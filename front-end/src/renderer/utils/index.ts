@@ -12,6 +12,9 @@ export * from './notifications';
 export * from './safeAwait';
 export * from './assertions';
 export * from './router';
+export * from './userStoreHelpers';
+export * from './sdk';
+export * from './transactionSignatureModels';
 
 export const getDateTimeLocalInputValue = (date: Date) => {
   const tzo = -date.getTimezoneOffset();
@@ -68,6 +71,20 @@ export const getUInt8ArrayFromBytesString = (bytes: string) => {
   const numberArray = bytes.trim().length === 0 ? [] : bytes.split(',').map(n => Number(n));
 
   return Uint8Array.from(numberArray);
+};
+
+export const uint8ToHex = (uint8: Uint8Array) => {
+  return Array.from(uint8)
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('');
+};
+
+export const hexToUint8Array = (hexString: string) => {
+  return new Uint8Array(
+    (hexString.startsWith('0x') ? hexString.slice(2) : hexString)
+      .match(/.{1,2}/g)
+      ?.map(byte => parseInt(byte, 16)) || [],
+  );
 };
 
 export const encodeString = (str: string) => {

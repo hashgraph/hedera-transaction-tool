@@ -14,12 +14,12 @@ import { Prisma } from '@prisma/client';
 
 import { useRouter } from 'vue-router';
 
+import * as ush from '@renderer/utils';
+
 import useNetworkStore from './storeNetwork';
 import useContactsStore from './storeContacts';
 import useWebsocketConnection from './storeWebsocketConnection';
 import useNotificationsStore from './storeNotifications';
-
-import * as ush from '@renderer/utils/userStoreHelpers';
 
 const useUserStore = defineStore('user', () => {
   /* Stores */

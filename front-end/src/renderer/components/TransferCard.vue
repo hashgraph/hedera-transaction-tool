@@ -12,8 +12,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import { getAll } from '@renderer/services/accountsService';
 
-import { formatAccountId, stringifyHbar } from '@renderer/utils';
-import { flattenAccountIds, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { formatAccountId, stringifyHbar, flattenAccountIds, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
@@ -62,9 +61,7 @@ const isApprovedTransfer = ref(false);
 const accoundIds = ref<HederaAccount[]>([]);
 
 /* Handlers */
-const handleSubmit = (e: Event) => {
-  e.preventDefault();
-
+const handleSubmit = () => {
   if (!accountData.isValid.value) {
     throw new Error('Invalid Account ID');
   }
@@ -130,7 +127,7 @@ watch([amount, accountData.isValid], async ([newAmount]) => {
 </script>
 <template>
   <div class="border rounded overflow-hidden p-4">
-    <form @submit="handleSubmit">
+    <form @submit.prevent="handleSubmit">
       <div class="form-group overflow-hidden position-relative">
         <label class="form-label me-3">{{ accountLabel }}</label>
         <label v-if="accountData.accountInfo.value?.deleted" class="form-label text-danger me-3"
@@ -161,7 +158,6 @@ watch([amount, accountData.isValid], async ([newAmount]) => {
         <label v-if="spender?.trim() && isApprovedTransfer" class="form-label text-secondary"
           >Allowance: {{ stringifyHbar(accountData.getSpenderAllowance(spender)) }}</label
         >
-        <!-- @vue-ignore Broken type inference -->
         <AppHbarInput
           v-model:model-value="amount as Hbar"
           placeholder="Enter Amount"

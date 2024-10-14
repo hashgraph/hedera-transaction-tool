@@ -259,7 +259,7 @@ test.describe('Workflow tests', () => {
     expect(fileId).toBe(fileIdFromUpdatePage);
 
     const transactionHeaderText = await transactionPage.getTransactionTypeHeaderText();
-    expect(transactionHeaderText).toBe('Update File Transaction');
+    expect(transactionHeaderText).toBe('File Update Transaction');
   });
 
   test('Verify file card append flow leads to append page with prefilled fileid', async () => {
@@ -273,7 +273,7 @@ test.describe('Workflow tests', () => {
     expect(fileId).toBe(fileIdFromAppendPage);
 
     const transactionHeaderText = await transactionPage.getTransactionTypeHeaderText();
-    expect(transactionHeaderText).toBe('Append File Transaction');
+    expect(transactionHeaderText).toBe('File Append Transaction');
   });
 
   test('Verify file card read flow leads to read page with prefilled fileid', async () => {
@@ -296,7 +296,7 @@ test.describe('Workflow tests', () => {
     await filePage.clickOnCreateNewFileLink();
 
     const transactionHeaderText = await transactionPage.getTransactionTypeHeaderText();
-    expect(transactionHeaderText).toBe('Create File Transaction');
+    expect(transactionHeaderText).toBe('File Create Transaction');
   });
 
   test('Verify clicking on "Add new" and "Update" navigates the user to update file transaction page w/o prefilled id', async () => {
@@ -305,7 +305,7 @@ test.describe('Workflow tests', () => {
     await filePage.clickOnUpdateFileLink();
 
     const transactionHeaderText = await transactionPage.getTransactionTypeHeaderText();
-    expect(transactionHeaderText).toBe('Update File Transaction');
+    expect(transactionHeaderText).toBe('File Update Transaction');
 
     const fileIdFromUpdatePage = await transactionPage.getFileIdFromUpdatePage();
     expect(fileIdFromUpdatePage).toBe('');
@@ -317,7 +317,7 @@ test.describe('Workflow tests', () => {
     await filePage.clickOnAppendFileLink();
 
     const transactionHeaderText = await transactionPage.getTransactionTypeHeaderText();
-    expect(transactionHeaderText).toBe('Append File Transaction');
+    expect(transactionHeaderText).toBe('File Append Transaction');
 
     const fileIdFromUpdatePage = await transactionPage.getFileIdFromAppendPage();
     expect(fileIdFromUpdatePage).toBe('');

@@ -3,8 +3,6 @@ import fs from 'fs/promises';
 
 import { BrowserWindow, app, dialog, ipcMain, shell, FileFilter } from 'electron';
 
-import { Key, KeyList } from '@hashgraph/sdk';
-import { proto } from '@hashgraph/proto';
 import * as bcrypt from 'bcrypt';
 
 import { getNumberArrayFromString, saveContentToPath } from '@main/utils';
@@ -13,16 +11,6 @@ const createChannelName = (...props: string[]) => ['utils', ...props].join(':');
 
 export default () => {
   ipcMain.on(createChannelName('openExternal'), (_e, url: string) => shell.openExternal(url));
-
-  ipcMain.handle(
-    createChannelName('decodeProtobuffKey'),
-    (_e, protobuffEncodedKey: string): Key | KeyList | proto.Key => {
-      const buffer = Buffer.from(protobuffEncodedKey, 'hex');
-      const key = proto.Key.decode(buffer);
-
-      return key;
-    },
-  );
 
   ipcMain.handle(createChannelName('hash'), (_e, data: string): string => {
     return bcrypt.hashSync(data, 10);
@@ -41,27 +29,6 @@ export default () => {
       }
 
       return null;
-    },
-  );
-
-  ipcMain.handle(createChannelName('uint8ArrayToHex'), (_e, data: string): string => {
-    return Buffer.from(getNumberArrayFromString(data)).toString('hex');
-  });
-
-  ipcMain.handle(createChannelName('hexToUint8Array'), (_e, hexString: string): string => {
-    return Uint8Array.from(
-      Buffer.from(hexString.startsWith('0x') ? hexString.slice(2) : hexString, 'hex'),
-    ).toString();
-  });
-
-  ipcMain.handle(
-    createChannelName('hexToUint8ArrayBatch'),
-    (_e, hexStrings: string[]): string[] => {
-      return hexStrings.map(hexString =>
-        Uint8Array.from(
-          Buffer.from(hexString.startsWith('0x') ? hexString.slice(2) : hexString, 'hex'),
-        ).toString(),
-      );
     },
   );
 
@@ -98,7 +65,7 @@ export default () => {
       if (!filePath.trim() || canceled) return;
 
       try {
-        await fs.writeFile(filePath, content);
+        await fs.writeFile(filePath, Uint8Array.from(content));
       } catch (error: any) {
         dialog.showErrorBox('Failed to save file', error?.message || 'Unknown error');
         console.log(error);

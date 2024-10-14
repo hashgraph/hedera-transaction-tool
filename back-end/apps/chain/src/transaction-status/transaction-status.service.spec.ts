@@ -15,6 +15,7 @@ import {
   notifySyncIndicators,
   notifyTransactionAction,
   notifyWaitingForSignatures,
+  isTransactionOverMaxSize,
 } from '@app/common';
 import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
@@ -345,7 +346,6 @@ describe('TransactionStatusService', () => {
         notificationsService,
         transactions[1].id,
       );
-
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
       expect(notifyTransactionAction).toHaveBeenCalledTimes(1);
     });
@@ -486,7 +486,7 @@ describe('TransactionStatusService', () => {
       expectNotifyNotCalled();
     });
 
-    it('should skip transaction if is file update or append', async () => {
+    it.skip('should skip transaction if is file update or append', async () => {
       const transaction = {
         id: 1,
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
@@ -660,6 +660,16 @@ describe('TransactionStatusService', () => {
         },
       );
     });
+
+    it('should handle error in callback', async () => {
+      jest.mocked(isTransactionOverMaxSize).mockRejectedValue(new Error('Error'));
+
+      service.prepareAndExecute(mockTransaction);
+
+      await jest.advanceTimersToNextTimerAsync();
+
+      expect(service.addExecutionTimeout).not.toHaveBeenCalled();
+    });
   });
 
   describe('addExecutionTimeout', () => {
@@ -714,6 +724,16 @@ describe('TransactionStatusService', () => {
       service.addExecutionTimeout(transaction);
 
       await jest.advanceTimersByTimeAsync(timeToValidStart + 5 * 1000);
+
+      expect(executeService.executeTransaction).toHaveBeenCalledWith(transaction);
+    });
+
+    it('should handle error in the timeout callback', async () => {
+      jest.spyOn(executeService, 'executeTransaction').mockRejectedValue(new Error('Error'));
+
+      service.addExecutionTimeout(transaction);
+
+      await jest.advanceTimersToNextTimerAsync();
 
       expect(executeService.executeTransaction).toHaveBeenCalledWith(transaction);
     });

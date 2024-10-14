@@ -22,8 +22,7 @@ import { useToast } from 'vue-toast-notification';
 import { getTransactionInfo } from '@renderer/services/mirrorNodeDataService';
 import { add, getAll } from '@renderer/services/accountsService';
 
-import { isAccountId, stringifyHbar } from '@renderer/utils';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isUserLoggedIn, isAccountId, stringifyHbar } from '@renderer/utils';
 
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';

@@ -2,6 +2,7 @@
 import { onBeforeMount } from 'vue';
 
 import { Transaction, AccountAllowanceApproveTransaction, Hbar } from '@hashgraph/sdk';
+
 import { stringifyHbar } from '@renderer/utils';
 
 /* Props */

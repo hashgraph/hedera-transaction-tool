@@ -1,0 +1,86 @@
+<script setup lang="ts">
+import type { Key } from '@hashgraph/sdk';
+import type { FileUpdateData } from '@renderer/utils/sdk';
+
+import useUserStore from '@renderer/stores/storeUser';
+
+import { isLoggedInOrganization, formatAccountId } from '@renderer/utils';
+
+import AppInput from '@renderer/components/ui/AppInput.vue';
+import KeyField from '@renderer/components/KeyField.vue';
+import FileDataFormData from '@renderer/components/Transaction/Create/FileData/FileDataFormData.vue';
+
+/* Props */
+defineProps<{
+  data: FileUpdateData;
+  signatureKey: Key | null;
+}>();
+
+/* Emits */
+defineEmits<{
+  (event: 'update:data', data: FileUpdateData): void;
+  (event: 'update:signatureKey', key: Key | null): void;
+}>();
+
+/* Stores */
+const user = useUserStore();
+
+/* Misc */
+const columnClass = 'col-4 col-xxxl-3';
+</script>
+<template>
+  <div class="row">
+    <div class="form-group" :class="[columnClass]">
+      <label class="form-label">File ID <span class="text-danger">*</span></label>
+      <AppInput
+        :model-value="data.fileId"
+        @update:model-value="
+          $emit('update:data', {
+            ...data,
+            fileId: formatAccountId($event),
+          })
+        "
+        :filled="true"
+        placeholder="Enter File ID"
+        data-testid="input-file-id-for-update"
+      />
+    </div>
+  </div>
+
+  <div v-if="!isLoggedInOrganization(user.selectedOrganization)" class="row my-6">
+    <div class="form-group col-8 col-xxxl-6">
+      <KeyField
+        :model-key="signatureKey"
+        @update:model-key="$emit('update:signatureKey', $event)"
+        is-required
+        label="Signature Key"
+      />
+    </div>
+  </div>
+
+  <FileDataFormData
+    :data="data"
+    @update:data="
+      $emit('update:data', {
+        ...data,
+        ...$event,
+      })
+    "
+    :keyRequired="false"
+    :file-id="data.fileId"
+  />
+
+  <!-- <div class="row mt-6"> TODO
+          <div class="form-group" :class="[columnClass]">
+            <label class="form-label">Chunk Size (If File is large)</label>
+            <AppInput
+              v-model="chunkSize"
+              type="number"
+              min="1024"
+              max="6144"
+              :filled="true"
+              placeholder="Enter Chunk Size"
+            />
+          </div>
+        </div> -->
+</template>

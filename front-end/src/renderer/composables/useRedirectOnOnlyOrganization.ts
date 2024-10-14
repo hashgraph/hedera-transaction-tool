@@ -4,7 +4,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization } from '@renderer/utils';
 
 export default function useRedirectOnOnlyOrganization() {
   /* Stores */

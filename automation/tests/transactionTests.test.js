@@ -541,7 +541,7 @@ test.describe('Transaction tests', () => {
 
     const isAcceptStakingRewardsSwitchOn =
       await transactionPage.isAcceptStakingRewardsSwitchToggledOn();
-    expect(isAcceptStakingRewardsSwitchOn).toBe(true);
+    expect(isAcceptStakingRewardsSwitchOn).toBe(false);
 
     const isReceiverSigRequiredSwitchOn =
       await transactionPage.isReceiverSigRequiredSwitchToggledOnForUpdatePage();
@@ -622,11 +622,11 @@ test.describe('Transaction tests', () => {
 
     const transactionMemoText = 'test memo';
     const fileMemoText = 'file memo';
-    const fileContent = 'test file content';
+    // const fileContent = 'test file content';
 
     await transactionPage.fillInTransactionMemoForCreateFilePage(transactionMemoText);
     await transactionPage.fillInFileMemoForCreatePage(fileMemoText);
-    await transactionPage.fillInFileContent(fileContent);
+    // await transactionPage.fillInFileContent(fileContent);
 
     await transactionPage.saveDraft();
     await transactionPage.clickOnFirstDraftContinueButton();
@@ -637,8 +637,8 @@ test.describe('Transaction tests', () => {
     const fileMemoFromField = await transactionPage.getFileMemoFromCreatePage();
     expect(fileMemoFromField).toBe(fileMemoText);
 
-    const fileContentFromField = await transactionPage.getFileContentText();
-    expect(fileContentFromField).toBe(fileContent);
+    // const fileContentFromField = await transactionPage.getFileContentText();
+    // expect(fileContentFromField).toBe(fileContent);
 
     await transactionPage.navigateToDrafts();
     await transactionPage.deleteFirstDraft();

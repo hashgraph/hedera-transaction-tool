@@ -10,8 +10,7 @@ import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 import { signUp } from '@renderer/services/organization';
 import { addContact } from '@renderer/services/contactsService';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
-import { isEmail } from '@renderer/utils';
+import { isLoggedInOrganization, isUserLoggedIn, isEmail } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';

@@ -12,7 +12,7 @@ import axios from 'axios';
 import { AccountId, EvmAddress, Hbar, HbarUnit, Key, PublicKey, Timestamp } from '@hashgraph/sdk';
 import { BigNumber } from 'bignumber.js';
 
-import { decodeProtobuffKey } from './electronUtilsService';
+import { decodeProtobuffKey } from '@renderer/utils';
 
 /* Mirror node data service */
 
@@ -133,7 +133,7 @@ export const getAccountInfo = async (
   } else {
     switch (rawAccountInfo.key._type) {
       case 'ProtobufEncoded':
-        key = (await decodeProtobuffKey(rawAccountInfo.key.key || '')) || null;
+        key = decodeProtobuffKey(rawAccountInfo.key.key || '') || null;
         break;
       case 'ED25519':
       case 'ECDSA_SECP256K1':

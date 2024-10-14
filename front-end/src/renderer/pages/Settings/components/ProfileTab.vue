@@ -14,7 +14,7 @@ import { addOrganizationCredentials } from '@renderer/services/organizationCrede
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';

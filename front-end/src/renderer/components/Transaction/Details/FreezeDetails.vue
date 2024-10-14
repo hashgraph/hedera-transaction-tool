@@ -3,9 +3,7 @@ import { onBeforeMount, ref } from 'vue';
 
 import { Transaction, FreezeTransaction } from '@hashgraph/sdk';
 
-import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
-
-import { getDateStringExtended } from '@renderer/utils';
+import { getDateStringExtended, uint8ToHex } from '@renderer/utils';
 import { getFreezeTypeString } from '@renderer/utils/sdk/transactions';
 
 /* Props */
@@ -17,13 +15,13 @@ const props = defineProps<{
 const fileHashHex = ref('');
 
 /* Hooks */
-onBeforeMount(async () => {
+onBeforeMount(() => {
   if (!(props.transaction instanceof FreezeTransaction)) {
     throw new Error('Transaction is not Account Delete Transaction');
   }
 
   if (props.transaction.fileHash) {
-    fileHashHex.value = await uint8ArrayToHex(props.transaction.fileHash);
+    fileHashHex.value = uint8ToHex(props.transaction.fileHash);
   }
 });
 

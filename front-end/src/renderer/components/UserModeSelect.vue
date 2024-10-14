@@ -15,7 +15,7 @@ import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 import { withLoader } from '@renderer/utils';
 
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
-import AppButton from './ui/AppButton.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
 
 /* Misc */
 const personalModeText = 'My Transactions';

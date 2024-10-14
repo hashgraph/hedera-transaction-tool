@@ -1,14 +1,13 @@
-import AccountInfoVue from './Account/AccountInfo.vue';
-import ApproveHbarAllowanceVue from './Account/ApproveHbarAllowance.vue';
-import CreateAccount from './Account/CreateAccount.vue';
-import DeleteAccount from './Account/DeleteAccount.vue';
-import UpdateAccount from './Account/UpdateAccount.vue';
-import AppendToFileVue from './File/AppendToFile.vue';
-import CreateFile from './File/CreateFile.vue';
-import ReadFile from './File/ReadFile.vue';
-import UpdateFile from './File/UpdateFile.vue';
-import FreezeVue from './Misc/Freeze.vue';
-import TransferHbar from './Transfer/TransferHbar.vue';
+import ApproveHbarAllowance from './ApproveHbarAllowance';
+import AccountCreate from './AccountCreate';
+import AccountUpdate from './AccountUpdate';
+import AccountDelete from './AccountDelete';
+import FileAppend from './FileAppend';
+import FileCreate from './FileCreate';
+import FileUpdate from './FileUpdate';
+import FileContents from './FileContents';
+import Freeze from './Freeze';
+import TransferHbar from './TransferHbar';
 
 export const transactionTypeKeys = {
   createFile: 'FileCreateTransaction',
@@ -25,17 +24,16 @@ export const transactionTypeKeys = {
 };
 
 const txTypeComponentMapping = {
-  [transactionTypeKeys.createFile]: CreateFile,
-  [transactionTypeKeys.readFile]: ReadFile,
-  [transactionTypeKeys.updateFile]: UpdateFile,
-  [transactionTypeKeys.appendToFile]: AppendToFileVue,
-  [transactionTypeKeys.createAccount]: CreateAccount,
-  [transactionTypeKeys.updateAccount]: UpdateAccount,
-  [transactionTypeKeys.deleteAccount]: DeleteAccount,
-  [transactionTypeKeys.accountInfo]: AccountInfoVue,
+  [transactionTypeKeys.createFile]: FileCreate,
+  [transactionTypeKeys.readFile]: FileContents,
+  [transactionTypeKeys.updateFile]: FileUpdate,
+  [transactionTypeKeys.appendToFile]: FileAppend,
+  [transactionTypeKeys.createAccount]: AccountCreate,
+  [transactionTypeKeys.updateAccount]: AccountUpdate,
+  [transactionTypeKeys.deleteAccount]: AccountDelete,
   [transactionTypeKeys.transfer]: TransferHbar,
-  [transactionTypeKeys.approveAllowance]: ApproveHbarAllowanceVue,
-  [transactionTypeKeys.freeze]: FreezeVue,
+  [transactionTypeKeys.approveAllowance]: ApproveHbarAllowance,
+  [transactionTypeKeys.freeze]: Freeze,
 };
 
 export default txTypeComponentMapping;

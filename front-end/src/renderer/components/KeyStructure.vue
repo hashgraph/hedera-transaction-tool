@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { KeyList, PublicKey } from '@hashgraph/sdk';
 
-import { normalizePublicKey } from '@renderer/utils/sdk';
+import { normalizePublicKey } from '@renderer/utils';
 
 import AppPublicKeyNickname from '@renderer/components/ui/AppPublicKeyNickname.vue';
 

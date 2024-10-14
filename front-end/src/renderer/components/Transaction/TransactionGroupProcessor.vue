@@ -24,7 +24,6 @@ import {
   editGroupItem,
 } from '@renderer/services/transactionGroupsService';
 import { addGroup, getGroupItem } from '@renderer/services/transactionGroupsService';
-import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 import {
   addApprovers,
   addObservers,
@@ -34,12 +33,16 @@ import {
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
-import { ableToSign, getPrivateKey, getStatusFromCode, getTransactionType } from '@renderer/utils';
 import {
   assertUserLoggedIn,
+  ableToSign,
+  getPrivateKey,
+  getStatusFromCode,
+  getTransactionType,
+  uint8ToHex,
   isLoggedInOrganization,
   isUserLoggedIn,
-} from '@renderer/utils/userStoreHelpers';
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -312,7 +315,7 @@ async function sendSignedTransactionsToOrganization() {
   /* User Serializes each Transaction */
   const groupBytesHex = new Array<string>();
   for (const groupItem of transactionGroup.groupItems) {
-    groupBytesHex.push(await uint8ArrayToHex(groupItem.transactionBytes));
+    groupBytesHex.push(uint8ToHex(groupItem.transactionBytes));
   }
 
   /* Signs the unfrozen transaction */
@@ -323,7 +326,7 @@ async function sendSignedTransactionsToOrganization() {
 
   const groupSignatureHex = new Array<string>();
   for (const groupItem of transactionGroup.groupItems) {
-    groupSignatureHex.push(await uint8ArrayToHex(privateKey.sign(groupItem.transactionBytes)));
+    groupSignatureHex.push(uint8ToHex(privateKey.sign(groupItem.transactionBytes)));
   }
 
   /* Submit transactions to the back end */

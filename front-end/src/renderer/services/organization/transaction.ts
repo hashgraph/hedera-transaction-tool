@@ -83,7 +83,7 @@ export const fullUploadSignatures = async (
     const privateKeyRaw = await decryptPrivateKey(userId, userPassword, publicKey);
     const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
-    const signatures = await getSignatures(privateKey, transaction);
+    const signatures = getSignatures(privateKey, transaction);
 
     signaturesArray.push({
       publicKeyId: organization.userKeys.find(k => k.publicKey === publicKey)?.id || -1,

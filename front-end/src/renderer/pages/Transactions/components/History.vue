@@ -22,16 +22,18 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
 import { getTransactions, getTransactionsCount } from '@renderer/services/transactionService';
 import { getHistoryTransactions } from '@renderer/services/organization';
-import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
-import { getNotifiedTransactions, redirectToDetails } from '@renderer/utils';
 import {
   getTransactionStatus,
   getTransactionId,
   getStatusFromCode,
-} from '@renderer/utils/transactions';
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
-import { getDateStringExtended } from '@renderer/utils';
+  getNotifiedTransactions,
+  getDateStringExtended,
+  hexToUint8Array,
+  redirectToDetails,
+  isLoggedInOrganization,
+  isUserLoggedIn,
+} from '@renderer/utils';
 import * as sdkTransactionUtils from '@renderer/utils/sdk/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -170,9 +172,7 @@ async function fetchTransactions() {
       );
       totalItems.value = totalItemsCount;
 
-      const transactionsBytes = await hexToUint8ArrayBatch(
-        rawTransactions.map(t => t.transactionBytes),
-      );
+      const transactionsBytes = rawTransactions.map(t => hexToUint8Array(t.transactionBytes));
       organizationTransactions.value = rawTransactions.map((transaction, i) => ({
         transactionRaw: transaction,
         transaction: SDKTransaction.fromBytes(transactionsBytes[i]),

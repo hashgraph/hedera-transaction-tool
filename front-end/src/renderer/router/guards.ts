@@ -2,7 +2,7 @@ import type { Router } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization } from '@renderer/utils';
 
 const exludedPreviousPaths = ['login', 'organizationLogin', 'accountSetup', 'migrate'];
 

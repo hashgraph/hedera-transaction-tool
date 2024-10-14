@@ -23,8 +23,7 @@ import { saveFile } from '@renderer/services/electronUtilsService';
 import { getTransactionInfo } from '@renderer/services/mirrorNodeDataService';
 import { add, getAll } from '@renderer/services/filesService';
 
-import { getFormattedDateFromTimestamp } from '@renderer/utils';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isUserLoggedIn, getFormattedDateFromTimestamp } from '@renderer/utils';
 
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';

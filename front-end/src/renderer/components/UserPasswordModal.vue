@@ -5,7 +5,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { comparePasswords } from '@renderer/services/userService';
 
-import { isLoggedInWithPassword, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInWithPassword, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';

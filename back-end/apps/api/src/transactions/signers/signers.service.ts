@@ -180,7 +180,6 @@ export class SignersService {
       /* Commit the database transaction */
       await queryRunner.commitTransaction();
 
-      /* Check if ready to execute */
       emitUpdateTransactionStatus(this.chainService, transactionId);
       notifyTransactionAction(this.notificationService);
       notifySyncIndicators(this.notificationService, transactionId, transaction.status);
@@ -280,10 +279,10 @@ export class SignersService {
       await queryRunner.commitTransaction();
       await queryRunner.release();
 
-      /* Check if ready to execute */
       emitUpdateTransactionStatus(this.chainService, transactionId);
       notifyTransactionAction(this.notificationService);
       notifySyncIndicators(this.notificationService, transactionId, transaction.status);
+
       return signers;
     } catch (error) {
       await queryRunner.rollbackTransaction();

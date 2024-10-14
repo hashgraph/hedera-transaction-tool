@@ -13,7 +13,7 @@ import useContactsStore from '@renderer/stores/storeContacts';
 import { addContact, updateContact } from '@renderer/services/contactsService';
 import { getAccountsByPublicKeysParallel } from '@renderer/services/mirrorNodeDataService';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';

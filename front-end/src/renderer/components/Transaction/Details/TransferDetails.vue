@@ -10,8 +10,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getAll } from '@renderer/services/accountsService';
 
-import { stringifyHbar } from '@renderer/utils';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isUserLoggedIn, stringifyHbar } from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{

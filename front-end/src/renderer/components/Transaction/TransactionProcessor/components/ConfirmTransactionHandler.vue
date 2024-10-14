@@ -10,8 +10,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
-import { getTransactionType, stringifyHbar } from '@renderer/utils';
-import { assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { assertUserLoggedIn, getTransactionType, stringifyHbar } from '@renderer/utils';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 

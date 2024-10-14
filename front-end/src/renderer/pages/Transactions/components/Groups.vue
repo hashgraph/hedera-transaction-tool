@@ -9,7 +9,7 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useUserStore from '@renderer/stores/storeUser';
 
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';

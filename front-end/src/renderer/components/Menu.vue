@@ -3,7 +3,7 @@ import { RouterLink } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization } from '@renderer/utils';
 
 /* Store */
 const user = useUserStore();

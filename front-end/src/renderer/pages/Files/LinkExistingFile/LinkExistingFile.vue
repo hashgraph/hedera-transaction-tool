@@ -12,8 +12,7 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { add } from '@renderer/services/filesService';
 
-import { isAccountId, isFileId, formatAccountId } from '@renderer/utils';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isAccountId, isFileId, isUserLoggedIn, formatAccountId } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';

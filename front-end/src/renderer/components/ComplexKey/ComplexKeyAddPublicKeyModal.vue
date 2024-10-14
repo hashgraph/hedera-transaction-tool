@@ -6,8 +6,7 @@ import { PublicKey } from '@hashgraph/sdk';
 import useUserStore from '@renderer/stores/storeUser';
 import useContactsStore from '@renderer/stores/storeContacts';
 
-import { isPublicKey } from '@renderer/utils/validator';
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import { isPublicKey, isLoggedInOrganization } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppListItem from '@renderer/components/ui/AppListItem.vue';

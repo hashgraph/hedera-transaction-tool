@@ -17,15 +17,18 @@ import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 
 import { getApiGroups, getTransactionsForUser } from '@renderer/services/organization';
-import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
 import {
   getTransactionDateExtended,
   getTransactionId,
   getTransactionType,
 } from '@renderer/utils/sdk/transactions';
-import { redirectToDetails, redirectToGroupDetails } from '@renderer/utils';
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
+import {
+  redirectToDetails,
+  redirectToGroupDetails,
+  isLoggedInOrganization,
+  hexToUint8Array,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -112,9 +115,7 @@ async function fetchTransactions() {
       [{ property: sort.field, direction: sort.direction }],
     );
     totalItems.value = totalItemsCount;
-    const transactionsBytes = await hexToUint8ArrayBatch(
-      rawTransactions.map(t => t.transactionBytes),
-    );
+    const transactionsBytes = rawTransactions.map(t => hexToUint8Array(t.transactionBytes));
 
     for (const [i, transaction] of rawTransactions.entries()) {
       const currentGroup =

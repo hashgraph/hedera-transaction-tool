@@ -7,7 +7,7 @@ import useContactsStore from '@renderer/stores/storeContacts';
 
 import { useToast } from 'vue-toast-notification';
 
-import { isPublicKeyInKeyList } from '@renderer/utils/sdk';
+import { isPublicKeyInKeyList } from '@renderer/utils';
 import * as ush from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';

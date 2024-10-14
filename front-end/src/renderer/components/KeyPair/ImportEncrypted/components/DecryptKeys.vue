@@ -9,7 +9,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { hashData } from '@renderer/services/electronUtilsService';
 
-import { getKeysFromSecretHash, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { getKeysFromSecretHash, isUserLoggedIn } from '@renderer/utils';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 

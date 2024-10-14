@@ -11,12 +11,15 @@ import useNetwork from '@renderer/stores/storeNetwork';
 import { useToast } from 'vue-toast-notification';
 import useDraft from '@renderer/composables/useDraft';
 
-import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { addApprovers, addObservers, submitTransaction } from '@renderer/services/organization';
 
-import { getPrivateKey } from '@renderer/utils';
-import { assertIsLoggedInOrganization, assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import {
+  assertIsLoggedInOrganization,
+  assertUserLoggedIn,
+  getPrivateKey,
+  uint8ToHex,
+} from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{
@@ -94,7 +97,7 @@ async function sign(publicKey: string) {
 
   /* Signs the unfrozen transaction */
   const signatureBytes = privateKey.sign(request.value.transactionBytes);
-  const signature = await uint8ArrayToHex(signatureBytes);
+  const signature = uint8ToHex(signatureBytes);
 
   return signature;
 }
@@ -105,7 +108,7 @@ async function submit(publicKey: string, signature: string) {
     if (!request.value) throw new Error('Request is required to sign');
     if (!transaction.value) throw new Error('Transaction is required to sign');
 
-    const hexTransactionBytes = await uint8ArrayToHex(request.value.transactionBytes);
+    const hexTransactionBytes = uint8ToHex(request.value.transactionBytes);
 
     return await submitTransaction(
       user.selectedOrganization.serverUrl,

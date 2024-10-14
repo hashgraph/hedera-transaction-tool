@@ -1,26 +1,23 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { useRoute } from 'vue-router';
 
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { getDraft } from '@renderer/services/transactionDraftsService';
 import * as claim from '@renderer/services/claimService';
 
-import { formatAccountId, getTransactionFromBytes, stringifyHbar } from '@renderer/utils';
-import { flattenAccountIds, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { formatAccountId, flattenAccountIds, isUserLoggedIn, stringifyHbar } from '@renderer/utils';
 
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
-import RunningClockDatePicker from '@renderer/components/Wrapped/RunningClockDatePicker.vue';
+import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
 
 /* Props */
 const props = defineProps<{
@@ -34,7 +31,6 @@ const emit = defineEmits(['update:payerId', 'update:validStart', 'update:maxTran
 
 /* Stores */
 const user = useUserStore();
-const transactionGroup = useTransactionGroupStore();
 
 /* Composables */
 const route = useRoute();
@@ -61,31 +57,9 @@ function handleUpdateValidStart(v: Date) {
   emit('update:validStart', v);
 }
 
-/* Functions */
-const loadFromDraftBytes = async (transactionBytes: string) => {
-  const draftTransaction = getTransactionFromBytes(transactionBytes);
-
-  if (draftTransaction.transactionId) {
-    const transactionId = draftTransaction.transactionId;
-
-    if (transactionId.accountId) {
-      account.accountId.value = transactionId.accountId.toString();
-      emit('update:payerId', transactionId.accountId.toString());
-    }
-
-    if (transactionId.validStart) {
-      emit('update:validStart', transactionId.validStart.toDate());
-    }
-  }
-
-  if (draftTransaction.maxTransactionFee) {
-    emit('update:maxTransactionFee', draftTransaction.maxTransactionFee);
-  }
-};
-
 /* Hooks */
 onBeforeMount(async () => {
-  if (!isUserLoggedIn(user.personal)) return;
+  if (!isUserLoggedIn(user.personal) || route.query.draftId || route.query.groupIndex) return;
 
   const [maxTransactionFeeClaim] = await claim.get({
     where: { user_id: user.personal.id, claim_key: DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY },
@@ -97,24 +71,11 @@ onBeforeMount(async () => {
       Hbar.fromString(maxTransactionFeeClaim.claim_value, HbarUnit.Tinybar),
     );
   }
-});
 
-onMounted(async () => {
-  // Check if this is loading from draft, or group item, or is a
-  // new transaction. Set values accordingly
-  if (route.query.draftId) {
-    const draft = await getDraft(route.query.draftId.toString());
-    await loadFromDraftBytes(draft.transactionBytes);
-  } else if (route.query.groupIndex) {
-    await loadFromDraftBytes(
-      transactionGroup.groupItems[Number(route.query.groupIndex)].transactionBytes.toString(),
-    );
-  } else {
-    const allAccounts = user.publicKeyToAccounts.map(a => a.accounts).flat();
-    if (allAccounts.length > 0 && allAccounts[0].account) {
-      account.accountId.value = allAccounts[0].account;
-      emit('update:payerId', allAccounts[0].account || '');
-    }
+  const allAccounts = user.publicKeyToAccounts.map(a => a.accounts).flat();
+  if (allAccounts.length > 0 && allAccounts[0].account) {
+    account.accountId.value = allAccounts[0].account;
+    emit('update:payerId', allAccounts[0].account || '');
   }
 });
 

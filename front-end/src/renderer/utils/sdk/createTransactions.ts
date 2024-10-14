@@ -26,11 +26,85 @@ import type { IAccountInfoParsed } from '@main/shared/interfaces';
 import { isAccountId, isFileId } from '../validator';
 import { compareKeys } from '.';
 
-type TransactionCommon = {
+export type TransactionData = TransactionCommonData & TransactionSpecificData;
+
+export type TransactionCommonData = {
   payerId: string;
   validStart: Date;
   maxTransactionFee: Hbar;
   transactionMemo: string;
+};
+
+export type TransactionSpecificData =
+  | AccountCreateData
+  | AccountUpdateData
+  | AccountDeleteData
+  | ApproveHbarAllowanceData
+  | FileCreateData
+  | FileUpdateData
+  | FileAppendData
+  | FreezeData
+  | TransferHbarData;
+
+export type AccountData = {
+  receiverSignatureRequired: boolean;
+  declineStakingReward: boolean;
+  maxAutomaticTokenAssociations: number;
+  accountMemo: string;
+  stakeType: 'Account' | 'Node' | 'None';
+  stakedAccountId: string;
+  stakedNodeId: number | null;
+  ownerKey: Key | null;
+};
+
+export type AccountCreateData = AccountData & {
+  initialBalance: Hbar | null;
+};
+
+export type AccountDeleteData = {
+  accountId: string;
+  transferAccountId: string;
+};
+
+export type AccountUpdateData = AccountData & {
+  accountId: string;
+};
+
+export type ApproveHbarAllowanceData = {
+  ownerAccountId: string;
+  spenderAccountId: string;
+  amount: Hbar;
+};
+
+export type FileData = {
+  ownerKey: Key | null;
+  fileMemo: string;
+  expirationTime: Date | null;
+  contents: Uint8Array | string | null;
+};
+
+export type FileCreateData = FileData;
+
+export type FileUpdateData = FileData & {
+  fileId: string;
+};
+
+export type FileAppendData = {
+  fileId: string;
+  chunkSize: number;
+  maxChunks: number;
+  contents: Uint8Array | string | null;
+};
+
+export type FreezeData = {
+  freezeType: number;
+  startTimestamp: Date;
+  fileId: string;
+  fileHash: string;
+};
+
+export type TransferHbarData = {
+  transfers: Transfer[];
 };
 
 /* Crafts transaction id by account id and valid start */
@@ -55,7 +129,7 @@ export const createTransactionId = (
   return TransactionId.withValidStart(accountId, validStart);
 };
 
-const setTransactionCommon = (transaction: Transaction, data: TransactionCommon) => {
+const setTransactionCommonData = (transaction: Transaction, data: TransactionCommonData) => {
   if (isAccountId(data.payerId)) {
     transaction.setTransactionId(createTransactionId(data.payerId, data.validStart));
   }
@@ -69,19 +143,7 @@ const setTransactionCommon = (transaction: Transaction, data: TransactionCommon)
 };
 
 /* Account Create Transaction */
-export const createAccountTransaction = (
-  data: TransactionCommon & {
-    receiverSignatureRequired: boolean;
-    declineStakingReward: boolean;
-    maxAutomaticTokenAssociations: number;
-    accountMemo: string;
-    stakeType: 'Account' | 'Node' | 'None';
-    stakedAccountId: string;
-    stakedNodeId: number | null;
-    initialBalance: Hbar | null;
-    ownerKey: Key | null;
-  },
-) => {
+export const createAccountCreateTransaction = (data: TransactionCommonData & AccountCreateData) => {
   const transaction = new AccountCreateTransaction()
     .setReceiverSignatureRequired(data.receiverSignatureRequired)
     .setDeclineStakingReward(data.declineStakingReward)
@@ -89,7 +151,7 @@ export const createAccountTransaction = (
     .setMaxAutomaticTokenAssociations(data.maxAutomaticTokenAssociations)
     .setAccountMemo(data.accountMemo);
 
-  setTransactionCommon(transaction, data);
+  setTransactionCommonData(transaction, data);
 
   if (data.ownerKey) {
     transaction.setKey(data.ownerKey);
@@ -105,15 +167,11 @@ export const createAccountTransaction = (
 };
 
 /* Approve Allowance Transaction */
-export const createApproveAllowanceTransaction = (
-  data: TransactionCommon & {
-    ownerAccountId: string;
-    spenderAccountId: string;
-    amount: Hbar;
-  },
+export const createApproveHbarAllowanceTransaction = (
+  data: TransactionCommonData & ApproveHbarAllowanceData,
 ) => {
   const transaction = new AccountAllowanceApproveTransaction();
-  setTransactionCommon(transaction, data);
+  setTransactionCommonData(transaction, data);
 
   if (isAccountId(data.ownerAccountId) && isAccountId(data.spenderAccountId)) {
     transaction.approveHbarAllowance(data.ownerAccountId, data.spenderAccountId, data.amount);
@@ -123,14 +181,9 @@ export const createApproveAllowanceTransaction = (
 };
 
 /* Accound Delete Transaction */
-export const createAccountDeleteTransaction = (
-  data: TransactionCommon & {
-    accountId: string;
-    transferAccountId: string;
-  },
-) => {
+export const createAccountDeleteTransaction = (data: TransactionCommonData & AccountDeleteData) => {
   const transaction = new AccountDeleteTransaction();
-  setTransactionCommon(transaction, data);
+  setTransactionCommonData(transaction, data);
 
   if (isAccountId(data.accountId)) {
     transaction.setAccountId(data.accountId);
@@ -145,21 +198,11 @@ export const createAccountDeleteTransaction = (
 
 /* Accound Update Transaction */
 export const createAccountUpdateTransaction = (
-  data: TransactionCommon & {
-    accountId: string;
-    receiverSignatureRequired: boolean;
-    declineStakingReward: boolean;
-    maxAutomaticTokenAssociations: number;
-    accountMemo: string;
-    ownerKey: Key | null;
-    stakeType: 'Account' | 'Node' | 'None';
-    stakedAccountId: string;
-    stakedNodeId: number | null;
-  },
+  data: TransactionCommonData & AccountUpdateData,
   oldData: IAccountInfoParsed | null,
 ) => {
   const transaction = new AccountUpdateTransaction();
-  setTransactionCommon(transaction, data);
+  setTransactionCommonData(transaction, data);
 
   isAccountId(data.accountId) && transaction.setAccountId(data.accountId);
 
@@ -209,16 +252,9 @@ export const createAccountUpdateTransaction = (
 };
 
 /* File Append Transaction */
-export const createFileAppendTransaction = (
-  data: TransactionCommon & {
-    fileId: string;
-    chunkSize: number;
-    maxChunks: number;
-    contents: Uint8Array | null;
-  },
-) => {
+export const createFileAppendTransaction = (data: TransactionCommonData & FileAppendData) => {
   const transaction = new FileAppendTransaction().setMaxChunks(data.maxChunks);
-  setTransactionCommon(transaction, data);
+  setTransactionCommonData(transaction, data);
 
   if (isAccountId(data.fileId)) {
     transaction.setFileId(data.fileId);
@@ -239,12 +275,7 @@ export const createFileAppendTransaction = (
 
 const setFileInfo = (
   transaction: FileCreateTransaction | FileUpdateTransaction,
-  data: {
-    ownerKey: Key | null;
-    fileMemo: string;
-    expirationTime: Date | null;
-    contents: Uint8Array | string | null;
-  },
+  data: FileData,
 ) => {
   if (data.fileMemo.length > 0 && data.fileMemo.length <= MEMO_MAX_LENGTH) {
     transaction.setFileMemo(data.fileMemo);
@@ -265,33 +296,24 @@ const setFileInfo = (
   }
 };
 
-/* File Create Transaction */
-export const createFileCreateTransaction = (
-  data: TransactionCommon & {
-    ownerKey: Key | null;
-    fileMemo: string;
-    expirationTime: Date | null;
-    contents: Uint8Array | string | null;
-  },
-) => {
+export const createFileDataTransaction = (data: FileData) => {
   const transaction = new FileCreateTransaction();
-  setTransactionCommon(transaction, data);
+  setFileInfo(transaction, data);
+  return transaction;
+};
+
+/* File Create Transaction */
+export const createFileCreateTransaction = (data: TransactionCommonData & FileData) => {
+  const transaction = new FileCreateTransaction();
+  setTransactionCommonData(transaction, data);
   setFileInfo(transaction, data);
   return transaction;
 };
 
 /* File Update Transaction */
-export const createFileUpdateTransaction = (
-  data: TransactionCommon & {
-    fileId: string;
-    ownerKey: Key | null;
-    fileMemo: string;
-    expirationTime: Date | null;
-    contents: Uint8Array | string | null;
-  },
-) => {
+export const createFileUpdateTransaction = (data: TransactionCommonData & FileUpdateData) => {
   const transaction = new FileUpdateTransaction();
-  setTransactionCommon(transaction, data);
+  setTransactionCommonData(transaction, data);
   setFileInfo(transaction, data);
 
   if (isAccountId(data.fileId)) {
@@ -302,16 +324,9 @@ export const createFileUpdateTransaction = (
 };
 
 /* Freeze Transaction */
-export const createFreezeTransaction = (
-  data: TransactionCommon & {
-    freezeType: number;
-    startTimestamp: Date;
-    fileId: string;
-    fileHash: string;
-  },
-) => {
+export const createFreezeTransaction = (data: TransactionCommonData & FreezeData) => {
   const transaction = new FreezeTransaction();
-  setTransactionCommon(transaction, data);
+  setTransactionCommonData(transaction, data);
 
   if (data.freezeType <= 0 || data.freezeType > 6) return transaction;
 
@@ -352,13 +367,9 @@ export const createFreezeTransaction = (
 };
 
 /* Transfer Hbar */
-export const createTransferHbarTransaction = (
-  data: TransactionCommon & {
-    transfers: Transfer[];
-  },
-) => {
+export const createTransferHbarTransaction = (data: TransactionCommonData & TransferHbarData) => {
   const transaction = new TransferTransaction();
-  setTransactionCommon(transaction, data);
+  setTransactionCommonData(transaction, data);
 
   data.transfers.forEach(transfer => {
     transfer.isApproved
