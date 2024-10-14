@@ -680,11 +680,7 @@ onMounted(async () => {
       ref="transactionProcessor"
       :observers="observers"
       :approvers="approvers"
-      :on-executed="
-        () => {
-          isExecuted = true;
-        }
-      "
+      :on-executed="() => (isExecuted = true)"
       :on-submitted="handleSubmit"
       :on-local-stored="handleLocalStored"
     />
