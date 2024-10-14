@@ -10,14 +10,13 @@ import {
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
   NOTIFY_GENERAL,
-  NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
   NotifyGeneralDto,
-  NotifyForTransactionDto,
   hasValidSignatureKey,
   computeSignatureKey,
   smartCollate,
   notifyTransactionAction,
   notifySyncIndicators,
+  notifyWaitingForSignatures,
 } from '@app/common';
 import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
@@ -266,12 +265,7 @@ export class TransactionStatusService {
     }
 
     if (newStatus === TransactionStatus.WAITING_FOR_SIGNATURES) {
-      this.notificationsService.emit<undefined, NotifyForTransactionDto>(
-        NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
-        {
-          transactionId: transaction.id,
-        },
-      );
+      notifyWaitingForSignatures(this.notificationsService, transaction.id);
     }
   }
 
