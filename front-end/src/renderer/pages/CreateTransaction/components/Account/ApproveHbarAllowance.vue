@@ -232,6 +232,7 @@ function createTransaction() {
 /* Hooks */
 onMounted(async () => {
   await handleLoadFromDraft();
+  console.log('ownerData', ownerData);
 });
 
 /* Misc */
@@ -255,7 +256,7 @@ const columnClass = 'col-4 col-xxxl-3';
               color="primary"
               type="submit"
               data-testid="button-sign-and-submit-allowance"
-              :disabled="!ownerData.key || !payerData.isValid.value"
+              :disabled="!spenderData.key.value || !ownerData.key.value || !payerData.isValid.value"
             >
               <span class="bi bi-send"></span>
               {{
@@ -412,19 +413,7 @@ const columnClass = 'col-4 col-xxxl-3';
       :on-executed="() => (isExecuted = true)"
       :on-submitted="handleSubmit"
       :on-local-stored="handleLocalStored"
-    >
-      <template #successHeading>Allowance Approved Successfully</template>
-      <template #successContent>
-        <p class="text-small d-flex justify-content-between align-items mt-2">
-          <span class="text-bold text-secondary">Owner Account ID:</span>
-          <span>{{ ownerData.accountIdFormatted.value }}</span>
-        </p>
-        <p class="text-small d-flex justify-content-between align-items mt-2">
-          <span class="text-bold text-secondary">Spender Account ID:</span>
-          <span>{{ spenderData.accountIdFormatted.value }}</span>
-        </p>
-      </template>
-    </TransactionProcessor>
+    />
 
     <KeyStructureModal
       v-model:show="isKeyStructureModalShown"
