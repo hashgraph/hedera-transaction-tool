@@ -12,6 +12,14 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppListItem from '@renderer/components/ui/AppListItem.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { b } from 'vitest/dist/chunks/suite.CcK46U-P.js';
+
+/* Enums */
+enum KeyTab {
+  MY = 'My keys',
+  ACCOUNTS = 'My accounts',
+  CONTACTS = 'My contacts',
+}
 
 /* Props */
 const props = defineProps<{
@@ -34,21 +42,62 @@ const contacts = useContactsStore();
 /* State */
 const publicKey = ref('');
 const selectedPublicKeys = ref<string[]>([]);
-const currentTab = ref('my');
+const currentTab = ref(KeyTab.MY);
 
 /* Computed */
-const keyList = computed(() => {
-  const keys = user.keyPairs
-    .map(kp => ({ publicKey: kp.public_key, nickname: kp.nickname }))
-    .concat(isLoggedInOrganization(user.selectedOrganization) ? contacts.publicKeys : []);
+const myKeys = computed(() => {
+  const myKeysWithDuplicates = user.keyPairs.map(kp => ({
+    publicKey: kp.public_key,
+    nickname: kp.nickname,
+  }));
 
-  return keys.filter(k => keys.findIndex(k2 => k2.publicKey === k.publicKey) === keys.indexOf(k));
+  return myKeysWithDuplicates.filter(
+    (k, i) => myKeysWithDuplicates.findIndex(k2 => k2.publicKey === k.publicKey) === i,
+  );
 });
+
+const myContactListKeys = computed(() => {
+  if (!isLoggedInOrganization(user.selectedOrganization)) return [];
+  const myUserId = user.selectedOrganization.userId;
+  const myContactListKeysWithDuplicates = contacts.contacts.reduce(
+    (acc, c) => {
+      if (c.user.id !== myUserId) {
+        c.userKeys.forEach(k => {
+          if (!acc.some(k2 => k2.publicKey === k.publicKey)) {
+            acc.push({
+              publicKey: k.publicKey,
+              nickname: c.nickname,
+            });
+          }
+        });
+      }
+      return acc;
+    },
+    [] as { publicKey: string; nickname: string }[],
+  );
+
+  return myContactListKeysWithDuplicates;
+});
+
 const listedKeyList = computed(() => {
+  let currentKeyList: { publicKey: string; nickname: string | null }[] = [];
+
+  switch (currentTab.value) {
+    case KeyTab.MY:
+      currentKeyList = myKeys.value;
+      break;
+    case KeyTab.ACCOUNTS:
+      currentKeyList = [];
+      break;
+    case KeyTab.CONTACTS:
+      currentKeyList = myContactListKeys.value;
+      break;
+  }
+
   if (props.alreadyAdded && props.alreadyAdded.length > 0) {
-    return keyList.value.filter(k => !props.alreadyAdded?.includes(k.publicKey));
+    return currentKeyList.filter(k => !props.alreadyAdded?.includes(k.publicKey));
   } else {
-    return keyList.value;
+    return currentKeyList;
   }
 });
 
@@ -116,27 +165,16 @@ const handleKeyTabChange = async (tab: string) => {
         <hr class="separator my-5" />
 
         <div class="btn-group d-flex justify-content-between">
-          <AppButton
-            @click="handleKeyTabChange('my')"
-            :class="{ active: currentTab === 'my' }"
-            color="secondary"
-            data-testid="tab-keys-my"
-            >My keys</AppButton
-          >
-          <AppButton
-            @click="handleKeyTabChange('accounts')"
-            :class="{ active: currentTab === 'accounts' }"
-            color="secondary"
-            data-testid="tab-keys-accounts"
-            >My Accounts</AppButton
-          >
-          <AppButton
-            @click="handleKeyTabChange('contacts')"
-            :class="{ active: currentTab === 'contacts' }"
-            color="secondary"
-            data-testid="tab-keys-contacts"
-            >My Contacts</AppButton
-          >
+          <template v-for="kt in KeyTab" :key="kt">
+            <AppButton
+              @click="handleKeyTabChange(kt)"
+              :class="{ active: currentTab === kt }"
+              color="secondary"
+              type="button"
+              data-testid="tab-keys-my"
+              >{{ kt }}</AppButton
+            >
+          </template>
         </div>
         <div>
           <!-- <h3 class="text-small">Recent</h3> -->
