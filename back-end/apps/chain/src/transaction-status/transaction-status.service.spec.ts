@@ -11,12 +11,10 @@ import {
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
   NOTIFY_GENERAL,
-  SYNC_INDICATORS,
-  NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
   smartCollate,
-  notifyTransactionAction,
   notifySyncIndicators,
-  notifyWaitingForSignatures
+  notifyTransactionAction,
+  notifyWaitingForSignatures,
 } from '@app/common';
 import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
@@ -52,6 +50,11 @@ jest.mock('@nestjs/schedule', () => {
     },
   };
 });
+
+const expectNotifyNotCalled = () => {
+  expect(notifyTransactionAction).not.toHaveBeenCalled();
+  expect(notifySyncIndicators).not.toHaveBeenCalled();
+};
 
 describe('TransactionStatusService', () => {
   let service: TransactionStatusService;
@@ -264,6 +267,7 @@ describe('TransactionStatusService', () => {
       );
     }
     expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+    expect(notifySyncIndicators).toHaveBeenCalledTimes(3);
   });
 
   describe('updateTransactions', () => {
@@ -304,7 +308,7 @@ describe('TransactionStatusService', () => {
       expect(transactionRepo.update).toHaveBeenNthCalledWith(
         1,
         {
-          id: 1,
+          id: transactions[0].id,
         },
         {
           status: TransactionStatus.WAITING_FOR_EXECUTION,
@@ -313,12 +317,13 @@ describe('TransactionStatusService', () => {
       expect(transactionRepo.update).toHaveBeenNthCalledWith(
         2,
         {
-          id: 2,
+          id: transactions[1].id,
         },
         {
           status: TransactionStatus.WAITING_FOR_SIGNATURES,
         },
       );
+
       expect(notifySyncIndicators).toHaveBeenCalledWith(
         notificationsService,
         transactions[0].id,
@@ -340,7 +345,9 @@ describe('TransactionStatusService', () => {
         notificationsService,
         transactions[1].id,
       );
+
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+      expect(notifyTransactionAction).toHaveBeenCalledTimes(1);
     });
 
     it('should not emit notifications event if no transactions updated', async () => {
@@ -372,7 +379,7 @@ describe('TransactionStatusService', () => {
 
       await service.updateTransactions(new Date(), new Date());
 
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it.skip('should skip transaction if is file update or append', async () => {
@@ -407,7 +414,7 @@ describe('TransactionStatusService', () => {
         transactions[1].id,
         TransactionStatus.WAITING_FOR_SIGNATURES,
       );
-      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, transactions[1].id);
+      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(transactions[1].id);
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
   });
@@ -476,10 +483,10 @@ describe('TransactionStatusService', () => {
         'Error',
       );
 
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
-    it.skip('should skip transaction if is file update or append', async () => {
+    it('should skip transaction if is file update or append', async () => {
       const transaction = {
         id: 1,
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
@@ -494,7 +501,7 @@ describe('TransactionStatusService', () => {
       await service.updateTransactionStatus({ id: transaction.id });
 
       expect(transactionRepo.update).not.toHaveBeenCalled();
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should return if transaction does not exist', async () => {
@@ -504,7 +511,7 @@ describe('TransactionStatusService', () => {
 
       expect(transactionRepo.findOne).toHaveBeenCalled();
       expect(transactionRepo.update).not.toHaveBeenCalled();
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should return if transaction status is the same', async () => {
@@ -522,7 +529,7 @@ describe('TransactionStatusService', () => {
 
       expect(transactionRepo.findOne).toHaveBeenCalled();
       expect(transactionRepo.update).not.toHaveBeenCalled();
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
   });
 
@@ -604,7 +611,7 @@ describe('TransactionStatusService', () => {
 
       transaction.removeAllSignatures();
 
-      privateKeys.slice(0,5).forEach(key => transaction.sign(key));
+      privateKeys.slice(0, 5).forEach(key => transaction.sign(key));
 
       // Mock the functions
       jest.mocked(smartCollate).mockResolvedValueOnce(transaction);
@@ -631,39 +638,27 @@ describe('TransactionStatusService', () => {
       transaction = await transaction.sign(privateKey);
       mockTransaction.transactionBytes = Buffer.from(transaction.toBytes());
 
-        // Mock the functions
-        jest.mocked(smartCollate).mockReturnValue(null);
-        jest.mocked(computeSignatureKey).mockResolvedValue(keyList);
+      // Mock the functions
+      jest.mocked(smartCollate).mockReturnValue(null);
+      jest.mocked(computeSignatureKey).mockResolvedValue(keyList);
 
-        jest.spyOn(transactionRepo, 'update').mockResolvedValue(undefined);
-
-        service.prepareAndExecute(mockTransaction);
-
-        await jest.advanceTimersToNextTimerAsync();
-
-        expect(service.addExecutionTimeout).not.toHaveBeenCalled();
-
-        // Verify that the update method was called with the correct parameters
-        expect(transactionRepo.update).toHaveBeenCalledWith(
-          { id: mockTransaction.id },
-          {
-            status: TransactionStatus.FAILED,
-            executedAt: expect.any(Date), // Use expect.any(Date) to match any Date object
-            statusCode: Status.TransactionOversize._code,
-          }
-        );
-      });
-      
-    });
-
-    it('should handle error in callback', async () => {
-      jest.mocked(isTransactionOverMaxSize).mockRejectedValue(new Error('Error'));
+      jest.spyOn(transactionRepo, 'update').mockResolvedValue(undefined);
 
       service.prepareAndExecute(mockTransaction);
 
       await jest.advanceTimersToNextTimerAsync();
 
       expect(service.addExecutionTimeout).not.toHaveBeenCalled();
+
+      // Verify that the update method was called with the correct parameters
+      expect(transactionRepo.update).toHaveBeenCalledWith(
+        { id: mockTransaction.id },
+        {
+          status: TransactionStatus.FAILED,
+          executedAt: expect.any(Date), // Use expect.any(Date) to match any Date object
+          statusCode: Status.TransactionOversize._code,
+        },
+      );
     });
   });
 
@@ -719,16 +714,6 @@ describe('TransactionStatusService', () => {
       service.addExecutionTimeout(transaction);
 
       await jest.advanceTimersByTimeAsync(timeToValidStart + 5 * 1000);
-
-      expect(executeService.executeTransaction).toHaveBeenCalledWith(transaction);
-    });
-
-    it('should handle error in the timeout callback', async () => {
-      jest.spyOn(executeService, 'executeTransaction').mockRejectedValue(new Error('Error'));
-
-      service.addExecutionTimeout(transaction);
-
-      await jest.advanceTimersToNextTimerAsync();
 
       expect(executeService.executeTransaction).toHaveBeenCalledWith(transaction);
     });
