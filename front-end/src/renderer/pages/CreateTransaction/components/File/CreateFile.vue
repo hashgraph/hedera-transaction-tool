@@ -128,6 +128,7 @@ const handleCreate = async (e: Event) => {
     }
 
     transaction.value = createTransaction();
+
     await transactionProcessor.value?.process(
       {
         transactionKey: transactionKey.value,
