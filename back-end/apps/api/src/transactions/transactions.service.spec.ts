@@ -21,19 +21,15 @@ import {
   FileUpdateTransaction,
 } from '@hashgraph/sdk';
 
-import {
-  NOTIFICATIONS_SERVICE,
-  MirrorNodeService,
-  NOTIFY_CLIENT,
-  NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
-  TRANSACTION_ACTION,
-  SYNC_INDICATORS,
-} from '@app/common';
+import { NOTIFICATIONS_SERVICE, MirrorNodeService } from '@app/common';
 import {
   attachKeys,
   getClientFromName,
   isExpired,
   userKeysRequiredToSign,
+  notifyTransactionAction,
+  notifyWaitingForSignatures,
+  notifySyncIndicators,
 } from '@app/common/utils';
 import {
   Network,
@@ -117,200 +113,230 @@ describe('TransactionsService', () => {
     expect(service).toBeDefined();
   });
 
-  it('should return transaction by id', async () => {
-    const transaction: Partial<Transaction> = { id: 1 };
-
-    jest.spyOn(transactionsRepo, 'findOne').mockResolvedValueOnce(transaction as Transaction);
-
-    await service.getTransactionById(1);
-
-    expect(transactionsRepo.findOne).toHaveBeenCalledWith({
-      where: { id: 1 },
-      relations: ['creatorKey', 'observers', 'comments', 'groupItem'],
+  describe('getTransactionById', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
     });
 
-    expect(entityManager.find).toHaveBeenCalledWith(TransactionSigner, {
-      where: {
-        transaction: {
-          id: transaction.id,
+    it('should return transaction by id', async () => {
+      const transaction: Partial<Transaction> = { id: 1 };
+
+      jest.spyOn(transactionsRepo, 'findOne').mockResolvedValueOnce(transaction as Transaction);
+
+      await service.getTransactionById(1);
+
+      expect(transactionsRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+        relations: ['creatorKey', 'observers', 'comments', 'groupItem'],
+      });
+
+      expect(entityManager.find).toHaveBeenCalledWith(TransactionSigner, {
+        where: {
+          transaction: {
+            id: transaction.id,
+          },
         },
-      },
-      relations: {
-        userKey: true,
-      },
-      withDeleted: true,
+        relations: {
+          userKey: true,
+        },
+        withDeleted: true,
+      });
+    });
+
+    it('should return null if not transaction found', async () => {
+      jest.spyOn(transactionsRepo, 'findOne').mockResolvedValueOnce(null);
+
+      const result = await service.getTransactionById(1);
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null if no id provided', async () => {
+      const result = await service.getTransactionById(null);
+
+      expect(result).toBeNull();
     });
   });
 
-  it('should return null if not transaction found', async () => {
-    jest.spyOn(transactionsRepo, 'findOne').mockResolvedValueOnce(null);
+  describe('getTransactions', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
 
-    const result = await service.getTransactionById(1);
+    it('should return transactions', async () => {
+      const transactions = [];
+      const count = 0;
 
-    expect(result).toBeNull();
-  });
+      const queryBuilder = {
+        setFindOptions: jest.fn().mockReturnThis(),
+        orWhere: jest.fn().mockImplementation(() => queryBuilder),
+        getManyAndCount: jest.fn().mockResolvedValue([transactions, count]),
+      };
+      transactionsRepo.createQueryBuilder.mockReturnValue(
+        queryBuilder as unknown as SelectQueryBuilder<Transaction>,
+      );
 
-  it('should return null if no id provided', async () => {
-    const result = await service.getTransactionById(null);
+      const result = await service.getTransactions(user as User, defaultPagination, undefined, [
+        {
+          property: 'status',
+          rule: 'eq',
+          value: 'NEW',
+        },
+      ]);
 
-    expect(result).toBeNull();
-  });
-
-  it('should return transactions', async () => {
-    const transactions = [];
-    const count = 0;
-
-    const queryBuilder = {
-      setFindOptions: jest.fn().mockReturnThis(),
-      orWhere: jest.fn().mockImplementation(() => queryBuilder),
-      getManyAndCount: jest.fn().mockResolvedValue([transactions, count]),
-    };
-    transactionsRepo.createQueryBuilder.mockReturnValue(
-      queryBuilder as unknown as SelectQueryBuilder<Transaction>,
-    );
-
-    const result = await service.getTransactions(user as User, defaultPagination, undefined, [
-      {
-        property: 'status',
-        rule: 'eq',
-        value: 'NEW',
-      },
-    ]);
-
-    expect(transactionsRepo.createQueryBuilder).toHaveBeenCalled();
-    expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        relations: ['creatorKey', 'groupItem', 'groupItem.group'],
-        skip: 0,
-        take: 10,
-      }),
-    );
-    expect(queryBuilder.orWhere).toHaveBeenCalledWith(expect.any(Brackets));
-    expect(result).toEqual({
-      items: transactions,
-      totalItems: count,
-      page: defaultPagination.page,
-      size: defaultPagination.size,
+      expect(transactionsRepo.createQueryBuilder).toHaveBeenCalled();
+      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          relations: ['creatorKey', 'groupItem', 'groupItem.group'],
+          skip: 0,
+          take: 10,
+        }),
+      );
+      expect(queryBuilder.orWhere).toHaveBeenCalledWith(expect.any(Brackets));
+      expect(result).toEqual({
+        items: transactions,
+        totalItems: count,
+        page: defaultPagination.page,
+        size: defaultPagination.size,
+      });
     });
   });
 
-  it('should return history transactions', async () => {
-    const transactions = [];
-    const count = 0;
+  describe('getHistoryTransactions', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
 
-    const queryBuilder = {
-      setFindOptions: jest.fn().mockReturnThis(),
-      orWhere: jest.fn().mockImplementation(() => queryBuilder),
-      getManyAndCount: jest.fn().mockResolvedValue([transactions, count]),
-    };
-    transactionsRepo.createQueryBuilder.mockReturnValue(
-      queryBuilder as unknown as SelectQueryBuilder<Transaction>,
-    );
+    it('should return history transactions', async () => {
+      const transactions = [];
+      const count = 0;
 
-    const result = await service.getHistoryTransactions(defaultPagination);
+      const queryBuilder = {
+        setFindOptions: jest.fn().mockReturnThis(),
+        orWhere: jest.fn().mockImplementation(() => queryBuilder),
+        getManyAndCount: jest.fn().mockResolvedValue([transactions, count]),
+      };
+      transactionsRepo.createQueryBuilder.mockReturnValue(
+        queryBuilder as unknown as SelectQueryBuilder<Transaction>,
+      );
 
-    expect(transactionsRepo.createQueryBuilder).toHaveBeenCalled();
-    expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        relations: ['groupItem', 'groupItem.group'],
-        skip: defaultPagination.offset,
-        take: defaultPagination.limit,
-      }),
-    );
-    expect(result).toEqual({
-      items: transactions,
-      totalItems: count,
-      page: defaultPagination.page,
-      size: defaultPagination.size,
+      const result = await service.getHistoryTransactions(defaultPagination);
+
+      expect(transactionsRepo.createQueryBuilder).toHaveBeenCalled();
+      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          relations: ['groupItem', 'groupItem.group'],
+          skip: defaultPagination.offset,
+          take: defaultPagination.limit,
+        }),
+      );
+      expect(result).toEqual({
+        items: transactions,
+        totalItems: count,
+        page: defaultPagination.page,
+        size: defaultPagination.size,
+      });
     });
   });
 
-  it('should return empty array if user has no keys', async () => {
-    jest.mocked(attachKeys).mockImplementationOnce(async (user: User) => {
-      user.keys = [];
+  describe('getTransactionsToSign', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
     });
 
-    const result = await service.getTransactionsToSign(user as User, {
-      page: 1,
-      limit: 10,
-      size: 10,
-      offset: 0,
+    it('should return empty array if user has no keys', async () => {
+      jest.mocked(attachKeys).mockImplementationOnce(async (user: User) => {
+        user.keys = [];
+      });
+
+      const result = await service.getTransactionsToSign(user as User, {
+        page: 1,
+        limit: 10,
+        size: 10,
+        offset: 0,
+      });
+
+      expect(result.items).toHaveLength(0);
+      expect(result.totalItems).toBe(0);
     });
 
-    expect(result.items).toHaveLength(0);
-    expect(result.totalItems).toBe(0);
+    it('should handle no transactions to sign', async () => {
+      entityManager.find.mockReturnValue(Promise.resolve([{ id: 1 }]));
+      transactionsRepo.find.mockReturnValue(Promise.resolve([]));
+
+      const result = await service.getTransactionsToSign(userWithKeys, {
+        page: 1,
+        limit: 10,
+        size: 10,
+        offset: 0,
+      });
+      expect(result.items).toHaveLength(0);
+      expect(result.totalItems).toBe(0);
+    });
+
+    it('should return transactions requiring signature', async () => {
+      entityManager.find.mockReturnValue(Promise.resolve([{ id: 1 }]));
+      transactionsRepo.find.mockResolvedValue([{ id: 1, name: 'Transaction 1' }] as Transaction[]);
+
+      jest.spyOn(service, 'userKeysToSign').mockImplementation(() => Promise.resolve([1]));
+
+      const result = await service.getTransactionsToSign(userWithKeys, {
+        page: 1,
+        limit: 10,
+        size: 10,
+        offset: 0,
+      });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.totalItems).toBe(1);
+    });
   });
 
-  it('should handle no transactions to sign', async () => {
-    entityManager.find.mockReturnValue(Promise.resolve([{ id: 1 }]));
-    transactionsRepo.find.mockReturnValue(Promise.resolve([]));
-
-    const result = await service.getTransactionsToSign(userWithKeys, {
-      page: 1,
-      limit: 10,
-      size: 10,
-      offset: 0,
-    });
-    expect(result.items).toHaveLength(0);
-    expect(result.totalItems).toBe(0);
-  });
-
-  it('should return transactions requiring signature', async () => {
-    entityManager.find.mockReturnValue(Promise.resolve([{ id: 1 }]));
-    transactionsRepo.find.mockResolvedValue([{ id: 1, name: 'Transaction 1' }] as Transaction[]);
-
-    jest.spyOn(service, 'userKeysToSign').mockImplementation(() => Promise.resolve([1]));
-
-    const result = await service.getTransactionsToSign(userWithKeys, {
-      page: 1,
-      limit: 10,
-      size: 10,
-      offset: 0,
+  describe('getTransactionsToApprove', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
     });
 
-    expect(result.items).toHaveLength(1);
-    expect(result.totalItems).toBe(1);
-  });
+    it('should return no transactions to approve for the user', async () => {
+      transactionsRepo.createQueryBuilder.mockImplementation(
+        () =>
+          ({
+            setFindOptions: jest.fn().mockReturnThis(),
+            where: jest.fn().mockReturnThis(),
+            getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+          }) as unknown as SelectQueryBuilder<Transaction>,
+      );
 
-  it('should return no transactions to approve for the user', async () => {
-    transactionsRepo.createQueryBuilder.mockImplementation(
-      () =>
-        ({
-          setFindOptions: jest.fn().mockReturnThis(),
-          where: jest.fn().mockReturnThis(),
-          getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
-        }) as unknown as SelectQueryBuilder<Transaction>,
-    );
-
-    const result = await service.getTransactionsToApprove(user as User, {
-      page: 1,
-      limit: 10,
-      size: 10,
-      offset: 0,
+      const result = await service.getTransactionsToApprove(user as User, {
+        page: 1,
+        limit: 10,
+        size: 10,
+        offset: 0,
+      });
+      expect(result.totalItems).toBe(0);
+      expect(result.items).toHaveLength(0);
     });
-    expect(result.totalItems).toBe(0);
-    expect(result.items).toHaveLength(0);
-  });
 
-  it('should return transactions to approve for the user', async () => {
-    const mockTransactions = [{ id: 1 }, { id: 2 }];
-    transactionsRepo.createQueryBuilder.mockImplementation(
-      () =>
-        ({
-          setFindOptions: jest.fn().mockReturnThis(),
-          where: jest.fn().mockReturnThis(),
-          getManyAndCount: jest.fn().mockResolvedValue([mockTransactions, 2]),
-        }) as unknown as SelectQueryBuilder<Transaction>,
-    );
+    it('should return transactions to approve for the user', async () => {
+      const mockTransactions = [{ id: 1 }, { id: 2 }];
+      transactionsRepo.createQueryBuilder.mockImplementation(
+        () =>
+          ({
+            setFindOptions: jest.fn().mockReturnThis(),
+            where: jest.fn().mockReturnThis(),
+            getManyAndCount: jest.fn().mockResolvedValue([mockTransactions, 2]),
+          }) as unknown as SelectQueryBuilder<Transaction>,
+      );
 
-    const result = await service.getTransactionsToApprove(user as User, {
-      page: 1,
-      limit: 10,
-      size: 10,
-      offset: 0,
+      const result = await service.getTransactionsToApprove(user as User, {
+        page: 1,
+        limit: 10,
+        size: 10,
+        offset: 0,
+      });
+      expect(result.totalItems).toBe(2);
+      expect(result.items).toHaveLength(2);
     });
-    expect(result.totalItems).toBe(2);
-    expect(result.items).toHaveLength(2);
   });
 
   const userKeys: UserKey[] = [
@@ -370,17 +396,8 @@ describe('TransactionsService', () => {
       await service.createTransaction(dto, user as User);
 
       expect(transactionsRepo.save).toHaveBeenCalled();
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(
-        1,
-        NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
-        {
-          transactionId: 1,
-        },
-      );
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(2, NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
+      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, 1);
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
 
       client.close();
     });
@@ -502,492 +519,534 @@ describe('TransactionsService', () => {
     });
   });
 
-  it('should throw if transaction not found', async () => {
-    transactionsRepo.findOne.mockResolvedValue(null);
-
-    await expect(service.removeTransaction(user as User, 123, true)).rejects.toThrow(
-      'Transaction not found',
-    );
-  });
-
-  it('should throw if user is not the creator', async () => {
-    const transaction = { id: 123, creatorKey: { user: { id: 2 } } };
-
-    transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
-
-    await expect(service.removeTransaction(user as User, 123, true)).rejects.toThrow(
-      'Only the creator of the transaction is able to delete it',
-    );
-  });
-
-  it('should soft remove the transaction', async () => {
+  describe('removeTransaction', () => {
     const transaction = { id: 123, creatorKey: { userId: user.id } };
 
-    transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
-
-    await service.removeTransaction(user as User, 123, true);
-
-    expect(transactionsRepo.softRemove).toHaveBeenCalledWith(transaction);
-    expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-      transactionId: transaction.id,
-      transactionStatus: TransactionStatus.CANCELED,
+    beforeEach(() => {
+      jest.resetAllMocks();
+      jest
+        .spyOn(service, 'getTransactionForCreator')
+        .mockResolvedValueOnce(transaction as Transaction);
     });
-    expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
+
+    afterEach(() => {
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transaction.id,
+        TransactionStatus.CANCELED,
+      );
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
-  });
 
-  it('should hard remove the transaction', async () => {
-    const transaction = { id: 123, creatorKey: { userId: user.id } };
-
-    transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
-
-    await service.removeTransaction(user as User, 123, false);
-
-    expect(transactionsRepo.remove).toHaveBeenCalledWith(transaction);
-    expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-      transactionId: transaction.id,
-      transactionStatus: TransactionStatus.CANCELED,
+    it('should soft remove the transaction', async () => {
+      await service.removeTransaction(123, user as User, true);
+      expect(transactionsRepo.softRemove).toHaveBeenCalledWith(transaction);
     });
-    expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
+
+    it('should hard remove the transaction', async () => {
+      await service.removeTransaction(123, user as User, false);
+      expect(transactionsRepo.remove).toHaveBeenCalledWith(transaction);
     });
   });
 
-  it('should throw if transaction not found', async () => {
-    transactionsRepo.findOne.mockResolvedValue(null);
-
-    await expect(service.cancelTransaction({ id: 1 } as User, 123)).rejects.toThrow(
-      'Transaction not found',
-    );
-  });
-
-  it('should throw if user is not the creator', async () => {
-    const transaction = { id: 123, creatorKey: { userId: 2 } };
-
-    transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
-
-    await expect(service.cancelTransaction({ id: 1 } as User, 123)).rejects.toThrow(
-      'Only the creator of the transaction is able to cancel it',
-    );
-  });
-
-  it('should throw if transaction status is not cancelable', async () => {
-    const transaction = {
-      creatorKey: { userId: 1 },
-      status: TransactionStatus.EXECUTED,
-    };
-
-    transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
-
-    await expect(service.cancelTransaction({ id: 1 } as User, 123)).rejects.toThrow(
-      'Only transactions in progress can be canceled',
-    );
-  });
-
-  it('should update transaction status to CANCELED and return true', async () => {
-    const transaction = {
-      id: 123,
-      creatorKey: { userId: 1 },
-      status: TransactionStatus.WAITING_FOR_SIGNATURES,
-    };
-
-    transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
-
-    const result = await service.cancelTransaction({ id: 1 } as User, 123);
-
-    expect(transactionsRepo.update).toHaveBeenCalledWith(
-      { id: 123 },
-      { status: TransactionStatus.CANCELED },
-    );
-    expect(result).toBe(true);
-    expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-      transactionId: transaction.id,
-      transactionStatus: TransactionStatus.CANCELED,
+  describe('cancelTransaction', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
     });
-    expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
+
+    it('should throw if transaction status is not cancelable', async () => {
+      const transaction = {
+        creatorKey: { userId: 1 },
+        status: TransactionStatus.EXECUTED,
+      };
+
+      jest
+        .spyOn(service, 'getTransactionForCreator')
+        .mockResolvedValueOnce(transaction as Transaction);
+
+      await expect(service.cancelTransaction(123, { id: 1 } as User)).rejects.toThrow(
+        'Only transactions in progress can be canceled',
+      );
+    });
+
+    it('should update transaction status to CANCELED and return true', async () => {
+      const transaction = {
+        id: 123,
+        creatorKey: { userId: 1 },
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      };
+
+      jest
+        .spyOn(service, 'getTransactionForCreator')
+        .mockResolvedValueOnce(transaction as Transaction);
+
+      const result = await service.cancelTransaction(123, { id: 1 } as User);
+
+      expect(transactionsRepo.update).toHaveBeenCalledWith(
+        { id: 123 },
+        { status: TransactionStatus.CANCELED },
+      );
+      expect(result).toBe(true);
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transaction.id,
+        TransactionStatus.CANCELED,
+      );
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
   });
 
-  it('should throw if transaction ID is not provided', async () => {
-    await expect(service.getTransactionWithVerifiedAccess(null, user as User)).rejects.toThrow(
-      'Transaction not found',
-    );
-  });
+  describe('getTransactionWithVerifiedAccess', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
 
-  it('should throw if transaction is not found', async () => {
-    transactionsRepo.findOne.mockResolvedValue(null);
+    it('should throw if transaction ID is not provided', async () => {
+      await expect(service.getTransactionWithVerifiedAccess(null, user as User)).rejects.toThrow(
+        'Transaction not found',
+      );
+    });
 
-    jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
-    await expect(service.getTransactionWithVerifiedAccess(123, user as User)).rejects.toThrow(
-      'Transaction not found',
-    );
-  });
+    it('should throw if transaction is not found', async () => {
+      transactionsRepo.findOne.mockResolvedValue(null);
 
-  it('should return the transaction if the user is the creator', async () => {
-    const transaction = { id: 123, creatorKey: { user: user }, observers: [] };
+      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      await expect(service.getTransactionWithVerifiedAccess(123, user as User)).rejects.toThrow(
+        'Transaction not found',
+      );
+    });
 
-    jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
-    jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
-    transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
+    it('should return the transaction if the user is the creator', async () => {
+      const transaction = { id: 123, creatorKey: { user: user }, observers: [] };
 
-    await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
-      transaction,
-    );
-  });
+      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
+      transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
 
-  it('should return the transaction if the user is a signer', async () => {
-    const transaction = {
-      id: 123,
-      observers: [],
-    };
+      await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
+        transaction,
+      );
+    });
 
-    entityManager.find.mockResolvedValueOnce([
-      {
-        userKey: {
-          userId: user.id,
+    it('should return the transaction if the user is a signer', async () => {
+      const transaction = {
+        id: 123,
+        observers: [],
+      };
+
+      entityManager.find.mockResolvedValueOnce([
+        {
+          userKey: {
+            userId: user.id,
+          },
         },
-      },
-    ]);
+      ]);
 
-    jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
-    jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
-    transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
+      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
+      transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
 
-    await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
-      transaction,
-    );
-  });
+      await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
+        transaction,
+      );
+    });
 
-  it('should return the transaction if the user is an observer', async () => {
-    const transaction = {
-      id: 123,
-      observers: [{ userId: user.id }],
-    };
+    it('should return the transaction if the user is an observer', async () => {
+      const transaction = {
+        id: 123,
+        observers: [{ userId: user.id }],
+      };
 
-    entityManager.find.mockResolvedValueOnce([]);
-    jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
-    jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
-    transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
+      entityManager.find.mockResolvedValueOnce([]);
+      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
+      transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
 
-    await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
-      transaction,
-    );
-  });
+      await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
+        transaction,
+      );
+    });
 
-  it('should return the transaction if the user is an approver', async () => {
-    const transaction = {
-      id: 123,
-      observers: [],
-    };
+    it('should return the transaction if the user is an approver', async () => {
+      const transaction = {
+        id: 123,
+        observers: [],
+      };
 
-    const approvers: TransactionApprover[] = [{ userId: user.id }] as TransactionApprover[];
+      const approvers: TransactionApprover[] = [{ userId: user.id }] as TransactionApprover[];
 
-    entityManager.find.mockResolvedValueOnce([]);
-    jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
-    jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce(approvers);
-    jest.spyOn(approversService, 'getTreeStructure').mockReturnValue(approvers);
-    transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
+      entityManager.find.mockResolvedValueOnce([]);
+      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce(approvers);
+      jest.spyOn(approversService, 'getTreeStructure').mockReturnValue(approvers);
+      transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
 
-    await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
-      transaction,
-    );
-  });
+      await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
+        transaction,
+      );
+    });
 
-  it('should throw if the user does not have verified access', async () => {
-    const transaction = {
-      id: 123,
-      creatorKey: { user: { id: 2 } },
-      observers: [],
-    };
+    it('should throw if the user does not have verified access', async () => {
+      const transaction = {
+        id: 123,
+        creatorKey: { user: { id: 2 } },
+        observers: [],
+      };
 
-    entityManager.find.mockResolvedValueOnce([]);
-    jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
-    jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
-    jest.spyOn(approversService, 'getTreeStructure').mockReturnValue([]);
-    transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
+      entityManager.find.mockResolvedValueOnce([]);
+      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
+      jest.spyOn(approversService, 'getTreeStructure').mockReturnValue([]);
+      transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
 
-    await expect(service.getTransactionWithVerifiedAccess(123, user as User)).rejects.toThrow(
-      "You don't have permission to view this transaction",
-    );
-  });
+      await expect(service.getTransactionWithVerifiedAccess(123, user as User)).rejects.toThrow(
+        "You don't have permission to view this transaction",
+      );
+    });
 
-  it('should return null if the user does not have verified access', async () => {
-    const transaction = {
-      id: 123,
-      status: TransactionStatus.EXECUTED,
-    };
+    it('should return null if the user does not have verified access', async () => {
+      const transaction = {
+        id: 123,
+        status: TransactionStatus.EXECUTED,
+      };
 
-    entityManager.find.mockResolvedValueOnce([]);
-    jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
-    jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
-    jest.spyOn(approversService, 'getTreeStructure').mockReturnValue([]);
-    transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
+      entityManager.find.mockResolvedValueOnce([]);
+      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
+      jest.spyOn(approversService, 'getTreeStructure').mockReturnValue([]);
+      transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
 
-    await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
-      transaction,
-    );
-  });
-
-  it('should attach the signers to the transaction', async () => {
-    const transaction = {
-      id: 123,
-    };
-
-    entityManager.find.mockResolvedValueOnce([]);
-
-    await service.attachTransactionSigners(transaction as Transaction);
-
-    expect(entityManager.find).toHaveBeenCalledWith(TransactionSigner, {
-      where: {
-        transaction: {
-          id: transaction.id,
-        },
-      },
-      relations: ['userKey'],
-      withDeleted: true,
+      await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
+        transaction,
+      );
     });
   });
 
-  it('should throw if not transaction is passed to attachTransactionSigners', async () => {
-    await expect(service.attachTransactionSigners(null)).rejects.toThrow('Transaction not found');
+  describe('attachTransactionSigners', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('should attach the signers to the transaction', async () => {
+      const transaction = {
+        id: 123,
+      };
+
+      entityManager.find.mockResolvedValueOnce([]);
+
+      await service.attachTransactionSigners(transaction as Transaction);
+
+      expect(entityManager.find).toHaveBeenCalledWith(TransactionSigner, {
+        where: {
+          transaction: {
+            id: transaction.id,
+          },
+        },
+        relations: ['userKey'],
+        withDeleted: true,
+      });
+    });
+
+    it('should throw if not transaction is passed to attachTransactionSigners', async () => {
+      await expect(service.attachTransactionSigners(null)).rejects.toThrow('Transaction not found');
+    });
   });
 
-  it('should call user keys required with correct arguments', async () => {
-    const transaction = { id: 123 };
+  describe('userKeysToSign', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
 
-    await service.userKeysToSign(transaction as Transaction, user as User);
+    it('should call user keys required with correct arguments', async () => {
+      const transaction = { id: 123 };
 
-    expect(jest.mocked(userKeysRequiredToSign)).toHaveBeenCalledWith(
-      transaction,
-      user,
-      mirrorNodeService,
-      entityManager,
+      await service.userKeysToSign(transaction as Transaction, user as User);
+
+      expect(jest.mocked(userKeysRequiredToSign)).toHaveBeenCalledWith(
+        transaction,
+        user,
+        mirrorNodeService,
+        entityManager,
+      );
+    });
+  });
+  describe('shouldApproveTransaction', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('should return true if user has not sent an approve signature', async () => {
+      const transactionId = 123;
+      const approvers: TransactionApprover[] = [
+        { userId: user.id },
+      ] as unknown as TransactionApprover[];
+
+      jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce(approvers);
+
+      const result = await service.shouldApproveTransaction(transactionId, user as User);
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false if a user has already send approval', async () => {
+      const transactionId = 123;
+      const approvers: TransactionApprover[] = [
+        { userId: user.id, signature: '0x' },
+      ] as unknown as TransactionApprover[];
+
+      jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce(approvers);
+
+      const result = await service.shouldApproveTransaction(transactionId, user as User);
+
+      expect(result).toBe(false);
+    });
+
+    it('should reeturn false if a user is not in the approvers list', async () => {
+      const transactionId = 123;
+      const approvers: TransactionApprover[] = [];
+
+      jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce(approvers);
+
+      const result = await service.shouldApproveTransaction(transactionId, user as User);
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('getHistoryWhere', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    const allowedStatuses = [
+      TransactionStatus.EXECUTED,
+      TransactionStatus.FAILED,
+      TransactionStatus.EXPIRED,
+      TransactionStatus.CANCELED,
+    ];
+    const forbiddenStatuses = Object.values(TransactionStatus).filter(
+      s => !allowedStatuses.includes(s),
     );
-  });
 
-  it('should return true if user has not sent an approve signature', async () => {
-    const transactionId = 123;
-    const approvers: TransactionApprover[] = [
-      { userId: user.id },
-    ] as unknown as TransactionApprover[];
+    const mockQueryBuilder = () => {
+      const queryBuilder = {
+        setFindOptions: jest.fn().mockReturnThis(),
+        orWhere: jest.fn().mockImplementation(() => queryBuilder),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      transactionsRepo.createQueryBuilder.mockReturnValue(
+        queryBuilder as unknown as SelectQueryBuilder<Transaction>,
+      );
 
-    jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce(approvers);
-
-    const result = await service.shouldApproveTransaction(transactionId, user as User);
-
-    expect(result).toBe(true);
-  });
-
-  it('should return false if a user has already send approval', async () => {
-    const transactionId = 123;
-    const approvers: TransactionApprover[] = [
-      { userId: user.id, signature: '0x' },
-    ] as unknown as TransactionApprover[];
-
-    jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce(approvers);
-
-    const result = await service.shouldApproveTransaction(transactionId, user as User);
-
-    expect(result).toBe(false);
-  });
-
-  it('should reeturn false if a user is not in the approvers list', async () => {
-    const transactionId = 123;
-    const approvers: TransactionApprover[] = [];
-
-    jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce(approvers);
-
-    const result = await service.shouldApproveTransaction(transactionId, user as User);
-
-    expect(result).toBe(false);
-  });
-
-  const allowedStatuses = [
-    TransactionStatus.EXECUTED,
-    TransactionStatus.FAILED,
-    TransactionStatus.EXPIRED,
-    TransactionStatus.CANCELED,
-  ];
-  const forbiddenStatuses = Object.values(TransactionStatus).filter(
-    s => !allowedStatuses.includes(s),
-  );
-
-  const mockQueryBuilder = () => {
-    const queryBuilder = {
-      setFindOptions: jest.fn().mockReturnThis(),
-      orWhere: jest.fn().mockImplementation(() => queryBuilder),
-      getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      return queryBuilder;
     };
-    transactionsRepo.createQueryBuilder.mockReturnValue(
-      queryBuilder as unknown as SelectQueryBuilder<Transaction>,
-    );
 
-    return queryBuilder;
-  };
+    it('should return where only with allowed statuses if not filter provided', async () => {
+      const queryBuilder = mockQueryBuilder();
 
-  it('should return where only with allowed statuses if not filter provided', async () => {
-    const queryBuilder = mockQueryBuilder();
+      await service.getHistoryTransactions(defaultPagination);
 
-    await service.getHistoryTransactions(defaultPagination);
-
-    expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          status: Not(In(forbiddenStatuses)),
+      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: Not(In(forbiddenStatuses)),
+          }),
         }),
-      }),
-    );
+      );
+    });
+
+    it('should return where only with with allowed status if EQ filter provided', async () => {
+      const queryBuilder = mockQueryBuilder();
+
+      await service.getHistoryTransactions(defaultPagination, [
+        {
+          property: 'status',
+          rule: 'eq',
+          value: 'EXECUTED',
+        },
+      ]);
+
+      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: 'EXECUTED',
+          }),
+        }),
+      );
+    });
+
+    it('should return where with allowed statuses if malicious EQ filter provided', async () => {
+      const queryBuilder = mockQueryBuilder();
+
+      await service.getHistoryTransactions(defaultPagination, [
+        {
+          property: 'status',
+          rule: 'eq',
+          value: 'WAITING FOR EXECUTION',
+        },
+      ]);
+
+      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: Not(In(forbiddenStatuses)),
+          }),
+        }),
+      );
+    });
+
+    it('should return where only with with allowed statuses if IN filter provided', async () => {
+      const queryBuilder = mockQueryBuilder();
+
+      await service.getHistoryTransactions(defaultPagination, [
+        {
+          property: 'status',
+          rule: 'in',
+          value: 'EXECUTED, WAITING FOR EXECUTION, WAITING FOR SIGNATURES, FAILED',
+        },
+      ]);
+
+      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: In([TransactionStatus.EXECUTED, TransactionStatus.FAILED]),
+          }),
+        }),
+      );
+    });
+
+    it('should return where only with with allowed statuses if malicious IN filter provided', async () => {
+      const queryBuilder = mockQueryBuilder();
+
+      await service.getHistoryTransactions(defaultPagination, [
+        {
+          property: 'status',
+          rule: 'in',
+          value: 'NEW, WAITING FOR EXECUTION, WAITING FOR SIGNATURES, REJECTED',
+        },
+      ]);
+
+      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: In([]),
+          }),
+        }),
+      );
+    });
+
+    it('should return where only with with allowed status if NEQ filter provided', async () => {
+      const queryBuilder = mockQueryBuilder();
+
+      await service.getHistoryTransactions(defaultPagination, [
+        {
+          property: 'status',
+          rule: 'neq',
+          value: 'EXECUTED',
+        },
+      ]);
+
+      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: Not(In([...forbiddenStatuses, TransactionStatus.EXECUTED])),
+          }),
+        }),
+      );
+    });
+
+    it('should return where only with with allowed statuses if NIN filter provided', async () => {
+      const queryBuilder = mockQueryBuilder();
+
+      await service.getHistoryTransactions(defaultPagination, [
+        {
+          property: 'status',
+          rule: 'nin',
+          value: 'EXECUTED, FAILED,EXPIRED',
+        },
+      ]);
+
+      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: Not(
+              In([
+                ...forbiddenStatuses,
+                TransactionStatus.EXECUTED,
+                TransactionStatus.FAILED,
+                TransactionStatus.EXPIRED,
+              ]),
+            ),
+          }),
+        }),
+      );
+    });
+
+    it('should return where only with with allowed statuses if unsupported filter', async () => {
+      const queryBuilder = mockQueryBuilder();
+
+      await service.getHistoryTransactions(defaultPagination, [
+        {
+          property: 'status',
+          rule: 'geteverythingpossiblerule',
+          value: 'EXECUTED,FAILED,EXPIRED',
+        },
+      ]);
+
+      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: Not(In([...forbiddenStatuses])),
+          }),
+        }),
+      );
+    });
   });
 
-  it('should return where only with with allowed status if EQ filter provided', async () => {
-    const queryBuilder = mockQueryBuilder();
+  describe('getTransactionForCreator', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
 
-    await service.getHistoryTransactions(defaultPagination, [
-      {
-        property: 'status',
-        rule: 'eq',
-        value: 'EXECUTED',
-      },
-    ]);
+    it('should return null if no transaction id provided', async () => {
+      await expect(service.getTransactionForCreator(null, user as User)).rejects.toThrow(
+        'Transaction not found',
+      );
+    });
 
-    expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          status: 'EXECUTED',
-        }),
-      }),
-    );
-  });
+    it('should return null if no transaction found', async () => {
+      await expect(service.getTransactionForCreator(null, user as User)).rejects.toThrow(
+        'Transaction not found',
+      );
+    });
 
-  it('should return where with allowed statuses if malicious EQ filter provided', async () => {
-    const queryBuilder = mockQueryBuilder();
+    it('should throw if no user is provided', async () => {
+      const transaction = { creatorKey: { userId: 2 } };
+      transactionsRepo.findOne.mockResolvedValueOnce(transaction as Transaction);
 
-    await service.getHistoryTransactions(defaultPagination, [
-      {
-        property: 'status',
-        rule: 'eq',
-        value: 'WAITING FOR EXECUTION',
-      },
-    ]);
+      await expect(service.getTransactionForCreator(1, null)).rejects.toThrow(
+        'Only the creator has access to this transaction',
+      );
+    });
 
-    expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          status: Not(In(forbiddenStatuses)),
-        }),
-      }),
-    );
-  });
+    it('should throw if user is not the creator', async () => {
+      const transaction = { creatorKey: { userId: 231232 } };
 
-  it('should return where only with with allowed statuses if IN filter provided', async () => {
-    const queryBuilder = mockQueryBuilder();
+      transactionsRepo.findOne.mockResolvedValueOnce(transaction as Transaction);
 
-    await service.getHistoryTransactions(defaultPagination, [
-      {
-        property: 'status',
-        rule: 'in',
-        value: 'EXECUTED, WAITING FOR EXECUTION, WAITING FOR SIGNATURES, FAILED',
-      },
-    ]);
+      await expect(service.getTransactionForCreator(1, user as User)).rejects.toThrow(
+        'Only the creator has access to this transaction',
+      );
+    });
 
-    expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          status: In([TransactionStatus.EXECUTED, TransactionStatus.FAILED]),
-        }),
-      }),
-    );
-  });
+    it('should return the transaction if user is the creator', async () => {
+      const transaction = { creatorKey: { userId: user.id } };
 
-  it('should return where only with with allowed statuses if malicious IN filter provided', async () => {
-    const queryBuilder = mockQueryBuilder();
+      transactionsRepo.findOne.mockResolvedValueOnce(transaction as Transaction);
 
-    await service.getHistoryTransactions(defaultPagination, [
-      {
-        property: 'status',
-        rule: 'in',
-        value: 'NEW, WAITING FOR EXECUTION, WAITING FOR SIGNATURES, REJECTED',
-      },
-    ]);
+      const result = await service.getTransactionForCreator(1, user as User);
 
-    expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          status: In([]),
-        }),
-      }),
-    );
-  });
-
-  it('should return where only with with allowed status if NEQ filter provided', async () => {
-    const queryBuilder = mockQueryBuilder();
-
-    await service.getHistoryTransactions(defaultPagination, [
-      {
-        property: 'status',
-        rule: 'neq',
-        value: 'EXECUTED',
-      },
-    ]);
-
-    expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          status: Not(In([...forbiddenStatuses, TransactionStatus.EXECUTED])),
-        }),
-      }),
-    );
-  });
-
-  it('should return where only with with allowed statuses if NIN filter provided', async () => {
-    const queryBuilder = mockQueryBuilder();
-
-    await service.getHistoryTransactions(defaultPagination, [
-      {
-        property: 'status',
-        rule: 'nin',
-        value: 'EXECUTED, FAILED,EXPIRED',
-      },
-    ]);
-
-    expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          status: Not(
-            In([
-              ...forbiddenStatuses,
-              TransactionStatus.EXECUTED,
-              TransactionStatus.FAILED,
-              TransactionStatus.EXPIRED,
-            ]),
-          ),
-        }),
-      }),
-    );
-  });
-
-  it('should return where only with with allowed statuses if unsupported filter', async () => {
-    const queryBuilder = mockQueryBuilder();
-
-    await service.getHistoryTransactions(defaultPagination, [
-      {
-        property: 'status',
-        rule: 'geteverythingpossiblerule',
-        value: 'EXECUTED,FAILED,EXPIRED',
-      },
-    ]);
-
-    expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          status: Not(In([...forbiddenStatuses])),
-        }),
-      }),
-    );
+      expect(result).toEqual(transaction);
+    });
   });
 });
