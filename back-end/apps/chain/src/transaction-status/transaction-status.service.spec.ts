@@ -10,12 +10,12 @@ import {
   computeSignatureKey,
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
-  NOTIFY_CLIENT,
   NOTIFY_GENERAL,
-  TRANSACTION_ACTION,
   SYNC_INDICATORS,
   NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
   smartCollate,
+  computeShortenedPublicKeyList,
+  notifyTransactionAction,
 } from '@app/common';
 import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
@@ -261,11 +261,7 @@ describe('TransactionStatusService', () => {
         transactionStatus: TransactionStatus.EXPIRED,
       });
     }
-    expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
-    expect(notificationsService.emit).toHaveBeenCalledTimes(4);
+    expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
   });
 
   describe('updateTransactions', () => {
@@ -321,33 +317,28 @@ describe('TransactionStatusService', () => {
           status: TransactionStatus.WAITING_FOR_SIGNATURES,
         },
       );
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(1, SYNC_INDICATORS, {
+      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
         transactionId: transactions[0].id,
         transactionStatus: TransactionStatus.WAITING_FOR_EXECUTION,
       });
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(2, NOTIFY_GENERAL, {
+      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_GENERAL, {
         entityId: transactions[0].id,
         type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
         actorId: null,
         content: `Transaction ${transactions[0].transactionId} is ready for execution`,
         userIds: [transactions[0].creatorKey?.userId],
       });
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(3, SYNC_INDICATORS, {
+      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
         transactionId: transactions[1].id,
         transactionStatus: TransactionStatus.WAITING_FOR_SIGNATURES,
       });
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(
-        4,
+      expect(notificationsService.emit).toHaveBeenCalledWith(
         NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
         {
           transactionId: transactions[1].id,
         },
       );
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(5, NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
-      expect(notificationsService.emit).toHaveBeenCalledTimes(5);
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
 
     it('should not emit notifications event if no transactions updated', async () => {
@@ -387,9 +378,7 @@ describe('TransactionStatusService', () => {
         {
           id: 1,
           status: TransactionStatus.WAITING_FOR_SIGNATURES,
-          transactionBytes: new FileUpdateTransaction()
-            .setContents('test')
-            .toBytes(),
+          transactionBytes: new FileUpdateTransaction().setContents('test').toBytes(),
         },
         {
           id: 2,
@@ -399,9 +388,7 @@ describe('TransactionStatusService', () => {
         {
           id: 3,
           status: TransactionStatus.WAITING_FOR_EXECUTION,
-          transactionBytes: new FileAppendTransaction()
-            .setContents('test')
-            .toBytes(),
+          transactionBytes: new FileAppendTransaction().setContents('test').toBytes(),
         },
       ];
 
@@ -413,22 +400,17 @@ describe('TransactionStatusService', () => {
       await service.updateTransactions(new Date(), new Date());
 
       expect(transactionRepo.update).toHaveBeenCalledTimes(1);
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(1, SYNC_INDICATORS, {
+      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
         transactionId: transactions[1].id,
         transactionStatus: TransactionStatus.WAITING_FOR_SIGNATURES,
       });
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(
-        2,
+      expect(notificationsService.emit).toHaveBeenCalledWith(
         NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
         {
           transactionId: transactions[1].id,
         },
       );
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(3, NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
-      expect(notificationsService.emit).toHaveBeenCalledTimes(3);
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
   });
 
@@ -463,22 +445,18 @@ describe('TransactionStatusService', () => {
           status: TransactionStatus.WAITING_FOR_EXECUTION,
         },
       );
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(1, SYNC_INDICATORS, {
+      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
         transactionId: transaction.id,
         transactionStatus: TransactionStatus.WAITING_FOR_EXECUTION,
       });
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(2, NOTIFY_GENERAL, {
+      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_GENERAL, {
         entityId: transaction.id,
         type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
         actorId: null,
         content: `Transaction ${transaction.transactionId} is ready for execution`,
         userIds: [transaction.creatorKey?.userId],
       });
-      expect(notificationsService.emit).toHaveBeenNthCalledWith(3, NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
-      expect(notificationsService.emit).toHaveBeenCalledTimes(3);
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
 
     it('should not emit notifications event if no transactions updated', async () => {
@@ -562,7 +540,9 @@ describe('TransactionStatusService', () => {
       const validStart = new Date(Date.now() + 1000);
       transaction = new AccountCreateTransaction()
         .setNodeAccountIds([new AccountId(3)])
-        .setTransactionId(TransactionId.withValidStart(new AccountId(3), Timestamp.fromDate(validStart)))
+        .setTransactionId(
+          TransactionId.withValidStart(new AccountId(3), Timestamp.fromDate(validStart)),
+        )
         .setTransactionMemo('Test Transaction')
         .freeze();
       mockTransaction = {
@@ -641,18 +621,16 @@ describe('TransactionStatusService', () => {
       expect(sdkTransaction._signerPublicKeys.size).toBe(5);
     });
 
-    it(
-      'should fail to prepare a transaction signed with 100 different keys, due to key list unable to be sufficiently reduced',
-      async () => {
-        // prepare the signatures
-        keyList = new KeyList();
-        privateKeys = [];
+    it('should fail to prepare a transaction signed with 100 different keys, due to key list unable to be sufficiently reduced', async () => {
+      // prepare the signatures
+      keyList = new KeyList();
+      privateKeys = [];
 
-        const privateKey = PrivateKey.generate();
-        privateKeys.push(privateKey);
-        keyList.push(privateKey.publicKey);
-        transaction = await transaction.sign(privateKey);
-        mockTransaction.transactionBytes = Buffer.from(transaction.toBytes());
+      const privateKey = PrivateKey.generate();
+      privateKeys.push(privateKey);
+      keyList.push(privateKey.publicKey);
+      transaction = await transaction.sign(privateKey);
+      mockTransaction.transactionBytes = Buffer.from(transaction.toBytes());
 
         // Mock the functions
         jest.mocked(smartCollate).mockReturnValue(null);
@@ -676,6 +654,7 @@ describe('TransactionStatusService', () => {
           }
         );
       });
+    });
   });
 
   describe('addExecutionTimeout', () => {

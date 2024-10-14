@@ -3,13 +3,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
-import {
-  asyncFilter,
-  NOTIFICATIONS_SERVICE,
-  NOTIFY_CLIENT,
-  NotifyClientDto,
-  TRANSACTION_ACTION,
-} from '@app/common';
+import { asyncFilter, NOTIFICATIONS_SERVICE, notifyTransactionAction } from '@app/common';
 import { TransactionGroup, TransactionGroupItem, User } from '@entities';
 
 import { TransactionsService } from '../transactions.service';
@@ -53,10 +47,7 @@ export class TransactionGroupsService {
       await manager.save(TransactionGroupItem, groupItems);
     });
 
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
+    notifyTransactionAction(this.notificationsService);
 
     return group;
   }
@@ -72,7 +63,7 @@ export class TransactionGroupsService {
       ],
     });
 
-    if (!(group?.groupItems.length > 0)) {
+    if (!(group?.groupItems?.length > 0)) {
       throw new NotFoundException('Transaction not found');
     }
 
@@ -112,10 +103,7 @@ export class TransactionGroupsService {
 
     await this.dataSource.manager.remove(TransactionGroup, group);
 
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
+    notifyTransactionAction(this.notificationsService);
 
     return true;
   }

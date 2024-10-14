@@ -14,7 +14,7 @@ import {
 } from '@entities';
 
 import { NOTIFICATIONS_SERVICE, MirrorNodeService } from '@app/common';
-import { userKeysRequiredToSign } from '@app/common/utils';
+import { userKeysRequiredToSign, notifyTransactionAction } from '@app/common/utils';
 
 import { ObserversService } from './observers.service';
 import { ApproversService } from '../approvers';
@@ -266,7 +266,7 @@ describe('ObserversService', () => {
       expect(observersRepo.findOneBy).toHaveBeenCalledWith({ id: observerId });
       expect(observersRepo.save).toHaveBeenCalledWith(observer);
 
-      expect(notificationsService.emit).toHaveBeenCalled();
+      expect(notifyTransactionAction).toHaveBeenCalled();
     });
 
     it('should not update the transaction observer if not creator', async () => {
@@ -321,7 +321,7 @@ describe('ObserversService', () => {
       expect(observersRepo.findOneBy).toHaveBeenCalledWith({ id: observerId });
       expect(observersRepo.remove).toHaveBeenCalledWith(observer);
 
-      expect(notificationsService.emit).toHaveBeenCalled();
+      expect(notifyTransactionAction).toHaveBeenCalled();
     });
 
     it('should not remove the transaction observer if not creator', async () => {

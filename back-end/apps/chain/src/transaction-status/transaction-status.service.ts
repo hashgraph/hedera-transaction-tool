@@ -9,18 +9,16 @@ import { Status, Transaction as SDKTransaction } from '@hashgraph/sdk';
 import {
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
-  NOTIFY_CLIENT,
   NOTIFY_GENERAL,
   SYNC_INDICATORS,
-  TRANSACTION_ACTION,
   NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
-  NotifyClientDto,
   SyncIndicatorsDto,
   NotifyGeneralDto,
   NotifyForTransactionDto,
   hasValidSignatureKey,
   computeSignatureKey,
   smartCollate,
+  notifyTransactionAction,
 } from '@app/common';
 import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
@@ -154,10 +152,7 @@ export class TransactionStatusService {
       }
 
       if (transactions.length > 0) {
-        this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-          message: TRANSACTION_ACTION,
-          content: '',
-        });
+        notifyTransactionAction(this.notificationsService);
       }
     });
   }
@@ -194,10 +189,7 @@ export class TransactionStatusService {
     }
 
     if (atLeastOneUpdated) {
-      this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
+      notifyTransactionAction(this.notificationsService);
     }
 
     return transactions;
@@ -217,11 +209,7 @@ export class TransactionStatusService {
     if (!newStatus) return;
 
     this.emitNotificationEvents(transaction, newStatus);
-
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
+    notifyTransactionAction(this.notificationsService);
   }
 
   private async _updateTransactionStatus(

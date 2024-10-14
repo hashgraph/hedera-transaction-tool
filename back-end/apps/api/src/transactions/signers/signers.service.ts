@@ -8,11 +8,8 @@ import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 import {
   CHAIN_SERVICE,
   NOTIFICATIONS_SERVICE,
-  NOTIFY_CLIENT,
-  TRANSACTION_ACTION,
   SYNC_INDICATORS,
   MirrorNodeService,
-  NotifyClientDto,
   PaginatedResourceDto,
   SyncIndicatorsDto,
   Pagination,
@@ -21,6 +18,7 @@ import {
   isExpired,
   validateSignature,
   userKeysRequiredToSign,
+  notifyTransactionAction,
 } from '@app/common';
 
 import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
@@ -184,10 +182,7 @@ export class SignersService {
 
       /* Check if ready to execute */
       this.chainService.emit('update-transaction-status', { id: transactionId });
-      this.notificationService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
+      notifyTransactionAction(this.notificationService);
       this.notificationService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
         transactionId: transactionId,
         transactionStatus: transaction.status,
@@ -290,10 +285,7 @@ export class SignersService {
 
       /* Check if ready to execute */
       this.chainService.emit('update-transaction-status', { id: transactionId });
-      this.notificationService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
+      notifyTransactionAction(this.notificationService);
       this.notificationService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
         transactionId: transactionId,
         transactionStatus: transaction.status,

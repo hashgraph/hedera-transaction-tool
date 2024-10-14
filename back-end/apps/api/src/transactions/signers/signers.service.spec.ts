@@ -11,9 +11,7 @@ import {
   CHAIN_SERVICE,
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
-  NOTIFY_CLIENT,
   SYNC_INDICATORS,
-  TRANSACTION_ACTION,
 } from '@app/common';
 import {
   addTransactionSignatures,
@@ -21,6 +19,7 @@ import {
   isExpired,
   validateSignature,
   userKeysRequiredToSign,
+  notifyTransactionAction,
 } from '@app/common/utils';
 
 import { SignersService } from './signers.service';
@@ -247,15 +246,11 @@ describe('SignaturesService', () => {
       expect(chainService.emit).toHaveBeenCalledWith('update-transaction-status', {
         id: transactionId,
       });
-      expect(notificationService.emit).toHaveBeenNthCalledWith(1, NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
-      expect(notificationService.emit).toHaveBeenNthCalledWith(2, SYNC_INDICATORS, {
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationService);
+      expect(notificationService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
         transactionId,
         transactionStatus: transaction.status,
       });
-      expect(notificationService.emit).toHaveBeenCalledTimes(2);
     });
 
     it.skip('should throw if signature public key does not belong to sender', async () => {
@@ -531,15 +526,11 @@ describe('SignaturesService', () => {
       expect(chainService.emit).toHaveBeenCalledWith('update-transaction-status', {
         id: transactionId,
       });
-      expect(notificationService.emit).toHaveBeenNthCalledWith(1, NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
-      expect(notificationService.emit).toHaveBeenNthCalledWith(2, SYNC_INDICATORS, {
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationService);
+      expect(notificationService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
         transactionId,
         transactionStatus: transaction.status,
       });
-      expect(notificationService.emit).toHaveBeenCalledTimes(2);
     });
 
     it.skip('should throw if signature public key does not belong to sender', async () => {
