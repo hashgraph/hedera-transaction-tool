@@ -207,13 +207,6 @@ export class SignersService {
     { signatures: signaturesArray }: UploadSignatureArrayDto,
     user: User,
   ): Promise<TransactionSigner[]> {
-    /* Verify that the user has all the keys */
-    const allKeysAreUsers = signaturesArray.every(({ publicKeyId }) =>
-      user.keys.some(key => key.id === publicKeyId),
-    );
-    if (!allKeysAreUsers)
-      throw new BadRequestException('Transaction can be signed only with your own keys');
-
     /* Verify that the transaction exists */
     const transaction = await this.dataSource.manager.findOneBy(Transaction, { id: transactionId });
     if (!transaction) throw new BadRequestException('Transaction not found');

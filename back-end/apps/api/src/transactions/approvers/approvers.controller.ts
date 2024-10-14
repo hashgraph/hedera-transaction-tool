@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { Serialize } from '@app/common';
+import { OnlyOwnerKey, Serialize } from '@app/common';
 
 import { TransactionApprover, User } from '@entities';
 
@@ -63,6 +63,7 @@ export class ApproversController {
     type: Boolean,
   })
   @Post('/approve')
+  @OnlyOwnerKey<ApproverChoiceDto>('userKeyId')
   approveTransaction(
     @GetUser() user: User,
     @Param('transactionId', ParseIntPipe) transactionId: number,

@@ -26,7 +26,7 @@ import {
   FindOperator,
 } from 'typeorm';
 
-import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
+import { Transaction, TransactionSigner, TransactionStatus, User } from '@entities';
 
 import {
   NOTIFICATIONS_SERVICE,
@@ -331,13 +331,10 @@ export class TransactionsService {
 
   /* Create a new transaction with the provided information */
   async createTransaction(dto: CreateTransactionDto, user: User): Promise<Transaction> {
-    const userKeys = await this.entityManager.find(UserKey, { where: { userId: user.id } });
-    const creatorKey = userKeys.find(key => key.id === dto.creatorKeyId);
+    await attachKeys(user, this.entityManager);
+    const creatorKey = user.keys.find(key => key.id === dto.creatorKeyId);
 
-    /* Check if the key belongs to the user */
-    if (!userKeys.some(key => key.id === dto.creatorKeyId))
-      throw new BadRequestException("Creator key doesn't belong to the user");
-    const publicKey = PublicKey.fromString(creatorKey.publicKey);
+    const publicKey = PublicKey.fromString(creatorKey?.publicKey);
 
     /* Verify the signature matches the transaction */
     const validSignature = publicKey.verify(dto.transactionBytes, dto.signature);
@@ -374,7 +371,9 @@ export class TransactionsService {
       transactionBytes: sdkTransaction.toBytes(),
       unsignedTransactionBytes: sdkTransaction.toBytes(),
       status: TransactionStatus.WAITING_FOR_SIGNATURES,
-      creatorKey,
+      creatorKey: {
+        id: dto.creatorKeyId,
+      },
       signature: dto.signature,
       network: dto.network,
       validStart: sdkTransaction.transactionId.validStart.toDate(),

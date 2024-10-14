@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { mockDeep } from 'jest-mock-extended';
+import { EntityManager } from 'typeorm';
 
 import { guardMock, Pagination } from '@app/common';
 import {
@@ -24,6 +25,7 @@ describe('TransactionsController', () => {
   let pagination: Pagination;
 
   const transactionService = mockDeep<TransactionsService>();
+  const entityManager = mockDeep<EntityManager>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -32,6 +34,10 @@ describe('TransactionsController', () => {
         {
           provide: TransactionsService,
           useValue: transactionService,
+        },
+        {
+          provide: EntityManager,
+          useValue: entityManager,
         },
       ],
     })

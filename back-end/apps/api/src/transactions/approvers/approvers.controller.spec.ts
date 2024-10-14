@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
+import { EntityManager } from 'typeorm';
 
 import { guardMock } from '@app/common';
 import { TransactionApprover, User, UserStatus } from '@entities';
@@ -15,6 +16,7 @@ describe('ApproversController', () => {
   let transactionApprover: TransactionApprover;
 
   const approversService = mockDeep<ApproversService>();
+  const entityManager = mockDeep<EntityManager>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -23,6 +25,10 @@ describe('ApproversController', () => {
         {
           provide: ApproversService,
           useValue: approversService,
+        },
+        {
+          provide: EntityManager,
+          useValue: entityManager,
         },
       ],
     })
