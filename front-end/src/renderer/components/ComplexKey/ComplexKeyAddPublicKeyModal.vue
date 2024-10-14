@@ -100,6 +100,20 @@ const listedKeyList = computed(() => {
       break;
   }
 
+  // Filter by publicKey, nickname, or email
+  const searchQuery = publicKey.value.trim().toLowerCase();
+  currentKeyList = currentKeyList.filter(key => {
+    const contact = contacts.getContactByPublicKey(key.publicKey);
+    const email = contact?.user.email?.toLowerCase() || '';
+    const nickname = key.nickname?.toLowerCase() || '';
+
+    return (
+      key.publicKey.toLowerCase().includes(searchQuery) ||
+      nickname.includes(searchQuery) ||
+      email.includes(searchQuery)
+    );
+  });
+
   if (props.alreadyAdded && props.alreadyAdded.length > 0) {
     return currentKeyList.filter(k => !props.alreadyAdded?.includes(k.publicKey));
   } else {
