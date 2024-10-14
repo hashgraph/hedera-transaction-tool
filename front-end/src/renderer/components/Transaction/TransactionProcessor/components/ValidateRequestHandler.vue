@@ -2,13 +2,13 @@
 import type { Handler, TransactionRequest } from '..';
 
 import { ref } from 'vue';
-import { FileCreateTransaction, FileUpdateTransaction, Transaction } from '@hashgraph/sdk';
+import { FileCreateTransaction, Transaction } from '@hashgraph/sdk';
 
 import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { ableToSign } from '@renderer/utils';
+import { ableToSign, getTransactionType } from '@renderer/utils';
 import { assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 /* Stores */
@@ -43,10 +43,7 @@ async function handle(request: TransactionRequest) {
 function validate(request: TransactionRequest, transaction: Transaction) {
   validateSignableInPersonal(request);
 
-  if (
-    transaction instanceof FileCreateTransaction ||
-    transaction instanceof FileUpdateTransaction
-  ) {
+  if (transaction instanceof FileCreateTransaction) {
     validateBigFile(transaction);
   }
 
@@ -71,11 +68,17 @@ function validateSignableInPersonal(request: TransactionRequest) {
   }
 }
 
-function validateBigFile(transaction: FileCreateTransaction | FileUpdateTransaction) {
+function validateBigFile(transaction: FileCreateTransaction) {
   const size = transaction.toBytes().length;
   const sizeBufferBytes = 200;
 
   if (size <= TRANSACTION_MAX_SIZE - sizeBufferBytes) return;
+
+  if (user.selectedOrganization) {
+    throw new Error(
+      `${getTransactionType(transaction)} size exceeds max transaction size. It has to be split.`,
+    );
+  }
 }
 
 /* Expose */

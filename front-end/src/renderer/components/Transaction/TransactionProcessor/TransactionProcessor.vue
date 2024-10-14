@@ -48,28 +48,28 @@ const approvers = ref<TransactionApproverDto[]>([]);
 const isSigning = ref(false);
 
 /* Handlers */
-const handleSubmitSuccess = async (id: number, body: string) => {
-  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Validate');
+const handleSubmitSuccess = async (id: number, transactionBytes: string) => {
+  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Confirm');
   confirmHandler.value.setShow(false);
 
   toast.success('Transaction submitted successfully');
-  props.onSubmitted && (await props.onSubmitted(id, body));
+  props.onSubmitted && (await props.onSubmitted(id, transactionBytes));
 };
 
 const handleSubmitFail = () => {
-  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Validate');
+  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Confirm');
   confirmHandler.value.setShow(true);
 };
 
 const handleSignBegin = () => {
   isSigning.value = true;
-  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Validate');
+  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Confirm');
   confirmHandler.value.setShow(true);
 };
 
 const handleSignSuccess = () => {
   isSigning.value = false;
-  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Validate');
+  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Confirm');
   confirmHandler.value.setShow(false);
 };
 
@@ -149,6 +149,10 @@ defineExpose({
     <!-- Handler #3: File Create (has sub-chain) -->
     <BigFileRequestHandler
       ref="bigFileHandler"
+      :observers="observers"
+      :approvers="approvers"
+      @transaction:submit:success="handleSubmitSuccess"
+      @transaction:submit:fail="handleSubmitFail"
       @transaction:sign:begin="handleSignBegin"
       @transaction:sign:success="handleSignSuccess"
       @transaction:sign:fail="handleSignFail"

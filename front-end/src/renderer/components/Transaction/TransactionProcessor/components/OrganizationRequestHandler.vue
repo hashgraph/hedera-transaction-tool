@@ -26,7 +26,7 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'transaction:submit:success', id: number, body: string): void;
+  (event: 'transaction:submit:success', id: number, transactionBytes: string): void;
   (event: 'transaction:submit:fail', error: unknown): void;
 }>();
 
@@ -63,7 +63,7 @@ async function handle(req: TransactionRequest) {
   const publicKey = user.keyPairs[0].public_key;
 
   const signature = await sign(publicKey);
-  const { id, body } = await submit(publicKey, signature);
+  const { id, transactionBytes } = await submit(publicKey, signature);
 
   const results = await Promise.allSettled([
     upload('observers', id),
@@ -77,7 +77,7 @@ async function handle(req: TransactionRequest) {
     }
   });
 
-  emit('transaction:submit:success', id, body);
+  emit('transaction:submit:success', id, transactionBytes);
 }
 
 /* Functions */
