@@ -30,7 +30,7 @@ const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <div class="row">
-    <div class="form-group" :class="[columnClass]">
+    <div class="form-group mb-6" :class="[columnClass]">
       <label class="form-label">File ID <span class="text-danger">*</span></label>
       <AppInput
         :model-value="data.fileId"
@@ -47,7 +47,7 @@ const columnClass = 'col-4 col-xxxl-3';
     </div>
   </div>
 
-  <div v-if="!isLoggedInOrganization(user.selectedOrganization)" class="row my-6">
+  <div v-if="!isLoggedInOrganization(user.selectedOrganization)" class="row mb-6">
     <div class="form-group col-8 col-xxxl-6">
       <KeyField
         :model-key="signatureKey"
