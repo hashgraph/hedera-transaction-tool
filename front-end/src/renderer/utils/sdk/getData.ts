@@ -50,7 +50,7 @@ type AssertType = <T extends Transaction>(
   transaction: Transaction,
   type: new (...args: any[]) => T,
 ) => asserts transaction is T;
-const assertTransactionType: AssertType = (transaction, type) => {
+export const assertTransactionType: AssertType = (transaction, type) => {
   if (!(transaction instanceof type)) {
     throw new Error('Invalid transaction type.');
   }
