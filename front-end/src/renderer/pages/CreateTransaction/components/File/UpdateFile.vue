@@ -117,7 +117,7 @@ const handleCreate = async (e: Event) => {
       throw Error('Invalid File ID');
     }
 
-    if (!ownerKey.value) {
+    if (!ownerKey.value && !isLoggedInOrganization(user.selectedOrganization)) {
       throw Error('Signature key is required');
     }
 
@@ -228,7 +228,7 @@ function handleAddToGroup() {
     throw Error('Invalid File ID');
   }
 
-  if (!ownerKey.value) {
+  if (!ownerKey.value && !isLoggedInOrganization(user.selectedOrganization)) {
     throw Error('Signature key is required');
   }
 
