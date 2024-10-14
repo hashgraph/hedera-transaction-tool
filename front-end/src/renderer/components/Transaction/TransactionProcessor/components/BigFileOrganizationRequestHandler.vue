@@ -3,12 +3,7 @@ import type { TransactionApproverDto } from '@main/shared/interfaces/organizatio
 import type { Handler, TransactionRequest } from '..';
 
 import { computed, ref } from 'vue';
-import {
-  Transaction,
-  FileCreateTransaction,
-  FileUpdateTransaction,
-  FileAppendTransaction,
-} from '@hashgraph/sdk';
+import { Transaction, FileUpdateTransaction, FileAppendTransaction } from '@hashgraph/sdk';
 
 import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
 
@@ -44,10 +39,7 @@ const organizationHandler = ref<InstanceType<typeof OrganizationRequestHandler> 
 const nextHandler = ref<Handler | null>(null);
 
 const request = ref<TransactionRequest | null>(null);
-const fileId = ref<string | null>(null);
-const originalProcessed = ref<boolean>(false);
-const originalOrganizationId = ref<number | null>(null);
-const originalBody = ref<string | null>(null);
+const appendProcessed = ref<boolean>(false);
 
 /* Computed */
 const originalTransaction = computed(() =>
@@ -82,34 +74,17 @@ async function handle(req: TransactionRequest) {
   reset();
   request.value = req;
 
-  await processOriginal();
+  await processAppend();
 }
 
 /* Handlers */
 const handleSubmitSuccess = async (id: number, transactionBytes: string) => {
-  if (!originalProcessed.value) {
-    originalProcessed.value = true;
-    handleOriginalSubmit(id, transactionBytes);
-    await processAppend();
+  if (!appendProcessed.value) {
+    appendProcessed.value = true;
+    await processUpdate();
   } else {
-    if (!originalOrganizationId.value || !originalBody.value) {
-      throw new Error('Original id or transaction bytes is missing');
-    }
-    emit('transaction:submit:success', originalOrganizationId.value, originalBody.value);
+    emit('transaction:submit:success', id, transactionBytes);
   }
-};
-
-const handleOriginalSubmit = (id: number, body: string) => {
-  if (originalTransaction.value instanceof FileCreateTransaction) {
-    throw new Error('Large File Create Transaction is not supported in Organization mode');
-  } else if (originalTransaction.value instanceof FileUpdateTransaction) {
-    if (!originalTransaction.value.fileId) throw new Error('File ID is missing');
-    fileId.value = originalTransaction.value.fileId.toString();
-    //TODO: Check if the keys are updated and execute the append with new transaction key
-  }
-
-  originalOrganizationId.value = id;
-  originalBody.value = body;
 };
 
 const handleSubmitFail = (error: unknown) => emit('transaction:submit:fail', error);
@@ -120,11 +95,10 @@ async function startChain(req: TransactionRequest) {
   await organizationHandler.value.handle(req);
 }
 
-async function processOriginal() {
+async function processUpdate() {
   if (!request.value) throw new Error('Transaction request is missing');
 
   const transaction = Transaction.fromBytes(request.value.transactionBytes);
-
   assertTransactionType(transaction);
   if (!content.value) throw new Error('Transaction content is missing');
 
@@ -153,13 +127,17 @@ async function processAppend() {
 
 function createAppendTransaction() {
   if (!originalTransaction.value) throw new Error('Transaction is missing');
+  if (!isFileUpdate(originalTransaction.value))
+    throw new Error('Transaction is not a File Update Transaction');
   if (!content.value) throw new Error('Transaction content is missing');
-  if (!fileId.value) throw new Error('File ID is missing');
 
   const originalTransactionId = originalTransaction.value.transactionId;
   if (!originalTransactionId) throw new Error('Original transaction ID is missing');
   if (!originalTransactionId.accountId) throw new Error('Transaction payer ID is missing');
   if (!originalTransactionId.validStart) throw new Error('Transaction valid start is missing');
+
+  const fileId = originalTransaction.value.fileId;
+  if (!fileId) throw new Error('File ID is missing');
 
   const append = new FileAppendTransaction()
     .setTransactionValidDuration(180)
@@ -170,7 +148,7 @@ function createAppendTransaction() {
         originalTransactionId.validStart.plusNanos(10),
       ),
     )
-    .setFileId(fileId.value)
+    .setFileId(fileId)
     .setContents(content.value.slice(FIRST_CHUNK_SIZE_BYTES))
     .setMaxChunks(99999);
 
@@ -191,10 +169,7 @@ function assertTransactionType(
 
 function reset() {
   request.value = null;
-  fileId.value = null;
-  originalProcessed.value = false;
-  originalOrganizationId.value = null;
-  originalBody.value = null;
+  appendProcessed.value = false;
 }
 
 /* Expose */
