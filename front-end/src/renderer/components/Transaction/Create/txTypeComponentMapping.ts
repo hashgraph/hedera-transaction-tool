@@ -1,14 +1,14 @@
-import AccountInfoVue from './components/Account/AccountInfo.vue';
-import ApproveHbarAllowanceVue from './components/Account/ApproveHbarAllowance.vue';
-import CreateAccount from './components/Account/CreateAccount.vue';
-import DeleteAccount from './components/Account/DeleteAccount.vue';
-import UpdateAccount from './components/Account/UpdateAccount.vue';
-import AppendToFileVue from './components/File/AppendToFile.vue';
-import CreateFile from './components/File/CreateFile.vue';
-import ReadFile from './components/File/ReadFile.vue';
-import UpdateFile from './components/File/UpdateFile.vue';
-import FreezeVue from './components/Misc/Freeze.vue';
-import TransferHbar from './components/Transfer/TransferHbar.vue';
+import AccountInfoVue from './Account/AccountInfo.vue';
+import ApproveHbarAllowanceVue from './Account/ApproveHbarAllowance.vue';
+import CreateAccount from './Account/CreateAccount.vue';
+import DeleteAccount from './Account/DeleteAccount.vue';
+import UpdateAccount from './Account/UpdateAccount.vue';
+import AppendToFileVue from './File/AppendToFile.vue';
+import CreateFile from './File/CreateFile.vue';
+import ReadFile from './File/ReadFile.vue';
+import UpdateFile from './File/UpdateFile.vue';
+import FreezeVue from './Misc/Freeze.vue';
+import TransferHbar from './Transfer/TransferHbar.vue';
 
 export const transactionTypeKeys = {
   createFile: 'FileCreateTransaction',

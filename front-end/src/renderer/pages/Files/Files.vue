@@ -22,7 +22,7 @@ import { flattenKeyList, getKeyListLevels } from '@renderer/services/keyPairServ
 import { getUInt8ArrayFromBytesString, convertBytes } from '@renderer/utils';
 import { getFormattedDateFromTimestamp } from '@renderer/utils/transactions';
 
-import { transactionTypeKeys } from '@renderer/pages/CreateTransaction/txTypeComponentMapping';
+import { transactionTypeKeys } from '@renderer/components/Transaction/Create/txTypeComponentMapping';
 import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';

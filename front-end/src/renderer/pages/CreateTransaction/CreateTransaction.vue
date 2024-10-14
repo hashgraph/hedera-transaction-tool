@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import txTypeComponentMapping from './txTypeComponentMapping';
-
+import txTypeComponentMapping from '@renderer/components/Transaction/Create/txTypeComponentMapping';
 import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 /* Composables */
