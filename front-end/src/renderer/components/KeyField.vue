@@ -200,7 +200,6 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
         <ComplexKeyAddPublicKeyModal
           v-if="addPublicKeyModalShown"
           v-model:show="addPublicKeyModalShown"
-          :already-added="modelKey instanceof PublicKey ? [modelKey.toStringRaw()] : []"
           @selected:single="handleAddPublicKey"
         />
       </template>

@@ -21,7 +21,6 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 /* Enums */
 enum KeyTab {
   MY = 'My keys',
-  ACCOUNTS = 'My accounts',
   CONTACTS = 'My contacts',
 }
 
@@ -46,6 +45,7 @@ const contacts = useContactsStore();
 
 /* State */
 const publicKey = ref('');
+const searchQuery = ref('');
 const selectedPublicKeys = ref<string[]>([]);
 const currentTab = ref(KeyTab.MY);
 const accounts = ref<HederaAccount[]>([]);
@@ -92,25 +92,22 @@ const listedKeyList = computed(() => {
     case KeyTab.MY:
       currentKeyList = myKeys.value;
       break;
-    case KeyTab.ACCOUNTS:
-      currentKeyList = [];
-      break;
     case KeyTab.CONTACTS:
       currentKeyList = myContactListKeys.value;
       break;
   }
 
   // Filter by publicKey, nickname, or email
-  const searchQuery = publicKey.value.trim().toLowerCase();
+  const searchByKey = searchQuery.value.trim().toLowerCase();
   currentKeyList = currentKeyList.filter(key => {
     const contact = contacts.getContactByPublicKey(key.publicKey);
     const email = contact?.user.email?.toLowerCase() || '';
     const nickname = key.nickname?.toLowerCase() || '';
 
     return (
-      key.publicKey.toLowerCase().includes(searchQuery) ||
-      nickname.includes(searchQuery) ||
-      email.includes(searchQuery)
+      key.publicKey.toLowerCase().includes(searchByKey) ||
+      nickname.includes(searchByKey) ||
+      email.includes(searchByKey)
     );
   });
 
@@ -190,7 +187,7 @@ onMounted(async () => {
         <p class="text-micro text-bold mt-5">Search by or paste public key</p>
         <div class="mt-3">
           <AppInput
-            v-model:model-value="publicKey"
+            v-model:model-value="searchQuery"
             data-testid="input-complex-public-key"
             filled
             type="text"
@@ -200,20 +197,21 @@ onMounted(async () => {
 
         <hr class="separator my-5" />
 
-        <div class="btn-group d-flex justify-content-between">
-          <template v-for="kt in KeyTab" :key="kt">
-            <AppButton
-              @click="handleKeyTabChange(kt)"
-              :class="{ active: currentTab === kt }"
-              color="secondary"
-              type="button"
-              data-testid="tab-keys-my"
-              >{{ kt }}</AppButton
-            >
-          </template>
-        </div>
+        <template v-if="isLoggedInOrganization(user.selectedOrganization)">
+          <div class="btn-group d-flex justify-content-between">
+            <template v-for="kt in KeyTab" :key="kt">
+              <AppButton
+                @click="handleKeyTabChange(kt)"
+                :class="{ active: currentTab === kt }"
+                color="secondary"
+                type="button"
+                data-testid="tab-keys-my"
+                >{{ kt }}</AppButton
+              >
+            </template>
+          </div></template
+        >
         <div>
-          <!-- <h3 class="text-small">Recent</h3> -->
           <template v-if="listedKeyList.length > 0">
             <div class="mt-4 overflow-auto" :style="{ height: '313px' }">
               <template v-for="kp in listedKeyList" :key="kp.public_key">
