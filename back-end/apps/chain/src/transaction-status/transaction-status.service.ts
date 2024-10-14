@@ -17,10 +17,10 @@ import {
   notifyTransactionAction,
   notifySyncIndicators,
   notifyWaitingForSignatures,
+  UpdateTransactionStatusDto,
 } from '@app/common';
 import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
-import { UpdateTransactionStatusDto } from './dto';
 import { ExecuteService } from '../execute/execute.service';
 
 @Injectable()

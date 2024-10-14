@@ -10,6 +10,7 @@ import { AccountCreateTransaction } from '@hashgraph/sdk';
 import { CHAIN_SERVICE, MirrorNodeService, NOTIFICATIONS_SERVICE } from '@app/common';
 import {
   addTransactionSignatures,
+  emitUpdateTransactionStatus,
   isAlreadySigned,
   isExpired,
   validateSignature,
@@ -244,9 +245,7 @@ describe('SignaturesService', () => {
       });
       expect(signersRepo.save).toHaveBeenCalled();
 
-      expect(chainService.emit).toHaveBeenCalledWith('update-transaction-status', {
-        id: transactionId,
-      });
+      expect(emitUpdateTransactionStatus).toHaveBeenCalledWith(chainService, transactionId);
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationService);
       expect(notifySyncIndicators).toHaveBeenCalledWith(
         notificationService,
@@ -525,9 +524,7 @@ describe('SignaturesService', () => {
         userKey: user.keys[0],
       });
 
-      expect(chainService.emit).toHaveBeenCalledWith('update-transaction-status', {
-        id: transactionId,
-      });
+      expect(emitUpdateTransactionStatus).toHaveBeenCalledWith(chainService, transactionId);
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationService);
       expect(notifySyncIndicators).toHaveBeenCalledWith(
         notificationService,

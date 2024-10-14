@@ -6,18 +6,19 @@ import { DataSource, Repository } from 'typeorm';
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
-  CHAIN_SERVICE,
-  NOTIFICATIONS_SERVICE,
-  MirrorNodeService,
-  PaginatedResourceDto,
-  Pagination,
   addTransactionSignatures,
+  CHAIN_SERVICE,
+  emitUpdateTransactionStatus,
   isAlreadySigned,
   isExpired,
-  validateSignature,
-  userKeysRequiredToSign,
-  notifyTransactionAction,
+  MirrorNodeService,
   notifySyncIndicators,
+  notifyTransactionAction,
+  NOTIFICATIONS_SERVICE,
+  PaginatedResourceDto,
+  Pagination,
+  userKeysRequiredToSign,
+  validateSignature,
 } from '@app/common';
 
 import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
@@ -180,7 +181,7 @@ export class SignersService {
       await queryRunner.commitTransaction();
 
       /* Check if ready to execute */
-      this.chainService.emit('update-transaction-status', { id: transactionId });
+      emitUpdateTransactionStatus(this.chainService, transactionId);
       notifyTransactionAction(this.notificationService);
       notifySyncIndicators(this.notificationService, transactionId, transaction.status);
 
@@ -280,7 +281,7 @@ export class SignersService {
       await queryRunner.release();
 
       /* Check if ready to execute */
-      this.chainService.emit('update-transaction-status', { id: transactionId });
+      emitUpdateTransactionStatus(this.chainService, transactionId);
       notifyTransactionAction(this.notificationService);
       notifySyncIndicators(this.notificationService, transactionId, transaction.status);
       return signers;
