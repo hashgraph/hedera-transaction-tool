@@ -67,5 +67,5 @@ export interface IGroup {
   description: string;
   atomic: boolean;
   createdAt: Date;
-  groupItems: IGroupItem;
+  groupItems: IGroupItem[];
 }

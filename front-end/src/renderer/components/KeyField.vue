@@ -12,8 +12,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { getComplexKey, updateComplexKey } from '@renderer/services/complexKeysService';
 
-import { isPublicKey } from '@renderer/utils/validator';
-import { decodeKeyList, encodeKey } from '@renderer/utils/sdk';
+import { isPublicKey, decodeKeyList, encodeKey } from '@renderer/utils';
 import * as ush from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';

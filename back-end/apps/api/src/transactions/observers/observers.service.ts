@@ -15,10 +15,8 @@ import { Role, Transaction, TransactionObserver, TransactionStatus, User } from 
 import {
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
-  NOTIFY_CLIENT,
-  NotifyClientDto,
-  TRANSACTION_ACTION,
   userKeysRequiredToSign,
+  notifyTransactionAction,
 } from '@app/common';
 
 import { ApproversService } from '../approvers';
@@ -68,10 +66,7 @@ export class ObserversService {
     try {
       const result = await this.repo.save(observers);
 
-      this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
+      notifyTransactionAction(this.notificationsService);
 
       return result;
     } catch (error) {
@@ -86,14 +81,7 @@ export class ObserversService {
   ): Promise<TransactionObserver[]> {
     const transaction = await this.entityManager.findOne(Transaction, {
       where: { id: transactionId },
-      relations: [
-        'creatorKey',
-        'creatorKey.user',
-        'observers',
-        'signers',
-        'signers.userKey',
-        'signers.userKey.user',
-      ],
+      relations: ['creatorKey', 'observers', 'signers', 'signers.userKey'],
     });
 
     if (!transaction) throw new NotFoundException('Transaction not found');
@@ -119,9 +107,9 @@ export class ObserversService {
 
     if (
       userKeysToSign.length === 0 &&
-      transaction.creatorKey?.user?.id !== user.id &&
+      transaction.creatorKey?.userId !== user.id &&
       !transaction.observers.some(o => o.userId === user.id) &&
-      !transaction.signers.some(s => s.userKey.user.id === user.id) &&
+      !transaction.signers.some(s => s.userKey.userId === user.id) &&
       !approvers.some(a => a.userId === user.id)
     )
       throw new UnauthorizedException("You don't have permission to view this transaction");
@@ -141,10 +129,7 @@ export class ObserversService {
 
     const result = await this.repo.save(observer);
 
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
+    notifyTransactionAction(this.notificationsService);
 
     return result;
   }
@@ -155,10 +140,7 @@ export class ObserversService {
 
     await this.repo.remove(observer);
 
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
+    notifyTransactionAction(this.notificationsService);
 
     return true;
   }

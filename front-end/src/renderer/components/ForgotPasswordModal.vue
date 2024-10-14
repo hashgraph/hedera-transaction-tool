@@ -9,8 +9,7 @@ import { resetPassword, setPassword, verifyReset } from '@renderer/services/orga
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
 import { comparePasswords } from '@renderer/services/userService';
 
-import { isEmail } from '@renderer/utils';
-import { isLoggedOutOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isEmail, isLoggedOutOrganization, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';

@@ -11,7 +11,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { add, getAll } from '@renderer/services/accountsService';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{

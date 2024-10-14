@@ -19,8 +19,7 @@ import {
 
 import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 
-import { isEmail } from '@renderer/utils/validator';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isEmail, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';

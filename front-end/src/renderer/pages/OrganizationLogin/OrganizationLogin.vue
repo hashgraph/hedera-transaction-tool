@@ -11,8 +11,7 @@ import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 import { login } from '@renderer/services/organization';
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
-import { isLoggedOutOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
-import { withLoader } from '@renderer/utils';
+import { isLoggedOutOrganization, isUserLoggedIn, withLoader } from '@renderer/utils';
 
 import { GLOBAL_MODAL_LOADER_KEY, USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 

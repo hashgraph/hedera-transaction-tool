@@ -10,8 +10,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
-import { getTransactionType, stringifyHbar } from '@renderer/utils';
-import { assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { assertUserLoggedIn, getTransactionType, stringifyHbar } from '@renderer/utils';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
@@ -20,7 +19,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 
 /* Props */
 defineProps<{
-  signing: boolean;
+  loading: boolean;
 }>();
 
 /* Stores */
@@ -52,6 +51,7 @@ function setNext(next: Handler) {
 }
 
 function handle(req: TransactionRequest) {
+  reset();
   request.value = req;
   show.value = true;
 }
@@ -86,6 +86,11 @@ function assertPassword() {
   }
 
   return true;
+}
+
+function reset() {
+  request.value = null;
+  show.value = false;
 }
 
 /* Expose */
@@ -151,8 +156,8 @@ defineExpose({
             color="primary"
             type="submit"
             data-testid="button-sign-transaction"
-            :loading="signing"
-            :disabled="signing"
+            :loading="loading"
+            :disabled="loading"
             >Confirm</AppButton
           >
         </div>

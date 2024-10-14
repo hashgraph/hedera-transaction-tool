@@ -7,6 +7,11 @@ import { useRoute } from 'vue-router';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 
+/* Props */
+const props = defineProps<{
+  skip?: boolean;
+}>();
+
 /* Composables */
 const route = useRoute();
 
@@ -23,7 +28,7 @@ function handleAddToGroup() {
 
 /* Hooks */
 onBeforeRouteLeave(async () => {
-  if (route.query.group == 'true' && isAddToGroupModalShown.value == false) {
+  if (route.query.group == 'true' && isAddToGroupModalShown.value == false && !props.skip) {
     isAddToGroupModalShown.value = true;
     return false;
   }

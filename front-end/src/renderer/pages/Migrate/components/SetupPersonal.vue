@@ -9,7 +9,7 @@ import { getStaticUser, initializeUseKeychain } from '@renderer/services/safeSto
 import { registerLocal } from '@renderer/services/userService';
 import { restorePrivateKey, storeKeyPair } from '@renderer/services/keyPairService';
 
-import { safeAwait } from '@renderer/utils/safeAwait';
+import { safeAwait } from '@renderer/utils';
 
 import SetupPersonalForm from './SetupPersonalForm.vue';
 

@@ -11,12 +11,15 @@ import useNetwork from '@renderer/stores/storeNetwork';
 import { useToast } from 'vue-toast-notification';
 import useDraft from '@renderer/composables/useDraft';
 
-import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { addApprovers, addObservers, submitTransaction } from '@renderer/services/organization';
 
-import { getPrivateKey } from '@renderer/utils';
-import { assertIsLoggedInOrganization, assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import {
+  assertIsLoggedInOrganization,
+  assertUserLoggedIn,
+  getPrivateKey,
+  uint8ToHex,
+} from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{
@@ -26,8 +29,10 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'transaction:submit:success', id: number, body: string): void;
+  (event: 'transaction:submit:success', id: number, transactionBytes: string): void;
   (event: 'transaction:submit:fail', error: unknown): void;
+  (event: 'loading:begin'): void;
+  (event: 'loading:end'): void;
 }>();
 
 /* Stores */
@@ -62,22 +67,27 @@ async function handle(req: TransactionRequest) {
 
   const publicKey = user.keyPairs[0].public_key;
 
-  const signature = await sign(publicKey);
-  const { id, body } = await submit(publicKey, signature);
+  try {
+    emit('loading:begin');
+    const signature = await sign(publicKey);
+    const { id, transactionBytes } = await submit(publicKey, signature);
 
-  const results = await Promise.allSettled([
-    upload('observers', id),
-    upload('approvers', id),
-    draft.deleteIfNotTemplate(),
-  ]);
+    const results = await Promise.allSettled([
+      upload('observers', id),
+      upload('approvers', id),
+      draft.deleteIfNotTemplate(),
+    ]);
 
-  results.forEach(result => {
-    if (result.status === 'rejected') {
-      toast.error(result.reason.message);
-    }
-  });
+    results.forEach(result => {
+      if (result.status === 'rejected') {
+        toast.error(result.reason.message);
+      }
+    });
 
-  emit('transaction:submit:success', id, body);
+    emit('transaction:submit:success', id, transactionBytes);
+  } finally {
+    emit('loading:end');
+  }
 }
 
 /* Functions */
@@ -94,7 +104,7 @@ async function sign(publicKey: string) {
 
   /* Signs the unfrozen transaction */
   const signatureBytes = privateKey.sign(request.value.transactionBytes);
-  const signature = await uint8ArrayToHex(signatureBytes);
+  const signature = uint8ToHex(signatureBytes);
 
   return signature;
 }
@@ -105,7 +115,7 @@ async function submit(publicKey: string, signature: string) {
     if (!request.value) throw new Error('Request is required to sign');
     if (!transaction.value) throw new Error('Transaction is required to sign');
 
-    const hexTransactionBytes = await uint8ArrayToHex(request.value.transactionBytes);
+    const hexTransactionBytes = uint8ToHex(request.value.transactionBytes);
 
     return await submitTransaction(
       user.selectedOrganization.serverUrl,

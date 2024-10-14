@@ -6,8 +6,9 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getStaticUser, getUseKeychain } from '@renderer/services/safeStorageService';
 
-import GlobalModalLoader from '@renderer/components/GlobalModalLoader.vue';
 import { safeAwait } from '@renderer/utils';
+
+import GlobalModalLoader from '@renderer/components/GlobalModalLoader.vue';
 
 export default function useAutoLogin(
   globalLoderRef: Ref<InstanceType<typeof GlobalModalLoader> | null>,

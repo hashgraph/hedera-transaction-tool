@@ -3,13 +3,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
-import {
-  asyncFilter,
-  NOTIFICATIONS_SERVICE,
-  NOTIFY_CLIENT,
-  NotifyClientDto,
-  TRANSACTION_ACTION,
-} from '@app/common';
+import { asyncFilter, NOTIFICATIONS_SERVICE, notifyTransactionAction } from '@app/common';
 import { TransactionGroup, TransactionGroupItem, User } from '@entities';
 
 import { TransactionsService } from '../transactions.service';
@@ -53,10 +47,7 @@ export class TransactionGroupsService {
       await manager.save(TransactionGroupItem, groupItems);
     });
 
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
+    notifyTransactionAction(this.notificationsService);
 
     return group;
   }
@@ -68,17 +59,17 @@ export class TransactionGroupsService {
         'groupItems',
         'groupItems.transaction',
         'groupItems.transaction.creatorKey',
-        'groupItems.transaction.creatorKey.user',
         'groupItems.transaction.observers',
       ],
     });
 
-    if (!(group?.groupItems.length > 0)) {
+    if (!(group?.groupItems?.length > 0)) {
       throw new NotFoundException('Transaction not found');
     }
 
     group.groupItems = await asyncFilter(group.groupItems, async groupItem => {
-      await this.transactionsService.attachTransactionSignersApprovers(groupItem.transaction);
+      await this.transactionsService.attachTransactionSigners(groupItem.transaction);
+      await this.transactionsService.attachTransactionApprovers(groupItem.transaction);
       return this.transactionsService.verifyAccess(groupItem.transaction, user);
     });
 
@@ -107,15 +98,12 @@ export class TransactionGroupsService {
     for (const groupItem of groupItems) {
       const transactionId = groupItem.transactionId;
       await this.dataSource.manager.remove(TransactionGroupItem, groupItem);
-      await this.transactionsService.removeTransaction(user, transactionId, false);
+      await this.transactionsService.removeTransaction(transactionId, user, false);
     }
 
     await this.dataSource.manager.remove(TransactionGroup, group);
 
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
+    notifyTransactionAction(this.notificationsService);
 
     return true;
   }

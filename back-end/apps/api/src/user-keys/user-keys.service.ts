@@ -4,6 +4,7 @@ import { FindOptionsRelations, Repository } from 'typeorm';
 import { User, UserKey } from '@entities';
 import { UploadUserKeyDto } from './dtos';
 import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
+import { attachKeys } from '@app/common';
 
 export const MAX_USER_KEYS = 20;
 
@@ -24,10 +25,7 @@ export class UserKeysService {
 
   // Upload the provided user key for the provided user.
   async uploadKey(user: User, dto: UploadUserKeyDto): Promise<UserKey> {
-    // If the user doesn't have keys, get the keys
-    if (!user.keys) {
-      user.keys = await this.getUserKeys(user.id);
-    }
+    await attachKeys(user, this.repo.manager);
 
     // Check if the user already has the maximum number of keys
     if (user.keys.length >= MAX_USER_KEYS) {
@@ -37,7 +35,6 @@ export class UserKeysService {
     // Find the userKey by the publicKey
     let userKey = await this.repo.findOne({
       where: { publicKey: dto.publicKey },
-      relations: { user: true },
       withDeleted: true,
     });
 
@@ -46,7 +43,7 @@ export class UserKeysService {
       // or if the userKey has a non null hash or index that doesn't
       // match the hash or index provided
       // throw an error.
-      if (userKey.user.id !== user.id || (userKey.index && userKey.index !== dto.index)) {
+      if (userKey.userId !== user.id || (userKey.index && userKey.index !== dto.index)) {
         throw new BadRequestException('Public Key in use.');
       }
       // Set the hash and/or index (only if the current value is null)
@@ -64,10 +61,8 @@ export class UserKeysService {
 
   // Get the list of user keys for the provided userId
   async getUserKeys(userId: number): Promise<UserKey[]> {
-    if (!userId) {
-      return [];
-    }
-    return this.repo.find({ where: { user: { id: userId } }, relations: { user: true } });
+    if (!userId) return [];
+    return this.repo.find({ where: { userId } });
   }
 
   // Remove the user key for the provided userKeyId.
@@ -83,13 +78,13 @@ export class UserKeysService {
   }
 
   async removeUserKey(user: User, id: number): Promise<boolean> {
-    const userKey = await this.getUserKey({ id }, { user: true });
+    const userKey = await this.getUserKey({ id });
 
     if (!userKey) {
       throw new NotFoundException('Key not found');
     }
 
-    if (userKey.user.id !== user.id) {
+    if (userKey.userId !== user.id) {
       throw new BadRequestException('Key not owned by user');
     }
 
@@ -100,6 +95,6 @@ export class UserKeysService {
 
   /* Returns the count of the user keys for the provided user */
   async getUserKeysCount(userId: number): Promise<number> {
-    return this.repo.count({ where: { user: { id: userId } } });
+    return this.repo.count({ where: { userId } });
   }
 }

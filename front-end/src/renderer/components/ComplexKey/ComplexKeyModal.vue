@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 
 import { Key, KeyList } from '@hashgraph/sdk';
 
-import { isKeyListValid } from '@renderer/utils/sdk';
+import { isKeyListValid } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';

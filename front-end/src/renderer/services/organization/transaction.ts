@@ -32,7 +32,7 @@ export const submitTransaction = async (
   network: Network,
   signature: string,
   creatorKeyId: number,
-): Promise<{ id: number; body: string }> =>
+): Promise<{ id: number; transactionBytes: string }> =>
   commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.post(`${serverUrl}/${controller}`, {
       name,
@@ -43,7 +43,7 @@ export const submitTransaction = async (
       creatorKeyId,
     });
 
-    return { id: data.id, body: data.body };
+    return { id: data.id, transactionBytes: data.transactionBytes };
   }, 'Failed submit transaction');
 
 /* Cancel a transaction  */
@@ -83,7 +83,7 @@ export const fullUploadSignatures = async (
     const privateKeyRaw = await decryptPrivateKey(userId, userPassword, publicKey);
     const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
-    const signatures = await getSignatures(privateKey, transaction);
+    const signatures = getSignatures(privateKey, transaction);
 
     signaturesArray.push({
       publicKeyId: organization.userKeys.find(k => k.publicKey === publicKey)?.id || -1,

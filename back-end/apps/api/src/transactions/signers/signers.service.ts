@@ -6,21 +6,19 @@ import { DataSource, Repository } from 'typeorm';
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
-  CHAIN_SERVICE,
-  NOTIFICATIONS_SERVICE,
-  NOTIFY_CLIENT,
-  TRANSACTION_ACTION,
-  SYNC_INDICATORS,
-  MirrorNodeService,
-  NotifyClientDto,
-  PaginatedResourceDto,
-  SyncIndicatorsDto,
-  Pagination,
   addTransactionSignatures,
+  CHAIN_SERVICE,
+  emitUpdateTransactionStatus,
   isAlreadySigned,
   isExpired,
-  validateSignature,
+  MirrorNodeService,
+  notifySyncIndicators,
+  notifyTransactionAction,
+  NOTIFICATIONS_SERVICE,
+  PaginatedResourceDto,
+  Pagination,
   userKeysRequiredToSign,
+  validateSignature,
 } from '@app/common';
 
 import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
@@ -182,16 +180,9 @@ export class SignersService {
       /* Commit the database transaction */
       await queryRunner.commitTransaction();
 
-      /* Check if ready to execute */
-      this.chainService.emit('update-transaction-status', { id: transactionId });
-      this.notificationService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
-      this.notificationService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
-        transactionId: transactionId,
-        transactionStatus: transaction.status,
-      });
+      emitUpdateTransactionStatus(this.chainService, transactionId);
+      notifyTransactionAction(this.notificationService);
+      notifySyncIndicators(this.notificationService, transactionId, transaction.status);
 
       return signer;
     } catch (error) {
@@ -207,13 +198,6 @@ export class SignersService {
     { signatures: signaturesArray }: UploadSignatureArrayDto,
     user: User,
   ): Promise<TransactionSigner[]> {
-    /* Verify that the user has all the keys */
-    const allKeysAreUsers = signaturesArray.every(({ publicKeyId }) =>
-      user.keys.some(key => key.id === publicKeyId),
-    );
-    if (!allKeysAreUsers)
-      throw new BadRequestException('Transaction can be signed only with your own keys');
-
     /* Verify that the transaction exists */
     const transaction = await this.dataSource.manager.findOneBy(Transaction, { id: transactionId });
     if (!transaction) throw new BadRequestException('Transaction not found');
@@ -295,16 +279,10 @@ export class SignersService {
       await queryRunner.commitTransaction();
       await queryRunner.release();
 
-      /* Check if ready to execute */
-      this.chainService.emit('update-transaction-status', { id: transactionId });
-      this.notificationService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
-      this.notificationService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
-        transactionId: transactionId,
-        transactionStatus: transaction.status,
-      });
+      emitUpdateTransactionStatus(this.chainService, transactionId);
+      notifyTransactionAction(this.notificationService);
+      notifySyncIndicators(this.notificationService, transactionId, transaction.status);
+
       return signers;
     } catch (error) {
       await queryRunner.rollbackTransaction();

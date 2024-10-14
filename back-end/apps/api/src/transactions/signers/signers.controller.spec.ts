@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
+import { EntityManager } from 'typeorm';
 
 import { guardMock } from '@app/common';
 import { TransactionSigner, User, UserStatus } from '@entities';
@@ -15,6 +16,7 @@ describe('SignaturesController', () => {
   let signer: TransactionSigner;
 
   const signersService = mockDeep<SignersService>();
+  const entityManager = mockDeep<EntityManager>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -23,6 +25,10 @@ describe('SignaturesController', () => {
         {
           provide: SignersService,
           useValue: signersService,
+        },
+        {
+          provide: EntityManager,
+          useValue: entityManager,
         },
       ],
     })

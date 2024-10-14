@@ -8,12 +8,7 @@ import {
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 
-import {
-  FileAppendTransaction,
-  FileUpdateTransaction,
-  PublicKey,
-  Transaction as SDKTransaction,
-} from '@hashgraph/sdk';
+import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
   Repository,
@@ -26,19 +21,16 @@ import {
   FindOperator,
 } from 'typeorm';
 
-import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
+import { Transaction, TransactionSigner, TransactionStatus, User } from '@entities';
 
 import {
   NOTIFICATIONS_SERVICE,
-  NOTIFY_CLIENT,
-  NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
-  SYNC_INDICATORS,
-  TRANSACTION_ACTION,
   MirrorNodeService,
   encodeUint8Array,
   getClientFromName,
   getTransactionTypeEnumValue,
   isExpired,
+  notifyTransactionAction,
   Pagination,
   Sorting,
   Filtering,
@@ -46,12 +38,11 @@ import {
   getOrder,
   userKeysRequiredToSign,
   PaginatedResourceDto,
-  NotifyClientDto,
-  NotifyForTransactionDto,
-  SyncIndicatorsDto,
+  attachKeys,
+  notifyWaitingForSignatures,
+  notifySyncIndicators,
 } from '@app/common';
 
-import { UserDto } from '../users/dtos';
 import { CreateTransactionDto } from './dto';
 
 import { ApproversService } from './approvers';
@@ -72,14 +63,7 @@ export class TransactionsService {
 
     const transaction = await this.repo.findOne({
       where: { id },
-      relations: [
-        'creatorKey',
-        'creatorKey.user',
-        'observers',
-        'observers.user',
-        'comments',
-        'groupItem',
-      ],
+      relations: ['creatorKey', 'observers', 'comments', 'groupItem'],
     });
 
     if (!transaction) return null;
@@ -236,15 +220,14 @@ export class TransactionsService {
     }[] = [];
 
     /* Ensures the user keys are passed */
-    if (!user.keys || user.keys.length === 0) {
-      user.keys = await this.entityManager.find(UserKey, { where: { user: { id: user.id } } });
-      if (user.keys.length === 0)
-        return {
-          totalItems: 0,
-          items: [],
-          page,
-          size,
-        };
+    await attachKeys(user, this.entityManager);
+    if (user.keys.length === 0) {
+      return {
+        totalItems: 0,
+        items: [],
+        page,
+        size,
+      };
     }
 
     const transactions = await this.repo.find({
@@ -338,13 +321,9 @@ export class TransactionsService {
 
   /* Create a new transaction with the provided information */
   async createTransaction(dto: CreateTransactionDto, user: User): Promise<Transaction> {
-    const userKeys = await this.entityManager.find(UserKey, { where: { user: { id: user.id } } });
-    const creatorKey = userKeys.find(key => key.id === dto.creatorKeyId);
-
-    /* Check if the key belongs to the user */
-    if (!userKeys.some(key => key.id === dto.creatorKeyId))
-      throw new BadRequestException("Creator key doesn't belong to the user");
-    const publicKey = PublicKey.fromString(creatorKey.publicKey);
+    await attachKeys(user, this.entityManager);
+    const creatorKey = user.keys.find(key => key.id === dto.creatorKeyId);
+    const publicKey = PublicKey.fromString(creatorKey?.publicKey);
 
     /* Verify the signature matches the transaction */
     const validSignature = publicKey.verify(dto.transactionBytes, dto.signature);
@@ -353,16 +332,14 @@ export class TransactionsService {
 
     /* Check if the transaction is expired */
     const sdkTransaction = SDKTransaction.fromBytes(dto.transactionBytes);
-    if (
-      sdkTransaction instanceof FileUpdateTransaction ||
-      sdkTransaction instanceof FileAppendTransaction
-    )
-      throw new BadRequestException('File Update/Append transactions are not currently supported');
     if (isExpired(sdkTransaction)) throw new BadRequestException('Transaction is expired');
 
     /* Check if the transaction already exists */
     const countExisting = await this.repo.count({
-      where: [{ transactionId: sdkTransaction.transactionId.toString() }, { transactionBytes: dto.transactionBytes }],
+      where: [
+        { transactionId: sdkTransaction.transactionId.toString() },
+        { transactionBytes: dto.transactionBytes },
+      ],
     });
     if (countExisting > 0) throw new BadRequestException('Transaction already exists');
 
@@ -378,7 +355,9 @@ export class TransactionsService {
       transactionBytes: sdkTransaction.toBytes(),
       unsignedTransactionBytes: sdkTransaction.toBytes(),
       status: TransactionStatus.WAITING_FOR_SIGNATURES,
-      creatorKey,
+      creatorKey: {
+        id: dto.creatorKeyId,
+      },
       signature: dto.signature,
       network: dto.network,
       validStart: sdkTransaction.transactionId.validStart.toDate(),
@@ -392,32 +371,15 @@ export class TransactionsService {
       throw new BadRequestException('Failed to save transaction');
     }
 
-    this.notificationsService.emit<undefined, NotifyForTransactionDto>(
-      NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
-      {
-        transactionId: transaction.id,
-      },
-    );
-
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
+    notifyWaitingForSignatures(this.notificationsService, transaction.id);
+    notifyTransactionAction(this.notificationsService);
 
     return transaction;
   }
 
   /* Remove the transaction for the given transaction id. */
-  async removeTransaction(user: UserDto, id: number, softRemove: boolean = true): Promise<boolean> {
-    const transaction = await this.getTransactionById(id);
-
-    if (!transaction) {
-      throw new BadRequestException('Transaction not found');
-    }
-
-    if (transaction.creatorKey?.user?.id !== user.id) {
-      throw new BadRequestException('Only the creator of the transaction is able to delete it');
-    }
+  async removeTransaction(id: number, user: User, softRemove: boolean = true): Promise<boolean> {
+    const transaction = await this.getTransactionForCreator(id, user);
 
     if (softRemove) {
       await this.repo.softRemove(transaction);
@@ -425,30 +387,15 @@ export class TransactionsService {
       await this.repo.remove(transaction);
     }
 
-    this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
-      transactionId: transaction.id,
-      transactionStatus: TransactionStatus.CANCELED,
-    });
-
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
+    notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.CANCELED);
+    notifyTransactionAction(this.notificationsService);
 
     return true;
   }
 
   /* Cancel the transaction if the valid start has not come yet. */
-  async cancelTransaction(user: UserDto, id: number): Promise<boolean> {
-    const transaction = await this.getTransactionById(id);
-
-    if (!transaction) {
-      throw new BadRequestException('Transaction not found');
-    }
-
-    if (transaction.creatorKey?.user?.id !== user.id) {
-      throw new UnauthorizedException('Only the creator of the transaction is able to cancel it');
-    }
+  async cancelTransaction(id: number, user: User): Promise<boolean> {
+    const transaction = await this.getTransactionForCreator(id, user);
 
     if (
       ![
@@ -462,27 +409,17 @@ export class TransactionsService {
 
     await this.repo.update({ id }, { status: TransactionStatus.CANCELED });
 
-    this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
-      transactionId: transaction.id,
-      transactionStatus: TransactionStatus.CANCELED,
-    });
-
-    this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
+    notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.CANCELED);
+    notifyTransactionAction(this.notificationsService);
 
     return true;
   }
 
   /* Get the transaction with the provided id if user has access */
   async getTransactionWithVerifiedAccess(transactionId: number, user: User) {
-    const transaction = await this.repo.findOne({
-      where: { id: transactionId },
-      relations: ['creatorKey', 'creatorKey.user', 'observers', 'groupItem'],
-    });
+    const transaction = await this.getTransactionById(transactionId);
 
-    await this.attachTransactionSignersApprovers(transaction);
+    await this.attachTransactionApprovers(transaction);
 
     if (!(await this.verifyAccess(transaction, user))) {
       throw new UnauthorizedException("You don't have permission to view this transaction");
@@ -490,7 +427,7 @@ export class TransactionsService {
     return transaction;
   }
 
-  async attachTransactionSignersApprovers(transaction: Transaction) {
+  async attachTransactionSigners(transaction: Transaction) {
     if (!transaction) throw new NotFoundException('Transaction not found');
 
     transaction.signers = await this.entityManager.find(TransactionSigner, {
@@ -499,9 +436,13 @@ export class TransactionsService {
           id: transaction.id,
         },
       },
-      relations: ['userKey', 'userKey.user'],
+      relations: ['userKey'],
       withDeleted: true,
     });
+  }
+
+  async attachTransactionApprovers(transaction: Transaction) {
+    if (!transaction) throw new NotFoundException('Transaction not found');
 
     const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
     transaction.approvers = this.approversService.getTreeStructure(approvers);
@@ -526,7 +467,7 @@ export class TransactionsService {
       userKeysToSign.length !== 0 ||
       transaction.creatorKey?.user?.id === user.id ||
       transaction.observers.some(o => o.userId === user.id) ||
-      transaction.signers.some(s => s.userKey.user.id === user.id) ||
+      transaction.signers.some(s => s.userKey?.userId === user.id) ||
       transaction.approvers.some(a => a.userId === user.id)
     );
   }
@@ -549,6 +490,20 @@ export class TransactionsService {
   /* Get the user keys that are required for a given transaction */
   userKeysToSign(transaction: Transaction, user: User) {
     return userKeysRequiredToSign(transaction, user, this.mirrorNodeService, this.entityManager);
+  }
+
+  async getTransactionForCreator(id: number, user: User) {
+    const transaction = await this.getTransactionById(id);
+
+    if (!transaction) {
+      throw new BadRequestException('Transaction not found');
+    }
+
+    if (transaction.creatorKey?.userId !== user?.id) {
+      throw new UnauthorizedException('Only the creator has access to this transaction');
+    }
+
+    return transaction;
   }
 
   /* Get the status where clause for the history transactions */

@@ -14,7 +14,7 @@ import { updateOrganizationCredentials } from '@renderer/services/organizationCr
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';

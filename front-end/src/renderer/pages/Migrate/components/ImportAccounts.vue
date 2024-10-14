@@ -7,7 +7,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { migrateUserData } from '@renderer/services/migrateDataService';
 
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isUserLoggedIn } from '@renderer/utils';
 
 /* Emits */
 const emit = defineEmits<{

@@ -7,7 +7,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { updateNickname } from '@renderer/services/keyPairService';
 
-import { getNicknameById } from '@renderer/utils/userStoreHelpers';
+import { getNicknameById } from '@renderer/utils';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';

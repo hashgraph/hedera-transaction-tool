@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
-import { transactionTypeKeys } from '@renderer/pages/CreateTransaction/txTypeComponentMapping';
-
-import useUserStore from '@renderer/stores/storeUser';
+import { transactionTypeKeys } from '@renderer/components/Transaction/Create/txTypeComponentMapping';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 /* Props */
 const props = defineProps<{
@@ -16,9 +13,6 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits(['update:show']);
-
-/* Stores */
-const user = useUserStore();
 
 /* State */
 const show = ref(props.show);
@@ -35,7 +29,6 @@ const transactionGroups = computed(() => {
         { label: 'Delete Account', name: transactionTypeKeys.deleteAccount },
         { label: 'Transfer Tokens', name: transactionTypeKeys.transfer },
         { label: 'Approve Allowance', name: transactionTypeKeys.approveAllowance },
-        // { label: 'Account Info', name: transactionTypeKeys.accountInfo },
       ],
     },
     {
@@ -56,13 +49,6 @@ const transactionGroups = computed(() => {
     // { groupTitle: 'Freeze Service', items: [] },
   ];
 
-  if (isLoggedInOrganization(user.selectedOrganization)) {
-    const fileGroup = groups.find(group => group.groupTitle === 'File');
-    if (fileGroup) {
-      const toRemove = [transactionTypeKeys.appendToFile, transactionTypeKeys.updateFile];
-      fileGroup.items = fileGroup.items.filter(item => !toRemove.includes(item.name));
-    }
-  }
   return groups;
 });
 
@@ -76,14 +62,6 @@ watch(
     show.value = value;
   },
 );
-// <RouterLink
-//               :to="{ name: 'createTransaction', params: { type: item.name } }"
-//               v-for="(item, index) in group.items"
-//               :key="index"
-//               class="link-primary text-main d-block mt-3"
-//             >
-//               {{ item.label }}
-//             </RouterLink>
 </script>
 <template>
   <AppModal v-model:show="show" class="large-modal">

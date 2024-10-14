@@ -14,7 +14,7 @@ import {
 } from '@entities';
 
 import { NOTIFICATIONS_SERVICE, MirrorNodeService } from '@app/common';
-import { userKeysRequiredToSign } from '@app/common/utils';
+import { userKeysRequiredToSign, notifyTransactionAction } from '@app/common/utils';
 
 import { ObserversService } from './observers.service';
 import { ApproversService } from '../approvers';
@@ -161,7 +161,7 @@ describe('ObserversService', () => {
 
     it('should get transaction observers by transaction id if user is creator', async () => {
       const transactionId = 1;
-      const transaction = { creatorKey: { user } };
+      const transaction = { creatorKey: { userId: user.id } };
       entityManager.findOne.mockResolvedValue(transaction);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([]);
 
@@ -169,14 +169,7 @@ describe('ObserversService', () => {
 
       expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
         where: { id: transactionId },
-        relations: [
-          'creatorKey',
-          'creatorKey.user',
-          'observers',
-          'signers',
-          'signers.userKey',
-          'signers.userKey.user',
-        ],
+        relations: ['creatorKey', 'observers', 'signers', 'signers.userKey'],
       });
     });
 
@@ -195,7 +188,7 @@ describe('ObserversService', () => {
 
     it('should get observers if user is signer', async () => {
       const transactionId = 1;
-      const signers = [{ userKey: { user } }];
+      const signers = [{ userKey: { userId: user.id } }];
       const transaction = { id: transactionId, observers: [], signers };
       entityManager.findOne.mockResolvedValue(transaction);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([]);
@@ -273,7 +266,7 @@ describe('ObserversService', () => {
       expect(observersRepo.findOneBy).toHaveBeenCalledWith({ id: observerId });
       expect(observersRepo.save).toHaveBeenCalledWith(observer);
 
-      expect(notificationsService.emit).toHaveBeenCalled();
+      expect(notifyTransactionAction).toHaveBeenCalled();
     });
 
     it('should not update the transaction observer if not creator', async () => {
@@ -328,7 +321,7 @@ describe('ObserversService', () => {
       expect(observersRepo.findOneBy).toHaveBeenCalledWith({ id: observerId });
       expect(observersRepo.remove).toHaveBeenCalledWith(observer);
 
-      expect(notificationsService.emit).toHaveBeenCalled();
+      expect(notifyTransactionAction).toHaveBeenCalled();
     });
 
     it('should not remove the transaction observer if not creator', async () => {

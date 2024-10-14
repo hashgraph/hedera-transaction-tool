@@ -19,15 +19,18 @@ import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
 import { getTransactionsForUser } from '@renderer/services/organization';
-import { hexToUint8ArrayBatch } from '@renderer/services/electronUtilsService';
 
-import { getNotifiedTransactions, redirectToDetails } from '@renderer/utils';
+import {
+  getNotifiedTransactions,
+  hexToUint8Array,
+  redirectToDetails,
+  isLoggedInOrganization,
+} from '@renderer/utils';
 import {
   getTransactionDateExtended,
   getTransactionId,
   getTransactionType,
 } from '@renderer/utils/sdk/transactions';
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -123,9 +126,7 @@ async function fetchTransactions() {
     );
     totalItems.value = totalItemsCount;
 
-    const transactionsBytes = await hexToUint8ArrayBatch(
-      rawTransactions.map(t => t.transactionBytes),
-    );
+    const transactionsBytes = rawTransactions.map(t => hexToUint8Array(t.transactionBytes));
     transactions.value = rawTransactions.map((transaction, i) => ({
       transactionRaw: transaction,
       transaction: Transaction.fromBytes(transactionsBytes[i]),

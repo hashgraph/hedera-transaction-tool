@@ -29,22 +29,16 @@ import {
   sendApproverChoice,
 } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
-import { hexToUint8Array } from '@renderer/services/electronUtilsService';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
 import {
   getTransactionDateExtended,
   getTransactionId,
   getTransactionPayerId,
   getTransactionType,
 } from '@renderer/utils/sdk/transactions';
-import {
-  computeSignatureKey,
-  publicRequiredToSign,
-} from '@renderer/utils/transactionSignatureModels';
 import {
   getDateStringExtended,
   getPrivateKey,
@@ -53,6 +47,11 @@ import {
   KEEP_NEXT_QUERY_KEY,
   openTransactionInHashscan,
   redirectToDetails,
+  hexToUint8Array,
+  isLoggedInOrganization,
+  isUserLoggedIn,
+  computeSignatureKey,
+  publicRequiredToSign,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -62,9 +61,9 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import SignatureStatus from '@renderer/components/SignatureStatus.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
-
-import txTypeComponentMapping from './txTypeComponentMapping';
 import ReadOnlyApproversList from '@renderer/components/Approvers/ReadOnlyApproversList.vue';
+
+import txTypeComponentMapping from '@renderer/components/Transaction/Details/txTypeComponentMapping';
 
 /* Stores */
 const user = useUserStore();
@@ -320,7 +319,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
       const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
       const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
-      const signature = await getTransactionBodySignatureWithoutNodeAccountId(
+      const signature = getTransactionBodySignatureWithoutNodeAccountId(
         privateKey,
         sdkTransaction.value,
       );
@@ -423,7 +422,7 @@ async function fetchTransaction(id: string | number) {
         user.selectedOrganization?.serverUrl || '',
         Number(id),
       );
-      transactionBytes = await hexToUint8Array(orgTransaction.value.transactionBytes);
+      transactionBytes = hexToUint8Array(orgTransaction.value.transactionBytes);
       publicKeysRequiredToSign.value = await publicRequiredToSign(
         SDKTransaction.fromBytes(transactionBytes),
         user.selectedOrganization.userKeys,
@@ -493,10 +492,14 @@ onBeforeMount(async () => {
 
   subscribeToTransactionAction();
   const formattedId = Array.isArray(id) ? id[0] : id;
-  await fetchTransaction(formattedId);
-  nextId.value = await nextTransaction.getNext(
-    isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
-  );
+
+  const result = await Promise.all([
+    fetchTransaction(formattedId),
+    nextTransaction.getNext(
+      isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
+    ),
+  ]);
+  nextId.value = result[1];
 });
 
 /* Watchers */

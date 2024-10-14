@@ -4,29 +4,20 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 import { MurLock } from 'murlock';
-import {
-  AccountUpdateTransaction,
-  FileAppendTransaction,
-  FileUpdateTransaction,
-  Transaction as SDKTransaction,
-  Status,
-} from '@hashgraph/sdk';
+import { AccountUpdateTransaction, Transaction as SDKTransaction, Status } from '@hashgraph/sdk';
 
 import { Transaction, TransactionStatus, Network } from '@entities';
 
 import {
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
-  NOTIFY_CLIENT,
-  SYNC_INDICATORS,
-  TRANSACTION_ACTION,
-  NotifyClientDto,
   TransactionExecutedDto,
   hasValidSignatureKey,
-  SyncIndicatorsDto,
   computeSignatureKey,
   getClientFromName,
   getStatusCodeFromMessage,
+  notifyTransactionAction,
+  notifySyncIndicators,
 } from '@app/common';
 import { ExecuteTransactionDto } from '@app/common/dtos/execute-transaction.dto';
 
@@ -47,13 +38,6 @@ export class ExecuteService {
 
     /* Gets the SDK transaction from the transaction body */
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
-
-    /* Throws an error if the transaction is a file update/append transaction */
-    if (
-      sdkTransaction instanceof FileUpdateTransaction ||
-      sdkTransaction instanceof FileAppendTransaction
-    )
-      throw new Error('File transactions are not currently supported for execution.');
 
     /* Gets the signature key */
     const signatureKey = await computeSignatureKey(
@@ -106,15 +90,8 @@ export class ExecuteService {
 
       client.close();
 
-      this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
-        transactionId: transaction.id,
-        transactionStatus: transactionStatus,
-      });
-
-      this.notificationsService.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
+      notifySyncIndicators(this.notificationsService, transaction.id, transaction.status);
+      notifyTransactionAction(this.notificationsService);
 
       this.sideEffect(sdkTransaction, transaction.network);
     }

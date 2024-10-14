@@ -16,7 +16,7 @@ import { deleteUser } from '@renderer/services/organization';
 import { removeContact } from '@renderer/services/contactsService';
 import { getAll } from '@renderer/services/accountsService';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import ContactDetails from '@renderer/components/Contacts/ContactDetails.vue';

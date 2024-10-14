@@ -1,10 +1,9 @@
-import { Expose, Transform } from 'class-transformer';
+import { Expose } from 'class-transformer';
 
 export class UserKeyDto {
   @Expose()
   id: number;
 
-  @Transform(({ obj }) => obj.user.id)
   @Expose()
   userId: number;
 

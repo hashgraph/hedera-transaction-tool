@@ -9,7 +9,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { getKeyPairs } from '@renderer/services/keyPairService';
 
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isUserLoggedIn } from '@renderer/utils';
 
 /* Props */
 defineProps<{

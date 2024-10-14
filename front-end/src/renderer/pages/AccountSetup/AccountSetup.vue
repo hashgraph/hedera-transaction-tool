@@ -12,10 +12,7 @@ import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
 
-import {
-  accountSetupRequiredParts,
-  isLoggedInOrganization,
-} from '@renderer/utils/userStoreHelpers';
+import { accountSetupRequiredParts, isLoggedInOrganization } from '@renderer/utils';
 
 import GenerateOrImport from './components/GenerateOrImport.vue';
 import KeyPairs from './components/KeyPairs.vue';

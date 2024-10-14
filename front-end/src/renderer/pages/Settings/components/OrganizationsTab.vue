@@ -9,7 +9,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { updateOrganization } from '@renderer/services/organizationsService';
 
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';

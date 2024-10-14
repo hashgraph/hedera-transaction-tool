@@ -85,7 +85,7 @@ export class Transaction {
   @ApiProperty({
     description: 'The transaction in bytes. This transaction does not contain any signatures.',
   })
-  @Column({ type: 'bytea'})
+  @Column({ type: 'bytea' })
   unsignedTransactionBytes: Buffer;
 
   @Column()
@@ -126,16 +126,16 @@ export class Transaction {
   deletedAt: Date;
 
   @OneToMany(() => TransactionComment, comment => comment.transaction)
-  comments: TransactionComment[];
+  comments?: TransactionComment[];
 
   @OneToMany(() => TransactionSigner, signer => signer.transaction)
-  signers: TransactionSigner[];
+  signers?: TransactionSigner[];
 
   @OneToMany(() => TransactionApprover, approver => approver.transaction)
-  approvers: TransactionApprover[];
+  approvers?: TransactionApprover[];
 
   @OneToMany(() => TransactionObserver, observer => observer.transaction)
-  observers: TransactionObserver[];
+  observers?: TransactionObserver[];
 
   @OneToOne(() => TransactionGroupItem, groupItem => groupItem.transaction)
   groupItem?: TransactionGroupItem;

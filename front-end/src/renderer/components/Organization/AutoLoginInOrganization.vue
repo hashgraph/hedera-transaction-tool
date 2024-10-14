@@ -10,7 +10,7 @@ import { tryAutoSignIn } from '@renderer/services/organizationCredentials';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';

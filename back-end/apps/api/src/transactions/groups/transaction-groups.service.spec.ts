@@ -4,13 +4,16 @@ import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
-import { NOTIFICATIONS_SERVICE, NOTIFY_CLIENT, TRANSACTION_ACTION } from '@app/common';
+import { NOTIFICATIONS_SERVICE } from '@app/common';
+import { asyncFilter, notifyTransactionAction } from '@app/common/utils';
 import { Network, TransactionGroup, User, UserStatus } from '@entities';
 
 import { CreateTransactionGroupDto } from '../dto';
 
 import { TransactionGroupsService } from './transaction-groups.service';
 import { TransactionsService } from '../transactions.service';
+
+jest.mock('@app/common/utils');
 
 describe('TransactionGroupsService', () => {
   let service: TransactionGroupsService;
@@ -117,14 +120,15 @@ describe('TransactionGroupsService', () => {
       expect(dataSource.manager.create).toHaveBeenCalledTimes(3);
       expect(transactionsService.createTransaction).toHaveBeenCalledTimes(2);
       expect(dataSource.manager.save).toHaveBeenCalledTimes(4);
-      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
   });
 
   describe('getTransactionGroup', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
     it('should throw NotFoundException if no group found', async () => {
       dataSource.manager.findOne.mockResolvedValue(undefined);
       await expect(service.getTransactionGroup(user as User, 1)).rejects.toThrow(NotFoundException);
@@ -136,6 +140,7 @@ describe('TransactionGroupsService', () => {
         groupItems: [{ transaction: { id: 1 } }, { transaction: { id: 2 } }],
       };
       dataSource.manager.findOne.mockResolvedValue(mockGroup);
+      jest.mocked(asyncFilter).mockResolvedValueOnce([]);
       transactionsService.verifyAccess.mockResolvedValue(false);
       await expect(service.getTransactionGroup(user as User, 1)).rejects.toThrow(
         UnauthorizedException,
@@ -152,6 +157,7 @@ describe('TransactionGroupsService', () => {
         groupItems: [{ transaction: { id: 1 } }],
       };
       dataSource.manager.findOne.mockResolvedValue(mockGroup);
+      jest.mocked(asyncFilter).mockResolvedValueOnce(expectedGroup.groupItems);
       transactionsService.verifyAccess.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
       const result = await service.getTransactionGroup(user as User, 1);
       expect(result).toEqual(expectedGroup);
@@ -159,6 +165,10 @@ describe('TransactionGroupsService', () => {
   });
 
   describe('removeTransactionGroup', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
     it('should throw an error if the group is not found', async () => {
       dataSource.manager.findOneBy.mockResolvedValue(undefined);
       await expect(service.removeTransactionGroup(user as User, 1)).rejects.toThrow(
@@ -187,10 +197,7 @@ describe('TransactionGroupsService', () => {
 
       expect(dataSource.manager.remove).toHaveBeenCalledTimes(3); // Twice for group items, once for the group
       expect(transactionsService.removeTransaction).toHaveBeenCalledTimes(mockGroupItems.length);
-      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_CLIENT, {
-        message: TRANSACTION_ACTION,
-        content: '',
-      });
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
   });
 });

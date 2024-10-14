@@ -48,19 +48,25 @@ export const hasValidSignatureKey = (publicKeys: string[], key: Key) => {
 export const decodeProtobuffKey = (protobuffEncodedKey: string) => {
   const buffer = Buffer.from(protobuffEncodedKey, 'hex');
   const protoKey = proto.Key.decode(buffer);
-
   return Key._fromProtobufKey(protoKey);
 };
 
-export function isPublicKeyInKeyList(publicKey: PublicKey | string, keyList: KeyList) {
+export function isPublicKeyInKeyList(publicKey: PublicKey | string, key: Key) {
+  const keyIsKeyList = key instanceof KeyList;
+  const keyIsPublicKey = key instanceof PublicKey;
+
+  if (!keyIsKeyList && !keyIsPublicKey) return false;
+
   publicKey = publicKey instanceof PublicKey ? publicKey.toStringRaw() : publicKey;
 
+  const keyList = keyIsKeyList ? key : new KeyList([key]);
+
   const keys = keyList.toArray();
-  return keys.some(key => {
-    if (key instanceof PublicKey) {
-      return key.toStringRaw() === publicKey;
-    } else if (key instanceof KeyList) {
-      return isPublicKeyInKeyList(publicKey, key);
+  return keys.some(k => {
+    if (k instanceof PublicKey) {
+      return k.toStringRaw() === publicKey;
+    } else if (k instanceof KeyList) {
+      return isPublicKeyInKeyList(publicKey, k);
     }
     return false;
   });

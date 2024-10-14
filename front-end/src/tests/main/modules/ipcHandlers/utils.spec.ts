@@ -4,7 +4,6 @@ import registerUtilsListeners from '@main/modules/ipcHandlers/utils';
 
 import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
 import { mockDeep } from 'vitest-mock-extended';
-import { proto } from '@hashgraph/proto';
 import { compareSync, hashSync } from 'bcrypt';
 import { getNumberArrayFromString, saveContentToPath } from '@main/utils';
 import path from 'path';
@@ -87,16 +86,7 @@ describe('registerUtilsListeners', () => {
   const event: Electron.IpcMainEvent = mockDeep<Electron.IpcMainEvent>();
 
   test('Should register handlers for each util', () => {
-    const utils = [
-      'decodeProtobuffKey',
-      'hash',
-      'uint8ArrayToHex',
-      'hexToUint8Array',
-      'hexToUint8ArrayBatch',
-      'openBufferInTempFile',
-      'saveFile',
-      'quit',
-    ];
+    const utils = ['hash', 'openBufferInTempFile', 'saveFile', 'quit'];
 
     expect(ipcMainMO.on).toHaveBeenCalledWith('utils:openExternal', expect.any(Function));
 
@@ -115,80 +105,6 @@ describe('registerUtilsListeners', () => {
     });
     openExternalHandler && openExternalHandler[1](event, url);
     expect(shell.openExternal).toHaveBeenCalledWith(url);
-  });
-
-  test('Should decode key in util:decodeProtobuffKey', () => {
-    const encodedKey = 'somekey';
-
-    vi.spyOn(proto.Key, 'decode').mockReturnValue(
-      proto.Key.create({ ed25519: Uint8Array.from([1, 2, 3]) }),
-    );
-
-    const decodeProtobuffKeyHandler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'utils:decodeProtobuffKey',
-    );
-
-    expect(decodeProtobuffKeyHandler).toBeDefined();
-
-    if (decodeProtobuffKeyHandler) {
-      const key = decodeProtobuffKeyHandler[1](event, encodedKey);
-      expect(proto.Key.decode).toHaveBeenCalledWith(Buffer.from(encodedKey, 'hex'));
-      expect(key).toEqual(proto.Key.create({ ed25519: Uint8Array.from([1, 2, 3]) }));
-    }
-  });
-
-  test('Should convert uint8 array to hex in util:uint8ArrayToHex', () => {
-    const dataString = '1,2,3,4,5,6,7,8,9';
-    const data = Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-    const result = Buffer.from(data).toString('hex');
-
-    const uint8ArrayToHexHandler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'utils:uint8ArrayToHex',
-    );
-
-    expect(uint8ArrayToHexHandler).toBeDefined();
-
-    if (uint8ArrayToHexHandler) {
-      vi.mocked(getNumberArrayFromString).mockReturnValue([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-      const hex = uint8ArrayToHexHandler[1](event, dataString);
-      expect(hex).toEqual(result);
-    }
-  });
-
-  test('Should convert hex to uint8 array in util:hexToUint8Array', () => {
-    const data = Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-    const hex = Buffer.from(data).toString('hex');
-
-    const hexToUint8ArrayHandler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'utils:hexToUint8Array',
-    );
-
-    expect(hexToUint8ArrayHandler).toBeDefined();
-
-    if (hexToUint8ArrayHandler) {
-      const uint8array = hexToUint8ArrayHandler[1](event, hex);
-      const uint8array2 = hexToUint8ArrayHandler[1](event, `0x${hex}`);
-      expect(uint8array).toEqual(data.join(','));
-      expect(uint8array2).toEqual(data.join(','));
-    }
-  });
-
-  test('Should convert multiple hexes to uint8 arrays in util:hexToUint8ArrayBatch', () => {
-    const data = Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-    const data2 = Uint8Array.from([10, 20, 30, 40, 50, 60, 70, 80, 90]);
-    const hex = Buffer.from(data).toString('hex');
-    const hex2 = Buffer.from(data2).toString('hex');
-
-    const hexToUint8ArrayBatchHandler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'utils:hexToUint8ArrayBatch',
-    );
-
-    expect(hexToUint8ArrayBatchHandler).toBeDefined();
-
-    if (hexToUint8ArrayBatchHandler) {
-      const uint8array = hexToUint8ArrayBatchHandler[1](event, [hex, `0x${hex2}`]);
-      expect(uint8array).toEqual([data.join(','), data2.join(',')]);
-    }
   });
 
   test('Should call save file function and open it in util:openBufferInTempFile', async () => {
@@ -244,7 +160,7 @@ describe('registerUtilsListeners', () => {
     const windows = [{}];
     const uint8ArrayString = 'testString';
     const numberArray = [1, 2, 3];
-    const content = Buffer.from(numberArray);
+    const content = Uint8Array.from(numberArray);
     const filePath = 'testPath';
     const canceled = false;
 

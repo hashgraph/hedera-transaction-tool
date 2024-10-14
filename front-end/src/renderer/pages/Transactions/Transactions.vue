@@ -24,8 +24,7 @@ import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 import { getTransactionsToSign } from '@renderer/services/organization';
 
-import { isLoggedInOrganization, isOrganizationActive } from '@renderer/utils/userStoreHelpers';
-import { withLoader } from '@renderer/utils';
+import { isLoggedInOrganization, isOrganizationActive, withLoader } from '@renderer/utils';
 
 import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 

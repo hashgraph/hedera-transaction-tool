@@ -2,14 +2,21 @@
 import type { Handler, TransactionRequest } from '..';
 
 import { ref } from 'vue';
-import { FileCreateTransaction, FileUpdateTransaction, Transaction } from '@hashgraph/sdk';
+import { FileCreateTransaction, Transaction } from '@hashgraph/sdk';
 
 import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { ableToSign, getTransactionType } from '@renderer/utils';
-import { assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import {
+  assertUserLoggedIn,
+  ableToSign,
+  getTransactionType,
+  validateFileUpdateTransaction,
+} from '@renderer/utils';
+
+/* Constants */
+const SIZE_BUFFER_BYTES = 200;
 
 /* Stores */
 const user = useUserStore();
@@ -43,12 +50,11 @@ async function handle(request: TransactionRequest) {
 function validate(request: TransactionRequest, transaction: Transaction) {
   validateSignableInPersonal(request);
 
-  if (
-    transaction instanceof FileCreateTransaction ||
-    transaction instanceof FileUpdateTransaction
-  ) {
+  if (transaction instanceof FileCreateTransaction) {
     validateBigFile(transaction);
   }
+
+  validateFileUpdateTransaction(transaction);
 
   if (request.name && request.name?.length > 50) {
     throw new Error('Transaction name is too long');
@@ -71,11 +77,12 @@ function validateSignableInPersonal(request: TransactionRequest) {
   }
 }
 
-function validateBigFile(transaction: FileCreateTransaction | FileUpdateTransaction) {
+function validateBigFile(transaction: FileCreateTransaction) {
   const size = transaction.toBytes().length;
-  const sizeBufferBytes = 200;
 
-  if (size <= TRANSACTION_MAX_SIZE - sizeBufferBytes) return;
+  if (size <= TRANSACTION_MAX_SIZE - SIZE_BUFFER_BYTES) {
+    return;
+  }
 
   if (user.selectedOrganization) {
     throw new Error(

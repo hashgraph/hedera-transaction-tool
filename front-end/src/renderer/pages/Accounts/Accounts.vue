@@ -16,10 +16,9 @@ import { getAll, remove, changeNickname } from '@renderer/services/accountsServi
 import { getKeyListLevels } from '@renderer/services/keyPairService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
-import { stringifyHbar, getFormattedDateFromTimestamp } from '@renderer/utils';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { getFormattedDateFromTimestamp, isUserLoggedIn, stringifyHbar } from '@renderer/utils';
 
-import { transactionTypeKeys } from '../CreateTransaction/txTypeComponentMapping';
+import { transactionTypeKeys } from '@renderer/components/Transaction/Create/txTypeComponentMapping';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';

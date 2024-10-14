@@ -18,7 +18,11 @@ import {
 } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
-import { uint8ArrayToHex } from '@renderer/services/electronUtilsService';
+import { uint8ToHex, hexToUint8Array } from '..';
+
+export * from './createTransactions';
+export * from './getData';
+export * from './validation';
 
 export const createFileInfo = (props: {
   fileId: FileId | string;
@@ -176,6 +180,26 @@ export function decodeKeyList(keyListBytes: string) {
   }
 }
 
+export const decodeProtobuffKey = (protobuffKey: string): Key | undefined => {
+  try {
+    const key = proto.Key.decode(hexToUint8Array(protobuffKey));
+
+    if (key.thresholdKey) {
+      return KeyList.__fromProtobufThresoldKey(key.thresholdKey);
+    }
+    if (key.keyList) {
+      return KeyList.__fromProtobufKeyList(key.keyList);
+    }
+    if (key.ed25519 || key.ECDSASecp256k1) {
+      return Key._fromProtobufKey(key);
+    }
+
+    return undefined;
+  } catch (error) {
+    throw new Error('Failed to decode protobuf');
+  }
+};
+
 export function formatHbar(hbar: Hbar) {
   return hbar
     .toBigNumber()
@@ -279,7 +303,7 @@ export const isExpired = (transaction: Transaction) => {
   return new Date().getTime() >= validStart.getTime() + duration * 1_000;
 };
 
-export const getSignatures = async (privateKey: PrivateKey, transaction: Transaction) => {
+export const getSignatures = (privateKey: PrivateKey, transaction: Transaction) => {
   const signatures: {
     [key: string]: string;
   } = {};
@@ -292,13 +316,13 @@ export const getSignatures = async (privateKey: PrivateKey, transaction: Transac
     const nodeAccountId = AccountId._fromProtobuf(nodeAccountID);
 
     const signature = privateKey.sign(bodyBytes);
-    signatures[nodeAccountId.toString()] = await uint8ArrayToHex(signature);
+    signatures[nodeAccountId.toString()] = uint8ToHex(signature);
   }
 
   return signatures;
 };
 
-export const getTransactionBodySignatureWithoutNodeAccountId = async (
+export const getTransactionBodySignatureWithoutNodeAccountId = (
   privateKey: PrivateKey,
   transaction: Transaction,
 ) => {
@@ -307,7 +331,7 @@ export const getTransactionBodySignatureWithoutNodeAccountId = async (
   const bodyBytes = proto.TransactionBody.encode(transactionBody).finish();
 
   const signature = privateKey.sign(bodyBytes);
-  return await uint8ArrayToHex(signature);
+  return uint8ToHex(signature);
 };
 
 export const isApproved = (approver: ITransactionApprover): boolean | null => {

@@ -230,9 +230,7 @@ export async function getUserKeys(id?: number) {
       id
         ? {
             where: {
-              user: {
-                id,
-              },
+              userId: id,
             },
           }
         : undefined,

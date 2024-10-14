@@ -14,8 +14,7 @@ import useDraft from '@renderer/composables/useDraft';
 
 import { execute, storeTransaction } from '@renderer/services/transactionService';
 
-import { assertUserLoggedIn } from '@renderer/utils/userStoreHelpers';
-import { getStatusFromCode, getTransactionType } from '@renderer/utils';
+import { assertUserLoggedIn, getStatusFromCode, getTransactionType } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -58,6 +57,7 @@ function setNext(next: Handler) {
 }
 
 async function handle(req: TransactionRequest) {
+  reset();
   request.value = req;
 
   assertUserLoggedIn(user.personal);
@@ -126,6 +126,11 @@ async function store(status: number) {
 
   const { id } = await storeTransaction(tx);
   emit('transaction:stored', id);
+}
+
+function reset() {
+  request.value = null;
+  isExecuting.value = false;
 }
 
 /* Hooks */

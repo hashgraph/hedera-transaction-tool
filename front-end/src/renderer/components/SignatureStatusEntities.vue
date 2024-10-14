@@ -9,8 +9,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getAll } from '@renderer/services/accountsService';
 
-import { ableToSign } from '@renderer/utils';
-import { isUserLoggedIn } from '@renderer/utils/userStoreHelpers';
+import { ableToSign, isUserLoggedIn } from '@renderer/utils';
 
 import SignatureStatusKeyStructure from '@renderer/components/SignatureStatusKeyStructure.vue';
 
