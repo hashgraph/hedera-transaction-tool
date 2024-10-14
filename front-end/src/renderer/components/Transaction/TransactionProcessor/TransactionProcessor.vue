@@ -46,44 +46,37 @@ const executePersonalHandler = ref<InstanceType<typeof ExecutePersonalRequestHan
 const observers = ref<number[]>([]);
 const approvers = ref<TransactionApproverDto[]>([]);
 
-const isSigning = ref(false);
+const isLoading = ref(false);
 
 /* Handlers */
 const handleGroupSubmitSuccess = async (id: number) => {
-  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Confirm');
-  confirmHandler.value.setShow(false);
-
+  setConfirmModalShown(false);
   toast.success('Transaction group submitted successfully');
   props.onGroupSubmitted && (await props.onGroupSubmitted(id));
 };
 
 const handleSubmitSuccess = async (id: number, transactionBytes: string) => {
-  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Confirm');
-  confirmHandler.value.setShow(false);
-
+  setConfirmModalShown(false);
   toast.success('Transaction submitted successfully');
   props.onSubmitted && (await props.onSubmitted(id, transactionBytes));
 };
 
 const handleSubmitFail = () => {
-  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Confirm');
-  confirmHandler.value.setShow(true);
+  setConfirmModalShown(true);
 };
 
 const handleSignBegin = () => {
-  isSigning.value = true;
-  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Confirm');
-  confirmHandler.value.setShow(true);
+  handleLoading(true);
+  setConfirmModalShown(true);
 };
 
 const handleSignSuccess = () => {
-  isSigning.value = false;
-  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Confirm');
-  confirmHandler.value.setShow(false);
+  handleLoading(false);
+  setConfirmModalShown(false);
 };
 
-const handleSignFail = () => {
-  isSigning.value = false;
+const handleLoading = (loading: boolean) => {
+  isLoading.value = loading;
 };
 
 const handleTransactionExecuted = (
@@ -144,10 +137,15 @@ function buildChain() {
   signPersonalHandler.value.setNext(executePersonalHandler.value);
 }
 
+function setConfirmModalShown(value: boolean) {
+  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Confirm');
+  confirmHandler.value.setShow(value);
+}
+
 function resetData() {
   observers.value = [];
   approvers.value = [];
-  isSigning.value = false;
+  isLoading.value = false;
 }
 
 /* Expose */
@@ -161,7 +159,7 @@ defineExpose({
     <ValidateRequestHandler ref="validateHandler" />
 
     <!-- Handler #2: Confirm modal -->
-    <ConfirmTransactionHandler ref="confirmHandler" :signing="isSigning" />
+    <ConfirmTransactionHandler ref="confirmHandler" :loading="isLoading" />
 
     <!-- Handler #3: Big File Update For Organization -->
     <BigFileOrganizationRequestHandler
@@ -170,6 +168,8 @@ defineExpose({
       :approvers="approvers"
       @transaction:group:submit:success="handleGroupSubmitSuccess"
       @transaction:group:submit:fail="handleSubmitFail"
+      @loading:begin="handleLoading(true)"
+      @loading:end="handleLoading(false)"
     />
 
     <!-- Handler #4: Big File Create/Update in Personal (has sub-chain) -->
@@ -177,7 +177,7 @@ defineExpose({
       ref="bigFilePersonalHandler"
       @transaction:sign:begin="handleSignBegin"
       @transaction:sign:success="handleSignSuccess"
-      @transaction:sign:fail="handleSignFail"
+      @transaction:sign:fail="handleLoading(false)"
       @transaction:executed="handleTransactionExecuted"
       @transaction:stored="handleTransactionStore"
     />
@@ -189,6 +189,8 @@ defineExpose({
       :approvers="approvers"
       @transaction:submit:success="handleSubmitSuccess"
       @transaction:submit:fail="handleSubmitFail"
+      @loading:begin="handleLoading(true)"
+      @loading:end="handleLoading(false)"
     />
 
     <!-- Handler #6: Sign in Personal -->
@@ -196,7 +198,7 @@ defineExpose({
       ref="signPersonalHandler"
       @transaction:sign:begin="handleSignBegin"
       @transaction:sign:success="handleSignSuccess"
-      @transaction:sign:fail="handleSignFail"
+      @transaction:sign:fail="handleLoading(false)"
     />
 
     <!-- Handler #7: Execute Personal -->

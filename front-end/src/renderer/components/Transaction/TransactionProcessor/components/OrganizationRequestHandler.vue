@@ -31,6 +31,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'transaction:submit:success', id: number, transactionBytes: string): void;
   (event: 'transaction:submit:fail', error: unknown): void;
+  (event: 'loading:begin'): void;
+  (event: 'loading:end'): void;
 }>();
 
 /* Stores */
@@ -65,22 +67,27 @@ async function handle(req: TransactionRequest) {
 
   const publicKey = user.keyPairs[0].public_key;
 
-  const signature = await sign(publicKey);
-  const { id, transactionBytes } = await submit(publicKey, signature);
+  try {
+    emit('loading:begin');
+    const signature = await sign(publicKey);
+    const { id, transactionBytes } = await submit(publicKey, signature);
 
-  const results = await Promise.allSettled([
-    upload('observers', id),
-    upload('approvers', id),
-    draft.deleteIfNotTemplate(),
-  ]);
+    const results = await Promise.allSettled([
+      upload('observers', id),
+      upload('approvers', id),
+      draft.deleteIfNotTemplate(),
+    ]);
 
-  results.forEach(result => {
-    if (result.status === 'rejected') {
-      toast.error(result.reason.message);
-    }
-  });
+    results.forEach(result => {
+      if (result.status === 'rejected') {
+        toast.error(result.reason.message);
+      }
+    });
 
-  emit('transaction:submit:success', id, transactionBytes);
+    emit('transaction:submit:success', id, transactionBytes);
+  } finally {
+    emit('loading:end');
+  }
 }
 
 /* Functions */

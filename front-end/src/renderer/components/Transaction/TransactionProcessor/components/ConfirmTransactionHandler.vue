@@ -19,7 +19,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 
 /* Props */
 defineProps<{
-  signing: boolean;
+  loading: boolean;
 }>();
 
 /* Stores */
@@ -156,8 +156,8 @@ defineExpose({
             color="primary"
             type="submit"
             data-testid="button-sign-transaction"
-            :loading="signing"
-            :disabled="signing"
+            :loading="loading"
+            :disabled="loading"
             >Confirm</AppButton
           >
         </div>

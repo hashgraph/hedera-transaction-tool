@@ -48,6 +48,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'transaction:group:submit:success', id: number): void;
   (event: 'transaction:group:submit:fail', error: unknown): void;
+  (event: 'loading:begin'): void;
+  (event: 'loading:end'): void;
 }>();
 
 /* Stores */
@@ -84,8 +86,13 @@ async function handle(req: TransactionRequest) {
   reset();
   request.value = req;
 
-  const groupItems = createGroupItems(req);
-  await signGroupItems(groupItems);
+  try {
+    emit('loading:begin');
+    const groupItems = createGroupItems(req);
+    await signGroupItems(groupItems);
+  } finally {
+    emit('loading:end');
+  }
 }
 
 /* Functions */
@@ -217,6 +224,7 @@ async function submitGroup(groupItems: GroupItem[], signature: string[], keyToSi
     emit('transaction:group:submit:success', id);
   } catch (error) {
     emit('transaction:group:submit:fail', error);
+    throw error;
   }
 }
 
