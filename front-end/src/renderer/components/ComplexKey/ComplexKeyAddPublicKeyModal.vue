@@ -34,6 +34,7 @@ const contacts = useContactsStore();
 /* State */
 const publicKey = ref('');
 const selectedPublicKeys = ref<string[]>([]);
+const currentTab = ref('my');
 
 /* Computed */
 const keyList = computed(() => {
@@ -86,9 +87,14 @@ const handleInsert = (e: Event) => {
     throw new Error('Invalid public key/s');
   }
 };
+
+/* Handlers */
+const handleKeyTabChange = async (tab: string) => {
+  currentTab.value = tab;
+};
 </script>
 <template>
-  <AppModal :show="show" @update:show="$emit('update:show', $event)" class="medium-modal">
+  <AppModal :show="show" @update:show="$emit('update:show', $event)" class="large-modal">
     <div class="p-4">
       <form @submit="handleInsert">
         <div>
@@ -96,20 +102,46 @@ const handleInsert = (e: Event) => {
         </div>
         <h1 class="text-title text-semi-bold text-center">Add Public Key</h1>
 
-        <div class="mt-5">
+        <p class="text-micro text-bold mt-5">Search by or paste public key</p>
+        <div class="mt-3">
           <AppInput
             v-model:model-value="publicKey"
             data-testid="input-complex-public-key"
             filled
             type="text"
-            placeholder="Enter Public Key"
+            placeholder="Public Key"
           />
         </div>
+
         <hr class="separator my-5" />
+
+        <div class="btn-group d-flex justify-content-between">
+          <AppButton
+            @click="handleKeyTabChange('my')"
+            :class="{ active: currentTab === 'my' }"
+            color="secondary"
+            data-testid="tab-keys-my"
+            >My keys</AppButton
+          >
+          <AppButton
+            @click="handleKeyTabChange('accounts')"
+            :class="{ active: currentTab === 'accounts' }"
+            color="secondary"
+            data-testid="tab-keys-accounts"
+            >My Accounts</AppButton
+          >
+          <AppButton
+            @click="handleKeyTabChange('contacts')"
+            :class="{ active: currentTab === 'contacts' }"
+            color="secondary"
+            data-testid="tab-keys-contacts"
+            >My Contacts</AppButton
+          >
+        </div>
         <div>
           <!-- <h3 class="text-small">Recent</h3> -->
           <template v-if="listedKeyList.length > 0">
-            <div class="mt-4 overflow-auto" :style="{ height: '158px' }">
+            <div class="mt-4 overflow-auto" :style="{ height: '313px' }">
               <template v-for="kp in listedKeyList" :key="kp.public_key">
                 <AppListItem
                   class="mt-3"
