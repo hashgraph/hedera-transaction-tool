@@ -37,7 +37,7 @@ const toast = useToast();
 /** Handlers */
 const validateHandler = ref<InstanceType<typeof ValidateRequestHandler> | null>(null);
 const confirmHandler = ref<InstanceType<typeof ConfirmTransactionHandler> | null>(null);
-const fileCreateHandler = ref<InstanceType<typeof BigFileRequestHandler> | null>(null);
+const bigFileHandler = ref<InstanceType<typeof BigFileRequestHandler> | null>(null);
 const organizationHandler = ref<InstanceType<typeof OrganizationRequestHandler> | null>(null);
 const signPersonalHandler = ref<InstanceType<typeof SignPersonalRequestHandler> | null>(null);
 const executePersonalHandler = ref<InstanceType<typeof ExecutePersonalRequestHandler> | null>(null);
@@ -109,7 +109,7 @@ async function process(
 function buildChain() {
   assertHandlerExists<typeof ValidateRequestHandler>(validateHandler.value, 'Validate');
   assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Confirm');
-  assertHandlerExists<typeof BigFileRequestHandler>(fileCreateHandler.value, 'File Create');
+  assertHandlerExists<typeof BigFileRequestHandler>(bigFileHandler.value, 'File Create');
   assertHandlerExists<typeof OrganizationRequestHandler>(organizationHandler.value, 'Organization');
   assertHandlerExists<typeof SignPersonalRequestHandler>(
     signPersonalHandler.value,
@@ -121,8 +121,8 @@ function buildChain() {
   );
 
   validateHandler.value.setNext(confirmHandler.value);
-  confirmHandler.value.setNext(fileCreateHandler.value);
-  fileCreateHandler.value.setNext(organizationHandler.value);
+  confirmHandler.value.setNext(bigFileHandler.value);
+  bigFileHandler.value.setNext(organizationHandler.value);
   organizationHandler.value.setNext(signPersonalHandler.value);
   signPersonalHandler.value.setNext(executePersonalHandler.value);
 }
@@ -148,7 +148,7 @@ defineExpose({
 
     <!-- Handler #3: File Create (has sub-chain) -->
     <BigFileRequestHandler
-      ref="fileCreateHandler"
+      ref="bigFileHandler"
       @transaction:sign:begin="handleSignBegin"
       @transaction:sign:success="handleSignSuccess"
       @transaction:sign:fail="handleSignFail"
