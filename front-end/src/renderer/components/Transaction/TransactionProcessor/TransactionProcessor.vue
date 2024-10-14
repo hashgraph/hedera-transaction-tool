@@ -10,7 +10,8 @@ import { useToast } from 'vue-toast-notification';
 
 import ConfirmTransactionHandler from './components/ConfirmTransactionHandler.vue';
 import ValidateRequestHandler from './components/ValidateRequestHandler.vue';
-import BigFileRequestHandler from './components/BigFileRequestHandler.vue';
+import BigFileOrganizationRequestHandler from './components/BigFileOrganizationRequestHandler.vue';
+import BigFilePersonalRequestHandler from './components/BigFilePersonalRequestHandler.vue';
 import OrganizationRequestHandler from './components/OrganizationRequestHandler.vue';
 import SignPersonalRequestHandler from './components/SignPersonalRequestHandler.vue';
 import ExecutePersonalRequestHandler from './components/ExecutePersonalRequestHandler.vue';
@@ -37,7 +38,10 @@ const toast = useToast();
 /** Handlers */
 const validateHandler = ref<InstanceType<typeof ValidateRequestHandler> | null>(null);
 const confirmHandler = ref<InstanceType<typeof ConfirmTransactionHandler> | null>(null);
-const bigFileHandler = ref<InstanceType<typeof BigFileRequestHandler> | null>(null);
+const bigFileOrganizationHandler = ref<InstanceType<
+  typeof BigFileOrganizationRequestHandler
+> | null>(null);
+const bigFilePersonalHandler = ref<InstanceType<typeof BigFilePersonalRequestHandler> | null>(null);
 const organizationHandler = ref<InstanceType<typeof OrganizationRequestHandler> | null>(null);
 const signPersonalHandler = ref<InstanceType<typeof SignPersonalRequestHandler> | null>(null);
 const executePersonalHandler = ref<InstanceType<typeof ExecutePersonalRequestHandler> | null>(null);
@@ -109,7 +113,14 @@ async function process(
 function buildChain() {
   assertHandlerExists<typeof ValidateRequestHandler>(validateHandler.value, 'Validate');
   assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Confirm');
-  assertHandlerExists<typeof BigFileRequestHandler>(bigFileHandler.value, 'File Create');
+  assertHandlerExists<typeof BigFileOrganizationRequestHandler>(
+    bigFileOrganizationHandler.value,
+    'Large File Create/Update',
+  );
+  assertHandlerExists<typeof BigFilePersonalRequestHandler>(
+    bigFilePersonalHandler.value,
+    'Large File Create/Update',
+  );
   assertHandlerExists<typeof OrganizationRequestHandler>(organizationHandler.value, 'Organization');
   assertHandlerExists<typeof SignPersonalRequestHandler>(
     signPersonalHandler.value,
@@ -121,8 +132,9 @@ function buildChain() {
   );
 
   validateHandler.value.setNext(confirmHandler.value);
-  confirmHandler.value.setNext(bigFileHandler.value);
-  bigFileHandler.value.setNext(organizationHandler.value);
+  confirmHandler.value.setNext(bigFileOrganizationHandler.value);
+  bigFileOrganizationHandler.value.setNext(bigFilePersonalHandler.value);
+  bigFilePersonalHandler.value.setNext(organizationHandler.value);
   organizationHandler.value.setNext(signPersonalHandler.value);
   signPersonalHandler.value.setNext(executePersonalHandler.value);
 }
@@ -146,13 +158,18 @@ defineExpose({
     <!-- Handler #2: Confirm modal -->
     <ConfirmTransactionHandler ref="confirmHandler" :signing="isSigning" />
 
-    <!-- Handler #3: File Create (has sub-chain) -->
-    <BigFileRequestHandler
-      ref="bigFileHandler"
+    <!-- Handler #3: Big File Update For Organization (has sub-chain) -->
+    <BigFileOrganizationRequestHandler
+      ref="bigFileOrganizationHandler"
       :observers="observers"
       :approvers="approvers"
       @transaction:submit:success="handleSubmitSuccess"
       @transaction:submit:fail="handleSubmitFail"
+    />
+
+    <!-- Handler #4: Big File Create/Update in Personal (has sub-chain) -->
+    <BigFilePersonalRequestHandler
+      ref="bigFilePersonalHandler"
       @transaction:sign:begin="handleSignBegin"
       @transaction:sign:success="handleSignSuccess"
       @transaction:sign:fail="handleSignFail"
@@ -160,7 +177,7 @@ defineExpose({
       @transaction:stored="handleTransactionStore"
     />
 
-    <!-- Handler #4: Organization  -->
+    <!-- Handler #5: Organization  -->
     <OrganizationRequestHandler
       ref="organizationHandler"
       :observers="observers"
@@ -169,7 +186,7 @@ defineExpose({
       @transaction:submit:fail="handleSubmitFail"
     />
 
-    <!-- Handler #5: Sign in Personal -->
+    <!-- Handler #6: Sign in Personal -->
     <SignPersonalRequestHandler
       ref="signPersonalHandler"
       @transaction:sign:begin="handleSignBegin"
@@ -177,7 +194,7 @@ defineExpose({
       @transaction:sign:fail="handleSignFail"
     />
 
-    <!-- Handler #6: Execute Personal -->
+    <!-- Handler #7: Execute Personal -->
     <ExecutePersonalRequestHandler
       ref="executePersonalHandler"
       @transaction:executed="handleTransactionExecuted"

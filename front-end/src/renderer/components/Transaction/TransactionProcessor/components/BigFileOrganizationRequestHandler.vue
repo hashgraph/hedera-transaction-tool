@@ -7,23 +7,22 @@ import {
   Transaction,
   FileCreateTransaction,
   FileUpdateTransaction,
-  TransactionResponse,
-  TransactionReceipt,
   FileAppendTransaction,
 } from '@hashgraph/sdk';
 
 import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
 
-import { createTransactionId } from '@renderer/utils/sdk/createTransactions';
+import useUserStore from '@renderer/stores/storeUser';
+
+import { createTransactionId } from '@renderer/services/transactionService';
 
 import OrganizationRequestHandler from './OrganizationRequestHandler.vue';
-import SignPersonalRequestHandler from './SignPersonalRequestHandler.vue';
-import ExecutePersonalRequestHandler from './ExecutePersonalRequestHandler.vue';
 
 import { assertHandlerExists } from '..';
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 /* Constants */
-const firstChunkSize = 100;
+const FIRST_CHUNK_SIZE_BYTES = 100;
 
 /* Props */
 defineProps<{
@@ -35,30 +34,18 @@ defineProps<{
 const emit = defineEmits<{
   (event: 'transaction:submit:success', id: number, body: string): void;
   (event: 'transaction:submit:fail', error: unknown): void;
-  (event: 'transaction:sign:begin'): void;
-  (event: 'transaction:sign:success'): void;
-  (event: 'transaction:sign:fail'): void;
-  (
-    event: 'transaction:executed',
-    success: boolean,
-    response: TransactionResponse | null,
-    receipt: TransactionReceipt | null,
-  ): void;
-  (event: 'transaction:stored', id: string): void;
 }>();
+
+/* Stores */
+const user = useUserStore();
 
 /* State */
 const organizationHandler = ref<InstanceType<typeof OrganizationRequestHandler> | null>(null);
-const signPersonalHandler = ref<InstanceType<typeof SignPersonalRequestHandler> | null>(null);
-const executePersonalHandler = ref<InstanceType<typeof ExecutePersonalRequestHandler> | null>(null);
 const nextHandler = ref<Handler | null>(null);
 
 const request = ref<TransactionRequest | null>(null);
 const fileId = ref<string | null>(null);
 const originalProcessed = ref<boolean>(false);
-const originalResponse = ref<TransactionResponse | null>(null);
-const originalReceipt = ref<TransactionReceipt | null>(null);
-const originalLocalId = ref<string | null>(null);
 const originalOrganizationId = ref<number | null>(null);
 const originalBody = ref<string | null>(null);
 
@@ -68,7 +55,7 @@ const originalTransaction = computed(() =>
 );
 const content = computed(() => {
   if (!originalTransaction.value) return null;
-  if (!isFileCreateOrUpdate(originalTransaction.value)) return null;
+  if (!isFileUpdate(originalTransaction.value)) return null;
   return originalTransaction.value.contents;
 });
 
@@ -78,16 +65,13 @@ function setNext(next: Handler) {
 }
 
 async function handle(req: TransactionRequest) {
-  reset();
-
-  request.value = req;
   const transaction = Transaction.fromBytes(req.transactionBytes);
-
   const size = transaction.toBytes().length;
   const sizeBufferBytes = 200;
 
   if (
-    !isFileCreateOrUpdate(transaction) ||
+    !isLoggedInOrganization(user.selectedOrganization) ||
+    !isFileUpdate(transaction) ||
     size <= TRANSACTION_MAX_SIZE - sizeBufferBytes ||
     !transaction.contents
   ) {
@@ -95,7 +79,8 @@ async function handle(req: TransactionRequest) {
     return;
   }
 
-  buildChain();
+  reset();
+  request.value = req;
 
   await processOriginal();
 }
@@ -129,83 +114,7 @@ const handleOriginalSubmit = (id: number, body: string) => {
 
 const handleSubmitFail = (error: unknown) => emit('transaction:submit:fail', error);
 
-const handleSignBegin = async () => emit('transaction:sign:begin');
-const handleSignSuccess = async () => emit('transaction:sign:success');
-const handleSignFail = async () => emit('transaction:sign:fail');
-
-const handleTransactionExecuted = async (
-  success: boolean,
-  response: TransactionResponse | null,
-  receipt: TransactionReceipt | null,
-) => {
-  if (!success) {
-    emit('transaction:executed', success, response, receipt);
-    return;
-  }
-
-  if (!receipt) throw new Error('Receipt is missing');
-
-  if (!originalProcessed.value) {
-    originalProcessed.value = true;
-    handleOrginialExecuted(response, receipt);
-    await processAppend();
-  } else {
-    handleAppendExecuted();
-    emit('transaction:executed', success, originalResponse.value, originalReceipt.value);
-  }
-};
-
-const handleOrginialExecuted = (
-  response: TransactionResponse | null,
-  receipt: TransactionReceipt,
-) => {
-  if (originalTransaction.value instanceof FileCreateTransaction) {
-    if (!receipt.fileId) throw new Error('File ID is missing in the receipt');
-    fileId.value = receipt.fileId?.toString();
-  } else if (originalTransaction.value instanceof FileUpdateTransaction) {
-    if (!originalTransaction.value.fileId) throw new Error('File ID is missing');
-    fileId.value = originalTransaction.value.fileId.toString();
-    //TODO: Check if the keys are updated and execute the append with new transaction key
-  }
-
-  originalResponse.value = response;
-  originalReceipt.value = receipt;
-};
-
-const handleAppendExecuted = () => {
-  if (
-    !(originalResponse.value instanceof TransactionResponse) ||
-    !(originalReceipt.value instanceof TransactionReceipt)
-  ) {
-    throw new Error('Original response or receipt is missing');
-  }
-};
-
-const handleTransactionStore = async (id: string) => {
-  if (!originalLocalId.value) {
-    originalLocalId.value = id;
-    return;
-  } else {
-    emit('transaction:stored', originalLocalId.value);
-  }
-};
-
 /* Functions */
-function buildChain() {
-  assertHandlerExists<typeof OrganizationRequestHandler>(organizationHandler.value, 'Organization');
-  assertHandlerExists<typeof SignPersonalRequestHandler>(
-    signPersonalHandler.value,
-    'Sign Personal',
-  );
-  assertHandlerExists<typeof ExecutePersonalRequestHandler>(
-    executePersonalHandler.value,
-    'Execute Personal',
-  );
-
-  organizationHandler.value.setNext(signPersonalHandler.value);
-  signPersonalHandler.value.setNext(executePersonalHandler.value);
-}
-
 async function startChain(req: TransactionRequest) {
   assertHandlerExists<typeof OrganizationRequestHandler>(organizationHandler.value, 'Organization');
   await organizationHandler.value.handle(req);
@@ -219,7 +128,7 @@ async function processOriginal() {
   assertTransactionType(transaction);
   if (!content.value) throw new Error('Transaction content is missing');
 
-  transaction.setContents(content.value.slice(0, firstChunkSize));
+  transaction.setContents(content.value.slice(0, FIRST_CHUNK_SIZE_BYTES));
 
   await startChain({
     transactionBytes: transaction.toBytes(),
@@ -262,25 +171,21 @@ function createAppendTransaction() {
       ),
     )
     .setFileId(fileId.value)
-    .setContents(content.value.slice(firstChunkSize))
+    .setContents(content.value.slice(FIRST_CHUNK_SIZE_BYTES))
     .setMaxChunks(99999);
 
   return append;
 }
 
-function isFileCreateOrUpdate(
-  transaction: Transaction,
-): transaction is FileCreateTransaction | FileUpdateTransaction {
-  return (
-    transaction instanceof FileCreateTransaction || transaction instanceof FileUpdateTransaction
-  );
+function isFileUpdate(transaction: Transaction): transaction is FileUpdateTransaction {
+  return transaction instanceof FileUpdateTransaction;
 }
 
 function assertTransactionType(
   transaction: Transaction,
-): asserts transaction is FileCreateTransaction | FileUpdateTransaction {
-  if (!isFileCreateOrUpdate(transaction)) {
-    throw new Error('Transaction is not a File Create Transaction or File Update Transaction');
+): asserts transaction is FileUpdateTransaction {
+  if (!isFileUpdate(transaction)) {
+    throw new Error('Transaction is not a File Update Transaction');
   }
 }
 
@@ -288,9 +193,6 @@ function reset() {
   request.value = null;
   fileId.value = null;
   originalProcessed.value = false;
-  originalResponse.value = null;
-  originalReceipt.value = null;
-  originalLocalId.value = null;
   originalOrganizationId.value = null;
   originalBody.value = null;
 }
@@ -309,20 +211,5 @@ defineExpose({
     :approvers="approvers"
     @transaction:submit:success="handleSubmitSuccess"
     @transaction:submit:fail="handleSubmitFail"
-  />
-
-  <!-- Handler #2: Sign in Personal -->
-  <SignPersonalRequestHandler
-    ref="signPersonalHandler"
-    @transaction:sign:begin="handleSignBegin"
-    @transaction:sign:success="handleSignSuccess"
-    @transaction:sign:fail="handleSignFail"
-  />
-
-  <!-- Handler #3: Execute Personal -->
-  <ExecutePersonalRequestHandler
-    ref="executePersonalHandler"
-    @transaction:executed="handleTransactionExecuted"
-    @transaction:stored="handleTransactionStore"
   />
 </template>
