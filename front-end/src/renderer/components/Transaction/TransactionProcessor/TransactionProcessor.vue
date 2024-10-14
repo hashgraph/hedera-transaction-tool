@@ -22,6 +22,7 @@ import { assertHandlerExists } from '.';
 const props = defineProps<{
   onExecuted?: (data: ExecutedData) => void;
   onSubmitted?: (id: number, body: string) => void;
+  onGroupSubmitted?: (id: number) => void;
   onLocalStored?: (id: string) => void;
   onCloseSuccessModalClick?: () => void;
   watchExecutedModalShown?: (shown: boolean) => void;
@@ -48,6 +49,14 @@ const approvers = ref<TransactionApproverDto[]>([]);
 const isSigning = ref(false);
 
 /* Handlers */
+const handleGroupSubmitSuccess = async (id: number) => {
+  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Confirm');
+  confirmHandler.value.setShow(false);
+
+  toast.success('Transaction group submitted successfully');
+  props.onGroupSubmitted && (await props.onGroupSubmitted(id));
+};
+
 const handleSubmitSuccess = async (id: number, transactionBytes: string) => {
   assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Confirm');
   confirmHandler.value.setShow(false);
@@ -154,13 +163,13 @@ defineExpose({
     <!-- Handler #2: Confirm modal -->
     <ConfirmTransactionHandler ref="confirmHandler" :signing="isSigning" />
 
-    <!-- Handler #3: Big File Update For Organization (has sub-chain) -->
+    <!-- Handler #3: Big File Update For Organization -->
     <BigFileOrganizationRequestHandler
       ref="bigFileOrganizationHandler"
       :observers="observers"
       :approvers="approvers"
-      @transaction:submit:success="handleSubmitSuccess"
-      @transaction:submit:fail="handleSubmitFail"
+      @transaction:group:submit:success="handleGroupSubmitSuccess"
+      @transaction:group:submit:fail="handleSubmitFail"
     />
 
     <!-- Handler #4: Big File Create/Update in Personal (has sub-chain) -->

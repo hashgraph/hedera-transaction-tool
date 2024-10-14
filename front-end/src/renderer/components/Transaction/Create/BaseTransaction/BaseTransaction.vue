@@ -16,7 +16,12 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { getTransactionType, isAccountId, redirectToDetails } from '@renderer/utils';
+import {
+  getTransactionType,
+  isAccountId,
+  redirectToDetails,
+  redirectToGroupDetails,
+} from '@renderer/utils';
 import { getTransactionCommonData } from '@renderer/utils/sdk';
 import { getPropagationButtonLabel } from '@renderer/utils/transactions';
 
@@ -44,6 +49,7 @@ const emit = defineEmits<{
   (event: 'executed', data: ExecutedData): void;
   (event: 'executed:success', data: ExecutedSuccessData): void;
   (event: 'submitted', id: number, body: string): void;
+  (event: 'group:submitted', id: number): void;
   (event: 'draft-loaded', transaction: Transaction): void;
 }>();
 
@@ -121,6 +127,12 @@ const handleSubmit = (id: number, body: string) => {
   isProcessed.value = true;
   redirectToDetails(router, id);
   emit('submitted', id, body);
+};
+
+const handleGroupSubmit = (id: number) => {
+  isProcessed.value = true;
+  redirectToGroupDetails(router, id);
+  emit('group:submitted', id);
 };
 
 const handleLocalStored = (id: string) => {
@@ -221,6 +233,7 @@ defineExpose({
       :approvers="approvers"
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
+      :on-group-submitted="handleGroupSubmit"
       :on-local-stored="handleLocalStored"
     />
 
