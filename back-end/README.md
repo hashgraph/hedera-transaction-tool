@@ -157,7 +157,8 @@ The defaults are:
 
 When deploying to a server, it may be desired to use Kubernetes.
 The docker images are currently private. They must be created and pushed
-to an accessible location. Update the deployment files as needed.
+to an accessible location. Examples of the secret files are supplied, 
+the secrets need to be encoded to be set. Update the deployment files as needed. 
 
 A helm chart is forthcoming.
 Until then, use the following commands once connected to a cluster:
