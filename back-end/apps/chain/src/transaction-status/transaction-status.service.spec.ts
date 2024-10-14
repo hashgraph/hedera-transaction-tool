@@ -11,10 +11,10 @@ import {
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
   NOTIFY_GENERAL,
-  SYNC_INDICATORS,
   NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
   smartCollate,
   computeShortenedPublicKeyList,
+  notifySyncIndicators,
   notifyTransactionAction,
 } from '@app/common';
 import { NotificationType, Transaction, TransactionStatus } from '@entities';
@@ -51,6 +51,11 @@ jest.mock('@nestjs/schedule', () => {
     },
   };
 });
+
+const expectNotifyNotCalled = () => {
+  expect(notifyTransactionAction).not.toHaveBeenCalled();
+  expect(notifySyncIndicators).not.toHaveBeenCalled();
+};
 
 describe('TransactionStatusService', () => {
   let service: TransactionStatusService;
@@ -256,10 +261,7 @@ describe('TransactionStatusService', () => {
     expect(transactionRepo.manager.update).toHaveBeenCalled();
 
     for (const transaction of expiredTransactions) {
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transaction.id,
-        transactionStatus: TransactionStatus.EXPIRED,
-      });
+      expect(notifySyncIndicators).toHaveBeenCalledWith(transaction.id, TransactionStatus.EXPIRED);
     }
     expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
   });
@@ -317,10 +319,10 @@ describe('TransactionStatusService', () => {
           status: TransactionStatus.WAITING_FOR_SIGNATURES,
         },
       );
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transactions[0].id,
-        transactionStatus: TransactionStatus.WAITING_FOR_EXECUTION,
-      });
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        transactions[0].id,
+        TransactionStatus.WAITING_FOR_EXECUTION,
+      );
       expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_GENERAL, {
         entityId: transactions[0].id,
         type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
@@ -328,10 +330,10 @@ describe('TransactionStatusService', () => {
         content: `Transaction ${transactions[0].transactionId} is ready for execution`,
         userIds: [transactions[0].creatorKey?.userId],
       });
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transactions[1].id,
-        transactionStatus: TransactionStatus.WAITING_FOR_SIGNATURES,
-      });
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        transactions[1].id,
+        TransactionStatus.WAITING_FOR_SIGNATURES,
+      );
       expect(notificationsService.emit).toHaveBeenCalledWith(
         NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
         {
@@ -370,7 +372,7 @@ describe('TransactionStatusService', () => {
 
       await service.updateTransactions(new Date(), new Date());
 
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it.skip('should skip transaction if is file update or append', async () => {
@@ -400,10 +402,10 @@ describe('TransactionStatusService', () => {
       await service.updateTransactions(new Date(), new Date());
 
       expect(transactionRepo.update).toHaveBeenCalledTimes(1);
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transactions[1].id,
-        transactionStatus: TransactionStatus.WAITING_FOR_SIGNATURES,
-      });
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        transactions[1].id,
+        TransactionStatus.WAITING_FOR_SIGNATURES,
+      );
       expect(notificationsService.emit).toHaveBeenCalledWith(
         NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
         {
@@ -445,10 +447,10 @@ describe('TransactionStatusService', () => {
           status: TransactionStatus.WAITING_FOR_EXECUTION,
         },
       );
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transaction.id,
-        transactionStatus: TransactionStatus.WAITING_FOR_EXECUTION,
-      });
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        transaction.id,
+        TransactionStatus.WAITING_FOR_EXECUTION,
+      );
       expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_GENERAL, {
         entityId: transaction.id,
         type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
@@ -477,7 +479,7 @@ describe('TransactionStatusService', () => {
         'Error',
       );
 
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it.skip('should skip transaction if is file update or append', async () => {
@@ -495,7 +497,7 @@ describe('TransactionStatusService', () => {
       await service.updateTransactionStatus({ id: transaction.id });
 
       expect(transactionRepo.update).not.toHaveBeenCalled();
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should return if transaction does not exist', async () => {
@@ -505,7 +507,7 @@ describe('TransactionStatusService', () => {
 
       expect(transactionRepo.findOne).toHaveBeenCalled();
       expect(transactionRepo.update).not.toHaveBeenCalled();
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should return if transaction status is the same', async () => {
@@ -523,7 +525,7 @@ describe('TransactionStatusService', () => {
 
       expect(transactionRepo.findOne).toHaveBeenCalled();
       expect(transactionRepo.update).not.toHaveBeenCalled();
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
   });
 

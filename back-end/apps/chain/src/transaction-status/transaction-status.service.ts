@@ -10,15 +10,14 @@ import {
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
   NOTIFY_GENERAL,
-  SYNC_INDICATORS,
   NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
-  SyncIndicatorsDto,
   NotifyGeneralDto,
   NotifyForTransactionDto,
   hasValidSignatureKey,
   computeSignatureKey,
   smartCollate,
   notifyTransactionAction,
+  notifySyncIndicators,
 } from '@app/common';
 import { NotificationType, Transaction, TransactionStatus } from '@entities';
 
@@ -145,10 +144,7 @@ export class TransactionStatusService {
           },
         );
 
-        this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
-          transactionId: transaction.id,
-          transactionStatus: TransactionStatus.EXPIRED,
-        });
+        notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.EXPIRED);
       }
 
       if (transactions.length > 0) {
@@ -257,10 +253,7 @@ export class TransactionStatusService {
   }
 
   private emitNotificationEvents(transaction: Transaction, newStatus: TransactionStatus) {
-    this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
-      transactionId: transaction.id,
-      transactionStatus: newStatus,
-    });
+    notifySyncIndicators(this.notificationsService, transaction.id, newStatus);
 
     if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
       this.notificationsService.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {

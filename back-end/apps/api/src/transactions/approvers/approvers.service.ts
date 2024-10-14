@@ -23,9 +23,8 @@ import {
   attachKeys,
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
+  notifySyncIndicators,
   notifyTransactionAction,
-  SYNC_INDICATORS,
-  SyncIndicatorsDto,
   userKeysRequiredToSign,
   verifyTransactionBodyWithoutNodeAccountIdSignature,
 } from '@app/common';
@@ -616,11 +615,7 @@ export class ApproversService {
     });
 
     notifyTransactionAction(this.notificationsService);
-
-    this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
-      transactionId: transaction.id,
-      transactionStatus: transaction.status,
-    });
+    notifySyncIndicators(this.notificationsService, transaction.id, transaction.status);
 
     return true;
   }
@@ -678,10 +673,7 @@ export class ApproversService {
 
     if (!transaction) return;
 
-    this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
-      transactionId: transactionId,
-      transactionStatus: transaction.status,
-    });
+    notifySyncIndicators(this.notificationsService, transactionId, transaction.status);
   }
 
   /* Get the tree structure of the approvers */

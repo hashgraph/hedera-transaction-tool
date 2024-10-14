@@ -11,14 +11,13 @@ import { Transaction, TransactionStatus, Network } from '@entities';
 import {
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
-  SYNC_INDICATORS,
   TransactionExecutedDto,
   hasValidSignatureKey,
-  SyncIndicatorsDto,
   computeSignatureKey,
   getClientFromName,
   getStatusCodeFromMessage,
   notifyTransactionAction,
+  notifySyncIndicators,
 } from '@app/common';
 import { ExecuteTransactionDto } from '@app/common/dtos/execute-transaction.dto';
 
@@ -91,11 +90,7 @@ export class ExecuteService {
 
       client.close();
 
-      this.notificationsService.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
-        transactionId: transaction.id,
-        transactionStatus: transactionStatus,
-      });
-
+      notifySyncIndicators(this.notificationsService, transaction.id, transaction.status);
       notifyTransactionAction(this.notificationsService);
 
       this.sideEffect(sdkTransaction, transaction.network);

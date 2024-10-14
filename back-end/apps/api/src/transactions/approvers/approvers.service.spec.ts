@@ -5,12 +5,13 @@ import { mock, mockDeep } from 'jest-mock-extended';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { AccountCreateTransaction } from '@hashgraph/sdk';
 
-import { MirrorNodeService, NOTIFICATIONS_SERVICE, SYNC_INDICATORS } from '@app/common';
+import { MirrorNodeService, NOTIFICATIONS_SERVICE } from '@app/common';
 import {
   attachKeys,
   userKeysRequiredToSign,
   verifyTransactionBodyWithoutNodeAccountIdSignature,
   notifyTransactionAction,
+  notifySyncIndicators,
 } from '@app/common/utils';
 import { Transaction, TransactionApprover, TransactionStatus, User } from '@entities';
 
@@ -22,6 +23,11 @@ import {
 } from '../dto';
 
 jest.mock('@app/common/utils');
+
+const expectNotifyNotCalled = () => {
+  expect(notifyTransactionAction).not.toHaveBeenCalled();
+  expect(notifySyncIndicators).not.toHaveBeenCalled();
+};
 
 describe('ApproversService', () => {
   let service: ApproversService;
@@ -367,10 +373,11 @@ describe('ApproversService', () => {
       });
       expect(dataSource.manager.insert).toHaveBeenCalled();
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transaction.id,
-        transactionStatus: expect.anything(),
-      });
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transaction.id,
+        expect.anything(),
+      );
     });
 
     it('should create nested transaction approver', async () => {
@@ -473,11 +480,11 @@ describe('ApproversService', () => {
       });
       expect(dataSource.manager.insert).toHaveBeenCalledTimes(5);
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
-
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transaction.id,
-        transactionStatus: expect.anything(),
-      });
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transaction.id,
+        expect.anything(),
+      );
     });
 
     it('should fail empty approver', async () => {
@@ -489,7 +496,7 @@ describe('ApproversService', () => {
       await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
         'Cannot create empty approver',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on approver with both user id and threshold', async () => {
@@ -525,7 +532,7 @@ describe('ApproversService', () => {
       await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
         'User with id: 1 not found',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on approver with threshold but no children', async () => {
@@ -541,7 +548,7 @@ describe('ApproversService', () => {
       await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
         'Children must be set when there is a threshold',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on approver with threshold an user id', async () => {
@@ -563,7 +570,7 @@ describe('ApproversService', () => {
       await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
         'You can only set a user or a tree of approvers, not both',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on approver with a tree but without a threshold', async () => {
@@ -583,7 +590,7 @@ describe('ApproversService', () => {
       await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
         'Threshold must be set for the parent approver',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on approver with a tree and invalid threshold', async () => {
@@ -604,7 +611,7 @@ describe('ApproversService', () => {
       await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
         'Threshold must be less or equal to the number of approvers (1) and not 0',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on approver that already exists', async () => {
@@ -621,7 +628,7 @@ describe('ApproversService', () => {
       await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
         'Approver already exists',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on attaching a child to a non-existent parent', async () => {
@@ -639,7 +646,7 @@ describe('ApproversService', () => {
       await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
         'Parent approver not found',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on attaching a child to a parent on different transaction', async () => {
@@ -666,7 +673,7 @@ describe('ApproversService', () => {
       await expect(service.createTransactionApprovers(user, transactionId, dto)).rejects.toThrow(
         'Root transaction is not the same',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should create basic transaction approver that is already added', async () => {
@@ -704,10 +711,11 @@ describe('ApproversService', () => {
       });
       expect(dataSource.manager.insert).toHaveBeenCalled();
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transaction.id,
-        transactionStatus: expect.anything(),
-      });
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transaction.id,
+        expect.anything(),
+      );
     });
   });
 
@@ -822,10 +830,11 @@ describe('ApproversService', () => {
         approved: undefined,
       });
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transaction.id,
-        transactionStatus: expect.anything(),
-      });
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transaction.id,
+        expect.anything(),
+      );
     });
 
     it('should do nothing if approver user id updated with the same user id', async () => {
@@ -842,7 +851,7 @@ describe('ApproversService', () => {
       await service.updateTransactionApprover(1, dto, transactionId, user);
 
       expect(dataSource.manager.update).not.toHaveBeenCalled();
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on update of non existing approver', async () => {
@@ -856,7 +865,7 @@ describe('ApproversService', () => {
       await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
         "Approver doesn't exist",
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on update of approver without root', async () => {
@@ -871,7 +880,7 @@ describe('ApproversService', () => {
       await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
         "Root approver doesn't exist",
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on update of an approver with non existing user', async () => {
@@ -887,7 +896,7 @@ describe('ApproversService', () => {
       await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
         'User with id: 12 not found',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on update of an approver with non existing user', async () => {
@@ -903,7 +912,7 @@ describe('ApproversService', () => {
       await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
         'User with id: 12 not found',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on update many properties of an approver', async () => {
@@ -919,7 +928,7 @@ describe('ApproversService', () => {
       await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
         'Only one property of the approver can be update user id, list id, or the threshold',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on update nested approver with user id ', async () => {
@@ -934,7 +943,7 @@ describe('ApproversService', () => {
       await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
         'Cannot update user id, the approver is a tree',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should update attach approver to a tree', async () => {
@@ -963,10 +972,11 @@ describe('ApproversService', () => {
         transactionId: null,
       });
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transaction.id,
-        transactionStatus: expect.anything(),
-      });
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transaction.id,
+        expect.anything(),
+      );
     });
 
     it('should fail on update listId if parent (listId approver) not found', async () => {
@@ -984,7 +994,7 @@ describe('ApproversService', () => {
       await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
         'Parent approver not found',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on update listId if parent (listId approver) is not tree', async () => {
@@ -1002,7 +1012,7 @@ describe('ApproversService', () => {
       await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
         'Threshold must be set for the parent approver',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on update transaction is different', async () => {
@@ -1019,7 +1029,7 @@ describe('ApproversService', () => {
       await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
         'Root transaction is not the same',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on update listId if the new list id is child of the updated approver', async () => {
@@ -1053,7 +1063,7 @@ describe('ApproversService', () => {
       await expect(service.updateTransactionApprover(3, dto, transactionId, user)).rejects.toThrow(
         'Cannot set a child as a parent',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on update listId if the parent is not in same transaction', async () => {
@@ -1075,7 +1085,7 @@ describe('ApproversService', () => {
       await expect(service.updateTransactionApprover(3, dto, transactionId, user)).rejects.toThrow(
         'Root transaction is not the same',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should do nothing if update list id that is null with null', async () => {
@@ -1094,7 +1104,7 @@ describe('ApproversService', () => {
       await service.updateTransactionApprover(1, dto, transactionId, user);
 
       expect(dataSource.manager.update).not.toHaveBeenCalled();
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should update child to a tree', async () => {
@@ -1132,10 +1142,11 @@ describe('ApproversService', () => {
         },
       );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transaction.id,
-        transactionStatus: expect.anything(),
-      });
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transaction.id,
+        expect.anything(),
+      );
     });
 
     it('should soft remove tree if no children left', async () => {
@@ -1168,10 +1179,11 @@ describe('ApproversService', () => {
       );
       expect(dataSource.manager.softRemove).toHaveBeenCalled();
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transaction.id,
-        transactionStatus: expect.anything(),
-      });
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transaction.id,
+        expect.anything(),
+      );
     });
 
     it('should update the threshold of a tree', async () => {
@@ -1195,10 +1207,11 @@ describe('ApproversService', () => {
         threshold: 1,
       });
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transaction.id,
-        transactionStatus: expect.anything(),
-      });
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transaction.id,
+        expect.anything(),
+      );
     });
 
     it('should fail on update the threshold of a tree with invalid threshold', async () => {
@@ -1216,7 +1229,7 @@ describe('ApproversService', () => {
       await expect(
         service.updateTransactionApprover(treeApprover.id, dto, transactionId, user),
       ).rejects.toThrow('Threshold must be less or equal to the number of approvers (2) and not 0');
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should fail on update the threshold if approver is not a tree', async () => {
@@ -1231,7 +1244,7 @@ describe('ApproversService', () => {
       await expect(
         service.updateTransactionApprover(basicApprover.id, dto, transactionId, user),
       ).rejects.toThrow('Cannot update threshold, the approver is not a tree');
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
   });
 
@@ -1303,10 +1316,11 @@ describe('ApproversService', () => {
       expect(queryBuilder.set).toHaveBeenCalled();
       expect(queryBuilder.whereInIds).toHaveBeenCalled();
       expect(queryBuilder.execute).toHaveBeenCalled();
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transaction.id,
-        transactionStatus: transaction.status,
-      });
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transaction.id,
+        transaction.status,
+      );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
 
@@ -1327,7 +1341,7 @@ describe('ApproversService', () => {
       await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
         'You are not an approver of this transaction',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should throw if user already approver', async () => {
@@ -1353,7 +1367,7 @@ describe('ApproversService', () => {
       await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
         'You have already approved this transaction',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should do nothing if user has no keys to approve with', async () => {
@@ -1382,7 +1396,7 @@ describe('ApproversService', () => {
       expect(await service.approveTransaction(dto, transaction.id, { ...user, keys: [] })).toEqual(
         false,
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it.skip('should throw if the signature key does not belong to the user', async () => {
@@ -1407,7 +1421,7 @@ describe('ApproversService', () => {
       await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
         'Signature key does not belong to the user',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should throw if the transaction is not found', async () => {
@@ -1429,7 +1443,7 @@ describe('ApproversService', () => {
       await expect(service.approveTransaction(dto, 1, user)).rejects.toThrow(
         'Transaction not found',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should throw if the transaction is already executed', async () => {
@@ -1454,7 +1468,7 @@ describe('ApproversService', () => {
       await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
         'Transaction has already been executed',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should throw if the transaction is canceled', async () => {
@@ -1479,7 +1493,7 @@ describe('ApproversService', () => {
       await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
         'Transaction has been canceled',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
 
     it('should throw if signature is invalid', async () => {
@@ -1507,7 +1521,7 @@ describe('ApproversService', () => {
       await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
         'The signature does not match the public key',
       );
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
   });
 
@@ -1659,10 +1673,11 @@ describe('ApproversService', () => {
 
       await service.emitSyncIndicators(transaction.id);
 
-      expect(notificationsService.emit).toHaveBeenCalledWith(SYNC_INDICATORS, {
-        transactionId: transaction.id,
-        transactionStatus: transaction.status,
-      });
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transaction.id,
+        transaction.status,
+      );
     });
 
     it('should do nothing if transaction is not found', async () => {
@@ -1670,7 +1685,7 @@ describe('ApproversService', () => {
 
       await expect(service.emitSyncIndicators(1));
 
-      expect(notificationsService.emit).not.toHaveBeenCalled();
+      expectNotifyNotCalled();
     });
   });
 });
