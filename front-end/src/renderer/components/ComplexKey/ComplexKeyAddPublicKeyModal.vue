@@ -64,25 +64,8 @@ const myKeys = computed(() => {
 
 const myContactListKeys = computed(() => {
   if (!isLoggedInOrganization(user.selectedOrganization)) return [];
-  const myUserId = user.selectedOrganization.userId;
-  const myContactListKeysWithDuplicates = contacts.contacts.reduce(
-    (acc, c) => {
-      if (c.user.id !== myUserId) {
-        c.userKeys.forEach(k => {
-          if (!acc.some(k2 => k2.publicKey === k.publicKey)) {
-            acc.push({
-              publicKey: k.publicKey,
-              nickname: c.nickname,
-            });
-          }
-        });
-      }
-      return acc;
-    },
-    [] as { publicKey: string; nickname: string }[],
-  );
 
-  return myContactListKeysWithDuplicates;
+  return contacts.publicKeys.filter(pk => !myKeys.value.some(k => k.publicKey === pk.publicKey));
 });
 
 const listedKeyList = computed(() => {
