@@ -25,8 +25,6 @@ const router = useRouter();
 /* Functions */
 const getTransactionData = (): [string, Uint8Array, string[]] => {
   const transaction = props.createTransaction();
-  console.log(transaction.maxTransactionFee?.toString());
-
   return [
     getTransactionType(transaction),
     transaction.toBytes(),
