@@ -382,7 +382,7 @@ describe('TransactionStatusService', () => {
       expect(notificationsService.emit).not.toHaveBeenCalled();
     });
 
-    it('should skip transaction if is file update or append', async () => {
+    it.skip('should skip transaction if is file update or append', async () => {
       const transactions = [
         {
           id: 1,
@@ -502,7 +502,7 @@ describe('TransactionStatusService', () => {
       expect(notificationsService.emit).not.toHaveBeenCalled();
     });
 
-    it('should skip transaction if is file update or append', async () => {
+    it.skip('should skip transaction if is file update or append', async () => {
       const transaction = {
         id: 1,
         status: TransactionStatus.WAITING_FOR_SIGNATURES,

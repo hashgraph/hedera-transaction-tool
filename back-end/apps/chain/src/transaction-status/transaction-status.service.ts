@@ -4,12 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 
 import { In, Between, MoreThan, Repository, LessThanOrEqual } from 'typeorm';
-import {
-  FileAppendTransaction,
-  FileUpdateTransaction,
-  Status,
-  Transaction as SDKTransaction,
-} from '@hashgraph/sdk';
+import { Status, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
   MirrorNodeService,
@@ -237,13 +232,6 @@ export class TransactionStatusService {
 
     /* Gets the SDK transaction from the transaction body */
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
-
-    /* Throws an error if the transaction is a file update/append transaction */
-    if (
-      sdkTransaction instanceof FileUpdateTransaction ||
-      sdkTransaction instanceof FileAppendTransaction
-    )
-      return;
 
     /* Gets the signature key */
     const signatureKey = await computeSignatureKey(
