@@ -1,18 +1,22 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import type { HederaAccount } from '@prisma/client';
+
+import { computed, onMounted, ref } from 'vue';
 
 import { PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useContactsStore from '@renderer/stores/storeContacts';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { isPublicKey, isLoggedInOrganization } from '@renderer/utils';
+import { getAll } from '@renderer/services/accountsService';
+
+import { isPublicKey, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppListItem from '@renderer/components/ui/AppListItem.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { b } from 'vitest/dist/chunks/suite.CcK46U-P.js';
 
 /* Enums */
 enum KeyTab {
@@ -37,12 +41,14 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 const contacts = useContactsStore();
 
 /* State */
 const publicKey = ref('');
 const selectedPublicKeys = ref<string[]>([]);
 const currentTab = ref(KeyTab.MY);
+const accounts = ref<HederaAccount[]>([]);
 
 /* Computed */
 const myKeys = computed(() => {
@@ -137,10 +143,26 @@ const handleInsert = (e: Event) => {
   }
 };
 
-/* Handlers */
-const handleKeyTabChange = async (tab: string) => {
+const handleKeyTabChange = async (tab: KeyTab) => {
   currentTab.value = tab;
 };
+
+/* Functions */
+async function fetchAccounts() {
+  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+
+  accounts.value = await getAll({
+    where: {
+      user_id: user.personal.id,
+      network: network.network,
+    },
+  });
+}
+
+/* Hooks */
+onMounted(async () => {
+  await fetchAccounts();
+});
 </script>
 <template>
   <AppModal :show="show" @update:show="$emit('update:show', $event)" class="large-modal">
