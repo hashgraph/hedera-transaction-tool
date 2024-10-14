@@ -9,12 +9,12 @@ import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { createTransactionId } from '@renderer/services/transactionService';
+import { createTransactionId } from '@renderer/utils/sdk/createTransactions';
+import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import OrganizationRequestHandler from './OrganizationRequestHandler.vue';
 
 import { assertHandlerExists } from '..';
-import { isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 /* Constants */
 const FIRST_CHUNK_SIZE_BYTES = 100;
