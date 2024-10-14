@@ -2,6 +2,9 @@
 .env
 *.sqlite
 
+# yaml secrets files
+*-secret.yaml
+
 # files with notes and scripts for manual data/image manipulation
 *.helper
 
