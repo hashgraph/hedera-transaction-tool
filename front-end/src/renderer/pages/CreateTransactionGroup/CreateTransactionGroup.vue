@@ -210,29 +210,30 @@ async function handleOnFileChanged(e: Event) {
     let memo = '';
     let validStart: Date | null = null;
     for (const row of rows) {
-      const title = row.split(',')[0];
+      const title = row.split(',')[0].toLowerCase();
       switch (title) {
-        case 'Sender Account':
+        case 'sender account':
           senderAccount = row.split(',')[1];
           break;
-        case 'Fee Payer Account':
+        case 'fee payer account':
           feePayer = row.split(',')[1];
           break;
-        case 'Sending Time':
+        case 'sending time':
           sendingTime = row.split(',')[1];
           break;
-        case 'Node IDs':
+        case 'node ids':
           break;
-        case 'Transaction Fee':
+        case 'transaction fee':
           transactionFee = row.split(',')[1];
           break;
-        case 'Transaction Valid Duration':
+        case 'transaction valid duration':
           txValidDuration = row.split(',')[1];
           break;
-        case 'Memo':
+        case 'memo':
           memo = row.split(',')[1];
           break;
-        case 'Account ID':
+        case 'accountid':
+        case 'account id':
           break;
         default: {
           if (row === '') {
