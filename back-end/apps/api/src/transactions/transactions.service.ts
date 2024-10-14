@@ -72,14 +72,7 @@ export class TransactionsService {
 
     const transaction = await this.repo.findOne({
       where: { id },
-      relations: [
-        'creatorKey',
-        'creatorKey.user',
-        'observers',
-        'observers.user',
-        'comments',
-        'groupItem',
-      ],
+      relations: ['creatorKey', 'observers', 'comments', 'groupItem'],
     });
 
     if (!transaction) return null;
@@ -362,7 +355,10 @@ export class TransactionsService {
 
     /* Check if the transaction already exists */
     const countExisting = await this.repo.count({
-      where: [{ transactionId: sdkTransaction.transactionId.toString() }, { transactionBytes: dto.transactionBytes }],
+      where: [
+        { transactionId: sdkTransaction.transactionId.toString() },
+        { transactionBytes: dto.transactionBytes },
+      ],
     });
     if (countExisting > 0) throw new BadRequestException('Transaction already exists');
 
@@ -415,7 +411,7 @@ export class TransactionsService {
       throw new BadRequestException('Transaction not found');
     }
 
-    if (transaction.creatorKey?.user?.id !== user.id) {
+    if (transaction.creatorKey?.userId !== user.id) {
       throw new BadRequestException('Only the creator of the transaction is able to delete it');
     }
 
@@ -446,7 +442,7 @@ export class TransactionsService {
       throw new BadRequestException('Transaction not found');
     }
 
-    if (transaction.creatorKey?.user?.id !== user.id) {
+    if (transaction.creatorKey?.userId !== user.id) {
       throw new UnauthorizedException('Only the creator of the transaction is able to cancel it');
     }
 
@@ -499,7 +495,7 @@ export class TransactionsService {
           id: transaction.id,
         },
       },
-      relations: ['userKey', 'userKey.user'],
+      relations: ['userKey'],
       withDeleted: true,
     });
 
@@ -526,7 +522,7 @@ export class TransactionsService {
       userKeysToSign.length !== 0 ||
       transaction.creatorKey?.user?.id === user.id ||
       transaction.observers.some(o => o.userId === user.id) ||
-      transaction.signers.some(s => s.userKey.user.id === user.id) ||
+      transaction.signers.some(s => s.userKey?.userId === user.id) ||
       transaction.approvers.some(a => a.userId === user.id)
     );
   }
