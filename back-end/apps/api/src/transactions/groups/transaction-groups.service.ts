@@ -68,7 +68,6 @@ export class TransactionGroupsService {
         'groupItems',
         'groupItems.transaction',
         'groupItems.transaction.creatorKey',
-        'groupItems.transaction.creatorKey.user',
         'groupItems.transaction.observers',
       ],
     });
@@ -78,7 +77,8 @@ export class TransactionGroupsService {
     }
 
     group.groupItems = await asyncFilter(group.groupItems, async groupItem => {
-      await this.transactionsService.attachTransactionSignersApprovers(groupItem.transaction);
+      await this.transactionsService.attachTransactionSigners(groupItem.transaction);
+      await this.transactionsService.attachTransactionApprovers(groupItem.transaction);
       return this.transactionsService.verifyAccess(groupItem.transaction, user);
     });
 

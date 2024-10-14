@@ -473,12 +473,9 @@ export class TransactionsService {
 
   /* Get the transaction with the provided id if user has access */
   async getTransactionWithVerifiedAccess(transactionId: number, user: User) {
-    const transaction = await this.repo.findOne({
-      where: { id: transactionId },
-      relations: ['creatorKey', 'creatorKey.user', 'observers', 'groupItem'],
-    });
+    const transaction = await this.getTransactionById(transactionId);
 
-    await this.attachTransactionSignersApprovers(transaction);
+    await this.attachTransactionApprovers(transaction);
 
     if (!(await this.verifyAccess(transaction, user))) {
       throw new UnauthorizedException("You don't have permission to view this transaction");
@@ -486,7 +483,7 @@ export class TransactionsService {
     return transaction;
   }
 
-  async attachTransactionSignersApprovers(transaction: Transaction) {
+  async attachTransactionSigners(transaction: Transaction) {
     if (!transaction) throw new NotFoundException('Transaction not found');
 
     transaction.signers = await this.entityManager.find(TransactionSigner, {
@@ -498,6 +495,10 @@ export class TransactionsService {
       relations: ['userKey'],
       withDeleted: true,
     });
+  }
+
+  async attachTransactionApprovers(transaction: Transaction) {
+    if (!transaction) throw new NotFoundException('Transaction not found');
 
     const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
     transaction.approvers = this.approversService.getTreeStructure(approvers);
