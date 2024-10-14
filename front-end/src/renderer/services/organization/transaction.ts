@@ -32,7 +32,7 @@ export const submitTransaction = async (
   network: Network,
   signature: string,
   creatorKeyId: number,
-): Promise<{ id: number; body: string }> =>
+): Promise<{ id: number; transactionBytes: string }> =>
   commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.post(`${serverUrl}/${controller}`, {
       name,
@@ -43,7 +43,7 @@ export const submitTransaction = async (
       creatorKeyId,
     });
 
-    return { id: data.id, body: data.body };
+    return { id: data.id, transactionBytes: data.transactionBytes };
   }, 'Failed submit transaction');
 
 /* Cancel a transaction  */

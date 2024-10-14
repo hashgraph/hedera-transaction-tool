@@ -35,7 +35,7 @@ export const submitTransactionGroup = async (
   description: string,
   atomic: boolean,
   groupItems: ApiGroupItem[],
-): Promise<{ id: number; body: string }> => {
+): Promise<{ id: number; transactionBytes: string }> => {
   return commonRequestHandler(async () => {
     const { data } = await axios.post(
       `${serverUrl}/transaction-groups`,
@@ -49,7 +49,7 @@ export const submitTransactionGroup = async (
       },
     );
 
-    return { id: data.id, body: '' };
+    return { id: data.id, transactionBytes: '' };
   }, 'Failed submit transaction');
 };
 

@@ -50,7 +50,7 @@ const props = defineProps<{
   observers?: number[];
   approvers?: TransactionApproverDto[];
   onExecuted?: (id: string) => void;
-  onSubmitted?: (id: number, body: string) => void;
+  onSubmitted?: (id: number, transactionBytes: string) => void;
   onCloseSuccessModalClick?: () => void;
   watchExecutedModalShown?: (shown: boolean) => void;
 }>();
@@ -344,7 +344,7 @@ async function sendSignedTransactionsToOrganization() {
     });
   }
 
-  const { id, body } = await submitTransactionGroup(
+  const { id, transactionBytes } = await submitTransactionGroup(
     user.selectedOrganization.serverUrl,
     transactionGroup.description,
     false,
@@ -371,7 +371,7 @@ async function sendSignedTransactionsToOrganization() {
       }
     });
   }
-  props.onSubmitted && props.onSubmitted(id, body);
+  props.onSubmitted && props.onSubmitted(id, transactionBytes);
 }
 
 async function uploadObservers(transactionId: number, seqId: number) {
