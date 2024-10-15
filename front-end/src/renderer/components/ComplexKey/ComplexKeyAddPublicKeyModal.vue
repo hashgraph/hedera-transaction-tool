@@ -39,65 +39,46 @@ const contacts = useContactsStore();
 
 /* State */
 const publicKey = ref('');
-const searchQuery = ref('');
 const selectedPublicKeys = ref<string[]>([]);
 const currentTab = ref(KeyTab.MY);
 
 /* Computed */
 const myKeys = computed(() => {
-  const myKeysWithDuplicates = user.keyPairs.map(kp => ({
+  return user.keyPairs.map(kp => ({
     publicKey: kp.public_key,
     nickname: kp.nickname,
   }));
-
-  return myKeysWithDuplicates.filter(
-    (k, i) => myKeysWithDuplicates.findIndex(k2 => k2.publicKey === k.publicKey) === i,
-  );
 });
 
 const myContactListKeys = computed(() => {
   if (!isLoggedInOrganization(user.selectedOrganization)) return [];
-
-  return contacts.publicKeys.filter(pk => !myKeys.value.some(k => k.publicKey === pk.publicKey));
+  const myKeySet = new Set(myKeys.value.map(k => k.publicKey));
+  return contacts.publicKeys.filter(pk => !myKeySet.has(pk.publicKey));
 });
 
 const listedKeyList = computed(() => {
-  let currentKeyList: { publicKey: string; nickname: string | null }[] = [];
+  let result: { publicKey: string; nickname: string | null }[] = [];
 
   switch (currentTab.value) {
     case KeyTab.MY:
-      currentKeyList = myKeys.value;
+      result = myKeys.value;
       break;
     case KeyTab.CONTACTS:
-      currentKeyList = myContactListKeys.value;
+      result = myContactListKeys.value;
       break;
   }
 
-  // Filter by publicKey, nickname, or email
-  const searchByKey = searchQuery.value.trim().toLowerCase();
-  currentKeyList = currentKeyList.filter(key => {
-    const contact = contacts.getContactByPublicKey(key.publicKey);
-    const email = contact?.user.email?.toLowerCase() || '';
-    const nickname = key.nickname?.toLowerCase() || '';
-
-    return (
-      key.publicKey.toLowerCase().includes(searchByKey) ||
-      nickname.includes(searchByKey) ||
-      email.includes(searchByKey)
-    );
-  });
+  result = filterKeyList(result, publicKey.value);
 
   if (props.alreadyAdded && props.alreadyAdded.length > 0) {
-    return currentKeyList.filter(k => !props.alreadyAdded?.includes(k.publicKey));
+    return result.filter(k => !props.alreadyAdded?.includes(k.publicKey));
   } else {
-    return currentKeyList;
+    return result;
   }
 });
 
 /* Handlers */
-const handleInsert = (e: Event) => {
-  e.preventDefault();
-
+const handleInsert = () => {
   if (props.multiple && selectedPublicKeys.value.length === 0 && publicKey.value.trim() === '')
     return;
 
@@ -133,11 +114,27 @@ const handleInsert = (e: Event) => {
 const handleKeyTabChange = async (tab: KeyTab) => {
   currentTab.value = tab;
 };
+
+/* Functions */
+function filterKeyList(keyList: { publicKey: string; nickname: string | null }[], query: string) {
+  query = query.trim().toLowerCase();
+  return keyList.filter(key => {
+    const contact = contacts.getContactByPublicKey(key.publicKey);
+    const email = contact?.user.email?.toLowerCase() || '';
+    const nickname = key.nickname?.toLowerCase() || '';
+
+    return (
+      key.publicKey.toLowerCase().includes(query) ||
+      nickname.includes(query) ||
+      email.includes(query)
+    );
+  });
+}
 </script>
 <template>
   <AppModal :show="show" @update:show="$emit('update:show', $event)" class="large-modal">
     <div class="p-4">
-      <form @submit="handleInsert">
+      <form @submit.prevent="handleInsert">
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
         </div>
@@ -146,7 +143,7 @@ const handleKeyTabChange = async (tab: KeyTab) => {
         <p class="text-micro text-bold mt-5">Search by or paste public key</p>
         <div class="mt-3">
           <AppInput
-            v-model:model-value="searchQuery"
+            v-model:model-value="publicKey"
             data-testid="input-complex-public-key"
             filled
             type="text"
@@ -172,7 +169,7 @@ const handleKeyTabChange = async (tab: KeyTab) => {
         >
         <div>
           <template v-if="listedKeyList.length > 0">
-            <div class="mt-4 overflow-auto" :style="{ height: '313px' }">
+            <div class="overflow-auto mt-4" :style="{ height: '35vh' }">
               <template v-for="kp in listedKeyList" :key="kp.public_key">
                 <AppListItem
                   class="mt-3"
@@ -209,7 +206,7 @@ const handleKeyTabChange = async (tab: KeyTab) => {
             </div>
           </template>
           <template v-else>
-            <div class="flex-centered flex-column mt-4" :style="{ height: '158px' }">
+            <div class="flex-centered flex-column mt-4" :style="{ height: '35vh' }">
               <p class="text-muted">There are no selectable public keys</p>
             </div>
           </template>
