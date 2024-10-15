@@ -29,7 +29,7 @@ class TransactionPage extends BasePage {
   updateAccountInputSelector = 'input-account-id-for-update';
   maxAutoAssociationsUpdateInputSelector = 'input-max-auto-token-associations';
   memoUpdateInputSelector = 'input-account-memo';
-  transactionMemoUpdateInputSelector = 'input-transaction-memo';
+  transactionMemoInputSelector = 'input-transaction-memo';
   transferFromAccountIdInputSelector = 'input-transfer-from-account';
   transferAmountFromAccountInputSelector = 'input-transfer-from-amount';
   transferToAccountIdInputSelector = 'input-transfer-to-account';
@@ -45,15 +45,10 @@ class TransactionPage extends BasePage {
   fileContentUpdateTextFieldSelector = 'textarea-file-content';
   fileIdInputForAppendSelector = 'input-file-id-for-append';
   fileContentAppendTextFieldSelector = 'textarea-file-content';
-  fileCreateTransactionMemoInputSelector = 'input-transaction-memo';
-  fileUpdateTransactionMemoInputSelector = 'input-transaction-memo';
-  fileAppendTransactionMemoInputSelector = 'input-transaction-memo';
-  fileCreateMemoInputSelector = 'input-file-memo';
+  fileMemoInputSelector = 'input-file-memo';
   fileCreateExpirationDateInputSelector = 'input-expiration-time-for-file';
   fileCreateNameInputSelector = 'input-file-name-for-file-create';
   fileCreateDescriptionInputSelector = 'input-file-description-for-file-create';
-  deleteAccountMemoInputSelector = 'input-transaction-memo';
-  fileUpdateMemoInputSelector = 'input-file-memo';
   maxTransactionFeeInputSelector = 'input-max-transaction-fee';
   descriptionInputSelector = 'input-transaction-description';
 
@@ -165,8 +160,8 @@ class TransactionPage extends BasePage {
     const checks = await Promise.all([
       this.isElementVisible(this.signAndSubmitFileCreateSelector),
       this.isElementVisible(this.fileContentTextFieldSelector),
-      this.isElementVisible(this.fileCreateTransactionMemoInputSelector),
-      this.isElementVisible(this.fileCreateMemoInputSelector),
+      this.isElementVisible(this.transactionMemoInputSelector),
+      this.isElementVisible(this.fileMemoInputSelector),
       this.isElementVisible(this.fileCreateExpirationDateInputSelector),
       this.isElementVisible(this.fileCreateNameInputSelector),
       this.isElementVisible(this.fileCreateDescriptionInputSelector),
@@ -997,15 +992,11 @@ class TransactionPage extends BasePage {
   }
 
   async fillInTransactionMemoUpdate(memo) {
-    await this.fill(this.transactionMemoUpdateInputSelector, memo);
+    await this.fill(this.transactionMemoInputSelector, memo);
   }
 
   async getTransactionMemoText() {
-    return await this.getTextFromInputField(this.transactionMemoUpdateInputSelector);
-  }
-
-  async getTransactionMemoTextForDeletePage() {
-    return await this.getTextFromInputField(this.deleteAccountMemoInputSelector);
+    return await this.getTextFromInputField(this.transactionMemoInputSelector);
   }
 
   async fillInNickname(nickname) {
@@ -1186,10 +1177,6 @@ class TransactionPage extends BasePage {
     await this.click(this.draftsTabSelector);
   }
 
-  async fillInDeleteAccountTransactionMemo(memo) {
-    await this.fill(this.deleteAccountMemoInputSelector, memo);
-  }
-
   async fillInTransactionMemoForApprovePage(memo) {
     await this.fill(this.approveAllowanceTransactionMemoSelector, memo);
   }
@@ -1198,44 +1185,12 @@ class TransactionPage extends BasePage {
     return await this.getTextFromInputField(this.approveAllowanceTransactionMemoSelector);
   }
 
-  async fillInTransactionMemoForCreateFilePage(memo) {
-    await this.fill(this.fileCreateTransactionMemoInputSelector, memo);
+  async fillInFileMemo(memo) {
+    await this.fill(this.fileMemoInputSelector, memo);
   }
 
-  async getTransactionMemoFromFilePage() {
-    return await this.getTextFromInputField(this.fileCreateTransactionMemoInputSelector);
-  }
-
-  async fillInFileMemoForCreatePage(memo) {
-    await this.fill(this.fileCreateMemoInputSelector, memo);
-  }
-
-  async getFileMemoFromCreatePage() {
-    return await this.getTextFromInputField(this.fileCreateMemoInputSelector);
-  }
-
-  async fillInTransactionMemoForFileUpdatePage(memo) {
-    await this.fill(this.fileUpdateTransactionMemoInputSelector, memo);
-  }
-
-  async getTransactionMemoFromFileUpdatePage() {
-    return await this.getTextFromInputField(this.fileUpdateTransactionMemoInputSelector);
-  }
-
-  async fillInTransactionMemoForFileAppendPage(memo) {
-    await this.fill(this.fileAppendTransactionMemoInputSelector, memo);
-  }
-
-  async getTransactionMemoFromFileAppendPage() {
-    return await this.getTextFromInputField(this.fileAppendTransactionMemoInputSelector);
-  }
-
-  async fillInFileUpdateMemo(memo) {
-    await this.fill(this.fileUpdateMemoInputSelector, memo);
-  }
-
-  async getFileUpdateMemo() {
-    return await this.getTextFromInputField(this.fileUpdateMemoInputSelector);
+  async getFileMemoTextFromField() {
+    return await this.getTextFromInputField(this.fileMemoInputSelector);
   }
 
   async getFirstDraftDate() {

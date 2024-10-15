@@ -565,13 +565,13 @@ test.describe('Transaction tests', () => {
     const transferAccountId = await transactionPage.fillInTransferAccountId();
     const transactionMemoText = 'test memo';
     const accountIdToBeDeleted = '0.0.1234';
-    await transactionPage.fillInDeleteAccountTransactionMemo(transactionMemoText);
+    await transactionPage.fillInTransactionMemoUpdate(transactionMemoText);
     await transactionPage.fillInDeleteAccountIdNormally(accountIdToBeDeleted);
 
     await transactionPage.saveDraft();
     await transactionPage.clickOnFirstDraftContinueButton();
 
-    const transactionMemoFromField = await transactionPage.getTransactionMemoTextForDeletePage();
+    const transactionMemoFromField = await transactionPage.getTransactionMemoText();
     expect(transactionMemoFromField).toBe(transactionMemoText);
 
     const deletedIdFromField = await transactionPage.getPrefilledAccountIdInDeletePage();
@@ -624,21 +624,18 @@ test.describe('Transaction tests', () => {
     const fileMemoText = 'file memo';
     // const fileContent = 'test file content';
 
-    await transactionPage.fillInTransactionMemoForCreateFilePage(transactionMemoText);
-    await transactionPage.fillInFileMemoForCreatePage(fileMemoText);
+    await transactionPage.fillInTransactionMemoUpdate(transactionMemoText);
+    await transactionPage.fillInFileMemo(fileMemoText);
     // await transactionPage.fillInFileContent(fileContent);
 
     await transactionPage.saveDraft();
     await transactionPage.clickOnFirstDraftContinueButton();
 
-    const transactionMemoFromField = await transactionPage.getTransactionMemoFromFilePage();
+    const transactionMemoFromField = await transactionPage.getTransactionMemoText();
     expect(transactionMemoFromField).toBe(transactionMemoText);
 
-    const fileMemoFromField = await transactionPage.getFileMemoFromCreatePage();
+    const fileMemoFromField = await transactionPage.getFileMemoTextFromField();
     expect(fileMemoFromField).toBe(fileMemoText);
-
-    // const fileContentFromField = await transactionPage.getFileContentText();
-    // expect(fileContentFromField).toBe(fileContent);
 
     await transactionPage.navigateToDrafts();
     await transactionPage.deleteFirstDraft();
@@ -654,20 +651,20 @@ test.describe('Transaction tests', () => {
     const transactionMemoText = 'test memo';
     const fileMemoText = 'file memo';
 
-    await transactionPage.fillInTransactionMemoForFileUpdatePage(transactionMemoText);
+    await transactionPage.fillInTransactionMemoUpdate(transactionMemoText);
     await transactionPage.fillInFileIdForUpdate(fileId);
-    await transactionPage.fillInFileUpdateMemo(fileMemoText);
+    await transactionPage.fillInFileMemo(fileMemoText);
 
     await transactionPage.saveDraft();
     await transactionPage.clickOnFirstDraftContinueButton();
 
-    const transactionMemoFromField = await transactionPage.getTransactionMemoFromFileUpdatePage();
+    const transactionMemoFromField = await transactionPage.getTransactionMemoText();
     expect(transactionMemoFromField).toBe(transactionMemoText);
 
     const fileIdFromPage = await transactionPage.getFileIdFromUpdatePage();
     expect(fileId).toBe(fileIdFromPage);
 
-    const fileMemoFromField = await transactionPage.getFileUpdateMemo();
+    const fileMemoFromField = await transactionPage.getFileMemoTextFromField();
     expect(fileMemoFromField).toBe(fileMemoText);
 
     await transactionPage.navigateToDrafts();
@@ -683,13 +680,13 @@ test.describe('Transaction tests', () => {
 
     const transactionMemoText = 'test memo';
 
-    await transactionPage.fillInTransactionMemoForFileAppendPage(transactionMemoText);
+    await transactionPage.fillInTransactionMemoUpdate(transactionMemoText);
     await transactionPage.fillInFileIdForAppend(fileId);
 
     await transactionPage.saveDraft();
     await transactionPage.clickOnFirstDraftContinueButton();
 
-    const transactionMemoFromField = await transactionPage.getTransactionMemoFromFileAppendPage();
+    const transactionMemoFromField = await transactionPage.getTransactionMemoText();
     expect(transactionMemoFromField).toBe(transactionMemoText);
 
     const fileIdFromPage = await transactionPage.getFileIdFromAppendPage();
