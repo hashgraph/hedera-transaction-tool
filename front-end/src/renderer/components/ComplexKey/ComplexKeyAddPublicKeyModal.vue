@@ -13,6 +13,12 @@ import AppListItem from '@renderer/components/ui/AppListItem.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
+/* Enums */
+enum KeyTab {
+  MY = 'My keys',
+  CONTACTS = 'My contacts',
+}
+
 /* Props */
 const props = defineProps<{
   show: boolean;
@@ -34,27 +40,45 @@ const contacts = useContactsStore();
 /* State */
 const publicKey = ref('');
 const selectedPublicKeys = ref<string[]>([]);
+const currentTab = ref(KeyTab.MY);
 
 /* Computed */
-const keyList = computed(() => {
-  const keys = user.keyPairs
-    .map(kp => ({ publicKey: kp.public_key, nickname: kp.nickname }))
-    .concat(isLoggedInOrganization(user.selectedOrganization) ? contacts.publicKeys : []);
-
-  return keys.filter(k => keys.findIndex(k2 => k2.publicKey === k.publicKey) === keys.indexOf(k));
+const myKeys = computed(() => {
+  return user.keyPairs.map(kp => ({
+    publicKey: kp.public_key,
+    nickname: kp.nickname,
+  }));
 });
+
+const myContactListKeys = computed(() => {
+  if (!isLoggedInOrganization(user.selectedOrganization)) return [];
+  const myKeySet = new Set(myKeys.value.map(k => k.publicKey));
+  return contacts.publicKeys.filter(pk => !myKeySet.has(pk.publicKey));
+});
+
 const listedKeyList = computed(() => {
+  let result: { publicKey: string; nickname: string | null }[] = [];
+
+  switch (currentTab.value) {
+    case KeyTab.MY:
+      result = myKeys.value;
+      break;
+    case KeyTab.CONTACTS:
+      result = myContactListKeys.value;
+      break;
+  }
+
+  result = filterKeyList(result, publicKey.value);
+
   if (props.alreadyAdded && props.alreadyAdded.length > 0) {
-    return keyList.value.filter(k => !props.alreadyAdded?.includes(k.publicKey));
+    return result.filter(k => !props.alreadyAdded?.includes(k.publicKey));
   } else {
-    return keyList.value;
+    return result;
   }
 });
 
 /* Handlers */
-const handleInsert = (e: Event) => {
-  e.preventDefault();
-
+const handleInsert = () => {
   if (props.multiple && selectedPublicKeys.value.length === 0 && publicKey.value.trim() === '')
     return;
 
@@ -86,30 +110,66 @@ const handleInsert = (e: Event) => {
     throw new Error('Invalid public key/s');
   }
 };
+
+const handleKeyTabChange = async (tab: KeyTab) => {
+  currentTab.value = tab;
+};
+
+/* Functions */
+function filterKeyList(keyList: { publicKey: string; nickname: string | null }[], query: string) {
+  query = query.trim().toLowerCase();
+  return keyList.filter(key => {
+    const contact = contacts.getContactByPublicKey(key.publicKey);
+    const email = contact?.user.email?.toLowerCase() || '';
+    const nickname = key.nickname?.toLowerCase() || '';
+
+    return (
+      key.publicKey.toLowerCase().includes(query) ||
+      nickname.includes(query) ||
+      email.includes(query)
+    );
+  });
+}
 </script>
 <template>
-  <AppModal :show="show" @update:show="$emit('update:show', $event)" class="medium-modal">
+  <AppModal :show="show" @update:show="$emit('update:show', $event)" class="large-modal">
     <div class="p-4">
-      <form @submit="handleInsert">
+      <form @submit.prevent="handleInsert">
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
         </div>
         <h1 class="text-title text-semi-bold text-center">Add Public Key</h1>
 
-        <div class="mt-5">
+        <p class="text-micro text-bold mt-5">Search by or paste public key</p>
+        <div class="mt-3">
           <AppInput
             v-model:model-value="publicKey"
             data-testid="input-complex-public-key"
             filled
             type="text"
-            placeholder="Enter Public Key"
+            placeholder="Public Key"
           />
         </div>
+
         <hr class="separator my-5" />
+
+        <template v-if="isLoggedInOrganization(user.selectedOrganization)">
+          <div class="btn-group d-flex justify-content-between">
+            <template v-for="kt in KeyTab" :key="kt">
+              <AppButton
+                @click="handleKeyTabChange(kt)"
+                :class="{ active: currentTab === kt }"
+                color="secondary"
+                type="button"
+                data-testid="tab-keys-my"
+                >{{ kt }}</AppButton
+              >
+            </template>
+          </div></template
+        >
         <div>
-          <!-- <h3 class="text-small">Recent</h3> -->
           <template v-if="listedKeyList.length > 0">
-            <div class="mt-4 overflow-auto" :style="{ height: '158px' }">
+            <div class="overflow-auto mt-4" :style="{ height: '35vh' }">
               <template v-for="kp in listedKeyList" :key="kp.public_key">
                 <AppListItem
                   class="mt-3"
@@ -146,7 +206,7 @@ const handleInsert = (e: Event) => {
             </div>
           </template>
           <template v-else>
-            <div class="flex-centered flex-column mt-4" :style="{ height: '158px' }">
+            <div class="flex-centered flex-column mt-4" :style="{ height: '35vh' }">
               <p class="text-muted">There are no selectable public keys</p>
             </div>
           </template>
