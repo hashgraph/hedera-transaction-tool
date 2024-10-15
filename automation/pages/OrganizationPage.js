@@ -511,7 +511,7 @@ class OrganizationPage extends BasePage {
    * Opens the date picker.
    */
   async openDatePicker() {
-    await this.window.click(`.dp__input_wrap`);
+    await this.click(`.dp__input_wrap`);
     await this.window.waitForSelector('.dp__instance_calendar');
   }
 
@@ -519,7 +519,7 @@ class OrganizationPage extends BasePage {
    * Switches to the time picker within the date picker.
    */
   async switchToTimePicker() {
-    await this.window.click(this.timePickerIconSelector);
+    await this.click(this.timePickerIconSelector);
     await this.window.waitForSelector('.dp__time_input');
   }
 
