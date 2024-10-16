@@ -56,16 +56,16 @@ class TransactionPage extends BasePage {
   transactionsMenuButtonSelector = 'button-menu-transactions';
   accountsMenuButtonSelector = 'button-menu-accounts';
   createNewTransactionButtonSelector = 'button-create-new';
-  createAccountSublinkSelector = 'menu-sublink-0';
-  updateAccountSublinkSelector = 'menu-sublink-1';
-  deleteAccountSublinkSelector = 'menu-sublink-2';
-  transferTokensSublinkSelector = 'menu-sublink-3';
-  allowanceSublinkSelector = 'menu-sublink-4';
-  fileServiceLinkSelector = 'menu-link-1';
-  createFileSublinkSelector = 'menu-sublink-0';
-  updateFileSublinkSelector = 'menu-sublink-1';
-  readFileSublinkSelector = 'menu-sublink-2';
-  appendFileSublinkSelector = 'menu-sublink-3';
+  fileServiceLinkSelector = 'menu-link-file';
+  createAccountSublinkSelector = 'menu-sub-link-accountcreatetransaction';
+  updateAccountSublinkSelector = 'menu-sub-link-accountupdatetransaction';
+  deleteAccountSublinkSelector = 'menu-sub-link-accountdeletetransaction';
+  transferTokensSublinkSelector = 'menu-sub-link-transfertransaction';
+  allowanceSublinkSelector = 'menu-sub-link-accountallowanceapprovetransaction';
+  createFileSublinkSelector = 'menu-sub-link-filecreatetransaction';
+  updateFileSublinkSelector = 'menu-sub-link-fileupdatetransaction';
+  readFileSublinkSelector = 'menu-sub-link-filecontentsquery';
+  appendFileSublinkSelector = 'menu-sub-link-fileappendtransaction';
   saveDraftButtonSelector = 'button-save-draft';
   signAndSubmitButtonSelector = 'button-header-create';
   signAndSubmitDeleteButtonSelector = 'button-header-create';
@@ -118,7 +118,6 @@ class TransactionPage extends BasePage {
   transactionDetailsCreatedAtSelector = 'p-transaction-details-created-at';
   transactionDetailsIdSelector = 'p-transaction-details-id';
   approveAllowanceTransactionMemoSelector = 'input-transaction-memo';
-  newAccountIdDetailsSelector = 'p-new-account-id';
 
   //Indexes
   accountIdPrefixSelector = 'p-account-id-';
@@ -234,128 +233,40 @@ class TransactionPage extends BasePage {
     await this.clickOnSingleTransactionButton();
   }
 
-  /**
-   * Generalized function to attempt clicking on a transaction link and check for the visibility of a target element.
-   * @param {string} linkSelector - The test ID selector for the transaction link.
-   * @param {string} targetSelector - The test ID selector for the target element to verify page transition.
-   * @param {string} transactionType - A string representing the type of transaction for logging purposes.
-   * @throws {Error} Throws an error if unable to navigate to the transaction page after multiple attempts.
-   */
-  async clickOnTransactionLink(linkSelector, targetSelector, transactionType) {
-    console.log(`Attempting to click on ${transactionType} Transaction link`);
-    const maxAttempts = 10; // Maximum number of attempts to find the correct element
-    for (let index = 0; index < maxAttempts; index++) {
-      try {
-        await this.click(linkSelector, index);
-        // Check if the next page element that should appear is visible
-        if (await this.isElementVisible(targetSelector)) {
-          console.log(`Successfully navigated to the ${transactionType} Transaction page.`);
-          return;
-        }
-      } catch (error) {
-        console.log(
-          `Attempt ${index + 1}: Failed to find or click on the correct element, retrying...`,
-        );
-      }
-    }
-    throw new Error(
-      `Failed to navigate to the ${transactionType} Transaction page after multiple attempts`,
-    );
-  }
-
-  async clickOnMenuLink(linkSelector, transactionType) {
-    console.log(`Attempting to click on ${transactionType} menu link`);
-    const maxAttempts = 10; // Maximum number of attempts to find the correct element
-    for (let index = 0; index < maxAttempts; index++) {
-      try {
-        await this.click(linkSelector, index);
-        // After clicking, verify that the menu item is now active
-        const isActive = await this.isElementActive(linkSelector, index);
-        if (isActive) {
-          console.log(`Successfully activated the ${transactionType} menu link`);
-          return;
-        } else {
-          console.log(`Attempt ${index + 1}: Menu item is not active after click, retrying...`);
-        }
-      } catch (error) {
-        console.log(
-          `Attempt ${index + 1}: Failed to find or click on the correct element, retrying...`,
-        );
-      }
-    }
-    throw new Error(`Failed to activate the ${transactionType} menu link after multiple attempts`);
-  }
-
   async clickOnCreateAccountTransaction() {
-    await this.clickOnTransactionLink(
-      this.createAccountSublinkSelector,
-      this.signAndSubmitButtonSelector,
-      'Create Account',
-    );
+    await this.click(this.createAccountSublinkSelector);
   }
 
   async clickOnDeleteAccountTransaction() {
-    await this.clickOnTransactionLink(
-      this.deleteAccountSublinkSelector,
-      this.transferAccountInputSelector,
-      'Delete Account',
-    );
+    await this.click(this.deleteAccountSublinkSelector);
   }
 
   async clickOnUpdateAccountTransaction() {
-    await this.clickOnTransactionLink(
-      this.updateAccountSublinkSelector,
-      this.updateAccountInputSelector,
-      'Update Account',
-    );
+    await this.click(this.updateAccountSublinkSelector);
   }
 
   async clickOnApproveAllowanceTransaction() {
-    await this.clickOnTransactionLink(
-      this.allowanceSublinkSelector,
-      this.signAndSubmitAllowanceSelector,
-      'Approve Allowance',
-    );
+    await this.click(this.allowanceSublinkSelector);
   }
 
   async clickOnTransferTokensTransaction() {
-    await this.clickOnTransactionLink(
-      this.transferTokensSublinkSelector,
-      this.signAndSubmitTransferSelector,
-      'Transfer Tokens',
-    );
+    await this.click(this.transferTokensSublinkSelector);
   }
 
   async clickOnFileCreateTransaction() {
-    await this.clickOnTransactionLink(
-      this.createFileSublinkSelector,
-      this.signAndSubmitFileCreateSelector,
-      'Create File',
-    );
+    await this.click(this.createFileSublinkSelector);
   }
 
   async clickOnReadCreateTransaction() {
-    await this.clickOnTransactionLink(
-      this.readFileSublinkSelector,
-      this.signAndReadFileButtonSelector,
-      'Read File',
-    );
+    await this.click(this.readFileSublinkSelector);
   }
 
   async clickOnUpdateFileSublink() {
-    await this.clickOnTransactionLink(
-      this.updateFileSublinkSelector,
-      this.signAndSubmitUpdateFileSelector,
-      'Update File',
-    );
+    await this.click(this.updateFileSublinkSelector);
   }
 
   async clickOnAppendFileSublink() {
-    await this.clickOnTransactionLink(
-      this.appendFileSublinkSelector,
-      this.signAndSubmitFileAppendButtonSelector,
-      'Append File',
-    );
+    await this.click(this.appendFileSublinkSelector);
   }
 
   async verifyTransactionExists(transactionId, transactionType) {
@@ -1053,6 +964,10 @@ class TransactionPage extends BasePage {
     return firstAccountId;
   }
 
+  async fillInAllowanceOwner(accountId) {
+    await this.fill(this.allowanceOwnerAccountSelector, accountId);
+  }
+
   async getAllowanceOwnerAccountId() {
     return await this.getTextFromInputField(this.allowanceOwnerAccountSelector);
   }
@@ -1106,7 +1021,7 @@ class TransactionPage extends BasePage {
   }
 
   async clickOnFileServiceLink() {
-    await this.clickOnMenuLink(this.fileServiceLinkSelector, 'File Service');
+    await this.click(this.fileServiceLinkSelector);
   }
 
   async fillInFileIdForRead(fileId) {

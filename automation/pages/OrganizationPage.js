@@ -578,6 +578,7 @@ class OrganizationPage extends BasePage {
     await this.transactionPage.clickOnTransactionsMenuButton();
     await this.transactionPage.clickOnCreateNewTransactionButton();
     await this.transactionPage.clickOnCreateAccountTransaction();
+    await this.transactionPage.fillInInitialFunds('100');
     await this.transactionPage.clickOnComplexTab();
     await this.transactionPage.clickOnCreateNewComplexKeyButton();
 
@@ -833,6 +834,35 @@ class OrganizationPage extends BasePage {
 
     await this.transactionPage.clickOnSignAndSubmitTransferButton();
     await this.transactionPage.clickSignTransactionButton();
+
+    const txId = await this.getTransactionDetailsId();
+    const validStart = await this.getValidStart();
+
+    if (isSignRequiredFromCreator) {
+      await this.clickOnSignTransactionButton();
+    }
+
+    return { txId, validStart };
+  }
+
+  async approveAllowance(
+    ownerAccountId,
+    amount,
+    timeForExecution,
+    isSignRequiredFromCreator = false,
+  ) {
+    await this.transactionPage.clickOnTransactionsMenuButton();
+    await this.transactionPage.clickOnCreateNewTransactionButton();
+    await this.transactionPage.clickOnApproveAllowanceTransaction(false);
+    await this.transactionPage.fillInAllowanceOwner(ownerAccountId);
+    await this.setDateTimeAheadBy(timeForExecution);
+    await this.transactionPage.fillInAllowanceAmount(amount);
+    await this.transactionPage.fillInSpenderAccountId(
+      await this.getTextFromInputField(this.transactionPage.payerDropdownSelector),
+    );
+    await this.transactionPage.clickOnSignAndSubmitAllowanceButton();
+    await this.transactionPage.clickSignTransactionButton();
+    await this.transactionPage.waitForCreatedAtToBeVisible();
 
     const txId = await this.getTransactionDetailsId();
     const validStart = await this.getValidStart();

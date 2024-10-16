@@ -417,4 +417,60 @@ test.describe('Organization Transaction tests', () => {
     await organizationPage.clickOnHistoryDetailsButtonByTransactionId(txId);
     expect(await organizationPage.isNextTransactionButtonVisible()).toBe(true);
   });
+
+  test('Verify user can execute transfer transaction with complex account', async () => {
+    test.slow();
+    const { txId, validStart } = await organizationPage.transferAmountBetweenAccounts(
+      complexKeyAccountId,
+      '10',
+      15,
+      true,
+    );
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.logoutFromOrganization();
+
+    await organizationPage.logInAndSignTransactionByAllUsers(globalCredentials.password, txId);
+    await organizationPage.signInOrganization(
+      firstUser.email,
+      firstUser.password,
+      globalCredentials.password,
+    );
+    await organizationPage.waitForValidStart(validStart);
+
+    await organizationPage.clickOnHistoryTab();
+    const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId);
+    expect(transactionDetails.transactionId).toBe(txId);
+    expect(transactionDetails.transactionType).toBe('Transfer Transaction');
+    expect(transactionDetails.validStart).toBeTruthy();
+    expect(transactionDetails.detailsButton).toBe(true);
+    expect(transactionDetails.status).toBe('SUCCESS');
+  });
+
+  test('Verify user can execute approve allowance with complex account', async () => {
+    test.slow();
+    const { txId, validStart } = await organizationPage.approveAllowance(
+      complexKeyAccountId,
+      '10',
+      15,
+      true,
+    );
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.logoutFromOrganization();
+
+    await organizationPage.logInAndSignTransactionByAllUsers(globalCredentials.password, txId);
+    await organizationPage.signInOrganization(
+      firstUser.email,
+      firstUser.password,
+      globalCredentials.password,
+    );
+    await organizationPage.waitForValidStart(validStart);
+
+    await organizationPage.clickOnHistoryTab();
+    const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId);
+    expect(transactionDetails.transactionId).toBe(txId);
+    expect(transactionDetails.transactionType).toBe('Account Allowance Approve Transaction');
+    expect(transactionDetails.validStart).toBeTruthy();
+    expect(transactionDetails.detailsButton).toBe(true);
+    expect(transactionDetails.status).toBe('SUCCESS');
+  });
 });
