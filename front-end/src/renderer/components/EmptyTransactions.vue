@@ -45,5 +45,9 @@ const isTransactionSelectionModalShown = ref(false);
       >
     </div>
   </div>
-  <TransactionSelectionModal v-model:show="isTransactionSelectionModalShown" :group="group" />
+  <TransactionSelectionModal
+    v-if="isTransactionSelectionModalShown"
+    v-model:show="isTransactionSelectionModalShown"
+    :group="group"
+  />
 </template>

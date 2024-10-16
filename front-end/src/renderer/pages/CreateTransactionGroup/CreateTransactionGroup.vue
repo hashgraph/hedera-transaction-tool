@@ -430,7 +430,11 @@ onBeforeRouteLeave(async to => {
       <div v-if="groupEmpty">
         <EmptyTransactions class="absolute-centered w-100" group />
       </div>
-      <TransactionSelectionModal v-model:show="isTransactionSelectionModalShown" group />
+      <TransactionSelectionModal
+        v-if="isTransactionSelectionModalShown"
+        v-model:show="isTransactionSelectionModalShown"
+        group
+      />
       <TransactionGroupProcessor
         ref="transactionGroupProcessor"
         :on-close-success-modal-click="handleClose"
