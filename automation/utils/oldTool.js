@@ -28,7 +28,7 @@ const getBasePath = async app => {
  */
 export async function migrationDataExists(app) {
   try {
-    const basePath = await getBasePath(app);
+    const basePath = getBasePath(app);
 
     const propertiesPath = path.join(basePath, FILES, USER_PROPERTIES);
     const mnemonicPath = path.join(basePath, FILES, RECOVERY_FILE_PARENT_FOLDER, RECOVERY_FILE);

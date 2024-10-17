@@ -12,6 +12,7 @@ const {
   generateRandomEmail,
   generateRandomPassword,
   setupEnvironmentForTransactions,
+  waitForValidStart,
 } = require('../utils/util');
 const {
   getFirstPublicKeyByEmail,
@@ -60,11 +61,8 @@ class OrganizationPage extends BasePage {
   logoutButtonSelector = 'button-logout';
   contactListButton = 'button-contact-list';
   deleteNextButtonSelector = 'button-delete-next';
-  addApproverButtonSelector = 'button-add-approver';
   addObserverButtonSelector = 'button-add-observer';
-  selectUserButtonSelector = 'button-select-user';
   addUserButtonSelector = 'button-add-user';
-  doneButtonSelector = 'button-complex-key-done';
   timePickerIconSelector = '.dp--tp-wrap button[aria-label="Open time picker"]';
   incrementSecondsButtonSelector = 'button[aria-label="Increment seconds"]';
   incrementMinutesButtonSelector = 'button[aria-label="Increment minutes"]';
@@ -292,14 +290,6 @@ class OrganizationPage extends BasePage {
     user.password = newPassword;
   }
 
-  findUserAndReturnPassword(email) {
-    const user = this.users.find(user => user.email === email);
-    if (!user) {
-      throw new Error(`User with email ${email} is not defined`);
-    }
-    return user.password;
-  }
-
   async returnAllTabsVisible() {
     const checks = await Promise.all([
       this.isElementVisible(this.readyForReviewTabSelector),
@@ -441,7 +431,6 @@ class OrganizationPage extends BasePage {
   }
 
   async editOrganizationNickname(newNickname) {
-    const { delay } = await import('../utils/util.js');
     let retries = 0;
     const maxRetries = 10;
 
@@ -449,7 +438,7 @@ class OrganizationPage extends BasePage {
       const currentNickname = await this.getOrganizationNicknameText();
       if (currentNickname !== newNickname) {
         await this.clickOnEditNicknameOrganizationButton();
-        await delay(500);
+        await new Promise(resolve => setTimeout(resolve, 500));
         await this.fillInNewOrganizationNickname(newNickname);
         await this.settingsPage.clickOnOrganisationsTab();
         retries++;
@@ -578,6 +567,7 @@ class OrganizationPage extends BasePage {
     await this.transactionPage.clickOnTransactionsMenuButton();
     await this.transactionPage.clickOnCreateNewTransactionButton();
     await this.transactionPage.clickOnCreateAccountTransaction();
+    await this.transactionPage.fillInInitialFunds('100');
     await this.transactionPage.clickOnComplexTab();
     await this.transactionPage.clickOnCreateNewComplexKeyButton();
 
@@ -601,7 +591,8 @@ class OrganizationPage extends BasePage {
     await this.transactionPage.clickSignTransactionButton();
     const transactionId = await this.getTransactionDetailsId();
     await this.clickOnSignTransactionButton();
-    await new Promise(resolve => setTimeout(resolve, 6000));
+    const validStart = await this.getValidStart();
+    await waitForValidStart(validStart);
     const transactionResponse =
       await this.transactionPage.mirrorGetTransactionResponse(transactionId);
     this.complexAccountId.push(transactionResponse.transactions[0].entity_id);
@@ -789,26 +780,40 @@ class OrganizationPage extends BasePage {
     await this.click(this.historyTabSelector);
   }
 
-  async updateAccount(accountId, memo, timeForExecution = 10, isSignRequiredFromCreator = false) {
+  async startNewTransaction(transactionTypeFunction) {
     await this.transactionPage.clickOnTransactionsMenuButton();
     await this.transactionPage.clickOnCreateNewTransactionButton();
-    await this.transactionPage.clickOnUpdateAccountTransaction();
+    await transactionTypeFunction();
+  }
+
+  async processTransaction(isSignRequiredFromCreator = false) {
+    await this.transactionPage.clickOnSignAndSubmitButton();
+    await this.transactionPage.clickSignTransactionButton();
+
+    const txId = await this.getTransactionDetailsId();
+    const validStart = await this.getValidStart();
+
+    if (isSignRequiredFromCreator) {
+      await this.clickOnSignTransactionButton();
+    }
+
+    return { txId, validStart };
+  }
+
+  async updateAccount(accountId, memo, timeForExecution = 10, isSignRequiredFromCreator = false) {
+    await this.startNewTransaction(() => this.transactionPage.clickOnUpdateAccountTransaction());
     await this.setDateTimeAheadBy(timeForExecution);
+
     await this.transactionPage.fillInUpdatedAccountId(accountId);
     await this.transactionPage.fillInMemoUpdate(memo);
     await this.transactionPage.fillInTransactionMemoUpdate('tx memo update');
+
     await this.transactionPage.waitForElementPresentInDOM(
       this.transactionPage.updateAccountIdFetchedDivSelector,
       30000,
     );
-    await this.transactionPage.clickOnSignAndSubmitUpdateButton();
-    await this.transactionPage.clickSignTransactionButton();
-    const txId = await this.getTransactionDetailsId();
-    const validStart = await this.getValidStart();
-    if (isSignRequiredFromCreator) {
-      await this.clickOnSignTransactionButton();
-    }
-    return { txId, validStart };
+
+    return await this.processTransaction(isSignRequiredFromCreator);
   }
 
   async transferAmountBetweenAccounts(
@@ -817,53 +822,42 @@ class OrganizationPage extends BasePage {
     timeForExecution = 10,
     isSignRequiredFromCreator = false,
   ) {
-    await this.transactionPage.clickOnTransactionsMenuButton();
-    await this.transactionPage.clickOnCreateNewTransactionButton();
-    await this.transactionPage.clickOnTransferTokensTransaction();
+    await this.startNewTransaction(() => this.transactionPage.clickOnTransferTokensTransaction());
     await this.setDateTimeAheadBy(timeForExecution);
+
     await this.fill(this.transactionPage.transferFromAccountIdInputSelector, fromAccountId);
     await this.transactionPage.fillInTransferAmountFromAccount(amount);
+
     const payerAccountId = await this.getTextFromInputField(
       this.transactionPage.payerDropdownSelector,
     );
     await this.transactionPage.fillInTransferToAccountId(payerAccountId);
+
     await this.transactionPage.clickOnAddTransferFromButton();
     await this.transactionPage.fillInTransferAmountToAccount(amount);
     await this.transactionPage.clickOnAddTransferToButton();
 
-    await this.transactionPage.clickOnSignAndSubmitTransferButton();
-    await this.transactionPage.clickSignTransactionButton();
-
-    const txId = await this.getTransactionDetailsId();
-    const validStart = await this.getValidStart();
-
-    if (isSignRequiredFromCreator) {
-      await this.clickOnSignTransactionButton();
-    }
-
-    return { txId, validStart };
+    return await this.processTransaction(isSignRequiredFromCreator);
   }
 
-  async waitForValidStart(dateTimeString, bufferSeconds = 15) {
-    // Convert the dateTimeString to a Date object
-    const targetDate = new Date(dateTimeString);
+  async approveAllowance(
+    ownerAccountId,
+    amount,
+    timeForExecution,
+    isSignRequiredFromCreator = false,
+  ) {
+    await this.startNewTransaction(() =>
+      this.transactionPage.clickOnApproveAllowanceTransaction(false),
+    );
+    await this.setDateTimeAheadBy(timeForExecution);
 
-    // Get the current time
-    const currentDate = new Date();
+    await this.transactionPage.fillInAllowanceOwner(ownerAccountId);
+    await this.transactionPage.fillInAllowanceAmount(amount);
+    await this.transactionPage.fillInSpenderAccountId(
+      await this.getTextFromInputField(this.transactionPage.payerDropdownSelector),
+    );
 
-    // Calculate the difference in milliseconds
-    const timeDifference = targetDate - currentDate;
-
-    // Add buffer time (in milliseconds)
-    const waitTime = Math.max(timeDifference + bufferSeconds * 1000, 0); // Ensure non-negative
-
-    // Wait for the calculated time
-    if (waitTime > 0) {
-      console.log(`Waiting for ${waitTime / 1000} seconds until the valid start time...`);
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-    } else {
-      console.log('The target time has already passed.');
-    }
+    return await this.processTransaction(isSignRequiredFromCreator);
   }
 
   async getReadyForSignTransactionIdByIndex(index) {

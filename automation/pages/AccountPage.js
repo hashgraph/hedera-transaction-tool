@@ -224,8 +224,7 @@ class AccountPage extends BasePage {
   }
 
   async clickOnAccountCheckbox(accountId) {
-    const { delay } = await import('../utils/util.js');
-    await delay(1000);
+    await new Promise(resolve => setTimeout(resolve, 1000));
     const index = await this.transactionPage.findAccountIndexById(accountId);
     await this.click(this.multiSelectCheckboxSelector + index);
   }

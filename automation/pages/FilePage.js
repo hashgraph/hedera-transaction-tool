@@ -152,8 +152,7 @@ class FilePage extends BasePage {
   }
 
   async clickOnFileCheckbox(fileId) {
-    const { delay } = await import('../utils/util.js');
-    await delay(1000);
+    await new Promise(resolve => setTimeout(resolve, 1000));
     const index = await this.findFileByIndex(fileId);
     await this.click(this.multiSelectFileCheckboxSelector + index);
   }
