@@ -41,6 +41,7 @@ import {
   attachKeys,
   notifyWaitingForSignatures,
   notifySyncIndicators,
+  ErrorCodes,
 } from '@app/common';
 
 import { CreateTransactionDto } from './dto';
@@ -327,8 +328,7 @@ export class TransactionsService {
 
     /* Verify the signature matches the transaction */
     const validSignature = publicKey.verify(dto.transactionBytes, dto.signature);
-    if (!validSignature)
-      throw new BadRequestException('The signature does not match the public key');
+    if (!validSignature) throw new BadRequestException(ErrorCodes.SNMP);
 
     /* Check if the transaction is expired */
     const sdkTransaction = SDKTransaction.fromBytes(dto.transactionBytes);

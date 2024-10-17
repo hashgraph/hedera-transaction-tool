@@ -42,6 +42,7 @@ import {
   updateAccount,
 } from '../utils/hederaUtils';
 import { HederaAccount } from '../utils/models';
+import { ErrorCodes } from '@app/common';
 
 describe('Transactions (e2e)', () => {
   let app: NestExpressApplication;
@@ -213,15 +214,15 @@ describe('Transactions (e2e)', () => {
       const transaction = await createTransaction();
       transaction.signature = 'invalid-signature';
 
-      const { status } = await endpoint.post(transaction, null, userAuthCookie);
+      const { status, body } = await endpoint.post(transaction, null, userAuthCookie);
       const countAfter = await repo.count();
 
       expect(status).toEqual(400);
-      // expect(body).toMatchObject(
-      //   expect.objectContaining({
-      //     message: 'The signature does not match the public key',
-      //   }),
-      // );
+      expect(body).toMatchObject(
+        expect.objectContaining({
+          code: ErrorCodes.SNMP,
+        }),
+      );
       expect(countAfter).toEqual(countBefore);
     });
 

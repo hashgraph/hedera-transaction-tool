@@ -21,6 +21,7 @@ import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
   attachKeys,
+  ErrorCodes,
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
   notifySyncIndicators,
@@ -598,7 +599,7 @@ export class ApproversService {
     if (
       !verifyTransactionBodyWithoutNodeAccountIdSignature(sdkTransaction, dto.signature, publicKey)
     )
-      throw new BadRequestException('The signature does not match the public key');
+      throw new BadRequestException(ErrorCodes.SNMP);
 
     /* Update the approver with the signature */
     await this.dataSource.transaction(async transactionalEntityManager => {
