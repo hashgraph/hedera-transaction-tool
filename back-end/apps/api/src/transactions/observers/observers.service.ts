@@ -144,7 +144,7 @@ export class ObserversService {
   private async getUpdateableObserver(id: number, user: User): Promise<TransactionObserver> {
     const observer = await this.repo.findOneBy({ id });
 
-    if (!observer) throw new BadRequestException('Transaction observer not found');
+    if (!observer) throw new BadRequestException(ErrorCodes.ONF);
 
     const transaction = await this.entityManager.findOne(Transaction, {
       where: { id: observer.transactionId },

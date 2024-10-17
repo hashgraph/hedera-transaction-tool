@@ -24,6 +24,7 @@ export enum ErrorCodes {
   ISNMP = 'ISNMP',
   ANF = 'ANF',
   RANF = 'RANF',
+  ONF = 'ONF',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -53,4 +54,5 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.ISNMP]: 'Invalid signature map',
   [ErrorCodes.ANF]: 'Approver not found',
   [ErrorCodes.RANF]: 'Root approver not found',
+  [ErrorCodes.ONF]: 'Observer not found',
 };
