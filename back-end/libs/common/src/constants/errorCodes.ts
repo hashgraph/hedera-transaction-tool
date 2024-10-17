@@ -6,6 +6,7 @@ export enum ErrorCodes {
   TE = 'TE',
   TEX = 'TEX',
   FST = 'FST',
+  OTIP = 'OTIP',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -16,4 +17,5 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.TE]: 'Transaction is expired',
   [ErrorCodes.TEX]: 'Transaction already exists',
   [ErrorCodes.FST]: 'Failed to save transaction',
+  [ErrorCodes.OTIP]: 'Only transactions in progress can be canceled',
 };

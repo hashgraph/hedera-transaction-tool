@@ -404,7 +404,7 @@ export class TransactionsService {
         TransactionStatus.NEW,
       ].includes(transaction.status)
     ) {
-      throw new BadRequestException('Only transactions in progress can be canceled');
+      throw new BadRequestException(ErrorCodes.OTIP);
     }
 
     await this.repo.update({ id }, { status: TransactionStatus.CANCELED });
