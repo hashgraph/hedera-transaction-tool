@@ -86,7 +86,7 @@ export class UserKeysService {
     }
 
     if (userKey.userId !== user.id) {
-      throw new BadRequestException('Key not owned by user');
+      throw new BadRequestException(ErrorCodes.PNY);
     }
 
     await this.repo.softRemove(userKey);

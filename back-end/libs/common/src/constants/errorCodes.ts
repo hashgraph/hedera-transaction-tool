@@ -14,6 +14,7 @@ export enum ErrorCodes {
   SAD = 'SAD',
   KNRS = 'KNRS',
   PU = 'PU',
+  PNY = 'PNY',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -32,4 +33,5 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.SAD]: 'Signature already added',
   [ErrorCodes.KNRS]: 'Key not required to sign',
   [ErrorCodes.PU]: 'Public key already used',
+  [ErrorCodes.PNY]: 'Provided key/s not yours',
 };
