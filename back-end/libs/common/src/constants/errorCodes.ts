@@ -3,6 +3,7 @@ export enum ErrorCodes {
   INOP = 'INOP',
   UNKWN = 'UNKWN',
   SNMP = 'SNMP',
+  TE = 'TE',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -10,4 +11,5 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.INOP]: 'Invalid old password',
   [ErrorCodes.UNKWN]: 'Unknown error',
   [ErrorCodes.SNMP]: 'The signature does not match the public key',
+  [ErrorCodes.TE]: 'Transaction is expired',
 };

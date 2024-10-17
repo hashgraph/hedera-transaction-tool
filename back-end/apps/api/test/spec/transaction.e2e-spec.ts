@@ -302,15 +302,15 @@ describe('Transactions (e2e)', () => {
         network: localnet1003.network,
       };
 
-      const { status } = await endpoint.post(dto, null, userAuthCookie);
+      const { status, body } = await endpoint.post(dto, null, userAuthCookie);
       const countAfter = await repo.count();
 
       expect(status).toEqual(400);
-      // expect(body).toMatchObject(
-      //   expect.objectContaining({
-      //     message: 'Transaction is expired',
-      //   }),
-      // );
+      expect(body).toMatchObject(
+        expect.objectContaining({
+          message: ErrorCodes.TE,
+        }),
+      );
       expect(countAfter).toEqual(countBefore);
     });
 

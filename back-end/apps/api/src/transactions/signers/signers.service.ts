@@ -19,8 +19,8 @@ import {
   Pagination,
   userKeysRequiredToSign,
   validateSignature,
+  ErrorCodes,
 } from '@app/common';
-
 import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
 
 import { UploadSignatureArrayDto, UploadSignatureDto } from '../dto';
@@ -116,7 +116,7 @@ export class SignersService {
     if (!transaction) throw new BadRequestException('Transaction not found');
 
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
-    if (isExpired(sdkTransaction)) throw new BadRequestException('Transaction is expired');
+    if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
 
     /* Checks if the transaction is canceled */
     if (transaction.status === TransactionStatus.CANCELED)
@@ -203,7 +203,7 @@ export class SignersService {
     if (!transaction) throw new BadRequestException('Transaction not found');
 
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
-    if (isExpired(sdkTransaction)) throw new BadRequestException('Transaction is expired');
+    if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
 
     /* Checks if the transaction is canceled */
     if (transaction.status === TransactionStatus.CANCELED)
