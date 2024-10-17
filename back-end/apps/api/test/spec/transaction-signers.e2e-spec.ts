@@ -154,7 +154,7 @@ describe('Transactions (e2e)', () => {
       expect(response.body).toEqual(
         expect.objectContaining({
           statusCode: 400,
-          // message: 'Signature already added',
+          code: ErrorCodes.SAD,
         }),
       );
     });

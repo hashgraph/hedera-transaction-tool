@@ -11,6 +11,7 @@ export enum ErrorCodes {
   TAP = 'TAP',
   TAX = 'TAX',
   TC = 'TC',
+  SAD = 'SAD',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -26,4 +27,5 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.TAP]: 'Transaction already approved',
   [ErrorCodes.TAX]: 'Transaction already executed',
   [ErrorCodes.TC]: 'Transaction canceled',
+  [ErrorCodes.SAD]: 'Signature already added',
 };

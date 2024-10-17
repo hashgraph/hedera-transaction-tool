@@ -131,7 +131,7 @@ export class SignersService {
 
     /* Add the signatures to the transaction */
     if (isAlreadySigned(sdkTransaction, userKey.publicKey))
-      throw new BadRequestException('Signature already added');
+      throw new BadRequestException(ErrorCodes.SAD);
 
     const keysIds = await userKeysRequiredToSign(
       transaction,
@@ -217,7 +217,7 @@ export class SignersService {
 
       /* Verify that the signature is not already added */
       if (isAlreadySigned(sdkTransaction, userKey.publicKey))
-        throw new BadRequestException('Signature already added');
+        throw new BadRequestException(ErrorCodes.SAD);
 
       /* Verify that each signature corresponds the correct transaction for the given node and to the public key  */
       for (const nodeAccountId in signatures) {
