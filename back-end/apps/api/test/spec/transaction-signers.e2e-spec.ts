@@ -130,7 +130,7 @@ describe('Transactions (e2e)', () => {
       expect(response.body).toEqual(
         expect.objectContaining({
           statusCode: 400,
-          // message: 'This key is not required to sign this transaction',
+          code: ErrorCodes.KNRS,
         }),
       );
     });

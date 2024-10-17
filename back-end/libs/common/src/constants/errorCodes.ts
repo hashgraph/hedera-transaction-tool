@@ -12,6 +12,7 @@ export enum ErrorCodes {
   TAX = 'TAX',
   TC = 'TC',
   SAD = 'SAD',
+  KNRS = 'KNRS',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -28,4 +29,5 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.TAX]: 'Transaction already executed',
   [ErrorCodes.TC]: 'Transaction canceled',
   [ErrorCodes.SAD]: 'Signature already added',
+  [ErrorCodes.KNRS]: 'Key not required to sign',
 };

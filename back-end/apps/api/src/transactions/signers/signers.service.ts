@@ -141,7 +141,7 @@ export class SignersService {
     );
 
     if (!keysIds.includes(userKey.id)) {
-      throw new BadRequestException('This key is not required to sign this transaction');
+      throw new BadRequestException(ErrorCodes.KNRS);
     }
 
     try {
