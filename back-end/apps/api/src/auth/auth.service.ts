@@ -16,6 +16,7 @@ import * as bcrypt from 'bcryptjs';
 
 import {
   ELECTRON_APP_PROTOCOL_PREFIX,
+  ErrorCodes,
   NOTIFICATIONS_SERVICE,
   NOTIFY_EMAIL,
   NotifyEmailDto,
@@ -95,11 +96,10 @@ export class AuthService {
 
   /* Change the password for the given user */
   async changePassword(user: User, { oldPassword, newPassword }: ChangePasswordDto): Promise<void> {
-    if (oldPassword === newPassword)
-      throw new BadRequestException('New password should not be the old password');
+    if (oldPassword === newPassword) throw new BadRequestException(ErrorCodes.NPMOP);
 
     const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
-    if (!isOldPasswordValid) throw new BadRequestException('Invalid old password');
+    if (!isOldPasswordValid) throw new BadRequestException(ErrorCodes.INOP);
 
     await this.usersService.setPassword(user, newPassword);
   }
