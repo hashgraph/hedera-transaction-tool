@@ -1,11 +1,5 @@
 import { ClientProxy } from '@nestjs/microservices';
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 
 import { EntityManager, Repository } from 'typeorm';
@@ -46,7 +40,7 @@ export class ObserversService {
       relations: ['creatorKey', 'creatorKey.user', 'observers'],
     });
 
-    if (!transaction) throw new NotFoundException(ErrorCodes.TNF);
+    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     if (transaction.creatorKey?.user?.id !== user.id)
       throw new UnauthorizedException('Only the creator of the transaction is able to delete it');
@@ -85,7 +79,7 @@ export class ObserversService {
       relations: ['creatorKey', 'observers', 'signers', 'signers.userKey'],
     });
 
-    if (!transaction) throw new NotFoundException(ErrorCodes.TNF);
+    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     const userKeysToSign = await userKeysRequiredToSign(
       transaction,
@@ -150,14 +144,14 @@ export class ObserversService {
   private async getUpdateableObserver(id: number, user: User): Promise<TransactionObserver> {
     const observer = await this.repo.findOneBy({ id });
 
-    if (!observer) throw new NotFoundException('Transaction observer not found');
+    if (!observer) throw new BadRequestException('Transaction observer not found');
 
     const transaction = await this.entityManager.findOne(Transaction, {
       where: { id: observer.transactionId },
       relations: ['creatorKey', 'creatorKey.user'],
     });
 
-    if (!transaction) throw new NotFoundException(ErrorCodes.TNF);
+    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     if (transaction.creatorKey?.user?.id !== user.id)
       throw new UnauthorizedException('Only the creator of the transaction is able to update it');

@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -69,7 +69,7 @@ export class TransactionGroupsService {
     });
 
     if (!(group?.groupItems?.length > 0)) {
-      throw new NotFoundException(ErrorCodes.TNF);
+      throw new BadRequestException(ErrorCodes.TNF);
     }
 
     group.groupItems = await asyncFilter(group.groupItems, async groupItem => {

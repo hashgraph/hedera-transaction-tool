@@ -1,11 +1,5 @@
 import { ClientProxy } from '@nestjs/microservices';
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
 import {
@@ -119,7 +113,7 @@ export class ApproversService {
       relations: ['creatorKey', 'creatorKey.user', 'observers', 'signers', 'signers.userKey'],
     });
 
-    if (!transaction) throw new NotFoundException("Transaction doesn't exist");
+    if (!transaction) throw new BadRequestException("Transaction doesn't exist");
 
     const approvers = await this.getApproversByTransactionId(transactionId);
 
@@ -157,7 +151,7 @@ export class ApproversService {
     id: number,
     entityManager?: EntityManager,
   ): Promise<TransactionApprover[]> {
-    if (typeof id !== 'number') throw new NotFoundException("Transaction doesn't exist");
+    if (typeof id !== 'number') throw new BadRequestException("Transaction doesn't exist");
 
     return (entityManager || this.repo).query(
       `
@@ -383,11 +377,11 @@ export class ApproversService {
 
         /* Verifies that the approver exists */
         const approver = await this.getTransactionApproverById(id, transactionalEntityManager);
-        if (!approver) throw new NotFoundException("Approver doesn't exist");
+        if (!approver) throw new BadRequestException("Approver doesn't exist");
 
         /* Gets the root approver */
         const rootNode = await this.getRootNodeFromNode(approver.id, transactionalEntityManager);
-        if (!rootNode) throw new NotFoundException("Root approver doesn't exist");
+        if (!rootNode) throw new BadRequestException("Root approver doesn't exist");
 
         /* Verifies that the root transaction is the same as the param */
         if (rootNode.transactionId !== transactionId)
@@ -538,7 +532,7 @@ export class ApproversService {
   async removeTransactionApprover(id: number): Promise<void> {
     const approver = await this.getTransactionApproverById(id);
 
-    if (!approver) throw new NotFoundException("Approver doesn't exist");
+    if (!approver) throw new BadRequestException("Approver doesn't exist");
 
     const result = await this.removeNode(approver.id);
 
@@ -579,7 +573,7 @@ export class ApproversService {
     });
 
     /* Check if the transaction exists */
-    if (!transaction) throw new NotFoundException(ErrorCodes.TNF);
+    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     /* Checks if the transaction is executed */
     if (
@@ -635,7 +629,7 @@ export class ApproversService {
       ? entityManager.findOne(Transaction, find)
       : this.dataSource.manager.findOne(Transaction, find));
 
-    if (!transaction) throw new NotFoundException(ErrorCodes.TNF);
+    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     if (transaction.creatorKey?.user?.id !== user.id)
       throw new UnauthorizedException('Only the creator of the transaction is able to modify it');

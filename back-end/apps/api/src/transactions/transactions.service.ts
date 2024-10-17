@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 
@@ -428,7 +422,7 @@ export class TransactionsService {
   }
 
   async attachTransactionSigners(transaction: Transaction) {
-    if (!transaction) throw new NotFoundException(ErrorCodes.TNF);
+    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     transaction.signers = await this.entityManager.find(TransactionSigner, {
       where: {
@@ -442,14 +436,14 @@ export class TransactionsService {
   }
 
   async attachTransactionApprovers(transaction: Transaction) {
-    if (!transaction) throw new NotFoundException(ErrorCodes.TNF);
+    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
     transaction.approvers = this.approversService.getTreeStructure(approvers);
   }
 
   async verifyAccess(transaction: Transaction, user: User): Promise<boolean> {
-    if (!transaction) throw new NotFoundException(ErrorCodes.TNF);
+    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     if (
       [
