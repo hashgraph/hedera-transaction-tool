@@ -17,6 +17,11 @@ export enum ErrorCodes {
   PNY = 'PNY',
   CRYFO = 'CRYFO',
   UNF = 'UNF',
+  IFP = 'IFP',
+  ISP = 'ISP',
+  IPP = 'IPP',
+  INP = 'INP',
+  ISNMP = 'ISNMP',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -38,4 +43,10 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.PNY]: 'Provided key/s not yours',
   [ErrorCodes.CRYFO]: 'Cannot remove yourself from the organization',
   [ErrorCodes.UNF]: 'User not found',
+  [ErrorCodes.IFP]: 'Invalid filter parameters',
+  [ErrorCodes.ISP]: 'Invalid sorting parameters',
+  [ErrorCodes.IPP]:
+    'Invalid pagination parameters. Page and size should be positive integers and size should be less than 100',
+  [ErrorCodes.INP]: 'Invalid network parameter',
+  [ErrorCodes.ISNMP]: 'Invalid signature map',
 };

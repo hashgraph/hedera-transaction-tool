@@ -1,7 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
-
 import { registerDecorator } from 'class-validator';
-import { decode, isAccountId } from '../utils';
+
+import { decode, ErrorCodes, isAccountId } from '@app/common';
 
 export function IsSignatureMap() {
   return function (object: object, propertyName: string) {
@@ -11,12 +11,11 @@ export function IsSignatureMap() {
       propertyName: propertyName,
       validator: {
         validate(value) {
-          if (!value || typeof value !== 'object')
-            throw new BadRequestException('Signature map must be an object');
+          if (!value || typeof value !== 'object') throw new BadRequestException(ErrorCodes.ISNMP);
 
           for (const key in value) {
             if (!isAccountId(key) || !value[key] || typeof value[key] !== 'string')
-              throw new BadRequestException('Invalid Signature map');
+              throw new BadRequestException(ErrorCodes.ISNMP);
 
             value[key] = decode(value[key]);
           }

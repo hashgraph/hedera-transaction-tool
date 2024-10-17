@@ -1,6 +1,8 @@
 import { BadRequestException, createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Request } from 'express';
 
+import { ErrorCodes } from '@app/common';
+
 export interface Sorting {
   property: string;
   direction: string;
@@ -18,7 +20,7 @@ export const SortingParams = createParamDecorator(
 
     if (!sort) return null;
 
-    if (!Array.isArray(validProperties)) throw new BadRequestException('Invalid sort parameter');
+    if (!Array.isArray(validProperties)) throw new BadRequestException(ErrorCodes.ISP);
 
     const sorting: Sorting[] = [];
 
@@ -32,7 +34,7 @@ export const SortingParams = createParamDecorator(
 
 function parseSort(rawSort: string, validProperties: string[]): Sorting {
   const sortPattern = /^([a-zA-Z0-9]+):(asc|desc)$/;
-  if (!rawSort.match(sortPattern)) throw new BadRequestException('Invalid sort parameter');
+  if (!rawSort.match(sortPattern)) throw new BadRequestException(ErrorCodes.ISP);
 
   const [property, direction] = rawSort.split(':');
   if (!validProperties.includes(property))
