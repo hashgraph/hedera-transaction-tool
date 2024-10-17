@@ -341,7 +341,7 @@ export class TransactionsService {
         { transactionBytes: dto.transactionBytes },
       ],
     });
-    if (countExisting > 0) throw new BadRequestException('Transaction already exists');
+    if (countExisting > 0) throw new BadRequestException(ErrorCodes.TEX);
 
     const client = getClientFromName(dto.network);
     sdkTransaction.freezeWith(client);

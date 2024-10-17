@@ -268,17 +268,17 @@ describe('Transactions (e2e)', () => {
       await endpoint.post(transaction, null, userAuthCookie);
 
       const countBefore = await repo.count();
-      const { status } = await endpoint.post(transaction, null, userAuthCookie);
+      const { status, body } = await endpoint.post(transaction, null, userAuthCookie);
       const countAfter = await repo.count();
 
       testsAddedTransactionsCountUser++;
 
       expect(status).toEqual(400);
-      // expect(body).toMatchObject(
-      //   expect.objectContaining({
-      //     message: 'Transaction already exists',
-      //   }),
-      // );
+      expect(body).toMatchObject(
+        expect.objectContaining({
+          code: ErrorCodes.TEX,
+        }),
+      );
       expect(countAfter).toEqual(countBefore);
     });
 
@@ -308,7 +308,7 @@ describe('Transactions (e2e)', () => {
       expect(status).toEqual(400);
       expect(body).toMatchObject(
         expect.objectContaining({
-          message: ErrorCodes.TE,
+          code: ErrorCodes.TE,
         }),
       );
       expect(countAfter).toEqual(countBefore);
