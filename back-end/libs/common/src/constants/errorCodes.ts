@@ -15,6 +15,7 @@ export enum ErrorCodes {
   KNRS = 'KNRS',
   PU = 'PU',
   PNY = 'PNY',
+  CRYFO = 'CRYFO',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -34,4 +35,5 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.KNRS]: 'Key not required to sign',
   [ErrorCodes.PU]: 'Public key already used',
   [ErrorCodes.PNY]: 'Provided key/s not yours',
+  [ErrorCodes.CRYFO]: 'Cannot remove yourself from the organization',
 };
