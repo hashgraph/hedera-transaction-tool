@@ -48,7 +48,7 @@ function createOnlyOwnerKeyInterceptor<T>(keyIdProp: keyof T) {
       }
 
       if (!body) {
-        throw new BadRequestException('Request body is missing.');
+        throw new BadRequestException();
       }
     }
 
