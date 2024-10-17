@@ -562,8 +562,7 @@ export class ApproversService {
       throw new UnauthorizedException('You are not an approver of this transaction');
 
     /* Check if the user has already approved the transaction */
-    if (userApprovers.every(a => a.signature))
-      throw new BadRequestException('You have already approved this transaction');
+    if (userApprovers.every(a => a.signature)) throw new BadRequestException(ErrorCodes.TAP);
 
     /* Ensures the user keys are passed */
     await attachKeys(user, this.dataSource.manager);
@@ -587,11 +586,11 @@ export class ApproversService {
       transaction.status === TransactionStatus.EXECUTED ||
       transaction.status === TransactionStatus.FAILED
     )
-      throw new BadRequestException('Transaction has already been executed');
+      throw new BadRequestException(ErrorCodes.TAX);
 
     /* Checks if the transaction is canceled */
     if (transaction.status === TransactionStatus.CANCELED)
-      throw new BadRequestException('Transaction has been canceled');
+      throw new BadRequestException(ErrorCodes.TC);
 
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 

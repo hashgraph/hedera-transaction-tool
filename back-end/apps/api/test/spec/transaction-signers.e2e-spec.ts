@@ -228,7 +228,7 @@ describe('Transactions (e2e)', () => {
       expect(body).toEqual(
         expect.objectContaining({
           statusCode: 400,
-          // message: 'Transaction has been canceled',
+          code: ErrorCodes.TC,
         }),
       );
     });

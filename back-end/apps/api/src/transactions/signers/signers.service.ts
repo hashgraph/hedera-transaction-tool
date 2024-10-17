@@ -120,7 +120,7 @@ export class SignersService {
 
     /* Checks if the transaction is canceled */
     if (transaction.status === TransactionStatus.CANCELED)
-      throw new BadRequestException('Transaction has been canceled');
+      throw new BadRequestException(ErrorCodes.TC);
 
     /* Verify that each signature corresponds the correct transaction for the given node and to the public key  */
     for (const key in signatures) {
@@ -207,7 +207,7 @@ export class SignersService {
 
     /* Checks if the transaction is canceled */
     if (transaction.status === TransactionStatus.CANCELED)
-      throw new BadRequestException('Transaction has been canceled');
+      throw new BadRequestException(ErrorCodes.TC);
 
     const userKeys: UserKey[] = [];
 
