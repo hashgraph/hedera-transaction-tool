@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsRelations, Repository } from 'typeorm';
+import { FindOptionsRelations, FindOptionsWhere, Repository } from 'typeorm';
+
+import { attachKeys, ErrorCodes } from '@app/common';
 import { User, UserKey } from '@entities';
+
 import { UploadUserKeyDto } from './dtos';
-import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
-import { attachKeys } from '@app/common';
 
 export const MAX_USER_KEYS = 20;
 
@@ -44,7 +45,7 @@ export class UserKeysService {
       // match the hash or index provided
       // throw an error.
       if (userKey.userId !== user.id || (userKey.index && userKey.index !== dto.index)) {
-        throw new BadRequestException('Public Key in use.');
+        throw new BadRequestException(ErrorCodes.PU);
       }
       // Set the hash and/or index (only if the current value is null)
       Object.assign(userKey, dto);
