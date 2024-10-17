@@ -1,3 +1,4 @@
+import { ErrorCodes, ErrorMessages } from '@app/common';
 import { ExceptionFilter, Catch, ArgumentsHost, BadRequestException } from '@nestjs/common';
 import { Response } from 'express';
 
@@ -8,10 +9,12 @@ export class BadRequestExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const status = exception.getStatus();
 
+    const isErrorCode = ErrorMessages[exception.message];
+
     response.status(status).json({
       statusCode: status,
       message: 'The request is invalid. Please check the request body and try again.',
-      code: exception.message,
+      code: isErrorCode ? exception.message : ErrorCodes.UNKWN,
     });
   }
 }
