@@ -22,6 +22,8 @@ export enum ErrorCodes {
   IPP = 'IPP',
   INP = 'INP',
   ISNMP = 'ISNMP',
+  ANF = 'ANF',
+  RANF = 'RANF',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -49,4 +51,6 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
     'Invalid pagination parameters. Page and size should be positive integers and size should be less than 100',
   [ErrorCodes.INP]: 'Invalid network parameter',
   [ErrorCodes.ISNMP]: 'Invalid signature map',
+  [ErrorCodes.ANF]: 'Approver not found',
+  [ErrorCodes.RANF]: 'Root approver not found',
 };
