@@ -428,7 +428,7 @@ export class TransactionsService {
   }
 
   async attachTransactionSigners(transaction: Transaction) {
-    if (!transaction) throw new NotFoundException('Transaction not found');
+    if (!transaction) throw new NotFoundException(ErrorCodes.TNF);
 
     transaction.signers = await this.entityManager.find(TransactionSigner, {
       where: {
@@ -442,14 +442,14 @@ export class TransactionsService {
   }
 
   async attachTransactionApprovers(transaction: Transaction) {
-    if (!transaction) throw new NotFoundException('Transaction not found');
+    if (!transaction) throw new NotFoundException(ErrorCodes.TNF);
 
     const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
     transaction.approvers = this.approversService.getTreeStructure(approvers);
   }
 
   async verifyAccess(transaction: Transaction, user: User): Promise<boolean> {
-    if (!transaction) throw new NotFoundException('Transaction not found');
+    if (!transaction) throw new NotFoundException(ErrorCodes.TNF);
 
     if (
       [
@@ -496,7 +496,7 @@ export class TransactionsService {
     const transaction = await this.getTransactionById(id);
 
     if (!transaction) {
-      throw new BadRequestException('Transaction not found');
+      throw new BadRequestException(ErrorCodes.TNF);
     }
 
     if (transaction.creatorKey?.userId !== user?.id) {

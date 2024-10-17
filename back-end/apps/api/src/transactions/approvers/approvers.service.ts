@@ -580,7 +580,7 @@ export class ApproversService {
     });
 
     /* Check if the transaction exists */
-    if (!transaction) throw new NotFoundException('Transaction not found');
+    if (!transaction) throw new NotFoundException(ErrorCodes.TNF);
 
     /* Checks if the transaction is executed */
     if (
@@ -636,7 +636,7 @@ export class ApproversService {
       ? entityManager.findOne(Transaction, find)
       : this.dataSource.manager.findOne(Transaction, find));
 
-    if (!transaction) throw new NotFoundException('Transaction not found');
+    if (!transaction) throw new NotFoundException(ErrorCodes.TNF);
 
     if (transaction.creatorKey?.user?.id !== user.id)
       throw new UnauthorizedException('Only the creator of the transaction is able to modify it');

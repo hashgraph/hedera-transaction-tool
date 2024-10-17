@@ -3,6 +3,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { Repository } from 'typeorm';
 import { AccountCreateTransaction, AccountUpdateTransaction, KeyList } from '@hashgraph/sdk';
 
+import { ErrorCodes } from '@app/common';
 import { User, Transaction, TransactionSigner, UserKey, TransactionStatus } from '@entities';
 
 import { closeApp, createNestApp, login } from '../utils';
@@ -196,7 +197,7 @@ describe('Transactions (e2e)', () => {
       expect(body).toEqual(
         expect.objectContaining({
           statusCode: 400,
-          // message: 'Transaction not found',
+          code: ErrorCodes.TNF,
         }),
       );
     });

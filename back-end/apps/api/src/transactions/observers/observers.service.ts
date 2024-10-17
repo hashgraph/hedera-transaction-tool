@@ -17,6 +17,7 @@ import {
   NOTIFICATIONS_SERVICE,
   userKeysRequiredToSign,
   notifyTransactionAction,
+  ErrorCodes,
 } from '@app/common';
 
 import { ApproversService } from '../approvers';
@@ -45,7 +46,7 @@ export class ObserversService {
       relations: ['creatorKey', 'creatorKey.user', 'observers'],
     });
 
-    if (!transaction) throw new NotFoundException('Transaction not found');
+    if (!transaction) throw new NotFoundException(ErrorCodes.TNF);
 
     if (transaction.creatorKey?.user?.id !== user.id)
       throw new UnauthorizedException('Only the creator of the transaction is able to delete it');
@@ -84,7 +85,7 @@ export class ObserversService {
       relations: ['creatorKey', 'observers', 'signers', 'signers.userKey'],
     });
 
-    if (!transaction) throw new NotFoundException('Transaction not found');
+    if (!transaction) throw new NotFoundException(ErrorCodes.TNF);
 
     const userKeysToSign = await userKeysRequiredToSign(
       transaction,
@@ -156,7 +157,7 @@ export class ObserversService {
       relations: ['creatorKey', 'creatorKey.user'],
     });
 
-    if (!transaction) throw new NotFoundException('Transaction not found');
+    if (!transaction) throw new NotFoundException(ErrorCodes.TNF);
 
     if (transaction.creatorKey?.user?.id !== user.id)
       throw new UnauthorizedException('Only the creator of the transaction is able to update it');

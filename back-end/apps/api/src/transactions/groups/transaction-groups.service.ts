@@ -3,7 +3,12 @@ import { ClientProxy } from '@nestjs/microservices';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
-import { asyncFilter, NOTIFICATIONS_SERVICE, notifyTransactionAction } from '@app/common';
+import {
+  asyncFilter,
+  ErrorCodes,
+  NOTIFICATIONS_SERVICE,
+  notifyTransactionAction,
+} from '@app/common';
 import { TransactionGroup, TransactionGroupItem, User } from '@entities';
 
 import { TransactionsService } from '../transactions.service';
@@ -64,7 +69,7 @@ export class TransactionGroupsService {
     });
 
     if (!(group?.groupItems?.length > 0)) {
-      throw new NotFoundException('Transaction not found');
+      throw new NotFoundException(ErrorCodes.TNF);
     }
 
     group.groupItems = await asyncFilter(group.groupItems, async groupItem => {

@@ -113,7 +113,7 @@ export class SignersService {
 
     /* Verify that the transaction exists */
     const transaction = await this.dataSource.manager.findOneBy(Transaction, { id: transactionId });
-    if (!transaction) throw new BadRequestException('Transaction not found');
+    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
     if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
@@ -200,7 +200,7 @@ export class SignersService {
   ): Promise<TransactionSigner[]> {
     /* Verify that the transaction exists */
     const transaction = await this.dataSource.manager.findOneBy(Transaction, { id: transactionId });
-    if (!transaction) throw new BadRequestException('Transaction not found');
+    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
     if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
