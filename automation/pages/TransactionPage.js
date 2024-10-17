@@ -68,8 +68,6 @@ class TransactionPage extends BasePage {
   appendFileSublinkSelector = 'menu-sub-link-fileappendtransaction';
   saveDraftButtonSelector = 'button-save-draft';
   signAndSubmitButtonSelector = 'button-header-create';
-  signAndSubmitDeleteButtonSelector = 'button-header-create';
-  signAndSubmitUpdateButtonSelector = 'button-header-create';
   payerDropdownSelector = 'dropdown-payer';
   singleTabSelector = 'tab-single';
   complexTabSelector = 'tab-complex';
@@ -90,12 +88,6 @@ class TransactionPage extends BasePage {
   addTransferFromButtonSelector = 'button-add-transfer-from';
   addRestButtonSelector = 'button-transfer-to-rest';
   addTransferToButtonSelector = 'button-add-transfer-to';
-  signAndSubmitTransferSelector = 'button-header-create';
-  signAndSubmitAllowanceSelector = 'button-header-create';
-  signAndSubmitFileCreateSelector = 'button-header-create';
-  signAndReadFileButtonSelector = 'button-header-create';
-  signAndSubmitUpdateFileSelector = 'button-header-create';
-  signAndSubmitFileAppendButtonSelector = 'button-header-create';
   draftsTabSelector = 'tab-0';
   draftDeleteButtonIndexSelector = 'button-draft-delete-';
   draftContinueButtonIndexSelector = 'button-draft-continue-';
@@ -103,7 +95,6 @@ class TransactionPage extends BasePage {
   singleTransactionButtonSelector = 'span-single-transaction';
 
   //Other
-  modalTransactionSuccessSelector = 'modal-transaction-success';
   confirmTransactionModalSelector = 'modal-confirm-transaction';
   spanCreateNewComplexKeyButtonSelector = 'span-create-new-complex-key';
   updateAccountIdFetchedDivSelector = 'div-account-info-fetched';
@@ -157,7 +148,7 @@ class TransactionPage extends BasePage {
 
   async verifyFileCreateTransactionElements() {
     const checks = await Promise.all([
-      this.isElementVisible(this.signAndSubmitFileCreateSelector),
+      this.isElementVisible(this.signAndSubmitButtonSelector),
       this.isElementVisible(this.fileContentTextFieldSelector),
       this.isElementVisible(this.transactionMemoInputSelector),
       this.isElementVisible(this.fileMemoInputSelector),
@@ -165,7 +156,7 @@ class TransactionPage extends BasePage {
       this.isElementVisible(this.fileCreateNameInputSelector),
       this.isElementVisible(this.fileCreateDescriptionInputSelector),
       this.isElementVisible(this.fileContentTextFieldSelector),
-      this.isElementVisible(this.signAndSubmitFileCreateSelector),
+      this.isElementVisible(this.signAndSubmitButtonSelector),
     ]);
     return checks.every(isTrue => isTrue);
   }
@@ -205,15 +196,6 @@ class TransactionPage extends BasePage {
       console.log('Transaction not found in mirror node');
     }
     return transactionDetails;
-  }
-
-  async closeCompletedTransaction() {
-    const isCompletedTxModalVisible = await this.isElementVisible(
-      this.modalTransactionSuccessSelector,
-    );
-    if (isCompletedTxModalVisible) {
-      await this.clickOnCloseButtonForCompletedTransaction();
-    }
   }
 
   async clickOnTransactionsMenuButton() {
@@ -452,7 +434,7 @@ class TransactionPage extends BasePage {
     await this.clickOnDeleteAccountTransaction();
     await this.fillInTransferAccountId();
     await this.fillInDeletedAccountId(accountId);
-    await this.clickOnSignAndSubmitDeleteButton();
+    await this.clickOnSignAndSubmitButton();
     await this.clickOnConfirmDeleteAccountButton();
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
@@ -474,7 +456,7 @@ class TransactionPage extends BasePage {
       await this.clickOnAcceptStakingRewardsSwitch(); //disabling staking rewards
     }
     await this.waitForElementPresentInDOM(this.updateAccountIdFetchedDivSelector, 30000);
-    await this.clickOnSignAndSubmitUpdateButton();
+    await this.clickOnSignAndSubmitButton();
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
     const transactionId = await this.getTransactionDetailsId();
@@ -497,7 +479,7 @@ class TransactionPage extends BasePage {
     await this.clickOnFileCreateTransaction();
     const publicKey = await this.getPublicKeyText();
     await this.fillInFileContent(fileContent);
-    await this.clickOnSignAndSubmitFileCreateButton();
+    await this.clickOnSignAndSubmitButton();
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
     const transactionId = await this.getTransactionDetailsId();
@@ -514,7 +496,7 @@ class TransactionPage extends BasePage {
     await this.clickOnFileServiceLink();
     await this.clickOnReadCreateTransaction();
     await this.fillInFileIdForRead(fileId);
-    await this.clickOnSignAndReadFileButton();
+    await this.clickOnSignAndSubmitButton();
     await this.waitForElementToDisappear(this.toastMessageSelector);
     return await this.readFileContentFromTextArea();
   }
@@ -528,7 +510,7 @@ class TransactionPage extends BasePage {
     const publicKey = await this.getPublicKeyFromFile(fileId);
     await this.fillInPublicKeyForFile(publicKey);
     await this.fillInFileContentForUpdate(fileContent);
-    await this.clickOnSignAndSubmitUpdateFileButton();
+    await this.clickOnSignAndSubmitButton();
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
     const transactionId = await this.getTransactionDetailsId();
@@ -546,7 +528,7 @@ class TransactionPage extends BasePage {
     const publicKey = await this.getPublicKeyFromFile(fileId);
     await this.fillInPublicKeyForFile(publicKey);
     await this.fillInFileContentForAppend(fileContent);
-    await this.clickOnSignAndSubmitFileAppendButton();
+    await this.clickOnSignAndSubmitButton();
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
     const transactionId = await this.getTransactionDetailsId();
@@ -566,7 +548,7 @@ class TransactionPage extends BasePage {
     }
     await this.fillInAllowanceAmount(amount);
     await this.fillInSpenderAccountId(spenderAccountId);
-    await this.clickOnSignAndSubmitAllowanceButton();
+    await this.clickOnSignAndSubmitButton();
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
     const transactionId = await this.getTransactionDetailsId();
@@ -587,7 +569,7 @@ class TransactionPage extends BasePage {
     await this.fillInTransferAmountToAccount(amount);
     await this.clickOnAddTransferToButton();
 
-    await this.clickOnSignAndSubmitTransferButton();
+    await this.clickOnSignAndSubmitButton();
     await this.clickSignTransactionButton();
 
     if (isSupposedToFail) {
@@ -633,7 +615,6 @@ class TransactionPage extends BasePage {
   }
 
   async fillInInitialFunds(amount) {
-    const { delay } = await import('../utils/util.js');
     const getFilledBalance = async () =>
       this.getTextFromInputField(this.initialBalanceInputSelector);
 
@@ -641,7 +622,7 @@ class TransactionPage extends BasePage {
 
     while (filledBalance !== amount) {
       await this.fill(this.initialBalanceInputSelector, amount);
-      await delay(1000);
+      await new Promise(resolve => setTimeout(resolve, 1000));
       filledBalance = await getFilledBalance();
     }
   }
@@ -660,14 +641,6 @@ class TransactionPage extends BasePage {
 
   async clickOnSignAndSubmitButton() {
     await this.click(this.signAndSubmitButtonSelector, null, 10000);
-  }
-
-  async clickOnSignAndSubmitDeleteButton() {
-    await this.click(this.signAndSubmitDeleteButtonSelector);
-  }
-
-  async clickOnSignAndSubmitUpdateButton() {
-    await this.click(this.signAndSubmitUpdateButtonSelector);
   }
 
   async clickSignTransactionButton() {
@@ -739,7 +712,6 @@ class TransactionPage extends BasePage {
     let attempt = 0;
 
     while (attempt < maxRetries) {
-      const { delay } = await import('../utils/util.js');
       // Fill the input normally
       const element = this.window.getByTestId(inputSelector);
       await element.fill(accountId);
@@ -760,7 +732,7 @@ class TransactionPage extends BasePage {
       }
 
       // Wait a short period before retrying to allow for UI updates
-      await delay(100); // Wait for 100 milliseconds
+      await new Promise(resolve => setTimeout(resolve, 100)); // Wait for 100 milliseconds
 
       attempt++; // Increment the attempt counter
     }
@@ -774,7 +746,7 @@ class TransactionPage extends BasePage {
     await this.fillInAccountId(
       accountId,
       this.deletedAccountInputSelector,
-      this.signAndSubmitDeleteButtonSelector,
+      this.signAndSubmitButtonSelector,
     );
   }
 
@@ -782,7 +754,7 @@ class TransactionPage extends BasePage {
     await this.fillInAccountId(
       accountId,
       this.updateAccountInputSelector,
-      this.signAndSubmitUpdateButtonSelector,
+      this.signAndSubmitButtonSelector,
     );
   }
 
@@ -790,7 +762,7 @@ class TransactionPage extends BasePage {
     await this.fillInAccountId(
       accountId,
       this.allowanceSpenderAccountSelector,
-      this.signAndSubmitAllowanceSelector,
+      this.signAndSubmitButtonSelector,
     );
   }
 
@@ -945,16 +917,12 @@ class TransactionPage extends BasePage {
     await this.click(this.addRestButtonSelector);
   }
 
-  async clickOnSignAndSubmitTransferButton() {
-    await this.click(this.signAndSubmitTransferSelector);
-  }
-
   async getHbarAmountValueForTwoAccounts() {
     return await this.getText(this.hbarAmountValueSelector);
   }
 
   async isSignAndSubmitButtonEnabled() {
-    return await this.isButtonEnabled(this.signAndSubmitTransferSelector);
+    return await this.isButtonEnabled(this.signAndSubmitButtonSelector);
   }
 
   async fillInAllowanceOwnerAccount() {
@@ -980,16 +948,8 @@ class TransactionPage extends BasePage {
     return await this.getTextFromInputField(this.allowanceAmountSelector);
   }
 
-  async clickOnSignAndSubmitAllowanceButton() {
-    await this.click(this.signAndSubmitAllowanceSelector);
-  }
-
-  async isSignAndSubmitCreateAccountButtonVisible() {
+  async isSignAndSubmitButtonVisible() {
     return await this.isElementVisible(this.signAndSubmitButtonSelector);
-  }
-
-  async isSignAndSubmitUpdateAccountButtonVisible() {
-    return await this.isElementVisible(this.signAndSubmitUpdateButtonSelector);
   }
 
   async isTransferAccountIdVisible() {
@@ -1012,14 +972,6 @@ class TransactionPage extends BasePage {
     await this.fill(this.fileContentTextFieldSelector, fileContent);
   }
 
-  async getFileContentText() {
-    return await this.getTextFromInputField(this.fileContentTextFieldSelector);
-  }
-
-  async clickOnSignAndSubmitFileCreateButton() {
-    await this.click(this.signAndSubmitFileCreateSelector, null, 10000);
-  }
-
   async clickOnFileServiceLink() {
     await this.click(this.fileServiceLinkSelector);
   }
@@ -1034,10 +986,6 @@ class TransactionPage extends BasePage {
 
   async readFileContentFromTextArea() {
     return await this.getTextFromInputField(this.fileContentReadTextFieldSelector);
-  }
-
-  async clickOnSignAndReadFileButton() {
-    await this.click(this.signAndReadFileButtonSelector);
   }
 
   async getPublicKeyText() {
@@ -1058,14 +1006,6 @@ class TransactionPage extends BasePage {
 
   async fillInFileContentForUpdate(fileContent) {
     await this.fill(this.fileContentUpdateTextFieldSelector, fileContent);
-  }
-
-  async clickOnSignAndSubmitUpdateFileButton() {
-    await this.click(this.signAndSubmitUpdateFileSelector);
-  }
-
-  async clickOnSignAndSubmitFileAppendButton() {
-    await this.click(this.signAndSubmitFileAppendButtonSelector);
   }
 
   async fillInFileIdForAppend(fileId) {

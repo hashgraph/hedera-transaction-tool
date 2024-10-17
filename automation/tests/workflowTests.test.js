@@ -145,8 +145,7 @@ test.describe('Workflow tests', () => {
     await accountPage.clickOnAddNewButton();
     await accountPage.clickOnCreateNewLink();
 
-    const isSignAndSubmitButtonVisible =
-      await transactionPage.isSignAndSubmitCreateAccountButtonVisible();
+    const isSignAndSubmitButtonVisible = await transactionPage.isSignAndSubmitButtonVisible();
     expect(isSignAndSubmitButtonVisible).toBe(true);
   });
 
@@ -159,8 +158,7 @@ test.describe('Workflow tests', () => {
     await accountPage.clickOnEditButton();
     await accountPage.clickOnUpdateInNetworkLink();
 
-    const isSignAndSubmitButtonVisible =
-      await transactionPage.isSignAndSubmitUpdateAccountButtonVisible();
+    const isSignAndSubmitButtonVisible = await transactionPage.isSignAndSubmitButtonVisible();
     expect(isSignAndSubmitButtonVisible).toBe(true);
 
     const isAccountIdPrefilled = await transactionPage.getPrefilledAccountIdInUpdatePage();

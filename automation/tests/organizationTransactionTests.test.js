@@ -5,7 +5,7 @@ const {
   generateRandomEmail,
   generateRandomPassword,
   setupEnvironmentForTransactions,
-  delay,
+  waitForValidStart,
 } = require('../utils/util');
 const RegistrationPage = require('../pages/RegistrationPage.js');
 const { expect } = require('playwright/test');
@@ -214,25 +214,12 @@ test.describe('Organization Transaction tests', () => {
     );
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
-
+    await organizationPage.logInAndSignTransactionByAllUsers(globalCredentials.password, txId);
     await organizationPage.signInOrganization(
-      secondUser.email,
-      secondUser.password,
+      firstUser.email,
+      firstUser.password,
       globalCredentials.password,
     );
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnSubmitSignButtonByTransactionId(txId);
-    await organizationPage.clickOnSignTransactionButton();
-    await organizationPage.logoutFromOrganization();
-
-    await organizationPage.signInOrganization(
-      thirdUser.email,
-      thirdUser.password,
-      globalCredentials.password,
-    );
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnSubmitSignButtonByTransactionId(txId);
-    await organizationPage.clickOnSignTransactionButton();
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnReadyForExecutionTab();
 
@@ -256,7 +243,7 @@ test.describe('Organization Transaction tests', () => {
 
   test('Verify transaction is shown "History" after it is executed', async () => {
     test.slow();
-    const { txId } = await organizationPage.updateAccount(
+    const { txId, validStart } = await organizationPage.updateAccount(
       complexKeyAccountId,
       'newUpdate',
       5,
@@ -264,27 +251,13 @@ test.describe('Organization Transaction tests', () => {
     );
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
-
+    await organizationPage.logInAndSignTransactionByAllUsers(globalCredentials.password, txId);
     await organizationPage.signInOrganization(
-      secondUser.email,
-      secondUser.password,
+      firstUser.email,
+      firstUser.password,
       globalCredentials.password,
     );
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnSubmitSignButtonByTransactionId(txId);
-    await organizationPage.clickOnSignTransactionButton();
-    await organizationPage.logoutFromOrganization();
-
-    await organizationPage.signInOrganization(
-      thirdUser.email,
-      thirdUser.password,
-      globalCredentials.password,
-    );
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnSubmitSignButtonByTransactionId(txId);
-    await organizationPage.clickOnSignTransactionButton();
-    await delay(6000);
-    await transactionPage.mirrorGetTransactionResponse(txId);
+    await waitForValidStart(validStart);
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnHistoryTab();
 
@@ -370,7 +343,6 @@ test.describe('Organization Transaction tests', () => {
 
   test('Verify observer is saved in the db for the correct transaction id', async () => {
     const { txId, selectedObservers } = await organizationPage.createAccount(60, 1);
-    const firstObserver = await organizationPage.getObserverEmail(0);
     const userIdInDb = await organizationPage.getUserIdByEmail(selectedObservers);
     const txIdForObserver = await organizationPage.getAllTransactionIdsForUserObserver(userIdInDb);
     expect(txIdForObserver).toContain(txId);
@@ -411,7 +383,7 @@ test.describe('Organization Transaction tests', () => {
     test.slow();
     const { txId } = await organizationPage.createAccount(5, 0, true);
     const { validStart } = await organizationPage.createAccount(5, 0, true);
-    await organizationPage.waitForValidStart(validStart);
+    await waitForValidStart(validStart);
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnHistoryTab();
     await organizationPage.clickOnHistoryDetailsButtonByTransactionId(txId);
@@ -435,7 +407,7 @@ test.describe('Organization Transaction tests', () => {
       firstUser.password,
       globalCredentials.password,
     );
-    await organizationPage.waitForValidStart(validStart);
+    await waitForValidStart(validStart);
 
     await organizationPage.clickOnHistoryTab();
     const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId);
@@ -463,7 +435,7 @@ test.describe('Organization Transaction tests', () => {
       firstUser.password,
       globalCredentials.password,
     );
-    await organizationPage.waitForValidStart(validStart);
+    await waitForValidStart(validStart);
 
     await organizationPage.clickOnHistoryTab();
     const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId);

@@ -17,7 +17,7 @@ async function setupApp() {
 
   expect(window).not.toBeNull();
   await loginPage.closeImportantNoteModal();
-  const canMigrate = await migrationDataExists(app);
+  const canMigrate = migrationDataExists(app);
   if (canMigrate) {
     await loginPage.closeMigrationModal();
   }
@@ -31,7 +31,7 @@ async function setupApp() {
 async function resetAppState(window, app) {
   const loginPage = new LoginPage(window);
   await loginPage.resetState();
-  const canMigrate = await migrationDataExists(app);
+  const canMigrate = migrationDataExists(app);
   if (canMigrate) {
     await loginPage.closeMigrationModal();
   }
@@ -100,16 +100,36 @@ function formatTransactionId(transactionId) {
   return formattedId;
 }
 
-/**
- * Utility function to pause execution for a given duration.
- * @param {number} ms - The number of milliseconds to delay.
- */
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 function calculateTimeout(totalUsers, timePerUser) {
   return totalUsers * timePerUser * 2000;
+}
+
+/**
+ * Waits for a valid start time to continue the test.
+ * @param dateTimeString - The target date and time in string format.
+ * @param bufferSeconds - The buffer time in seconds to wait before the target time.
+ * @returns {Promise<void>} - A promise that resolves after the wait time.
+ */
+async function waitForValidStart(dateTimeString, bufferSeconds = 15) {
+  // Convert the dateTimeString to a Date object
+  const targetDate = new Date(dateTimeString);
+
+  // Get the current time
+  const currentDate = new Date();
+
+  // Calculate the difference in milliseconds
+  const timeDifference = targetDate - currentDate;
+
+  // Add buffer time (in milliseconds)
+  const waitTime = Math.max(timeDifference + bufferSeconds * 1000, 0); // Ensure non-negative
+
+  // Wait for the calculated time
+  if (waitTime > 0) {
+    console.log(`Waiting for ${waitTime / 1000} seconds until the valid start time...`);
+    await new Promise(resolve => setTimeout(resolve, waitTime));
+  } else {
+    console.log('The target time has already passed.');
+  }
 }
 
 const asciiArt =
@@ -132,6 +152,6 @@ module.exports = {
   generateRandomPassword,
   setupEnvironmentForTransactions,
   formatTransactionId,
-  delay,
   calculateTimeout,
+  waitForValidStart,
 };

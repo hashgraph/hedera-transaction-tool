@@ -138,7 +138,6 @@ class SettingsPage extends BasePage {
   }
 
   async clickOnRestoreButton() {
-    const { delay } = require('../utils/util.js');
     const maxRetries = 10;
     let attempt = 0;
 
@@ -147,7 +146,7 @@ class SettingsPage extends BasePage {
       if (await this.isElementVisible(this.continueButtonSelector, null, 3000)) {
         return;
       }
-      await delay(2000);
+      await new Promise(resolve => setTimeout(resolve, 2000));
       attempt++;
     }
 
