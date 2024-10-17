@@ -229,6 +229,10 @@ watch(activeTabTitle, setQueryTab);
       <template v-if="activeTabTitle === historyTitle"><History /></template>
     </div>
 
-    <TransactionSelectionModal v-model:show="isTransactionSelectionModalShown" :group="false" />
+    <TransactionSelectionModal
+      v-if="isTransactionSelectionModalShown"
+      v-model:show="isTransactionSelectionModalShown"
+      :group="false"
+    />
   </div>
 </template>
