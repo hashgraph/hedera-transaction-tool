@@ -16,6 +16,7 @@ export enum ErrorCodes {
   PU = 'PU',
   PNY = 'PNY',
   CRYFO = 'CRYFO',
+  UNF = 'UNF',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -36,4 +37,5 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.PU]: 'Public key already used',
   [ErrorCodes.PNY]: 'Provided key/s not yours',
   [ErrorCodes.CRYFO]: 'Cannot remove yourself from the organization',
+  [ErrorCodes.UNF]: 'User not found',
 };
