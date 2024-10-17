@@ -188,7 +188,7 @@ export class SignersService {
     } catch (error) {
       await queryRunner.rollbackTransaction();
       await queryRunner.release();
-      throw new BadRequestException('Failed to save transaction');
+      throw new BadRequestException(ErrorCodes.FST);
     }
   }
 
@@ -287,7 +287,7 @@ export class SignersService {
     } catch (error) {
       await queryRunner.rollbackTransaction();
       await queryRunner.release();
-      throw new BadRequestException('Failed to save transaction');
+      throw new BadRequestException(ErrorCodes.FST);
     }
   }
 

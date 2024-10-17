@@ -368,7 +368,7 @@ export class TransactionsService {
     try {
       await this.repo.save(transaction);
     } catch (error) {
-      throw new BadRequestException('Failed to save transaction');
+      throw new BadRequestException(ErrorCodes.FST);
     }
 
     notifyWaitingForSignatures(this.notificationsService, transaction.id);

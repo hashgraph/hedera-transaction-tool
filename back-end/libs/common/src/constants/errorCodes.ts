@@ -5,6 +5,7 @@ export enum ErrorCodes {
   SNMP = 'SNMP',
   TE = 'TE',
   TEX = 'TEX',
+  FST = 'FST',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -14,4 +15,5 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.SNMP]: 'The signature does not match the public key',
   [ErrorCodes.TE]: 'Transaction is expired',
   [ErrorCodes.TEX]: 'Transaction already exists',
+  [ErrorCodes.FST]: 'Failed to save transaction',
 };
