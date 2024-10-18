@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsRelations, FindOptionsWhere, Repository } from 'typeorm';
 
@@ -30,7 +30,7 @@ export class UserKeysService {
 
     // Check if the user already has the maximum number of keys
     if (user.keys.length >= MAX_USER_KEYS) {
-      throw new BadRequestException(`A user can only have up to ${MAX_USER_KEYS} keys.`);
+      throw new BadRequestException(ErrorCodes.UMK);
     }
 
     // Find the userKey by the publicKey
@@ -71,7 +71,7 @@ export class UserKeysService {
   async removeKey(id: number): Promise<boolean> {
     const userKey = await this.getUserKey({ id });
     if (!userKey) {
-      throw new NotFoundException('Key not found');
+      throw new BadRequestException(ErrorCodes.KNF);
     }
     await this.repo.softRemove(userKey);
 
@@ -82,7 +82,7 @@ export class UserKeysService {
     const userKey = await this.getUserKey({ id });
 
     if (!userKey) {
-      throw new NotFoundException('Key not found');
+      throw new BadRequestException(ErrorCodes.KNF);
     }
 
     if (userKey.userId !== user.id) {

@@ -37,8 +37,7 @@ function parseSort(rawSort: string, validProperties: string[]): Sorting {
   if (!rawSort.match(sortPattern)) throw new BadRequestException(ErrorCodes.ISP);
 
   const [property, direction] = rawSort.split(':');
-  if (!validProperties.includes(property))
-    throw new BadRequestException(`Invalid sort property: ${property}`);
+  if (!validProperties.includes(property)) throw new BadRequestException(ErrorCodes.ISP);
 
   return { property, direction };
 }

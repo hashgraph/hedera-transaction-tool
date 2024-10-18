@@ -64,10 +64,9 @@ function parseFilter(
   }
 
   const [property, rule, value] = rawFilter.split(':');
-  if (!validProperties.includes(property))
-    throw new BadRequestException(`Invalid filter property: ${property}`);
+  if (!validProperties.includes(property)) throw new BadRequestException(ErrorCodes.IFP);
   if (!Object.values(FilterRule).includes(rule as FilterRule))
-    throw new BadRequestException(`Invalid filter rule: ${rule}`);
+    throw new BadRequestException(ErrorCodes.IFP);
 
   const filtering: Filtering = { property, rule, value };
 

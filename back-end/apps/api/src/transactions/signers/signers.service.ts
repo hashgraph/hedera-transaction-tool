@@ -125,7 +125,7 @@ export class SignersService {
     /* Verify that each signature corresponds the correct transaction for the given node and to the public key  */
     for (const key in signatures) {
       if (!validateSignature(sdkTransaction, key, signatures[key], userKey.publicKey)) {
-        throw new BadRequestException(`Invalid Signature for Node with Account ID: ${key}`);
+        throw new BadRequestException(ErrorCodes.ISNMPN);
       }
     }
 
