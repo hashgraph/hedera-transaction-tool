@@ -11,3 +11,48 @@ updates:
       interval: weekly
     versioning-strategy: increase
     open-pull-requests-limit: 10
+
+  - package-ecosystem: npm
+    directory: /automation
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /back-end/apps/api
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /back-end/apps/api
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /back-end/apps/chain
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /back-end/apps/chain
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /back-end/apps/notifications
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /back-end/apps/notifications
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /back-end
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /front-end
+    schedule:
+      interval: daily

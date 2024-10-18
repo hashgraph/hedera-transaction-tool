@@ -1,4 +1,4 @@
-FROM node:alpine AS development
+FROM node:alpine@sha256:b20f8fad528b0e768936cb88ccb7b0e37cf41587d177e2d6fcdbd48bb4e083ec AS development
 
 WORKDIR /usr/src/app
 
@@ -16,7 +16,7 @@ RUN pnpm install && cd apps/notifications && pnpm install
 
 RUN pnpm run build notifications
 
-FROM node:alpine AS production
+FROM node:alpine@sha256:b20f8fad528b0e768936cb88ccb7b0e37cf41587d177e2d6fcdbd48bb4e083ec AS production
 
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
