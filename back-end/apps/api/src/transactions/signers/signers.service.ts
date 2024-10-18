@@ -125,6 +125,11 @@ export class SignersService {
     /* Verify that each signature corresponds the correct transaction for the given node and to the public key  */
     for (const key in signatures) {
       if (!validateSignature(sdkTransaction, key, signatures[key], userKey.publicKey)) {
+        console.log(signatures);
+        console.log(signatures[key]);
+        console.log(userKey.publicKey);
+        console.log(key);
+
         throw new BadRequestException(ErrorCodes.ISNMPN);
       }
     }

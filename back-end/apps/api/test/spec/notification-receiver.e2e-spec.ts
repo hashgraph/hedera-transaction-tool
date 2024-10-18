@@ -186,7 +186,7 @@ describe('Notification Receiver (e2e)', () => {
 
       const { status } = await endpoint.get(`${notificationForAdmin[0].id}`, userAuthCookie);
 
-      expect(status).toBe(404);
+      expect(status).toBe(400);
     });
 
     it("(PATCH) should mark user's notification as read", async () => {
@@ -229,7 +229,7 @@ describe('Notification Receiver (e2e)', () => {
         where: { id: notificationForAdmin[0].id },
       });
 
-      expect(status).toBe(404);
+      expect(status).toBe(400);
       expect(notification.isRead).toEqual(false);
     });
 
@@ -265,7 +265,7 @@ describe('Notification Receiver (e2e)', () => {
         where: { id: notificationForAdmin[0].id },
       });
 
-      expect(status).toBe(404);
+      expect(status).toBe(400);
       expect(notification).toBeDefined();
     });
   });

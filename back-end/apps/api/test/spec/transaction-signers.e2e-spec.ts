@@ -107,7 +107,7 @@ describe('Transactions (e2e)', () => {
       const transaction = addedTransactions.userTransactions[0];
       const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
       const userKey1002 = await getUserKey(admin.id, localnet1002.publicKeyRaw);
-      const signatures = getSignatures(localnet1003.privateKey, sdkTransaction);
+      const signatures = getSignatures(localnet1002.privateKey, sdkTransaction);
 
       const response = await endpoint.post(
         {
