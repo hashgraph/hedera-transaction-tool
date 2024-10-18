@@ -3,7 +3,6 @@ import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, In } from 'typeorm';
 
 import {
-  ErrorCodes,
   keysRequiredToSign,
   MirrorNodeService,
   NotifyForTransactionDto,
@@ -92,7 +91,7 @@ export class ReceiverService {
       },
     });
 
-    if (!transaction) throw new Error(ErrorCodes.TNF);
+    if (!transaction) throw new Error('Transaction not found');
 
     /* Get users required to sign */
     const userIds = await this.getUsersIdsRequiredToSign(this.entityManager, transaction);

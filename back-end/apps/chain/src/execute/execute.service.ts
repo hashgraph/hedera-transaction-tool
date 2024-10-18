@@ -18,7 +18,6 @@ import {
   getStatusCodeFromMessage,
   notifyTransactionAction,
   notifySyncIndicators,
-  ErrorCodes,
 } from '@app/common';
 import { ExecuteTransactionDto } from '@app/common/dtos/execute-transaction.dto';
 
@@ -34,7 +33,7 @@ export class ExecuteService {
   @MurLock(5000, 'transaction.id')
   async executeTransaction(transaction: ExecuteTransactionDto) {
     /* Throws an error if the transaction is not found or in incorrect state */
-    if (!transaction) throw new Error(ErrorCodes.TNF);
+    if (!transaction) throw new Error('Transaction not found');
     this.validateTransactionStatus(transaction);
 
     /* Gets the SDK transaction from the transaction body */
