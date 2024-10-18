@@ -13,7 +13,7 @@ import {
   User,
 } from '@entities';
 
-import { NOTIFICATIONS_SERVICE, MirrorNodeService } from '@app/common';
+import { NOTIFICATIONS_SERVICE, MirrorNodeService, ErrorCodes } from '@app/common';
 import { userKeysRequiredToSign, notifyTransactionAction } from '@app/common/utils';
 
 import { ObserversService } from './observers.service';
@@ -121,7 +121,7 @@ describe('ObserversService', () => {
       entityManager.findOne.mockResolvedValue(null);
 
       await expect(service.createTransactionObservers(user, transactionId, dto)).rejects.toThrow(
-        'Transaction not found',
+        ErrorCodes.TNF,
       );
     });
 
@@ -231,7 +231,7 @@ describe('ObserversService', () => {
 
       await expect(
         service.getTransactionObserversByTransactionId(transactionId, user),
-      ).rejects.toThrow('Transaction not found');
+      ).rejects.toThrow(ErrorCodes.TNF);
     });
 
     it('should throw if user has not access to this transaction', async () => {
@@ -289,7 +289,7 @@ describe('ObserversService', () => {
       observersRepo.findOneBy.mockResolvedValue(null);
 
       await expect(service.updateTransactionObserver(observerId, dto, user)).rejects.toThrow(
-        'Transaction observer not found',
+        ErrorCodes.ONF,
       );
     });
 
@@ -302,7 +302,7 @@ describe('ObserversService', () => {
       entityManager.findOne.mockResolvedValue(null);
 
       await expect(service.updateTransactionObserver(observerId, dto, user)).rejects.toThrow(
-        'Transaction not found',
+        ErrorCodes.TNF,
       );
     });
   });

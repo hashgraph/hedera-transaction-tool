@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Repository } from 'typeorm';
@@ -128,10 +128,10 @@ describe('NotificationReceiverService', () => {
       expect(result).toEqual(notificationReceiver);
     });
 
-    it('should throw NotFoundException if notification receiver not found', async () => {
+    it('should throw BadRequestException if notification receiver not found', async () => {
       repo.findOne.mockResolvedValue(null);
 
-      await expect(service.getReceivedNotification(user, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.getReceivedNotification(user, 1)).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -150,11 +150,11 @@ describe('NotificationReceiverService', () => {
       expect(result.isRead).toBe(true);
     });
 
-    it('should throw NotFoundException if notification receiver not found', async () => {
+    it('should throw BadRequestException if notification receiver not found', async () => {
       repo.findOne.mockResolvedValue(null);
 
       await expect(service.updateReceivedNotification(user, 1, { isRead: true })).rejects.toThrow(
-        NotFoundException,
+        BadRequestException,
       );
     });
   });
@@ -173,10 +173,12 @@ describe('NotificationReceiverService', () => {
       expect(result).toBe(true);
     });
 
-    it('should throw NotFoundException if notification receiver not found', async () => {
+    it('should throw BadRequestException if notification receiver not found', async () => {
       repo.findOne.mockResolvedValue(null);
 
-      await expect(service.deleteReceivedNotification(user, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.deleteReceivedNotification(user, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 

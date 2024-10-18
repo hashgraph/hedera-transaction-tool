@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
+import { ErrorCodes } from '@app/common';
 import { User } from '@entities';
 
 import * as bcrypt from 'bcryptjs';
@@ -149,7 +150,7 @@ describe('UsersService', () => {
   it('should throw if the user is not found', async () => {
     userRepository.findOne.mockResolvedValue(null);
 
-    await expect(service.updateUserById(1, {})).rejects.toThrow('User not found');
+    await expect(service.updateUserById(1, {})).rejects.toThrow(ErrorCodes.UNF);
   });
 
   it('should call the repo to update a user', async () => {
@@ -166,7 +167,7 @@ describe('UsersService', () => {
   it('should throw if the user is not found', async () => {
     userRepository.findOne.mockResolvedValue(null);
 
-    await expect(service.updateUserById(1, {})).rejects.toThrow('User not found');
+    await expect(service.updateUserById(1, {})).rejects.toThrow(ErrorCodes.UNF);
   });
 
   it('should set new password the user', async () => {
@@ -193,6 +194,6 @@ describe('UsersService', () => {
   it('should throw if the user is not found', async () => {
     userRepository.findOne.mockResolvedValue(null);
 
-    await expect(service.removeUser(1)).rejects.toThrow('User not found');
+    await expect(service.removeUser(1)).rejects.toThrow(ErrorCodes.UNF);
   });
 });
