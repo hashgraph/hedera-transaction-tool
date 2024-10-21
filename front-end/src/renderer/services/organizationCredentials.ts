@@ -2,13 +2,11 @@ import { commonIPCHandler } from '@renderer/utils';
 
 /* Organizations Service */
 
-/* Get the connected organizations */
-export const getConnectedOrganizations = async (user_id: string) =>
+/* Get the organization ids with tokens */
+export const getOrganizationTokens = async (user_id: string) =>
   commonIPCHandler(async () => {
-    return await window.electronAPI.local.organizationCredentials.getConnectedOrganizations(
-      user_id,
-    );
-  }, 'Failed to fetch organizations');
+    return await window.electronAPI.local.organizationCredentials.getOrganizationTokens(user_id);
+  }, 'Failed to fetch organization tokens');
 
 /* Returns the organizations that the user should sign into */
 export const getOrganizationsToSignIn = async (user_id: string) =>

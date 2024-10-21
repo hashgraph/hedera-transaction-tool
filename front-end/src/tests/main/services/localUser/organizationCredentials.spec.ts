@@ -6,10 +6,9 @@ import prisma from '@main/db/__mocks__/prisma';
 
 import {
   addOrganizationCredentials,
-  decryptCredentialPassword,
   deleteOrganizationCredentials,
   getAccessToken,
-  getConnectedOrganizations,
+  getOrganizationTokens,
   getCurrentUser,
   getOrganizationCredentials,
   organizationCredentialsExists,
@@ -58,7 +57,7 @@ describe('Services Local User Organization Credentials', () => {
     key: 'key',
   };
 
-  describe('getConnectedOrganizations', () => {
+  describe('getOrganizationTokens', () => {
     beforeEach(() => {
       vi.resetAllMocks();
     });
@@ -66,13 +65,14 @@ describe('Services Local User Organization Credentials', () => {
     test('Should return the organizations that the user is connected to', async () => {
       const records = [
         {
-          organization: organization,
+          organizationId: organization,
+          jwtToken: 'token',
         },
       ] as unknown as OrganizationCredentials[];
 
       prisma.organizationCredentials.findMany.mockResolvedValue(records);
 
-      const result = await getConnectedOrganizations('123');
+      const result = await getOrganizationTokens('123');
 
       expect(result).toEqual([organization]);
     });
@@ -82,7 +82,7 @@ describe('Services Local User Organization Credentials', () => {
         null as unknown as OrganizationCredentials[],
       );
 
-      const result = await getConnectedOrganizations('123');
+      const result = await getOrganizationTokens('123');
 
       expect(result).toEqual([]);
     });
@@ -90,7 +90,7 @@ describe('Services Local User Organization Credentials', () => {
     test('Should return empty array on prisma error', async () => {
       prisma.organizationCredentials.findMany.mockRejectedValue('Database error');
 
-      const result = await getConnectedOrganizations('123');
+      const result = await getOrganizationTokens('123');
 
       expect(result).toEqual([]);
     });
@@ -427,7 +427,7 @@ describe('Services Local User Organization Credentials', () => {
       vi.mocked(safeStorage.encryptString).mockReturnValue(encryptedPassword);
       prisma.organizationCredentials.findFirst.mockResolvedValue(organizationCredentials);
 
-      await updateOrganizationCredentials('123', '321', email, password, null);
+      await updateOrganizationCredentials('123', '321', email, password, undefined, null);
 
       expect(prisma.organizationCredentials.update).toHaveBeenCalledWith({
         where: { id: organizationCredentials.id },
@@ -505,6 +505,7 @@ describe('Services Local User Organization Credentials', () => {
         password,
         '123',
         '321',
+        'token',
         encryptPassword,
       );
 
@@ -513,6 +514,7 @@ describe('Services Local User Organization Credentials', () => {
         data: {
           email,
           password: encryptedPassword,
+          jwtToken: 'token',
           organization_id: '123',
           user_id: '321',
         },
@@ -528,13 +530,14 @@ describe('Services Local User Organization Credentials', () => {
       vi.mocked(safeStorage.encryptString).mockReturnValue(encryptedPassword);
       prisma.organizationCredentials.create.mockResolvedValue(organizationCredentials);
 
-      const result = await addOrganizationCredentials(email, password, '123', '321', null);
+      const result = await addOrganizationCredentials(email, password, '123', '321', 'token', null);
 
       expect(result).toEqual(true);
       expect(prisma.organizationCredentials.create).toHaveBeenCalledWith({
         data: {
           email,
           password: encryptedPassword.toString('base64'),
+          jwtToken: 'token',
           organization_id: '123',
           user_id: '321',
         },
@@ -556,6 +559,7 @@ describe('Services Local User Organization Credentials', () => {
         password,
         '123',
         '321',
+        'token',
         encryptPassword,
         true,
       );
@@ -563,7 +567,7 @@ describe('Services Local User Organization Credentials', () => {
       expect(result).toEqual(undefined);
       expect(prisma.organizationCredentials.update).toHaveBeenCalledWith({
         where: { id: organizationCredentials.id },
-        data: { email, password: encryptedPassword },
+        data: { email, password: encryptedPassword, jwtToken: 'token' },
       });
     });
 
@@ -575,7 +579,7 @@ describe('Services Local User Organization Credentials', () => {
       prisma.organizationCredentials.create.mockRejectedValue('Database Error');
 
       expect(() =>
-        addOrganizationCredentials(email, password, '123', '321', encryptPassword, true),
+        addOrganizationCredentials(email, password, '123', '321', 'token', encryptPassword, true),
       ).rejects.toThrow('Failed to add organization credentials');
     });
 
@@ -586,9 +590,9 @@ describe('Services Local User Organization Credentials', () => {
       vi.mocked(getUseKeychainClaim).mockResolvedValueOnce(false);
       prisma.organizationCredentials.create.mockResolvedValue(organizationCredentials);
 
-      await expect(addOrganizationCredentials(email, password, '123', '321', null)).rejects.toThrow(
-        'Failed to add organization credentials',
-      );
+      await expect(
+        addOrganizationCredentials(email, password, '123', '321', 'token', null),
+      ).rejects.toThrow('Failed to add organization credentials');
     });
   });
 
@@ -611,49 +615,6 @@ describe('Services Local User Organization Credentials', () => {
 
       expect(() => deleteOrganizationCredentials('123', '321')).rejects.toThrow(
         'Failed to delete organization credentials',
-      );
-    });
-  });
-
-  describe('decryptCredentialPassword', () => {
-    beforeEach(() => {
-      vi.resetAllMocks();
-    });
-
-    test('Should return the decrypted password if the provided encrypt password is correct', async () => {
-      const decryptedPassword = 'password';
-
-      vi.mocked(decrypt).mockReturnValue(decryptedPassword);
-
-      const result = await decryptCredentialPassword(organizationCredentials, '321');
-
-      expect(result).toEqual(decryptedPassword);
-    });
-
-    test('Should return the decrypted password if the keychain is used', async () => {
-      const decryptedPassword = 'password';
-
-      vi.mocked(getUseKeychainClaim).mockResolvedValue(true);
-      vi.mocked(safeStorage.decryptString).mockReturnValue(decryptedPassword);
-
-      const result = await decryptCredentialPassword(organizationCredentials, '321');
-
-      expect(result).toEqual(decryptedPassword);
-    });
-
-    test('Should throw error if there is a database error', async () => {
-      vi.mocked(decrypt).mockImplementation(() => {
-        throw new Error('Some decrypt error');
-      });
-
-      expect(() => decryptCredentialPassword(organizationCredentials, '321')).rejects.toThrow(
-        'Failed to decrypt credential',
-      );
-    });
-
-    test('Should throw error if keychain is not used and decrypt password is not provided', async () => {
-      expect(() => decryptCredentialPassword(organizationCredentials, null)).rejects.toThrow(
-        'Failed to decrypt credential',
       );
     });
   });
@@ -687,7 +648,7 @@ describe('Services Local User Organization Credentials', () => {
 
       prisma.organizationCredentials.findMany.mockResolvedValue(credentials);
       vi.mocked(decrypt).mockReturnValue(decryptedPassword);
-      vi.mocked(login).mockResolvedValue({ id: 2, cookie: [] });
+      vi.mocked(login).mockResolvedValue({ id: 2, accessToken: 'token' });
 
       const result = await tryAutoSignIn('123', '321');
 
@@ -714,70 +675,6 @@ describe('Services Local User Organization Credentials', () => {
       vi.mocked(login).mockRejectedValue('Failed login in server');
 
       expect(() => tryAutoSignIn('123', '321')).rejects.toThrow('Incorrect decryption password');
-    });
-
-    test('parseSetCookie: Should parse a Set-Cookie string into a CookiesSetDetails object', async () => {
-      const decryptedPassword = 'password';
-
-      const setCookieString =
-        'name=value; Path=/; HttpOnly; Expires=Wed, 21 Oct 2025 07:28:00 GMT; SameSite=None';
-
-      prisma.organizationCredentials.findMany.mockResolvedValue(credentials);
-      vi.mocked(decrypt).mockReturnValue(decryptedPassword);
-      vi.mocked(login).mockResolvedValue({ id: 2, cookie: [setCookieString] });
-
-      const result = await tryAutoSignIn('123', '321');
-
-      expect(result).toEqual([]);
-      expect(session.fromPartition('persist:main').cookies.set).toHaveBeenCalledWith({
-        name: 'name',
-        url: credentials[0].organization.serverUrl,
-        value: 'value',
-        path: '/',
-        httpOnly: true,
-        sameSite: 'no_restriction',
-        expirationDate: new Date('Wed, 21 Oct 2025 07:28:00 GMT').getTime() / 1000,
-        secure: true,
-      });
-
-      const setCookieString2 =
-        'name=value; Path=/; HttpOnly; Expires=Wed, 21 Oct 2025 07:28:00 GMT; SameSite=LAX';
-      vi.mocked(login).mockResolvedValue({ id: 2, cookie: [setCookieString2] });
-
-      await tryAutoSignIn('123', '321');
-
-      expect(session.fromPartition('persist:main').cookies.set).toHaveBeenCalledWith({
-        name: 'name',
-        url: credentials[0].organization.serverUrl,
-        value: 'value',
-        path: '/',
-        httpOnly: true,
-        sameSite: 'lax',
-        expirationDate: new Date('Wed, 21 Oct 2025 07:28:00 GMT').getTime() / 1000,
-        secure: false,
-      });
-    });
-
-    test('parseSetCookie: Should handle a Set-Cookie string without optional attributes', async () => {
-      const decryptedPassword = 'password';
-
-      const setCookieString = 'name=value';
-
-      prisma.organizationCredentials.findMany.mockResolvedValue(credentials);
-      vi.mocked(decrypt).mockReturnValue(decryptedPassword);
-      vi.mocked(login).mockResolvedValue({ id: 2, cookie: [setCookieString] });
-
-      await tryAutoSignIn('123', '321');
-
-      expect(session.fromPartition('persist:main').cookies.set).toHaveBeenCalledWith({
-        name: 'name',
-        url: credentials[0].organization.serverUrl,
-        value: 'value',
-        path: '/',
-        httpOnly: true,
-        sameSite: 'no_restriction',
-        secure: true,
-      });
     });
   });
 });

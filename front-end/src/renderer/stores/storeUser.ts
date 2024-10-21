@@ -5,6 +5,7 @@ import type {
   PublicKeyAccounts,
   RecoveryPhrase,
   ConnectedOrganization,
+  OrganizationTokens,
 } from '@renderer/types';
 
 import { computed, ref, watch, nextTick } from 'vue';
@@ -44,6 +45,7 @@ const useUserStore = defineStore('user', () => {
   /** Organization */
   const selectedOrganization = ref<ConnectedOrganization | null>(null);
   const organizations = ref<ConnectedOrganization[]>([]);
+  const organizationTokens = ref<OrganizationTokens>({});
 
   /** Migration */
   const migrating = ref<boolean>(false);
@@ -179,10 +181,11 @@ const useUserStore = defineStore('user', () => {
 
   const refetchOrganizations = async () => {
     organizations.value = await ush.getConnectedOrganizations(personal.value);
-
     const updatedSelectedOrganization = organizations.value.find(
       o => o.id === selectedOrganization.value?.id,
     );
+    organizationTokens.value = await ush.getOrganizationJwtTokens(personal.value);
+    ush.setSessionStorageTokens(organizations.value, organizationTokens.value);
 
     if (updatedSelectedOrganization) {
       await selectOrganization(updatedSelectedOrganization);
@@ -192,6 +195,10 @@ const useUserStore = defineStore('user', () => {
   const deleteOrganization = async (organizationId: string) => {
     organizations.value = organizations.value.filter(org => org.id !== organizationId);
     await ush.deleteOrganizationConnection(organizationId, personal.value);
+  };
+
+  const getJwtToken = (organizationId?: string): string | null => {
+    return organizationTokens.value[organizationId || selectedOrganization.value?.id || ''] || null;
   };
 
   /* Migration */
@@ -218,20 +225,21 @@ const useUserStore = defineStore('user', () => {
     publicKeys,
     shouldSetupAccount,
     migrating,
+    deleteOrganization,
+    getJwtToken,
+    getPassword,
     login,
     logout,
-    setRecoveryPhrase,
-    refetchKeys,
     refetchAccounts,
-    storeKey,
+    refetchKeys,
+    refetchOrganizations,
+    refetchUserState,
     selectOrganization,
-    getPassword,
+    setMigrating,
     setPassword,
     setPasswordStoreDuration,
-    refetchUserState,
-    deleteOrganization,
-    refetchOrganizations,
-    setMigrating,
+    setRecoveryPhrase,
+    storeKey,
   };
 
   return exports;

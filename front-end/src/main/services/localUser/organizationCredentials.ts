@@ -10,18 +10,19 @@ import { getUseKeychainClaim } from '@main/services/localUser/claim';
 import { decrypt, encrypt } from '@main/utils/crypto';
 
 /* Returns the organization that the user is connected to */
-export const getConnectedOrganizations = async (user_id: string) => {
+export const getOrganizationTokens = async (user_id: string) => {
   const prisma = getPrismaClient();
 
   try {
     const orgs = await prisma.organizationCredentials.findMany({
       where: { user_id },
       select: {
-        organization: true,
+        organization_id: true,
+        jwtToken: true,
       },
     });
 
-    return orgs === null ? [] : orgs.map(org => org.organization);
+    return orgs;
   } catch (error) {
     console.log(error);
     return [];

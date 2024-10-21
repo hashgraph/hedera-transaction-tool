@@ -4,7 +4,7 @@ import { mockDeep } from 'vitest-mock-extended';
 import registerOrganizationCredentialsHandlers from '@main/modules/ipcHandlers/localUser/organizationCredentials';
 
 import {
-  getConnectedOrganizations,
+  getOrganizationTokens,
   organizationsToSignIn,
   shouldSignInOrganization,
   addOrganizationCredentials,
@@ -20,7 +20,7 @@ vi.mock('electron', () => ({
 }));
 
 vi.mock('@main/services/localUser', () => ({
-  getConnectedOrganizations: vi.fn(),
+  getOrganizationTokens: vi.fn(),
   organizationsToSignIn: vi.fn(),
   shouldSignInOrganization: vi.fn(),
   addOrganizationCredentials: vi.fn(),
@@ -40,7 +40,7 @@ describe('IPC handlers organization credentials', () => {
 
   test('Should register handlers for each event', () => {
     const ежент = [
-      'getConnectedOrganizations',
+      'getOrganizationTokens',
       'organizationsToSignIn',
       'shouldSignInOrganization',
       'addOrganizationCredentials',
@@ -56,16 +56,16 @@ describe('IPC handlers organization credentials', () => {
     ).toBe(true);
   });
 
-  test('Should set up getConnectedOrganizations handler', async () => {
+  test('Should set up getOrganizationTokens handler', async () => {
     const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'organizationCredentials:getConnectedOrganizations',
+      ([e]) => e === 'organizationCredentials:getOrganizationTokens',
     );
     expect(handler).toBeDefined();
 
     const user_id = 'userId';
 
     handler && (await handler[1](event, user_id));
-    expect(getConnectedOrganizations).toHaveBeenCalledWith(user_id);
+    expect(getOrganizationTokens).toHaveBeenCalledWith(user_id);
   });
 
   test('Should set up organizationsToSignIn handler', async () => {

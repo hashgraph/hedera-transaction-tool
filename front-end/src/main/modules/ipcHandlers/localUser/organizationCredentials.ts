@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron';
 
 import {
-  getConnectedOrganizations,
+  getOrganizationTokens,
   organizationsToSignIn,
   shouldSignInOrganization,
   addOrganizationCredentials,
@@ -15,9 +15,9 @@ const createChannelName = (...props) => ['organizationCredentials', ...props].jo
 export default () => {
   /* Organization Credentials */
 
-  /* Get all connected organizations */
-  ipcMain.handle(createChannelName('getConnectedOrganizations'), (_e, user_id: string) =>
-    getConnectedOrganizations(user_id),
+  /* Get all organization ids with their jwt tokens */
+  ipcMain.handle(createChannelName('getOrganizationTokens'), (_e, user_id: string) =>
+    getOrganizationTokens(user_id),
   );
 
   /* Get all organizations that user should sign in */
