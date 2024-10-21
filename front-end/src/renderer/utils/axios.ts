@@ -1,7 +1,9 @@
-import { ErrorCodes, ErrorMessages } from '@main/shared/constants';
 import type { AxiosRequestConfig, AxiosResponse } from 'axios';
 
 import axios, { AxiosError } from 'axios';
+
+import { ErrorCodes, ErrorMessages } from '@main/shared/constants';
+import { getAuthTokenFromSessionStorage } from '@renderer/utils';
 
 export function throwIfNoResponse(response?: AxiosResponse): asserts response is AxiosResponse {
   if (!response) {
