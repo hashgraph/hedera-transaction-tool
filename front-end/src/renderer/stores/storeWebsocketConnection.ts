@@ -2,6 +2,8 @@ import { ref } from 'vue';
 import { defineStore } from 'pinia';
 import { Socket, io } from 'socket.io-client';
 
+import { SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@main/shared/constants';
+
 import { isUserLoggedIn } from '@renderer/utils';
 
 import useUserStore from './storeUser';
@@ -55,7 +57,9 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
     } else {
       const newSocket = io(url, {
         path: '/ws',
-        withCredentials: true,
+        extraHeaders: {
+          Authorization: `bearer ${sessionStorage.getItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${serverUrl}`)}`,
+        },
       });
 
       newSocket.on('connect', () => {

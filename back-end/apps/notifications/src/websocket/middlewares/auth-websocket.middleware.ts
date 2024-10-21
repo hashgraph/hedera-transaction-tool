@@ -1,7 +1,6 @@
 import { ClientProxy } from '@nestjs/microservices';
 import { Socket } from 'socket.io';
 import { firstValueFrom } from 'rxjs';
-import * as cookie from 'cookie';
 
 import { User } from '@entities';
 
@@ -20,10 +19,19 @@ export const AuthWebsocketMiddleware = (apiService: ClientProxy): SocketIOMiddle
   return async (socket: AuthWebsocket, next) => {
     try {
       /* Get the cookie from the header. This is the HTTP-only cookie which contains the Authentication jwt. */
-      const { Authentication: jwt } = cookie.parse(socket.handshake.headers.cookie);
+      const { authorization } = socket.handshake.headers;
+
+      if (!authorization) {
+        next({ name: 'Unauthorized', message: 'Unauthorized' });
+        return;
+      }
+
+      const jwt = (Array.isArray(authorization) ? authorization[0] : authorization).split(' ')[1];
 
       /* Request authentication of the jwt from the API service. */
-      const response = apiService.send<User>('authenticate-websocket-token', { jwt });
+      const response = apiService.send<User>('authenticate-websocket-token', {
+        jwt,
+      });
       const user = await firstValueFrom(response);
 
       if (user) {
