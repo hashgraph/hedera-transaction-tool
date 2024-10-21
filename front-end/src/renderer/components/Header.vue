@@ -71,7 +71,7 @@ const handleLogout = async () => {
     const { id, nickname, serverUrl, key } = user.selectedOrganization;
     await logout(serverUrl);
     await updateOrganizationCredentials(id, user.personal.id, undefined, undefined, null);
-    localStorage.removeItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${id}`);
+    localStorage.removeItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${new URL(serverUrl).origin}`);
     await user.selectOrganization(null);
     await user.selectOrganization({ id, nickname, serverUrl, key });
   } else {
