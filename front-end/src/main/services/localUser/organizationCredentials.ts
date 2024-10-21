@@ -22,7 +22,7 @@ export const getOrganizationTokens = async (user_id: string) => {
       },
     });
 
-    return orgs;
+    return orgs || [];
   } catch (error) {
     console.log(error);
     return [];
@@ -279,18 +279,16 @@ async function encryptData(data: string, encryptPassword?: string | null) {
 
   if (useKeychain) {
     const passwordBuffer = safeStorage.encryptString(data);
-    data = passwordBuffer.toString('base64');
+    return passwordBuffer.toString('base64');
   } else if (encryptPassword) {
-    data = encrypt(data, encryptPassword);
+    return encrypt(data, encryptPassword);
   } else {
     throw new Error('Password is required to store sensitive data');
   }
-
-  return data;
 }
 
 /* Decrypt data */
-async function decryptData(data: string, decryptPassword?: string | null) {
+export async function decryptData(data: string, decryptPassword?: string | null) {
   const useKeychain = await getUseKeychainClaim();
   if (useKeychain) {
     const buffer = Buffer.from(data, 'base64');
@@ -300,12 +298,10 @@ async function decryptData(data: string, decryptPassword?: string | null) {
   } else {
     throw new Error('Password is required to decrypt sensitive');
   }
-
-  return data;
 }
 
 /* Validate organization credentials */
-async function organizationCredentialsInvalid(
+export async function organizationCredentialsInvalid(
   org?: (OrganizationCredentials & { organization: Organization }) | null,
 ) {
   if (!org) return true;

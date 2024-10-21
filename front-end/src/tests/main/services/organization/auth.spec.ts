@@ -16,14 +16,11 @@ describe('Services Organization Auth', () => {
   test('login: sends a request to the server with the provided credentials', async () => {
     const response = {
       id: 'some-id',
-      cookie: 'some-cookie',
+      accessToken: 'token',
     };
 
     vi.spyOn(axios, 'post').mockResolvedValueOnce({
-      data: { id: response.id },
-      headers: {
-        'set-cookie': response.cookie,
-      },
+      data: { user: { id: response.id }, accessToken: response.accessToken },
     });
 
     const result = await login(serverUrl, email, password);

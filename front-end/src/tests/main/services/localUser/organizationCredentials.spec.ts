@@ -16,6 +16,8 @@ import {
   shouldSignInOrganization,
   tryAutoSignIn,
   updateOrganizationCredentials,
+  decryptData,
+  organizationCredentialsInvalid,
 } from '@main/services/localUser/organizationCredentials';
 
 import { safeStorage, session } from 'electron';
@@ -65,7 +67,7 @@ describe('Services Local User Organization Credentials', () => {
     test('Should return the organizations that the user is connected to', async () => {
       const records = [
         {
-          organizationId: organization,
+          organizationId: organization.id,
           jwtToken: 'token',
         },
       ] as unknown as OrganizationCredentials[];
@@ -74,7 +76,12 @@ describe('Services Local User Organization Credentials', () => {
 
       const result = await getOrganizationTokens('123');
 
-      expect(result).toEqual([organization]);
+      expect(result).toEqual([
+        {
+          organizationId: organization.id,
+          jwtToken: 'token',
+        },
+      ]);
     });
 
     test('Should return empty array if organizations are null', async () => {
@@ -123,13 +130,6 @@ describe('Services Local User Organization Credentials', () => {
     });
 
     test('Should add organization to the result if there is no access token', async () => {
-      const ses = {
-        cookies: {
-          get: vi.fn().mockResolvedValue([]),
-        },
-      } as unknown as Electron.Session;
-      vi.mocked(session.fromPartition).mockReturnValue(ses);
-
       prisma.organizationCredentials.findMany.mockResolvedValue(credentials);
 
       const result = await organizationsToSignIn('123');
@@ -177,24 +177,20 @@ describe('Services Local User Organization Credentials', () => {
     });
 
     test('Should add organization to the result if there is a valid token', async () => {
-      const ses = {
-        cookies: {
-          get: vi.fn().mockResolvedValue([
-            {
-              domain: urlHost,
-              value: 'valid token',
-            },
-          ]),
-        },
-      } as unknown as Electron.Session;
-      vi.mocked(session.fromPartition).mockReturnValue(ses);
       vi.mocked(jwtDecode).mockReturnValue({ exp: Date.now() + 2 * 1000 });
 
       prisma.organizationCredentials.findMany.mockResolvedValue(credentials);
 
       const result = await organizationsToSignIn('123');
 
-      expect(result).toEqual([]);
+      expect(result).toEqual([
+        {
+          ...organizationCredentials,
+          organization: {
+            serverUrl,
+          },
+        },
+      ]);
     });
 
     test('Should return empty array if there is database error', async () => {
@@ -248,12 +244,10 @@ describe('Services Local User Organization Credentials', () => {
       const serverUrl = `http://${urlHost}:3000`;
       const tokenValue = 'token';
 
-      const ses = {
-        cookies: {
-          get: vi.fn().mockResolvedValue([{ domain: urlHost, value: tokenValue }]),
-        },
-      } as unknown as Electron.Session;
-      vi.mocked(session.fromPartition).mockReturnValue(ses);
+      prisma.organizationCredentials.findFirst.mockResolvedValue({
+        ...organizationCredentials,
+        jwtToken: tokenValue,
+      });
 
       const result = await getAccessToken(serverUrl);
 
@@ -277,17 +271,10 @@ describe('Services Local User Organization Credentials', () => {
       const serverUrl = `http://${urlHost}:3000`;
       const payload = { token: 'payload' };
 
-      const ses = {
-        cookies: {
-          get: vi.fn().mockResolvedValue([
-            {
-              domain: urlHost,
-              value: 'some valid token',
-            },
-          ]),
-        },
-      } as unknown as Electron.Session;
-      vi.mocked(session.fromPartition).mockReturnValue(ses);
+      prisma.organizationCredentials.findFirst.mockResolvedValue({
+        ...organizationCredentials,
+        jwtToken: 'token',
+      });
       vi.mocked(jwtDecode).mockReturnValue(payload);
 
       const result = await getCurrentUser(serverUrl);
@@ -299,12 +286,7 @@ describe('Services Local User Organization Credentials', () => {
       const urlHost = 'localhost';
       const serverUrl = `http://${urlHost}:3000`;
 
-      const ses = {
-        cookies: {
-          get: vi.fn().mockResolvedValue([]),
-        },
-      } as unknown as Electron.Session;
-      vi.mocked(session.fromPartition).mockReturnValue(ses);
+      prisma.organizationCredentials.findFirst.mockResolvedValue(null);
 
       const result = await getCurrentUser(serverUrl);
 
@@ -315,17 +297,44 @@ describe('Services Local User Organization Credentials', () => {
       const urlHost = 'localhost';
       const serverUrl = `http://${urlHost}:3000`;
 
-      const ses = {
-        cookies: {
-          get: vi.fn().mockResolvedValue([
-            {
-              domain: urlHost,
-              value: 'invlaid',
-            },
-          ]),
-        },
-      } as unknown as Electron.Session;
-      vi.mocked(session.fromPartition).mockReturnValue(ses);
+      prisma.organizationCredentials.findFirst.mockResolvedValue({
+        ...organizationCredentials,
+        jwtToken: 'token',
+      });
+      vi.mocked(jwtDecode).mockImplementation(() => {
+        throw new Error('Invalid token');
+      });
+
+      const result = await getCurrentUser(serverUrl);
+
+      expect(result).toEqual(null);
+    });
+
+    test('Should return null if an error occur in get access token', async () => {
+      const urlHost = 'localhost';
+      const serverUrl = `http://${urlHost}:3000`;
+
+      prisma.organizationCredentials.findFirst.mockRejectedValueOnce({
+        ...organizationCredentials,
+        jwtToken: 'token',
+      });
+      vi.mocked(jwtDecode).mockImplementation(() => {
+        throw new Error('Invalid token');
+      });
+
+      const result = await getCurrentUser(serverUrl);
+
+      expect(result).toEqual(null);
+    });
+
+    test('Should return null if jwt is null', async () => {
+      const urlHost = 'localhost';
+      const serverUrl = `http://${urlHost}:3000`;
+
+      prisma.organizationCredentials.findFirst.mockResolvedValueOnce({
+        ...organizationCredentials,
+        jwtToken: null,
+      });
       vi.mocked(jwtDecode).mockImplementation(() => {
         throw new Error('Invalid token');
       });
@@ -410,11 +419,18 @@ describe('Services Local User Organization Credentials', () => {
       vi.mocked(encrypt).mockReturnValue(encryptedPassword);
       prisma.organizationCredentials.findFirst.mockResolvedValue(organizationCredentials);
 
-      await updateOrganizationCredentials('123', '321', email, password, encryptPassword);
+      await updateOrganizationCredentials(
+        '123',
+        '321',
+        email,
+        password,
+        undefined,
+        encryptPassword,
+      );
 
       expect(prisma.organizationCredentials.update).toHaveBeenCalledWith({
         where: { id: organizationCredentials.id },
-        data: { email, password: encryptedPassword },
+        data: { email, password: encryptedPassword, jwtToken: organizationCredentials.jwtToken },
       });
     });
 
@@ -431,7 +447,11 @@ describe('Services Local User Organization Credentials', () => {
 
       expect(prisma.organizationCredentials.update).toHaveBeenCalledWith({
         where: { id: organizationCredentials.id },
-        data: { email, password: encryptedPassword.toString('base64') },
+        data: {
+          email,
+          password: encryptedPassword.toString('base64'),
+          jwtToken: organizationCredentials.jwtToken,
+        },
       });
     });
 
@@ -444,7 +464,11 @@ describe('Services Local User Organization Credentials', () => {
 
       expect(prisma.organizationCredentials.update).toHaveBeenCalledWith({
         where: { id: organizationCredentials.id },
-        data: { email, password: organizationCredentials.password },
+        data: {
+          email,
+          password: organizationCredentials.password,
+          jwtToken: organizationCredentials.jwtToken,
+        },
       });
     });
 
@@ -456,11 +480,22 @@ describe('Services Local User Organization Credentials', () => {
       vi.mocked(encrypt).mockReturnValue(encryptedPassword);
       prisma.organizationCredentials.findFirst.mockResolvedValue(organizationCredentials);
 
-      await updateOrganizationCredentials('123', '321', undefined, password, encryptPassword);
+      await updateOrganizationCredentials(
+        '123',
+        '321',
+        undefined,
+        password,
+        undefined,
+        encryptPassword,
+      );
 
       expect(prisma.organizationCredentials.update).toHaveBeenCalledWith({
         where: { id: organizationCredentials.id },
-        data: { email: organizationCredentials.email, password: encryptedPassword },
+        data: {
+          email: organizationCredentials.email,
+          password: encryptedPassword,
+          jwtToken: organizationCredentials.jwtToken,
+        },
       });
     });
 
@@ -470,7 +505,7 @@ describe('Services Local User Organization Credentials', () => {
       const encryptPassword = 'password for encryption';
 
       expect(() =>
-        updateOrganizationCredentials('123', '321', email, password, encryptPassword),
+        updateOrganizationCredentials('123', '321', email, password, undefined, encryptPassword),
       ).rejects.toThrow('Failed to update organization credentials');
     });
 
@@ -622,14 +657,6 @@ describe('Services Local User Organization Credentials', () => {
   describe('tryAutoSignIn', () => {
     beforeEach(() => {
       vi.resetAllMocks();
-
-      const ses = {
-        cookies: {
-          set: vi.fn(),
-          get: vi.fn().mockResolvedValue([]),
-        },
-      } as unknown as Electron.Session;
-      vi.mocked(session.fromPartition).mockReturnValue(ses);
     });
 
     const urlHost = 'localhost';
@@ -675,6 +702,127 @@ describe('Services Local User Organization Credentials', () => {
       vi.mocked(login).mockRejectedValue('Failed login in server');
 
       expect(() => tryAutoSignIn('123', '321')).rejects.toThrow('Incorrect decryption password');
+    });
+  });
+
+  describe('decryptData', () => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+    });
+
+    test('Should decrypt data using keychain', async () => {
+      const encryptedData = 'encryptedData';
+      const decryptedData = 'decryptedData';
+      const buffer = Buffer.from(encryptedData, 'base64');
+
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(true);
+      vi.mocked(safeStorage.decryptString).mockReturnValue(decryptedData);
+
+      const result = await decryptData(encryptedData);
+
+      expect(safeStorage.decryptString).toHaveBeenCalledWith(buffer);
+      expect(result).toEqual(decryptedData);
+    });
+
+    test('Should decrypt data using decryption password', async () => {
+      const encryptedData = 'encryptedData';
+      const decryptedData = 'decryptedData';
+      const decryptPassword = 'password';
+
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
+      vi.mocked(decrypt).mockReturnValue(decryptedData);
+
+      const result = await decryptData(encryptedData, decryptPassword);
+
+      expect(decrypt).toHaveBeenCalledWith(encryptedData, decryptPassword);
+      expect(result).toEqual(decryptedData);
+    });
+
+    test('Should throw error if no decryption method is available', async () => {
+      const encryptedData = 'encryptedData';
+
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
+
+      await expect(decryptData(encryptedData)).rejects.toThrow(
+        'Password is required to decrypt sensitive',
+      );
+    });
+  });
+
+  describe('organizationCredentialsInvalid', () => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+    });
+
+    const organization = {
+      id: '321',
+      nickname: 'organization',
+      serverUrl: 'http://localhost:3000',
+      key: 'key',
+    };
+
+    const validCredentials = {
+      id: '1',
+      user_id: '123',
+      organization_id: '321',
+      organization_user_id: 1,
+      email: 'email',
+      password: 'password',
+      updated_at: new Date(),
+      jwtToken: 'validToken',
+      organization,
+    };
+
+    test('Should return true if credentials are missing', async () => {
+      const result = await organizationCredentialsInvalid(null);
+      expect(result).toBe(true);
+    });
+
+    test('Should return true if password is missing', async () => {
+      const credentials = { ...validCredentials, password: '' };
+      const result = await organizationCredentialsInvalid(credentials);
+      expect(result).toBe(true);
+    });
+
+    test('Should return true if email is missing', async () => {
+      const credentials = { ...validCredentials, email: '' };
+      const result = await organizationCredentialsInvalid(credentials);
+      expect(result).toBe(true);
+    });
+
+    test('Should return true if access token is missing', async () => {
+      prisma.organizationCredentials.findFirst.mockResolvedValue(null);
+      const result = await organizationCredentialsInvalid(validCredentials);
+      expect(result).toBe(true);
+    });
+
+    test('Should return true if access token is expired', async () => {
+      prisma.organizationCredentials.findFirst.mockResolvedValue({
+        jwtToken: 'expired',
+      } as unknown as OrganizationCredentials);
+      vi.mocked(jwtDecode).mockReturnValue({ exp: Date.now() / 1000 - 1000 });
+      const result = await organizationCredentialsInvalid(validCredentials);
+      expect(result).toBe(true);
+    });
+
+    test('Should return true if jwt decode throws', async () => {
+      prisma.organizationCredentials.findFirst.mockResolvedValue({
+        jwtToken: 'expired',
+      } as unknown as OrganizationCredentials);
+      vi.mocked(jwtDecode).mockImplementationOnce(() => {
+        throw new Error('Invalid token');
+      });
+      const result = await organizationCredentialsInvalid(validCredentials);
+      expect(result).toBe(true);
+    });
+
+    test('Should return false if credentials are valid', async () => {
+      prisma.organizationCredentials.findFirst.mockResolvedValue({
+        jwtToken: 'validToken',
+      } as unknown as OrganizationCredentials);
+      vi.mocked(jwtDecode).mockReturnValue({ exp: Date.now() / 1000 + 1000 });
+      const result = await organizationCredentialsInvalid(validCredentials);
+      expect(result).toBe(false);
     });
   });
 });

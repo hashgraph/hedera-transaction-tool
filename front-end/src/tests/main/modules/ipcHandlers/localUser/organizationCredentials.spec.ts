@@ -103,6 +103,7 @@ describe('IPC handlers organization credentials', () => {
     const password = 'password';
     const organization_id = 'organizationId';
     const user_id = 'userId';
+    const jwtToken = 'token';
     const encryptPassword = 'encryptPassword';
     const updateIfExists = false;
 
@@ -113,6 +114,7 @@ describe('IPC handlers organization credentials', () => {
         password,
         organization_id,
         user_id,
+        jwtToken,
         encryptPassword,
         updateIfExists,
       ));
@@ -121,6 +123,7 @@ describe('IPC handlers organization credentials', () => {
       password,
       organization_id,
       user_id,
+      jwtToken,
       encryptPassword,
       updateIfExists,
     );
@@ -136,15 +139,17 @@ describe('IPC handlers organization credentials', () => {
     const user_id = 'userId';
     const email = 'email';
     const password = 'password';
+    const token = 'token';
     const encryptPassword = 'encryptPassword';
 
     handler &&
-      (await handler[1](event, organization_id, user_id, email, password, encryptPassword));
+      (await handler[1](event, organization_id, user_id, email, password, token, encryptPassword));
     expect(updateOrganizationCredentials).toHaveBeenCalledWith(
       organization_id,
       user_id,
       email,
       password,
+      token,
       encryptPassword,
     );
   });
