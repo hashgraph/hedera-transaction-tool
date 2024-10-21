@@ -29,13 +29,15 @@ export function createJwtBlacklistGuard(extractJwt: (req) => string) {
 
       const request = context.switchToHttp().getRequest();
 
-      const jwt = extractJwt(request);
-      if (!jwt) return false;
+      try {
+        const jwt = extractJwt(request);
+        if (!jwt) return false;
 
-      const isBlacklisted = await this.blacklistService.isTokenBlacklisted(jwt);
-      console.log('Is blacklisted:', isBlacklisted);
-
-      return !isBlacklisted;
+        const isBlacklisted = await this.blacklistService.isTokenBlacklisted(jwt);
+        return !isBlacklisted;
+      } catch (error) {
+        return false;
+      }
     }
   }
 
