@@ -43,7 +43,15 @@ const transactionGroups = computed(() => {
     },
     // { groupTitle: 'Token Service', items: [] },
     // { groupTitle: 'Smart Contract Service', items: [] },
-    { groupTitle: 'Node', items: [{ label: 'Freeze', name: transactionTypeKeys.freeze }] },
+    {
+      groupTitle: 'Node',
+      items: [
+        { label: 'Freeze', name: transactionTypeKeys.freeze },
+        { label: 'Node Create', name: transactionTypeKeys.nodeCreate },
+        { label: 'Node Delete', name: transactionTypeKeys.nodeDelete },
+        { label: 'Node Update', name: transactionTypeKeys.nodeUpdate },
+      ],
+    },
     // { groupTitle: 'Token Service', items: [] },
     // { groupTitle: 'Schedule Service', items: [] },
     // { groupTitle: 'Freeze Service', items: [] },
