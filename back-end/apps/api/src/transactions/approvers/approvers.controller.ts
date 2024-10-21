@@ -15,7 +15,7 @@ import { OnlyOwnerKey, Serialize } from '@app/common';
 
 import { TransactionApprover, User } from '@entities';
 
-import { JwtAuthGuard, VerifiedUserGuard } from '../../guards';
+import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../../guards';
 
 import { GetUser } from '../../decorators/get-user.decorator';
 
@@ -30,7 +30,7 @@ import {
 
 @ApiTags('Transaction Approvers')
 @Controller('transactions/:transactionId?/approvers')
-@UseGuards(JwtAuthGuard, VerifiedUserGuard)
+@UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
 @Serialize(TransactionApproverDto)
 export class ApproversController {
   constructor(private approversService: ApproversService) {}

@@ -15,17 +15,16 @@ import { ErrorCodes, Serialize } from '@app/common';
 
 import { User } from '@entities';
 
-import { AdminGuard, JwtAuthGuard, VerifiedUserGuard } from '../guards';
-
+import { AdminGuard, JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../guards';
 import { AllowNonVerifiedUser, GetUser } from '../decorators';
-
-import { UsersService } from './users.service';
 
 import { UpdateUserDto, UserDto } from './dtos';
 
+import { UsersService } from './users.service';
+
 @ApiTags('Users')
 @Controller('users')
-@UseGuards(JwtAuthGuard, VerifiedUserGuard)
+@UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
 @Serialize(UserDto)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

@@ -26,7 +26,7 @@ import {
 
 import { Transaction, User, transactionDateProperties, transactionProperties } from '@entities';
 
-import { JwtAuthGuard, VerifiedUserGuard, HasKeyGuard } from '../guards';
+import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard, HasKeyGuard } from '../guards';
 
 import { GetUser } from '../decorators';
 
@@ -41,7 +41,7 @@ import {
 
 @ApiTags('Transactions')
 @Controller('transactions')
-@UseGuards(JwtAuthGuard, VerifiedUserGuard)
+@UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
 export class TransactionsController {
   constructor(private transactionsService: TransactionsService) {}
 

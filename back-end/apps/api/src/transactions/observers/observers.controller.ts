@@ -12,24 +12,21 @@ import {
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { Serialize } from '@app/common';
-
 import { TransactionObserver, User } from '@entities';
 
-import { JwtAuthGuard, VerifiedUserGuard } from '../../guards';
-
+import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../../guards';
 import { GetUser } from '../../decorators';
-
-import { ObserversService } from './observers.service';
-
 import {
   TransactionObserverDto,
   CreateTransactionObserversDto,
   UpdateTransactionObserverDto,
 } from '../dto/';
 
+import { ObserversService } from './observers.service';
+
 @ApiTags('Transaction Observers')
 @Controller('transactions/:transactionId?/observers')
-@UseGuards(JwtAuthGuard, VerifiedUserGuard)
+@UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
 @Serialize(TransactionObserverDto)
 export class ObserversController {
   constructor(private observersService: ObserversService) {}
@@ -98,7 +95,10 @@ export class ObserversController {
     type: Boolean,
   })
   @Delete('/:id')
-  removeTransactionObserver(@GetUser() user: User, @Param('id', ParseIntPipe) id: number): Promise<boolean> {
+  removeTransactionObserver(
+    @GetUser() user: User,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<boolean> {
     return this.observersService.removeTransactionObserver(id, user);
   }
 }

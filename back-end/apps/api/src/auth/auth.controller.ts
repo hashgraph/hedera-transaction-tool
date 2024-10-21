@@ -13,6 +13,8 @@ import {
   AdminGuard,
   EmailThrottlerGuard,
   JwtAuthGuard,
+  JwtBlackListAuthGuard,
+  JwtBlackListOtpGuard,
   LocalAuthGuard,
   OtpJwtAuthGuard,
   OtpVerifiedAuthGuard,
@@ -24,14 +26,14 @@ import { AuthService } from './auth.service';
 
 import {
   AuthDto,
+  AuthenticateWebsocketTokenDto,
   ChangePasswordDto,
   LoginDto,
+  LoginResponseDto,
   NewPasswordDto,
   OtpDto,
   OtpLocalDto,
   SignUpUserDto,
-  AuthenticateWebsocketTokenDto,
-  LoginResponseDto,
 } from './dtos';
 
 @ApiTags('Authentication')
@@ -51,7 +53,7 @@ export class AuthController {
   })
   @Post('/signup')
   @Serialize(AuthDto)
-  @UseGuards(JwtAuthGuard, AdminGuard, EmailThrottlerGuard)
+  @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, AdminGuard, EmailThrottlerGuard)
   async signUp(@Body() dto: SignUpUserDto, @Req() req: Request): Promise<User> {
     const url = `${req.protocol}://${req.get('host')}`;
     return this.authService.signUpByAdmin(dto, url);
@@ -89,7 +91,7 @@ export class AuthController {
   })
   @Post('/logout')
   @HttpCode(200)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard)
   logout() {
     return this.authService.logout();
   }
@@ -104,7 +106,7 @@ export class AuthController {
     description: 'Password successfully changed.',
   })
   @Patch('/change-password')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard)
   async changePassword(@GetUser() user: User, @Body() dto: ChangePasswordDto): Promise<void> {
     return this.authService.changePassword(user, dto);
   }
@@ -142,7 +144,7 @@ export class AuthController {
   })
   @Post('/verify-reset')
   @HttpCode(200)
-  @UseGuards(OtpJwtAuthGuard)
+  @UseGuards(JwtBlackListOtpGuard, OtpJwtAuthGuard)
   verifyOtp(@GetUser() user: User, @Body() dto: OtpDto) {
     return this.authService.verifyOtp(user, dto);
   }
@@ -156,7 +158,7 @@ export class AuthController {
     status: 200,
     description: 'Password successfully set.',
   })
-  @UseGuards(OtpVerifiedAuthGuard)
+  @UseGuards(JwtBlackListOtpGuard, OtpVerifiedAuthGuard)
   @Patch('/set-password')
   async setPassword(@GetUser() user: User, @Body() dto: NewPasswordDto): Promise<void> {
     await this.authService.setPassword(user, dto.password);

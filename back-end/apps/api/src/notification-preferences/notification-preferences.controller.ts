@@ -5,7 +5,7 @@ import { Serialize } from '@app/common';
 
 import { NotificationPreferences, NotificationType, User } from '@entities';
 
-import { JwtAuthGuard } from '../guards';
+import { JwtAuthGuard, JwtBlackListAuthGuard } from '../guards';
 
 import { GetUser } from '../decorators';
 
@@ -16,7 +16,7 @@ import { EnumValidationPipe } from '@app/common/pipes';
 
 @ApiTags('Notification Preferences')
 @Controller('notification-preferences')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtBlackListAuthGuard, JwtAuthGuard)
 @Serialize(NotificationPreferencesDto)
 export class NotificationPreferencesController {
   constructor(private notificationPreferencesService: NotificationPreferencesService) {}
