@@ -1,5 +1,6 @@
 import { ErrorCodes, ErrorMessages } from '@main/shared/constants';
 import type { AxiosRequestConfig, AxiosResponse } from 'axios';
+
 import axios, { AxiosError } from 'axios';
 
 export function throwIfNoResponse(response?: AxiosResponse): asserts response is AxiosResponse {
@@ -35,31 +36,48 @@ export const commonRequestHandler = async <T>(
   }
 };
 
+const getConfigWithAuthHeader = (config: AxiosRequestConfig, url: string) => {
+  const serverUrl = new URL(url);
+  const token = sessionStorage.getItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${serverUrl.origin}`);
+
+  return {
+    ...config,
+    headers: {
+      ...config.headers,
+      Authorization: `bearer ${token}`,
+    },
+  };
+};
+
 export const axiosWithCredentials = {
   get: <T = any, R = AxiosResponse<T>, D = any>(
     url: string,
     config?: AxiosRequestConfig<D> | undefined,
   ) =>
     axios.get<T, R>(url, {
-      ...config,
-      withCredentials: true,
+      ...getConfigWithAuthHeader(config || {}, url),
     }),
   post: <T = any, R = AxiosResponse<T>, D = any>(
     url: string,
     data?: any,
     config?: AxiosRequestConfig<D> | undefined,
-  ) => axios.post<T, R>(url, data, { ...config, withCredentials: true }),
+  ) =>
+    axios.post<T, R>(url, data, {
+      ...getConfigWithAuthHeader(config || {}, url),
+    }),
   patch: <T = any, R = AxiosResponse<T>, D = any>(
     url: string,
     data?: any,
     config?: AxiosRequestConfig<D> | undefined,
-  ) => axios.patch<T, R>(url, data, { ...config, withCredentials: true }),
+  ) =>
+    axios.patch<T, R>(url, data, {
+      ...getConfigWithAuthHeader(config || {}, url),
+    }),
   delete: <T = any, R = AxiosResponse<T>, D = any>(
     url: string,
     config?: AxiosRequestConfig<D> | undefined,
   ) =>
     axios.delete<T, R>(url, {
-      ...config,
-      withCredentials: true,
+      ...getConfigWithAuthHeader(config || {}, url),
     }),
 };

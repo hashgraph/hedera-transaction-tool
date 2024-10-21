@@ -27,7 +27,6 @@ export const login = async (
 export const logout = async (serverUrl: string): Promise<{ id: number }> =>
   commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.post(`${serverUrl}/${authController}/logout`);
-
     return { id: data.id };
   }, 'Failed to Log out of Organization');
 

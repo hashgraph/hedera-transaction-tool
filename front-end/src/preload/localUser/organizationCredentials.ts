@@ -4,8 +4,10 @@ import { ipcRenderer } from 'electron';
 
 export default {
   organizationCredentials: {
-    getConnectedOrganizations: (user_id: string): Promise<Organization[]> =>
-      ipcRenderer.invoke('organizationCredentials:getConnectedOrganizations', user_id),
+    getOrganizationTokens: (
+      user_id: string,
+    ): Promise<{ organization_id: string; jwtToken: string | null }[]> =>
+      ipcRenderer.invoke('organizationCredentials:getOrganizationTokens', user_id),
     organizationsToSignIn: (
       user_id: string,
     ): Promise<{ credential_id?: string; email?: string; organization: Organization }[]> =>
