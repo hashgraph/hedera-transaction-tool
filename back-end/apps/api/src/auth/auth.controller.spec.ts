@@ -1,7 +1,7 @@
 import { UnprocessableEntityException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 
 import { guardMock } from '@app/common';
 import { User, UserStatus } from '@entities';
@@ -14,7 +14,6 @@ import { EmailThrottlerGuard } from '../guards';
 describe('AuthController', () => {
   let controller: AuthController;
   let user: User;
-  let res: Response;
 
   const authService = mockDeep<AuthService>();
 
@@ -56,13 +55,13 @@ describe('AuthController', () => {
       receivedNotifications: [],
       notificationPreferences: [],
     };
-    res = {
-      status: jest.fn().mockReturnThis(),
-      send: jest.fn(),
-    } as unknown as Response;
   });
 
   describe('signUp', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
     it('should return a user', async () => {
       const result = user;
 
@@ -97,9 +96,9 @@ describe('AuthController', () => {
 
   describe('login', () => {
     it('should return a user', async () => {
-      const result = user;
+      await controller.login(user);
 
-      expect(await controller.login(user, res)).toBe(result);
+      expect(authService.login).toHaveBeenCalledWith(user);
     });
   });
 
@@ -120,7 +119,7 @@ describe('AuthController', () => {
     it('should have no return value', async () => {
       authService.createOtp.mockResolvedValue(undefined);
 
-      expect(await controller.createOtp({ email: 'john@test.com' }, res)).toBeUndefined();
+      expect(await controller.createOtp({ email: 'john@test.com' })).toBeUndefined();
     });
   });
 
@@ -128,7 +127,7 @@ describe('AuthController', () => {
     it('should have no return value', async () => {
       authService.verifyOtp.mockResolvedValue(undefined);
 
-      expect(await controller.verifyOtp(user, { token: '' }, res)).toBeUndefined();
+      expect(await controller.verifyOtp(user, { token: '' })).toBeUndefined();
     });
   });
 
@@ -136,7 +135,7 @@ describe('AuthController', () => {
     it('should have no return value', async () => {
       authService.setPassword.mockResolvedValue(undefined);
 
-      expect(await controller.setPassword(user, { password: 'Doe' }, res)).toBeUndefined();
+      expect(await controller.setPassword(user, { password: 'Doe' })).toBeUndefined();
     });
   });
 
@@ -150,7 +149,7 @@ describe('AuthController', () => {
 
   describe('logout', () => {
     it('should have no return value', async () => {
-      expect(await controller.logout(res)).toBeUndefined();
+      expect(await controller.logout()).toBeUndefined();
     });
   });
 });

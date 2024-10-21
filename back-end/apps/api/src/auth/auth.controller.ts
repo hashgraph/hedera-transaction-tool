@@ -1,9 +1,9 @@
-import { Body, Controller, HttpCode, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { SkipThrottle } from '@nestjs/throttler';
 
-import { Request, Response } from 'express';
+import { Request } from 'express';
 
 import { Serialize } from '@app/common';
 
@@ -90,8 +90,8 @@ export class AuthController {
   @Post('/logout')
   @HttpCode(200)
   @UseGuards(JwtAuthGuard)
-  logout(@Res({ passthrough: true }) response: Response) {
-    return this.authService.logout(response); //TODO: Blacklist the token
+  logout() {
+    return this.authService.logout();
   }
 
   /* Change user's password */

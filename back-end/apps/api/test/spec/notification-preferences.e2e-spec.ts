@@ -13,8 +13,8 @@ describe('Notification Preferences (e2e)', () => {
 
   let entityManager: EntityManager;
 
-  let adminAuthCookie: string;
-  let userAuthCookie: string;
+  let adminAuthToken: string;
+  let userAuthToken: string;
   let admin: User;
   let user: User;
 
@@ -28,8 +28,8 @@ describe('Notification Preferences (e2e)', () => {
 
     entityManager = app.get(EntityManager);
 
-    adminAuthCookie = await login(app, 'admin');
-    userAuthCookie = await login(app, 'user');
+    adminAuthToken = await login(app, 'admin');
+    userAuthToken = await login(app, 'user');
 
     admin = await getUser('admin');
     user = await getUser('user');
@@ -65,7 +65,7 @@ describe('Notification Preferences (e2e)', () => {
           inApp: false,
         },
         null,
-        userAuthCookie,
+        userAuthToken,
       );
 
       preferences = await getPreferences(user.id, NotificationType.TRANSACTION_CREATED);
@@ -97,7 +97,7 @@ describe('Notification Preferences (e2e)', () => {
           inApp: false,
         },
         null,
-        userAuthCookie,
+        userAuthToken,
       );
 
       const preferences = await getPreferences(user.id, NotificationType.TRANSACTION_CREATED);
@@ -128,7 +128,7 @@ describe('Notification Preferences (e2e)', () => {
           email: true,
         },
         null,
-        userAuthCookie,
+        userAuthToken,
       );
 
       const preferences = await getPreferences(user.id, NotificationType.TRANSACTION_CREATED);
@@ -159,7 +159,7 @@ describe('Notification Preferences (e2e)', () => {
           inApp: true,
         },
         null,
-        userAuthCookie,
+        userAuthToken,
       );
 
       const preferences = await getPreferences(user.id, NotificationType.TRANSACTION_CREATED);
@@ -190,7 +190,7 @@ describe('Notification Preferences (e2e)', () => {
             type: NotificationType.TRANSACTION_CREATED,
           },
           null,
-          userAuthCookie,
+          userAuthToken,
         )
         .expect(200);
 
@@ -216,11 +216,11 @@ describe('Notification Preferences (e2e)', () => {
     });
 
     it('(PATCH) should throw if invalid body is passed', async () => {
-      await endpoint.patch({ email: 'sad' }, null, userAuthCookie).expect(400);
+      await endpoint.patch({ email: 'sad' }, null, userAuthToken).expect(400);
 
-      await endpoint.patch({ inApp: 'sad' }, null, userAuthCookie).expect(400);
+      await endpoint.patch({ inApp: 'sad' }, null, userAuthToken).expect(400);
 
-      await endpoint.patch({ email: true, inApp: false }, null, userAuthCookie).expect(400);
+      await endpoint.patch({ email: true, inApp: false }, null, userAuthToken).expect(400);
     });
 
     it('(PATCH) should NOT update the preferences if the user is not authenticated', async () => {
@@ -231,7 +231,7 @@ describe('Notification Preferences (e2e)', () => {
       let preferences = await getPreferences(admin.id);
       expect(preferences).toEqual([]);
 
-      const { status, body } = await endpoint.get(null, adminAuthCookie);
+      const { status, body } = await endpoint.get(null, adminAuthToken);
       preferences = await getPreferences(admin.id);
 
       expect(status).toBe(200);
@@ -254,7 +254,7 @@ describe('Notification Preferences (e2e)', () => {
     it('(GET) should return the preferences', async () => {
       const preferences = await getPreferences(user.id);
 
-      const { status, body } = await endpoint.get(null, userAuthCookie);
+      const { status, body } = await endpoint.get(null, userAuthToken);
 
       expect(status).toBe(200);
       expect(body.length).toBe(Object.values(NotificationType).length);
@@ -269,11 +269,7 @@ describe('Notification Preferences (e2e)', () => {
     });
 
     it('(GET) should return the preferences for a given type', async () => {
-      const { status, body } = await endpoint.get(
-        null,
-        userAuthCookie,
-        '?type=TRANSACTION_CREATED',
-      );
+      const { status, body } = await endpoint.get(null, userAuthToken, '?type=TRANSACTION_CREATED');
 
       expect(status).toBe(200);
       expect(body).toEqual([
@@ -287,7 +283,7 @@ describe('Notification Preferences (e2e)', () => {
     });
 
     it('(GET) should throw if invalid query is passed', async () => {
-      await endpoint.get(null, userAuthCookie, '?type=INVALID').expect(400);
+      await endpoint.get(null, userAuthToken, '?type=INVALID').expect(400);
     });
 
     it('(GET) should not return the preferences if the user is not authenticated', async () => {

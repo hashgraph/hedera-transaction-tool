@@ -7,9 +7,9 @@ import { getUser, getUsers, resetDatabase, resetUsersState } from '../utils/data
 describe('Users (e2e)', () => {
   let app: NestExpressApplication;
   let server: ReturnType<typeof app.getHttpServer>;
-  let adminAuthCookie: string;
-  let userAuthCookie: string;
-  let userNewAuthCookie: string;
+  let adminAuthToken: string;
+  let userAuthToken: string;
+  let userNewAuthToken: string;
 
   beforeAll(async () => {
     await resetDatabase();
@@ -19,9 +19,9 @@ describe('Users (e2e)', () => {
     app = await createNestApp();
     server = app.getHttpServer();
 
-    adminAuthCookie = await login(app, 'admin');
-    userAuthCookie = await login(app, 'user');
-    userNewAuthCookie = await login(app, 'userNew');
+    adminAuthToken = await login(app, 'admin');
+    userAuthToken = await login(app, 'user');
+    userNewAuthToken = await login(app, 'userNew');
   });
 
   afterEach(async () => {
@@ -37,7 +37,7 @@ describe('Users (e2e)', () => {
     });
 
     it('(GET) should get users if verified', async () => {
-      const res = await endpoint.get(null, userAuthCookie).expect(200);
+      const res = await endpoint.get(null, userAuthToken).expect(200);
 
       const actualUsers = await getUsers();
 
@@ -45,7 +45,7 @@ describe('Users (e2e)', () => {
     });
 
     it('(GET) should not be able to get users if not verified', async () => {
-      await endpoint.get(null, userNewAuthCookie).expect(403);
+      await endpoint.get(null, userNewAuthToken).expect(403);
     });
 
     it('(GET) should not be able to get users if not logged in', async () => {
@@ -61,7 +61,7 @@ describe('Users (e2e)', () => {
     });
 
     it('(GET) should get the current user', async () => {
-      const res = await endpoint.get(null, userAuthCookie).expect(200);
+      const res = await endpoint.get(null, userAuthToken).expect(200);
 
       expect(res.body).toEqual({
         admin: false,
@@ -75,7 +75,7 @@ describe('Users (e2e)', () => {
     });
 
     it('(GET) should get the current user if not verified', async () => {
-      const res = await endpoint.get(null, userNewAuthCookie).expect(200);
+      const res = await endpoint.get(null, userNewAuthToken).expect(200);
 
       expect(res.body).toEqual({
         admin: false,
@@ -101,7 +101,7 @@ describe('Users (e2e)', () => {
     });
 
     it('(GET) should get a specific user', async () => {
-      const res = await endpoint.get('1', userAuthCookie).expect(200);
+      const res = await endpoint.get('1', userAuthToken).expect(200);
 
       expect(res.body).toEqual({
         admin: true,
@@ -115,7 +115,7 @@ describe('Users (e2e)', () => {
     });
 
     it('(GET) should not get a specific user if not verified', async () => {
-      await endpoint.get('1', userNewAuthCookie).expect(403);
+      await endpoint.get('1', userNewAuthToken).expect(403);
     });
 
     it('(GET) should not get a specific user if not logged in', async () => {
@@ -123,7 +123,7 @@ describe('Users (e2e)', () => {
     });
 
     it("(PATCH) should update a user's admin status if admin", async () => {
-      const res = await endpoint.patch({ admin: true }, '2', adminAuthCookie).expect(200);
+      const res = await endpoint.patch({ admin: true }, '2', adminAuthToken).expect(200);
 
       expect(res.body).toEqual({
         admin: true,
@@ -137,33 +137,33 @@ describe('Users (e2e)', () => {
     });
 
     it("(PATCH) should not update a user's admin status if not admin", async () => {
-      await endpoint.patch({ admin: true }, '2', userAuthCookie).expect(403);
+      await endpoint.patch({ admin: true }, '2', userAuthToken).expect(403);
     });
 
     it("(PATCH) should not update a user's admin status if incorrect data is sent", async () => {
-      await endpoint.patch({ admin: 'asd' }, '2', adminAuthCookie).expect(400);
+      await endpoint.patch({ admin: 'asd' }, '2', adminAuthToken).expect(400);
     });
 
     it('(DELETE) should remove a user if admin', async () => {
-      await endpoint.delete('2', adminAuthCookie).expect(200);
+      await endpoint.delete('2', adminAuthToken).expect(200);
     });
 
     it('(DELETE) should not remove a user if not admin', async () => {
-      await endpoint.delete('2', userAuthCookie).expect(403);
+      await endpoint.delete('2', userAuthToken).expect(403);
     });
 
     it('(DELETE) should not remove a user if not existing', async () => {
-      await endpoint.delete('999999', adminAuthCookie).expect(400);
+      await endpoint.delete('999999', adminAuthToken).expect(400);
     });
 
     it('(DELETE) should throw if a user id ', async () => {
-      await endpoint.delete('asdasd', adminAuthCookie).expect(400);
+      await endpoint.delete('asdasd', adminAuthToken).expect(400);
     });
 
     it('(DELETE) should throw if try to remove themselves', async () => {
       const admin = await getUser('admin');
 
-      await endpoint.delete(admin.id.toString(), adminAuthCookie).expect(400);
+      await endpoint.delete(admin.id.toString(), adminAuthToken).expect(400);
     });
   });
 });

@@ -7,7 +7,6 @@ import { mock } from 'jest-mock-extended';
 
 import { AuthService } from './auth.service';
 
-import { Response } from 'express';
 import { ErrorCodes, NOTIFICATIONS_SERVICE } from '@app/common';
 import { User, UserStatus } from '@entities';
 import * as bcrypt from 'bcryptjs';
@@ -53,7 +52,6 @@ describe('AuthService', () => {
 
   async function invokeLogin(production: boolean) {
     const user = { id: 1, email: '' };
-    const response: Partial<Response> = { cookie: jest.fn() };
     const JWT_EXPIRATION = 2;
 
     //@ts-expect-error - incorrect overload expected
@@ -64,22 +62,9 @@ describe('AuthService', () => {
       .mockReturnValue(production ? 'production' : 'development');
     jest.spyOn(jwtService, 'sign').mockReturnValue('token');
 
-    await service.login(user as User, response as Response);
+    await service.login(user as User);
 
-    return { user, response };
-  }
-
-  async function invokeLogout(production: boolean) {
-    const response: Partial<Response> = { clearCookie: jest.fn() };
-
-    configService.get
-      //@ts-expect-error - incorrect overload expected
-      .calledWith('NODE_ENV')
-      .mockReturnValue(production ? 'production' : 'development');
-
-    await service.logout(response as Response);
-
-    return response;
+    return { user };
   }
 
   async function invokeCreateOtp(production: boolean) {
@@ -88,7 +73,6 @@ describe('AuthService', () => {
     const otpSecret = 'my-cool-secret';
     const totpRes = '123456';
     const accessToken = 'token';
-    const response: Partial<Response> = { cookie: jest.fn() };
 
     userService.getUser.mockResolvedValue(user as User);
     configService.get
@@ -105,9 +89,9 @@ describe('AuthService', () => {
 
     jest.spyOn(totp, 'generate').mockReturnValue(totpRes);
 
-    await service.createOtp(email, response as Response);
+    await service.createOtp(email);
 
-    return { user, otpSecret, totpRes, accessToken, response };
+    return { user, otpSecret, totpRes, accessToken };
   }
 
   async function invokeVerifyOtp(production: boolean) {
@@ -115,7 +99,6 @@ describe('AuthService', () => {
     const user = { email };
     const otpSecret = 'secret';
     const accessToken = 'token';
-    const response: Partial<Response> = { cookie: jest.fn() };
 
     configService.get
       //@ts-expect-error - incorrect overload expected
@@ -129,9 +112,9 @@ describe('AuthService', () => {
       .mockReturnValue(production ? 'production' : 'development');
     jest.spyOn(totp, 'check').mockReturnValue(true);
 
-    await service.verifyOtp(user as User, { token: '123456' }, response as Response);
+    await service.verifyOtp(user as User, { token: '123456' });
 
-    return { user, response, otpSecret, accessToken };
+    return { user, otpSecret, accessToken };
   }
 
   it('should be defined', () => {
@@ -152,56 +135,13 @@ describe('AuthService', () => {
     );
   });
 
-  it('should login user and set cookie in dev', async () => {
-    const { user, response } = await invokeLogin(false);
+  it('should login user', async () => {
+    const { user } = await invokeLogin(false);
 
     expect(jwtService.sign).toHaveBeenCalledWith(
       { userId: user.id, email: user.email },
       expect.any(Object),
     );
-
-    expect(response.cookie).toHaveBeenCalledWith('Authentication', expect.any(String), {
-      httpOnly: true,
-      expires: expect.any(Date),
-      sameSite: 'lax',
-      secure: false,
-    });
-  });
-
-  it('should login user and set cookie in production', async () => {
-    const { user, response } = await invokeLogin(true);
-
-    expect(jwtService.sign).toHaveBeenCalledWith(
-      { userId: user.id, email: user.email },
-      expect.any(Object),
-    );
-
-    expect(response.cookie).toHaveBeenCalledWith('Authentication', expect.any(String), {
-      httpOnly: true,
-      expires: expect.any(Date),
-      sameSite: 'none',
-      secure: true,
-    });
-  });
-
-  it('should logout user and clear cookie in dev', async () => {
-    const response = await invokeLogout(false);
-
-    expect(response.clearCookie).toHaveBeenCalledWith('Authentication', {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: false,
-    });
-  });
-
-  it('should logout user and clear cookie in production', async () => {
-    const response = await invokeLogout(true);
-
-    expect(response.clearCookie).toHaveBeenCalledWith('Authentication', {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: true,
-    });
   });
 
   it('should change password', async () => {
@@ -232,36 +172,24 @@ describe('AuthService', () => {
   });
 
   it('should create otp in dev', async () => {
-    const { user, otpSecret, totpRes, accessToken, response } = await invokeCreateOtp(false);
+    const { user, otpSecret, totpRes } = await invokeCreateOtp(false);
 
     expect(totp.generate).toHaveBeenCalledWith(`${otpSecret}${user.email}`);
     expect(notificationsService.emit).toHaveBeenCalledWith('notify_email', {
       email: user.email,
       subject: 'Password Reset token',
       text: expect.stringContaining(totpRes),
-    });
-    expect(response.cookie).toHaveBeenCalledWith('otp', accessToken, {
-      httpOnly: true,
-      expires: expect.any(Date),
-      sameSite: 'lax',
-      secure: false,
     });
   });
 
   it('should create otp in production', async () => {
-    const { user, otpSecret, totpRes, accessToken, response } = await invokeCreateOtp(true);
+    const { user, otpSecret, totpRes } = await invokeCreateOtp(true);
 
     expect(totp.generate).toHaveBeenCalledWith(`${otpSecret}${user.email}`);
     expect(notificationsService.emit).toHaveBeenCalledWith('notify_email', {
       email: user.email,
       subject: 'Password Reset token',
       text: expect.stringContaining(totpRes),
-    });
-    expect(response.cookie).toHaveBeenCalledWith('otp', accessToken, {
-      httpOnly: true,
-      expires: expect.any(Date),
-      sameSite: 'none',
-      secure: true,
     });
   });
 
@@ -270,31 +198,19 @@ describe('AuthService', () => {
 
     userService.getUser.mockResolvedValue(null);
 
-    await service.createOtp(email, {} as Response);
+    await service.createOtp(email);
   });
 
   it('should verify otp in dev', async () => {
-    const { user, accessToken, response } = await invokeVerifyOtp(false);
+    const { user } = await invokeVerifyOtp(false);
 
     expect(userService.updateUser).toHaveBeenCalledWith(user, { status: UserStatus.NEW });
-    expect(response.cookie).toHaveBeenCalledWith('otp', accessToken, {
-      httpOnly: true,
-      expires: expect.any(Date),
-      sameSite: 'lax',
-      secure: false,
-    });
   });
 
   it('should verify otp in production', async () => {
-    const { user, accessToken, response } = await invokeVerifyOtp(true);
+    const { user } = await invokeVerifyOtp(true);
 
     expect(userService.updateUser).toHaveBeenCalledWith(user, { status: UserStatus.NEW });
-    expect(response.cookie).toHaveBeenCalledWith('otp', accessToken, {
-      httpOnly: true,
-      expires: expect.any(Date),
-      sameSite: 'none',
-      secure: true,
-    });
   });
 
   it('should throw error if token is invalid', async () => {
@@ -308,9 +224,9 @@ describe('AuthService', () => {
 
     jest.spyOn(totp, 'check').mockReturnValue(false);
 
-    await expect(
-      service.verifyOtp(user as User, { token: '123456' }, {} as Response),
-    ).rejects.toThrow('Incorrect token');
+    await expect(service.verifyOtp(user as User, { token: '123456' })).rejects.toThrow(
+      'Incorrect token',
+    );
   });
 
   it('should throw error if update user fails', async () => {
@@ -325,38 +241,9 @@ describe('AuthService', () => {
     jest.spyOn(totp, 'check').mockReturnValue(true);
     userService.updateUser.mockRejectedValue(new Error());
 
-    await expect(
-      service.verifyOtp(user as User, { token: '123456' }, {} as Response),
-    ).rejects.toThrow('Error while updating user status');
-  });
-
-  it('should clear otp cookie in dev', () => {
-    const response: Partial<Response> = { clearCookie: jest.fn() };
-
-    service.clearOtpCookie(response as Response);
-
-    expect(response.clearCookie).toHaveBeenCalledWith('otp', {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: false,
-    });
-  });
-
-  it('should clear otp cookie in production', () => {
-    const response: Partial<Response> = { clearCookie: jest.fn() };
-
-    configService.get
-      //@ts-expect-error - incorrect overload expected
-      .calledWith('NODE_ENV')
-      .mockReturnValue('production');
-
-    service.clearOtpCookie(response as Response);
-
-    expect(response.clearCookie).toHaveBeenCalledWith('otp', {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: true,
-    });
+    await expect(service.verifyOtp(user as User, { token: '123456' })).rejects.toThrow(
+      'Error while updating user status',
+    );
   });
 
   it('should set password', async () => {

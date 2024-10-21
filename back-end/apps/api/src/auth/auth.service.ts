@@ -10,7 +10,6 @@ import { JwtService } from '@nestjs/jwt';
 import { ClientProxy } from '@nestjs/microservices';
 
 import * as crypto from 'crypto';
-import { Response } from 'express';
 import { totp } from 'otplib';
 import * as bcrypt from 'bcryptjs';
 
@@ -72,14 +71,7 @@ export class AuthService {
   }
 
   /* Log the user out of the organization, remove his cooke and blacklists his token */
-  logout(response: Response) {
-    response.clearCookie('Authentication', {
-      httpOnly: true,
-      sameSite: ['production', 'testing'].includes(this.configService.get('NODE_ENV'))
-        ? 'none'
-        : 'lax',
-      secure: ['production', 'testing'].includes(this.configService.get('NODE_ENV')),
-    });
+  logout() {
     //TODO implement token blacklisting
   }
 
@@ -144,17 +136,6 @@ export class AuthService {
 
     return this.jwtService.sign(otpPayload, {
       expiresIn: `${this.configService.get('OTP_EXPIRATION')}m`,
-    });
-  }
-
-  /* Clear the OTP cookie */
-  clearOtpCookie(response: Response) {
-    response.clearCookie('otp', {
-      httpOnly: true,
-      sameSite: ['production', 'testing'].includes(this.configService.get('NODE_ENV'))
-        ? 'none'
-        : 'lax',
-      secure: ['production', 'testing'].includes(this.configService.get('NODE_ENV')),
     });
   }
 

@@ -50,9 +50,9 @@ describe('Transactions (e2e)', () => {
 
   let repo: Repository<Transaction>;
 
-  let adminAuthCookie: string;
-  let userAuthCookie: string;
-  let userNewAuthCookie: string;
+  let adminAuthToken: string;
+  let userAuthToken: string;
+  let userNewAuthToken: string;
   let admin: User;
   let user: User;
   let adminKey1002: UserKey;
@@ -99,9 +99,9 @@ describe('Transactions (e2e)', () => {
     app = await createNestApp();
     server = app.getHttpServer();
 
-    adminAuthCookie = await login(app, 'admin');
-    userAuthCookie = await login(app, 'user');
-    userNewAuthCookie = await login(app, 'userNew');
+    adminAuthToken = await login(app, 'admin');
+    userAuthToken = await login(app, 'user');
+    userNewAuthToken = await login(app, 'userNew');
 
     admin = await getUser('admin');
     user = await getUser('user');
@@ -124,7 +124,7 @@ describe('Transactions (e2e)', () => {
     it('(POST) should create a simple account create transaction', async () => {
       const transaction = await createTransaction();
 
-      const { status, body } = await endpoint.post(transaction, null, userAuthCookie);
+      const { status, body } = await endpoint.post(transaction, null, userAuthToken);
       testsAddedTransactionsCountUser++;
 
       expect(status).toEqual(201);
@@ -141,7 +141,7 @@ describe('Transactions (e2e)', () => {
 
     it('(POST) should not create a transaction if user is not verified', async () => {
       const countBefore = await repo.count();
-      await endpoint.post(await createTransaction(), null, userNewAuthCookie).expect(403);
+      await endpoint.post(await createTransaction(), null, userNewAuthToken).expect(403);
       const countAfter = await repo.count();
 
       expect(countAfter).toEqual(countBefore);
@@ -152,9 +152,9 @@ describe('Transactions (e2e)', () => {
       const transaction = await createTransaction();
 
       const user = await createUser('test@test.com', '1234567890', false, UserStatus.NONE);
-      const cookie = await login(app, { ...user, password: '1234567890' });
+      const token = await login(app, { ...user, password: '1234567890' });
 
-      const { status } = await endpoint.post(transaction, null, cookie);
+      const { status } = await endpoint.post(transaction, null, token);
       const countAfter = await repo.count();
 
       expect(status).toEqual(401);
@@ -178,7 +178,7 @@ describe('Transactions (e2e)', () => {
       const countBefore = await repo.count();
       const transaction = await createTransaction(admin, localnet2);
 
-      const { status } = await endpoint.post(transaction, null, userAuthCookie);
+      const { status } = await endpoint.post(transaction, null, userAuthToken);
       const countAfter = await repo.count();
 
       expect(status).toEqual(400);
@@ -195,7 +195,7 @@ describe('Transactions (e2e)', () => {
       const transaction = await createTransaction();
       transaction.network = 'some-network' as Network;
 
-      const { status } = await endpoint.post(transaction, null, userAuthCookie);
+      const { status } = await endpoint.post(transaction, null, userAuthToken);
       const countAfter = await repo.count();
 
       expect(status).toEqual(400);
@@ -214,7 +214,7 @@ describe('Transactions (e2e)', () => {
       const transaction = await createTransaction();
       transaction.signature = 'invalid-signature';
 
-      const { status, body } = await endpoint.post(transaction, null, userAuthCookie);
+      const { status, body } = await endpoint.post(transaction, null, userAuthToken);
       const countAfter = await repo.count();
 
       expect(status).toEqual(400);
@@ -235,7 +235,7 @@ describe('Transactions (e2e)', () => {
       delete transaction.creatorKeyId;
       delete transaction.network;
 
-      const { status } = await endpoint.post(transaction, null, userAuthCookie);
+      const { status } = await endpoint.post(transaction, null, userAuthToken);
       const countAfter = await repo.count();
 
       expect(status).toEqual(400);
@@ -255,7 +255,7 @@ describe('Transactions (e2e)', () => {
 
     it('(POST) should not create a transaction with an invalid body', async () => {
       const countBefore = await repo.count();
-      const { status } = await endpoint.post({ body: 'invalid' }, null, userAuthCookie);
+      const { status } = await endpoint.post({ body: 'invalid' }, null, userAuthToken);
       const countAfter = await repo.count();
 
       expect(status).toEqual(400);
@@ -265,10 +265,10 @@ describe('Transactions (e2e)', () => {
     it('(POST) should not create a duplicating transaction', async () => {
       const transaction = await createTransaction();
 
-      await endpoint.post(transaction, null, userAuthCookie);
+      await endpoint.post(transaction, null, userAuthToken);
 
       const countBefore = await repo.count();
-      const { status, body } = await endpoint.post(transaction, null, userAuthCookie);
+      const { status, body } = await endpoint.post(transaction, null, userAuthToken);
       const countAfter = await repo.count();
 
       testsAddedTransactionsCountUser++;
@@ -302,7 +302,7 @@ describe('Transactions (e2e)', () => {
         network: localnet1003.network,
       };
 
-      const { status, body } = await endpoint.post(dto, null, userAuthCookie);
+      const { status, body } = await endpoint.post(dto, null, userAuthToken);
       const countAfter = await repo.count();
 
       expect(status).toEqual(400);
@@ -315,7 +315,7 @@ describe('Transactions (e2e)', () => {
     });
 
     it('(GET) should get all transactions for user', async () => {
-      const { status, body } = await endpoint.get(null, userAuthCookie, 'page=1&size=99');
+      const { status, body } = await endpoint.get(null, userAuthToken, 'page=1&size=99');
 
       expect(status).toEqual(200);
       expect(body.totalItems).toEqual(
@@ -324,7 +324,7 @@ describe('Transactions (e2e)', () => {
     });
 
     it('(GET) should get all transactions for admin', async () => {
-      const { status, body } = await endpoint.get(null, adminAuthCookie, 'page=1&size=99');
+      const { status, body } = await endpoint.get(null, adminAuthToken, 'page=1&size=99');
 
       expect(status).toEqual(200);
       expect(body.totalItems).toEqual(addedTransactions.adminTransactions.length);
@@ -333,12 +333,12 @@ describe('Transactions (e2e)', () => {
     it('(GET) should get all file create transactions', async () => {
       const { status, body } = await endpoint.get(
         null,
-        userAuthCookie,
+        userAuthToken,
         `page=1&size=99&filter=type:eq:${TransactionType.FILE_CREATE}`,
       );
       const { status: status2, body: body2 } = await endpoint.get(
         null,
-        adminAuthCookie,
+        adminAuthToken,
         `page=1&size=99&filter=type:eq:${TransactionType.FILE_CREATE}`,
       );
 
@@ -358,7 +358,7 @@ describe('Transactions (e2e)', () => {
     });
 
     it('(GET) should get paginated transactions', async () => {
-      const { status, body } = await endpoint.get(null, userAuthCookie, 'page=1&size=2');
+      const { status, body } = await endpoint.get(null, userAuthToken, 'page=1&size=2');
 
       expect(status).toEqual(200);
       expect(body.items.length).toEqual(2);
@@ -415,7 +415,7 @@ describe('Transactions (e2e)', () => {
     });
 
     it('(GET) should get all transactions that are visible to everyone', async () => {
-      const { status, body } = await endpoint.get(null, userAuthCookie, 'page=1&size=99');
+      const { status, body } = await endpoint.get(null, userAuthToken, 'page=1&size=99');
 
       expect(status).toEqual(200);
       expect(body.totalItems).toEqual(addedTransactions.total);
@@ -424,7 +424,7 @@ describe('Transactions (e2e)', () => {
     it('(GET) should get all transactions that are visible to everyone with filtering', async () => {
       const { status, body } = await endpoint.get(
         null,
-        userAuthCookie,
+        userAuthToken,
         `page=1&size=99&filter=status:eq:${TransactionStatus.EXECUTED}`,
       );
       const actualExpired = addedTransactions.userTransactions
@@ -436,11 +436,11 @@ describe('Transactions (e2e)', () => {
     });
 
     it('(GET) should not get transactions if not verified', async () => {
-      await endpoint.get(null, userNewAuthCookie, 'page=1&size=99').expect(403);
+      await endpoint.get(null, userNewAuthToken, 'page=1&size=99').expect(403);
     });
 
     it('(GET) should get paginated transactions', async () => {
-      const { status, body } = await endpoint.get(null, userAuthCookie, 'page=1&size=2');
+      const { status, body } = await endpoint.get(null, userAuthToken, 'page=1&size=2');
 
       expect(status).toEqual(200);
       expect(body.items.length).toEqual(2);
@@ -453,7 +453,7 @@ describe('Transactions (e2e)', () => {
     it('(GET) should not get forbidden transactions', async () => {
       const { status, body } = await endpoint.get(
         null,
-        userAuthCookie,
+        userAuthToken,
         `page=1&size=99&filter=status:in:${forbiddenStatuses.join(', ')}`,
       );
 
@@ -471,12 +471,12 @@ describe('Transactions (e2e)', () => {
 
     it('(GET) should get all transactions to sign', async () => {
       /* User has created 3 transactions that need his signatures */
-      const { status, body } = await endpoint.get(null, userAuthCookie, 'page=1&size=99');
+      const { status, body } = await endpoint.get(null, userAuthToken, 'page=1&size=99');
 
       /* Admin has created 1 transaction that needs his signature, but one of the user created transaction requires admin's key signature */
       const { status: status2, body: body2 } = await endpoint.get(
         null,
-        adminAuthCookie,
+        adminAuthToken,
         'page=1&size=99',
       );
 
@@ -488,14 +488,14 @@ describe('Transactions (e2e)', () => {
     });
 
     it('(GET) should get paginated transactions', async () => {
-      const { status, body } = await endpoint.get(null, userAuthCookie, 'page=1&size=2');
+      const { status, body } = await endpoint.get(null, userAuthToken, 'page=1&size=2');
 
       expect(status).toEqual(200);
       expect(body.items.length).toEqual(2);
     });
 
     it('(GET) should not get transactions to sign if not verified', async () => {
-      await endpoint.get(null, userNewAuthCookie, 'page=1&size=99').expect(403);
+      await endpoint.get(null, userNewAuthToken, 'page=1&size=99').expect(403);
     });
 
     it('(GET) should not get transactions to sign if not logged in', async () => {
@@ -504,9 +504,9 @@ describe('Transactions (e2e)', () => {
 
     it('(GET) should not get transactions to sign if user has no keys', async () => {
       const user = await createUser('test123@test.com', '1234567890', false, UserStatus.NONE);
-      const cookie = await login(app, { ...user, password: '1234567890' });
+      const token = await login(app, { ...user, password: '1234567890' });
 
-      const { body } = await endpoint.get(null, cookie, 'page=1&size=99');
+      const { body } = await endpoint.get(null, token, 'page=1&size=99');
 
       expect(body.totalItems).toEqual(0);
     });
@@ -544,11 +544,11 @@ describe('Transactions (e2e)', () => {
         network: localnet2.network,
       };
 
-      await new Endpoint(server, '/transactions').post(dto, null, adminAuthCookie).expect(201);
+      await new Endpoint(server, '/transactions').post(dto, null, adminAuthToken).expect(201);
       testsAddedTransactionsCountAdmin++;
       testsAddedTransactionsCountUser++;
 
-      const { status, body } = await endpoint.get(null, userAuthCookie, 'page=1&size=99');
+      const { status, body } = await endpoint.get(null, userAuthToken, 'page=1&size=99');
 
       expect(status).toEqual(200);
       expect(body.totalItems).toEqual(
@@ -573,10 +573,10 @@ describe('Transactions (e2e)', () => {
         network: localnet2.network,
       };
 
-      await new Endpoint(server, '/transactions').post(dto, null, userAuthCookie).expect(201);
+      await new Endpoint(server, '/transactions').post(dto, null, userAuthToken).expect(201);
       testsAddedTransactionsCountAdmin++;
 
-      const { status, body } = await endpoint.get(null, adminAuthCookie, 'page=1&size=99');
+      const { status, body } = await endpoint.get(null, adminAuthToken, 'page=1&size=99');
 
       expect(status).toEqual(200);
       expect(body.totalItems).toEqual(
@@ -615,11 +615,11 @@ describe('Transactions (e2e)', () => {
         network: localnet2.network,
       };
 
-      await new Endpoint(server, '/transactions').post(dto, null, adminAuthCookie).expect(201);
+      await new Endpoint(server, '/transactions').post(dto, null, adminAuthToken).expect(201);
       testsAddedTransactionsCountAdmin++;
       testsAddedTransactionsCountUser++;
 
-      const { status, body } = await endpoint.get(null, userAuthCookie, 'page=1&size=99');
+      const { status, body } = await endpoint.get(null, userAuthToken, 'page=1&size=99');
 
       expect(status).toEqual(200);
       expect(body.totalItems).toEqual(
@@ -636,7 +636,7 @@ describe('Transactions (e2e)', () => {
     });
 
     it('(GET) should get keys required to sign for the given transaction', async () => {
-      const { status, body } = await endpoint.get('1', userAuthCookie);
+      const { status, body } = await endpoint.get('1', userAuthToken);
       const userKey1003 = await getUserKey(user.id, localnet1003.publicKeyRaw);
 
       expect(status).toEqual(200);
@@ -644,16 +644,16 @@ describe('Transactions (e2e)', () => {
     });
 
     it('(GET) should not get transactions to sign if not verified', () =>
-      endpoint.get('1', userNewAuthCookie).expect(403));
+      endpoint.get('1', userNewAuthToken).expect(403));
 
     it('(GET) should not get transactions to sign if not logged in', () =>
       endpoint.get('1', null).expect(401));
 
     it('(GET) should get empty array if user should not sign the transaction', () =>
-      endpoint.get('4', userAuthCookie).expect(200).expect([]));
+      endpoint.get('4', userAuthToken).expect(200).expect([]));
 
     it('(GET) should get empty array if transaction does not exist', async () =>
-      endpoint.get('999', userAuthCookie).expect(200).expect([]));
+      endpoint.get('999', userAuthToken).expect(200).expect([]));
 
     it('(GET) should get empty array if the transaction is already signed', async () => {
       const transactionsEndpoint = new Endpoint(server, '/transactions');
@@ -661,7 +661,7 @@ describe('Transactions (e2e)', () => {
       /* A transaction created by user that requires the admin to sign */
       const transaction = addedTransactions.userTransactions[1];
 
-      const beforeSignRes = await endpoint.get(transaction.id.toString(), adminAuthCookie);
+      const beforeSignRes = await endpoint.get(transaction.id.toString(), adminAuthToken);
       expect(beforeSignRes.status).toBe(200);
       expect(beforeSignRes.body).toEqual([adminKey1002.id]);
 
@@ -676,12 +676,12 @@ describe('Transactions (e2e)', () => {
             signatures,
           },
           `/${transaction.id}/signers`,
-          adminAuthCookie,
+          adminAuthToken,
         )
         .expect(201);
 
       /* Get observers (ADMIN) */
-      const afterSignRes = await endpoint.get(transaction.id.toString(), adminAuthCookie);
+      const afterSignRes = await endpoint.get(transaction.id.toString(), adminAuthToken);
       expect(afterSignRes.status).toBe(200);
       expect(afterSignRes.body).toEqual([]);
 
@@ -711,10 +711,10 @@ describe('Transactions (e2e)', () => {
     it('(PATCH) should cancel a transaction if creator', async () => {
       const transaction = await createTransaction(user, localnet1003);
       const { body: newTransaction } = await new Endpoint(server, '/transactions')
-        .post(transaction, null, userAuthCookie)
+        .post(transaction, null, userAuthToken)
         .expect(201);
 
-      const { status } = await endpoint.patch(null, newTransaction.id.toString(), userAuthCookie);
+      const { status } = await endpoint.patch(null, newTransaction.id.toString(), userAuthToken);
 
       const transactionFromDb = await repo.findOne({ where: { id: newTransaction.id } });
 
@@ -725,10 +725,10 @@ describe('Transactions (e2e)', () => {
     it('(PATCH) should not cancel a transaction if not creator', async () => {
       const transaction = await createTransaction(user, localnet1003);
       const { body: newTransaction } = await new Endpoint(server, '/transactions')
-        .post(transaction, null, userAuthCookie)
+        .post(transaction, null, userAuthToken)
         .expect(201);
 
-      const { status } = await endpoint.patch(null, newTransaction.id.toString(), adminAuthCookie);
+      const { status } = await endpoint.patch(null, newTransaction.id.toString(), adminAuthToken);
 
       const transactionFromDb = await repo.findOne({ where: { id: newTransaction.id } });
 
@@ -739,14 +739,10 @@ describe('Transactions (e2e)', () => {
     it('(PATCH) should not cancel a transaction if not verified', async () => {
       const transaction = await createTransaction(user, localnet1003);
       const { body: newTransaction } = await new Endpoint(server, '/transactions')
-        .post(transaction, null, userAuthCookie)
+        .post(transaction, null, userAuthToken)
         .expect(201);
 
-      const { status } = await endpoint.patch(
-        null,
-        newTransaction.id.toString(),
-        userNewAuthCookie,
-      );
+      const { status } = await endpoint.patch(null, newTransaction.id.toString(), userNewAuthToken);
 
       const transactionFromDb = await repo.findOne({ where: { id: newTransaction.id } });
 
@@ -757,12 +753,12 @@ describe('Transactions (e2e)', () => {
     it("(PATCH) should not cancel a transaction if it's already executed", async () => {
       const transaction = await createTransaction(user, localnet1003);
       const { body: newTransaction } = await new Endpoint(server, '/transactions')
-        .post(transaction, null, userAuthCookie)
+        .post(transaction, null, userAuthToken)
         .expect(201);
 
       await repo.update({ id: newTransaction.id }, { status: TransactionStatus.EXECUTED });
 
-      const { status } = await endpoint.patch(null, newTransaction.id.toString(), userAuthCookie);
+      const { status } = await endpoint.patch(null, newTransaction.id.toString(), userAuthToken);
 
       const transactionFromDb = await repo.findOne({ where: { id: newTransaction.id } });
 
@@ -789,7 +785,7 @@ describe('Transactions (e2e)', () => {
     it('(GET) should get a transaction by id if has access (Is creator)', async () => {
       const id = addedTransactions.userTransactions[0].id;
 
-      const { status, body } = await endpoint.get(id.toString(), userAuthCookie);
+      const { status, body } = await endpoint.get(id.toString(), userAuthToken);
 
       expect(status).toEqual(200);
       expect(body.id).toEqual(id);
@@ -806,12 +802,12 @@ describe('Transactions (e2e)', () => {
             userIds: [admin.id],
           },
           `/${transaction.id}/observers`,
-          userAuthCookie,
+          userAuthToken,
         )
         .expect(201);
 
       /* Get observers (ADMIN) */
-      const { status, body } = await endpoint.get(transaction.id.toString(), adminAuthCookie);
+      const { status, body } = await endpoint.get(transaction.id.toString(), adminAuthToken);
 
       expect(status).toBe(200);
       expect(body.id).toEqual(transaction.id);
@@ -838,12 +834,12 @@ describe('Transactions (e2e)', () => {
             signatures,
           },
           `/${transaction.id}/signers`,
-          adminAuthCookie,
+          adminAuthToken,
         )
         .expect(201);
 
       /* Get observers (ADMIN) */
-      const { status, body } = await endpoint.get(transaction.id.toString(), adminAuthCookie);
+      const { status, body } = await endpoint.get(transaction.id.toString(), adminAuthToken);
 
       expect(status).toBe(200);
       expect(body.id).toEqual(transaction.id);
@@ -858,7 +854,7 @@ describe('Transactions (e2e)', () => {
     it('(GET) should get a transaction by id if has access (should sign)', async () => {
       const transaction = addedTransactions.userTransactions[1];
 
-      const { status, body } = await endpoint.get(transaction.id.toString(), adminAuthCookie);
+      const { status, body } = await endpoint.get(transaction.id.toString(), adminAuthToken);
 
       expect(status).toBe(200);
       expect(body.id).toEqual(transaction.id);
@@ -867,11 +863,11 @@ describe('Transactions (e2e)', () => {
     it('(GET) should get a transaction by id if has access (is in a status visible for everyone)', async () => {
       const transaction = await createTransaction(user, localnet1003);
       const { body: newTransaction } = await new Endpoint(server, '/transactions')
-        .post(transaction, null, userAuthCookie)
+        .post(transaction, null, userAuthToken)
         .expect(201);
       await repo.update({ id: newTransaction.id }, { status: TransactionStatus.EXECUTED });
 
-      const { status, body } = await endpoint.get(newTransaction.id.toString(), adminAuthCookie);
+      const { status, body } = await endpoint.get(newTransaction.id.toString(), adminAuthToken);
 
       expect(status).toEqual(200);
       expect(body.id).toEqual(newTransaction.id);
@@ -880,20 +876,20 @@ describe('Transactions (e2e)', () => {
     it('(GET) should NOT get a transaction by id if has access (is in a status NOT visible for everyone)', async () => {
       const transaction = await createTransaction(user, localnet1003);
       const { body: newTransaction } = await new Endpoint(server, '/transactions')
-        .post(transaction, null, userAuthCookie)
+        .post(transaction, null, userAuthToken)
         .expect(201);
 
-      return endpoint.get(newTransaction.id.toString(), adminAuthCookie).expect(401);
+      return endpoint.get(newTransaction.id.toString(), adminAuthToken).expect(401);
     });
 
     it('(GET) should not get a transaction by id if not creator, signer, observer, reviewer or should sign', () =>
       endpoint
-        .get(addedTransactions.userTransactions[0].id.toString(), adminAuthCookie)
+        .get(addedTransactions.userTransactions[0].id.toString(), adminAuthToken)
         .expect(401));
 
     it('(GET) should not get a transaction by id if not verified', () =>
       endpoint
-        .get(addedTransactions.userTransactions[0].id.toString(), userNewAuthCookie)
+        .get(addedTransactions.userTransactions[0].id.toString(), userNewAuthToken)
         .expect(403));
   });
 });
