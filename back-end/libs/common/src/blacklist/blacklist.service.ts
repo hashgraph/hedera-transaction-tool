@@ -5,7 +5,7 @@ import { createClient } from 'redis';
 
 @Injectable()
 export class BlacklistService {
-  BLACKLISTED = 'blacklisted';
+  private BLACKLISTED = 'blacklisted';
 
   constructor(private readonly configService: ConfigService) {}
 
