@@ -12,6 +12,13 @@ import { AuthService } from './auth.service';
 
 import { EmailThrottlerGuard } from '../guards';
 
+jest.mock('passport-jwt', () => ({
+  ExtractJwt: {
+    fromAuthHeaderAsBearerToken: jest.fn(() => () => 'token'),
+    fromHeader: jest.fn(() => () => 'token'),
+  },
+}));
+
 describe('AuthController', () => {
   let controller: AuthController;
   let user: User;
@@ -131,9 +138,11 @@ describe('AuthController', () => {
 
   describe('verify-reset', () => {
     it('should have no return value', async () => {
-      authService.verifyOtp.mockResolvedValue(undefined);
+      const result = { token: 'newToken' };
+      authService.verifyOtp.mockResolvedValue(result);
 
-      expect(await controller.verifyOtp(user, { token: '' })).toBeUndefined();
+      expect(await controller.verifyOtp(user, { token: '' }, request)).toEqual(result);
+      expect(blacklistService.blacklistToken).toHaveBeenCalledWith('token');
     });
   });
 
@@ -141,7 +150,8 @@ describe('AuthController', () => {
     it('should have no return value', async () => {
       authService.setPassword.mockResolvedValue(undefined);
 
-      expect(await controller.setPassword(user, { password: 'Doe' })).toBeUndefined();
+      expect(await controller.setPassword(user, { password: 'Doe' }, request)).toBeUndefined();
+      expect(blacklistService.blacklistToken).toHaveBeenCalledWith('token');
     });
   });
 
@@ -155,7 +165,8 @@ describe('AuthController', () => {
 
   describe('logout', () => {
     it('should have no return value', async () => {
-      expect(await controller.logout()).toBeUndefined();
+      await controller.logout(request);
+      expect(blacklistService.blacklistToken).toHaveBeenCalledWith('token');
     });
   });
 });

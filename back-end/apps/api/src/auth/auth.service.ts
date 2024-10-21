@@ -70,11 +70,6 @@ export class AuthService {
     return accessToken;
   }
 
-  /* Log the user out of the organization, remove his cooke and blacklists his token */
-  logout() {
-    //TODO implement token blacklisting
-  }
-
   /* Change the password for the given user */
   async changePassword(user: User, { oldPassword, newPassword }: ChangePasswordDto): Promise<void> {
     if (oldPassword === newPassword) throw new BadRequestException(ErrorCodes.NPMOP);

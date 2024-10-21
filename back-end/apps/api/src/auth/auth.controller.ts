@@ -5,13 +5,15 @@ import { SkipThrottle } from '@nestjs/throttler';
 
 import { Request } from 'express';
 
-import { Serialize } from '@app/common';
+import { BlacklistService, Serialize } from '@app/common';
 
 import { User } from '@entities';
 
 import {
   AdminGuard,
   EmailThrottlerGuard,
+  extractJwtAuth,
+  extractJwtOtp,
   JwtAuthGuard,
   JwtBlackListAuthGuard,
   JwtBlackListOtpGuard,
@@ -39,7 +41,10 @@ import {
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly blacklistService: BlacklistService,
+  ) {}
 
   /* Register new users by admins */
   @ApiOperation({
@@ -92,8 +97,8 @@ export class AuthController {
   @Post('/logout')
   @HttpCode(200)
   @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard)
-  logout() {
-    return this.authService.logout();
+  async logout(@Req() req: Request) {
+    await this.blacklistService.blacklistToken(extractJwtAuth(req));
   }
 
   /* Change user's password */
@@ -145,8 +150,10 @@ export class AuthController {
   @Post('/verify-reset')
   @HttpCode(200)
   @UseGuards(JwtBlackListOtpGuard, OtpJwtAuthGuard)
-  verifyOtp(@GetUser() user: User, @Body() dto: OtpDto) {
-    return this.authService.verifyOtp(user, dto);
+  async verifyOtp(@GetUser() user: User, @Body() dto: OtpDto, @Req() req) {
+    const result = await this.authService.verifyOtp(user, dto);
+    await this.blacklistService.blacklistToken(extractJwtOtp(req));
+    return result;
   }
 
   /* Set the password for the user if the email has been verified */
@@ -160,9 +167,9 @@ export class AuthController {
   })
   @UseGuards(JwtBlackListOtpGuard, OtpVerifiedAuthGuard)
   @Patch('/set-password')
-  async setPassword(@GetUser() user: User, @Body() dto: NewPasswordDto): Promise<void> {
+  async setPassword(@GetUser() user: User, @Body() dto: NewPasswordDto, @Req() req): Promise<void> {
     await this.authService.setPassword(user, dto.password);
-    //TODO: Blacklist the token
+    await this.blacklistService.blacklistToken(extractJwtOtp(req));
   }
 
   @SkipThrottle()
