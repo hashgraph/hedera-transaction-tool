@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { createClient } from 'redis';
+import { Redis } from 'ioredis';
 
 @Injectable()
 export class BlacklistService {
@@ -11,27 +11,23 @@ export class BlacklistService {
 
   async blacklistToken(jwt: string) {
     await this.withClient(async client => {
-      const expirationDays = this.configService.get<number>('JWT_EXPIRATION', { infer: true });
-      const expirationSeconds = expirationDays * 24 * 60 * 60;
+      const expirationDays = this.configService.get<number>('JWT_EXPIRATION');
+      const expirationSeconds = Number(expirationDays) * 24 * 60 * 60;
 
-      await client.set(jwt, this.BLACKLISTED, {
-        EX: expirationSeconds,
-      });
+      await client.set(jwt, this.BLACKLISTED, 'EX', expirationSeconds);
     });
   }
 
   async isTokenBlacklisted(jwt: string) {
     return await this.withClient(async client => {
-      const result = await client.get(jwt);
-      return result === this.BLACKLISTED;
+      const data = await client.get(jwt);
+      return data === this.BLACKLISTED;
     });
   }
 
-  async withClient<T>(
-    callback: (client: ReturnType<typeof createClient>) => Promise<T>,
-  ): Promise<T> {
+  async withClient<T>(callback: (client: Redis) => Promise<T>): Promise<T> {
     const redisURL = this.configService.get('REDIS_URL');
-    const client = createClient(redisURL);
+    const client = new Redis(redisURL);
 
     const result = await callback(client);
 
