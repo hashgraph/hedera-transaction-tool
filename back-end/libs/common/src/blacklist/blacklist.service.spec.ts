@@ -1,24 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
+import { mockDeep } from 'jest-mock-extended';
+
 import { BlacklistService } from './blacklist.service';
 
 jest.mock('ioredis', () => {
   return {
-    Redis: jest.fn().mockImplementation(() => {
-      return {
-        set: jest.fn(),
-        get: jest.fn(),
-        quit: jest.fn(),
-      };
-    }),
+    Redis: jest.fn().mockImplementation(() => ({})),
   };
 });
 
 describe('BlacklistService', () => {
   let service: BlacklistService;
-  let configService: ConfigService;
-  let redisClient: jest.Mocked<Redis>;
+  const configService = mockDeep<ConfigService>();
+  const client = mockDeep<Redis>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -26,16 +22,13 @@ describe('BlacklistService', () => {
         BlacklistService,
         {
           provide: ConfigService,
-          useValue: {
-            get: jest.fn(),
-          },
+          useValue: configService,
         },
       ],
     }).compile();
 
     service = module.get<BlacklistService>(BlacklistService);
-    configService = module.get<ConfigService>(ConfigService);
-    redisClient = new Redis() as jest.Mocked<Redis>;
+    service.client = client;
   });
 
   afterEach(() => {
@@ -49,13 +42,10 @@ describe('BlacklistService', () => {
       const expirationSeconds = expirationDays * 24 * 60 * 60;
 
       jest.spyOn(configService, 'get').mockReturnValue(expirationDays);
-      jest.spyOn(service, 'withClient').mockImplementation(async callback => {
-        return callback(redisClient);
-      });
 
       await service.blacklistToken(jwt);
 
-      expect(redisClient.set).toHaveBeenCalledWith(jwt, 'blacklisted', 'EX', expirationSeconds);
+      expect(client.set).toHaveBeenCalledWith(jwt, 'blacklisted', 'EX', expirationSeconds);
     });
   });
 
@@ -63,36 +53,23 @@ describe('BlacklistService', () => {
     it('should return true if the token is blacklisted', async () => {
       const jwt = 'testToken';
 
-      jest.spyOn(service, 'withClient').mockImplementation(async callback => {
-        redisClient.get.mockResolvedValue('blacklisted');
-        return callback(redisClient);
-      });
+      client.get.mockResolvedValue('blacklisted');
 
       const result = await service.isTokenBlacklisted(jwt);
 
       expect(result).toBe(true);
-      expect(redisClient.get).toHaveBeenCalledWith(jwt);
+      expect(client.get).toHaveBeenCalledWith(jwt);
     });
 
     it('should return false if the token is not blacklisted', async () => {
       const jwt = 'testToken';
 
-      jest.spyOn(service, 'withClient').mockImplementation(async callback => {
-        redisClient.get.mockResolvedValue(null);
-        return callback(redisClient);
-      });
+      client.get.mockResolvedValue(null);
 
       const result = await service.isTokenBlacklisted(jwt);
 
       expect(result).toBe(false);
-      expect(redisClient.get).toHaveBeenCalledWith(jwt);
-    });
-  });
-
-  describe('withClient', () => {
-    it('should handle errors gracefully', async () => {
-      const callback = jest.fn().mockRejectedValue(new Error('Test error'));
-      await expect(service.withClient(callback)).rejects.toThrow('Test error');
+      expect(client.get).toHaveBeenCalledWith(jwt);
     });
   });
 });

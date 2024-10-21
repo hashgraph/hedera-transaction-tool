@@ -7,32 +7,22 @@ import { Redis } from 'ioredis';
 export class BlacklistService {
   private BLACKLISTED = 'blacklisted';
 
-  constructor(private readonly configService: ConfigService) {}
+  client: Redis;
+
+  constructor(private readonly configService: ConfigService) {
+    const redisURL = this.configService.get('REDIS_URL');
+    this.client = new Redis(redisURL);
+  }
 
   async blacklistToken(jwt: string) {
-    await this.withClient(async client => {
-      const expirationDays = this.configService.get<number>('JWT_EXPIRATION');
-      const expirationSeconds = Number(expirationDays) * 24 * 60 * 60;
+    const expirationDays = this.configService.get<number>('JWT_EXPIRATION');
+    const expirationSeconds = Number(expirationDays) * 24 * 60 * 60;
 
-      await client.set(jwt, this.BLACKLISTED, 'EX', expirationSeconds);
-    });
+    await this.client.set(jwt, this.BLACKLISTED, 'EX', expirationSeconds);
   }
 
   async isTokenBlacklisted(jwt: string) {
-    return await this.withClient(async client => {
-      const data = await client.get(jwt);
-      return data === this.BLACKLISTED;
-    });
-  }
-
-  async withClient<T>(callback: (client: Redis) => Promise<T>): Promise<T> {
-    const redisURL = this.configService.get('REDIS_URL');
-    const client = new Redis(redisURL);
-
-    const result = await callback(client);
-
-    await client.quit();
-
-    return result;
+    const data = await this.client.get(jwt);
+    return data === this.BLACKLISTED;
   }
 }

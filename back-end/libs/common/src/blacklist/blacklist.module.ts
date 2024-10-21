@@ -9,4 +9,12 @@ import { BlacklistService } from './blacklist.service';
   providers: [BlacklistService],
   exports: [BlacklistService],
 })
-export class BlacklistModule extends ConfigurableModuleClass {}
+export class BlacklistModule extends ConfigurableModuleClass {
+  constructor(private readonly blacklistService: BlacklistService) {
+    super();
+  }
+
+  onModuleDestroy() {
+    this.blacklistService.client.quit();
+  }
+}
