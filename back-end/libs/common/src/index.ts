@@ -13,3 +13,4 @@ export * from './modules';
 export * from './interceptors';
 export * from './dtos';
 export * from './health';
+export * from './blacklist';
