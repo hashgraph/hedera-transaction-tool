@@ -2,6 +2,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { Socket } from 'socket.io';
 import { firstValueFrom } from 'rxjs';
 
+import { BlacklistService } from '@app/common';
 import { User } from '@entities';
 
 export interface AuthWebsocket extends Socket {
@@ -15,7 +16,10 @@ export type SocketIOMiddleware = {
 /* This middleware will intercept connection requests during the handshake enabling authentication to
  * occur before the connection is established.
  */
-export const AuthWebsocketMiddleware = (apiService: ClientProxy): SocketIOMiddleware => {
+export const AuthWebsocketMiddleware = (
+  apiService: ClientProxy,
+  blacklistService: BlacklistService,
+): SocketIOMiddleware => {
   return async (socket: AuthWebsocket, next) => {
     try {
       /* Get the cookie from the header. This is the HTTP-only cookie which contains the Authentication jwt. */
@@ -27,6 +31,17 @@ export const AuthWebsocketMiddleware = (apiService: ClientProxy): SocketIOMiddle
       }
 
       const jwt = (Array.isArray(authorization) ? authorization[0] : authorization).split(' ')[1];
+
+      if (!jwt) {
+        next({ name: 'Unauthorized', message: 'Unauthorized' });
+        return;
+      }
+
+      const isBlacklisted = await blacklistService.isTokenBlacklisted(jwt);
+      if (isBlacklisted) {
+        next({ name: 'Unauthorized', message: 'Unauthorized' });
+        return;
+      }
 
       /* Request authentication of the jwt from the API service. */
       const response = apiService.send<User>('authenticate-websocket-token', {
