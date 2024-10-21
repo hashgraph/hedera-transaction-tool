@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { RouteLocationNormalized } from 'vue-router';
+import type { Transaction } from '@hashgraph/sdk';
 
 import { ref } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
-import { FileAppendTransaction, FileUpdateTransaction, type Transaction } from '@hashgraph/sdk';
+import { FileAppendTransaction, FileUpdateTransaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -22,7 +23,6 @@ import { getTransactionFromBytes, isUserLoggedIn } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
-import type { NodeCreateTransaction, NodeUpdateTransaction } from '@hashgraph/sdk';
 
 /* Props */
 const props = defineProps<{
@@ -30,7 +30,6 @@ const props = defineProps<{
   handleDraftAdded?: (id: string) => void;
   handleDraftUpdated?: (id: string) => void;
   getTransaction?: () => Transaction;
-  getNodeTransaction?: () => Promise<NodeCreateTransaction | NodeUpdateTransaction>;
   description: string;
   isExecuted: boolean;
 }>();
@@ -53,9 +52,7 @@ const saveDraft = async () => {
     throw new Error('User is not logged in');
   }
 
-  const transactionBytes = props.getNodeTransaction
-    ? (await props.getNodeTransaction()).toBytes()
-    : getTransactionBytes();
+  const transactionBytes = getTransactionBytes();
   if (!transactionBytes) return;
 
   if (route.query.draftId) {
@@ -111,9 +108,7 @@ function getTransactionBytes() {
 onBeforeRouteLeave(async to => {
   if (to.name?.toString().toLocaleLowerCase().includes('login')) return true;
 
-  const transactionBytes = props.getNodeTransaction
-    ? (await props.getNodeTransaction()).toBytes()
-    : getTransactionBytes();
+  const transactionBytes = getTransactionBytes();
   if (!transactionBytes) return true;
 
   if (route.query.draftId) {
