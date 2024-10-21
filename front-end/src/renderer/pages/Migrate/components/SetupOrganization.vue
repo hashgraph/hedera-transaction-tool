@@ -6,6 +6,8 @@ import type { ModelValue, SubmitCallback } from './SetupOrganizationForm.vue';
 
 import { ref } from 'vue';
 
+import { SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@main/shared/constants';
+
 import { addOrganization } from '@renderer/services/organizationsService';
 import {
   changePassword,
@@ -143,6 +145,8 @@ const loginInOrganization = async ({
   }
 
   const { id, jwtToken } = await login(organizationURL, email, temporaryOrganizationPassword);
+  sessionStorage.setItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${organizationURL}`, jwtToken);
+
   organizationUserId.value = id;
   organizationJwtToken.value = jwtToken;
 };
