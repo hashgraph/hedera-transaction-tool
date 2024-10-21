@@ -77,12 +77,8 @@ watch(
       />
     </template>
 
-    <template v-if="importantNoteReady && migrationCheckReady">
-      <AutoLoginInOrganization />
-
-      <template v-if="!migrate">
-        <DetectKeychain ref="detectKeychainRef" />
-      </template>
+    <template v-if="importantNoteReady && migrationCheckReady && !migrate">
+      <DetectKeychain ref="detectKeychainRef" />
     </template>
   </template>
 
