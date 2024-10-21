@@ -186,7 +186,7 @@ export const updateOrganizationCredentials = async (
   user_id: string,
   email?: string,
   password?: string | null,
-  jwtToken?: string,
+  jwtToken?: string | null,
   encryptPassword?: string | null,
 ) => {
   const prisma = getPrismaClient();
@@ -209,7 +209,7 @@ export const updateOrganizationCredentials = async (
       data: {
         email: email || credentials.email,
         password: password || credentials.password,
-        jwtToken: jwtToken || credentials.jwtToken,
+        jwtToken: jwtToken !== undefined ? jwtToken : credentials.jwtToken,
       },
     });
 

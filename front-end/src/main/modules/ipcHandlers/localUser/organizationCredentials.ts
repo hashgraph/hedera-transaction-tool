@@ -65,7 +65,7 @@ export default () => {
       user_id: string,
       email?: string,
       password?: string | null,
-      jwtToken?: string,
+      jwtToken?: string | null,
       encryptPassword?: string,
     ) =>
       updateOrganizationCredentials(

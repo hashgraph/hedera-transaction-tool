@@ -42,7 +42,7 @@ export default {
       user_id: string,
       email?: string,
       password?: string,
-      jwtToken?: string,
+      jwtToken?: string | null,
       encryptPassword?: string,
     ): Promise<boolean> =>
       ipcRenderer.invoke(

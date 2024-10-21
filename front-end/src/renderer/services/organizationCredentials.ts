@@ -51,7 +51,7 @@ export const updateOrganizationCredentials = async (
   user_id: string,
   email?: string,
   password?: string,
-  jwtToken?: string,
+  jwtToken?: string | null,
   encryptPassword?: string,
 ) =>
   commonIPCHandler(async () => {

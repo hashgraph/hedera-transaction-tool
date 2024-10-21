@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 
-import { inject, nextTick, onUpdated } from 'vue';
+import { inject, onUpdated } from 'vue';
 
 import { Network } from '@main/shared/enums';
+import { SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -14,10 +15,11 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { logout } from '@renderer/services/organization';
 import { quit } from '@renderer/services/electronUtilsService';
+import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
 import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 
-import { withLoader } from '@renderer/utils';
+import { isUserLoggedIn, withLoader } from '@renderer/utils';
 
 import Logo from '@renderer/components/Logo.vue';
 import LogoText from '@renderer/components/LogoText.vue';
@@ -64,20 +66,17 @@ const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADE
 /* Handlers */
 const handleLogout = async () => {
   if (user.selectedOrganization) {
-    await nextTick();
+    if (!isUserLoggedIn(user.personal)) return;
 
     const { id, nickname, serverUrl, key } = user.selectedOrganization;
     await logout(serverUrl);
+    await updateOrganizationCredentials(id, user.personal.id, undefined, undefined, null);
+    localStorage.removeItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${id}`);
     await user.selectOrganization(null);
     await user.selectOrganization({ id, nickname, serverUrl, key });
   } else {
     localStorage.removeItem('htx_user');
-
     await user.logout();
-
-    user.keyPairs = [];
-    user.recoveryPhrase = null;
-
     await router.push({ name: 'login' });
   }
 };
