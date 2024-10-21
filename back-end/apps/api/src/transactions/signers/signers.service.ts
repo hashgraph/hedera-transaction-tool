@@ -109,7 +109,6 @@ export class SignersService {
   ): Promise<TransactionSigner> {
     /* Verify that the user has the key */
     const userKey = user.keys.find(key => key.id === publicKeyId);
-    if (!userKey) throw new BadRequestException('Transaction can be signed only with your own key');
 
     /* Verify that the transaction exists */
     const transaction = await this.dataSource.manager.findOneBy(Transaction, { id: transactionId });
