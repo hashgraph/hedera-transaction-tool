@@ -91,6 +91,14 @@ export const encodeString = (str: string) => {
   return new TextEncoder().encode(str);
 };
 
+export function stringToHex(str: string): string {
+  return Array.from(str, c => c.charCodeAt(0).toString(16)).join('');
+}
+
+export function hexToString(hex: string) {
+  return decodeURIComponent(hex.replace(/\s+/g, '').replace(/[0-9a-f]{2}/g, '%$&'));
+}
+
 export const getDateStringExtended = (date: Date) => {
   return `${date.toDateString()} ${date.toLocaleTimeString()}`;
 };

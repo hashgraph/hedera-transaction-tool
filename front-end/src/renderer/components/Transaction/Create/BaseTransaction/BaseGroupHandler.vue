@@ -10,6 +10,8 @@ import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { getTransactionType } from '@renderer/utils';
 
+//FIXME: This should not be a component, but a .ts file with exportable functions
+
 /* Props */
 const props = defineProps<{
   createTransaction: () => Transaction;

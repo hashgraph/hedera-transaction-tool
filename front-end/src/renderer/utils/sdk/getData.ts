@@ -11,6 +11,9 @@ import {
   FreezeTransaction,
   Hbar,
   KeyList,
+  NodeCreateTransaction,
+  NodeDeleteTransaction,
+  NodeUpdateTransaction,
   TransferTransaction,
 } from '@hashgraph/sdk';
 
@@ -20,16 +23,19 @@ import type {
   AccountDeleteData,
   AccountUpdateData,
   ApproveHbarAllowanceData,
+  componentServiceEndpoint,
   FileAppendData,
   FileCreateData,
   FileData,
   FileUpdateData,
   FreezeData,
+  NodeData,
+  NodeUpdateData,
   TransactionCommonData,
   TransferHbarData,
 } from './createTransactions';
 import { getMaximumExpirationTime, getMinimumExpirationTime } from '.';
-import { uint8ToHex } from '..';
+import { hexToString, uint8ToHex } from '..';
 
 export const getTransactionCommonData = (transaction: Transaction): TransactionCommonData => {
   const transactionId = transaction.transactionId;
@@ -182,3 +188,71 @@ export const getTransferHbarData = (transaction: Transaction): TransferHbarData 
     transfers: transaction.hbarTransfersList,
   };
 };
+
+export function getNodeData(transaction: Transaction): NodeData {
+  if (
+    !(transaction instanceof NodeCreateTransaction) &&
+    !(transaction instanceof NodeUpdateTransaction)
+  ) {
+    throw new Error('Invalid transaction type.');
+  }
+
+  const gossipEndpoints = new Array<componentServiceEndpoint>();
+  const serviceEndpoints = new Array<componentServiceEndpoint>();
+
+  if (transaction.gossipEndpoints != null) {
+    for (const endpoint of transaction.gossipEndpoints) {
+      if (endpoint.getPort) {
+        gossipEndpoints.push({
+          ipAddressV4:
+            endpoint.getIpAddressV4 != null
+              ? hexToString(uint8ToHex(endpoint.getIpAddressV4))
+              : null,
+          port: endpoint.getPort?.toString(),
+          domainName: endpoint.getDomainName != null ? endpoint.getDomainName : null,
+        });
+      }
+    }
+  }
+  if (transaction.serviceEndpoints != null) {
+    for (const endpoint of transaction.serviceEndpoints) {
+      if (endpoint.getPort) {
+        serviceEndpoints.push({
+          ipAddressV4:
+            endpoint.getIpAddressV4 != null
+              ? hexToString(uint8ToHex(endpoint.getIpAddressV4))
+              : null,
+          port: endpoint.getPort?.toString(),
+          domainName: endpoint.getDomainName != null ? endpoint.getDomainName : null,
+        });
+      }
+    }
+  }
+  const gossipCaCertificate = transaction.gossipCaCertificate ? uint8ToHex(transaction.gossipCaCertificate) : '';
+  const certificateHash = transaction.certificateHash ? uint8ToHex(transaction.certificateHash) : ''
+
+  return {
+    nodeAccountId: transaction.accountId?.toString() || '',
+    description: transaction.description || '',
+    gossipEndpoints: gossipEndpoints || [],
+    serviceEndpoints: serviceEndpoints || [],
+    gossipCaCertificate: gossipCaCertificate,
+    certificateHash: certificateHash,
+    adminKey: transaction.adminKey,
+  };
+};
+
+export function getNodeUpdateData(transaction: Transaction): NodeUpdateData {
+  assertTransactionType(transaction, NodeUpdateTransaction);
+  return {
+    nodeId: transaction.nodeId.toString() || '',
+    ...getNodeData(transaction),
+  };
+}
+
+export function getNodeDeleteData(transaction: Transaction) {
+  assertTransactionType(transaction, NodeDeleteTransaction);
+  return {
+    nodeId: transaction.nodeId.toString() || ''
+  }
+}

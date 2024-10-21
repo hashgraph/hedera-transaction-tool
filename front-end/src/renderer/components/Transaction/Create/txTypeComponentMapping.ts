@@ -8,6 +8,9 @@ import FileUpdate from './FileUpdate';
 import FileContents from './FileContents';
 import Freeze from './Freeze';
 import TransferHbar from './TransferHbar';
+import NodeCreate from './NodeCreate';
+import NodeDelete from './NodeDelete';
+import NodeUpdate from './NodeUpdate';
 
 export const transactionTypeKeys = {
   createFile: 'FileCreateTransaction',
@@ -21,6 +24,9 @@ export const transactionTypeKeys = {
   transfer: 'TransferTransaction',
   approveAllowance: 'AccountAllowanceApproveTransaction',
   freeze: 'FreezeTransaction',
+  nodeCreate: 'NodeCreateTransaction',
+  nodeDelete: 'NodeDeleteTransaction',
+  nodeUpdate: 'NodeUpdateTransaction'
 };
 
 const txTypeComponentMapping = {
@@ -34,6 +40,9 @@ const txTypeComponentMapping = {
   [transactionTypeKeys.transfer]: TransferHbar,
   [transactionTypeKeys.approveAllowance]: ApproveHbarAllowance,
   [transactionTypeKeys.freeze]: Freeze,
+  [transactionTypeKeys.nodeCreate]: NodeCreate,
+  [transactionTypeKeys.nodeDelete]: NodeDelete,
+  [transactionTypeKeys.nodeUpdate]: NodeUpdate
 };
 
 export default txTypeComponentMapping;

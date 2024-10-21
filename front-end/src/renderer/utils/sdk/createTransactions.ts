@@ -13,6 +13,10 @@ import {
   Hbar,
   Key,
   KeyList,
+  NodeCreateTransaction,
+  NodeDeleteTransaction,
+  NodeUpdateTransaction,
+  ServiceEndpoint,
   Timestamp,
   Transaction,
   TransactionId,
@@ -25,6 +29,7 @@ import type { IAccountInfoParsed } from '@main/shared/interfaces';
 
 import { isAccountId, isFileId } from '../validator';
 import { compareKeys } from '.';
+import { hexToUint8Array, stringToHex } from '..';
 
 export type TransactionData = TransactionCommonData & TransactionSpecificData;
 
@@ -106,6 +111,30 @@ export type FreezeData = {
 export type TransferHbarData = {
   transfers: Transfer[];
 };
+
+export interface componentServiceEndpoint {
+  ipAddressV4: string | null;
+  port: string;
+  domainName: string | null;
+}
+
+export type NodeData = {
+  nodeAccountId: string;
+  description: string;
+  gossipEndpoints: componentServiceEndpoint[];
+  serviceEndpoints: componentServiceEndpoint[];
+  gossipCaCertificate: string;
+  certificateHash: string;
+  adminKey: Key | null;
+}
+
+export type NodeUpdateData = NodeData & {
+  nodeId: string;
+}
+
+export type NodeDeleteData = {
+  nodeId: string;
+}
 
 /* Crafts transaction id by account id and valid start */
 export const createTransactionId = (
@@ -379,3 +408,161 @@ export const createTransferHbarTransaction = (data: TransactionCommonData & Tran
 
   return transaction;
 };
+
+/* Node Create */
+export function createNodeCreateTransaction(data: TransactionCommonData & NodeData) {
+  const transaction = new NodeCreateTransaction();
+  setTransactionCommonData(transaction, data);
+
+  const txGossipEndpoints = new Array<ServiceEndpoint>();
+  const txServiceEndpoints = new Array<ServiceEndpoint>();
+  for (const serviceEndpoint of data.gossipEndpoints) {
+    let newServiceEndpoint;
+    if (serviceEndpoint.ipAddressV4 != null) {
+      newServiceEndpoint = new ServiceEndpoint()
+        .setIpAddressV4(hexToUint8Array(stringToHex(serviceEndpoint.ipAddressV4)))
+        .setPort(Number.parseInt(serviceEndpoint.port));
+    } else if (serviceEndpoint.domainName != null) {
+      newServiceEndpoint = new ServiceEndpoint()
+        .setPort(Number.parseInt(serviceEndpoint.port))
+        .setDomainName(serviceEndpoint.domainName);
+    }
+    if (newServiceEndpoint) {
+      txGossipEndpoints.push(newServiceEndpoint);
+    }
+  }
+
+   for (const serviceEndpoint of data.serviceEndpoints) {
+    let newServiceEndpoint;
+    if (serviceEndpoint.ipAddressV4 != null) {
+      newServiceEndpoint = new ServiceEndpoint()
+        .setIpAddressV4(hexToUint8Array(stringToHex(serviceEndpoint.ipAddressV4)))
+        .setPort(Number.parseInt(serviceEndpoint.port));
+    } else if (serviceEndpoint.domainName != null) {
+      newServiceEndpoint = new ServiceEndpoint()
+        .setPort(Number.parseInt(serviceEndpoint.port))
+        .setDomainName(serviceEndpoint.domainName);
+    }
+    if (newServiceEndpoint) {
+      txServiceEndpoints.push(newServiceEndpoint);
+    }
+  }
+
+  transaction
+    .setDescription(data.description)
+    // CertHash Optional
+    .setCertificateHash(hexToUint8Array(data.certificateHash));
+
+  if (isAccountId(data.nodeAccountId)) {
+      transaction.setAccountId(data.nodeAccountId)
+  }
+
+  // Hack to get this to work with create transaction refactor
+  if (txGossipEndpoints.length == 0 || txServiceEndpoints.length == 0) {
+    transaction
+      .setGossipEndpoints([new ServiceEndpoint().setPort(1).setDomainName('temp')])
+      .setServiceEndpoints([new ServiceEndpoint().setPort(1).setDomainName('temp')])
+  } else {
+    transaction.setGossipEndpoints(txGossipEndpoints).setServiceEndpoints(txServiceEndpoints);
+  }
+
+
+  // Hack to get this to work with create transaction refactor
+  if (!data.gossipCaCertificate) {
+    transaction
+      .setGossipCaCertificate(hexToUint8Array('61'))
+  } else {
+    transaction.setGossipCaCertificate(hexToUint8Array(data.gossipCaCertificate))
+  }
+
+  if (data.adminKey) {
+    // Optional Admin Key
+    transaction.setAdminKey(data.adminKey);
+  }
+
+  return transaction;
+}
+
+/* Node Update */
+export function createNodeUpdateTransaction(data: TransactionCommonData & NodeUpdateData) {
+  const transaction = new NodeUpdateTransaction();
+  setTransactionCommonData(transaction, data);
+
+  const txGossipEndpoints = new Array<ServiceEndpoint>();
+  const txServiceEndpoints = new Array<ServiceEndpoint>();
+  for (const serviceEndpoint of data.gossipEndpoints) {
+    let newServiceEndpoint;
+    if (serviceEndpoint.ipAddressV4 != null) {
+      newServiceEndpoint = new ServiceEndpoint()
+        .setIpAddressV4(hexToUint8Array(stringToHex(serviceEndpoint.ipAddressV4)))
+        .setPort(Number.parseInt(serviceEndpoint.port));
+    } else if (serviceEndpoint.domainName != null) {
+      newServiceEndpoint = new ServiceEndpoint()
+        .setPort(Number.parseInt(serviceEndpoint.port))
+        .setDomainName(serviceEndpoint.domainName);
+    }
+    if (newServiceEndpoint) {
+      txGossipEndpoints.push(newServiceEndpoint);
+    }
+  }
+
+   for (const serviceEndpoint of data.serviceEndpoints) {
+    let newServiceEndpoint;
+    if (serviceEndpoint.ipAddressV4 != null) {
+      newServiceEndpoint = new ServiceEndpoint()
+        .setIpAddressV4(hexToUint8Array(stringToHex(serviceEndpoint.ipAddressV4)))
+        .setPort(Number.parseInt(serviceEndpoint.port));
+    } else if (serviceEndpoint.domainName != null) {
+      newServiceEndpoint = new ServiceEndpoint()
+        .setPort(Number.parseInt(serviceEndpoint.port))
+        .setDomainName(serviceEndpoint.domainName);
+    }
+    if (newServiceEndpoint) {
+      txServiceEndpoints.push(newServiceEndpoint);
+    }
+  }
+
+  transaction
+    .setDescription(data.description)
+    .setCertificateHash(hexToUint8Array(data.certificateHash));
+
+  if (data.nodeId) {
+      transaction.setNodeId(data.nodeId);
+  }
+
+  if (isAccountId(data.nodeAccountId)) {
+      transaction.setAccountId(data.nodeAccountId)
+  }
+
+  if (txGossipEndpoints.length > 0) {
+    transaction.setGossipEndpoints(txGossipEndpoints)
+  }
+
+  if (txServiceEndpoints.length > 0) {
+    transaction.setServiceEndpoints(txServiceEndpoints)
+  }
+
+  if (data.gossipCaCertificate) {
+    transaction.setGossipCaCertificate(hexToUint8Array(data.gossipCaCertificate))
+  }
+
+  if (data.adminKey) {
+    // Optional Admin Key
+    transaction.setAdminKey(data.adminKey);
+  }
+
+  return transaction;
+}
+
+/* Node Delete */
+export function createNodeDeleteTransaction(data: TransactionCommonData & NodeDeleteData) {
+  const transaction = new NodeDeleteTransaction();
+
+  if (data.nodeId) {
+    transaction.setNodeId(data.nodeId)
+  }
+
+  setTransactionCommonData(transaction, data);
+
+  return transaction;
+}
