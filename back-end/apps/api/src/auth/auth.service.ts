@@ -94,13 +94,13 @@ export class AuthService {
   }
 
   /* Create OTP and send it to the user */
-  async createOtp(email: string, response: Response): Promise<void> {
+  async createOtp(email: string): Promise<{ token: string }> {
     const user = await this.usersService.getUser({ email });
 
     if (!user) return;
 
     const secret = this.getOtpSecret(user.email);
-    const token = totp.generate(secret);
+    const otp = totp.generate(secret);
 
     this.notificationsService.emit<undefined, NotifyEmailDto>(NOTIFY_EMAIL, {
       email: user.email,
@@ -108,23 +108,25 @@ export class AuthService {
       text: `
       <div>
         <h1 style="margin: 0">Hedera Transaction Tool</h1>
-        <p style="margin: 0">Use the following token to reset your password: <b>${token}</b></p>
-        <a href="${ELECTRON_APP_PROTOCOL_PREFIX}token=${token}" style="text-decoration: none; color: white; background-color: #6600cc; padding: 8px 22px; border-radius: 6px;">Verify</a>
+        <p style="margin: 0">Use the following token to reset your password: <b>${otp}</b></p>
+        <a href="${ELECTRON_APP_PROTOCOL_PREFIX}token=${otp}" style="text-decoration: none; color: white; background-color: #6600cc; padding: 8px 22px; border-radius: 6px;">Verify</a>
       </div>
       `,
     });
 
-    this.setOtpCookie(response, { email: user.email, verified: false });
+    const token = this.getOtpToken({ email: user.email, verified: false });
+    return { token };
   }
 
-  async verifyOtp(user: User, { token }: OtpDto, response: Response): Promise<void> {
+  async verifyOtp(user: User, { token }: OtpDto): Promise<{ token: string }> {
     const secret = this.getOtpSecret(user.email);
 
     if (!totp.check(token, secret)) throw new UnauthorizedException('Incorrect token');
 
     try {
       await this.usersService.updateUser(user, { status: UserStatus.NEW });
-      this.setOtpCookie(response, { email: user.email, verified: true });
+      const token = this.getOtpToken({ email: user.email, verified: true });
+      return { token };
     } catch (err) {
       throw new InternalServerErrorException('Error while updating user status');
     }
@@ -136,20 +138,12 @@ export class AuthService {
   }
 
   /* Sets the OTP cookie with the payload */
-  private setOtpCookie(response: Response, otpPayload: OtpPayload) {
+  private getOtpToken(otpPayload: OtpPayload) {
     const expires = new Date();
     expires.setSeconds(expires.getSeconds() + totp.options.step * (totp.options.window as number));
 
-    const accessToken: string = this.jwtService.sign(otpPayload, {
+    return this.jwtService.sign(otpPayload, {
       expiresIn: `${this.configService.get('OTP_EXPIRATION')}m`,
-    });
-    response.cookie('otp', accessToken, {
-      httpOnly: true,
-      expires,
-      sameSite: ['production', 'testing'].includes(this.configService.get('NODE_ENV'))
-        ? 'none'
-        : 'lax',
-      secure: ['production', 'testing'].includes(this.configService.get('NODE_ENV')),
     });
   }
 

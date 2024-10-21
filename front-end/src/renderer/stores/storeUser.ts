@@ -72,6 +72,7 @@ const useUserStore = defineStore('user', () => {
     organizations.value.splice(0, organizations.value.length);
     publicKeyToAccounts.value.splice(0, publicKeyToAccounts.value.length);
     keyPairs.value = [];
+    recoveryPhrase.value = null;
   };
 
   const getPassword = () => {

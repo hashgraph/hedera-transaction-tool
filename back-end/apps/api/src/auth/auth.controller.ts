@@ -67,7 +67,7 @@ export class AuthController {
   })
   @ApiResponse({
     status: 200,
-    description: 'User is verified and an authentication token in a cookie is attached.',
+    description: 'User is verified and an authentication token is returned along with the user.',
   })
   @Post('/login')
   @HttpCode(200)
@@ -85,13 +85,13 @@ export class AuthController {
   })
   @ApiResponse({
     status: 200,
-    description: "The user's authentication token cookie is removed and added in the blacklist.",
+    description: "The user's authentication token is added in the blacklist.",
   })
   @Post('/logout')
   @HttpCode(200)
   @UseGuards(JwtAuthGuard)
   logout(@Res({ passthrough: true }) response: Response) {
-    return this.authService.logout(response);
+    return this.authService.logout(response); //TODO: Blacklist the token
   }
 
   /* Change user's password */
@@ -113,7 +113,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Request OTP for password reset',
     description:
-      "Begin the process of resetting the user's password by creating and emailing an OTP to the user. A JWT cookie is attached to the response. Once the OTP is verified, the JWT cookie will be updated and the user will be able to set his new password.",
+      "Begin the process of resetting the user's password by creating and emailing an OTP to the user. A JWT is returned. Once the OTP is verified, a new JWT will be issued and the user will be able to set his new password.",
   })
   @ApiBody({
     type: SignUpUserDto,
@@ -125,30 +125,26 @@ export class AuthController {
   @Post('/reset-password')
   @HttpCode(200)
   @UseGuards(EmailThrottlerGuard)
-  async createOtp(@Body() { email }: OtpLocalDto, @Res({ passthrough: true }) response: Response) {
-    return this.authService.createOtp(email, response);
+  async createOtp(@Body() { email }: OtpLocalDto) {
+    return this.authService.createOtp(email);
   }
 
   /* Verify OTP for password reset */
   @ApiOperation({
     summary: 'Verify password reset',
     description:
-      'Verify the user can reset the password by supplying the valid OTP. If the OTP is valid the JWT cookie is updated and the user will be able to set his new password',
+      'Verify the user can reset the password by supplying the valid OTP. If the OTP is valid , a new JWT is issued and the user will be able to set his new password',
   })
   @ApiResponse({
     status: 200,
     description:
-      'The OTP verified and the JWT cookie is updated. Now the user is able to set his new password. If the cookie is expired, the user will need to request a new OTP.',
+      'The OTP verified, new JWT is issued. Now the user is able to set his new password. If the JWT is expired, the user will need to request a new OTP.',
   })
   @Post('/verify-reset')
   @HttpCode(200)
   @UseGuards(OtpJwtAuthGuard)
-  verifyOtp(
-    @GetUser() user: User,
-    @Body() dto: OtpDto,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    return this.authService.verifyOtp(user, dto, response);
+  verifyOtp(@GetUser() user: User, @Body() dto: OtpDto) {
+    return this.authService.verifyOtp(user, dto);
   }
 
   /* Set the password for the user if the email has been verified */
@@ -162,13 +158,9 @@ export class AuthController {
   })
   @UseGuards(OtpVerifiedAuthGuard)
   @Patch('/set-password')
-  async setPassword(
-    @GetUser() user: User,
-    @Body() dto: NewPasswordDto,
-    @Res({ passthrough: true }) response: Response,
-  ): Promise<void> {
+  async setPassword(@GetUser() user: User, @Body() dto: NewPasswordDto): Promise<void> {
     await this.authService.setPassword(user, dto.password);
-    this.authService.clearOtpCookie(response);
+    //TODO: Blacklist the token
   }
 
   @SkipThrottle()

@@ -52,6 +52,8 @@ const inputConfirmPasswordInvalid = ref(false);
 const shouldEnterToken = ref(false);
 const shouldSetNewPassword = ref(false);
 
+const token = ref<string | null>(null);
+
 const onOTPReceivedUnsubscribe = ref<() => void>();
 
 /* Handlers */
@@ -72,7 +74,7 @@ async function handleEmailEnter() {
   if (!user.selectedOrganization) throw new Error('Please select organization');
 
   try {
-    await resetPassword(user.selectedOrganization.serverUrl, email.value);
+    token.value = await resetPassword(user.selectedOrganization.serverUrl, email.value);
 
     shouldEnterToken.value = true;
     setTimeout(() => otpInputRef.value?.focus(), 100);
@@ -84,9 +86,14 @@ async function handleEmailEnter() {
 async function handleTokenEnter() {
   if (!otp.value?.value || !otp.value.isValid) throw new Error('Invalid OTP');
   if (!user.selectedOrganization) throw new Error('Please select organization');
+  if (!token.value) throw new Error('OTP token is not set');
 
   try {
-    await verifyReset(user.selectedOrganization.serverUrl, otp.value.value);
+    token.value = await verifyReset(
+      user.selectedOrganization.serverUrl,
+      otp.value.value,
+      token.value,
+    );
 
     shouldEnterToken.value = false;
     shouldSetNewPassword.value = true;
@@ -99,6 +106,7 @@ async function handleNewPassword() {
   if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
   if (!isLoggedOutOrganization(user.selectedOrganization))
     throw new Error('Please select organization');
+  if (!token.value) throw new Error('OTP token is not set');
 
   const isPasswordCorrect = await comparePasswords(user.personal.id, personalPassword.value);
 
@@ -113,7 +121,7 @@ async function handleNewPassword() {
 
   try {
     !user.personal.useKeychain && user.setPassword(personalPassword.value);
-    await setPassword(user.selectedOrganization.serverUrl, newPassword.value);
+    await setPassword(user.selectedOrganization.serverUrl, newPassword.value, token.value);
 
     await updateOrganizationCredentials(
       user.selectedOrganization.id,
