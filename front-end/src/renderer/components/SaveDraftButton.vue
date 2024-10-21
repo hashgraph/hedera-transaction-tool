@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { RouteLocationNormalized } from 'vue-router';
+import type { Transaction } from '@hashgraph/sdk';
 
 import { ref } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
-import { FileAppendTransaction, FileUpdateTransaction, type Transaction } from '@hashgraph/sdk';
+import { FileAppendTransaction, FileUpdateTransaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
