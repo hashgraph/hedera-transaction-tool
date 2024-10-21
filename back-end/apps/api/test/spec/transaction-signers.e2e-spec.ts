@@ -3,6 +3,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { Repository } from 'typeorm';
 import { AccountCreateTransaction, AccountUpdateTransaction, KeyList } from '@hashgraph/sdk';
 
+import { ErrorCodes } from '@app/common';
 import { User, Transaction, TransactionSigner, UserKey, TransactionStatus } from '@entities';
 
 import { closeApp, createNestApp, login } from '../utils';
@@ -106,7 +107,7 @@ describe('Transactions (e2e)', () => {
       const transaction = addedTransactions.userTransactions[0];
       const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
       const userKey1002 = await getUserKey(admin.id, localnet1002.publicKeyRaw);
-      const signatures = getSignatures(localnet1003.privateKey, sdkTransaction);
+      const signatures = getSignatures(localnet1002.privateKey, sdkTransaction);
 
       const response = await endpoint.post(
         {
@@ -129,7 +130,7 @@ describe('Transactions (e2e)', () => {
       expect(response.body).toEqual(
         expect.objectContaining({
           statusCode: 400,
-          // message: 'This key is not required to sign this transaction',
+          code: ErrorCodes.KNRS,
         }),
       );
     });
@@ -153,7 +154,7 @@ describe('Transactions (e2e)', () => {
       expect(response.body).toEqual(
         expect.objectContaining({
           statusCode: 400,
-          // message: 'Signature already added',
+          code: ErrorCodes.SAD,
         }),
       );
     });
@@ -196,7 +197,7 @@ describe('Transactions (e2e)', () => {
       expect(body).toEqual(
         expect.objectContaining({
           statusCode: 400,
-          // message: 'Transaction not found',
+          code: ErrorCodes.TNF,
         }),
       );
     });
@@ -227,7 +228,7 @@ describe('Transactions (e2e)', () => {
       expect(body).toEqual(
         expect.objectContaining({
           statusCode: 400,
-          // message: 'Transaction has been canceled',
+          code: ErrorCodes.TC,
         }),
       );
     });

@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { Serialize } from '@app/common';
+import { ErrorCodes, Serialize } from '@app/common';
 
 import { User } from '@entities';
 
@@ -95,8 +95,7 @@ export class UsersController {
   @UseGuards(AdminGuard)
   @Delete('/:id')
   removeUser(@GetUser() user: User, @Param('id', ParseIntPipe) id: number): Promise<boolean> {
-    if (user.id === id)
-      throw new BadRequestException('You cannot remove yourself from the organization.');
+    if (user.id === id) throw new BadRequestException(ErrorCodes.CRYFO);
     return this.usersService.removeUser(id);
   }
 }

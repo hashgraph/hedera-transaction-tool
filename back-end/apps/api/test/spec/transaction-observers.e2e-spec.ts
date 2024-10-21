@@ -204,10 +204,10 @@ describe('Transaction Observers (e2e)', () => {
         adminAuthCookie,
       );
 
-      expect(status).toBe(404);
+      expect(status).toBe(400);
       expect(body).toEqual(
         expect.objectContaining({
-          statusCode: 404,
+          statusCode: 400,
         }),
       );
     });
@@ -429,10 +429,10 @@ describe('Transaction Observers (e2e)', () => {
     it('(GET) should NOT get transaction observers if transaction does not exist', async () => {
       const { status, body } = await endpoint.get('/999/observers', adminAuthCookie);
 
-      expect(status).toBe(404);
+      expect(status).toBe(400);
       expect(body).toEqual(
         expect.objectContaining({
-          statusCode: 404,
+          statusCode: 400,
           // message: 'Route not found',
         }),
       );
@@ -546,10 +546,10 @@ describe('Transaction Observers (e2e)', () => {
     it('(DELETE) should NOT delete transaction observer if transaction does not exist', async () => {
       const { status, body } = await endpoint.delete('/999/observers/999', adminAuthCookie);
 
-      expect(status).toBe(404);
+      expect(status).toBe(400);
       expect(body).toEqual(
         expect.objectContaining({
-          statusCode: 404,
+          statusCode: 400,
         }),
       );
     });

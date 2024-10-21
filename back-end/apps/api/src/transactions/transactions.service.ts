@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 
@@ -41,6 +35,7 @@ import {
   attachKeys,
   notifyWaitingForSignatures,
   notifySyncIndicators,
+  ErrorCodes,
 } from '@app/common';
 
 import { CreateTransactionDto } from './dto';
@@ -327,12 +322,11 @@ export class TransactionsService {
 
     /* Verify the signature matches the transaction */
     const validSignature = publicKey.verify(dto.transactionBytes, dto.signature);
-    if (!validSignature)
-      throw new BadRequestException('The signature does not match the public key');
+    if (!validSignature) throw new BadRequestException(ErrorCodes.SNMP);
 
     /* Check if the transaction is expired */
     const sdkTransaction = SDKTransaction.fromBytes(dto.transactionBytes);
-    if (isExpired(sdkTransaction)) throw new BadRequestException('Transaction is expired');
+    if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
 
     /* Check if the transaction already exists */
     const countExisting = await this.repo.count({
@@ -341,7 +335,7 @@ export class TransactionsService {
         { transactionBytes: dto.transactionBytes },
       ],
     });
-    if (countExisting > 0) throw new BadRequestException('Transaction already exists');
+    if (countExisting > 0) throw new BadRequestException(ErrorCodes.TEX);
 
     const client = getClientFromName(dto.network);
     sdkTransaction.freezeWith(client);
@@ -368,7 +362,7 @@ export class TransactionsService {
     try {
       await this.repo.save(transaction);
     } catch (error) {
-      throw new BadRequestException('Failed to save transaction');
+      throw new BadRequestException(ErrorCodes.FST);
     }
 
     notifyWaitingForSignatures(this.notificationsService, transaction.id);
@@ -404,7 +398,7 @@ export class TransactionsService {
         TransactionStatus.NEW,
       ].includes(transaction.status)
     ) {
-      throw new BadRequestException('Only transactions in progress can be canceled');
+      throw new BadRequestException(ErrorCodes.OTIP);
     }
 
     await this.repo.update({ id }, { status: TransactionStatus.CANCELED });
@@ -428,7 +422,7 @@ export class TransactionsService {
   }
 
   async attachTransactionSigners(transaction: Transaction) {
-    if (!transaction) throw new NotFoundException('Transaction not found');
+    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     transaction.signers = await this.entityManager.find(TransactionSigner, {
       where: {
@@ -442,14 +436,14 @@ export class TransactionsService {
   }
 
   async attachTransactionApprovers(transaction: Transaction) {
-    if (!transaction) throw new NotFoundException('Transaction not found');
+    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
     transaction.approvers = this.approversService.getTreeStructure(approvers);
   }
 
   async verifyAccess(transaction: Transaction, user: User): Promise<boolean> {
-    if (!transaction) throw new NotFoundException('Transaction not found');
+    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     if (
       [
@@ -496,7 +490,7 @@ export class TransactionsService {
     const transaction = await this.getTransactionById(id);
 
     if (!transaction) {
-      throw new BadRequestException('Transaction not found');
+      throw new BadRequestException(ErrorCodes.TNF);
     }
 
     if (transaction.creatorKey?.userId !== user?.id) {

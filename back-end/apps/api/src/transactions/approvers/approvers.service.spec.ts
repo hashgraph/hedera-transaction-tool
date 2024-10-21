@@ -5,7 +5,7 @@ import { mock, mockDeep } from 'jest-mock-extended';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { AccountCreateTransaction } from '@hashgraph/sdk';
 
-import { MirrorNodeService, NOTIFICATIONS_SERVICE } from '@app/common';
+import { ErrorCodes, MirrorNodeService, NOTIFICATIONS_SERVICE } from '@app/common';
 import {
   attachKeys,
   userKeysRequiredToSign,
@@ -241,7 +241,7 @@ describe('ApproversService', () => {
 
       await expect(
         service.getVerifiedApproversByTransactionId(transactionId, user),
-      ).rejects.toThrow("Transaction doesn't exist");
+      ).rejects.toThrow(ErrorCodes.TNF);
     });
 
     it('should throw if user has not access to this transaction', async () => {
@@ -281,9 +281,7 @@ describe('ApproversService', () => {
     });
 
     it('should throw if id is null', async () => {
-      await expect(service.getTransactionApproversById(null)).rejects.toThrow(
-        "Transaction doesn't exist",
-      );
+      await expect(service.getTransactionApproversById(null)).rejects.toThrow(ErrorCodes.TNF);
     });
   });
 
@@ -863,7 +861,7 @@ describe('ApproversService', () => {
       jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce(null);
 
       await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
-        "Approver doesn't exist",
+        ErrorCodes.ANF,
       );
       expectNotifyNotCalled();
     });
@@ -878,7 +876,7 @@ describe('ApproversService', () => {
       jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce(null);
 
       await expect(service.updateTransactionApprover(1, dto, transactionId, user)).rejects.toThrow(
-        "Root approver doesn't exist",
+        ErrorCodes.RANF,
       );
       expectNotifyNotCalled();
     });
@@ -1267,7 +1265,7 @@ describe('ApproversService', () => {
     it('should fail if approver does not exists', async () => {
       jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce(null);
 
-      await expect(service.removeTransactionApprover(1)).rejects.toThrow("Approver doesn't exist");
+      await expect(service.removeTransactionApprover(1)).rejects.toThrow(ErrorCodes.ANF);
     });
   });
 
@@ -1365,7 +1363,7 @@ describe('ApproversService', () => {
       dataSource.manager.findOne.mockResolvedValueOnce(transaction);
 
       await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
-        'You have already approved this transaction',
+        ErrorCodes.TAP,
       );
       expectNotifyNotCalled();
     });
@@ -1419,7 +1417,7 @@ describe('ApproversService', () => {
       dataSource.manager.findOne.mockResolvedValueOnce(transaction);
 
       await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
-        'Signature key does not belong to the user',
+        ErrorCodes.KNRS,
       );
       expectNotifyNotCalled();
     });
@@ -1440,9 +1438,7 @@ describe('ApproversService', () => {
         } as TransactionApprover,
       ]);
 
-      await expect(service.approveTransaction(dto, 1, user)).rejects.toThrow(
-        'Transaction not found',
-      );
+      await expect(service.approveTransaction(dto, 1, user)).rejects.toThrow(ErrorCodes.TNF);
       expectNotifyNotCalled();
     });
 
@@ -1466,7 +1462,7 @@ describe('ApproversService', () => {
       dataSource.manager.findOne.mockResolvedValueOnce(transaction);
 
       await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
-        'Transaction has already been executed',
+        ErrorCodes.TAX,
       );
       expectNotifyNotCalled();
     });
@@ -1491,7 +1487,7 @@ describe('ApproversService', () => {
       dataSource.manager.findOne.mockResolvedValueOnce(transaction);
 
       await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
-        'Transaction has been canceled',
+        ErrorCodes.TC,
       );
       expectNotifyNotCalled();
     });
@@ -1519,7 +1515,7 @@ describe('ApproversService', () => {
       jest.mocked(verifyTransactionBodyWithoutNodeAccountIdSignature).mockReturnValue(false);
 
       await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
-        'The signature does not match the public key',
+        ErrorCodes.SNMP,
       );
       expectNotifyNotCalled();
     });
@@ -1557,9 +1553,7 @@ describe('ApproversService', () => {
     it('should throw if transaction is not found', async () => {
       dataSource.manager.findOne.mockResolvedValueOnce(null);
 
-      await expect(service.getCreatorsTransaction(1, user)).rejects.toThrow(
-        'Transaction not found',
-      );
+      await expect(service.getCreatorsTransaction(1, user)).rejects.toThrow(ErrorCodes.TNF);
     });
   });
 

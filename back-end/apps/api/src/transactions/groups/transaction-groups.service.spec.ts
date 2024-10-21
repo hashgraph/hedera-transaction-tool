@@ -1,6 +1,6 @@
 import { ClientProxy } from '@nestjs/microservices';
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
@@ -129,9 +129,11 @@ describe('TransactionGroupsService', () => {
       jest.resetAllMocks();
     });
 
-    it('should throw NotFoundException if no group found', async () => {
+    it('should throw BadRequestException if no group found', async () => {
       dataSource.manager.findOne.mockResolvedValue(undefined);
-      await expect(service.getTransactionGroup(user as User, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.getTransactionGroup(user as User, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw UnauthorizedException if user has no access to any group items', async () => {

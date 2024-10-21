@@ -1,6 +1,8 @@
 import { BadRequestException, createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Request } from 'express';
 
+import { ErrorCodes } from '@app/common';
+
 export interface Pagination {
   page: number;
   limit: number;
@@ -14,11 +16,11 @@ export const PaginationParams = createParamDecorator((data, ctx: ExecutionContex
   const size = parseInt(req.query.size as string);
 
   if (isNaN(page) || page <= 0 || isNaN(size) || size < 0) {
-    throw new BadRequestException('Invalid pagination params');
+    throw new BadRequestException(ErrorCodes.IPP);
   }
 
   if (size > 100) {
-    throw new BadRequestException('Invalid pagination params: Max size is 100');
+    throw new BadRequestException(ErrorCodes.IPP);
   }
 
   // calculate pagination parameters

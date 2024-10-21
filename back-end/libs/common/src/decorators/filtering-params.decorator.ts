@@ -1,6 +1,8 @@
 import { BadRequestException, createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Request } from 'express';
 
+import { ErrorCodes } from '@app/common';
+
 export interface Filtering {
   property: string;
   rule: string;
@@ -37,7 +39,7 @@ export const FilteringParams = createParamDecorator(
       ? req.query.filter.map(f => f?.toString())
       : [req.query.filter?.toString()];
 
-    if (!Array.isArray(validProperties)) throw new BadRequestException('Invalid filter parameter');
+    if (!Array.isArray(validProperties)) throw new BadRequestException(ErrorCodes.IFP);
 
     const filtering: Filtering[] = [];
 
@@ -58,14 +60,13 @@ function parseFilter(
     !rawFilter.match(/^[a-zA-Z0-9_]+:(eq|neq|gt|gte|lt|lte|like|nlike|in|nin):[a-zA-Z0-9_, -]+$/) &&
     !rawFilter.match(/^[a-zA-Z0-9_]+:(isnull|isnotnull)$/)
   ) {
-    throw new BadRequestException('Invalid filter parameter');
+    throw new BadRequestException(ErrorCodes.IFP);
   }
 
   const [property, rule, value] = rawFilter.split(':');
-  if (!validProperties.includes(property))
-    throw new BadRequestException(`Invalid filter property: ${property}`);
+  if (!validProperties.includes(property)) throw new BadRequestException(ErrorCodes.IFP);
   if (!Object.values(FilterRule).includes(rule as FilterRule))
-    throw new BadRequestException(`Invalid filter rule: ${rule}`);
+    throw new BadRequestException(ErrorCodes.IFP);
 
   const filtering: Filtering = { property, rule, value };
 

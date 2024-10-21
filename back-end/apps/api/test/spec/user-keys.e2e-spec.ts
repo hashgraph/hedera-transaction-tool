@@ -274,7 +274,7 @@ describe('User Keys (e2e)', () => {
     });
 
     it('(DELETE) should not delete user key if invalid id', async () => {
-      await endpoint.delete(`/2/keys/123`, userAuthCookie).expect(404);
+      await endpoint.delete(`/2/keys/123`, userAuthCookie).expect(400);
     });
 
     it('(DELETE) should not delete another users key', async () => {

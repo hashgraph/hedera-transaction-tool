@@ -8,12 +8,12 @@ import {
   UnauthorizedException,
   UseInterceptors,
 } from '@nestjs/common';
+import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 import { Request } from 'express';
 
-import { attachKeys } from '@app/common/utils';
+import { attachKeys, ErrorCodes } from '@app/common';
 import { User } from '@entities';
-import { InjectEntityManager } from '@nestjs/typeorm';
 
 export const OnlyOwnerKey = <T>(keyIdProp: keyof T) => {
   return applyDecorators(UseInterceptors(createOnlyOwnerKeyInterceptor(keyIdProp)));
@@ -36,7 +36,7 @@ function createOnlyOwnerKeyInterceptor<T>(keyIdProp: keyof T) {
 
       const userKeyIds = new Set(user.keys.map(key => key.id));
       if (!keyIdValues.every(keyId => userKeyIds.has(keyId))) {
-        throw new BadRequestException('Invalid key ID(s) provided.');
+        throw new BadRequestException(ErrorCodes.PNY);
       }
 
       return handler.handle();
@@ -48,7 +48,7 @@ function createOnlyOwnerKeyInterceptor<T>(keyIdProp: keyof T) {
       }
 
       if (!body) {
-        throw new BadRequestException('Request body is missing.');
+        throw new BadRequestException();
       }
     }
 

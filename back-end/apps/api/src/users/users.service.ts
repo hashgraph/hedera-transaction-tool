@@ -12,6 +12,7 @@ import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
 
 import * as bcrypt from 'bcryptjs';
 
+import { ErrorCodes } from '@app/common';
 import { User, UserStatus } from '@entities';
 
 @Injectable()
@@ -75,7 +76,7 @@ export class UsersService {
     const user = await this.getUser({ id });
 
     if (!user) {
-      throw new BadRequestException('User not found');
+      throw new BadRequestException(ErrorCodes.UNF);
     }
 
     return this.updateUser(user, attrs);
@@ -104,7 +105,7 @@ export class UsersService {
     const user = await this.getUser({ id });
 
     if (!user) {
-      throw new BadRequestException('User not found');
+      throw new BadRequestException(ErrorCodes.UNF);
     }
 
     await this.repo.softRemove(user);

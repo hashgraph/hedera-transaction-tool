@@ -1,11 +1,5 @@
 import { ClientProxy } from '@nestjs/microservices';
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
 import {
@@ -21,6 +15,7 @@ import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
   attachKeys,
+  ErrorCodes,
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
   notifySyncIndicators,
@@ -118,7 +113,7 @@ export class ApproversService {
       relations: ['creatorKey', 'creatorKey.user', 'observers', 'signers', 'signers.userKey'],
     });
 
-    if (!transaction) throw new NotFoundException("Transaction doesn't exist");
+    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     const approvers = await this.getApproversByTransactionId(transactionId);
 
@@ -156,7 +151,7 @@ export class ApproversService {
     id: number,
     entityManager?: EntityManager,
   ): Promise<TransactionApprover[]> {
-    if (typeof id !== 'number') throw new NotFoundException("Transaction doesn't exist");
+    if (typeof id !== 'number') throw new BadRequestException(ErrorCodes.TNF);
 
     return (entityManager || this.repo).query(
       `
@@ -382,11 +377,11 @@ export class ApproversService {
 
         /* Verifies that the approver exists */
         const approver = await this.getTransactionApproverById(id, transactionalEntityManager);
-        if (!approver) throw new NotFoundException("Approver doesn't exist");
+        if (!approver) throw new BadRequestException(ErrorCodes.ANF);
 
         /* Gets the root approver */
         const rootNode = await this.getRootNodeFromNode(approver.id, transactionalEntityManager);
-        if (!rootNode) throw new NotFoundException("Root approver doesn't exist");
+        if (!rootNode) throw new BadRequestException(ErrorCodes.RANF);
 
         /* Verifies that the root transaction is the same as the param */
         if (rootNode.transactionId !== transactionId)
@@ -537,7 +532,7 @@ export class ApproversService {
   async removeTransactionApprover(id: number): Promise<void> {
     const approver = await this.getTransactionApproverById(id);
 
-    if (!approver) throw new NotFoundException("Approver doesn't exist");
+    if (!approver) throw new BadRequestException(ErrorCodes.ANF);
 
     const result = await this.removeNode(approver.id);
 
@@ -561,8 +556,7 @@ export class ApproversService {
       throw new UnauthorizedException('You are not an approver of this transaction');
 
     /* Check if the user has already approved the transaction */
-    if (userApprovers.every(a => a.signature))
-      throw new BadRequestException('You have already approved this transaction');
+    if (userApprovers.every(a => a.signature)) throw new BadRequestException(ErrorCodes.TAP);
 
     /* Ensures the user keys are passed */
     await attachKeys(user, this.dataSource.manager);
@@ -579,18 +573,18 @@ export class ApproversService {
     });
 
     /* Check if the transaction exists */
-    if (!transaction) throw new NotFoundException('Transaction not found');
+    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     /* Checks if the transaction is executed */
     if (
       transaction.status === TransactionStatus.EXECUTED ||
       transaction.status === TransactionStatus.FAILED
     )
-      throw new BadRequestException('Transaction has already been executed');
+      throw new BadRequestException(ErrorCodes.TAX);
 
     /* Checks if the transaction is canceled */
     if (transaction.status === TransactionStatus.CANCELED)
-      throw new BadRequestException('Transaction has been canceled');
+      throw new BadRequestException(ErrorCodes.TC);
 
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
@@ -598,7 +592,7 @@ export class ApproversService {
     if (
       !verifyTransactionBodyWithoutNodeAccountIdSignature(sdkTransaction, dto.signature, publicKey)
     )
-      throw new BadRequestException('The signature does not match the public key');
+      throw new BadRequestException(ErrorCodes.SNMP);
 
     /* Update the approver with the signature */
     await this.dataSource.transaction(async transactionalEntityManager => {
@@ -635,7 +629,7 @@ export class ApproversService {
       ? entityManager.findOne(Transaction, find)
       : this.dataSource.manager.findOne(Transaction, find));
 
-    if (!transaction) throw new NotFoundException('Transaction not found');
+    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     if (transaction.creatorKey?.user?.id !== user.id)
       throw new UnauthorizedException('Only the creator of the transaction is able to modify it');

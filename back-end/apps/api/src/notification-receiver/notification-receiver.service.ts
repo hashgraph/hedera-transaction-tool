@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindManyOptions, FindOptionsOrder, FindOptionsWhere, Repository } from 'typeorm';
 
@@ -11,6 +11,7 @@ import {
 } from '@entities';
 
 import {
+  ErrorCodes,
   Filtering,
   getOrder,
   getWhere,
@@ -58,7 +59,7 @@ export class NotificationReceiverService {
     });
 
     if (!notificationReceiver) {
-      throw new NotFoundException('Notification not found or does not belong to you');
+      throw new BadRequestException(ErrorCodes.NNF);
     }
 
     return notificationReceiver;

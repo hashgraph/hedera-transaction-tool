@@ -1,9 +1,10 @@
 import { mockDeep } from 'jest-mock-extended';
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { ErrorCodes } from '@app/common';
 import { attachKeys } from '@app/common/utils';
 import { User, UserKey } from '@entities';
 
@@ -171,10 +172,10 @@ describe('UserKeysService', () => {
   });
 
   describe('removeKey', () => {
-    it('should throw NotFoundException if the key does not exist', async () => {
+    it('should throw BadRequestException if the key does not exist', async () => {
       repo.findOne.mockResolvedValue(undefined);
 
-      await expect(service.removeKey(1)).rejects.toThrow('Key not found');
+      await expect(service.removeKey(1)).rejects.toThrow(ErrorCodes.KNF);
     });
 
     it('should soft remove the user key if it exists', async () => {
@@ -197,10 +198,10 @@ describe('UserKeysService', () => {
       userKey = { id: 1, publicKey: 'test-public-key', userId: user.id } as UserKey;
     });
 
-    it('should throw NotFoundException if the key does not exist', async () => {
+    it('should throw BadRequestException if the key does not exist', async () => {
       service.getUserKey = jest.fn().mockResolvedValue(undefined);
 
-      await expect(service.removeUserKey(user, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.removeUserKey(user, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if the key is not owned by the user', async () => {

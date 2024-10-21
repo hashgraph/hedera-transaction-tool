@@ -7,7 +7,7 @@ import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { Transaction, TransactionSigner, TransactionStatus, User } from '@entities';
 
 import { AccountCreateTransaction } from '@hashgraph/sdk';
-import { CHAIN_SERVICE, MirrorNodeService, NOTIFICATIONS_SERVICE } from '@app/common';
+import { CHAIN_SERVICE, ErrorCodes, MirrorNodeService, NOTIFICATIONS_SERVICE } from '@app/common';
 import {
   addTransactionSignatures,
   emitUpdateTransactionStatus,
@@ -272,7 +272,7 @@ describe('SignaturesService', () => {
 
       await expect(
         service.uploadSignature(transactionId, { publicKeyId, signatures }, user),
-      ).rejects.toThrow('Transaction not found');
+      ).rejects.toThrow(ErrorCodes.TNF);
       expectNotifyNotCalled();
     });
 
@@ -292,7 +292,7 @@ describe('SignaturesService', () => {
 
       await expect(
         service.uploadSignature(transactionId, { publicKeyId, signatures }, user),
-      ).rejects.toThrow('Transaction is expired');
+      ).rejects.toThrow(ErrorCodes.TE);
       expectNotifyNotCalled();
     });
 
@@ -312,7 +312,7 @@ describe('SignaturesService', () => {
 
       await expect(
         service.uploadSignature(transactionId, { publicKeyId, signatures }, user),
-      ).rejects.toThrow('Transaction has been canceled');
+      ).rejects.toThrow(ErrorCodes.TC);
       expectNotifyNotCalled();
     });
 
@@ -355,7 +355,7 @@ describe('SignaturesService', () => {
 
       await expect(
         service.uploadSignature(transactionId, { publicKeyId, signatures }, user),
-      ).rejects.toThrow('Signature already added');
+      ).rejects.toThrow(ErrorCodes.SAD);
       expectNotifyNotCalled();
     });
 
@@ -378,7 +378,7 @@ describe('SignaturesService', () => {
 
       await expect(
         service.uploadSignature(transactionId, { publicKeyId, signatures }, user),
-      ).rejects.toThrow('This key is not required to sign this transaction');
+      ).rejects.toThrow(ErrorCodes.KNRS);
       expectNotifyNotCalled();
     });
 
@@ -432,7 +432,7 @@ describe('SignaturesService', () => {
 
       await expect(
         service.uploadSignature(transactionId, { publicKeyId, signatures }, user),
-      ).rejects.toThrow('Failed to update transaction');
+      ).rejects.toThrow(ErrorCodes.FST);
       expectNotifyNotCalled();
     });
 
@@ -460,7 +460,7 @@ describe('SignaturesService', () => {
 
       await expect(
         service.uploadSignature(transactionId, { publicKeyId, signatures }, user),
-      ).rejects.toThrow('Failed to save transaction');
+      ).rejects.toThrow(ErrorCodes.FST);
       expectNotifyNotCalled();
     });
   });
@@ -559,7 +559,7 @@ describe('SignaturesService', () => {
           { signatures: [{ publicKeyId, signatures }] },
           user,
         ),
-      ).rejects.toThrow('Transaction not found');
+      ).rejects.toThrow(ErrorCodes.TNF);
       expectNotifyNotCalled();
     });
 
@@ -583,7 +583,7 @@ describe('SignaturesService', () => {
           { signatures: [{ publicKeyId, signatures }] },
           user,
         ),
-      ).rejects.toThrow('Transaction is expired');
+      ).rejects.toThrow(ErrorCodes.TE);
       expectNotifyNotCalled();
     });
 
@@ -607,7 +607,7 @@ describe('SignaturesService', () => {
           { signatures: [{ publicKeyId, signatures }] },
           user,
         ),
-      ).rejects.toThrow('Transaction has been canceled');
+      ).rejects.toThrow(ErrorCodes.TC);
       expectNotifyNotCalled();
     });
 
@@ -658,7 +658,7 @@ describe('SignaturesService', () => {
           { signatures: [{ publicKeyId, signatures }] },
           user,
         ),
-      ).rejects.toThrow('Signature already added');
+      ).rejects.toThrow(ErrorCodes.SAD);
       expectNotifyNotCalled();
     });
 
@@ -746,7 +746,7 @@ describe('SignaturesService', () => {
           { signatures: [{ publicKeyId, signatures }] },
           user,
         ),
-      ).rejects.toThrow('Failed to update transaction');
+      ).rejects.toThrow(ErrorCodes.FST);
       expectNotifyNotCalled();
     });
 
@@ -778,7 +778,7 @@ describe('SignaturesService', () => {
           { signatures: [{ publicKeyId, signatures }] },
           user,
         ),
-      ).rejects.toThrow('Failed to save transaction');
+      ).rejects.toThrow(ErrorCodes.FST);
       expectNotifyNotCalled();
     });
   });

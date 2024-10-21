@@ -8,7 +8,7 @@ import { mock } from 'jest-mock-extended';
 import { AuthService } from './auth.service';
 
 import { Response } from 'express';
-import { NOTIFICATIONS_SERVICE } from '@app/common';
+import { ErrorCodes, NOTIFICATIONS_SERVICE } from '@app/common';
 import { User, UserStatus } from '@entities';
 import * as bcrypt from 'bcryptjs';
 import { totp } from 'otplib';
@@ -219,9 +219,7 @@ describe('AuthService', () => {
     const user = { id: 1, email: '', password: 'old' };
     const dto = { oldPassword: 'old', newPassword: 'old' };
 
-    await expect(service.changePassword(user as User, dto)).rejects.toThrow(
-      'New password should not be the old password',
-    );
+    await expect(service.changePassword(user as User, dto)).rejects.toThrow(ErrorCodes.NPMOP);
   });
 
   it('should not change password if old password is invalid', async () => {
@@ -230,7 +228,7 @@ describe('AuthService', () => {
 
     jest.spyOn(bcrypt, 'compare').mockImplementationOnce(async () => false);
 
-    await expect(service.changePassword(user as User, dto)).rejects.toThrow('Invalid old password');
+    await expect(service.changePassword(user as User, dto)).rejects.toThrow(ErrorCodes.INOP);
   });
 
   it('should create otp in dev', async () => {

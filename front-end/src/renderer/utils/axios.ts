@@ -1,8 +1,9 @@
+import { ErrorCodes, ErrorMessages } from '@main/shared/constants';
 import type { AxiosRequestConfig, AxiosResponse } from 'axios';
 import axios, { AxiosError } from 'axios';
 
-export function throwIfNoResponse(error: AxiosError) {
-  if (!error.response) {
+export function throwIfNoResponse(response?: AxiosResponse): asserts response is AxiosResponse {
+  if (!response) {
     throw new Error('Failed to connect to the server');
   }
 }
@@ -10,7 +11,7 @@ export function throwIfNoResponse(error: AxiosError) {
 export const commonRequestHandler = async <T>(
   callback: () => Promise<T>,
   defaultMessage: string = 'Failed to send request',
-  messageOn4XX?: string,
+  messageOn401?: string,
 ) => {
   try {
     return await callback();
@@ -18,11 +19,16 @@ export const commonRequestHandler = async <T>(
     let message = defaultMessage;
 
     if (error instanceof AxiosError) {
-      throwIfNoResponse(error);
+      throwIfNoResponse(error.response);
 
-      const errorMessage = error.response?.data?.message;
-      if ([400, 401].includes(error.response?.status || 0) && message.length > 0) {
-        message = messageOn4XX?.trim() || errorMessage;
+      const errorMessage = error.response.data?.message;
+      if (error.response.status === 401 && message.length > 0) {
+        message = messageOn401?.trim() || errorMessage;
+      }
+
+      if (error.response.status === 400) {
+        const code: keyof typeof ErrorMessages = error.response.data?.code || ErrorCodes.UNKWN;
+        message = ErrorMessages[code] || ErrorMessages[ErrorCodes.UNKWN];
       }
     }
     throw new Error(message);

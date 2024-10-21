@@ -19,8 +19,8 @@ import {
   Pagination,
   userKeysRequiredToSign,
   validateSignature,
+  ErrorCodes,
 } from '@app/common';
-
 import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
 
 import { UploadSignatureArrayDto, UploadSignatureDto } from '../dto';
@@ -113,25 +113,30 @@ export class SignersService {
 
     /* Verify that the transaction exists */
     const transaction = await this.dataSource.manager.findOneBy(Transaction, { id: transactionId });
-    if (!transaction) throw new BadRequestException('Transaction not found');
+    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
-    if (isExpired(sdkTransaction)) throw new BadRequestException('Transaction is expired');
+    if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
 
     /* Checks if the transaction is canceled */
     if (transaction.status === TransactionStatus.CANCELED)
-      throw new BadRequestException('Transaction has been canceled');
+      throw new BadRequestException(ErrorCodes.TC);
 
     /* Verify that each signature corresponds the correct transaction for the given node and to the public key  */
     for (const key in signatures) {
       if (!validateSignature(sdkTransaction, key, signatures[key], userKey.publicKey)) {
-        throw new BadRequestException(`Invalid Signature for Node with Account ID: ${key}`);
+        console.log(signatures);
+        console.log(signatures[key]);
+        console.log(userKey.publicKey);
+        console.log(key);
+
+        throw new BadRequestException(ErrorCodes.ISNMPN);
       }
     }
 
     /* Add the signatures to the transaction */
     if (isAlreadySigned(sdkTransaction, userKey.publicKey))
-      throw new BadRequestException('Signature already added');
+      throw new BadRequestException(ErrorCodes.SAD);
 
     const keysIds = await userKeysRequiredToSign(
       transaction,
@@ -141,7 +146,7 @@ export class SignersService {
     );
 
     if (!keysIds.includes(userKey.id)) {
-      throw new BadRequestException('This key is not required to sign this transaction');
+      throw new BadRequestException(ErrorCodes.KNRS);
     }
 
     try {
@@ -165,7 +170,7 @@ export class SignersService {
     } catch (error) {
       await queryRunner.rollbackTransaction();
       await queryRunner.release();
-      throw new BadRequestException('Failed to update transaction');
+      throw new BadRequestException(ErrorCodes.FST);
     }
 
     /* Create transaction signer record */
@@ -188,7 +193,7 @@ export class SignersService {
     } catch (error) {
       await queryRunner.rollbackTransaction();
       await queryRunner.release();
-      throw new BadRequestException('Failed to save transaction');
+      throw new BadRequestException(ErrorCodes.FST);
     }
   }
 
@@ -200,14 +205,14 @@ export class SignersService {
   ): Promise<TransactionSigner[]> {
     /* Verify that the transaction exists */
     const transaction = await this.dataSource.manager.findOneBy(Transaction, { id: transactionId });
-    if (!transaction) throw new BadRequestException('Transaction not found');
+    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
-    if (isExpired(sdkTransaction)) throw new BadRequestException('Transaction is expired');
+    if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
 
     /* Checks if the transaction is canceled */
     if (transaction.status === TransactionStatus.CANCELED)
-      throw new BadRequestException('Transaction has been canceled');
+      throw new BadRequestException(ErrorCodes.TC);
 
     const userKeys: UserKey[] = [];
 
@@ -217,7 +222,7 @@ export class SignersService {
 
       /* Verify that the signature is not already added */
       if (isAlreadySigned(sdkTransaction, userKey.publicKey))
-        throw new BadRequestException('Signature already added');
+        throw new BadRequestException(ErrorCodes.SAD);
 
       /* Verify that each signature corresponds the correct transaction for the given node and to the public key  */
       for (const nodeAccountId in signatures) {
@@ -259,7 +264,7 @@ export class SignersService {
     } catch (error) {
       await queryRunner.rollbackTransaction();
       await queryRunner.release();
-      throw new BadRequestException('Failed to update transaction');
+      throw new BadRequestException(ErrorCodes.FST);
     }
 
     /* Create transaction signer record */
@@ -287,7 +292,7 @@ export class SignersService {
     } catch (error) {
       await queryRunner.rollbackTransaction();
       await queryRunner.release();
-      throw new BadRequestException('Failed to save transaction');
+      throw new BadRequestException(ErrorCodes.FST);
     }
   }
 

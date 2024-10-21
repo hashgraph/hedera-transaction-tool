@@ -21,7 +21,7 @@ import {
   FileUpdateTransaction,
 } from '@hashgraph/sdk';
 
-import { NOTIFICATIONS_SERVICE, MirrorNodeService } from '@app/common';
+import { NOTIFICATIONS_SERVICE, MirrorNodeService, ErrorCodes } from '@app/common';
 import {
   attachKeys,
   getClientFromName,
@@ -436,9 +436,7 @@ describe('TransactionsService', () => {
       });
       jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(false);
 
-      await expect(service.createTransaction(dto, user as User)).rejects.toThrow(
-        'The signature does not match the public key',
-      );
+      await expect(service.createTransaction(dto, user as User)).rejects.toThrow(ErrorCodes.SNMP);
     });
 
     it.skip('should throw on transaction create if unsupported type', async () => {
@@ -481,9 +479,7 @@ describe('TransactionsService', () => {
       jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
       jest.mocked(isExpired).mockReturnValueOnce(true);
 
-      await expect(service.createTransaction(dto, user as User)).rejects.toThrow(
-        'Transaction is expired',
-      );
+      await expect(service.createTransaction(dto, user as User)).rejects.toThrow(ErrorCodes.TE);
     });
 
     it('should throw on transaction create if save fails', async () => {
@@ -511,9 +507,7 @@ describe('TransactionsService', () => {
       jest.mocked(getClientFromName).mockReturnValueOnce(client);
       transactionsRepo.save.mockRejectedValueOnce(new Error('Failed to save'));
 
-      await expect(service.createTransaction(dto, user as User)).rejects.toThrow(
-        'Failed to save transaction',
-      );
+      await expect(service.createTransaction(dto, user as User)).rejects.toThrow(ErrorCodes.FST);
 
       client.close();
     });
@@ -565,7 +559,7 @@ describe('TransactionsService', () => {
         .mockResolvedValueOnce(transaction as Transaction);
 
       await expect(service.cancelTransaction(123, { id: 1 } as User)).rejects.toThrow(
-        'Only transactions in progress can be canceled',
+        ErrorCodes.OTIP,
       );
     });
 
@@ -603,7 +597,7 @@ describe('TransactionsService', () => {
 
     it('should throw if transaction ID is not provided', async () => {
       await expect(service.getTransactionWithVerifiedAccess(null, user as User)).rejects.toThrow(
-        'Transaction not found',
+        ErrorCodes.TNF,
       );
     });
 
@@ -612,7 +606,7 @@ describe('TransactionsService', () => {
 
       jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
       await expect(service.getTransactionWithVerifiedAccess(123, user as User)).rejects.toThrow(
-        'Transaction not found',
+        ErrorCodes.TNF,
       );
     });
 
@@ -748,7 +742,7 @@ describe('TransactionsService', () => {
     });
 
     it('should throw if not transaction is passed to attachTransactionSigners', async () => {
-      await expect(service.attachTransactionSigners(null)).rejects.toThrow('Transaction not found');
+      await expect(service.attachTransactionSigners(null)).rejects.toThrow(ErrorCodes.TNF);
     });
   });
 
@@ -1010,13 +1004,13 @@ describe('TransactionsService', () => {
 
     it('should return null if no transaction id provided', async () => {
       await expect(service.getTransactionForCreator(null, user as User)).rejects.toThrow(
-        'Transaction not found',
+        ErrorCodes.TNF,
       );
     });
 
     it('should return null if no transaction found', async () => {
       await expect(service.getTransactionForCreator(null, user as User)).rejects.toThrow(
-        'Transaction not found',
+        ErrorCodes.TNF,
       );
     });
 
