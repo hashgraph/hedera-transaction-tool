@@ -179,8 +179,15 @@ describe('Auth (e2e)', () => {
       endpoint = new Endpoint(server, '/auth/logout');
     });
 
-    it('(POST) should logout', async () => {
+    it('(POST) should mark the token as blacklisted', async () => {
       await endpoint.post({}, null, userAuthToken).expect(200);
+      await request(server).get('/transactions/history?page=1&size=99').expect(401);
+
+      const { body } = await request(server)
+        .post('/auth/login')
+        .send({ email: dummy.email, password: dummy.password });
+
+      userAuthToken = body.accessToken;
     });
 
     it('(POST) should not logout if not logged in', async () => {
@@ -288,16 +295,27 @@ describe('Auth (e2e)', () => {
       expect(verifiedOTPToken).toBeDefined();
     });
 
+    it('(POST) should blacklist OTP token after verification', async () => {
+      const token = totp.generate(`${process.env.OTP_SECRET}${dummy.email}`);
+
+      await request(server)
+        .post('/auth/verify-reset')
+        .send({ token })
+        .set('otp', unverifiedOTPToken)
+        .expect(401)
+        .expect({ message: 'Unauthorized', statusCode: 401 });
+    });
+
     it('(POST) should not verify OTP with invalid token', async () => {
       await request(server)
         .post('/auth/verify-reset')
         .send({ token: 'invalid token' })
         .set('otp', unverifiedOTPToken)
         .expect(401)
-        .expect({ message: 'Incorrect token', error: 'Unauthorized', statusCode: 401 });
+        .expect({ message: 'Unauthorized', statusCode: 401 });
     });
 
-    it('(POST) should not verify OTP without OTP cookie', async () => {
+    it('(POST) should not verify OTP without OTP token', async () => {
       await endpoint.post({}).expect(401).expect({ statusCode: 401, message: 'Unauthorized' });
     });
   });
@@ -305,21 +323,6 @@ describe('Auth (e2e)', () => {
   describe('/auth/set-password', () => {
     afterAll(async () => {
       await resetUsersState();
-    });
-
-    it('(PATCH) should set password', async () => {
-      await request(server)
-        .patch('/auth/set-password')
-        .send({ password: 'newPassword' })
-        .set('otp', verifiedOTPToken)
-        .expect(200);
-    });
-
-    it('(PATCH) should not set password without OTP cookie', async () => {
-      await request(server)
-        .patch('/auth/set-password')
-        .expect(401)
-        .expect({ statusCode: 401, message: 'Unauthorized' });
     });
 
     it('(PATCH) should not set password with invalid password', async () => {
@@ -336,6 +339,29 @@ describe('Auth (e2e)', () => {
         .send({})
         .set('otp', verifiedOTPToken)
         .expect(400);
+    });
+    it('(PATCH) should set password', async () => {
+      await request(server)
+        .patch('/auth/set-password')
+        .send({ password: 'newPassword' })
+        .set('otp', verifiedOTPToken)
+        .expect(200);
+    });
+
+    it('(PATCH) should blacklist OTP token after setting password', async () => {
+      await request(server)
+        .patch('/auth/set-password')
+        .send({ password: 'newPassword' })
+        .set('otp', verifiedOTPToken)
+        .expect(401)
+        .expect({ statusCode: 401, message: 'Unauthorized' });
+    });
+
+    it('(PATCH) should not set password without OTP token', async () => {
+      await request(server)
+        .patch('/auth/set-password')
+        .expect(401)
+        .expect({ statusCode: 401, message: 'Unauthorized' });
     });
 
     it('(PATCH) should not set password with invalid OTP', async () => {
