@@ -2,7 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 
-import { Pagination, PaginatedResourceDto, guardMock } from '@app/common';
+import { BlacklistService, Pagination, PaginatedResourceDto, guardMock } from '@app/common';
 import { NotificationReceiver, NotificationType, User } from '@entities';
 
 import { JwtAuthGuard, VerifiedUserGuard } from '../guards';
@@ -27,6 +27,8 @@ describe('NotificationsController', () => {
     },
   } as NotificationReceiver;
 
+  const blacklistService = mockDeep<BlacklistService>();
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [NotificationsController],
@@ -34,6 +36,10 @@ describe('NotificationsController', () => {
         {
           provide: NotificationReceiverService,
           useValue: mockDeep<NotificationReceiverService>(),
+        },
+        {
+          provide: BlacklistService,
+          useValue: blacklistService,
         },
       ],
     })

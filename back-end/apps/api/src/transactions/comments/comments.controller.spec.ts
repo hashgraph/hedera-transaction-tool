@@ -1,17 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 
-import { guardMock } from '@app/common';
+import { BlacklistService, guardMock } from '@app/common';
 import { User } from '@entities';
 
-import { CommentsController } from './comments.controller';
-
-import { CommentsService } from './comments.service';
 import { VerifiedUserGuard } from '../../guards';
+
+import { CommentsController } from './comments.controller';
+import { CommentsService } from './comments.service';
 
 describe('CommentsController', () => {
   let controller: CommentsController;
+
   const commentsService = mockDeep<CommentsService>();
+  const blacklistService = mockDeep<BlacklistService>();
 
   let user: Partial<User>;
 
@@ -26,6 +28,10 @@ describe('CommentsController', () => {
         {
           provide: CommentsService,
           useValue: commentsService,
+        },
+        {
+          provide: BlacklistService,
+          useValue: blacklistService,
         },
       ],
     })

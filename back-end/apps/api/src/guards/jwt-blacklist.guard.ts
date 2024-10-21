@@ -4,7 +4,7 @@ import { ExtractJwt } from 'passport-jwt';
 
 import { IGNORE_CONTROLLER_GUARD } from '../decorators/ignore-controller-guard.decorator';
 
-import { BlacklistService } from '../auth/blacklist.service';
+import { BlacklistService } from '@app/common';
 
 export const extractJwtAuth = ExtractJwt.fromAuthHeaderAsBearerToken();
 export const extractJwtOtp = ExtractJwt.fromHeader('otp');

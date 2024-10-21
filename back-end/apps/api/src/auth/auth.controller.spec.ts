@@ -3,12 +3,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 import { Request } from 'express';
 
-import { guardMock } from '@app/common';
+import { BlacklistService, guardMock } from '@app/common';
 import { User, UserStatus } from '@entities';
 
 import { AuthController } from './auth.controller';
 
 import { AuthService } from './auth.service';
+
 import { EmailThrottlerGuard } from '../guards';
 
 describe('AuthController', () => {
@@ -16,6 +17,7 @@ describe('AuthController', () => {
   let user: User;
 
   const authService = mockDeep<AuthService>();
+  const blacklistService = mockDeep<BlacklistService>();
 
   const request: Request = {
     protocol: 'http',
@@ -29,6 +31,10 @@ describe('AuthController', () => {
         {
           provide: AuthService,
           useValue: authService,
+        },
+        {
+          provide: BlacklistService,
+          useValue: blacklistService,
         },
       ],
     })

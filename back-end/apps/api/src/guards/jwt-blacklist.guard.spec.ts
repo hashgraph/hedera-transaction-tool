@@ -3,7 +3,7 @@ import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { mockDeep } from 'jest-mock-extended';
 
-import { BlacklistService } from '../auth/blacklist.service';
+import { BlacklistService } from '@app/common';
 
 import { createJwtBlacklistGuard, extractJwtAuth, extractJwtOtp } from './jwt-blacklist.guard';
 
