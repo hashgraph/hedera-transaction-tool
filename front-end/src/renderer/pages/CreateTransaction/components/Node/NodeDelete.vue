@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import {
   NodeDeleteTransaction,
   Hbar,
@@ -10,8 +10,6 @@ import {
   Key,
   KeyList,
   TransactionResponse,
-  ServiceEndpoint,
-  PublicKey,
 } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
@@ -28,14 +26,12 @@ import { useRoute, useRouter } from 'vue-router';
 import { createTransactionId } from '@renderer/utils/sdk/createTransactions';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
-import { isAccountId, formatAccountId } from '@renderer/utils';
+import { isAccountId } from '@renderer/utils';
 import { getTransactionFromBytes, getPropagationButtonLabel } from '@renderer/utils/transactions';
 import { isUserLoggedIn, isLoggedInOrganization } from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
-import KeyField from '@renderer/components/KeyField.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionInfoControls from '@renderer/components/Transaction/TransactionInfoControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
@@ -43,7 +39,6 @@ import TransactionProcessor from '@renderer/components/Transaction/TransactionPr
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
 import AddToGroupModal from '@renderer/components/AddToGroupModal.vue';
-import { hexToUint8Array, uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 
 /* Stores */
 const user = useUserStore();
@@ -63,7 +58,7 @@ const transaction = ref<Transaction | null>(null);
 const validStart = ref(new Date());
 const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
-const nodeAccountId = ref('');
+const nodeId = ref('');
 const ownerKey = ref<Key | null>(null);
 const isExecuted = ref(false);
 const isSubmitted = ref(false);
@@ -97,7 +92,7 @@ async function handleCreate(e: Event) {
       throw new Error('Owner key is required');
     }
 
-    if (!nodeAccountId.value) {
+    if (!nodeId.value) {
       throw new Error('Node Account ID Required');
     }
 
@@ -148,8 +143,8 @@ const handleLoadFromDraft = async () => {
     const draftTransaction = getTransactionFromBytes<NodeDeleteTransaction>(draftTransactionBytes);
     transaction.value = draftTransaction;
 
-    if (draftTransaction.getNodeId != null) {
-      nodeAccountId.value = draftTransaction.getNodeId.toString();
+    if (draftTransaction.nodeId != null) {
+      nodeId.value = draftTransaction.nodeId.toString();
     }
   }
 };
@@ -222,7 +217,7 @@ const createTransaction = () => {
   const transaction = new NodeDeleteTransaction()
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(maxTransactionFee.value)
-    .setNodeId(nodeAccountId.value);
+    .setNodeId(nodeId.value);
 
   if (isAccountId(payerData.accountId.value)) {
     transaction.setTransactionId(createTransactionId(payerData.accountId.value, validStart.value));
@@ -234,6 +229,12 @@ const createTransaction = () => {
 
   return transaction;
 };
+
+function formatNodeId(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const v = target.value.replace(/[^0-9]/g, '');
+  nodeId.value = v;
+}
 
 const redirectToDetails = async (id: string | number) => {
   router.push({
@@ -324,20 +325,15 @@ const columnClass = 'col-4 col-xxxl-3';
 
         <hr class="separator my-5" />
 
-        <div class="row">
-          <div class="form-group col-8 col-xxxl-6">
-            <KeyField :model-key="ownerKey" @update:model-key="handleOwnerKeyUpdate" is-required />
-          </div>
-        </div>
-
-        <div class="row align-items-end mt-6">
+        <div class="row align-items-end">
           <div class="form-group" :class="[columnClass]">
-            <label class="form-label">Node Account ID <span class="text-danger">*</span></label>
-            <AppInput
-              :model-value="nodeAccountId?.toString()"
-              @update:model-value="v => (nodeAccountId = formatAccountId(v))"
-              :filled="true"
-              placeholder="Enter Node Account ID"
+            <label class="form-label">Node ID <span class="text-danger">*</span></label>
+            <input
+              v-model="nodeId"
+              @input="formatNodeId"
+              maxlength="1"
+              class="form-control is-fill"
+              placeholder="Enter Node ID"
             />
           </div>
         </div>

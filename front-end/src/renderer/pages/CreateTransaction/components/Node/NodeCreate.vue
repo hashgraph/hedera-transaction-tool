@@ -11,7 +11,6 @@ import {
   KeyList,
   TransactionResponse,
   ServiceEndpoint,
-  PublicKey,
 } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
@@ -43,6 +42,7 @@ import TransactionProcessor from '@renderer/components/Transaction/TransactionPr
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ApproversList from '@renderer/components/Approvers/ApproversList.vue';
 import AddToGroupModal from '@renderer/components/AddToGroupModal.vue';
+import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
 import { hexToUint8Array, uint8ArrayToHex } from '@renderer/services/electronUtilsService';
 
 /* Stores */
@@ -76,7 +76,7 @@ const nodeData = reactive<{
   serviceEndpoints: componentServiceEndpoint[];
   gossipCaCertificate: string;
   certificateHash: string;
-  adminKey: string;
+  adminKey: Key | null;
 }>({
   nodeAccountId: '',
   description: '',
@@ -84,7 +84,7 @@ const nodeData = reactive<{
   serviceEndpoints: [],
   gossipCaCertificate: '',
   certificateHash: '',
-  adminKey: '',
+  adminKey: null,
 });
 const ownerKey = ref<Key | null>(null);
 const isExecuted = ref(false);
@@ -102,6 +102,9 @@ const approvers = ref<TransactionApproverDto[]>([]);
 const transactionName = ref('');
 const transactionDescription = ref('');
 const transactionMemo = ref('');
+
+const ipRegex =
+  /^(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}$/;
 
 /* Computed */
 const transactionKey = computed(() => {
@@ -192,14 +195,14 @@ const handleLoadFromDraft = async () => {
     const draftTransaction = getTransactionFromBytes<NodeCreateTransaction>(draftTransactionBytes);
     transaction.value = draftTransaction;
 
-    if (draftTransaction.getAccountId != null) {
-      nodeData.nodeAccountId = draftTransaction.getAccountId.toString();
+    if (draftTransaction.accountId != null) {
+      nodeData.nodeAccountId = draftTransaction.accountId.toString();
     }
-    if (draftTransaction.getDescription != null) {
-      nodeData.description = draftTransaction.getDescription;
+    if (draftTransaction.description != null) {
+      nodeData.description = draftTransaction.description;
     }
-    if (draftTransaction.getGossipEndpoints != null) {
-      for (const endpoint of draftTransaction.getGossipEndpoints) {
+    if (draftTransaction.gossipEndpoints != null) {
+      for (const endpoint of draftTransaction.gossipEndpoints) {
         if (endpoint.getPort) {
           nodeData.gossipEndpoints.push({
             ipAddressV4:
@@ -212,8 +215,8 @@ const handleLoadFromDraft = async () => {
         }
       }
     }
-    if (draftTransaction.getServiceEndpoints != null) {
-      for (const endpoint of draftTransaction.getServiceEndpoints) {
+    if (draftTransaction.serviceEndpoints != null) {
+      for (const endpoint of draftTransaction.serviceEndpoints) {
         if (endpoint.getPort) {
           nodeData.serviceEndpoints.push({
             ipAddressV4:
@@ -227,18 +230,14 @@ const handleLoadFromDraft = async () => {
       }
     }
 
-    if (draftTransaction.getGossipCaCertificate != null) {
-      nodeData.gossipCaCertificate = await uint8ArrayToHex(draftTransaction.getGossipCaCertificate);
+    if (draftTransaction.gossipCaCertificate != null) {
+      nodeData.gossipCaCertificate = await uint8ArrayToHex(draftTransaction.gossipCaCertificate);
     }
 
-    if (draftTransaction.getAdminKey != null) {
-      nodeData.adminKey = draftTransaction.getAdminKey.toString();
+    if (draftTransaction.adminKey != null) {
+      nodeData.adminKey = draftTransaction.adminKey;
     }
   }
-};
-
-const handleOwnerKeyUpdate = (key: Key) => {
-  ownerKey.value = key;
 };
 
 const handleSubmit = (id: number) => {
@@ -251,23 +250,14 @@ async function handleAddToGroup() {
     throw new Error('Invalid Payer ID');
   }
 
-  if (!ownerKey.value) {
-    throw new Error('Owner key is required');
-  }
   const transactionBytes = (await createTransaction()).toBytes();
-  const keys = new Array<string>();
-  if (ownerKey.value instanceof KeyList) {
-    for (const key of ownerKey.value.toArray()) {
-      keys.push(key.toString());
-    }
-  }
 
   transactionGroup.addGroupItem({
     transactionBytes: transactionBytes,
     type: 'NodeCreateTransaction',
     accountId: '',
     seq: transactionGroup.groupItems.length.toString(),
-    keyList: keys,
+    keyList: [],
     observers: observers.value,
     approvers: approvers.value,
     payerAccountId: payerData.accountId.value,
@@ -278,12 +268,6 @@ async function handleAddToGroup() {
 
 async function handleEditGroupItem() {
   const transactionBytes = (await createTransaction()).toBytes();
-  const keys = new Array<string>();
-  if (ownerKey.value instanceof KeyList) {
-    for (const key of ownerKey.value.toArray()) {
-      keys.push(key.toString());
-    }
-  }
 
   transactionGroup.editGroupItem({
     transactionBytes: transactionBytes,
@@ -291,7 +275,7 @@ async function handleEditGroupItem() {
     accountId: '',
     seq: route.params.seq[0],
     groupId: transactionGroup.groupItems[Number(route.query.groupIndex)].groupId,
-    keyList: keys,
+    keyList: [],
     observers: observers.value,
     approvers: approvers.value,
     payerAccountId: payerData.accountId.value,
@@ -301,6 +285,9 @@ async function handleEditGroupItem() {
 }
 
 function handleAddGossipEndpoint() {
+  if (gossipIpAddressV4.value && gossipDomainName.value) {
+    throw new Error('Either IP Address or Domain Name can be entered, but not both');
+  }
   nodeData.gossipEndpoints.push({
     ipAddressV4: gossipIpAddressV4.value,
     port: gossipPort.value,
@@ -312,6 +299,9 @@ function handleAddGossipEndpoint() {
 }
 
 function handleAddServiceEndpoint() {
+  if (serviceIpAddressV4.value && serviceDomainName.value) {
+    throw new Error('Either IP Address or Domain Name can be entered, but not both');
+  }
   nodeData.serviceEndpoints.push({
     ipAddressV4: serviceIpAddressV4.value,
     port: servicePort.value,
@@ -373,7 +363,7 @@ const createTransaction = async () => {
 
   if (nodeData.adminKey) {
     // Optional Admin Key
-    transaction.setAdminKey(PublicKey.fromString(nodeData.adminKey));
+    transaction.setAdminKey(nodeData.adminKey);
   }
 
   if (isAccountId(payerData.accountId.value)) {
@@ -393,6 +383,72 @@ function stringToHex(str: string): string {
 
 function hexToString(hex: string) {
   return decodeURIComponent(hex.replace(/\s+/g, '').replace(/[0-9a-f]{2}/g, '%$&'));
+}
+
+function formatServiceIpAddress(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const v = target.value;
+
+  const octets = v.split('.');
+
+  const newOctets = octets.map(octet => {
+    if (octet === '') {
+      return '';
+    }
+    const n = Number.parseInt(octet);
+    if (!isNaN(n) && n >= 0 && n <= 255) {
+      return n.toString();
+    } else {
+      return n.toString().slice(0, 3);
+    }
+  });
+
+  if (newOctets.length > 4) {
+    newOctets.pop();
+  }
+
+  if (newOctets.length <= 4) {
+    serviceIpAddressV4.value = newOctets.join('.');
+  }
+}
+
+function formatGossipIpAddress(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const v = target.value;
+
+  const octets = v.split('.');
+
+  const newOctets = octets.map(octet => {
+    if (octet === '') {
+      return '';
+    }
+    const n = Number.parseInt(octet);
+    if (!isNaN(n) && n >= 0 && n <= 255) {
+      return n.toString();
+    } else {
+      return n.toString().slice(0, 3);
+    }
+  });
+
+  if (newOctets.length > 4) {
+    newOctets.pop();
+  }
+
+  if (newOctets.length <= 4) {
+    gossipIpAddressV4.value = newOctets.join('.');
+  }
+}
+
+function formatGossipPort(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const v = target.value.replace(/[^0-9]/g, '');
+  gossipPort.value = v;
+}
+
+function formatServicePort(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const v = target.value.replace(/[^0-9]/g, '');
+  gossipPort.value = v;
 }
 
 const redirectToDetails = async (id: string | number) => {
@@ -440,7 +496,7 @@ const columnClass = 'col-4 col-xxxl-3';
               color="primary"
               type="submit"
               data-testid="button-sign-and-submit"
-              :disabled="!ownerKey || !payerData.isValid.value"
+              :disabled="!payerData.isValid.value"
             >
               <span class="bi bi-send"></span>
               {{
@@ -484,13 +540,7 @@ const columnClass = 'col-4 col-xxxl-3';
 
         <hr class="separator my-5" />
 
-        <div class="row">
-          <div class="form-group col-8 col-xxxl-6">
-            <KeyField :model-key="ownerKey" @update:model-key="handleOwnerKeyUpdate" is-required />
-          </div>
-        </div>
-
-        <div class="row align-items-end mt-6">
+        <div class="row align-items-end">
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">Node Account ID <span class="text-danger">*</span></label>
             <AppInput
@@ -519,20 +569,20 @@ const columnClass = 'col-4 col-xxxl-3';
         <label class="form-label">Gossip Endpoints <span class="text-danger">*</span></label>
         <div class="d-flex">
           <div class="col">
-            <label class="form-label">IP Adress</label>
-            <AppInput
-              :model-value="gossipIpAddressV4"
-              @update:model-value="v => (gossipIpAddressV4 = v)"
-              :filled="true"
-              placeholder="Enter IP Adress"
+            <label class="form-label">IP Address</label>
+            <input
+              v-model="gossipIpAddressV4"
+              @input="formatGossipIpAddress"
+              class="form-control is-fill"
+              placeholder="Enter IP Address"
             />
           </div>
           <div class="mx-5 col-2">
             <label class="form-label">Port</label>
-            <AppInput
-              :model-value="gossipPort"
-              @update:model-value="v => (gossipPort = v)"
-              :filled="true"
+            <input
+              v-model="gossipPort"
+              @input="formatGossipPort"
+              class="form-control is-fill"
               placeholder="Enter Port"
             />
           </div>
@@ -572,20 +622,20 @@ const columnClass = 'col-4 col-xxxl-3';
         <label class="form-label">Service Endpoints <span class="text-danger">*</span></label>
         <div class="d-flex">
           <div class="col">
-            <label class="form-label">IP Adress</label>
-            <AppInput
-              :model-value="serviceIpAddressV4"
-              @update:model-value="v => (serviceIpAddressV4 = v)"
-              :filled="true"
-              placeholder="Enter IP Adress"
+            <label class="form-label">IP Address</label>
+            <input
+              v-model="serviceIpAddressV4"
+              @input="formatServiceIpAddress"
+              class="form-control is-fill"
+              placeholder="Enter IP Address"
             />
           </div>
           <div class="mx-5 col-2">
             <label class="form-label">Port</label>
-            <AppInput
-              :model-value="servicePort"
-              @update:model-value="v => (servicePort = v)"
-              :filled="true"
+            <input
+              v-model="servicePort"
+              @input="formatServicePort"
+              class="form-control is-fill"
               placeholder="Enter Port"
             />
           </div>
@@ -637,25 +687,26 @@ const columnClass = 'col-4 col-xxxl-3';
         </div>
 
         <div class="row align-items-end mt-6">
-          <div class="form-group" :class="[columnClass]">
-            <label class="form-label">Certificate Hash</label>
-            <AppInput
+          <div class="form-group" :class="['col-8 col-xxxl-6']">
+            <label class="form-label">GRPC Certificate Hash</label>
+            <AppTextArea
               :model-value="nodeData.certificateHash"
-              @update:model-value="v => (nodeData.certificateHash = v)"
+              @update:model-value="(v: string) => (nodeData.certificateHash = v)"
               :filled="true"
-              placeholder="Enter Certificate Hash"
+              placeholder="Enter GRPC Certificate Hash"
             />
           </div>
         </div>
 
-        <div class="row align-items-end mt-6">
-          <div class="form-group" :class="[columnClass]">
-            <label class="form-label">Admin Key <span class="text-danger">*</span></label>
-            <AppInput
-              :model-value="nodeData.adminKey"
-              @update:model-value="v => (nodeData.adminKey = v)"
-              :filled="true"
-              placeholder="Enter Admin Key"
+        <hr class="separator my-5" />
+
+        <div class="row">
+          <div class="form-group col-8 col-xxxl-6">
+            <KeyField
+              label="Admin Key"
+              :model-key="ownerKey"
+              @update:model-key="v => (nodeData.adminKey = v)"
+              is-required
             />
           </div>
         </div>
