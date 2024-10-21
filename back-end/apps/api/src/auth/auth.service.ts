@@ -58,7 +58,7 @@ export class AuthService {
     return user;
   }
 
-  /* The user is already verified, create the token and put it in the cookie for the response. */
+  /* The user is already verified, return jwt */
   async login(user: User) {
     const payload: JwtPayload = { userId: user.id, email: user.email };
     const expiresIn = `${this.configService.get('JWT_EXPIRATION')}d`;
@@ -124,7 +124,7 @@ export class AuthService {
     return this.configService.get<string>('OTP_SECRET').concat(email);
   }
 
-  /* Sets the OTP cookie with the payload */
+  /* Sets the OTP jwt */
   private getOtpToken(otpPayload: OtpPayload) {
     const expires = new Date();
     expires.setSeconds(expires.getSeconds() + totp.options.step * (totp.options.window as number));

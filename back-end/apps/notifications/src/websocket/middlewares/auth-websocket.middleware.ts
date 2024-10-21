@@ -22,7 +22,7 @@ export const AuthWebsocketMiddleware = (
 ): SocketIOMiddleware => {
   return async (socket: AuthWebsocket, next) => {
     try {
-      /* Get the cookie from the header. This is the HTTP-only cookie which contains the Authentication jwt. */
+      /* Get the JWT from the header */
       const { authorization } = socket.handshake.headers;
 
       if (!authorization) {
