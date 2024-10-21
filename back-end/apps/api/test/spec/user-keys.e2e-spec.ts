@@ -3,7 +3,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { User } from '@entities';
 
 import { closeApp, createNestApp, login } from '../utils';
-import { getUser, getUserKeys, resetDatabase, resetUsersState } from '../utils/databaseUtil';
+import { getUser, getUserKeys, resetDatabase } from '../utils/databaseUtil';
 import { Endpoint } from '../utils/httpUtils';
 import { generatePrivateKey } from '../utils/hederaUtils';
 
@@ -21,9 +21,7 @@ describe('User Keys (e2e)', () => {
 
   beforeAll(async () => {
     await resetDatabase();
-  });
 
-  beforeEach(async () => {
     app = await createNestApp();
     server = app.getHttpServer();
 
@@ -35,15 +33,14 @@ describe('User Keys (e2e)', () => {
     user = await getUser('user');
   });
 
-  afterEach(async () => {
-    await resetUsersState();
+  afterAll(async () => {
     await closeApp(app);
   });
 
   describe('user/:id/keys', () => {
     let endpoint: Endpoint;
 
-    beforeEach(async () => {
+    beforeAll(async () => {
       endpoint = new Endpoint(server, `/user`);
     });
 

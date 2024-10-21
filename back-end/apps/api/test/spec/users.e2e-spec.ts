@@ -13,9 +13,7 @@ describe('Users (e2e)', () => {
 
   beforeAll(async () => {
     await resetDatabase();
-  });
 
-  beforeEach(async () => {
     app = await createNestApp();
     server = app.getHttpServer();
 
@@ -24,15 +22,14 @@ describe('Users (e2e)', () => {
     userNewAuthToken = await login(app, 'userNew');
   });
 
-  afterEach(async () => {
-    await resetUsersState();
+  afterAll(async () => {
     await closeApp(app);
   });
 
   describe('/users/', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/users');
     });
 
@@ -56,7 +53,7 @@ describe('Users (e2e)', () => {
   describe('/users/me', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/users/me');
     });
 
@@ -96,7 +93,7 @@ describe('Users (e2e)', () => {
   describe('/users/:id', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/users');
     });
 
@@ -134,6 +131,11 @@ describe('Users (e2e)', () => {
         updatedAt: expect.any(String),
         deletedAt: null,
       });
+
+      await resetUsersState();
+      adminAuthToken = await login(app, 'admin');
+      userAuthToken = await login(app, 'user');
+      userNewAuthToken = await login(app, 'userNew');
     });
 
     it("(PATCH) should not update a user's admin status if not admin", async () => {
@@ -146,6 +148,9 @@ describe('Users (e2e)', () => {
 
     it('(DELETE) should remove a user if admin', async () => {
       await endpoint.delete('2', adminAuthToken).expect(200);
+
+      await resetUsersState();
+      adminAuthToken = await login(app, 'admin');
     });
 
     it('(DELETE) should not remove a user if not admin', async () => {

@@ -29,7 +29,6 @@ import {
   getUser,
   getUserKey,
   resetDatabase,
-  resetUsersState,
 } from '../utils/databaseUtil';
 import { Endpoint } from '../utils/httpUtils';
 import {
@@ -93,9 +92,7 @@ describe('Transactions (e2e)', () => {
     addedTransactions = await addTransactions();
 
     repo = await getRepository(Transaction);
-  });
 
-  beforeEach(async () => {
     app = await createNestApp();
     server = app.getHttpServer();
 
@@ -109,15 +106,14 @@ describe('Transactions (e2e)', () => {
     adminKey1002 = await getUserKey(admin.id, localnet1002.publicKeyRaw);
   });
 
-  afterEach(async () => {
-    await resetUsersState();
+  afterAll(async () => {
     await closeApp(app);
   });
 
   describe('/transactions', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/transactions');
     });
 
@@ -382,6 +378,8 @@ describe('Transactions (e2e)', () => {
       allowedStatuses[Math.floor(Math.random() * allowedStatuses.length)];
 
     beforeAll(async () => {
+      endpoint = new Endpoint(server, '/transactions/history');
+
       await resetDatabase();
       await addHederaLocalnetAccounts();
       testsAddedTransactionsCountUser = 0;
@@ -408,10 +406,6 @@ describe('Transactions (e2e)', () => {
       testsAddedTransactionsCountUser = 0;
       testsAddedTransactionsCountAdmin = 0;
       addedTransactions = await addTransactions();
-    });
-
-    beforeEach(() => {
-      endpoint = new Endpoint(server, '/transactions/history');
     });
 
     it('(GET) should get all transactions that are visible to everyone', async () => {
@@ -465,7 +459,7 @@ describe('Transactions (e2e)', () => {
   describe('/transactions/sign', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/transactions/sign');
     });
 
@@ -631,7 +625,7 @@ describe('Transactions (e2e)', () => {
   describe('/transactions/sign/:transactionId', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/transactions/sign');
     });
 
@@ -696,7 +690,7 @@ describe('Transactions (e2e)', () => {
   describe('/transactions/cancel/:transactionId', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/transactions/cancel');
     });
 
@@ -770,7 +764,7 @@ describe('Transactions (e2e)', () => {
   describe('/transactions/:transactionId', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/transactions');
     });
 

@@ -20,7 +20,6 @@ import {
   getUser,
   getUserKey,
   resetDatabase,
-  resetUsersState,
 } from '../utils/databaseUtil';
 import { Endpoint } from '../utils/httpUtils';
 import {
@@ -82,9 +81,7 @@ describe('Transaction Observers (e2e)', () => {
 
     transactionRepo = await getRepository(Transaction);
     transactionObserverRepo = await getRepository(TransactionObserver);
-  });
 
-  beforeEach(async () => {
     app = await createNestApp();
     server = app.getHttpServer();
 
@@ -99,15 +96,14 @@ describe('Transaction Observers (e2e)', () => {
     adminKey1002 = await getUserKey(admin.id, localnet1002.publicKeyRaw);
   });
 
-  afterEach(async () => {
-    await resetUsersState();
+  afterAll(async () => {
     await closeApp(app);
   });
 
   describe('/transactions/:transactionId/observers', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/transactions');
     });
 

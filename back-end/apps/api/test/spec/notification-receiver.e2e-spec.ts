@@ -4,7 +4,7 @@ import { EntityManager } from 'typeorm';
 import { NotificationReceiver, NotificationType, User } from '@entities';
 
 import { closeApp, createNestApp, login } from '../utils';
-import { addNotifications, getUser, resetDatabase, resetUsersState } from '../utils/databaseUtil';
+import { addNotifications, getUser, resetDatabase } from '../utils/databaseUtil';
 import { Endpoint } from '../utils/httpUtils';
 
 describe('Notification Receiver (e2e)', () => {
@@ -20,9 +20,7 @@ describe('Notification Receiver (e2e)', () => {
   beforeAll(async () => {
     await resetDatabase();
     await addNotifications();
-  });
 
-  beforeEach(async () => {
     app = await createNestApp();
     server = app.getHttpServer();
 
@@ -34,15 +32,14 @@ describe('Notification Receiver (e2e)', () => {
     user = await getUser('user');
   });
 
-  afterEach(async () => {
-    await resetUsersState();
+  afterAll(async () => {
     await closeApp(app);
   });
 
   describe('/notifications', () => {
     let endpoint: Endpoint;
 
-    beforeEach(async () => {
+    beforeAll(async () => {
       endpoint = new Endpoint(server, '/notifications');
     });
 
@@ -102,7 +99,7 @@ describe('Notification Receiver (e2e)', () => {
   describe('/notifications/count', () => {
     let endpoint: Endpoint;
 
-    beforeEach(async () => {
+    beforeAll(async () => {
       endpoint = new Endpoint(server, '/notifications/count');
     });
 
@@ -152,7 +149,7 @@ describe('Notification Receiver (e2e)', () => {
   describe('/notifications/:id', () => {
     let endpoint: Endpoint;
 
-    beforeEach(async () => {
+    beforeAll(async () => {
       endpoint = new Endpoint(server, '/notifications');
     });
 

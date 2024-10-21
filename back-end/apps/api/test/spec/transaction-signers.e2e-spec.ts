@@ -14,7 +14,6 @@ import {
   getUser,
   getUserKey,
   resetDatabase,
-  resetUsersState,
 } from '../utils/databaseUtil';
 import { Endpoint } from '../utils/httpUtils';
 import {
@@ -47,9 +46,7 @@ describe('Transactions (e2e)', () => {
 
     transactionRepo = await getRepository(Transaction);
     transactionSignerRepo = await getRepository(TransactionSigner);
-  });
 
-  beforeEach(async () => {
     app = await createNestApp();
     server = app.getHttpServer();
 
@@ -61,15 +58,14 @@ describe('Transactions (e2e)', () => {
     userKey1003 = await getUserKey(user.id, localnet1003.publicKeyRaw);
   });
 
-  afterEach(async () => {
-    await resetUsersState();
+  afterAll(async () => {
     await closeApp(app);
   });
 
   describe('/transactions/:transactionId/signers', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/transactions');
     });
 
@@ -293,7 +289,7 @@ describe('Transactions (e2e)', () => {
   describe('/transactions/:transactionId/signers/many', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/transactions');
     });
 
@@ -366,7 +362,7 @@ describe('Transactions (e2e)', () => {
   describe('/transactions/:transactionId/signers/user', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/transactions');
     });
 

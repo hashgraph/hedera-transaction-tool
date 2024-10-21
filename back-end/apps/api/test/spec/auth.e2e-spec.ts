@@ -25,9 +25,7 @@ describe('Auth (e2e)', () => {
 
   beforeAll(async () => {
     await resetDatabase();
-  });
 
-  beforeEach(async () => {
     app = await createNestApp();
     server = app.getHttpServer();
 
@@ -35,7 +33,7 @@ describe('Auth (e2e)', () => {
     await client.connect();
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     try {
       client.close();
     } catch (error) {
@@ -47,7 +45,7 @@ describe('Auth (e2e)', () => {
   describe('/auth/login', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/auth/login');
     });
 
@@ -109,7 +107,7 @@ describe('Auth (e2e)', () => {
   describe('/auth/signup', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/auth/signup');
     });
 
@@ -172,33 +170,10 @@ describe('Auth (e2e)', () => {
     });
   });
 
-  describe('/auth/logout', () => {
-    let endpoint: Endpoint;
-
-    beforeEach(() => {
-      endpoint = new Endpoint(server, '/auth/logout');
-    });
-
-    it('(POST) should mark the token as blacklisted', async () => {
-      await endpoint.post({}, null, userAuthToken).expect(200);
-      await request(server).get('/transactions/history?page=1&size=99').expect(401);
-
-      const { body } = await request(server)
-        .post('/auth/login')
-        .send({ email: dummy.email, password: dummy.password });
-
-      userAuthToken = body.accessToken;
-    });
-
-    it('(POST) should not logout if not logged in', async () => {
-      await endpoint.post({}).expect(401);
-    });
-  });
-
   describe('/auth/change-password', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/auth/change-password');
     });
 
@@ -219,7 +194,7 @@ describe('Auth (e2e)', () => {
         .expect(200);
     });
 
-    it('(PATCH) should not logout if not logged in', async () => {
+    it('(PATCH) should not change password if not logged in', async () => {
       await endpoint.patch({}).expect(401).expect({ statusCode: 401, message: 'Unauthorized' });
     });
 
@@ -250,10 +225,27 @@ describe('Auth (e2e)', () => {
     });
   });
 
+  describe('/auth/logout', () => {
+    let endpoint: Endpoint;
+
+    beforeAll(() => {
+      endpoint = new Endpoint(server, '/auth/logout');
+    });
+
+    it('(POST) should mark the token as blacklisted', async () => {
+      await endpoint.post({}, null, userAuthToken).expect(200);
+      await request(server).get('/transactions/history?page=1&size=99').expect(401);
+    });
+
+    it('(POST) should not logout if not logged in', async () => {
+      await endpoint.post({}).expect(401);
+    });
+  });
+
   describe('/auth/reset-password', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/auth/reset-password');
     });
 
@@ -277,7 +269,7 @@ describe('Auth (e2e)', () => {
   describe('/auth/verify-reset', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/auth/verify-reset');
     });
 

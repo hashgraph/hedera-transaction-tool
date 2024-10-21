@@ -4,7 +4,7 @@ import { EntityManager } from 'typeorm';
 import { NotificationPreferences, NotificationType, User } from '@entities';
 
 import { closeApp, createNestApp, login } from '../utils';
-import { getUser, resetDatabase, resetUsersState } from '../utils/databaseUtil';
+import { getUser, resetDatabase } from '../utils/databaseUtil';
 import { Endpoint } from '../utils/httpUtils';
 
 describe('Notification Preferences (e2e)', () => {
@@ -20,9 +20,7 @@ describe('Notification Preferences (e2e)', () => {
 
   beforeAll(async () => {
     await resetDatabase();
-  });
 
-  beforeEach(async () => {
     app = await createNestApp();
     server = app.getHttpServer();
 
@@ -35,8 +33,7 @@ describe('Notification Preferences (e2e)', () => {
     user = await getUser('user');
   });
 
-  afterEach(async () => {
-    await resetUsersState();
+  afterAll(async () => {
     await closeApp(app);
   });
 
@@ -50,7 +47,7 @@ describe('Notification Preferences (e2e)', () => {
   describe('/notification-preferences', () => {
     let endpoint: Endpoint;
 
-    beforeEach(async () => {
+    beforeAll(async () => {
       endpoint = new Endpoint(server, `/notification-preferences`);
     });
 
