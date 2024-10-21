@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import type { NodeData } from '@renderer/utils/sdk';
 
+import { ref } from 'vue';
+
 import { formatAccountId } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
 import KeyField from '@renderer/components/KeyField.vue';
-import { ref } from 'vue';
 
 /* Props */
 const props = defineProps<{
