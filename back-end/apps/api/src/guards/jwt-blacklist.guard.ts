@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ExtractJwt } from 'passport-jwt';
 
@@ -25,18 +25,27 @@ export function createJwtBlacklistGuard(extractJwt: (req) => string) {
         IGNORE_CONTROLLER_GUARD,
         context.getHandler(),
       );
-      if (ignoreControllerGuard) return true;
+      if (ignoreControllerGuard) {
+        return true;
+      }
 
       const request = context.switchToHttp().getRequest();
 
       try {
         const jwt = extractJwt(request);
-        if (!jwt) return false;
+        if (!jwt) {
+          throw new UnauthorizedException();
+        }
 
         const isBlacklisted = await this.blacklistService.isTokenBlacklisted(jwt);
-        return !isBlacklisted;
+
+        if (isBlacklisted) {
+          throw new UnauthorizedException();
+        } else {
+          return true;
+        }
       } catch (error) {
-        return false;
+        throw new UnauthorizedException();
       }
     }
   }

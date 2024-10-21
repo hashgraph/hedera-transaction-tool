@@ -1,5 +1,5 @@
 import { CanActivate, HttpArgumentsHost } from '@nestjs/common/interfaces';
-import { ExecutionContext } from '@nestjs/common';
+import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { mockDeep } from 'jest-mock-extended';
 
@@ -48,8 +48,7 @@ describe('JwtBlacklistGuard', () => {
     const JwtBlacklistGuard = createJwtBlacklistGuard(() => null);
     guard = new JwtBlacklistGuard(reflector, blacklistService);
 
-    const result = await guard.canActivate(context);
-    expect(result).toBe(false);
+    await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
   });
 
   it('should deny access if the JWT is blacklisted', async () => {
@@ -59,8 +58,7 @@ describe('JwtBlacklistGuard', () => {
     const JwtBlacklistGuard = createJwtBlacklistGuard(() => 'blacklistedToken');
     guard = new JwtBlacklistGuard(reflector, blacklistService);
 
-    const result = await guard.canActivate(context);
-    expect(result).toBe(false);
+    await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
   });
 
   it('should allow access if the JWT is not blacklisted', async () => {
@@ -80,8 +78,7 @@ describe('JwtBlacklistGuard', () => {
     const JwtBlacklistGuard = createJwtBlacklistGuard(() => null);
     guard = new JwtBlacklistGuard(reflector, blacklistService);
 
-    const result = await guard.canActivate(context);
-    expect(result).toBe(false);
+    await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
   });
 
   it('should allow access if JWT is present in OTP header and not blacklisted', async () => {
@@ -102,8 +99,7 @@ describe('JwtBlacklistGuard', () => {
     const JwtBlacklistGuard = createJwtBlacklistGuard(extractJwtOtp);
     guard = new JwtBlacklistGuard(reflector, blacklistService);
 
-    const result = await guard.canActivate(context);
-    expect(result).toBe(false);
+    await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
   });
 
   it('should deny access if JWT extraction throws an error', async () => {
@@ -114,8 +110,7 @@ describe('JwtBlacklistGuard', () => {
     });
     guard = new JwtBlacklistGuard(reflector, blacklistService);
 
-    const result = await guard.canActivate(context);
-    expect(result).toBe(false);
+    await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
   });
 
   it('should handle unexpected errors gracefully', async () => {
@@ -127,7 +122,6 @@ describe('JwtBlacklistGuard', () => {
     const JwtBlacklistGuard = createJwtBlacklistGuard(() => 'validToken');
     guard = new JwtBlacklistGuard(reflector, blacklistService);
 
-    const result = await guard.canActivate(context);
-    expect(result).toBe(false);
+    await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
   });
 });
