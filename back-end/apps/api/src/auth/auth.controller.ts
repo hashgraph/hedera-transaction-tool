@@ -31,8 +31,8 @@ import {
   OtpLocalDto,
   SignUpUserDto,
   AuthenticateWebsocketTokenDto,
+  LoginResponseDto,
 } from './dtos';
-import { UserDto } from '../users/dtos';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -72,10 +72,10 @@ export class AuthController {
   @Post('/login')
   @HttpCode(200)
   @UseGuards(LocalAuthGuard, EmailThrottlerGuard)
-  @Serialize(UserDto)
-  async login(@GetUser() user: User, @Res({ passthrough: true }) response: Response) {
-    await this.authService.login(user, response);
-    return user;
+  @Serialize(LoginResponseDto)
+  async login(@GetUser() user: User) {
+    const accessToken = await this.authService.login(user);
+    return { user, accessToken };
   }
 
   /* User log out */

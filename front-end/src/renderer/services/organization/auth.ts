@@ -17,7 +17,7 @@ export const login = async (
         password,
       });
 
-      return { id: data.id };
+      return { id: data.user.id, accessToken: data.accessToken };
     },
     'Failed to Sign in Organization',
     'Invalid email or password',

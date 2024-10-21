@@ -60,26 +60,15 @@ export class AuthService {
   }
 
   /* The user is already verified, create the token and put it in the cookie for the response. */
-  async login(user: User, response: Response) {
+  async login(user: User) {
     const payload: JwtPayload = { userId: user.id, email: user.email };
+    const expiresIn = `${this.configService.get('JWT_EXPIRATION')}d`;
 
     const accessToken: string = this.jwtService.sign(payload, {
-      expiresIn: `${this.configService.get('JWT_EXPIRATION')}d`,
+      expiresIn,
     });
 
-    const expires = new Date();
-    expires.setSeconds(
-      expires.getSeconds() + this.configService.get<number>('JWT_EXPIRATION') * 24 * 60 * 60,
-    );
-
-    response.cookie('Authentication', accessToken, {
-      httpOnly: true,
-      expires,
-      sameSite: ['production', 'testing'].includes(this.configService.get('NODE_ENV'))
-        ? 'none'
-        : 'lax',
-      secure: ['production', 'testing'].includes(this.configService.get('NODE_ENV')),
-    });
+    return accessToken;
   }
 
   /* Log the user out of the organization, remove his cooke and blacklists his token */
