@@ -535,7 +535,7 @@ export const setSessionStorageTokens = (
     const token = organizationTokens[organization.id]?.trim();
     if (token && token.length > 0) {
       sessionStorage.setItem(
-        `${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${organization.serverUrl}`,
+        `${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${new URL(organization.serverUrl).origin}`,
         token,
       );
     }
@@ -561,4 +561,22 @@ const navigateToPreviousRoute = (router: Router) => {
   } else {
     currentRoute.name !== 'transactions' && router.push({ name: 'transactions' });
   }
+};
+
+export const toggleAuthTokenInSessionStorage = (
+  serverUrl: string,
+  token: string,
+  remove: boolean = false,
+) => {
+  const origin = new URL(serverUrl).origin;
+  if (remove) {
+    sessionStorage.removeItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`);
+    return;
+  }
+  sessionStorage.setItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`, token);
+};
+
+export const getAuthTokenFromSessionStorage = (serverUrl: string): string | null => {
+  const origin = new URL(serverUrl).origin;
+  return sessionStorage.getItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`);
 };

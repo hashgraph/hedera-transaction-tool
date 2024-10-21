@@ -37,14 +37,11 @@ export const commonRequestHandler = async <T>(
 };
 
 const getConfigWithAuthHeader = (config: AxiosRequestConfig, url: string) => {
-  const serverUrl = new URL(url);
-  const token = sessionStorage.getItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${serverUrl.origin}`);
-
   return {
     ...config,
     headers: {
       ...config.headers,
-      Authorization: `bearer ${token}`,
+      Authorization: `bearer ${getAuthTokenFromSessionStorage(url)}`,
     },
   };
 };
