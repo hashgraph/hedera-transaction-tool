@@ -6,7 +6,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useToast } from 'vue-toast-notification';
 
 import { resetPassword, setPassword, verifyReset } from '@renderer/services/organization';
-import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
+import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
 import { comparePasswords } from '@renderer/services/userService';
 
 import { isEmail, isLoggedOutOrganization, isUserLoggedIn } from '@renderer/utils';
@@ -115,13 +115,13 @@ async function handleNewPassword() {
     !user.personal.useKeychain && user.setPassword(personalPassword.value);
     await setPassword(user.selectedOrganization.serverUrl, newPassword.value);
 
-    await addOrganizationCredentials(
-      email.value,
-      newPassword.value,
+    await updateOrganizationCredentials(
       user.selectedOrganization.id,
       user.personal.id,
+      undefined,
+      newPassword.value,
+      undefined,
       personalPassword.value,
-      true,
     );
 
     emit('update:show', false);

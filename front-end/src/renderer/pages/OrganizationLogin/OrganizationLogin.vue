@@ -71,16 +71,21 @@ const handleLogin = async () => {
   try {
     loading.value = true;
 
+    const { jwtToken } = await login(
+      user.selectedOrganization.serverUrl,
+      inputEmail.value.trim(),
+      inputPassword.value,
+    );
+
     await addOrganizationCredentials(
       inputEmail.value.trim(),
       inputPassword.value,
       user.selectedOrganization.id,
       user.personal.id,
+      jwtToken,
       personalPassword,
       true,
     );
-
-    await login(user.selectedOrganization.serverUrl, inputEmail.value.trim(), inputPassword.value);
     toast.success('Successfully signed in');
 
     const { id, serverUrl, nickname, key } = user.selectedOrganization;

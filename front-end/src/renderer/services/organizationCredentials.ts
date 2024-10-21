@@ -31,6 +31,7 @@ export const addOrganizationCredentials = async (
   password: string,
   organization_id: string,
   user_id: string,
+  jwtToken: string,
   encryptPassword: string | null,
   updateIfExists: boolean = false,
 ) =>
@@ -40,6 +41,7 @@ export const addOrganizationCredentials = async (
       password,
       organization_id,
       user_id,
+      jwtToken,
       encryptPassword,
       updateIfExists,
     );
@@ -51,6 +53,7 @@ export const updateOrganizationCredentials = async (
   user_id: string,
   email?: string,
   password?: string,
+  jwtToken?: string,
   encryptPassword?: string,
 ) =>
   commonIPCHandler(async () => {
@@ -59,6 +62,7 @@ export const updateOrganizationCredentials = async (
       user_id,
       email,
       password,
+      jwtToken,
       encryptPassword,
     );
   }, 'Failed to store organization credentials');

@@ -21,6 +21,7 @@ export default {
       password: string,
       organization_id: string,
       user_id: string,
+      jwtToken: string,
       encryptPassword: string | null,
       updateIfExists: boolean = false,
     ): Promise<boolean> =>
@@ -30,6 +31,7 @@ export default {
         password,
         organization_id,
         user_id,
+        jwtToken,
         encryptPassword,
         updateIfExists,
       ),

@@ -9,7 +9,7 @@ export const login = async (
   serverUrl: string,
   email: string,
   password: string,
-): Promise<{ id: number }> =>
+): Promise<{ id: number; jwtToken: string }> =>
   commonRequestHandler(
     async () => {
       const { data } = await axiosWithCredentials.post(`${serverUrl}/${authController}/login`, {
@@ -17,7 +17,7 @@ export const login = async (
         password,
       });
 
-      return { id: data.user.id, accessToken: data.accessToken };
+      return { id: data.user.id, jwtToken: data.accessToken };
     },
     'Failed to Sign in Organization',
     'Invalid email or password',
