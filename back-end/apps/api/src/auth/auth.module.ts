@@ -12,6 +12,7 @@ import { UsersModule } from '../users/users.module';
 import { JwtStrategy, LocalStrategy, OtpJwtStrategy, OtpVerifiedStrategy } from './strategies';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { BlacklistService } from './blacklist.service';
 
 @Module({
   imports: [
@@ -29,11 +30,13 @@ import { AuthService } from './auth.service';
   controllers: [AuthController],
   providers: [
     AuthService,
+    BlacklistService,
     LocalStrategy,
     JwtStrategy,
     OtpJwtStrategy,
     OtpVerifiedStrategy,
     Reflector,
   ],
+  exports: [BlacklistService],
 })
 export class AuthModule {}
