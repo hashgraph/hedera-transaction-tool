@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 
 /* Authentification service for organization */
@@ -9,7 +11,7 @@ export const login = async (
   serverUrl: string,
   email: string,
   password: string,
-): Promise<{ id: number }> =>
+): Promise<{ id: number; jwtToken: string }> =>
   commonRequestHandler(
     async () => {
       const { data } = await axiosWithCredentials.post(`${serverUrl}/${authController}/login`, {
@@ -17,7 +19,7 @@ export const login = async (
         password,
       });
 
-      return { id: data.id };
+      return { id: data.user.id, jwtToken: data.accessToken };
     },
     'Failed to Sign in Organization',
     'Invalid email or password',
@@ -27,7 +29,6 @@ export const login = async (
 export const logout = async (serverUrl: string): Promise<{ id: number }> =>
   commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.post(`${serverUrl}/${authController}/logout`);
-
     return { id: data.id };
   }, 'Failed to Log out of Organization');
 
@@ -49,36 +50,54 @@ export const changePassword = async (
   }, 'Failed to change user password');
 
 /* Sends a reset password request */
-export const resetPassword = async (organizationServerUrl: string, email: string): Promise<void> =>
+export const resetPassword = async (
+  organizationServerUrl: string,
+  email: string,
+): Promise<string> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.post(
-      `${organizationServerUrl}/${authController}/reset-password`,
-      {
-        email,
-      },
-    );
-    return response.data;
+    const response = await axios.post(`${organizationServerUrl}/${authController}/reset-password`, {
+      email,
+    });
+    return response.data.token;
   }, 'Failed to request passoword reset');
 
 /* Sends the OTP in order to verify the password reset */
-export const verifyReset = async (organizationServerUrl: string, otp: string): Promise<void> =>
+export const verifyReset = async (
+  organizationServerUrl: string,
+  otp: string,
+  token: string,
+): Promise<string> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.post(
+    const response = await axios.post(
       `${organizationServerUrl}/${authController}/verify-reset`,
       {
         token: otp,
       },
+      {
+        headers: {
+          otp: token,
+        },
+      },
     );
-    return response.data;
+    return response.data.token;
   }, 'Failed to verify password reset');
 
 /* Sets new password after being OTP verified */
-export const setPassword = async (organizationServerUrl: string, password: string): Promise<void> =>
+export const setPassword = async (
+  organizationServerUrl: string,
+  password: string,
+  token: string,
+): Promise<void> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.patch(
+    const response = await axios.patch(
       `${organizationServerUrl}/${authController}/set-password`,
       {
         password,
+      },
+      {
+        headers: {
+          otp: token,
+        },
       },
     );
     return response.data;

@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron';
 
 import {
-  getConnectedOrganizations,
+  getOrganizationTokens,
   organizationsToSignIn,
   shouldSignInOrganization,
   addOrganizationCredentials,
@@ -15,9 +15,9 @@ const createChannelName = (...props) => ['organizationCredentials', ...props].jo
 export default () => {
   /* Organization Credentials */
 
-  /* Get all connected organizations */
-  ipcMain.handle(createChannelName('getConnectedOrganizations'), (_e, user_id: string) =>
-    getConnectedOrganizations(user_id),
+  /* Get all organization ids with their jwt tokens */
+  ipcMain.handle(createChannelName('getOrganizationTokens'), (_e, user_id: string) =>
+    getOrganizationTokens(user_id),
   );
 
   /* Get all organizations that user should sign in */
@@ -41,6 +41,7 @@ export default () => {
       password: string,
       organization_id: string,
       user_id: string,
+      accessToken: string,
       encryptPassword: string | null,
       updateIfExists: boolean = false,
     ) =>
@@ -49,6 +50,7 @@ export default () => {
         password,
         organization_id,
         user_id,
+        accessToken,
         encryptPassword,
         updateIfExists,
       ),
@@ -63,8 +65,17 @@ export default () => {
       user_id: string,
       email?: string,
       password?: string | null,
+      jwtToken?: string | null,
       encryptPassword?: string,
-    ) => updateOrganizationCredentials(organization_id, user_id, email, password, encryptPassword),
+    ) =>
+      updateOrganizationCredentials(
+        organization_id,
+        user_id,
+        email,
+        password,
+        jwtToken,
+        encryptPassword,
+      ),
   );
 
   /* Delete organization credentials */

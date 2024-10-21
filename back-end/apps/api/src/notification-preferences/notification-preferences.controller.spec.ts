@@ -3,10 +3,11 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
-import { guardMock } from '@app/common';
+import { BlacklistService, guardMock } from '@app/common';
 import { NotificationPreferences, NotificationType, User } from '@entities';
 
 import { JwtAuthGuard, VerifiedUserGuard } from '../guards';
+
 import { UpdateNotificationPreferencesDto } from './dtos';
 
 import { NotificationPreferencesController } from './notification-preferences.controller';
@@ -17,6 +18,8 @@ describe('NotificationPreferencesController', () => {
   let service: NotificationPreferencesService;
   const repo = mockDeep<Repository<NotificationPreferences>>();
 
+  const blacklistService = mockDeep<BlacklistService>();
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [NotificationPreferencesController],
@@ -25,6 +28,10 @@ describe('NotificationPreferencesController', () => {
         {
           provide: getRepositoryToken(NotificationPreferences),
           useValue: repo,
+        },
+        {
+          provide: BlacklistService,
+          useValue: blacklistService,
         },
       ],
     })

@@ -4,7 +4,7 @@ import { mockDeep } from 'vitest-mock-extended';
 import registerOrganizationCredentialsHandlers from '@main/modules/ipcHandlers/localUser/organizationCredentials';
 
 import {
-  getConnectedOrganizations,
+  getOrganizationTokens,
   organizationsToSignIn,
   shouldSignInOrganization,
   addOrganizationCredentials,
@@ -20,7 +20,7 @@ vi.mock('electron', () => ({
 }));
 
 vi.mock('@main/services/localUser', () => ({
-  getConnectedOrganizations: vi.fn(),
+  getOrganizationTokens: vi.fn(),
   organizationsToSignIn: vi.fn(),
   shouldSignInOrganization: vi.fn(),
   addOrganizationCredentials: vi.fn(),
@@ -40,7 +40,7 @@ describe('IPC handlers organization credentials', () => {
 
   test('Should register handlers for each event', () => {
     const ежент = [
-      'getConnectedOrganizations',
+      'getOrganizationTokens',
       'organizationsToSignIn',
       'shouldSignInOrganization',
       'addOrganizationCredentials',
@@ -56,16 +56,16 @@ describe('IPC handlers organization credentials', () => {
     ).toBe(true);
   });
 
-  test('Should set up getConnectedOrganizations handler', async () => {
+  test('Should set up getOrganizationTokens handler', async () => {
     const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'organizationCredentials:getConnectedOrganizations',
+      ([e]) => e === 'organizationCredentials:getOrganizationTokens',
     );
     expect(handler).toBeDefined();
 
     const user_id = 'userId';
 
     handler && (await handler[1](event, user_id));
-    expect(getConnectedOrganizations).toHaveBeenCalledWith(user_id);
+    expect(getOrganizationTokens).toHaveBeenCalledWith(user_id);
   });
 
   test('Should set up organizationsToSignIn handler', async () => {
@@ -103,6 +103,7 @@ describe('IPC handlers organization credentials', () => {
     const password = 'password';
     const organization_id = 'organizationId';
     const user_id = 'userId';
+    const jwtToken = 'token';
     const encryptPassword = 'encryptPassword';
     const updateIfExists = false;
 
@@ -113,6 +114,7 @@ describe('IPC handlers organization credentials', () => {
         password,
         organization_id,
         user_id,
+        jwtToken,
         encryptPassword,
         updateIfExists,
       ));
@@ -121,6 +123,7 @@ describe('IPC handlers organization credentials', () => {
       password,
       organization_id,
       user_id,
+      jwtToken,
       encryptPassword,
       updateIfExists,
     );
@@ -136,15 +139,17 @@ describe('IPC handlers organization credentials', () => {
     const user_id = 'userId';
     const email = 'email';
     const password = 'password';
+    const token = 'token';
     const encryptPassword = 'encryptPassword';
 
     handler &&
-      (await handler[1](event, organization_id, user_id, email, password, encryptPassword));
+      (await handler[1](event, organization_id, user_id, email, password, token, encryptPassword));
     expect(updateOrganizationCredentials).toHaveBeenCalledWith(
       organization_id,
       user_id,
       email,
       password,
+      token,
       encryptPassword,
     );
   });

@@ -1,8 +1,8 @@
 import type { ITransaction } from '@main/shared/interfaces';
 
 import { Network } from '@main/shared/enums';
-import axios from 'axios';
-import { commonRequestHandler } from '@renderer/utils';
+
+import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 
 export interface ApiTransaction {
   name: string;
@@ -37,7 +37,7 @@ export const submitTransactionGroup = async (
   groupItems: ApiGroupItem[],
 ): Promise<{ id: number; transactionBytes: string }> => {
   return commonRequestHandler(async () => {
-    const { data } = await axios.post(
+    const { data } = await axiosWithCredentials.post(
       `${serverUrl}/transaction-groups`,
       {
         description,
@@ -56,7 +56,7 @@ export const submitTransactionGroup = async (
 /* Get transaction groups */
 export const getApiGroups = async (serverUrl: string) => {
   return commonRequestHandler(async () => {
-    const { data } = await axios.get(`${serverUrl}/transaction-groups/`, {
+    const { data } = await axiosWithCredentials.get(`${serverUrl}/transaction-groups/`, {
       withCredentials: true,
     });
 
@@ -67,7 +67,7 @@ export const getApiGroups = async (serverUrl: string) => {
 /* Get transaction groups */
 export const getApiGroupById = async (serverUrl: string, id: number) => {
   return commonRequestHandler(async () => {
-    const { data } = await axios.get(`${serverUrl}/transaction-groups/${id}`, {
+    const { data } = await axiosWithCredentials.get(`${serverUrl}/transaction-groups/${id}`, {
       withCredentials: true,
     });
 

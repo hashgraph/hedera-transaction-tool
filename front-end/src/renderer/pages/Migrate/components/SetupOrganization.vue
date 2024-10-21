@@ -18,7 +18,7 @@ import { addOrganizationCredentials } from '@renderer/services/organizationCrede
 import { restorePrivateKey, storeKeyPair } from '@renderer/services/keyPairService';
 import { compareHash } from '@renderer/services/electronUtilsService';
 
-import { userKeyHasMnemonic, safeAwait } from '@renderer/utils';
+import { userKeyHasMnemonic, safeAwait, toggleAuthTokenInSessionStorage } from '@renderer/utils';
 
 import SetupOrganizationForm from './SetupOrganizationForm.vue';
 
@@ -38,6 +38,7 @@ const loading = ref(false);
 const loadingText = ref<string>('');
 const organizationId = ref<string | null>(null);
 const organizationUserId = ref<number | null>(null);
+const organizationJwtToken = ref<string | null>(null);
 const loggedIn = ref(false);
 
 /* Handlers */
@@ -93,6 +94,7 @@ const handleFormSubmit: SubmitCallback = async (formData: ModelValue) => {
       formData.newOrganizationPassword,
       organizationId.value,
       props.personalUser.personalId,
+      organizationJwtToken.value || '',
       props.personalUser.password,
     ),
   );
@@ -140,8 +142,11 @@ const loginInOrganization = async ({
     email = props.personalUser.email;
   }
 
-  const { id } = await login(organizationURL, email, temporaryOrganizationPassword);
+  const { id, jwtToken } = await login(organizationURL, email, temporaryOrganizationPassword);
+  toggleAuthTokenInSessionStorage(organizationURL, jwtToken, false);
+
   organizationUserId.value = id;
+  organizationJwtToken.value = jwtToken;
 };
 
 const setNewPassword = async ({

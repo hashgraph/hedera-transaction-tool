@@ -1,6 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UsersService } from '../../users/users.service';
 import { User } from '@entities';
@@ -16,7 +15,7 @@ export class OtpVerifiedStrategy extends PassportStrategy(Strategy, 'otp-verifie
     super({
       secretOrKey: configService.get('JWT_SECRET'),
       ignoreExpiration: false,
-      jwtFromRequest: ExtractJwt.fromExtractors([(request: Request) => request?.cookies?.['otp']]),
+      jwtFromRequest: ExtractJwt.fromHeader('otp'),
     });
   }
 

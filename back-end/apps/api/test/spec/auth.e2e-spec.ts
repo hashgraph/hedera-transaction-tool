@@ -1,5 +1,6 @@
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
+import * as request from 'supertest';
 
 import { totp } from 'otplib';
 
@@ -7,7 +8,7 @@ import { API_SERVICE } from '@app/common';
 import { UserStatus } from '@entities';
 
 import { closeApp, createNestApp } from '../utils';
-import { getCookieRaw, Endpoint, getCookieValue } from '../utils/httpUtils';
+import { Endpoint } from '../utils/httpUtils';
 import { resetDatabase, resetUsersState } from '../utils/databaseUtil';
 
 import { admin, dummy, invalidEmail, validEmail } from '../utils/constants';
@@ -17,16 +18,14 @@ describe('Auth (e2e)', () => {
   let server: ReturnType<typeof app.getHttpServer>;
   let client: ClientProxy;
 
-  let adminAuthCookie: string;
-  let userAuthCookie: string;
-  let unverifiedOTPCookie: string;
-  let verifiedOTPCookie: string;
+  let adminAuthToken: string;
+  let userAuthToken: string;
+  let unverifiedOTPToken: string;
+  let verifiedOTPToken: string;
 
   beforeAll(async () => {
     await resetDatabase();
-  });
 
-  beforeEach(async () => {
     app = await createNestApp();
     server = app.getHttpServer();
 
@@ -34,7 +33,7 @@ describe('Auth (e2e)', () => {
     await client.connect();
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     try {
       client.close();
     } catch (error) {
@@ -46,23 +45,23 @@ describe('Auth (e2e)', () => {
   describe('/auth/login', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/auth/login');
     });
 
     it('(POST) should login as admin', async () => {
-      const res = await endpoint
+      const { body } = await endpoint
         .post({
           email: admin.email,
           password: admin.password,
         })
         .expect(200);
 
-      adminAuthCookie = getCookieRaw(res, 'Authentication');
+      adminAuthToken = body.accessToken;
     });
 
     it('(POST) should login as regular user', async () => {
-      const res = await endpoint
+      const { body } = await endpoint
         .post({
           email: dummy.email,
           password: dummy.password,
@@ -70,17 +69,20 @@ describe('Auth (e2e)', () => {
         .expect(200)
         .expect(res => {
           expect(res.body).toEqual({
-            id: expect.any(Number),
-            email: dummy.email,
-            createdAt: expect.any(String),
-            admin: false,
-            status: UserStatus.NONE,
-            updatedAt: expect.any(String),
-            deletedAt: null,
+            user: {
+              id: expect.any(Number),
+              email: dummy.email,
+              createdAt: expect.any(String),
+              admin: false,
+              status: UserStatus.NONE,
+              updatedAt: expect.any(String),
+              deletedAt: null,
+            },
+            accessToken: expect.any(String),
           });
         });
 
-      userAuthCookie = getCookieRaw(res, 'Authentication');
+      userAuthToken = body.accessToken;
     });
 
     it('(POST) should not login with invalid email', async () => {
@@ -105,7 +107,7 @@ describe('Auth (e2e)', () => {
   describe('/auth/signup', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/auth/signup');
     });
 
@@ -116,7 +118,7 @@ describe('Auth (e2e)', () => {
             email: validEmail,
           },
           null,
-          adminAuthCookie,
+          adminAuthToken,
         )
         .expect(201)
         .then(res => {
@@ -143,7 +145,7 @@ describe('Auth (e2e)', () => {
             email: validEmail,
           },
           null,
-          userAuthCookie,
+          userAuthToken,
         )
         .expect(403);
     });
@@ -155,39 +157,23 @@ describe('Auth (e2e)', () => {
             email: invalidEmail,
           },
           null,
-          adminAuthCookie,
+          adminAuthToken,
         )
         .expect(400);
     });
 
     it('(POST) should throw on missing email', async () => {
       await endpoint
-        .post({}, null, adminAuthCookie)
+        .post({}, null, adminAuthToken)
         .expect(400)
         .expect({ statusCode: 400, message: 'No email specified.' });
-    });
-  });
-
-  describe('/auth/logout', () => {
-    let endpoint: Endpoint;
-
-    beforeEach(() => {
-      endpoint = new Endpoint(server, '/auth/logout');
-    });
-
-    it('(POST) should logout', async () => {
-      await endpoint.post({}, null, userAuthCookie).expect(200);
-    });
-
-    it('(POST) should not logout if not logged in', async () => {
-      await endpoint.post({}).expect(401);
     });
   });
 
   describe('/auth/change-password', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/auth/change-password');
     });
 
@@ -203,12 +189,12 @@ describe('Auth (e2e)', () => {
             newPassword: 'newPassword',
           },
           null,
-          userAuthCookie,
+          userAuthToken,
         )
         .expect(200);
     });
 
-    it('(PATCH) should not logout if not logged in', async () => {
+    it('(PATCH) should not change password if not logged in', async () => {
       await endpoint.patch({}).expect(401).expect({ statusCode: 401, message: 'Unauthorized' });
     });
 
@@ -220,7 +206,7 @@ describe('Auth (e2e)', () => {
             newPassword: 'newPassword',
           },
           null,
-          userAuthCookie,
+          userAuthToken,
         )
         .expect(400);
     });
@@ -233,25 +219,42 @@ describe('Auth (e2e)', () => {
             newPassword: dummy.password,
           },
           null,
-          userAuthCookie,
+          userAuthToken,
         )
         .expect(400);
+    });
+  });
+
+  describe('/auth/logout', () => {
+    let endpoint: Endpoint;
+
+    beforeAll(() => {
+      endpoint = new Endpoint(server, '/auth/logout');
+    });
+
+    it('(POST) should mark the token as blacklisted', async () => {
+      await endpoint.post({}, null, userAuthToken).expect(200);
+      await request(server).get('/transactions/history?page=1&size=99').expect(401);
+    });
+
+    it('(POST) should not logout if not logged in', async () => {
+      await endpoint.post({}).expect(401);
     });
   });
 
   describe('/auth/reset-password', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/auth/reset-password');
     });
 
     it('(POST) should request OTP', async () => {
       const res = await endpoint.post({ email: dummy.email }).expect(200);
 
-      unverifiedOTPCookie = getCookieRaw(res, 'otp');
+      unverifiedOTPToken = res.body.token;
 
-      expect(unverifiedOTPCookie).toBeDefined();
+      expect(unverifiedOTPToken).toBeDefined();
     });
 
     it('(POST) should not request OTP for invalid email', async () => {
@@ -266,101 +269,98 @@ describe('Auth (e2e)', () => {
   describe('/auth/verify-reset', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/auth/verify-reset');
     });
 
     it('(POST) should verify OTP', async () => {
       const token = totp.generate(`${process.env.OTP_SECRET}${dummy.email}`);
 
-      const res = await endpoint
-        .post(
-          {
-            token,
-          },
-          null,
-          unverifiedOTPCookie,
-        )
+      const { body } = await request(server)
+        .post('/auth/verify-reset')
+        .send({ token })
+        .set('otp', unverifiedOTPToken)
         .expect(200);
 
-      verifiedOTPCookie = getCookieRaw(res, 'otp');
+      verifiedOTPToken = body.token;
 
-      expect(verifiedOTPCookie).toBeDefined();
+      expect(verifiedOTPToken).toBeDefined();
+    });
+
+    it('(POST) should blacklist OTP token after verification', async () => {
+      const token = totp.generate(`${process.env.OTP_SECRET}${dummy.email}`);
+
+      await request(server)
+        .post('/auth/verify-reset')
+        .send({ token })
+        .set('otp', unverifiedOTPToken)
+        .expect(401)
+        .expect({ message: 'Unauthorized', statusCode: 401 });
     });
 
     it('(POST) should not verify OTP with invalid token', async () => {
-      await endpoint
-        .post(
-          {
-            token: 'invalid',
-          },
-          null,
-          unverifiedOTPCookie,
-        )
+      await request(server)
+        .post('/auth/verify-reset')
+        .send({ token: 'invalid token' })
+        .set('otp', unverifiedOTPToken)
         .expect(401)
-        .expect({ message: 'Incorrect token', error: 'Unauthorized', statusCode: 401 });
+        .expect({ message: 'Unauthorized', statusCode: 401 });
     });
 
-    it('(POST) should not verify OTP without OTP cookie', async () => {
+    it('(POST) should not verify OTP without OTP token', async () => {
       await endpoint.post({}).expect(401).expect({ statusCode: 401, message: 'Unauthorized' });
     });
   });
 
   describe('/auth/set-password', () => {
-    let endpoint: Endpoint;
-
-    beforeEach(() => {
-      endpoint = new Endpoint(server, '/auth/set-password');
-    });
-
     afterAll(async () => {
       await resetUsersState();
     });
 
-    it('(PATCH) should set password', async () => {
-      const res = await endpoint
-        .patch(
-          {
-            password: 'newPassword',
-          },
-          null,
-          verifiedOTPCookie,
-        )
-        .expect(200);
-
-      const otpCookie = getCookieRaw(res, 'otp');
-      expect(otpCookie).toContain('otp=;');
-    });
-
-    it('(PATCH) should not set password without OTP cookie', async () => {
-      await endpoint.patch({}).expect(401).expect({ statusCode: 401, message: 'Unauthorized' });
-    });
-
     it('(PATCH) should not set password with invalid password', async () => {
-      await endpoint
-        .patch(
-          {
-            password: 'short',
-          },
-          null,
-          verifiedOTPCookie,
-        )
+      await request(server)
+        .patch('/auth/set-password')
+        .send({ password: 'short' })
+        .set('otp', verifiedOTPToken)
         .expect(400);
     });
 
     it('(PATCH) should not set password with missing password', async () => {
-      await endpoint.patch({}, null, verifiedOTPCookie).expect(400);
+      await request(server)
+        .patch('/auth/set-password')
+        .send({})
+        .set('otp', verifiedOTPToken)
+        .expect(400);
+    });
+    it('(PATCH) should set password', async () => {
+      await request(server)
+        .patch('/auth/set-password')
+        .send({ password: 'newPassword' })
+        .set('otp', verifiedOTPToken)
+        .expect(200);
+    });
+
+    it('(PATCH) should blacklist OTP token after setting password', async () => {
+      await request(server)
+        .patch('/auth/set-password')
+        .send({ password: 'newPassword' })
+        .set('otp', verifiedOTPToken)
+        .expect(401)
+        .expect({ statusCode: 401, message: 'Unauthorized' });
+    });
+
+    it('(PATCH) should not set password without OTP token', async () => {
+      await request(server)
+        .patch('/auth/set-password')
+        .expect(401)
+        .expect({ statusCode: 401, message: 'Unauthorized' });
     });
 
     it('(PATCH) should not set password with invalid OTP', async () => {
-      await endpoint
-        .patch(
-          {
-            password: 'newPassword',
-          },
-          null,
-          unverifiedOTPCookie,
-        )
+      await request(server)
+        .patch('/auth/set-password')
+        .send({ password: 'newPassword' })
+        .set('otp', unverifiedOTPToken)
         .expect(401)
         .expect({ statusCode: 401, message: 'Unauthorized' });
     });
@@ -370,7 +370,7 @@ describe('Auth (e2e)', () => {
     it('should authenticate user', done => {
       client
         .send('authenticate-websocket-token', {
-          jwt: getCookieValue(userAuthCookie),
+          jwt: userAuthToken,
         })
         .subscribe(value => {
           expect(value).toEqual({

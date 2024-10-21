@@ -14,7 +14,6 @@ import {
   getUser,
   getUserKey,
   resetDatabase,
-  resetUsersState,
 } from '../utils/databaseUtil';
 import { Endpoint } from '../utils/httpUtils';
 import {
@@ -32,8 +31,8 @@ describe('Transactions (e2e)', () => {
   let transactionRepo: Repository<Transaction>;
   let transactionSignerRepo: Repository<TransactionSigner>;
 
-  let adminAuthCookie: string;
-  let userAuthCookie: string;
+  let adminAuthToken: string;
+  let userAuthToken: string;
   let admin: User;
   let user: User;
   let userKey1003: UserKey;
@@ -47,29 +46,26 @@ describe('Transactions (e2e)', () => {
 
     transactionRepo = await getRepository(Transaction);
     transactionSignerRepo = await getRepository(TransactionSigner);
-  });
 
-  beforeEach(async () => {
     app = await createNestApp();
     server = app.getHttpServer();
 
-    adminAuthCookie = await login(app, 'admin');
-    userAuthCookie = await login(app, 'user');
+    adminAuthToken = await login(app, 'admin');
+    userAuthToken = await login(app, 'user');
 
     admin = await getUser('admin');
     user = await getUser('user');
     userKey1003 = await getUserKey(user.id, localnet1003.publicKeyRaw);
   });
 
-  afterEach(async () => {
-    await resetUsersState();
+  afterAll(async () => {
     await closeApp(app);
   });
 
   describe('/transactions/:transactionId/signers', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/transactions');
     });
 
@@ -84,7 +80,7 @@ describe('Transactions (e2e)', () => {
           signatures,
         },
         `/${transaction.id}/signers`,
-        userAuthCookie,
+        userAuthToken,
       );
 
       const signerEntry = await transactionSignerRepo.findOne({
@@ -115,7 +111,7 @@ describe('Transactions (e2e)', () => {
           signatures,
         },
         `/${transaction.id}/signers`,
-        adminAuthCookie,
+        adminAuthToken,
       );
 
       const signerEntry = await transactionSignerRepo.findOne({
@@ -147,7 +143,7 @@ describe('Transactions (e2e)', () => {
           signatures,
         },
         `/${transaction.id}/signers`,
-        userAuthCookie,
+        userAuthToken,
       );
 
       expect(response.status).toBe(400);
@@ -171,7 +167,7 @@ describe('Transactions (e2e)', () => {
           signatures,
         },
         `/${transaction.id}/signers`,
-        userAuthCookie,
+        userAuthToken,
       );
 
       expect(status).toBe(400);
@@ -190,7 +186,7 @@ describe('Transactions (e2e)', () => {
           signatures: [],
         },
         '/123/signers',
-        userAuthCookie,
+        userAuthToken,
       );
 
       expect(status).toBe(400);
@@ -221,7 +217,7 @@ describe('Transactions (e2e)', () => {
           signatures,
         },
         `/${transaction.id}/signers`,
-        userAuthCookie,
+        userAuthToken,
       );
 
       expect(status).toBe(400);
@@ -243,7 +239,7 @@ describe('Transactions (e2e)', () => {
           signatures,
         },
         `/${transaction.id}/signers`,
-        userAuthCookie,
+        userAuthToken,
       );
 
       expect(status).toBe(400);
@@ -258,7 +254,7 @@ describe('Transactions (e2e)', () => {
     it('(GET) should return all signatures for a transaction', async () => {
       const transaction = addedTransactions.userTransactions[0];
 
-      const { status, body } = await endpoint.get(`${transaction.id}/signers`, userAuthCookie);
+      const { status, body } = await endpoint.get(`${transaction.id}/signers`, userAuthToken);
 
       expect(status).toBe(200);
       expect(body.length).toBeGreaterThan(0);
@@ -275,7 +271,7 @@ describe('Transactions (e2e)', () => {
     it('(GET) should return all signatures for a transaction requested by a user that is not part of the transaction', async () => {
       const transaction = addedTransactions.userTransactions[0];
 
-      const { status, body } = await endpoint.get(`${transaction.id}/signers`, adminAuthCookie);
+      const { status, body } = await endpoint.get(`${transaction.id}/signers`, adminAuthToken);
 
       expect(status).toBe(200);
       expect(body.length).toBeGreaterThan(0);
@@ -293,7 +289,7 @@ describe('Transactions (e2e)', () => {
   describe('/transactions/:transactionId/signers/many', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/transactions');
     });
 
@@ -320,7 +316,7 @@ describe('Transactions (e2e)', () => {
         network: localnet1003.network,
       };
 
-      const createTxResponse = await endpoint.post(transactionBody, '', userAuthCookie);
+      const createTxResponse = await endpoint.post(transactionBody, '', userAuthToken);
       expect(createTxResponse.status).toBe(201);
 
       const signatures1 = getSignatures(localnet1003.privateKey, sdkTransaction);
@@ -340,7 +336,7 @@ describe('Transactions (e2e)', () => {
           ],
         },
         `${createTxResponse.body.id}/signers/many`,
-        userAuthCookie,
+        userAuthToken,
       );
 
       const signer1Entry = await transactionSignerRepo.findOne({
@@ -366,7 +362,7 @@ describe('Transactions (e2e)', () => {
   describe('/transactions/:transactionId/signers/user', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/transactions');
     });
 
@@ -375,7 +371,7 @@ describe('Transactions (e2e)', () => {
 
       const { status, body } = await endpoint.get(
         `${transaction.id}/signers/user`,
-        userAuthCookie,
+        userAuthToken,
         'page=1&size=10',
       );
 
@@ -394,7 +390,7 @@ describe('Transactions (e2e)', () => {
 
       const { status, body } = await endpoint.get(
         `${transaction.id}/signers/user`,
-        adminAuthCookie,
+        adminAuthToken,
         'page=1&size=10',
       );
 

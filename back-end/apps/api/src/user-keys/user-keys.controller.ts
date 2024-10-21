@@ -11,20 +11,17 @@ import {
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { Serialize } from '@app/common';
-
 import { User, UserKey } from '@entities';
 
-import { JwtAuthGuard, VerifiedUserGuard } from '../guards';
-
+import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../guards';
 import { GetUser } from '../decorators';
 
-import { UserKeysService } from './user-keys.service';
-
 import { UploadUserKeyDto, UserKeyDto } from './dtos';
+import { UserKeysService } from './user-keys.service';
 
 @ApiTags('User Keys')
 @Controller('user/:userId?/keys')
-@UseGuards(JwtAuthGuard, VerifiedUserGuard)
+@UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
 @Serialize(UserKeyDto)
 export class UserKeysController {
   constructor(private userKeysService: UserKeysService) {}

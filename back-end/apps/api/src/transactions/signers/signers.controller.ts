@@ -18,11 +18,9 @@ import {
   Serialize,
   withPaginatedResponse,
 } from '@app/common';
-
 import { TransactionSigner, User } from '@entities';
 
-import { JwtAuthGuard, VerifiedUserGuard } from '../../guards';
-
+import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../../guards';
 import { GetUser } from '../../decorators/get-user.decorator';
 
 import { SignersService } from './signers.service';
@@ -37,7 +35,7 @@ import {
 
 @ApiTags('Transaction Signers')
 @Controller('transactions/:transactionId?/signers')
-@UseGuards(JwtAuthGuard, VerifiedUserGuard)
+@UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
 export class SignersController {
   constructor(private signaturesService: SignersService) {}
 

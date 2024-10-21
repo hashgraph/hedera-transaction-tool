@@ -20,7 +20,6 @@ import {
   getUser,
   getUserKey,
   resetDatabase,
-  resetUsersState,
 } from '../utils/databaseUtil';
 import { Endpoint } from '../utils/httpUtils';
 import {
@@ -38,9 +37,9 @@ describe('Transaction Observers (e2e)', () => {
   let transactionRepo: Repository<Transaction>;
   let transactionObserverRepo: Repository<TransactionObserver>;
 
-  let adminAuthCookie: string;
-  let userAuthCookie: string;
-  let userNewAuthCookie: string;
+  let adminAuthToken: string;
+  let userAuthToken: string;
+  let userNewAuthToken: string;
   let user: User;
   let admin: User;
   let userNew: User;
@@ -82,15 +81,13 @@ describe('Transaction Observers (e2e)', () => {
 
     transactionRepo = await getRepository(Transaction);
     transactionObserverRepo = await getRepository(TransactionObserver);
-  });
 
-  beforeEach(async () => {
     app = await createNestApp();
     server = app.getHttpServer();
 
-    adminAuthCookie = await login(app, 'admin');
-    userAuthCookie = await login(app, 'user');
-    userNewAuthCookie = await login(app, 'userNew');
+    adminAuthToken = await login(app, 'admin');
+    userAuthToken = await login(app, 'user');
+    userNewAuthToken = await login(app, 'userNew');
 
     user = await getUser('user');
     admin = await getUser('admin');
@@ -99,15 +96,14 @@ describe('Transaction Observers (e2e)', () => {
     adminKey1002 = await getUserKey(admin.id, localnet1002.publicKeyRaw);
   });
 
-  afterEach(async () => {
-    await resetUsersState();
+  afterAll(async () => {
     await closeApp(app);
   });
 
   describe('/transactions/:transactionId/observers', () => {
     let endpoint: Endpoint;
 
-    beforeEach(() => {
+    beforeAll(() => {
       endpoint = new Endpoint(server, '/transactions');
     });
 
@@ -119,7 +115,7 @@ describe('Transaction Observers (e2e)', () => {
           userIds: [user.id],
         },
         `/${transaction.id}/observers`,
-        adminAuthCookie,
+        adminAuthToken,
       );
 
       expect(status).toBe(201);
@@ -142,7 +138,7 @@ describe('Transaction Observers (e2e)', () => {
           userIds: [user.id, userNew.id],
         },
         `/${transaction.id}/observers`,
-        adminAuthCookie,
+        adminAuthToken,
       );
 
       expect(status).toBe(201);
@@ -165,7 +161,7 @@ describe('Transaction Observers (e2e)', () => {
           userIds: [user.id],
         },
         `/${transaction.id}/observers`,
-        adminAuthCookie,
+        adminAuthToken,
       );
 
       expect(status).toBe(401);
@@ -183,7 +179,7 @@ describe('Transaction Observers (e2e)', () => {
       const { status, body } = await endpoint.post(
         {},
         `/${transaction.id}/observers`,
-        adminAuthCookie,
+        adminAuthToken,
       );
 
       expect(status).toBe(400);
@@ -201,7 +197,7 @@ describe('Transaction Observers (e2e)', () => {
           userIds: [user.id],
         },
         '/999/observers',
-        adminAuthCookie,
+        adminAuthToken,
       );
 
       expect(status).toBe(400);
@@ -215,7 +211,7 @@ describe('Transaction Observers (e2e)', () => {
     it('(GET) should get transaction observers if user has access (is creator)', async () => {
       const transaction = addedTransactions.adminTransactions[0];
 
-      const { status, body } = await endpoint.get(`/${transaction.id}/observers`, adminAuthCookie);
+      const { status, body } = await endpoint.get(`/${transaction.id}/observers`, adminAuthToken);
 
       expect(status).toBe(200);
       expect(body).toEqual(
@@ -242,7 +238,7 @@ describe('Transaction Observers (e2e)', () => {
             userIds: [user.id],
           },
           `/${transaction.id}/observers`,
-          userAuthCookie,
+          userAuthToken,
         )
         .expect(201);
 
@@ -257,12 +253,12 @@ describe('Transaction Observers (e2e)', () => {
             signatures,
           },
           `/${transaction.id}/signers`,
-          adminAuthCookie,
+          adminAuthToken,
         )
         .expect(201);
 
       /* Get observers (ADMIN) */
-      const { status, body } = await endpoint.get(`/${transaction.id}/observers`, adminAuthCookie);
+      const { status, body } = await endpoint.get(`/${transaction.id}/observers`, adminAuthToken);
 
       expect(status).toBe(200);
       expect(body).toEqual(
@@ -281,7 +277,7 @@ describe('Transaction Observers (e2e)', () => {
     it('(GET) should get transaction observers if user has access (is observer)', async () => {
       const transaction = addedTransactions.adminTransactions[0];
 
-      const { status, body } = await endpoint.get(`/${transaction.id}/observers`, userAuthCookie);
+      const { status, body } = await endpoint.get(`/${transaction.id}/observers`, userAuthToken);
 
       expect(status).toBe(200);
       expect(body).toEqual(
@@ -299,18 +295,18 @@ describe('Transaction Observers (e2e)', () => {
 
     it('(GET) should get transaction observers if user has access (should sign)', async () => {
       const transaction = await createTransaction(user, localnet1003, localnet1002);
-      const createTxRes = await endpoint.post(transaction, null, userAuthCookie);
+      const createTxRes = await endpoint.post(transaction, null, userAuthToken);
       await endpoint.post(
         {
           userIds: [userNew.id],
         },
         `/${createTxRes.body.id}/observers`,
-        userAuthCookie,
+        userAuthToken,
       );
 
       const getObserversRes = await endpoint.get(
         `/${createTxRes.body.id}/observers`,
-        adminAuthCookie,
+        adminAuthToken,
       );
 
       expect(createTxRes.status).toBe(201);
@@ -337,7 +333,7 @@ describe('Transaction Observers (e2e)', () => {
       ];
 
       const transaction = await createTransaction(user, localnet1003, localnet1003);
-      const createTxRes = await endpoint.post(transaction, null, userAuthCookie);
+      const createTxRes = await endpoint.post(transaction, null, userAuthToken);
       await transactionRepo.update(
         {
           id: createTxRes.body.id,
@@ -349,12 +345,12 @@ describe('Transaction Observers (e2e)', () => {
           userIds: [userNew.id],
         },
         `/${createTxRes.body.id}/observers`,
-        userAuthCookie,
+        userAuthToken,
       );
 
       const getObserversRes = await endpoint.get(
         `/${createTxRes.body.id}/observers`,
-        adminAuthCookie,
+        adminAuthToken,
       );
 
       expect(createTxRes.status).toBe(201);
@@ -374,18 +370,18 @@ describe('Transaction Observers (e2e)', () => {
 
     it('(GET) should NOT get transaction observers if transaction is in a NOT visible status', async () => {
       const transaction = await createTransaction(user, localnet1003, localnet1003);
-      const createTxRes = await endpoint.post(transaction, null, userAuthCookie);
+      const createTxRes = await endpoint.post(transaction, null, userAuthToken);
       await endpoint.post(
         {
           userIds: [userNew.id],
         },
         `/${createTxRes.body.id}/observers`,
-        userAuthCookie,
+        userAuthToken,
       );
 
       const getObserversRes = await endpoint.get(
         `/${createTxRes.body.id}/observers`,
-        adminAuthCookie,
+        adminAuthToken,
       );
       console.log(getObserversRes.body);
 
@@ -401,10 +397,7 @@ describe('Transaction Observers (e2e)', () => {
     it('(GET) should NOT get transaction observers if user is not verified', async () => {
       const transaction = addedTransactions.adminTransactions[0];
 
-      const { status, body } = await endpoint.get(
-        `/${transaction.id}/observers`,
-        userNewAuthCookie,
-      );
+      const { status, body } = await endpoint.get(`/${transaction.id}/observers`, userNewAuthToken);
 
       expect(status).toBe(403);
       expect(body).toEqual({
@@ -427,7 +420,7 @@ describe('Transaction Observers (e2e)', () => {
     });
 
     it('(GET) should NOT get transaction observers if transaction does not exist', async () => {
-      const { status, body } = await endpoint.get('/999/observers', adminAuthCookie);
+      const { status, body } = await endpoint.get('/999/observers', adminAuthToken);
 
       expect(status).toBe(400);
       expect(body).toEqual(
@@ -449,7 +442,7 @@ describe('Transaction Observers (e2e)', () => {
           role: Role.APPROVER,
         },
         `/${transaction.id}/observers/${userObserverEntry.id}`,
-        adminAuthCookie,
+        adminAuthToken,
       );
 
       expect(userObserverEntry).toBeDefined();
@@ -474,7 +467,7 @@ describe('Transaction Observers (e2e)', () => {
       const { status, body } = await endpoint.patch(
         {},
         `/${transaction.id}/observers/${userObserverEntry.id}`,
-        adminAuthCookie,
+        adminAuthToken,
       );
 
       expect(status).toBe(400);
@@ -497,7 +490,7 @@ describe('Transaction Observers (e2e)', () => {
           role: Role.APPROVER,
         },
         `/${transaction.id}/observers/${userObserverEntry.id}`,
-        userAuthCookie,
+        userAuthToken,
       );
 
       expect(status).toBe(401);
@@ -517,7 +510,7 @@ describe('Transaction Observers (e2e)', () => {
 
       const { status, body } = await endpoint.delete(
         `/${transaction.id}/observers/${userObserverEntry.id}`,
-        userAuthCookie,
+        userAuthToken,
       );
 
       expect(status).toBe(401);
@@ -537,14 +530,14 @@ describe('Transaction Observers (e2e)', () => {
 
       const { status } = await endpoint.delete(
         `/${transaction.id}/observers/${userObserverEntry.id}`,
-        adminAuthCookie,
+        adminAuthToken,
       );
 
       expect(status).toBe(200);
     });
 
     it('(DELETE) should NOT delete transaction observer if transaction does not exist', async () => {
-      const { status, body } = await endpoint.delete('/999/observers/999', adminAuthCookie);
+      const { status, body } = await endpoint.delete('/999/observers/999', adminAuthToken);
 
       expect(status).toBe(400);
       expect(body).toEqual(

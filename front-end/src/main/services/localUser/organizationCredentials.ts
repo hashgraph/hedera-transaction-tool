@@ -1,4 +1,4 @@
-import { session, CookiesSetDetails, safeStorage } from 'electron';
+import { safeStorage } from 'electron';
 import { getPrismaClient } from '@main/db/prisma';
 
 import { Organization, OrganizationCredentials } from '@prisma/client';
@@ -10,18 +10,19 @@ import { getUseKeychainClaim } from '@main/services/localUser/claim';
 import { decrypt, encrypt } from '@main/utils/crypto';
 
 /* Returns the organization that the user is connected to */
-export const getConnectedOrganizations = async (user_id: string) => {
+export const getOrganizationTokens = async (user_id: string) => {
   const prisma = getPrismaClient();
 
   try {
     const orgs = await prisma.organizationCredentials.findMany({
       where: { user_id },
       select: {
-        organization: true,
+        organization_id: true,
+        jwtToken: true,
       },
     });
 
-    return orgs === null ? [] : orgs.map(org => org.organization);
+    return orgs || [];
   } catch (error) {
     console.log(error);
     return [];
@@ -73,18 +74,15 @@ export const shouldSignInOrganization = async (user_id: string, organization_id:
 };
 
 /* Returns the access token of a user for an organization */
-export const getAccessToken = async (organizationServerUrl: string) => {
+export const getAccessToken = async (serverUrl: string) => {
+  const prisma = getPrismaClient();
+
   try {
-    const url = new URL(organizationServerUrl);
-
-    const ses = session.fromPartition('persist:main');
-    const authCookies = (
-      await ses.cookies.get({
-        name: 'Authentication',
-      })
-    ).filter(cookie => cookie.domain === url.hostname);
-
-    return authCookies.length > 0 ? authCookies[0].value : null;
+    const credentials = await prisma.organizationCredentials.findFirst({
+      where: { organization: { serverUrl } },
+    });
+    if (!credentials) return null;
+    return credentials.jwtToken || null;
   } catch (error) {
     console.log(error);
     return null;
@@ -140,6 +138,7 @@ export const addOrganizationCredentials = async (
   password: string,
   organization_id: string,
   user_id: string,
+  jwtToken: string,
   encryptPassword: string | null,
   updateIfExists: boolean = false,
 ) => {
@@ -154,6 +153,7 @@ export const addOrganizationCredentials = async (
         user_id,
         email,
         password,
+        jwtToken,
         encryptPassword,
       );
       return;
@@ -161,21 +161,13 @@ export const addOrganizationCredentials = async (
   }
 
   try {
-    const useKeychain = await getUseKeychainClaim();
-
-    if (useKeychain) {
-      const buffer = safeStorage.encryptString(password);
-      password = buffer.toString('base64');
-    } else if (encryptPassword) {
-      password = encrypt(password, encryptPassword);
-    } else {
-      throw new Error('Password is required to store unencrypted key pair');
-    }
+    password = await encryptData(password, encryptPassword);
 
     await prisma.organizationCredentials.create({
       data: {
         email,
         password,
+        jwtToken,
         organization_id,
         user_id,
       },
@@ -194,21 +186,14 @@ export const updateOrganizationCredentials = async (
   user_id: string,
   email?: string,
   password?: string | null,
+  jwtToken?: string | null,
   encryptPassword?: string | null,
 ) => {
   const prisma = getPrismaClient();
 
   try {
     if (password) {
-      const useKeychain = await getUseKeychainClaim();
-      if (useKeychain) {
-        const buffer = safeStorage.encryptString(password);
-        password = buffer.toString('base64');
-      } else if (encryptPassword) {
-        password = encrypt(password, encryptPassword);
-      } else {
-        throw new Error('Password is required to store unencrypted key pair');
-      }
+      password = await encryptData(password, encryptPassword);
     }
 
     const credentials = await prisma.organizationCredentials.findFirst({
@@ -224,6 +209,7 @@ export const updateOrganizationCredentials = async (
       data: {
         email: email || credentials.email,
         password: password || credentials.password,
+        jwtToken: jwtToken !== undefined ? jwtToken : credentials.jwtToken,
       },
     });
 
@@ -250,29 +236,9 @@ export const deleteOrganizationCredentials = async (organization_id: string, use
   }
 };
 
-export const decryptCredentialPassword = async (
-  credentials: OrganizationCredentials,
-  decryptPassword: string | null,
-) => {
-  try {
-    const useKeychain = await getUseKeychainClaim();
-    if (useKeychain) {
-      const buffer = Buffer.from(credentials.password, 'base64');
-      return safeStorage.decryptString(buffer);
-    } else if (decryptPassword) {
-      return decrypt(credentials.password, decryptPassword);
-    } else {
-      throw new Error('Password is required to store unencrypted key pair');
-    }
-  } catch (error) {
-    console.log(error);
-    throw new Error('Failed to decrypt credential');
-  }
-};
-
 /* Tries to auto sign in to all organizations that should sign in */
 export const tryAutoSignIn = async (user_id: string, decryptPassword: string | null) => {
-  const ses = session.fromPartition('persist:main');
+  const prisma = getPrismaClient();
 
   const invalidCredentials = await organizationsToSignIn(user_id);
 
@@ -283,21 +249,22 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string | n
 
     let password = '';
     try {
-      password = await decryptCredentialPassword(invalidCredential, decryptPassword);
+      password = await decryptData(invalidCredential.password, decryptPassword);
     } catch (error) {
       throw new Error('Incorrect decryption password');
     }
 
     try {
-      const { cookie } = await login(
+      const { accessToken } = await login(
         invalidCredential.organization.serverUrl,
         invalidCredential.email,
         password,
       );
 
-      if (cookie && cookie.length > 0) {
-        ses.cookies.set(parseSetCookie(invalidCredential.organization.serverUrl, cookie[0]));
-      }
+      await prisma.organizationCredentials.update({
+        where: { id: invalidCredential.id },
+        data: { jwtToken: accessToken },
+      });
     } catch (error) {
       failedLogins.push(invalidCredential.organization);
     }
@@ -306,43 +273,35 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string | n
   return failedLogins;
 };
 
-function parseSetCookie(url: string, setCookieString: string) {
-  const parts = setCookieString.split(';').map(part => part.trim());
+/* Ecnrypt data */
+async function encryptData(data: string, encryptPassword?: string | null) {
+  const useKeychain = await getUseKeychainClaim();
 
-  const [namePart, ...otherParts] = parts;
-  const [name, value] = namePart.split('=');
+  if (useKeychain) {
+    const passwordBuffer = safeStorage.encryptString(data);
+    return passwordBuffer.toString('base64');
+  } else if (encryptPassword) {
+    return encrypt(data, encryptPassword);
+  } else {
+    throw new Error('Password is required to store sensitive data');
+  }
+}
 
-  const cookie: CookiesSetDetails = {
-    name,
-    url,
-    value,
-    path: '/',
-    httpOnly: true,
-    sameSite: 'no_restriction',
-  };
-
-  otherParts.forEach(part => {
-    part = part.toLowerCase().trim();
-    if (part.startsWith('path=')) {
-      cookie.path = part.split('=')[1];
-    } else if (part === 'httponly') {
-      cookie.httpOnly = true;
-    } else if (part.startsWith('expires=')) {
-      const expirationDate = new Date(part.split('=')[1]);
-      cookie.expirationDate = expirationDate.getTime() / 1000;
-    } else if (part.startsWith('samesite=')) {
-      const value = part.split('=')[1];
-      cookie.sameSite = value === 'none' ? 'no_restriction' : 'lax';
-    }
-  });
-
-  cookie.secure = cookie.sameSite === 'no_restriction';
-
-  return cookie;
+/* Decrypt data */
+export async function decryptData(data: string, decryptPassword?: string | null) {
+  const useKeychain = await getUseKeychainClaim();
+  if (useKeychain) {
+    const buffer = Buffer.from(data, 'base64');
+    return safeStorage.decryptString(buffer);
+  } else if (decryptPassword) {
+    return decrypt(data, decryptPassword);
+  } else {
+    throw new Error('Password is required to decrypt sensitive');
+  }
 }
 
 /* Validate organization credentials */
-async function organizationCredentialsInvalid(
+export async function organizationCredentialsInvalid(
   org?: (OrganizationCredentials & { organization: Organization }) | null,
 ) {
   if (!org) return true;

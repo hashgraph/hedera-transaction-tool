@@ -4,8 +4,10 @@ import { ipcRenderer } from 'electron';
 
 export default {
   organizationCredentials: {
-    getConnectedOrganizations: (user_id: string): Promise<Organization[]> =>
-      ipcRenderer.invoke('organizationCredentials:getConnectedOrganizations', user_id),
+    getOrganizationTokens: (
+      user_id: string,
+    ): Promise<{ organization_id: string; jwtToken: string | null }[]> =>
+      ipcRenderer.invoke('organizationCredentials:getOrganizationTokens', user_id),
     organizationsToSignIn: (
       user_id: string,
     ): Promise<{ credential_id?: string; email?: string; organization: Organization }[]> =>
@@ -21,6 +23,7 @@ export default {
       password: string,
       organization_id: string,
       user_id: string,
+      jwtToken: string,
       encryptPassword: string | null,
       updateIfExists: boolean = false,
     ): Promise<boolean> =>
@@ -30,6 +33,7 @@ export default {
         password,
         organization_id,
         user_id,
+        jwtToken,
         encryptPassword,
         updateIfExists,
       ),
@@ -38,7 +42,7 @@ export default {
       user_id: string,
       email?: string,
       password?: string,
-      jwtToken?: string,
+      jwtToken?: string | null,
       encryptPassword?: string,
     ): Promise<boolean> =>
       ipcRenderer.invoke(

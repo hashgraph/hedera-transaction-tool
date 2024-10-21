@@ -8,7 +8,7 @@ import { User } from '@entities';
 
 import { admin, dummy, dummyNew } from './constants';
 
-import { Endpoint, getCookieRaw } from './httpUtils';
+import { Endpoint } from './httpUtils';
 
 import { ApiModule } from '../../src/api.module';
 import { setupApp } from '../../src/setup-app';
@@ -84,12 +84,12 @@ export async function login(
       password = user.password;
   }
 
-  const res = await endpoint.post({
+  const { body } = await endpoint.post({
     email,
     password,
   });
 
-  return getCookieRaw(res, 'Authentication');
+  return body.accessToken;
 }
 
 export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

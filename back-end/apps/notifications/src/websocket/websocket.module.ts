@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 
-import { LoggerModule } from '@app/common';
+import { BlacklistModule, LoggerModule } from '@app/common';
 
 import { WebsocketController } from './websocket.controller';
 import { WebsocketGateway } from './websocket.gateway';
 
 @Module({
-  imports: [LoggerModule],
+  imports: [LoggerModule, BlacklistModule],
   controllers: [WebsocketController],
   providers: [WebsocketGateway],
   exports: [WebsocketGateway],

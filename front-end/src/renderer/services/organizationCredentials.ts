@@ -2,13 +2,11 @@ import { commonIPCHandler } from '@renderer/utils';
 
 /* Organizations Service */
 
-/* Get the connected organizations */
-export const getConnectedOrganizations = async (user_id: string) =>
+/* Get the organization ids with tokens */
+export const getOrganizationTokens = async (user_id: string) =>
   commonIPCHandler(async () => {
-    return await window.electronAPI.local.organizationCredentials.getConnectedOrganizations(
-      user_id,
-    );
-  }, 'Failed to fetch organizations');
+    return await window.electronAPI.local.organizationCredentials.getOrganizationTokens(user_id);
+  }, 'Failed to fetch organization tokens');
 
 /* Returns the organizations that the user should sign into */
 export const getOrganizationsToSignIn = async (user_id: string) =>
@@ -31,6 +29,7 @@ export const addOrganizationCredentials = async (
   password: string,
   organization_id: string,
   user_id: string,
+  jwtToken: string,
   encryptPassword: string | null,
   updateIfExists: boolean = false,
 ) =>
@@ -40,6 +39,7 @@ export const addOrganizationCredentials = async (
       password,
       organization_id,
       user_id,
+      jwtToken,
       encryptPassword,
       updateIfExists,
     );
@@ -51,6 +51,7 @@ export const updateOrganizationCredentials = async (
   user_id: string,
   email?: string,
   password?: string,
+  jwtToken?: string | null,
   encryptPassword?: string,
 ) =>
   commonIPCHandler(async () => {
@@ -59,6 +60,7 @@ export const updateOrganizationCredentials = async (
       user_id,
       email,
       password,
+      jwtToken,
       encryptPassword,
     );
   }, 'Failed to store organization credentials');

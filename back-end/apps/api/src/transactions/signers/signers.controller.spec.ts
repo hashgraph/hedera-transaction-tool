@@ -2,13 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 import { EntityManager } from 'typeorm';
 
-import { guardMock } from '@app/common';
+import { BlacklistService, guardMock } from '@app/common';
 import { TransactionSigner, User, UserStatus } from '@entities';
 
-import { SignersController } from './signers.controller';
-
-import { SignersService } from './signers.service';
 import { VerifiedUserGuard } from '../../guards';
+
+import { SignersController } from './signers.controller';
+import { SignersService } from './signers.service';
 
 describe('SignaturesController', () => {
   let controller: SignersController;
@@ -17,6 +17,7 @@ describe('SignaturesController', () => {
 
   const signersService = mockDeep<SignersService>();
   const entityManager = mockDeep<EntityManager>();
+  const blacklistService = mockDeep<BlacklistService>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -29,6 +30,10 @@ describe('SignaturesController', () => {
         {
           provide: EntityManager,
           useValue: entityManager,
+        },
+        {
+          provide: BlacklistService,
+          useValue: blacklistService,
         },
       ],
     })

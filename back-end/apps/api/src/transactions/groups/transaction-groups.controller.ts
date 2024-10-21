@@ -8,17 +8,20 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { TransactionGroupsService } from './transaction-groups.service';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard, VerifiedUserGuard } from '../../guards';
+
 import { Serialize } from '@app/common';
-import { CreateTransactionGroupDto, TransactionGroupDto } from '../dto';
 import { TransactionGroup, User } from '@entities';
+
+import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../../guards';
+import { CreateTransactionGroupDto, TransactionGroupDto } from '../dto';
 import { GetUser } from '../../decorators';
+
+import { TransactionGroupsService } from './transaction-groups.service';
 
 @ApiTags('Transaction Groups')
 @Controller('transaction-groups')
-@UseGuards(JwtAuthGuard, VerifiedUserGuard)
+@UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
 @Serialize(TransactionGroupDto)
 export class TransactionGroupsController {
   constructor(private readonly transactionGroupsService: TransactionGroupsService) {}
@@ -58,7 +61,10 @@ export class TransactionGroupsController {
     type: TransactionGroupDto,
   })
   @Get('/:id')
-  getTransactionGroup(@GetUser() user: User, @Param('id', ParseIntPipe) groupId: number): Promise<TransactionGroup> {
+  getTransactionGroup(
+    @GetUser() user: User,
+    @Param('id', ParseIntPipe) groupId: number,
+  ): Promise<TransactionGroup> {
     return this.transactionGroupsService.getTransactionGroup(user, groupId);
   }
 
@@ -73,7 +79,10 @@ export class TransactionGroupsController {
     type: Boolean,
   })
   @Delete('/:id')
-  removeTransactionGroup(@GetUser() user: User, @Param('id', ParseIntPipe) groupId: number): Promise<boolean> {
+  removeTransactionGroup(
+    @GetUser() user: User,
+    @Param('id', ParseIntPipe) groupId: number,
+  ): Promise<boolean> {
     return this.transactionGroupsService.removeTransactionGroup(user, groupId);
   }
 }

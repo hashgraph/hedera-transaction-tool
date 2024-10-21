@@ -11,14 +11,12 @@ describe('API Health (e2e)', () => {
 
   beforeAll(async () => {
     await resetDatabase();
-  });
 
-  beforeEach(async () => {
     app = await createNestApp();
     server = app.getHttpServer();
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await closeApp(app);
   });
 

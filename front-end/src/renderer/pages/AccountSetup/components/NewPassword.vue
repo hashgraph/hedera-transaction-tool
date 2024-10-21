@@ -93,6 +93,7 @@ const handleChangePassword = async () => {
         user.personal.id,
         undefined,
         newPassword.value,
+        undefined,
         personalPassword || undefined,
       );
 

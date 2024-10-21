@@ -8,31 +8,31 @@ export const req = (
   server: ServerType,
   type: 'get' | 'post' | 'put' | 'delete' | 'patch',
   endpoint: string,
-  cookie?: string,
+  token?: string,
 ) => {
   const req = request(server)[type](endpoint);
 
-  if (cookie) {
-    req.set('Cookie', cookie);
+  if (token) {
+    req.set('Authorization', `bearer ${token}`);
   }
 
   return req;
 };
 
-export const get = (server: ServerType, endpoint: string, cookie?: string) =>
-  req(server, 'get', endpoint, cookie);
+export const get = (server: ServerType, endpoint: string, token?: string) =>
+  req(server, 'get', endpoint, token);
 
-export const post = (server: ServerType, endpoint: string, cookie?: string) =>
-  req(server, 'post', endpoint, cookie);
+export const post = (server: ServerType, endpoint: string, token?: string) =>
+  req(server, 'post', endpoint, token);
 
-export const put = (server: ServerType, endpoint: string, cookie?: string) =>
-  req(server, 'put', endpoint, cookie);
+export const put = (server: ServerType, endpoint: string, token?: string) =>
+  req(server, 'put', endpoint, token);
 
-export const del = (server: ServerType, endpoint: string, cookie?: string) =>
-  req(server, 'delete', endpoint, cookie);
+export const del = (server: ServerType, endpoint: string, token?: string) =>
+  req(server, 'delete', endpoint, token);
 
-export const patch = (server: ServerType, endpoint: string, cookie?: string) =>
-  req(server, 'patch', endpoint, cookie);
+export const patch = (server: ServerType, endpoint: string, token?: string) =>
+  req(server, 'patch', endpoint, token);
 
 export class Endpoint {
   public endpoint: string;
@@ -43,33 +43,33 @@ export class Endpoint {
     this.server = server;
   }
 
-  public get(param?: string, cookie?: string, query?: string) {
-    return get(this.server, this.createEndpoint(param, query), cookie);
+  public get(param?: string, token?: string, query?: string) {
+    return get(this.server, this.createEndpoint(param, query), token);
   }
 
-  public post(data?, param?: string, cookie?: string) {
+  public post(data?, param?: string, token?: string) {
     if (data) {
-      return post(this.server, this.createEndpoint(param), cookie).send(data);
+      return post(this.server, this.createEndpoint(param), token).send(data);
     }
-    return post(this.server, this.createEndpoint(param), cookie);
+    return post(this.server, this.createEndpoint(param), token);
   }
 
-  public put(data?, param?: string, cookie?: string) {
+  public put(data?, param?: string, token?: string) {
     if (data) {
-      return put(this.server, this.createEndpoint(param), cookie).send(data);
+      return put(this.server, this.createEndpoint(param), token).send(data);
     }
-    return put(this.server, this.createEndpoint(param), cookie);
+    return put(this.server, this.createEndpoint(param), token);
   }
 
-  public patch(data?, param?: string, cookie?: string) {
+  public patch(data?, param?: string, token?: string) {
     if (data) {
-      return patch(this.server, this.createEndpoint(param), cookie).send(data);
+      return patch(this.server, this.createEndpoint(param), token).send(data);
     }
-    return patch(this.server, this.createEndpoint(param), cookie);
+    return patch(this.server, this.createEndpoint(param), token);
   }
 
-  public delete(param?: string, cookie?: string) {
-    return del(this.server, this.createEndpoint(param), cookie);
+  public delete(param?: string, token?: string) {
+    return del(this.server, this.createEndpoint(param), token);
   }
 
   private createEndpoint(param?: string, query?: string) {
@@ -85,18 +85,3 @@ export class Endpoint {
     return result.replaceAll('//', '/');
   }
 }
-
-export const getCookieRaw = (res: request.Response, name: string) => {
-  if (Array.isArray(res.headers['set-cookie'])) {
-    const cookies = res.headers['set-cookie'];
-    return cookies.find(cookie => cookie.startsWith(name));
-  } else {
-    return res.headers['set-cookie'];
-  }
-};
-
-export const getCookieValue = (cookie: string) => {
-  const cookiePairs = cookie.split(';');
-  const [, cookieValue] = cookiePairs[0].trim().split('=');
-  return cookieValue;
-};

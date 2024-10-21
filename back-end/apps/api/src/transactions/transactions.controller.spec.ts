@@ -3,7 +3,7 @@ import { BadRequestException } from '@nestjs/common';
 import { mockDeep } from 'jest-mock-extended';
 import { EntityManager } from 'typeorm';
 
-import { guardMock, Pagination } from '@app/common';
+import { BlacklistService, guardMock, Pagination } from '@app/common';
 import {
   Network,
   Transaction,
@@ -13,10 +13,10 @@ import {
   UserStatus,
 } from '@entities';
 
-import { TransactionsController } from './transactions.controller';
-
-import { TransactionsService } from './transactions.service';
 import { HasKeyGuard, VerifiedUserGuard } from '../guards';
+
+import { TransactionsController } from './transactions.controller';
+import { TransactionsService } from './transactions.service';
 
 describe('TransactionsController', () => {
   let controller: TransactionsController;
@@ -26,6 +26,7 @@ describe('TransactionsController', () => {
 
   const transactionService = mockDeep<TransactionsService>();
   const entityManager = mockDeep<EntityManager>();
+  const blacklistService = mockDeep<BlacklistService>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -38,6 +39,10 @@ describe('TransactionsController', () => {
         {
           provide: EntityManager,
           useValue: entityManager,
+        },
+        {
+          provide: BlacklistService,
+          useValue: blacklistService,
         },
       ],
     })

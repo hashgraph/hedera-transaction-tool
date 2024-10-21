@@ -1,13 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 
-import { guardMock } from '@app/common';
+import { BlacklistService, guardMock } from '@app/common';
 import { TransactionGroup, User, UserStatus } from '@entities';
 
-import { TransactionGroupsController } from './transaction-groups.controller';
-
-import { TransactionGroupsService } from './transaction-groups.service';
 import { VerifiedUserGuard } from '../../guards';
+
+import { TransactionGroupsController } from './transaction-groups.controller';
+import { TransactionGroupsService } from './transaction-groups.service';
 
 describe('TransactionGroupsController', () => {
   let controller: TransactionGroupsController;
@@ -15,6 +15,7 @@ describe('TransactionGroupsController', () => {
   let transactionGroup: TransactionGroup;
 
   const transactionGroupsService = mockDeep<TransactionGroupsService>();
+  const blacklistService = mockDeep<BlacklistService>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -23,6 +24,10 @@ describe('TransactionGroupsController', () => {
         {
           provide: TransactionGroupsService,
           useValue: transactionGroupsService,
+        },
+        {
+          provide: BlacklistService,
+          useValue: blacklistService,
         },
       ],
     })

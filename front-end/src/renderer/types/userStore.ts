@@ -58,6 +58,10 @@ export type ConnectedOrganization = Organization &
     | (OrganizationActiveServer & (LoggedInOrganization | LoggedOutOrganization))
   );
 
+export type OrganizationTokens = {
+  [organizationId: string]: string | null;
+};
+
 export type PublicKeyAccounts = {
   publicKey: string;
   accounts: AccountInfo[];

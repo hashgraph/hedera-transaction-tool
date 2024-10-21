@@ -4,7 +4,7 @@ import { EntityManager } from 'typeorm';
 import { NotificationReceiver, NotificationType, User } from '@entities';
 
 import { closeApp, createNestApp, login } from '../utils';
-import { addNotifications, getUser, resetDatabase, resetUsersState } from '../utils/databaseUtil';
+import { addNotifications, getUser, resetDatabase } from '../utils/databaseUtil';
 import { Endpoint } from '../utils/httpUtils';
 
 describe('Notification Receiver (e2e)', () => {
@@ -13,36 +13,33 @@ describe('Notification Receiver (e2e)', () => {
 
   let entityManager: EntityManager;
 
-  let userAuthCookie: string;
+  let userAuthToken: string;
   let admin: User;
   let user: User;
 
   beforeAll(async () => {
     await resetDatabase();
     await addNotifications();
-  });
 
-  beforeEach(async () => {
     app = await createNestApp();
     server = app.getHttpServer();
 
     entityManager = app.get(EntityManager);
 
-    userAuthCookie = await login(app, 'user');
+    userAuthToken = await login(app, 'user');
 
     admin = await getUser('admin');
     user = await getUser('user');
   });
 
-  afterEach(async () => {
-    await resetUsersState();
+  afterAll(async () => {
     await closeApp(app);
   });
 
   describe('/notifications', () => {
     let endpoint: Endpoint;
 
-    beforeEach(async () => {
+    beforeAll(async () => {
       endpoint = new Endpoint(server, '/notifications');
     });
 
@@ -51,7 +48,7 @@ describe('Notification Receiver (e2e)', () => {
         where: { userId: user.id },
       });
 
-      const { status, body } = await endpoint.get(null, userAuthCookie, '?page=1&size=10');
+      const { status, body } = await endpoint.get(null, userAuthToken, '?page=1&size=10');
 
       expect(status).toBe(200);
       expect(body.totalItems).toEqual(notificationForUser.length);
@@ -66,7 +63,7 @@ describe('Notification Receiver (e2e)', () => {
 
       const { status, body } = await endpoint.get(
         null,
-        userAuthCookie,
+        userAuthToken,
         '?page=1&size=10&filter=isRead:eq:false',
       );
 
@@ -88,7 +85,7 @@ describe('Notification Receiver (e2e)', () => {
 
       const { status, body } = await endpoint.get(
         null,
-        userAuthCookie,
+        userAuthToken,
         '?page=1&size=10&filter=type:eq:TRANSACTION_CREATED',
       );
 
@@ -102,7 +99,7 @@ describe('Notification Receiver (e2e)', () => {
   describe('/notifications/count', () => {
     let endpoint: Endpoint;
 
-    beforeEach(async () => {
+    beforeAll(async () => {
       endpoint = new Endpoint(server, '/notifications/count');
     });
 
@@ -111,7 +108,7 @@ describe('Notification Receiver (e2e)', () => {
         where: { userId: user.id },
       });
 
-      const { status, text } = await endpoint.get(null, userAuthCookie);
+      const { status, text } = await endpoint.get(null, userAuthToken);
 
       expect(status).toBe(200);
       expect(text).toBe(countForUser.toString());
@@ -122,7 +119,7 @@ describe('Notification Receiver (e2e)', () => {
         where: { userId: user.id, isRead: false },
       });
 
-      const { status, text } = await endpoint.get(null, userAuthCookie, '?filter=isRead:eq:false');
+      const { status, text } = await endpoint.get(null, userAuthToken, '?filter=isRead:eq:false');
 
       expect(status).toBe(200);
       expect(text).toBe(countForUser.toString());
@@ -140,7 +137,7 @@ describe('Notification Receiver (e2e)', () => {
 
       const { status, text } = await endpoint.get(
         null,
-        userAuthCookie,
+        userAuthToken,
         '?filter=type:eq:TRANSACTION_CREATED',
       );
 
@@ -152,7 +149,7 @@ describe('Notification Receiver (e2e)', () => {
   describe('/notifications/:id', () => {
     let endpoint: Endpoint;
 
-    beforeEach(async () => {
+    beforeAll(async () => {
       endpoint = new Endpoint(server, '/notifications');
     });
 
@@ -165,7 +162,7 @@ describe('Notification Receiver (e2e)', () => {
       });
       expect(notificationForUser.length).toBeGreaterThan(0);
 
-      const { status, body } = await endpoint.get(`${notificationForUser[0].id}`, userAuthCookie);
+      const { status, body } = await endpoint.get(`${notificationForUser[0].id}`, userAuthToken);
 
       expect(status).toBe(200);
       expect(body.id).toEqual(notificationForUser[0].id);
@@ -184,7 +181,7 @@ describe('Notification Receiver (e2e)', () => {
       });
       expect(notificationForAdmin.length).toBeGreaterThan(0);
 
-      const { status } = await endpoint.get(`${notificationForAdmin[0].id}`, userAuthCookie);
+      const { status } = await endpoint.get(`${notificationForAdmin[0].id}`, userAuthToken);
 
       expect(status).toBe(400);
     });
@@ -199,7 +196,7 @@ describe('Notification Receiver (e2e)', () => {
       const { status, body } = await endpoint.patch(
         { isRead: true },
         `${notificationForUser[0].id}`,
-        userAuthCookie,
+        userAuthToken,
       );
 
       const notification = await entityManager.findOne(NotificationReceiver, {
@@ -222,7 +219,7 @@ describe('Notification Receiver (e2e)', () => {
       const { status } = await endpoint.patch(
         { isRead: true },
         `${notificationForAdmin[0].id}`,
-        userAuthCookie,
+        userAuthToken,
       );
 
       const notification = await entityManager.findOne(NotificationReceiver, {
@@ -239,10 +236,7 @@ describe('Notification Receiver (e2e)', () => {
       });
       expect(notificationForUser.length).toBeGreaterThan(0);
 
-      const { status, text } = await endpoint.delete(
-        `${notificationForUser[0].id}`,
-        userAuthCookie,
-      );
+      const { status, text } = await endpoint.delete(`${notificationForUser[0].id}`, userAuthToken);
 
       const notification = await entityManager.findOne(NotificationReceiver, {
         where: { id: notificationForUser[0].id },
@@ -259,7 +253,7 @@ describe('Notification Receiver (e2e)', () => {
       });
       expect(notificationForAdmin.length).toBeGreaterThan(0);
 
-      const { status } = await endpoint.delete(`${notificationForAdmin[0].id}`, userAuthCookie);
+      const { status } = await endpoint.delete(`${notificationForAdmin[0].id}`, userAuthToken);
 
       const notification = await entityManager.findOne(NotificationReceiver, {
         where: { id: notificationForAdmin[0].id },

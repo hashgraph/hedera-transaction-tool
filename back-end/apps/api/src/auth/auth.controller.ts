@@ -1,18 +1,22 @@
-import { Body, Controller, HttpCode, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { SkipThrottle } from '@nestjs/throttler';
 
-import { Request, Response } from 'express';
+import { Request } from 'express';
 
-import { Serialize } from '@app/common';
+import { BlacklistService, Serialize } from '@app/common';
 
 import { User } from '@entities';
 
 import {
   AdminGuard,
   EmailThrottlerGuard,
+  extractJwtAuth,
+  extractJwtOtp,
   JwtAuthGuard,
+  JwtBlackListAuthGuard,
+  JwtBlackListOtpGuard,
   LocalAuthGuard,
   OtpJwtAuthGuard,
   OtpVerifiedAuthGuard,
@@ -24,20 +28,23 @@ import { AuthService } from './auth.service';
 
 import {
   AuthDto,
+  AuthenticateWebsocketTokenDto,
   ChangePasswordDto,
   LoginDto,
+  LoginResponseDto,
   NewPasswordDto,
   OtpDto,
   OtpLocalDto,
   SignUpUserDto,
-  AuthenticateWebsocketTokenDto,
 } from './dtos';
-import { UserDto } from '../users/dtos';
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly blacklistService: BlacklistService,
+  ) {}
 
   /* Register new users by admins */
   @ApiOperation({
@@ -51,7 +58,7 @@ export class AuthController {
   })
   @Post('/signup')
   @Serialize(AuthDto)
-  @UseGuards(JwtAuthGuard, AdminGuard, EmailThrottlerGuard)
+  @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, AdminGuard, EmailThrottlerGuard)
   async signUp(@Body() dto: SignUpUserDto, @Req() req: Request): Promise<User> {
     const url = `${req.protocol}://${req.get('host')}`;
     return this.authService.signUpByAdmin(dto, url);
@@ -67,15 +74,15 @@ export class AuthController {
   })
   @ApiResponse({
     status: 200,
-    description: 'User is verified and an authentication token in a cookie is attached.',
+    description: 'User is verified and an authentication token is returned along with the user.',
   })
   @Post('/login')
   @HttpCode(200)
   @UseGuards(LocalAuthGuard, EmailThrottlerGuard)
-  @Serialize(UserDto)
-  async login(@GetUser() user: User, @Res({ passthrough: true }) response: Response) {
-    await this.authService.login(user, response);
-    return user;
+  @Serialize(LoginResponseDto)
+  async login(@GetUser() user: User) {
+    const accessToken = await this.authService.login(user);
+    return { user, accessToken };
   }
 
   /* User log out */
@@ -85,13 +92,13 @@ export class AuthController {
   })
   @ApiResponse({
     status: 200,
-    description: "The user's authentication token cookie is removed and added in the blacklist.",
+    description: "The user's authentication token is added in the blacklist.",
   })
   @Post('/logout')
   @HttpCode(200)
-  @UseGuards(JwtAuthGuard)
-  logout(@Res({ passthrough: true }) response: Response) {
-    return this.authService.logout(response);
+  @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard)
+  async logout(@Req() req: Request) {
+    await this.blacklistService.blacklistToken(extractJwtAuth(req));
   }
 
   /* Change user's password */
@@ -104,7 +111,7 @@ export class AuthController {
     description: 'Password successfully changed.',
   })
   @Patch('/change-password')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard)
   async changePassword(@GetUser() user: User, @Body() dto: ChangePasswordDto): Promise<void> {
     return this.authService.changePassword(user, dto);
   }
@@ -113,7 +120,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Request OTP for password reset',
     description:
-      "Begin the process of resetting the user's password by creating and emailing an OTP to the user. A JWT cookie is attached to the response. Once the OTP is verified, the JWT cookie will be updated and the user will be able to set his new password.",
+      "Begin the process of resetting the user's password by creating and emailing an OTP to the user. A JWT is returned. Once the OTP is verified, a new JWT will be issued and the user will be able to set his new password.",
   })
   @ApiBody({
     type: SignUpUserDto,
@@ -125,30 +132,28 @@ export class AuthController {
   @Post('/reset-password')
   @HttpCode(200)
   @UseGuards(EmailThrottlerGuard)
-  async createOtp(@Body() { email }: OtpLocalDto, @Res({ passthrough: true }) response: Response) {
-    return this.authService.createOtp(email, response);
+  async createOtp(@Body() { email }: OtpLocalDto) {
+    return this.authService.createOtp(email);
   }
 
   /* Verify OTP for password reset */
   @ApiOperation({
     summary: 'Verify password reset',
     description:
-      'Verify the user can reset the password by supplying the valid OTP. If the OTP is valid the JWT cookie is updated and the user will be able to set his new password',
+      'Verify the user can reset the password by supplying the valid OTP. If the OTP is valid , a new JWT is issued and the user will be able to set his new password',
   })
   @ApiResponse({
     status: 200,
     description:
-      'The OTP verified and the JWT cookie is updated. Now the user is able to set his new password. If the cookie is expired, the user will need to request a new OTP.',
+      'The OTP verified, new JWT is issued. Now the user is able to set his new password. If the JWT is expired, the user will need to request a new OTP.',
   })
   @Post('/verify-reset')
   @HttpCode(200)
-  @UseGuards(OtpJwtAuthGuard)
-  verifyOtp(
-    @GetUser() user: User,
-    @Body() dto: OtpDto,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    return this.authService.verifyOtp(user, dto, response);
+  @UseGuards(JwtBlackListOtpGuard, OtpJwtAuthGuard)
+  async verifyOtp(@GetUser() user: User, @Body() dto: OtpDto, @Req() req) {
+    const result = await this.authService.verifyOtp(user, dto);
+    await this.blacklistService.blacklistToken(extractJwtOtp(req));
+    return result;
   }
 
   /* Set the password for the user if the email has been verified */
@@ -160,15 +165,11 @@ export class AuthController {
     status: 200,
     description: 'Password successfully set.',
   })
-  @UseGuards(OtpVerifiedAuthGuard)
+  @UseGuards(JwtBlackListOtpGuard, OtpVerifiedAuthGuard)
   @Patch('/set-password')
-  async setPassword(
-    @GetUser() user: User,
-    @Body() dto: NewPasswordDto,
-    @Res({ passthrough: true }) response: Response,
-  ): Promise<void> {
+  async setPassword(@GetUser() user: User, @Body() dto: NewPasswordDto, @Req() req): Promise<void> {
     await this.authService.setPassword(user, dto.password);
-    this.authService.clearOtpCookie(response);
+    await this.blacklistService.blacklistToken(extractJwtOtp(req));
   }
 
   @SkipThrottle()

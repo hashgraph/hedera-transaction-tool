@@ -10,7 +10,7 @@ import { useRouter } from 'vue-router';
 
 import { changePassword, resetDataLocal } from '@renderer/services/userService';
 import { changePassword as organizationChangePassword } from '@renderer/services/organization/auth';
-import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
+import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
@@ -70,13 +70,13 @@ const handleChangePassword = async () => {
         newPassword.value,
       );
 
-      await addOrganizationCredentials(
-        user.selectedOrganization.email,
-        newPassword.value,
+      await updateOrganizationCredentials(
         user.selectedOrganization.id,
         user.personal.id,
-        personalPassword,
-        true,
+        undefined,
+        newPassword.value,
+        undefined,
+        personalPassword || undefined,
       );
     } else {
       await changePassword(user.personal.id, currentPassword.value, newPassword.value);

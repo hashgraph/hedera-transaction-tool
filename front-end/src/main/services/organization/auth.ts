@@ -4,18 +4,12 @@ import axios from 'axios';
 
 export const login = async (serverUrl: string, email: string, password: string) => {
   try {
-    const res = await axios.post(
-      `${serverUrl}/auth/login`,
-      {
-        email,
-        password,
-      },
-      {
-        withCredentials: true,
-      },
-    );
+    const { data } = await axios.post(`${serverUrl}/auth/login`, {
+      email,
+      password,
+    });
 
-    return { id: res.data.id, cookie: res.headers['set-cookie'] };
+    return { id: data.user.id, accessToken: data.accessToken };
   } catch (error: any) {
     throw new Error('Failed Sign in Organization');
   }

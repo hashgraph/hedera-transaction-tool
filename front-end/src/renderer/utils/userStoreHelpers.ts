@@ -10,6 +10,7 @@ import type {
   PublicKeyAccounts,
   RecoveryPhrase,
   LoggedInUserWithPassword,
+  OrganizationTokens,
 } from '@renderer/types';
 
 import { nextTick } from 'vue';
@@ -17,12 +18,15 @@ import { nextTick } from 'vue';
 import { Prisma } from '@prisma/client';
 import { Mnemonic } from '@hashgraph/sdk';
 
+import { SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@main/shared/constants';
+
 import { getUserState, healthCheck } from '@renderer/services/organization';
 import { getAccountIds, getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService';
 import { storeKeyPair as storeKey, getKeyPairs } from '@renderer/services/keyPairService';
 import {
   shouldSignInOrganization,
   deleteOrganizationCredentials,
+  getOrganizationTokens,
 } from '@renderer/services/organizationCredentials';
 import { deleteOrganization, getOrganizations } from '@renderer/services/organizationsService';
 import {
@@ -495,7 +499,6 @@ export const refetchUserState = async (organization: Ref<ConnectedOrganization |
 
 export const getConnectedOrganizations = async (user: PersonalUser | null) => {
   const organizations = await getOrganizations();
-
   const connectedOrganizations: ConnectedOrganization[] = [];
 
   const results = await Promise.allSettled(
@@ -509,6 +512,34 @@ export const getConnectedOrganizations = async (user: PersonalUser | null) => {
   });
 
   return connectedOrganizations;
+};
+
+export const getOrganizationJwtTokens = async (
+  user: PersonalUser | null,
+): Promise<OrganizationTokens> => {
+  if (isUserLoggedIn(user)) {
+    const organizationTokens = await getOrganizationTokens(user.id);
+    return organizationTokens.reduce<OrganizationTokens>((acc, token) => {
+      acc[token.organization_id] = token.jwtToken;
+      return acc;
+    }, {});
+  }
+  return {};
+};
+
+export const setSessionStorageTokens = (
+  organizations: Organization[],
+  organizationTokens: OrganizationTokens,
+) => {
+  for (const organization of organizations) {
+    const token = organizationTokens[organization.id]?.trim();
+    if (token && token.length > 0) {
+      sessionStorage.setItem(
+        `${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${new URL(organization.serverUrl).origin}`,
+        token,
+      );
+    }
+  }
 };
 
 export const deleteOrganizationConnection = async (
@@ -530,4 +561,22 @@ const navigateToPreviousRoute = (router: Router) => {
   } else {
     currentRoute.name !== 'transactions' && router.push({ name: 'transactions' });
   }
+};
+
+export const toggleAuthTokenInSessionStorage = (
+  serverUrl: string,
+  token: string,
+  remove: boolean = false,
+) => {
+  const origin = new URL(serverUrl).origin;
+  if (remove) {
+    sessionStorage.removeItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`);
+    return;
+  }
+  sessionStorage.setItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`, token);
+};
+
+export const getAuthTokenFromSessionStorage = (serverUrl: string): string | null => {
+  const origin = new URL(serverUrl).origin;
+  return sessionStorage.getItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`);
 };

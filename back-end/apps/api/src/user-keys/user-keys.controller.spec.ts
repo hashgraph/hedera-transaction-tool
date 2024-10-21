@@ -1,13 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 
-import { guardMock } from '@app/common';
+import { BlacklistService, guardMock } from '@app/common';
 import { User, UserKey, UserStatus } from '@entities';
 
-import { UserKeysController } from './user-keys.controller';
-
-import { MAX_USER_KEYS, UserKeysService } from './user-keys.service';
 import { VerifiedUserGuard } from '../guards';
+
+import { UserKeysController } from './user-keys.controller';
+import { MAX_USER_KEYS, UserKeysService } from './user-keys.service';
 
 describe('UserKeysController', () => {
   let controller: UserKeysController;
@@ -15,6 +15,7 @@ describe('UserKeysController', () => {
   let userKey: UserKey;
 
   const userKeysService = mockDeep<UserKeysService>();
+  const blacklistService = mockDeep<BlacklistService>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -23,6 +24,10 @@ describe('UserKeysController', () => {
         {
           provide: UserKeysService,
           useValue: userKeysService,
+        },
+        {
+          provide: BlacklistService,
+          useValue: blacklistService,
         },
       ],
     })

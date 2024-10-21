@@ -1,22 +1,30 @@
 import { UnprocessableEntityException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 
-import { guardMock } from '@app/common';
+import { BlacklistService, guardMock } from '@app/common';
 import { User, UserStatus } from '@entities';
 
 import { AuthController } from './auth.controller';
 
 import { AuthService } from './auth.service';
+
 import { EmailThrottlerGuard } from '../guards';
+
+jest.mock('passport-jwt', () => ({
+  ExtractJwt: {
+    fromAuthHeaderAsBearerToken: jest.fn(() => () => 'token'),
+    fromHeader: jest.fn(() => () => 'token'),
+  },
+}));
 
 describe('AuthController', () => {
   let controller: AuthController;
   let user: User;
-  let res: Response;
 
   const authService = mockDeep<AuthService>();
+  const blacklistService = mockDeep<BlacklistService>();
 
   const request: Request = {
     protocol: 'http',
@@ -30,6 +38,10 @@ describe('AuthController', () => {
         {
           provide: AuthService,
           useValue: authService,
+        },
+        {
+          provide: BlacklistService,
+          useValue: blacklistService,
         },
       ],
     })
@@ -56,13 +68,13 @@ describe('AuthController', () => {
       receivedNotifications: [],
       notificationPreferences: [],
     };
-    res = {
-      status: jest.fn().mockReturnThis(),
-      send: jest.fn(),
-    } as unknown as Response;
   });
 
   describe('signUp', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
     it('should return a user', async () => {
       const result = user;
 
@@ -97,9 +109,9 @@ describe('AuthController', () => {
 
   describe('login', () => {
     it('should return a user', async () => {
-      const result = user;
+      await controller.login(user);
 
-      expect(await controller.login(user, res)).toBe(result);
+      expect(authService.login).toHaveBeenCalledWith(user);
     });
   });
 
@@ -120,15 +132,17 @@ describe('AuthController', () => {
     it('should have no return value', async () => {
       authService.createOtp.mockResolvedValue(undefined);
 
-      expect(await controller.createOtp({ email: 'john@test.com' }, res)).toBeUndefined();
+      expect(await controller.createOtp({ email: 'john@test.com' })).toBeUndefined();
     });
   });
 
   describe('verify-reset', () => {
     it('should have no return value', async () => {
-      authService.verifyOtp.mockResolvedValue(undefined);
+      const result = { token: 'newToken' };
+      authService.verifyOtp.mockResolvedValue(result);
 
-      expect(await controller.verifyOtp(user, { token: '' }, res)).toBeUndefined();
+      expect(await controller.verifyOtp(user, { token: '' }, request)).toEqual(result);
+      expect(blacklistService.blacklistToken).toHaveBeenCalledWith('token');
     });
   });
 
@@ -136,7 +150,8 @@ describe('AuthController', () => {
     it('should have no return value', async () => {
       authService.setPassword.mockResolvedValue(undefined);
 
-      expect(await controller.setPassword(user, { password: 'Doe' }, res)).toBeUndefined();
+      expect(await controller.setPassword(user, { password: 'Doe' }, request)).toBeUndefined();
+      expect(blacklistService.blacklistToken).toHaveBeenCalledWith('token');
     });
   });
 
@@ -150,7 +165,8 @@ describe('AuthController', () => {
 
   describe('logout', () => {
     it('should have no return value', async () => {
-      expect(await controller.logout(res)).toBeUndefined();
+      await controller.logout(request);
+      expect(blacklistService.blacklistToken).toHaveBeenCalledWith('token');
     });
   });
 });

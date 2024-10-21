@@ -71,23 +71,33 @@ const handleLogin = async () => {
   try {
     loading.value = true;
 
+    const { jwtToken } = await login(
+      user.selectedOrganization.serverUrl,
+      inputEmail.value.toLocaleLowerCase().trim(),
+      inputPassword.value,
+    );
+
     await addOrganizationCredentials(
-      inputEmail.value.trim(),
+      inputEmail.value.toLocaleLowerCase().trim(),
       inputPassword.value,
       user.selectedOrganization.id,
       user.personal.id,
+      jwtToken,
       personalPassword,
       true,
     );
-
-    await login(user.selectedOrganization.serverUrl, inputEmail.value.trim(), inputPassword.value);
     toast.success('Successfully signed in');
 
     const { id, serverUrl, nickname, key } = user.selectedOrganization;
     loading.value = false;
 
+    await user.refetchOrganizations();
+
     await withLoader(
-      user.selectOrganization.bind(null, { id, serverUrl, nickname, key }),
+      async () => {
+        await user.refetchOrganizations();
+        await user.selectOrganization({ id, serverUrl, nickname, key });
+      },
       toast,
       globalModalLoaderRef?.value,
       'Failed to change user mode',

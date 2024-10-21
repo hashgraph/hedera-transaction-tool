@@ -10,6 +10,7 @@ import {
   LoggerModule,
   NotificationsProxyModule,
   HealthModule,
+  BlacklistModule,
 } from '@app/common';
 
 import getEnvFilePaths from './config/envFilePaths';
@@ -62,6 +63,7 @@ export const config = ConfigModule.forRoot({
     HealthModule,
     IpThrottlerModule,
     EmailThrottlerModule,
+    BlacklistModule.register({ isGlobal: true }),
   ],
   providers: [
     {

@@ -4,8 +4,6 @@ import { Transport } from '@nestjs/microservices';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
-import * as cookieParser from 'cookie-parser';
-
 import { version } from '../package.json';
 
 import { API_SERVICE, LoggerMiddleware } from '@app/common';
@@ -15,8 +13,6 @@ import { BadRequestExceptionFilter } from './filters/bad-request-exception.filte
 
 export function setupApp(app: NestExpressApplication, addLogger: boolean = true) {
   connectMicroservices(app);
-
-  app.use(cookieParser());
 
   app.useGlobalPipes(
     new ValidationPipe({

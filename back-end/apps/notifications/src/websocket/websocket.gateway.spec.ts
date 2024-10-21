@@ -4,7 +4,7 @@ import { Server } from 'socket.io';
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 
-import { AUTH_SERVICE, NotifyClientDto } from '@app/common';
+import { AUTH_SERVICE, NotifyClientDto, BlacklistService } from '@app/common';
 import { User } from '@entities';
 
 import { WebsocketGateway } from './websocket.gateway';
@@ -17,6 +17,7 @@ jest.mock('./middlewares/auth-websocket.middleware');
 describe('WebsocketGateway', () => {
   let gateway: WebsocketGateway;
   const authService = mockDeep<ClientProxy>();
+  const blacklistService = mockDeep<BlacklistService>();
   const authWebsocket: Partial<AuthWebsocket> = {
     user: {
       id: 1,
@@ -31,6 +32,10 @@ describe('WebsocketGateway', () => {
         {
           provide: AUTH_SERVICE,
           useValue: authService,
+        },
+        {
+          provide: BlacklistService,
+          useValue: blacklistService,
         },
       ],
     }).compile();
@@ -59,7 +64,7 @@ describe('WebsocketGateway', () => {
       gateway.afterInit(server as Server);
 
       expect(server.use).toHaveBeenCalled();
-      expect(AuthWebsocketMiddleware).toHaveBeenCalledWith(authService);
+      expect(AuthWebsocketMiddleware).toHaveBeenCalledWith(authService, blacklistService);
     });
   });
 
@@ -71,6 +76,19 @@ describe('WebsocketGateway', () => {
       expect(gateway.logger.log).toHaveBeenCalledWith(
         `Socket client connected for User ID: ${authWebsocket.user.id}`,
       );
+    });
+
+    it('should handle connection without user id', () => {
+      const invalidSocket: Partial<AuthWebsocket> = {
+        user: {} as User,
+        disconnect: jest.fn(),
+        join: jest.fn(),
+      };
+
+      gateway.handleConnection(invalidSocket as AuthWebsocket);
+
+      expect(invalidSocket.disconnect).toHaveBeenCalled();
+      expect(invalidSocket.join).not.toHaveBeenCalled();
     });
 
     it('should join user room', () => {

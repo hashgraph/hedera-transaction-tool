@@ -1,19 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 
-import { guardMock } from '@app/common';
+import { BlacklistService, guardMock } from '@app/common';
 import { User, UserStatus } from '@entities';
 
-import { UsersController } from './users.controller';
-
-import { UsersService } from './users.service';
 import { VerifiedUserGuard } from '../guards';
+
+import { UsersController } from './users.controller';
+import { UsersService } from './users.service';
 
 describe('UsersController', () => {
   let controller: UsersController;
   let user: User;
 
   const userService = mockDeep<UsersService>();
+  const blacklistService = mockDeep<BlacklistService>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -22,6 +23,10 @@ describe('UsersController', () => {
         {
           provide: UsersService,
           useValue: userService,
+        },
+        {
+          provide: BlacklistService,
+          useValue: blacklistService,
         },
       ],
     })
