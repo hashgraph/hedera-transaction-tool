@@ -107,12 +107,12 @@ export async function decryptMnemonic(
   const iv = data.subarray(header.length, header.length + IV_LENGTH);
 
   /* Create a decipher, set the auth tag */
-  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
-  decipher.setAuthTag(authTag);
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, new Uint8Array(iv));
+  decipher.setAuthTag(new Uint8Array(authTag));
 
   try {
     /* Decrypt the encrypted text */
-    let decrypted = decipher.update(encryptedText, undefined, 'utf8');
+    let decrypted = decipher.update(new Uint8Array(encryptedText), undefined, 'utf8');
     decrypted += decipher.final();
     return decrypted;
   } catch (error) {
