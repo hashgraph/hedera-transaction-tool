@@ -46,7 +46,7 @@ export const generateMnemonic = () => {
 };
 
 [localnet2, localnet1002, localnet1003, localnet1004, localnet1022].forEach(account => {
-  account.setNetwork('local-node', 'local-node');
+  account.setNetwork('local-node');
 });
 
 export const generatePrivateKey = async (mnemonic?: Mnemonic) => {

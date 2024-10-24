@@ -36,7 +36,6 @@ import {
   notifyWaitingForSignatures,
   notifySyncIndicators,
   ErrorCodes,
-  MirrorNetworkGRPC,
 } from '@app/common';
 
 import { CreateTransactionDto } from './dto';
@@ -354,7 +353,7 @@ export class TransactionsService {
         id: dto.creatorKeyId,
       },
       signature: dto.signature,
-      mirrorNetwork: MirrorNetworkGRPC.fromBaseURL(dto.mirrorNetwork)[0],
+      mirrorNetwork: dto.mirrorNetwork,
       validStart: sdkTransaction.transactionId.validStart.toDate(),
       cutoffAt: dto.cutoffAt,
     });
