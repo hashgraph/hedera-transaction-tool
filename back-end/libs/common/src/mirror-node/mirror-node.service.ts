@@ -25,6 +25,7 @@ export class MirrorNodeService {
     );
 
     if (cachedData && env !== 'test') return cachedData;
+    console.log(this.getMirrorNodeBaseURL(mirrorNetworkRest));
 
     const { data } = await this.httpService.axiosRef.get<AccountInfo>(
       `${this.getMirrorNodeBaseURL(mirrorNetworkRest)}/accounts/${accountId}`,

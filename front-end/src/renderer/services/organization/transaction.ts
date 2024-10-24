@@ -13,6 +13,7 @@ import type {
 
 import { Transaction } from '@hashgraph/sdk';
 
+import { CommonNetwork } from '@main/shared/enums';
 import { ObserverRole, TransactionStatus } from '@main/shared/interfaces';
 
 import {
@@ -38,6 +39,17 @@ export const submitTransaction = async (
   creatorKeyId: number,
 ): Promise<{ id: number; transactionBytes: string }> =>
   commonRequestHandler(async () => {
+    if (
+      [
+        CommonNetwork.MAINNET,
+        CommonNetwork.TESTNET,
+        CommonNetwork.PREVIEWNET,
+        CommonNetwork.LOCAL_NODE,
+      ].includes(network)
+    ) {
+      mirrorNetworkRest = network;
+    }
+
     const { data } = await axiosWithCredentials.post(`${serverUrl}/${controller}`, {
       name,
       description,

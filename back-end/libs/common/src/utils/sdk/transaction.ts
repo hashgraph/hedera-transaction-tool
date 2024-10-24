@@ -208,23 +208,31 @@ export const computeSignatureKey = async (
 
   /* Add the keys of the account ids to the signature key list */
   for (const accountId of accounts) {
-    const accountInfo = await mirrorNodeService.getAccountInfo(accountId, mirrorNetworkRest);
-    const key = parseAccountProperty(accountInfo, 'key');
-    if (!key) continue;
+    try {
+      const accountInfo = await mirrorNodeService.getAccountInfo(accountId, mirrorNetworkRest);
+      const key = parseAccountProperty(accountInfo, 'key');
+      if (!key) continue;
 
-    signatureKey.push(key);
+      signatureKey.push(key);
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   /* Check if there is a receiver account that required signature, if so add it to the key list */
   for (const accountId of receiverAccounts) {
-    const accountInfo = await mirrorNodeService.getAccountInfo(accountId, mirrorNetworkRest);
-    const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
-    if (!receiverSigRequired) continue;
+    try {
+      const accountInfo = await mirrorNodeService.getAccountInfo(accountId, mirrorNetworkRest);
+      const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
+      if (!receiverSigRequired) continue;
 
-    const key = parseAccountProperty(accountInfo, 'key');
-    if (!key) continue;
+      const key = parseAccountProperty(accountInfo, 'key');
+      if (!key) continue;
 
-    signatureKey.push(key);
+      signatureKey.push(key);
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   return signatureKey;
