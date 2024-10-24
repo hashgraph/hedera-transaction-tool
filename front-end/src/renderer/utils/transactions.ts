@@ -67,7 +67,7 @@ export const getFormattedDateFromTimestamp = (timestamp: Timestamp): string => {
 };
 
 export const openTransactionInHashscan = (transactionId: string, network: Network) => {
-  network !== 'custom' &&
+  !['custom', 'local-node'].includes(network) &&
     openExternal(`https://hashscan.io/${network}/transaction/${transactionId}`);
 };
 
