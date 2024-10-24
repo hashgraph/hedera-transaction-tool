@@ -1,7 +1,7 @@
 import type { IAccountInfoParsed, CryptoAllowance } from '@main/shared/interfaces';
 
 import { computed, ref, watch } from 'vue';
-import { AccountId, Hbar } from '@hashgraph/sdk';
+import { AccountId, Client, Hbar } from '@hashgraph/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
@@ -33,7 +33,9 @@ export default function useAccountId() {
   const accoundIdWithChecksum = computed(() => {
     try {
       return isValid.value
-        ? accountInfo.value?.accountId.toStringWithChecksum(networkStore.client).split('-')
+        ? accountInfo.value?.accountId
+            .toStringWithChecksum(networkStore.client as Client)
+            .split('-')
         : accountIdFormatted.value;
     } catch (error) {
       return accountIdFormatted.value;
