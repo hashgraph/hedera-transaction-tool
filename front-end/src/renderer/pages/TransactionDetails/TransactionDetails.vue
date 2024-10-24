@@ -10,6 +10,7 @@ import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import { TransactionStatus } from '@main/shared/interfaces';
 import { TRANSACTION_ACTION } from '@main/shared/constants';
+import { CommonNetwork } from '@main/shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
@@ -707,7 +708,14 @@ const cancel = 'Cancel';
               <div :class="sectionHeadingClass">
                 <h2 class="text-title text-bold">Transaction Details</h2>
                 <span
-                  v-if="localTransaction || stepperActiveIndex === stepperItems.length - 1"
+                  v-if="
+                    [
+                      CommonNetwork.MAINNET,
+                      CommonNetwork.TESTNET,
+                      CommonNetwork.PREVIEWNET,
+                    ].includes(network.network) &&
+                    (localTransaction || stepperActiveIndex === stepperItems.length - 1)
+                  "
                   class="text-micro text-pink cursor-pointer"
                   @click="
                     openTransactionInHashscan(
