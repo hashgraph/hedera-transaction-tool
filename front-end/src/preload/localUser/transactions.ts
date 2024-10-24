@@ -6,13 +6,8 @@ import { Prisma } from '@prisma/client';
 
 export default {
   transactions: {
-    setClient: (
-      network: string,
-      nodeAccountIds?: {
-        [key: string]: string;
-      },
-      mirrorNetwork?: string[],
-    ) => ipcRenderer.invoke('transactions:setClient', network, nodeAccountIds, mirrorNetwork),
+    setClient: (mirrorNetwork: string | string[], ledgerId?: string) =>
+      ipcRenderer.invoke('transactions:setClient', mirrorNetwork, ledgerId),
     freezeTransaction: (transactionBytes: Uint8Array): Promise<Uint8Array> =>
       ipcRenderer.invoke('transactions:freezeTransaction', transactionBytes),
     signTransaction: (

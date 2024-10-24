@@ -8,6 +8,7 @@ import {
   executeTransaction,
   freezeTransaction,
   getClient,
+  getClientFromNetwork,
   getTransaction,
   getTransactions,
   getTransactionsCount,
@@ -70,61 +71,63 @@ describe('Services Local User Transactions', () => {
     vi.resetAllMocks();
   });
 
-  describe('setClient', () => {
+  describe('getClientFromNetwork', () => {
     beforeEach(() => {
       vi.resetAllMocks();
     });
 
-    test('Should set client for common networks', () => {
-      const forMainnet = vi.spyOn(SDK.Client, 'forMainnet');
-      const forTestnet = vi.spyOn(SDK.Client, 'forMainnet');
-      const forPreviewnet = vi.spyOn(SDK.Client, 'forMainnet');
-      const forLocalNode = vi.spyOn(SDK.Client, 'forMainnet');
+    test('Should return client for common networks', async () => {
+      const forMainnet = vi.spyOn(SDK.Client, 'forName').mockReturnValue({ close: vi.fn() } as any);
 
-      setClient('mainnet');
-      expect(forMainnet).toHaveBeenCalledTimes(1);
-      getClient().close();
-
-      setClient('testnet');
-      expect(forTestnet).toHaveBeenCalledTimes(1);
-      getClient().close();
-
-      setClient('previewnet');
-      expect(forPreviewnet).toHaveBeenCalledTimes(1);
-      getClient().close();
-
-      setClient('local-node');
-      expect(forLocalNode).toHaveBeenCalledTimes(1);
-      getClient().close();
+      const client = await getClientFromNetwork('mainnet');
+      expect(forMainnet).toHaveBeenCalledWith('mainnet');
+      client.close();
     });
 
-    test('Should set client for custom network', () => {
-      const nodeAddress = { '0.0.3': 'http://my-test-url.com' };
+    test('Should return client for custom network', async () => {
+      const mirrorNetwork = ['http://my-test-url.com'];
 
-      const forNetwork = vi.spyOn(SDK.Client, 'forNetwork');
+      const forNetwork = vi.spyOn(SDK.Client, 'forNetwork').mockReturnValue({
+        setMirrorNetwork: vi.fn().mockReturnThis(),
+        setNetworkFromAddressBook: vi.fn(),
+        setLedgerId: vi.fn(),
+        close: vi.fn(),
+      } as any);
 
-      try {
-        setClient('custom', nodeAddress, ['testnet']);
-        getClient().close();
-      } catch (error) {
-        /* Ignore error */
-      }
+      const addressBookQueryMock = {
+        setFileId: vi.fn().mockReturnThis(),
+        execute: vi.fn().mockResolvedValue({}),
+      };
+      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(() => addressBookQueryMock as any);
 
-      expect(forNetwork).toHaveBeenCalledWith(nodeAddress);
+      const client = await getClientFromNetwork(mirrorNetwork);
+      expect(forNetwork).toHaveBeenCalledWith({});
+      expect(client.setMirrorNetwork).toHaveBeenCalledWith(mirrorNetwork);
+      client.close();
     });
 
-    test('Should throw error when setting custom network without node addresses or mirror network', () => {
-      expect(() => setClient('custom', undefined, ['testnet'])).toThrowError(
-        'Settings for custom network are required',
-      );
+    test('Should set ledger ID if provided', async () => {
+      const mirrorNetwork = ['http://my-test-url.com'];
+      const ledgerId = '0xa2';
 
-      expect(() => setClient('custom', { '0.0.3': 'url' })).toThrowError(
-        'Settings for custom network are required',
-      );
-    });
+      const forNetwork = vi.spyOn(SDK.Client, 'forNetwork').mockReturnValue({
+        setMirrorNetwork: vi.fn().mockReturnThis(),
+        setNetworkFromAddressBook: vi.fn(),
+        setLedgerId: vi.fn(),
+        close: vi.fn(),
+      } as any);
 
-    test('Should throw error when setting custom network without node addresses or mirror network', () => {
-      expect(() => setClient('some-cool-network')).toThrowError('Network not supported');
+      const addressBookQueryMock = {
+        setFileId: vi.fn().mockReturnThis(),
+        execute: vi.fn().mockResolvedValue({}),
+      };
+      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(() => addressBookQueryMock as any);
+
+      const client = await getClientFromNetwork(mirrorNetwork, ledgerId);
+      expect(forNetwork).toHaveBeenCalledWith({});
+      expect(client.setMirrorNetwork).toHaveBeenCalledWith(mirrorNetwork);
+      expect(client.setLedgerId).toHaveBeenCalledWith(ledgerId);
+      client.close();
     });
   });
 
@@ -133,8 +136,12 @@ describe('Services Local User Transactions', () => {
       vi.resetAllMocks();
     });
 
-    test('Should return client', () => {
-      setClient('testnet');
+    test('Should return client', async () => {
+      vi.spyOn(SDK.Client, 'forName').mockReturnValue({
+        close: vi.fn(),
+      } as any);
+
+      await setClient('testnet');
 
       expect(getClient()).toBeDefined();
     });
@@ -422,6 +429,15 @@ describe('Services Local User Transactions', () => {
   });
 
   describe('executeQuery', () => {
+    beforeAll(async () => {
+      vi.spyOn(SDK.Client, 'forName').mockReturnValue({
+        close: vi.fn(),
+        setOperator: vi.fn(),
+      } as any);
+
+      await setClient('testnet');
+    });
+
     beforeEach(() => {
       vi.resetAllMocks();
     });

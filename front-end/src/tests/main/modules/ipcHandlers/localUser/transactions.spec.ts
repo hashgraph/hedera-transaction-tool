@@ -71,12 +71,11 @@ describe('IPC handlers Accounts', () => {
     const handler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'transactions:setClient');
     expect(handler).toBeDefined();
 
-    const network = 'network';
-    const nodeAccountIds = { key: 'value' };
-    const mirrorNetwork = ['mirrorNetwork'];
+    const mirrorNetwork = ['mainnet'];
+    const ledgerId = '0x0';
 
-    handler && (await handler[1](event, network, nodeAccountIds, mirrorNetwork));
-    expect(setClient).toHaveBeenCalledWith(network, nodeAccountIds, mirrorNetwork);
+    handler && (await handler[1](event, mirrorNetwork, ledgerId));
+    expect(setClient).toHaveBeenCalledWith(mirrorNetwork, ledgerId);
   });
 
   test('Should set up freezeTransaction handler', async () => {

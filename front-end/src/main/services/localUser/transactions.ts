@@ -1,5 +1,13 @@
 import { safeStorage } from 'electron';
-import { Client, FileContentsQuery, PrivateKey, Query, Transaction } from '@hashgraph/sdk';
+import {
+  AddressBookQuery,
+  Client,
+  FileContentsQuery,
+  FileId,
+  PrivateKey,
+  Query,
+  Transaction,
+} from '@hashgraph/sdk';
 
 import { Prisma } from '@prisma/client';
 import { getPrismaClient } from '@main/db/prisma';
@@ -22,36 +30,39 @@ import { getStatusCodeFromMessage } from '@main/utils/sdk';
 
 let client: Client;
 
-// Sets the client
-export const setClient = (
-  network: string,
-  nodeAccountIds?: {
-    [key: string]: string;
-  },
-  mirrorNetwork?: string[],
-) => {
-  switch (network) {
-    case 'mainnet':
-      client = Client.forMainnet();
-      break;
-    case 'testnet':
-      client = Client.forTestnet();
-      break;
-    case 'previewnet':
-      client = Client.forPreviewnet();
-      break;
-    case 'local-node':
-      client = Client.forLocalNode();
-      break;
-    case 'custom':
-      if (!nodeAccountIds || !mirrorNetwork) {
-        throw Error('Settings for custom network are required');
-      }
-      client = Client.forNetwork(nodeAccountIds).setMirrorNetwork(mirrorNetwork);
-      break;
-    default:
-      throw Error('Network not supported');
+const MAINNET = 'mainnet';
+const TESTNET = 'testnet';
+const PREVIEWNET = 'previewnet';
+const LOCAL_NODE = 'local-node';
+
+export const getClientFromNetwork = async (mirrorNetwork: string | string[], ledgerId?: string) => {
+  if (!Array.isArray(mirrorNetwork)) {
+    mirrorNetwork = [mirrorNetwork];
   }
+
+  mirrorNetwork = mirrorNetwork.map(network => network.toLocaleLowerCase());
+  if ([MAINNET, TESTNET, PREVIEWNET, LOCAL_NODE].includes(mirrorNetwork[0])) {
+    return Client.forName(mirrorNetwork[0]);
+  }
+
+  const client = Client.forNetwork({}).setMirrorNetwork(mirrorNetwork);
+
+  const nodeAddressBook = await new AddressBookQuery()
+    .setFileId(FileId.ADDRESS_BOOK)
+    .execute(client);
+
+  client.setNetworkFromAddressBook(nodeAddressBook);
+
+  if (ledgerId) {
+    client.setLedgerId(ledgerId);
+  }
+
+  return client;
+};
+
+// Sets the client
+export const setClient = async (mirrorNetwork: string | string[], ledgerId?: string) => {
+  client = await getClientFromNetwork(mirrorNetwork, ledgerId);
 };
 
 // Gets the client
