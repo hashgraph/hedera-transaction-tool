@@ -5,7 +5,9 @@ import type {
   NetworkExchangeRateSetResponse,
   Transaction,
   AccountsResponse,
-} from '../../main/shared/interfaces';
+  NetworkNode,
+  NetworkNodesResponse,
+} from '@main/shared/interfaces';
 
 import axios from 'axios';
 
@@ -246,4 +248,30 @@ export const getTransactionInfo = async (
   );
 
   return data;
+};
+
+/* Gets the network nodes information */
+export const getNetworkNodes = async (mirrorNodeURL: string) => {
+  let networkNodes: NetworkNode[] = [];
+
+  try {
+    let nextUrl: string | null = `${mirrorNodeURL}/network/nodes?limit=100`;
+
+    while (nextUrl) {
+      const res = await axios.get(nextUrl);
+      const data: NetworkNodesResponse = res.data;
+      networkNodes = networkNodes.concat(data.nodes || []);
+
+      if (data.links?.next) {
+        nextUrl = `${mirrorNodeURL}${data.links.next.slice(data.links.next.indexOf('/network'))}`;
+      } else {
+        nextUrl = null;
+      }
+    }
+
+    return networkNodes;
+  } catch (error) {
+    console.log(error);
+    return networkNodes;
+  }
 };

@@ -18,6 +18,8 @@ import {
 } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
+import { getNetworkNodes } from '@renderer/services/mirrorNodeDataService';
+
 import { uint8ToHex, hexToUint8Array } from '..';
 
 export * from './createTransactions';
@@ -260,20 +262,15 @@ export function stringifyHbar(hbar: Hbar) {
 //   throw new Error('Invalid Hbar');
 // }
 
-export function getNodeNumbersFromNetwork(network: {
-  [key: string]: string | AccountId;
-}): number[] {
-  const nodeNumbers: number[] = [];
+export async function getNodeNumbersFromNetwork(mirrorNodeRESTURL: string): Promise<number[]> {
+  const networkNodes = await getNetworkNodes(mirrorNodeRESTURL);
 
-  for (const key in network) {
-    const nodeName = key.indexOf('node');
-
-    if (nodeName >= 0) {
-      nodeNumbers.push(Number(key.slice(nodeName + 4, nodeName + 6)));
+  return networkNodes.reduce<number[]>((acc, node) => {
+    if (node.node_id !== undefined) {
+      acc.push(node.node_id);
     }
-  }
-
-  return nodeNumbers.sort((a, b) => a - b);
+    return acc;
+  }, []);
 }
 
 export const getPrivateKey = (
