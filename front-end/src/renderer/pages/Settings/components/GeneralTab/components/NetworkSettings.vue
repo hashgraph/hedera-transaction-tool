@@ -3,9 +3,8 @@ import type { Network } from '@main/shared/interfaces';
 import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 
 import { inject, onBeforeMount, ref } from 'vue';
-import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
-import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY } from '@main/shared/constants';
+import { SELECTED_NETWORK } from '@main/shared/constants';
 import { CommonNetwork } from '@main/shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -32,8 +31,6 @@ const isCustomSettingsVisible = ref(false);
 
 const mirrorNodeBaseURL = ref('');
 
-const maxTransactionFee = ref<Hbar>(new Hbar(0));
-
 /* Composables */
 const toast = useToast();
 
@@ -42,8 +39,13 @@ const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADE
 
 /* Handlers */
 const handleNetworkChange = async (network: Network) => {
-  isCustomSettingsVisible.value = false;
+  await updateSelectedNetwork(network);
   await networkStore.setNetwork(network);
+};
+
+const handleCommonNetwork = async (network: Network) => {
+  isCustomSettingsVisible.value = false;
+  await handleNetworkChange(network);
 };
 
 const handleMirrorNodeBaseURLChange = async (e: Event) => {
@@ -52,24 +54,17 @@ const handleMirrorNodeBaseURLChange = async (e: Event) => {
     forceSetMirrorNodeBaseURL(mirrorNodeBaseURL.value);
     return;
   }
+
   mirrorNodeBaseURL.value = formatMirrorNodeBaseURL(value);
   forceSetMirrorNodeBaseURL(mirrorNodeBaseURL.value);
-  await networkStore.setNetwork(mirrorNodeBaseURL.value);
+  await handleNetworkChange(mirrorNodeBaseURL.value);
 };
 
-const handleUpdateMaxTransactionFee = async (newFee: Hbar) => {
+const updateSelectedNetwork = async (network: Network) => {
   if (!isUserLoggedIn(user.personal)) return;
-
-  const storedClaim = await getStoredClaim(DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY);
-  const addOrUpdate = storedClaim !== undefined ? update : add;
-
-  await addOrUpdate(
-    user.personal.id,
-    DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
-    newFee.toString(HbarUnit.Tinybar),
-  );
-
-  maxTransactionFee.value = newFee;
+  const selectedNetwork = await getStoredClaim(SELECTED_NETWORK);
+  const addOrUpdate = selectedNetwork !== undefined ? update : add;
+  await addOrUpdate(user.personal.id, SELECTED_NETWORK, network);
 };
 
 /* Functions */
@@ -114,18 +109,6 @@ onBeforeMount(() => {
     mirrorNodeBaseURL.value = networkStore.network;
   }
 });
-
-/** Default Settings */
-onBeforeMount(async () => {
-  const storeMaxTransactionFee = await getStoredClaim(DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY);
-
-  if (storeMaxTransactionFee !== undefined) {
-    maxTransactionFee.value = Hbar.fromString(storeMaxTransactionFee.claim_value, HbarUnit.Tinybar);
-  } else {
-    maxTransactionFee.value = new Hbar(2);
-    await handleUpdateMaxTransactionFee(new Hbar(2));
-  }
-});
 </script>
 <template>
   <div class="fill-remaining overflow-x-auto border border-2 rounded-3 p-4">
@@ -136,7 +119,7 @@ onBeforeMount(async () => {
         data-testid="tab-network-mainnet"
         class="text-nowrap"
         :class="{ active: networkStore.network === CommonNetwork.MAINNET }"
-        @click="handleNetworkChange(CommonNetwork.MAINNET)"
+        @click="handleCommonNetwork(CommonNetwork.MAINNET)"
         >Mainnet</AppButton
       >
       <AppButton
@@ -144,7 +127,7 @@ onBeforeMount(async () => {
         data-testid="tab-network-testnet"
         class="text-nowrap"
         :class="{ active: networkStore.network === CommonNetwork.TESTNET }"
-        @click="handleNetworkChange(CommonNetwork.TESTNET)"
+        @click="handleCommonNetwork(CommonNetwork.TESTNET)"
         >Testnet</AppButton
       >
       <AppButton
@@ -153,7 +136,7 @@ onBeforeMount(async () => {
         class="text-nowrap"
         disabled
         :class="{ active: networkStore.network === CommonNetwork.PREVIEWNET }"
-        @click="handleNetworkChange(CommonNetwork.PREVIEWNET)"
+        @click="handleCommonNetwork(CommonNetwork.PREVIEWNET)"
         >Previewnet</AppButton
       >
       <AppButton
@@ -161,7 +144,7 @@ onBeforeMount(async () => {
         data-testid="tab-network-local-node"
         class="text-nowrap"
         :class="{ active: networkStore.network === CommonNetwork.LOCAL_NODE }"
-        @click="handleNetworkChange(CommonNetwork.LOCAL_NODE)"
+        @click="handleCommonNetwork(CommonNetwork.LOCAL_NODE)"
         >Local Node</AppButton
       >
       <AppButton
