@@ -26,7 +26,7 @@ const networkStore = useNetworkStore();
 const isCustomSettingsVisible = ref(false);
 
 const mirrorNodeGRPCEndpoint = ref('127.0.0.1:5600');
-const mirrorNodeRESTAPIEndpoint = ref('http://localhost:5551/api/v1');
+const mirrorNodeRESTAPIEndpoint = ref('http://localhost:5551');
 
 const theme = ref<Theme>('light');
 const onUpdateUnsubscribe = ref<() => void>();
@@ -40,6 +40,16 @@ const handleNetworkChange = async (network: Network) => {
 };
 
 const handleSetCustomNetwork = async () => {
+  const mirrorNodeGRPCEndpointValue = mirrorNodeGRPCEndpoint.value.trim();
+  mirrorNodeGRPCEndpoint.value = mirrorNodeGRPCEndpointValue.endsWith('/')
+    ? mirrorNodeGRPCEndpoint.value.trim().slice(0, -1)
+    : mirrorNodeGRPCEndpoint.value.trim();
+
+  const mirrorNodeRESTAPIEndpointValue = mirrorNodeRESTAPIEndpoint.value.trim();
+  mirrorNodeRESTAPIEndpoint.value = mirrorNodeRESTAPIEndpointValue.endsWith('/')
+    ? mirrorNodeRESTAPIEndpoint.value.trim().slice(0, -1)
+    : mirrorNodeRESTAPIEndpoint.value.trim();
+
   await networkStore.setNetwork(mirrorNodeGRPCEndpoint.value, mirrorNodeRESTAPIEndpoint.value);
 };
 

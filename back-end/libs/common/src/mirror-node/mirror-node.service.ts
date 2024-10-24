@@ -7,6 +7,7 @@ import { AccountInfo, MirrorNodeBaseURL } from '@app/common';
 
 @Injectable()
 export class MirrorNodeService {
+  private endointPrefix = '/api/v1';
   private cacheExpirationMs = 5 * 60 * 1_000;
 
   constructor(
@@ -57,6 +58,6 @@ export class MirrorNodeService {
   }
 
   private getMirrorNodeBaseURL(mirrorNetworkRest: string) {
-    return MirrorNodeBaseURL.fromURL(mirrorNetworkRest);
+    return `${MirrorNodeBaseURL.fromURL(mirrorNetworkRest)}${this.endointPrefix}`;
   }
 }

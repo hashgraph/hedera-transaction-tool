@@ -40,10 +40,10 @@ export const MirrorNodeBaseURL = {
     }
   },
 
-  MAINNET: 'https://mainnet-public.mirrornode.hedera.com/api/v1',
-  TESTNET: 'https://testnet.mirrornode.hedera.com/api/v1',
-  PREVIEWNET: 'https://previewnet.mirrornode.hedera.com/api/v1',
+  MAINNET: 'https://mainnet-public.mirrornode.hedera.com',
+  TESTNET: 'https://testnet.mirrornode.hedera.com',
+  PREVIEWNET: 'https://previewnet.mirrornode.hedera.com',
   /* Using host.docker.internal to access the host machine from the container, will work only in dev mode */
   /* Local node will be used only in development mode */
-  LOCAL_NODE: `http://${process.env.NODE_ENV !== 'test' ? 'host.docker.internal' : '127.0.0.1'}:5551/api/v1`,
+  LOCAL_NODE: `http://${process.env.NODE_ENV !== 'test' ? 'host.docker.internal' : '127.0.0.1'}:5551`,
 };
