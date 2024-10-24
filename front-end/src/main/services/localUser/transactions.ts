@@ -41,6 +41,7 @@ export const getClientFromNetwork = async (mirrorNetwork: string | string[], led
   }
 
   mirrorNetwork = mirrorNetwork.map(network => network.toLocaleLowerCase());
+
   if ([MAINNET, TESTNET, PREVIEWNET, LOCAL_NODE].includes(mirrorNetwork[0])) {
     return Client.forName(mirrorNetwork[0]);
   }
@@ -62,6 +63,7 @@ export const getClientFromNetwork = async (mirrorNetwork: string | string[], led
 
 // Sets the client
 export const setClient = async (mirrorNetwork: string | string[], ledgerId?: string) => {
+  client?.close();
   client = await getClientFromNetwork(mirrorNetwork, ledgerId);
 };
 
