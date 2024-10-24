@@ -15,7 +15,7 @@ import { getClientFromMirrorNode, getNodeNumbersFromNetwork } from '@renderer/ut
 const useNetworkStore = defineStore('network', () => {
   /* State */
   const network = ref<Network>(CommonNetwork.TESTNET);
-  const mirrorNodeBaseURL = ref(getMirrorNodeLinkByNetwork(network.value));
+  const mirrorNodeBaseURL = ref(getMirrorNodeREST(network.value));
   const exchangeRateSet = ref<NetworkExchangeRateSetResponse | null>(null);
   const client = ref<Client>(Client.forTestnet());
   const nodeNumbers = ref<number[]>([]);
@@ -49,10 +49,13 @@ const useNetworkStore = defineStore('network', () => {
     await setNetwork(CommonNetwork.TESTNET);
   }
 
-  async function setNetwork(newNetwork: Network, mirrorNodeRESTURL?: string) {
+  async function setNetwork(newNetwork: Network) {
+    console.log('newNetwork', newNetwork);
+
     await setClient(newNetwork);
     await setStoreClient(newNetwork);
-    mirrorNodeBaseURL.value = getMirrorNodeLinkByNetwork(newNetwork, mirrorNodeRESTURL);
+
+    mirrorNodeBaseURL.value = getMirrorNodeREST(newNetwork);
     network.value = newNetwork;
     exchangeRateSet.value = await getExchangeRateSet(mirrorNodeBaseURL.value);
     nodeNumbers.value = await getNodeNumbersFromNetwork(mirrorNodeBaseURL.value);
@@ -81,7 +84,7 @@ const useNetworkStore = defineStore('network', () => {
   }
 
   /* Helpers */
-  function getMirrorNodeLinkByNetwork(network: Network, defaultMirrorNodeREST?: string) {
+  function getMirrorNodeREST(network: Network) {
     const networkLink = {
       [CommonNetwork.MAINNET]: 'https://mainnet-public.mirrornode.hedera.com',
       [CommonNetwork.TESTNET]: 'https://testnet.mirrornode.hedera.com',
@@ -89,8 +92,8 @@ const useNetworkStore = defineStore('network', () => {
       [CommonNetwork.LOCAL_NODE]: 'http://localhost:5551',
     };
 
-    if (!networkLink[network] && defaultMirrorNodeREST) {
-      return defaultMirrorNodeREST;
+    if (!networkLink[network]) {
+      return `https://${network}`;
     }
 
     return networkLink[network];
@@ -105,7 +108,7 @@ const useNetworkStore = defineStore('network', () => {
     nodeNumbers,
     setup,
     setNetwork,
-    getMirrorNodeLinkByNetwork,
+    getMirrorNodeREST,
   };
 });
 

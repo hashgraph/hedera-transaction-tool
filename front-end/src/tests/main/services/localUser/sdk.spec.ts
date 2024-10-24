@@ -21,6 +21,7 @@ describe('SDK Service', () => {
       const mockMirrorNetwork = 'test-mirror-network';
       const mockClient = {
         setMirrorNetwork: vi.fn().mockReturnThis(),
+        close: vi.fn(),
       };
       const mockAddressBookQuery = {
         setFileId: vi.fn().mockReturnThis(),

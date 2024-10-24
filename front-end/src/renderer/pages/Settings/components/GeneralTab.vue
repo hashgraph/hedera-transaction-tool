@@ -23,10 +23,10 @@ const user = useUserStore();
 const networkStore = useNetworkStore();
 
 /* State */
+const mirrorNodeInputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const isCustomSettingsVisible = ref(false);
 
-const mirrorNodeGRPCEndpoint = ref('127.0.0.1:5600');
-const mirrorNodeRESTAPIEndpoint = ref('http://localhost:5551');
+const mirrorNodeBaseURL = ref('');
 
 const theme = ref<Theme>('light');
 const onUpdateUnsubscribe = ref<() => void>();
@@ -39,18 +39,13 @@ const handleNetworkChange = async (network: Network) => {
   await networkStore.setNetwork(network);
 };
 
-const handleSetCustomNetwork = async () => {
-  const mirrorNodeGRPCEndpointValue = mirrorNodeGRPCEndpoint.value.trim();
-  mirrorNodeGRPCEndpoint.value = mirrorNodeGRPCEndpointValue.endsWith('/')
-    ? mirrorNodeGRPCEndpoint.value.trim().slice(0, -1)
-    : mirrorNodeGRPCEndpoint.value.trim();
-
-  const mirrorNodeRESTAPIEndpointValue = mirrorNodeRESTAPIEndpoint.value.trim();
-  mirrorNodeRESTAPIEndpoint.value = mirrorNodeRESTAPIEndpointValue.endsWith('/')
-    ? mirrorNodeRESTAPIEndpoint.value.trim().slice(0, -1)
-    : mirrorNodeRESTAPIEndpoint.value.trim();
-
-  await networkStore.setNetwork(mirrorNodeGRPCEndpoint.value, mirrorNodeRESTAPIEndpoint.value);
+const handleMirrorNodeBaseURLChange = async (e: Event) => {
+  const value = (e.target as HTMLInputElement)?.value || '';
+  mirrorNodeBaseURL.value = formatMirrorNodeBaseURL(value);
+  if (mirrorNodeInputRef.value?.inputRef) {
+    mirrorNodeInputRef.value.inputRef.value = mirrorNodeBaseURL.value; // Due to Vue bug
+  }
+  await networkStore.setNetwork(mirrorNodeBaseURL.value);
 };
 
 const handleThemeChange = (newTheme: Theme) => {
@@ -86,6 +81,15 @@ const getStoredClaim = async (claimKey: string) => {
   return claim;
 };
 
+const formatMirrorNodeBaseURL = (url: string) => {
+  return url
+    .trim()
+    .replace(/^https?:\/\//, '')
+    .replace(/\/:443$/, '')
+    .replace(/:443$/, '')
+    .replace(/\/$/, '');
+};
+
 /* Hooks */
 /** Network */
 onBeforeMount(() => {
@@ -97,8 +101,7 @@ onBeforeMount(() => {
       CommonNetwork.LOCAL_NODE,
     ].includes(networkStore.network)
   ) {
-    mirrorNodeGRPCEndpoint.value = networkStore.network;
-    mirrorNodeRESTAPIEndpoint.value = networkStore.mirrorNodeBaseURL;
+    mirrorNodeBaseURL.value = networkStore.network;
   }
 });
 
@@ -189,32 +192,18 @@ onBeforeUnmount(() => {
       <Transition name="fade" mode="out-in">
         <div v-if="isCustomSettingsVisible" class="mt-4">
           <div class="mt-4">
-            <label class="form-label">Mirror Node GRPC Endpoint</label>
+            <label class="form-label">Mirror Node Base URL</label>
             <AppInput
+              ref="mirrorNodeInputRef"
               type="text"
               :filled="true"
               size="small"
-              data-testid="input-mirror-grpc-endpoint"
-              v-model="mirrorNodeGRPCEndpoint"
+              placeholder="Enter Mirror Node Base URL"
+              data-testid="input-mirror-node-base-url"
+              :model-value="formatMirrorNodeBaseURL(mirrorNodeBaseURL)"
+              @change="handleMirrorNodeBaseURLChange"
             />
           </div>
-          <div class="mt-4">
-            <label class="form-label">Mirror Node REST API Endpoint</label>
-            <AppInput
-              type="text"
-              :filled="true"
-              size="small"
-              data-testid="input-mirror-rest-endpoint"
-              v-model="mirrorNodeRESTAPIEndpoint"
-            />
-          </div>
-          <AppButton
-            color="primary"
-            class="mt-4"
-            data-testid="button-set"
-            @click="handleSetCustomNetwork"
-            >Set</AppButton
-          >
         </div>
       </Transition>
     </div>

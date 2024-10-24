@@ -7,5 +7,7 @@ export const getNodeAddressBook = async (mirrorNetwork: string) => {
     .setFileId(FileId.ADDRESS_BOOK)
     .execute(client);
 
+  client?.close();
+
   return nodeAddressBook._toProtobuf();
 };

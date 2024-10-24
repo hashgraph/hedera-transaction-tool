@@ -102,12 +102,12 @@ describe('Services Local User Transactions', () => {
 
       const client = await getClientFromNetwork(mirrorNetwork);
       expect(forNetwork).toHaveBeenCalledWith({});
-      expect(client.setMirrorNetwork).toHaveBeenCalledWith(mirrorNetwork);
+      expect(client.setMirrorNetwork).toHaveBeenCalledWith([`${mirrorNetwork[0]}:443`]);
       client.close();
     });
 
     test('Should set ledger ID if provided', async () => {
-      const mirrorNetwork = ['http://my-test-url.com'];
+      const mirrorNetwork = ['http://my-test-url.com:443'];
       const ledgerId = '0xa2';
 
       const forNetwork = vi.spyOn(SDK.Client, 'forNetwork').mockReturnValue({

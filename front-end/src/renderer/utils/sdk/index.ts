@@ -368,7 +368,9 @@ export const formatAccountId = (accountId: string) => {
   return `${shard || ''}.${realm || ''}.${account || ''}`;
 };
 
-export const getClientFromMirrorNode = async (mirrorNodeGRPC: string) => {
+export const getClientFromMirrorNode = async (mirrorNetwork: string) => {
+  const mirrorNodeGRPC = mirrorNetwork.endsWith(':443') ? mirrorNetwork : `${mirrorNetwork}:443`;
+
   const nodeAddressBookProto = await getNodeAddressBook(mirrorNodeGRPC);
 
   nodeAddressBookProto.nodeAddress?.forEach(node => {

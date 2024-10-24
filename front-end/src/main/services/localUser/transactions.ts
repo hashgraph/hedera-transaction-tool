@@ -46,6 +46,9 @@ export const getClientFromNetwork = async (mirrorNetwork: string | string[], led
     return Client.forName(mirrorNetwork[0]);
   }
 
+  mirrorNetwork = mirrorNetwork.map(network =>
+    network.endsWith(':443') ? network : `${network}:443`,
+  );
   const client = Client.forNetwork({}).setMirrorNetwork(mirrorNetwork);
 
   const nodeAddressBook = await new AddressBookQuery()

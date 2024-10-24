@@ -43,7 +43,6 @@ export interface ITransaction {
   executedAt?: string;
   updatedAt: string;
   mirrorNetwork: string;
-  mirrorNetworkRest: string;
   creatorKeyId: number;
   groupItem: IGroupItem;
 }
