@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import type { Network } from '@main/shared/interfaces';
 import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 
 import { inject, onUpdated } from 'vue';
 
-import { Network } from '@main/shared/enums';
+import { CommonNetwork } from '@main/shared/enums';
 import { SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -29,24 +30,20 @@ import UserModeSelect from './UserModeSelect.vue';
 const networkMapping: {
   [key in Network]: { label: string; className: string };
 } = {
-  [Network.TESTNET]: {
+  [CommonNetwork.TESTNET]: {
     label: 'TESTNET',
     className: 'text-testnet',
   },
-  [Network.MAINNET]: {
+  [CommonNetwork.MAINNET]: {
     label: 'MAINNET',
     className: 'text-mainnet',
   },
-  [Network.PREVIEWNET]: {
+  [CommonNetwork.PREVIEWNET]: {
     label: 'PREVIEWNET',
     className: 'text-previewnet',
   },
-  [Network.LOCAL_NODE]: {
+  [CommonNetwork.LOCAL_NODE]: {
     label: 'LOCAL NODE',
-    className: 'text-info',
-  },
-  [Network.CUSTOM]: {
-    label: 'CUSTOM',
     className: 'text-info',
   },
 };

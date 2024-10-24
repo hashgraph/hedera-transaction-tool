@@ -1,3 +1,5 @@
+import type { Network } from '@main/shared/interfaces';
+
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -6,7 +8,7 @@ import { app } from 'electron';
 import * as argon2 from 'argon2';
 import { AccountId, Hbar, HbarUnit } from '@hashgraph/sdk';
 
-import { Network } from '@main/shared/enums';
+import { CommonNetwork } from '@main/shared/enums';
 import { MigrateUserDataResult } from '@main/shared/interfaces/migration';
 import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY } from '@main/shared/constants';
 
@@ -145,7 +147,7 @@ export function getDataMigrationKeysPath(): string {
 
 export async function getAccountInfoFromFile(
   directory: string,
-  defaultNetwork: Network = Network.MAINNET,
+  defaultNetwork: Network = CommonNetwork.MAINNET,
 ): Promise<{ nickname: string; accountID: string; network: Network }[]> {
   const accountDataList: { nickname: string; accountID: string; network: Network }[] = [];
 
@@ -186,7 +188,7 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
     defaultMaxTransactionFee: null,
   };
 
-  let defaultNetwork = Network.TESTNET;
+  let defaultNetwork: Network = CommonNetwork.TESTNET;
 
   try {
     const content = await fs.promises.readFile(getPropertiesPath(), {

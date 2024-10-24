@@ -16,7 +16,7 @@ import {
   updateFile,
 } from '@main/services/localUser/files';
 
-import { Network } from '@main/shared/enums';
+import { CommonNetwork } from '@main/shared/enums';
 import { saveContentToPath, getNumberArrayFromString, deleteDirectory } from '@main/utils';
 
 import { app, shell } from 'electron';
@@ -41,7 +41,7 @@ describe('Services Local User Files', () => {
     user_id: '123',
     file_id: '0.0.111',
     nickname: 'special',
-    network: Network.TESTNET,
+    network: CommonNetwork.TESTNET,
     contentBytes: '0x123',
     metaBytes: '0x456',
     lastRefreshed: new Date(),

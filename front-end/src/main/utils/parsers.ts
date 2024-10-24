@@ -1,13 +1,14 @@
-import { Network } from '@main/shared/enums';
+import { CommonNetwork } from '@main/shared/enums';
+import { Network } from '@main/shared/interfaces';
 
 export function parseNetwork(value: string, defaultNetwork: Network): Network {
   value = value?.toLocaleLowerCase();
 
   return value?.includes('testnet')
-    ? Network.TESTNET
+    ? CommonNetwork.TESTNET
     : value?.includes('mainnet')
-      ? Network.MAINNET
+      ? CommonNetwork.MAINNET
       : value?.includes('previewnet')
-        ? Network.PREVIEWNET
+        ? CommonNetwork.PREVIEWNET
         : defaultNetwork;
 }

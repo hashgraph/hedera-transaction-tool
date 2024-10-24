@@ -4,7 +4,7 @@ import { mockDeep } from 'vitest-mock-extended';
 import registerTransactionsHandlers from '@main/modules/ipcHandlers/localUser/transactions';
 
 import { Prisma } from '@prisma/client';
-import { Network } from '@main/shared/enums';
+import { CommonNetwork } from '@main/shared/enums';
 import {
   executeQuery,
   executeTransaction,
@@ -150,7 +150,7 @@ describe('IPC handlers Accounts', () => {
       transaction_hash: 'transactionHash',
       status_code: 20,
       signature: '0x',
-      network: Network.PREVIEWNET,
+      network: CommonNetwork.PREVIEWNET,
       valid_start: new Date().toLocaleString(),
       executed_at: Date.now(),
       created_at: new Date(),

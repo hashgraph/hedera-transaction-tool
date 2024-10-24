@@ -4,7 +4,7 @@ import { mockDeep } from 'vitest-mock-extended';
 import registerFilesHandlers from '@main/modules/ipcHandlers/localUser/files';
 
 import { Prisma } from '@prisma/client';
-import { Network } from '@main/shared/enums';
+import { CommonNetwork } from '@main/shared/enums';
 import {
   addFile,
   getFiles,
@@ -65,7 +65,7 @@ describe('IPC handlers Files', () => {
     const file: Prisma.HederaFileUncheckedCreateInput = {
       file_id: 'file1',
       user_id: 'user1',
-      network: Network.MAINNET,
+      network: CommonNetwork.MAINNET,
     };
 
     addHandler && (await addHandler[1](event, file));

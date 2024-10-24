@@ -1,3 +1,4 @@
+import type { Network } from '@main/shared/interfaces';
 import type { KeyPair, Transaction } from '@prisma/client';
 
 import {
@@ -9,7 +10,7 @@ import {
   Key,
 } from '@hashgraph/sdk';
 
-import { Network } from '@main/shared/enums';
+import { CommonNetwork } from '@main/shared/enums';
 
 import { openExternal } from '@renderer/services/electronUtilsService';
 import { flattenKeyList } from '@renderer/services/keyPairService';
@@ -67,8 +68,9 @@ export const getFormattedDateFromTimestamp = (timestamp: Timestamp): string => {
 };
 
 export const openTransactionInHashscan = (transactionId: string, network: Network) => {
-  !['custom', 'local-node'].includes(network) &&
-    openExternal(`https://hashscan.io/${network}/transaction/${transactionId}`);
+  [CommonNetwork.MAINNET, CommonNetwork.PREVIEWNET, CommonNetwork.TESTNET].includes(
+    network as CommonNetwork,
+  ) && openExternal(`https://hashscan.io/${network}/transaction/${transactionId}`);
 };
 
 export const getEntityIdFromTransactionReceipt = (

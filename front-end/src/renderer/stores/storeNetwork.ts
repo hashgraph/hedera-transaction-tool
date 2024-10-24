@@ -1,11 +1,11 @@
-import type { NetworkExchangeRateSetResponse } from '@main/shared/interfaces';
+import type { Network, NetworkExchangeRateSetResponse } from '@main/shared/interfaces';
 
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
 import { Client, Timestamp } from '@hashgraph/sdk';
 
-import { Network } from '@main/shared/enums';
+import { CommonNetwork } from '@main/shared/enums';
 
 import { getExchangeRateSet } from '@renderer/services/mirrorNodeDataService';
 import { setClient } from '@renderer/services/transactionService';
@@ -22,7 +22,7 @@ export type CustomNetworkSettings = {
 
 const useNetworkStore = defineStore('network', () => {
   /* State */
-  const network = ref<Network>(Network.TESTNET);
+  const network = ref<Network>(CommonNetwork.TESTNET);
   const customNetworkSettings = ref<CustomNetworkSettings | null>(null);
   const exchangeRateSet = ref<NetworkExchangeRateSetResponse | null>(null);
 
@@ -31,25 +31,18 @@ const useNetworkStore = defineStore('network', () => {
 
   const client = computed(() => {
     switch (network.value) {
-      case Network.MAINNET:
+      case CommonNetwork.MAINNET:
         return Client.forMainnet();
-      case Network.TESTNET:
+      case CommonNetwork.TESTNET:
         return Client.forTestnet();
-      case Network.PREVIEWNET:
+      case CommonNetwork.PREVIEWNET:
         return Client.forPreviewnet();
-      case Network.LOCAL_NODE:
+      case CommonNetwork.LOCAL_NODE:
         return Client.forNetwork({
           '127.0.0.1:50211': '0.0.3',
         })
           .setMirrorNetwork('127.0.0.1:5600')
           .setLedgerId('3');
-      case Network.CUSTOM:
-        if (customNetworkSettings.value) {
-          return Client.forNetwork(customNetworkSettings.value.nodeAccountIds).setMirrorNetwork(
-            customNetworkSettings.value.mirrorNodeGRPCEndpoint,
-          );
-        }
-        throw Error('Settings for custom network are required');
       default:
         throw Error('Network not supported');
     }
@@ -84,24 +77,12 @@ const useNetworkStore = defineStore('network', () => {
 
   /* Actions */
   async function setup() {
-    await setNetwork(Network.TESTNET);
+    await setNetwork(CommonNetwork.TESTNET);
   }
 
-  async function setNetwork(newNetwork: Network, _customNetworkSettings?: CustomNetworkSettings) {
-    if (newNetwork === 'custom') {
-      if (!_customNetworkSettings) {
-        throw Error('Settings for custom network are required');
-      }
-      customNetworkSettings.value = _customNetworkSettings;
-      await setClient(newNetwork, _customNetworkSettings.nodeAccountIds, [
-        _customNetworkSettings.mirrorNodeGRPCEndpoint,
-      ]);
-    } else {
-      await setClient(newNetwork);
-    }
-
+  async function setNetwork(newNetwork: Network) {
+    await setClient(newNetwork);
     network.value = newNetwork;
-
     exchangeRateSet.value = await getExchangeRateSet(mirrorNodeBaseURL.value);
   }
 

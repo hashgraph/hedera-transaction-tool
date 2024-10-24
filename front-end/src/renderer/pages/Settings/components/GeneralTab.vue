@@ -1,20 +1,18 @@
 <script setup lang="ts">
-import type { Theme } from '@main/shared/interfaces';
+import type { Network, Theme } from '@main/shared/interfaces';
 
 import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY } from '@main/shared/constants';
-import { Network } from '@main/shared/enums';
+import { CommonNetwork } from '@main/shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useToast } from 'vue-toast-notification';
-
 import { add, get, update } from '@renderer/services/claimService';
 
-import { isAccountId, isUserLoggedIn } from '@renderer/utils';
+import { isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -23,9 +21,6 @@ import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 /* Stores */
 const user = useUserStore();
 const networkStore = useNetworkStore();
-
-/* Composables */
-const toast = useToast();
 
 /* State */
 const isCustomSettingsVisible = ref(false);
@@ -48,27 +43,7 @@ const handleNetworkChange = async (network: Network) => {
   }
 };
 
-const handleSetCustomNetwork = async () => {
-  try {
-    if (!isAccountId(nodeAccountId.value)) {
-      throw new Error('Invalid node account ID');
-    }
-
-    await networkStore.setNetwork(Network.CUSTOM, {
-      nodeAccountIds: {
-        [consensusNodeEndpoint.value]: nodeAccountId.value,
-      },
-      mirrorNodeGRPCEndpoint: mirrorNodeGRPCEndpoint.value,
-      mirrorNodeRESTAPIEndpoint: mirrorNodeRESTAPIEndpoint.value,
-    });
-  } catch (err: any) {
-    let message = 'Failed to set custom network';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message, { position: 'bottom-right' });
-  }
-};
+const handleSetCustomNetwork = async () => {};
 
 const handleThemeChange = (newTheme: Theme) => {
   window.electronAPI.local.theme.toggle(newTheme);
@@ -154,30 +129,30 @@ onBeforeUnmount(() => {
         <AppButton
           color="secondary"
           data-testid="tab-network-mainnet"
-          :class="{ active: networkStore.network === Network.MAINNET }"
-          @click="handleNetworkChange(Network.MAINNET)"
+          :class="{ active: networkStore.network === CommonNetwork.MAINNET }"
+          @click="handleNetworkChange(CommonNetwork.MAINNET)"
           >Mainnet</AppButton
         >
         <AppButton
           color="secondary"
           data-testid="tab-network-testnet"
-          :class="{ active: networkStore.network === Network.TESTNET }"
-          @click="handleNetworkChange(Network.TESTNET)"
+          :class="{ active: networkStore.network === CommonNetwork.TESTNET }"
+          @click="handleNetworkChange(CommonNetwork.TESTNET)"
           >Testnet</AppButton
         >
         <AppButton
           color="secondary"
           data-testid="tab-network-previewnet"
           disabled
-          :class="{ active: networkStore.network === Network.PREVIEWNET }"
-          @click="handleNetworkChange(Network.PREVIEWNET)"
+          :class="{ active: networkStore.network === CommonNetwork.PREVIEWNET }"
+          @click="handleNetworkChange(CommonNetwork.PREVIEWNET)"
           >Previewnet</AppButton
         >
         <AppButton
           color="secondary"
           data-testid="tab-network-custom"
-          :class="{ active: networkStore.network === Network.LOCAL_NODE }"
-          @click="handleNetworkChange(Network.LOCAL_NODE)"
+          :class="{ active: networkStore.network === CommonNetwork.LOCAL_NODE }"
+          @click="handleNetworkChange(CommonNetwork.LOCAL_NODE)"
           >Local Node</AppButton
         >
       </div>

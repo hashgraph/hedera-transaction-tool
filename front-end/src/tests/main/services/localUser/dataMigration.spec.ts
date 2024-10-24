@@ -5,7 +5,7 @@ import * as crypto from 'crypto';
 import { app } from 'electron';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
-import { Network } from '@main/shared/enums';
+import { CommonNetwork } from '@main/shared/enums';
 import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY } from '@main/shared/constants';
 
 import {
@@ -160,11 +160,11 @@ describe('Data Migration', () => {
         ext: '.json',
       } as path.ParsedPath);
 
-      const result = await getAccountInfoFromFile(mockDirectory, Network.MAINNET);
+      const result = await getAccountInfoFromFile(mockDirectory, CommonNetwork.MAINNET);
 
       expect(result).toEqual([
-        { nickname: 'account1', accountID: '0.0.123', network: Network.MAINNET },
-        { nickname: 'account2', accountID: '0.0.123', network: Network.TESTNET },
+        { nickname: 'account1', accountID: '0.0.123', network: CommonNetwork.MAINNET },
+        { nickname: 'account2', accountID: '0.0.123', network: CommonNetwork.TESTNET },
       ]);
     });
 
@@ -191,10 +191,10 @@ describe('Data Migration', () => {
         ext: '.json',
       } as path.ParsedPath);
 
-      const result = await getAccountInfoFromFile(mockDirectory, Network.MAINNET);
+      const result = await getAccountInfoFromFile(mockDirectory, CommonNetwork.MAINNET);
 
       expect(result).toEqual([
-        { nickname: 'account1', accountID: '0.0.123', network: Network.MAINNET },
+        { nickname: 'account1', accountID: '0.0.123', network: CommonNetwork.MAINNET },
       ]);
     });
 
@@ -202,7 +202,7 @@ describe('Data Migration', () => {
       const mockDirectory = '/mock/directory';
       vi.mocked(fs.existsSync).mockReturnValue(false);
 
-      const result = await getAccountInfoFromFile(mockDirectory, Network.MAINNET);
+      const result = await getAccountInfoFromFile(mockDirectory, CommonNetwork.MAINNET);
 
       expect(result).toEqual([]);
     });
@@ -245,7 +245,12 @@ describe('Data Migration', () => {
         DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
         Hbar.fromTinybars(1000).toString(HbarUnit.Tinybar),
       );
-      expect(addAccount).toHaveBeenCalledWith(mockUserId, '0.0.123', Network.TESTNET, 'account1');
+      expect(addAccount).toHaveBeenCalledWith(
+        mockUserId,
+        '0.0.123',
+        CommonNetwork.TESTNET,
+        'account1',
+      );
     });
 
     test('Should handle errors gracefully when reading properties file', async () => {
@@ -271,7 +276,12 @@ describe('Data Migration', () => {
         DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
         Hbar.fromTinybars(1000).toString(HbarUnit.Tinybar),
       );
-      expect(addAccount).toHaveBeenCalledWith(mockUserId, '0.0.123', Network.TESTNET, 'account1');
+      expect(addAccount).toHaveBeenCalledWith(
+        mockUserId,
+        '0.0.123',
+        CommonNetwork.TESTNET,
+        'account1',
+      );
     });
 
     test('Should handle errors gracefully when adding account', async () => {
@@ -289,7 +299,12 @@ describe('Data Migration', () => {
         DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
         Hbar.fromTinybars(1000).toString(HbarUnit.Tinybar),
       );
-      expect(addAccount).toHaveBeenCalledWith(mockUserId, '0.0.123', Network.TESTNET, 'account1');
+      expect(addAccount).toHaveBeenCalledWith(
+        mockUserId,
+        '0.0.123',
+        CommonNetwork.TESTNET,
+        'account1',
+      );
     });
 
     test('Should handle missing defaultTxFee gracefully', async () => {
@@ -302,7 +317,12 @@ describe('Data Migration', () => {
       const result = await migrateUserData(mockUserId);
       expect(result).toEqual({ accountsImported: 1, defaultMaxTransactionFee: null });
       expect(addClaim).not.toHaveBeenCalled();
-      expect(addAccount).toHaveBeenCalledWith(mockUserId, '0.0.123', Network.TESTNET, 'account1');
+      expect(addAccount).toHaveBeenCalledWith(
+        mockUserId,
+        '0.0.123',
+        CommonNetwork.TESTNET,
+        'account1',
+      );
     });
 
     test('Should handle missing currentNetwork gracefully', async () => {
@@ -319,7 +339,12 @@ describe('Data Migration', () => {
         DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
         Hbar.fromTinybars(1000).toString(HbarUnit.Tinybar),
       );
-      expect(addAccount).toHaveBeenCalledWith(mockUserId, '0.0.123', Network.TESTNET, 'account1');
+      expect(addAccount).toHaveBeenCalledWith(
+        mockUserId,
+        '0.0.123',
+        CommonNetwork.TESTNET,
+        'account1',
+      );
     });
 
     test('Should handle empty account data gracefully', async () => {

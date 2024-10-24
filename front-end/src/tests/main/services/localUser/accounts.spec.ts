@@ -4,7 +4,7 @@ import { HederaAccount } from '@prisma/client';
 
 import prisma from '@main/db/__mocks__/prisma';
 
-import { Network } from '@main/shared/enums';
+import { CommonNetwork } from '@main/shared/enums';
 
 import {
   addAccount,
@@ -61,7 +61,7 @@ describe('Services Local User Accounts', () => {
 
     const userId: string = '123';
     const accountId: string = '0.0.2';
-    const network: Network = Network.TESTNET;
+    const network = CommonNetwork.TESTNET;
     const nickname: string = 'A Nickname';
 
     test('Should add an account with provided arguments', async () => {
