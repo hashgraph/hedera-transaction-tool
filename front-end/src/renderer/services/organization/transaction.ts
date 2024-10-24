@@ -41,7 +41,7 @@ export const submitTransaction = async (
       name,
       description,
       transactionBytes,
-      network,
+      mirrorNetwork: network,
       signature,
       creatorKeyId,
     });
@@ -119,7 +119,7 @@ export const getTransactionsToSign = async (
 > =>
   commonRequestHandler(async () => {
     const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
-    const filtering = `&filter=network:eq:${network}`;
+    const filtering = `&filter=mirrorNetwork:eq:${network}`;
 
     const { data } = await axiosWithCredentials.get(
       `${serverUrl}/${controller}/sign?page=${page}&size=${size}${sorting}${filtering}`,
@@ -138,7 +138,7 @@ export const getTransactionsToApprove = async (
 ): Promise<PaginatedResourceDto<ITransaction>> =>
   commonRequestHandler(async () => {
     const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
-    const filtering = `&filter=network:eq:${network}`;
+    const filtering = `&filter=mirrorNetwork:eq:${network}`;
 
     const { data } = await axiosWithCredentials.get(
       `${serverUrl}/${controller}/approve?page=${page}&size=${size}${sorting}${filtering}`,
@@ -203,7 +203,7 @@ export const getTransactionsForUser = async (
       !status.includes(TransactionStatus.CANCELED);
     const validStartTimestamp = new Date(Date.now() - 180 * 1_000).getTime();
 
-    const filtering = `&filter=status:in:${status.join(',')}${withValidStart ? `&filter=validStart:gte:${validStartTimestamp}` : ''}&filter=network:eq:${network}`;
+    const filtering = `&filter=status:in:${status.join(',')}${withValidStart ? `&filter=validStart:gte:${validStartTimestamp}` : ''}&filter=mirrorNetwork:eq:${network}`;
     const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
 
     const { data } = await axiosWithCredentials.get(
