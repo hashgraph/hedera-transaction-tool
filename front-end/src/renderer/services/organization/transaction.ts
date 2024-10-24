@@ -33,6 +33,7 @@ export const submitTransaction = async (
   description: string,
   transactionBytes: string,
   network: Network,
+  mirrorNetworkRest: string,
   signature: string,
   creatorKeyId: number,
 ): Promise<{ id: number; transactionBytes: string }> =>
@@ -42,6 +43,7 @@ export const submitTransaction = async (
       description,
       transactionBytes,
       mirrorNetwork: network,
+      mirrorNetworkRest,
       signature,
       creatorKeyId,
     });

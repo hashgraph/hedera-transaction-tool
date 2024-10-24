@@ -123,6 +123,7 @@ async function submit(publicKey: string, signature: string) {
       request.value?.description || '',
       hexTransactionBytes,
       network.network,
+      network.mirrorNodeBaseURL,
       signature,
       user.selectedOrganization.userKeys.find(k => k.publicKey === publicKey)?.id || -1,
     );
