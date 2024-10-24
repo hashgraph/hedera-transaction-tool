@@ -29,6 +29,7 @@ export enum ErrorCodes {
   ISNMPN = 'ISNMPN',
   KNF = 'KNF',
   NNF = 'NNF',
+  IB = 'IB',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -63,4 +64,5 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.ISNMPN]: 'Invalid signature map node parameters',
   [ErrorCodes.KNF]: 'Key not found',
   [ErrorCodes.NNF]: 'Notification not found',
+  [ErrorCodes.IB]: 'Invalid body',
 };
