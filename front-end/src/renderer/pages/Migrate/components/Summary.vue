@@ -87,6 +87,14 @@ const handleFinishMigration = () => {
         data-testid="p-migration-summary-imported-accounts"
       />
 
+      <SummaryItem
+        v-if="importedUserData && importedUserData.currentNetwork"
+        class="mt-4"
+        label="Imported Network"
+        :value="importedUserData.currentNetwork"
+        data-testid="p-migration-summary-network"
+      />
+
       <SummaryItem class="mt-4" label="Recovery Phrase" value="">
         <ul class="d-flex flex-wrap gap-2">
           <template v-for="word in user.recoveryPhrase?.words || []" :key="word">
