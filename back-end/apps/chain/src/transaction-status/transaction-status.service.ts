@@ -220,7 +220,7 @@ export class TransactionStatusService {
     const signatureKey = await computeSignatureKey(
       sdkTransaction,
       this.mirrorNodeService,
-      transaction.network,
+      transaction.mirrorNetworkRest,
     );
 
     /* Checks if the transaction has valid signature */

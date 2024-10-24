@@ -1,22 +1,18 @@
-import { Network } from '@entities';
+import { LOCAL_NODE, MAINNET, PREVIEWNET, TESTNET } from '@app/common';
 
 export const MirrorNetwork = {
-  fromName(name: Network) {
-    switch (name) {
-      case 'mainnet':
+  fromURL(mirrorNodeRest: string) {
+    switch (mirrorNodeRest) {
+      case MAINNET:
         return MirrorNetwork.MAINNET;
-
-      case 'testnet':
+      case TESTNET:
         return MirrorNetwork.TESTNET;
-
-      case 'previewnet':
+      case PREVIEWNET:
         return MirrorNetwork.PREVIEWNET;
-
-      case 'local-node':
+      case LOCAL_NODE:
         return MirrorNetwork.LOCAL_NODE;
-
       default:
-        throw new Error(`Unknown network name: ${name}`);
+        return mirrorNodeRest;
     }
   },
 
@@ -29,22 +25,18 @@ export const MirrorNetwork = {
 };
 
 export const MirrorNodeBaseURL = {
-  fromName(name: Network) {
-    switch (name) {
-      case 'mainnet':
+  fromURL(mirrorNodeRest: string) {
+    switch (mirrorNodeRest) {
+      case MAINNET:
         return MirrorNodeBaseURL.MAINNET;
-
-      case 'testnet':
+      case TESTNET:
         return MirrorNodeBaseURL.TESTNET;
-
-      case 'previewnet':
+      case PREVIEWNET:
         return MirrorNodeBaseURL.PREVIEWNET;
-
-      case 'local-node':
+      case LOCAL_NODE:
         return MirrorNodeBaseURL.LOCAL_NODE;
-
       default:
-        throw new Error(`Unknown network name: ${name}`);
+        return mirrorNodeRest;
     }
   },
 

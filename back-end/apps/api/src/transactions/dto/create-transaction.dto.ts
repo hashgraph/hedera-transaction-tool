@@ -1,7 +1,5 @@
-import { IsDate, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsDate, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
-
-import { Network } from '@entities';
 
 import { TransformBuffer } from '@app/common';
 
@@ -26,8 +24,12 @@ export class CreateTransactionDto {
   signature: Buffer;
 
   @IsNotEmpty()
-  @IsEnum(Network)
-  network: Network;
+  @IsString()
+  mirrorNetwork: string;
+
+  @IsNotEmpty()
+  @IsString()
+  mirrorNetworkRest: string;
 
   @Type(() => Date)
   @IsDate()

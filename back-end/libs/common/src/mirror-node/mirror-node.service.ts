@@ -3,8 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 
-import { Network } from '@entities';
-
 import { AccountInfo, MirrorNodeBaseURL } from '@app/common';
 
 @Injectable()
@@ -18,39 +16,47 @@ export class MirrorNodeService {
   ) {}
 
   /* Get the account information for accountId */
-  async getAccountInfo(accountId: string, network: Network): Promise<AccountInfo> {
+  async getAccountInfo(accountId: string, mirrorNetworkRest: string): Promise<AccountInfo> {
     const env = this.configService.get<string>('NODE_ENV');
 
     const cachedData = await this.cacheService.get<AccountInfo>(
-      this.getCacheKey(accountId, network),
+      this.getCacheKey(accountId, mirrorNetworkRest),
     );
 
     if (cachedData && env !== 'test') return cachedData;
 
     const { data } = await this.httpService.axiosRef.get<AccountInfo>(
-      `${this.getMirrorNodeBaseURL(network)}/accounts/${accountId}`,
+      `${this.getMirrorNodeBaseURL(mirrorNetworkRest)}/accounts/${accountId}`,
     );
 
-    await this.cacheService.set(this.getCacheKey(accountId, network), data, this.cacheExpirationMs);
+    await this.cacheService.set(
+      this.getCacheKey(accountId, mirrorNetworkRest),
+      data,
+      this.cacheExpirationMs,
+    );
 
     return data;
   }
 
-  async updateAccountInfo(accountId: string, network: Network): Promise<AccountInfo> {
+  async updateAccountInfo(accountId: string, mirrorNetworkRest: string): Promise<AccountInfo> {
     const { data } = await this.httpService.axiosRef.get<AccountInfo>(
-      `${this.getMirrorNodeBaseURL(network)}/accounts/${accountId}`,
+      `${this.getMirrorNodeBaseURL(mirrorNetworkRest)}/accounts/${accountId}`,
     );
 
-    await this.cacheService.set(this.getCacheKey(accountId, network), data, this.cacheExpirationMs);
+    await this.cacheService.set(
+      this.getCacheKey(accountId, mirrorNetworkRest),
+      data,
+      this.cacheExpirationMs,
+    );
 
     return data;
   }
 
-  private getCacheKey(accountId: string, network: Network) {
-    return `${network}-${accountId}`;
+  private getCacheKey(accountId: string, mirrorNetworkRest: string) {
+    return `${mirrorNetworkRest}-${accountId}`;
   }
 
-  private getMirrorNodeBaseURL(network: Network) {
-    return MirrorNodeBaseURL.fromName(network);
+  private getMirrorNodeBaseURL(mirrorNetworkRest: string) {
+    return MirrorNodeBaseURL.fromURL(mirrorNetworkRest);
   }
 }
