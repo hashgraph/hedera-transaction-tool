@@ -195,7 +195,7 @@ export const getStatusCodeFromMessage = (message: string) => {
 export const computeSignatureKey = async (
   transaction: SDKTransaction,
   mirrorNodeService: MirrorNodeService,
-  mirrorNetworkRest: string,
+  mirrorNetwork: string,
 ) => {
   /* Get the accounts, receiver accounts and new keys from the transaction */
   const { accounts, receiverAccounts, newKeys } = getSignatureEntities(transaction);
@@ -209,7 +209,7 @@ export const computeSignatureKey = async (
   /* Add the keys of the account ids to the signature key list */
   for (const accountId of accounts) {
     try {
-      const accountInfo = await mirrorNodeService.getAccountInfo(accountId, mirrorNetworkRest);
+      const accountInfo = await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork);
       const key = parseAccountProperty(accountInfo, 'key');
       if (!key) continue;
 
@@ -222,7 +222,7 @@ export const computeSignatureKey = async (
   /* Check if there is a receiver account that required signature, if so add it to the key list */
   for (const accountId of receiverAccounts) {
     try {
-      const accountInfo = await mirrorNodeService.getAccountInfo(accountId, mirrorNetworkRest);
+      const accountInfo = await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork);
       const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
       if (!receiverSigRequired) continue;
 
@@ -277,7 +277,7 @@ export async function smartCollate(
     const signatureKey = await computeSignatureKey(
       sdkTransaction,
       mirrorNodeService,
-      transaction.mirrorNetworkRest,
+      transaction.mirrorNetwork,
     );
 
     const publicKeys = computeShortenedPublicKeyList(

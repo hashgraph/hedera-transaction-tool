@@ -96,7 +96,6 @@ describe('TransactionGroupsService', () => {
               creatorKeyId: 1,
               signature: Buffer.from('0xabc02'),
               mirrorNetwork: 'testnet',
-              mirrorNetworkRest: 'testnet',
             },
           },
           {
@@ -108,7 +107,6 @@ describe('TransactionGroupsService', () => {
               creatorKeyId: 1,
               signature: Buffer.from('0xabc04'),
               mirrorNetwork: 'testnet',
-              mirrorNetworkRest: 'testnet',
             },
           },
         ],

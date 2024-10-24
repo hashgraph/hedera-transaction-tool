@@ -30,6 +30,7 @@ import {
   notifyTransactionAction,
   notifyWaitingForSignatures,
   notifySyncIndicators,
+  MirrorNetworkGRPC,
 } from '@app/common/utils';
 import {
   Transaction,
@@ -373,7 +374,6 @@ describe('TransactionsService', () => {
         creatorKeyId: 1,
         signature: Buffer.from('0xabc02'),
         mirrorNetwork: 'testnet',
-        mirrorNetworkRest: 'testnet',
       };
 
       const client = Client.forTestnet();
@@ -384,6 +384,7 @@ describe('TransactionsService', () => {
       jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
       jest.mocked(isExpired).mockReturnValueOnce(false);
       transactionsRepo.count.mockResolvedValueOnce(0);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
       transactionsRepo.create.mockImplementationOnce(
         (input: DeepPartial<Transaction>) => ({ ...input }) as Transaction,
@@ -410,7 +411,6 @@ describe('TransactionsService', () => {
         creatorKeyId: 2,
         signature: Buffer.from('0xabc02'),
         mirrorNetwork: 'testnet',
-        mirrorNetworkRest: 'testnet',
       };
 
       jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
@@ -430,7 +430,6 @@ describe('TransactionsService', () => {
         creatorKeyId: 1,
         signature: Buffer.from('0xabc02'),
         mirrorNetwork: 'testnet',
-        mirrorNetworkRest: 'testnet',
       };
 
       jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
@@ -451,7 +450,6 @@ describe('TransactionsService', () => {
         creatorKeyId: 1,
         signature: Buffer.from('0xabc02'),
         mirrorNetwork: 'testnet',
-        mirrorNetworkRest: 'testnet',
       };
 
       jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
@@ -474,7 +472,6 @@ describe('TransactionsService', () => {
         creatorKeyId: 1,
         signature: Buffer.from('0xabc02'),
         mirrorNetwork: 'testnet',
-        mirrorNetworkRest: 'testnet',
       };
 
       jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
@@ -498,7 +495,6 @@ describe('TransactionsService', () => {
         creatorKeyId: 1,
         signature: Buffer.from('0xabc02'),
         mirrorNetwork: 'testnet',
-        mirrorNetworkRest: 'testnet',
       };
 
       const client = Client.forTestnet();
@@ -509,6 +505,7 @@ describe('TransactionsService', () => {
       jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
       jest.mocked(isExpired).mockReturnValueOnce(false);
       transactionsRepo.count.mockResolvedValueOnce(0);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
       transactionsRepo.save.mockRejectedValueOnce(new Error('Failed to save'));
 

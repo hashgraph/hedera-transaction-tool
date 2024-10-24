@@ -83,7 +83,6 @@ describe('TransactionsController', () => {
       ),
       status: TransactionStatus.NEW,
       mirrorNetwork: 'testnet',
-      mirrorNetworkRest: 'testnet',
       cutoffAt: new Date(),
       createdAt: new Date(),
       updatedAt: new Date(),

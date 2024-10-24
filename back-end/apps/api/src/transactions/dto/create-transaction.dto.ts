@@ -27,10 +27,6 @@ export class CreateTransactionDto {
   @IsString()
   mirrorNetwork: string;
 
-  @IsNotEmpty()
-  @IsString()
-  mirrorNetworkRest: string;
-
   @Type(() => Date)
   @IsDate()
   @IsOptional()

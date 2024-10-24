@@ -1,6 +1,6 @@
 import { AddressBookQuery, Client, FileId, LedgerId } from '@hashgraph/sdk';
 
-import { MirrorNetwork } from '../mirrorNode';
+import { MirrorNetworkGRPC } from '../mirrorNode';
 
 export const MAINNET = 'mainnet';
 export const TESTNET = 'testnet';
@@ -31,11 +31,13 @@ export const getClientFromNetwork = async (
 
   if (mirrorNetwork[0] === LOCAL_NODE) {
     return Client.forNetwork(getLocalClientNetwork(process.env.NODE_ENV)).setMirrorNetwork(
-      MirrorNetwork.LOCAL_NODE,
+      MirrorNetworkGRPC.LOCAL_NODE,
     );
   }
 
-  const client = Client.forNetwork({}).setMirrorNetwork(mirrorNetwork);
+  const client = Client.forNetwork({}).setMirrorNetwork(
+    MirrorNetworkGRPC.fromBaseURL(mirrorNetwork[0]),
+  );
 
   const nodeAddressBook = await new AddressBookQuery()
     .setFileId(FileId.ADDRESS_BOOK)

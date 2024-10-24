@@ -1,18 +1,18 @@
 import { LOCAL_NODE, MAINNET, PREVIEWNET, TESTNET } from '@app/common';
 
-export const MirrorNetwork = {
-  fromURL(mirrorNodeRest: string) {
-    switch (mirrorNodeRest) {
+export const MirrorNetworkGRPC = {
+  fromBaseURL(mirrorNetwork: string) {
+    switch (mirrorNetwork) {
       case MAINNET:
-        return MirrorNetwork.MAINNET;
+        return MirrorNetworkGRPC.MAINNET;
       case TESTNET:
-        return MirrorNetwork.TESTNET;
+        return MirrorNetworkGRPC.TESTNET;
       case PREVIEWNET:
-        return MirrorNetwork.PREVIEWNET;
+        return MirrorNetworkGRPC.PREVIEWNET;
       case LOCAL_NODE:
-        return MirrorNetwork.LOCAL_NODE;
+        return MirrorNetworkGRPC.LOCAL_NODE;
       default:
-        return mirrorNodeRest;
+        return [mirrorNetwork.endsWith(':443') ? mirrorNetwork : `${mirrorNetwork}:443`];
     }
   },
 
@@ -24,19 +24,19 @@ export const MirrorNetwork = {
   LOCAL_NODE: [`${process.env.NODE_ENV !== 'test' ? 'host.docker.internal' : '127.0.0.1'}:5600`],
 };
 
-export const MirrorNodeBaseURL = {
-  fromURL(mirrorNodeRest: string) {
-    switch (mirrorNodeRest) {
+export const MirrorNodeREST = {
+  fromBaseURL(mirrorNetwork: string) {
+    switch (mirrorNetwork) {
       case MAINNET:
-        return MirrorNodeBaseURL.MAINNET;
+        return MirrorNodeREST.MAINNET;
       case TESTNET:
-        return MirrorNodeBaseURL.TESTNET;
+        return MirrorNodeREST.TESTNET;
       case PREVIEWNET:
-        return MirrorNodeBaseURL.PREVIEWNET;
+        return MirrorNodeREST.PREVIEWNET;
       case LOCAL_NODE:
-        return MirrorNodeBaseURL.LOCAL_NODE;
+        return MirrorNodeREST.LOCAL_NODE;
       default:
-        return mirrorNodeRest;
+        return `https://${mirrorNetwork}`;
     }
   },
 

@@ -332,7 +332,6 @@ export async function addTransactions() {
       creatorKey: { id: userKey1003.id },
       signature: Buffer.from(localnet1003.privateKey.sign(accountCreate.toBytes())),
       mirrorNetwork: localnet1003.mirrorNetwork,
-      mirrorNetworkRest: localnet1003.mirrorNetworkRest,
     }),
     transactionRepo.create({
       name: '#2 Simple Account Update Transaction',
@@ -342,7 +341,6 @@ export async function addTransactions() {
       creatorKey: { id: userKey1004.id },
       signature: Buffer.from(localnet1004.privateKey.sign(accountUpdate.toBytes())),
       mirrorNetwork: localnet1004.mirrorNetwork,
-      mirrorNetworkRest: localnet1004.mirrorNetworkRest,
     }),
     transactionRepo.create({
       name: '#4 Second simple File Create Transaction',
@@ -352,7 +350,6 @@ export async function addTransactions() {
       creatorKey: { id: userKey1003.id },
       signature: Buffer.from(localnet1003.privateKey.sign(fileCreate.toBytes())),
       mirrorNetwork: localnet1003.mirrorNetwork,
-      mirrorNetworkRest: localnet1003.mirrorNetworkRest,
     }),
   ];
 
@@ -365,7 +362,6 @@ export async function addTransactions() {
       creatorKey: { id: adminKey1002.id },
       signature: Buffer.from(localnet1002.privateKey.sign(fileCreate.toBytes())),
       mirrorNetwork: localnet1002.mirrorNetwork,
-      mirrorNetworkRest: localnet1002.mirrorNetworkRest,
     }),
   ];
 

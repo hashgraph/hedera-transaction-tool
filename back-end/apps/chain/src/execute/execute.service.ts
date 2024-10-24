@@ -43,7 +43,7 @@ export class ExecuteService {
     const signatureKey = await computeSignatureKey(
       sdkTransaction,
       this.mirrorNodeService,
-      transaction.mirrorNetworkRest,
+      transaction.mirrorNetwork,
     );
 
     /* Checks if the transaction has valid signatureKey */
@@ -93,7 +93,7 @@ export class ExecuteService {
       notifySyncIndicators(this.notificationsService, transaction.id, transaction.status);
       notifyTransactionAction(this.notificationsService);
 
-      this.sideEffect(sdkTransaction, transaction.mirrorNetworkRest);
+      this.sideEffect(sdkTransaction, transaction.mirrorNetwork);
     }
     return result;
   }
@@ -116,13 +116,13 @@ export class ExecuteService {
     }
   }
 
-  private sideEffect(sdkTransaction: SDKTransaction, mirrorNetworkRest: string) {
+  private sideEffect(sdkTransaction: SDKTransaction, mirrorNetwork: string) {
     if (sdkTransaction instanceof AccountUpdateTransaction) {
       setTimeout(async () => {
         try {
           await this.mirrorNodeService.updateAccountInfo(
             sdkTransaction.accountId.toString(),
-            mirrorNetworkRest,
+            mirrorNetwork,
           );
         } catch (error) {
           console.log('Error updating account info', error);

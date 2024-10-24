@@ -102,9 +102,6 @@ export class Transaction {
   @Column()
   mirrorNetwork: string;
 
-  @Column()
-  mirrorNetworkRest: string;
-
   @Column({ nullable: true })
   cutoffAt?: Date;
 
@@ -148,7 +145,6 @@ export const transactionProperties: (keyof Transaction)[] = [
   'status',
   'statusCode',
   'mirrorNetwork',
-  'mirrorNetworkRest',
   'createdAt',
   'executedAt',
   'updatedAt',

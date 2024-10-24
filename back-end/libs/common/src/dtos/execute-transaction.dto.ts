@@ -18,8 +18,4 @@ export class ExecuteTransactionDto {
   @IsNotEmpty()
   @IsString()
   mirrorNetwork: string;
-
-  @IsNotEmpty()
-  @IsString()
-  mirrorNetworkRest: string;
 }

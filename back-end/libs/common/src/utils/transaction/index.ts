@@ -85,7 +85,7 @@ export const keysRequiredToSign = async (
     try {
       const accountInfo = await mirrorNodeService.getAccountInfo(
         accountId,
-        transaction.mirrorNetworkRest,
+        transaction.mirrorNetwork,
       );
       const key = parseAccountProperty(accountInfo, 'key');
       if (!key) continue;
@@ -101,7 +101,7 @@ export const keysRequiredToSign = async (
     try {
       const accountInfo = await mirrorNodeService.getAccountInfo(
         accountId,
-        transaction.mirrorNetworkRest,
+        transaction.mirrorNetwork,
       );
       const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
       if (!receiverSigRequired) continue;
