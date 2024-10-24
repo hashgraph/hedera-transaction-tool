@@ -45,8 +45,8 @@ const useNetworkStore = defineStore('network', () => {
   });
 
   /* Actions */
-  async function setup() {
-    await setNetwork(CommonNetwork.TESTNET);
+  async function setup(defaultNetwork?: Network) {
+    await setNetwork(defaultNetwork || CommonNetwork.TESTNET);
   }
 
   async function setNetwork(newNetwork: Network) {
