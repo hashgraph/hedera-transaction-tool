@@ -164,7 +164,7 @@ onBeforeUnmount(() => {
         >
         <AppButton
           color="secondary"
-          data-testid="tab-network-custom"
+          data-testid="tab-network-local-node"
           class="text-nowrap"
           :class="{ active: networkStore.network === CommonNetwork.LOCAL_NODE }"
           @click="handleNetworkChange(CommonNetwork.LOCAL_NODE)"

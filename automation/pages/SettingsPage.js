@@ -31,7 +31,7 @@ class SettingsPage extends BasePage {
   mainnetTabButtonSelector = 'tab-network-mainnet';
   testnetTabButtonSelector = 'tab-network-testnet';
   previewnetTabButtonSelector = 'tab-network-previewnet';
-  customTabButtonSelector = 'tab-network-custom';
+  localNodeTabButtonSelector = 'tab-network-local-node';
   darkTabButtonSelector = 'tab-appearance-dark';
   lightTabButtonSelector = 'tab-appearance-light';
   systemTabButtonSelector = 'tab-appearance-system';
@@ -73,7 +73,7 @@ class SettingsPage extends BasePage {
       this.isElementVisible(this.mainnetTabButtonSelector),
       this.isElementVisible(this.testnetTabButtonSelector),
       this.isElementVisible(this.previewnetTabButtonSelector),
-      this.isElementVisible(this.customTabButtonSelector),
+      this.isElementVisible(this.localNodeTabButtonSelector),
       this.isElementVisible(this.darkTabButtonSelector),
       this.isElementVisible(this.lightTabButtonSelector),
       this.isElementVisible(this.systemTabButtonSelector),
@@ -179,8 +179,8 @@ class SettingsPage extends BasePage {
     await this.click(this.continuePhraseButtonSelector);
   }
 
-  async clickOnCustomTab() {
-    await this.click(this.customTabButtonSelector);
+  async clickOnLocalNodeTab() {
+    await this.click(this.localNodeTabButtonSelector);
   }
 
   async clickOnImportButton() {
