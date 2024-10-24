@@ -6,7 +6,6 @@ import type { PersonalUser } from './components/SetupPersonal.vue';
 import { computed, onMounted, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 import { useRouter } from 'vue-router';
@@ -17,7 +16,7 @@ import { getStaticUser } from '@renderer/services/safeStorageService';
 import DecryptRecoveryPhrase from './components/DecryptRecoveryPhrase.vue';
 import SetupPersonal from './components/SetupPersonal.vue';
 import SetupOrganization from './components/SetupOrganization.vue';
-import ImportAccounts from './components/ImportAccounts.vue';
+import ImportUserData from './components/ImportUserData.vue';
 import BeginKeysImport from './components/BeginKeysImport.vue';
 import Summary from './components/Summary.vue';
 
@@ -26,7 +25,6 @@ type StepName = 'recoveryPhrase' | 'personal' | 'organization' | 'summary';
 
 /* Stores */
 const user = useUserStore();
-const network = useNetworkStore();
 
 /* Composables */
 useSetDynamicLayout({
@@ -113,7 +111,6 @@ const initializeUserStore = async () => {
   await user.selectOrganization(user.organizations[0]);
   await user.setRecoveryPhrase(recoveryPhrase.value.words);
   personalUser.value.password && user.setPassword(personalUser.value.password);
-  await network.setup();
 };
 
 /* Hooks */
@@ -155,7 +152,7 @@ onMounted(async () => {
           />
 
           <template v-if="userInitialized">
-            <ImportAccounts @importedUserData="importedUserData = $event" />
+            <ImportUserData @importedUserData="importedUserData = $event" />
             <BeginKeysImport
               :recovery-phrase="recoveryPhrase"
               :recovery-phrase-password="recoveryPhrasePassword"
