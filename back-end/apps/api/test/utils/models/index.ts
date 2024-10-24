@@ -12,7 +12,6 @@ export class HederaAccount {
   publicKey: PublicKey;
   publicKeyRaw: string;
   mirrorNetwork: string;
-  mirrorNetworkRest: string;
 
   setAccountId(accountId: string) {
     this.accountId = AccountId.fromString(accountId);
@@ -48,9 +47,8 @@ export class HederaAccount {
     return this;
   }
 
-  setNetwork(mirrorNetwork: string, mirrorNetwrokRest: string) {
+  setNetwork(mirrorNetwork: string) {
     this.mirrorNetwork = mirrorNetwork;
-    this.mirrorNetworkRest = mirrorNetwrokRest;
 
     return this;
   }

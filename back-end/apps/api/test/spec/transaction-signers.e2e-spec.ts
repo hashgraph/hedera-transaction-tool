@@ -314,7 +314,6 @@ describe('Transactions (e2e)', () => {
           'hex',
         ),
         mirrorNetwork: localnet1003.mirrorNetwork,
-        mirrorNetworkRest: localnet1003.mirrorNetworkRest,
       };
 
       const createTxResponse = await endpoint.post(transactionBody, '', userAuthToken);

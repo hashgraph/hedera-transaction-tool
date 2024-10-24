@@ -82,7 +82,6 @@ describe('Transactions (e2e)', () => {
         (account || localnet1003).privateKey.sign(transaction.toBytes()),
       ).toString('hex'),
       mirrorNetwork: (account || localnet1003).mirrorNetwork,
-      mirrorNetworkRest: (account || localnet1003).mirrorNetworkRest,
     };
   };
 
@@ -279,7 +278,6 @@ describe('Transactions (e2e)', () => {
         creatorKeyId: userKey.id,
         signature: Buffer.from(localnet1003.privateKey.sign(transaction.toBytes())).toString('hex'),
         mirrorNetwork: localnet1003.mirrorNetwork,
-        mirrorNetworkRest: localnet1003.mirrorNetworkRest,
       };
 
       const { status, body } = await endpoint.post(dto, null, userAuthToken);
@@ -501,7 +499,7 @@ describe('Transactions (e2e)', () => {
       newlyCreatedAccount = new HederaAccount()
         .setAccountId(accountId.toString())
         .setPrivateKey(localnet2.privateKey.toStringDer())
-        .setNetwork(localnet2.mirrorNetwork, localnet2.mirrorNetworkRest);
+        .setNetwork(localnet2.mirrorNetwork);
 
       await sleep(3000); //Wait for mirror node to update its data after account creation
 
@@ -520,7 +518,6 @@ describe('Transactions (e2e)', () => {
         creatorKeyId: userKey.id,
         signature: Buffer.from(localnet2.privateKey.sign(transaction.toBytes())).toString('hex'),
         mirrorNetwork: localnet2.mirrorNetwork,
-        mirrorNetworkRest: localnet2.mirrorNetworkRest,
       };
 
       await new Endpoint(server, '/transactions').post(dto, null, adminAuthToken).expect(201);
@@ -550,7 +547,6 @@ describe('Transactions (e2e)', () => {
         creatorKeyId: userKey.id,
         signature: Buffer.from(localnet1003.privateKey.sign(transaction.toBytes())).toString('hex'),
         mirrorNetwork: localnet2.mirrorNetwork,
-        mirrorNetworkRest: localnet2.mirrorNetworkRest,
       };
 
       await new Endpoint(server, '/transactions').post(dto, null, userAuthToken).expect(201);
@@ -593,7 +589,6 @@ describe('Transactions (e2e)', () => {
         creatorKeyId: userKey.id,
         signature: Buffer.from(localnet2.privateKey.sign(transaction.toBytes())).toString('hex'),
         mirrorNetwork: localnet2.mirrorNetwork,
-        mirrorNetworkRest: localnet2.mirrorNetworkRest,
       };
 
       await new Endpoint(server, '/transactions').post(dto, null, adminAuthToken).expect(201);
