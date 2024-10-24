@@ -6,7 +6,7 @@ import { mockDeep } from 'jest-mock-extended';
 
 import { NOTIFICATIONS_SERVICE } from '@app/common';
 import { asyncFilter, notifyTransactionAction } from '@app/common/utils';
-import { Network, TransactionGroup, User, UserStatus } from '@entities';
+import { TransactionGroup, User, UserStatus } from '@entities';
 
 import { CreateTransactionGroupDto } from '../dto';
 
@@ -95,7 +95,8 @@ describe('TransactionGroupsService', () => {
               transactionBytes: Buffer.from('0xabc01'),
               creatorKeyId: 1,
               signature: Buffer.from('0xabc02'),
-              network: Network.TESTNET,
+              mirrorNetwork: 'testnet',
+              mirrorNetworkRest: 'testnet',
             },
           },
           {
@@ -106,7 +107,8 @@ describe('TransactionGroupsService', () => {
               transactionBytes: Buffer.from('0xabc03'),
               creatorKeyId: 1,
               signature: Buffer.from('0xabc04'),
-              network: Network.TESTNET,
+              mirrorNetwork: 'testnet',
+              mirrorNetworkRest: 'testnet',
             },
           },
         ],
