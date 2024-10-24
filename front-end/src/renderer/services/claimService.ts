@@ -2,6 +2,8 @@ import type { Claim } from '@prisma/client';
 
 import { Prisma } from '@prisma/client';
 
+import { SELECTED_NETWORK } from '@main/shared/constants';
+
 import { commonIPCHandler } from '@renderer/utils';
 
 export const add = async (userId: string, claimKey: string, claimValue: string) =>
@@ -23,3 +25,14 @@ export const remove = async (userId: string, claimKeys: string[]) =>
   commonIPCHandler<boolean>(async () => {
     return await window.electronAPI.local.claim.remove(userId, claimKeys);
   }, 'Failed to remove claim');
+
+export const getSelectedNetwork = async (userId: string) => {
+  const [claim] = await get({
+    where: {
+      user_id: userId,
+      claim_key: SELECTED_NETWORK,
+    },
+  });
+
+  return claim?.claim_value;
+};

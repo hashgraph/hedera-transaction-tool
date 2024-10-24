@@ -1,13 +1,9 @@
 import { onMounted, ref, watch, type Ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { SELECTED_NETWORK } from '@main/shared/constants';
-
 import useUserStore from '@renderer/stores/storeUser';
-import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getStaticUser, getUseKeychain } from '@renderer/services/safeStorageService';
-import { get } from '@renderer/services/claimService';
 
 import { safeAwait } from '@renderer/utils';
 
@@ -18,7 +14,6 @@ export default function useAutoLogin(
 ) {
   /* Stores */
   const user = useUserStore();
-  const network = useNetworkStore();
 
   /* Composables */
   const router = useRouter();
@@ -27,38 +22,15 @@ export default function useAutoLogin(
   const finished = ref(false);
 
   /* Functions */
-  const getSelectedNetwork = async (userId?: string) => {
-    const [claim] = await get({
-      where: {
-        user_id: userId || '',
-        claim_key: SELECTED_NETWORK,
-      },
-    });
-
-    return claim?.claim_value;
-  };
-
   const keychainLogin = async () => {
     const staticUser = await getStaticUser();
     await user.login(staticUser.id, staticUser.email, true);
-
-    if (user.shouldSetupAccount) {
-      router.push({ name: 'accountSetup' });
-    }
-
     return staticUser.id;
   };
 
-  const localStorageLogin = (loggedUser: string) => {
+  const localStorageLogin = async (loggedUser: string) => {
     const { userId, email }: { userId: string; email: string } = JSON.parse(loggedUser);
-
-    setTimeout(async () => {
-      await user.login(userId, email, false);
-      if (user.shouldSetupAccount) {
-        router.push({ name: 'accountSetup' });
-      }
-    }, 100);
-
+    await user.login(userId, email, false);
     return userId;
   };
 
@@ -75,11 +47,12 @@ export default function useAutoLogin(
       if (useKeychain) {
         userId = await keychainLogin();
       } else if (loggedUser) {
-        userId = localStorageLogin(loggedUser);
+        userId = await localStorageLogin(loggedUser);
       }
 
-      const selectedNetwork = await getSelectedNetwork(userId);
-      await safeAwait(network.setup(selectedNetwork));
+      if (user.shouldSetupAccount) {
+        router.push({ name: 'accountSetup' });
+      }
 
       if (!userId) {
         await user.logout();
