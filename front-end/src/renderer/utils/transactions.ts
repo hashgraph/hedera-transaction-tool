@@ -68,9 +68,8 @@ export const getFormattedDateFromTimestamp = (timestamp: Timestamp): string => {
 };
 
 export const openTransactionInHashscan = (transactionId: string, network: Network) => {
-  [CommonNetwork.MAINNET, CommonNetwork.PREVIEWNET, CommonNetwork.TESTNET].includes(
-    network as CommonNetwork,
-  ) && openExternal(`https://hashscan.io/${network}/transaction/${transactionId}`);
+  [CommonNetwork.MAINNET, CommonNetwork.PREVIEWNET, CommonNetwork.TESTNET].includes(network) &&
+    openExternal(`https://hashscan.io/${network}/transaction/${transactionId}`);
 };
 
 export const getEntityIdFromTransactionReceipt = (
