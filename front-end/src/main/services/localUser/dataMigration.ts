@@ -10,7 +10,7 @@ import { AccountId, Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import { CommonNetwork } from '@main/shared/enums';
 import { MigrateUserDataResult } from '@main/shared/interfaces/migration';
-import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY } from '@main/shared/constants';
+import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY, SELECTED_NETWORK } from '@main/shared/constants';
 
 import { parseNetwork } from '@main/utils/parsers';
 
@@ -183,12 +183,13 @@ export async function getAccountInfoFromFile(
 }
 
 export async function migrateUserData(userId: string): Promise<MigrateUserDataResult> {
+  let defaultNetwork: Network = CommonNetwork.TESTNET;
+
   const result: MigrateUserDataResult = {
     accountsImported: 0,
     defaultMaxTransactionFee: null,
+    currentNetwork: defaultNetwork,
   };
-
-  let defaultNetwork: Network = CommonNetwork.TESTNET;
 
   try {
     const content = await fs.promises.readFile(getPropertiesPath(), {
@@ -217,6 +218,12 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
       parsedContent[USER_PROPERTIES_CURRENT_NETWORK_KEY],
       defaultNetwork,
     );
+    try {
+      result.currentNetwork = defaultNetwork;
+      await addClaim(userId, SELECTED_NETWORK, defaultNetwork);
+    } catch (error) {
+      console.log(error);
+    }
   } catch (error) {
     console.log(error);
   }
