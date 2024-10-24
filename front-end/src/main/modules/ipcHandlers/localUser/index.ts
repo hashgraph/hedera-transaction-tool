@@ -14,6 +14,7 @@ import listenForEncryptedKeysEvents from './encryptedKeys';
 import listenForClaimEvents from './claim';
 import listenForSafeStorageEvents from './safeStorage';
 import listenForDataMigrationEvents from './dataMigration';
+import listenForSDKEvents from './sdk';
 
 export default () => {
   listenForKeyPairEvents();
@@ -32,4 +33,5 @@ export default () => {
   listenForClaimEvents();
   listenForSafeStorageEvents();
   listenForDataMigrationEvents();
+  listenForSDKEvents();
 };

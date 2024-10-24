@@ -10,7 +10,7 @@ import { CommonNetwork } from '@main/shared/enums';
 import { getExchangeRateSet } from '@renderer/services/mirrorNodeDataService';
 import { setClient } from '@renderer/services/transactionService';
 
-import { getNodeNumbersFromNetwork } from '@renderer/utils';
+import { getClientFromMirrorNode, getNodeNumbersFromNetwork } from '@renderer/utils';
 
 const useNetworkStore = defineStore('network', () => {
   /* State */
@@ -51,31 +51,33 @@ const useNetworkStore = defineStore('network', () => {
 
   async function setNetwork(newNetwork: Network, mirrorNodeRESTURL?: string) {
     await setClient(newNetwork);
-    await setStoreClient();
+    await setStoreClient(newNetwork);
     mirrorNodeBaseURL.value = getMirrorNodeLinkByNetwork(newNetwork, mirrorNodeRESTURL);
     network.value = newNetwork;
     exchangeRateSet.value = await getExchangeRateSet(mirrorNodeBaseURL.value);
     nodeNumbers.value = await getNodeNumbersFromNetwork(mirrorNodeBaseURL.value);
   }
 
-  async function setStoreClient() {
+  async function setStoreClient(newNetwork: Network) {
     client.value.close();
 
     if (
-      [CommonNetwork.MAINNET, CommonNetwork.TESTNET, CommonNetwork.PREVIEWNET].includes(
-        network.value,
-      )
+      [CommonNetwork.MAINNET, CommonNetwork.TESTNET, CommonNetwork.PREVIEWNET].includes(newNetwork)
     ) {
-      client.value = Client.forName(network.value);
+      client.value = Client.forName(newNetwork);
+      return;
     }
 
-    if (network.value === CommonNetwork.LOCAL_NODE) {
+    if (newNetwork === CommonNetwork.LOCAL_NODE) {
       client.value = Client.forNetwork({
         '127.0.0.1:50211': '0.0.3',
       })
         .setMirrorNetwork('127.0.0.1:5600')
         .setLedgerId('3');
+      return;
     }
+
+    client.value = await getClientFromMirrorNode(newNetwork);
   }
 
   /* Helpers */

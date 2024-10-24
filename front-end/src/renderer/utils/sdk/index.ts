@@ -3,6 +3,7 @@ import type { ITransactionApprover } from '@main/shared/interfaces/organization/
 
 import {
   AccountId,
+  Client,
   FileId,
   FileInfo,
   Hbar,
@@ -11,6 +12,7 @@ import {
   KeyList,
   LedgerId,
   Long,
+  NodeAddressBook,
   PrivateKey,
   PublicKey,
   Timestamp,
@@ -21,6 +23,7 @@ import { proto } from '@hashgraph/proto';
 import { getNetworkNodes } from '@renderer/services/mirrorNodeDataService';
 
 import { uint8ToHex, hexToUint8Array } from '..';
+import { getNodeAddressBook } from '@renderer/services/sdkService';
 
 export * from './createTransactions';
 export * from './getData';
@@ -363,4 +366,28 @@ export const formatAccountId = (accountId: string) => {
   }
 
   return `${shard || ''}.${realm || ''}.${account || ''}`;
+};
+
+export const getClientFromMirrorNode = async (mirrorNodeGRPC: string) => {
+  const nodeAddressBookProto = await getNodeAddressBook(mirrorNodeGRPC);
+
+  nodeAddressBookProto.nodeAddress?.forEach(node => {
+    if (node.nodeAccountId?.shardNum) {
+      node.nodeAccountId.shardNum = Long.fromValue(node.nodeAccountId.shardNum);
+    }
+    if (node.nodeAccountId?.accountNum) {
+      node.nodeAccountId.accountNum = Long.fromValue(node.nodeAccountId.accountNum);
+    }
+    if (node.nodeAccountId?.realmNum) {
+      node.nodeAccountId.realmNum = Long.fromValue(node.nodeAccountId.realmNum);
+    }
+  });
+
+  const nodeAddressBook = NodeAddressBook._fromProtobuf(nodeAddressBookProto);
+
+  const client = Client.forNetwork({})
+    .setMirrorNetwork(mirrorNodeGRPC)
+    .setNetworkFromAddressBook(nodeAddressBook);
+
+  return client;
 };
