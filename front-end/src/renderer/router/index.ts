@@ -19,7 +19,7 @@ const Files = () => import('@renderer/pages/Files');
 const ContactList = () => import('@renderer/pages/ContactList');
 const SignUpUser = () => import('@renderer/pages/ContactList/SignUpUser');
 const AccountSetup = () => import('@renderer/pages/AccountSetup');
-const GeneralTab = () => import('@renderer/pages/Settings/components/GeneralTab.vue');
+const GeneralTab = () => import('@renderer/pages/Settings/components/GeneralTab');
 const WorkGroupsTab = () => import('@renderer/pages/Settings/components/WorkGroupsTab.vue');
 const KeysTab = () => import('@renderer/pages/Settings/components/KeysTab.vue');
 const NotificationsTab = () => import('@renderer/pages/Settings/components/NotificationsTab.vue');

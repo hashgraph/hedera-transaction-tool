@@ -50,8 +50,6 @@ const useNetworkStore = defineStore('network', () => {
   }
 
   async function setNetwork(newNetwork: Network) {
-    console.log('newNetwork', newNetwork);
-
     await setClient(newNetwork);
     await setStoreClient(newNetwork);
 
