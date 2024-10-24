@@ -313,7 +313,8 @@ describe('Transactions (e2e)', () => {
         signature: Buffer.from(localnet1003.privateKey.sign(sdkTransaction.toBytes())).toString(
           'hex',
         ),
-        network: localnet1003.network,
+        mirrorNetwork: localnet1003.mirrorNetwork,
+        mirrorNetworkRest: localnet1003.mirrorNetworkRest,
       };
 
       const createTxResponse = await endpoint.post(transactionBody, '', userAuthToken);

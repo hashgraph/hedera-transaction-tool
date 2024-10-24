@@ -70,7 +70,8 @@ describe('Transaction Observers (e2e)', () => {
       transactionBytes: buffer,
       creatorKeyId: userKey.id,
       signature: Buffer.from(usrAccount.privateKey.sign(transaction.toBytes())).toString('hex'),
-      network: usrAccount.network,
+      mirrorNetwork: usrAccount.mirrorNetwork,
+      mirrorNetworkRest: usrAccount.mirrorNetworkRest,
     };
   };
 

@@ -15,7 +15,7 @@ import {
 } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
-import { Network, TransactionType } from '../../../../libs/common/src/database/entities';
+import { TransactionType } from '../../../../libs/common/src/database/entities';
 
 import { HederaAccount } from './models';
 
@@ -46,7 +46,7 @@ export const generateMnemonic = () => {
 };
 
 [localnet2, localnet1002, localnet1003, localnet1004, localnet1022].forEach(account => {
-  account.setNetwork(Network.LOCAL_NODE);
+  account.setNetwork('local-node', 'local-node');
 });
 
 export const generatePrivateKey = async (mnemonic?: Mnemonic) => {

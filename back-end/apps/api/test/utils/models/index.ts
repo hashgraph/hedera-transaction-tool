@@ -1,7 +1,5 @@
 import { AccountId, PrivateKey, PublicKey } from '@hashgraph/sdk';
 
-import { Network } from '@entities';
-
 export const ecdsaDerPrefix = '3030020100300706052b8104000a04220420';
 export const ecdsaDerPrefix2 = '30540201010420';
 export const ed25519DerPrefix = '302e020100300506032b657004220420';
@@ -13,7 +11,8 @@ export class HederaAccount {
   privateKeyRaw: string;
   publicKey: PublicKey;
   publicKeyRaw: string;
-  network: Network;
+  mirrorNetwork: string;
+  mirrorNetworkRest: string;
 
   setAccountId(accountId: string) {
     this.accountId = AccountId.fromString(accountId);
@@ -49,8 +48,9 @@ export class HederaAccount {
     return this;
   }
 
-  setNetwork(network: Network) {
-    this.network = network;
+  setNetwork(mirrorNetwork: string, mirrorNetwrokRest: string) {
+    this.mirrorNetwork = mirrorNetwork;
+    this.mirrorNetworkRest = mirrorNetwrokRest;
 
     return this;
   }
