@@ -25,10 +25,8 @@ const networkStore = useNetworkStore();
 /* State */
 const isCustomSettingsVisible = ref(false);
 
-const consensusNodeEndpoint = ref('127.0.0.1:50211');
 const mirrorNodeGRPCEndpoint = ref('127.0.0.1:5600');
 const mirrorNodeRESTAPIEndpoint = ref('http://localhost:5551/api/v1');
-const nodeAccountId = ref('0.0.3');
 
 const theme = ref<Theme>('light');
 const onUpdateUnsubscribe = ref<() => void>();
@@ -37,13 +35,13 @@ const maxTransactionFee = ref<Hbar>(new Hbar(0));
 
 /* Handlers */
 const handleNetworkChange = async (network: Network) => {
-  networkStore.setNetwork(network);
-  if (network !== 'custom') {
-    isCustomSettingsVisible.value = false;
-  }
+  isCustomSettingsVisible.value = false;
+  await networkStore.setNetwork(network);
 };
 
-const handleSetCustomNetwork = async () => {};
+const handleSetCustomNetwork = async () => {
+  await networkStore.setNetwork(mirrorNodeGRPCEndpoint.value, mirrorNodeRESTAPIEndpoint.value);
+};
 
 const handleThemeChange = (newTheme: Theme) => {
   window.electronAPI.local.theme.toggle(newTheme);
@@ -81,13 +79,16 @@ const getStoredClaim = async (claimKey: string) => {
 /* Hooks */
 /** Network */
 onBeforeMount(() => {
-  if (networkStore.customNetworkSettings) {
-    const firstNodeAccountId = Object.entries(networkStore.customNetworkSettings.nodeAccountIds)[0];
-
-    consensusNodeEndpoint.value = firstNodeAccountId[0];
-    nodeAccountId.value = firstNodeAccountId[1];
-    mirrorNodeGRPCEndpoint.value = networkStore.customNetworkSettings.mirrorNodeGRPCEndpoint;
-    mirrorNodeRESTAPIEndpoint.value = networkStore.customNetworkSettings.mirrorNodeRESTAPIEndpoint;
+  if (
+    ![
+      CommonNetwork.MAINNET,
+      CommonNetwork.TESTNET,
+      CommonNetwork.PREVIEWNET,
+      CommonNetwork.LOCAL_NODE,
+    ].includes(networkStore.network)
+  ) {
+    mirrorNodeGRPCEndpoint.value = networkStore.network;
+    mirrorNodeRESTAPIEndpoint.value = networkStore.mirrorNodeBaseURL;
   }
 });
 
@@ -123,12 +124,13 @@ onBeforeUnmount(() => {
 <template>
   <div>
     <!-- Network -->
-    <div class="fill-remaining border border-2 rounded-3 p-4">
+    <div class="fill-remaining overflow-x-auto border border-2 rounded-3 p-4">
       <p>Network</p>
-      <div class="mt-4 btn-group">
+      <div class="w-100 btn-group mt-4">
         <AppButton
           color="secondary"
           data-testid="tab-network-mainnet"
+          class="text-nowrap"
           :class="{ active: networkStore.network === CommonNetwork.MAINNET }"
           @click="handleNetworkChange(CommonNetwork.MAINNET)"
           >Mainnet</AppButton
@@ -136,6 +138,7 @@ onBeforeUnmount(() => {
         <AppButton
           color="secondary"
           data-testid="tab-network-testnet"
+          class="text-nowrap"
           :class="{ active: networkStore.network === CommonNetwork.TESTNET }"
           @click="handleNetworkChange(CommonNetwork.TESTNET)"
           >Testnet</AppButton
@@ -143,6 +146,7 @@ onBeforeUnmount(() => {
         <AppButton
           color="secondary"
           data-testid="tab-network-previewnet"
+          class="text-nowrap"
           disabled
           :class="{ active: networkStore.network === CommonNetwork.PREVIEWNET }"
           @click="handleNetworkChange(CommonNetwork.PREVIEWNET)"
@@ -151,23 +155,29 @@ onBeforeUnmount(() => {
         <AppButton
           color="secondary"
           data-testid="tab-network-custom"
+          class="text-nowrap"
           :class="{ active: networkStore.network === CommonNetwork.LOCAL_NODE }"
           @click="handleNetworkChange(CommonNetwork.LOCAL_NODE)"
           >Local Node</AppButton
         >
+        <AppButton
+          color="secondary"
+          data-testid="tab-network-custom"
+          class="text-nowrap"
+          :class="{
+            active: ![
+              CommonNetwork.MAINNET,
+              CommonNetwork.TESTNET,
+              CommonNetwork.PREVIEWNET,
+              CommonNetwork.LOCAL_NODE,
+            ].includes(networkStore.network as any),
+          }"
+          @click="isCustomSettingsVisible = !isCustomSettingsVisible"
+          >Custom</AppButton
+        >
       </div>
       <Transition name="fade" mode="out-in">
         <div v-if="isCustomSettingsVisible" class="mt-4">
-          <div>
-            <label class="form-label">Consensus Node Endpoint</label>
-            <AppInput
-              type="text"
-              :filled="true"
-              size="small"
-              data-testid="input-consensus-endpoint"
-              v-model="consensusNodeEndpoint"
-            />
-          </div>
           <div class="mt-4">
             <label class="form-label">Mirror Node GRPC Endpoint</label>
             <AppInput
@@ -186,16 +196,6 @@ onBeforeUnmount(() => {
               size="small"
               data-testid="input-mirror-rest-endpoint"
               v-model="mirrorNodeRESTAPIEndpoint"
-            />
-          </div>
-          <div class="mt-4">
-            <label class="form-label">Node Account Id</label>
-            <AppInput
-              type="text"
-              :filled="true"
-              size="small"
-              data-testid="input-node-accountid"
-              v-model="nodeAccountId"
             />
           </div>
           <AppButton
