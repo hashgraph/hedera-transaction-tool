@@ -110,8 +110,8 @@ onUpdated(() => {
       <div class="me-5">
         <span
           class="text-bold text-small"
-          :class="networkMapping[networkStore.network].className"
-          >{{ networkMapping[networkStore.network].label }}</span
+          :class="networkMapping[networkStore.network]?.className || 'text-info'"
+          >{{ networkMapping[networkStore.network]?.label || 'CUSTOM' }}</span
         >
         <RouterLink class="container-icon link-white" to="/settings/general"
           ><i class="text-icon-main bi bi-toggles"></i
