@@ -271,14 +271,25 @@ describe('ExecuteService', () => {
       expect(mirrorNodeService.updateAccountInfo).toHaveBeenCalled();
     });
 
-    it.skip('should throw on file update & append transactions', async () => {
-      const transaction = getTransaction('file') as Transaction;
+    it('should handle errors when updating account info', async () => {
+      const client = mockDeep<Client>();
+      const transaction = getTransaction('account_update') as Transaction;
 
       transactionRepo.findOne.mockResolvedValueOnce(transaction);
-
-      await expect(service.executeTransaction(transaction)).rejects.toThrow(
-        'File transactions are not currently supported for execution.',
+      jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
+      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      mirrorNodeService.updateAccountInfo.mockRejectedValueOnce(
+        new Error('Failed to update account info'),
       );
+      jest.useFakeTimers();
+
+      await service.executeTransaction(transaction);
+
+      await jest.advanceTimersToNextTimerAsync();
+      jest.useRealTimers();
+
+      expect(mirrorNodeService.updateAccountInfo).toHaveBeenCalled();
     });
 
     it('should throw on invalid signature', async () => {
@@ -377,7 +388,7 @@ describe('ExecuteService', () => {
       }
       jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
       jest.mocked(hasValidSignatureKey).mockReturnValue(true);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      jest.mocked(getClientFromNetwork).mockResolvedValue(client);
     });
 
     it('should execute a group of transactions sequentially', async () => {
