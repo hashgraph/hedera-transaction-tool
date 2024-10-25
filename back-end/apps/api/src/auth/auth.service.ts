@@ -43,11 +43,19 @@ export class AuthService {
     @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
   ) {}
 
+  async createAdmin(dto: SignUpUserDto, url: string): Promise<User> {
+    return this.signUp(dto, url, true);
+  }
+
   /* Register a new user by admins and send him an email with the temporary password */
   async signUpByAdmin(dto: SignUpUserDto, url: string): Promise<User> {
+    return this.signUp(dto, url);
+  }
+
+  private async signUp(dto: SignUpUserDto, url: string, admin: boolean = false): Promise<User> {
     const tempPassword = this.generatePassword();
 
-    const user = await this.usersService.createUser(dto.email, tempPassword);
+    const user = await this.usersService.createUser(dto.email, tempPassword, admin);
 
     this.notificationsService.emit<undefined, NotifyEmailDto>(NOTIFY_EMAIL, {
       subject: 'Hedera Transaction Tool Registration',

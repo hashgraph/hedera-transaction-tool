@@ -20,7 +20,7 @@ export class UsersService {
   constructor(@InjectRepository(User) private repo: Repository<User>) {}
 
   /* Creates a user with a given email and password. */
-  async createUser(email: string, password: string): Promise<User> {
+  async createUser(email: string, password: string, admin: boolean = false): Promise<User> {
     let user = await this.getUser({ email }, true);
     password = await this.getSaltedHash(password);
 
@@ -30,12 +30,13 @@ export class UsersService {
       await this.repo.restore(user.id);
 
       password = await this.getSaltedHash(password);
-      return this.updateUser(user, { email, password, status: UserStatus.NEW });
+      return this.updateUser(user, { email, password, status: UserStatus.NEW, admin });
     }
 
     user = this.repo.create({
       email,
       password,
+      admin,
     });
 
     return await this.repo.save(user);

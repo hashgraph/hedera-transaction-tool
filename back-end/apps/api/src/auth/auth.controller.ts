@@ -1,5 +1,5 @@
 import { Body, Controller, HttpCode, Patch, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiExcludeEndpoint, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { SkipThrottle } from '@nestjs/throttler';
 
@@ -37,6 +37,7 @@ import {
   OtpLocalDto,
   SignUpUserDto,
 } from './dtos';
+import { InitializedGuard } from '../guards/initialized.guard';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -62,6 +63,17 @@ export class AuthController {
   async signUp(@Body() dto: SignUpUserDto, @Req() req: Request): Promise<User> {
     const url = `${req.protocol}://${req.get('host')}`;
     return this.authService.signUpByAdmin(dto, url);
+  }
+
+  @ApiExcludeEndpoint()
+  @Post('/create-admin')
+  @UseGuards(InitializedGuard)
+  async createAdmin(@Body() dto: SignUpUserDto, @Req() req: Request) {
+    // the req should only be called by the script run during the initialization of the api microservice.
+    const protocol = req.protocol || 'http';
+    const host = req.get('host') || 'localhost';
+    const url = `${protocol}://${host}`;
+    return this.authService.createAdmin(dto, url);
   }
 
   /* User login */
