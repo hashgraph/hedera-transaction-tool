@@ -286,7 +286,7 @@ watch(
           placeholder="Enter Name"
         /> -->
       </div>
-      <div class="form-group col-6">
+      <div v-if="isLoggedInOrganization(user.selectedOrganization)" class="form-group col-6">
         <label class="form-label">Sequential Execution</label>
         <div>{{ group?.sequential ? 'Yes' : 'No' }}</div>
         <!-- <AppInput
