@@ -3,6 +3,13 @@ import { generateMnemonic } from '../utils/keyUtil';
 const bcrypt = require('bcryptjs');
 const { Mnemonic } = require('@hashgraph/sdk');
 const { encrypt } = require('../utils/crypto');
+const {
+  encodeExchangeRates,
+  encodeFeeSchedule,
+  encodeNodeAddressBook,
+  encodeServicesConfigurationList,
+  encodeThrottleDefinitions,
+} = require('../utils/encodeSystemFiles');
 
 const BasePage = require('./BasePage');
 const RegistrationPage = require('./RegistrationPage');
@@ -72,6 +79,7 @@ class OrganizationPage extends BasePage {
   hoursOverlayButtonSelector = 'button[data-test="hours-toggle-overlay-btn-0"]';
   signTransactionButtonSelector = 'button-sign-org-transaction';
   nextTransactionButtonSelector = 'button-next-org-transaction';
+  signAllTransactionsButtonSelector = 'button-sign-all-tx';
 
   // Inputs
   organizationNicknameInputSelector = 'input-organization-nickname';
@@ -88,6 +96,8 @@ class OrganizationPage extends BasePage {
   transactionValidStartSelector = 'p-transaction-details-valid-start';
   secondSignerCheckmarkSelector = 'span-checkmark-public-key-1-0';
   spanNotificationNumberSelector = 'span-notification-number';
+  transactionIdInGroupSelector = 'td-group-transaction-id';
+  validStartTimeInGroupSelector = 'td-group-valid-start-time';
 
   // Indexes
   modeSelectionIndexSelector = 'dropdown-item-';
@@ -500,7 +510,7 @@ class OrganizationPage extends BasePage {
    * Opens the date picker.
    */
   async openDatePicker() {
-    await this.click(`.dp__input_wrap`);
+    await this.window.click(`[data-test="dp-input"]`);
     await this.window.waitForSelector('.dp__instance_calendar');
   }
 
@@ -515,7 +525,7 @@ class OrganizationPage extends BasePage {
   /**
    * Moves the time ahead by the specified number of seconds, handling minute and hour overflow.
    *
-   * @param {number} seconds - The number of seconds to move ahead.
+   * @param seconds - The number of seconds to move ahead.
    */
   async moveTimeAheadBySeconds(seconds) {
     const increment = async (selector, count) => {
@@ -858,6 +868,103 @@ class OrganizationPage extends BasePage {
     );
 
     return await this.processTransaction(isSignRequiredFromCreator);
+  }
+
+  async updateSystemFile(fileId, timeForExecution = 10, isSignRequiredFromCreator = false) {
+    await this.startNewTransaction(async () => {
+      await this.transactionPage.clickOnFileServiceLink();
+      await this.transactionPage.clickOnUpdateFileSublink();
+    });
+    await this.transactionPage.fillInPayerAccountId('0.0.2');
+    await this.setDateTimeAheadBy(timeForExecution);
+    await this.transactionPage.fillInFileIdForUpdate(fileId);
+
+    const fileMappings = {
+      '0.0.101': {
+        encodeFunction: encodeNodeAddressBook,
+        inputFile: 'data/101.json',
+        outputFile: 'data/node-address-book.bin',
+        binFile: 'node-address-book.bin',
+      },
+      '0.0.102': {
+        encodeFunction: encodeNodeAddressBook,
+        inputFile: 'data/102.json',
+        outputFile: 'data/node-details.bin',
+        binFile: 'node-details.bin',
+      },
+      '0.0.111': {
+        encodeFunction: encodeFeeSchedule,
+        inputFile: 'data/feeSchedules.json',
+        outputFile: 'data/fee-schedules.bin',
+        binFile: 'fee-schedules.bin',
+        specialProcessing: true, // This is a huge file, so we need to handle it differently due to transaction group
+      },
+      '0.0.112': {
+        encodeFunction: encodeExchangeRates,
+        inputFile: 'data/exchangeRates.json',
+        outputFile: 'data/exchange-rates.bin',
+        binFile: 'exchange-rates.bin',
+      },
+      '0.0.121': {
+        encodeFunction: encodeServicesConfigurationList,
+        inputFile: 'data/application.properties',
+        outputFile: 'data/application-properties.bin',
+        binFile: 'application-properties.bin',
+      },
+      '0.0.122': {
+        encodeFunction: encodeServicesConfigurationList,
+        inputFile: 'data/api-permission.properties',
+        outputFile: 'data/api-permission-properties.bin',
+        binFile: 'api-permission-properties.bin',
+      },
+      '0.0.123': {
+        encodeFunction: encodeThrottleDefinitions,
+        inputFile: 'data/123.json',
+        outputFile: 'data/throttles.bin',
+        binFile: 'throttles.bin',
+      },
+    };
+
+    const fileInfo = fileMappings[fileId];
+
+    if (!fileInfo) {
+      throw new Error(`Unsupported fileId: ${fileId}`);
+    }
+
+    await fileInfo.encodeFunction(fileInfo.inputFile, fileInfo.outputFile);
+    await this.transactionPage.uploadSystemFile(fileInfo.binFile);
+
+    let txId, validStart;
+
+    if (fileInfo.specialProcessing) {
+      // Special processing for large files
+      // It does not go through the standard transaction processing
+      // Instead it goes into a transaction group
+      await this.transactionPage.clickOnSignAndSubmitButton();
+      await this.transactionPage.clickSignTransactionButton();
+      const txIdArray = await this.getGroupTransactionIdText();
+      const validStartArray = await this.getGroupValidStartText();
+      txId = txIdArray[txIdArray.length - 1]; // Get the last item in the array
+      validStart = validStartArray[0];
+      await this.clickOnSignAllTransactionsButton();
+    } else {
+      // Standard transaction processing
+      ({ txId, validStart } = await this.processTransaction(isSignRequiredFromCreator));
+    }
+
+    return { txId, validStart };
+  }
+
+  async getGroupTransactionIdText() {
+    return await this.getText(this.transactionIdInGroupSelector);
+  }
+
+  async getGroupValidStartText() {
+    return await this.getText(this.validStartTimeInGroupSelector);
+  }
+
+  async clickOnSignAllTransactionsButton() {
+    await this.click(this.signAllTransactionsButtonSelector);
   }
 
   async getReadyForSignTransactionIdByIndex(index) {

@@ -1,0 +1,30 @@
+{
+  "nodeAddress": [
+    {
+      "serviceEndpoint": [
+        {
+          "ipAddressV4": "35.237.119.55",
+          "port": 50211
+        },
+        {
+          "ipAddressV4": "35.237.119.55",
+          "port": 50212
+        },
+        {
+          "ipAddressV4": "3.212.6.13",
+          "port": 50211
+        },
+        {
+          "ipAddressV4": "3.212.6.13",
+          "port": 50212
+        }
+      ],
+      "RSA_PubKey": "308201a2300d06092a864886f70d01010105000382018f003082018a0282018100c557af579fa83501be899b28907765bfdfcd52ab432b0195a1f1ecd86fc00ab6c5509b0fdd97edd3cb5cea56a295f312abb550831dbf963f450118b4fcc6e22cf4676200ce9cc8edfbbf558dc69f024264ad7d3dab23bed2133c274e6934489155db1087f90370905c64185a6211dc742fb9a6909d82186947b277463dfb3ff0acd47eff12ead1f6972ef2c1203793c45e77575be4fa110c7e40fa8db9c6187d113f4704014179071abf59be7d2b0de82de4215dc25506b1c9c26e4917401c997506e377e6bf03b688727e7940fad69c5e0da3cd5cbd2be777350aea2d0d47e97a448c84be6ce134d64bee0985c29162f4c1e567cca93d06a3c1be8abce35b557fb77f4fe671a66dec790756d0e8818165f2bacaa891aae7ac7437fc7175b6eb6deb7472378751bb6bf9b0e1483f9668e9fdbd5604c39b14d9e2bedeec846a980d704d171e7ba4b7fcd1a30d945ca12f47a325d9398aa18f97066054d4d15fc8994e2debe73e9271d548683f61ea44fb25071e3518a78ed3eb37e71a0691f2670203010001",
+      "nodeId": "1",
+      "nodeAccountId": "0.0.4",
+      "nodeCertHash": "7409dec2e494b627ee49c69b294be1ceaebca3fdcaf36789e88fc7d5b0eef5561f52b82d35191a39c2fbed6027267166",
+      "description": "Hosted by Hedera | East Coast, USA",
+      "stake": "71"
+    }
+  ]
+}

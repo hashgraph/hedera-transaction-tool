@@ -244,6 +244,33 @@ class BasePage {
     }
   }
 
+  /**
+   * Uploads a file via a file input or file chooser dialog.
+   * @param {string} selector - The selector of the element to trigger the file upload.
+   * @param {string|string[]} filePaths - The path(s) to the file(s) to upload.
+   * @param {number|null} [index=null] - Optional index to select a specific element when multiple are present.
+   * @returns {Promise<void>}
+   */
+  async uploadFile(selector, filePaths, index = null) {
+    console.log(`Uploading file(s) ${filePaths} via element with selector: ${selector}`);
+
+    const element = this.getElement(selector, index);
+
+    // Determine if the element is an input of type file
+    const isInputFile = await element.evaluate(el => el.tagName === 'INPUT' && el.type === 'file');
+
+    if (isInputFile) {
+      // If the element is an input[type="file"], set files directly
+      await element.setInputFiles(filePaths);
+    } else {
+      // Otherwise, wait for the file chooser event
+      const fileChooserPromise = this.window.waitForEvent('filechooser');
+      await element.click();
+      const fileChooser = await fileChooserPromise;
+      await fileChooser.setFiles(filePaths);
+    }
+  }
+
   // --------------------------
   // Element State Methods
   // --------------------------

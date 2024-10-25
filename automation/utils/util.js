@@ -3,6 +3,8 @@ const { launchHederaTransactionTool } = require('./electronAppLauncher');
 const { migrationDataExists } = require('./oldTool.js');
 const LoginPage = require('../pages/LoginPage.js');
 const SettingsPage = require('../pages/SettingsPage');
+const fs = require('fs').promises;
+const path = require('path');
 
 async function setupApp() {
   console.log(asciiArt); // Display ASCII art as the app starts
@@ -132,6 +134,33 @@ async function waitForValidStart(dateTimeString, bufferSeconds = 15) {
   }
 }
 
+/**
+ * Asynchronously deletes all .bin files in the specified directory.
+ * @param {string} directory - The path to the directory where .bin files will be deleted.
+ */
+async function cleanupBinFiles(directory) {
+  try {
+    const files = await fs.readdir(directory);
+    const deletePromises = files.map(async file => {
+      const filePath = path.join(directory, file);
+      const fileStat = await fs.stat(filePath);
+
+      if (fileStat.isFile() && path.extname(file) === '.bin') {
+        try {
+          await fs.unlink(filePath);
+          console.log(`Deleted file: ${filePath}`);
+        } catch (err) {
+          console.error(`Failed to delete file ${filePath}: ${err.message}`);
+        }
+      }
+    });
+    await Promise.all(deletePromises);
+    console.log('Cleanup completed.');
+  } catch (err) {
+    console.error(`Unable to read directory ${directory}: ${err.message}`);
+  }
+}
+
 const asciiArt =
   '\n' +
   ' ________ __    __        ________ ______   ______  __               ______  __    __ ________ ______  __       __  ______  ________ ______  ______  __    __ \n' +
@@ -154,4 +183,5 @@ module.exports = {
   formatTransactionId,
   calculateTimeout,
   waitForValidStart,
+  cleanupBinFiles,
 };

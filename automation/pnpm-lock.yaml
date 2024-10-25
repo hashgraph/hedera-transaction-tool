@@ -34,6 +34,9 @@ importers:
       fsevents:
         specifier: 2.3.2
         version: 2.3.2
+      long:
+        specifier: 5.2.3
+        version: 5.2.3
       pg:
         specifier: 8.12.0
         version: 8.12.0
