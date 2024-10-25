@@ -1,19 +1,10 @@
-import type { ITransaction, Network } from '@main/shared/interfaces';
+import type { ITransaction } from '@main/shared/interfaces';
 
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 
-export interface ApiTransaction {
-  name: string;
-  description: string;
-  transactionBytes: string;
-  network: Network;
-  signature: string;
-  creatorKeyId: number;
-}
-
 export interface ApiGroupItem {
   seq: number;
-  transaction: ApiTransaction | ITransaction;
+  transaction: Partial<ITransaction>;
 }
 
 export interface IGroupItem {
@@ -24,6 +15,8 @@ export interface IGroupItem {
 export interface IGroup {
   id: number;
   description: string;
+  atomic: boolean;
+  sequential: boolean;
   createdAt: string;
   groupItems: IGroupItem[];
 }
@@ -32,6 +25,7 @@ export const submitTransactionGroup = async (
   serverUrl: string,
   description: string,
   atomic: boolean,
+  sequential: boolean,
   groupItems: ApiGroupItem[],
 ): Promise<{ id: number; transactionBytes: string }> => {
   return commonRequestHandler(async () => {
@@ -40,6 +34,7 @@ export const submitTransactionGroup = async (
       {
         description,
         atomic,
+        sequential,
         groupItems,
       },
       {
