@@ -58,6 +58,7 @@ describe('TransactionGroupsController', () => {
       id: 1,
       description: 'Test Transaction Group Description',
       atomic: false,
+      sequential: false,
       groupItems: [],
       createdAt: new Date(),
     };

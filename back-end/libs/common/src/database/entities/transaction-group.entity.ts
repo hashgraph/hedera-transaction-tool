@@ -12,6 +12,9 @@ export class TransactionGroup {
   @Column({ default: false})
   atomic: boolean;
 
+  @Column({ default: false})
+  sequential: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

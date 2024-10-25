@@ -12,6 +12,9 @@ export class TransactionGroupDto {
   atomic: boolean;
 
   @Expose()
+  sequential: boolean;
+
+  @Expose()
   createdAt: Date;
 
   @Expose()
