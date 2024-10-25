@@ -17,7 +17,7 @@ import {
   notifyWaitingForSignatures,
   isTransactionOverMaxSize,
 } from '@app/common';
-import { NotificationType, Transaction, TransactionStatus } from '@entities';
+import { NotificationType, Transaction, TransactionGroup, TransactionGroupItem, TransactionStatus } from '@entities';
 
 import { TransactionStatusService } from './transaction-status.service';
 import { ExecuteService } from '../execute/execute.service';
@@ -61,6 +61,7 @@ describe('TransactionStatusService', () => {
   let service: TransactionStatusService;
 
   const transactionRepo = mockDeep<Repository<Transaction>>();
+  const transactionGroupRepo = mockDeep<Repository<TransactionGroup>>();
   const notificationsService = mockDeep<ClientProxy>();
   const schedulerRegistry = mockDeep<SchedulerRegistry>();
   const executeService = mockDeep<ExecuteService>();
@@ -82,6 +83,10 @@ describe('TransactionStatusService', () => {
         {
           provide: getRepositoryToken(Transaction),
           useValue: transactionRepo,
+        },
+        {
+          provide: getRepositoryToken(TransactionGroup),
+          useValue: transactionGroupRepo,
         },
         {
           provide: NOTIFICATIONS_SERVICE,
@@ -122,7 +127,7 @@ describe('TransactionStatusService', () => {
     expect(service.getValidStartNowMinus180Seconds).toHaveBeenCalled();
   });
 
-  it('should add execution timeout for transactions that are waiting for execution in initial cron', async () => {
+  it('should call prepareAndExecute for transactions that are waiting for execution in initial cron', async () => {
     const transactions = [
       {
         validStart: new Date(new Date().getTime() - 10 * 1_000),
@@ -132,11 +137,11 @@ describe('TransactionStatusService', () => {
 
     jest.spyOn(service, 'updateTransactions').mockResolvedValueOnce(transactions as Transaction[]);
     jest.spyOn(service, 'getValidStartNowMinus180Seconds').mockImplementationOnce(jest.fn());
-    jest.spyOn(service, 'prepareAndExecute').mockImplementationOnce(jest.fn());
+    jest.spyOn(service, 'prepareTransactions').mockImplementationOnce(jest.fn());
 
     await service.handleInitialTransactionStatusUpdate();
 
-    expect(service.prepareAndExecute).toHaveBeenCalled();
+    expect(service.prepareTransactions).toHaveBeenCalled();
   });
 
   it('should request update for transactions with valid start after one week', async () => {
@@ -237,11 +242,11 @@ describe('TransactionStatusService', () => {
 
     jest.spyOn(service, 'updateTransactions').mockResolvedValueOnce(transactions as Transaction[]);
     jest.spyOn(service, 'getValidStartNowMinus180Seconds').mockImplementationOnce(jest.fn());
-    jest.spyOn(service, 'prepareAndExecute').mockImplementationOnce(jest.fn());
+    jest.spyOn(service, 'prepareTransactions').mockImplementationOnce(jest.fn());
 
     await service.handleTransactionsBetweenNowAndAfterThreeMinutes();
 
-    expect(service.prepareAndExecute).toHaveBeenCalled();
+    expect(service.prepareTransactions).toHaveBeenCalled();
   });
 
   it('should updates for expired transactions', async () => {
@@ -533,13 +538,290 @@ describe('TransactionStatusService', () => {
     });
   });
 
-  describe('prepareAndExecute', () => {
+  describe('prepareTransactions', () => {
+    it('should call collateAndExecute for each transaction with status WAITING_FOR_EXECUTION', async () => {
+      const transactions = [
+        { id: 1, status: TransactionStatus.WAITING_FOR_EXECUTION, validStart: new Date() } as Transaction,
+        { id: 2, status: TransactionStatus.WAITING_FOR_SIGNATURES, validStart: new Date() } as Transaction,
+        { id: 3, status: TransactionStatus.WAITING_FOR_EXECUTION, validStart: new Date() } as Transaction,
+      ];
+
+      jest.spyOn(service, 'collateAndExecute').mockImplementation(jest.fn());
+
+      await service.prepareTransactions(transactions);
+
+      expect(service.collateAndExecute).toHaveBeenCalledTimes(2);
+      expect(service.collateAndExecute).toHaveBeenCalledWith(transactions[0]);
+      expect(service.collateAndExecute).toHaveBeenCalledWith(transactions[2]);
+    });
+
+    it('should not call collateAndExecute for transactions with status other than WAITING_FOR_EXECUTION', async () => {
+      const transactions = [
+        { id: 1, status: TransactionStatus.WAITING_FOR_SIGNATURES } as Transaction,
+        { id: 2, status: TransactionStatus.NEW } as Transaction,
+      ];
+
+      jest.spyOn(service, 'collateAndExecute').mockImplementation(jest.fn());
+
+      await service.prepareTransactions(transactions);
+
+      expect(service.collateAndExecute).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('collateGroupAndExecute', () => {
+    let transactions: SDKTransaction[] = [];
+    let mockTransactionGroup: TransactionGroup;
+    let name: string;
+    let timeToValidStart: number;
+
+    beforeEach(async () => {
+      jest.setTimeout(10_000);
+      jest.resetAllMocks();
+      const validStart = new Date(Date.now());
+      for (let i = 0; i < 10; i++) {
+        const transaction = new AccountCreateTransaction()
+          .setNodeAccountIds([new AccountId(3)])
+          .setTransactionId(
+            TransactionId.withValidStart(
+              new AccountId(3), Timestamp.fromDate(new Date(validStart.getTime() + i * 1000))
+            ),
+          )
+          .setTransactionMemo('Test Transaction')
+          .freeze();
+        transactions.push(transaction);
+      }
+      mockTransactionGroup = {
+        id: 1,
+        description: 'Test Group',
+        atomic: false,
+        sequential: true,
+        createdAt: new Date(),
+        groupItems: []
+      } as TransactionGroup;
+      for (let i = 0; i < 10; i++) {
+        const mockTransaction = {
+          id: i,
+          validStart: new Date(validStart.getTime() + i * 1000),
+          status: TransactionStatus.WAITING_FOR_EXECUTION,
+        } as Transaction;
+        mockTransactionGroup.groupItems.push({
+          groupId: 1,
+          seq: i,
+          transaction: mockTransaction,
+        } as TransactionGroupItem);
+      }
+      name = `smart_collate_group_timeout_${mockTransactionGroup.id}`;
+
+      timeToValidStart = mockTransactionGroup.groupItems[0].transaction.validStart.getTime() - Date.now();
+
+      jest.useFakeTimers();
+      jest.spyOn(global, 'setTimeout');
+      jest.spyOn(schedulerRegistry, 'doesExist').mockReturnValue(false);
+      jest.spyOn(schedulerRegistry, 'addTimeout');
+      jest.spyOn(schedulerRegistry, 'deleteTimeout');
+      jest.spyOn(executeService, 'executeTransaction').mockResolvedValue(undefined);
+      jest.spyOn(service, 'addGroupExecutionTimeout').mockImplementationOnce(jest.fn());
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('should not set a timeout if one already exists', () => {
+      schedulerRegistry.doesExist.mockReturnValueOnce(true);
+
+      service.collateGroupAndExecute(mockTransactionGroup);
+
+      expect(setTimeout).not.toHaveBeenCalled();
+    });
+
+    it('should set a timeout with the correct delay', () => {
+      service.collateGroupAndExecute(mockTransactionGroup);
+
+      expect(setTimeout).toHaveBeenCalledWith(
+        expect.any(Function),
+        expect.closeTo(timeToValidStart - 10 * 1000),
+      );
+    });
+
+    it('should add the timeout to the scheduler registry', () => {
+      service.collateGroupAndExecute(mockTransactionGroup);
+
+      expect(schedulerRegistry.addTimeout).toHaveBeenCalledWith(name, expect.anything());
+    });
+
+    it('should collate and execute a transaction group signed with 10 different keys, reducing the signatures as needed',
+      async () => {
+      // prepare the signatures
+      const keyList = new KeyList();
+      const privateKeys = [];
+
+      for (let i = 0; i < 10; i++) {
+        let transaction = transactions[i];
+        for (let j = 0; j < 10; j++) {
+          const privateKey = PrivateKey.generate();
+          privateKeys.push(privateKey);
+          keyList.push(privateKey.publicKey);
+          transaction = await transaction.sign(privateKey);
+        }
+        mockTransactionGroup.groupItems[i].transaction.transactionBytes = Buffer.from(transaction.toBytes());
+
+        transaction.removeAllSignatures();
+      }
+
+      // Mock the functions
+      jest.mocked(smartCollate).mockImplementation(async (transaction, mirrorNodeService) => {
+        for (let i = 0; i < 10; i++) {
+          const _transaction = mockTransactionGroup.groupItems[i].transaction;
+
+          if (_transaction.id === transaction.id) {
+            privateKeys.slice(0, 5).forEach(key => transactions[i].sign(key));
+            return transactions[i];
+          }
+        }
+        return null;
+      });
+      jest.mocked(computeSignatureKey).mockResolvedValue(keyList);
+
+      service.collateGroupAndExecute(mockTransactionGroup);
+
+      await jest.advanceTimersToNextTimerAsync();
+
+      expect(service.addGroupExecutionTimeout).toHaveBeenCalled();
+
+      mockTransactionGroup.groupItems.forEach((groupItem) => {
+        const sdkTransaction = SDKTransaction.fromBytes(groupItem.transaction.transactionBytes);
+
+        expect(sdkTransaction._signerPublicKeys.size).toBe(5);
+      });
+    });
+
+    it('should fail to prepare a group of signed transactions, due to key list unable to be sufficiently reduced',
+      async () => {
+      // prepare the signatures
+      const keyList = new KeyList();
+      const privateKeys = [];
+
+      for (let i = 0; i < 10; i++) {
+        let transaction = transactions[i];
+        const privateKey = PrivateKey.generate();
+        privateKeys.push(privateKey);
+        keyList.push(privateKey.publicKey);
+        transaction = await transaction.sign(privateKey);
+        mockTransactionGroup.groupItems[i].transaction.transactionBytes = Buffer.from(transaction.toBytes());
+
+        transaction.removeAllSignatures();
+      }
+
+      // Mock the functions
+      jest.mocked(smartCollate).mockReturnValue(null);
+      jest.mocked(computeSignatureKey).mockResolvedValue(keyList);
+
+      jest.spyOn(transactionRepo, 'update').mockResolvedValue(undefined);
+
+      service.collateGroupAndExecute(mockTransactionGroup);
+
+      await jest.advanceTimersToNextTimerAsync();
+
+      expect(service.addGroupExecutionTimeout).not.toHaveBeenCalled();
+
+      mockTransactionGroup.groupItems.forEach((groupItem) => {
+        // Verify that the update method was called with the correct parameters
+        expect(transactionRepo.update).toHaveBeenCalledWith(
+          { id: groupItem.transaction.id },
+          {
+            status: TransactionStatus.FAILED,
+            executedAt: expect.any(Date), // Use expect.any(Date) to match any Date object
+            statusCode: Status.TransactionOversize._code,
+          },
+        );
+      });
+    });
+
+    it('should fail to prepare a group of signed transactions, due to some transactions not signed',
+      async () => {
+        const consoleSpy = jest.spyOn(console, 'log');
+
+        mockTransactionGroup.groupItems[9].transaction.status = TransactionStatus.WAITING_FOR_SIGNATURES;
+
+        service.collateGroupAndExecute(mockTransactionGroup);
+
+        expect(consoleSpy).toHaveBeenCalledWith(
+          expect.stringContaining('The following transactions are not ready for execution, group will not execute:'),
+          expect.anything(),
+        );
+        expect(setTimeout).not.toHaveBeenCalled();
+
+        consoleSpy.mockRestore();
+    });
+
+    it('should fail to prepare a group of signed transactions, due to some transactions not able to pass smart collating',
+      async () => {
+        // prepare the signatures
+        const keyList = new KeyList();
+        const privateKeys = [];
+
+        for (let i = 0; i < 9; i++) {
+          let transaction = transactions[i];
+          const privateKey = PrivateKey.generate();
+          privateKeys.push(privateKey);
+          keyList.push(privateKey.publicKey);
+          transaction = await transaction.sign(privateKey);
+          mockTransactionGroup.groupItems[i].transaction.transactionBytes = Buffer.from(transaction.toBytes());
+
+          transaction.removeAllSignatures();
+        }
+
+        // Mock the functions
+        jest.mocked(smartCollate).mockImplementation(async (transaction, mirrorNodeService) => {
+          for (let i = 0; i < 9; i++) {
+            const _transaction = mockTransactionGroup.groupItems[i].transaction;
+
+            if (_transaction.id === transaction.id) {
+              privateKeys.slice(0, 5).forEach(key => transactions[i].sign(key));
+              return transactions[i];
+            }
+          }
+          return null;
+        });
+        jest.mocked(computeSignatureKey).mockResolvedValue(keyList);
+
+        service.collateGroupAndExecute(mockTransactionGroup);
+
+        await jest.advanceTimersToNextTimerAsync();
+
+        expect(service.addGroupExecutionTimeout).not.toHaveBeenCalled();
+
+        mockTransactionGroup.groupItems.forEach((groupItem) => {
+          // Verify that the update method was called with the correct parameters
+          expect(transactionRepo.update).toHaveBeenCalledWith(
+            { id: groupItem.transaction.id },
+            {
+              status: TransactionStatus.FAILED,
+              executedAt: expect.any(Date), // Use expect.any(Date) to match any Date object
+              statusCode: Status.TransactionOversize._code,
+            },
+          );
+        });
+    });
+
+    it('should handle error in callback', async () => {
+      jest.mocked(isTransactionOverMaxSize).mockRejectedValue(new Error('Error'));
+
+      service.collateGroupAndExecute(mockTransactionGroup);
+
+      await jest.advanceTimersToNextTimerAsync();
+
+      expect(service.addGroupExecutionTimeout).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('collateAndExecute', () => {
     let transaction: SDKTransaction;
     let mockTransaction: Transaction;
     let name: string;
     let timeToValidStart: number;
-    let keyList: KeyList;
-    let privateKeys: PrivateKey[];
 
     beforeEach(async () => {
       jest.resetAllMocks();
@@ -576,13 +858,13 @@ describe('TransactionStatusService', () => {
     it('should not set a timeout if one already exists', () => {
       schedulerRegistry.doesExist.mockReturnValueOnce(true);
 
-      service.prepareAndExecute(mockTransaction);
+      service.collateAndExecute(mockTransaction);
 
       expect(setTimeout).not.toHaveBeenCalled();
     });
 
     it('should set a timeout with the correct delay', () => {
-      service.prepareAndExecute(mockTransaction);
+      service.collateAndExecute(mockTransaction);
 
       expect(setTimeout).toHaveBeenCalledWith(
         expect.any(Function),
@@ -591,15 +873,15 @@ describe('TransactionStatusService', () => {
     });
 
     it('should add the timeout to the scheduler registry', () => {
-      service.prepareAndExecute(mockTransaction);
+      service.collateAndExecute(mockTransaction);
 
       expect(schedulerRegistry.addTimeout).toHaveBeenCalledWith(name, expect.anything());
     });
 
     it('should prepare and execute a transaction signed with 50 different keys, reducing the signatures as needed', async () => {
       // prepare the signatures
-      keyList = new KeyList();
-      privateKeys = [];
+      const keyList = new KeyList();
+      const privateKeys = [];
 
       for (let i = 0; i < 50; i++) {
         const privateKey = PrivateKey.generate();
@@ -617,7 +899,7 @@ describe('TransactionStatusService', () => {
       jest.mocked(smartCollate).mockResolvedValueOnce(transaction);
       jest.mocked(computeSignatureKey).mockResolvedValueOnce(keyList);
 
-      service.prepareAndExecute(mockTransaction);
+      service.collateAndExecute(mockTransaction);
 
       await jest.advanceTimersToNextTimerAsync();
 
@@ -627,10 +909,10 @@ describe('TransactionStatusService', () => {
       expect(sdkTransaction._signerPublicKeys.size).toBe(5);
     });
 
-    it('should fail to prepare a transaction signed with 100 different keys, due to key list unable to be sufficiently reduced', async () => {
+    it('should fail to prepare a signed transaction, due to key list unable to be sufficiently reduced', async () => {
       // prepare the signatures
-      keyList = new KeyList();
-      privateKeys = [];
+      const keyList = new KeyList();
+      const privateKeys = [];
 
       const privateKey = PrivateKey.generate();
       privateKeys.push(privateKey);
@@ -644,7 +926,7 @@ describe('TransactionStatusService', () => {
 
       jest.spyOn(transactionRepo, 'update').mockResolvedValue(undefined);
 
-      service.prepareAndExecute(mockTransaction);
+      service.collateAndExecute(mockTransaction);
 
       await jest.advanceTimersToNextTimerAsync();
 
@@ -664,11 +946,110 @@ describe('TransactionStatusService', () => {
     it('should handle error in callback', async () => {
       jest.mocked(isTransactionOverMaxSize).mockRejectedValue(new Error('Error'));
 
-      service.prepareAndExecute(mockTransaction);
+      service.collateAndExecute(mockTransaction);
 
       await jest.advanceTimersToNextTimerAsync();
 
       expect(service.addExecutionTimeout).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('addGroupExecutionTimeout', () => {
+    let transactions: SDKTransaction[] = [];
+    let mockTransactionGroup: TransactionGroup;
+    let name: string;
+    let timeToValidStart: number;
+
+    beforeEach(async () => {
+      jest.resetAllMocks();
+      const validStart = new Date(Date.now());
+      for (let i = 0; i < 10; i++) {
+        const transaction = new AccountCreateTransaction()
+          .setNodeAccountIds([new AccountId(3)])
+          .setTransactionId(
+            TransactionId.withValidStart(
+              new AccountId(3), Timestamp.fromDate(new Date(validStart.getTime() + i * 1000))
+            ),
+          )
+          .setTransactionMemo('Test Transaction')
+          .freeze();
+        transactions.push(transaction);
+      }
+      mockTransactionGroup = {
+        id: 1,
+        description: 'Test Group',
+        atomic: false,
+        sequential: true,
+        createdAt: new Date(),
+        groupItems: []
+      } as TransactionGroup;
+      for (let i = 0; i < 10; i++) {
+        const mockTransaction = {
+          id: i,
+          validStart: new Date(validStart.getTime() + i * 1000),
+          status: TransactionStatus.WAITING_FOR_EXECUTION,
+        } as Transaction;
+        mockTransactionGroup.groupItems.push({
+          groupId: 1,
+          seq: i,
+          transaction: mockTransaction,
+        } as TransactionGroupItem);
+      }
+      name = `group_execution_timeout_${mockTransactionGroup.id}`;
+
+      timeToValidStart = mockTransactionGroup.groupItems[0].transaction.validStart.getTime() - Date.now();
+
+      jest.useFakeTimers();
+      jest.spyOn(global, 'setTimeout');
+      jest.spyOn(schedulerRegistry, 'doesExist').mockReturnValue(false);
+      jest.spyOn(schedulerRegistry, 'addTimeout');
+      jest.spyOn(schedulerRegistry, 'deleteTimeout');
+      jest.spyOn(executeService, 'executeTransactionGroup').mockResolvedValue(undefined);
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('should not set a timeout if one already exists', () => {
+      schedulerRegistry.doesExist.mockReturnValueOnce(true);
+
+      service.addGroupExecutionTimeout(mockTransactionGroup);
+
+      expect(setTimeout).not.toHaveBeenCalled();
+    });
+
+    it('should set a timeout with the correct delay', () => {
+      service.addGroupExecutionTimeout(mockTransactionGroup);
+
+      expect(setTimeout).toHaveBeenCalledWith(
+        expect.any(Function),
+        expect.closeTo(timeToValidStart + 5 * 1000),
+      );
+    });
+
+    it('should add the timeout to the scheduler registry', () => {
+      service.addGroupExecutionTimeout(mockTransactionGroup);
+
+      expect(schedulerRegistry.addTimeout).toHaveBeenCalledWith(name, expect.anything());
+    });
+
+    it('should execute the transaction and remove the timeout after the delay', async () => {
+      service.addGroupExecutionTimeout(mockTransactionGroup);
+
+      await jest.advanceTimersByTimeAsync(timeToValidStart + 5 * 1000);
+
+      expect(executeService.executeTransactionGroup).toHaveBeenCalledWith(mockTransactionGroup);
+    });
+
+    it('should handle error in the timeout callback', async () => {
+      jest.spyOn(executeService, 'executeTransaction').mockRejectedValue(new Error('Error'));
+
+      service.addGroupExecutionTimeout(mockTransactionGroup);
+
+      await jest.advanceTimersToNextTimerAsync();
+
+      expect(executeService.executeTransactionGroup).toHaveBeenCalledWith(mockTransactionGroup);
     });
   });
 

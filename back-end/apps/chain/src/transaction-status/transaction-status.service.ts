@@ -44,13 +44,7 @@ export class TransactionStatusService {
     /* Valid start now minus 180 seconds */
     const transactions = await this.updateTransactions(this.getValidStartNowMinus180Seconds());
 
-    for (const transaction of transactions.filter(
-      t =>
-        this.isValidStartExecutable(t.validStart) &&
-        t.status === TransactionStatus.WAITING_FOR_EXECUTION,
-    )) {
-      this.prepareAndExecute(transaction);
-    }
+    await this.prepareTransactions(transactions);
   }
 
   /* For transactions with valid start after 1 week */
@@ -102,25 +96,8 @@ export class TransactionStatusService {
       this.getValidStartNowMinus180Seconds(),
       this.getThreeMinutesLater(),
     );
-   const processedGroupIds = new Set<number>();
 
-    for (const transaction of transactions) {
-      if (transaction.status === TransactionStatus.WAITING_FOR_EXECUTION &&
-        this.isValidStartExecutable(transaction.validStart)) {
-        if (transaction.groupItem) {
-          if (!processedGroupIds.has(transaction.groupItem.groupId)) {
-            processedGroupIds.add(transaction.groupItem.groupId);
-            const transactionGroup = await this.transactionGroupRepo.findOne({
-              where: { id: transaction.groupItem.groupId },
-              relations: ['groupItems', 'groupItems.transactions'],
-            });
-            this.prepareGroupAndExecute(transactionGroup);
-          }
-        } else {
-          this.prepareAndExecute(transaction);
-        }
-      }
-    }
+    await this.prepareTransactions(transactions);
   }
 
   /* For transactions that are expired */
@@ -285,7 +262,38 @@ export class TransactionStatusService {
     }
   }
 
-  prepareGroupAndExecute(transactionGroup: TransactionGroup) {
+  async prepareTransactions(transactions: Transaction[]) {
+    const processedGroupIds = new Set<number>();
+
+    for (const transaction of transactions) {
+      if (transaction.status === TransactionStatus.WAITING_FOR_EXECUTION &&
+        this.isValidStartExecutable(transaction.validStart)) {
+        if (transaction.groupItem) {
+          if (!processedGroupIds.has(transaction.groupItem.groupId)) {
+            processedGroupIds.add(transaction.groupItem.groupId);
+            const transactionGroup = await this.transactionGroupRepo.findOne({
+              where: { id: transaction.groupItem.groupId },
+              relations: ['groupItems', 'groupItems.transactions'],
+              order: {
+                'groupItems': {
+                  'transaction': {
+
+                  }
+                },
+              }
+            });
+            // All the transactions for the group are now pulled. If there is an issue validating for even one
+            // transaction, the group will not be executed. This is handled in executeTransactionGroup
+            this.collateGroupAndExecute(transactionGroup);
+          }
+        } else {
+          this.collateAndExecute(transaction);
+        }
+      }
+    }
+  }
+
+  collateGroupAndExecute(transactionGroup: TransactionGroup) {
     const name = `smart_collate_group_timeout_${transactionGroup.id}`;
 
     if (this.schedulerRegistry.doesExist('timeout', name)) return;
@@ -331,6 +339,7 @@ export class TransactionStatusService {
             );
             this.emitNotificationEvents(groupItem.transaction, TransactionStatus.FAILED);
           }
+          return;
         }
 
         this.addGroupExecutionTimeout(transactionGroup);
@@ -345,7 +354,7 @@ export class TransactionStatusService {
     this.schedulerRegistry.addTimeout(name, timeout);
   }
 
-  prepareAndExecute(transaction: Transaction) {
+  collateAndExecute(transaction: Transaction) {
     const name = `smart_collate_timeout_${transaction.id}`;
 
     if (this.schedulerRegistry.doesExist('timeout', name)) return;
@@ -401,7 +410,7 @@ export class TransactionStatusService {
 
     const callback = async () => {
       try {
-        await this.executeService.executeGroupTransaction(transactionGroup);
+        await this.executeService.executeTransactionGroup(transactionGroup);
       } catch (error) {
         console.log(error);
       } finally {

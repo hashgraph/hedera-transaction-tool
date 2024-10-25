@@ -27,3 +27,5 @@ export function maskSensitiveData(data: any, fieldsToMask: string[]): any {
 
   return maskedData;
 }
+
+export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
