@@ -19,7 +19,7 @@ import {
   notifyWaitingForSignatures,
   UpdateTransactionStatusDto,
 } from '@app/common';
-import { NotificationType, Transaction, TransactionStatus } from '@entities';
+import { NotificationType, Transaction, TransactionGroup, TransactionStatus } from '@entities';
 
 import { ExecuteService } from '../execute/execute.service';
 
@@ -27,6 +27,7 @@ import { ExecuteService } from '../execute/execute.service';
 export class TransactionStatusService {
   constructor(
     @InjectRepository(Transaction) private transactionRepo: Repository<Transaction>,
+    @InjectRepository(TransactionGroup) private transactionGroupRepo: Repository<TransactionGroup>,
     @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
     private schedulerRegistry: SchedulerRegistry,
     private readonly executeService: ExecuteService,
@@ -43,13 +44,7 @@ export class TransactionStatusService {
     /* Valid start now minus 180 seconds */
     const transactions = await this.updateTransactions(this.getValidStartNowMinus180Seconds());
 
-    for (const transaction of transactions.filter(
-      t =>
-        this.isValidStartExecutable(t.validStart) &&
-        t.status === TransactionStatus.WAITING_FOR_EXECUTION,
-    )) {
-      this.prepareAndExecute(transaction);
-    }
+    await this.prepareTransactions(transactions);
   }
 
   /* For transactions with valid start after 1 week */
@@ -102,13 +97,7 @@ export class TransactionStatusService {
       this.getThreeMinutesLater(),
     );
 
-    for (const transaction of transactions.filter(
-      t =>
-        t.status === TransactionStatus.WAITING_FOR_EXECUTION &&
-        this.isValidStartExecutable(t.validStart),
-    )) {
-      this.prepareAndExecute(transaction);
-    }
+    await this.prepareTransactions(transactions);
   }
 
   /* For transactions that are expired */
@@ -164,6 +153,10 @@ export class TransactionStatusService {
       },
       relations: {
         creatorKey: true,
+        groupItem: true,
+      },
+      order: {
+        validStart: 'ASC',
       },
     });
 
@@ -269,7 +262,102 @@ export class TransactionStatusService {
     }
   }
 
-  prepareAndExecute(transaction: Transaction) {
+  async prepareTransactions(transactions: Transaction[]) {
+    const processedGroupIds = new Set<number>();
+
+    for (const transaction of transactions) {
+      const waitingForExecution = transaction.status === TransactionStatus.WAITING_FOR_EXECUTION;
+
+      if (waitingForExecution && this.isValidStartExecutable(transaction.validStart)) {
+        if (transaction.groupItem) {
+          if (!processedGroupIds.has(transaction.groupItem.groupId)) {
+            processedGroupIds.add(transaction.groupItem.groupId);
+            const transactionGroup = await this.transactionGroupRepo.findOne({
+              where: { id: transaction.groupItem.groupId },
+              relations: {
+                groupItems: {
+                  transaction: true,
+                },
+              },
+              order: {
+                groupItems: {
+                  transaction: {
+                    validStart: 'ASC',
+                  },
+                },
+              },
+            });
+            // All the transactions for the group are now pulled. If there is an issue validating for even one
+            // transaction, the group will not be executed. This is handled in executeTransactionGroup
+            this.collateGroupAndExecute(transactionGroup);
+          }
+        } else {
+          this.collateAndExecute(transaction);
+        }
+      }
+    }
+  }
+
+  collateGroupAndExecute(transactionGroup: TransactionGroup) {
+    const name = `smart_collate_group_timeout_${transactionGroup.id}`;
+
+    if (this.schedulerRegistry.doesExist('timeout', name)) return;
+
+    const timeToValidStart =
+      transactionGroup.groupItems[0].transaction.validStart.getTime() - Date.now();
+
+    const callback = async () => {
+      try {
+        let smartCollateFailed = false;
+        for (const groupItem of transactionGroup.groupItems) {
+          const transaction = groupItem.transaction;
+          const sdkTransaction = await smartCollate(transaction, this.mirrorNodeService);
+
+          // If the transaction is still too large,
+          // break out of the loop and update all transactions in the group to failed
+          // with the TRANSACTION_OVERSIZE status code.
+          // This should happen on the first transaction, if at all
+          if (sdkTransaction === null) {
+            smartCollateFailed = true;
+            break;
+          }
+
+          //NOTE: the transactionBytes are set here but are not to be saved. Otherwise,
+          // any signatures that were removed in order to make the transaction fit
+          // would be lost.
+          transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
+        }
+
+        if (smartCollateFailed) {
+          for (const groupItem of transactionGroup.groupItems) {
+            await this.transactionRepo.update(
+              {
+                id: groupItem.transaction.id,
+              },
+              {
+                status: TransactionStatus.FAILED,
+                executedAt: new Date(),
+                statusCode: Status.TransactionOversize._code,
+              },
+            );
+            this.emitNotificationEvents(groupItem.transaction, TransactionStatus.FAILED);
+          }
+          return;
+        }
+
+        this.addGroupExecutionTimeout(transactionGroup);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        this.schedulerRegistry.deleteTimeout(name);
+      }
+    };
+
+    const timeout = setTimeout(callback, timeToValidStart - 10 * 1_000);
+    this.schedulerRegistry.addTimeout(name, timeout);
+  }
+
+  collateAndExecute(transaction: Transaction) {
     const name = `smart_collate_timeout_${transaction.id}`;
 
     if (this.schedulerRegistry.doesExist('timeout', name)) return;
@@ -313,6 +401,28 @@ export class TransactionStatusService {
     };
 
     const timeout = setTimeout(callback, timeToValidStart - 10 * 1_000);
+    this.schedulerRegistry.addTimeout(name, timeout);
+  }
+
+  addGroupExecutionTimeout(transactionGroup: TransactionGroup) {
+    const name = `group_execution_timeout_${transactionGroup.id}`;
+
+    if (this.schedulerRegistry.doesExist('timeout', name)) return;
+
+    const timeToValidStart =
+      transactionGroup.groupItems[0].transaction.validStart.getTime() - Date.now();
+
+    const callback = async () => {
+      try {
+        await this.executeService.executeTransactionGroup(transactionGroup);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        this.schedulerRegistry.deleteTimeout(name);
+      }
+    };
+
+    const timeout = setTimeout(callback, timeToValidStart + 5 * 1_000);
     this.schedulerRegistry.addTimeout(name, timeout);
   }
 

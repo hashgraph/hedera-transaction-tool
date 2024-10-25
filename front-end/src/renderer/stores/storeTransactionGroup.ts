@@ -33,6 +33,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   /* State */
   const groupItems = ref<GroupItem[]>([]);
   const description = ref('');
+  const sequential = ref(false);
   const modified = ref(false);
 
   // TODO: keylists, approvers and observers must be saved in local drafts
@@ -70,6 +71,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   function clearGroup() {
     groupItems.value = [];
     description.value = '';
+    sequential.value = false;
     modified.value = false;
   }
 
@@ -233,6 +235,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     clearGroup,
     groupItems,
     description,
+    sequential,
     getRequiredKeys,
     editGroupItem,
     hasObservers,

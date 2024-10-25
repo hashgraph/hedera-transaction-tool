@@ -13,11 +13,17 @@ import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 import { deleteGroup } from '@renderer/services/transactionGroupsService';
 
-import { getPropagationButtonLabel, isUserLoggedIn, redirectToGroupDetails } from '@renderer/utils';
+import {
+  getPropagationButtonLabel,
+  isLoggedInOrganization,
+  isUserLoggedIn,
+  redirectToGroupDetails,
+} from '@renderer/utils';
 import { createTransactionId } from '@renderer/utils/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
@@ -76,6 +82,11 @@ async function handleSaveGroup() {
 
 function nameUpdated() {
   transactionGroup.description = groupName.value;
+  transactionGroup.setModified();
+}
+
+function handleSequentialChange(value: boolean) {
+  transactionGroup.sequential = value;
   transactionGroup.setModified();
 }
 
@@ -370,6 +381,20 @@ onBeforeRouteLeave(async to => {
                 )
               }}</AppButton
             >
+          </div>
+        </div>
+        <div
+          v-if="isLoggedInOrganization(user.selectedOrganization)"
+          class="d-flex justify-content-between mt-4"
+        >
+          <div class="form-group col">
+            <AppCheckBox
+              :checked="transactionGroup.sequential"
+              @update:checked="handleSequentialChange"
+              label="Sequential execution"
+              name="sequential-execution"
+              data-testid="checkbox-sequential-execution"
+            />
           </div>
         </div>
         <hr class="separator my-5 w-100" />

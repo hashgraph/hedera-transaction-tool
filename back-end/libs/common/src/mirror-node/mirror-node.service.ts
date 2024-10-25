@@ -40,7 +40,7 @@ export class MirrorNodeService {
   }
 
   async updateAccountInfo(accountId: string, mirrorNetwork: string): Promise<AccountInfo> {
-    const restURL = MirrorNodeREST.fromBaseURL(mirrorNetwork);
+    const restURL = this.getMirrorNodeRESTURL(mirrorNetwork);
 
     const { data } = await this.httpService.axiosRef.get<AccountInfo>(
       `${restURL}/accounts/${accountId}`,

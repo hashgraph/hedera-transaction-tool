@@ -6,7 +6,7 @@ import {
   TransactionComment,
   TransactionSigner,
   TransactionApprover,
-  TransactionObserver,
+  TransactionObserver, TransactionGroup, TransactionGroupItem,
 } from '@app/common/database/entities';
 
 import { MirrorNodeModule } from '@app/common';
@@ -24,6 +24,7 @@ import { TransactionStatusController } from './transaction-status.controller';
       TransactionSigner,
       TransactionApprover,
       TransactionObserver,
+      TransactionGroup,
     ]),
     MirrorNodeModule,
     ExecuteModule,

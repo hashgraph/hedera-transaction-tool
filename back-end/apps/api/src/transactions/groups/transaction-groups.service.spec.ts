@@ -86,6 +86,7 @@ describe('TransactionGroupsService', () => {
       const dto: CreateTransactionGroupDto = {
         description: 'description',
         atomic: true,
+        sequential: false,
         groupItems: [
           {
             seq: 1,

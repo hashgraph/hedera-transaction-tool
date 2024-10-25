@@ -58,6 +58,7 @@ describe('TransactionGroupsController', () => {
       id: 1,
       description: 'Test Transaction Group Description',
       atomic: false,
+      sequential: false,
       groupItems: [],
       createdAt: new Date(),
     };
@@ -69,6 +70,7 @@ describe('TransactionGroupsController', () => {
       const body = {
         description: 'Test Transaction Group Description',
         atomic: false,
+        sequential: false,
         groupItems: [],
       };
 

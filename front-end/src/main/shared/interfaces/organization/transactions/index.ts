@@ -65,6 +65,7 @@ export interface IGroup {
   id: number;
   description: string;
   atomic: boolean;
+  sequential: boolean;
   createdAt: Date;
   groupItems: IGroupItem[];
 }
