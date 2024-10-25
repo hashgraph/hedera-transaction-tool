@@ -40,6 +40,46 @@ export class ExecuteService {
     return this._executeTransaction(transaction, sdkTransaction);
   }
 
+  @MurLock(5000, 'transaction.id + "_group"')
+  async executeTransactionGroup(transactionGroup: ExecuteTransactionGroupDto) {
+    const transactions: { sdkTransaction: SDKTransaction; transaction: ExecuteTransactionDto }[] =
+      [];
+    // first we need to validate all the transactions, as they all need to be valid before we can execute any of them
+    for (const groupItemDto of transactionGroup.groupItems) {
+      const transaction = groupItemDto.transaction;
+      try {
+        const sdkTransaction = await this.getValidatedSDKTransaction(transaction);
+        transactions.push({ sdkTransaction, transaction });
+      } catch (error) {
+        throw new Error(
+          `Transaction Group cannot be submitted. Error validating transaction ${transaction.id}: ${error.message}`,
+        );
+      }
+    }
+
+    const results: TransactionGroupExecutedDto = {
+      transactions: [],
+    };
+
+    // now we can execute all the transactions
+    if (transactionGroup.sequential) {
+      for (const { sdkTransaction, transaction } of transactions) {
+        const delay = transaction.validStart.getTime() - Date.now();
+        await sleep(delay);
+        results.transactions.push(await this._executeTransaction(transaction, sdkTransaction));
+      }
+    } else {
+      const executionPromises = transactions.map(async ({ sdkTransaction, transaction }) => {
+        const delay = transaction.validStart.getTime() - Date.now();
+        await sleep(delay);
+        return this._executeTransaction(transaction, sdkTransaction);
+      });
+      results.transactions.push(...(await Promise.all(executionPromises)));
+    }
+
+    return results;
+  }
+
   private async _executeTransaction(
     transaction: ExecuteTransactionDto,
     sdkTransaction: SDKTransaction,
@@ -90,46 +130,6 @@ export class ExecuteService {
       this.sideEffect(sdkTransaction, transaction.mirrorNetwork);
     }
     return result;
-  }
-
-  @MurLock(5000, 'transaction.id + "_group"')
-  async executeTransactionGroup(transactionGroup: ExecuteTransactionGroupDto) {
-    const transactions: { sdkTransaction: SDKTransaction; transaction: ExecuteTransactionDto }[] =
-      [];
-    // first we need to validate all the transactions, as they all need to be valid before we can execute any of them
-    for (const groupItemDto of transactionGroup.groupItems) {
-      const transaction = groupItemDto.transaction;
-      try {
-        const sdkTransaction = await this.getValidatedSDKTransaction(transaction);
-        transactions.push({ sdkTransaction, transaction });
-      } catch (error) {
-        throw new Error(
-          `Transaction Group cannot be submitted. Error validating transaction ${transaction.id}: ${error.message}`,
-        );
-      }
-    }
-
-    const results: TransactionGroupExecutedDto = {
-      transactions: [],
-    };
-
-    // now we can execute all the transactions
-    if (transactionGroup.sequential) {
-      for (const { sdkTransaction, transaction } of transactions) {
-        const delay = transaction.validStart.getTime() - Date.now();
-        await sleep(delay);
-        results.transactions.push(await this._executeTransaction(transaction, sdkTransaction));
-      }
-    } else {
-      const executionPromises = transactions.map(async ({ sdkTransaction, transaction }) => {
-        const delay = transaction.validStart.getTime() - Date.now();
-        await sleep(delay);
-        return this._executeTransaction(transaction, sdkTransaction);
-      });
-      results.transactions.push(...(await Promise.all(executionPromises)));
-    }
-
-    return results;
   }
 
   private async getValidatedSDKTransaction(
