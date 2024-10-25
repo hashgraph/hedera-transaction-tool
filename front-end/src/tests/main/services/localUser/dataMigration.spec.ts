@@ -5,8 +5,8 @@ import * as crypto from 'crypto';
 import { app } from 'electron';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
-import { Network } from '@main/shared/enums';
-import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY } from '@main/shared/constants';
+import { CommonNetwork } from '@main/shared/enums';
+import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY, SELECTED_NETWORK } from '@main/shared/constants';
 
 import {
   locateDataMigrationFiles,
@@ -160,11 +160,11 @@ describe('Data Migration', () => {
         ext: '.json',
       } as path.ParsedPath);
 
-      const result = await getAccountInfoFromFile(mockDirectory, Network.MAINNET);
+      const result = await getAccountInfoFromFile(mockDirectory, CommonNetwork.MAINNET);
 
       expect(result).toEqual([
-        { nickname: 'account1', accountID: '0.0.123', network: Network.MAINNET },
-        { nickname: 'account2', accountID: '0.0.123', network: Network.TESTNET },
+        { nickname: 'account1', accountID: '0.0.123', network: CommonNetwork.MAINNET },
+        { nickname: 'account2', accountID: '0.0.123', network: CommonNetwork.TESTNET },
       ]);
     });
 
@@ -191,10 +191,10 @@ describe('Data Migration', () => {
         ext: '.json',
       } as path.ParsedPath);
 
-      const result = await getAccountInfoFromFile(mockDirectory, Network.MAINNET);
+      const result = await getAccountInfoFromFile(mockDirectory, CommonNetwork.MAINNET);
 
       expect(result).toEqual([
-        { nickname: 'account1', accountID: '0.0.123', network: Network.MAINNET },
+        { nickname: 'account1', accountID: '0.0.123', network: CommonNetwork.MAINNET },
       ]);
     });
 
@@ -202,7 +202,7 @@ describe('Data Migration', () => {
       const mockDirectory = '/mock/directory';
       vi.mocked(fs.existsSync).mockReturnValue(false);
 
-      const result = await getAccountInfoFromFile(mockDirectory, Network.MAINNET);
+      const result = await getAccountInfoFromFile(mockDirectory, CommonNetwork.MAINNET);
 
       expect(result).toEqual([]);
     });
@@ -239,13 +239,23 @@ describe('Data Migration', () => {
       mockAccounts();
 
       const result = await migrateUserData(mockUserId);
-      expect(result).toEqual({ accountsImported: 1, defaultMaxTransactionFee: 1000 });
+      expect(result).toEqual({
+        accountsImported: 1,
+        defaultMaxTransactionFee: 1000,
+        currentNetwork: CommonNetwork.TESTNET,
+      });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
         DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
         Hbar.fromTinybars(1000).toString(HbarUnit.Tinybar),
       );
-      expect(addAccount).toHaveBeenCalledWith(mockUserId, '0.0.123', Network.TESTNET, 'account1');
+      expect(addClaim).toHaveBeenCalledWith(mockUserId, SELECTED_NETWORK, CommonNetwork.TESTNET);
+      expect(addAccount).toHaveBeenCalledWith(
+        mockUserId,
+        '0.0.123',
+        CommonNetwork.TESTNET,
+        'account1',
+      );
     });
 
     test('Should handle errors gracefully when reading properties file', async () => {
@@ -253,7 +263,11 @@ describe('Data Migration', () => {
       vi.mocked(fs.promises.readFile).mockRejectedValue(new Error('Read error'));
 
       const result = await migrateUserData(mockUserId);
-      expect(result).toEqual({ accountsImported: 0, defaultMaxTransactionFee: null });
+      expect(result).toEqual({
+        accountsImported: 0,
+        defaultMaxTransactionFee: null,
+        currentNetwork: CommonNetwork.TESTNET,
+      });
     });
 
     test('Should handle errors gracefully when adding claim', async () => {
@@ -265,13 +279,22 @@ describe('Data Migration', () => {
       vi.mocked(addClaim).mockRejectedValue(new Error('Claim error'));
 
       const result = await migrateUserData(mockUserId);
-      expect(result).toEqual({ accountsImported: 1, defaultMaxTransactionFee: 1000 });
+      expect(result).toEqual({
+        accountsImported: 1,
+        defaultMaxTransactionFee: 1000,
+        currentNetwork: CommonNetwork.TESTNET,
+      });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
         DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
         Hbar.fromTinybars(1000).toString(HbarUnit.Tinybar),
       );
-      expect(addAccount).toHaveBeenCalledWith(mockUserId, '0.0.123', Network.TESTNET, 'account1');
+      expect(addAccount).toHaveBeenCalledWith(
+        mockUserId,
+        '0.0.123',
+        CommonNetwork.TESTNET,
+        'account1',
+      );
     });
 
     test('Should handle errors gracefully when adding account', async () => {
@@ -283,13 +306,22 @@ describe('Data Migration', () => {
       vi.mocked(addAccount).mockRejectedValue(new Error('Account error'));
 
       const result = await migrateUserData(mockUserId);
-      expect(result).toEqual({ accountsImported: 0, defaultMaxTransactionFee: 1000 });
+      expect(result).toEqual({
+        accountsImported: 0,
+        defaultMaxTransactionFee: 1000,
+        currentNetwork: CommonNetwork.TESTNET,
+      });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
         DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
         Hbar.fromTinybars(1000).toString(HbarUnit.Tinybar),
       );
-      expect(addAccount).toHaveBeenCalledWith(mockUserId, '0.0.123', Network.TESTNET, 'account1');
+      expect(addAccount).toHaveBeenCalledWith(
+        mockUserId,
+        '0.0.123',
+        CommonNetwork.TESTNET,
+        'account1',
+      );
     });
 
     test('Should handle missing defaultTxFee gracefully', async () => {
@@ -300,9 +332,18 @@ describe('Data Migration', () => {
       mockAccounts();
 
       const result = await migrateUserData(mockUserId);
-      expect(result).toEqual({ accountsImported: 1, defaultMaxTransactionFee: null });
-      expect(addClaim).not.toHaveBeenCalled();
-      expect(addAccount).toHaveBeenCalledWith(mockUserId, '0.0.123', Network.TESTNET, 'account1');
+      expect(result).toEqual({
+        accountsImported: 1,
+        defaultMaxTransactionFee: null,
+        currentNetwork: CommonNetwork.TESTNET,
+      });
+      expect(addClaim).toHaveBeenCalledTimes(1);
+      expect(addAccount).toHaveBeenCalledWith(
+        mockUserId,
+        '0.0.123',
+        CommonNetwork.TESTNET,
+        'account1',
+      );
     });
 
     test('Should handle missing currentNetwork gracefully', async () => {
@@ -313,13 +354,22 @@ describe('Data Migration', () => {
       mockAccounts();
 
       const result = await migrateUserData(mockUserId);
-      expect(result).toEqual({ accountsImported: 1, defaultMaxTransactionFee: 1000 });
+      expect(result).toEqual({
+        accountsImported: 1,
+        defaultMaxTransactionFee: 1000,
+        currentNetwork: CommonNetwork.TESTNET,
+      });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
         DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
         Hbar.fromTinybars(1000).toString(HbarUnit.Tinybar),
       );
-      expect(addAccount).toHaveBeenCalledWith(mockUserId, '0.0.123', Network.TESTNET, 'account1');
+      expect(addAccount).toHaveBeenCalledWith(
+        mockUserId,
+        '0.0.123',
+        CommonNetwork.TESTNET,
+        'account1',
+      );
     });
 
     test('Should handle empty account data gracefully', async () => {
@@ -331,7 +381,11 @@ describe('Data Migration', () => {
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
 
       const result = await migrateUserData(mockUserId);
-      expect(result).toEqual({ accountsImported: 0, defaultMaxTransactionFee: 1000 });
+      expect(result).toEqual({
+        accountsImported: 0,
+        defaultMaxTransactionFee: 1000,
+        currentNetwork: CommonNetwork.TESTNET,
+      });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
         DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
@@ -348,7 +402,11 @@ describe('Data Migration', () => {
       vi.mocked(fs.promises.readdir).mockRejectedValue(new Error('Read error'));
 
       const result = await migrateUserData(mockUserId);
-      expect(result).toEqual({ accountsImported: 0, defaultMaxTransactionFee: 1000 });
+      expect(result).toEqual({
+        accountsImported: 0,
+        defaultMaxTransactionFee: 1000,
+        currentNetwork: CommonNetwork.TESTNET,
+      });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
         DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
@@ -366,7 +424,11 @@ describe('Data Migration', () => {
       vi.mocked(fs.promises.readdir).mockRejectedValueOnce(new Error('Read dir error'));
 
       const result = await migrateUserData(mockUserId);
-      expect(result).toEqual({ accountsImported: 0, defaultMaxTransactionFee: 1000 });
+      expect(result).toEqual({
+        accountsImported: 0,
+        defaultMaxTransactionFee: 1000,
+        currentNetwork: CommonNetwork.TESTNET,
+      });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
         DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,

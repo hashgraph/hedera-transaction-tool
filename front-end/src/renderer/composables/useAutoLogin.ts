@@ -2,7 +2,6 @@ import { onMounted, ref, watch, type Ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getStaticUser, getUseKeychain } from '@renderer/services/safeStorageService';
 
@@ -15,7 +14,6 @@ export default function useAutoLogin(
 ) {
   /* Stores */
   const user = useUserStore();
-  const network = useNetworkStore();
 
   /* Composables */
   const router = useRouter();
@@ -23,47 +21,45 @@ export default function useAutoLogin(
   /* State */
   const finished = ref(false);
 
+  /* Functions */
+  const keychainLogin = async () => {
+    const staticUser = await getStaticUser();
+    await user.login(staticUser.id, staticUser.email, true);
+    return staticUser.id;
+  };
+
+  const localStorageLogin = async (loggedUser: string) => {
+    const { userId, email }: { userId: string; email: string } = JSON.parse(loggedUser);
+    await user.login(userId, email, false);
+    return userId;
+  };
+
   /* Hooks */
   onMounted(async () => {
     router.push({ name: 'login' });
 
+    let userId: string | undefined;
+
+    const { data: useKeychain } = await safeAwait(getUseKeychain());
+    const loggedUser = localStorage.getItem('htx_user');
+
     try {
-      const useKeychain = await getUseKeychain();
       if (useKeychain) {
-        const staticUser = await getStaticUser();
-        await user.login(staticUser.id, staticUser.email, true);
-        if (user.shouldSetupAccount) {
-          router.push({ name: 'accountSetup' });
-        }
-
-        finished.value = true;
-        globalLoderRef.value?.close();
-
-        await safeAwait(network.setup());
-        return;
+        userId = await keychainLogin();
+      } else if (loggedUser) {
+        userId = await localStorageLogin(loggedUser);
       }
-    } catch {
-      /* Do nothing */
-    }
 
-    try {
-      const loggedUser = localStorage.getItem('htx_user');
-      if (loggedUser) {
-        const { userId, email }: { userId: string; email: string } = JSON.parse(loggedUser);
-        setTimeout(async () => {
-          await user.login(userId, email, false);
-          if (user.shouldSetupAccount) {
-            router.push({ name: 'accountSetup' });
-          }
-        }, 100);
-      } else {
+      if (user.shouldSetupAccount) {
+        router.push({ name: 'accountSetup' });
+      }
+
+      if (!userId) {
         await user.logout();
       }
     } finally {
       finished.value = true;
       globalLoderRef.value?.close();
-
-      await safeAwait(network.setup());
     }
   });
 

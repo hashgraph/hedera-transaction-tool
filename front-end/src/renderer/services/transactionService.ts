@@ -17,21 +17,9 @@ import { decryptPrivateKey } from './keyPairService';
 /* Transaction service */
 
 /* Sets the client in the main processor */
-export const setClient = async (
-  network: string,
-  nodeAccountIds?: {
-    [key: string]: string;
-  },
-  mirrorNetwork?: string[],
-) =>
+export const setClient = async (mirrorNetwork: string | string[], ledgerId?: string) =>
   commonIPCHandler(async () => {
-    if (nodeAccountIds) {
-      Object.keys(nodeAccountIds).forEach(key => {
-        nodeAccountIds[key] = nodeAccountIds[key].toString();
-      });
-    }
-
-    await window.electronAPI.local.transactions.setClient(network, nodeAccountIds, mirrorNetwork);
+    await window.electronAPI.local.transactions.setClient(mirrorNetwork, ledgerId);
   }, 'Failed to set client');
 
 /* Collects and adds the signatures for the provided key pairs */

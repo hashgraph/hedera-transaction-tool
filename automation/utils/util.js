@@ -48,7 +48,7 @@ async function setupEnvironmentForTransactions(window, privateKey = process.env.
   if (process.env.ENVIRONMENT.toUpperCase() === 'LOCALNET') {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
-    await settingsPage.clickOnCustomTab();
+    await settingsPage.clickOnLocalNodeTab();
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnED25519DropDown();

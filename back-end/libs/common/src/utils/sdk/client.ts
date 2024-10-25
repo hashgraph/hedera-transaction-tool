@@ -1,7 +1,11 @@
-import { Client } from '@hashgraph/sdk';
+import { AddressBookQuery, Client, FileId, LedgerId } from '@hashgraph/sdk';
 
-import { Network } from '@entities';
-import { MirrorNetwork } from '../mirrorNode';
+import { MirrorNetworkGRPC } from '../mirrorNode';
+
+export const MAINNET = 'mainnet';
+export const TESTNET = 'testnet';
+export const PREVIEWNET = 'previewnet';
+export const LOCAL_NODE = 'local-node';
 
 export const getLocalClientNetwork = (env: string) => {
   switch (env) {
@@ -12,12 +16,38 @@ export const getLocalClientNetwork = (env: string) => {
   }
 };
 
-export const getClientFromName = (network: Network) => {
-  return network !== Network.LOCAL_NODE
-    ? Client.forName(network)
-    : /* Using host.docker.internal to access the host machine from the container, will work only in dev mode */
-      /* Local node will be used only in development mode */
-      Client.forNetwork(getLocalClientNetwork(process.env.NODE_ENV)).setMirrorNetwork(
-        MirrorNetwork.LOCAL_NODE,
-      );
+export const getClientFromNetwork = async (
+  mirrorNetwork: string | string[],
+  ledgerId?: string | LedgerId,
+) => {
+  if (!Array.isArray(mirrorNetwork)) {
+    mirrorNetwork = [mirrorNetwork];
+  }
+
+  mirrorNetwork = mirrorNetwork.map(network => network.toLocaleLowerCase());
+  if ([MAINNET, TESTNET, PREVIEWNET].includes(mirrorNetwork[0])) {
+    return Client.forName(mirrorNetwork[0]);
+  }
+
+  if (mirrorNetwork[0] === LOCAL_NODE) {
+    return Client.forNetwork(getLocalClientNetwork(process.env.NODE_ENV)).setMirrorNetwork(
+      MirrorNetworkGRPC.LOCAL_NODE,
+    );
+  }
+
+  const client = Client.forNetwork({}).setMirrorNetwork(
+    MirrorNetworkGRPC.fromBaseURL(mirrorNetwork[0]),
+  );
+
+  const nodeAddressBook = await new AddressBookQuery()
+    .setFileId(FileId.ADDRESS_BOOK)
+    .execute(client);
+
+  client.setNetworkFromAddressBook(nodeAddressBook);
+
+  if (ledgerId) {
+    client.setLedgerId(ledgerId);
+  }
+
+  return client;
 };

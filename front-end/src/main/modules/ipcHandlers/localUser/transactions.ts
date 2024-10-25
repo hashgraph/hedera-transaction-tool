@@ -23,14 +23,7 @@ export default () => {
   // Set client
   ipcMain.handle(
     createChannelName('setClient'),
-    (
-      _e,
-      network: string,
-      nodeAccountIds?: {
-        [key: string]: string;
-      },
-      mirrorNetwork?: string[],
-    ) => setClient(network, nodeAccountIds, mirrorNetwork),
+    (_e, mirrorNetwork: string | string[], ledgerId?: string) => setClient(mirrorNetwork, ledgerId),
   );
 
   // Freezes a transaction

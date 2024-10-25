@@ -86,7 +86,7 @@ const orgFilters = ref<
     rule: string;
     value: string;
   }[]
->([{ property: 'network', rule: 'eq', value: network.network }]);
+>([{ property: 'mirrorNetwork', rule: 'eq', value: network.network }]);
 const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);

@@ -4,7 +4,7 @@ import { mockDeep } from 'vitest-mock-extended';
 import registerTransactionsHandlers from '@main/modules/ipcHandlers/localUser/transactions';
 
 import { Prisma } from '@prisma/client';
-import { Network } from '@main/shared/enums';
+import { CommonNetwork } from '@main/shared/enums';
 import {
   executeQuery,
   executeTransaction,
@@ -71,12 +71,11 @@ describe('IPC handlers Accounts', () => {
     const handler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'transactions:setClient');
     expect(handler).toBeDefined();
 
-    const network = 'network';
-    const nodeAccountIds = { key: 'value' };
-    const mirrorNetwork = ['mirrorNetwork'];
+    const mirrorNetwork = ['mainnet'];
+    const ledgerId = '0x0';
 
-    handler && (await handler[1](event, network, nodeAccountIds, mirrorNetwork));
-    expect(setClient).toHaveBeenCalledWith(network, nodeAccountIds, mirrorNetwork);
+    handler && (await handler[1](event, mirrorNetwork, ledgerId));
+    expect(setClient).toHaveBeenCalledWith(mirrorNetwork, ledgerId);
   });
 
   test('Should set up freezeTransaction handler', async () => {
@@ -151,7 +150,7 @@ describe('IPC handlers Accounts', () => {
       transaction_hash: 'transactionHash',
       status_code: 20,
       signature: '0x',
-      network: Network.PREVIEWNET,
+      network: CommonNetwork.PREVIEWNET,
       valid_start: new Date().toLocaleString(),
       executed_at: Date.now(),
       created_at: new Date(),

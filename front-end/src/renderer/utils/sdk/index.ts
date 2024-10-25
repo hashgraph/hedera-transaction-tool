@@ -3,6 +3,7 @@ import type { ITransactionApprover } from '@main/shared/interfaces/organization/
 
 import {
   AccountId,
+  Client,
   FileId,
   FileInfo,
   Hbar,
@@ -11,6 +12,7 @@ import {
   KeyList,
   LedgerId,
   Long,
+  // NodeAddressBook,
   PrivateKey,
   PublicKey,
   Timestamp,
@@ -18,7 +20,10 @@ import {
 } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
+import { getNetworkNodes } from '@renderer/services/mirrorNodeDataService';
+
 import { uint8ToHex, hexToUint8Array } from '..';
+import { getNodeAddressBook } from '@renderer/services/sdkService';
 
 export * from './createTransactions';
 export * from './getData';
@@ -260,20 +265,15 @@ export function stringifyHbar(hbar: Hbar) {
 //   throw new Error('Invalid Hbar');
 // }
 
-export function getNodeNumbersFromNetwork(network: {
-  [key: string]: string | AccountId;
-}): number[] {
-  const nodeNumbers: number[] = [];
+export async function getNodeNumbersFromNetwork(mirrorNodeRESTURL: string): Promise<number[]> {
+  const networkNodes = await getNetworkNodes(mirrorNodeRESTURL);
 
-  for (const key in network) {
-    const nodeName = key.indexOf('node');
-
-    if (nodeName >= 0) {
-      nodeNumbers.push(Number(key.slice(nodeName + 4, nodeName + 6)));
+  return networkNodes.reduce<number[]>((acc, node) => {
+    if (node.node_id !== undefined) {
+      acc.push(node.node_id);
     }
-  }
-
-  return nodeNumbers.sort((a, b) => a - b);
+    return acc;
+  }, []);
 }
 
 export const getPrivateKey = (
@@ -366,4 +366,29 @@ export const formatAccountId = (accountId: string) => {
   }
 
   return `${shard || ''}.${realm || ''}.${account || ''}`;
+};
+
+export const getClientFromMirrorNode = async (mirrorNetwork: string) => {
+  const mirrorNodeGRPC = mirrorNetwork.endsWith(':443') ? mirrorNetwork : `${mirrorNetwork}:443`;
+
+  const nodeAddressBookProto = await getNodeAddressBook(mirrorNodeGRPC);
+
+  nodeAddressBookProto.nodeAddress?.forEach(node => {
+    if (node.nodeAccountId?.shardNum) {
+      node.nodeAccountId.shardNum = Long.fromValue(node.nodeAccountId.shardNum);
+    }
+    if (node.nodeAccountId?.accountNum) {
+      node.nodeAccountId.accountNum = Long.fromValue(node.nodeAccountId.accountNum);
+    }
+    if (node.nodeAccountId?.realmNum) {
+      node.nodeAccountId.realmNum = Long.fromValue(node.nodeAccountId.realmNum);
+    }
+  });
+
+  // const nodeAddressBook = NodeAddressBook._fromProtobuf(nodeAddressBookProto);
+
+  const client = Client.forNetwork({}).setMirrorNetwork(mirrorNodeGRPC);
+  // .setNetworkFromAddressBook(nodeAddressBook);
+
+  return client;
 };

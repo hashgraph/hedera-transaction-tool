@@ -1,4 +1,3 @@
-import { Network } from '@main/shared/enums';
 import type { ITransactionApprover } from '../approvers';
 import type { ITransactionObserverUserId } from '../observers';
 import type { ITransactionSignerUserKey } from '../signers';
@@ -43,7 +42,7 @@ export interface ITransaction {
   createdAt: string;
   executedAt?: string;
   updatedAt: string;
-  network: Network;
+  mirrorNetwork: string;
   creatorKeyId: number;
   groupItem: IGroupItem;
 }

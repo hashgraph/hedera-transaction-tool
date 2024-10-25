@@ -5,7 +5,9 @@ import type {
   NetworkExchangeRateSetResponse,
   Transaction,
   AccountsResponse,
-} from '../../main/shared/interfaces';
+  NetworkNode,
+  NetworkNodesResponse,
+} from '@main/shared/interfaces';
 
 import axios from 'axios';
 
@@ -15,6 +17,7 @@ import { BigNumber } from 'bignumber.js';
 import { decodeProtobuffKey } from '@renderer/utils';
 
 /* Mirror node data service */
+const withAPIPrefix = (url: string) => `${url}/api/v1`;
 
 /* Get users account id by a public key */
 export const getAccountIds = async (
@@ -24,12 +27,13 @@ export const getAccountIds = async (
 ) => {
   try {
     const { data } = await axios.get<AccountsResponse>(
-      nextUrl || `${mirrorNodeURL}/accounts/?account.publickey=${publicKey}&limit=100&order=asc`,
+      nextUrl ||
+        `${withAPIPrefix(mirrorNodeURL)}/accounts/?account.publickey=${publicKey}&limit=100&order=asc`,
     );
     return {
       accounts: data.accounts,
       nextUrl: data.links?.next
-        ? `${mirrorNodeURL}${data.links.next.slice(data.links.next.indexOf('/accounts'))}`
+        ? `${withAPIPrefix(mirrorNodeURL)}${data.links.next.slice(data.links.next.indexOf('/accounts'))}`
         : null,
     };
   } catch (error) {
@@ -47,7 +51,7 @@ export const getAccountsByPublicKey = async (
 
   try {
     let nextUrl: string | null =
-      `${mirrorNodeURL}/accounts/?account.publickey=${publicKey}&limit=100&order=asc`;
+      `${withAPIPrefix(mirrorNodeURL)}/accounts/?account.publickey=${publicKey}&limit=100&order=asc`;
 
     while (nextUrl) {
       const res = await axios.get<AccountsResponse>(nextUrl);
@@ -55,7 +59,7 @@ export const getAccountsByPublicKey = async (
       accounts = accounts.concat(data.accounts || []);
 
       if (data.links?.next) {
-        nextUrl = `${mirrorNodeURL}${data.links.next.slice(data.links.next.indexOf('/accounts'))}`;
+        nextUrl = `${withAPIPrefix(mirrorNodeURL)}${data.links.next.slice(data.links.next.indexOf('/accounts'))}`;
       } else {
         nextUrl = null;
       }
@@ -120,7 +124,7 @@ export const getAccountInfo = async (
   mirrorNodeLink: string,
   controller?: AbortController,
 ) => {
-  const { data } = await axios.get(`${mirrorNodeLink}/accounts/${accountId}`, {
+  const { data } = await axios.get(`${withAPIPrefix(mirrorNodeLink)}/accounts/${accountId}`, {
     signal: controller?.signal,
   });
 
@@ -187,9 +191,12 @@ export const getAccountAllowances = async (
   mirrorNodeLink: string,
   controller?: AbortController,
 ) => {
-  const { data } = await axios.get(`${mirrorNodeLink}/accounts/${accountId}/allowances/crypto`, {
-    signal: controller?.signal,
-  });
+  const { data } = await axios.get(
+    `${withAPIPrefix(mirrorNodeLink)}/accounts/${accountId}/allowances/crypto`,
+    {
+      signal: controller?.signal,
+    },
+  );
 
   const allowances: CryptoAllowance[] = data.allowances;
 
@@ -199,7 +206,7 @@ export const getAccountAllowances = async (
 /* Gets the exchange rate set */
 export const getExchangeRateSet = async (mirrorNodeLink: string, controller?: AbortController) => {
   try {
-    const { data } = await axios.get(`${mirrorNodeLink}/network/exchangerate`, {
+    const { data } = await axios.get(`${withAPIPrefix(mirrorNodeLink)}/network/exchangerate`, {
       signal: controller?.signal,
     });
 
@@ -239,11 +246,37 @@ export const getTransactionInfo = async (
   controller?: AbortController,
 ) => {
   const { data } = await axios.get<{ transactions: Transaction[] }>(
-    `${mirrorNodeLink}/transactions/${transactionId}`,
+    `${withAPIPrefix(mirrorNodeLink)}/transactions/${transactionId}`,
     {
       signal: controller?.signal,
     },
   );
 
   return data;
+};
+
+/* Gets the network nodes information */
+export const getNetworkNodes = async (mirrorNodeURL: string) => {
+  let networkNodes: NetworkNode[] = [];
+
+  try {
+    let nextUrl: string | null = `${withAPIPrefix(mirrorNodeURL)}/network/nodes?limit=100`;
+
+    while (nextUrl) {
+      const res = await axios.get(nextUrl);
+      const data: NetworkNodesResponse = res.data;
+      networkNodes = networkNodes.concat(data.nodes || []);
+
+      if (data.links?.next) {
+        nextUrl = `${withAPIPrefix(mirrorNodeURL)}${data.links.next.slice(data.links.next.indexOf('/network'))}`;
+      } else {
+        nextUrl = null;
+      }
+    }
+
+    return networkNodes;
+  } catch (error) {
+    console.log(error);
+    return networkNodes;
+  }
 };

@@ -15,7 +15,7 @@ import { Prisma } from '@prisma/client';
 
 import { useRouter } from 'vue-router';
 
-import * as ush from '@renderer/utils';
+import * as ush from '@renderer/utils/userStoreHelpers';
 
 import useNetworkStore from './storeNetwork';
 import useContactsStore from './storeContacts';
@@ -62,6 +62,7 @@ const useUserStore = defineStore('user', () => {
   /** Personal */
   const login = async (id: string, email: string, useKeychain: boolean) => {
     personal.value = ush.createPersonalUser(id, email, useKeychain);
+    await ush.setupSafeNetwork(id, network.setup);
     await refetchOrganizations();
     await selectOrganization(null);
   };

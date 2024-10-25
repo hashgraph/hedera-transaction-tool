@@ -1,8 +1,8 @@
+import type { Network } from '@main/shared/interfaces';
+
 import { ipcMain } from 'electron';
 
 import { Prisma } from '@prisma/client';
-
-import { Network } from '@main/shared/enums';
 
 import {
   addAccount,

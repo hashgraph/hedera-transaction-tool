@@ -1,4 +1,4 @@
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Transport } from '@nestjs/microservices';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -6,7 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { version } from '../package.json';
 
-import { API_SERVICE, LoggerMiddleware } from '@app/common';
+import { API_SERVICE, ErrorCodes, LoggerMiddleware } from '@app/common';
 
 import { NotFoundExceptionFilter } from './filters/not-found-exception.filter';
 import { BadRequestExceptionFilter } from './filters/bad-request-exception.filter';
@@ -18,6 +18,9 @@ export function setupApp(app: NestExpressApplication, addLogger: boolean = true)
     new ValidationPipe({
       whitelist: true,
       transform: true,
+      exceptionFactory() {
+        return new BadRequestException(ErrorCodes.IB);
+      },
     }),
   );
 

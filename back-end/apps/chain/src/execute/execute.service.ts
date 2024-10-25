@@ -6,20 +6,20 @@ import { Repository } from 'typeorm';
 import { MurLock } from 'murlock';
 import { AccountUpdateTransaction, Transaction as SDKTransaction, Status } from '@hashgraph/sdk';
 
-import { Transaction, TransactionStatus, Network } from '@entities';
+import { Transaction, TransactionStatus } from '@entities';
 
 import {
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
+  ExecuteTransactionDto,
   TransactionExecutedDto,
   hasValidSignatureKey,
   computeSignatureKey,
-  getClientFromName,
+  getClientFromNetwork,
   getStatusCodeFromMessage,
   notifyTransactionAction,
   notifySyncIndicators,
 } from '@app/common';
-import { ExecuteTransactionDto } from '@app/common/dtos/execute-transaction.dto';
 
 @Injectable()
 export class ExecuteService {
@@ -43,7 +43,7 @@ export class ExecuteService {
     const signatureKey = await computeSignatureKey(
       sdkTransaction,
       this.mirrorNodeService,
-      transaction.network,
+      transaction.mirrorNetwork,
     );
 
     /* Checks if the transaction has valid signatureKey */
@@ -51,7 +51,7 @@ export class ExecuteService {
       throw new Error('Transaction has invalid signature.');
 
     /* Execute the transaction */
-    const client = getClientFromName(transaction.network);
+    const client = await getClientFromNetwork(transaction.mirrorNetwork);
 
     const executedAt = new Date();
     let transactionStatus = TransactionStatus.EXECUTED;
@@ -93,7 +93,7 @@ export class ExecuteService {
       notifySyncIndicators(this.notificationsService, transaction.id, transaction.status);
       notifyTransactionAction(this.notificationsService);
 
-      this.sideEffect(sdkTransaction, transaction.network);
+      this.sideEffect(sdkTransaction, transaction.mirrorNetwork);
     }
     return result;
   }
@@ -116,13 +116,17 @@ export class ExecuteService {
     }
   }
 
-  private sideEffect(sdkTransaction: SDKTransaction, network: Network) {
+  private sideEffect(sdkTransaction: SDKTransaction, mirrorNetwork: string) {
     if (sdkTransaction instanceof AccountUpdateTransaction) {
       setTimeout(async () => {
-        await this.mirrorNodeService.updateAccountInfo(
-          sdkTransaction.accountId.toString(),
-          network,
-        );
+        try {
+          await this.mirrorNodeService.updateAccountInfo(
+            sdkTransaction.accountId.toString(),
+            mirrorNetwork,
+          );
+        } catch (error) {
+          console.log('Error updating account info', error);
+        }
       }, 5 * 1_000);
     }
   }

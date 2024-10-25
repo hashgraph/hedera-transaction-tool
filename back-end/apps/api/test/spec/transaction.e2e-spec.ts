@@ -9,7 +9,6 @@ import {
 } from '@hashgraph/sdk';
 
 import {
-  Network,
   TransactionStatus,
   User,
   UserStatus,
@@ -82,7 +81,7 @@ describe('Transactions (e2e)', () => {
       signature: Buffer.from(
         (account || localnet1003).privateKey.sign(transaction.toBytes()),
       ).toString('hex'),
-      network: (account || localnet1003).network,
+      mirrorNetwork: (account || localnet1003).mirrorNetwork,
     };
   };
 
@@ -174,34 +173,17 @@ describe('Transactions (e2e)', () => {
       const countBefore = await repo.count();
       const transaction = await createTransaction(admin, localnet2);
 
-      const { status } = await endpoint.post(transaction, null, userAuthToken);
+      const { status, body } = await endpoint.post(transaction, null, userAuthToken);
       const countAfter = await repo.count();
 
       expect(status).toEqual(400);
-      // expect(body).toMatchObject(
-      //   expect.objectContaining({
-      //     message: "Creator key doesn't belong to the user",
-      //   }),
-      // );
-      expect(countAfter).toEqual(countBefore);
-    });
-
-    it('(POST) should not create transaction with invalid network', async () => {
-      const countBefore = await repo.count();
-      const transaction = await createTransaction();
-      transaction.network = 'some-network' as Network;
-
-      const { status } = await endpoint.post(transaction, null, userAuthToken);
-      const countAfter = await repo.count();
-
-      expect(status).toEqual(400);
-      // expect(body).toMatchObject(
-      //   expect.objectContaining({
-      //     message: [
-      //       'network must be one of the following values: mainnet, testnet, previewnet, local-node',
-      //     ],
-      //   }),
-      // );
+      expect(body).toMatchObject(
+        expect.objectContaining({
+          code: ErrorCodes.PNY,
+          message: 'The request is invalid. Please check the request body and try again.',
+          statusCode: 400,
+        }),
+      );
       expect(countAfter).toEqual(countBefore);
     });
 
@@ -222,14 +204,14 @@ describe('Transactions (e2e)', () => {
       expect(countAfter).toEqual(countBefore);
     });
 
-    it('(POST) should not create a transaction without name, description, creatorKeyId, or network', async () => {
+    it('(POST) should not create a transaction without name, description, creatorKeyId, or mirrorNetwork', async () => {
       const countBefore = await repo.count();
       const transaction = await createTransaction();
 
       delete transaction.name;
       delete transaction.description;
       delete transaction.creatorKeyId;
-      delete transaction.network;
+      delete transaction.mirrorNetwork;
 
       const { status } = await endpoint.post(transaction, null, userAuthToken);
       const countAfter = await repo.count();
@@ -295,7 +277,7 @@ describe('Transactions (e2e)', () => {
         transactionBytes: buffer,
         creatorKeyId: userKey.id,
         signature: Buffer.from(localnet1003.privateKey.sign(transaction.toBytes())).toString('hex'),
-        network: localnet1003.network,
+        mirrorNetwork: localnet1003.mirrorNetwork,
       };
 
       const { status, body } = await endpoint.post(dto, null, userAuthToken);
@@ -517,7 +499,7 @@ describe('Transactions (e2e)', () => {
       newlyCreatedAccount = new HederaAccount()
         .setAccountId(accountId.toString())
         .setPrivateKey(localnet2.privateKey.toStringDer())
-        .setNetwork(localnet2.network);
+        .setNetwork(localnet2.mirrorNetwork);
 
       await sleep(3000); //Wait for mirror node to update its data after account creation
 
@@ -535,7 +517,7 @@ describe('Transactions (e2e)', () => {
         transactionBytes: buffer,
         creatorKeyId: userKey.id,
         signature: Buffer.from(localnet2.privateKey.sign(transaction.toBytes())).toString('hex'),
-        network: localnet2.network,
+        mirrorNetwork: localnet2.mirrorNetwork,
       };
 
       await new Endpoint(server, '/transactions').post(dto, null, adminAuthToken).expect(201);
@@ -564,7 +546,7 @@ describe('Transactions (e2e)', () => {
         transactionBytes: buffer,
         creatorKeyId: userKey.id,
         signature: Buffer.from(localnet1003.privateKey.sign(transaction.toBytes())).toString('hex'),
-        network: localnet2.network,
+        mirrorNetwork: localnet2.mirrorNetwork,
       };
 
       await new Endpoint(server, '/transactions').post(dto, null, userAuthToken).expect(201);
@@ -606,7 +588,7 @@ describe('Transactions (e2e)', () => {
         transactionBytes: buffer,
         creatorKeyId: userKey.id,
         signature: Buffer.from(localnet2.privateKey.sign(transaction.toBytes())).toString('hex'),
-        network: localnet2.network,
+        mirrorNetwork: localnet2.mirrorNetwork,
       };
 
       await new Endpoint(server, '/transactions').post(dto, null, adminAuthToken).expect(201);

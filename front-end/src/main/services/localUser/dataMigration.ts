@@ -1,3 +1,5 @@
+import type { Network } from '@main/shared/interfaces';
+
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -6,9 +8,9 @@ import { app } from 'electron';
 import * as argon2 from 'argon2';
 import { AccountId, Hbar, HbarUnit } from '@hashgraph/sdk';
 
-import { Network } from '@main/shared/enums';
+import { CommonNetwork } from '@main/shared/enums';
 import { MigrateUserDataResult } from '@main/shared/interfaces/migration';
-import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY } from '@main/shared/constants';
+import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY, SELECTED_NETWORK } from '@main/shared/constants';
 
 import { parseNetwork } from '@main/utils/parsers';
 
@@ -105,12 +107,12 @@ export async function decryptMnemonic(
   const iv = data.subarray(header.length, header.length + IV_LENGTH);
 
   /* Create a decipher, set the auth tag */
-  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
-  decipher.setAuthTag(authTag);
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, new Uint8Array(iv));
+  decipher.setAuthTag(new Uint8Array(authTag));
 
   try {
     /* Decrypt the encrypted text */
-    let decrypted = decipher.update(encryptedText, undefined, 'utf8');
+    let decrypted = decipher.update(new Uint8Array(encryptedText), undefined, 'utf8');
     decrypted += decipher.final();
     return decrypted;
   } catch (error) {
@@ -145,7 +147,7 @@ export function getDataMigrationKeysPath(): string {
 
 export async function getAccountInfoFromFile(
   directory: string,
-  defaultNetwork: Network = Network.MAINNET,
+  defaultNetwork: Network = CommonNetwork.MAINNET,
 ): Promise<{ nickname: string; accountID: string; network: Network }[]> {
   const accountDataList: { nickname: string; accountID: string; network: Network }[] = [];
 
@@ -181,12 +183,13 @@ export async function getAccountInfoFromFile(
 }
 
 export async function migrateUserData(userId: string): Promise<MigrateUserDataResult> {
+  let defaultNetwork: Network = CommonNetwork.TESTNET;
+
   const result: MigrateUserDataResult = {
     accountsImported: 0,
     defaultMaxTransactionFee: null,
+    currentNetwork: defaultNetwork,
   };
-
-  let defaultNetwork = Network.TESTNET;
 
   try {
     const content = await fs.promises.readFile(getPropertiesPath(), {
@@ -215,6 +218,12 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
       parsedContent[USER_PROPERTIES_CURRENT_NETWORK_KEY],
       defaultNetwork,
     );
+    try {
+      result.currentNetwork = defaultNetwork;
+      await addClaim(userId, SELECTED_NETWORK, defaultNetwork);
+    } catch (error) {
+      console.log(error);
+    }
   } catch (error) {
     console.log(error);
   }

@@ -1,7 +1,7 @@
 import { AccountId, KeyList, PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
-import { Network, MAX_TRANSACTION_BYTE_SIZE, TransactionType, Transaction } from '@entities';
+import { MAX_TRANSACTION_BYTE_SIZE, TransactionType, Transaction } from '@entities';
 import {
   MirrorNodeService,
   decode,
@@ -195,7 +195,7 @@ export const getStatusCodeFromMessage = (message: string) => {
 export const computeSignatureKey = async (
   transaction: SDKTransaction,
   mirrorNodeService: MirrorNodeService,
-  network: Network,
+  mirrorNetwork: string,
 ) => {
   /* Get the accounts, receiver accounts and new keys from the transaction */
   const { accounts, receiverAccounts, newKeys } = getSignatureEntities(transaction);
@@ -208,23 +208,31 @@ export const computeSignatureKey = async (
 
   /* Add the keys of the account ids to the signature key list */
   for (const accountId of accounts) {
-    const accountInfo = await mirrorNodeService.getAccountInfo(accountId, network);
-    const key = parseAccountProperty(accountInfo, 'key');
-    if (!key) continue;
+    try {
+      const accountInfo = await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork);
+      const key = parseAccountProperty(accountInfo, 'key');
+      if (!key) continue;
 
-    signatureKey.push(key);
+      signatureKey.push(key);
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   /* Check if there is a receiver account that required signature, if so add it to the key list */
   for (const accountId of receiverAccounts) {
-    const accountInfo = await mirrorNodeService.getAccountInfo(accountId, network);
-    const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
-    if (!receiverSigRequired) continue;
+    try {
+      const accountInfo = await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork);
+      const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
+      if (!receiverSigRequired) continue;
 
-    const key = parseAccountProperty(accountInfo, 'key');
-    if (!key) continue;
+      const key = parseAccountProperty(accountInfo, 'key');
+      if (!key) continue;
 
-    signatureKey.push(key);
+      signatureKey.push(key);
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   return signatureKey;
@@ -269,7 +277,7 @@ export async function smartCollate(
     const signatureKey = await computeSignatureKey(
       sdkTransaction,
       mirrorNodeService,
-      transaction.network,
+      transaction.mirrorNetwork,
     );
 
     const publicKeys = computeShortenedPublicKeyList(

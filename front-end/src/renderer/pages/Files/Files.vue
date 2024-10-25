@@ -3,7 +3,7 @@ import type { HederaFile } from '@prisma/client';
 
 import { computed, onMounted, ref, watch } from 'vue';
 
-import { FileId, FileInfo } from '@hashgraph/sdk';
+import { Client, FileId, FileInfo } from '@hashgraph/sdk';
 
 import { Prisma } from '@prisma/client';
 
@@ -152,7 +152,9 @@ const selectedFileInfo = computed(() =>
 const selectedFileIdWithChecksum = computed(
   () =>
     selectedFile.value &&
-    FileId.fromString(selectedFile.value?.file_id).toStringWithChecksum(network.client).split('-'),
+    FileId.fromString(selectedFile.value?.file_id)
+      .toStringWithChecksum(network.client as Client)
+      .split('-'),
 );
 
 /* Composables */

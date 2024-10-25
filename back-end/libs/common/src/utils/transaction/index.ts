@@ -82,23 +82,37 @@ export const keysRequiredToSign = async (
 
   /* Check if a key of the user is inside the key of some account required to sign */
   for (const accountId of accounts) {
-    const accountInfo = await mirrorNodeService.getAccountInfo(accountId, transaction.network);
-    const key = parseAccountProperty(accountInfo, 'key');
-    if (!key) continue;
+    try {
+      const accountInfo = await mirrorNodeService.getAccountInfo(
+        accountId,
+        transaction.mirrorNetwork,
+      );
+      const key = parseAccountProperty(accountInfo, 'key');
+      if (!key) continue;
 
-    userKeysInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
+      userKeysInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   /* Check if user has a key included in a receiver account that required signature */
   for (const accountId of receiverAccounts) {
-    const accountInfo = await mirrorNodeService.getAccountInfo(accountId, transaction.network);
-    const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
-    if (!receiverSigRequired) continue;
+    try {
+      const accountInfo = await mirrorNodeService.getAccountInfo(
+        accountId,
+        transaction.mirrorNetwork,
+      );
+      const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
+      if (!receiverSigRequired) continue;
 
-    const key = parseAccountProperty(accountInfo, 'key');
-    if (!key) continue;
+      const key = parseAccountProperty(accountInfo, 'key');
+      if (!key) continue;
 
-    userKeysInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
+      userKeysInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   return userKeys.filter(userKey => userKeyIdsRequired.has(userKey.id));

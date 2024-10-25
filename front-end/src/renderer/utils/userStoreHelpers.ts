@@ -34,6 +34,9 @@ import {
   compareDataToHashes,
   compareHash,
 } from '@renderer/services/electronUtilsService';
+import { getSelectedNetwork } from '@renderer/services/claimService';
+
+import { safeAwait } from './safeAwait';
 
 /* Flags */
 export function assertUserLoggedIn(user: PersonalUser | null): asserts user is LoggedInUser {
@@ -284,6 +287,14 @@ export const setPublicKeyToAccounts = async (
       publicKeyToAccounts.value = [...publicKeyToAccounts.value];
     } while (next);
   }
+};
+
+export const setupSafeNetwork = async (
+  userId: string,
+  setNetwork: (network: string | undefined) => Promise<void>,
+) => {
+  const { data } = await safeAwait(getSelectedNetwork(userId));
+  await safeAwait(setNetwork(data));
 };
 
 /* Computations */
@@ -554,15 +565,6 @@ export const deleteOrganizationConnection = async (
   await deleteOrganization(organizationId);
 };
 
-const navigateToPreviousRoute = (router: Router) => {
-  const currentRoute = router.currentRoute.value;
-  if (router.previousPath) {
-    currentRoute.path !== router.previousPath && router.push(router.previousPath);
-  } else {
-    currentRoute.name !== 'transactions' && router.push({ name: 'transactions' });
-  }
-};
-
 export const toggleAuthTokenInSessionStorage = (
   serverUrl: string,
   token: string,
@@ -579,4 +581,13 @@ export const toggleAuthTokenInSessionStorage = (
 export const getAuthTokenFromSessionStorage = (serverUrl: string): string | null => {
   const origin = new URL(serverUrl).origin;
   return sessionStorage.getItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`);
+};
+
+const navigateToPreviousRoute = (router: Router) => {
+  const currentRoute = router.currentRoute.value;
+  if (router.previousPath) {
+    currentRoute.path !== router.previousPath && router.push(router.previousPath);
+  } else {
+    currentRoute.name !== 'transactions' && router.push({ name: 'transactions' });
+  }
 };

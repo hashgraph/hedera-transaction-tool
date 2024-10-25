@@ -17,13 +17,13 @@ import {
 import {
   hasValidSignatureKey,
   computeSignatureKey,
-  getClientFromName,
+  getClientFromNetwork,
   getStatusCodeFromMessage,
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
   notifyTransactionAction,
 } from '@app/common';
-import { Network, Transaction, TransactionStatus } from '@entities';
+import { Transaction, TransactionStatus } from '@entities';
 
 import { ExecuteService } from './execute.service';
 
@@ -74,7 +74,7 @@ describe('ExecuteService', () => {
       approvers: [],
       observers: [],
       creatorKey: null,
-      network: Network.TESTNET,
+      mirrorNetwork: 'testnet',
     };
 
     switch (type) {
@@ -143,7 +143,7 @@ describe('ExecuteService', () => {
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
     jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
-    jest.mocked(getClientFromName).mockReturnValueOnce(client);
+    jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
     const { receipt, response } = mockSDKTransactionExecution();
 
     await service.executeTransaction(transaction);
@@ -167,7 +167,7 @@ describe('ExecuteService', () => {
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
     jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
-    jest.mocked(getClientFromName).mockReturnValueOnce(client);
+    jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
     jest.spyOn(SDKTransaction.prototype, 'execute').mockImplementation(async () => {
       return {
         getReceipt: jest.fn(async () => {
@@ -201,7 +201,7 @@ describe('ExecuteService', () => {
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
     jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
-    jest.mocked(getClientFromName).mockReturnValueOnce(client);
+    jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
     jest.spyOn(SDKTransaction.prototype, 'execute').mockRejectedValueOnce({
       message: 'Transaction failed',
     });
@@ -227,7 +227,7 @@ describe('ExecuteService', () => {
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
     jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
-    jest.mocked(getClientFromName).mockReturnValueOnce(client);
+    jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
     jest.spyOn(SDKTransaction.prototype, 'execute').mockRejectedValueOnce({
       message: 'Transaction failed',
       status: {
@@ -256,7 +256,27 @@ describe('ExecuteService', () => {
     transactionRepo.findOne.mockResolvedValueOnce(transaction);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
     jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
-    jest.mocked(getClientFromName).mockReturnValueOnce(client);
+    jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+
+    jest.useFakeTimers();
+
+    await service.executeTransaction(transaction);
+
+    jest.runAllTimers();
+    jest.useRealTimers();
+
+    expect(mirrorNodeService.updateAccountInfo).toHaveBeenCalled();
+  });
+
+  it('should cathc error in update the account info if the transaction is account update', async () => {
+    const client = mockDeep<Client>();
+    const transaction = getTransaction('account_update') as Transaction;
+
+    transactionRepo.findOne.mockResolvedValueOnce(transaction);
+    jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
+    jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
+    jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+    jest.mocked(mirrorNodeService.updateAccountInfo).mockRejectedValueOnce(new Error('Error'));
 
     jest.useFakeTimers();
 

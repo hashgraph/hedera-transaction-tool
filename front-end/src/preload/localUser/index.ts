@@ -18,6 +18,7 @@ import encryptedKeys from './encryptedKeys';
 import claim from './claim';
 import safeStorage from './safeStorage';
 import dataMigration from './dataMigration';
+import sdk from './sdk';
 
 export default {
   ...updateAPI,
@@ -40,4 +41,5 @@ export default {
   ...claim,
   ...safeStorage,
   ...dataMigration,
+  ...sdk,
 };

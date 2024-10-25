@@ -1,22 +1,18 @@
-import { Network } from '@entities';
+import { LOCAL_NODE, MAINNET, PREVIEWNET, TESTNET } from '@app/common';
 
-export const MirrorNetwork = {
-  fromName(name: Network) {
-    switch (name) {
-      case 'mainnet':
-        return MirrorNetwork.MAINNET;
-
-      case 'testnet':
-        return MirrorNetwork.TESTNET;
-
-      case 'previewnet':
-        return MirrorNetwork.PREVIEWNET;
-
-      case 'local-node':
-        return MirrorNetwork.LOCAL_NODE;
-
+export const MirrorNetworkGRPC = {
+  fromBaseURL(mirrorNetwork: string) {
+    switch (mirrorNetwork) {
+      case MAINNET:
+        return MirrorNetworkGRPC.MAINNET;
+      case TESTNET:
+        return MirrorNetworkGRPC.TESTNET;
+      case PREVIEWNET:
+        return MirrorNetworkGRPC.PREVIEWNET;
+      case LOCAL_NODE:
+        return MirrorNetworkGRPC.LOCAL_NODE;
       default:
-        throw new Error(`Unknown network name: ${name}`);
+        return [mirrorNetwork.endsWith(':443') ? mirrorNetwork : `${mirrorNetwork}:443`];
     }
   },
 
@@ -28,30 +24,26 @@ export const MirrorNetwork = {
   LOCAL_NODE: [`${process.env.NODE_ENV !== 'test' ? 'host.docker.internal' : '127.0.0.1'}:5600`],
 };
 
-export const MirrorNodeBaseURL = {
-  fromName(name: Network) {
-    switch (name) {
-      case 'mainnet':
-        return MirrorNodeBaseURL.MAINNET;
-
-      case 'testnet':
-        return MirrorNodeBaseURL.TESTNET;
-
-      case 'previewnet':
-        return MirrorNodeBaseURL.PREVIEWNET;
-
-      case 'local-node':
-        return MirrorNodeBaseURL.LOCAL_NODE;
-
+export const MirrorNodeREST = {
+  fromBaseURL(mirrorNetwork: string) {
+    switch (mirrorNetwork) {
+      case MAINNET:
+        return MirrorNodeREST.MAINNET;
+      case TESTNET:
+        return MirrorNodeREST.TESTNET;
+      case PREVIEWNET:
+        return MirrorNodeREST.PREVIEWNET;
+      case LOCAL_NODE:
+        return MirrorNodeREST.LOCAL_NODE;
       default:
-        throw new Error(`Unknown network name: ${name}`);
+        return `https://${mirrorNetwork}`;
     }
   },
 
-  MAINNET: 'https://mainnet-public.mirrornode.hedera.com/api/v1',
-  TESTNET: 'https://testnet.mirrornode.hedera.com/api/v1',
-  PREVIEWNET: 'https://previewnet.mirrornode.hedera.com/api/v1',
+  MAINNET: 'https://mainnet-public.mirrornode.hedera.com',
+  TESTNET: 'https://testnet.mirrornode.hedera.com',
+  PREVIEWNET: 'https://previewnet.mirrornode.hedera.com',
   /* Using host.docker.internal to access the host machine from the container, will work only in dev mode */
   /* Local node will be used only in development mode */
-  LOCAL_NODE: `http://${process.env.NODE_ENV !== 'test' ? 'host.docker.internal' : '127.0.0.1'}:5551/api/v1`,
+  LOCAL_NODE: `http://${process.env.NODE_ENV !== 'test' ? 'host.docker.internal' : '127.0.0.1'}:5551`,
 };

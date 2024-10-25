@@ -21,7 +21,7 @@ import {
   NOTIFICATIONS_SERVICE,
   MirrorNodeService,
   encodeUint8Array,
-  getClientFromName,
+  getClientFromNetwork,
   getTransactionTypeEnumValue,
   isExpired,
   notifyTransactionAction,
@@ -337,7 +337,7 @@ export class TransactionsService {
     });
     if (countExisting > 0) throw new BadRequestException(ErrorCodes.TEX);
 
-    const client = getClientFromName(dto.network);
+    const client = await getClientFromNetwork(dto.mirrorNetwork);
     sdkTransaction.freezeWith(client);
 
     const transaction = this.repo.create({
@@ -353,7 +353,7 @@ export class TransactionsService {
         id: dto.creatorKeyId,
       },
       signature: dto.signature,
-      network: dto.network,
+      mirrorNetwork: dto.mirrorNetwork,
       validStart: sdkTransaction.transactionId.validStart.toDate(),
       cutoffAt: dto.cutoffAt,
     });

@@ -1,60 +1,26 @@
-import type { NetworkExchangeRateSetResponse } from '@main/shared/interfaces';
+import type { Network, NetworkExchangeRateSetResponse } from '@main/shared/interfaces';
 
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
 import { Client, Timestamp } from '@hashgraph/sdk';
 
-import { Network } from '@main/shared/enums';
+import { CommonNetwork } from '@main/shared/enums';
 
 import { getExchangeRateSet } from '@renderer/services/mirrorNodeDataService';
 import { setClient } from '@renderer/services/transactionService';
 
-import { getNodeNumbersFromNetwork } from '@renderer/utils';
-
-export type CustomNetworkSettings = {
-  nodeAccountIds: {
-    [key: string]: string;
-  };
-  mirrorNodeGRPCEndpoint: string;
-  mirrorNodeRESTAPIEndpoint: string;
-};
+import { getClientFromMirrorNode, getNodeNumbersFromNetwork } from '@renderer/utils';
 
 const useNetworkStore = defineStore('network', () => {
   /* State */
-  const network = ref<Network>(Network.TESTNET);
-  const customNetworkSettings = ref<CustomNetworkSettings | null>(null);
+  const network = ref<Network>(CommonNetwork.TESTNET);
+  const mirrorNodeBaseURL = ref(getMirrorNodeREST(network.value));
   const exchangeRateSet = ref<NetworkExchangeRateSetResponse | null>(null);
+  const client = ref<Client>(Client.forTestnet());
+  const nodeNumbers = ref<number[]>([]);
 
   /* Getters */
-  const mirrorNodeBaseURL = computed(() => getMirrorNodeLinkByNetwork(network.value));
-
-  const client = computed(() => {
-    switch (network.value) {
-      case Network.MAINNET:
-        return Client.forMainnet();
-      case Network.TESTNET:
-        return Client.forTestnet();
-      case Network.PREVIEWNET:
-        return Client.forPreviewnet();
-      case Network.LOCAL_NODE:
-        return Client.forNetwork({
-          '127.0.0.1:50211': '0.0.3',
-        })
-          .setMirrorNetwork('127.0.0.1:5600')
-          .setLedgerId('3');
-      case Network.CUSTOM:
-        if (customNetworkSettings.value) {
-          return Client.forNetwork(customNetworkSettings.value.nodeAccountIds).setMirrorNetwork(
-            customNetworkSettings.value.mirrorNodeGRPCEndpoint,
-          );
-        }
-        throw Error('Settings for custom network are required');
-      default:
-        throw Error('Network not supported');
-    }
-  });
-
   const currentRate = computed(() => {
     if (!exchangeRateSet.value) {
       throw new Error('Exchange rate set not found');
@@ -78,62 +44,61 @@ const useNetworkStore = defineStore('network', () => {
     return rate;
   });
 
-  const nodeNumbers = computed(() => {
-    return getNodeNumbersFromNetwork(client.value.network);
-  });
-
   /* Actions */
-  async function setup() {
-    await setNetwork(Network.TESTNET);
+  async function setup(defaultNetwork?: Network) {
+    await setNetwork(defaultNetwork || CommonNetwork.TESTNET);
   }
 
-  async function setNetwork(newNetwork: Network, _customNetworkSettings?: CustomNetworkSettings) {
-    if (newNetwork === 'custom') {
-      if (!_customNetworkSettings) {
-        throw Error('Settings for custom network are required');
-      }
-      customNetworkSettings.value = _customNetworkSettings;
-      await setClient(newNetwork, _customNetworkSettings.nodeAccountIds, [
-        _customNetworkSettings.mirrorNodeGRPCEndpoint,
-      ]);
-    } else {
-      await setClient(newNetwork);
+  async function setNetwork(newNetwork: Network) {
+    await setClient(newNetwork);
+    await setStoreClient(newNetwork);
+
+    mirrorNodeBaseURL.value = getMirrorNodeREST(newNetwork);
+    network.value = newNetwork;
+    exchangeRateSet.value = await getExchangeRateSet(mirrorNodeBaseURL.value);
+    nodeNumbers.value = await getNodeNumbersFromNetwork(mirrorNodeBaseURL.value);
+  }
+
+  async function setStoreClient(newNetwork: Network) {
+    client.value.close();
+
+    if (
+      [CommonNetwork.MAINNET, CommonNetwork.TESTNET, CommonNetwork.PREVIEWNET].includes(newNetwork)
+    ) {
+      client.value = Client.forName(newNetwork);
+      return;
     }
 
-    network.value = newNetwork;
+    if (newNetwork === CommonNetwork.LOCAL_NODE) {
+      client.value = Client.forNetwork({
+        '127.0.0.1:50211': '0.0.3',
+      })
+        .setMirrorNetwork('127.0.0.1:5600')
+        .setLedgerId('3');
+      return;
+    }
 
-    exchangeRateSet.value = await getExchangeRateSet(mirrorNodeBaseURL.value);
+    client.value = await getClientFromMirrorNode(newNetwork);
   }
 
   /* Helpers */
-  function getMirrorNodeLinkByNetwork(network: Network) {
-    const MAINNET = 'https://mainnet-public.mirrornode.hedera.com/api/v1';
-    const TESTNET = 'https://testnet.mirrornode.hedera.com/api/v1';
-    const PREVIEWNET = 'https://previewnet.mirrornode.hedera.com/api/v1';
-    const LOCAL_NODE = 'http://localhost:5551/api/v1';
+  function getMirrorNodeREST(network: Network) {
+    const networkLink = {
+      [CommonNetwork.MAINNET]: 'https://mainnet-public.mirrornode.hedera.com',
+      [CommonNetwork.TESTNET]: 'https://testnet.mirrornode.hedera.com',
+      [CommonNetwork.PREVIEWNET]: 'https://previewnet.mirrornode.hedera.com',
+      [CommonNetwork.LOCAL_NODE]: 'http://localhost:5551',
+    };
 
-    switch (network) {
-      case 'mainnet':
-        return MAINNET;
-      case 'testnet':
-        return TESTNET;
-      case 'previewnet':
-        return PREVIEWNET;
-      case 'local-node':
-        return LOCAL_NODE;
-      case 'custom':
-        if (customNetworkSettings.value) {
-          return customNetworkSettings.value?.mirrorNodeRESTAPIEndpoint;
-        }
-        throw Error('Settings for custom network are required');
-      default:
-        throw Error('Invalid network');
+    if (!networkLink[network]) {
+      return `https://${network}`;
     }
+
+    return networkLink[network];
   }
 
   return {
     network,
-    customNetworkSettings,
     exchangeRateSet,
     mirrorNodeBaseURL,
     client,
@@ -141,7 +106,7 @@ const useNetworkStore = defineStore('network', () => {
     nodeNumbers,
     setup,
     setNetwork,
-    getMirrorNodeLinkByNetwork,
+    getMirrorNodeREST,
   };
 });
 

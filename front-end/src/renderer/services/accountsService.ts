@@ -1,6 +1,6 @@
-import { Prisma } from '@prisma/client';
+import type { Network } from '@main/shared/interfaces';
 
-import { Network } from '@main/shared/enums';
+import { Prisma } from '@prisma/client';
 
 import { commonIPCHandler } from '@renderer/utils';
 

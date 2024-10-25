@@ -117,7 +117,6 @@ export const withLoader = (
       toast.error(error instanceof Error ? error.message : defaultErrorMessage);
     } finally {
       loaderRef?.close();
-      toast.clear();
     }
   };
 };

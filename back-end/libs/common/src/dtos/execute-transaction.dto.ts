@@ -1,7 +1,7 @@
-import { Network, TransactionStatus } from '@entities';
-import { IsEnum, IsNotEmpty, IsNumber } from 'class-validator';
-//TODO why did I need to add the /transformers/transformBuffer to get this to work?
-import { TransformBuffer } from '@app/common/transformers/transformBuffer';
+import { IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+
+import { TransformBuffer } from '@app/common/transformers';
+import { TransactionStatus } from '@entities';
 
 export class ExecuteTransactionDto {
   @IsNumber()
@@ -16,6 +16,6 @@ export class ExecuteTransactionDto {
   transactionBytes: Buffer;
 
   @IsNotEmpty()
-  @IsEnum(Network)
-  network: Network;
+  @IsString()
+  mirrorNetwork: string;
 }

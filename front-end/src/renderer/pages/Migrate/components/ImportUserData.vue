@@ -4,6 +4,7 @@ import type { MigrateUserDataResult } from '@main/shared/interfaces/migration';
 import { onMounted } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { migrateUserData } from '@renderer/services/migrateDataService';
 
@@ -16,11 +17,14 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* Hooks */
 onMounted(async () => {
   if (!isUserLoggedIn(user.personal)) throw Error('(BUG) User is not logged in');
-  emit('importedUserData', await migrateUserData(user.personal.id));
+  const migratedUserData = await migrateUserData(user.personal.id);
+  await network.setup(migratedUserData.currentNetwork);
+  emit('importedUserData', migratedUserData);
 });
 </script>
 <template>

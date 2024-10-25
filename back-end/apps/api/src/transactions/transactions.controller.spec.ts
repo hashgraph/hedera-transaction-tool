@@ -4,14 +4,7 @@ import { mockDeep } from 'jest-mock-extended';
 import { EntityManager } from 'typeorm';
 
 import { BlacklistService, guardMock, Pagination } from '@app/common';
-import {
-  Network,
-  Transaction,
-  TransactionStatus,
-  TransactionType,
-  User,
-  UserStatus,
-} from '@entities';
+import { Transaction, TransactionStatus, TransactionType, User, UserStatus } from '@entities';
 
 import { HasKeyGuard, VerifiedUserGuard } from '../guards';
 
@@ -89,7 +82,7 @@ describe('TransactionsController', () => {
         '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
       ),
       status: TransactionStatus.NEW,
-      network: Network.TESTNET,
+      mirrorNetwork: 'testnet',
       cutoffAt: new Date(),
       createdAt: new Date(),
       updatedAt: new Date(),

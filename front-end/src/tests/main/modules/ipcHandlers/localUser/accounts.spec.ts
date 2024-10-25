@@ -4,7 +4,7 @@ import { mockDeep } from 'vitest-mock-extended';
 import registerAccountsHandlers from '@main/modules/ipcHandlers/localUser/accounts';
 
 import { Prisma } from '@prisma/client';
-import { Network } from '@main/shared/enums';
+import { CommonNetwork } from '@main/shared/enums';
 import {
   addAccount,
   changeAccountNickname,
@@ -60,7 +60,7 @@ describe('IPC handlers Accounts', () => {
 
     const userId = 'user1';
     const accountId = 'account1';
-    const network = Network.TESTNET;
+    const network = CommonNetwork.TESTNET;
     const nickname = 'nickname';
 
     addHandler && (await addHandler[1](event, userId, accountId, network, nickname));

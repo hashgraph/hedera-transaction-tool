@@ -10,6 +10,8 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
 
+import { CommonNetwork } from '@main/shared/enums';
+
 import { deleteKey } from '@renderer/services/organization';
 import { decryptPrivateKey, deleteKeyPair } from '@renderer/services/keyPairService';
 
@@ -289,10 +291,14 @@ watch(isDeleteModalShown, newVal => {
                         ?.accounts[0]?.account
                     "
                     :class="{
-                      'text-mainnet': network.network === 'mainnet',
-                      'text-testnet': network.network === 'testnet',
-                      'text-previewnet': network.network === 'previewnet',
-                      'text-info': network.network === 'local-node',
+                      'text-mainnet': network.network === CommonNetwork.MAINNET,
+                      'text-testnet': network.network === CommonNetwork.TESTNET,
+                      'text-previewnet': network.network === CommonNetwork.PREVIEWNET,
+                      'text-info': ![
+                        CommonNetwork.MAINNET,
+                        CommonNetwork.TESTNET,
+                        CommonNetwork.PREVIEWNET,
+                      ].includes(network.network),
                     }"
                   >
                     {{

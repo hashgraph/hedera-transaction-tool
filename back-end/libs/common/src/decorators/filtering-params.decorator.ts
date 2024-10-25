@@ -57,18 +57,20 @@ function parseFilter(
   dateProperties: string[],
 ): Filtering {
   if (
-    !rawFilter.match(/^[a-zA-Z0-9_]+:(eq|neq|gt|gte|lt|lte|like|nlike|in|nin):[a-zA-Z0-9_, -]+$/) &&
+    !rawFilter.match(
+      /^[a-zA-Z0-9_]+:(eq|neq|gt|gte|lt|lte|like|nlike|in|nin):[a-zA-Z0-9_, -.:/]+$/,
+    ) &&
     !rawFilter.match(/^[a-zA-Z0-9_]+:(isnull|isnotnull)$/)
   ) {
     throw new BadRequestException(ErrorCodes.IFP);
   }
 
-  const [property, rule, value] = rawFilter.split(':');
+  const [property, rule, ...value] = rawFilter.split(':');
   if (!validProperties.includes(property)) throw new BadRequestException(ErrorCodes.IFP);
   if (!Object.values(FilterRule).includes(rule as FilterRule))
     throw new BadRequestException(ErrorCodes.IFP);
 
-  const filtering: Filtering = { property, rule, value };
+  const filtering: Filtering = { property, rule, value: value.join(':') };
 
   if (dateProperties.includes(property)) {
     filtering.isDate = true;
