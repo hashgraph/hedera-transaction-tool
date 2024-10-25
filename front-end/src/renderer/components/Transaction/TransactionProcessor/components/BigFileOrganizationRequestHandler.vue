@@ -204,7 +204,7 @@ async function submitGroup(groupItems: GroupItem[], signature: string[], keyToSi
         name: transaction.transactionMemo || `New ${getTransactionType(transaction)}`,
         description: transaction.transactionMemo || '',
         transactionBytes: uint8ToHex(groupItems[i].transactionBytes),
-        network: network.network,
+        mirrorNetwork: network.network,
         signature: signature[i],
         creatorKeyId:
           user.selectedOrganization.userKeys.find(k => k.publicKey === keyToSignWith)?.id || -1,
@@ -217,6 +217,7 @@ async function submitGroup(groupItems: GroupItem[], signature: string[], keyToSi
       user.selectedOrganization.serverUrl,
       'Automatically created group for large file update',
       false,
+      true,
       apiGroupItems,
     );
     const group: IGroup = await getApiGroupById(user.selectedOrganization.serverUrl, id);

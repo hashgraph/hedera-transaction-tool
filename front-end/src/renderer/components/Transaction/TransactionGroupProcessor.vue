@@ -339,7 +339,7 @@ async function sendSignedTransactionsToOrganization() {
         name: transaction.transactionMemo || `New ${getTransactionType(transaction)}`,
         description: transaction.transactionMemo || '',
         transactionBytes: groupBytesHex[i],
-        network: network.network,
+        mirrorNetwork: network.network,
         signature: groupSignatureHex[i],
         creatorKeyId:
           user.selectedOrganization.userKeys.find(k => k.publicKey === keyToSignWith)?.id || -1,
@@ -351,6 +351,7 @@ async function sendSignedTransactionsToOrganization() {
     user.selectedOrganization.serverUrl,
     transactionGroup.description,
     false,
+    transactionGroup.sequential,
     apiGroupItems,
   );
 
