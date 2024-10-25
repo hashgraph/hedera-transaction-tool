@@ -347,7 +347,7 @@ describe('ExecuteService', () => {
     });
   });
 
-  describe.skip('executeTransactionGroup', () => {
+  describe('executeTransactionGroup', () => {
     let client: Client;
     let transaction: Transaction;
     let transactionGroup: TransactionGroup;
@@ -465,6 +465,21 @@ describe('ExecuteService', () => {
       });
       expect(client.close).toHaveBeenCalled();
       expect(notifyTransactionAction).toHaveBeenCalled();
+    });
+
+    it('should throw error if failed to get validated transaction from the group', async () => {
+      const errorMessage = 'Transaction not found';
+      jest
+        // @ts-expect-error private function
+        .spyOn(service, 'getValidatedSDKTransaction')
+        // @ts-expect-error private function
+        .mockRejectedValueOnce(new Error(errorMessage));
+
+      transactionGroupRepo.findOne.mockResolvedValueOnce(transactionGroup);
+
+      await expect(service.executeTransactionGroup(transactionGroup)).rejects.toThrow(
+        `Transaction Group cannot be submitted. Error validating transaction 0: ${errorMessage}`,
+      );
     });
   });
 });
