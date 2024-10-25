@@ -266,8 +266,9 @@ export class TransactionStatusService {
     const processedGroupIds = new Set<number>();
 
     for (const transaction of transactions) {
-      if (transaction.status === TransactionStatus.WAITING_FOR_EXECUTION &&
-        this.isValidStartExecutable(transaction.validStart)) {
+      const waitingForExecution = transaction.status === TransactionStatus.WAITING_FOR_EXECUTION;
+
+      if (waitingForExecution && this.isValidStartExecutable(transaction.validStart)) {
         if (transaction.groupItem) {
           if (!processedGroupIds.has(transaction.groupItem.groupId)) {
             processedGroupIds.add(transaction.groupItem.groupId);
@@ -284,7 +285,7 @@ export class TransactionStatusService {
                     validStart: 'ASC',
                   },
                 },
-              }
+              },
             });
             // All the transactions for the group are now pulled. If there is an issue validating for even one
             // transaction, the group will not be executed. This is handled in executeTransactionGroup
@@ -302,7 +303,8 @@ export class TransactionStatusService {
 
     if (this.schedulerRegistry.doesExist('timeout', name)) return;
 
-    const timeToValidStart = transactionGroup.groupItems[0].transaction.validStart.getTime() - Date.now();
+    const timeToValidStart =
+      transactionGroup.groupItems[0].transaction.validStart.getTime() - Date.now();
 
     const callback = async () => {
       try {
@@ -407,7 +409,8 @@ export class TransactionStatusService {
 
     if (this.schedulerRegistry.doesExist('timeout', name)) return;
 
-    const timeToValidStart = transactionGroup.groupItems[0].transaction.validStart.getTime() - Date.now();
+    const timeToValidStart =
+      transactionGroup.groupItems[0].transaction.validStart.getTime() - Date.now();
 
     const callback = async () => {
       try {
