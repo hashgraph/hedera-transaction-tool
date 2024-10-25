@@ -96,6 +96,7 @@ watch([file, manualContent], () => {
   <div class="mt-6 form-group">
     <AppUploadFile
       id="append-transaction-file"
+      data-testid="button-upload-file"
       show-name
       show-progress
       v-model:file="file"

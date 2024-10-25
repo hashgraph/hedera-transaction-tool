@@ -313,13 +313,13 @@ watch(
         <tbody>
           <template v-for="groupItem in group?.groupItems" :key="groupItem.seq">
             <tr>
-              <td>
+              <td data-testid="td-group-transaction-id">
                 {{ groupItem.transaction.transactionId }}
               </td>
               <td>
                 <span class="text-bold">{{ groupItem.transaction.name }}</span>
               </td>
-              <td>
+              <td data-testid="td-group-valid-start-time">
                 {{ getDateStringExtended(new Date(groupItem.transaction.validStart)) }}
               </td>
               <td class="text-center">
@@ -362,6 +362,7 @@ watch(
           "
           color="primary"
           type="button"
+          data-testid="button-sign-all-tx"
           @click="handleSignGroup"
         >
           Sign All
