@@ -9,16 +9,18 @@ import { AccountUpdateTransaction, Transaction as SDKTransaction, Status } from 
 import { Transaction, TransactionStatus } from '@entities';
 
 import {
-  MirrorNodeService,
-  NOTIFICATIONS_SERVICE,
-  ExecuteTransactionDto,
-  TransactionExecutedDto,
-  hasValidSignatureKey,
   computeSignatureKey,
+  ExecuteTransactionDto,
+  ExecuteTransactionGroupDto,
   getClientFromNetwork,
   getStatusCodeFromMessage,
-  notifyTransactionAction,
+  hasValidSignatureKey,
+  MirrorNodeService,
+  NOTIFICATIONS_SERVICE,
   notifySyncIndicators,
+  notifyTransactionAction,
+  TransactionExecutedDto,
+  TransactionGroupExecutedDto,
 } from '@app/common';
 
 @Injectable()
@@ -29,27 +31,51 @@ export class ExecuteService {
     private readonly mirrorNodeService: MirrorNodeService,
   ) {}
 
+  @MurLock(5000, 'transaction.id + "_group"')
+  async executeGroupTransaction(transactionGroup: ExecuteTransactionGroupDto) {
+    const transactions: { sdkTransaction: SDKTransaction; transaction: ExecuteTransactionDto }[] =
+      [];
+    // first we need to validate all the transactions, as they all need to be valid before we can execute any of them
+    for (const groupItemDto of transactionGroup.groupItems) {
+      const transaction = groupItemDto.transaction;
+      const sdkTransaction = await this.getValidatedSDKTransaction(transaction);
+      transactions.push({ sdkTransaction, transaction });
+    }
+
+    const results: TransactionGroupExecutedDto = {
+      transactions: [],
+    };
+
+    // now we can execute all the transactions
+    if (transactionGroup.sequential) {
+      for (const { sdkTransaction, transaction } of transactions) {
+        results.transactions.push(await this._executeTransaction(transaction, sdkTransaction));
+      }
+    } else {
+      results.transactions.push(
+        ...(await Promise.all(
+          transactions.map(({ sdkTransaction, transaction }) =>
+            this._executeTransaction(transaction, sdkTransaction),
+          ),
+        )),
+      );
+    }
+
+    return results;
+  }
+
   /* Tries to execute a transaction */
   @MurLock(5000, 'transaction.id')
   async executeTransaction(transaction: ExecuteTransactionDto) {
-    /* Throws an error if the transaction is not found or in incorrect state */
-    if (!transaction) throw new Error('Transaction not found');
-    this.validateTransactionStatus(transaction);
+    /* Gets the SDK transaction */
+    const sdkTransaction = await this.getValidatedSDKTransaction(transaction);
+    return this._executeTransaction(transaction, sdkTransaction);
+  }
 
-    /* Gets the SDK transaction from the transaction body */
-    const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
-
-    /* Gets the signature key */
-    const signatureKey = await computeSignatureKey(
-      sdkTransaction,
-      this.mirrorNodeService,
-      transaction.mirrorNetwork,
-    );
-
-    /* Checks if the transaction has valid signatureKey */
-    if (!hasValidSignatureKey([...sdkTransaction._signerPublicKeys], signatureKey))
-      throw new Error('Transaction has invalid signature.');
-
+  private async _executeTransaction(
+    transaction: ExecuteTransactionDto,
+    sdkTransaction: SDKTransaction,
+  ) {
     /* Execute the transaction */
     const client = await getClientFromNetwork(transaction.mirrorNetwork);
 
@@ -96,6 +122,30 @@ export class ExecuteService {
       this.sideEffect(sdkTransaction, transaction.mirrorNetwork);
     }
     return result;
+  }
+
+  private async getValidatedSDKTransaction(
+    transaction: ExecuteTransactionDto,
+  ): Promise<SDKTransaction> {
+    /* Throws an error if the transaction is not found or in incorrect state */
+    if (!transaction) throw new Error('Transaction not found');
+    this.validateTransactionStatus(transaction);
+
+    /* Gets the SDK transaction from the transaction body */
+    const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
+
+    /* Gets the signature key */
+    const signatureKey = await computeSignatureKey(
+      sdkTransaction,
+      this.mirrorNodeService,
+      transaction.mirrorNetwork,
+    );
+
+    /* Checks if the transaction has valid signatureKey */
+    if (!hasValidSignatureKey([...sdkTransaction._signerPublicKeys], signatureKey))
+      throw new Error('Transaction has invalid signature.');
+
+    return sdkTransaction;
   }
 
   /* Throws if the transaction is not in a valid state */
