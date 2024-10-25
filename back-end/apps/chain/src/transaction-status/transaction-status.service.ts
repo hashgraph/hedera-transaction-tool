@@ -273,12 +273,16 @@ export class TransactionStatusService {
             processedGroupIds.add(transaction.groupItem.groupId);
             const transactionGroup = await this.transactionGroupRepo.findOne({
               where: { id: transaction.groupItem.groupId },
-              relations: ['groupItems', 'groupItems.transactions'],
+              relations: {
+                groupItems: {
+                  transaction: true,
+                },
+              },
               order: {
-                'groupItems': {
-                  'transaction': {
-
-                  }
+                groupItems: {
+                  transaction: {
+                    validStart: 'ASC',
+                  },
                 },
               }
             });
@@ -297,9 +301,6 @@ export class TransactionStatusService {
     const name = `smart_collate_group_timeout_${transactionGroup.id}`;
 
     if (this.schedulerRegistry.doesExist('timeout', name)) return;
-
-    //TODO validStart is enough, seq is not needed. once we allow for transactions to be reordered, we will need to handle the validStart stuff
-    transactionGroup.groupItems.sort((a, b) => a.transaction.validStart.getTime() - b.transaction.validStart.getTime());
 
     const timeToValidStart = transactionGroup.groupItems[0].transaction.validStart.getTime() - Date.now();
 
