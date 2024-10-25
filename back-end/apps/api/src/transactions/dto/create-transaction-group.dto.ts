@@ -17,6 +17,10 @@ export class CreateTransactionGroupDto {
   @IsBoolean()
   atomic: boolean;
 
+  @IsOptional()
+  @IsBoolean()
+  sequential: boolean;
+
   @IsArray()
   @IsNotEmpty()
   @ValidateNested({ each: true })
