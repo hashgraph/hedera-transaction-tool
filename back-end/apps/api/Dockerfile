@@ -26,6 +26,8 @@ WORKDIR /usr/src/app
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 
+COPY apps/api/scripts apps/api/scripts
+
 RUN npm install -g pnpm
 
 RUN pnpm install --prod
