@@ -275,16 +275,29 @@ watch(
 
       <h2 class="text-title text-bold">Transaction Group Details</h2>
     </div>
-    <div class="form-group col-6">
-      <label class="form-label">Transaction Group Name</label>
-      <div>{{ group?.description }}</div>
-      <!-- <AppInput
+    <div class="d-flex mt-4">
+      <div class="form-group col-6">
+        <label class="form-label">Transaction Group Name</label>
+        <div>{{ group?.description }}</div>
+        <!-- <AppInput
           v-model="groupName"
           @update:modelValue="nameUpdated"
           filled
           placeholder="Enter Name"
         /> -->
+      </div>
+      <div class="form-group col-6">
+        <label class="form-label">Sequential Execution</label>
+        <div>{{ group?.sequential ? 'Yes' : 'No' }}</div>
+        <!-- <AppInput
+          v-model="groupName"
+          @update:modelValue="nameUpdated"
+          filled
+          placeholder="Enter Name"
+        /> -->
+      </div>
     </div>
+
     <hr class="separator my-5 w-100" />
     <div v-if="!groupEmpty">
       <table class="table-custom">
