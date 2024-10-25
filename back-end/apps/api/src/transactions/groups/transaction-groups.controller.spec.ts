@@ -70,6 +70,7 @@ describe('TransactionGroupsController', () => {
       const body = {
         description: 'Test Transaction Group Description',
         atomic: false,
+        sequential: false,
         groupItems: [],
       };
 

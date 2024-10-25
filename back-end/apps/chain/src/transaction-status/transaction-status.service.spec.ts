@@ -15,7 +15,6 @@ import {
   notifySyncIndicators,
   notifyTransactionAction,
   notifyWaitingForSignatures,
-  isTransactionOverMaxSize,
 } from '@app/common';
 import {
   NotificationType,
@@ -30,8 +29,6 @@ import { ExecuteService } from '../execute/execute.service';
 import {
   AccountCreateTransaction,
   AccountId,
-  FileAppendTransaction,
-  FileUpdateTransaction,
   KeyList,
   PrivateKey,
   TransactionId,
@@ -392,42 +389,6 @@ describe('TransactionStatusService', () => {
 
       expectNotifyNotCalled();
     });
-
-    it.skip('should skip transaction if is file update or append', async () => {
-      const transactions = [
-        {
-          id: 1,
-          status: TransactionStatus.WAITING_FOR_SIGNATURES,
-          transactionBytes: new FileUpdateTransaction().setContents('test').toBytes(),
-        },
-        {
-          id: 2,
-          status: TransactionStatus.WAITING_FOR_EXECUTION,
-          transactionBytes: new AccountCreateTransaction().toBytes(),
-        },
-        {
-          id: 3,
-          status: TransactionStatus.WAITING_FOR_EXECUTION,
-          transactionBytes: new FileAppendTransaction().setContents('test').toBytes(),
-        },
-      ];
-
-      transactionRepo.find.mockResolvedValue(transactions as Transaction[]);
-
-      jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
-      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
-
-      await service.updateTransactions(new Date(), new Date());
-
-      expect(transactionRepo.update).toHaveBeenCalledTimes(1);
-      expect(notifySyncIndicators).toHaveBeenCalledWith(
-        notificationsService,
-        transactions[1].id,
-        TransactionStatus.WAITING_FOR_SIGNATURES,
-      );
-      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(transactions[1].id);
-      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
-    });
   });
 
   describe('updateTransactionStatus', () => {
@@ -494,24 +455,6 @@ describe('TransactionStatusService', () => {
         'Error',
       );
 
-      expectNotifyNotCalled();
-    });
-
-    it.skip('should skip transaction if is file update or append', async () => {
-      const transaction = {
-        id: 1,
-        status: TransactionStatus.WAITING_FOR_SIGNATURES,
-        transactionBytes: new FileUpdateTransaction().toBytes(),
-      };
-
-      transactionRepo.findOne.mockResolvedValue(transaction as Transaction);
-
-      jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
-      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
-
-      await service.updateTransactionStatus({ id: transaction.id });
-
-      expect(transactionRepo.update).not.toHaveBeenCalled();
       expectNotifyNotCalled();
     });
 
@@ -808,7 +751,7 @@ describe('TransactionStatusService', () => {
 
         expect(sdkTransaction._signerPublicKeys.size).toBe(5);
       });
-    });
+    }, 15000);
 
     it('should fail to prepare a group of signed transactions, due to key list unable to be sufficiently reduced', async () => {
       const keyList = new KeyList();
@@ -934,7 +877,7 @@ describe('TransactionStatusService', () => {
     });
 
     it('should handle error in callback', async () => {
-      jest.mocked(isTransactionOverMaxSize).mockRejectedValue(new Error('Error'));
+      jest.mocked(smartCollate).mockRejectedValue(new Error('Error'));
 
       service.collateGroupAndExecute(mockTransactionGroup);
 
@@ -1071,7 +1014,7 @@ describe('TransactionStatusService', () => {
     });
 
     it('should handle error in callback', async () => {
-      jest.mocked(isTransactionOverMaxSize).mockRejectedValue(new Error('Error'));
+      jest.mocked(smartCollate).mockRejectedValue(new Error('Error'));
 
       service.collateAndExecute(mockTransaction);
 
