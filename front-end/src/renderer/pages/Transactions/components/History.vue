@@ -455,7 +455,7 @@ watch(
                     <span
                       class="badge bg-success text-break"
                       :class="{
-                        'bg-danger': ![0, 22].includes(
+                        'bg-danger': ![0, 22, 104].includes(
                           transactionData.transactionRaw.statusCode || -1,
                         ),
                       }"
