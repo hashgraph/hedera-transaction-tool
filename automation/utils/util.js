@@ -5,6 +5,8 @@ const LoginPage = require('../pages/LoginPage.js');
 const SettingsPage = require('../pages/SettingsPage');
 const fs = require('fs').promises;
 const path = require('path');
+const _ = require('lodash');
+const Diff = require('deep-diff');
 
 async function setupApp() {
   console.log(asciiArt); // Display ASCII art as the app starts
@@ -161,6 +163,73 @@ async function cleanupBinFiles(directory) {
   }
 }
 
+/**
+ * Compares two JSON data structures and reports differences.
+ * @param {object} jsonData1 - The first JSON data object.
+ * @param {object} jsonData2 - The second JSON data object.
+ * @param {string[]} [keysToIgnore] - Optional array of keys to ignore during comparison.
+ * @returns {object|null} - Returns null if objects are equal, or an array of differences.
+ */
+function compareJsonFiles(jsonData1, jsonData2, keysToIgnore = []) {
+  // Remove keys to ignore from both JSON objects
+  const jsonData1Cleaned = removeKeys(jsonData1, keysToIgnore);
+  const jsonData2Cleaned = removeKeys(jsonData2, keysToIgnore);
+
+  // Use lodash to check for deep equality
+  const isEqual = _.isEqual(jsonData1Cleaned, jsonData2Cleaned);
+
+  if (isEqual) {
+    return null;
+  } else {
+    // Use deep-diff to find differences
+    return Diff.diff(jsonData1Cleaned, jsonData2Cleaned);
+  }
+}
+
+/**
+ * Recursively removes specified keys from the JSON object.
+ * @param {object} obj - The JSON object.
+ * @param {string[]} keysToRemove - Array of keys to remove.
+ * @returns {object} - The cleaned JSON object.
+ */
+function removeKeys(obj, keysToRemove) {
+  if (_.isArray(obj)) {
+    return obj.map(item => removeKeys(item, keysToRemove));
+  } else if (_.isObject(obj) && obj !== null) {
+    return Object.keys(obj).reduce((acc, key) => {
+      if (!keysToRemove.includes(key)) {
+        acc[key] = removeKeys(obj[key], keysToRemove);
+      }
+      return acc;
+    }, {});
+  } else {
+    return obj;
+  }
+}
+
+/**
+ * Parses the content of a properties file into an object.
+ * @param {string} content - The content of the properties file.
+ * @returns {object} - The parsed key-value pairs as an object.
+ */
+function parsePropertiesContent(content) {
+  const lines = content.split('\n');
+  const obj = {};
+
+  lines.forEach(line => {
+    line = line.trim();
+    if (line && !line.startsWith('#')) {
+      const index = line.indexOf('=');
+      if (index > -1) {
+        const key = line.substring(0, index).trim();
+        obj[key] = line.substring(index + 1).trim();
+      }
+    }
+  });
+
+  return obj;
+}
+
 const asciiArt =
   '\n' +
   ' ________ __    __        ________ ______   ______  __               ______  __    __ ________ ______  __       __  ______  ________ ______  ______  __    __ \n' +
@@ -184,4 +253,6 @@ module.exports = {
   calculateTimeout,
   waitForValidStart,
   cleanupBinFiles,
+  compareJsonFiles,
+  parsePropertiesContent,
 };

@@ -23,10 +23,9 @@ let firstUser;
 
 /**
  * These tests verify that the user can execute file update transactions for system files
- * Executing some of these tests breaks the local node and requires a restart
  */
 
-test.describe.skip('System file tests', () => {
+test.describe('System file tests', () => {
   test.beforeAll(async () => {
     test.slow();
     await resetDbState();
@@ -85,9 +84,14 @@ test.describe.skip('System file tests', () => {
 
   test('Verify user can execute file update transaction for node address book(101) ', async () => {
     test.slow();
-
-    const { txId, validStart } = await organizationPage.updateSystemFile('0.0.101', 5, true);
+    const fileId = '0.0.101';
+    const { txId, validStart } = await organizationPage.updateSystemFile(fileId, 5, true);
     await waitForValidStart(validStart);
+
+    //comparing the file from read query with the file from data folder
+    const areIdentical = await organizationPage.areFilesIdentical(fileId);
+    expect(areIdentical).toBe(true);
+
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
     const transactionType = transactionDetails.transactions[0]?.name;
     const result = transactionDetails.transactions[0]?.result;
@@ -99,8 +103,14 @@ test.describe.skip('System file tests', () => {
 
   test('Verify user can execute file update transaction for node address book(102) ', async () => {
     test.slow();
-    const { txId, validStart } = await organizationPage.updateSystemFile('0.0.102', 5, true);
+    const fileId = '0.0.102';
+    const { txId, validStart } = await organizationPage.updateSystemFile(fileId, 5, true);
     await waitForValidStart(validStart);
+
+    //comparing the file from read query with the file from data folder
+    const areIdentical = await organizationPage.areFilesIdentical(fileId);
+    expect(areIdentical).toBe(true);
+
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
     const transactionType = transactionDetails.transactions[0]?.name;
     const result = transactionDetails.transactions[0]?.result;
@@ -110,10 +120,16 @@ test.describe.skip('System file tests', () => {
     expect(result).toBe('SUCCESS');
   });
 
-  test('Verify user can execute file update transaction for fee schedule(111)', async () => {
+  test.skip('Verify user can execute file update transaction for fee schedule(111)', async () => {
     test.slow();
-    const { txId, validStart } = await organizationPage.updateSystemFile('0.0.111', 5, true);
+    const fileId = '0.0.111';
+    const { txId, validStart } = await organizationPage.updateSystemFile(fileId, 5, true);
     await waitForValidStart(validStart);
+
+    //comparing the file from read query with the file from data folder
+    const areIdentical = await organizationPage.areFilesIdentical(fileId);
+    expect(areIdentical).toBe(true);
+
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
     const transactionType = transactionDetails.transactions[0]?.name;
     const result = transactionDetails.transactions[0]?.result;
@@ -125,8 +141,14 @@ test.describe.skip('System file tests', () => {
 
   test('Verify user can execute file update transaction for exchange rate(112)', async () => {
     test.slow();
-    const { txId, validStart } = await organizationPage.updateSystemFile('0.0.112', 5, true);
+    const fileId = '0.0.112';
+    const { txId, validStart } = await organizationPage.updateSystemFile(fileId, 5, true);
     await waitForValidStart(validStart);
+
+    //comparing the file from read query with the file from data folder
+    const areIdentical = await organizationPage.areFilesIdentical(fileId);
+    expect(areIdentical).toBe(true);
+
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
     const transactionType = transactionDetails.transactions[0]?.name;
     const result = transactionDetails.transactions[0]?.result;
@@ -138,8 +160,13 @@ test.describe.skip('System file tests', () => {
 
   test('Verify user can execute file update transaction for application properties(121) ', async () => {
     test.slow();
-    const { txId, validStart } = await organizationPage.updateSystemFile('0.0.121', 5, true);
+    const fileId = '0.0.121';
+    const { txId, validStart } = await organizationPage.updateSystemFile(fileId, 5, true);
     await waitForValidStart(validStart);
+
+    const areIdentical = await organizationPage.areFilesIdentical(fileId);
+    expect(areIdentical).toBe(true);
+
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
     const transactionType = transactionDetails.transactions[0]?.name;
     const result = transactionDetails.transactions[0]?.result;
@@ -151,8 +178,13 @@ test.describe.skip('System file tests', () => {
 
   test('Verify user can execute file update transaction for api permissions(122) ', async () => {
     test.slow();
+    const fileId = '0.0.122';
     const { txId, validStart } = await organizationPage.updateSystemFile('0.0.122', 5, true);
     await waitForValidStart(validStart);
+
+    const areIdentical = await organizationPage.areFilesIdentical(fileId);
+    expect(areIdentical).toBe(true);
+
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
     const transactionType = transactionDetails.transactions[0]?.name;
     const result = transactionDetails.transactions[0]?.result;
@@ -164,8 +196,13 @@ test.describe.skip('System file tests', () => {
 
   test('Verify user can execute file update transaction for throttles(123) ', async () => {
     test.slow();
-    const { txId, validStart } = await organizationPage.updateSystemFile('0.0.123', 5, true);
+    const fileId = '0.0.123';
+    const { txId, validStart } = await organizationPage.updateSystemFile(fileId, 5, true);
     await waitForValidStart(validStart);
+
+    const areIdentical = await organizationPage.areFilesIdentical(fileId);
+    expect(areIdentical).toBe(true);
+
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
     const transactionType = transactionDetails.transactions[0]?.name;
     const result = transactionDetails.transactions[0]?.result;

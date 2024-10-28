@@ -20,7 +20,10 @@ const {
   generateRandomPassword,
   setupEnvironmentForTransactions,
   waitForValidStart,
+  compareJsonFiles,
+  parsePropertiesContent,
 } = require('../utils/util');
+const { normalizeExchangeRateData, normalizeThrottleData } = require('../utils/dataNormalizer');
 const {
   getFirstPublicKeyByEmail,
   getUserIdByEmail,
@@ -32,6 +35,7 @@ const {
   insertKeyPair,
   getLatestNotificationStatusByEmail,
 } = require('../utils/databaseQueries');
+const fs = require('fs');
 
 class OrganizationPage extends BasePage {
   constructor(window) {
@@ -953,6 +957,96 @@ class OrganizationPage extends BasePage {
     }
 
     return { txId, validStart };
+  }
+
+  /**
+   * Checks if a file from the application is identical to the corresponding file in the data folder.
+   * @param {string} fileId - The ID of the file to read and compare.
+   * @returns {boolean} - Returns true if files are identical, or false if there are differences.
+   */
+  async areFilesIdentical(fileId) {
+    // Read the file content from the application
+    const textFromField = await this.transactionPage.readFile(fileId);
+    if (!textFromField || textFromField.trim() === '') {
+      throw new Error(`No data returned from application for fileId ${fileId}`);
+    }
+
+    // Mapping of file IDs to data files and file types
+    const fileMappings = {
+      '0.0.101': { path: 'data/101.json', type: 'json', keysToIgnore: [] },
+      '0.0.102': { path: 'data/102.json', type: 'json', keysToIgnore: [] },
+      '0.0.111': { path: 'data/feeSchedules.json', type: 'json', keysToIgnore: [] },
+      '0.0.112': {
+        path: 'data/exchangeRates.json',
+        type: 'json',
+        keysToIgnore: ['exchangeRateInCents'],
+        normalizer: normalizeExchangeRateData,
+      },
+      '0.0.121': { path: 'data/application.properties', type: 'properties', keysToIgnore: [] },
+      '0.0.122': { path: 'data/api-permission.properties', type: 'properties', keysToIgnore: [] },
+      '0.0.123': {
+        path: 'data/123.json',
+        type: 'json',
+        keysToIgnore: [],
+        normalizer: normalizeThrottleData,
+      },
+    };
+
+    const fileInfo = fileMappings[fileId];
+
+    if (!fileInfo) {
+      throw new Error(`Unsupported fileId: ${fileId}`);
+    }
+
+    // Read the local file content
+    const localFileContent = fs.readFileSync(fileInfo.path, 'utf8');
+
+    let localData, remoteData;
+
+    // Parse the files based on their type
+    if (fileInfo.type === 'json') {
+      // Parse local JSON file
+      try {
+        localData = JSON.parse(localFileContent);
+      } catch (error) {
+        throw new Error(`Failed to parse local JSON file ${fileInfo.path}: ${error.message}`);
+      }
+
+      // Parse remote JSON data from application
+      try {
+        remoteData = JSON.parse(textFromField);
+      } catch (error) {
+        throw new Error(`Failed to parse remote JSON data for fileId ${fileId}: ${error.message}`);
+      }
+    } else if (fileInfo.type === 'properties') {
+      // Parse local properties file into an object
+      localData = parsePropertiesContent(localFileContent);
+
+      // Parse remote properties content into an object
+      remoteData = parsePropertiesContent(textFromField);
+    } else {
+      throw new Error(`Unsupported file type for fileId ${fileId}`);
+    }
+
+    const keysToIgnore = fileInfo.keysToIgnore || [];
+
+    // Apply normalizer if present
+    if (fileInfo.normalizer) {
+      localData = fileInfo.normalizer(localData);
+      remoteData = fileInfo.normalizer(remoteData);
+    }
+
+    // Compare the two data objects
+    const differences = compareJsonFiles(localData, remoteData, keysToIgnore);
+
+    if (differences === null) {
+      console.log(`The files for fileId ${fileId} are identical.`);
+      return true;
+    } else {
+      console.log(`The files for fileId ${fileId} are not identical.`);
+      console.log('Differences:', JSON.stringify(differences, null, 2));
+      return false;
+    }
   }
 
   async getGroupTransactionIdText() {

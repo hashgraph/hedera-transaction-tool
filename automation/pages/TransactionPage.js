@@ -988,7 +988,7 @@ class TransactionPage extends BasePage {
   }
 
   async readFileContentFromTextArea() {
-    return await this.getTextFromInputField(this.fileContentReadTextFieldSelector);
+    return await this.getTextFromInputFieldWithRetry(this.fileContentReadTextFieldSelector);
   }
 
   async getPublicKeyText() {
