@@ -7,6 +7,6 @@ export default {
         callback(location),
       );
     },
-    checkForUpdate: () => ipcRenderer.send('update:check-for-update'),
+    checkForUpdate: (location: string) => ipcRenderer.send('update:check-for-update', location),
   },
 };
