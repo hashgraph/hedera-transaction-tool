@@ -15,6 +15,7 @@ export const DISPLAY_FILE_SIZE_LIMIT = 512 * 1024;
 export const DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY = 'default_max_transaction_fee';
 export const SELECTED_NETWORK = 'selected_network';
 export const USE_KEYCHAIN = 'use_keychain';
+export const UPDATE_LOCATION = 'update_location';
 
 /* Transaction tabs */
 export const draftsTitle = 'Drafts';
