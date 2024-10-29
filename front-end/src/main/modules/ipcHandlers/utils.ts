@@ -12,6 +12,8 @@ const createChannelName = (...props: string[]) => ['utils', ...props].join(':');
 export default () => {
   ipcMain.on(createChannelName('openExternal'), (_e, url: string) => shell.openExternal(url));
 
+  ipcMain.on(createChannelName('openPath'), (_e, path: string) => shell.openPath(path));
+
   ipcMain.handle(createChannelName('hash'), (_e, data: string): string => {
     return bcrypt.hashSync(data, 10);
   });
