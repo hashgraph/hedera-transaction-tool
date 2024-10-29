@@ -18,7 +18,7 @@ const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <div class="form-group" :class="[columnClass]">
-    <label class="form-label">Node Account ID <span class="text-danger">*</span></label>
+    <label class="form-label">Node ID <span class="text-danger">*</span></label>
     <AppInput
       :model-value="data.nodeId"
       @update:model-value="
