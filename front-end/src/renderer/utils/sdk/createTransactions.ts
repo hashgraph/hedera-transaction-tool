@@ -185,7 +185,9 @@ const setTransactionCommonData = (transaction: Transaction, data: TransactionCom
 };
 
 /* Account Create Transaction */
-export const createAccountCreateTransaction = (data: TransactionCommonData & AccountCreateData) => {
+export const createAccountCreateTransaction = (
+  data: TransactionCommonData & AccountCreateData,
+): AccountCreateTransaction => {
   const transaction = new AccountCreateTransaction()
     .setReceiverSignatureRequired(data.receiverSignatureRequired)
     .setDeclineStakingReward(data.declineStakingReward)
@@ -211,7 +213,7 @@ export const createAccountCreateTransaction = (data: TransactionCommonData & Acc
 /* Approve Allowance Transaction */
 export const createApproveHbarAllowanceTransaction = (
   data: TransactionCommonData & ApproveHbarAllowanceData,
-) => {
+): AccountAllowanceApproveTransaction => {
   const transaction = new AccountAllowanceApproveTransaction();
   setTransactionCommonData(transaction, data);
 
@@ -223,7 +225,9 @@ export const createApproveHbarAllowanceTransaction = (
 };
 
 /* Accound Delete Transaction */
-export const createAccountDeleteTransaction = (data: TransactionCommonData & AccountDeleteData) => {
+export const createAccountDeleteTransaction = (
+  data: TransactionCommonData & AccountDeleteData,
+): AccountDeleteTransaction => {
   const transaction = new AccountDeleteTransaction();
   setTransactionCommonData(transaction, data);
 
@@ -242,7 +246,7 @@ export const createAccountDeleteTransaction = (data: TransactionCommonData & Acc
 export const createAccountUpdateTransaction = (
   data: TransactionCommonData & AccountUpdateData,
   oldData: IAccountInfoParsed | null,
-) => {
+): AccountUpdateTransaction => {
   const transaction = new AccountUpdateTransaction();
   setTransactionCommonData(transaction, data);
 
@@ -294,7 +298,9 @@ export const createAccountUpdateTransaction = (
 };
 
 /* File Append Transaction */
-export const createFileAppendTransaction = (data: TransactionCommonData & FileAppendData) => {
+export const createFileAppendTransaction = (
+  data: TransactionCommonData & FileAppendData,
+): FileAppendTransaction => {
   const transaction = new FileAppendTransaction().setMaxChunks(data.maxChunks);
   setTransactionCommonData(transaction, data);
 
@@ -345,7 +351,9 @@ export const createFileCreateDataOnlyTransaction = (data: FileData) => {
 };
 
 /* File Create Transaction */
-export const createFileCreateTransaction = (data: TransactionCommonData & FileData) => {
+export const createFileCreateTransaction = (
+  data: TransactionCommonData & FileData,
+): FileCreateTransaction => {
   const transaction = new FileCreateTransaction();
   setTransactionCommonData(transaction, data);
   setFileInfo(transaction, data);
@@ -353,7 +361,9 @@ export const createFileCreateTransaction = (data: TransactionCommonData & FileDa
 };
 
 /* File Update Transaction */
-export const createFileUpdateTransaction = (data: TransactionCommonData & FileUpdateData) => {
+export const createFileUpdateTransaction = (
+  data: TransactionCommonData & FileUpdateData,
+): FileUpdateTransaction => {
   const transaction = new FileUpdateTransaction();
   setTransactionCommonData(transaction, data);
   setFileInfo(transaction, data);
@@ -366,7 +376,9 @@ export const createFileUpdateTransaction = (data: TransactionCommonData & FileUp
 };
 
 /* Freeze Transaction */
-export const createFreezeTransaction = (data: TransactionCommonData & FreezeData) => {
+export const createFreezeTransaction = (
+  data: TransactionCommonData & FreezeData,
+): FreezeTransaction => {
   const transaction = new FreezeTransaction();
   setTransactionCommonData(transaction, data);
 
@@ -409,7 +421,9 @@ export const createFreezeTransaction = (data: TransactionCommonData & FreezeData
 };
 
 /* Transfer Hbar */
-export const createTransferHbarTransaction = (data: TransactionCommonData & TransferHbarData) => {
+export const createTransferHbarTransaction = (
+  data: TransactionCommonData & TransferHbarData,
+): TransferTransaction => {
   const transaction = new TransferTransaction();
   setTransactionCommonData(transaction, data);
 
@@ -515,7 +529,9 @@ export function createNodeUpdateTransaction(data: TransactionCommonData & NodeUp
 }
 
 /* Node Delete */
-export function createNodeDeleteTransaction(data: TransactionCommonData & NodeDeleteData) {
+export function createNodeDeleteTransaction(
+  data: TransactionCommonData & NodeDeleteData,
+): NodeDeleteTransaction {
   const transaction = new NodeDeleteTransaction();
   setTransactionCommonData(transaction, data);
 
