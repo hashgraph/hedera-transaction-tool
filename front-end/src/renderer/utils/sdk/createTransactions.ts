@@ -126,15 +126,15 @@ export type NodeData = {
   gossipCaCertificate: string;
   certificateHash: string;
   adminKey: Key | null;
-}
+};
 
 export type NodeUpdateData = NodeData & {
   nodeId: string;
-}
+};
 
 export type NodeDeleteData = {
   nodeId: string;
-}
+};
 
 /* Crafts transaction id by account id and valid start */
 export const createTransactionId = (
@@ -325,7 +325,7 @@ const setFileInfo = (
   }
 };
 
-export const createFileDataTransaction = (data: FileData) => {
+export const createFileCreateDataOnlyTransaction = (data: FileData) => {
   const transaction = new FileCreateTransaction();
   setFileInfo(transaction, data);
   return transaction;
@@ -375,7 +375,7 @@ export const createFreezeTransaction = (data: TransactionCommonData & FreezeData
       transaction.setFileId(FileId.fromString(data.fileId));
     }
 
-    if (_fileHash && data.fileHash.trim().length > 0) {
+    if (_fileHash && data.fileHash.length > 0) {
       transaction.setFileHash(data.fileHash);
     }
   };
@@ -409,11 +409,10 @@ export const createTransferHbarTransaction = (data: TransactionCommonData & Tran
   return transaction;
 };
 
-/* Node Create */
-export function createNodeCreateTransaction(data: TransactionCommonData & NodeData) {
-  const transaction = new NodeCreateTransaction();
-  setTransactionCommonData(transaction, data);
-
+const setNodeData = (
+  transaction: NodeCreateTransaction | NodeUpdateTransaction,
+  data: NodeData,
+) => {
   const txGossipEndpoints = new Array<ServiceEndpoint>();
   const txServiceEndpoints = new Array<ServiceEndpoint>();
   for (const serviceEndpoint of data.gossipEndpoints) {
@@ -432,7 +431,7 @@ export function createNodeCreateTransaction(data: TransactionCommonData & NodeDa
     }
   }
 
-   for (const serviceEndpoint of data.serviceEndpoints) {
+  for (const serviceEndpoint of data.serviceEndpoints) {
     let newServiceEndpoint;
     if (serviceEndpoint.ipAddressV4 != null) {
       newServiceEndpoint = new ServiceEndpoint()
@@ -448,38 +447,44 @@ export function createNodeCreateTransaction(data: TransactionCommonData & NodeDa
     }
   }
 
-  transaction
-    .setDescription(data.description)
-    // CertHash Optional
-    .setCertificateHash(hexToUint8Array(data.certificateHash));
+  if (data.description) {
+    transaction.setDescription(data.description);
+  }
+
+  if (data.certificateHash) {
+    transaction.setCertificateHash(hexToUint8Array(data.certificateHash));
+  }
 
   if (isAccountId(data.nodeAccountId)) {
-      transaction.setAccountId(data.nodeAccountId)
+    transaction.setAccountId(data.nodeAccountId);
   }
 
-  // Hack to get this to work with create transaction refactor
-  if (txGossipEndpoints.length == 0 || txServiceEndpoints.length == 0) {
-    transaction
-      .setGossipEndpoints([new ServiceEndpoint().setPort(1).setDomainName('temp')])
-      .setServiceEndpoints([new ServiceEndpoint().setPort(1).setDomainName('temp')])
-  } else {
-    transaction.setGossipEndpoints(txGossipEndpoints).setServiceEndpoints(txServiceEndpoints);
+  if (txGossipEndpoints.length > 0) {
+    transaction.setGossipEndpoints(txGossipEndpoints);
   }
 
+  if (txServiceEndpoints.length > 0) {
+    transaction.setServiceEndpoints(txServiceEndpoints);
+  }
 
-  // Hack to get this to work with create transaction refactor
-  if (!data.gossipCaCertificate) {
-    transaction
-      .setGossipCaCertificate(hexToUint8Array('61'))
-  } else {
-    transaction.setGossipCaCertificate(hexToUint8Array(data.gossipCaCertificate))
+  if (data.gossipCaCertificate) {
+    const uint8array = hexToUint8Array(data.gossipCaCertificate);
+    if (uint8array.length > 0) {
+      transaction.setGossipCaCertificate(uint8array);
+    }
   }
 
   if (data.adminKey) {
     // Optional Admin Key
     transaction.setAdminKey(data.adminKey);
   }
+};
 
+/* Node Create */
+export function createNodeCreateTransaction(data: TransactionCommonData & NodeData) {
+  const transaction = new NodeCreateTransaction();
+  setTransactionCommonData(transaction, data);
+  setNodeData(transaction, data);
   return transaction;
 }
 
@@ -487,68 +492,10 @@ export function createNodeCreateTransaction(data: TransactionCommonData & NodeDa
 export function createNodeUpdateTransaction(data: TransactionCommonData & NodeUpdateData) {
   const transaction = new NodeUpdateTransaction();
   setTransactionCommonData(transaction, data);
-
-  const txGossipEndpoints = new Array<ServiceEndpoint>();
-  const txServiceEndpoints = new Array<ServiceEndpoint>();
-  for (const serviceEndpoint of data.gossipEndpoints) {
-    let newServiceEndpoint;
-    if (serviceEndpoint.ipAddressV4 != null) {
-      newServiceEndpoint = new ServiceEndpoint()
-        .setIpAddressV4(hexToUint8Array(stringToHex(serviceEndpoint.ipAddressV4)))
-        .setPort(Number.parseInt(serviceEndpoint.port));
-    } else if (serviceEndpoint.domainName != null) {
-      newServiceEndpoint = new ServiceEndpoint()
-        .setPort(Number.parseInt(serviceEndpoint.port))
-        .setDomainName(serviceEndpoint.domainName);
-    }
-    if (newServiceEndpoint) {
-      txGossipEndpoints.push(newServiceEndpoint);
-    }
-  }
-
-   for (const serviceEndpoint of data.serviceEndpoints) {
-    let newServiceEndpoint;
-    if (serviceEndpoint.ipAddressV4 != null) {
-      newServiceEndpoint = new ServiceEndpoint()
-        .setIpAddressV4(hexToUint8Array(stringToHex(serviceEndpoint.ipAddressV4)))
-        .setPort(Number.parseInt(serviceEndpoint.port));
-    } else if (serviceEndpoint.domainName != null) {
-      newServiceEndpoint = new ServiceEndpoint()
-        .setPort(Number.parseInt(serviceEndpoint.port))
-        .setDomainName(serviceEndpoint.domainName);
-    }
-    if (newServiceEndpoint) {
-      txServiceEndpoints.push(newServiceEndpoint);
-    }
-  }
-
-  transaction
-    .setDescription(data.description)
-    .setCertificateHash(hexToUint8Array(data.certificateHash));
+  setNodeData(transaction, data);
 
   if (data.nodeId) {
-      transaction.setNodeId(data.nodeId);
-  }
-
-  if (isAccountId(data.nodeAccountId)) {
-      transaction.setAccountId(data.nodeAccountId)
-  }
-
-  if (txGossipEndpoints.length > 0) {
-    transaction.setGossipEndpoints(txGossipEndpoints)
-  }
-
-  if (txServiceEndpoints.length > 0) {
-    transaction.setServiceEndpoints(txServiceEndpoints)
-  }
-
-  if (data.gossipCaCertificate) {
-    transaction.setGossipCaCertificate(hexToUint8Array(data.gossipCaCertificate))
-  }
-
-  if (data.adminKey) {
-    // Optional Admin Key
-    transaction.setAdminKey(data.adminKey);
+    transaction.setNodeId(data.nodeId);
   }
 
   return transaction;
@@ -557,12 +504,11 @@ export function createNodeUpdateTransaction(data: TransactionCommonData & NodeUp
 /* Node Delete */
 export function createNodeDeleteTransaction(data: TransactionCommonData & NodeDeleteData) {
   const transaction = new NodeDeleteTransaction();
+  setTransactionCommonData(transaction, data);
 
   if (data.nodeId) {
-    transaction.setNodeId(data.nodeId)
+    transaction.setNodeId(data.nodeId);
   }
-
-  setTransactionCommonData(transaction, data);
 
   return transaction;
 }
