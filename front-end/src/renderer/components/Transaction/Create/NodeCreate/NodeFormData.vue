@@ -281,7 +281,7 @@ const columnClass = 'col-4 col-xxxl-3';
       @update:model-value="
         emit('update:data', {
           ...data,
-          gossipCaCertificate: $event,
+          gossipCaCertificate: $event.startsWith('0x') ? $event.slice(2) : $event,
         })
       "
       :filled="true"
