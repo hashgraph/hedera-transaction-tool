@@ -18,7 +18,7 @@ import { nextTick } from 'vue';
 import { Prisma } from '@prisma/client';
 import { Mnemonic } from '@hashgraph/sdk';
 
-import { SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@main/shared/constants';
+import { SELECTED_NETWORK, SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@main/shared/constants';
 
 import { getUserState, healthCheck } from '@renderer/services/organization';
 import { getAccountIds, getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService';
@@ -34,7 +34,7 @@ import {
   compareDataToHashes,
   compareHash,
 } from '@renderer/services/electronUtilsService';
-import { getSelectedNetwork } from '@renderer/services/claimService';
+import { getStoredClaim } from '@renderer/services/claimService';
 
 import { safeAwait } from './safeAwait';
 
@@ -293,7 +293,7 @@ export const setupSafeNetwork = async (
   userId: string,
   setNetwork: (network: string | undefined) => Promise<void>,
 ) => {
-  const { data } = await safeAwait(getSelectedNetwork(userId));
+  const { data } = await safeAwait(getStoredClaim(userId, SELECTED_NETWORK));
   await safeAwait(setNetwork(data));
 };
 

@@ -14,7 +14,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 
-import { add, get, update } from '@renderer/services/claimService';
+import { add, getStoredClaim, update } from '@renderer/services/claimService';
 
 import { isUserLoggedIn, withLoader } from '@renderer/utils';
 
@@ -62,25 +62,12 @@ const handleMirrorNodeBaseURLChange = async (e: Event) => {
 
 const updateSelectedNetwork = async (network: Network) => {
   if (!isUserLoggedIn(user.personal)) return;
-  const selectedNetwork = await getStoredClaim(SELECTED_NETWORK);
+  const selectedNetwork = await getStoredClaim(user.personal.id, SELECTED_NETWORK);
   const addOrUpdate = selectedNetwork !== undefined ? update : add;
   await addOrUpdate(user.personal.id, SELECTED_NETWORK, network);
 };
 
 /* Functions */
-const getStoredClaim = async (claimKey: string) => {
-  if (!isUserLoggedIn(user.personal)) return;
-
-  const [claim] = await get({
-    where: {
-      user_id: user.personal.id,
-      claim_key: claimKey,
-    },
-  });
-
-  return claim;
-};
-
 const formatMirrorNodeBaseURL = (url: string) => {
   return url
     .trim()
