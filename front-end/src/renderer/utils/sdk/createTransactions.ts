@@ -17,6 +17,8 @@ import {
   NodeDeleteTransaction,
   NodeUpdateTransaction,
   ServiceEndpoint,
+  SystemDeleteTransaction,
+  SystemUndeleteTransaction,
   Timestamp,
   Transaction,
   TransactionId,
@@ -135,6 +137,17 @@ export type NodeUpdateData = NodeData & {
 export type NodeDeleteData = {
   nodeId: string;
 };
+
+export type SystemData = {
+  fileId: string;
+  contractId: string;
+};
+
+export type SystemDeleteData = SystemData & {
+  expirationTime: Date | null;
+};
+
+export type SystemUndeleteData = SystemData;
 
 /* Crafts transaction id by account id and valid start */
 export const createTransactionId = (
@@ -510,5 +523,43 @@ export function createNodeDeleteTransaction(data: TransactionCommonData & NodeDe
     transaction.setNodeId(data.nodeId);
   }
 
+  return transaction;
+}
+
+const setSystemData = (
+  transaction: SystemDeleteTransaction | SystemUndeleteTransaction,
+  data: SystemData,
+) => {
+  if (isFileId(data.fileId)) {
+    transaction.setFileId(data.fileId);
+  }
+
+  if (isAccountId(data.contractId)) {
+    transaction.setContractId(data.contractId);
+  }
+};
+
+/* System Delete */
+export function createSystemDeleteTransaction(
+  data: TransactionCommonData & SystemDeleteData,
+): SystemDeleteTransaction {
+  const transaction = new SystemDeleteTransaction();
+  setTransactionCommonData(transaction, data);
+  setSystemData(transaction, data);
+
+  if (data.expirationTime) {
+    transaction.setExpirationTime(Timestamp.fromDate(data.expirationTime));
+  }
+
+  return transaction;
+}
+
+/* System Undelete */
+export function createSystemUndeleteTransaction(
+  data: TransactionCommonData & SystemUndeleteData,
+): SystemUndeleteTransaction {
+  const transaction = new SystemUndeleteTransaction();
+  setTransactionCommonData(transaction, data);
+  setSystemData(transaction, data);
   return transaction;
 }
