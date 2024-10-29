@@ -71,14 +71,37 @@ export class Updater {
   }
 
   private static isNewerVersion(newVersion: string, currentVersion: string): boolean {
-    const currentParts = currentVersion.split('.').map(Number);
-    const newParts = newVersion.split('.').map(Number);
+    const parseVersion = (version: string) => {
+      const [main, pre] = version.split('-');
+      const mainParts = main.split('.').map(Number);
+      const preParts = pre
+        ? pre.split('.').map(part => (isNaN(Number(part)) ? part : Number(part)))
+        : [];
+      return { mainParts, preParts };
+    };
 
-    for (let i = 0; i < newParts.length; i++) {
-      if (newParts[i] > currentParts[i]) return true;
-      if (newParts[i] < currentParts[i]) return false;
-    }
+    const compareParts = (a: (number | string)[], b: (number | string)[]) => {
+      for (let i = 0; i < Math.max(a.length, b.length); i++) {
+        const aPart = a[i] !== undefined ? a[i] : 0;
+        const bPart = b[i] !== undefined ? b[i] : 0;
 
-    return false;
+        if (typeof aPart === 'number' && typeof bPart === 'number') {
+          if (aPart > bPart) return 1;
+          if (aPart < bPart) return -1;
+        } else {
+          if (String(aPart) > String(bPart)) return 1;
+          if (String(aPart) < String(bPart)) return -1;
+        }
+      }
+      return 0;
+    };
+
+    const current = parseVersion(currentVersion);
+    const latest = parseVersion(newVersion);
+
+    const mainComparison = compareParts(latest.mainParts, current.mainParts);
+    if (mainComparison !== 0) return mainComparison > 0;
+
+    return compareParts(latest.preParts, current.preParts) > 0;
   }
 }

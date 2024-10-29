@@ -154,5 +154,77 @@ files:
       const result = Updater.isNewerVersion('1.0.0', '1.0.0');
       expect(result).toBe(false);
     });
+
+    it('should return true if the new version has more parts and is newer', () => {
+      //@ts-expect-error - Testing private method
+      const result = Updater.isNewerVersion('1.0.0.1', '1.0.0');
+      expect(result).toBe(true);
+    });
+
+    it('should return false if the new version has more parts and is older', () => {
+      //@ts-expect-error - Testing private method
+      const result = Updater.isNewerVersion('1.0.0', '1.0.0.1');
+      expect(result).toBe(false);
+    });
+
+    it('should return false if the new version has fewer parts and is newer', () => {
+      //@ts-expect-error - Testing private method
+      const result = Updater.isNewerVersion('1.0', '1.0.0');
+      expect(result).toBe(false);
+    });
+
+    it('should return false if the new version has fewer parts and is older', () => {
+      //@ts-expect-error - Testing private method
+      const result = Updater.isNewerVersion('1.0.0', '1.0');
+      expect(result).toBe(false);
+    });
+
+    it('should return true if the new version has a pre-release identifier and the current version does not', () => {
+      //@ts-expect-error - Testing private method
+      const result = Updater.isNewerVersion('1.0.1-beta.1', '1.0.0');
+      expect(result).toBe(true);
+    });
+
+    it('should return false if the current version has a pre-release identifier and the new version does not', () => {
+      //@ts-expect-error - Testing private method
+      const result = Updater.isNewerVersion('1.0.0', '1.0.1-beta.1');
+      expect(result).toBe(false);
+    });
+
+    it('should return true if the new version has a higher alphanumeric pre-release identifier', () => {
+      //@ts-expect-error - Testing private method
+      const result = Updater.isNewerVersion('1.0.0-beta.2', '1.0.0-beta.1');
+      expect(result).toBe(true);
+    });
+
+    it('should return false if the new version has a lower alphanumeric pre-release identifier', () => {
+      //@ts-expect-error - Testing private method
+      const result = Updater.isNewerVersion('1.0.0-beta.1', '1.0.0-beta.2');
+      expect(result).toBe(false);
+    });
+
+    it('should return true if the new version has a higher alphanumeric identifier', () => {
+      //@ts-expect-error - Testing private method
+      const result = Updater.isNewerVersion('1.0.0-rc.1', '1.0.0-beta.2');
+      expect(result).toBe(true);
+    });
+
+    it('should return false if the new version has a lower alphanumeric identifier', () => {
+      //@ts-expect-error - Testing private method
+      const result = Updater.isNewerVersion('1.0.0-beta.2', '1.0.0-rc.1');
+      expect(result).toBe(false);
+    });
+
+    it('should return true if the new version has a higher mixed alphanumeric identifier', () => {
+      //@ts-expect-error - Testing private method
+      const result = Updater.isNewerVersion('1.0.0-beta.10', '1.0.0-beta.2');
+      expect(result).toBe(true);
+    });
+
+    it('should return false if the new version has a lower mixed alphanumeric identifier', () => {
+      //@ts-expect-error - Testing private method
+      const result = Updater.isNewerVersion('1.0.0-beta.2', '1.0.0-beta.10');
+      expect(result).toBe(false);
+    });
   });
 });
