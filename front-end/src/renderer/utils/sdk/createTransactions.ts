@@ -325,7 +325,7 @@ const setFileInfo = (
   }
 };
 
-export const createFileDataTransaction = (data: FileData) => {
+export const createFileCreateDataOnlyTransaction = (data: FileData) => {
   const transaction = new FileCreateTransaction();
   setFileInfo(transaction, data);
   return transaction;

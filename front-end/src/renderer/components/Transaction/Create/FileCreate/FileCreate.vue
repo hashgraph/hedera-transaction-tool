@@ -18,7 +18,7 @@ import { add } from '@renderer/services/filesService';
 import { isUserLoggedIn, createFileInfo, getEntityIdFromTransactionReceipt } from '@renderer/utils';
 import {
   createFileCreateTransaction,
-  createFileDataTransaction,
+  createFileCreateDataOnlyTransaction,
   getFileCreateTransactionData,
 } from '@renderer/utils/sdk';
 
@@ -78,7 +78,7 @@ const handleExecutedSuccess = async ({ receipt }: ExecutedSuccessData) => {
 
   const newFileId = getEntityIdFromTransactionReceipt(receipt, 'fileId');
 
-  const transaction = createFileDataTransaction(data);
+  const transaction = createFileCreateDataOnlyTransaction(data);
   const infoBytes = await createFileInfo({
     fileId: newFileId,
     size: transaction.contents?.length || 0,
@@ -88,8 +88,6 @@ const handleExecutedSuccess = async ({ receipt }: ExecutedSuccessData) => {
     fileMemo: transaction.fileMemo || '',
     ledgerId: network.client.ledgerId,
   });
-
-  console.log(description.value);
 
   const file: Prisma.HederaFileUncheckedCreateInput = {
     file_id: newFileId,
