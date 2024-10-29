@@ -4,6 +4,7 @@ import { ipcRenderer } from 'electron';
 export default {
   utils: {
     openExternal: (url: string) => ipcRenderer.send('utils:openExternal', url),
+    openPath: (path: string) => ipcRenderer.send('utils:openPath', path),
     hash: (data: string): Promise<string> => ipcRenderer.invoke('utils:hash', data),
     compareHash: (data: string, hash: string): Promise<boolean> =>
       ipcRenderer.invoke('utils:compareHash', data, hash),

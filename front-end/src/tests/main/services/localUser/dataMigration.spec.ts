@@ -6,7 +6,11 @@ import { app } from 'electron';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import { CommonNetwork } from '@main/shared/enums';
-import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY, SELECTED_NETWORK } from '@main/shared/constants';
+import {
+  DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
+  SELECTED_NETWORK,
+  UPDATE_LOCATION,
+} from '@main/shared/constants';
 
 import {
   locateDataMigrationFiles,
@@ -233,7 +237,8 @@ describe('Data Migration', () => {
 
     test('Should correctly migrate user', async () => {
       const mockUserId = 'userId';
-      const mockContent = 'defaultTxFee=1000\ncurrentNetwork=TESTNET';
+      const mockContent =
+        'defaultTxFee=1000\ncurrentNetwork=TESTNET\npreferredStorageDirectory=mockDir';
 
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
       mockAccounts();
@@ -250,6 +255,7 @@ describe('Data Migration', () => {
         Hbar.fromTinybars(1000).toString(HbarUnit.Tinybar),
       );
       expect(addClaim).toHaveBeenCalledWith(mockUserId, SELECTED_NETWORK, CommonNetwork.TESTNET);
+      expect(addClaim).toHaveBeenCalledWith(mockUserId, UPDATE_LOCATION, 'mockDir');
       expect(addAccount).toHaveBeenCalledWith(
         mockUserId,
         '0.0.123',
@@ -435,6 +441,22 @@ describe('Data Migration', () => {
         Hbar.fromTinybars(1000).toString(HbarUnit.Tinybar),
       );
       expect(addAccount).not.toHaveBeenCalled();
+    });
+
+    test('Should handle errors gracefully when adding update location', async () => {
+      const mockUserId = 'userId';
+      const mockContent = 'preferredStorageDirectory=mockDir';
+      vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
+      vi.mocked(addClaim).mockImplementationOnce(vi.fn());
+      vi.mocked(addClaim).mockRejectedValueOnce(new Error('Claim error'));
+
+      const result = await migrateUserData(mockUserId);
+      expect(result).toEqual({
+        accountsImported: 0,
+        defaultMaxTransactionFee: null,
+        currentNetwork: CommonNetwork.TESTNET,
+      });
+      expect(addClaim).toHaveBeenCalledWith(mockUserId, UPDATE_LOCATION, 'mockDir');
     });
   });
 

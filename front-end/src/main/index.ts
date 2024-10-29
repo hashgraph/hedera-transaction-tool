@@ -85,7 +85,7 @@ function attachAppEvents() {
 async function initMainWindow() {
   mainWindow = await restoreOrCreateWindow();
 
-  createMenu(mainWindow);
+  createMenu();
 
   mainWindow.on('closed', () => {
     mainWindow = null;

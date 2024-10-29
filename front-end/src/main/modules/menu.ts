@@ -1,8 +1,6 @@
-import { BrowserWindow, Menu, shell } from 'electron';
+import { Menu, shell } from 'electron';
 
-import updater from './updater';
-
-export default function (mainWindow: BrowserWindow) {
+export default function () {
   const isMac = process.platform === 'darwin';
 
   const template = [
@@ -13,12 +11,6 @@ export default function (mainWindow: BrowserWindow) {
             label: 'hedera-transaction-tool',
             submenu: [
               { role: 'about' },
-              {
-                label: 'Check for updates',
-                click: () => {
-                  updater(mainWindow);
-                },
-              },
               { type: 'separator' },
               { role: 'services' },
               { type: 'separator' },

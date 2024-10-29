@@ -10,7 +10,11 @@ import { AccountId, Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import { CommonNetwork } from '@main/shared/enums';
 import { MigrateUserDataResult } from '@main/shared/interfaces/migration';
-import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY, SELECTED_NETWORK } from '@main/shared/constants';
+import {
+  DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
+  SELECTED_NETWORK,
+  UPDATE_LOCATION,
+} from '@main/shared/constants';
 
 import { parseNetwork } from '@main/utils/parsers';
 
@@ -38,6 +42,7 @@ const USER_PROPERTIES = 'user.properties';
 
 const USER_PROPERTIES_DEFAULT_MAX_TRANSACTION_FEE_KEY = 'defaultTxFee';
 const USER_PROPERTIES_CURRENT_NETWORK_KEY = 'currentNetwork';
+const PREFERRED_STORAGE_DIRECTORY = 'preferredStorageDirectory';
 
 /* Get the 'HederaTools' folder in the documents directory */
 const getBasePath = () => {
@@ -221,6 +226,15 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
     try {
       result.currentNetwork = defaultNetwork;
       await addClaim(userId, SELECTED_NETWORK, defaultNetwork);
+    } catch (error) {
+      console.log(error);
+    }
+
+    try {
+      const updatesLocation = parsedContent[PREFERRED_STORAGE_DIRECTORY]?.trim();
+      if (updatesLocation) {
+        await addClaim(userId, UPDATE_LOCATION, updatesLocation);
+      }
     } catch (error) {
       console.log(error);
     }
