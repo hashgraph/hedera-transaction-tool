@@ -42,7 +42,7 @@ const USER_PROPERTIES = 'user.properties';
 
 const USER_PROPERTIES_DEFAULT_MAX_TRANSACTION_FEE_KEY = 'defaultTxFee';
 const USER_PROPERTIES_CURRENT_NETWORK_KEY = 'currentNetwork';
-const PREFERRED_STORAGE_DIRECTORY = 'preferredStorageDirectory';
+const CREDENTIALS_DIRECTORY = 'credentials';
 
 /* Get the 'HederaTools' folder in the documents directory */
 const getBasePath = () => {
@@ -231,8 +231,9 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
     }
 
     try {
-      const updatesLocation = parsedContent[PREFERRED_STORAGE_DIRECTORY]?.trim();
-      if (updatesLocation) {
+      const credentialsObj = parsedContent[CREDENTIALS_DIRECTORY];
+      if (credentialsObj && typeof credentialsObj === 'object') {
+        const updatesLocation = Object.keys(credentialsObj)[0];
         await addClaim(userId, UPDATE_LOCATION, updatesLocation);
       }
     } catch (error) {

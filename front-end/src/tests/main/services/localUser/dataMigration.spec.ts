@@ -238,7 +238,7 @@ describe('Data Migration', () => {
     test('Should correctly migrate user', async () => {
       const mockUserId = 'userId';
       const mockContent =
-        'defaultTxFee=1000\ncurrentNetwork=TESTNET\npreferredStorageDirectory=mockDir';
+        'defaultTxFee=1000\ncurrentNetwork=TESTNET\ncredentials={"mockDir": "svet"}';
 
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
       mockAccounts();
@@ -445,7 +445,7 @@ describe('Data Migration', () => {
 
     test('Should handle errors gracefully when adding update location', async () => {
       const mockUserId = 'userId';
-      const mockContent = 'preferredStorageDirectory=mockDir';
+      const mockContent = 'credentials={"mockDir": "svet"}';
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
       vi.mocked(addClaim).mockImplementationOnce(vi.fn());
       vi.mocked(addClaim).mockRejectedValueOnce(new Error('Claim error'));

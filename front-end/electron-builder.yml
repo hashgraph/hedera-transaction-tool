@@ -1,5 +1,6 @@
 appId: com.electron.app
 productName: Hedera Transaction Tool
+artifactName: ${name}-${version}-${os}-${arch}.${ext}
 protocols:
   name: Hedera Transaction Tool
   schemes:

@@ -21,7 +21,8 @@ export class Updater {
     }
 
     if (this.isNewerVersion(updateData.version, app.getVersion())) {
-      window.webContents.send('update:check-for-update-result', updateData.version);
+      const file = this.getFileForPlatform(updateData.files);
+      window.webContents.send('update:check-for-update-result', file);
     }
   }
 
@@ -103,5 +104,15 @@ export class Updater {
     if (mainComparison !== 0) return mainComparison > 0;
 
     return compareParts(latest.preParts, current.preParts) > 0;
+  }
+
+  private static getFileForPlatform(files: string[]): string | null {
+    for (const file of files) {
+      if (file.includes(process.arch)) {
+        return file;
+      }
+    }
+
+    return null;
   }
 }

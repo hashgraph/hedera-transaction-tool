@@ -21,19 +21,22 @@ const isUpdateAvailableShown = ref(false);
 
 /* Computed */
 const location = ref<string>('');
-const version = ref<string | null>(null);
+const file = ref<string | null>(null);
 
 /* Handlers */
-const handleCheckingForUpdatesResult = (newVersion: string | null) => {
-  version.value = newVersion;
+const handleCheckingForUpdatesResult = (fileForPlatform: string | null) => {
+  file.value = fileForPlatform;
 
-  if (newVersion) {
+  if (fileForPlatform) {
     isUpdateAvailableShown.value = true;
   }
 };
 
-const handleOpenUpdateLocation = () => {
+const handleCancel = () => {
   isUpdateAvailableShown.value = false;
+};
+
+const handleOpenUpdateLocation = () => {
   if (location.value) {
     openPath(location.value);
   }
@@ -67,12 +70,14 @@ watch(
         <img src="/images/icon.png" style="height: 10vh" />
       </div>
       <h2 class="text-title text-semi-bold mt-5">Update Available</h2>
-      <p class="text-small text-secondary mt-3">Version {{ version || '' }}</p>
-      <p class="text-small text-secondary mt-3">{{ location || '' }}</p>
+      <p class="text-small text-secondary mt-3">{{ file }}</p>
 
       <hr class="separator my-5" />
 
-      <AppButton type="button" color="primary" @click="handleOpenUpdateLocation">Open</AppButton>
+      <div class="d-flex gap-4">
+        <AppButton type="button" color="secondary" @click="handleCancel">Cancel</AppButton>
+        <AppButton type="button" color="primary" @click="handleOpenUpdateLocation">Open</AppButton>
+      </div>
     </div>
   </AppModal>
 </template>
