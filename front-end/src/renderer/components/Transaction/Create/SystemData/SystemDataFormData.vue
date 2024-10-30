@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { SystemData } from '@renderer/utils/sdk';
 
-import { formatAccountId } from '@renderer/utils';
+import { formatAccountId, formatContractId } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
@@ -47,7 +47,7 @@ const columnClass = 'col-4 col-xxxl-3';
         @update:model-value="
           $emit('update:data', {
             ...data,
-            contractId: formatAccountId($event),
+            contractId: formatContractId($event),
           })
         "
         :filled="true"
