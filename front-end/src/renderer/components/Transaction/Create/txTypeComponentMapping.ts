@@ -12,6 +12,7 @@ import NodeCreate from './NodeCreate';
 import NodeDelete from './NodeDelete';
 import NodeUpdate from './NodeUpdate';
 import SystemDelete from './SystemDelete';
+import SystemUndelete from './SystemUndelete';
 
 export const transactionTypeKeys = {
   createFile: 'FileCreateTransaction',
@@ -29,6 +30,7 @@ export const transactionTypeKeys = {
   nodeDelete: 'NodeDeleteTransaction',
   nodeUpdate: 'NodeUpdateTransaction',
   systemDelete: 'SystemDeleteTransaction',
+  systemUndelete: 'SystemUndeleteTransaction',
 };
 
 const txTypeComponentMapping = {
@@ -46,6 +48,7 @@ const txTypeComponentMapping = {
   [transactionTypeKeys.nodeDelete]: NodeDelete,
   [transactionTypeKeys.nodeUpdate]: NodeUpdate,
   [transactionTypeKeys.systemDelete]: SystemDelete,
+  [transactionTypeKeys.systemUndelete]: SystemUndelete,
 };
 
 export default txTypeComponentMapping;

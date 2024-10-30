@@ -56,7 +56,7 @@ const transactionGroups = computed(() => {
       groupTitle: 'System',
       items: [
         { label: 'System Delete', name: transactionTypeKeys.systemDelete },
-        // { label: 'System Undelete', name: transactionTypeKeys.systemUndelete },
+        { label: 'System Undelete', name: transactionTypeKeys.systemUndelete },
       ],
     },
     // { groupTitle: 'Token Service', items: [] },
