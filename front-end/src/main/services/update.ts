@@ -22,8 +22,6 @@ export class Updater {
 
     if (this.isNewerVersion(updateData.version, app.getVersion())) {
       const file = this.getFileForPlatform(updateData.files);
-      console.log(file);
-
       window.webContents.send('update:check-for-update-result', file);
     }
   }
