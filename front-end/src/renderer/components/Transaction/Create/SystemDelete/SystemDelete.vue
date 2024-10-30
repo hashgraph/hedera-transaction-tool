@@ -5,7 +5,7 @@ import type { SystemDeleteData } from '@renderer/utils/sdk';
 import { computed, reactive } from 'vue';
 import { Transaction } from '@hashgraph/sdk';
 
-import { isAccountId, isFileId } from '@renderer/utils';
+import { isContractId, isFileId } from '@renderer/utils';
 import { createSystemDeleteTransaction, getSystemDeleteData } from '@renderer/utils/sdk';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
@@ -28,7 +28,7 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
 });
 
 const createDisabled = computed(() => {
-  return !isFileId(data.fileId) || !isAccountId(data.contractId) || !data.expirationTime;
+  return !isFileId(data.fileId) || !isContractId(data.contractId) || !data.expirationTime;
 });
 
 /* Handlers */
@@ -46,7 +46,7 @@ const preCreateAssert = () => {
     throw new Error('Invalid File ID');
   }
 
-  if (!isAccountId(data.contractId)) {
+  if (!isContractId(data.contractId)) {
     throw new Error('Invalid Contract ID');
   }
 
