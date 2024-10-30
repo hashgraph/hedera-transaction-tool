@@ -476,7 +476,10 @@ const setNodeData = (
   }
 
   if (data.certificateHash) {
-    transaction.setCertificateHash(hexToUint8Array(data.certificateHash));
+    const uint8array = hexToUint8Array(data.certificateHash);
+    if (uint8array.length > 0) {
+      transaction.setCertificateHash(hexToUint8Array(data.certificateHash));
+    }
   }
 
   if (isAccountId(data.nodeAccountId)) {
