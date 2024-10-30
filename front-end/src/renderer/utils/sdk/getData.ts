@@ -1,7 +1,7 @@
-import type {
+import {
   SystemDeleteTransaction,
   SystemUndeleteTransaction,
-  Transaction,
+  type Transaction,
 } from '@hashgraph/sdk';
 
 import {
@@ -278,13 +278,15 @@ export function getSystemData(
   };
 }
 
-export function getSystemDeleteData(transaction: SystemDeleteTransaction): SystemDeleteData {
+export function getSystemDeleteData(transaction: Transaction): SystemDeleteData {
+  assertTransactionType(transaction, SystemDeleteTransaction);
   return {
     ...getSystemData(transaction),
     expirationTime: transaction.expirationTime?.toDate() || null,
   };
 }
 
-export function getSystemUndeleteData(transaction: SystemUndeleteTransaction): SystemUndeleteData {
+export function getSystemUndeleteData(transaction: Transaction): SystemUndeleteData {
+  assertTransactionType(transaction, SystemUndeleteTransaction);
   return getSystemData(transaction);
 }
