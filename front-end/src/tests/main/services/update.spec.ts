@@ -60,10 +60,12 @@ describe('Updater', () => {
       vi.spyOn(Updater, 'readLatestMacYml').mockResolvedValue(updateData);
       //@ts-expect-error - Testing private method
       vi.spyOn(Updater, 'verifyFiles').mockResolvedValue(true);
+      //@ts-expect-error - Testing private method
+      vi.spyOn(Updater, 'getFileForPlatform').mockImplementationOnce(() => 'artifact');
       await Updater.checkForUpdate('/path/to/location');
       expect(mockWindow.webContents.send).toHaveBeenCalledWith(
         'update:check-for-update-result',
-        '1.1.0',
+        'artifact',
       );
     });
 
@@ -225,6 +227,42 @@ files:
       //@ts-expect-error - Testing private method
       const result = Updater.isNewerVersion('1.0.0-beta.2', '1.0.0-beta.10');
       expect(result).toBe(false);
+    });
+  });
+
+  describe('getFileForPlatform', () => {
+    afterAll(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('should return the correct file for the current platform', () => {
+      const files = ['file1-x64', 'file2-arm64'];
+      const originalArch = process.arch;
+      Object.defineProperty(process, 'arch', { value: 'x64' });
+      //@ts-expect-error - Testing private method
+      const result = Updater.getFileForPlatform(files);
+      expect(result).toBe('file1-x64');
+      Object.defineProperty(process, 'arch', { value: originalArch });
+    });
+
+    it('should return null if no file matches the current platform', () => {
+      const files = ['file1-x64', 'file2-arm64'];
+      const originalArch = process.arch;
+      Object.defineProperty(process, 'arch', { value: 'ia32' });
+      //@ts-expect-error - Testing private method
+      const result = Updater.getFileForPlatform(files);
+      expect(result).toBeNull();
+      Object.defineProperty(process, 'arch', { value: originalArch });
+    });
+
+    it('should return the first matching file if multiple files match the current platform', () => {
+      const files = ['file1-x64', 'file2-x64'];
+      const originalArch = process.arch;
+      Object.defineProperty(process, 'arch', { value: 'x64' });
+      //@ts-expect-error - Testing private method
+      const result = Updater.getFileForPlatform(files);
+      expect(result).toBe('file1-x64');
+      Object.defineProperty(process, 'arch', { value: originalArch });
     });
   });
 });
