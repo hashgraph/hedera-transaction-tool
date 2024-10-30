@@ -168,6 +168,8 @@ const transactionSpecificLabel = computed(() => {
   if (type.includes('fileupdate')) return 'File Changes';
   if (type.includes('freeze')) return 'Freeze Information';
   if (type.includes('transfer')) return 'Transfer Info';
+  if (type.includes('systemdelete')) return 'System Delete Info';
+  if (type.includes('systemundelete')) return 'System Undelete Info';
 
   return 'Transaction Specific Details';
 });

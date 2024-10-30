@@ -1,4 +1,8 @@
-import type { Transaction } from '@hashgraph/sdk';
+import {
+  SystemDeleteTransaction,
+  SystemUndeleteTransaction,
+  type Transaction,
+} from '@hashgraph/sdk';
 
 import {
   AccountAllowanceApproveTransaction,
@@ -30,7 +34,11 @@ import type {
   FileUpdateData,
   FreezeData,
   NodeData,
+  NodeDeleteData,
   NodeUpdateData,
+  SystemData,
+  SystemDeleteData,
+  SystemUndeleteData,
   TransactionCommonData,
   TransferHbarData,
 } from './createTransactions';
@@ -228,8 +236,12 @@ export function getNodeData(transaction: Transaction): NodeData {
       }
     }
   }
-  const gossipCaCertificate = transaction.gossipCaCertificate ? uint8ToHex(transaction.gossipCaCertificate) : '';
-  const certificateHash = transaction.certificateHash ? uint8ToHex(transaction.certificateHash) : ''
+  const gossipCaCertificate = transaction.gossipCaCertificate
+    ? uint8ToHex(transaction.gossipCaCertificate)
+    : '';
+  const certificateHash = transaction.certificateHash
+    ? uint8ToHex(transaction.certificateHash)
+    : '';
 
   return {
     nodeAccountId: transaction.accountId?.toString() || '',
@@ -240,7 +252,7 @@ export function getNodeData(transaction: Transaction): NodeData {
     certificateHash: certificateHash,
     adminKey: transaction.adminKey,
   };
-};
+}
 
 export function getNodeUpdateData(transaction: Transaction): NodeUpdateData {
   assertTransactionType(transaction, NodeUpdateTransaction);
@@ -250,9 +262,31 @@ export function getNodeUpdateData(transaction: Transaction): NodeUpdateData {
   };
 }
 
-export function getNodeDeleteData(transaction: Transaction) {
+export function getNodeDeleteData(transaction: Transaction): NodeDeleteData {
   assertTransactionType(transaction, NodeDeleteTransaction);
   return {
-    nodeId: transaction.nodeId.toString() || ''
-  }
+    nodeId: transaction.nodeId.toString() || '',
+  };
+}
+
+export function getSystemData(
+  transaction: SystemDeleteTransaction | SystemUndeleteTransaction,
+): SystemData {
+  return {
+    fileId: transaction.fileId?.toString() || '',
+    contractId: transaction.contractId?.toString() || '',
+  };
+}
+
+export function getSystemDeleteData(transaction: Transaction): SystemDeleteData {
+  assertTransactionType(transaction, SystemDeleteTransaction);
+  return {
+    ...getSystemData(transaction),
+    expirationTime: transaction.expirationTime?.toDate() || null,
+  };
+}
+
+export function getSystemUndeleteData(transaction: Transaction): SystemUndeleteData {
+  assertTransactionType(transaction, SystemUndeleteTransaction);
+  return getSystemData(transaction);
 }
