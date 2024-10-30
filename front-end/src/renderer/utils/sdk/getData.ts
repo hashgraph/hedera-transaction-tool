@@ -1,4 +1,5 @@
 import {
+  ServiceEndpoint,
   SystemDeleteTransaction,
   SystemUndeleteTransaction,
   type Transaction,
@@ -27,7 +28,7 @@ import type {
   AccountDeleteData,
   AccountUpdateData,
   ApproveHbarAllowanceData,
-  componentServiceEndpoint,
+  ComponentServiceEndpoint,
   FileAppendData,
   FileCreateData,
   FileData,
@@ -197,6 +198,29 @@ export const getTransferHbarData = (transaction: Transaction): TransferHbarData 
   };
 };
 
+export const getEndpointData = (
+  serviceEndpoints: ServiceEndpoint[],
+): ComponentServiceEndpoint[] => {
+  const result = new Array<ComponentServiceEndpoint>();
+
+  for (const endpoint of serviceEndpoints) {
+    const ipAddressV4 =
+      endpoint.getIpAddressV4 && endpoint.getIpAddressV4.length > 0
+        ? hexToString(uint8ToHex(endpoint.getIpAddressV4))
+        : '';
+    const port = endpoint.getPort ? endpoint.getPort.toString() : '';
+    const domainName = endpoint.getDomainName || '';
+
+    result.push({
+      ipAddressV4,
+      port,
+      domainName,
+    });
+  }
+
+  return result;
+};
+
 export function getNodeData(transaction: Transaction): NodeData {
   if (
     !(transaction instanceof NodeCreateTransaction) &&
@@ -205,37 +229,9 @@ export function getNodeData(transaction: Transaction): NodeData {
     throw new Error('Invalid transaction type.');
   }
 
-  const gossipEndpoints = new Array<componentServiceEndpoint>();
-  const serviceEndpoints = new Array<componentServiceEndpoint>();
+  const gossipEndpoints = getEndpointData(transaction.gossipEndpoints || []);
+  const serviceEndpoints = getEndpointData(transaction.serviceEndpoints || []);
 
-  if (transaction.gossipEndpoints != null) {
-    for (const endpoint of transaction.gossipEndpoints) {
-      if (endpoint.getPort) {
-        gossipEndpoints.push({
-          ipAddressV4:
-            endpoint.getIpAddressV4 != null
-              ? hexToString(uint8ToHex(endpoint.getIpAddressV4))
-              : null,
-          port: endpoint.getPort?.toString(),
-          domainName: endpoint.getDomainName != null ? endpoint.getDomainName : null,
-        });
-      }
-    }
-  }
-  if (transaction.serviceEndpoints != null) {
-    for (const endpoint of transaction.serviceEndpoints) {
-      if (endpoint.getPort) {
-        serviceEndpoints.push({
-          ipAddressV4:
-            endpoint.getIpAddressV4 != null
-              ? hexToString(uint8ToHex(endpoint.getIpAddressV4))
-              : null,
-          port: endpoint.getPort?.toString(),
-          domainName: endpoint.getDomainName != null ? endpoint.getDomainName : null,
-        });
-      }
-    }
-  }
   const gossipCaCertificate = transaction.gossipCaCertificate
     ? uint8ToHex(transaction.gossipCaCertificate)
     : '';

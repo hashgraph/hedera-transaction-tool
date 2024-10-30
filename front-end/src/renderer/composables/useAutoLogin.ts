@@ -34,8 +34,18 @@ export default function useAutoLogin(
     return userId;
   };
 
+  const addLoaderTimeout = () => {
+    setTimeout(() => {
+      if (!finished.value) {
+        globalLoderRef.value?.close();
+      }
+    }, 10_000);
+  };
+
   /* Hooks */
   onMounted(async () => {
+    addLoaderTimeout();
+
     router.push({ name: 'login' });
 
     let userId: string | undefined;

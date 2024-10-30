@@ -38,11 +38,7 @@ function handleAddGossipEndpoint() {
     ...props.data,
     gossipEndpoints: [
       ...props.data.gossipEndpoints,
-      {
-        ipAddressV4: gossipIpAddressV4.value,
-        port: gossipPort.value,
-        domainName: gossipDomainName.value,
-      },
+      getEndpointData(gossipIpAddressV4.value, gossipPort.value, gossipDomainName.value),
     ],
   });
   gossipIpAddressV4.value = '';
@@ -58,11 +54,7 @@ function handleAddServiceEndpoint() {
     ...props.data,
     serviceEndpoints: [
       ...props.data.serviceEndpoints,
-      {
-        ipAddressV4: serviceIpAddressV4.value,
-        port: servicePort.value,
-        domainName: serviceDomainName.value,
-      },
+      getEndpointData(serviceIpAddressV4.value, servicePort.value, serviceDomainName.value),
     ],
   });
   serviceIpAddressV4.value = '';
@@ -71,11 +63,17 @@ function handleAddServiceEndpoint() {
 }
 
 /* Functions */
-function formatServiceIpAddress(event: Event) {
-  const target = event.target as HTMLInputElement;
-  const v = target.value;
+function getEndpointData(ipAddressV4: string, port: string, domainName: string) {
+  const domainNameTrimmed = domainName.trim();
+  return {
+    ipAddressV4,
+    port: domainNameTrimmed ? '' : port,
+    domainName: domainNameTrimmed,
+  };
+}
 
-  const octets = v.split('.');
+function formatOctets(value: string) {
+  const octets = value.split('.');
 
   const newOctets = octets.map(octet => {
     if (octet === '') {
@@ -94,47 +92,40 @@ function formatServiceIpAddress(event: Event) {
   }
 
   if (newOctets.length <= 4) {
-    serviceIpAddressV4.value = newOctets.join('.');
+    return newOctets.join('.');
+  }
+
+  return null;
+}
+
+function formatPort(value: string) {
+  return value.replace(/[^0-9]/g, '');
+}
+
+function formatServiceIpAddress(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const octets = formatOctets(target.value);
+  if (octets) {
+    serviceIpAddressV4.value = octets;
   }
 }
 
 function formatGossipIpAddress(event: Event) {
   const target = event.target as HTMLInputElement;
-  const v = target.value;
-
-  const octets = v.split('.');
-
-  const newOctets = octets.map(octet => {
-    if (octet === '') {
-      return '';
-    }
-    const n = Number.parseInt(octet);
-    if (!isNaN(n) && n >= 0 && n <= 255) {
-      return n.toString();
-    } else {
-      return n.toString().slice(0, 3);
-    }
-  });
-
-  if (newOctets.length > 4) {
-    newOctets.pop();
-  }
-
-  if (newOctets.length <= 4) {
-    gossipIpAddressV4.value = newOctets.join('.');
+  const octets = formatOctets(target.value);
+  if (octets) {
+    gossipIpAddressV4.value = octets;
   }
 }
 
 function formatGossipPort(event: Event) {
   const target = event.target as HTMLInputElement;
-  const v = target.value.replace(/[^0-9]/g, '');
-  gossipPort.value = v;
+  gossipPort.value = formatPort(target.value);
 }
 
 function formatServicePort(event: Event) {
   const target = event.target as HTMLInputElement;
-  const v = target.value.replace(/[^0-9]/g, '');
-  gossipPort.value = v;
+  servicePort.value = formatPort(target.value);
 }
 
 /* Misc */
@@ -195,8 +186,7 @@ const columnClass = 'col-4 col-xxxl-3';
     <div class="col mx-5">
       <label class="form-label">Domain Name</label>
       <AppInput
-        :model-value="gossipDomainName"
-        @update:model-value="v => (gossipDomainName = v)"
+        v-model:model-value="gossipDomainName"
         :filled="true"
         placeholder="Enter Domain Name"
       />
@@ -244,8 +234,7 @@ const columnClass = 'col-4 col-xxxl-3';
     <div class="col mx-5">
       <label class="form-label">Domain Name</label>
       <AppInput
-        :model-value="serviceDomainName"
-        @update:model-value="v => (serviceDomainName = v)"
+        v-model:model-value="serviceDomainName"
         :filled="true"
         placeholder="Enter Domain Name"
       />

@@ -114,7 +114,7 @@ export type TransferHbarData = {
   transfers: Transfer[];
 };
 
-export interface componentServiceEndpoint {
+export interface ComponentServiceEndpoint {
   ipAddressV4: string | null;
   port: string;
   domainName: string | null;
@@ -123,8 +123,8 @@ export interface componentServiceEndpoint {
 export type NodeData = {
   nodeAccountId: string;
   description: string;
-  gossipEndpoints: componentServiceEndpoint[];
-  serviceEndpoints: componentServiceEndpoint[];
+  gossipEndpoints: ComponentServiceEndpoint[];
+  serviceEndpoints: ComponentServiceEndpoint[];
   gossipCaCertificate: string;
   certificateHash: string;
   adminKey: Key | null;
@@ -436,50 +436,50 @@ export const createTransferHbarTransaction = (
   return transaction;
 };
 
+const getServiceEndpoints = (data: ComponentServiceEndpoint[]) => {
+  const endpoints = new Array<ServiceEndpoint>();
+
+  for (const serviceEndpoint of data) {
+    const ipAddressV4 = serviceEndpoint.ipAddressV4?.trim();
+    const port = Number.parseInt(serviceEndpoint.port?.trim());
+    const domainName = serviceEndpoint.domainName?.trim();
+
+    if (ipAddressV4 || domainName) {
+      const serviceEndpoint = new ServiceEndpoint();
+
+      if (ipAddressV4) {
+        serviceEndpoint.setIpAddressV4(hexToUint8Array(stringToHex(ipAddressV4)));
+      } else if (domainName) {
+        serviceEndpoint.setDomainName(domainName);
+      }
+
+      if (!isNaN(port)) {
+        serviceEndpoint.setPort(port);
+      }
+
+      endpoints.push(serviceEndpoint);
+    }
+  }
+
+  return endpoints;
+};
+
 const setNodeData = (
   transaction: NodeCreateTransaction | NodeUpdateTransaction,
   data: NodeData,
 ) => {
-  const txGossipEndpoints = new Array<ServiceEndpoint>();
-  const txServiceEndpoints = new Array<ServiceEndpoint>();
-  for (const serviceEndpoint of data.gossipEndpoints) {
-    let newServiceEndpoint;
-    if (serviceEndpoint.ipAddressV4 != null) {
-      newServiceEndpoint = new ServiceEndpoint()
-        .setIpAddressV4(hexToUint8Array(stringToHex(serviceEndpoint.ipAddressV4)))
-        .setPort(Number.parseInt(serviceEndpoint.port));
-    } else if (serviceEndpoint.domainName != null) {
-      newServiceEndpoint = new ServiceEndpoint()
-        .setPort(Number.parseInt(serviceEndpoint.port))
-        .setDomainName(serviceEndpoint.domainName);
-    }
-    if (newServiceEndpoint) {
-      txGossipEndpoints.push(newServiceEndpoint);
-    }
-  }
-
-  for (const serviceEndpoint of data.serviceEndpoints) {
-    let newServiceEndpoint;
-    if (serviceEndpoint.ipAddressV4 != null) {
-      newServiceEndpoint = new ServiceEndpoint()
-        .setIpAddressV4(hexToUint8Array(stringToHex(serviceEndpoint.ipAddressV4)))
-        .setPort(Number.parseInt(serviceEndpoint.port));
-    } else if (serviceEndpoint.domainName != null) {
-      newServiceEndpoint = new ServiceEndpoint()
-        .setPort(Number.parseInt(serviceEndpoint.port))
-        .setDomainName(serviceEndpoint.domainName);
-    }
-    if (newServiceEndpoint) {
-      txServiceEndpoints.push(newServiceEndpoint);
-    }
-  }
+  const txGossipEndpoints = getServiceEndpoints(data.gossipEndpoints);
+  const txServiceEndpoints = getServiceEndpoints(data.serviceEndpoints);
 
   if (data.description) {
     transaction.setDescription(data.description);
   }
 
   if (data.certificateHash) {
-    transaction.setCertificateHash(hexToUint8Array(data.certificateHash));
+    const uint8array = hexToUint8Array(data.certificateHash);
+    if (uint8array.length > 0) {
+      transaction.setCertificateHash(hexToUint8Array(data.certificateHash));
+    }
   }
 
   if (isAccountId(data.nodeAccountId)) {

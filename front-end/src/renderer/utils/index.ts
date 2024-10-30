@@ -108,11 +108,16 @@ export const withLoader = (
   toast: ToastPluginApi,
   loaderRef: InstanceType<typeof GlobalModalLoader> | null | undefined,
   defaultErrorMessage = 'Failed to perform operation',
+  timeout = 10000, // default timeout of 10 seconds
 ) => {
   return async (...args: any[]) => {
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Operation timed out')), timeout),
+    );
+
     try {
       loaderRef?.open();
-      return await fn(...args);
+      return await Promise.race([fn(...args), timeoutPromise]);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : defaultErrorMessage);
     } finally {
