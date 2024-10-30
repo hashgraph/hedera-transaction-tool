@@ -11,6 +11,7 @@ import TransferHbar from './TransferHbar';
 import NodeCreate from './NodeCreate';
 import NodeDelete from './NodeDelete';
 import NodeUpdate from './NodeUpdate';
+import SystemDelete from './SystemDelete';
 
 export const transactionTypeKeys = {
   createFile: 'FileCreateTransaction',
@@ -26,7 +27,8 @@ export const transactionTypeKeys = {
   freeze: 'FreezeTransaction',
   nodeCreate: 'NodeCreateTransaction',
   nodeDelete: 'NodeDeleteTransaction',
-  nodeUpdate: 'NodeUpdateTransaction'
+  nodeUpdate: 'NodeUpdateTransaction',
+  systemDelete: 'SystemDeleteTransaction',
 };
 
 const txTypeComponentMapping = {
@@ -42,7 +44,8 @@ const txTypeComponentMapping = {
   [transactionTypeKeys.freeze]: Freeze,
   [transactionTypeKeys.nodeCreate]: NodeCreate,
   [transactionTypeKeys.nodeDelete]: NodeDelete,
-  [transactionTypeKeys.nodeUpdate]: NodeUpdate
+  [transactionTypeKeys.nodeUpdate]: NodeUpdate,
+  [transactionTypeKeys.systemDelete]: SystemDelete,
 };
 
 export default txTypeComponentMapping;
