@@ -29,7 +29,7 @@ import {
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 import type { IAccountInfoParsed } from '@main/shared/interfaces';
 
-import { isAccountId, isFileId } from '../validator';
+import { isAccountId, isContractId, isFileId } from '../validator';
 import { compareKeys } from '.';
 import { hexToUint8Array, stringToHex } from '..';
 
@@ -550,7 +550,7 @@ const setSystemData = (
     transaction.setFileId(data.fileId);
   }
 
-  if (isAccountId(data.contractId)) {
+  if (isContractId(data.contractId)) {
     transaction.setContractId(data.contractId);
   }
 };

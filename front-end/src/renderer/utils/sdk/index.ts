@@ -4,6 +4,7 @@ import type { ITransactionApprover } from '@main/shared/interfaces/organization/
 import {
   AccountId,
   Client,
+  ContractId,
   FileId,
   FileInfo,
   Hbar,
@@ -22,7 +23,7 @@ import { proto } from '@hashgraph/proto';
 
 import { getNetworkNodes } from '@renderer/services/mirrorNodeDataService';
 
-import { uint8ToHex, hexToUint8Array } from '..';
+import { uint8ToHex, hexToUint8Array, isContractId } from '..';
 import { getNodeAddressBook } from '@renderer/services/sdkService';
 
 export * from './createTransactions';
@@ -366,6 +367,14 @@ export const formatAccountId = (accountId: string) => {
   }
 
   return `${shard || ''}.${realm || ''}.${account || ''}`;
+};
+
+export const formatContractId = (contractId: string) => {
+  if (isContractId(contractId)) {
+    return ContractId.fromString(contractId).toString();
+  } else {
+    return contractId;
+  }
 };
 
 export const getClientFromMirrorNode = async (mirrorNetwork: string) => {
