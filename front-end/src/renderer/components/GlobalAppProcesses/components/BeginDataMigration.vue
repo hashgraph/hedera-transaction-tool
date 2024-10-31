@@ -75,7 +75,7 @@ defineExpose({ initialize });
       </div>
       <div class="flex-between-centered gap-4 mt-5">
         <AppButton
-          color="borderless"
+          color="secondary"
           @click="handleChoose(false)"
           data-testid="button-refuse-migration"
           >No</AppButton
