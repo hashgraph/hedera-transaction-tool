@@ -167,11 +167,4 @@ export class SignersService {
 
     return signers;
   }
-
-  /* Remove the signature for the given id */
-  async removeSignature(id: number): Promise<boolean> {
-    await this.repo.softDelete(id);
-
-    return true;
-  }
 }
