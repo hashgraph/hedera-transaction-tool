@@ -151,4 +151,3 @@ automation/playwright-report/
 automation/blob-report/
 automation/playwright/.cache/
 automation/.env
-automation/data/*.bin
