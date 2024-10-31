@@ -56,7 +56,6 @@ const useNetworkStore = defineStore('network', () => {
     mirrorNodeBaseURL.value = getMirrorNodeREST(newNetwork);
     network.value = newNetwork;
     exchangeRateSet.value = await getExchangeRateSet(mirrorNodeBaseURL.value);
-    console.log(exchangeRateSet.value);
 
     nodeNumbers.value = await getNodeNumbersFromNetwork(mirrorNodeBaseURL.value);
   }
