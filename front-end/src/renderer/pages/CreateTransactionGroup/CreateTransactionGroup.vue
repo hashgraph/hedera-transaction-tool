@@ -46,7 +46,7 @@ useSetDynamicLayout({
 });
 
 /* State */
-const groupName = ref('');
+const groupDescription = ref('');
 const isTransactionSelectionModalShown = ref(false);
 const transactionGroupProcessor = ref<typeof TransactionGroupProcessor | null>(null);
 const file = ref<HTMLInputElement | null>(null);
@@ -70,18 +70,18 @@ async function handleSaveGroup() {
     isSaveGroupModalShown.value = false;
   }
 
-  if (groupName.value.trim() === '') {
-    toast.error('Please enter a group name', { position: 'bottom-right' });
+  if (groupDescription.value.trim() === '') {
+    toast.error('Please enter a group description', { position: 'bottom-right' });
     return;
   }
 
-  await transactionGroup.saveGroup(user.personal.id, groupName.value);
+  await transactionGroup.saveGroup(user.personal.id, groupDescription.value);
   transactionGroup.clearGroup();
   router.push('transactions');
 }
 
-function nameUpdated() {
-  transactionGroup.description = groupName.value;
+function descriptionUpdated() {
+  transactionGroup.description = groupDescription.value;
   transactionGroup.setModified();
 }
 
@@ -160,8 +160,8 @@ const handleLoadGroup = async () => {
 };
 
 async function handleSignSubmit() {
-  if (groupName.value.trim() === '') {
-    toast.error('Group Name Required', { position: 'bottom-right' });
+  if (groupDescription.value.trim() === '') {
+    toast.error('Group Description Required', { position: 'bottom-right' });
     return;
   }
 
@@ -300,7 +300,7 @@ async function handleOnFileChanged(e: Event) {
 /* Hooks */
 onMounted(async () => {
   await handleLoadGroup();
-  groupName.value = transactionGroup.description;
+  groupDescription.value = transactionGroup.description;
 });
 
 // onBeforeRouteLeave(async to => {
@@ -347,13 +347,13 @@ onBeforeRouteLeave(async to => {
         <div class="d-flex justify-content-between">
           <div class="form-group col">
             <label class="form-label"
-              >Transaction Group Name <span class="text-danger">*</span></label
+              >Transaction Group Description <span class="text-danger">*</span></label
             >
             <AppInput
-              v-model="groupName"
-              @update:modelValue="nameUpdated"
+              v-model="groupDescription"
+              @update:modelValue="descriptionUpdated"
               filled
-              placeholder="Enter Name"
+              placeholder="Enter Description"
             />
           </div>
           <div class="mt-4 align-self-end">
