@@ -310,8 +310,6 @@ export const createFileAppendTransaction = (
 
   if (data.contents) {
     transaction.setContents(data.contents);
-  } else {
-    transaction.setContents(new Uint8Array());
   }
 
   if (typeof data.chunkSize === 'number') {

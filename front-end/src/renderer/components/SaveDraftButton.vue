@@ -92,14 +92,14 @@ async function sendAddDraft(userId: string, transactionBytes: Uint8Array) {
 }
 
 function getTransactionBytes() {
-  //TODO: Think of better way to remove the content
   if (!props.getTransaction) return;
   const transaction = props.getTransaction();
   if (
     transaction instanceof FileUpdateTransaction ||
     transaction instanceof FileAppendTransaction
   ) {
-    transaction.setContents(new Uint8Array());
+    //@ts-expect-error - contents should be null
+    transaction.setContents(null);
   }
   return transaction.toBytes();
 }
