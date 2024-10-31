@@ -33,7 +33,8 @@ import { Endpoint } from '../utils/httpUtils';
 import {
   createAccount,
   createTransactionId,
-  getSignatures,
+  formatSignatureMap,
+  getSignatureMapForPublicKeys,
   localnet1002,
   localnet1003,
   localnet2,
@@ -643,13 +644,16 @@ describe('Transactions (e2e)', () => {
 
       /* Sign transaction (ADMIN) */
       const sdkTransaction = AccountUpdateTransaction.fromBytes(transaction.transactionBytes);
-      const signatures = getSignatures(localnet1002.privateKey, sdkTransaction);
+      await sdkTransaction.sign(localnet1002.privateKey);
+      const signatureMap = getSignatureMapForPublicKeys(
+        [localnet1002.publicKeyRaw],
+        sdkTransaction,
+      );
 
       await transactionsEndpoint
         .post(
           {
-            publicKeyId: adminKey1002.id,
-            signatures,
+            signatureMap: formatSignatureMap(signatureMap),
           },
           `/${transaction.id}/signers`,
           adminAuthToken,
@@ -801,13 +805,16 @@ describe('Transactions (e2e)', () => {
 
       /* Sign transaction (ADMIN) */
       const sdkTransaction = AccountUpdateTransaction.fromBytes(transaction.transactionBytes);
-      const signatures = getSignatures(localnet1002.privateKey, sdkTransaction);
+      await sdkTransaction.sign(localnet1002.privateKey);
+      const signatureMap = getSignatureMapForPublicKeys(
+        [localnet1002.publicKeyRaw],
+        sdkTransaction,
+      );
 
       await endpoint
         .post(
           {
-            publicKeyId: adminKey1002.id,
-            signatures,
+            signatureMap: formatSignatureMap(signatureMap),
           },
           `/${transaction.id}/signers`,
           adminAuthToken,
