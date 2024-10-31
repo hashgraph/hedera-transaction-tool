@@ -100,19 +100,23 @@ export const validateSignature = (transaction: SDKTransaction, signatureMap: Sig
   for (const [nodeAccountId, transactionIds] of signatureMap._map) {
     for (const [transactionId, publicKeys] of transactionIds._map) {
       for (const [publicKeyDer, signature] of publicKeys._map) {
-        const alreadySigned = transaction._signerPublicKeys.has(publicKeyDer);
+        const publicKey = PublicKey.fromString(publicKeyDer);
+        const publicKeyHex = publicKey.toStringRaw();
+
+        const alreadySigned =
+          transaction._signerPublicKeys.has(publicKeyHex) ||
+          transaction._signerPublicKeys.has(publicKeyDer);
 
         if (!alreadySigned) {
           const row = nodeAccountIdRow[nodeAccountId];
           const col = transactionIdCol[transactionId];
 
           const bodyBytes = transaction._signedTransactions.get(col * rowLength + row).bodyBytes;
-          const publicKey = PublicKey.fromString(publicKeyDer);
 
           const signatureValid = publicKey.verify(bodyBytes, signature);
 
           if (signatureValid) {
-            signerPublicKeys.push(publicKey.toStringRaw());
+            signerPublicKeys.push(publicKeyHex);
           } else {
             throw new Error('Invalid signature');
           }
