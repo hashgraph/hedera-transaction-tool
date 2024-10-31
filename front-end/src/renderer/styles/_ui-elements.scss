@@ -583,6 +583,14 @@
     padding: 16px;
   }
 
+  thead {
+    &.thin {
+      th {
+        padding: 6px 12px;
+      }
+    }
+  }
+
   tbody {
     tr.highlight {
       td {
@@ -623,6 +631,12 @@
         @media (prefers-color-scheme: light) {
           background-color: rgba($light-blue-300, 0.5);
         }
+      }
+    }
+
+    &.thin {
+      td {
+        padding: 8px 16px;
       }
     }
   }
