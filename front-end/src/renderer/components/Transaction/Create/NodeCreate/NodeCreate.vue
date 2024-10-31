@@ -97,7 +97,7 @@ const preCreateAssert = () => {
     @draft-loaded="handleDraftLoaded"
   >
     <template #default>
-      <NodeFormData :data="data as NodeData" @update:data="handleUpdateData" />
+      <NodeFormData :data="data as NodeData" @update:data="handleUpdateData" required />
     </template>
   </BaseTransaction>
 </template>

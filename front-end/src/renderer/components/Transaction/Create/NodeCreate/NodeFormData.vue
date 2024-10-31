@@ -13,6 +13,7 @@ import KeyField from '@renderer/components/KeyField.vue';
 /* Props */
 const props = defineProps<{
   data: NodeData;
+  required?: boolean;
 }>();
 
 /* State */
@@ -63,14 +64,11 @@ function handleAddServiceEndpoint() {
 }
 
 /* Functions */
-function getEndpointData(ipAddressV4: string, port: string, domainName: string) {
-  const domainNameTrimmed = domainName.trim();
-  return {
-    ipAddressV4,
-    port: domainNameTrimmed ? '' : port,
-    domainName: domainNameTrimmed,
-  };
-}
+const getEndpointData = (ipAddressV4: string, port: string, domainName: string) => ({
+  ipAddressV4,
+  port,
+  domainName: domainName.trim(),
+});
 
 function formatOctets(value: string) {
   const octets = value.split('.');
@@ -133,7 +131,9 @@ const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
   <div class="form-group mt-6" :class="[columnClass]">
-    <label class="form-label">Node Account ID <span class="text-danger">*</span></label>
+    <label class="form-label"
+      >Node Account ID <span v-if="required" class="text-danger">*</span></label
+    >
     <AppInput
       :model-value="data.nodeAccountId?.toString()"
       @update:model-value="
@@ -163,7 +163,9 @@ const columnClass = 'col-4 col-xxxl-3';
 
   <hr class="separator my-5" />
 
-  <label class="form-label">Gossip Endpoints <span class="text-danger">*</span></label>
+  <label class="form-label"
+    >Gossip Endpoints <span v-if="required" class="text-danger">*</span></label
+  >
   <div class="d-flex">
     <div class="col">
       <label class="form-label">IP Address</label>
@@ -211,7 +213,9 @@ const columnClass = 'col-4 col-xxxl-3';
 
   <hr class="separator my-5" />
 
-  <label class="form-label">Service Endpoints <span class="text-danger">*</span></label>
+  <label class="form-label"
+    >Service Endpoints <span v-if="required" class="text-danger">*</span></label
+  >
   <div class="d-flex">
     <div class="col">
       <label class="form-label">IP Address</label>
@@ -264,7 +268,9 @@ const columnClass = 'col-4 col-xxxl-3';
   <hr class="separator my-5" />
 
   <div class="form-group" :class="[columnClass]">
-    <label class="form-label">Gossip CA Certificate <span class="text-danger">*</span></label>
+    <label class="form-label"
+      >Gossip CA Certificate <span v-if="required" class="text-danger">*</span></label
+    >
     <AppInput
       :model-value="data.gossipCaCertificate"
       @update:model-value="
@@ -305,7 +311,7 @@ const columnClass = 'col-4 col-xxxl-3';
           adminKey: $event,
         })
       "
-      is-required
+      :is-required="required"
     />
   </div>
 </template>
