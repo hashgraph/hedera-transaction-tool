@@ -92,7 +92,7 @@ const getSignedTransactionsDimensions = (transaction: SDKTransaction) => {
 };
 
 export const validateSignature = (transaction: SDKTransaction, signatureMap: SignatureMap) => {
-  const signerPublicKeys: string[] = [];
+  const signerPublicKeys: PublicKey[] = [];
 
   const { rowLength, nodeAccountIdRow, transactionIdCol } =
     getSignedTransactionsDimensions(transaction);
@@ -116,7 +116,7 @@ export const validateSignature = (transaction: SDKTransaction, signatureMap: Sig
           const signatureValid = publicKey.verify(bodyBytes, signature);
 
           if (signatureValid) {
-            signerPublicKeys.push(publicKeyHex);
+            signerPublicKeys.push(publicKey);
           } else {
             throw new Error('Invalid signature');
           }
