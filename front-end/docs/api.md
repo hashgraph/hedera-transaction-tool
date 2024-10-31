@@ -38,6 +38,8 @@ Make sure to retain this access token for furture requests.
 
 Using the SDK, create desired transaction and encode it into a hex string.
 
+Do not freeze the transaction prior to encoding.
+
 To encode Transaction Bytes into a hex string, this function can be used:
 
 ```
@@ -185,8 +187,24 @@ content-type: application/json
 
 {
   "approversArray": [{
-    "userId":1,
-    "approverType":"Single"
+      "listId": 1;
+      "threshold": 1;
+      "approvers": [
+        "userId": 1;
+      ]
   }]
+}
+```
+
+### Adding Observers
+Observers Request (replace "accessTokenHere" with your access token):
+
+```
+POST http://example.com/transactions/1/observers
+Authorization: Bearer accessTokenHere
+content-type: application/json
+
+{
+  "userIds": [1, 2]
 }
 ```
