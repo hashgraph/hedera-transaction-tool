@@ -65,7 +65,7 @@ export default function useAutoLogin(
       }
 
       if (!userId) {
-        await user.logout();
+        user.logout();
       }
     } finally {
       finished.value = true;

@@ -24,12 +24,16 @@ export const remove = async (userId: string, claimKeys: string[]) =>
     return await window.electronAPI.local.claim.remove(userId, claimKeys);
   }, 'Failed to remove claim');
 
-export const getStoredClaim = async (userId: string, key: string): Promise<string | undefined> => {
+export const getStoredClaim = async (
+  userId: string | undefined,
+  key: string,
+): Promise<string | undefined> => {
+  const where: Prisma.ClaimWhereInput = { claim_key: key };
+  if (userId) {
+    where['user_id'] = userId;
+  }
   const [claim] = await get({
-    where: {
-      user_id: userId,
-      claim_key: key,
-    },
+    where,
   });
 
   return claim?.claim_value;

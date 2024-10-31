@@ -5,6 +5,8 @@ import type { PersonalUser } from './components/SetupPersonal.vue';
 
 import { computed, onMounted, ref } from 'vue';
 
+import { MIGRATION_STARTED } from '@main/shared/constants';
+
 import useUserStore from '@renderer/stores/storeUser';
 
 import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
@@ -12,6 +14,9 @@ import { useRouter } from 'vue-router';
 
 import { resetDataLocal } from '@renderer/services/userService';
 import { getStaticUser } from '@renderer/services/safeStorageService';
+import { add, remove } from '@renderer/services/claimService';
+
+import { safeAwait } from '@renderer/utils';
 
 import DecryptRecoveryPhrase from './components/DecryptRecoveryPhrase.vue';
 import SetupPersonal from './components/SetupPersonal.vue';
@@ -65,8 +70,9 @@ const heading = computed(() => {
 /* Handlers */
 const handleStopMigration = async () => {
   user.setMigrating(false);
+  await resetDataLocal();
+  user.logout();
   router.push({ name: 'login' });
-  await user.logout();
 };
 
 const handleSetRecoveryPhrase = async (value: {
@@ -80,6 +86,7 @@ const handleSetRecoveryPhrase = async (value: {
 
 const handleSetPersonalUser = async (value: PersonalUser) => {
   personalUser.value = value;
+  await toggleMigrationClaim(personalUser.value.personalId, true);
   step.value = 'organization';
 };
 
@@ -90,6 +97,8 @@ const handleSetOrganizationId = async (value: string) => {
 };
 
 const handleKeysImported = async (value: number) => {
+  if (!personalUser.value) throw new Error('(BUG) Personal User not set');
+  await toggleMigrationClaim(personalUser.value.personalId, false);
   keysImported.value = value;
   step.value = 'summary';
 };
@@ -111,6 +120,14 @@ const initializeUserStore = async () => {
   await user.selectOrganization(user.organizations[0]);
   await user.setRecoveryPhrase(recoveryPhrase.value.words);
   personalUser.value.password && user.setPassword(personalUser.value.password);
+};
+
+const toggleMigrationClaim = async (userId: string, start = false) => {
+  if (start) {
+    await safeAwait(add(userId, MIGRATION_STARTED, 'true'));
+  } else {
+    await safeAwait(remove(userId, [MIGRATION_STARTED]));
+  }
 };
 
 /* Hooks */
@@ -138,6 +155,7 @@ onMounted(async () => {
           <SetupPersonal
             :recovery-phrase="recoveryPhrase"
             @set-personal-user="handleSetPersonalUser"
+            @migration:cancel="handleStopMigration"
           />
         </template>
 
@@ -149,6 +167,7 @@ onMounted(async () => {
             :recovery-phrase="recoveryPhrase"
             :personal-user="personalUser"
             @set-organization-id="handleSetOrganizationId"
+            @migration:cancel="handleStopMigration"
           />
 
           <template v-if="userInitialized">

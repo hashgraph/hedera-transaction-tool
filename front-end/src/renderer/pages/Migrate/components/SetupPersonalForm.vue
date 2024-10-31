@@ -32,6 +32,7 @@ defineProps<{
 /* Emits */
 const emit = defineEmits<{
   (event: 'submit', value: ModelValue): void;
+  (event: 'migration:cancel'): void;
 }>();
 
 /* State */
@@ -80,6 +81,8 @@ const handleOnFormSubmit = async (e: Event) => {
         },
   );
 };
+
+const handleCancel = () => emit('migration:cancel');
 
 const handleUseKeychain = async (value: boolean) => {
   if (useKeychain.value === value) return;
@@ -234,7 +237,16 @@ watch(inputPassword, pass => {
     </div>
 
     <!-- Submit -->
-    <div class="d-flex justify-content-end align-items-end mt-5">
+    <div class="d-flex justify-content-between align-items-end mt-5">
+      <div>
+        <AppButton
+          color="secondary"
+          type="button"
+          data-testid="button-migration-cancel"
+          @click="handleCancel"
+          >Cancel</AppButton
+        >
+      </div>
       <div>
         <AppButton
           color="primary"

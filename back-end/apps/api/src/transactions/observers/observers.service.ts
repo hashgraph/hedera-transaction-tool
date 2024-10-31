@@ -42,7 +42,7 @@ export class ObserversService {
 
     if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
-    if (transaction.creatorKey?.user?.id !== user.id)
+    if (transaction.creatorKey?.userId !== user.id)
       throw new UnauthorizedException('Only the creator of the transaction is able to delete it');
 
     const observers: TransactionObserver[] = [];
@@ -153,7 +153,7 @@ export class ObserversService {
 
     if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
-    if (transaction.creatorKey?.user?.id !== user.id)
+    if (transaction.creatorKey?.userId !== user.id)
       throw new UnauthorizedException('Only the creator of the transaction is able to update it');
 
     return observer;

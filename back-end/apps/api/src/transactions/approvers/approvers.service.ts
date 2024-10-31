@@ -136,7 +136,7 @@ export class ApproversService {
 
     if (
       userKeysToSign.length === 0 &&
-      transaction.creatorKey?.user?.id !== user.id &&
+      transaction.creatorKey?.userId !== user.id &&
       !transaction.observers.some(o => o.userId === user.id) &&
       !transaction.signers.some(s => s.userKey.userId === user.id) &&
       !approvers.some(a => a.userId === user.id)
@@ -631,7 +631,7 @@ export class ApproversService {
 
     if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
-    if (transaction.creatorKey?.user?.id !== user.id)
+    if (transaction.creatorKey?.userId !== user.id)
       throw new UnauthorizedException('Only the creator of the transaction is able to modify it');
 
     return transaction;
