@@ -99,7 +99,6 @@ const handleResetData = async () => {
   await resetDataLocal();
   toast.success('User data has been reset', { position: 'bottom-right' });
   user.logout();
-  user.setRecoveryPhrase(null);
   router.push({ name: 'login' });
 };
 </script>

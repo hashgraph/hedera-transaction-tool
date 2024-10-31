@@ -18,13 +18,14 @@ const show = ref(false);
 /* Emits */
 const emit = defineEmits<{
   (event: 'ready'): void;
-  (event: 'startMigrate'): void;
+  (event: 'ready:not'): void;
+  (event: 'migrate:start'): void;
 }>();
 
 /* Handlers */
 const handleChoose = (migrate: boolean) => {
   if (migrate) {
-    emit('startMigrate');
+    emit('migrate:start');
     router.push({ name: 'migrate' });
   }
 
@@ -46,6 +47,7 @@ const checkShouldChoose = async () => {
 
 const initialize = async () => {
   show.value = await checkShouldChoose();
+  if (show.value) emit('ready:not');
   if (!show.value) emit('ready');
 };
 

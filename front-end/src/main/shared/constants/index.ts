@@ -16,6 +16,7 @@ export const DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY = 'default_max_transaction_fe
 export const SELECTED_NETWORK = 'selected_network';
 export const USE_KEYCHAIN = 'use_keychain';
 export const UPDATE_LOCATION = 'update_location';
+export const MIGRATION_STARTED = 'migration_started';
 
 /* Transaction tabs */
 export const draftsTitle = 'Drafts';
