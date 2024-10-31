@@ -12,7 +12,7 @@ import {
   KeyList,
   LedgerId,
   Long,
-  // NodeAddressBook,
+  NodeAddressBook,
   PrivateKey,
   PublicKey,
   SignatureMap,
@@ -375,10 +375,11 @@ export const getClientFromMirrorNode = async (mirrorNetwork: string) => {
     }
   });
 
-  // const nodeAddressBook = NodeAddressBook._fromProtobuf(nodeAddressBookProto);
+  const nodeAddressBook = NodeAddressBook._fromProtobuf(nodeAddressBookProto);
 
-  const client = Client.forNetwork({}).setMirrorNetwork(mirrorNodeGRPC);
-  // .setNetworkFromAddressBook(nodeAddressBook);
+  const client = Client.forNetwork({})
+    .setMirrorNetwork(mirrorNodeGRPC)
+    .setNetworkFromAddressBook(nodeAddressBook);
 
   return client;
 };
