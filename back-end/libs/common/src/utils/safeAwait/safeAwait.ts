@@ -50,7 +50,7 @@ export const safeAwaitAll = async <T extends unknown[]>(
     await finallyFunc?.();
   }
 };
-export const safe = async <T>(callback: () => T): Promise<ISafeResult<T>> => {
+export const safe = <T>(callback: () => T): ISafeResult<T> => {
   try {
     const data = callback();
     if (data instanceof Error) {

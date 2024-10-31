@@ -117,7 +117,7 @@ export class SignersService {
       throw new BadRequestException(ErrorCodes.TC); //TO DO Move in guard
 
     /* Validates the signatures */
-    const { data: publicKeys, error } = await safe<PublicKey[]>(
+    const { data: publicKeys, error } = safe<PublicKey[]>(
       validateSignature.bind(this, sdkTransaction, signatureMap),
     );
     if (error) throw new BadRequestException(ErrorCodes.ISNMPN);
@@ -138,10 +138,13 @@ export class SignersService {
 
     const signers: TransactionSigner[] = [];
     try {
-      Object.assign(transaction, {
-        transactionBytes: sdkTransaction.toBytes(),
-      });
-      await this.dataSource.manager.save(Transaction, transaction);
+      await this.dataSource.manager.update(
+        Transaction,
+        { id: transactionId },
+        {
+          transactionBytes: sdkTransaction.toBytes(),
+        },
+      );
 
       for (const userKey of userKeys) {
         const signer = this.repo.create({

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 import { EntityManager } from 'typeorm';
+import { SignatureMap } from '@hashgraph/sdk';
 
 import { BlacklistService, guardMock } from '@app/common';
 import { TransactionSigner, User, UserStatus } from '@entities';
@@ -93,30 +94,16 @@ describe('SignaturesController', () => {
     });
   });
 
-  describe('uploadSignature', () => {
-    it('should return an array of signatures', async () => {
-      const result = signer;
-      const body = {
-        publicKeyId: 1,
-        signatures: { '0.0.3': Buffer.from('signature') },
-      };
-
-      signersService.uploadSignature.mockResolvedValue(result);
-
-      expect(await controller.uploadSignature(1, body, user)).toEqual(result);
-    });
-  });
-
-  describe('uploadSignatures', () => {
+  describe('uploadSignatureMap', () => {
     it('should return an array of signatures', async () => {
       const result = [signer];
       const body = {
-        signatures: [{ publicKeyId: 1, signatures: { '0.0.3': Buffer.from('signature') } }],
+        signatureMap: new SignatureMap(),
       };
 
-      signersService.uploadSignatures.mockResolvedValue(result);
+      signersService.uploadSignatureMap.mockResolvedValue(result);
 
-      expect(await controller.uploadSignatures(1, body, user)).toEqual(result);
+      expect(await controller.uploadSignatureMap(1, body, user)).toEqual(result);
     });
   });
 });
