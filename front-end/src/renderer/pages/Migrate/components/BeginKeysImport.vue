@@ -42,6 +42,7 @@ const decryptKeysRef = ref<InstanceType<typeof DecryptKeys> | null>(null);
 /* Handlers */
 const handleEnd = async (importedCount: number) => {
   await safeAwait(restoreExistingKeys());
+  await safeAwait(user.refetchUserState());
   emit('keysImported', importedCount);
 };
 
