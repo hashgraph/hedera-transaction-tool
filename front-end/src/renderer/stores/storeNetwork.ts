@@ -26,7 +26,7 @@ const useNetworkStore = defineStore('network', () => {
       throw new Error('Exchange rate set not found');
     }
 
-    const timestamp = Timestamp.generate().seconds.low;
+    const timestamp = parseInt(exchangeRateSet.value.timestamp);
 
     const networkCurrRate = exchangeRateSet.value.current_rate;
     let rate = networkCurrRate.cent_equivalent / networkCurrRate.hbar_equivalent / 100;
@@ -56,6 +56,8 @@ const useNetworkStore = defineStore('network', () => {
     mirrorNodeBaseURL.value = getMirrorNodeREST(newNetwork);
     network.value = newNetwork;
     exchangeRateSet.value = await getExchangeRateSet(mirrorNodeBaseURL.value);
+    console.log(exchangeRateSet.value);
+
     nodeNumbers.value = await getNodeNumbersFromNetwork(mirrorNodeBaseURL.value);
   }
 
