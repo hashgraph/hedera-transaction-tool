@@ -67,7 +67,7 @@ const useUserStore = defineStore('user', () => {
     await selectOrganization(null);
   };
 
-  const logout = async () => {
+  const logout = () => {
     personal.value = ush.createPersonalUser();
     selectedOrganization.value = null;
     organizations.value.splice(0, organizations.value.length);

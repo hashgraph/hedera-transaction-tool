@@ -72,7 +72,7 @@ const handleLogout = async () => {
     await user.selectOrganization({ id, nickname, serverUrl, key });
   } else {
     localStorage.removeItem('htx_user');
-    await user.logout();
+    user.logout();
     await router.push({ name: 'login' });
   }
 };
