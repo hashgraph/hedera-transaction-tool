@@ -14,7 +14,7 @@ import { getClientFromMirrorNode, getNodeNumbersFromNetwork } from '@renderer/ut
 
 const useNetworkStore = defineStore('network', () => {
   /* State */
-  const network = ref<Network>(CommonNetwork.TESTNET);
+  const network = ref<Network>(CommonNetwork.MAINNET);
   const mirrorNodeBaseURL = ref(getMirrorNodeREST(network.value));
   const exchangeRateSet = ref<NetworkExchangeRateSetResponse | null>(null);
   const client = ref<Client>(Client.forTestnet());
@@ -46,7 +46,7 @@ const useNetworkStore = defineStore('network', () => {
 
   /* Actions */
   async function setup(defaultNetwork?: Network) {
-    await setNetwork(defaultNetwork || CommonNetwork.TESTNET);
+    await setNetwork(defaultNetwork || CommonNetwork.MAINNET);
   }
 
   async function setNetwork(newNetwork: Network) {
