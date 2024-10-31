@@ -99,9 +99,7 @@ export class TransactionsService {
       {
         ...where,
         creatorKey: {
-          user: {
-            id: user.id,
-          },
+          userId: user.id,
         },
       },
     ];

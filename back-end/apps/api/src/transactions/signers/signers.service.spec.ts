@@ -122,9 +122,7 @@ describe('SignaturesService', () => {
 
       expect(signersRepo.findAndCount).toHaveBeenCalledWith({
         where: {
-          user: {
-            id: user.id,
-          },
+          userId: user.id,
         },
         select: {
           id: true,

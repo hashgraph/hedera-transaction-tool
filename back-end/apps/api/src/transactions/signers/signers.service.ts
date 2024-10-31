@@ -53,9 +53,7 @@ export class SignersService {
 
     const [items, totalItems] = await this.repo.findAndCount({
       where: {
-        user: {
-          id: user.id,
-        },
+        userId: user.id,
       },
       select: {
         id: true,
