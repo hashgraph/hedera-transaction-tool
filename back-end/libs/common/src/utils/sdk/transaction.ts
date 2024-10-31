@@ -230,11 +230,11 @@ export async function smartCollate(
       signatureKey,
     );
 
-    const sigDictionary = sdkTransaction.removeAllSignatures();
+    const signatureMap = sdkTransaction.getSignatures();
+    sdkTransaction.removeAllSignatures();
 
     for (const key of publicKeys) {
-      const sigArray = sigDictionary[key.toStringRaw()];
-      sdkTransaction.addSignature(key, sigArray);
+      sdkTransaction.addSignature(key, signatureMap);
     }
 
     // If the transaction is still too large,
