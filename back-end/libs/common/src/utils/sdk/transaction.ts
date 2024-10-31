@@ -1,4 +1,10 @@
-import { AccountId, KeyList, PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import {
+  KeyList,
+  PublicKey,
+  Transaction as SDKTransaction,
+  SignatureMap,
+  TransactionId,
+} from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
 import { MAX_TRANSACTION_BYTE_SIZE, TransactionType, Transaction } from '@entities';
@@ -6,7 +12,6 @@ import {
   MirrorNodeService,
   decode,
   getSignatureEntities,
-  isAccountId,
   parseAccountProperty,
   computeShortenedPublicKeyList,
 } from '@app/common';
@@ -61,126 +66,66 @@ export const getTransactionTypeEnumValue = (transaction: SDKTransaction): Transa
   }
 };
 
-export const validateSignature = (
-  transaction: string | Buffer | SDKTransaction,
-  nodeAccountId: string | AccountId,
-  signature: string | Buffer,
-  publicKey: string | PublicKey,
-) => {
-  /* Deserialize Transaction */
-  transaction =
-    transaction instanceof SDKTransaction
-      ? transaction
-      : SDKTransaction.fromBytes(transaction instanceof Buffer ? transaction : decode(transaction));
+const getSignedTransactionsDimensions = (transaction: SDKTransaction) => {
+  const rowLength = transaction._nodeAccountIds.length;
+  const columns = transaction._signedTransactions.length / rowLength;
 
-  /* Deserialize Node Account Id */
-  nodeAccountId =
-    nodeAccountId instanceof AccountId ? nodeAccountId : AccountId.fromString(nodeAccountId);
+  const nodeAccountIdRow: { [nodeAccountId: string]: number } = {};
+  const transactionIdCol: { [transactionId: string]: number } = {};
 
-  /* Deserialize Public Key */
-  publicKey = publicKey instanceof PublicKey ? publicKey : PublicKey.fromString(publicKey);
-
-  /* Deserialize Signature */
-  signature = signature instanceof Buffer ? signature : decode(signature);
-
-  // @ts-expect-error - _makeTransactionBody is a private method
-  const transactionBody = transaction._makeTransactionBody(nodeAccountId);
-  const bodyBytes = proto.TransactionBody.encode(transactionBody).finish();
-
-  try {
-    return publicKey.verify(bodyBytes, signature);
-  } catch (err) {
-    console.log(err);
-
-    return false;
+  for (let row = 0; row < rowLength; row++) {
+    const nodeAccountId = transaction._nodeAccountIds.get(row).toString();
+    nodeAccountIdRow[nodeAccountId] = row;
   }
-};
 
-export const addTransactionSignatures = (
-  transaction: string | Buffer | SDKTransaction,
-  signatures: { [key: string]: Buffer },
-  publicKey: string | PublicKey,
-) => {
-  /* Deserialize Transaction */
-  transaction =
-    transaction instanceof SDKTransaction
-      ? transaction
-      : SDKTransaction.fromBytes(transaction instanceof Buffer ? transaction : decode(transaction));
+  for (let col = 0; col < columns; col++) {
+    const bodyBytes = transaction._signedTransactions.get(col * rowLength).bodyBytes;
 
-  /* Deserialize Public Key */
-  publicKey = publicKey instanceof PublicKey ? publicKey : PublicKey.fromString(publicKey);
-
-  /* Validates the signature map */
-  if (!isSignatureMap(signatures)) throw new Error('Invalid Signature Map');
-
-  /* Checks the length of the signatures */
-  if (Object.values(signatures).length === 0) return;
-
-  /* Freeze the transaction if not frozen */
-  if (!transaction.isFrozen()) transaction.freeze();
-
-  const publicKeyHex = publicKey.toStringRaw();
-
-  /* Check if the signature is already added */
-  if (transaction._signerPublicKeys.has(publicKeyHex)) return;
-
-  /* Lock the transaction properties */
-  // @ts-expect-error - _transactionIds is private property
-  transaction._transactionIds.setLocked();
-  transaction._nodeAccountIds.setLocked();
-  transaction._signedTransactions.setLocked();
-
-  /* Add the signature to each transaction copy for each node */
-  for (const subTransaction of transaction._signedTransactions.list) {
-    const { nodeAccountID } = proto.TransactionBody.decode(subTransaction.bodyBytes);
-    const nodeAccountId = AccountId._fromProtobuf(nodeAccountID);
-
-    let signature = signatures[nodeAccountId.toString()];
-
-    if (!signature) {
-      throw new Error(`Signature for Node with Account ID ${nodeAccountId.toString()} Not Found`);
+    if (bodyBytes) {
+      const body = proto.TransactionBody.decode(bodyBytes);
+      const transactionId = TransactionId._fromProtobuf(body.transactionID).toString();
+      transactionIdCol[transactionId] = col;
     }
-    /* Deserialize Signature */
-    signature = signature instanceof Buffer ? signature : decode(signature);
-
-    if (subTransaction.sigMap == null) subTransaction.sigMap = {};
-
-    if (subTransaction.sigMap.sigPair == null) subTransaction.sigMap.sigPair = [];
-
-    subTransaction.sigMap.sigPair.push(publicKey._toProtobufSignature(signature));
   }
 
-  transaction._signerPublicKeys.add(publicKeyHex);
-  //@ts-expect-error - _publicKeys is a private property
-  transaction._publicKeys.push(publicKey);
-  //@ts-expect-error - _transactionSigners is a private property
-  transaction._transactionSigners.push(null);
+  return { rowLength, nodeAccountIdRow, transactionIdCol };
 };
 
-export const isSignatureMap = value => {
-  if (!value || typeof value !== 'object') return false;
+export const validateSignature = (transaction: SDKTransaction, signatureMap: SignatureMap) => {
+  const signerPublicKeys: PublicKey[] = [];
 
-  for (const key in value) {
-    if (
-      !isAccountId(key) ||
-      !value[key] ||
-      (typeof value[key] !== 'string' && !(value[key] instanceof Buffer))
-    )
-      return false;
+  const { rowLength, nodeAccountIdRow, transactionIdCol } =
+    getSignedTransactionsDimensions(transaction);
 
-    if (value[key] instanceof Buffer) continue;
-    value[key] = decode(value[key]);
+  for (const [nodeAccountId, transactionIds] of signatureMap._map) {
+    for (const [transactionId, publicKeys] of transactionIds._map) {
+      for (const [publicKeyDer, signature] of publicKeys._map) {
+        const publicKey = PublicKey.fromString(publicKeyDer);
+        const publicKeyHex = publicKey.toStringRaw();
+
+        const alreadySigned =
+          transaction._signerPublicKeys.has(publicKeyHex) ||
+          transaction._signerPublicKeys.has(publicKeyDer);
+
+        if (!alreadySigned) {
+          const row = nodeAccountIdRow[nodeAccountId];
+          const col = transactionIdCol[transactionId];
+
+          const bodyBytes = transaction._signedTransactions.get(col * rowLength + row).bodyBytes;
+
+          const signatureValid = publicKey.verify(bodyBytes, signature);
+
+          if (signatureValid) {
+            signerPublicKeys.push(publicKey);
+          } else {
+            throw new Error('Invalid signature');
+          }
+        }
+      }
+    }
   }
-  return true;
-};
 
-export const isAlreadySigned = (transaction: SDKTransaction, publicKey: string | PublicKey) => {
-  publicKey =
-    publicKey instanceof PublicKey
-      ? publicKey.toStringRaw()
-      : PublicKey.fromString(publicKey).toStringRaw();
-
-  return transaction._signerPublicKeys.has(publicKey);
+  return signerPublicKeys;
 };
 
 export const getStatusCodeFromMessage = (message: string) => {
@@ -285,11 +230,11 @@ export async function smartCollate(
       signatureKey,
     );
 
-    const sigDictionary = sdkTransaction.removeAllSignatures();
+    const signatureMap = sdkTransaction.getSignatures();
+    sdkTransaction.removeAllSignatures();
 
     for (const key of publicKeys) {
-      const sigArray = sigDictionary[key.toStringRaw()];
-      sdkTransaction.addSignature(key, sigArray);
+      sdkTransaction.addSignature(key, signatureMap);
     }
 
     // If the transaction is still too large,

@@ -9,11 +9,11 @@ import {
   Mnemonic,
   PrivateKey,
   PublicKey,
+  SignatureMap,
   Timestamp,
   Transaction,
   TransactionId,
 } from '@hashgraph/sdk';
-import { proto } from '@hashgraph/proto';
 
 import { TransactionType } from '../../../../libs/common/src/database/entities';
 
@@ -170,21 +170,45 @@ export const updateAccount = async (
   };
 };
 
-export const getSignatures = (privateKey: PrivateKey, transaction: Transaction) => {
-  const signatures: {
-    [key: string]: string;
-  } = {};
+export const getSignatureMapForPublicKeys = (publicKeys: string[], transaction: Transaction) => {
+  const signatureMap = new SignatureMap();
+  const allSignatures = transaction.getSignatures();
 
-  for (const { bodyBytes } of transaction._signedTransactions.list) {
-    if (!bodyBytes) continue;
-    const { nodeAccountID } = proto.TransactionBody.decode(bodyBytes);
+  const nodeAccountIds = allSignatures.keys();
+  for (const nodeAccountId of nodeAccountIds) {
+    const transactionIds = allSignatures.get(nodeAccountId)?.keys() || [];
 
-    if (!nodeAccountID) continue;
-    const nodeAccountId = AccountId._fromProtobuf(nodeAccountID);
+    for (const transactionId of transactionIds) {
+      const signatures = allSignatures.get(nodeAccountId)?.get(transactionId);
 
-    const signature = privateKey.sign(bodyBytes);
-    signatures[nodeAccountId.toString()] = Buffer.from(signature).toString('hex');
+      if (signatures) {
+        for (const publicKeyString of publicKeys) {
+          const publicKey = PublicKey.fromString(publicKeyString);
+
+          const signature = signatures.get(publicKey);
+          if (signature) {
+            signatureMap.addSignature(nodeAccountId, transactionId, publicKey, signature);
+          }
+        }
+      }
+    }
   }
 
-  return signatures;
+  return signatureMap;
+};
+
+export const formatSignatureMap = (signatureMap: SignatureMap) => {
+  const result: {
+    [nodeAccountId: string]: { [transactionId: string]: { [publicKey: string]: string } };
+  } = {};
+  for (const [nodeAccountId, transactions] of signatureMap._map) {
+    result[nodeAccountId] = {};
+    for (const [transactionId, signatures] of transactions._map) {
+      result[nodeAccountId][transactionId] = {};
+      for (const [publicKey, signature] of signatures._map) {
+        result[nodeAccountId][transactionId][publicKey] = Buffer.from(signature).toString('hex');
+      }
+    }
+  }
+  return result;
 };

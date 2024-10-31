@@ -15,8 +15,8 @@ importers:
         specifier: 2.15.0-beta.4
         version: 2.15.0-beta.4
       '@hashgraph/sdk':
-        specifier: 2.52.0
-        version: 2.52.0
+        specifier: 2.53.0-beta.4
+        version: 2.53.0-beta.4
       '@prisma/client':
         specifier: 5.20.0
         version: 5.20.0(prisma@5.20.0)
@@ -608,8 +608,8 @@ packages:
     resolution: {integrity: sha512-da51j1RCHm+uXpQNM0KJ7qbhUJLTp6Avw8GdL+PQCbZ4lBwKAo8jjJ5rRjf1odsN1+zKl+JF7SMmKZB8PY229Q==}
     engines: {node: '>=10.0.0'}
 
-  '@hashgraph/sdk@2.52.0':
-    resolution: {integrity: sha512-Gv/U9bM744lPGwctKFl27iaQogEq3jWcTRKoGkBC9HYJwsiKnEGxjwGaI4sM/4+Y24tyhDTngLa4nV/QxbjbaA==}
+  '@hashgraph/sdk@2.53.0-beta.4':
+    resolution: {integrity: sha512-Plr+ImaIDKNm4spmbtmGRcI1YnFmHX3aycV2UHhh/0jUghbPzbuAHlHSPruhjbjRRSYFMFt1/Kk5bPsohOX4rA==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
       expo: ^49.0.16
@@ -3942,7 +3942,7 @@ snapshots:
       long: 4.0.0
       protobufjs: 7.4.0
 
-  '@hashgraph/sdk@2.52.0':
+  '@hashgraph/sdk@2.53.0-beta.4':
     dependencies:
       '@ethersproject/abi': 5.7.0
       '@ethersproject/bignumber': 5.7.0

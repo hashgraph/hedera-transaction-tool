@@ -1,5 +1,14 @@
 import { AccountInfo, AccountInfoParsed, KeyType, decodeProtobuffKey } from '@app/common';
-import { AccountId, EvmAddress, Hbar, HbarUnit, Key, PublicKey, Timestamp } from '@hashgraph/sdk';
+import {
+  AccountId,
+  EvmAddress,
+  Hbar,
+  HbarUnit,
+  Key,
+  PublicKey,
+  Timestamp,
+  TransactionId,
+} from '@hashgraph/sdk';
 
 export const parseAccountInfo = (accountInfo: AccountInfo) => {
   const accountInfoParsed: AccountInfoParsed = {
@@ -126,6 +135,15 @@ export function parseAccountProperty(accountInfo: AccountInfo, property: keyof A
 export const isAccountId = (accountId: string) => {
   try {
     AccountId.fromString(accountId);
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
+export const isTransactionId = (transactionId: string) => {
+  try {
+    TransactionId.fromString(transactionId);
     return true;
   } catch (error) {
     return false;

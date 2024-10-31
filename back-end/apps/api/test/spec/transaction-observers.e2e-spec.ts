@@ -3,14 +3,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { Repository } from 'typeorm';
 import { AccountCreateTransaction, AccountUpdateTransaction } from '@hashgraph/sdk';
 
-import {
-  TransactionStatus,
-  User,
-  Transaction,
-  Role,
-  TransactionObserver,
-  UserKey,
-} from '@entities';
+import { TransactionStatus, User, Transaction, Role, TransactionObserver } from '@entities';
 
 import { closeApp, createNestApp, login } from '../utils';
 import {
@@ -24,7 +17,8 @@ import {
 import { Endpoint } from '../utils/httpUtils';
 import {
   createTransactionId,
-  getSignatures,
+  formatSignatureMap,
+  getSignatureMapForPublicKeys,
   localnet1002,
   localnet1003,
 } from '../utils/hederaUtils';
@@ -41,9 +35,7 @@ describe('Transaction Observers (e2e)', () => {
   let userAuthToken: string;
   let userNewAuthToken: string;
   let user: User;
-  let admin: User;
   let userNew: User;
-  let adminKey1002: UserKey;
 
   let addedTransactions: Awaited<ReturnType<typeof addTransactions>>;
 
@@ -90,10 +82,7 @@ describe('Transaction Observers (e2e)', () => {
     userNewAuthToken = await login(app, 'userNew');
 
     user = await getUser('user');
-    admin = await getUser('admin');
     userNew = await getUser('userNew');
-
-    adminKey1002 = await getUserKey(admin.id, localnet1002.publicKeyRaw);
   });
 
   afterAll(async () => {
@@ -244,13 +233,13 @@ describe('Transaction Observers (e2e)', () => {
 
       /* Sign transaction (ADMIN) */
       const sdkTransaction = AccountUpdateTransaction.fromBytes(transaction.transactionBytes);
-      const signatures = getSignatures(localnet1002.privateKey, sdkTransaction);
+      await sdkTransaction.sign(localnet1002.privateKey);
+      const signatures = getSignatureMapForPublicKeys([localnet1002.publicKeyRaw], sdkTransaction);
 
       await endpoint
         .post(
           {
-            publicKeyId: adminKey1002.id,
-            signatures,
+            signatureMap: formatSignatureMap(signatures),
           },
           `/${transaction.id}/signers`,
           adminAuthToken,

@@ -17,10 +17,10 @@ import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 
 import {
-  fullUploadSignatures,
   getApiGroupById,
   getUserShouldApprove,
   sendApproverChoice,
+  uploadSignatureMap,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 
@@ -141,12 +141,12 @@ const handleSignGroup = async () => {
           user.selectedOrganization.userKeys,
           network.mirrorNodeBaseURL,
         );
-        await fullUploadSignatures(
+        await uploadSignatureMap(
           user.personal.id,
           password,
           user.selectedOrganization,
           publicKeysRequired,
-          transaction,
+          Transaction.fromBytes(transaction.toBytes()),
           groupItem.transaction.id,
         );
       }

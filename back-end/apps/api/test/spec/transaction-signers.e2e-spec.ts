@@ -1,7 +1,12 @@
 import { NestExpressApplication } from '@nestjs/platform-express';
 
 import { Repository } from 'typeorm';
-import { AccountCreateTransaction, AccountUpdateTransaction, KeyList } from '@hashgraph/sdk';
+import {
+  AccountCreateTransaction,
+  AccountUpdateTransaction,
+  KeyList,
+  SignatureMap,
+} from '@hashgraph/sdk';
 
 import { ErrorCodes } from '@app/common';
 import { User, Transaction, TransactionSigner, UserKey, TransactionStatus } from '@entities';
@@ -18,7 +23,8 @@ import {
 import { Endpoint } from '../utils/httpUtils';
 import {
   createTransactionId,
-  getSignatures,
+  formatSignatureMap,
+  getSignatureMapForPublicKeys,
   localnet1002,
   localnet1003,
   localnet1004,
@@ -33,7 +39,6 @@ describe('Transactions (e2e)', () => {
 
   let adminAuthToken: string;
   let userAuthToken: string;
-  let admin: User;
   let user: User;
   let userKey1003: UserKey;
 
@@ -53,7 +58,6 @@ describe('Transactions (e2e)', () => {
     adminAuthToken = await login(app, 'admin');
     userAuthToken = await login(app, 'user');
 
-    admin = await getUser('admin');
     user = await getUser('user');
     userKey1003 = await getUserKey(user.id, localnet1003.publicKeyRaw);
   });
@@ -69,15 +73,18 @@ describe('Transactions (e2e)', () => {
       endpoint = new Endpoint(server, '/transactions');
     });
 
-    it('(POST) should upload a signature for a transaction when required to sign', async () => {
+    it('(POST) should upload a signature map for a transaction', async () => {
       const transaction = addedTransactions.userTransactions[0];
       const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
-      const signatures = getSignatures(localnet1003.privateKey, sdkTransaction);
+      await sdkTransaction.sign(localnet1003.privateKey);
+      const signatureMap = getSignatureMapForPublicKeys(
+        [localnet1003.publicKeyRaw],
+        sdkTransaction,
+      );
 
       const response = await endpoint.post(
         {
-          publicKeyId: userKey1003.id,
-          signatures,
+          signatureMap: formatSignatureMap(signatureMap),
         },
         `/${transaction.id}/signers`,
         userAuthToken,
@@ -92,79 +99,88 @@ describe('Transactions (e2e)', () => {
 
       expect(signerEntry).toBeDefined();
       expect(response.status).toBe(201);
-      expect(response.body).toEqual(
+      expect(response.body).toEqual([
         expect.objectContaining({
           id: transaction.id,
         }),
-      );
+      ]);
     });
 
-    it('(POST) should NOT upload a signature for a transaction when not required to sign', async () => {
-      const transaction = addedTransactions.userTransactions[0];
-      const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
-      const userKey1002 = await getUserKey(admin.id, localnet1002.publicKeyRaw);
-      const signatures = getSignatures(localnet1002.privateKey, sdkTransaction);
+    it('(POST) should upload a signature map 2 public keys for a transaction', async () => {
+      const sdkTransaction = new AccountUpdateTransaction()
+        .setTransactionId(createTransactionId(localnet1003.accountId))
+        .setKey(new KeyList([localnet1003.publicKey, localnet1004.privateKey]));
+      const buffer = Buffer.from(sdkTransaction.toBytes()).toString('hex');
 
-      const response = await endpoint.post(
-        {
-          publicKeyId: userKey1002.id,
-          signatures,
-        },
-        `/${transaction.id}/signers`,
-        adminAuthToken,
+      const userKey1004 = await getUserKey(user.id, localnet1004.publicKeyRaw);
+
+      if (userKey1004 === null) {
+        throw new Error('User key not found');
+      }
+
+      const transactionBody = {
+        name: 'TEST Simple Account Create Transaction',
+        description: 'TEST This is a simple account create transaction',
+        transactionBytes: buffer,
+        creatorKeyId: userKey1003.id,
+        signature: Buffer.from(localnet1003.privateKey.sign(sdkTransaction.toBytes())).toString(
+          'hex',
+        ),
+        mirrorNetwork: localnet1003.mirrorNetwork,
+      };
+
+      const createTxResponse = await endpoint.post(transactionBody, '', userAuthToken);
+      expect(createTxResponse.status).toBe(201);
+
+      const frozenSdkTransaction = AccountUpdateTransaction.fromBytes(
+        Buffer.from(createTxResponse.body.transactionBytes, 'hex'),
+      );
+      await frozenSdkTransaction.sign(localnet1003.privateKey);
+      await frozenSdkTransaction.sign(localnet1004.privateKey);
+      const signatureMap = getSignatureMapForPublicKeys(
+        [localnet1003.publicKeyRaw, localnet1004.publicKeyRaw],
+        frozenSdkTransaction,
       );
 
-      const signerEntry = await transactionSignerRepo.findOne({
-        where: {
-          transactionId: transaction.id,
-          userKeyId: userKey1002.id,
-        },
-      });
-
-      expect(signerEntry).toBeNull();
-      expect(response.status).toBe(400);
-      expect(response.body).toEqual(
-        expect.objectContaining({
-          statusCode: 400,
-          code: ErrorCodes.KNRS,
-        }),
-      );
-    });
-
-    it('(POST) should NOT upload a signature for a transaction when already signed', async () => {
-      const transaction = addedTransactions.userTransactions[0];
-      const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
-      const signatures = getSignatures(localnet1003.privateKey, sdkTransaction);
-
-      /* User has already signed in a previous test */
-      const response = await endpoint.post(
+      const { status, body } = await endpoint.post(
         {
-          publicKeyId: userKey1003.id,
-          signatures,
+          signatureMap: formatSignatureMap(signatureMap),
         },
-        `/${transaction.id}/signers`,
+        `${createTxResponse.body.id}/signers`,
         userAuthToken,
       );
 
-      expect(response.status).toBe(400);
-      expect(response.body).toEqual(
-        expect.objectContaining({
-          statusCode: 400,
-          code: ErrorCodes.SAD,
-        }),
-      );
+      const signer1Entry = await transactionSignerRepo.findOne({
+        where: {
+          transactionId: createTxResponse.body.id,
+          userKeyId: userKey1003.id,
+        },
+      });
+      const signer2Entry = await transactionSignerRepo.findOne({
+        where: {
+          transactionId: createTxResponse.body.id,
+          userKeyId: userKey1004.id,
+        },
+      });
+
+      expect(signer1Entry).toBeDefined();
+      expect(signer2Entry).toBeDefined();
+      expect(status).toBe(201);
+      expect(body.length).toBe(2);
     });
 
     it('(POST) should NOT upload a signature for a transaction with a key that does not belong to the user', async () => {
       const transaction = addedTransactions.userTransactions[0];
       const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
-      const userKey1002 = await getUserKey(admin.id, localnet1002.publicKeyRaw);
-      const signatures = getSignatures(localnet1003.privateKey, sdkTransaction);
+      await sdkTransaction.sign(localnet1002.privateKey);
+      const signatureMap = getSignatureMapForPublicKeys(
+        [localnet1002.publicKeyRaw],
+        sdkTransaction,
+      );
 
       const { status, body } = await endpoint.post(
         {
-          publicKeyId: userKey1002.id,
-          signatures,
+          signatureMap: formatSignatureMap(signatureMap),
         },
         `/${transaction.id}/signers`,
         userAuthToken,
@@ -174,7 +190,7 @@ describe('Transactions (e2e)', () => {
       expect(body).toEqual(
         expect.objectContaining({
           statusCode: 400,
-          // message: 'Transaction can be signed only with your own key',
+          code: ErrorCodes.PNY,
         }),
       );
     });
@@ -182,8 +198,7 @@ describe('Transactions (e2e)', () => {
     it('(POST) should NOT upload a signature for a transaction that does not exist', async () => {
       const { status, body } = await endpoint.post(
         {
-          publicKeyId: userKey1003.id,
-          signatures: [],
+          signatureMap: formatSignatureMap(new SignatureMap()),
         },
         '/123/signers',
         userAuthToken,
@@ -206,15 +221,16 @@ describe('Transactions (e2e)', () => {
           status: TransactionStatus.CANCELED,
         },
       );
-      const signatures = getSignatures(
-        localnet1003.privateKey,
-        AccountCreateTransaction.fromBytes(transaction.transactionBytes),
+      const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
+      await sdkTransaction.sign(localnet1003.privateKey);
+      const signatureMap = getSignatureMapForPublicKeys(
+        [localnet1003.publicKeyRaw],
+        sdkTransaction,
       );
 
       const { status, body } = await endpoint.post(
         {
-          publicKeyId: userKey1003.id,
-          signatures,
+          signatureMap: formatSignatureMap(signatureMap),
         },
         `/${transaction.id}/signers`,
         userAuthToken,
@@ -229,14 +245,15 @@ describe('Transactions (e2e)', () => {
       );
     });
 
-    it('(POST) should NOT upload a signature that is invalid', async () => {
+    it('(POST) should NOT upload invalid body', async () => {
       const transaction = addedTransactions.userTransactions[0];
-      const signatures = ['invalid-signature'];
+      const signatureMap = {
+        asd: 'invalid-signature',
+      };
 
       const { status, body } = await endpoint.post(
         {
-          publicKeyId: userKey1003.id,
-          signatures,
+          signatureMap,
         },
         `/${transaction.id}/signers`,
         userAuthToken,
@@ -246,7 +263,66 @@ describe('Transactions (e2e)', () => {
       expect(body).toEqual(
         expect.objectContaining({
           statusCode: 400,
-          // message: 'Invalid signature',
+          code: ErrorCodes.ISNMP,
+        }),
+      );
+    });
+
+    it('(POST) should NOT upload a signature that is invalid', async () => {
+      const sdkTransaction = new AccountUpdateTransaction()
+        .setTransactionId(createTransactionId(localnet1003.accountId))
+        .setKey(new KeyList([localnet1003.publicKey, localnet1004.privateKey]));
+      const buffer = Buffer.from(sdkTransaction.toBytes()).toString('hex');
+
+      const userKey1004 = await getUserKey(user.id, localnet1004.publicKeyRaw);
+
+      if (userKey1004 === null) {
+        throw new Error('User key not found');
+      }
+
+      const transactionBody = {
+        name: 'TEST Simple Account Create Transaction',
+        description: 'TEST This is a simple account create transaction',
+        transactionBytes: buffer,
+        creatorKeyId: userKey1003.id,
+        signature: Buffer.from(localnet1003.privateKey.sign(sdkTransaction.toBytes())).toString(
+          'hex',
+        ),
+        mirrorNetwork: localnet1003.mirrorNetwork,
+      };
+
+      const createTxResponse = await endpoint.post(transactionBody, '', userAuthToken);
+      expect(createTxResponse.status).toBe(201);
+
+      const frozenSdkTransaction = AccountUpdateTransaction.fromBytes(
+        Buffer.from(createTxResponse.body.transactionBytes, 'hex'),
+      );
+      await frozenSdkTransaction.sign(localnet1003.privateKey);
+      const signatureMap = getSignatureMapForPublicKeys(
+        [localnet1003.publicKeyRaw],
+        frozenSdkTransaction,
+      );
+      const formattedSignatureMap = formatSignatureMap(signatureMap);
+
+      const nodeAccountIds = Object.keys(formattedSignatureMap);
+      const transactionIds = Object.keys(formattedSignatureMap[nodeAccountIds[0]]);
+      const publicKeys = Object.keys(formattedSignatureMap[nodeAccountIds[0]][transactionIds[0]]);
+      formattedSignatureMap[nodeAccountIds[0]][transactionIds[0]][publicKeys[0]] =
+        'invalid-signature';
+
+      const { status, body } = await endpoint.post(
+        {
+          signatureMap: formattedSignatureMap,
+        },
+        `${createTxResponse.body.id}/signers`,
+        userAuthToken,
+      );
+
+      expect(status).toBe(400);
+      expect(body).toEqual(
+        expect.objectContaining({
+          statusCode: 400,
+          code: ErrorCodes.ISNMP,
         }),
       );
     });
@@ -283,79 +359,6 @@ describe('Transactions (e2e)', () => {
           }),
         }),
       );
-    });
-  });
-
-  describe('/transactions/:transactionId/signers/many', () => {
-    let endpoint: Endpoint;
-
-    beforeAll(() => {
-      endpoint = new Endpoint(server, '/transactions');
-    });
-
-    it('(POST) should upload multiple signatures for a transaction when required to sign', async () => {
-      const sdkTransaction = new AccountUpdateTransaction()
-        .setTransactionId(createTransactionId(localnet1003.accountId))
-        .setKey(new KeyList([localnet1003.publicKey, localnet1004.privateKey]));
-      const buffer = Buffer.from(sdkTransaction.toBytes()).toString('hex');
-
-      const userKey1004 = await getUserKey(user.id, localnet1004.publicKeyRaw);
-
-      if (userKey1004 === null) {
-        throw new Error('User key not found');
-      }
-
-      const transactionBody = {
-        name: 'TEST Simple Account Create Transaction',
-        description: 'TEST This is a simple account create transaction',
-        transactionBytes: buffer,
-        creatorKeyId: userKey1003.id,
-        signature: Buffer.from(localnet1003.privateKey.sign(sdkTransaction.toBytes())).toString(
-          'hex',
-        ),
-        mirrorNetwork: localnet1003.mirrorNetwork,
-      };
-
-      const createTxResponse = await endpoint.post(transactionBody, '', userAuthToken);
-      expect(createTxResponse.status).toBe(201);
-
-      const signatures1 = getSignatures(localnet1003.privateKey, sdkTransaction);
-      const signatures2 = getSignatures(localnet1004.privateKey, sdkTransaction);
-
-      const { status, body } = await endpoint.post(
-        {
-          signatures: [
-            {
-              publicKeyId: userKey1003.id,
-              signatures: signatures1,
-            },
-            {
-              publicKeyId: userKey1004.id,
-              signatures: signatures2,
-            },
-          ],
-        },
-        `${createTxResponse.body.id}/signers/many`,
-        userAuthToken,
-      );
-
-      const signer1Entry = await transactionSignerRepo.findOne({
-        where: {
-          transactionId: createTxResponse.body.id,
-          userKeyId: userKey1003.id,
-        },
-      });
-      const signer2Entry = await transactionSignerRepo.findOne({
-        where: {
-          transactionId: createTxResponse.body.id,
-          userKeyId: userKey1004.id,
-        },
-      });
-
-      expect(signer1Entry).toBeDefined();
-      expect(signer2Entry).toBeDefined();
-      expect(status).toBe(201);
-      expect(body.length).toBe(2);
     });
   });
 
