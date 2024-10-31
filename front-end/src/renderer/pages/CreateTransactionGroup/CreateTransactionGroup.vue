@@ -346,7 +346,9 @@ onBeforeRouteLeave(async to => {
       <form class="mt-5" @submit.prevent="handleSaveGroup">
         <div class="d-flex justify-content-between">
           <div class="form-group col">
-            <label class="form-label">Transaction Group Name</label>
+            <label class="form-label"
+              >Transaction Group Name <span class="text-danger">*</span></label
+            >
             <AppInput
               v-model="groupName"
               @update:modelValue="nameUpdated"
