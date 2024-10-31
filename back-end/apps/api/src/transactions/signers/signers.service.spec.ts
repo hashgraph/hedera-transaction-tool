@@ -6,12 +6,17 @@ import { DataSource, QueryRunner, Repository } from 'typeorm';
 
 import { Transaction, TransactionSigner, TransactionStatus, User } from '@entities';
 
-import { AccountCreateTransaction, PublicKey, PrivateKey, SignatureMap } from '@hashgraph/sdk';
+import {
+  AccountCreateTransaction,
+  PrivateKey,
+  SignatureMap,
+  AccountId,
+  TransactionId,
+} from '@hashgraph/sdk';
 import { CHAIN_SERVICE, ErrorCodes, MirrorNodeService, NOTIFICATIONS_SERVICE } from '@app/common';
 import {
   emitUpdateTransactionStatus,
   isExpired,
-  validateSignature,
   userKeysRequiredToSign,
   notifyTransactionAction,
   notifySyncIndicators,
@@ -185,25 +190,35 @@ describe('SignaturesService', () => {
 
     it('should upload signature', async () => {
       const transactionId = 3;
+      const originalPublicKey = user.keys[0].publicKey;
       const publicKeyId = user.keys[0].id;
-      const publicKey = PublicKey.fromString(user.keys[0].publicKey);
+      const privateKey = PrivateKey.generateECDSA();
+      user.keys[0].publicKey = privateKey.publicKey.toStringRaw();
 
-      const sdkTransaction = new AccountCreateTransaction();
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
       const transaction = {
         id: transactionId,
         transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       };
 
+      await sdkTransaction.sign(privateKey);
       dataSource.manager.findOneBy.mockResolvedValueOnce(transaction);
       jest.mocked(isExpired).mockReturnValue(false);
-      jest.mocked(safe).mockReturnValue({ data: [publicKey] });
+      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([publicKeyId]);
 
       const queryRunner = mockDeep<QueryRunner>();
       dataSource.createQueryRunner.mockReturnValueOnce(queryRunner);
 
-      await service.uploadSignatureMap(transactionId, { signatureMap }, user);
+      await service.uploadSignatureMap(
+        transactionId,
+        { signatureMap: sdkTransaction.getSignatures() },
+        user,
+      );
 
       expect(dataSource.manager.update).toHaveBeenCalledWith(
         Transaction,
@@ -223,17 +238,32 @@ describe('SignaturesService', () => {
         transactionId,
         transaction.status,
       );
+
+      user.keys[0].publicKey = originalPublicKey;
     });
 
     it('should throw if signature public key does not belong to sender', async () => {
       const transactionId = 3;
       const publicKey = PrivateKey.generate().publicKey;
 
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
+      const transaction = {
+        id: transactionId,
+        transactionBytes: sdkTransaction.toBytes(),
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      };
+
+      dataSource.manager.findOneBy.mockResolvedValueOnce(transaction);
+      jest.mocked(isExpired).mockReturnValue(false);
       jest.mocked(safe).mockReturnValue({ data: [publicKey] });
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([2]);
 
       await expect(
         service.uploadSignatureMap(transactionId, { signatureMap }, user),
-      ).rejects.toThrow('TNF');
+      ).rejects.toThrow(ErrorCodes.PNY);
       expectNotifyNotCalled();
     });
 
@@ -298,30 +328,38 @@ describe('SignaturesService', () => {
 
       dataSource.manager.findOneBy.mockResolvedValueOnce(transaction);
       jest.mocked(isExpired).mockReturnValue(false);
-      jest.mocked(validateSignature).mockImplementationOnce(() => {
-        throw new Error('Invalid signature!!');
+      jest.mocked(safe).mockImplementationOnce(() => {
+        return { error: 'error' };
       });
 
       await expect(
         service.uploadSignatureMap(transactionId, { signatureMap }, user),
-      ).rejects.toThrow();
+      ).rejects.toThrow(ErrorCodes.ISNMPN);
       expectNotifyNotCalled();
     });
 
     it('should throw if the database update fails', async () => {
       const transactionId = 3;
-      const publicKey = PublicKey.fromString(user.keys[0].publicKey);
+      const originalPublicKey = user.keys[0].publicKey;
+      const publicKeyId = user.keys[0].id;
+      const privateKey = PrivateKey.generateECDSA();
+      user.keys[0].publicKey = privateKey.publicKey.toStringRaw();
 
-      const sdkTransaction = new AccountCreateTransaction();
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
       const transaction = {
         id: transactionId,
         transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       };
 
+      await sdkTransaction.sign(privateKey);
       dataSource.manager.findOneBy.mockResolvedValueOnce(transaction);
       jest.mocked(isExpired).mockReturnValue(false);
-      jest.mocked(safe).mockReturnValue({ data: [publicKey] });
+      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([publicKeyId]);
 
       dataSource.manager.update.mockRejectedValueOnce(new Error());
 
@@ -329,9 +367,15 @@ describe('SignaturesService', () => {
       dataSource.createQueryRunner.mockReturnValueOnce(queryRunner);
 
       await expect(
-        service.uploadSignatureMap(transactionId, { signatureMap }, user),
+        service.uploadSignatureMap(
+          transactionId,
+          { signatureMap: sdkTransaction.getSignatures() },
+          user,
+        ),
       ).rejects.toThrow(ErrorCodes.FST);
       expectNotifyNotCalled();
+
+      user.keys[0].publicKey = originalPublicKey;
     });
   });
 });

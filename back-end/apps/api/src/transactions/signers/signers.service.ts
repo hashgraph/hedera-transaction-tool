@@ -3,13 +3,12 @@ import { ClientProxy } from '@nestjs/microservices';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
 import { DataSource, Repository } from 'typeorm';
-import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { PublicKey, Transaction as SDKTransaction, SignatureMap } from '@hashgraph/sdk';
 
 import {
   CHAIN_SERVICE,
   emitUpdateTransactionStatus,
   isExpired,
-  MirrorNodeService,
   notifySyncIndicators,
   notifyTransactionAction,
   NOTIFICATIONS_SERVICE,
@@ -31,7 +30,6 @@ export class SignersService {
     @InjectDataSource() private dataSource: DataSource,
     @Inject(CHAIN_SERVICE) private readonly chainService: ClientProxy,
     @Inject(NOTIFICATIONS_SERVICE) private readonly notificationService: ClientProxy,
-    private readonly mirrorNodeService: MirrorNodeService,
   ) {}
 
   /* Get the signature for the given signature id */
@@ -105,6 +103,8 @@ export class SignersService {
     { signatureMap }: UploadSignatureMapDto,
     user: User,
   ): Promise<TransactionSigner[]> {
+    const map: SignatureMap = signatureMap;
+
     /* Verify that the transaction exists */
     const transaction = await this.dataSource.manager.findOneBy(Transaction, { id: transactionId });
     if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
@@ -118,16 +118,16 @@ export class SignersService {
 
     /* Validates the signatures */
     const { data: publicKeys, error } = safe<PublicKey[]>(
-      validateSignature.bind(this, sdkTransaction, signatureMap),
+      validateSignature.bind(this, sdkTransaction, map),
     );
     if (error) throw new BadRequestException(ErrorCodes.ISNMPN);
 
     const userKeys: UserKey[] = [];
     for (const publicKey of publicKeys) {
-      sdkTransaction = sdkTransaction.addSignature(publicKey, signatureMap);
-
       const userKey = user.keys.find(key => key.publicKey === publicKey.toStringRaw());
       if (!userKey) throw new BadRequestException(ErrorCodes.PNY);
+
+      sdkTransaction = sdkTransaction.addSignature(publicKey, map);
       userKeys.push(userKey);
     }
 
