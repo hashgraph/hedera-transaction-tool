@@ -12,8 +12,8 @@ importers:
         specifier: 2.15.0-beta.4
         version: 2.15.0-beta.4
       '@hashgraph/sdk':
-        specifier: 2.52.0
-        version: 2.52.0
+        specifier: 2.53.0-beta.4
+        version: 2.53.0-beta.4
       '@nest-lab/throttler-storage-redis':
         specifier: 1.0.0
         version: 1.0.0(@nestjs/common@10.3.10(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10(@nestjs/common@10.3.10(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/microservices@10.3.10)(@nestjs/platform-express@10.3.10)(@nestjs/websockets@10.3.10)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/throttler@6.2.1(@nestjs/common@10.3.10(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10(@nestjs/common@10.3.10(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/microservices@10.3.10)(@nestjs/platform-express@10.3.10)(@nestjs/websockets@10.3.10)(reflect-metadata@0.2.2)(rxjs@7.8.1))(reflect-metadata@0.2.2))(ioredis@5.4.1)(reflect-metadata@0.2.2)
@@ -576,6 +576,15 @@ packages:
 
   '@hashgraph/sdk@2.52.0':
     resolution: {integrity: sha512-Gv/U9bM744lPGwctKFl27iaQogEq3jWcTRKoGkBC9HYJwsiKnEGxjwGaI4sM/4+Y24tyhDTngLa4nV/QxbjbaA==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      expo: ^49.0.16
+    peerDependenciesMeta:
+      expo:
+        optional: true
+
+  '@hashgraph/sdk@2.53.0-beta.4':
+    resolution: {integrity: sha512-Plr+ImaIDKNm4spmbtmGRcI1YnFmHX3aycV2UHhh/0jUghbPzbuAHlHSPruhjbjRRSYFMFt1/Kk5bPsohOX4rA==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
       expo: ^49.0.16
@@ -5131,6 +5140,31 @@ snapshots:
       protobufjs: 7.3.2
 
   '@hashgraph/sdk@2.52.0':
+    dependencies:
+      '@ethersproject/abi': 5.7.0
+      '@ethersproject/bignumber': 5.7.0
+      '@ethersproject/bytes': 5.7.0
+      '@ethersproject/rlp': 5.7.0
+      '@grpc/grpc-js': 1.8.2
+      '@hashgraph/cryptography': 1.4.8-beta.9
+      '@hashgraph/proto': 2.15.0-beta.4
+      axios: 1.7.7
+      bignumber.js: 9.1.2
+      bn.js: 5.2.1
+      crypto-js: 4.2.0
+      js-base64: 3.7.7
+      long: 4.0.0
+      pino: 8.21.0
+      pino-pretty: 10.3.1
+      protobufjs: 7.2.5
+      rfc4648: 1.5.3
+      utf8: 3.0.0
+    transitivePeerDependencies:
+      - debug
+      - expo-crypto
+      - expo-random
+
+  '@hashgraph/sdk@2.53.0-beta.4':
     dependencies:
       '@ethersproject/abi': 5.7.0
       '@ethersproject/bignumber': 5.7.0
