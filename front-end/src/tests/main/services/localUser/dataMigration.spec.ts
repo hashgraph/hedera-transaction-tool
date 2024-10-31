@@ -272,7 +272,7 @@ describe('Data Migration', () => {
       expect(result).toEqual({
         accountsImported: 0,
         defaultMaxTransactionFee: null,
-        currentNetwork: CommonNetwork.TESTNET,
+        currentNetwork: CommonNetwork.MAINNET,
       });
     });
 
@@ -363,7 +363,7 @@ describe('Data Migration', () => {
       expect(result).toEqual({
         accountsImported: 1,
         defaultMaxTransactionFee: 1000,
-        currentNetwork: CommonNetwork.TESTNET,
+        currentNetwork: CommonNetwork.MAINNET,
       });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
@@ -373,7 +373,7 @@ describe('Data Migration', () => {
       expect(addAccount).toHaveBeenCalledWith(
         mockUserId,
         '0.0.123',
-        CommonNetwork.TESTNET,
+        CommonNetwork.MAINNET,
         'account1',
       );
     });
@@ -454,7 +454,7 @@ describe('Data Migration', () => {
       expect(result).toEqual({
         accountsImported: 0,
         defaultMaxTransactionFee: null,
-        currentNetwork: CommonNetwork.TESTNET,
+        currentNetwork: CommonNetwork.MAINNET,
       });
       expect(addClaim).toHaveBeenCalledWith(mockUserId, UPDATE_LOCATION, 'mockDir');
     });
