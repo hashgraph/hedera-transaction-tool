@@ -1,4 +1,10 @@
-import { AccountId, KeyList, PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import {
+  KeyList,
+  PublicKey,
+  Transaction as SDKTransaction,
+  SignatureMap,
+  TransactionId,
+} from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
 import { MAX_TRANSACTION_BYTE_SIZE, TransactionType, Transaction } from '@entities';
@@ -60,48 +66,62 @@ export const getTransactionTypeEnumValue = (transaction: SDKTransaction): Transa
   }
 };
 
-export const validateSignature = (
-  transaction: string | Buffer | SDKTransaction,
-  nodeAccountId: string | AccountId,
-  signature: string | Buffer,
-  publicKey: string | PublicKey,
-) => {
-  /* Deserialize Transaction */
-  transaction =
-    transaction instanceof SDKTransaction
-      ? transaction
-      : SDKTransaction.fromBytes(transaction instanceof Buffer ? transaction : decode(transaction));
+const getSignedTransactionsDimensions = (transaction: SDKTransaction) => {
+  const rowLength = transaction._nodeAccountIds.length;
+  const columns = transaction._signedTransactions.length / rowLength;
 
-  /* Deserialize Node Account Id */
-  nodeAccountId =
-    nodeAccountId instanceof AccountId ? nodeAccountId : AccountId.fromString(nodeAccountId);
+  const nodeAccountIdRow: { [nodeAccountId: string]: number } = {};
+  const transactionIdCol: { [transactionId: string]: number } = {};
 
-  /* Deserialize Public Key */
-  publicKey = publicKey instanceof PublicKey ? publicKey : PublicKey.fromString(publicKey);
-
-  /* Deserialize Signature */
-  signature = signature instanceof Buffer ? signature : decode(signature);
-
-  // @ts-expect-error - _makeTransactionBody is a private method
-  const transactionBody = transaction._makeTransactionBody(nodeAccountId);
-  const bodyBytes = proto.TransactionBody.encode(transactionBody).finish();
-
-  try {
-    return publicKey.verify(bodyBytes, signature);
-  } catch (err) {
-    console.log(err);
-
-    return false;
+  for (let row = 0; row < rowLength; row++) {
+    const nodeAccountId = transaction._nodeAccountIds.get(row).toString();
+    nodeAccountIdRow[nodeAccountId] = row;
   }
+
+  for (let col = 0; col < columns; col++) {
+    const bodyBytes = transaction._signedTransactions.get(col * rowLength).bodyBytes;
+
+    if (bodyBytes) {
+      const body = proto.TransactionBody.decode(bodyBytes);
+      const transactionId = TransactionId._fromProtobuf(body.transactionID).toString();
+      transactionIdCol[transactionId] = col;
+    }
+  }
+
+  return { rowLength, nodeAccountIdRow, transactionIdCol };
 };
 
-export const isAlreadySigned = (transaction: SDKTransaction, publicKey: string | PublicKey) => {
-  publicKey =
-    publicKey instanceof PublicKey
-      ? publicKey.toStringRaw()
-      : PublicKey.fromString(publicKey).toStringRaw();
+export const validateSignature = (transaction: SDKTransaction, signatureMap: SignatureMap) => {
+  const signerPublicKeys: string[] = [];
 
-  return transaction._signerPublicKeys.has(publicKey);
+  const { rowLength, nodeAccountIdRow, transactionIdCol } =
+    getSignedTransactionsDimensions(transaction);
+
+  for (const [nodeAccountId, transactionIds] of signatureMap._map) {
+    for (const [transactionId, publicKeys] of transactionIds._map) {
+      for (const [publicKeyDer, signature] of publicKeys._map) {
+        const alreadySigned = transaction._signerPublicKeys.has(publicKeyDer);
+
+        if (!alreadySigned) {
+          const row = nodeAccountIdRow[nodeAccountId];
+          const col = transactionIdCol[transactionId];
+
+          const bodyBytes = transaction._signedTransactions.get(col * rowLength + row).bodyBytes;
+          const publicKey = PublicKey.fromString(publicKeyDer);
+
+          const signatureValid = publicKey.verify(bodyBytes, signature);
+
+          if (signatureValid) {
+            signerPublicKeys.push(publicKey.toStringRaw());
+          } else {
+            throw new Error('Invalid signature');
+          }
+        }
+      }
+    }
+  }
+
+  return signerPublicKeys;
 };
 
 export const getStatusCodeFromMessage = (message: string) => {
