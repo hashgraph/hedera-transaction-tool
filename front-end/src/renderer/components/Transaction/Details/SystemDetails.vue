@@ -5,18 +5,13 @@ import { onBeforeMount } from 'vue';
 
 import { Transaction, SystemDeleteTransaction, SystemUndeleteTransaction } from '@hashgraph/sdk';
 
-import useUserStore from '@renderer/stores/storeUser';
-
-import { isUserLoggedIn, getFormattedDateFromTimestamp } from '@renderer/utils';
+import { getFormattedDateFromTimestamp } from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{
   transaction: Transaction;
   organizationTransaction: ITransactionFull | null;
 }>();
-
-/* Stores */
-const user = useUserStore();
 
 /* Hooks */
 onBeforeMount(async () => {
@@ -28,7 +23,6 @@ onBeforeMount(async () => {
   ) {
     throw new Error('Transaction is not System Delete, System Undelete');
   }
-  if (!isUserLoggedIn(user.personal)) throw new Error('User not logged in');
 });
 
 /* Misc */
