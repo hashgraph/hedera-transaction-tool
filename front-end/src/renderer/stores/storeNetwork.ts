@@ -37,10 +37,6 @@ const useNetworkStore = defineStore('network', () => {
       rate = networkNextRate.cent_equivalent / networkNextRate.hbar_equivalent / 100;
     }
 
-    if (timestamp > networkNextRate.expiration_time) {
-      throw new Error('Exchange rate expired');
-    }
-
     return rate;
   });
 
