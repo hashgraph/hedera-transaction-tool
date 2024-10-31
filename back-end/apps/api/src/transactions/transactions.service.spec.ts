@@ -613,7 +613,7 @@ describe('TransactionsService', () => {
     });
 
     it('should return the transaction if the user is the creator', async () => {
-      const transaction = { id: 123, creatorKey: { user: user }, observers: [] };
+      const transaction = { id: 123, creatorKey: { userId: user.id }, observers: [] };
 
       jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
@@ -685,7 +685,7 @@ describe('TransactionsService', () => {
     it('should throw if the user does not have verified access', async () => {
       const transaction = {
         id: 123,
-        creatorKey: { user: { id: 2 } },
+        creatorKey: { userId: 2 },
         observers: [],
       };
 

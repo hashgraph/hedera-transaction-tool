@@ -80,7 +80,7 @@ describe('ObserversService', () => {
       const transactionId = 1;
       const dto = { userIds: [2] };
 
-      const transaction = { creatorKey: { user }, observers: [] };
+      const transaction = { creatorKey: { userId: user.id }, observers: [] };
       entityManager.findOne.mockResolvedValue(transaction);
 
       const observer = { userId: 2, transactionId, role: Role.FULL } as TransactionObserver;
@@ -100,7 +100,7 @@ describe('ObserversService', () => {
       const transactionId = 1;
       const dto = { userIds: [3] };
 
-      const transaction = { creatorKey: { user }, observers: [{ userId: 3 }] };
+      const transaction = { creatorKey: { userId: user.id }, observers: [{ userId: 3 }] };
       entityManager.findOne.mockResolvedValue(transaction);
 
       const result = await service.createTransactionObservers(user, transactionId, dto);
@@ -129,7 +129,7 @@ describe('ObserversService', () => {
       const transactionId = 1;
       const dto = { userIds: [2] };
 
-      const transaction = { creatorKey: { user: { id: 2 } } };
+      const transaction = { creatorKey: { userId: 2 } };
       entityManager.findOne.mockResolvedValue(transaction);
 
       await expect(service.createTransactionObservers(user, transactionId, dto)).rejects.toThrow(
@@ -141,7 +141,7 @@ describe('ObserversService', () => {
       const transactionId = 1;
       const dto = { userIds: [2] };
 
-      const transaction = { creatorKey: { user }, observers: [] };
+      const transaction = { creatorKey: { userId: user.id }, observers: [] };
       entityManager.findOne.mockResolvedValue(transaction);
 
       const observer = { userId: 2, transactionId, role: Role.FULL } as TransactionObserver;
@@ -216,7 +216,11 @@ describe('ObserversService', () => {
     it('should get transaction observers when transaction is visible for everyone', async () => {
       const transactionId = 1;
       const observers = [{ userId: 2 }, { userId: 3 }];
-      const transaction = { creatorKey: { user }, status: TransactionStatus.EXECUTED, observers };
+      const transaction = {
+        creatorKey: { userId: user.id },
+        status: TransactionStatus.EXECUTED,
+        observers,
+      };
       entityManager.findOne.mockResolvedValue(transaction);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([]);
 
@@ -255,7 +259,7 @@ describe('ObserversService', () => {
     it('should update transaction observer', async () => {
       const observerId = 1;
       const dto = { role: Role.FULL };
-      const transaction = { creatorKey: { user } };
+      const transaction = { creatorKey: { userId: user.id } };
       const observer = { id: observerId, userId: user.id } as TransactionObserver;
 
       observersRepo.findOneBy.mockResolvedValue(observer);
@@ -272,7 +276,7 @@ describe('ObserversService', () => {
     it('should not update the transaction observer if not creator', async () => {
       const observerId = 1;
       const dto = { role: Role.FULL };
-      const transaction = { creatorKey: { user: { id: 2 } } };
+      const transaction = { creatorKey: { userId: 2 } };
       const observer = { id: observerId, userId: user.id } as TransactionObserver;
 
       observersRepo.findOneBy.mockResolvedValue(observer);
@@ -310,7 +314,7 @@ describe('ObserversService', () => {
   describe('removeTransactionObserver', () => {
     it('should remove transaction observer', async () => {
       const observerId = 1;
-      const transaction = { creatorKey: { user } };
+      const transaction = { creatorKey: { userId: user.id } };
       const observer = { id: observerId, userId: user.id } as TransactionObserver;
 
       observersRepo.findOneBy.mockResolvedValue(observer);
@@ -326,7 +330,7 @@ describe('ObserversService', () => {
 
     it('should not remove the transaction observer if not creator', async () => {
       const observerId = 1;
-      const transaction = { creatorKey: { user: { id: 2 } } };
+      const transaction = { creatorKey: { userId: 2 } };
       const observer = { id: observerId, userId: user.id } as TransactionObserver;
 
       observersRepo.findOneBy.mockResolvedValue(observer);

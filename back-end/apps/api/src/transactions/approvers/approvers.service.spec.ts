@@ -170,7 +170,7 @@ describe('ApproversService', () => {
   describe('getVerifiedApproversByTransactionId', () => {
     it('should get transaction appovers by transaction id if user is creator', async () => {
       const transactionId = 1;
-      const transaction = { creatorKey: { user } };
+      const transaction = { creatorKey: { userId: user.id } };
       dataSource.manager.findOne.mockResolvedValue(transaction);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([]);
 
@@ -335,7 +335,7 @@ describe('ApproversService', () => {
   describe('createTransactionApprovers', () => {
     const transaction = {
       id: 1,
-      creatorKey: { user },
+      creatorKey: { userId: user.id },
       status: TransactionStatus.EXPIRED,
     };
 
@@ -720,7 +720,7 @@ describe('ApproversService', () => {
   describe('updateTransactionApprover', () => {
     const transaction = {
       id: 1,
-      creatorKey: { user },
+      creatorKey: { userId: user.id },
       status: TransactionStatus.WAITING_FOR_EXECUTION,
     };
 
@@ -1529,7 +1529,7 @@ describe('ApproversService', () => {
     it('should return the transaction if user is creator', async () => {
       const transaction = {
         id: 1,
-        creatorKey: { user },
+        creatorKey: { userId: user.id },
       };
 
       dataSource.manager.findOne.mockResolvedValueOnce(transaction);
@@ -1540,7 +1540,7 @@ describe('ApproversService', () => {
     it('should throw if user is not creator', async () => {
       const transaction = {
         id: 1,
-        creatorKey: { user: { id: 2 } },
+        creatorKey: { userId: 2 },
       };
 
       dataSource.manager.findOne.mockResolvedValueOnce(transaction);
