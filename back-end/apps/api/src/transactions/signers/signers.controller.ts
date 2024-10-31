@@ -11,7 +11,6 @@ import {
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import {
-  OnlyOwnerKey,
   PaginatedResourceDto,
   Pagination,
   PaginationParams,
@@ -23,15 +22,14 @@ import { TransactionSigner, User } from '@entities';
 import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../../guards';
 import { GetUser } from '../../decorators/get-user.decorator';
 
-import { SignersService } from './signers.service';
-
 import {
-  UploadSignatureDto,
+  UploadSignatureMapDto,
   TransactionSignerDto,
   TransactionSignerUserKeyDto,
   TransactionSignerFullDto,
-  UploadSignatureArrayDto,
 } from '../dto';
+
+import { SignersService } from './signers.service';
 
 @ApiTags('Transaction Signers')
 @Controller('transactions/:transactionId?/signers')
@@ -76,53 +74,27 @@ export class SignersController {
     return this.signaturesService.getSignaturesByUser(user, pagination, true);
   }
 
-  /* Uploads a signature for particular transaction */
+  /* Uploads a signature map for a transaction */
   @ApiOperation({
     summary: 'Upload a signature map for a transaction',
     description:
-      'Upload a siganture map and user key id with which the transaction is signed. The signature map must be an object containing node account ids for which the signature is valid',
+      'Upload a siganture map for the transaction. The signature map must be an object containing with the following structure: node account ID -> transaction ID -> DER public key -> signature.',
   })
   @ApiBody({
-    type: UploadSignatureDto,
+    type: UploadSignatureMapDto,
   })
   @ApiResponse({
     status: 201,
-    type: TransactionSignerFullDto,
+    type: [TransactionSignerFullDto],
   })
   @Post()
   @HttpCode(201)
   @Serialize(TransactionSignerFullDto)
-  @OnlyOwnerKey<UploadSignatureDto>('publicKeyId')
-  uploadSignature(
+  uploadSignatureMap(
     @Param('transactionId', ParseIntPipe) transactionId: number,
-    @Body() body: UploadSignatureDto,
-    @GetUser() user: User,
-  ): Promise<TransactionSigner> {
-    return this.signaturesService.uploadSignature(transactionId, body, user);
-  }
-
-  /* Uploads signatures for many public keys for particular transaction */
-  @ApiOperation({
-    summary: 'Upload a signature map for a transaction',
-    description:
-      'Upload a siganture map and user key id with which the transaction is signed. The signature map must be an object containing node account ids for which the signature is valid',
-  })
-  @ApiBody({
-    type: UploadSignatureArrayDto,
-  })
-  @ApiResponse({
-    status: 201,
-    type: TransactionSignerFullDto,
-  })
-  @Post('/many')
-  @HttpCode(201)
-  @Serialize(TransactionSignerFullDto)
-  @OnlyOwnerKey<UploadSignatureDto>('publicKeyId')
-  uploadSignatures(
-    @Param('transactionId', ParseIntPipe) transactionId: number,
-    @Body() body: UploadSignatureArrayDto,
+    @Body() body: UploadSignatureMapDto,
     @GetUser() user: User,
   ): Promise<TransactionSigner[]> {
-    return this.signaturesService.uploadSignatures(transactionId, body, user);
+    return this.signaturesService.uploadSignatureMap(transactionId, body, user);
   }
 }
