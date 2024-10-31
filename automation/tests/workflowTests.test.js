@@ -629,12 +629,12 @@ test.describe('Workflow tests', () => {
   });
 
   // This test is failing in CI environment due to bug in the SDK
-  test.skip('Verify transaction details are displayed for file append tx ', async () => {
+  test('Verify transaction details are displayed for file append tx ', async () => {
     const newText = ' extra text to append';
     await transactionPage.ensureFileExists('test');
     const fileId = await transactionPage.getFirsFileIdFromCache();
     const transactionId = await transactionPage.appendFile(fileId, newText);
-
+    await detailsPage.clickOnFirstTransactionDetailsButton();
     await detailsPage.assertTransactionDetails(
       transactionId,
       'File Append Transaction',

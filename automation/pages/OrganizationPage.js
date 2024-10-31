@@ -23,7 +23,11 @@ const {
   compareJsonFiles,
   parsePropertiesContent,
 } = require('../utils/util');
-const { normalizeExchangeRateData, normalizeThrottleData } = require('../utils/dataNormalizer');
+const {
+  normalizeExchangeRateData,
+  normalizeThrottleData,
+  normalizeFeeScheduleData,
+} = require('../utils/dataNormalizer');
 const {
   getFirstPublicKeyByEmail,
   getUserIdByEmail,
@@ -126,7 +130,6 @@ class OrganizationPage extends BasePage {
   stageBubbleIndexSelector = 'div-stepper-nav-item-bubble-';
   observerIndexSelector = 'span-group-email-';
   userListIndexSelector = 'span-email-';
-  contactListPublicKeyTypeIndexSelector = 'p-contact-public-type-key-';
 
   async clickOnAddNewOrganizationButton() {
     await this.click(this.addNewOrganizationButtonSelector);
@@ -975,7 +978,12 @@ class OrganizationPage extends BasePage {
     const fileMappings = {
       '0.0.101': { path: 'data/101.json', type: 'json', keysToIgnore: [] },
       '0.0.102': { path: 'data/102.json', type: 'json', keysToIgnore: [] },
-      '0.0.111': { path: 'data/feeSchedules.json', type: 'json', keysToIgnore: [] },
+      '0.0.111': {
+        path: 'data/feeSchedules.json',
+        type: 'json',
+        keysToIgnore: [],
+        normalizer: normalizeFeeScheduleData,
+      },
       '0.0.112': {
         path: 'data/exchangeRates.json',
         type: 'json',

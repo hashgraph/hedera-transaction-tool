@@ -1,43 +1,54 @@
 /**
- * Normalizes exchange rate data by converting specific fields to standard names and formats.
- * @param data - The exchange rate data object to normalize.
- * @returns {{}} - The normalized exchange rate data object.
+ * Recursively traverses an object or array and applies a callback to each key-value pair.
+ * @param {any} obj - The input data to traverse.
+ * @param {Function} callback - The function to apply to each key-value pair.
+ * @returns {any} - The transformed data.
  */
-
-function normalizeExchangeRateData(data) {
-  const normalizedData = {};
-
-  for (const rateType of ['currentRate', 'nextRate']) {
-    if (data[rateType]) {
-      const rateData = data[rateType];
-      const normalizedRate = {};
-
-      // Map hbarEquiv to hbars
-      normalizedRate.hbars = rateData.hbars || rateData.hbarEquiv;
-      // Map centEquiv to cents
-      normalizedRate.cents = rateData.cents || rateData.centEquiv;
-
-      // Handle expirationTime
-      if (rateData.expirationTime) {
-        if (typeof rateData.expirationTime === 'string') {
-          normalizedRate.expirationTime = rateData.expirationTime;
-        } else if (typeof rateData.expirationTime === 'object' && rateData.expirationTime.seconds) {
-          // Convert seconds to ISO string
-          const date = new Date(Number(rateData.expirationTime.seconds) * 1000);
-          normalizedRate.expirationTime = date.toISOString();
-        }
+function deepTraverse(obj, callback) {
+  if (Array.isArray(obj)) {
+    return obj.map(item => deepTraverse(item, callback));
+  } else if (obj !== null && typeof obj === 'object') {
+    const newObj = {};
+    for (const key in obj) {
+      if (Object.hasOwnProperty.call(obj, key)) {
+        const { newKey, newValue } = callback(key, obj[key]);
+        newObj[newKey] = deepTraverse(newValue, callback);
       }
-
-      // Include exchangeRateInCents if present
-      if (rateData.exchangeRateInCents !== undefined) {
-        normalizedRate.exchangeRateInCents = rateData.exchangeRateInCents;
-      }
-
-      normalizedData[rateType] = normalizedRate;
     }
+    return newObj;
+  } else {
+    return obj;
+  }
+}
+
+/**
+ * Normalizes exchange rate data by converting specific fields to standard names and formats.
+ * @param {object} data - The exchange rate data object to normalize.
+ * @returns {object} - The normalized exchange rate data object.
+ */
+function normalizeExchangeRateData(data) {
+  const keyMappings = {
+    hbarEquiv: 'hbars',
+    centEquiv: 'cents',
+  };
+
+  function callback(key, value) {
+    let newKey = keyMappings[key] || key;
+    let newValue = value;
+
+    if (['currentRate', 'nextRate'].includes(key)) {
+      // Do nothing, proceed to traverse
+    } else if (newKey === 'expirationTime') {
+      if (typeof value === 'object' && value.seconds) {
+        const date = new Date(Number(value.seconds) * 1000);
+        newValue = date.toISOString();
+      }
+    }
+
+    return { newKey, newValue };
   }
 
-  return normalizedData;
+  return deepTraverse(data, callback);
 }
 
 /**
@@ -46,30 +57,48 @@ function normalizeExchangeRateData(data) {
  * @returns {object} - The normalized data object.
  */
 function normalizeThrottleData(data) {
-  function traverse(obj) {
-    if (Array.isArray(obj)) {
-      return obj.map(traverse);
-    } else if (obj !== null && typeof obj === 'object') {
-      for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
-          if (key === 'milliOpsPerSec' || key === 'burstPeriodMs') {
-            if (typeof obj[key] === 'string') {
-              obj[key] = parseInt(obj[key], 10);
-            }
-          } else {
-            obj[key] = traverse(obj[key]);
-          }
-        }
-      }
-      return obj;
-    } else {
-      return obj;
+  function callback(key, value) {
+    let newValue = value;
+    if (['milliOpsPerSec', 'burstPeriodMs'].includes(key) && typeof value === 'string') {
+      newValue = parseInt(value, 10);
     }
+    return { newKey: key, newValue };
   }
-  return traverse(data);
+
+  return deepTraverse(data, callback);
+}
+
+/**
+ * Normalizes fee schedule data by renaming specific keys.
+ * @param {object} data - The fee schedule data object to normalize.
+ * @returns {object} - The normalized data object.
+ */
+function normalizeFeeScheduleData(data) {
+  const keyMappings = {
+    currentFeeSchedule: 'current',
+    subType: 'feeDataType',
+    bpt: 'transactionBandwidthByte',
+    vpt: 'transactionVerification',
+    rbh: 'transactionRamByteHour',
+    sbh: 'transactionStorageByteHour',
+    gas: 'contractTransactionGas',
+    tv: 'transferVolumeHbar',
+    bpr: 'responseMemoryByte',
+    sbpr: 'responseDiskByte',
+    nextFeeSchedule: 'next',
+    expiryTime: 'expirationTime',
+  };
+
+  function callback(key, value) {
+    const newKey = keyMappings[key] || key;
+    return { newKey, newValue: value };
+  }
+
+  return deepTraverse(data, callback);
 }
 
 module.exports = {
   normalizeExchangeRateData,
   normalizeThrottleData,
+  normalizeFeeScheduleData,
 };

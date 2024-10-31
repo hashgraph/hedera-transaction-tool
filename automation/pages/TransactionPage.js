@@ -94,7 +94,6 @@ class TransactionPage extends BasePage {
   draftContinueButtonIndexSelector = 'button-draft-continue-';
   confirmDeleteAccountButtonSelector = 'button-confirm-delete-account';
   singleTransactionButtonSelector = 'span-single-transaction';
-  //uploadFileButtonSelector = 'button-upload-file';
   uploadFileButtonSelector = '#append-transaction-file[type="file"]';
 
   //Other

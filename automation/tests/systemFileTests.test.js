@@ -120,7 +120,7 @@ test.describe('System file tests', () => {
     expect(result).toBe('SUCCESS');
   });
 
-  test.skip('Verify user can execute file update transaction for fee schedule(111)', async () => {
+  test('Verify user can execute file update transaction for fee schedule(111)', async () => {
     test.slow();
     const fileId = '0.0.111';
     const { txId, validStart } = await organizationPage.updateSystemFile(fileId, 5, true);
@@ -136,7 +136,7 @@ test.describe('System file tests', () => {
     const entityId = transactionDetails.transactions[0]?.entity_id;
     expect(transactionType).toBe('FILEAPPEND');
     expect(entityId).toBe('0.0.111');
-    expect(result).toBe('SUCCESS');
+    expect(result).toBe('FEE_SCHEDULE_FILE_PART_UPLOADED');
   });
 
   test('Verify user can execute file update transaction for exchange rate(112)', async () => {
