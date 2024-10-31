@@ -3,7 +3,7 @@ import type { Network, NetworkExchangeRateSetResponse } from '@main/shared/inter
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
-import { Client, Timestamp } from '@hashgraph/sdk';
+import { Client } from '@hashgraph/sdk';
 
 import { CommonNetwork } from '@main/shared/enums';
 
