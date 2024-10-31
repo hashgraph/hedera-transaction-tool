@@ -22,6 +22,7 @@ const props = defineProps<{
 /* Emits */
 const emit = defineEmits<{
   (event: 'setOrganizationId', value: string): void;
+  (event: 'migration:cancel'): void;
 }>();
 
 /* State */
@@ -100,6 +101,8 @@ const handleFormSubmit: SubmitCallback = async (formData: ModelValue) => {
   return { tempPasswordError: null, newPasswordError: null };
 };
 
+const handleMigrationCancel = () => emit('migration:cancel');
+
 /* Functions */
 const setupOrganization = async ({ organizationURL, organizationNickname }: ModelValue) => {
   const { id } = await addOrganization({
@@ -146,5 +149,6 @@ const setNewPassword = async ({
     :loading-text="loadingText"
     :personal-user="personalUser"
     :submit-callback="handleFormSubmit"
+    @migration:cancel="handleMigrationCancel"
   />
 </template>

@@ -68,10 +68,11 @@ const heading = computed(() => {
 });
 
 /* Handlers */
-const handleStopMigration = () => {
+const handleStopMigration = async () => {
   user.setMigrating(false);
-  router.push({ name: 'login' });
+  await resetDataLocal();
   user.logout();
+  router.push({ name: 'login' });
 };
 
 const handleSetRecoveryPhrase = async (value: {
@@ -154,6 +155,7 @@ onMounted(async () => {
           <SetupPersonal
             :recovery-phrase="recoveryPhrase"
             @set-personal-user="handleSetPersonalUser"
+            @migration:cancel="handleStopMigration"
           />
         </template>
 
@@ -165,6 +167,7 @@ onMounted(async () => {
             :recovery-phrase="recoveryPhrase"
             :personal-user="personalUser"
             @set-organization-id="handleSetOrganizationId"
+            @migration:cancel="handleStopMigration"
           />
 
           <template v-if="userInitialized">

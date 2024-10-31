@@ -32,6 +32,11 @@ const props = defineProps<{
   submitCallback: SubmitCallback;
 }>();
 
+/* Emits */
+const emit = defineEmits<{
+  (event: 'migration:cancel'): void;
+}>();
+
 /* State */
 const inputOrganizationNickname = ref('');
 const inputOrganizationURL = ref('');
@@ -44,9 +49,7 @@ const inputTemporaryPasswordError = ref<string | null>(null);
 const inputNewOrganizationPasswordError = ref<string | null>(null);
 
 /* Handlers */
-const handleOnFormSubmit = async (e: Event) => {
-  e.preventDefault();
-
+const handleOnFormSubmit = async () => {
   const organizationURL = inputOrganizationURL.value.trim();
   const organizationEmail = inputOrganizationEmail.value.trim();
   const organizationNickname = inputOrganizationNickname.value.trim();
@@ -83,6 +86,8 @@ const handleOnFormSubmit = async (e: Event) => {
   inputNewOrganizationPasswordError.value = result.newPasswordError;
 };
 
+const handleCancel = () => emit('migration:cancel');
+
 /* Functions */
 function checkUrl(url: string) {
   const urlValid = isUrl(url);
@@ -101,7 +106,7 @@ watch(inputNewOrganizationPassword, pass => {
 watch(inputTemporaryOrganizationPassword, () => (inputTemporaryPasswordError.value = null));
 </script>
 <template>
-  <form @submit="handleOnFormSubmit" class="flex-column-100">
+  <form @submit.prevent="handleOnFormSubmit" class="flex-column-100">
     <div class="fill-remaining">
       <p class="text-secondary text-small lh-base text-center">
         Fill the information to setup your organization
@@ -194,12 +199,20 @@ watch(inputTemporaryOrganizationPassword, () => (inputTemporaryPasswordError.val
     </div>
 
     <!-- Submit -->
-    <div class="d-flex justify-content-end align-items-end mt-5">
+    <div class="d-flex justify-content-between align-items-end mt-5">
+      <div>
+        <AppButton
+          color="secondary"
+          type="button"
+          data-testid="button-migration-cancel"
+          @click="handleCancel"
+          >Cancel</AppButton
+        >
+      </div>
       <div>
         <AppButton
           color="primary"
           type="submit"
-          class="w-100"
           :loading="loading"
           :loading-text="loadingText"
           :disabled="
@@ -209,7 +222,7 @@ watch(inputTemporaryOrganizationPassword, () => (inputTemporaryPasswordError.val
             inputNewOrganizationPassword.trim().length === 0 ||
             inputNewOrganizationPassword.trim() === inputTemporaryOrganizationPassword.trim()
           "
-          data-testid="button-setup-personal"
+          data-testid="button-migration-setup-organization"
           >Continue</AppButton
         >
       </div>

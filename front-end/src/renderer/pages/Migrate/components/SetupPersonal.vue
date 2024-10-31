@@ -35,6 +35,7 @@ const props = defineProps<{
 /* Emits */
 const emit = defineEmits<{
   (event: 'setPersonalUser', personalUser: PersonalUser): void;
+  (event: 'migration:cancel'): void;
 }>();
 
 /* State */
@@ -55,6 +56,8 @@ const handleFormSubmit = async (formData: ModelValue) => {
 
   emit('setPersonalUser', data);
 };
+
+const handleCancel = () => emit('migration:cancel');
 
 /* Functions */
 const setupPersonal = async ({
@@ -114,5 +117,9 @@ const setupPersonal = async ({
 };
 </script>
 <template>
-  <SetupPersonalForm :loading="loading" @submit="handleFormSubmit" />
+  <SetupPersonalForm
+    :loading="loading"
+    @submit="handleFormSubmit"
+    @migration:cancel="handleCancel"
+  />
 </template>
