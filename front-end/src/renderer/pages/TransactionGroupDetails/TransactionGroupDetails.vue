@@ -277,24 +277,12 @@ watch(
     </div>
     <div class="d-flex mt-4">
       <div class="form-group col-6">
-        <label class="form-label">Transaction Group Name</label>
+        <label class="form-label">Transaction Group Description</label>
         <div>{{ group?.description }}</div>
-        <!-- <AppInput
-          v-model="groupName"
-          @update:modelValue="nameUpdated"
-          filled
-          placeholder="Enter Name"
-        /> -->
       </div>
       <div v-if="isLoggedInOrganization(user.selectedOrganization)" class="form-group col-6">
         <label class="form-label">Sequential Execution</label>
         <div>{{ group?.sequential ? 'Yes' : 'No' }}</div>
-        <!-- <AppInput
-          v-model="groupName"
-          @update:modelValue="nameUpdated"
-          filled
-          placeholder="Enter Name"
-        /> -->
       </div>
     </div>
 
