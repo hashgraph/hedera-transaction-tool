@@ -6,7 +6,6 @@ import {
   MirrorNodeService,
   decode,
   getSignatureEntities,
-  isAccountId,
   parseAccountProperty,
   computeShortenedPublicKeyList,
 } from '@app/common';
@@ -94,84 +93,6 @@ export const validateSignature = (
 
     return false;
   }
-};
-
-export const addTransactionSignatures = (
-  transaction: string | Buffer | SDKTransaction,
-  signatures: { [key: string]: Buffer },
-  publicKey: string | PublicKey,
-) => {
-  /* Deserialize Transaction */
-  transaction =
-    transaction instanceof SDKTransaction
-      ? transaction
-      : SDKTransaction.fromBytes(transaction instanceof Buffer ? transaction : decode(transaction));
-
-  /* Deserialize Public Key */
-  publicKey = publicKey instanceof PublicKey ? publicKey : PublicKey.fromString(publicKey);
-
-  /* Validates the signature map */
-  if (!isSignatureMap(signatures)) throw new Error('Invalid Signature Map');
-
-  /* Checks the length of the signatures */
-  if (Object.values(signatures).length === 0) return;
-
-  /* Freeze the transaction if not frozen */
-  if (!transaction.isFrozen()) transaction.freeze();
-
-  const publicKeyHex = publicKey.toStringRaw();
-
-  /* Check if the signature is already added */
-  if (transaction._signerPublicKeys.has(publicKeyHex)) return;
-
-  /* Lock the transaction properties */
-  // @ts-expect-error - _transactionIds is private property
-  transaction._transactionIds.setLocked();
-  transaction._nodeAccountIds.setLocked();
-  transaction._signedTransactions.setLocked();
-
-  /* Add the signature to each transaction copy for each node */
-  for (const subTransaction of transaction._signedTransactions.list) {
-    const { nodeAccountID } = proto.TransactionBody.decode(subTransaction.bodyBytes);
-    const nodeAccountId = AccountId._fromProtobuf(nodeAccountID);
-
-    let signature = signatures[nodeAccountId.toString()];
-
-    if (!signature) {
-      throw new Error(`Signature for Node with Account ID ${nodeAccountId.toString()} Not Found`);
-    }
-    /* Deserialize Signature */
-    signature = signature instanceof Buffer ? signature : decode(signature);
-
-    if (subTransaction.sigMap == null) subTransaction.sigMap = {};
-
-    if (subTransaction.sigMap.sigPair == null) subTransaction.sigMap.sigPair = [];
-
-    subTransaction.sigMap.sigPair.push(publicKey._toProtobufSignature(signature));
-  }
-
-  transaction._signerPublicKeys.add(publicKeyHex);
-  //@ts-expect-error - _publicKeys is a private property
-  transaction._publicKeys.push(publicKey);
-  //@ts-expect-error - _transactionSigners is a private property
-  transaction._transactionSigners.push(null);
-};
-
-export const isSignatureMap = value => {
-  if (!value || typeof value !== 'object') return false;
-
-  for (const key in value) {
-    if (
-      !isAccountId(key) ||
-      !value[key] ||
-      (typeof value[key] !== 'string' && !(value[key] instanceof Buffer))
-    )
-      return false;
-
-    if (value[key] instanceof Buffer) continue;
-    value[key] = decode(value[key]);
-  }
-  return true;
 };
 
 export const isAlreadySigned = (transaction: SDKTransaction, publicKey: string | PublicKey) => {
