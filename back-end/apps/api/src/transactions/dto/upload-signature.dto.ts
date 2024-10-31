@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { SignatureMap } from '@hashgraph/sdk';
 
 import { IsSignatureMap } from '@app/common';
 import { IsNotEmptyObject } from 'class-validator';
@@ -30,5 +29,5 @@ export class UploadSignatureMapDto {
   })
   @IsNotEmptyObject()
   @IsSignatureMap()
-  signatureMap: SignatureMap;
+  signatureMap;
 }
