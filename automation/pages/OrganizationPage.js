@@ -3,6 +3,13 @@ import { generateMnemonic } from '../utils/keyUtil';
 const bcrypt = require('bcryptjs');
 const { Mnemonic } = require('@hashgraph/sdk');
 const { encrypt } = require('../utils/crypto');
+const {
+  encodeExchangeRates,
+  encodeFeeSchedule,
+  encodeNodeAddressBook,
+  encodeServicesConfigurationList,
+  encodeThrottleDefinitions,
+} = require('../utils/encodeSystemFiles');
 
 const BasePage = require('./BasePage');
 const RegistrationPage = require('./RegistrationPage');
@@ -13,7 +20,14 @@ const {
   generateRandomPassword,
   setupEnvironmentForTransactions,
   waitForValidStart,
+  compareJsonFiles,
+  parsePropertiesContent,
 } = require('../utils/util');
+const {
+  normalizeExchangeRateData,
+  normalizeThrottleData,
+  normalizeFeeScheduleData,
+} = require('../utils/dataNormalizer');
 const {
   getFirstPublicKeyByEmail,
   getUserIdByEmail,
@@ -25,6 +39,7 @@ const {
   insertKeyPair,
   getLatestNotificationStatusByEmail,
 } = require('../utils/databaseQueries');
+const fs = require('fs');
 
 class OrganizationPage extends BasePage {
   constructor(window) {
@@ -72,6 +87,7 @@ class OrganizationPage extends BasePage {
   hoursOverlayButtonSelector = 'button[data-test="hours-toggle-overlay-btn-0"]';
   signTransactionButtonSelector = 'button-sign-org-transaction';
   nextTransactionButtonSelector = 'button-next-org-transaction';
+  signAllTransactionsButtonSelector = 'button-sign-all-tx';
 
   // Inputs
   organizationNicknameInputSelector = 'input-organization-nickname';
@@ -88,6 +104,8 @@ class OrganizationPage extends BasePage {
   transactionValidStartSelector = 'p-transaction-details-valid-start';
   secondSignerCheckmarkSelector = 'span-checkmark-public-key-1-0';
   spanNotificationNumberSelector = 'span-notification-number';
+  transactionIdInGroupSelector = 'td-group-transaction-id';
+  validStartTimeInGroupSelector = 'td-group-valid-start-time';
 
   // Indexes
   modeSelectionIndexSelector = 'dropdown-item-';
@@ -112,7 +130,6 @@ class OrganizationPage extends BasePage {
   stageBubbleIndexSelector = 'div-stepper-nav-item-bubble-';
   observerIndexSelector = 'span-group-email-';
   userListIndexSelector = 'span-email-';
-  contactListPublicKeyTypeIndexSelector = 'p-contact-public-type-key-';
 
   async clickOnAddNewOrganizationButton() {
     await this.click(this.addNewOrganizationButtonSelector);
@@ -500,7 +517,7 @@ class OrganizationPage extends BasePage {
    * Opens the date picker.
    */
   async openDatePicker() {
-    await this.click(`.dp__input_wrap`);
+    await this.window.click(`[data-test="dp-input"]`);
     await this.window.waitForSelector('.dp__instance_calendar');
   }
 
@@ -515,7 +532,7 @@ class OrganizationPage extends BasePage {
   /**
    * Moves the time ahead by the specified number of seconds, handling minute and hour overflow.
    *
-   * @param {number} seconds - The number of seconds to move ahead.
+   * @param seconds - The number of seconds to move ahead.
    */
   async moveTimeAheadBySeconds(seconds) {
     const increment = async (selector, count) => {
@@ -858,6 +875,198 @@ class OrganizationPage extends BasePage {
     );
 
     return await this.processTransaction(isSignRequiredFromCreator);
+  }
+
+  async updateSystemFile(fileId, timeForExecution = 10, isSignRequiredFromCreator = false) {
+    await this.startNewTransaction(async () => {
+      await this.transactionPage.clickOnFileServiceLink();
+      await this.transactionPage.clickOnUpdateFileSublink();
+    });
+    await this.transactionPage.fillInPayerAccountId('0.0.2');
+    await this.setDateTimeAheadBy(timeForExecution);
+    await this.transactionPage.fillInFileIdForUpdate(fileId);
+
+    const fileMappings = {
+      '0.0.101': {
+        encodeFunction: encodeNodeAddressBook,
+        inputFile: 'data/101.json',
+        outputFile: 'data/node-address-book.bin',
+        binFile: 'node-address-book.bin',
+      },
+      '0.0.102': {
+        encodeFunction: encodeNodeAddressBook,
+        inputFile: 'data/102.json',
+        outputFile: 'data/node-details.bin',
+        binFile: 'node-details.bin',
+      },
+      '0.0.111': {
+        encodeFunction: encodeFeeSchedule,
+        inputFile: 'data/feeSchedules.json',
+        outputFile: 'data/fee-schedules.bin',
+        binFile: 'fee-schedules.bin',
+        specialProcessing: true, // This is a huge file, so we need to handle it differently due to transaction group
+      },
+      '0.0.112': {
+        encodeFunction: encodeExchangeRates,
+        inputFile: 'data/exchangeRates.json',
+        outputFile: 'data/exchange-rates.bin',
+        binFile: 'exchange-rates.bin',
+      },
+      '0.0.121': {
+        encodeFunction: encodeServicesConfigurationList,
+        inputFile: 'data/application.properties',
+        outputFile: 'data/application-properties.bin',
+        binFile: 'application-properties.bin',
+      },
+      '0.0.122': {
+        encodeFunction: encodeServicesConfigurationList,
+        inputFile: 'data/api-permission.properties',
+        outputFile: 'data/api-permission-properties.bin',
+        binFile: 'api-permission-properties.bin',
+      },
+      '0.0.123': {
+        encodeFunction: encodeThrottleDefinitions,
+        inputFile: 'data/123.json',
+        outputFile: 'data/throttles.bin',
+        binFile: 'throttles.bin',
+      },
+    };
+
+    const fileInfo = fileMappings[fileId];
+
+    if (!fileInfo) {
+      throw new Error(`Unsupported fileId: ${fileId}`);
+    }
+
+    await fileInfo.encodeFunction(fileInfo.inputFile, fileInfo.outputFile);
+    await this.transactionPage.uploadSystemFile(fileInfo.binFile);
+
+    let txId, validStart;
+
+    if (fileInfo.specialProcessing) {
+      // Special processing for large files
+      // It does not go through the standard transaction processing
+      // Instead it goes into a transaction group
+      await this.transactionPage.clickOnSignAndSubmitButton();
+      await this.transactionPage.clickSignTransactionButton();
+      const txIdArray = await this.getGroupTransactionIdText();
+      const validStartArray = await this.getGroupValidStartText();
+      txId = txIdArray[txIdArray.length - 1]; // Get the last item in the array
+      validStart = validStartArray[0];
+      await this.clickOnSignAllTransactionsButton();
+    } else {
+      // Standard transaction processing
+      ({ txId, validStart } = await this.processTransaction(isSignRequiredFromCreator));
+    }
+
+    return { txId, validStart };
+  }
+
+  /**
+   * Checks if a file from the application is identical to the corresponding file in the data folder.
+   * @param {string} fileId - The ID of the file to read and compare.
+   * @returns {boolean} - Returns true if files are identical, or false if there are differences.
+   */
+  async areFilesIdentical(fileId) {
+    // Read the file content from the application
+    const textFromField = await this.transactionPage.readFile(fileId);
+    if (!textFromField || textFromField.trim() === '') {
+      throw new Error(`No data returned from application for fileId ${fileId}`);
+    }
+
+    // Mapping of file IDs to data files and file types
+    const fileMappings = {
+      '0.0.101': { path: 'data/101.json', type: 'json', keysToIgnore: [] },
+      '0.0.102': { path: 'data/102.json', type: 'json', keysToIgnore: [] },
+      '0.0.111': {
+        path: 'data/feeSchedules.json',
+        type: 'json',
+        keysToIgnore: [],
+        normalizer: normalizeFeeScheduleData,
+      },
+      '0.0.112': {
+        path: 'data/exchangeRates.json',
+        type: 'json',
+        keysToIgnore: ['exchangeRateInCents'],
+        normalizer: normalizeExchangeRateData,
+      },
+      '0.0.121': { path: 'data/application.properties', type: 'properties', keysToIgnore: [] },
+      '0.0.122': { path: 'data/api-permission.properties', type: 'properties', keysToIgnore: [] },
+      '0.0.123': {
+        path: 'data/123.json',
+        type: 'json',
+        keysToIgnore: [],
+        normalizer: normalizeThrottleData,
+      },
+    };
+
+    const fileInfo = fileMappings[fileId];
+
+    if (!fileInfo) {
+      throw new Error(`Unsupported fileId: ${fileId}`);
+    }
+
+    // Read the local file content
+    const localFileContent = fs.readFileSync(fileInfo.path, 'utf8');
+
+    let localData, remoteData;
+
+    // Parse the files based on their type
+    if (fileInfo.type === 'json') {
+      // Parse local JSON file
+      try {
+        localData = JSON.parse(localFileContent);
+      } catch (error) {
+        throw new Error(`Failed to parse local JSON file ${fileInfo.path}: ${error.message}`);
+      }
+
+      // Parse remote JSON data from application
+      try {
+        remoteData = JSON.parse(textFromField);
+      } catch (error) {
+        throw new Error(`Failed to parse remote JSON data for fileId ${fileId}: ${error.message}`);
+      }
+    } else if (fileInfo.type === 'properties') {
+      // Parse local properties file into an object
+      localData = parsePropertiesContent(localFileContent);
+
+      // Parse remote properties content into an object
+      remoteData = parsePropertiesContent(textFromField);
+    } else {
+      throw new Error(`Unsupported file type for fileId ${fileId}`);
+    }
+
+    const keysToIgnore = fileInfo.keysToIgnore || [];
+
+    // Apply normalizer if present
+    if (fileInfo.normalizer) {
+      localData = fileInfo.normalizer(localData);
+      remoteData = fileInfo.normalizer(remoteData);
+    }
+
+    // Compare the two data objects
+    const differences = compareJsonFiles(localData, remoteData, keysToIgnore);
+
+    if (differences === null) {
+      console.log(`The files for fileId ${fileId} are identical.`);
+      return true;
+    } else {
+      console.log(`The files for fileId ${fileId} are not identical.`);
+      console.log('Differences:', JSON.stringify(differences, null, 2));
+      return false;
+    }
+  }
+
+  async getGroupTransactionIdText() {
+    return await this.getText(this.transactionIdInGroupSelector);
+  }
+
+  async getGroupValidStartText() {
+    return await this.getText(this.validStartTimeInGroupSelector);
+  }
+
+  async clickOnSignAllTransactionsButton() {
+    await this.click(this.signAllTransactionsButtonSelector);
   }
 
   async getReadyForSignTransactionIdByIndex(index) {

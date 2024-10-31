@@ -6,6 +6,7 @@ const {
   verifyFileExists,
 } = require('../utils/databaseQueries');
 const { decodeAndFlattenKeys } = require('../utils/keyUtil');
+const path = require('path');
 
 class TransactionPage extends BasePage {
   constructor(window) {
@@ -93,6 +94,7 @@ class TransactionPage extends BasePage {
   draftContinueButtonIndexSelector = 'button-draft-continue-';
   confirmDeleteAccountButtonSelector = 'button-confirm-delete-account';
   singleTransactionButtonSelector = 'span-single-transaction';
+  uploadFileButtonSelector = '#append-transaction-file[type="file"]';
 
   //Other
   confirmTransactionModalSelector = 'modal-confirm-transaction';
@@ -985,7 +987,7 @@ class TransactionPage extends BasePage {
   }
 
   async readFileContentFromTextArea() {
-    return await this.getTextFromInputField(this.fileContentReadTextFieldSelector);
+    return await this.getTextFromInputFieldWithRetry(this.fileContentReadTextFieldSelector);
   }
 
   async getPublicKeyText() {
@@ -1134,6 +1136,15 @@ class TransactionPage extends BasePage {
 
   async fillInDescription(description) {
     await this.fill(this.descriptionInputSelector, description);
+  }
+
+  async uploadSystemFile(fileName) {
+    const filePath = path.resolve(__dirname, '..', 'data', fileName);
+    await this.uploadFile(this.uploadFileButtonSelector, filePath);
+  }
+
+  async fillInPayerAccountId(accountId) {
+    await this.fill(this.payerDropdownSelector, accountId);
   }
 }
 module.exports = TransactionPage;

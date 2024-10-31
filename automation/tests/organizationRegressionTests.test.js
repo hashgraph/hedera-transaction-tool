@@ -6,6 +6,7 @@ const {
   generateRandomPassword,
   setupEnvironmentForTransactions,
   calculateTimeout,
+  waitForValidStart,
 } = require('../utils/util');
 const RegistrationPage = require('../pages/RegistrationPage.js');
 const { expect } = require('playwright/test');
@@ -113,7 +114,7 @@ test.describe.skip('Organization Regression tests', () => {
       globalCredentials.password,
     );
 
-    await organizationPage.waitForValidStart(validStart);
+    await waitForValidStart(validStart);
 
     const transactionResponse = await transactionPage.mirrorGetTransactionResponse(txId);
     const transactionType = transactionResponse.transactions[0]?.name;
@@ -148,7 +149,7 @@ test.describe.skip('Organization Regression tests', () => {
       globalCredentials.password,
     );
 
-    await organizationPage.waitForValidStart(validStart);
+    await waitForValidStart(validStart);
 
     const transactionResponse = await transactionPage.mirrorGetTransactionResponse(txId);
     const transactionType = transactionResponse.transactions[0]?.name;

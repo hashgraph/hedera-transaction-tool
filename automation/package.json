@@ -22,6 +22,9 @@
     "bcryptjs": "2.4.3",
     "bip39": "3.1.0",
     "uuid": "10.0.0",
-    "fsevents": "2.3.2"
+    "fsevents": "2.3.2",
+    "long": "5.2.3",
+    "lodash": "4.17.21",
+    "deep-diff": "1.0.2"
   }
 }
