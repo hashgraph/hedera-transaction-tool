@@ -170,6 +170,9 @@ const transactionSpecificLabel = computed(() => {
   if (type.includes('transfer')) return 'Transfer Info';
   if (type.includes('systemdelete')) return 'System Delete Info';
   if (type.includes('systemundelete')) return 'System Undelete Info';
+  if (type.includes('nodecreate')) return 'Node Creation Info';
+  if (type.includes('nodeupdate')) return 'Node Update Info';
+  if (type.includes('nodedelete')) return 'Node Deletion Info';
 
   return 'Transaction Specific Details';
 });
@@ -610,7 +613,7 @@ const cancel = 'Cancel';
               </div>
             </div>
 
-            <div class="fill-remaining mt-5">
+            <div class="fill-remaining mt-5 pe-4">
               <div class="row flex-wrap">
                 <!-- Description -->
                 <div :class="commonColClass">
