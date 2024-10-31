@@ -18,8 +18,9 @@ import { ObserverRole, TransactionStatus } from '@main/shared/interfaces';
 import {
   axiosWithCredentials,
   commonRequestHandler,
+  formatSignatureMap,
   getPrivateKey,
-  getSignatures,
+  getSignatureMapForPublicKeys,
 } from '@renderer/utils';
 
 import { decryptPrivateKey } from '../keyPairService';
@@ -57,22 +58,8 @@ export const cancelTransaction = async (serverUrl: string, id: number): Promise<
     return data;
   }, `Failed cancel transaction with id ${id}`);
 
-/* Uploads signatures to the back end */
-export const uploadSignature = async (
-  serverUrl: string,
-  transactionId: number,
-  publicKeyId: number,
-  signatures: { [key: string]: string },
-): Promise<void> =>
-  commonRequestHandler(async () => {
-    await axiosWithCredentials.post(`${serverUrl}/${controller}/${transactionId}/signers`, {
-      publicKeyId,
-      signatures,
-    });
-  }, 'Failed upload signature');
-
 /* Decrypt, sign, upload signatures to the backend */
-export const fullUploadSignatures = async (
+export const uploadSignatureMap = async (
   userId: string,
   userPassword: string | null,
   organization: LoggedInOrganization & Organization,
@@ -80,25 +67,19 @@ export const fullUploadSignatures = async (
   transaction: Transaction,
   transactionId: number,
 ) => {
-  const signaturesArray: { publicKeyId: number; signatures: { [key: string]: string } }[] = [];
-
   for (const publicKey of publicKeys) {
     const privateKeyRaw = await decryptPrivateKey(userId, userPassword, publicKey);
     const privateKey = getPrivateKey(publicKey, privateKeyRaw);
-
-    const signatures = getSignatures(privateKey, transaction);
-
-    signaturesArray.push({
-      publicKeyId: organization.userKeys.find(k => k.publicKey === publicKey)?.id || -1,
-      signatures,
-    });
+    await transaction.sign(privateKey);
   }
+
+  const signatureMap = getSignatureMapForPublicKeys(publicKeys, transaction);
 
   await commonRequestHandler(async () => {
     await axiosWithCredentials.post(
-      `${organization.serverUrl}/${controller}/${transactionId}/signers/many`,
+      `${organization.serverUrl}/${controller}/${transactionId}/signers`,
       {
-        signatures: signaturesArray,
+        signatureMap: formatSignatureMap(signatureMap),
       },
     );
   }, 'Failed upload signatures');

@@ -2,7 +2,6 @@ import type { HederaSpecialFileId } from '@main/shared/interfaces';
 import type { ITransactionApprover } from '@main/shared/interfaces/organization/approvers';
 
 import {
-  AccountId,
   Client,
   ContractId,
   FileId,
@@ -16,6 +15,7 @@ import {
   // NodeAddressBook,
   PrivateKey,
   PublicKey,
+  SignatureMap,
   Timestamp,
   Transaction,
 } from '@hashgraph/sdk';
@@ -304,25 +304,6 @@ export const isExpired = (transaction: Transaction) => {
   return new Date().getTime() >= validStart.getTime() + duration * 1_000;
 };
 
-export const getSignatures = (privateKey: PrivateKey, transaction: Transaction) => {
-  const signatures: {
-    [key: string]: string;
-  } = {};
-
-  for (const { bodyBytes } of transaction._signedTransactions.list) {
-    if (!bodyBytes) continue;
-    const { nodeAccountID } = proto.TransactionBody.decode(bodyBytes);
-
-    if (!nodeAccountID) continue;
-    const nodeAccountId = AccountId._fromProtobuf(nodeAccountID);
-
-    const signature = privateKey.sign(bodyBytes);
-    signatures[nodeAccountId.toString()] = uint8ToHex(signature);
-  }
-
-  return signatures;
-};
-
 export const getTransactionBodySignatureWithoutNodeAccountId = (
   privateKey: PrivateKey,
   transaction: Transaction,
@@ -400,4 +381,47 @@ export const getClientFromMirrorNode = async (mirrorNetwork: string) => {
   // .setNetworkFromAddressBook(nodeAddressBook);
 
   return client;
+};
+
+export const getSignatureMapForPublicKeys = (publicKeys: string[], transaction: Transaction) => {
+  const signatureMap = new SignatureMap();
+  const allSignatures = transaction.getSignatures();
+
+  const nodeAccountIds = allSignatures.keys();
+  for (const nodeAccountId of nodeAccountIds) {
+    const transactionIds = allSignatures.get(nodeAccountId)?.keys() || [];
+
+    for (const transactionId of transactionIds) {
+      const signatures = allSignatures.get(nodeAccountId)?.get(transactionId);
+
+      if (signatures) {
+        for (const publicKeyString of publicKeys) {
+          const publicKey = PublicKey.fromString(publicKeyString);
+
+          const signature = signatures.get(publicKey);
+          if (signature) {
+            signatureMap.addSignature(nodeAccountId, transactionId, publicKey, signature);
+          }
+        }
+      }
+    }
+  }
+
+  return signatureMap;
+};
+
+export const formatSignatureMap = (signatureMap: SignatureMap) => {
+  const result: {
+    [nodeAccountId: string]: { [transactionId: string]: { [publicKey: string]: string } };
+  } = {};
+  for (const [nodeAccountId, transactions] of signatureMap._map) {
+    result[nodeAccountId] = {};
+    for (const [transactionId, signatures] of transactions._map) {
+      result[nodeAccountId][transactionId] = {};
+      for (const [publicKey, signature] of signatures._map) {
+        result[nodeAccountId][transactionId][publicKey] = uint8ToHex(signature);
+      }
+    }
+  }
+  return result;
 };

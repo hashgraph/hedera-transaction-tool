@@ -24,10 +24,10 @@ import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 import {
   cancelTransaction,
-  fullUploadSignatures,
   getTransactionById,
   getUserShouldApprove,
   sendApproverChoice,
+  uploadSignatureMap,
 } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
@@ -260,12 +260,12 @@ const handleSign = async () => {
       network.mirrorNodeBaseURL,
     );
 
-    await fullUploadSignatures(
+    await uploadSignatureMap(
       user.personal.id,
       password,
       user.selectedOrganization,
       publicKeysRequired,
-      sdkTransaction.value,
+      SDKTransaction.fromBytes(sdkTransaction.value.toBytes()),
       orgTransaction.value.id,
     );
     toast.success('Transaction signed successfully');
