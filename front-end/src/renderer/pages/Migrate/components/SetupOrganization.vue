@@ -225,12 +225,6 @@ const restoreKeyPair = async (
     nickname,
   };
 
-  await storeKeyPair(
-    keyPair,
-    props.personalUser.useKeychain ? null : props.personalUser.password,
-    false,
-  );
-
   if (upload) {
     await uploadKey(organizationURL, organizationUserId.value, {
       publicKey: keyPair.public_key,
@@ -238,6 +232,12 @@ const restoreKeyPair = async (
       mnemonicHash: keyPair.secret_hash || undefined,
     });
   }
+
+  await storeKeyPair(
+    keyPair,
+    props.personalUser.useKeychain ? null : props.personalUser.password,
+    false,
+  );
 };
 </script>
 <template>
