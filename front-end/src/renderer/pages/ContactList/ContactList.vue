@@ -112,20 +112,28 @@ onBeforeMount(async () => {
 
       <div class="row g-0 fill-remaining mt-6">
         <div class="col-4 col-xxl-3 flex-column-100 overflow-hidden with-border-end pe-4 ps-0">
-          <AppButton
-            color="primary"
-            data-testid="button-add-new-contact"
-            size="large"
-            class="w-100"
-            :disabled="
-              !isLoggedInOrganization(user.selectedOrganization) || !user.selectedOrganization.admin
+          <template
+            v-if="
+              isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin
             "
-            @click="$router.push({ name: 'signUpUser' })"
           >
-            Add New
-          </AppButton>
+            <AppButton
+              color="primary"
+              data-testid="button-add-new-contact"
+              size="large"
+              class="w-100"
+              :disabled="
+                !isLoggedInOrganization(user.selectedOrganization) ||
+                !user.selectedOrganization.admin
+              "
+              @click="$router.push({ name: 'signUpUser' })"
+            >
+              Add New
+            </AppButton>
 
-          <hr class="separator my-5" />
+            <hr class="separator my-5" />
+          </template>
+
           <div class="fill-remaining pe-3">
             <template v-if="fetching">
               <div class="mt-5">
