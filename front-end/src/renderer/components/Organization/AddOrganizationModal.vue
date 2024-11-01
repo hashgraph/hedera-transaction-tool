@@ -3,6 +3,8 @@ import type { Organization } from '@prisma/client';
 
 import { watch, ref } from 'vue';
 
+import useUserStore from '@renderer/stores/storeUser';
+
 import { useToast } from 'vue-toast-notification';
 
 import { addOrganization } from '@renderer/services/organizationsService';
@@ -23,6 +25,9 @@ const emit = defineEmits<{
   (event: 'added', organization: Organization): void;
 }>();
 
+/* Stores */
+const user = useUserStore();
+
 /* Composables */
 const toast = useToast();
 
@@ -42,7 +47,7 @@ const handleAdd = async (e: Event) => {
   }
   try {
     const organization = await addOrganization({
-      nickname: nickname.value,
+      nickname: nickname.value.trim() || `Organization ${user.organizations.length + 1}`,
       serverUrl: serverUrl.value,
       key: '',
     });

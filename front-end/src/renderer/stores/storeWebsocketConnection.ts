@@ -86,6 +86,14 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
     }
   }
 
+  function disconnect(serverUrl: string) {
+    if (sockets.value[serverUrl]) {
+      sockets.value[serverUrl].off();
+      sockets.value[serverUrl].disconnect();
+      sockets.value[serverUrl] = null;
+    }
+  }
+
   function on(serverUrl: string, event: string, callback: (...args: any[]) => void) {
     if (sockets.value[serverUrl]) {
       const subscription = (...args: any[]) => callback(...args);
@@ -100,8 +108,9 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
   }
 
   return {
-    setup,
+    disconnect,
     on,
+    setup,
   };
 });
 
