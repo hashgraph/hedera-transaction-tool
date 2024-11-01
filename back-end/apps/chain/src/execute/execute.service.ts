@@ -159,12 +159,12 @@ export class ExecuteService {
 
   /* Throws if the transaction is not in a valid state */
   private async validateTransactionStatus(transaction: ExecuteTransactionDto) {
-    transaction = await this.transactionsRepo.findOne({
+     const { status } = await this.transactionsRepo.findOne({
       where: { id: transaction.id },
       select: ['status'],
     });
 
-    switch (transaction.status) {
+    switch (status) {
       case TransactionStatus.NEW:
         throw new Error('Transaction is new and has not been signed yet.');
       case TransactionStatus.FAILED:
