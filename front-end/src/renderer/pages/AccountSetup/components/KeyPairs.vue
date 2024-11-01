@@ -38,7 +38,7 @@ const createTooltips = useCreateTooltips();
 const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
 
 /* State */
-const nickname = ref('');
+const nickname = ref(props.selectedPersonalKeyPair?.nickname || '');
 
 const privateKeyRef = ref<HTMLSpanElement | null>(null);
 const privateKeyHidden = ref(true);
