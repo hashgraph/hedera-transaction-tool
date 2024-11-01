@@ -121,7 +121,7 @@ watch(router.currentRoute, newRoute => {
         <AppTabs
           :items="visibleTabItems"
           v-model:active-index="activeTabIndex"
-          :content-container-class="'fill-remaining'"
+          :content-container-class="'fill-remaining pe-4'"
           class="flex-column-100"
         >
           <template #[activeTabTitle]>
