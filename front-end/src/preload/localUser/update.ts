@@ -8,5 +8,6 @@ export default {
       );
     },
     checkForUpdate: (location: string) => ipcRenderer.send('update:check-for-update', location),
+    getVerison: (): Promise<string> => ipcRenderer.invoke('update:get-version'),
   },
 };

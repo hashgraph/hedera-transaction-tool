@@ -98,9 +98,9 @@ onBeforeMount(() => {
 });
 </script>
 <template>
-  <div class="fill-remaining overflow-x-auto border border-2 rounded-3 p-4">
+  <div class="fill-remaining border border-2 rounded-3 p-4">
     <p>Network</p>
-    <div class="w-100 btn-group mt-4">
+    <div class="btn-group rounded-3 overflow-x-auto w-100 pb-2 mt-4">
       <AppButton
         color="secondary"
         data-testid="tab-network-mainnet"
