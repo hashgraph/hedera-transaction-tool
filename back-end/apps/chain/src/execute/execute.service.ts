@@ -137,7 +137,8 @@ export class ExecuteService {
   ): Promise<SDKTransaction> {
     /* Throws an error if the transaction is not found or in incorrect state */
     if (!transaction) throw new Error('Transaction not found');
-    this.validateTransactionStatus(transaction);
+
+    await this.validateTransactionStatus(transaction);
 
     /* Gets the SDK transaction from the transaction body */
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
@@ -157,7 +158,12 @@ export class ExecuteService {
   }
 
   /* Throws if the transaction is not in a valid state */
-  private validateTransactionStatus(transaction: { status: TransactionStatus }) {
+  private async validateTransactionStatus(transaction: ExecuteTransactionDto) {
+    transaction = await this.transactionsRepo.findOne({
+      where: { id: transaction.id },
+      select: ['status'],
+    });
+
     switch (transaction.status) {
       case TransactionStatus.NEW:
         throw new Error('Transaction is new and has not been signed yet.');
