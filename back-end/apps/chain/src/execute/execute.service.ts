@@ -33,14 +33,14 @@ export class ExecuteService {
   ) {}
 
   /* Tries to execute a transaction */
-  @MurLock(5000, 'transaction.id')
+  @MurLock(15000, 'transaction.id')
   async executeTransaction(transaction: ExecuteTransactionDto) {
     /* Gets the SDK transaction */
     const sdkTransaction = await this.getValidatedSDKTransaction(transaction);
     return this._executeTransaction(transaction, sdkTransaction);
   }
 
-  @MurLock(5000, 'transactionGroup.id + "_group"')
+  @MurLock(15000, 'transactionGroup.id + "_group"')
   async executeTransactionGroup(transactionGroup: ExecuteTransactionGroupDto) {
     const transactions: { sdkTransaction: SDKTransaction; transaction: ExecuteTransactionDto }[] =
       [];
