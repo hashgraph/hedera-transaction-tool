@@ -188,7 +188,7 @@ export async function getAccountInfoFromFile(
 }
 
 export async function migrateUserData(userId: string): Promise<MigrateUserDataResult> {
-  let defaultNetwork: Network = CommonNetwork.TESTNET;
+  let defaultNetwork: Network = CommonNetwork.MAINNET;
 
   const result: MigrateUserDataResult = {
     accountsImported: 0,
