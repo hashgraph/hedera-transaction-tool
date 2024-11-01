@@ -4,6 +4,7 @@ import type { Organization } from '@prisma/client';
 import { ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -17,6 +18,7 @@ import AddOrganizationModal from '@renderer/components/Organization/AddOrganizat
 
 /* Stores */
 const user = useUserStore();
+const ws = useWebsocketConnection();
 
 /* Composables */
 const toast = useToast();
@@ -32,9 +34,9 @@ const handleDeleteConnection = async (organizationId: string) => {
     throw new Error('User is not logged in');
   }
 
+  ws.disconnect(user.organizations.find(org => org.id === organizationId)?.serverUrl || '');
   await user.selectOrganization(null);
   await user.deleteOrganization(organizationId);
-
   toast.success('Connection deleted successfully');
 };
 
