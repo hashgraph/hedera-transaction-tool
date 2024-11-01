@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { app, ipcMain } from 'electron';
 
 import { Updater } from '@main/services/update';
 
@@ -8,4 +8,6 @@ export default () => {
   ipcMain.on(createChannelName('check-for-update'), (_e, location: string) =>
     Updater.checkForUpdate(location),
   );
+
+  ipcMain.handle(createChannelName('get-version'), () => app.getVersion());
 };

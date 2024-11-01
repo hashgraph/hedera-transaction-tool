@@ -9,8 +9,12 @@ import { mockDeep } from 'vitest-mock-extended';
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
 vi.mock('electron', () => {
   return {
+    app: {
+      getVersion: () => '1.0.0',
+    },
     ipcMain: {
       on: vi.fn(),
+      handle: vi.fn(),
     },
   };
 });
@@ -26,11 +30,18 @@ describe('registerUpdateListeners', () => {
   const event: Electron.IpcMainEvent = mockDeep<Electron.IpcMainEvent>();
 
   test('Should register handlers for each update event', () => {
-    const eventNames = ['check-for-update'];
+    const onEventNames = ['check-for-update'];
+    const handleEventNames = ['get-version'];
 
     expect(
-      eventNames.every(util =>
+      onEventNames.every(util =>
         ipcMainMO.on.mock.calls.some(([channel]) => channel === `update:${util}`),
+      ),
+    ).toBe(true);
+
+    expect(
+      handleEventNames.every(util =>
+        ipcMainMO.handle.mock.calls.some(([channel]) => channel === `update:${util}`),
       ),
     ).toBe(true);
   });
@@ -47,6 +58,19 @@ describe('registerUpdateListeners', () => {
     if (checkForUpdateHandler) {
       checkForUpdateHandler[1](event);
       expect(Updater.checkForUpdate).toBeCalledTimes(1);
+    }
+  });
+
+  test('Should get version', async () => {
+    const getVersionHandler = ipcMainMO.handle.mock.calls.find(([event]) => {
+      return event === 'update:get-version';
+    });
+
+    expect(getVersionHandler).toBeDefined();
+
+    if (getVersionHandler) {
+      const result = getVersionHandler[1](event);
+      expect(result).toBe('1.0.0');
     }
   });
 });
