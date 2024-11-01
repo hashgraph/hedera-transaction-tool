@@ -364,6 +364,9 @@ describe('ExecuteService', () => {
     let transactionGroup: TransactionGroup;
 
     beforeEach(() => {
+      jest.restoreAllMocks();
+      jest.resetAllMocks();
+
       client = mockDeep<Client>();
       transactionGroup = {
         id: 1,
@@ -396,6 +399,9 @@ describe('ExecuteService', () => {
 
       transactionGroup.sequential = true;
       transactionGroupRepo.findOne.mockResolvedValueOnce(transactionGroup);
+      transactionRepo.findOne.mockResolvedValue({
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      } as Transaction);
 
       await service.executeTransactionGroup(transactionGroup);
 
@@ -418,6 +424,9 @@ describe('ExecuteService', () => {
 
       transactionGroup.sequential = true;
       transactionGroupRepo.findOne.mockResolvedValueOnce(transactionGroup);
+      transactionRepo.findOne.mockResolvedValue({
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      } as Transaction);
 
       await service.executeTransactionGroup(transactionGroup);
 
@@ -437,6 +446,9 @@ describe('ExecuteService', () => {
       const { receipt, response } = mockSDKTransactionExecution();
 
       transactionGroupRepo.findOne.mockResolvedValueOnce(transactionGroup);
+      transactionRepo.findOne.mockResolvedValue({
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      } as Transaction);
 
       await service.executeTransactionGroup(transactionGroup);
 
@@ -461,6 +473,9 @@ describe('ExecuteService', () => {
       });
 
       transactionGroupRepo.findOne.mockResolvedValueOnce(transactionGroup);
+      transactionRepo.findOne.mockResolvedValue({
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      } as Transaction);
 
       await service.executeTransactionGroup(transactionGroup);
 
