@@ -253,3 +253,8 @@ export async function isTransactionOverMaxSize(transaction: SDKTransaction) {
   const request = await transaction._makeRequestAsync();
   return proto.Transaction.encode(request).finish().length > MAX_TRANSACTION_BYTE_SIZE;
 }
+
+export function isTransactionBodyOverMaxSize(transaction: SDKTransaction) {
+  const bodyBytes = getTransactionBodyBytes(transaction);
+  return bodyBytes.length > MAX_TRANSACTION_BYTE_SIZE;
+}

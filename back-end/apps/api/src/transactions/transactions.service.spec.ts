@@ -18,7 +18,6 @@ import {
   TransactionId,
   Timestamp,
   Client,
-  FileUpdateTransaction,
 } from '@hashgraph/sdk';
 
 import { NOTIFICATIONS_SERVICE, MirrorNodeService, ErrorCodes } from '@app/common';
@@ -31,6 +30,7 @@ import {
   notifyWaitingForSignatures,
   notifySyncIndicators,
   MirrorNetworkGRPC,
+  isTransactionBodyOverMaxSize,
 } from '@app/common/utils';
 import {
   Transaction,
@@ -383,6 +383,7 @@ describe('TransactionsService', () => {
       });
       jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
       jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
       transactionsRepo.count.mockResolvedValueOnce(0);
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
@@ -440,28 +441,6 @@ describe('TransactionsService', () => {
       await expect(service.createTransaction(dto, user as User)).rejects.toThrow(ErrorCodes.SNMP);
     });
 
-    it.skip('should throw on transaction create if unsupported type', async () => {
-      const sdkTransaction = new FileUpdateTransaction();
-
-      const dto: CreateTransactionDto = {
-        name: 'Transaction 1',
-        description: 'Description',
-        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
-        creatorKeyId: 1,
-        signature: Buffer.from('0xabc02'),
-        mirrorNetwork: 'testnet',
-      };
-
-      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
-        usr.keys = userKeys;
-      });
-      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
-
-      await expect(service.createTransaction(dto, user as User)).rejects.toThrow(
-        'File Update/Append transactions are not currently supported',
-      );
-    });
-
     it('should throw on transaction create if expired', async () => {
       const sdkTransaction = new AccountCreateTransaction();
 
@@ -504,12 +483,41 @@ describe('TransactionsService', () => {
       });
       jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
       jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
       transactionsRepo.count.mockResolvedValueOnce(0);
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
       transactionsRepo.save.mockRejectedValueOnce(new Error('Failed to save'));
 
       await expect(service.createTransaction(dto, user as User)).rejects.toThrow(ErrorCodes.FST);
+
+      client.close();
+    });
+
+    it('should throw on transaction create if transaction over max size', async () => {
+      const sdkTransaction = new AccountCreateTransaction().setTransactionId(
+        new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
+      );
+
+      const dto: CreateTransactionDto = {
+        name: 'Transaction 1',
+        description: 'Description',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
+      });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(true);
+
+      await expect(service.createTransaction(dto, user as User)).rejects.toThrow(ErrorCodes.TOS);
 
       client.close();
     });
