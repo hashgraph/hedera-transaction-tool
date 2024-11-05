@@ -178,21 +178,50 @@ content-type: application/json
 ```
 
 ### Adding Approvers
-Approvers Request (replace "accessTokenHere" with your access token):
-
+Single Threshold Approvers Request (replace "accessTokenHere" with your access token):
 ```
 POST http://example.com/transactions/1/approvers
 Authorization: Bearer accessTokenHere
 content-type: application/json
 
 {
-  "approversArray": [{
-      "listId": 1;
-      "threshold": 1;
-      "approvers": [
-        "userId": 1;
-      ]
-  }]
+    approversArray: [
+      {
+         userId: 1
+      }
+    ]
+}
+```
+
+Multiple Threshold Approvers Request (replace "accessTokenHere" with your access token):
+```
+POST http://example.com/transactions/1/approvers
+Authorization: Bearer accessTokenHere
+content-type: application/json
+
+{
+    approversArray: [
+      {
+        threshold: 2,
+        approvers: [
+          {
+            threshold: 1,
+            approvers: [
+              {
+                userId: 1,
+              },
+              {
+                userId: 2,
+              },
+            ],
+          },
+          {
+            userId: 3,
+            approvers: [],
+          },
+        ],
+      },
+    ],
 }
 ```
 
