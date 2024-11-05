@@ -5,6 +5,8 @@ import {
   AccountCreateTransaction,
   AccountUpdateTransaction,
   Hbar,
+  KeyList,
+  PrivateKey,
   TransferTransaction,
 } from '@hashgraph/sdk';
 
@@ -292,6 +294,50 @@ describe('Transactions (e2e)', () => {
       );
       expect(countAfter).toEqual(countBefore);
     });
+
+    it(
+      '(POST) should not create a transaction that is oversized',
+      async () => {
+        const countBefore = await repo.count();
+
+        const keylist = new KeyList();
+        for (let i = 0; i < 180; i++) {
+          keylist.push(PrivateKey.generate().publicKey);
+        }
+        const transaction = new AccountCreateTransaction()
+          .setTransactionId(createTransactionId(localnet1003.accountId, new Date()))
+          .setKey(keylist);
+
+        const buffer = Buffer.from(transaction.toBytes()).toString('hex');
+
+        const userKey = await getUserKey(user.id, localnet1003.publicKeyRaw);
+
+        if (userKey === null) throw new Error('User key not found');
+
+        const dto = {
+          name: 'Oversized Account Create Transaction',
+          description: 'This is a oversized account create transaction',
+          transactionBytes: buffer,
+          creatorKeyId: userKey.id,
+          signature: Buffer.from(localnet1003.privateKey.sign(transaction.toBytes())).toString(
+            'hex',
+          ),
+          mirrorNetwork: localnet1003.mirrorNetwork,
+        };
+
+        const { status, body } = await endpoint.post(dto, null, userAuthToken);
+        const countAfter = await repo.count();
+
+        expect(status).toEqual(400);
+        expect(body).toMatchObject(
+          expect.objectContaining({
+            code: ErrorCodes.TOS,
+          }),
+        );
+        expect(countAfter).toEqual(countBefore);
+      },
+      30 * 1_000,
+    );
 
     it('(GET) should get all transactions for user', async () => {
       const { status, body } = await endpoint.get(null, userAuthToken, 'page=1&size=99');
