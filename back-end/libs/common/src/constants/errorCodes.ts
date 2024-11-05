@@ -30,6 +30,7 @@ export enum ErrorCodes {
   KNF = 'KNF',
   NNF = 'NNF',
   IB = 'IB',
+  TOS = 'TOS',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -65,4 +66,5 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.KNF]: 'Key not found',
   [ErrorCodes.NNF]: 'Notification not found',
   [ErrorCodes.IB]: 'Invalid body',
+  [ErrorCodes.TOS]: 'Transaction is over the size limit and cannot be executed',
 };

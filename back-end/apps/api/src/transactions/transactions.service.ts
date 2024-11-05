@@ -36,6 +36,7 @@ import {
   notifyWaitingForSignatures,
   notifySyncIndicators,
   ErrorCodes,
+  isTransactionBodyOverMaxSize,
 } from '@app/common';
 
 import { CreateTransactionDto } from './dto';
@@ -325,6 +326,10 @@ export class TransactionsService {
     /* Check if the transaction is expired */
     const sdkTransaction = SDKTransaction.fromBytes(dto.transactionBytes);
     if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
+
+    if (isTransactionBodyOverMaxSize(sdkTransaction)) {
+      throw new BadRequestException(ErrorCodes.TOS);
+    }
 
     /* Check if the transaction already exists */
     const countExisting = await this.repo.count({
