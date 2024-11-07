@@ -295,6 +295,10 @@ async function handleOnFileChanged(e: Event) {
       }
     }
   };
+
+  if (file.value != null) {
+    file.value.value = '';
+  }
 }
 
 /* Hooks */
