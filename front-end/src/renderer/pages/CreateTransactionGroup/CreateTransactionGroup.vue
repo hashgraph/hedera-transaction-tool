@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 
-import { Hbar, KeyList, PublicKey, TransferTransaction } from '@hashgraph/sdk';
+import { Hbar, KeyList, PublicKey, TransferTransaction, Transaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
@@ -289,6 +289,7 @@ async function handleOnFileChanged(e: Event) {
               approvers: [],
               payerAccountId: feePayer ? feePayer : senderAccount,
               validStart: new Date(validStart.getTime()),
+              description: '',
             });
           }
         }
@@ -427,11 +428,20 @@ onBeforeRouteLeave(async to => {
             class="pb-3"
           >
             <div class="d-flex justify-content-between p-4 transaction-group-row">
-              <div class="align-self-center">
+              <div class="align-self-center col">
                 <div>{{ groupItem.type }}</div>
                 <div v-if="groupItem.accountId">{{ groupItem.accountId }}</div>
               </div>
-              <div class="d-flex">
+              <div class="align-self-center text-truncate col text-center mx-5">
+                {{
+                  groupItem.description != ''
+                    ? groupItem.description
+                    : Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
+                      ? Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
+                      : createTransactionId(groupItem.payerAccountId, groupItem.validStart)
+                }}
+              </div>
+              <div class="d-flex col">
                 <AppButton
                   type="button"
                   class="transaction-group-button-borderless"

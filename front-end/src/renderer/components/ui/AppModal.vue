@@ -53,8 +53,10 @@ onBeforeUnmount(() => {
     data-testid="modal-confirm-transaction"
     :style="{ display: show ? 'block' : 'none' }"
   >
-    <div class="modal-dialog modal-dialog-centered" ref="modalRef">
-      <div class="modal-content"><slot></slot></div>
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" ref="modalRef">
+      <div class="modal-content">
+        <div class="modal-body"><slot></slot></div>
+      </div>
     </div>
   </div>
   <div :style="{ display: show ? 'block' : 'none' }" class="modal-backdrop fade show"></div>

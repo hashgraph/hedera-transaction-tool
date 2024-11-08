@@ -34,6 +34,7 @@ const getTransactionData = (): [string, Uint8Array, string[]] => {
 
 const buildActionData = (
   action: 'add' | 'edit',
+  description: string,
   payerId: string,
   validStart: Date,
   observers: number[],
@@ -59,27 +60,32 @@ const buildActionData = (
     approvers: approvers,
     payerAccountId: payerId,
     validStart: validStart,
+    description: description,
   };
 };
 
 const addGroupItem = (
+  description: string,
   payerId: string,
   validStart: Date,
   observers: number[],
   approvers: TransactionApproverDto[],
 ) => {
-  transactionGroup.addGroupItem(buildActionData('add', payerId, validStart, observers, approvers));
+  transactionGroup.addGroupItem(
+    buildActionData('add', description, payerId, validStart, observers, approvers),
+  );
   router.push({ name: 'createTransactionGroup' });
 };
 
 const editGroupItem = (
+  description: string,
   payerId: string,
   validStart: Date,
   observers: number[],
   approvers: TransactionApproverDto[],
 ) => {
   transactionGroup.editGroupItem(
-    buildActionData('edit', payerId, validStart, observers, approvers),
+    buildActionData('edit', description, payerId, validStart, observers, approvers),
   );
   router.push({ name: 'createTransactionGroup' });
 };

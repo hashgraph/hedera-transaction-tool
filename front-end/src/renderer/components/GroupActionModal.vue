@@ -16,20 +16,32 @@ const props = defineProps<{
 const route = useRoute();
 
 /* State */
-const isAddToGroupModalShown = ref(false);
+const isGroupActionModalShown = ref(false);
 
 /* Emits */
-const emit = defineEmits(['addToGroup']);
+const emit = defineEmits(['addToGroup', 'editItem']);
 
 /* Handlers */
 function handleAddToGroup() {
   emit('addToGroup');
 }
 
+function handleEditItem() {
+  emit('editItem');
+}
+
+function handleGroupAction() {
+  if (!route.params.seq) {
+    handleAddToGroup();
+  } else {
+    handleEditItem();
+  }
+}
+
 /* Hooks */
 onBeforeRouteLeave(async () => {
-  if (route.query.group == 'true' && isAddToGroupModalShown.value == false && !props.skip) {
-    isAddToGroupModalShown.value = true;
+  if (route.query.group == 'true' && isGroupActionModalShown.value == false && !props.skip) {
+    isGroupActionModalShown.value = true;
     return false;
   }
   return true;
@@ -37,16 +49,17 @@ onBeforeRouteLeave(async () => {
 </script>
 <template>
   <AppModal
-    :show="isAddToGroupModalShown"
+    :show="isGroupActionModalShown"
     :close-on-click-outside="false"
     :close-on-escape="false"
     class="small-modal"
   >
-    <form class="text-center p-4" @submit.prevent="handleAddToGroup">
+    <form class="text-center p-4" @submit.prevent="handleGroupAction">
       <div class="text-start">
-        <i class="bi bi-x-lg cursor-pointer" @click="isAddToGroupModalShown = false"></i>
+        <i class="bi bi-x-lg cursor-pointer" @click="isGroupActionModalShown = false"></i>
       </div>
-      <h2 class="text-title text-semi-bold mt-3">Add To Group?</h2>
+      <h2 v-if="!route.params.seq" class="text-title text-semi-bold mt-3">Add To Group?</h2>
+      <h2 v-else class="text-title text-semi-bold mt-3">Save Edits?</h2>
 
       <hr class="separator my-5" />
 
@@ -58,8 +71,15 @@ onBeforeRouteLeave(async () => {
           @click="$router.back()"
           >Discard</AppButton
         >
-        <AppButton color="primary" data-testid="button-save-draft-modal" type="submit"
+        <AppButton
+          v-if="!route.params.seq"
+          color="primary"
+          data-testid="button-save-draft-modal"
+          type="submit"
           >Add To Group</AppButton
+        >
+        <AppButton v-else color="primary" data-testid="button-save-draft-modal" type="submit"
+          >Save Edits</AppButton
         >
       </div>
     </form>

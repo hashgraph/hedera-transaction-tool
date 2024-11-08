@@ -47,6 +47,7 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
+import { createTransactionId } from '@renderer/utils/sdk';
 
 /* Props */
 const props = defineProps<{
@@ -448,7 +449,7 @@ defineExpose({
     <!-- Confirm modal -->
     <AppModal
       v-model:show="isConfirmShown"
-      class="large=modal"
+      class="large-modal"
       :close-on-click-outside="false"
       :close-on-escape="false"
     >
@@ -462,12 +463,20 @@ defineExpose({
         <h3 class="text-center text-title text-bold mt-5">Confirm Transaction Group</h3>
         <hr class="separator my-5" />
         <div
-          v-for="(groupItem, index) in transactionGroup.groupItems"
+          v-for="groupItem in transactionGroup.groupItems"
           :key="groupItem.transactionBytes.toString()"
         >
-          <div class="d-flex p-4 transaction-group-row">
-            <div class="me-4">{{ index + 1 }}</div>
+          <div class="d-flex p-4 transaction-group-row justify-content-between">
             <div>{{ getTransactionType(groupItem.transactionBytes) }}</div>
+            <div>
+              {{
+                groupItem.description != ''
+                  ? groupItem.description
+                  : Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
+                    ? Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
+                    : createTransactionId(groupItem.payerAccountId, groupItem.validStart)
+              }}
+            </div>
           </div>
         </div>
 
