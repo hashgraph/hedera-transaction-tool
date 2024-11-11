@@ -67,17 +67,13 @@ export const keysRequiredToSign = async (
     }
   }
 
-  const userKeysInKeyOrIsKey = (key: Key) => {
-    const keys: UserKey[] = [];
-    for (const userKey of userKeys) {
-      if (
+  const addUserPublicKeyIfRequired = (key: Key) => {
+    const userKeysRequired = userKeys.filter(
+      userKey =>
         isPublicKeyInKeyList(userKey.publicKey, key) &&
-        !signatures.some(s => s.userKey.publicKey === userKey.publicKey)
-      ) {
-        keys.push(userKey);
-      }
-    }
-    return keys;
+        !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
+    );
+    userKeysRequired.forEach(userKey => userKeyIdsRequired.add(userKey.id));
   };
 
   /* Check if a key of the user is inside the key of some account required to sign */
@@ -96,9 +92,7 @@ export const keysRequiredToSign = async (
     transaction.mirrorNetwork,
   );
 
-  [...accountsKeys, ...receiverKeys].forEach(key => {
-    userKeysInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
-  });
+  [...accountsKeys, ...receiverKeys].forEach(key => addUserPublicKeyIfRequired(key));
 
   return userKeys.filter(userKey => userKeyIdsRequired.has(userKey.id));
 };

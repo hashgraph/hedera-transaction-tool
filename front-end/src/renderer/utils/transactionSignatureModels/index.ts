@@ -1,10 +1,10 @@
 import type { IUserKey } from '@main/shared/interfaces';
 
-import { Key, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
+import { Key, KeyList, NodeUpdateTransaction, Transaction } from '@hashgraph/sdk';
 
-import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
+import { getAccountInfo, getNodeInfo } from '@renderer/services/mirrorNodeDataService';
 
-import { isExpired, isPublicKeyInKeyList } from '../sdk';
+import { isExpired, isPublicKeyInKeyList, transactionIs } from '../sdk';
 
 import TransactionFactory from './transaction-factory';
 
@@ -30,6 +30,7 @@ export const getSignatureEntities = (transaction: Transaction) => {
       accounts: [...transactionModel.getSigningAccounts()],
       receiverAccounts: [...transactionModel.getReceiverAccounts()],
       newKeys: [...transactionModel.getNewKeys()],
+      nodeId: transactionModel.getNodeId(),
     };
 
     return result;
@@ -39,6 +40,7 @@ export const getSignatureEntities = (transaction: Transaction) => {
       accounts: [],
       receiverAccounts: [],
       newKeys: [],
+      nodeId: null,
     };
   }
 };
@@ -61,7 +63,7 @@ export const publicRequiredToSign = async (
   const signerPublicKeys = [...transaction._signerPublicKeys];
 
   /* Get signature entities */
-  const { newKeys, accounts, receiverAccounts } = getSignatureEntities(transaction);
+  const { newKeys, accounts, receiverAccounts, nodeId } = getSignatureEntities(transaction);
 
   /* Check if the user has a key that is required to sign */
   const userKeysIncludedInTransaction = userKeys.filter(userKey =>
@@ -75,41 +77,34 @@ export const publicRequiredToSign = async (
   );
   userKeysIncludedInTransaction.forEach(userKey => publicKeysRequired.add(userKey.publicKey));
 
-  const userKeyInKeyOrIsKey = (key: Key) =>
-    key instanceof PublicKey
-      ? userKeys.filter(
-          userKey =>
-            userKey.publicKey === key.toStringRaw() &&
-            !signerPublicKeys.includes(userKey.publicKey),
-        )
-      : key instanceof KeyList
-        ? userKeys.filter(
-            userKey =>
-              isPublicKeyInKeyList(userKey.publicKey, key) &&
-              !signerPublicKeys.includes(userKey.publicKey),
-          )
-        : [];
+  const addUserPublicKeyIfRequired = (key: Key) => {
+    const userKeysRequired = userKeys.filter(
+      userKey =>
+        isPublicKeyInKeyList(userKey.publicKey, key) &&
+        !signerPublicKeys.includes(userKey.publicKey),
+    );
+    userKeysRequired.forEach(userKey => publicKeysRequired.add(userKey.publicKey));
+  };
 
   /* Check if a key of the user is inside the key of some account required to sign */
   for (const accountId of accounts) {
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
     if (!accountInfo.key) continue;
-
-    userKeyInKeyOrIsKey(accountInfo.key).forEach(userKey =>
-      publicKeysRequired.add(userKey.publicKey),
-    );
+    addUserPublicKeyIfRequired(accountInfo.key);
   }
 
   /* Check if user has a key included in a receiver account that required signature */
   for (const accountId of receiverAccounts) {
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
-    if (!accountInfo.receiverSignatureRequired) continue;
+    if (!accountInfo.receiverSignatureRequired || !accountInfo.key) continue;
+    addUserPublicKeyIfRequired(accountInfo.key);
+  }
 
-    if (!accountInfo.key) continue;
-
-    userKeyInKeyOrIsKey(accountInfo.key).forEach(userKey =>
-      publicKeysRequired.add(userKey.publicKey),
-    );
+  /* Check if user has a key included in the node ids */
+  const result = await getNodeKeys(nodeId, transaction, mirrorNodeLink);
+  if (result.nodeAccountKey && result.adminKey) {
+    addUserPublicKeyIfRequired(result.adminKey);
+    addUserPublicKeyIfRequired(result.nodeAccountKey);
   }
 
   return [...publicKeysRequired];
@@ -118,7 +113,7 @@ export const publicRequiredToSign = async (
 /* Computes the signature key for the transaction */
 export const computeSignatureKey = async (transaction: Transaction, mirrorNodeLink: string) => {
   /* Get the accounts, receiver accounts and new keys from the transaction */
-  const { accounts, receiverAccounts, newKeys } = getSignatureEntities(transaction);
+  const { accounts, receiverAccounts, newKeys, nodeId } = getSignatureEntities(transaction);
 
   /* Create result object */
   const resultObject: {
@@ -133,11 +128,15 @@ export const computeSignatureKey = async (transaction: Transaction, mirrorNodeLi
     payerKey: {
       [accountId: string]: Key;
     };
+    nodeAdminKeys: {
+      [nodeId: string]: Key;
+    };
   } = {
     signatureKey: new KeyList(),
     accountsKeys: {},
     receiverAccountsKeys: {},
     payerKey: {},
+    nodeAdminKeys: {},
     newKeys,
   };
 
@@ -167,5 +166,47 @@ export const computeSignatureKey = async (transaction: Transaction, mirrorNodeLi
     resultObject.receiverAccountsKeys[accountId] = accountInfo.key;
   }
 
+  /* Check if user has a key included in the node ids */
+  const result = await getNodeKeys(nodeId, transaction, mirrorNodeLink);
+  if (nodeId && result.nodeAccountId && result.nodeAccountKey && result.adminKey) {
+    resultObject.signatureKey.push(result.adminKey);
+    resultObject.nodeAdminKeys[nodeId] = result.adminKey;
+    resultObject.signatureKey.push(result.nodeAccountKey);
+    resultObject.accountsKeys[result.nodeAccountId] = result.nodeAccountKey;
+  }
+
   return resultObject;
+};
+
+/***
+  Helper functions
+***/
+
+const getNodeKeys = async (
+  nodeId: number | null,
+  transaction: Transaction,
+  mirrorNodeLink: string,
+) => {
+  let adminKey: Key | null = null;
+  let nodeAccountKey: Key | null = null;
+  let nodeAccountId: string | null = null;
+
+  if (nodeId) {
+    const nodeInfo = await getNodeInfo(nodeId, mirrorNodeLink);
+    if (nodeInfo?.admin_key) {
+      adminKey = nodeInfo.admin_key;
+    }
+
+    if (transactionIs(NodeUpdateTransaction, transaction)) {
+      nodeAccountId = nodeInfo?.node_account_id?.toString() || null;
+      if (transaction.accountId && nodeAccountId) {
+        const accountInfo = await getAccountInfo(nodeAccountId, mirrorNodeLink);
+        if (accountInfo?.key) {
+          nodeAccountKey = accountInfo.key;
+        }
+      }
+    }
+  }
+
+  return { adminKey, nodeAccountKey, nodeAccountId };
 };

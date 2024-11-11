@@ -23,6 +23,9 @@ const props = defineProps<{
     payerKey: {
       [accountId: string]: Key;
     };
+    nodeAdminKeys: {
+      [accountId: string]: Key;
+    };
   };
   clean?: boolean;
   publicKeysSigned: string[];
@@ -79,6 +82,15 @@ const publicKeysInKeyList = computed(() => flattenKeyList(props.signatureKeyObje
           :entities="signatureKeyObject.receiverAccountsKeys"
           :public-keys-signed="publicKeysSigned"
           :label="`Receiver Account $entityId Key`"
+        />
+      </div>
+    </template>
+    <template v-if="Object.keys(signatureKeyObject.nodeAdminKeys).length > 0">
+      <div class="ms-4" :class="{ 'ms-5': publicKeysInKeyList.length > 1 }">
+        <SignatureStatusEntities
+          :entities="signatureKeyObject.nodeAdminKeys"
+          :public-keys-signed="publicKeysSigned"
+          :label="`Node $entityId Admin Key`"
         />
       </div>
     </template>
