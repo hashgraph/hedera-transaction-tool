@@ -7,14 +7,30 @@ import type {
   AccountsResponse,
   NetworkNode,
   NetworkNodesResponse,
+  INodeInfoParsed,
 } from '@main/shared/interfaces';
 
 import axios from 'axios';
 
-import { AccountId, EvmAddress, Hbar, HbarUnit, Key, PublicKey, Timestamp } from '@hashgraph/sdk';
+import {
+  AccountId,
+  EvmAddress,
+  FileId,
+  Hbar,
+  HbarUnit,
+  Key,
+  PublicKey,
+  Timestamp,
+} from '@hashgraph/sdk';
 import { BigNumber } from 'bignumber.js';
 
-import { decodeProtobuffKey } from '@renderer/utils';
+import {
+  decodeProtobuffKey,
+  getServiceEndpoints,
+  isAccountId,
+  isFileId,
+  parseHbar,
+} from '@renderer/utils';
 
 /* Mirror node data service */
 const withAPIPrefix = (url: string) => `${url}/api/v1`;
@@ -278,5 +294,59 @@ export const getNetworkNodes = async (mirrorNodeURL: string) => {
   } catch (error) {
     console.log(error);
     return networkNodes;
+  }
+};
+
+/* Gets the network node information */
+export const getNetworkNode = async (
+  mirrorNodeURL: string,
+  nodeId: number,
+): Promise<INodeInfoParsed | null> => {
+  try {
+    const res = await axios.get(
+      `${withAPIPrefix(mirrorNodeURL)}/network/nodes?node.id=eq:${nodeId}`,
+    );
+    const data: NetworkNodesResponse = res.data;
+
+    if (data.nodes && data.nodes.length > 0) {
+      const node = data.nodes[0];
+
+      const nodeInfo: INodeInfoParsed = {
+        // admin_key: node.admin_key ? decodeProtobuffKey(node.admin_key) || null : null,
+        // domain_name: node.domain_name || null,
+        admin_key: null,
+        domain_name: null,
+        description: node.description?.trim() || null,
+        file_id: node.file_id && isFileId(node.file_id) ? FileId.fromString(node.file_id) : null,
+        memo: node.memo?.trim() || null,
+        node_id: node.node_id || null,
+        node_account_id:
+          node.node_account_id && isAccountId(node.node_account_id)
+            ? AccountId.fromString(node.node_account_id)
+            : null,
+        node_cert_hash: node.node_cert_hash?.trim() || null,
+        public_key: node.public_key || null,
+        service_endpoints: getServiceEndpoints(
+          node.service_endpoints?.map(se => ({
+            ipAddressV4: se.ip_address_v4,
+            port: se.port.toString(),
+            domainName: '',
+          })) || [],
+        ),
+        timestamp: node.timestamp || null,
+        max_stake: parseHbar(node.max_stake, HbarUnit.Tinybar),
+        min_stake: parseHbar(node.min_stake, HbarUnit.Tinybar),
+        stake: parseHbar(node.stake, HbarUnit.Tinybar),
+        stake_not_rewarded: parseHbar(node.stake_not_rewarded, HbarUnit.Tinybar),
+        stake_rewarded: parseHbar(node.stake_rewarded, HbarUnit.Tinybar),
+        staking_period: node.staking_period || null,
+        reward_rate_start: parseHbar(node.reward_rate_start, HbarUnit.Tinybar),
+      };
+      return nodeInfo;
+    }
+    return null;
+  } catch (error) {
+    console.log(error);
+    return null;
   }
 };
