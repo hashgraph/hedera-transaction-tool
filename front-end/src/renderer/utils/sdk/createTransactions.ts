@@ -434,7 +434,7 @@ export const createTransferHbarTransaction = (
   return transaction;
 };
 
-const getServiceEndpoints = (data: ComponentServiceEndpoint[]) => {
+export const getServiceEndpoints = (data: ComponentServiceEndpoint[]) => {
   const endpoints = new Array<ServiceEndpoint>();
 
   for (const serviceEndpoint of data) {
