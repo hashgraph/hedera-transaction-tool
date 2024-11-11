@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 
-import { AccountInfo, MirrorNodeREST } from '@app/common';
+import { AccountInfo, MirrorNodeREST, NetworkNode, NetworkNodesResponse } from '@app/common';
 
 @Injectable()
 export class MirrorNodeService {
@@ -21,7 +21,7 @@ export class MirrorNodeService {
     const env = this.configService.get<string>('NODE_ENV');
 
     const cachedData = await this.cacheService.get<AccountInfo>(
-      this.getCacheKey(accountId, mirrorNetwork),
+      this.getAccountCacheKey(accountId, mirrorNetwork),
     );
 
     if (cachedData && env !== 'test') return cachedData;
@@ -31,7 +31,7 @@ export class MirrorNodeService {
     );
 
     await this.cacheService.set(
-      this.getCacheKey(accountId, mirrorNetwork),
+      this.getAccountCacheKey(accountId, mirrorNetwork),
       data,
       this.cacheExpirationMs,
     );
@@ -39,6 +39,7 @@ export class MirrorNodeService {
     return data;
   }
 
+  /* Update the account information for accountId in the cache */
   async updateAccountInfo(accountId: string, mirrorNetwork: string): Promise<AccountInfo> {
     const restURL = this.getMirrorNodeRESTURL(mirrorNetwork);
 
@@ -46,16 +47,49 @@ export class MirrorNodeService {
       `${restURL}/accounts/${accountId}`,
     );
 
-    await this.cacheService.set(this.getCacheKey(accountId, restURL), data, this.cacheExpirationMs);
+    await this.cacheService.set(
+      this.getAccountCacheKey(accountId, restURL),
+      data,
+      this.cacheExpirationMs,
+    );
 
     return data;
   }
 
-  private getCacheKey(accountId: string, mirrorNetwork: string) {
+  private getAccountCacheKey(accountId: string, mirrorNetwork: string) {
     return `${mirrorNetwork}-${accountId}`;
+  }
+
+  private getNodeCacheKey(nodeId: string, mirrorNetwork: string) {
+    return `${mirrorNetwork}-nodeId-${nodeId}`;
   }
 
   private getMirrorNodeRESTURL(mirrorNetwork: string) {
     return `${MirrorNodeREST.fromBaseURL(mirrorNetwork)}${this.endointPrefix}`;
+  }
+
+  /* Get the node information for nodeId */
+  async getNodeInfo(nodeId: number, mirrorNetwork: string) {
+    const env = this.configService.get<string>('NODE_ENV');
+
+    const cachedData = await this.cacheService.get<NetworkNode>(
+      this.getNodeCacheKey(nodeId.toString(), mirrorNetwork),
+    );
+
+    if (cachedData && env !== 'test') return cachedData;
+
+    const { data } = await this.httpService.axiosRef.get<NetworkNodesResponse>(
+      `${this.getMirrorNodeRESTURL(mirrorNetwork)}/network/nodes?node.id=eq:${nodeId}`,
+    );
+
+    if (data.nodes && data.nodes.length > 0) {
+      await this.cacheService.set(
+        this.getNodeCacheKey(nodeId.toString(), mirrorNetwork),
+        data.nodes[0],
+        this.cacheExpirationMs,
+      );
+      return data.nodes[0];
+    }
+    return null;
   }
 }

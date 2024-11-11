@@ -1,6 +1,6 @@
 import {
-  Key,
   KeyList,
+  NodeUpdateTransaction,
   PublicKey,
   Transaction as SDKTransaction,
   SignatureMap,
@@ -13,9 +13,9 @@ import {
   MirrorNodeService,
   decode,
   getSignatureEntities,
-  parseAccountProperty,
   computeShortenedPublicKeyList,
-  AccountInfo,
+  parseAccountInfo,
+  parseNodeInfo,
 } from '@app/common';
 
 export const isExpired = (transaction: SDKTransaction) => {
@@ -151,7 +151,7 @@ export const computeSignatureKey = async (
   mirrorNetwork: string,
 ) => {
   /* Get the accounts, receiver accounts and new keys from the transaction */
-  const { accounts, receiverAccounts, newKeys } = getSignatureEntities(transaction);
+  const { accounts, receiverAccounts, newKeys, nodeId } = getSignatureEntities(transaction);
 
   /* Create a new key list */
   const signatureKey = new KeyList();
@@ -160,60 +160,48 @@ export const computeSignatureKey = async (
   newKeys.forEach(key => signatureKey.push(key));
 
   /* Get the keys of the account ids to the signature key list */
-  const accountsKeys = await getAccountKeysByCondition(
-    accounts,
-    [],
-    mirrorNodeService,
-    mirrorNetwork,
-  );
+  for (const accountId of accounts) {
+    const accountInfo = parseAccountInfo(
+      await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork),
+    );
+    if (!accountInfo.key) continue;
+    signatureKey.push(accountInfo.key);
+  }
 
   /* Check if there is a receiver account that required signature, if so get it */
-  const receiverKeys = await getAccountKeysByCondition(
-    receiverAccounts,
-    ['receiver_sig_required'],
-    mirrorNodeService,
-    mirrorNetwork,
-  );
+  for (const accountId of receiverAccounts) {
+    const accountInfo = parseAccountInfo(
+      await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork),
+    );
+    if (!accountInfo.receiverSignatureRequired || !accountInfo.key) continue;
+    signatureKey.push(accountInfo.key);
+  }
 
-  /* Add the keys to the signature key list */
-  [...accountsKeys, ...receiverKeys].forEach(k => signatureKey.push(k));
+  /* Check if user has a key included in the node admin key */
+  try {
+    if (nodeId) {
+      const nodeInfo = parseNodeInfo(await mirrorNodeService.getNodeInfo(nodeId, mirrorNetwork));
+      if (nodeInfo.admin_key) {
+        signatureKey.push(nodeInfo.admin_key);
+      }
 
-  return signatureKey;
-};
-
-export const getAccountKeysByCondition = async (
-  accountIds: string[],
-  conditions: (keyof AccountInfo)[],
-  mirrorNodeService: MirrorNodeService,
-  mirrorNetwork: string,
-) => {
-  const keys: Key[] = [];
-
-  for (const accountId of accountIds) {
-    try {
-      const accountInfo = await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork);
-      const key = parseAccountProperty(accountInfo, 'key');
-      let add = true;
-
-      for (const condition of conditions) {
-        // @ts-expect-error - typings
-        const receiverSigRequired = parseAccountProperty(accountInfo, condition);
-        if (condition === 'receiver_sig_required') {
-          if (!receiverSigRequired) {
-            add = false;
+      if (transactionIs(NodeUpdateTransaction, transaction)) {
+        const nodeAccountId = nodeInfo?.node_account_id?.toString() || null;
+        if (transaction.accountId && nodeAccountId) {
+          const accountInfo = parseAccountInfo(
+            await mirrorNodeService.getAccountInfo(nodeAccountId, mirrorNetwork),
+          );
+          if (accountInfo?.key) {
+            signatureKey.push(accountInfo.key);
           }
         }
       }
-
-      if (add) {
-        keys.push(key);
-      }
-    } catch (error) {
-      console.log(error);
     }
+  } catch (error) {
+    console.log(error);
   }
 
-  return keys;
+  return signatureKey;
 };
 
 /* Get transaction body bytes without node account id */
@@ -291,3 +279,10 @@ export function isTransactionBodyOverMaxSize(transaction: SDKTransaction) {
   const bodyBytes = getTransactionBodyBytes(transaction);
   return bodyBytes.length > MAX_TRANSACTION_BYTE_SIZE;
 }
+
+export const transactionIs = <T extends SDKTransaction>(
+  type: new (...args) => T,
+  transaction: SDKTransaction,
+): transaction is T => {
+  return transaction instanceof type;
+};
