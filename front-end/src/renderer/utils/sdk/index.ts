@@ -186,7 +186,7 @@ export function decodeKeyList(keyListBytes: string) {
   }
 }
 
-export const decodeProtobuffKey = (protobuffKey: string): Key | undefined => {
+export const decodeProtobuffKey = (protobuffKey: string): Key | null => {
   try {
     const key = proto.Key.decode(hexToUint8Array(protobuffKey));
 
@@ -200,7 +200,7 @@ export const decodeProtobuffKey = (protobuffKey: string): Key | undefined => {
       return Key._fromProtobufKey(key);
     }
 
-    return undefined;
+    return null;
   } catch (error) {
     throw new Error('Failed to decode protobuf');
   }
