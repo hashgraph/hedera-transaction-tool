@@ -426,3 +426,17 @@ export const formatSignatureMap = (signatureMap: SignatureMap) => {
   }
   return result;
 };
+
+export const parseHbar = (hbar: string | number | null, unit: HbarUnit) => {
+  if (!hbar) {
+    return null;
+  }
+
+  hbar = hbar.toString();
+
+  if (hbar.startsWith('-')) {
+    return null;
+  }
+
+  return Hbar.from(hbar, unit);
+};
