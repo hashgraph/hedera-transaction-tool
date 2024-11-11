@@ -61,6 +61,12 @@ export const getTransactionTypeEnumValue = (transaction: SDKTransaction): Transa
       return TransactionType.SYSTEM_UNDELETE;
     case TransactionType.TRANSFER:
       return TransactionType.TRANSFER;
+    case TransactionType.NODE_CREATE:
+      return TransactionType.NODE_CREATE;
+    case TransactionType.NODE_UPDATE:
+      return TransactionType.NODE_UPDATE;
+    case TransactionType.NODE_DELETE:
+      return TransactionType.NODE_DELETE;
     default:
       throw new Error(`Unsupported transaction type: ${sdkType}`);
   }
