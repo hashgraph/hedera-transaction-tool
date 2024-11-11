@@ -279,9 +279,9 @@ export const getNetworkNodes = async (mirrorNodeURL: string) => {
 };
 
 /* Gets the network node information */
-export const getNetworkNode = async (
-  mirrorNodeURL: string,
+export const getNodeInfo = async (
   nodeId: number,
+  mirrorNodeURL: string,
 ): Promise<INodeInfoParsed | null> => {
   try {
     const res = await axios.get(

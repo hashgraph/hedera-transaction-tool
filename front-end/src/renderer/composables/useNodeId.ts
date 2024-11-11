@@ -4,7 +4,7 @@ import { computed, ref, watch } from 'vue';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { getNetworkNode } from '@renderer/services/mirrorNodeDataService';
+import { getNodeInfo } from '@renderer/services/mirrorNodeDataService';
 
 import useAccountId from './useAccountId';
 
@@ -38,7 +38,7 @@ export default function useNodeId() {
       }
 
       nodeInfoController.value = new AbortController();
-      const nodeInfoRes = await getNetworkNode(networkStore.mirrorNodeBaseURL, parsedNodeId);
+      const nodeInfoRes = await getNodeInfo(parsedNodeId, networkStore.mirrorNodeBaseURL);
 
       nodeInfo.value = nodeInfoRes;
 
