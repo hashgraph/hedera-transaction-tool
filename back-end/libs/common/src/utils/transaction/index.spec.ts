@@ -5,11 +5,10 @@ import { KeyList, AccountCreateTransaction, PrivateKey } from '@hashgraph/sdk';
 import {
   isExpired,
   getSignatureEntities,
+  getAccountKeysByCondition,
   isPublicKeyInKeyList,
   parseAccountProperty,
   MirrorNodeService,
-  KeyType,
-  AccountInfo,
 } from '@app/common';
 import { UserKey } from '@entities';
 
@@ -59,13 +58,8 @@ describe('keysRequiredToSign', () => {
     jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
     //@ts-expect-error overload typing issue
     jest.mocked(parseAccountProperty).mockReturnValue(pk.publicKey);
-    mirrorNodeService.getAccountInfo.mockResolvedValue({
-      key: {
-        _type: KeyType.ED25519,
-        key: pk.publicKey.toStringRaw(),
-      },
-      receiver_sig_required: true,
-    } as AccountInfo);
+    jest.mocked(getAccountKeysByCondition).mockResolvedValueOnce([pk.publicKey]);
+    jest.mocked(getAccountKeysByCondition).mockResolvedValueOnce([pk.publicKey]);
 
     const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
     expect(result).toEqual(keys);
@@ -83,12 +77,8 @@ describe('keysRequiredToSign', () => {
       newKeys: [],
     });
     jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
-    //@ts-expect-error overload typing issue
-    jest.mocked(parseAccountProperty).mockReturnValue(new KeyList([pk.publicKey]));
-    mirrorNodeService.getAccountInfo.mockResolvedValue({
-      // key is mocked above
-      receiver_sig_required: true,
-    } as AccountInfo);
+    jest.mocked(getAccountKeysByCondition).mockResolvedValueOnce([pk.publicKey]);
+    jest.mocked(getAccountKeysByCondition).mockResolvedValueOnce([pk.publicKey]);
 
     const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
     expect(result).toEqual(keys);
@@ -112,65 +102,8 @@ describe('keysRequiredToSign', () => {
       newKeys: [pk.publicKey],
     });
     jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
-    //@ts-expect-error overload typing issue
-    jest.mocked(parseAccountProperty).mockReturnValue(pk.publicKey);
-    mirrorNodeService.getAccountInfo.mockResolvedValue({
-      key: {
-        _type: KeyType.ED25519,
-        key: pk.publicKey.toStringRaw(),
-      },
-      receiver_sig_required: true,
-    } as AccountInfo);
-
-    const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
-    expect(result).toEqual([]);
-  });
-
-  it('should not retun user key IDs if user already signed the transaction', async () => {
-    const pk = PrivateKey.generateED25519();
-    const keys = [{ id: 1, publicKey: pk.publicKey.toStringRaw() }];
-
-    entityManager.find.mockResolvedValueOnce([
-      {
-        userKey: {
-          publicKey: pk.publicKey.toStringRaw(),
-        },
-      },
-    ]);
-    entityManager.find.mockResolvedValueOnce(keys);
-    jest.mocked(getSignatureEntities).mockReturnValueOnce({
-      accounts: ['0.0.21212'],
-      receiverAccounts: ['0.0.21212'],
-      newKeys: [pk.publicKey],
-    });
-    jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
-    //@ts-expect-error overload typing issue
-    jest.mocked(parseAccountProperty).mockReturnValue(new KeyList([pk.publicKey]));
-    mirrorNodeService.getAccountInfo.mockResolvedValue({
-      // key is mocked above
-      receiver_sig_required: true,
-    } as AccountInfo);
-
-    const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
-    expect(result).toEqual([]);
-  });
-
-  it('should not add account key if it is not found', async () => {
-    const pk = PrivateKey.generateED25519();
-    const keys = [{ id: 1, publicKey: pk.publicKey.toStringRaw() }];
-
-    entityManager.find.mockResolvedValueOnce([]);
-    entityManager.find.mockResolvedValueOnce(keys);
-    jest.mocked(getSignatureEntities).mockReturnValue({
-      accounts: ['0.0.21212'],
-      receiverAccounts: ['0.0.21212'],
-      newKeys: [],
-    });
-    jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
-    jest.mocked(parseAccountProperty).mockReturnValueOnce(null);
-    //@ts-expect-error overload typing issue
-    jest.mocked(parseAccountProperty).mockReturnValueOnce(true);
-    jest.mocked(parseAccountProperty).mockReturnValueOnce(null);
+    jest.mocked(getAccountKeysByCondition).mockResolvedValueOnce([new KeyList([pk.publicKey])]);
+    jest.mocked(getAccountKeysByCondition).mockResolvedValueOnce([new KeyList([pk.publicKey])]);
 
     const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
     expect(result).toEqual([]);
@@ -188,8 +121,8 @@ describe('keysRequiredToSign', () => {
       newKeys: [],
     });
     jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
-    //@ts-expect-error overload typing issue
-    jest.mocked(parseAccountProperty).mockReturnValueOnce(false);
+    jest.mocked(getAccountKeysByCondition).mockResolvedValueOnce([]);
+    jest.mocked(getAccountKeysByCondition).mockResolvedValueOnce([]);
 
     const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
     expect(result).toEqual([]);
@@ -206,6 +139,8 @@ describe('keysRequiredToSign', () => {
       newKeys: [new KeyList([pk.publicKey])],
     });
     jest.mocked(isPublicKeyInKeyList).mockReturnValue(false);
+    jest.mocked(getAccountKeysByCondition).mockResolvedValueOnce([]);
+    jest.mocked(getAccountKeysByCondition).mockResolvedValueOnce([]);
 
     const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
     expect(result).toEqual([]);
@@ -250,15 +185,8 @@ describe('userKeysRequiredToSign', () => {
       newKeys: [pk.publicKey],
     });
     jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
-    //@ts-expect-error overload typing issue
-    jest.mocked(parseAccountProperty).mockReturnValue(pk.publicKey);
-    mirrorNodeService.getAccountInfo.mockResolvedValue({
-      key: {
-        _type: KeyType.ED25519,
-        key: pk.publicKey.toStringRaw(),
-      },
-      receiver_sig_required: true,
-    } as AccountInfo);
+    jest.mocked(getAccountKeysByCondition).mockResolvedValueOnce([pk.publicKey]);
+    jest.mocked(getAccountKeysByCondition).mockResolvedValueOnce([pk.publicKey]);
 
     const result = await userKeysRequiredToSign(
       transaction,

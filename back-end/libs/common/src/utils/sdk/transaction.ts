@@ -1,4 +1,5 @@
 import {
+  Key,
   KeyList,
   PublicKey,
   Transaction as SDKTransaction,
@@ -14,6 +15,7 @@ import {
   getSignatureEntities,
   parseAccountProperty,
   computeShortenedPublicKeyList,
+  AccountInfo,
 } from '@app/common';
 
 export const isExpired = (transaction: SDKTransaction) => {
@@ -157,36 +159,61 @@ export const computeSignatureKey = async (
   /* Add keys to the signature key list */
   newKeys.forEach(key => signatureKey.push(key));
 
-  /* Add the keys of the account ids to the signature key list */
-  for (const accountId of accounts) {
-    try {
-      const accountInfo = await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork);
-      const key = parseAccountProperty(accountInfo, 'key');
-      if (!key) continue;
+  /* Get the keys of the account ids to the signature key list */
+  const accountsKeys = await getAccountKeysByCondition(
+    accounts,
+    [],
+    mirrorNodeService,
+    mirrorNetwork,
+  );
 
-      signatureKey.push(key);
-    } catch (error) {
-      console.log(error);
-    }
-  }
+  /* Check if there is a receiver account that required signature, if so get it */
+  const receiverKeys = await getAccountKeysByCondition(
+    receiverAccounts,
+    ['receiver_sig_required'],
+    mirrorNodeService,
+    mirrorNetwork,
+  );
 
-  /* Check if there is a receiver account that required signature, if so add it to the key list */
-  for (const accountId of receiverAccounts) {
-    try {
-      const accountInfo = await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork);
-      const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
-      if (!receiverSigRequired) continue;
-
-      const key = parseAccountProperty(accountInfo, 'key');
-      if (!key) continue;
-
-      signatureKey.push(key);
-    } catch (error) {
-      console.log(error);
-    }
-  }
+  /* Add the keys to the signature key list */
+  [...accountsKeys, ...receiverKeys].forEach(k => signatureKey.push(k));
 
   return signatureKey;
+};
+
+export const getAccountKeysByCondition = async (
+  accountIds: string[],
+  conditions: (keyof AccountInfo)[],
+  mirrorNodeService: MirrorNodeService,
+  mirrorNetwork: string,
+) => {
+  const keys: Key[] = [];
+
+  for (const accountId of accountIds) {
+    try {
+      const accountInfo = await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork);
+      const key = parseAccountProperty(accountInfo, 'key');
+      let add = true;
+
+      for (const condition of conditions) {
+        // @ts-expect-error - typings
+        const receiverSigRequired = parseAccountProperty(accountInfo, condition);
+        if (condition === 'receiver_sig_required') {
+          if (!receiverSigRequired) {
+            add = false;
+          }
+        }
+      }
+
+      if (add) {
+        keys.push(key);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  return keys;
 };
 
 /* Get transaction body bytes without node account id */

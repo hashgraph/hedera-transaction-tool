@@ -6,9 +6,9 @@ import {
   isExpired,
   getSignatureEntities,
   isPublicKeyInKeyList,
-  parseAccountProperty,
   MirrorNodeService,
   attachKeys,
+  getAccountKeysByCondition,
 } from '@app/common';
 import { User, Transaction, UserKey, TransactionSigner } from '@entities';
 
@@ -81,39 +81,24 @@ export const keysRequiredToSign = async (
   };
 
   /* Check if a key of the user is inside the key of some account required to sign */
-  for (const accountId of accounts) {
-    try {
-      const accountInfo = await mirrorNodeService.getAccountInfo(
-        accountId,
-        transaction.mirrorNetwork,
-      );
-      const key = parseAccountProperty(accountInfo, 'key');
-      if (!key) continue;
-
-      userKeysInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
-    } catch (error) {
-      console.log(error);
-    }
-  }
+  const accountsKeys = await getAccountKeysByCondition(
+    accounts,
+    [],
+    mirrorNodeService,
+    transaction.mirrorNetwork,
+  );
 
   /* Check if user has a key included in a receiver account that required signature */
-  for (const accountId of receiverAccounts) {
-    try {
-      const accountInfo = await mirrorNodeService.getAccountInfo(
-        accountId,
-        transaction.mirrorNetwork,
-      );
-      const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
-      if (!receiverSigRequired) continue;
+  const receiverKeys = await getAccountKeysByCondition(
+    receiverAccounts,
+    ['receiver_sig_required'],
+    mirrorNodeService,
+    transaction.mirrorNetwork,
+  );
 
-      const key = parseAccountProperty(accountInfo, 'key');
-      if (!key) continue;
-
-      userKeysInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
-    } catch (error) {
-      console.log(error);
-    }
-  }
+  [...accountsKeys, ...receiverKeys].forEach(key => {
+    userKeysInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
+  });
 
   return userKeys.filter(userKey => userKeyIdsRequired.has(userKey.id));
 };

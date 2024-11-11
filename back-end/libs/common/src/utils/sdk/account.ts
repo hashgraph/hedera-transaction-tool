@@ -100,8 +100,9 @@ export function parseAccountProperty(accountInfo: AccountInfo, property: keyof A
         case KeyType.ProtobufEncoded:
           return decodeProtobuffKey(accountInfo.key.key);
         case KeyType.ED25519:
+          return PublicKey.fromStringED25519(accountInfo.key.key);
         case KeyType.ECDSA_SECP256K1:
-          return PublicKey.fromString(accountInfo.key.key);
+          return PublicKey.fromStringECDSA(accountInfo.key.key);
         default:
           return null;
       }
