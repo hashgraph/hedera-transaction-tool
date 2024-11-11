@@ -36,7 +36,7 @@ const columnClass = 'col-4 col-xxxl-3';
           nodeId: $event,
         })
       "
-      maxlength="1"
+      maxlength="2"
       class="form-control is-fill"
       placeholder="Enter Node ID"
     />

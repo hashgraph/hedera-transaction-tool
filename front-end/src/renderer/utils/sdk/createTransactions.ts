@@ -1,3 +1,5 @@
+import type { IAccountInfoParsed, INodeInfoParsed } from '@main/shared/interfaces';
+
 import {
   AccountAllowanceApproveTransaction,
   AccountCreateTransaction,
@@ -27,7 +29,6 @@ import {
 } from '@hashgraph/sdk';
 
 import { MEMO_MAX_LENGTH } from '@main/shared/constants';
-import type { IAccountInfoParsed } from '@main/shared/interfaces';
 
 import { isAccountId, isContractId, isFileId } from '../validator';
 import { compareKeys } from '.';
@@ -465,11 +466,12 @@ export const getServiceEndpoints = (data: ComponentServiceEndpoint[]) => {
 const setNodeData = (
   transaction: NodeCreateTransaction | NodeUpdateTransaction,
   data: NodeData,
+  oldData?: INodeInfoParsed | null,
 ) => {
   const txGossipEndpoints = getServiceEndpoints(data.gossipEndpoints);
   const txServiceEndpoints = getServiceEndpoints(data.serviceEndpoints);
 
-  if (data.description) {
+  if (oldData?.description !== data.description) {
     transaction.setDescription(data.description);
   }
 
@@ -480,7 +482,10 @@ const setNodeData = (
     }
   }
 
-  if (isAccountId(data.nodeAccountId)) {
+  if (
+    isAccountId(data.nodeAccountId) &&
+    data.nodeAccountId !== oldData?.node_account_id?.toString()
+  ) {
     transaction.setAccountId(data.nodeAccountId);
   }
 
@@ -499,8 +504,9 @@ const setNodeData = (
     }
   }
 
-  if (data.adminKey) {
-    // Optional Admin Key
+  if (data.adminKey && oldData?.admin_key) {
+    !compareKeys(data.adminKey, oldData?.admin_key) && transaction.setAdminKey(data.adminKey);
+  } else if (data.adminKey) {
     transaction.setAdminKey(data.adminKey);
   }
 };
@@ -514,10 +520,13 @@ export function createNodeCreateTransaction(data: TransactionCommonData & NodeDa
 }
 
 /* Node Update */
-export function createNodeUpdateTransaction(data: TransactionCommonData & NodeUpdateData) {
+export function createNodeUpdateTransaction(
+  data: TransactionCommonData & NodeUpdateData,
+  oldData: INodeInfoParsed | null,
+) {
   const transaction = new NodeUpdateTransaction();
   setTransactionCommonData(transaction, data);
-  setNodeData(transaction, data);
+  setNodeData(transaction, data, oldData);
 
   if (data.nodeId) {
     transaction.setNodeId(data.nodeId);
