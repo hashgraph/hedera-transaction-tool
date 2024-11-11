@@ -2,13 +2,15 @@ import type { AccountId, FileId, Hbar, Key, ServiceEndpoint } from '@hashgraph/s
 import type { TimestampRange } from './HederaSchema';
 
 export interface INodeInfoParsed {
+  admin_key: Key | null;
+  domain_name: string | null;
   description: string | null;
   file_id: FileId | null;
   memo: string | null;
   node_id: number | null;
   node_account_id: AccountId | null;
   node_cert_hash: string | null;
-  public_key: Key | null;
+  public_key: string | null;
   service_endpoints: ServiceEndpoint[];
   timestamp: TimestampRange | null;
   max_stake: Hbar | null;
