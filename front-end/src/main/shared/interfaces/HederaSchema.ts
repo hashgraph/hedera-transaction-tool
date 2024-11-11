@@ -665,8 +665,9 @@ export interface NetworkNode {
 }
 
 export interface ServiceEndPoint {
-  ip_address_v4: string;
+  ip_address_v4: string | null;
   port: number;
+  domain_name: string | null;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
