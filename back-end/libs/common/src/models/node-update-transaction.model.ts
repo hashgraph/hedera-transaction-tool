@@ -20,4 +20,11 @@ export default class NodeUpdateTransactionModel extends TransactionBaseModel<Nod
 
     return set;
   }
+
+  getNodeId(): number | null {
+    if (this.transaction.nodeId) {
+      return this.transaction.nodeId.toNumber();
+    }
+    return null;
+  }
 }
