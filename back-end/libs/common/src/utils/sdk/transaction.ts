@@ -161,20 +161,28 @@ export const computeSignatureKey = async (
 
   /* Get the keys of the account ids to the signature key list */
   for (const accountId of accounts) {
-    const accountInfo = parseAccountInfo(
-      await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork),
-    );
-    if (!accountInfo.key) continue;
-    signatureKey.push(accountInfo.key);
+    try {
+      const accountInfo = parseAccountInfo(
+        await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork),
+      );
+      if (!accountInfo.key) continue;
+      signatureKey.push(accountInfo.key);
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   /* Check if there is a receiver account that required signature, if so get it */
   for (const accountId of receiverAccounts) {
-    const accountInfo = parseAccountInfo(
-      await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork),
-    );
-    if (!accountInfo.receiverSignatureRequired || !accountInfo.key) continue;
-    signatureKey.push(accountInfo.key);
+    try {
+      const accountInfo = parseAccountInfo(
+        await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork),
+      );
+      if (!accountInfo.receiverSignatureRequired || !accountInfo.key) continue;
+      signatureKey.push(accountInfo.key);
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   /* Check if user has a key included in the node admin key */

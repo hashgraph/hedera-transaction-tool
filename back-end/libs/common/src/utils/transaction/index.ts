@@ -80,20 +80,28 @@ export const keysRequiredToSign = async (
 
   /* Check if a key of the user is inside the key of some account required to sign */
   for (const accountId of accounts) {
-    const accountInfo = parseAccountInfo(
-      await mirrorNodeService.getAccountInfo(accountId, transaction.mirrorNetwork),
-    );
-    if (!accountInfo.key) continue;
-    addUserPublicKeyIfRequired(accountInfo.key);
+    try {
+      const accountInfo = parseAccountInfo(
+        await mirrorNodeService.getAccountInfo(accountId, transaction.mirrorNetwork),
+      );
+      if (!accountInfo.key) continue;
+      addUserPublicKeyIfRequired(accountInfo.key);
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   /* Check if user has a key included in a receiver account that required signature */
   for (const accountId of receiverAccounts) {
-    const accountInfo = parseAccountInfo(
-      await mirrorNodeService.getAccountInfo(accountId, transaction.mirrorNetwork),
-    );
-    if (!accountInfo.receiverSignatureRequired || !accountInfo.key) continue;
-    addUserPublicKeyIfRequired(accountInfo.key);
+    try {
+      const accountInfo = parseAccountInfo(
+        await mirrorNodeService.getAccountInfo(accountId, transaction.mirrorNetwork),
+      );
+      if (!accountInfo.receiverSignatureRequired || !accountInfo.key) continue;
+      addUserPublicKeyIfRequired(accountInfo.key);
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   /* Check if user has a key included in the node admin key */
