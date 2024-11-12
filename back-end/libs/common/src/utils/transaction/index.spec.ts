@@ -1,6 +1,6 @@
 import { mockDeep } from 'jest-mock-extended';
 import { EntityManager } from 'typeorm';
-import { KeyList, AccountCreateTransaction, PrivateKey } from '@hashgraph/sdk';
+import { KeyList, AccountCreateTransaction, PrivateKey, AccountId } from '@hashgraph/sdk';
 
 import {
   isExpired,
@@ -9,6 +9,9 @@ import {
   MirrorNodeService,
   parseAccountInfo,
   AccountInfoParsed,
+  parseNodeInfo,
+  NodeInfoParsed,
+  transactionIs,
 } from '@app/common';
 import { UserKey } from '@entities';
 
@@ -91,6 +94,81 @@ describe('keysRequiredToSign', () => {
     } as unknown as AccountInfoParsed);
 
     const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
+    expect(result).toEqual(keys);
+  });
+
+  it('should add the admin key of the node id', async () => {
+    const pk = PrivateKey.generateED25519();
+    const keys = [{ id: 1, publicKey: pk.publicKey.toStringRaw() }];
+
+    entityManager.find.mockResolvedValueOnce([]);
+    entityManager.find.mockResolvedValueOnce(keys);
+    jest.mocked(getSignatureEntities).mockReturnValueOnce({
+      accounts: [],
+      receiverAccounts: [],
+      newKeys: [],
+      nodeId: 2,
+    });
+    jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
+    jest
+      .mocked(parseNodeInfo)
+      .mockReturnValueOnce({ admin_key: pk.publicKey } as unknown as NodeInfoParsed);
+
+    const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
+    expect(result).toEqual(keys);
+  });
+
+  it('should not add the admin key of the node id if it is already in the list', async () => {
+    const pk = PrivateKey.generateED25519();
+    const keys = [{ id: 1, publicKey: pk.publicKey.toStringRaw() }];
+
+    entityManager.find.mockResolvedValueOnce([
+      { userKey: { publicKey: pk.publicKey.toStringRaw() } },
+    ]);
+    entityManager.find.mockResolvedValueOnce(keys);
+    jest.mocked(getSignatureEntities).mockReturnValueOnce({
+      accounts: [],
+      receiverAccounts: [],
+      newKeys: [],
+      nodeId: 2,
+    });
+    jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
+    jest
+      .mocked(parseNodeInfo)
+      .mockReturnValueOnce({ admin_key: pk.publicKey } as unknown as NodeInfoParsed);
+
+    const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
+    expect(result).toEqual([]);
+  });
+
+  it('should add the key of the new node account id', async () => {
+    const pk = PrivateKey.generateED25519();
+    const accKey = PrivateKey.generateED25519();
+    const keys = [
+      { id: 1, publicKey: pk.publicKey.toStringRaw() },
+      { id: 2, publicKey: accKey.publicKey.toStringRaw() },
+    ];
+
+    entityManager.find.mockResolvedValueOnce([]);
+    entityManager.find.mockResolvedValueOnce(keys);
+    jest.mocked(getSignatureEntities).mockReturnValueOnce({
+      accounts: [],
+      receiverAccounts: [],
+      newKeys: [],
+      nodeId: 2,
+    });
+    jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
+    jest.mocked(parseNodeInfo).mockReturnValueOnce({
+      admin_key: pk.publicKey,
+      node_account_id: AccountId.fromString('0.0.21212'),
+    } as unknown as NodeInfoParsed);
+    jest.mocked(transactionIs).mockReturnValueOnce(true);
+    jest
+      .mocked(parseAccountInfo)
+      .mockReturnValueOnce({ key: accKey.publicKey } as unknown as AccountInfoParsed);
+
+    const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
+
     expect(result).toEqual(keys);
   });
 
