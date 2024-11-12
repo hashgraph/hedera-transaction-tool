@@ -290,6 +290,29 @@ describe('TransactionsService', () => {
       expect(result.items).toHaveLength(1);
       expect(result.totalItems).toBe(1);
     });
+
+    it('should hande an error and return the rest of the transactions', async () => {
+      entityManager.find.mockReturnValue(Promise.resolve([{ id: 1 }, { id: 2 }]));
+      transactionsRepo.find.mockResolvedValue([
+        { id: 1, name: 'Transaction 1' },
+        { id: 2, name: 'Transaction 2' },
+      ] as Transaction[]);
+
+      jest
+        .spyOn(service, 'userKeysToSign')
+        .mockResolvedValueOnce([1])
+        .mockRejectedValueOnce(new Error('Error'));
+
+      const result = await service.getTransactionsToSign(userWithKeys, {
+        page: 1,
+        limit: 10,
+        size: 10,
+        offset: 0,
+      });
+
+      expect(result.items).toHaveLength(1);
+      expect(result.totalItems).toBe(1);
+    });
   });
 
   describe('getTransactionsToApprove', () => {
