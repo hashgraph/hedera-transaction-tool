@@ -26,4 +26,8 @@ export abstract class TransactionBaseModel<T extends Transaction> {
   getNewKeys(): Key[] {
     return [];
   }
+
+  getNodeId(): number | null {
+    return null;
+  }
 }

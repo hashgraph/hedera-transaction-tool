@@ -1,4 +1,4 @@
-import { Key, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Key, NodeUpdateTransaction, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import { EntityManager, In, Not } from 'typeorm';
 
@@ -6,9 +6,11 @@ import {
   isExpired,
   getSignatureEntities,
   isPublicKeyInKeyList,
-  parseAccountProperty,
   MirrorNodeService,
   attachKeys,
+  parseAccountInfo,
+  parseNodeInfo,
+  transactionIs,
 } from '@app/common';
 import { User, Transaction, UserKey, TransactionSigner } from '@entities';
 
@@ -54,7 +56,7 @@ export const keysRequiredToSign = async (
   }
 
   /* Get signature entities */
-  const { newKeys, accounts, receiverAccounts } = getSignatureEntities(sdkTransaction);
+  const { newKeys, accounts, receiverAccounts, nodeId } = getSignatureEntities(sdkTransaction);
 
   /* Check if the user has a key that is required to sign */
   for (const userKey of userKeys) {
@@ -67,30 +69,23 @@ export const keysRequiredToSign = async (
     }
   }
 
-  const userKeysInKeyOrIsKey = (key: Key) => {
-    const keys: UserKey[] = [];
-    for (const userKey of userKeys) {
-      if (
+  const addUserPublicKeyIfRequired = (key: Key) => {
+    const userKeysRequired = userKeys.filter(
+      userKey =>
         isPublicKeyInKeyList(userKey.publicKey, key) &&
-        !signatures.some(s => s.userKey.publicKey === userKey.publicKey)
-      ) {
-        keys.push(userKey);
-      }
-    }
-    return keys;
+        !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
+    );
+    userKeysRequired.forEach(userKey => userKeyIdsRequired.add(userKey.id));
   };
 
   /* Check if a key of the user is inside the key of some account required to sign */
   for (const accountId of accounts) {
     try {
-      const accountInfo = await mirrorNodeService.getAccountInfo(
-        accountId,
-        transaction.mirrorNetwork,
+      const accountInfo = parseAccountInfo(
+        await mirrorNodeService.getAccountInfo(accountId, transaction.mirrorNetwork),
       );
-      const key = parseAccountProperty(accountInfo, 'key');
-      if (!key) continue;
-
-      userKeysInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
+      if (!accountInfo.key) continue;
+      addUserPublicKeyIfRequired(accountInfo.key);
     } catch (error) {
       console.log(error);
     }
@@ -99,20 +94,40 @@ export const keysRequiredToSign = async (
   /* Check if user has a key included in a receiver account that required signature */
   for (const accountId of receiverAccounts) {
     try {
-      const accountInfo = await mirrorNodeService.getAccountInfo(
-        accountId,
-        transaction.mirrorNetwork,
+      const accountInfo = parseAccountInfo(
+        await mirrorNodeService.getAccountInfo(accountId, transaction.mirrorNetwork),
       );
-      const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
-      if (!receiverSigRequired) continue;
-
-      const key = parseAccountProperty(accountInfo, 'key');
-      if (!key) continue;
-
-      userKeysInKeyOrIsKey(key).forEach(userKey => userKeyIdsRequired.add(userKey.id));
+      if (!accountInfo.receiverSignatureRequired || !accountInfo.key) continue;
+      addUserPublicKeyIfRequired(accountInfo.key);
     } catch (error) {
       console.log(error);
     }
+  }
+
+  /* Check if user has a key included in the node admin key */
+  try {
+    if (nodeId) {
+      const nodeInfo = parseNodeInfo(
+        await mirrorNodeService.getNodeInfo(nodeId, transaction.mirrorNetwork),
+      );
+      if (nodeInfo.admin_key) {
+        addUserPublicKeyIfRequired(nodeInfo.admin_key);
+      }
+
+      if (transactionIs(NodeUpdateTransaction, sdkTransaction)) {
+        const nodeAccountId = nodeInfo?.node_account_id?.toString() || null;
+        if (sdkTransaction.accountId && nodeAccountId) {
+          const accountInfo = parseAccountInfo(
+            await mirrorNodeService.getAccountInfo(nodeAccountId, transaction.mirrorNetwork),
+          );
+          if (accountInfo?.key) {
+            addUserPublicKeyIfRequired(accountInfo.key);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error(error);
   }
 
   return userKeys.filter(userKey => userKeyIdsRequired.has(userKey.id));

@@ -1,5 +1,6 @@
 import {
   KeyList,
+  NodeUpdateTransaction,
   PublicKey,
   Transaction as SDKTransaction,
   SignatureMap,
@@ -12,8 +13,9 @@ import {
   MirrorNodeService,
   decode,
   getSignatureEntities,
-  parseAccountProperty,
   computeShortenedPublicKeyList,
+  parseAccountInfo,
+  parseNodeInfo,
 } from '@app/common';
 
 export const isExpired = (transaction: SDKTransaction) => {
@@ -61,6 +63,12 @@ export const getTransactionTypeEnumValue = (transaction: SDKTransaction): Transa
       return TransactionType.SYSTEM_UNDELETE;
     case TransactionType.TRANSFER:
       return TransactionType.TRANSFER;
+    case TransactionType.NODE_CREATE:
+      return TransactionType.NODE_CREATE;
+    case TransactionType.NODE_UPDATE:
+      return TransactionType.NODE_UPDATE;
+    case TransactionType.NODE_DELETE:
+      return TransactionType.NODE_DELETE;
     default:
       throw new Error(`Unsupported transaction type: ${sdkType}`);
   }
@@ -143,7 +151,7 @@ export const computeSignatureKey = async (
   mirrorNetwork: string,
 ) => {
   /* Get the accounts, receiver accounts and new keys from the transaction */
-  const { accounts, receiverAccounts, newKeys } = getSignatureEntities(transaction);
+  const { accounts, receiverAccounts, newKeys, nodeId } = getSignatureEntities(transaction);
 
   /* Create a new key list */
   const signatureKey = new KeyList();
@@ -151,33 +159,54 @@ export const computeSignatureKey = async (
   /* Add keys to the signature key list */
   newKeys.forEach(key => signatureKey.push(key));
 
-  /* Add the keys of the account ids to the signature key list */
+  /* Get the keys of the account ids to the signature key list */
   for (const accountId of accounts) {
     try {
-      const accountInfo = await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork);
-      const key = parseAccountProperty(accountInfo, 'key');
-      if (!key) continue;
-
-      signatureKey.push(key);
+      const accountInfo = parseAccountInfo(
+        await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork),
+      );
+      if (!accountInfo.key) continue;
+      signatureKey.push(accountInfo.key);
     } catch (error) {
       console.log(error);
     }
   }
 
-  /* Check if there is a receiver account that required signature, if so add it to the key list */
+  /* Check if there is a receiver account that required signature, if so get it */
   for (const accountId of receiverAccounts) {
     try {
-      const accountInfo = await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork);
-      const receiverSigRequired = parseAccountProperty(accountInfo, 'receiver_sig_required');
-      if (!receiverSigRequired) continue;
-
-      const key = parseAccountProperty(accountInfo, 'key');
-      if (!key) continue;
-
-      signatureKey.push(key);
+      const accountInfo = parseAccountInfo(
+        await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork),
+      );
+      if (!accountInfo.receiverSignatureRequired || !accountInfo.key) continue;
+      signatureKey.push(accountInfo.key);
     } catch (error) {
       console.log(error);
     }
+  }
+
+  /* Check if user has a key included in the node admin key */
+  try {
+    if (nodeId) {
+      const nodeInfo = parseNodeInfo(await mirrorNodeService.getNodeInfo(nodeId, mirrorNetwork));
+      if (nodeInfo.admin_key) {
+        signatureKey.push(nodeInfo.admin_key);
+      }
+
+      if (transactionIs(NodeUpdateTransaction, transaction)) {
+        const nodeAccountId = nodeInfo?.node_account_id?.toString() || null;
+        if (transaction.accountId && nodeAccountId) {
+          const accountInfo = parseAccountInfo(
+            await mirrorNodeService.getAccountInfo(nodeAccountId, mirrorNetwork),
+          );
+          if (accountInfo?.key) {
+            signatureKey.push(accountInfo.key);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.log(error);
   }
 
   return signatureKey;
@@ -258,3 +287,10 @@ export function isTransactionBodyOverMaxSize(transaction: SDKTransaction) {
   const bodyBytes = getTransactionBodyBytes(transaction);
   return bodyBytes.length > MAX_TRANSACTION_BYTE_SIZE;
 }
+
+export const transactionIs = <T extends SDKTransaction>(
+  type: new (...args) => T,
+  transaction: SDKTransaction,
+): transaction is T => {
+  return transaction instanceof type;
+};

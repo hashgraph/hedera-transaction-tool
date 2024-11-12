@@ -568,6 +568,8 @@ export interface NetworkNodesResponse {
 }
 
 export interface NetworkNode {
+  admin_key: Key | null | undefined;
+  domain_name: string | null | undefined;
   description: string | null | undefined;
   file_id: string | null | undefined; // Network entity ID in the format of shard.realm.num
   memo: string | undefined;
@@ -589,11 +591,12 @@ export interface NetworkNode {
 export interface ServiceEndPoint {
   ip_address_v4: string;
   port: number;
+  domain_name: string;
 }
 
 export function makeShortNodeDescription(description: string): string {
   const separator = description.indexOf('|') ?? -1;
-  return separator !== -1 ? description.slice(0, separator) ?? null : description;
+  return separator !== -1 ? (description.slice(0, separator) ?? null) : description;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

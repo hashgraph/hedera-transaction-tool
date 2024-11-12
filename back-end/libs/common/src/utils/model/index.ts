@@ -11,6 +11,7 @@ export const getSignatureEntities = (transaction: Transaction) => {
       accounts: [...transactionModel.getSigningAccounts()],
       receiverAccounts: [...transactionModel.getReceiverAccounts()],
       newKeys: [...transactionModel.getNewKeys()],
+      nodeId: transactionModel.getNodeId(),
     };
 
     return result;
@@ -20,6 +21,7 @@ export const getSignatureEntities = (transaction: Transaction) => {
       accounts: [],
       receiverAccounts: [],
       newKeys: [],
+      nodeId: null,
     };
   }
 };

@@ -1,15 +1,17 @@
 import { mockDeep } from 'jest-mock-extended';
 import { EntityManager } from 'typeorm';
-import { KeyList, AccountCreateTransaction, PrivateKey } from '@hashgraph/sdk';
+import { KeyList, AccountCreateTransaction, PrivateKey, AccountId } from '@hashgraph/sdk';
 
 import {
   isExpired,
   getSignatureEntities,
   isPublicKeyInKeyList,
-  parseAccountProperty,
   MirrorNodeService,
-  KeyType,
-  AccountInfo,
+  parseAccountInfo,
+  AccountInfoParsed,
+  parseNodeInfo,
+  NodeInfoParsed,
+  transactionIs,
 } from '@app/common';
 import { UserKey } from '@entities';
 
@@ -55,17 +57,16 @@ describe('keysRequiredToSign', () => {
       accounts: ['0.0.21212'],
       receiverAccounts: ['0.0.21212'],
       newKeys: [pk.publicKey],
+      nodeId: null,
     });
     jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
-    //@ts-expect-error overload typing issue
-    jest.mocked(parseAccountProperty).mockReturnValue(pk.publicKey);
-    mirrorNodeService.getAccountInfo.mockResolvedValue({
-      key: {
-        _type: KeyType.ED25519,
-        key: pk.publicKey.toStringRaw(),
-      },
-      receiver_sig_required: true,
-    } as AccountInfo);
+    jest
+      .mocked(parseAccountInfo)
+      .mockReturnValueOnce({ key: pk.publicKey } as unknown as AccountInfoParsed);
+    jest.mocked(parseAccountInfo).mockReturnValueOnce({
+      key: pk.publicKey,
+      receiverSignatureRequired: true,
+    } as unknown as AccountInfoParsed);
 
     const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
     expect(result).toEqual(keys);
@@ -81,16 +82,93 @@ describe('keysRequiredToSign', () => {
       accounts: ['0.0.21212'],
       receiverAccounts: ['0.0.21212'],
       newKeys: [],
+      nodeId: null,
     });
     jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
-    //@ts-expect-error overload typing issue
-    jest.mocked(parseAccountProperty).mockReturnValue(new KeyList([pk.publicKey]));
-    mirrorNodeService.getAccountInfo.mockResolvedValue({
-      // key is mocked above
-      receiver_sig_required: true,
-    } as AccountInfo);
+    jest
+      .mocked(parseAccountInfo)
+      .mockReturnValueOnce({ key: pk.publicKey } as unknown as AccountInfoParsed);
+    jest.mocked(parseAccountInfo).mockReturnValueOnce({
+      key: pk.publicKey,
+      receiverSignatureRequired: true,
+    } as unknown as AccountInfoParsed);
 
     const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
+    expect(result).toEqual(keys);
+  });
+
+  it('should add the admin key of the node id', async () => {
+    const pk = PrivateKey.generateED25519();
+    const keys = [{ id: 1, publicKey: pk.publicKey.toStringRaw() }];
+
+    entityManager.find.mockResolvedValueOnce([]);
+    entityManager.find.mockResolvedValueOnce(keys);
+    jest.mocked(getSignatureEntities).mockReturnValueOnce({
+      accounts: [],
+      receiverAccounts: [],
+      newKeys: [],
+      nodeId: 2,
+    });
+    jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
+    jest
+      .mocked(parseNodeInfo)
+      .mockReturnValueOnce({ admin_key: pk.publicKey } as unknown as NodeInfoParsed);
+
+    const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
+    expect(result).toEqual(keys);
+  });
+
+  it('should not add the admin key of the node id if it is already in the list', async () => {
+    const pk = PrivateKey.generateED25519();
+    const keys = [{ id: 1, publicKey: pk.publicKey.toStringRaw() }];
+
+    entityManager.find.mockResolvedValueOnce([
+      { userKey: { publicKey: pk.publicKey.toStringRaw() } },
+    ]);
+    entityManager.find.mockResolvedValueOnce(keys);
+    jest.mocked(getSignatureEntities).mockReturnValueOnce({
+      accounts: [],
+      receiverAccounts: [],
+      newKeys: [],
+      nodeId: 2,
+    });
+    jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
+    jest
+      .mocked(parseNodeInfo)
+      .mockReturnValueOnce({ admin_key: pk.publicKey } as unknown as NodeInfoParsed);
+
+    const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
+    expect(result).toEqual([]);
+  });
+
+  it('should add the key of the new node account id', async () => {
+    const pk = PrivateKey.generateED25519();
+    const accKey = PrivateKey.generateED25519();
+    const keys = [
+      { id: 1, publicKey: pk.publicKey.toStringRaw() },
+      { id: 2, publicKey: accKey.publicKey.toStringRaw() },
+    ];
+
+    entityManager.find.mockResolvedValueOnce([]);
+    entityManager.find.mockResolvedValueOnce(keys);
+    jest.mocked(getSignatureEntities).mockReturnValueOnce({
+      accounts: [],
+      receiverAccounts: [],
+      newKeys: [],
+      nodeId: 2,
+    });
+    jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
+    jest.mocked(parseNodeInfo).mockReturnValueOnce({
+      admin_key: pk.publicKey,
+      node_account_id: AccountId.fromString('0.0.21212'),
+    } as unknown as NodeInfoParsed);
+    jest.mocked(transactionIs).mockReturnValueOnce(true);
+    jest
+      .mocked(parseAccountInfo)
+      .mockReturnValueOnce({ key: accKey.publicKey } as unknown as AccountInfoParsed);
+
+    const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
+
     expect(result).toEqual(keys);
   });
 
@@ -110,67 +188,16 @@ describe('keysRequiredToSign', () => {
       accounts: ['0.0.21212'],
       receiverAccounts: ['0.0.21212'],
       newKeys: [pk.publicKey],
+      nodeId: null,
     });
     jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
-    //@ts-expect-error overload typing issue
-    jest.mocked(parseAccountProperty).mockReturnValue(pk.publicKey);
-    mirrorNodeService.getAccountInfo.mockResolvedValue({
-      key: {
-        _type: KeyType.ED25519,
-        key: pk.publicKey.toStringRaw(),
-      },
-      receiver_sig_required: true,
-    } as AccountInfo);
-
-    const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
-    expect(result).toEqual([]);
-  });
-
-  it('should not retun user key IDs if user already signed the transaction', async () => {
-    const pk = PrivateKey.generateED25519();
-    const keys = [{ id: 1, publicKey: pk.publicKey.toStringRaw() }];
-
-    entityManager.find.mockResolvedValueOnce([
-      {
-        userKey: {
-          publicKey: pk.publicKey.toStringRaw(),
-        },
-      },
-    ]);
-    entityManager.find.mockResolvedValueOnce(keys);
-    jest.mocked(getSignatureEntities).mockReturnValueOnce({
-      accounts: ['0.0.21212'],
-      receiverAccounts: ['0.0.21212'],
-      newKeys: [pk.publicKey],
-    });
-    jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
-    //@ts-expect-error overload typing issue
-    jest.mocked(parseAccountProperty).mockReturnValue(new KeyList([pk.publicKey]));
-    mirrorNodeService.getAccountInfo.mockResolvedValue({
-      // key is mocked above
-      receiver_sig_required: true,
-    } as AccountInfo);
-
-    const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
-    expect(result).toEqual([]);
-  });
-
-  it('should not add account key if it is not found', async () => {
-    const pk = PrivateKey.generateED25519();
-    const keys = [{ id: 1, publicKey: pk.publicKey.toStringRaw() }];
-
-    entityManager.find.mockResolvedValueOnce([]);
-    entityManager.find.mockResolvedValueOnce(keys);
-    jest.mocked(getSignatureEntities).mockReturnValue({
-      accounts: ['0.0.21212'],
-      receiverAccounts: ['0.0.21212'],
-      newKeys: [],
-    });
-    jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
-    jest.mocked(parseAccountProperty).mockReturnValueOnce(null);
-    //@ts-expect-error overload typing issue
-    jest.mocked(parseAccountProperty).mockReturnValueOnce(true);
-    jest.mocked(parseAccountProperty).mockReturnValueOnce(null);
+    jest
+      .mocked(parseAccountInfo)
+      .mockReturnValueOnce({ key: new KeyList([pk.publicKey]) } as unknown as AccountInfoParsed);
+    jest.mocked(parseAccountInfo).mockReturnValueOnce({
+      key: new KeyList([pk.publicKey]),
+      receiverSignatureRequired: true,
+    } as unknown as AccountInfoParsed);
 
     const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
     expect(result).toEqual([]);
@@ -186,10 +213,14 @@ describe('keysRequiredToSign', () => {
       accounts: [],
       receiverAccounts: ['0.0.21213'],
       newKeys: [],
+      nodeId: null,
     });
     jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
-    //@ts-expect-error overload typing issue
-    jest.mocked(parseAccountProperty).mockReturnValueOnce(false);
+
+    jest.mocked(parseAccountInfo).mockReturnValueOnce({
+      key: new KeyList([pk.publicKey]),
+      receiverSignatureRequired: false,
+    } as unknown as AccountInfoParsed);
 
     const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
     expect(result).toEqual([]);
@@ -204,6 +235,7 @@ describe('keysRequiredToSign', () => {
       accounts: [],
       receiverAccounts: [],
       newKeys: [new KeyList([pk.publicKey])],
+      nodeId: null,
     });
     jest.mocked(isPublicKeyInKeyList).mockReturnValue(false);
 
@@ -248,17 +280,16 @@ describe('userKeysRequiredToSign', () => {
       accounts: ['0.0.21212'],
       receiverAccounts: ['0.0.21212'],
       newKeys: [pk.publicKey],
+      nodeId: null,
     });
     jest.mocked(isPublicKeyInKeyList).mockReturnValue(true);
-    //@ts-expect-error overload typing issue
-    jest.mocked(parseAccountProperty).mockReturnValue(pk.publicKey);
-    mirrorNodeService.getAccountInfo.mockResolvedValue({
-      key: {
-        _type: KeyType.ED25519,
-        key: pk.publicKey.toStringRaw(),
-      },
-      receiver_sig_required: true,
-    } as AccountInfo);
+    jest
+      .mocked(parseAccountInfo)
+      .mockReturnValueOnce({ key: new KeyList([pk.publicKey]) } as unknown as AccountInfoParsed);
+    jest.mocked(parseAccountInfo).mockReturnValueOnce({
+      key: new KeyList([pk.publicKey]),
+      receiverSignatureRequired: true,
+    } as unknown as AccountInfoParsed);
 
     const result = await userKeysRequiredToSign(
       transaction,

@@ -34,6 +34,9 @@ export enum TransactionType {
   SYSTEM_DELETE = 'SYSTEM DELETE',
   SYSTEM_UNDELETE = 'SYSTEM UNDELETE',
   TRANSFER = 'TRANSFER',
+  NODE_CREATE = 'NODE CREATE',
+  NODE_UPDATE = 'NODE UPDATE',
+  NODE_DELETE = 'NODE DELETE',
 }
 
 export enum TransactionStatus {

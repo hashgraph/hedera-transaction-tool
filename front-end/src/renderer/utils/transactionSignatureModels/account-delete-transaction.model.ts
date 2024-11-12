@@ -10,7 +10,7 @@ export default class AccountDeleteTransactionModel extends TransactionBaseModel<
 
   getReceiverAccounts(): Set<string> {
     return new Set<string>(
-      this.transaction.accountId ? [this.transaction.accountId.toString()] : [],
+      this.transaction.transferAccountId ? [this.transaction.transferAccountId.toString()] : [],
     );
   }
 }

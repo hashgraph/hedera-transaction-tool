@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { ExecutedSuccessData } from '@renderer/components/Transaction/TransactionProcessor';
 import type { NodeData } from '@renderer/utils/sdk/createTransactions';
 
 import { computed, reactive, ref } from 'vue';
-import { Transaction } from '@hashgraph/sdk';
+import { Key, KeyList, Transaction } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { getNodeData, getEntityIdFromTransactionReceipt, isUserLoggedIn } from '@renderer/utils';
+import { getNodeData, isUserLoggedIn } from '@renderer/utils';
 import { createNodeCreateTransaction } from '@renderer/utils/sdk/createTransactions';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
@@ -44,6 +43,16 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
     });
 });
 
+const createDisabled = computed(() => {
+  return !data.adminKey;
+});
+
+const transactionKey = computed(() => {
+  const keys: Key[] = [];
+  data.adminKey && keys.push(data.adminKey);
+  return new KeyList(keys);
+});
+
 /* Handlers */
 const handleDraftLoaded = (transaction: Transaction) => {
   handleUpdateData(getNodeData(transaction));
@@ -53,14 +62,12 @@ const handleUpdateData = (newData: NodeData) => {
   Object.assign(data, newData);
 };
 
-const handleExecutedSuccess = async ({ receipt }: ExecutedSuccessData) => {
+const handleExecutedSuccess = async () => {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 
-  const accountId = getEntityIdFromTransactionReceipt(receipt, 'accountId');
-
-  toast.success(`Node ${accountId} Created`, { position: 'bottom-right' });
+  toast.success(`Node ${data.nodeAccountId} Created`, { position: 'bottom-right' });
 };
 
 /* Functions */
@@ -93,6 +100,8 @@ const preCreateAssert = () => {
     ref="baseTransactionRef"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
+    :transaction-base-key="transactionKey"
+    :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"
     @draft-loaded="handleDraftLoaded"
   >

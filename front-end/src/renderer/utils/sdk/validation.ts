@@ -39,3 +39,10 @@ export const validateFileUpdateTransaction = (transaction: Transaction) => {
     throw new Error('Invalid payer ID: System files can only be updated by authorized accounts');
   }
 };
+
+export const transactionIs = <T extends Transaction>(
+  type: new (...args: any[]) => T,
+  transaction: Transaction,
+): transaction is T => {
+  return transaction instanceof type;
+};

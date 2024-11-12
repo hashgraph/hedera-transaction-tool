@@ -7,14 +7,30 @@ import type {
   AccountsResponse,
   NetworkNode,
   NetworkNodesResponse,
+  INodeInfoParsed,
+  Key as NetworkResponseKey,
 } from '@main/shared/interfaces';
 
 import axios from 'axios';
 
-import { AccountId, EvmAddress, Hbar, HbarUnit, Key, PublicKey, Timestamp } from '@hashgraph/sdk';
+import {
+  AccountId,
+  EvmAddress,
+  FileId,
+  Hbar,
+  HbarUnit,
+  PublicKey,
+  Timestamp,
+} from '@hashgraph/sdk';
 import { BigNumber } from 'bignumber.js';
 
-import { decodeProtobuffKey } from '@renderer/utils';
+import {
+  decodeProtobuffKey,
+  getServiceEndpoints,
+  isAccountId,
+  isFileId,
+  parseHbar,
+} from '@renderer/utils';
 
 /* Mirror node data service */
 const withAPIPrefix = (url: string) => `${url}/api/v1`;
@@ -130,25 +146,6 @@ export const getAccountInfo = async (
 
   const rawAccountInfo: AccountInfo = data;
 
-  let key: Key | null;
-
-  if (!rawAccountInfo.key) {
-    key = null;
-  } else {
-    switch (rawAccountInfo.key._type) {
-      case 'ProtobufEncoded':
-        key = decodeProtobuffKey(rawAccountInfo.key.key || '') || null;
-        break;
-      case 'ED25519':
-      case 'ECDSA_SECP256K1':
-        key = PublicKey.fromString(rawAccountInfo.key.key || '');
-        break;
-      default:
-        key = null;
-        break;
-    }
-  }
-
   const accountInfo: IAccountInfoParsed = {
     accountId: AccountId.fromString(rawAccountInfo.account || ''),
     alias: rawAccountInfo.alias as string,
@@ -169,7 +166,7 @@ export const getAccountInfo = async (
           Number(rawAccountInfo.expiry_timestamp.split('.')[1]),
         )
       : null,
-    key: key,
+    key: parseNetworkResponseKey(rawAccountInfo.key),
     maxAutomaticTokenAssociations: rawAccountInfo.max_automatic_token_associations,
     memo: rawAccountInfo.memo,
     pendingRewards: Hbar.from(rawAccountInfo.pending_reward || 0, HbarUnit.Tinybar),
@@ -278,5 +275,75 @@ export const getNetworkNodes = async (mirrorNodeURL: string) => {
   } catch (error) {
     console.log(error);
     return networkNodes;
+  }
+};
+
+/* Gets the network node information */
+export const getNodeInfo = async (
+  nodeId: number,
+  mirrorNodeURL: string,
+): Promise<INodeInfoParsed | null> => {
+  try {
+    const res = await axios.get(
+      `${withAPIPrefix(mirrorNodeURL)}/network/nodes?node.id=eq:${nodeId}`,
+    );
+    const data: NetworkNodesResponse = res.data;
+
+    if (data.nodes && data.nodes.length > 0) {
+      const node = data.nodes[0];
+
+      const nodeInfo: INodeInfoParsed = {
+        admin_key: parseNetworkResponseKey(node.admin_key),
+        domain_name: node.domain_name || null,
+        description: node.description?.trim() || null,
+        file_id: node.file_id && isFileId(node.file_id) ? FileId.fromString(node.file_id) : null,
+        memo: node.memo?.trim() || null,
+        node_id: node.node_id || null,
+        node_account_id:
+          node.node_account_id && isAccountId(node.node_account_id)
+            ? AccountId.fromString(node.node_account_id)
+            : null,
+        node_cert_hash: node.node_cert_hash?.trim() || null,
+        public_key: node.public_key || null,
+        service_endpoints: getServiceEndpoints(
+          node.service_endpoints?.map(se => ({
+            ipAddressV4: se.ip_address_v4,
+            port: se.port.toString(),
+            domainName: '',
+          })) || [],
+        ),
+        timestamp: node.timestamp || null,
+        max_stake: parseHbar(node.max_stake, HbarUnit.Tinybar),
+        min_stake: parseHbar(node.min_stake, HbarUnit.Tinybar),
+        stake: parseHbar(node.stake, HbarUnit.Tinybar),
+        stake_not_rewarded: parseHbar(node.stake_not_rewarded, HbarUnit.Tinybar),
+        stake_rewarded: parseHbar(node.stake_rewarded, HbarUnit.Tinybar),
+        staking_period: node.staking_period || null,
+        reward_rate_start: parseHbar(node.reward_rate_start, HbarUnit.Tinybar),
+      };
+      return nodeInfo;
+    }
+    return null;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+};
+
+const parseNetworkResponseKey = (key: NetworkResponseKey | null | undefined) => {
+  try {
+    switch (key?._type) {
+      case 'ProtobufEncoded':
+        return decodeProtobuffKey(key.key || '') || null;
+      case 'ED25519':
+        return PublicKey.fromStringED25519(key.key || '');
+      case 'ECDSA_SECP256K1':
+        return PublicKey.fromStringECDSA(key.key || '');
+      default:
+        return null;
+    }
+  } catch (error) {
+    console.log(error);
+    return null;
   }
 };

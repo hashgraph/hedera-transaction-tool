@@ -1,7 +1,7 @@
 import { AccountAllowanceApproveTransaction } from '@hashgraph/sdk';
 import { TransactionBaseModel } from './transaction.model';
 
-export default class AccountAllowanceApproveModel extends TransactionBaseModel<AccountAllowanceApproveTransaction> {
+export default class AccountAllowanceApproveTransactionModel extends TransactionBaseModel<AccountAllowanceApproveTransaction> {
   getSigningAccounts(): Set<string> {
     const set = super.getSigningAccounts();
 

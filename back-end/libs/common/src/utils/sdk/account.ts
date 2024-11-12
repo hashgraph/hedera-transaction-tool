@@ -1,14 +1,5 @@
 import { AccountInfo, AccountInfoParsed, KeyType, decodeProtobuffKey } from '@app/common';
-import {
-  AccountId,
-  EvmAddress,
-  Hbar,
-  HbarUnit,
-  Key,
-  PublicKey,
-  Timestamp,
-  TransactionId,
-} from '@hashgraph/sdk';
+import { AccountId, EvmAddress, Hbar, HbarUnit, Key, PublicKey, Timestamp } from '@hashgraph/sdk';
 
 export const parseAccountInfo = (accountInfo: AccountInfo) => {
   const accountInfoParsed: AccountInfoParsed = {
@@ -100,8 +91,9 @@ export function parseAccountProperty(accountInfo: AccountInfo, property: keyof A
         case KeyType.ProtobufEncoded:
           return decodeProtobuffKey(accountInfo.key.key);
         case KeyType.ED25519:
+          return PublicKey.fromStringED25519(accountInfo.key.key);
         case KeyType.ECDSA_SECP256K1:
-          return PublicKey.fromString(accountInfo.key.key);
+          return PublicKey.fromStringECDSA(accountInfo.key.key);
         default:
           return null;
       }
@@ -131,21 +123,3 @@ export function parseAccountProperty(accountInfo: AccountInfo, property: keyof A
       throw new Error(`Unknown account info  property: ${property}`);
   }
 }
-
-export const isAccountId = (accountId: string) => {
-  try {
-    AccountId.fromString(accountId);
-    return true;
-  } catch (error) {
-    return false;
-  }
-};
-
-export const isTransactionId = (transactionId: string) => {
-  try {
-    TransactionId.fromString(transactionId);
-    return true;
-  } catch (error) {
-    return false;
-  }
-};

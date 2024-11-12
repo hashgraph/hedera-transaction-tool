@@ -232,9 +232,12 @@ export class TransactionsService {
 
     for (const transaction of transactions) {
       /* Check if the user should sign the transaction */
-      const keysToSign = await this.userKeysToSign(transaction, user);
-
-      if (keysToSign.length > 0) result.push({ transaction, keysToSign });
+      try {
+        const keysToSign = await this.userKeysToSign(transaction, user);
+        if (keysToSign.length > 0) result.push({ transaction, keysToSign });
+      } catch (error) {
+        console.log(error);
+      }
     }
 
     return {

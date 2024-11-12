@@ -1,5 +1,4 @@
 import {
-  BrowserWindow,
   Menu,
   // shell
 } from 'electron';
@@ -21,15 +20,10 @@ vi.mock('electron', () => ({
 vi.mock('@main/modules/updater', () => ({ default: vi.fn() }));
 
 describe('menuBuilder', () => {
-  let mainWindow: BrowserWindow;
   const MenuObject = Menu as unknown as MockedObject<typeof Menu>;
 
-  beforeEach(() => {
-    mainWindow = new BrowserWindow();
-  });
-
   test('Should build menu from template', () => {
-    menuBuilder(mainWindow);
+    menuBuilder();
 
     expect(MenuObject.buildFromTemplate).toHaveBeenCalled();
     expect(MenuObject.setApplicationMenu).toHaveBeenCalled();

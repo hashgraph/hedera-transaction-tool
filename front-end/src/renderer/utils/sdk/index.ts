@@ -133,15 +133,22 @@ export function getMaximumExpirationTime() {
   return now;
 }
 
-export function isPublicKeyInKeyList(publicKey: PublicKey | string, keyList: KeyList): boolean {
+export function isPublicKeyInKeyList(publicKey: PublicKey | string, key: Key): boolean {
+  const keyIsKeyList = key instanceof KeyList;
+  const keyIsPublicKey = key instanceof PublicKey;
+
+  if (!keyIsKeyList && !keyIsPublicKey) return false;
+
   publicKey = publicKey instanceof PublicKey ? publicKey.toStringRaw() : publicKey;
 
+  const keyList = keyIsKeyList ? key : new KeyList([key]);
+
   const keys = keyList.toArray();
-  return keys.some(key => {
-    if (key instanceof PublicKey) {
-      return key.toStringRaw() === publicKey;
-    } else if (key instanceof KeyList) {
-      return isPublicKeyInKeyList(publicKey, key);
+  return keys.some(k => {
+    if (k instanceof PublicKey) {
+      return k.toStringRaw() === publicKey;
+    } else if (k instanceof KeyList) {
+      return isPublicKeyInKeyList(publicKey, k);
     }
     return false;
   });
@@ -186,7 +193,7 @@ export function decodeKeyList(keyListBytes: string) {
   }
 }
 
-export const decodeProtobuffKey = (protobuffKey: string): Key | undefined => {
+export const decodeProtobuffKey = (protobuffKey: string): Key | null => {
   try {
     const key = proto.Key.decode(hexToUint8Array(protobuffKey));
 
@@ -200,7 +207,7 @@ export const decodeProtobuffKey = (protobuffKey: string): Key | undefined => {
       return Key._fromProtobufKey(key);
     }
 
-    return undefined;
+    return null;
   } catch (error) {
     throw new Error('Failed to decode protobuf');
   }
@@ -425,4 +432,18 @@ export const formatSignatureMap = (signatureMap: SignatureMap) => {
     }
   }
   return result;
+};
+
+export const parseHbar = (hbar: string | number | null, unit: HbarUnit) => {
+  if (!hbar) {
+    return null;
+  }
+
+  hbar = hbar.toString();
+
+  if (hbar.startsWith('-')) {
+    return null;
+  }
+
+  return Hbar.from(hbar, unit);
 };

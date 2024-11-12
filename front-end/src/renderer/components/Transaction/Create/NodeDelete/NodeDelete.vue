@@ -1,31 +1,23 @@
 <script setup lang="ts">
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { ExecutedSuccessData } from '@renderer/components/Transaction/TransactionProcessor';
 import type { NodeDeleteData } from '@renderer/utils/sdk/createTransactions';
 
 import { computed, reactive, ref } from 'vue';
-import { Transaction } from '@hashgraph/sdk';
+import { Key, KeyList, NodeDeleteTransaction, Transaction } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
-
-import useUserStore from '@renderer/stores/storeUser';
+import useNodeId from '@renderer/composables/useNodeId';
 
 import { createNodeDeleteTransaction } from '@renderer/utils/sdk/createTransactions';
 
-import {
-  getNodeDeleteData,
-  getEntityIdFromTransactionReceipt,
-  isUserLoggedIn,
-} from '@renderer/utils';
+import { getNodeDeleteData } from '@renderer/utils';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeDeleteFormData from '@renderer/components/Transaction/Create/NodeDelete/NodeDeleteFormData.vue';
 
-/* Stores */
-const user = useUserStore();
-
 /* Composables */
 const toast = useToast();
+const nodeData = useNodeId();
 
 /* State */
 const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
@@ -43,28 +35,40 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
     });
 });
 
+const createDisabled = computed(() => {
+  return !nodeData.isValid.value;
+});
+
+const transactionKey = computed(() => {
+  const keys: Key[] = [];
+  nodeData.key.value && keys.push(nodeData.key.value);
+  return new KeyList(keys);
+});
+
 /* Handlers */
 const handleDraftLoaded = (transaction: Transaction) => {
+  if (transaction instanceof NodeDeleteTransaction) {
+    if (transaction.nodeId) {
+      nodeData.nodeId.value = transaction.nodeId.toNumber();
+    }
+  }
   handleUpdateData(getNodeDeleteData(transaction));
 };
 
 const handleUpdateData = (newData: NodeDeleteData) => {
+  nodeData.nodeId.value = parseInt(newData.nodeId);
   Object.assign(data, newData);
 };
 
-const handleExecutedSuccess = async ({ receipt }: ExecutedSuccessData) => {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
-
-  const accountId = getEntityIdFromTransactionReceipt(receipt, 'accountId');
-
-  toast.success(`Node ${accountId} Deleted`, { position: 'bottom-right' });
+const handleExecutedSuccess = async () => {
+  toast.success(`Node ${data.nodeId} Deleted`, { position: 'bottom-right' });
 };
 
 /* Functions */
 const preCreateAssert = () => {
-  return true;
+  if (!data.nodeId) {
+    throw new Error('Node ID Required');
+  }
 };
 </script>
 <template>
@@ -72,6 +76,8 @@ const preCreateAssert = () => {
     ref="baseTransactionRef"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
+    :transaction-base-key="transactionKey"
+    :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"
     @draft-loaded="handleDraftLoaded"
   >
