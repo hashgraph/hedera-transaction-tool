@@ -9,6 +9,7 @@ import {
   Client,
   FileUpdateTransaction,
   KeyList,
+  NodeUpdateTransaction,
   Transaction as SDKTransaction,
   Status,
   TransactionResponse,
@@ -22,6 +23,7 @@ import {
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
   notifyTransactionAction,
+  transactionIs,
 } from '@app/common';
 import { Transaction, TransactionGroup, TransactionStatus } from '@entities';
 
@@ -68,7 +70,16 @@ describe('ExecuteService', () => {
     transactionBytes: new AccountUpdateTransaction().setAccountId('0.0.2').toBytes() as Buffer,
   });
 
-  const getTransaction = (type: 'executable' | 'file' | 'account_update'): Partial<Transaction> => {
+  const getNodeUpdateTransaction = (
+    baseTransaction: Partial<Transaction>,
+  ): Partial<Transaction> => ({
+    ...baseTransaction,
+    transactionBytes: new NodeUpdateTransaction().setNodeId(2).toBytes() as Buffer,
+  });
+
+  const getTransaction = (
+    type: 'executable' | 'file' | 'account_update' | 'node_update',
+  ): Partial<Transaction> => {
     const baseTransaction = {
       id: 1,
       signers: [],
@@ -86,6 +97,8 @@ describe('ExecuteService', () => {
         return getFileTransaction(baseTransaction);
       case 'account_update':
         return getAccountUpdateTransaction(baseTransaction);
+      case 'node_update':
+        return getNodeUpdateTransaction(baseTransaction);
     }
   };
 
@@ -260,6 +273,7 @@ describe('ExecuteService', () => {
       jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      jest.mocked(transactionIs).mockReturnValueOnce(true);
 
       jest.useFakeTimers();
 
@@ -279,6 +293,7 @@ describe('ExecuteService', () => {
       jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      jest.mocked(transactionIs).mockReturnValueOnce(true);
       mirrorNodeService.updateAccountInfo.mockRejectedValueOnce(
         new Error('Failed to update account info'),
       );
@@ -290,6 +305,50 @@ describe('ExecuteService', () => {
       jest.useRealTimers();
 
       expect(mirrorNodeService.updateAccountInfo).toHaveBeenCalled();
+    });
+
+    it('should update the node info if the transaction is node update', async () => {
+      const client = mockDeep<Client>();
+      const transaction = getTransaction('node_update') as Transaction;
+
+      transactionRepo.findOne.mockResolvedValueOnce(transaction);
+      jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
+      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      jest.mocked(transactionIs).mockReturnValueOnce(false);
+      jest.mocked(transactionIs).mockReturnValueOnce(true);
+
+      jest.useFakeTimers();
+
+      await service.executeTransaction(transaction);
+
+      jest.runAllTimers();
+      jest.useRealTimers();
+
+      expect(mirrorNodeService.updateNodeInfo).toHaveBeenCalled();
+    });
+
+    it('should handle errors when updating node info', async () => {
+      const client = mockDeep<Client>();
+      const transaction = getTransaction('node_update') as Transaction;
+
+      transactionRepo.findOne.mockResolvedValueOnce(transaction);
+      jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
+      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      jest.mocked(transactionIs).mockReturnValueOnce(false);
+      jest.mocked(transactionIs).mockReturnValueOnce(true);
+      mirrorNodeService.updateNodeInfo.mockRejectedValueOnce(
+        new Error('Failed to update node info'),
+      );
+      jest.useFakeTimers();
+
+      await service.executeTransaction(transaction);
+
+      await jest.advanceTimersToNextTimerAsync();
+      jest.useRealTimers();
+
+      expect(mirrorNodeService.updateNodeInfo).toHaveBeenCalled();
     });
 
     it('should throw on invalid signature', async () => {

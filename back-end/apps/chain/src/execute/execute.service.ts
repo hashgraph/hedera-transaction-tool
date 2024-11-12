@@ -4,7 +4,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 import { MurLock } from 'murlock';
-import { AccountUpdateTransaction, Transaction as SDKTransaction, Status } from '@hashgraph/sdk';
+import {
+  AccountUpdateTransaction,
+  NodeUpdateTransaction,
+  Transaction as SDKTransaction,
+  Status,
+} from '@hashgraph/sdk';
 
 import { Transaction, TransactionStatus } from '@entities';
 
@@ -22,6 +27,7 @@ import {
   TransactionGroupExecutedDto,
   notifySyncIndicators,
   sleep,
+  transactionIs,
 } from '@app/common';
 
 @Injectable()
@@ -159,7 +165,7 @@ export class ExecuteService {
 
   /* Throws if the transaction is not in a valid state */
   private async validateTransactionStatus(transaction: ExecuteTransactionDto) {
-     const { status } = await this.transactionsRepo.findOne({
+    const { status } = await this.transactionsRepo.findOne({
       where: { id: transaction.id },
       select: ['status'],
     });
@@ -181,7 +187,7 @@ export class ExecuteService {
   }
 
   private sideEffect(sdkTransaction: SDKTransaction, mirrorNetwork: string) {
-    if (sdkTransaction instanceof AccountUpdateTransaction) {
+    if (transactionIs(AccountUpdateTransaction, sdkTransaction)) {
       setTimeout(async () => {
         try {
           await this.mirrorNodeService.updateAccountInfo(
@@ -190,6 +196,17 @@ export class ExecuteService {
           );
         } catch (error) {
           console.log('Error updating account info', error);
+        }
+      }, 5 * 1_000);
+    } else if (transactionIs(NodeUpdateTransaction, sdkTransaction)) {
+      setTimeout(async () => {
+        try {
+          await this.mirrorNodeService.updateNodeInfo(
+            sdkTransaction.nodeId?.toNumber(),
+            mirrorNetwork,
+          );
+        } catch (error) {
+          console.log('Error updating node info', error);
         }
       }, 5 * 1_000);
     }
