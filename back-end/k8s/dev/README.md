@@ -4,6 +4,14 @@
 
 2. <b>(First time only)</b> Create `brevo-secret.yaml` from `brevo-secret.example.yaml` with your Brevo credentials
 
+#### You can use either the `deploy.sh` script or manually deploy each resource
+
+#### Usage of the `deploy.sh` (Preferred)
+
+3.  Run the script `sh deploy.sh` or `./deploy.sh`
+
+#### Manual deployment
+
 3. <b>(First time only)</b> Create a secret for your self-signed certificate \
    (Follow the steps in the root README to generate one if you don't have)
 
