@@ -31,7 +31,7 @@ Make sure that Kubernetes is enabled
 4. Apply Ingress from `k8s/dev`
 
    ```bash
-   kubectl apply -f ./
+   kubectl apply -f ./ingress.yaml
    ```
 
 5. Expose the `postgres`
