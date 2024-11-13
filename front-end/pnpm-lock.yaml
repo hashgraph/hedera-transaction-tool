@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@electron-toolkit/utils':
         specifier: 3.0.0
-        version: 3.0.0(electron@32.1.2)
+        version: 3.0.0(electron@33.2.0)
       '@hashgraph/proto':
         specifier: 2.15.0-beta.4
         version: 2.15.0-beta.4
@@ -115,8 +115,8 @@ importers:
         specifier: 0.6.0
         version: 0.6.0(typescript@5.5.4)(vue@3.5.12(typescript@5.5.4))
       electron:
-        specifier: 32.1.2
-        version: 32.1.2
+        specifier: 33.2.0
+        version: 33.2.0
       electron-builder:
         specifier: 25.1.8
         version: 25.1.8(electron-builder-squirrel-windows@24.13.3)
@@ -1399,6 +1399,7 @@ packages:
 
   boolean@3.2.0:
     resolution: {integrity: sha512-d0II/GO9uf9lfUHH2BQsjxzRJZBdsjgsBiW4BvhWk/3qoKwQFjIDVN19PfX8F2D/r9PCMTtLWjYVCFrpeYUzsw==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
 
   bootstrap-icons@1.11.3:
     resolution: {integrity: sha512-+3lpHrCw/it2/7lBL15VR0HEumaBss0+f/Lb6ZvHISn1mlK83jjFpooTLsMWbIjJMDjDjOExMsTxnXSIT4k4ww==}
@@ -1792,8 +1793,8 @@ packages:
   electron-updater@6.3.9:
     resolution: {integrity: sha512-2PJNONi+iBidkoC5D1nzT9XqsE8Q1X28Fn6xRQhO3YX8qRRyJ3mkV4F1aQsuRnYPqq6Hw+E51y27W75WgDoofw==}
 
-  electron@32.1.2:
-    resolution: {integrity: sha512-CXe6doFzhmh1U7daOvUzmF6Cj8hssdYWMeEPRnRO6rB9/bbwMlWctcQ7P8NJXhLQ88/vYUJQrJvlJPh8qM0BRQ==}
+  electron@33.2.0:
+    resolution: {integrity: sha512-PVw1ICAQDPsnnsmpNFX/b1i/49h67pbSPxuIENd9K9WpGO1tsRaQt+K2bmXqTuoMJsbzIc75Ce8zqtuwBPqawA==}
     engines: {node: '>= 12.20.55'}
     hasBin: true
 
@@ -3954,9 +3955,9 @@ snapshots:
     dependencies:
       '@types/node': 20.14.8
 
-  '@electron-toolkit/utils@3.0.0(electron@32.1.2)':
+  '@electron-toolkit/utils@3.0.0(electron@33.2.0)':
     dependencies:
-      electron: 32.1.2
+      electron: 33.2.0
 
   '@electron/asar@3.2.10':
     dependencies:
@@ -3966,7 +3967,7 @@ snapshots:
 
   '@electron/get@2.0.3':
     dependencies:
-      debug: 4.3.6
+      debug: 4.3.7
       env-paths: 2.2.1
       fs-extra: 8.1.0
       got: 11.8.6
@@ -5755,7 +5756,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  electron@32.1.2:
+  electron@33.2.0:
     dependencies:
       '@electron/get': 2.0.3
       '@types/node': 20.14.8
@@ -5987,7 +5988,7 @@ snapshots:
 
   extract-zip@2.0.1:
     dependencies:
-      debug: 4.3.6
+      debug: 4.3.7
       get-stream: 5.2.0
       yauzl: 2.10.0
     optionalDependencies:
@@ -7372,7 +7373,7 @@ snapshots:
 
   sumchecker@3.0.1:
     dependencies:
-      debug: 4.3.6
+      debug: 4.3.7
     transitivePeerDependencies:
       - supports-color
 
