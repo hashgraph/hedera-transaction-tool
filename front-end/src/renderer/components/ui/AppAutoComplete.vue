@@ -21,14 +21,10 @@ const hoveredIndex = ref<number>(-1);
 const itemRefs = ref<HTMLElement[]>([]);
 
 /* Computed */
-const filteredItems = computed(() =>
-  [...new Set<string>(props.items)].filter(item =>
-    item.toLocaleLowerCase().includes((props.modelValue || '')?.toString().toLocaleLowerCase()),
-  ),
-);
+const normalizedItems = computed(() => [...new Set<string>(props.items)]);
 
 const selectedIndex = computed(() =>
-  filteredItems.value.indexOf(props.modelValue?.toString() || ''),
+  normalizedItems.value.indexOf(props.modelValue?.toString() || ''),
 );
 
 /* Handlers */
@@ -47,12 +43,12 @@ const handleKeyDown = (e: KeyboardEvent) => {
     }
   } else if (e.key === arrows.ArrowDown) {
     if (e.metaKey || e.ctrlKey) {
-      hoveredIndex.value = filteredItems.value.length - 1;
+      hoveredIndex.value = normalizedItems.value.length - 1;
     } else {
-      hoveredIndex.value = Math.min(hoveredIndex.value + 1, filteredItems.value.length - 1);
+      hoveredIndex.value = Math.min(hoveredIndex.value + 1, normalizedItems.value.length - 1);
     }
   } else if (e.key === arrows.Enter) {
-    emit('update:modelValue', filteredItems.value[hoveredIndex.value]);
+    emit('update:modelValue', normalizedItems.value[hoveredIndex.value]);
   }
 
   if (e.key === arrows.ArrowUp || e.key === arrows.ArrowDown) {
@@ -152,10 +148,10 @@ onBeforeUnmount(() => {
     <div
       ref="dropdownRef"
       class="autocomplete-custom"
-      :class="{ 'd-none': filteredItems.length === 0 }"
+      :class="{ 'd-none': normalizedItems.length === 0 }"
     >
       <div>
-        <template v-for="(item, i) in filteredItems" :key="item">
+        <template v-for="(item, i) in normalizedItems" :key="item">
           <div
             class="autocomplete-item-custom"
             :class="{
