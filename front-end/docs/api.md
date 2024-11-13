@@ -5,7 +5,7 @@
 Login request:
 
 ```
-POST http://example.com/auth/login
+POST https://example.com/auth/login
 content-type: application/json
 
 {
@@ -132,7 +132,7 @@ Make sure to include the signature bytes and how to build that string.
 Transaction Request (replace "accessTokenHere" with your access token):
 
 ```
-POST http://example.com/transactions
+POST https://example.com/transactions
 Authorization: Bearer accessTokenHere
 content-type: application/json
 
@@ -149,7 +149,7 @@ It may be desired to group some transactions together such as File Update and Fi
 
 Transaction Group Request (replace "accessTokenHere" with your access token):
 ```
-POST http://example.com/transaction-groups
+POST https://example.com/transaction-groups
 Authorization: Bearer accessTokenHere
 content-type: application/json
 
@@ -180,7 +180,7 @@ content-type: application/json
 ### Adding Approvers
 Single Threshold Approvers Request (replace "accessTokenHere" with your access token):
 ```
-POST http://example.com/transactions/1/approvers
+POST https://example.com/transactions/1/approvers
 Authorization: Bearer accessTokenHere
 content-type: application/json
 
@@ -195,7 +195,7 @@ content-type: application/json
 
 Multiple Threshold Approvers Request (replace "accessTokenHere" with your access token):
 ```
-POST http://example.com/transactions/1/approvers
+POST https://example.com/transactions/1/approvers
 Authorization: Bearer accessTokenHere
 content-type: application/json
 
@@ -229,11 +229,27 @@ content-type: application/json
 Observers Request (replace "accessTokenHere" with your access token):
 
 ```
-POST http://example.com/transactions/1/observers
+POST https://example.com/transactions/1/observers
 Authorization: Bearer accessTokenHere
 content-type: application/json
 
 {
   "userIds": [1, 2]
 }
+```
+
+### Logout
+
+In order to invalidate the JWT token, a logout request must be made.
+
+```
+POST https://example.com/auth/logout
+Authorization: Bearer accessTokenHere
+content-type: application/json
+```
+
+Expected response code:
+
+```
+HTTP/2 200 OK
 ```
