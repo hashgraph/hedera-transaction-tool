@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: notifications
+  name: notifications-deployment
   labels:
-    name: notifications
+    name: notifications-deployment
     app: htx-back-end
 spec:
   replicas: 1
