@@ -61,8 +61,8 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
     } else {
       const newSocket = io(url, {
         path: '/ws',
-        extraHeaders: {
-          Authorization: `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`,
+        auth: {
+          token: `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`,
         },
       });
 
