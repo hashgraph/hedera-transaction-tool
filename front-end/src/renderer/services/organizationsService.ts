@@ -32,7 +32,7 @@ export const deleteOrganization = async (id: string) =>
   }, `Failed to delete transaction with id: ${id}`);
 
 /* Get local organization websocket endpoint */
-export const getLocalWebsocketPath = async (serverUrl: string) => {
+export const getLocalWebsocketPath = (serverUrl: string) => {
   const url = new URL(serverUrl);
 
   const NOTIFICATIONS_SERVICE_PORT = 3020; // See docker-compose.yml in the back-end folder

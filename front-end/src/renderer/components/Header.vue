@@ -5,7 +5,6 @@ import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 import { inject, onUpdated } from 'vue';
 
 import { CommonNetwork } from '@main/shared/enums';
-import { SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -19,7 +18,7 @@ import { updateOrganizationCredentials } from '@renderer/services/organizationCr
 
 import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 
-import { isUserLoggedIn, withLoader } from '@renderer/utils';
+import { isUserLoggedIn, toggleAuthTokenInSessionStorage, withLoader } from '@renderer/utils';
 
 import Logo from '@renderer/components/Logo.vue';
 import LogoText from '@renderer/components/LogoText.vue';
@@ -67,7 +66,7 @@ const handleLogout = async () => {
     const { id, nickname, serverUrl, key } = user.selectedOrganization;
     await logout(serverUrl);
     await updateOrganizationCredentials(id, user.personal.id, undefined, undefined, null);
-    localStorage.removeItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${new URL(serverUrl).origin}`);
+    toggleAuthTokenInSessionStorage(serverUrl, '', true);
     await user.selectOrganization(null);
     await user.selectOrganization({ id, nickname, serverUrl, key });
   } else {

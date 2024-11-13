@@ -6,14 +6,14 @@ import useUserStore from './storeUser';
 
 import { getLocalWebsocketPath } from '@renderer/services/organizationsService';
 
-import { getAuthTokenFromSessionStorage, isUserLoggedIn, safeAwait } from '@renderer/utils';
+import { getAuthTokenFromSessionStorage, isUserLoggedIn } from '@renderer/utils';
 
 const useWebsocketConnection = defineStore('websocketConnection', () => {
   /* Stores */
   const user = useUserStore();
 
   /* State */
-  const sockets = ref<{ [severUrl: string]: Socket | null }>({});
+  const sockets = ref<{ [serverUrl: string]: Socket | null }>({});
 
   /* Actions */
   async function setup() {
@@ -23,13 +23,12 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
     const serverUrls = user.organizations.map(o => o.serverUrl);
 
     for (const serverUrl of serverUrls) {
-      if (serverUrl.includes('localhost')) {
-        const { data } = await safeAwait(getLocalWebsocketPath(serverUrl));
-        if (data) {
-          newSockets[serverUrl] = connect(serverUrl, data);
-        }
-      } else {
-        newSockets[serverUrl] = connect(serverUrl, serverUrl);
+      try {
+        const url = serverUrl.includes('localhost') ? getLocalWebsocketPath(serverUrl) : serverUrl;
+        newSockets[serverUrl] = connect(serverUrl, url);
+      } catch (error) {
+        console.error(`Failed to connect to server ${serverUrl}:`, error);
+        disconnect(serverUrl);
       }
     }
 
@@ -37,73 +36,68 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
   }
 
   function connect(serverUrl: string, url: string) {
-    const currentSocket = sockets.value[serverUrl];
+    const socket = sockets.value[serverUrl];
 
-    if (currentSocket) {
-      const listeners = {
-        connect: currentSocket.listeners('connect')[0],
-        connect_error: currentSocket.listeners('connect_error')[0],
-        disconnect: currentSocket.listeners('disconnect')[0],
-      };
-
-      currentSocket.off();
-
-      currentSocket.on('connect', listeners.connect);
-      currentSocket.on('connect_error', listeners.connect_error);
-      currentSocket.on('disconnect', listeners.disconnect);
-
-      currentSocket.io.opts.extraHeaders = {
-        Authorization: `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`,
-      };
-      currentSocket.io.opts.withCredentials = true;
-      currentSocket.connect();
-
-      return currentSocket;
-    } else {
-      const newSocket = io(url, {
-        path: '/ws',
-        auth: {
-          token: `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`,
-        },
-        transports: ['websocket', 'polling'],
-        withCredentials: true,
-      });
-
-      newSocket.on('connect', () => {
-        console.log(`Connected to server ${url} with id: ${newSocket?.id}`);
-      });
-
-      newSocket.on('connect_error', error => {
-        if (newSocket?.active) {
-          // temporary failure, the socket will automatically try to reconnect
-        } else {
-          console.log(`Socket for ${serverUrl}: ${error.message}`);
-        }
-      });
-
-      newSocket.on('disconnect', reason => {
-        if (newSocket?.active) {
-          // temporary disconnection, the socket will automatically try to reconnect
-        } else {
-          console.log(`Socket for ${serverUrl}: ${reason}`);
-        }
-      });
-      return newSocket;
+    if (socket) {
+      //@ts-expect-error - auth is missing in typings
+      if (socket.auth?.token !== `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`) {
+        socket.disconnect();
+      } else {
+        socket.off();
+        return socket;
+      }
     }
+
+    const newSocket = io(url, {
+      path: '/ws',
+      auth: {
+        token: `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`,
+      },
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
+    });
+
+    listenConnection(newSocket, url, serverUrl);
+
+    return newSocket;
   }
 
   function disconnect(serverUrl: string) {
-    if (sockets.value[serverUrl]) {
-      sockets.value[serverUrl].off();
-      sockets.value[serverUrl].disconnect();
+    const socket = sockets.value[serverUrl];
+    if (socket) {
+      socket.off();
+      socket.disconnect();
       sockets.value[serverUrl] = null;
     }
   }
 
+  function listenConnection(socket: Socket, wsUrl: string, serverUrl: string) {
+    socket.on('connect', () => {
+      console.log(`Connected to server ${wsUrl} with id: ${socket?.id}`);
+    });
+
+    socket.on('connect_error', error => {
+      if (socket?.active) {
+        // temporary failure, the socket will automatically try to reconnect
+      } else {
+        console.log(`Socket for ${serverUrl}: ${error.message}`);
+      }
+    });
+
+    socket.on('disconnect', reason => {
+      if (socket?.active) {
+        // temporary disconnection, the socket will automatically try to reconnect
+      } else {
+        console.log(`Socket for ${serverUrl}: ${reason}`);
+      }
+    });
+  }
+
   function on(serverUrl: string, event: string, callback: (...args: any[]) => void) {
-    if (sockets.value[serverUrl]) {
+    const socket = sockets.value[serverUrl];
+    if (socket) {
       const subscription = (...args: any[]) => callback(...args);
-      sockets.value[serverUrl].on(event, subscription);
+      socket.on(event, subscription);
 
       return () => {
         sockets.value[serverUrl]?.off(event, subscription);
