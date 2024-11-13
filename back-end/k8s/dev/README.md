@@ -16,31 +16,33 @@ Make sure that Kubernetes is enabled
    docker build -t back-end-notifications:1.0.0 -f ./apps/notifications/Dockerfile .
    ```
 
-2. Create deployments from `k8s/dev`
+2. Create `brevo-secret.yaml` from `brevo-secret.example.yaml` with your Brevo credentials
+
+3. Create deployments from `k8s/dev`
 
    ```bash
    kubectl apply -f ./
    ```
 
-3. Install Ingress Controller (currently NGINX, will change)
+4. Install Ingress Controller (currently NGINX, will change)
 
    ```bash
    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.0-beta.0/deploy/static/provider/cloud/deploy.yaml
    ```
 
-4. Apply Ingress from `k8s/dev`
+5. Apply Ingress from `k8s/dev`
 
    ```bash
    kubectl apply -f ./ingress.yaml
    ```
 
-5. Expose the `postgres`
+6. Expose the `postgres`
 
    ```bash
    kubectl port-forward svc/postgres-ext-service 5432:5432
    ```
 
-6. Stop
+7. Stop
 
    ```bash
    kubectl delete --all deployments,ingresses
