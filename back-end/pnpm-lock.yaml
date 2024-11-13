@@ -250,15 +250,15 @@ importers:
         specifier: 0.2.2
         version: 0.2.2(socket.io-adapter@2.5.5)
       nodemailer:
-        specifier: 6.9.13
-        version: 6.9.13
+        specifier: 6.9.16
+        version: 6.9.16
       socket.io:
         specifier: 4.8.1
         version: 4.8.1
     devDependencies:
       '@types/nodemailer':
-        specifier: 6.4.14
-        version: 6.4.14
+        specifier: 6.4.16
+        version: 6.4.16
 
 packages:
 
@@ -1206,8 +1206,8 @@ packages:
   '@types/node@20.14.8':
     resolution: {integrity: sha512-DO+2/jZinXfROG7j7WKFn/3C6nFwxy2lLpgLjEXJz+0XKphZlTLJ14mo8Vfg8X5BWN6XjyESXq+LcYdT7tR3bA==}
 
-  '@types/nodemailer@6.4.14':
-    resolution: {integrity: sha512-fUWthHO9k9DSdPCSPRqcu6TWhYyxTBg382vlNIttSe9M7XfsT06y0f24KHXtbnijPGGRIcVvdKHTNikOI6qiHA==}
+  '@types/nodemailer@6.4.16':
+    resolution: {integrity: sha512-uz6hN6Pp0upXMcilM61CoKyjT7sskBoOWpptkjjJp8jIMlTdc3xG01U7proKkXzruMS4hS0zqtHNkNPFB20rKQ==}
 
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
@@ -3328,8 +3328,8 @@ packages:
   node-releases@2.0.18:
     resolution: {integrity: sha512-d9VeXT4SJ7ZeOqGX6R5EM022wpL+eWPooLI+5UpWn2jCT1aosUQEhQP214x33Wkwx3JQMvIm+tIoVOdodFS40g==}
 
-  nodemailer@6.9.13:
-    resolution: {integrity: sha512-7o38Yogx6krdoBf3jCAqnIN4oSQFx+fMa0I7dK1D+me9kBxx12D+/33wSb+fhOCtIxvYJ+4x4IMEhmhCKfAiOA==}
+  nodemailer@6.9.16:
+    resolution: {integrity: sha512-psAuZdTIRN08HKVd/E8ObdV6NO7NTBY3KsC30F7M4H1OnmLCUNaS56FpYxyb26zWLSyYF9Ozch9KYHhHegsiOQ==}
     engines: {node: '>=6.0.0'}
 
   normalize-package-data@3.0.3:
@@ -5864,7 +5864,7 @@ snapshots:
     dependencies:
       undici-types: 5.26.5
 
-  '@types/nodemailer@6.4.14':
+  '@types/nodemailer@6.4.16':
     dependencies:
       '@types/node': 20.14.8
 
@@ -8424,7 +8424,7 @@ snapshots:
 
   node-releases@2.0.18: {}
 
-  nodemailer@6.9.13: {}
+  nodemailer@6.9.16: {}
 
   normalize-package-data@3.0.3:
     dependencies:
