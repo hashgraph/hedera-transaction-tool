@@ -67,7 +67,7 @@
     "@hashgraph/hedera-local": "2.32.1",
     "@nestjs/cli": "10.4.5",
     "@nestjs/schematics": "10.2.3",
-    "@nestjs/testing": "10.4.1",
+    "@nestjs/testing": "10.4.5",
     "@testcontainers/postgresql": "10.13.0",
     "@testcontainers/rabbitmq": "10.13.0",
     "@testcontainers/redis": "10.13.0",
