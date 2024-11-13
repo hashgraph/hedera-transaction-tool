@@ -39,3 +39,9 @@ Make sure that Kubernetes is enabled
    ```bash
    kubectl port-forward svc/postgres-ext-service 5432:5432
    ```
+
+6. Stop
+
+   ```bash
+   kubectl delete --all deployments,ingresses
+   ```
