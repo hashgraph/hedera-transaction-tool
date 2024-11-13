@@ -25,3 +25,5 @@ spec:
                 name: api
                 port:
                   number: 3000
+  # tls:
+  #   - secretName: self-signed-certificate
