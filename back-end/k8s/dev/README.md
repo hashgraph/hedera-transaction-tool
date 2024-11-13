@@ -43,5 +43,6 @@ Make sure that Kubernetes is enabled
 6. Stop
 
    ```bash
-   kubectl delete --all deployments,ingresses,ingressclasses
+   kubectl delete --all deployments,ingresses
+   kubectl delete --all replicasets,ingressclasses --namespace ingress-nginx
    ```
