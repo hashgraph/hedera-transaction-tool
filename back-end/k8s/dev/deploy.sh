@@ -29,8 +29,6 @@ SECRETS_SCRIPT="./shell/secrets.sh"
 DOCKER_IMAGES_SCRIPT="./shell/docker_images.sh"
 DEPLOYMENTS_SCRIPT="./shell/deployments.sh"
 
-# Change the permission to be executable
-chmod 755 $VALIDATE_SCRIPT
 # Source the validate script
 . $VALIDATE_SCRIPT
 
@@ -38,16 +36,12 @@ validate_kubectl
 validate_cluster
 validate_helm
 
-# Change the permission to be executable
-chmod 755 $SECRETS_SCRIPT
 # Sorce the secrets script
 . $SECRETS_SCRIPT
 
 assert_brevo_secret
 assert_tls_secret
 
-# Change the permission to be executable
-chmod 755 $DOCKER_IMAGES_SCRIPT
 # Source the docker images script
 . $DOCKER_IMAGES_SCRIPT
 
@@ -58,10 +52,15 @@ else
     assert_docker_images
 fi
 
-# Change the permission to be executable
-chmod 755 $DEPLOYMENTS_SCRIPT
 # Source the docker images script
 . $DEPLOYMENTS_SCRIPT
+
+clean() {
+  stop_all
+  exit 0
+}
+
+trap clean SIGINT SIGQUIT SIGTERM
 
 deploy_all
 
@@ -73,7 +72,5 @@ wait_for_traefik
 assert_ingress
 
 port_forward_postgres
-
-stop_all
 
 exit 0
