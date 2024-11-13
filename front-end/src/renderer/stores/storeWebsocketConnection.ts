@@ -65,6 +65,7 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
         auth: {
           token: `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`,
         },
+        transports: ['websocket', 'polling'],
         withCredentials: true,
       });
 

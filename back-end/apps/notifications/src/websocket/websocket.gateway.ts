@@ -18,6 +18,7 @@ import { roomKeys } from './helpers';
   path: '/ws',
   cors: { origin: true, methods: ['GET', 'POST'], credentials: true },
   connectionStateRecovery: { maxDisconnectionDuration: 2 * 60 * 1000 },
+  transports: ['websocket', 'polling'],
 })
 export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(WebsocketGateway.name);
