@@ -22,3 +22,5 @@ spec:
                 name: api-http-service
                 port:
                   number: 3000
+  tls:
+    - secretName: self-signed-certificate
