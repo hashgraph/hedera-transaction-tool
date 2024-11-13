@@ -1,8 +1,12 @@
+BASEDIR=$(dirname "$0")
+
+# UTILS, CONSTANTS scripts paths
+UTILS_SCRIPT=$(realpath "$BASEDIR/shell/utils.sh")
+CONSTANTS_SCRIPT=$(realpath "$BASEDIR/shell/constants.sh")
+
 # Source the UTILS, CONSTANTS scripts
-UTILS_SCRIPT=utils.sh
-CONSTANTS_SCRIPT=constants.sh
-. "./shell/$UTILS_SCRIPT"
-. "./shell/$CONSTANTS_SCRIPT"
+. "$UTILS_SCRIPT"
+. "$CONSTANTS_SCRIPT"
 
 # Check if the Brevo secret exists
 brevo_secret_exists() {
@@ -22,7 +26,7 @@ assert_brevo_secret() {
         return 1
     fi
 
-    local brevo_secret_path=$(realpath "./deployments/brevo-secret.yaml")
+    local brevo_secret_path=$(realpath "$BASEDIR/deployments/brevo-secret.yaml")
     if [ ! -f "$brevo_secret_path" ]; then
         with_error "The Brevo secret (brevo-secret.yaml) file does not exist, you should create one from the brevo-secret.example.yaml"
         exit 1
@@ -59,15 +63,15 @@ tls_secret_exists() {
 
 # Create the TLS secret if not exists
 assert_tls_secret() {
-    echo "Checking if TLS secret exists..."
+    echo "\nChecking if TLS secret exists..."
 
     tls_secret_exists
     if [ $? -gt 0 ]; then
         return 1
     fi
 
-    local default_cert_path=$(realpath "../../cert/cert.pem")
-    local default_key_path=$(realpath "../../cert/key.pem")
+    local default_cert_path=$(realpath "$BASEDIR/../../cert/cert.pem")
+    local default_key_path=$(realpath "$BASEDIR/../../cert/key.pem")
 
     echo ""
     read -p "Enter the certificate path [DEFAULT: $default_cert_path]: " certPath

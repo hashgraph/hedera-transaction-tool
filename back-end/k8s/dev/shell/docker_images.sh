@@ -1,6 +1,10 @@
-# Source the CONSTANTS_SCRIPT
-CONSTANTS_SCRIPT=constants.sh
-. "./shell/$CONSTANTS_SCRIPT"
+BASEDIR=$(dirname "$0")
+
+# CONSTANTS scripts paths
+CONSTANTS_SCRIPT=$(realpath "$BASEDIR/shell/constants.sh")
+
+# Source the CONSTANTS scripts
+. "$CONSTANTS_SCRIPT"
 
 # Check if Docker image exists
 docker_image_exist() {
@@ -18,8 +22,8 @@ assert_docker_images() {
     local chain_name="chain"
     local notifications_name="notifications"
 
-    local apps_path=$(realpath "../../apps")
-    local context_path=$(realpath "../..")
+    local apps_path=$(realpath "$BASEDIR/../../apps")
+    local context_path=$(realpath "$BASEDIR/../..")
 
     for name in $api_name $chain_name $notifications_name
     do

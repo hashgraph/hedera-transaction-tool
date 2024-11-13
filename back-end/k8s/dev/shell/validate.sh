@@ -1,8 +1,12 @@
+BASEDIR=$(dirname "$0")
+
+# UTILS, CONSTANTS scripts paths
+UTILS_SCRIPT=$(realpath "$BASEDIR/shell/utils.sh")
+CONSTANTS_SCRIPT=$(realpath "$BASEDIR/shell/constants.sh")
+
 # Source the UTILS, CONSTANTS scripts
-UTILS_SCRIPT=utils.sh
-CONSTANTS_SCRIPT=constants.sh
-. "./shell/$UTILS_SCRIPT"
-. "./shell/$CONSTANTS_SCRIPT"
+. "$UTILS_SCRIPT"
+. "$CONSTANTS_SCRIPT"
 
 # Ensure that the kubectl exists
 validate_kubectl() {

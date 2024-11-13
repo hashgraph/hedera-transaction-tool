@@ -1,22 +1,28 @@
-# Source the CONSTANTS_SCRIPT
-CONSTANTS_SCRIPT=constants.sh
-. "./shell/$CONSTANTS_SCRIPT"
+BASEDIR=$(dirname "$0")
+
+# CONSTANTS scripts paths
+CONSTANTS_SCRIPT=$(realpath "$BASEDIR/shell/constants.sh")
+
+# Source the CONSTANTS scripts
+. "$CONSTANTS_SCRIPT"
 
 # Deploy the Postgres deployment
 deploy() {
-DEPLOYMENT_YAML=$(realpath "./deployments/$1.yaml")
+    echo "\nDeploying $1 deployment..."
+    
+    local deployment_yaml=$(realpath "$BASEDIR/deployments/$1.yaml")
 
-$KUBECTL apply -f "$DEPLOYMENT_YAML"
+    $KUBECTL apply -f "$deployment_yaml"
 }
 
 # Delete the deployment
 delete_deployment() {
-$KUBECTL delete deployments "$1"
+    $KUBECTL delete deployments "$1"
 }
 
 # Delete the service
 delete_service() {
-$KUBECTL delete services "$1"
+    $KUBECTL delete services "$1"
 }
 
 # Check traefik helm repo
@@ -44,7 +50,11 @@ assert_traefik_release() {
 
 # Apply Ingress
 assert_ingress() {
-    $KUBECTL apply -f "./ingress.yaml"
+    echo "\nApplying Ingress..."
+
+    local ingress_yaml=$(realpath "$BASEDIR/ingress.yaml")
+
+    $KUBECTL apply -f "$ingress_yaml"
 }
 
 # Port forward the Postgres
