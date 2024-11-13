@@ -103,8 +103,8 @@ importers:
         specifier: 5.1.5
         version: 5.1.5(vite@5.4.11(@types/node@20.14.8)(sass@1.77.6))(vue@3.5.12(typescript@5.5.4))
       '@vitest/coverage-v8':
-        specifier: 2.0.5
-        version: 2.0.5(vitest@2.1.4(@types/node@20.14.8)(happy-dom@13.6.2)(sass@1.77.6))
+        specifier: 2.1.4
+        version: 2.1.4(vitest@2.1.4(@types/node@20.14.8)(happy-dom@13.6.2)(sass@1.77.6))
       '@vue/eslint-config-prettier':
         specifier: 9.0.0
         version: 9.0.0(@types/eslint@8.56.12)(eslint@8.57.0)(prettier@3.3.3)
@@ -1022,10 +1022,14 @@ packages:
       vite: ^5.0.0
       vue: ^3.2.25
 
-  '@vitest/coverage-v8@2.0.5':
-    resolution: {integrity: sha512-qeFcySCg5FLO2bHHSa0tAZAOnAUbp4L6/A5JDuj9+bt53JREl8hpLjLHEWF0e/gWc8INVpJaqA7+Ene2rclpZg==}
+  '@vitest/coverage-v8@2.1.4':
+    resolution: {integrity: sha512-FPKQuJfR6VTfcNMcGpqInmtJuVXFSCd9HQltYncfR01AzXhLucMEtQ5SinPdZxsT5x/5BK7I5qFJ5/ApGCmyTQ==}
     peerDependencies:
-      vitest: 2.0.5
+      '@vitest/browser': 2.1.4
+      vitest: 2.1.4
+    peerDependenciesMeta:
+      '@vitest/browser':
+        optional: true
 
   '@vitest/expect@2.1.4':
     resolution: {integrity: sha512-DOETT0Oh1avie/D/o2sgMHGrzYUFFo3zqESB2Hn70z6QB1HrS2IQ9z5DfyTqU8sg4Bpu13zZe9V4+UTNQlUeQA==}
@@ -4709,16 +4713,16 @@ snapshots:
       vite: 5.4.11(@types/node@20.14.8)(sass@1.77.6)
       vue: 3.5.12(typescript@5.5.4)
 
-  '@vitest/coverage-v8@2.0.5(vitest@2.1.4(@types/node@20.14.8)(happy-dom@13.6.2)(sass@1.77.6))':
+  '@vitest/coverage-v8@2.1.4(vitest@2.1.4(@types/node@20.14.8)(happy-dom@13.6.2)(sass@1.77.6))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 0.2.3
-      debug: 4.3.6
+      debug: 4.3.7
       istanbul-lib-coverage: 3.2.2
       istanbul-lib-report: 3.0.1
       istanbul-lib-source-maps: 5.0.6
       istanbul-reports: 3.1.7
-      magic-string: 0.30.11
+      magic-string: 0.30.12
       magicast: 0.3.5
       std-env: 3.7.0
       test-exclude: 7.0.1
@@ -6422,7 +6426,7 @@ snapshots:
   istanbul-lib-source-maps@5.0.6:
     dependencies:
       '@jridgewell/trace-mapping': 0.3.25
-      debug: 4.3.6
+      debug: 4.3.7
       istanbul-lib-coverage: 3.2.2
     transitivePeerDependencies:
       - supports-color
@@ -6566,7 +6570,7 @@ snapshots:
     dependencies:
       '@babel/parser': 7.25.6
       '@babel/types': 7.25.6
-      source-map-js: 1.2.0
+      source-map-js: 1.2.1
 
   make-dir@3.1.0:
     dependencies:
