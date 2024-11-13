@@ -88,15 +88,11 @@ const handleLogin = async () => {
     );
     toast.success('Successfully signed in');
 
-    const { id, serverUrl, nickname, key } = user.selectedOrganization;
     loading.value = false;
-
-    await user.refetchOrganizations();
 
     await withLoader(
       async () => {
         await user.refetchOrganizations();
-        await user.selectOrganization({ id, serverUrl, nickname, key });
       },
       toast,
       globalModalLoaderRef?.value,

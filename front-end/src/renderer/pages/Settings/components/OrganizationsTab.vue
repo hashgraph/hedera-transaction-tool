@@ -10,7 +10,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { updateOrganization } from '@renderer/services/organizationsService';
 
-import { isUserLoggedIn } from '@renderer/utils';
+import { isUserLoggedIn, toggleAuthTokenInSessionStorage } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -34,7 +34,9 @@ const handleDeleteConnection = async (organizationId: string) => {
     throw new Error('User is not logged in');
   }
 
-  ws.disconnect(user.organizations.find(org => org.id === organizationId)?.serverUrl || '');
+  const serverUrl = user.organizations.find(org => org.id === organizationId)?.serverUrl || '';
+  ws.disconnect(serverUrl);
+  toggleAuthTokenInSessionStorage(serverUrl, '', true);
   await user.selectOrganization(null);
   await user.deleteOrganization(organizationId);
   toast.success('Connection deleted successfully');
