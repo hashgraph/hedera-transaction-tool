@@ -100,8 +100,8 @@ importers:
         specifier: 0.10.10
         version: 0.10.10
       '@vitejs/plugin-vue':
-        specifier: 5.1.4
-        version: 5.1.4(vite@5.4.11(@types/node@20.14.8)(sass@1.77.6))(vue@3.5.12(typescript@5.5.4))
+        specifier: 5.1.5
+        version: 5.1.5(vite@5.4.11(@types/node@20.14.8)(sass@1.77.6))(vue@3.5.12(typescript@5.5.4))
       '@vitest/coverage-v8':
         specifier: 2.0.5
         version: 2.0.5(vitest@2.1.4(@types/node@20.14.8)(happy-dom@13.6.2)(sass@1.77.6))
@@ -1015,8 +1015,8 @@ packages:
   '@ungap/structured-clone@1.2.0':
     resolution: {integrity: sha512-zuVdFrMJiuCDQUMCzQaD6KL28MjnqqN8XnAqiEq9PNm/hCPTSGfrXCOfwj1ow4LFb/tNymJPwsNbVePc1xFqrQ==}
 
-  '@vitejs/plugin-vue@5.1.4':
-    resolution: {integrity: sha512-N2XSI2n3sQqp5w7Y/AN/L2XDjBIRGqXko+eDp42sydYSBeJuSm5a1sLf8zakmo8u7tA8NmBgoDLA1HeOESjp9A==}
+  '@vitejs/plugin-vue@5.1.5':
+    resolution: {integrity: sha512-dlnib73G05CDBAUR/YpuZcQQ47fpjihnnNouAAqN62z+oqSsWJ+kh52GRzIxpkgFG3q11eXK7Di7RMmoCwISZA==}
     engines: {node: ^18.0.0 || >=20.0.0}
     peerDependencies:
       vite: ^5.0.0
@@ -4704,7 +4704,7 @@ snapshots:
 
   '@ungap/structured-clone@1.2.0': {}
 
-  '@vitejs/plugin-vue@5.1.4(vite@5.4.11(@types/node@20.14.8)(sass@1.77.6))(vue@3.5.12(typescript@5.5.4))':
+  '@vitejs/plugin-vue@5.1.5(vite@5.4.11(@types/node@20.14.8)(sass@1.77.6))(vue@3.5.12(typescript@5.5.4))':
     dependencies:
       vite: 5.4.11(@types/node@20.14.8)(sass@1.77.6)
       vue: 3.5.12(typescript@5.5.4)
