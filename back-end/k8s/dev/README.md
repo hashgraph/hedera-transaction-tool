@@ -8,7 +8,7 @@
    (Follow the steps in the root README to generate one if you don't have)
 
    ```bash
-   kubectl create secret tls self-signed-certificate --cert ../../cert/cert.pem --key=../../cert/key.pem
+   kubectl create secret tls self-signed-certificate --cert=../../cert/cert.pem --key=../../cert/key.pem
    ```
 
 4. <b>(On back-end change only)</b> Build Docker images from the root `back-end` folder
