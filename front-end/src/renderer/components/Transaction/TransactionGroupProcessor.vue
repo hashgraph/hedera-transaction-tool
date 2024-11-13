@@ -32,6 +32,7 @@ import {
 } from '@renderer/services/organization';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
+import { createTransactionId } from '@renderer/utils/sdk';
 
 import {
   assertUserLoggedIn,
@@ -47,7 +48,6 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
-import { createTransactionId } from '@renderer/utils/sdk';
 
 /* Props */
 const props = defineProps<{

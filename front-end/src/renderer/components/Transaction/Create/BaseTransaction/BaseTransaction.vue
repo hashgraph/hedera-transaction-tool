@@ -7,12 +7,12 @@ import type {
 } from '@renderer/components/Transaction/TransactionProcessor';
 import type { CreateTransactionFunc } from '.';
 
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { Hbar, Transaction, KeyList } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
@@ -35,7 +35,6 @@ import TransactionProcessor from '@renderer/components/Transaction/TransactionPr
 import BaseDraftLoad from '@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.vue';
 import BaseGroupHandler from '@renderer/components/Transaction/Create/BaseTransaction/BaseGroupHandler.vue';
 import BaseApproversObserverData from './BaseApproversObserverData.vue';
-import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 /* Props */
 const props = defineProps<{
@@ -61,8 +60,6 @@ const user = useUserStore();
 const toast = useToast();
 const router = useRouter();
 const payerData = useAccountId();
-const transactionGroup = useTransactionGroupStore();
-const route = useRoute();
 
 /* State */
 const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
@@ -157,6 +154,14 @@ const handleGroupAction = (action: 'add' | 'edit') => {
   );
 };
 
+function handleFetchedDescription(fetchedDescription: string) {
+  description.value = fetchedDescription;
+}
+
+function handleFetchedPayerAccountId(fetchedPayerAccountId: string) {
+  payerData.accountId.value = fetchedPayerAccountId;
+}
+
 /* Functions */
 function basePreCreateAssert() {
   if (!isAccountId(payerData.accountId.value)) {
@@ -176,16 +181,6 @@ function basePreCreateAssert() {
 defineExpose({
   payerData,
   submit: handleCreate,
-});
-
-/* Hooks */
-onMounted(async () => {
-  if (route.query.groupIndex) {
-    const groupItem =
-      transactionGroup.groupItems[Number.parseInt(route.query.groupIndex as string)];
-    description.value = groupItem.description;
-    payerData.accountId.value = groupItem.payerAccountId;
-  }
 });
 </script>
 <template>
@@ -261,6 +256,8 @@ onMounted(async () => {
       ref="baseGroupHandlerRef"
       :create-transaction="() => props.createTransaction({ ...data } as TransactionCommonData)"
       :transaction-key="transactionKey"
+      @fetched-description="handleFetchedDescription"
+      @fetched-payer-account-id="handleFetchedPayerAccountId"
     />
 
     <GroupActionModal

@@ -4,11 +4,12 @@ import type { KeyList, Transaction } from '@hashgraph/sdk';
 
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { getTransactionType } from '@renderer/utils';
+import { onMounted } from 'vue';
 
 /* Props */
 const props = defineProps<{
@@ -16,11 +17,15 @@ const props = defineProps<{
   transactionKey: KeyList;
 }>();
 
-/* Emits */
+/* Stores */
 const transactionGroup = useTransactionGroupStore();
+
+/* Emits */
+const emit = defineEmits(['fetchedDescription', 'fetchedPayerAccountId']);
 
 /* Composables */
 const router = useRouter();
+const route = useRoute();
 
 /* Functions */
 const getTransactionData = (): [string, Uint8Array, string[]] => {
@@ -94,6 +99,16 @@ const editGroupItem = (
 defineExpose({
   addGroupItem,
   editGroupItem,
+});
+
+/* Hooks */
+onMounted(async () => {
+  if (route.query.groupIndex) {
+    const groupItem =
+      transactionGroup.groupItems[Number.parseInt(route.query.groupIndex as string)];
+    emit('fetchedDescription', groupItem.description);
+    emit('fetchedPayerAccountId', groupItem.payerAccountId);
+  }
 });
 </script>
 <template>
