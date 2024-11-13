@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq-deployment
+  labels:
+    name: rabbitmq-deployment
+    app: htx-back-end
+spec:
+  selector:
+    matchLabels:
+      name: rabbitmq
+      app: htx-back-end
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: rabbitmq
+        app: htx-back-end
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:latest
+          ports:
+            - containerPort: 5672
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-service
+  labels:
+    name: rabbitmq-service
+    app: htx-back-end
+spec:
+  type: ClusterIP
+  selector:
+    name: rabbitmq
+    app: htx-back-end
+  ports:
+    - protocol: TCP
+      port: 5672
+      targetPort: 5672

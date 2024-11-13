@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-deployment
+  labels:
+    name: postgres-deployment
+    app: htx-back-end
+spec:
+  selector:
+    matchLabels:
+      name: postgres
+      app: htx-back-end
+  replicas: 1
+  template:
+    metadata:
+      name: postgres
+      labels:
+        name: postgres
+        app: htx-back-end
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:latest
+          env:
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              value: postgres
+            - name: POSTGRES_DB
+              value: postgres
+            - name: PGDATA
+              value: '/var/lib/postgresql/data/pgdata'
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - mountPath: '/var/lib/postgresql/data'
+              name: postgredb
+      volumes:
+        - name: postgredb
+          persistentVolumeClaim:
+            claimName: postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  labels:
+    name: postgres-service
+    app: htx-back-end
+spec:
+  type: ClusterIP
+  selector:
+    name: postgres
+    app: htx-back-end
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-ext-service
+  labels:
+    name: postgres-ext-service
+    app: htx-back-end
+spec:
+  type: NodePort
+  selector:
+    name: postgres
+    app: htx-back-end
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+      nodePort: 30030
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  labels:
+    name: postgres-pvc
+    app: htx-back-end
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
