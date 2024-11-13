@@ -50,7 +50,7 @@ assert_ingress() {
 # Port forward the Postgres
 port_forward_postgres() {
     echo "\nPort forwarding Postgres..."
-    $KUBECTL get svc
+    
     local port=5432
     while lsof -i tcp:$port >/dev/null; do
         port=$((port + 1))
