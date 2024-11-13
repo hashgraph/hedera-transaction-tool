@@ -2,9 +2,11 @@ import { ref } from 'vue';
 import { defineStore } from 'pinia';
 import { Socket, io } from 'socket.io-client';
 
-import { getAuthTokenFromSessionStorage, isUserLoggedIn } from '@renderer/utils';
-
 import useUserStore from './storeUser';
+
+import { getLocalWebsocketPath } from '@renderer/services/organizationsService';
+
+import { getAuthTokenFromSessionStorage, isUserLoggedIn, safeAwait } from '@renderer/utils';
 
 const useWebsocketConnection = defineStore('websocketConnection', () => {
   /* Stores */
@@ -20,14 +22,15 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
     const newSockets: typeof sockets.value = {};
     const serverUrls = user.organizations.map(o => o.serverUrl);
 
-    const NOTIFICATIONS_SERVICE_PORT = 3020; // See docker-compose.yml in the back-end folder
     for (const serverUrl of serverUrls) {
-      newSockets[serverUrl] = connect(
-        serverUrl,
-        serverUrl.includes('localhost')
-          ? `ws://localhost:${NOTIFICATIONS_SERVICE_PORT}/`
-          : `${serverUrl}/`,
-      );
+      if (serverUrl.includes('localhost')) {
+        const { data } = await safeAwait(getLocalWebsocketPath(serverUrl));
+        if (data) {
+          newSockets[serverUrl] = connect(serverUrl, data);
+        }
+      } else {
+        newSockets[serverUrl] = connect(serverUrl, serverUrl);
+      }
     }
 
     sockets.value = newSockets;
