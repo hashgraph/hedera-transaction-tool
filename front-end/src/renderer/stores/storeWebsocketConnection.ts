@@ -55,6 +55,7 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
       currentSocket.io.opts.extraHeaders = {
         Authorization: `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`,
       };
+      currentSocket.io.opts.withCredentials = true;
       currentSocket.connect();
 
       return currentSocket;
@@ -64,6 +65,7 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
         auth: {
           token: `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`,
         },
+        withCredentials: true,
       });
 
       newSocket.on('connect', () => {
