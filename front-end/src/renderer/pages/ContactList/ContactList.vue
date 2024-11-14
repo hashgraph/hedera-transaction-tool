@@ -149,19 +149,25 @@ onBeforeMount(async () => {
                   }"
                   @click="handleSelectContact(c.user.id)"
                 >
-                  <p
-                    class="text-small text-semi-bold overflow-hidden"
-                    :data-testid="`p-contact-nickname-${c.nickname}`"
-                  >
-                    {{ c.nickname }}
-                  </p>
-                  <div class="d-flex justify-content-between align-items-center">
+                  <div>
                     <p
-                      class="text-micro text-secondary overflow-hidden mt-2"
-                      :data-testid="`p-contact-email-${c.user.email}`"
+                      class="text-small text-semi-bold overflow-hidden"
+                      :data-testid="`p-contact-nickname-${c.nickname}`"
                     >
-                      {{ c.user.email }}
+                      {{ c.nickname }}
                     </p>
+                    <div class="d-flex justify-content-between align-items-center">
+                      <p
+                        class="text-micro text-secondary overflow-hidden mt-2"
+                        :data-testid="`p-contact-email-${c.user.email}`"
+                      >
+                        {{ c.user.email }}
+                      </p>
+                    </div>
+                    <div v-if="c.user.admin || c.user.status === 'NEW'" class="mt-2">
+                      <span v-if="c.user.admin" class="badge bg-warning me-2">admin</span>
+                      <span v-if="c.user.status === 'NEW'" class="badge bg-info">new</span>
+                    </div>
                   </div>
                 </div>
               </template>
