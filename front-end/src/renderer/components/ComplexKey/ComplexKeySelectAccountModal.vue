@@ -102,6 +102,7 @@ onMounted(async () => {
             @update:model-value="v => (selectedAccountData.accountId.value = formatAccountId(v))"
             filled
             type="text"
+            data-testid="input-complex-key-account-id"
             placeholder="Enter Account ID"
           />
         </div>
@@ -133,7 +134,11 @@ onMounted(async () => {
           <AppButton color="borderless" type="button" @click="handleShowUpdate(false)"
             >Cancel</AppButton
           >
-          <AppButton color="primary" type="submit" :disabled="!selectedAccountData.isValid.value"
+          <AppButton
+            color="primary"
+            data-testid="button-insert-account-id"
+            type="submit"
+            :disabled="!selectedAccountData.isValid.value"
             >Insert</AppButton
           >
         </div>
