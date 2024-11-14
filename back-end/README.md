@@ -155,10 +155,12 @@ The defaults are:
 
 ### Deploy on Kubernetes
 
+#### <b>A simple Kubernetes development deployment in [here](./k8s/dev/README.md)</b>
+
 When deploying to a server, it may be desired to use Kubernetes.
 The docker images are currently private. They must be created and pushed
-to an accessible location. Examples of the secret files are supplied, 
-the secrets need to be encoded to be set. Update the deployment files as needed. 
+to an accessible location. Examples of the secret files are supplied,
+the secrets need to be encoded to be set. Update the deployment files as needed.
 
 A helm chart is forthcoming.
 Until then, use the following commands once connected to a cluster:
@@ -180,12 +182,12 @@ Until then, use the following commands once connected to a cluster:
 
    ```bash
    kubectl apply -f ./rabbitmq-secret.yaml
-   
+
    helm repo add bitnami https://charts.bitnami.com/bitnami
    helm install back-end bitnami/rabbitmq-cluster-operator \
      -f ./rabbitmq-values.yaml \
-     --namespace hedera-transaction-tool 
-   
+     --namespace hedera-transaction-tool
+
    kubectl apply -f ./rabbitmq-definition.yaml
    ```
 
@@ -202,8 +204,9 @@ Until then, use the following commands once connected to a cluster:
    kubectl apply -f ./otp-secret.yaml
    kubectl apply -f ./brevo-secret.yaml
    ```
-   
+
 6. Deploy the services. Until migration is properly in place, the first time the api service is deployed, ensure that POSTGRES_SYNCHRONIZE is set to true in the yaml:
+
    ```bash
    kubectl apply -f ./api-deployment.yaml
    kubectl apply -f ./chain-deployment.yaml
@@ -212,7 +215,7 @@ Until then, use the following commands once connected to a cluster:
 
 7. The IP for the ingress can be set by the controller, or it can be set as a static IP. Either remove the loadBalancerIp value, or set it with a reserved IP.
 
-8. Install the ingress controller, and ingress.  
+8. Install the ingress controller, and ingress.
 
    ```bash
    helm repo add traefik https://helm.traefik.io/traefik
@@ -220,11 +223,11 @@ Until then, use the following commands once connected to a cluster:
    helm install traefik traefik/traefik -f traefik-values.yaml
    ```
 
-    Apply the ingress:
+   Apply the ingress:
 
-    ```bash
-    kubectl apply -f ./ingress.yaml
-    ```
+   ```bash
+   kubectl apply -f ./ingress.yaml
+   ```
 
 9. Using the actual name of the Postgres pod, connect to Postgres to create the admin user:
 

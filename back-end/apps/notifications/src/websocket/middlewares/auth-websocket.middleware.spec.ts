@@ -22,8 +22,8 @@ describe('AuthWebsocketMiddleware', () => {
 
     socketMock = {
       handshake: {
-        headers: {
-          authorization: 'bearer jwtToken',
+        auth: {
+          token: 'bearer jwtToken',
         },
       },
       user: undefined,
@@ -53,7 +53,7 @@ describe('AuthWebsocketMiddleware', () => {
     const middleware = AuthWebsocketMiddleware(apiServiceMock as ClientProxy, blacklistService);
 
     const socket = {
-      handshake: { headers: { authorization: ['bearer jwtToken'] } },
+      handshake: { auth: { token: ['bearer jwtToken'] } },
     };
     await middleware(socket as unknown as Socket, nextFunction);
 
@@ -68,7 +68,7 @@ describe('AuthWebsocketMiddleware', () => {
 
     const middleware = AuthWebsocketMiddleware(apiServiceMock as ClientProxy, blacklistService);
 
-    await middleware({ handshake: { headers: {} } } as Socket, nextFunction);
+    await middleware({ handshake: { auth: {} } } as Socket, nextFunction);
 
     expect(nextFunction).toHaveBeenCalledWith({ name: 'Unauthorized', message: 'Unauthorized' });
   });
@@ -99,7 +99,7 @@ describe('AuthWebsocketMiddleware', () => {
     const middleware = AuthWebsocketMiddleware(apiServiceMock as ClientProxy, blacklistService);
 
     await middleware(
-      { handshake: { headers: { authorization: 'bearer' } } } as Socket,
+      { handshake: { auth: { token: 'bearer' } } } as unknown as Socket,
       nextFunction,
     );
 

@@ -1,22 +1,25 @@
-FROM node:alpine AS development
+FROM node:22-alpine AS development
 
 WORKDIR /usr/src/app
 
+RUN npm install -g pnpm
+
 COPY package.json ./
 COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
 COPY tsconfig.json tsconfig.json
 COPY nest-cli.json nest-cli.json
-
-COPY apps/notifications apps/notifications
-COPY libs libs
-
-RUN npm install -g pnpm
+COPY apps/notifications/package.json apps/notifications/package.json
+COPY apps/notifications/tsconfig.app.json apps/notifications/tsconfig.app.json
 
 RUN pnpm install && cd apps/notifications && pnpm install
 
+COPY libs libs
+COPY apps/notifications apps/notifications
+
 RUN pnpm run build notifications
 
-FROM node:alpine AS production
+FROM node:22-alpine AS production
 
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}

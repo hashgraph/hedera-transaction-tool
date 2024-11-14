@@ -23,14 +23,14 @@ export const AuthWebsocketMiddleware = (
   return async (socket: AuthWebsocket, next) => {
     try {
       /* Get the JWT from the header */
-      const { authorization } = socket.handshake.headers;
+      const { token } = socket.handshake.auth;
 
-      if (!authorization) {
+      if (!token) {
         next({ name: 'Unauthorized', message: 'Unauthorized' });
         return;
       }
 
-      const jwt = (Array.isArray(authorization) ? authorization[0] : authorization).split(' ')[1];
+      const jwt = (Array.isArray(token) ? token[0] : token).split(' ')[1];
 
       if (!jwt) {
         next({ name: 'Unauthorized', message: 'Unauthorized' });
