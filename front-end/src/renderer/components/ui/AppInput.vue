@@ -2,12 +2,20 @@
 import { computed, ref } from 'vue';
 
 /* Props */
-const props = defineProps<{
-  modelValue?: string | number;
-  filled?: boolean;
-  size?: 'small' | 'large' | undefined;
-}>();
-defineEmits(['update:modelValue']);
+const props = withDefaults(
+  defineProps<{
+    modelValue?: string | number;
+    filled?: boolean;
+    size?: 'small' | 'large' | undefined;
+    autoTrim?: boolean;
+  }>(),
+  {
+    autoTrim: true,
+  },
+);
+
+/* Emits */
+const emit = defineEmits(['update:modelValue']);
 
 /* State */
 const inputRef = ref<HTMLInputElement | null>();
@@ -30,6 +38,21 @@ const sizeClass = computed(() => {
 });
 const fillClass = computed(() => (props.filled ? 'is-fill' : ''));
 
+/* Handlers */
+const handleInput = (e: Event) => {
+  const value = (e.target as HTMLInputElement).value;
+  emit('update:modelValue', props.autoTrim ? value.trim() : value);
+};
+
+const handleBlur = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  if (props.autoTrim) {
+    target.value = target.value.trim();
+  }
+
+  emit('update:modelValue', target.value);
+};
+
 /* Exposes */
 defineExpose({
   inputRef,
@@ -39,7 +62,8 @@ defineExpose({
   <input
     ref="inputRef"
     :value="modelValue"
-    @input="$emit('update:modelValue', ($event.target! as HTMLInputElement).value)"
+    @input="handleInput"
+    @blur="handleBlur"
     :class="[sizeClass, fillClass]"
   />
 </template>
