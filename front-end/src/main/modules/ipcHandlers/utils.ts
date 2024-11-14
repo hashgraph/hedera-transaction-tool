@@ -1,11 +1,10 @@
-import path from 'path';
 import fs from 'fs/promises';
 
 import { BrowserWindow, app, dialog, ipcMain, shell, FileFilter } from 'electron';
 
 import * as bcrypt from 'bcrypt';
 
-import { getNumberArrayFromString, saveContentToPath } from '@main/utils';
+import { getNumberArrayFromString } from '@main/utils';
 
 const createChannelName = (...props: string[]) => ['utils', ...props].join(':');
 
@@ -31,26 +30,6 @@ export default () => {
       }
 
       return null;
-    },
-  );
-
-  ipcMain.handle(
-    createChannelName('openBufferInTempFile'),
-    async (_e, name: string, uint8ArrayString: string) => {
-      const filePath = path.join(app.getPath('temp'), 'electronHederaFiles', `${name}.txt`);
-      const content = Buffer.from(getNumberArrayFromString(uint8ArrayString));
-
-      try {
-        const saved = await saveContentToPath(filePath, content);
-
-        if (saved) {
-          shell.showItemInFolder(filePath);
-          shell.openPath(filePath);
-        }
-      } catch (error) {
-        console.log(error);
-        throw new Error('Failed to open file content');
-      }
     },
   );
 
