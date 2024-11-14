@@ -27,15 +27,6 @@ export const compareDataToHashes = async (data: string, hashes: string[]) =>
   }, 'Failed to compare data to hashes');
 
 /* Opens a buffer in a temp file */
-export const openBufferInTempFile = async (name: string, data: Uint8Array) => {
-  try {
-    await window.electronAPI.local.utils.openBufferInTempFile(name, data.join(','));
-  } catch (error) {
-    throw new Error('Failed to open the content in a temp file');
-  }
-};
-
-/* Opens a buffer in a temp file */
 export const saveFile = async (data: Uint8Array) => {
   try {
     await window.electronAPI.local.utils.saveFile(data.join(','));

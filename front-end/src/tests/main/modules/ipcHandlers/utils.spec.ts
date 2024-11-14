@@ -5,8 +5,7 @@ import registerUtilsListeners from '@main/modules/ipcHandlers/utils';
 import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
 import { mockDeep } from 'vitest-mock-extended';
 import { compareSync, hashSync } from 'bcrypt';
-import { getNumberArrayFromString, saveContentToPath } from '@main/utils';
-import path from 'path';
+import { getNumberArrayFromString } from '@main/utils';
 import fs from 'fs/promises';
 
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
@@ -86,7 +85,7 @@ describe('registerUtilsListeners', () => {
   const event: Electron.IpcMainEvent = mockDeep<Electron.IpcMainEvent>();
 
   test('Should register handlers for each util', () => {
-    const utils = ['hash', 'openBufferInTempFile', 'saveFile', 'quit'];
+    const utils = ['hash', 'saveFile', 'quit'];
 
     expect(ipcMainMO.on).toHaveBeenCalledWith('utils:openExternal', expect.any(Function));
 
@@ -105,55 +104,6 @@ describe('registerUtilsListeners', () => {
     });
     openExternalHandler && openExternalHandler[1](event, url);
     expect(shell.openExternal).toHaveBeenCalledWith(url);
-  });
-
-  test('Should call save file function and open it in util:openBufferInTempFile', async () => {
-    const name = 'fileName';
-    const data = '1,2,3,4,5,6,7,8,9';
-    const dataBuffer = Buffer.from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-    const filePath = 'some-path';
-
-    const openBufferInTempFileHandler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'utils:openBufferInTempFile',
-    );
-
-    expect(openBufferInTempFileHandler).toBeDefined();
-
-    if (openBufferInTempFileHandler) {
-      vi.mocked(path.join).mockReturnValue(filePath);
-      vi.mocked(getNumberArrayFromString).mockReturnValue([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-      vi.mocked(saveContentToPath).mockResolvedValue(true);
-
-      await openBufferInTempFileHandler[1](event, name, data);
-
-      expect(app.getPath).toHaveBeenCalledWith('temp');
-      expect(path.join).toHaveBeenCalledWith(undefined, 'electronHederaFiles', `${name}.txt`);
-      expect(saveContentToPath).toHaveBeenCalledWith(filePath, dataBuffer);
-      expect(shell.openPath).toBeCalledWith(filePath);
-      expect(shell.showItemInFolder).toBeCalledWith(filePath);
-    }
-  });
-
-  test('Should throw error if a rejection is faced in util:openBufferInTempFile', () => {
-    const name = 'fileName';
-    const data = '1,2,3,4,5,6,7,8,9';
-    const filePath = 'some-path';
-
-    const openBufferInTempFileHandler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'utils:openBufferInTempFile',
-    );
-
-    expect(openBufferInTempFileHandler).toBeDefined();
-
-    if (openBufferInTempFileHandler) {
-      vi.mocked(path.join).mockReturnValue(filePath);
-      vi.mocked(getNumberArrayFromString).mockReturnValue([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-      vi.mocked(saveContentToPath).mockRejectedValue('some-error');
-
-      expect(() => openBufferInTempFileHandler[1](event, name, data)).rejects.toThrowError(
-        'Failed to open file content',
-      );
-    }
   });
 
   test('Should save file to a path in util:saveFile', async () => {
