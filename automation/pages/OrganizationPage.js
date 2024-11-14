@@ -50,6 +50,7 @@ class OrganizationPage extends BasePage {
     this.organizationRecoveryWords = []; // List to store recovery phrase words for organization
     this.badOrganizationList = []; // List to store bad organizations
     this.complexAccountId = []; // List to store complex account ids
+    this.complexFileId = []; // List to store complex file ids
     this.registrationPage = new RegistrationPage(window);
     this.settingsPage = new SettingsPage(window);
     this.transactionPage = new TransactionPage(window);
@@ -803,8 +804,11 @@ class OrganizationPage extends BasePage {
     await transactionTypeFunction();
   }
 
-  async processTransaction(isSignRequiredFromCreator = false) {
+  async processTransaction(isSignRequiredFromCreator = false, isDeleteTransaction = false) {
     await this.transactionPage.clickOnSignAndSubmitButton();
+    if (isDeleteTransaction) {
+      await this.transactionPage.clickOnConfirmDeleteAccountButton();
+    }
     await this.transactionPage.clickSignTransactionButton();
 
     const txId = await this.getTransactionDetailsId();
@@ -813,7 +817,6 @@ class OrganizationPage extends BasePage {
     if (isSignRequiredFromCreator) {
       await this.clickOnSignTransactionButton();
     }
-
     return { txId, validStart };
   }
 
@@ -836,8 +839,8 @@ class OrganizationPage extends BasePage {
   async transferAmountBetweenAccounts(
     fromAccountId,
     amount,
-    timeForExecution = 10,
-    isSignRequiredFromCreator = false,
+    timeForExecution = 12,
+    isSignRequiredFromCreator = true,
   ) {
     await this.startNewTransaction(() => this.transactionPage.clickOnTransferTokensTransaction());
     await this.setDateTimeAheadBy(timeForExecution);
@@ -860,8 +863,8 @@ class OrganizationPage extends BasePage {
   async approveAllowance(
     ownerAccountId,
     amount,
-    timeForExecution,
-    isSignRequiredFromCreator = false,
+    timeForExecution = 15,
+    isSignRequiredFromCreator = true,
   ) {
     await this.startNewTransaction(() =>
       this.transactionPage.clickOnApproveAllowanceTransaction(false),
@@ -875,6 +878,116 @@ class OrganizationPage extends BasePage {
     );
 
     return await this.processTransaction(isSignRequiredFromCreator);
+  }
+
+  async deleteAccount(complexAccountId, timeForExecution = 15, isSignRequiredFromCreator = true) {
+    await this.startNewTransaction(() =>
+      this.transactionPage.clickOnDeleteAccountTransaction(false),
+    );
+    await this.setDateTimeAheadBy(timeForExecution);
+    await this.transactionPage.fillInTransferAccountIdNormally(
+      await this.getTextFromInputField(this.transactionPage.payerDropdownSelector),
+    );
+    await this.transactionPage.fillInDeletedAccountId(complexAccountId);
+    this.complexAccountId = [];
+    return await this.processTransaction(isSignRequiredFromCreator, true);
+  }
+
+  async fileUpdate(
+    fileId,
+    complexAccountId,
+    content,
+    timeForExecution = 15,
+    isSignRequiredFromCreator = true,
+  ) {
+    await this.startNewTransaction(async () => {
+      await this.transactionPage.clickOnFileServiceLink();
+      await this.transactionPage.clickOnUpdateFileSublink();
+    });
+    await this.setDateTimeAheadBy(timeForExecution);
+
+    await this.transactionPage.clickOnComplexTab();
+    await this.transactionPage.clickOnCreateNewComplexKeyButton();
+    await this.transactionPage.addAccountAtDepth('0', complexAccountId);
+    await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
+
+    await this.transactionPage.fillInFileIdForUpdate(fileId);
+    await this.transactionPage.fillInFileContentForUpdate(content);
+
+    return await this.processTransaction(isSignRequiredFromCreator);
+  }
+
+  async fileAppend(
+    fileId,
+    complexAccountId,
+    content,
+    timeForExecution = 15,
+    isSignRequiredFromCreator = true,
+  ) {
+    await this.startNewTransaction(async () => {
+      await this.transactionPage.clickOnFileServiceLink();
+      await this.transactionPage.clickOnAppendFileSublink();
+    });
+    await this.transactionPage.fillInPayerAccountId(complexAccountId);
+    await this.setDateTimeAheadBy(timeForExecution);
+
+    await this.transactionPage.fillInFileIdForAppend(fileId);
+    await this.transactionPage.fillInFileContentForAppend(content);
+
+    return await this.processTransaction(isSignRequiredFromCreator);
+  }
+
+  async fileCreate(timeForExecution = 10, isSignRequiredFromCreator = false, complexAccountId) {
+    await this.startNewTransaction(async () => {
+      await this.transactionPage.clickOnFileServiceLink();
+      await this.transactionPage.clickOnFileCreateTransaction();
+    });
+    await this.transactionPage.clickOnComplexTab();
+    await this.transactionPage.clickOnCreateNewComplexKeyButton();
+
+    await this.transactionPage.addAccountAtDepth('0', complexAccountId);
+
+    await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
+    await this.setDateTimeAheadBy(timeForExecution);
+
+    return await this.processTransaction(isSignRequiredFromCreator);
+  }
+
+  async ensureComplexFileExists(
+    complexAccountId,
+    globalCredentials,
+    firstUser,
+    timeForExecution = 10,
+    isSignRequiredFromCreator = true,
+  ) {
+    let txId, validStart, fileId;
+    if (this.complexFileId.length === 0) {
+      console.log('Creating a new complex file');
+      ({ txId, validStart } = await this.fileCreate(
+        timeForExecution,
+        isSignRequiredFromCreator,
+        complexAccountId,
+      ));
+      await this.signTxByAllUsersAndRefresh(globalCredentials, firstUser, txId);
+      await waitForValidStart(validStart);
+      const txResponse = await this.transactionPage.mirrorGetTransactionResponse(txId);
+      fileId = txResponse.transactions[0]?.entity_id;
+      this.complexFileId.push(fileId);
+      return { txId, fileId };
+    } else {
+      fileId = this.complexFileId[0];
+      return { fileId };
+    }
+  }
+
+  async signTxByAllUsersAndRefresh(globalCredentials, firstUser, txId) {
+    await this.transactionPage.clickOnTransactionsMenuButton();
+    await this.logoutFromOrganization();
+
+    await this.logInAndSignTransactionByAllUsers(globalCredentials.password, txId);
+    await this.signInOrganization(firstUser.email, firstUser.password, globalCredentials.password);
+
+    await this.clickOnHistoryTab();
   }
 
   async updateSystemFile(fileId, timeForExecution = 10, isSignRequiredFromCreator = false) {
