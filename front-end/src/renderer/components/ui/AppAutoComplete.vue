@@ -5,11 +5,8 @@ import AppInput from './AppInput.vue';
 /* Props */
 const props = withDefaults(
   defineProps<{
-    items: string[];
     modelValue?: string | number;
-    filled?: boolean;
-    size?: 'small' | 'large' | undefined;
-    dataTestid?: string;
+    items: string[];
   }>(),
   {
     modelValue: '',
@@ -198,9 +195,6 @@ onBeforeUnmount(() => {
         :model-value="modelValue"
         @update:model-value="handleUpdate($event)"
         @keydown="handleKeyDown"
-        :filled="filled"
-        :size="size"
-        :data-testid="dataTestid"
         v-bind="$attrs"
       />
       <span ref="suggestionRef" class="autocomplete-suggestion">{{ autocompleteSuggestion }}</span>
