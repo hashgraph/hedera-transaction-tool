@@ -410,7 +410,7 @@ watch(
                   <td :data-testid="`td-transaction-status-${index}`">
                     <span
                       class="badge bg-success text-break"
-                      :class="{ 'bg-danger': ![0, 22].includes(transaction.status_code) }"
+                      :class="{ 'bg-danger': ![0, 22, 338].includes(transaction.status_code) }"
                       >{{ getTransactionStatus(transaction) }}</span
                     >
                   </td>
