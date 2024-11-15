@@ -30,7 +30,7 @@ const columnClass = 'col-4 col-xxxl-3';
 <template>
   <AccountDataFormData :data="data" @update:data="handleAccountDataUpdate" />
 
-  <div class="form-group" :class="[columnClass]">
+  <div class="form-group mt-6" :class="[columnClass]">
     <label class="form-label">Initial Balance {{ HbarUnit.Hbar._symbol }}</label>
     <AppHbarInput
       data-testid="input-initial-balance-amount"

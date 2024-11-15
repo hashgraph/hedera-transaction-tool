@@ -27,6 +27,7 @@ export interface GroupItem {
   approvers: TransactionApproverDto[];
   payerAccountId: string;
   validStart: Date;
+  description: string;
 }
 
 const useTransactionGroupStore = defineStore('transactionGroup', () => {
@@ -63,6 +64,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
           approvers: [],
           payerAccountId: transaction.transactionId?.accountId?.toString() as string,
           validStart: transaction.transactionId?.validStart?.toDate() as Date,
+          description: draft.description,
         });
       }
     }

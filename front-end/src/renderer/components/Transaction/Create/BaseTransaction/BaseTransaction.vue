@@ -27,7 +27,7 @@ import { getPropagationButtonLabel } from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
-import AddToGroupModal from '@renderer/components/AddToGroupModal.vue';
+import GroupActionModal from '@renderer/components/GroupActionModal.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionInfoControls from '@renderer/components/Transaction/TransactionInfoControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
@@ -145,8 +145,22 @@ const handleGroupAction = (action: 'add' | 'edit') => {
     action === 'add'
       ? baseGroupHandlerRef.value?.addGroupItem
       : baseGroupHandlerRef.value?.editGroupItem;
-  handle?.(payerData.accountId.value, data.validStart, observers.value, approvers.value);
+  handle?.(
+    description.value,
+    payerData.accountId.value,
+    data.validStart,
+    observers.value,
+    approvers.value,
+  );
 };
+
+function handleFetchedDescription(fetchedDescription: string) {
+  description.value = fetchedDescription;
+}
+
+function handleFetchedPayerAccountId(fetchedPayerAccountId: string) {
+  payerData.accountId.value = fetchedPayerAccountId;
+}
 
 /* Functions */
 function basePreCreateAssert() {
@@ -242,8 +256,14 @@ defineExpose({
       ref="baseGroupHandlerRef"
       :create-transaction="() => props.createTransaction({ ...data } as TransactionCommonData)"
       :transaction-key="transactionKey"
+      @fetched-description="handleFetchedDescription"
+      @fetched-payer-account-id="handleFetchedPayerAccountId"
     />
 
-    <AddToGroupModal :skip="groupActionTaken" @addToGroup="handleGroupAction('add')" />
+    <GroupActionModal
+      :skip="groupActionTaken"
+      @addToGroup="handleGroupAction('add')"
+      @editItem="handleGroupAction('edit')"
+    />
   </div>
 </template>

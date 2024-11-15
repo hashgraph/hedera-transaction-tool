@@ -176,6 +176,10 @@
   backdrop-filter: blur(4px);
 }
 
+.modal-body {
+  padding: 0;
+}
+
 /* Input Token */
 .container-input-token {
   background-color: $dark-blue-700; //TO CHANGE COLOR
