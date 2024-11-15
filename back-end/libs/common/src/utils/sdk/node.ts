@@ -14,7 +14,6 @@ import { AccountId, FileId, Hbar, HbarUnit, Key, PublicKey, ServiceEndpoint } fr
 export const parseNodeInfo = (nodeInfo: NetworkNode) => {
   const nodeInfoParsed: NodeInfoParsed = {
     admin_key: parseNodeProperty(nodeInfo, 'admin_key'),
-    domain_name: parseNodeProperty(nodeInfo, 'domain_name'),
     description: parseNodeProperty(nodeInfo, 'description'),
     file_id: parseNodeProperty(nodeInfo, 'file_id'),
     memo: parseNodeProperty(nodeInfo, 'memo'),
@@ -63,7 +62,7 @@ export function parseNodeProperty(
 export function parseNodeProperty(nodeInfo: NetworkNode, property: 'node_id'): number | null;
 export function parseNodeProperty(
   nodeInfo: NetworkNode,
-  property: 'domain_name' | 'description' | 'memo' | 'public_key' | 'node_cert_hash',
+  property: 'description' | 'memo' | 'public_key' | 'node_cert_hash',
 ): string | null;
 export function parseNodeProperty(nodeInfo: NetworkNode, property: keyof NetworkNode) {
   switch (property) {
@@ -111,8 +110,6 @@ export function parseNodeProperty(nodeInfo: NetworkNode, property: keyof Network
       return nodeInfo.staking_period || null;
     case 'memo':
       return nodeInfo.memo?.trim() || null;
-    case 'domain_name':
-      return nodeInfo.domain_name?.trim() || null;
     case 'description':
       return nodeInfo.description?.trim() || null;
     default:
