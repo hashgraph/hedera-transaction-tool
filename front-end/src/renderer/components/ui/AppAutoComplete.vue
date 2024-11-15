@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
-import AppInput from './AppInput.vue';
+
+import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Props */
 const props = withDefaults(
@@ -14,87 +15,74 @@ const props = withDefaults(
 );
 
 /* Emits */
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits<{
+  (event: 'update:modelValue', value: string): void;
+}>();
 
 /* State */
 const inputRef = ref<InstanceType<typeof AppInput> | null>(null);
-const suggestionRef = ref<InstanceType<typeof HTMLSpanElement> | null>(null);
+const suggestionRef = ref<HTMLSpanElement | null>(null);
 const dropdownRef = ref<HTMLDivElement | null>(null);
 const itemRefs = ref<HTMLElement[]>([]);
 
 /* Computed */
-const filteredItems = computed(() => [...new Set<string>(props.items)]);
+const modelValue = computed({
+  get: () => props.modelValue?.toString() || '',
+  set: (value: string) => {
+    emit('update:modelValue', value);
+  },
+});
 
+const filteredItems = computed(() => [...new Set<string>(props.items)]);
 const selectedIndex = computed(() => {
-  return filteredItems.value.findIndex(item => item.startsWith(props.modelValue.toString()));
+  return filteredItems.value.findIndex(item => item.startsWith(modelValue.value));
 });
 
 const autocompleteSuggestion = computed(() => {
-  if (!props.modelValue) return '';
+  if (!modelValue.value) return '';
   const match = filteredItems.value[selectedIndex.value];
-  return match?.slice(props.modelValue.toString().length) || '';
+  return match?.slice(modelValue.value.length) || '';
 });
 
 /* Handlers */
 const handleKeyDown = (e: KeyboardEvent) => {
   toggleDropdown(true);
 
-  const key = {
-    ArrowUp: 'ArrowUp',
-    ArrowDown: 'ArrowDown',
-    Enter: 'Enter',
-    Tab: 'Tab',
-    Backspace: 'Backspace',
-  };
-
   handleResize();
-  handleMove();
 
-  if (e.key === key.ArrowUp) {
+  if (e.key === 'ArrowUp') {
     if (e.metaKey || e.ctrlKey) {
-      emit('update:modelValue', filteredItems.value[0]);
+      setValue(filteredItems.value[0]);
     } else {
-      emit('update:modelValue', filteredItems.value[Math.max(selectedIndex.value - 1, 0)]);
+      setValue(filteredItems.value[Math.max(selectedIndex.value - 1, 0)]);
     }
-  } else if (e.key === key.ArrowDown) {
+  } else if (e.key === 'ArrowDown') {
     if (e.metaKey || e.ctrlKey) {
-      emit('update:modelValue', filteredItems.value[filteredItems.value.length - 1]);
+      setValue(filteredItems.value[filteredItems.value.length - 1]);
     } else {
-      emit(
-        'update:modelValue',
+      setValue(
         filteredItems.value[Math.min(selectedIndex.value + 1, filteredItems.value.length - 1)],
       );
     }
-  } else if (e.key === key.Tab && props.modelValue.toString().length > 0) {
+  } else if (e.key === 'Tab' && props.modelValue.toString().length > 0) {
     if (filteredItems.value[selectedIndex.value]) {
-      emit('update:modelValue', filteredItems.value[selectedIndex.value]);
+      setValue(filteredItems.value[selectedIndex.value]);
     }
     toggleDropdown(false);
   }
 
-  if (e.key === key.ArrowUp || e.key === key.ArrowDown) {
-    nextTick(() => {
-      itemRefs.value[selectedIndex.value]?.scrollIntoView({
-        block: 'nearest',
-      });
-    });
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    scrollToItem(selectedIndex.value);
   }
 };
 
 const handleUpdate = (value: string) => {
+  modelValue.value = value;
   if (value.length === 0) {
     toggleDropdown(false);
+  } else {
+    scrollToItem(selectedIndex.value);
   }
-  emit('update:modelValue', value);
-
-  nextTick(() => {
-    itemRefs.value[selectedIndex.value]?.scrollIntoView({
-      block: 'nearest',
-    });
-
-    handleResize();
-    handleMove();
-  });
 };
 
 const handleSelectItem = (event: Event, item: string) => {
@@ -136,6 +124,19 @@ const handleMove = () => {
 };
 
 /* Functions */
+function setValue(value: string) {
+  modelValue.value = value;
+}
+
+function scrollToItem(index: number) {
+  nextTick(() => {
+    itemRefs.value[index]?.scrollIntoView({
+      block: 'nearest',
+    });
+    handleResize();
+  });
+}
+
 function toggleDropdown(show: boolean) {
   if (!dropdownRef.value) return;
 
@@ -170,21 +171,22 @@ function positionSuggestion() {
   suggestion.style.left = `${inputWidth + 15}px`;
 }
 
+function handleGlobalEvents(add: boolean) {
+  const func = add ? 'addEventListener' : 'removeEventListener';
+  window[func]('resize', handleResize);
+  window[func]('click', handleWindowClick);
+  document[func]('scroll', handleMove, true);
+}
+
 /* Hooks */
 onMounted(() => {
   setTimeout(() => {
     handleResize();
   }, 100);
-  window.addEventListener('resize', handleResize);
-  window.addEventListener('click', handleWindowClick);
-  document.addEventListener('scroll', handleMove, true);
+  handleGlobalEvents(true);
 });
 
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize);
-  window.removeEventListener('click', handleWindowClick);
-  document.removeEventListener('scroll', handleMove, true);
-});
+onBeforeUnmount(() => handleGlobalEvents(false));
 </script>
 
 <template>
