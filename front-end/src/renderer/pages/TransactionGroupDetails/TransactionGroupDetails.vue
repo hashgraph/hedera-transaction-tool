@@ -371,7 +371,7 @@ watch(
       </div>
     </div>
     <AppModal v-model:show="isConfirmModalShown" class="common-modal">
-      <div class="modal-body">
+      <div class="p-4">
         <i
           class="bi bi-x-lg d-inline-block cursor-pointer"
           @click="isConfirmModalShown = false"

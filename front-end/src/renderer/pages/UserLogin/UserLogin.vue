@@ -368,7 +368,7 @@ watch(inputEmail, pass => {
         </div>
       </form>
       <AppModal v-model:show="isResetDataModalShown" class="common-modal">
-        <div class="modal-body">
+        <div class="p-4">
           <i
             class="bi bi-x-lg d-inline-block cursor-pointer"
             @click="isResetDataModalShown = false"
