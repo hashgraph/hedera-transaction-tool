@@ -118,7 +118,7 @@ const columnClass = 'col-4 col-xxxl-3';
       <template v-else>
         <div class="position-relative">
           <AppAutoComplete
-            :model-value="account.isValid.value ? account.accountIdFormatted.value : payerId"
+            :model-value="payerId"
             @update:model-value="handlePayerChange"
             :filled="true"
             :items="accoundIds"
