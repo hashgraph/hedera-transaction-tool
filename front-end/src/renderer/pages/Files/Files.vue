@@ -814,7 +814,7 @@ watch(files, newFiles => {
           />
         </div>
         <AppModal v-model:show="isUnlinkFileModalShown" class="common-modal">
-          <div class="modal-body">
+          <div class="p-4">
             <i class="bi bi-x-lg cursor-pointer" @click="isUnlinkFileModalShown = false"></i>
             <div class="text-center">
               <AppCustomIcon :name="'bin'" style="height: 160px" />

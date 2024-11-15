@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 import { Prisma } from '@prisma/client';
 import { PrivateKey } from '@hashgraph/sdk';
@@ -183,6 +183,13 @@ function reset() {
   error.value = null;
   decryptPassword.value = '';
 }
+
+/* Hooks */
+onMounted(async () => {
+  if (props.defaultPassword) {
+    await decrypt();
+  }
+});
 
 /* Watchers */
 watch(

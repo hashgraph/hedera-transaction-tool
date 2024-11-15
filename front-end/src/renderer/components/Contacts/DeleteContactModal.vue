@@ -32,7 +32,7 @@ function handleDeleteAccount() {
 </script>
 <template>
   <AppModal v-model:show="show" class="common-modal">
-    <div class="modal-body">
+    <div class="p-4">
       <div class="text-center">
         <AppCustomIcon :name="'bin'" style="height: 160px" />
       </div>

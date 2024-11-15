@@ -145,7 +145,7 @@ const handleResetData = async () => {
       </div>
     </form>
     <AppModal v-model:show="isConfirmModalShown" class="common-modal">
-      <div class="modal-body">
+      <div class="p-4">
         <i
           class="bi bi-x-lg d-inline-block cursor-pointer"
           @click="isConfirmModalShown = false"
@@ -219,7 +219,7 @@ const handleResetData = async () => {
       </div>
     </form>
     <AppModal v-model:show="isResetDataModalShown" class="common-modal">
-      <div class="modal-body">
+      <div class="p-5">
         <i
           class="bi bi-x-lg d-inline-block cursor-pointer"
           @click="isResetDataModalShown = false"
