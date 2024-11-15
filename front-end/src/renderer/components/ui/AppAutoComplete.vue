@@ -29,11 +29,7 @@ const itemRefs = ref<HTMLElement[]>([]);
 const filteredItems = computed(() => [...new Set<string>(props.items)]);
 
 const selectedIndex = computed(() => {
-  return filteredItems.value.findIndex(
-    item =>
-      item.startsWith(props.modelValue.toString()) ||
-      item.startsWith(`0.0.${props.modelValue.toString()}`),
-  );
+  return filteredItems.value.findIndex(item => item.startsWith(props.modelValue.toString()));
 });
 
 const autocompleteSuggestion = computed(() => {
