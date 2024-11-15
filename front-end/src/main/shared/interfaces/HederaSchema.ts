@@ -645,7 +645,6 @@ export interface NetworkNodesResponse {
 
 export interface NetworkNode {
   admin_key: Key | null | undefined;
-  domain_name: string | null | undefined;
   description: string | null | undefined;
   file_id: string | null | undefined; // Network entity ID in the format of shard.realm.num
   memo: string | undefined;
