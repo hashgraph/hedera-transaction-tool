@@ -114,7 +114,7 @@ function calculateTimeout(totalUsers, timePerUser) {
  * @param bufferSeconds - The buffer time in seconds to wait before the target time.
  * @returns {Promise<void>} - A promise that resolves after the wait time.
  */
-async function waitForValidStart(dateTimeString, bufferSeconds = 5) {
+async function waitForValidStart(dateTimeString, bufferSeconds = 10) {
   // Convert the dateTimeString to a Date object
   const targetDate = new Date(dateTimeString);
 
