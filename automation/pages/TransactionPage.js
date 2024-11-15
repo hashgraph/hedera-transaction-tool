@@ -52,6 +52,7 @@ class TransactionPage extends BasePage {
   fileCreateDescriptionInputSelector = 'input-file-description-for-file-create';
   maxTransactionFeeInputSelector = 'input-max-transaction-fee';
   descriptionInputSelector = 'input-transaction-description';
+  complexKeyAccountIdInputSelector = 'input-complex-key-account-id';
 
   //Buttons
   transactionsMenuButtonSelector = 'button-menu-transactions';
@@ -83,6 +84,7 @@ class TransactionPage extends BasePage {
   selectThresholdValueByIndex = 'select-complex-key-threshold-';
   selectThresholdNumberIndex = 'button-complex-key-add-element-threshold-';
   addPublicKeyButtonIndex = 'button-complex-key-add-element-public-key-';
+  addAccountButtonIndex = 'button-complex-key-add-element-account-';
   insertPublicKeyButtonSelector = 'button-insert-public-key';
   doneComplexKeyButtonSelector = 'button-complex-key-done';
   addNewAccountButtonSelector = 'button-add-new-account';
@@ -95,6 +97,7 @@ class TransactionPage extends BasePage {
   confirmDeleteAccountButtonSelector = 'button-confirm-delete-account';
   singleTransactionButtonSelector = 'span-single-transaction';
   uploadFileButtonSelector = '#append-transaction-file[type="file"]';
+  insertAccountIdButtonSelector = 'button-insert-account-id';
 
   //Other
   confirmTransactionModalSelector = 'modal-confirm-transaction';
@@ -273,6 +276,13 @@ class TransactionPage extends BasePage {
     }
     await this.fillInPublicKeyField(publicKey);
     await this.clickInsertPublicKey();
+  }
+
+  async addAccountAtDepth(depth, accountId) {
+    await this.clickAddButton(depth);
+    await this.selectAccountKeyOption(depth);
+    await this.fillInComplexAccountID(accountId);
+    await this.clickOnInsertAccountIdButton();
   }
 
   async addThresholdKeyAtDepth(depth) {
@@ -674,6 +684,10 @@ class TransactionPage extends BasePage {
     await this.click(this.addPublicKeyButtonIndex + depth);
   }
 
+  async selectAccountKeyOption(depth) {
+    await this.click(this.addAccountButtonIndex + depth);
+  }
+
   async selectThreshold(depth) {
     await this.click(this.selectThresholdNumberIndex + depth);
   }
@@ -781,6 +795,10 @@ class TransactionPage extends BasePage {
     const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
     await this.fillAndVerify(this.transferAccountInputSelector, firstAccountId);
     return firstAccountId;
+  }
+
+  async fillInTransferAccountIdNormally(accountId) {
+    await this.fill(this.transferAccountInputSelector, accountId);
   }
 
   async getFirstAccountIdFromText(allAccountIds) {
@@ -1145,6 +1163,14 @@ class TransactionPage extends BasePage {
 
   async fillInPayerAccountId(accountId) {
     await this.fill(this.payerDropdownSelector, accountId);
+  }
+
+  async fillInComplexAccountID(accountId) {
+    await this.fill(this.complexKeyAccountIdInputSelector, accountId);
+  }
+
+  async clickOnInsertAccountIdButton() {
+    await this.click(this.insertAccountIdButtonSelector);
   }
 }
 module.exports = TransactionPage;
