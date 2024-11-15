@@ -422,6 +422,9 @@ onBeforeRouteLeave(async to => {
         </div>
         <hr class="separator my-5 w-100" />
         <div v-if="!groupEmpty">
+          <div class="text-end mb-5">
+            {{ `${transactionGroup.groupItems.length} Transactions` }}
+          </div>
           <div
             v-for="(groupItem, index) in transactionGroup.groupItems"
             :key="groupItem.transactionBytes.toString()"
