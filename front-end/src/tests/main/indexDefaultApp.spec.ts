@@ -62,6 +62,7 @@ describe('Electron entry file', async () => {
     expect(beforeQuitHandler).toBeDefined();
     expect(beforeQuitHandler![1]).toBeDefined();
 
+    //@ts-expect-error Incorrect type definition
     beforeQuitHandler && (await beforeQuitHandler[1]({ preventDefault: vi.fn() }));
 
     expect(deleteAllTempFolders).toHaveBeenCalledOnce();

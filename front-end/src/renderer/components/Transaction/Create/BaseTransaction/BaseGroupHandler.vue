@@ -61,11 +61,11 @@ const buildActionData = (
     seq,
     groupId,
     keyList: keys,
-    observers: observers,
-    approvers: approvers,
+    observers,
+    approvers,
     payerAccountId: payerId,
-    validStart: validStart,
-    description: description,
+    validStart,
+    description,
   };
 };
 
