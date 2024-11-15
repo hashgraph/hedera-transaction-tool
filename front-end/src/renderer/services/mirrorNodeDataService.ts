@@ -294,7 +294,6 @@ export const getNodeInfo = async (
 
       const nodeInfo: INodeInfoParsed = {
         admin_key: parseNetworkResponseKey(node.admin_key),
-        domain_name: node.domain_name || null,
         description: node.description?.trim() || null,
         file_id: node.file_id && isFileId(node.file_id) ? FileId.fromString(node.file_id) : null,
         memo: node.memo?.trim() || null,

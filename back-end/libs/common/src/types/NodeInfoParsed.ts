@@ -3,7 +3,6 @@ import { TimestampRange } from '../schemas';
 
 export interface NodeInfoParsed {
   admin_key: Key | null;
-  domain_name: string | null;
   description: string | null;
   file_id: FileId | null;
   memo: string | null;
