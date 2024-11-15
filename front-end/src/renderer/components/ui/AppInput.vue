@@ -49,8 +49,6 @@ const handleBlur = (e: Event) => {
   if (props.autoTrim) {
     target.value = target.value.trim();
   }
-
-  emit('update:modelValue', target.value);
 };
 
 /* Exposes */

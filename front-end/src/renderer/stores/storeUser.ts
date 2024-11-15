@@ -54,6 +54,9 @@ const useUserStore = defineStore('user', () => {
   /** Keys */
   const secretHashes = computed<string[]>(() => ush.getSecretHashesFromKeys(keyPairs.value));
   const publicKeys = computed(() => keyPairs.value.map(kp => kp.public_key));
+  const publicKeysToAccountsFlattened = computed(() =>
+    ush.flattenAccountIds(publicKeyToAccounts.value),
+  );
   const shouldSetupAccount = computed(() =>
     ush.accountSetupRequired(selectedOrganization.value, keyPairs.value),
   );
@@ -215,10 +218,12 @@ const useUserStore = defineStore('user', () => {
       refetchAccounts();
     },
   );
+
   /* Exports */
   const exports = {
     keyPairs,
     publicKeyToAccounts,
+    publicKeysToAccountsFlattened,
     recoveryPhrase,
     personal,
     selectedOrganization,

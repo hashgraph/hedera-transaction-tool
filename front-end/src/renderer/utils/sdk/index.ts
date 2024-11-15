@@ -2,6 +2,7 @@ import type { HederaSpecialFileId } from '@main/shared/interfaces';
 import type { ITransactionApprover } from '@main/shared/interfaces/organization/approvers';
 
 import {
+  AccountId,
   Client,
   ContractId,
   FileId,
@@ -23,7 +24,7 @@ import { proto } from '@hashgraph/proto';
 
 import { getNetworkNodes } from '@renderer/services/mirrorNodeDataService';
 
-import { uint8ToHex, hexToUint8Array, isContractId } from '..';
+import { uint8ToHex, hexToUint8Array, isContractId, isAccountId } from '..';
 import { getNodeAddressBook } from '@renderer/services/sdkService';
 
 export * from './createTransactions';
@@ -345,16 +346,11 @@ export const isApproved = (approver: ITransactionApprover): boolean | null => {
 };
 
 export const formatAccountId = (accountId: string) => {
-  const parts = (accountId || '').trim().split('.').filter(Boolean);
-  const [shard, realm, account] = parts;
-
-  if (parts.length === 0 || (parts.length === 1 && shard === '0')) {
-    return '';
-  } else if (parts.length === 1) {
-    return `0.0.${shard || ''}`;
+  if (isAccountId(accountId) && !/^0+/.test(accountId)) {
+    return AccountId.fromString(accountId).toString();
+  } else {
+    return accountId;
   }
-
-  return `${shard || ''}.${realm || ''}.${account || ''}`;
 };
 
 export const formatContractId = (contractId: string) => {

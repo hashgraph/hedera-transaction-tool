@@ -4,12 +4,10 @@ import type { AccountData, AccountUpdateData } from '@renderer/utils/sdk';
 
 import { ref } from 'vue';
 
-import { formatAccountId } from '@renderer/utils';
-
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AccountDataFormData from '@renderer/components/Transaction/Create/AccountData';
+import AccountIdInput from '@renderer/components/AccountIdInput.vue';
 
 /* Props */
 const props = defineProps<{
@@ -40,17 +38,17 @@ const columnClass = 'col-4 col-xxxl-3';
   <div class="row">
     <div class="form-group" :class="[columnClass]">
       <label class="form-label">Account ID <span class="text-danger">*</span></label>
-      <AppInput
-        :model-value="formatAccountId(data.accountId)"
+      <AccountIdInput
+        :model-value="data.accountId"
         @update:model-value="
           emit('update:data', {
             ...data,
-            accountId: formatAccountId($event),
+            accountId: $event,
           })
         "
         :filled="true"
-        data-testid="input-account-id-for-update"
         placeholder="Enter Account ID"
+        data-testid="input-account-id-for-update"
       />
       <div v-if="accountInfo" data-testid="div-account-info-fetched"></div>
     </div>

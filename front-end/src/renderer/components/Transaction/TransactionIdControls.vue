@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, watch } from 'vue';
+import { onBeforeMount, ref, watch } from 'vue';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY } from '@main/shared/constants';
@@ -12,10 +12,10 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import * as claim from '@renderer/services/claimService';
 
-import { formatAccountId, flattenAccountIds, isUserLoggedIn, stringifyHbar } from '@renderer/utils';
+import { isUserLoggedIn, stringifyHbar } from '@renderer/utils';
 
-import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
+import AccountIdInput from '@renderer/components/AccountIdInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
 
@@ -39,18 +39,10 @@ const account = useAccountId();
 /* State */
 const localValidStart = ref<Date>(props.validStart);
 
-/* Computed */
-const accoundIds = computed<string[]>(() => flattenAccountIds(user.publicKeyToAccounts));
-
 /* Handlers */
-const handlePayerSelect = (payerId: string) => {
-  account.accountId.value = payerId;
-  emit('update:payerId', payerId || '');
-};
-
 const handlePayerChange = (payerId: string) => {
-  emit('update:payerId', formatAccountId(payerId));
-  account.accountId.value = formatAccountId(payerId);
+  emit('update:payerId', payerId || '');
+  account.accountId.value = payerId || '';
 };
 
 function handleUpdateValidStart(v: Date) {
@@ -90,7 +82,7 @@ watch(
 watch(
   () => user.publicKeyToAccounts,
   () => {
-    handlePayerSelect(accoundIds.value[0]);
+    handlePayerChange(user.publicKeysToAccountsFlattened[0]);
   },
 );
 
@@ -111,22 +103,18 @@ const columnClass = 'col-4 col-xxxl-3';
       <template v-if="!user.selectedOrganization">
         <AccountIdsSelect
           :account-id="payerId || ''"
-          @update:account-id="handlePayerSelect"
+          @update:account-id="handlePayerChange"
           :select-default="true"
         />
       </template>
       <template v-else>
-        <div class="position-relative">
-          <AppAutoComplete
-            :model-value="account.isValid.value ? account.accountIdFormatted.value : payerId"
-            @update:model-value="handlePayerChange"
-            :filled="true"
-            :items="accoundIds"
-            :min-date="new Date()"
-            data-testid="dropdown-payer"
-            placeholder="Enter Payer ID"
-          />
-        </div>
+        <AccountIdInput
+          :modelValue="payerId"
+          @update:modelValue="handlePayerChange"
+          :filled="true"
+          placeholder="Enter Payer ID"
+          data-testid="dropdown-payer"
+        />
       </template>
     </div>
     <div class="form-group" :class="[columnClass]">
