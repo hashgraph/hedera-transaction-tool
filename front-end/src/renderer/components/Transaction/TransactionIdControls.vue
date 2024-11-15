@@ -17,7 +17,7 @@ import { isUserLoggedIn, stringifyHbar } from '@renderer/utils';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
-import AccountIdInput from '../AccountIdInput.vue';
+import AccountIdInput from '@renderer/components/AccountIdInput.vue';
 
 /* Props */
 const props = defineProps<{
