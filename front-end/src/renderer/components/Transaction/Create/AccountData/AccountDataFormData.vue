@@ -3,10 +3,9 @@ import type { AccountData } from '@renderer/utils/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { formatAccountId } from '@renderer/utils';
-
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AccountIdInput from '@renderer/components/AccountIdInput.vue';
 import KeyField from '@renderer/components/KeyField.vue';
 
 /* Props */
@@ -116,17 +115,17 @@ const columnClass = 'col-4 col-xxxl-3';
     <div v-if="data.stakeType !== 'None'" class="form-group" :class="[columnClass]">
       <template v-if="data.stakeType === 'Account'">
         <label class="form-label">Account ID <span class="text-danger">*</span></label>
-        <AppInput
-          data-testid="input-stake-accountid"
+        <AccountIdInput
           :model-value="data.stakedAccountId"
           @update:model-value="
             emit('update:data', {
               ...data,
-              stakedAccountId: formatAccountId($event),
+              stakedAccountId: $event,
             })
           "
           :filled="true"
           placeholder="Enter Account ID"
+          data-testid="input-stake-accountid"
         />
       </template>
       <template v-else-if="data.stakeType === 'Node'">
