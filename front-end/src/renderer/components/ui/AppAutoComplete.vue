@@ -196,7 +196,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div @blur="toggleDropdown(false)" class="w-100 autocomplete-container">
-    <div class="input-wrapper">
+    <div @click="toggleDropdown(true)" class="input-wrapper">
       <AppInput
         ref="inputRef"
         :model-value="modelValue"
