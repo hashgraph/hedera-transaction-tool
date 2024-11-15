@@ -17,12 +17,13 @@ const props = defineProps<{
 }>();
 
 /* State */
-const gossipIpAddressV4 = ref('');
-const serviceIpAddressV4 = ref('');
+const gossipIpOrDomain = ref('');
+const serviceIpOrDomain = ref('');
 const gossipPort = ref('');
 const servicePort = ref('');
-const gossipDomainName = ref('');
-const serviceDomainName = ref('');
+
+const validIp =
+  '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]).){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$';
 
 /* Emits */
 const emit = defineEmits<{
@@ -31,89 +32,49 @@ const emit = defineEmits<{
 
 /* Handlers */
 function handleAddGossipEndpoint() {
-  if (gossipIpAddressV4.value && gossipDomainName.value) {
-    throw new Error('Either IP Address or Domain Name can be entered, but not both');
-  }
-
   emit('update:data', {
     ...props.data,
     gossipEndpoints: [
       ...props.data.gossipEndpoints,
-      getEndpointData(gossipIpAddressV4.value, gossipPort.value, gossipDomainName.value),
+      getEndpointData(gossipIpOrDomain.value, gossipPort.value),
     ],
   });
-  gossipIpAddressV4.value = '';
+  gossipIpOrDomain.value = '';
   gossipPort.value = '';
-  gossipDomainName.value = '';
 }
 
 function handleAddServiceEndpoint() {
-  if (serviceIpAddressV4.value && serviceDomainName.value) {
-    throw new Error('Either IP Address or Domain Name can be entered, but not both');
-  }
   emit('update:data', {
     ...props.data,
     serviceEndpoints: [
       ...props.data.serviceEndpoints,
-      getEndpointData(serviceIpAddressV4.value, servicePort.value, serviceDomainName.value),
+      getEndpointData(serviceIpOrDomain.value, servicePort.value),
     ],
   });
-  serviceIpAddressV4.value = '';
+  serviceIpOrDomain.value = '';
   servicePort.value = '';
-  serviceDomainName.value = '';
 }
 
 /* Functions */
-const getEndpointData = (ipAddressV4: string, port: string, domainName: string) => ({
-  ipAddressV4,
-  port,
-  domainName: domainName.trim(),
-});
+function getEndpointData(ipOrDomain: string, port: string) {
+  let ip = '';
+  let domain = '';
 
-function formatOctets(value: string) {
-  const octets = value.split('.');
-
-  const newOctets = octets.map(octet => {
-    if (octet === '') {
-      return '';
-    }
-    const n = Number.parseInt(octet);
-    if (!isNaN(n) && n >= 0 && n <= 255) {
-      return n.toString();
-    } else {
-      return n.toString().slice(0, 3);
-    }
-  });
-
-  if (newOctets.length > 4) {
-    newOctets.pop();
+  if (ipOrDomain.match(validIp)) {
+    ip = ipOrDomain;
+  } else {
+    domain = ipOrDomain;
   }
 
-  if (newOctets.length <= 4) {
-    return newOctets.join('.');
-  }
-
-  return null;
+  return {
+    ipAddressV4: ip,
+    port,
+    domainName: domain.trim(),
+  };
 }
 
 function formatPort(value: string) {
   return value.replace(/[^0-9]/g, '');
-}
-
-function formatServiceIpAddress(event: Event) {
-  const target = event.target as HTMLInputElement;
-  const octets = formatOctets(target.value);
-  if (octets) {
-    serviceIpAddressV4.value = octets;
-  }
-}
-
-function formatGossipIpAddress(event: Event) {
-  const target = event.target as HTMLInputElement;
-  const octets = formatOctets(target.value);
-  if (octets) {
-    gossipIpAddressV4.value = octets;
-  }
 }
 
 function formatGossipPort(event: Event) {
@@ -168,12 +129,11 @@ const columnClass = 'col-4 col-xxxl-3';
   >
   <div class="d-flex">
     <div class="col">
-      <label class="form-label">IP Address</label>
+      <label class="form-label">IP/Domain</label>
       <input
-        v-model="gossipIpAddressV4"
-        @input="formatGossipIpAddress"
+        v-model="gossipIpOrDomain"
         class="form-control is-fill"
-        placeholder="Enter IP Address"
+        placeholder="Enter Domain Name or IP Address"
       />
     </div>
     <div class="mx-5 col-2">
@@ -185,14 +145,6 @@ const columnClass = 'col-4 col-xxxl-3';
         placeholder="Enter Port"
       />
     </div>
-    <div class="col mx-5">
-      <label class="form-label">Domain Name</label>
-      <AppInput
-        v-model:model-value="gossipDomainName"
-        :filled="true"
-        placeholder="Enter Domain Name"
-      />
-    </div>
     <AppButton color="primary" type="button" class="align-self-end" @click="handleAddGossipEndpoint"
       >Add Gossip Endpoint
     </AppButton>
@@ -200,14 +152,14 @@ const columnClass = 'col-4 col-xxxl-3';
 
   <ul class="mt-5">
     <li class="d-flex">
-      <label class="form-label col text-center">IP Address</label>
+      <label class="form-label col text-center">IP/Domain</label>
       <label class="form-label mx-5 col text-center">Port</label>
-      <label class="form-label col text-center">Domain Name</label>
     </li>
     <li v-for="(endpoint, index) of data.gossipEndpoints" :key="index" class="d-flex">
-      <div class="col text-center">{{ endpoint.ipAddressV4 }}</div>
+      <div class="col text-center">
+        {{ endpoint.ipAddressV4 ? endpoint.ipAddressV4 : endpoint.domainName }}
+      </div>
       <div class="col text-center">{{ endpoint.port }}</div>
-      <div class="col text-center">{{ endpoint.domainName }}</div>
     </li>
   </ul>
 
@@ -218,10 +170,9 @@ const columnClass = 'col-4 col-xxxl-3';
   >
   <div class="d-flex">
     <div class="col">
-      <label class="form-label">IP Address</label>
+      <label class="form-label">IP/Domain</label>
       <input
-        v-model="serviceIpAddressV4"
-        @input="formatServiceIpAddress"
+        v-model="serviceIpOrDomain"
         class="form-control is-fill"
         placeholder="Enter IP Address"
       />
@@ -235,14 +186,6 @@ const columnClass = 'col-4 col-xxxl-3';
         placeholder="Enter Port"
       />
     </div>
-    <div class="col mx-5">
-      <label class="form-label">Domain Name</label>
-      <AppInput
-        v-model:model-value="serviceDomainName"
-        :filled="true"
-        placeholder="Enter Domain Name"
-      />
-    </div>
     <AppButton
       color="primary"
       type="button"
@@ -254,14 +197,14 @@ const columnClass = 'col-4 col-xxxl-3';
 
   <ul class="mt-5">
     <li class="d-flex">
-      <label class="form-label col text-center">IP Address</label>
+      <label class="form-label col text-center">IP/Domain</label>
       <label class="form-label mx-5 col text-center">Port</label>
-      <label class="form-label col text-center">Domain Name</label>
     </li>
     <li v-for="(endpoint, index) of data.serviceEndpoints" :key="index" class="d-flex">
-      <div class="col text-center">{{ endpoint.ipAddressV4 }}</div>
+      <div class="col text-center">
+        {{ endpoint.ipAddressV4 ? endpoint.ipAddressV4 : endpoint.domainName }}
+      </div>
       <div class="col text-center">{{ endpoint.port }}</div>
-      <div class="col text-center">{{ endpoint.domainName }}</div>
     </li>
   </ul>
 
