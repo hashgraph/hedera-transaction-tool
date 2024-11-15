@@ -122,7 +122,6 @@ const columnClass = 'col-4 col-xxxl-3';
             @update:model-value="handlePayerChange"
             :filled="true"
             :items="accoundIds"
-            :min-date="new Date()"
             data-testid="dropdown-payer"
             placeholder="Enter Payer ID"
           />
