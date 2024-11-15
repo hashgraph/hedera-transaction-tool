@@ -79,13 +79,13 @@ class OrganizationPage extends BasePage {
   deleteNextButtonSelector = 'button-delete-next';
   addObserverButtonSelector = 'button-add-observer';
   addUserButtonSelector = 'button-add-user';
-  timePickerIconSelector = 'button[aria-label="Open time picker"]';
+  timePickerIconSelector = '.dp--tp-wrap button[aria-label="Open time picker"]';
   incrementSecondsButtonSelector = 'button[aria-label="Increment seconds"]';
   incrementMinutesButtonSelector = 'button[aria-label="Increment minutes"]';
   incrementHourButtonSelector = 'button[aria-label="Increment hours"]';
-  secondsOverlayButtonSelector = 'button[data-test="seconds-toggle-overlay-btn-0"]';
-  minutesOverlayButtonSelector = 'button[data-test="minutes-toggle-overlay-btn-0"]';
-  hoursOverlayButtonSelector = 'button[data-test="hours-toggle-overlay-btn-0"]';
+  secondsOverlayButtonSelector = 'button[data-test-id="seconds-toggle-overlay-btn-0"]';
+  minutesOverlayButtonSelector = 'button[data-test-id="minutes-toggle-overlay-btn-0"]';
+  hoursOverlayButtonSelector = 'button[data-test-id="hours-toggle-overlay-btn-0"]';
   signTransactionButtonSelector = 'button-sign-org-transaction';
   nextTransactionButtonSelector = 'button-next-org-transaction';
   signAllTransactionsButtonSelector = 'button-sign-all-tx';
@@ -518,7 +518,7 @@ class OrganizationPage extends BasePage {
    * Opens the date picker.
    */
   async openDatePicker() {
-    await this.window.click(`[data-test="dp-input"]`);
+    await this.window.click(`[data-test-id="dp-input"]`);
     await this.window.waitForSelector('.dp__instance_calendar');
   }
 
@@ -526,7 +526,7 @@ class OrganizationPage extends BasePage {
    * Switches to the time picker within the date picker.
    */
   async switchToTimePicker() {
-    await this.window.click(this.timePickerIconSelector);
+    await this.click(this.timePickerIconSelector);
     await this.window.waitForSelector('.dp__time_input');
   }
 
