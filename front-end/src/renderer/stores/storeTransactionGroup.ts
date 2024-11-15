@@ -114,6 +114,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       transactionBytes: transaction.toBytes(),
       type: baseItem.type,
       accountId: baseItem.accountId,
+      description: baseItem.description,
       seq: (Number.parseInt(baseItem.seq) + 1).toString(),
       keyList: baseItem.keyList,
       observers: baseItem.observers,

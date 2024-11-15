@@ -138,14 +138,15 @@ function createGroupItem(transaction: Transaction, transactionKey: Key, seq: str
   const transactionBytes = transaction.toBytes();
 
   return {
-    transactionBytes: transactionBytes,
-    type: getTransactionType(transaction),
     accountId: '',
-    seq,
+    approvers: props.approvers,
+    description: '',
     keyList: flattenKeyList(transactionKey).map(pk => pk.toStringRaw()),
     observers: props.observers,
-    approvers: props.approvers,
     payerAccountId: payerId,
+    seq,
+    transactionBytes: transactionBytes,
+    type: getTransactionType(transaction),
     validStart: validStart,
   };
 }
