@@ -1,4 +1,5 @@
 import { MockedObject } from 'vitest';
+import { mockDeep } from 'vitest-mock-extended';
 
 import { app, BrowserWindow, session } from 'electron';
 import { optimizer, is } from '@electron-toolkit/utils';
@@ -27,39 +28,13 @@ vi.mock('@electron-toolkit/utils', () => ({
 }));
 vi.mock('electron', () => {
   const bw = vi.fn();
-  bw.prototype.close = vi.fn();
-
-  Object.defineProperty(bw.prototype, 'webContents', {
-    value: {
-      openDevTools: vi.fn(),
-    },
-    writable: false,
-    enumerable: true,
-  });
+  bw.prototype = mockDeep<BrowserWindow>();
 
   return {
-    default: {
-      app: {
-        getPath: vi.fn(),
-      },
-      BrowserWindow: bw,
-    },
-    app: {
-      getAppPath: vi.fn(),
-      getPath: vi.fn(),
-      on: vi.fn(),
-      setAsDefaultProtocolClient: vi.fn(),
-      quit: vi.fn(),
-    },
-
+    default: mockDeep<Electron.App>(),
+    app: mockDeep<Electron.App>(),
     BrowserWindow: bw,
-    session: {
-      defaultSession: {
-        webRequest: {
-          onHeadersReceived: vi.fn(),
-        },
-      },
-    },
+    session: mockDeep<Electron.Session>(),
   };
 });
 vi.mock('@main/db/init', () => ({ default: vi.fn() }));
@@ -81,6 +56,16 @@ describe('Electron entry file', async () => {
   await import('@main/index');
 
   const appMO = app as unknown as MockedObject<Electron.App>;
+
+  const assertEventHandler = (event: string) => {
+    const handler = appMO.on.mock.calls.find(([ev]) => ev === event);
+    expect(handler).toBeDefined();
+    expect(handler![1]).toBeDefined();
+    if (!handler) {
+      throw new Error('Handler not found');
+    }
+    return handler[1];
+  };
 
   vi.mocked(BrowserWindow).mockReturnValue({
     on: vi.fn(),
@@ -144,24 +129,15 @@ describe('Electron entry file', async () => {
   });
 
   test('Should delete temp folder on before-quit event', async () => {
-    vi.mocked(deleteAllTempFolders).mockRejectedValueOnce("Can't delete temp folder");
     //@ts-expect-error Incorrect type definition
-    const beforeQuitHandler = appMO.on.mock.calls.find(([event]) => event === 'before-quit');
-    expect(beforeQuitHandler).toBeDefined();
-    expect(beforeQuitHandler![1]).toBeDefined();
-
-    beforeQuitHandler && (await beforeQuitHandler[1]({ preventDefault: vi.fn() }));
+    await assertEventHandler('before-quit')({ preventDefault: vi.fn() });
 
     expect(deleteAllTempFolders).toHaveBeenCalledOnce();
   });
 
   test("Should handle deep link on 'open-url' event", async () => {
     //@ts-expect-error Incorrect type definition
-    const openUrlHandler = appMO.on.mock.calls.find(([event]) => event === 'open-url');
-    expect(openUrlHandler).toBeDefined();
-    expect(openUrlHandler![1]).toBeDefined();
-
-    openUrlHandler && (await openUrlHandler[1](null, 'test-url'));
+    await assertEventHandler('open-url')(null, 'test-url');
 
     expect(handleDeepLink).toHaveBeenCalledWith(expect.any(Object), null, 'test-url');
   });
@@ -172,25 +148,13 @@ describe('Electron entry file', async () => {
     mainWindow.on.mock.calls.find(([event]) => event === 'closed')![1]();
 
     //@ts-expect-error Incorrect type definition
-    const openUrlHandler = appMO.on.mock.calls.find(([event]) => event === 'open-url');
-    expect(openUrlHandler).toBeDefined();
-    expect(openUrlHandler![1]).toBeDefined();
-
-    openUrlHandler && (await openUrlHandler[1](null, 'test-url'));
+    await assertEventHandler('open-url')(null, 'test-url');
 
     expect(handleDeepLink).not.toHaveBeenCalledTimes(2);
   });
 
-  test("Should init window on 'active' event", async () => {
-    vi.mocked(restoreOrCreateWindow).mockResolvedValue(new BrowserWindow());
-
-    //@ts-expect-error Incorrect type definition
-    const activateHandler = appMO.on.mock.calls.find(([event]) => event === 'activate');
-    expect(activateHandler).toBeDefined();
-    expect(activateHandler![1]).toBeDefined();
-
-    activateHandler && (await activateHandler[1]());
-
+  test("Should init window on 'activate' event", async () => {
+    await assertEventHandler('activate')();
     expect(restoreOrCreateWindow).toHaveBeenCalled();
   });
 
