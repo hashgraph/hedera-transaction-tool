@@ -12,12 +12,12 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import { getAll } from '@renderer/services/accountsService';
 
-import { formatAccountId, stringifyHbar, flattenAccountIds, isUserLoggedIn } from '@renderer/utils';
+import { stringifyHbar, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
-import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
+import AccountIdInput from '@renderer/components/AccountIdInput.vue';
 
 /* Props */
 const props = withDefaults(
@@ -142,13 +142,11 @@ watch([amount, accountData.isValid], async ([newAmount]) => {
           }}</label
         >
 
-        <AppAutoComplete
-          :model-value="accountData.accountIdFormatted.value"
-          @update:model-value="v => (accountData.accountId.value = formatAccountId(v))"
+        <AccountIdInput
+          :model-value="accountData.accountId.value"
+          @update:model-value="accountData.accountId.value = $event"
           :filled="true"
-          :items="
-            accoundIds.map(a => a.account_id).concat(flattenAccountIds(user.publicKeyToAccounts))
-          "
+          :items="accoundIds.map(a => a.account_id).concat(user.publicKeysToAccountsFlattened)"
           placeholder="Enter Account ID"
           :data-testid="dataTestIdAccountIdInput"
         />
