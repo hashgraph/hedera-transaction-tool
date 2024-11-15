@@ -5,10 +5,8 @@ import type { AccountDeleteData } from '@renderer/utils/sdk';
 import { ref } from 'vue';
 import { Key } from '@hashgraph/sdk';
 
-import { formatAccountId } from '@renderer/utils';
-
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
+import AccountIdInput from '@renderer/components/AccountIdInput.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 
 /* Props */
@@ -37,12 +35,12 @@ const columnClass = 'col-4 col-xxxl-3';
       <label v-if="accountInfo" class="d-block form-label text-secondary"
         >Balance: {{ accountInfo.balance || 0 }}</label
       >
-      <AppInput
-        :model-value="formatAccountId(data.accountId)"
+      <AccountIdInput
+        :model-value="data.accountId"
         @update:model-value="
           emit('update:data', {
             ...data,
-            accountId: formatAccountId($event),
+            accountId: $event,
           })
         "
         :filled="true"
@@ -86,12 +84,12 @@ const columnClass = 'col-4 col-xxxl-3';
         >Receive Signature Required:
         {{ transferAccountInfo?.receiverSignatureRequired || false }}</label
       >
-      <AppInput
-        :model-value="formatAccountId(data.transferAccountId)"
+      <AccountIdInput
+        :model-value="data.transferAccountId"
         @update:model-value="
           emit('update:data', {
             ...data,
-            transferAccountId: formatAccountId($event),
+            transferAccountId: $event,
           })
         "
         :filled="true"
