@@ -49,10 +49,6 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
     );
 });
 
-const createDisabled = computed(() => {
-  return !nodeData.nodeId.value || !nodeData.isValid.value;
-});
-
 const transactionKey = computed(() => {
   const keys: Key[] = [];
 
@@ -127,7 +123,6 @@ watch(nodeData.nodeInfo, nodeInfo => {
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :transaction-base-key="transactionKey"
-    :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"
     @draft-loaded="handleDraftLoaded"
   >

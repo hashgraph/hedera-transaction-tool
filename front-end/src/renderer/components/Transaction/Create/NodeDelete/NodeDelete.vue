@@ -35,10 +35,6 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
     });
 });
 
-const createDisabled = computed(() => {
-  return !nodeData.isValid.value;
-});
-
 /* Handlers */
 const handleDraftLoaded = (transaction: Transaction) => {
   if (transaction instanceof NodeDeleteTransaction) {
@@ -70,7 +66,6 @@ const preCreateAssert = () => {
     ref="baseTransactionRef"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
-    :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"
     @draft-loaded="handleDraftLoaded"
   >
