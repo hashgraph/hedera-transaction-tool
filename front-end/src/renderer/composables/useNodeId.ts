@@ -29,10 +29,11 @@ export default function useNodeId() {
   watch(nodeId, async newNodeId => {
     cancelPreviousRequests();
 
-    if (!newNodeId) return resetData();
+    const parsedNodeId = parseInt(newNodeId?.toString() || '');
+
+    if (isNaN(parsedNodeId)) return resetData();
 
     try {
-      const parsedNodeId = parseInt(newNodeId.toString());
       if (isNaN(parsedNodeId)) {
         throw new Error('Invalid node ID');
       }
