@@ -9,6 +9,7 @@ import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 defineProps<{
   modelValue: string;
   items?: string[];
+  dataTestid?: string;
 }>();
 
 /* Emits */
@@ -24,6 +25,7 @@ const user = useUserStore();
     :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', formatAccountId($event))"
     :items="items || user.publicKeysToAccountsFlattened"
+    :data-testid="dataTestid"
     v-bind="$attrs"
   />
 </template>

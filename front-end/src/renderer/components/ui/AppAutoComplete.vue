@@ -8,6 +8,7 @@ const props = withDefaults(
   defineProps<{
     modelValue?: string | number;
     items: string[];
+    dataTestid?: string;
   }>(),
   {
     modelValue: '',
@@ -197,6 +198,7 @@ onBeforeUnmount(() => handleGlobalEvents(false));
         :model-value="modelValue"
         @update:model-value="handleUpdate($event)"
         @keydown="handleKeyDown"
+        :data-testid="dataTestid"
         v-bind="$attrs"
       />
       <span ref="suggestionRef" class="autocomplete-suggestion">{{ autocompleteSuggestion }}</span>
