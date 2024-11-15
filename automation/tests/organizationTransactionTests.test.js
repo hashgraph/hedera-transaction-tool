@@ -396,7 +396,7 @@ test.describe('Organization Transaction tests', () => {
     test.slow();
     const { txId, validStart } = await organizationPage.transferAmountBetweenAccounts(
       complexKeyAccountId,
-      '10',
+      '15',
     );
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
