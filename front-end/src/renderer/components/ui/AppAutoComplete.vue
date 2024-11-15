@@ -3,61 +3,85 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import AppInput from './AppInput.vue';
 
 /* Props */
-const props = defineProps<{
-  items: string[];
-  modelValue?: string | number;
-  filled?: boolean;
-  size?: 'small' | 'large' | undefined;
-  dataTestid?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    items: string[];
+    modelValue?: string | number;
+    filled?: boolean;
+    size?: 'small' | 'large' | undefined;
+    dataTestid?: string;
+  }>(),
+  {
+    modelValue: '',
+  },
+);
 
 /* Emits */
 const emit = defineEmits(['update:modelValue']);
 
 /* State */
 const inputRef = ref<InstanceType<typeof AppInput> | null>(null);
+const suggestionRef = ref<InstanceType<typeof HTMLSpanElement> | null>(null);
 const dropdownRef = ref<HTMLDivElement | null>(null);
-const hoveredIndex = ref<number>(-1);
 const itemRefs = ref<HTMLElement[]>([]);
 
 /* Computed */
-const filteredItems = computed(() =>
-  [...new Set<string>(props.items)].filter(item =>
-    item.toLocaleLowerCase().includes((props.modelValue || '')?.toString().toLocaleLowerCase()),
-  ),
-);
+const filteredItems = computed(() => [...new Set<string>(props.items)]);
 
-const selectedIndex = computed(() =>
-  filteredItems.value.indexOf(props.modelValue?.toString() || ''),
-);
+const selectedIndex = computed(() => {
+  return filteredItems.value.findIndex(
+    item =>
+      item.startsWith(props.modelValue.toString()) ||
+      item.startsWith(`0.0.${props.modelValue.toString()}`),
+  );
+});
+
+const autocompleteSuggestion = computed(() => {
+  if (!props.modelValue) return '';
+  const match = filteredItems.value[selectedIndex.value];
+  return match?.slice(props.modelValue.toString().length) || '';
+});
 
 /* Handlers */
 const handleKeyDown = (e: KeyboardEvent) => {
-  const arrows = {
+  toggleDropdown(true);
+
+  const key = {
     ArrowUp: 'ArrowUp',
     ArrowDown: 'ArrowDown',
     Enter: 'Enter',
+    Tab: 'Tab',
+    Backspace: 'Backspace',
   };
 
-  if (e.key === arrows.ArrowUp) {
+  handleResize();
+  handleMove();
+
+  if (e.key === key.ArrowUp) {
     if (e.metaKey || e.ctrlKey) {
-      hoveredIndex.value = 0;
+      emit('update:modelValue', filteredItems.value[0]);
     } else {
-      hoveredIndex.value = Math.max(hoveredIndex.value - 1, 0);
+      emit('update:modelValue', filteredItems.value[Math.max(selectedIndex.value - 1, 0)]);
     }
-  } else if (e.key === arrows.ArrowDown) {
+  } else if (e.key === key.ArrowDown) {
     if (e.metaKey || e.ctrlKey) {
-      hoveredIndex.value = filteredItems.value.length - 1;
+      emit('update:modelValue', filteredItems.value[filteredItems.value.length - 1]);
     } else {
-      hoveredIndex.value = Math.min(hoveredIndex.value + 1, filteredItems.value.length - 1);
+      emit(
+        'update:modelValue',
+        filteredItems.value[Math.min(selectedIndex.value + 1, filteredItems.value.length - 1)],
+      );
     }
-  } else if (e.key === arrows.Enter) {
-    emit('update:modelValue', filteredItems.value[hoveredIndex.value]);
+  } else if (e.key === key.Tab && props.modelValue.toString().length > 0) {
+    if (filteredItems.value[selectedIndex.value]) {
+      emit('update:modelValue', filteredItems.value[selectedIndex.value]);
+    }
+    toggleDropdown(false);
   }
 
-  if (e.key === arrows.ArrowUp || e.key === arrows.ArrowDown) {
+  if (e.key === key.ArrowUp || e.key === key.ArrowDown) {
     nextTick(() => {
-      itemRefs.value[hoveredIndex.value]?.scrollIntoView({
+      itemRefs.value[selectedIndex.value]?.scrollIntoView({
         block: 'nearest',
       });
     });
@@ -65,7 +89,19 @@ const handleKeyDown = (e: KeyboardEvent) => {
 };
 
 const handleUpdate = (value: string) => {
+  if (value.length === 0) {
+    toggleDropdown(false);
+  }
   emit('update:modelValue', value);
+
+  nextTick(() => {
+    itemRefs.value[selectedIndex.value]?.scrollIntoView({
+      block: 'nearest',
+    });
+
+    handleResize();
+    handleMove();
+  });
 };
 
 const handleSelectItem = (event: Event, item: string) => {
@@ -75,13 +111,14 @@ const handleSelectItem = (event: Event, item: string) => {
   toggleDropdown(false);
 };
 
-const handleInputClick = () => {
-  toggleDropdown(true);
-};
-
 const handleResize = () => {
+  setTimeout(() => {
+    handleMove();
+  }, 200);
+
   if (!inputRef.value?.inputRef || !dropdownRef.value) return;
   dropdownRef.value.style.width = `${inputRef.value.inputRef.offsetWidth}px`;
+  positionSuggestion();
 };
 
 const handleWindowClick = (e: Event) => {
@@ -119,12 +156,32 @@ function toggleDropdown(show: boolean) {
   dropdownRef.value.style.opacity = newOpacity;
 }
 
+function positionSuggestion() {
+  if (!inputRef.value?.inputRef || !suggestionRef.value) return;
+
+  const input = inputRef.value.inputRef;
+  const suggestion = suggestionRef.value;
+
+  const tempSpan = document.createElement('span');
+  tempSpan.style.visibility = 'hidden';
+  tempSpan.style.position = 'absolute';
+  tempSpan.style.whiteSpace = 'pre';
+  tempSpan.style.fontFamily = getComputedStyle(input).fontFamily;
+  tempSpan.style.fontSize = getComputedStyle(input).fontSize;
+  tempSpan.textContent = input.value;
+
+  document.body.appendChild(tempSpan);
+  const inputWidth = tempSpan.getBoundingClientRect().width;
+  document.body.removeChild(tempSpan);
+
+  suggestion.style.left = `${inputWidth + 15}px`;
+}
+
 /* Hooks */
 onMounted(() => {
   setTimeout(() => {
     handleResize();
   }, 100);
-
   window.addEventListener('resize', handleResize);
   window.addEventListener('click', handleWindowClick);
   document.addEventListener('scroll', handleMove, true);
@@ -138,17 +195,21 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div @click="handleInputClick" @blur="toggleDropdown(false)">
-    <AppInput
-      ref="inputRef"
-      :model-value="modelValue"
-      @update:model-value="handleUpdate($event)"
-      @keydown="handleKeyDown"
-      :filled="filled"
-      :size="size"
-      :data-testid="dataTestid"
-      v-bind="$attrs"
-    />
+  <div @blur="toggleDropdown(false)" class="w-100 autocomplete-container">
+    <div class="input-wrapper">
+      <AppInput
+        ref="inputRef"
+        :model-value="modelValue"
+        @update:model-value="handleUpdate($event)"
+        @keydown="handleKeyDown"
+        :filled="filled"
+        :size="size"
+        :data-testid="dataTestid"
+        v-bind="$attrs"
+      />
+      <span ref="suggestionRef" class="autocomplete-suggestion">{{ autocompleteSuggestion }}</span>
+    </div>
+
     <div
       ref="dropdownRef"
       class="autocomplete-custom"
@@ -159,7 +220,7 @@ onBeforeUnmount(() => {
           <div
             class="autocomplete-item-custom"
             :class="{
-              selected: i === selectedIndex || i === hoveredIndex,
+              selected: i === selectedIndex,
             }"
             @click="handleSelectItem($event, item)"
             ref="itemRefs"
