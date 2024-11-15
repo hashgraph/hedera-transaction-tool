@@ -17,12 +17,7 @@ export type ModelValue = {
   newOrganizationPassword: string;
 };
 
-export type SubmitCallback = (value: ModelValue) =>
-  | {
-      tempPasswordError: string | null;
-      newPasswordError: string | null;
-    }
-  | Promise<{ tempPasswordError: string | null; newPasswordError: string | null }>;
+export type SubmitCallback = (value: ModelValue) => Promise<{ error: string | null }>;
 
 /* Props */
 const props = defineProps<{
@@ -45,8 +40,7 @@ const inputTemporaryOrganizationPassword = ref('');
 const inputNewOrganizationPassword = ref('');
 
 const inputOrganizationURLInvalid = ref(false);
-const inputTemporaryPasswordError = ref<string | null>(null);
-const inputNewOrganizationPasswordError = ref<string | null>(null);
+const loginError = ref<string | null>(null);
 
 /* Handlers */
 const handleOnFormSubmit = async () => {
@@ -57,18 +51,11 @@ const handleOnFormSubmit = async () => {
   const newOrganizationPassword = inputNewOrganizationPassword.value.trim();
 
   inputOrganizationURLInvalid.value = organizationURL === '' || !checkUrl(organizationURL);
-  inputNewOrganizationPasswordError.value =
-    !isPasswordStrong(newOrganizationPassword).result ||
-    newOrganizationPassword === temporaryOrganizationPassword
-      ? 'Invalid Password'
-      : null;
 
   if (
     inputOrganizationURLInvalid.value || props.personalUser.useKeychain
       ? organizationEmail.length === 0
-      : false ||
-        temporaryOrganizationPassword.length === 0 ||
-        inputNewOrganizationPasswordError.value
+      : false || temporaryOrganizationPassword.length === 0 || loginError.value
   )
     return;
 
@@ -82,8 +69,7 @@ const handleOnFormSubmit = async () => {
     newOrganizationPassword,
   });
 
-  inputTemporaryPasswordError.value = result.tempPasswordError;
-  inputNewOrganizationPasswordError.value = result.newPasswordError;
+  loginError.value = result.error;
 };
 
 const handleCancel = () => emit('migration:cancel');
@@ -103,7 +89,6 @@ watch(inputNewOrganizationPassword, pass => {
   if (isPasswordStrong(pass) && pass !== inputTemporaryOrganizationPassword.value)
     inputOrganizationURLInvalid.value = false;
 });
-watch(inputTemporaryOrganizationPassword, () => (inputTemporaryPasswordError.value = null));
 </script>
 <template>
   <form @submit.prevent="handleOnFormSubmit" class="flex-column-100">
@@ -164,17 +149,9 @@ watch(inputTemporaryOrganizationPassword, () => (inputTemporaryPasswordError.val
           v-model="inputTemporaryOrganizationPassword"
           :filled="true"
           type="password"
-          :class="{ 'is-invalid': inputTemporaryPasswordError }"
           placeholder="Enter password"
           data-testid="input-temporary-organization-password"
         />
-        <div
-          v-if="inputTemporaryPasswordError"
-          class="invalid-feedback"
-          data-testid="invalid-text-organization-temporary-password"
-        >
-          {{ inputTemporaryPasswordError }}
-        </div>
       </div>
 
       <!-- New Organization Password -->
@@ -184,19 +161,17 @@ watch(inputTemporaryOrganizationPassword, () => (inputTemporaryPasswordError.val
           v-model="inputNewOrganizationPassword"
           :filled="true"
           type="password"
-          :class="{ 'is-invalid': inputNewOrganizationPasswordError }"
           placeholder="Enter password"
           data-testid="input-new-organization-password"
         />
-        <div
-          v-if="inputNewOrganizationPasswordError"
-          data-testid="invalid-new-organization-password"
-          class="invalid-feedback"
-        >
-          {{ inputNewOrganizationPasswordError }}
-        </div>
       </div>
     </div>
+
+    <div class="mt-5">
+      <p class="text-small text-danger">{{ loginError }}</p>
+    </div>
+
+    <hr class="separator mt-2" />
 
     <!-- Submit -->
     <div class="d-flex justify-content-between align-items-end mt-5">

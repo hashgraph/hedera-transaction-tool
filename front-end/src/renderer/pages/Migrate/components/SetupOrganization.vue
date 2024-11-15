@@ -63,7 +63,7 @@ const handleFormSubmit: SubmitCallback = async (formData: ModelValue) => {
     const loginInOrganizationResult = await safeAwait(loginInOrganization(formData));
     if (loginInOrganizationResult.error instanceof Error) {
       loading.value = false;
-      return { tempPasswordError: loginInOrganizationResult.error.message, newPasswordError: null };
+      return { error: loginInOrganizationResult.error.message };
     }
     loggedIn.value = true;
   }
@@ -73,7 +73,7 @@ const handleFormSubmit: SubmitCallback = async (formData: ModelValue) => {
   const setNewPasswordResult = await safeAwait(setNewPassword(formData));
   if (setNewPasswordResult.error instanceof Error) {
     loading.value = false;
-    return { tempPasswordError: null, newPasswordError: setNewPasswordResult.error.message };
+    return { error: setNewPasswordResult.error.message };
   }
 
   loadingText.value = 'Storing encrypted credentials...';
@@ -108,7 +108,7 @@ const handleFormSubmit: SubmitCallback = async (formData: ModelValue) => {
   loading.value = false;
   emit('setOrganizationId', organizationId.value);
 
-  return { tempPasswordError: null, newPasswordError: null };
+  return { error: null };
 };
 
 const handleMigrationCancel = () => emit('migration:cancel');
