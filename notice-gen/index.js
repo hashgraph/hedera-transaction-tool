@@ -3,70 +3,38 @@ const fs = require('fs/promises');
 const path = require('path');
 
 const NOTICE_FILE_NAME = 'NOTICE';
-
-const filePath = path.resolve(__dirname, '..', NOTICE_FILE_NAME);
-const frontEndDir = path.resolve(__dirname, '..', 'front-end');
-const backEndRootDir = path.resolve(__dirname, '..', 'back-end');
-const backEndApiDir = path.resolve(__dirname, '..', 'back-end', 'apps', 'api');
-const backEndChainDir = path.resolve(
-  __dirname,
-  '..',
-  'back-end',
-  'apps',
-  'chain'
-);
-const backEndNotificationsDir = path.resolve(
-  __dirname,
-  '..',
-  'back-end',
-  'apps',
-  'notifications'
-);
-
 const licenseCheckerPackage = 'license-checker@25.0.1';
 
-writeNoticeFile();
+const paths = {
+  noticeFile: path.resolve(__dirname, '..', NOTICE_FILE_NAME),
+  frontEnd: path.resolve(__dirname, '..', 'front-end'),
+  backEndRoot: path.resolve(__dirname, '..', 'back-end'),
+  backEndApi: path.resolve(__dirname, '..', 'back-end', 'apps', 'api'),
+  backEndChain: path.resolve(__dirname, '..', 'back-end', 'apps', 'chain'),
+  backEndNotifications: path.resolve(
+    __dirname,
+    '..',
+    'back-end',
+    'apps',
+    'notifications'
+  ),
+};
 
-async function writeNoticeFile() {
-  fs.writeFile(filePath, await getContent());
-}
+(async function writeNoticeFile() {
+  try {
+    const content = await getContent();
+    await fs.writeFile(paths.noticeFile, content);
+    console.log('NOTICE file written successfully.');
+  } catch (error) {
+    console.error(`Failed to write NOTICE file: ${error.message}`);
+  }
+})();
 
 async function getContent() {
-  let content = '';
-  console.log('Getting header...');
-  content += getHeader();
+  let content = getHeader();
+  const allDeps = await getAllDependencies();
 
-  console.log('Getting dependencies...');
-
-  console.log('Getting front-end dependencies...');
-  const frontEndDeps = await getDependencies(frontEndDir);
-
-  console.log('Getting back-end dependencies...');
-  const backEndRootDeps = await getDependencies(backEndRootDir);
-
-  console.log('Getting back-end API microservice dependencies...');
-  const backEndApiDeps = await getDependencies(backEndApiDir);
-
-  console.log('Getting back-end Chain microservice dependencies...');
-  const backEndChainDeps = await getDependencies(backEndChainDir);
-
-  console.log('Getting back-end Notifications microservice dependencies...');
-  const backEndNotificationsDeps = await getDependencies(
-    backEndNotificationsDir
-  );
-
-  const allDeps = {
-    ...frontEndDeps,
-    ...backEndRootDeps,
-    ...backEndApiDeps,
-    ...backEndChainDeps,
-    ...backEndNotificationsDeps,
-  };
-
-  console.log('Generating content for license-checker...');
   content += getLicenseCheckerNoticeText();
-
-  console.log('Generating dependencies content...');
   for (const [name, license] of Object.entries(allDeps)) {
     content += getLicenseNoticeText(name, license);
   }
@@ -93,18 +61,16 @@ function getLicenseCheckerNoticeText() {
 
 function getLicenseNoticeText(name, license) {
   const sanitizedName = sanitize(name);
-  const sanitizedSource = sanitize(
-    license.repository || license.url || license.url
-  );
+  const sanitizedSource = sanitize(license.repository || license.url || '');
+  const sanitizedPublisher = sanitize(license.publisher || '');
 
-  if (!license.publisher) {
+  if (!sanitizedPublisher) {
     return `
-This product includes software (${name}) developed at
+This product includes software (${sanitizedName}) developed at
 (${sanitizedSource}).
 `;
   }
 
-  const sanitizedPublisher = sanitize(license.publisher);
   return `
 The Initial Developer of ${sanitizedName},
 is ${sanitizedPublisher} (${sanitizedSource}).
@@ -112,11 +78,27 @@ Copyright ${sanitizedPublisher}. All Rights Reserved.
 `;
 }
 
+async function getAllDependencies() {
+  const dirs = [
+    paths.frontEnd,
+    paths.backEndRoot,
+    paths.backEndApi,
+    paths.backEndChain,
+    paths.backEndNotifications,
+  ];
+  const allDeps = {};
+
+  const deps = await Promise.all(dirs.map((dir) => getDependencies(dir)));
+  deps.forEach((dep) => Object.assign(allDeps, dep));
+
+  return allDeps;
+}
+
 async function getDependencies(cwd) {
   try {
-    const names = await getProjectNames();
+    const projectNames = await getProjectNames();
     const { stdout } = await execPromise(
-      `npx ${licenseCheckerPackage} --json --excludePackages '${names.join(
+      `npx ${licenseCheckerPackage} --json --excludePackages '${projectNames.join(
         ';'
       )}'`,
       { cwd }
@@ -128,17 +110,16 @@ async function getDependencies(cwd) {
 }
 
 async function getProjectNames() {
-  const projectDirs = [
-    frontEndDir,
-    backEndRootDir,
-    backEndApiDir,
-    backEndChainDir,
-    backEndNotificationsDir,
+  const dirs = [
+    paths.frontEnd,
+    paths.backEndRoot,
+    paths.backEndApi,
+    paths.backEndChain,
+    paths.backEndNotifications,
   ];
-
   const projectNames = [];
 
-  for (const dir of projectDirs) {
+  for (const dir of dirs) {
     try {
       const packageJsonPath = path.join(dir, 'package.json');
       const packageJson = JSON.parse(
