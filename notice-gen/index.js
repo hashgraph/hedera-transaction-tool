@@ -20,6 +20,7 @@ const paths = {
   ),
 };
 
+console.time('NOTICE generation time');
 (async function writeNoticeFile() {
   try {
     const content = await getContent();
@@ -28,6 +29,7 @@ const paths = {
   } catch (error) {
     console.error(`Failed to write NOTICE file: ${error.message}`);
   }
+  console.timeEnd('NOTICE generation time');
 })();
 
 async function getContent() {
