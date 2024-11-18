@@ -3,7 +3,7 @@ import type { CreateTransactionFunc } from '@renderer/components/Transaction/Cre
 import type { NodeDeleteData } from '@renderer/utils/sdk/createTransactions';
 
 import { computed, reactive, ref } from 'vue';
-import { Key, KeyList, NodeDeleteTransaction, Transaction } from '@hashgraph/sdk';
+import { NodeDeleteTransaction, Transaction } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 import useNodeId from '@renderer/composables/useNodeId';
@@ -33,16 +33,6 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
       ...common,
       ...(data as NodeDeleteData),
     });
-});
-
-const createDisabled = computed(() => {
-  return !nodeData.isValid.value;
-});
-
-const transactionKey = computed(() => {
-  const keys: Key[] = [];
-  nodeData.key.value && keys.push(nodeData.key.value);
-  return new KeyList(keys);
 });
 
 /* Handlers */
@@ -76,8 +66,6 @@ const preCreateAssert = () => {
     ref="baseTransactionRef"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
-    :transaction-base-key="transactionKey"
-    :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"
     @draft-loaded="handleDraftLoaded"
   >
