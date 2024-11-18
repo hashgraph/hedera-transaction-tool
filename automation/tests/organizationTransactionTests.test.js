@@ -97,7 +97,7 @@ test.describe('Organization Transaction tests', () => {
     const { txId, validStart } = await organizationPage.getOrCreateUpdateTransaction(
       complexKeyAccountId,
       'update',
-      100,
+      1000,
       false,
     );
     await transactionPage.clickOnTransactionsMenuButton();
@@ -135,7 +135,7 @@ test.describe('Organization Transaction tests', () => {
     const { txId } = await organizationPage.getOrCreateUpdateTransaction(
       complexKeyAccountId,
       'update',
-      100,
+      1000,
       false,
     );
     await transactionPage.clickOnTransactionsMenuButton();
@@ -160,7 +160,7 @@ test.describe('Organization Transaction tests', () => {
     const { txId } = await organizationPage.getOrCreateUpdateTransaction(
       complexKeyAccountId,
       'update',
-      100,
+      1000,
       false,
     );
     await transactionPage.clickOnTransactionsMenuButton();
@@ -211,7 +211,7 @@ test.describe('Organization Transaction tests', () => {
     const { txId, validStart } = await organizationPage.updateAccount(
       complexKeyAccountId,
       'update',
-      300,
+      3000,
       true,
     );
     await transactionPage.clickOnTransactionsMenuButton();
@@ -309,7 +309,7 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify transaction is visible for an observer while transaction is "In progress"', async () => {
-    const { txId, selectedObservers } = await organizationPage.createAccount(60, 1, false);
+    const { txId, selectedObservers } = await organizationPage.createAccount(1000, 1, false);
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
 
@@ -326,7 +326,7 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify transaction is visible for an observer while transaction is "Ready for execution"', async () => {
-    const { txId, selectedObservers } = await organizationPage.createAccount(60, 1, true);
+    const { txId, selectedObservers } = await organizationPage.createAccount(1000, 1, true);
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
 
@@ -344,7 +344,7 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify observer is saved in the db for the correct transaction id', async () => {
-    const { txId, selectedObservers } = await organizationPage.createAccount(60, 1);
+    const { txId, selectedObservers } = await organizationPage.createAccount(1000, 1);
     const userIdInDb = await organizationPage.getUserIdByEmail(selectedObservers);
     const txIdForObserver = await organizationPage.getAllTransactionIdsForUserObserver(userIdInDb);
     expect(txIdForObserver).toContain(txId);
@@ -361,8 +361,8 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify next button is visible when user has multiple txs to sign', async () => {
-    await organizationPage.createAccount(60, 0, false);
-    const { txId } = await organizationPage.createAccount(60, 0, false);
+    await organizationPage.createAccount(600, 0, false);
+    const { txId } = await organizationPage.createAccount(600, 0, false);
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnSubmitSignButtonByTransactionId(txId);
     await organizationPage.clickOnSignTransactionButton();
@@ -370,8 +370,8 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify user is redirected to the next transaction after clicking the next button', async () => {
-    await organizationPage.createAccount(60, 0, false);
-    const { txId } = await organizationPage.createAccount(60, 0, false);
+    await organizationPage.createAccount(600, 0, false);
+    const { txId } = await organizationPage.createAccount(600, 0, false);
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnSubmitSignButtonByTransactionId(txId);
     await organizationPage.clickOnSignTransactionButton();
