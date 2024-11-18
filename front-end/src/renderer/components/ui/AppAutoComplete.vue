@@ -1,71 +1,89 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
-import AppInput from './AppInput.vue';
+
+import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Props */
-const props = defineProps<{
-  items: string[];
-  modelValue?: string | number;
-  filled?: boolean;
-  size?: 'small' | 'large' | undefined;
-  dataTestid?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelValue?: string | number;
+    items: string[];
+    dataTestid?: string;
+  }>(),
+  {
+    modelValue: '',
+  },
+);
 
 /* Emits */
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits<{
+  (event: 'update:modelValue', value: string): void;
+}>();
 
 /* State */
 const inputRef = ref<InstanceType<typeof AppInput> | null>(null);
+const suggestionRef = ref<HTMLSpanElement | null>(null);
 const dropdownRef = ref<HTMLDivElement | null>(null);
-const hoveredIndex = ref<number>(-1);
 const itemRefs = ref<HTMLElement[]>([]);
 
 /* Computed */
-const filteredItems = computed(() =>
-  [...new Set<string>(props.items)].filter(item =>
-    item.toLocaleLowerCase().includes((props.modelValue || '')?.toString().toLocaleLowerCase()),
-  ),
-);
+const modelValue = computed({
+  get: () => props.modelValue?.toString() || '',
+  set: (value: string) => {
+    emit('update:modelValue', value);
+  },
+});
 
-const selectedIndex = computed(() =>
-  filteredItems.value.indexOf(props.modelValue?.toString() || ''),
-);
+const filteredItems = computed(() => [...new Set<string>(props.items)]);
+const selectedIndex = computed(() => {
+  return filteredItems.value.findIndex(item => item.startsWith(modelValue.value));
+});
+
+const autocompleteSuggestion = computed(() => {
+  if (!modelValue.value) return '';
+  const match = filteredItems.value[selectedIndex.value];
+  return match?.slice(modelValue.value.length) || '';
+});
 
 /* Handlers */
 const handleKeyDown = (e: KeyboardEvent) => {
-  const arrows = {
-    ArrowUp: 'ArrowUp',
-    ArrowDown: 'ArrowDown',
-    Enter: 'Enter',
-  };
+  toggleDropdown(true);
 
-  if (e.key === arrows.ArrowUp) {
+  handleResize();
+
+  if (e.key === 'ArrowUp') {
     if (e.metaKey || e.ctrlKey) {
-      hoveredIndex.value = 0;
+      setValue(filteredItems.value[0]);
     } else {
-      hoveredIndex.value = Math.max(hoveredIndex.value - 1, 0);
+      setValue(filteredItems.value[Math.max(selectedIndex.value - 1, 0)]);
     }
-  } else if (e.key === arrows.ArrowDown) {
+  } else if (e.key === 'ArrowDown') {
     if (e.metaKey || e.ctrlKey) {
-      hoveredIndex.value = filteredItems.value.length - 1;
+      setValue(filteredItems.value[filteredItems.value.length - 1]);
     } else {
-      hoveredIndex.value = Math.min(hoveredIndex.value + 1, filteredItems.value.length - 1);
+      setValue(
+        filteredItems.value[Math.min(selectedIndex.value + 1, filteredItems.value.length - 1)],
+      );
     }
-  } else if (e.key === arrows.Enter) {
-    emit('update:modelValue', filteredItems.value[hoveredIndex.value]);
+  } else if (e.key === 'Tab' && props.modelValue.toString().length > 0) {
+    if (filteredItems.value[selectedIndex.value]) {
+      setValue(filteredItems.value[selectedIndex.value]);
+    }
+    toggleDropdown(false);
   }
 
-  if (e.key === arrows.ArrowUp || e.key === arrows.ArrowDown) {
-    nextTick(() => {
-      itemRefs.value[hoveredIndex.value]?.scrollIntoView({
-        block: 'nearest',
-      });
-    });
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    scrollToItem(selectedIndex.value);
   }
 };
 
 const handleUpdate = (value: string) => {
-  emit('update:modelValue', value);
+  modelValue.value = value;
+  if (value.length === 0) {
+    toggleDropdown(false);
+  } else {
+    scrollToItem(selectedIndex.value);
+  }
 };
 
 const handleSelectItem = (event: Event, item: string) => {
@@ -75,13 +93,14 @@ const handleSelectItem = (event: Event, item: string) => {
   toggleDropdown(false);
 };
 
-const handleInputClick = () => {
-  toggleDropdown(true);
-};
-
 const handleResize = () => {
+  setTimeout(() => {
+    handleMove();
+  }, 200);
+
   if (!inputRef.value?.inputRef || !dropdownRef.value) return;
   dropdownRef.value.style.width = `${inputRef.value.inputRef.offsetWidth}px`;
+  positionSuggestion();
 };
 
 const handleWindowClick = (e: Event) => {
@@ -106,6 +125,19 @@ const handleMove = () => {
 };
 
 /* Functions */
+function setValue(value: string) {
+  modelValue.value = value;
+}
+
+function scrollToItem(index: number) {
+  nextTick(() => {
+    itemRefs.value[index]?.scrollIntoView({
+      block: 'nearest',
+    });
+    handleResize();
+  });
+}
+
 function toggleDropdown(show: boolean) {
   if (!dropdownRef.value) return;
 
@@ -119,36 +151,59 @@ function toggleDropdown(show: boolean) {
   dropdownRef.value.style.opacity = newOpacity;
 }
 
+function positionSuggestion() {
+  if (!inputRef.value?.inputRef || !suggestionRef.value) return;
+
+  const input = inputRef.value.inputRef;
+  const suggestion = suggestionRef.value;
+
+  const tempSpan = document.createElement('span');
+  tempSpan.style.visibility = 'hidden';
+  tempSpan.style.position = 'absolute';
+  tempSpan.style.whiteSpace = 'pre';
+  tempSpan.style.fontFamily = getComputedStyle(input).fontFamily;
+  tempSpan.style.fontSize = getComputedStyle(input).fontSize;
+  tempSpan.textContent = input.value;
+
+  document.body.appendChild(tempSpan);
+  const inputWidth = tempSpan.getBoundingClientRect().width;
+  document.body.removeChild(tempSpan);
+
+  suggestion.style.left = `${inputWidth + 15}px`;
+}
+
+function handleGlobalEvents(add: boolean) {
+  const func = add ? 'addEventListener' : 'removeEventListener';
+  window[func]('resize', handleResize);
+  window[func]('click', handleWindowClick);
+  document[func]('scroll', handleMove, true);
+}
+
 /* Hooks */
 onMounted(() => {
   setTimeout(() => {
     handleResize();
   }, 100);
-
-  window.addEventListener('resize', handleResize);
-  window.addEventListener('click', handleWindowClick);
-  document.addEventListener('scroll', handleMove, true);
+  handleGlobalEvents(true);
 });
 
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize);
-  window.removeEventListener('click', handleWindowClick);
-  document.removeEventListener('scroll', handleMove, true);
-});
+onBeforeUnmount(() => handleGlobalEvents(false));
 </script>
 
 <template>
-  <div @click="handleInputClick" @blur="toggleDropdown(false)">
-    <AppInput
-      ref="inputRef"
-      :model-value="modelValue"
-      @update:model-value="handleUpdate($event)"
-      @keydown="handleKeyDown"
-      :filled="filled"
-      :size="size"
-      :data-testid="dataTestid"
-      v-bind="$attrs"
-    />
+  <div @blur="toggleDropdown(false)" class="w-100 autocomplete-container">
+    <div @click="toggleDropdown(true)" class="input-wrapper">
+      <AppInput
+        ref="inputRef"
+        :model-value="modelValue"
+        @update:model-value="handleUpdate($event)"
+        @keydown="handleKeyDown"
+        :data-testid="dataTestid"
+        v-bind="$attrs"
+      />
+      <span ref="suggestionRef" class="autocomplete-suggestion">{{ autocompleteSuggestion }}</span>
+    </div>
+
     <div
       ref="dropdownRef"
       class="autocomplete-custom"
@@ -159,7 +214,7 @@ onBeforeUnmount(() => {
           <div
             class="autocomplete-item-custom"
             :class="{
-              selected: i === selectedIndex || i === hoveredIndex,
+              selected: i === selectedIndex,
             }"
             @click="handleSelectItem($event, item)"
             ref="itemRefs"

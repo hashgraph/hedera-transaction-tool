@@ -940,56 +940,82 @@
 }
 
 /* Autocomplete */
-.autocomplete-custom {
-  --max-height: 30vh;
-  --offset: 10px;
+.autocomplete-container {
+  position: relative;
+  display: inline-block;
 
-  width: 100%;
-
-  padding: 5px 5px;
-  margin-top: var(--offset);
-
-  overflow: hidden;
-  visibility: hidden;
-  opacity: 0;
-  position: fixed;
-
-  z-index: 9999;
-
-  border-radius: $border-radius;
-
-  transition: opacity 0.1s ease-in;
-
-  background-color: var(--#{$prefix}input-fill-bg-color);
-
-  // input:focus ~ & {
-  //   visibility: visible;
-  //   opacity: 1;
-  // }
-
-  > div {
-    max-height: var(--max-height);
-    overflow: auto;
+  .input-wrapper {
+    position: relative;
   }
 
-  .autocomplete-item-custom {
-    margin: 5px 0px;
-    padding: 5px 12px;
+  .autocomplete-suggestion {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
 
-    cursor: pointer;
-
-    font-size: $input-font-size;
     font-weight: $input-font-weight;
+    line-height: $input-line-height;
+    font-family: $input-font-family;
+    @include font-size($input-font-size);
+
+    color: grey;
+    pointer-events: none;
+    z-index: 0;
+    white-space: pre;
+    opacity: 0.7;
+  }
+
+  .autocomplete-custom {
+    --max-height: 30vh;
+    --offset: 10px;
+
+    width: 100%;
+
+    padding: 5px 5px;
+    margin-top: var(--offset);
+
+    overflow: hidden;
+    visibility: hidden;
+    opacity: 0;
+    position: fixed;
+
+    z-index: 9999;
 
     border-radius: $border-radius;
 
-    &.selected,
-    &:hover {
-      background-color: var(--#{$prefix}input-fill-focus-bg-color);
+    transition: opacity 0.1s ease-in;
+
+    background-color: var(--#{$prefix}input-fill-bg-color);
+
+    // input:focus ~ & {
+    //   visibility: visible;
+    //   opacity: 1;
+    // }
+
+    > div {
+      max-height: var(--max-height);
+      overflow: auto;
     }
 
-    &:first-child {
-      margin: 0;
+    .autocomplete-item-custom {
+      margin: 5px 0px;
+      padding: 5px 12px;
+
+      cursor: pointer;
+
+      font-size: $input-font-size;
+      font-weight: $input-font-weight;
+
+      border-radius: $border-radius;
+
+      &.selected,
+      &:hover {
+        background-color: var(--#{$prefix}input-fill-focus-bg-color);
+      }
+
+      &:first-child {
+        margin: 0;
+      }
     }
   }
 }
