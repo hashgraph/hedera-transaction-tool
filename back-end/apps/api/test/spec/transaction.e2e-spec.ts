@@ -137,7 +137,7 @@ describe('Transactions (e2e)', () => {
       );
     });
 
-    it('(POST) should create a transaction with and ID of an canceled transaction', async () => {
+    it('(POST) should create a transaction with and ID of a canceled transaction', async () => {
       const transaction = await createTransaction();
 
       const { body: newTransaction } = await endpoint.post(transaction, null, userAuthToken);
