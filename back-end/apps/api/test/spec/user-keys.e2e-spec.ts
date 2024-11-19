@@ -45,11 +45,15 @@ describe('User Keys (e2e)', () => {
     });
 
     it('(GET) should get keys of other user if verified', async () => {
-      const res = await endpoint.get('/1/keys', userAuthToken).expect(200);
+      const res = await endpoint.get(`/${admin.id}/keys`, userAuthToken).expect(200);
 
       const actualUserKeys = await getUserKeys(1);
 
       expect(res.body).toHaveLength(actualUserKeys.length);
+      res.body.forEach(key => {
+        expect(key).not.toHaveProperty('mnemonicHash');
+        expect(key).not.toHaveProperty('index');
+      });
     });
 
     it('(GET) should get users keys if verified', async () => {
@@ -58,6 +62,10 @@ describe('User Keys (e2e)', () => {
       const actualUserKeys = await getUserKeys(2);
 
       expect(res.body).toHaveLength(actualUserKeys.length);
+      res.body.forEach(key => {
+        expect(key).toHaveProperty('mnemonicHash');
+        expect(key).toHaveProperty('index');
+      });
     });
 
     it('(GET) should not be able to get user keys if not verified', async () => {
