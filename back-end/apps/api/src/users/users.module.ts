@@ -1,15 +1,15 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { User } from '@entities';
+
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from '@entities';
-import { DatabaseModule } from '@app/common';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    DatabaseModule,
     TypeOrmModule.forFeature([User]),
     JwtModule.registerAsync({
       imports: [], // imports is required, but it doesn't appear to require ConfigModule, maybe because it isGlobal?
