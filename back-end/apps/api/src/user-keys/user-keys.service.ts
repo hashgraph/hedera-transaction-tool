@@ -13,7 +13,7 @@ export const MAX_USER_KEYS = 20;
 export class UserKeysService {
   constructor(@InjectRepository(UserKey) private repo: Repository<UserKey>) {}
 
-  // Get the user key for the provided userKeyId.
+  // Get the user key for the provided where clause.
   getUserKey(
     where: FindOptionsWhere<UserKey>,
     relations?: FindOptionsRelations<UserKey>,
@@ -61,9 +61,19 @@ export class UserKeysService {
   }
 
   // Get the list of user keys for the provided userId
-  async getUserKeys(userId: number): Promise<UserKey[]> {
+  async getUserKeysRestricted(user: User, userId: number): Promise<UserKey[]> {
     if (!userId) return [];
-    return this.repo.find({ where: { userId } });
+    return this.repo.find({
+      where: { userId },
+      select: {
+        id: true,
+        userId: true,
+        mnemonicHash: user.id === userId,
+        index: user.id === userId,
+        publicKey: true,
+        deletedAt: true,
+      },
+    });
   }
 
   // Remove the user key for the provided userKeyId.
