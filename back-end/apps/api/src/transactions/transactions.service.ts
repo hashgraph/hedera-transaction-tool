@@ -340,13 +340,7 @@ export class TransactionsService {
       where: [
         {
           transactionId: sdkTransaction.transactionId.toString(),
-          status: Not(
-            In([
-              TransactionStatus.EXECUTED,
-              TransactionStatus.CANCELED,
-              TransactionStatus.REJECTED,
-            ]),
-          ),
+          status: Not(In([TransactionStatus.CANCELED, TransactionStatus.REJECTED])),
         },
       ],
     });
