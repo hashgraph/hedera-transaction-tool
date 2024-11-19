@@ -66,7 +66,7 @@ export class Transaction {
   @Column({ length: 256 })
   description: string;
 
-  @Column({ unique: true })
+  @Column()
   transactionId: string;
 
   @Column()
