@@ -55,14 +55,12 @@ const useContactsStore = defineStore('contacts', () => {
       const result = await Promise.allSettled(users.map(u => getUserKeys(serverUrl, u.id)));
 
       result.forEach((r, i) => {
-        if (r.status === 'fulfilled') {
-          newContacts.push({
-            user: users[i],
-            userKeys: r.value,
-            nickname: orgContacts.find(c => c.organization_user_id === users[i].id)?.nickname || '',
-            nicknameId: orgContacts.find(c => c.organization_user_id === users[i].id)?.id || null,
-          });
-        }
+        newContacts.push({
+          user: users[i],
+          userKeys: r.status === 'fulfilled' ? r.value : [],
+          nickname: orgContacts.find(c => c.organization_user_id === users[i].id)?.nickname || '',
+          nicknameId: orgContacts.find(c => c.organization_user_id === users[i].id)?.id || null,
+        });
       });
 
       contacts.value = newContacts;
