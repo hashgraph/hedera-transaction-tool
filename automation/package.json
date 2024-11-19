@@ -1,7 +1,8 @@
 {
   "name": "hedera-transaction-tool-tests",
   "scripts": {
-    "test": "playwright test"
+    "test": "playwright test",
+    "postinstall": "node ../notice-gen/index.js"
   },
   "main": "playwright.config.js",
   "directories": {

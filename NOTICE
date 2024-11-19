@@ -10,6 +10,74 @@ The Initial Developer of license-checker@25.0.1,
 is Dav Glass &lt;davglass@gmail.com&gt; (https://github.com/davglass/license-checker).
 Copyright Dav Glass &lt;davglass@gmail.com&gt;. All Rights Reserved.
 
+The Initial Developer of @hashgraph/proto@2.15.0,
+is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
+Copyright Launchbadge. All Rights Reserved.
+
+The Initial Developer of @hashgraph/sdk@2.53.0,
+is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
+Copyright Launchbadge. All Rights Reserved.
+
+The Initial Developer of @playwright/test@1.48.2,
+is Microsoft Corporation (https://github.com/microsoft/playwright).
+Copyright Microsoft Corporation. All Rights Reserved.
+
+This product includes software (async-retry@1.3.3) developed at
+(https://github.com/vercel/async-retry).
+
+The Initial Developer of axios@1.7.7,
+is Matt Zabriskie (https://github.com/axios/axios).
+Copyright Matt Zabriskie. All Rights Reserved.
+
+The Initial Developer of bcryptjs@2.4.3,
+is Daniel Wirtz (https://github.com/dcodeIO/bcrypt.js).
+Copyright Daniel Wirtz. All Rights Reserved.
+
+The Initial Developer of bip39@3.1.0,
+is Wei Lu (https://github.com/bitcoinjs/bip39).
+Copyright Wei Lu. All Rights Reserved.
+
+The Initial Developer of deep-diff@1.0.2,
+is Phillip Clark (https://github.com/flitbit/diff).
+Copyright Phillip Clark. All Rights Reserved.
+
+This product includes software (dotenv@16.4.5) developed at
+(https://github.com/motdotla/dotenv).
+
+This product includes software (fsevents@2.3.2) developed at
+(https://github.com/fsevents/fsevents).
+
+The Initial Developer of lodash@4.17.21,
+is John-David Dalton (https://github.com/lodash/lodash).
+Copyright John-David Dalton. All Rights Reserved.
+
+The Initial Developer of long@5.2.3,
+is Daniel Wirtz (https://github.com/dcodeIO/long.js).
+Copyright Daniel Wirtz. All Rights Reserved.
+
+The Initial Developer of pg@8.13.1,
+is Brian Carlson (https://github.com/brianc/node-postgres).
+Copyright Brian Carlson. All Rights Reserved.
+
+The Initial Developer of playwright-core@1.48.2,
+is Microsoft Corporation (https://github.com/microsoft/playwright).
+Copyright Microsoft Corporation. All Rights Reserved.
+
+The Initial Developer of playwright@1.48.2,
+is Microsoft Corporation (https://github.com/microsoft/playwright).
+Copyright Microsoft Corporation. All Rights Reserved.
+
+The Initial Developer of prettier@3.3.3,
+is James Long (https://github.com/prettier/prettier).
+Copyright James Long. All Rights Reserved.
+
+The Initial Developer of sqlite3@5.1.7,
+is Mapbox (https://github.com/TryGhost/node-sqlite3).
+Copyright Mapbox. All Rights Reserved.
+
+This product includes software (uuid@10.0.0) developed at
+(https://github.com/uuidjs/uuid).
+
 This product includes software (7zip-bin@5.2.0) developed at
 (https://github.com/develar/7zip-bin).
 
@@ -286,10 +354,6 @@ is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
 The Initial Developer of @hashgraph/proto@2.15.0-beta.4,
-is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
-Copyright Launchbadge. All Rights Reserved.
-
-The Initial Developer of @hashgraph/sdk@2.53.0,
 is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
@@ -803,10 +867,6 @@ The Initial Developer of atomic-sleep@1.0.0,
 is David Mark Clements (https://github.com/davidmarkclements/atomic-sleep).
 Copyright David Mark Clements. All Rights Reserved.
 
-The Initial Developer of axios@1.7.7,
-is Matt Zabriskie (https://github.com/axios/axios).
-Copyright Matt Zabriskie. All Rights Reserved.
-
 The Initial Developer of balanced-match@1.0.2,
 is Julian Gruber (https://github.com/juliangruber/balanced-match).
 Copyright Julian Gruber. All Rights Reserved.
@@ -1170,9 +1230,6 @@ This product includes software (doctrine@3.0.0) developed at
 The Initial Developer of dotenv-expand@11.0.7,
 is motdotla (https://github.com/motdotla/dotenv-expand).
 Copyright motdotla. All Rights Reserved.
-
-This product includes software (dotenv@16.4.5) developed at
-(https://github.com/motdotla/dotenv).
 
 The Initial Developer of duplexer2@0.1.4,
 is Conrad Pankoff (https://github.com/deoxxa/duplexer2).
@@ -1858,10 +1915,6 @@ The Initial Developer of lodash.union@4.6.0,
 is John-David Dalton (https://github.com/lodash/lodash).
 Copyright John-David Dalton. All Rights Reserved.
 
-The Initial Developer of lodash@4.17.21,
-is John-David Dalton (https://github.com/lodash/lodash).
-Copyright John-David Dalton. All Rights Reserved.
-
 The Initial Developer of log-symbols@4.1.0,
 is Sindre Sorhus (https://github.com/sindresorhus/log-symbols).
 Copyright Sindre Sorhus. All Rights Reserved.
@@ -2214,10 +2267,6 @@ Copyright George Zahariev. All Rights Reserved.
 
 This product includes software (prettier-linter-helpers@1.0.0) developed at
 (https://github.com/prettier/prettier-linter-helpers).
-
-The Initial Developer of prettier@3.3.3,
-is James Long (https://github.com/prettier/prettier).
-Copyright James Long. All Rights Reserved.
 
 The Initial Developer of prisma@5.22.0,
 is Tim Suchanek (https://github.com/prisma/prisma).
@@ -3003,10 +3052,6 @@ Copyright Jason Walton. All Rights Reserved.
 The Initial Developer of amqplib@0.10.4,
 is Michael Bridgen (https://github.com/amqp-node/amqplib).
 Copyright Michael Bridgen. All Rights Reserved.
-
-The Initial Developer of bcryptjs@2.4.3,
-is Daniel Wirtz (https://github.com/dcodeIO/bcrypt.js).
-Copyright Daniel Wirtz. All Rights Reserved.
 
 This product includes software (cache-manager-redis-yet@5.1.4) developed at
 (https://github.com/jaredwray/cacheable).
