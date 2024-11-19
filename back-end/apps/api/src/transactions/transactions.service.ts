@@ -338,10 +338,19 @@ export class TransactionsService {
     /* Check if the transaction already exists */
     const countExisting = await this.repo.count({
       where: [
-        { transactionId: sdkTransaction.transactionId.toString() },
-        { transactionBytes: dto.transactionBytes },
+        {
+          transactionId: sdkTransaction.transactionId.toString(),
+          status: Not(
+            In([
+              TransactionStatus.EXECUTED,
+              TransactionStatus.CANCELED,
+              TransactionStatus.REJECTED,
+            ]),
+          ),
+        },
       ],
     });
+
     if (countExisting > 0) throw new BadRequestException(ErrorCodes.TEX);
 
     const client = await getClientFromNetwork(dto.mirrorNetwork);
