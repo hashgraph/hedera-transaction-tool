@@ -137,6 +137,35 @@ describe('Transactions (e2e)', () => {
       );
     });
 
+    it('(POST) should create a transaction with and ID of an cancelled transaction', async () => {
+      const transaction = await createTransaction();
+
+      const { body: newTransaction } = await endpoint.post(transaction, null, userAuthToken);
+      testsAddedTransactionsCountUser++;
+
+      const cancelEndpoint = new Endpoint(server, '/transactions/cancel');
+      const cancelRes = await cancelEndpoint.patch(
+        null,
+        newTransaction.id.toString(),
+        userAuthToken,
+      );
+      expect(cancelRes.status).toEqual(200);
+
+      const { status, body } = await endpoint.post(transaction, null, userAuthToken);
+      testsAddedTransactionsCountUser++;
+
+      expect(status).toEqual(201);
+      expect(body.transactionBytes).not.toEqual(transaction.transactionBytes);
+      expect(body).toMatchObject(
+        expect.objectContaining({
+          name: transaction.name,
+          description: transaction.description,
+          status: TransactionStatus.WAITING_FOR_SIGNATURES,
+          creatorKeyId: transaction.creatorKeyId,
+        }),
+      );
+    });
+
     it('(POST) should not create a transaction if user is not verified', async () => {
       const countBefore = await repo.count();
       await endpoint.post(await createTransaction(), null, userNewAuthToken).expect(403);
