@@ -174,7 +174,7 @@ const columnClass = 'col-4 col-xxxl-3';
       <input
         v-model="serviceIpOrDomain"
         class="form-control is-fill"
-        placeholder="Enter IP Address"
+        placeholder="Enter Domain Name or IP Address"
       />
     </div>
     <div class="mx-5 col-2">
