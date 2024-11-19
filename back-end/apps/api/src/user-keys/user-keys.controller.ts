@@ -48,8 +48,11 @@ export class UserKeysController {
     type: [UserKeyDto],
   })
   @Get()
-  getUserKeys(@Param('userId', ParseIntPipe) userId: number): Promise<UserKey[]> {
-    return this.userKeysService.getUserKeys(userId);
+  getUserKeys(
+    @GetUser() user: User,
+    @Param('userId', ParseIntPipe) userId: number,
+  ): Promise<UserKey[]> {
+    return this.userKeysService.getUserKeysRestricted(user, userId);
   }
 
   @ApiOperation({
