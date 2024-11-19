@@ -7,6 +7,7 @@ const licenseCheckerPackage = 'license-checker@25.0.1';
 
 const paths = {
   noticeFile: path.resolve(__dirname, '..', NOTICE_FILE_NAME),
+  automation: path.resolve(__dirname, '..', 'automation'),
   frontEnd: path.resolve(__dirname, '..', 'front-end'),
   backEndRoot: path.resolve(__dirname, '..', 'back-end'),
   backEndApi: path.resolve(__dirname, '..', 'back-end', 'apps', 'api'),
@@ -82,6 +83,7 @@ Copyright ${sanitizedPublisher}. All Rights Reserved.
 
 async function getAllDependencies() {
   const dirs = [
+    paths.automation,
     paths.frontEnd,
     paths.backEndRoot,
     paths.backEndApi,
@@ -113,6 +115,7 @@ async function getDependencies(cwd) {
 
 async function getProjectNames() {
   const dirs = [
+    paths.automation,
     paths.frontEnd,
     paths.backEndRoot,
     paths.backEndApi,
