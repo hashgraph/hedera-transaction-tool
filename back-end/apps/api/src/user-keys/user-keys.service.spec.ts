@@ -61,7 +61,6 @@ describe('UserKeysService', () => {
     beforeEach(() => {
       user = { id: 1 } as unknown as User;
       dto = { publicKey: 'test-public-key', mnemonicHash: 'test-hash', index: 0 };
-      service.getUserKeys = jest.fn().mockResolvedValue([]);
     });
 
     it('should throw BadRequestException if public key is in use by a different user', async () => {
@@ -148,9 +147,16 @@ describe('UserKeysService', () => {
     });
   });
 
-  describe('getUserKeys', () => {
+  describe('getUserKeysRestricted', () => {
+    let user: User;
+
+    beforeEach(() => {
+      jest.resetAllMocks();
+      user = { id: 1 } as unknown as User;
+    });
+
     it('should return an empty array if userId is not provided', async () => {
-      const result = await service.getUserKeys(undefined);
+      const result = await service.getUserKeysRestricted(user, undefined);
       expect(result).toEqual([]);
     });
 
@@ -162,10 +168,42 @@ describe('UserKeysService', () => {
       ] as UserKey[];
       repo.find.mockResolvedValue(mockUserKeys);
 
-      const result = await service.getUserKeys(userId);
+      const result = await service.getUserKeysRestricted(user, userId);
+
+      expect(repo.find).toHaveBeenCalledWith({
+        select: {
+          deletedAt: true,
+          id: true,
+          index: true,
+          mnemonicHash: true,
+          publicKey: true,
+          userId: true,
+        },
+        where: { userId },
+      });
+      expect(result).toEqual(mockUserKeys);
+    });
+
+    it('should return user keys with only public key if user is not the owner', async () => {
+      const userId = 1;
+      const mockUserKeys = [
+        { id: 1, publicKey: 'key1', userId },
+        { id: 2, publicKey: 'key2', userId },
+      ] as UserKey[];
+      repo.find.mockResolvedValue(mockUserKeys);
+
+      const result = await service.getUserKeysRestricted({ id: 2 } as User, userId);
 
       expect(repo.find).toHaveBeenCalledWith({
         where: { userId },
+        select: {
+          id: true,
+          userId: true,
+          mnemonicHash: false,
+          index: false,
+          publicKey: true,
+          deletedAt: true,
+        },
       });
       expect(result).toEqual(mockUserKeys);
     });

@@ -99,18 +99,26 @@ describe('UserKeysController', () => {
   });
 
   describe('getKeys', () => {
-    it('should return an array of keys', async () => {
+    it('should return an array of keys with full key', async () => {
       const result = [userKey];
 
-      userKeysService.getUserKeys.mockResolvedValue(result);
+      userKeysService.getUserKeysRestricted.mockResolvedValue(result);
 
-      expect(await controller.getUserKeys(1)).toBe(result);
+      expect(await controller.getUserKeys(user, 1)).toBe(result);
+    });
+
+    it('should return an array of keys without mnemonic if not owner', async () => {
+      const result = [userKey].map(key => ({ ...key, mnemonicHash: undefined, index: undefined }));
+
+      userKeysService.getUserKeysRestricted.mockResolvedValue(result);
+
+      expect(await controller.getUserKeys({ id: 2, ...user }, 1)).toBe(result);
     });
 
     it('should return an empty array if no keys exist', async () => {
-      userKeysService.getUserKeys.mockResolvedValue([]);
+      userKeysService.getUserKeysRestricted.mockResolvedValue([]);
 
-      expect(await controller.getUserKeys(1)).toEqual([]);
+      expect(await controller.getUserKeys(user, 1)).toEqual([]);
     });
   });
 
