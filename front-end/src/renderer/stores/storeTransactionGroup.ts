@@ -121,6 +121,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       approvers: baseItem.approvers,
       payerAccountId: baseItem.payerAccountId,
       validStart: newDate,
+      description: baseItem.description,
     };
     groupItems.value.splice(index + 1, 0, newItem);
     setModified();

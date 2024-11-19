@@ -452,19 +452,25 @@ defineExpose({
       class="large-modal"
       :close-on-click-outside="false"
       :close-on-escape="false"
+      scrollable
     >
-      <div class="p-5">
-        <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="isConfirmShown = false"></i>
+      <template #header>
+        <div class="d-flex flex-column w-100">
+          <div>
+            <i class="bi bi-x-lg cursor-pointer" @click="isConfirmShown = false"></i>
+          </div>
+          <div class="text-center">
+            <i class="bi bi-arrow-left-right large-icon"></i>
+          </div>
+          <h3 class="text-center text-title text-bold mt-5">Confirm Transaction Group</h3>
+          <hr class="separator my-5" />
         </div>
-        <div class="text-center">
-          <i class="bi bi-arrow-left-right large-icon"></i>
-        </div>
-        <h3 class="text-center text-title text-bold mt-5">Confirm Transaction Group</h3>
-        <hr class="separator my-5" />
+      </template>
+      <template #default>
         <div
           v-for="groupItem in transactionGroup.groupItems"
           :key="groupItem.transactionBytes.toString()"
+          class="px-5"
         >
           <div class="d-flex p-4 transaction-group-row justify-content-between">
             <div>{{ getTransactionType(groupItem.transactionBytes) }}</div>
@@ -479,10 +485,12 @@ defineExpose({
             </div>
           </div>
         </div>
+      </template>
 
-        <hr class="separator my-5" />
+      <template #footer>
+        <hr class="separator m-5" />
 
-        <div class="flex-between-centered gap-4">
+        <div class="flex-between-centered gap-4 w-100 px-5 pb-5">
           <AppButton type="button" color="borderless" @click="isConfirmShown = false"
             >Cancel</AppButton
           >
@@ -490,7 +498,7 @@ defineExpose({
             >Confirm</AppButton
           >
         </div>
-      </div>
+      </template>
     </AppModal>
     <!-- Executing modal -->
     <AppModal

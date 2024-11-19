@@ -281,7 +281,7 @@ async function handleOnFileChanged(e: Event) {
             }
             transactionGroup.addGroupItem({
               transactionBytes,
-              type: 'TransferTransaction',
+              type: 'Transfer Transaction',
               accountId: '',
               seq: transactionGroup.groupItems.length.toString(),
               keyList: keys,
@@ -339,8 +339,8 @@ onBeforeRouteLeave(async to => {
 });
 </script>
 <template>
-  <div>
-    <div class="p-5 overflow-y-auto" style="height: 100%">
+  <div class="p-5">
+    <div class="flex-column-100 overflow-hidden">
       <div class="d-flex align-items-center">
         <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
           <i class="bi bi-arrow-left"></i>
@@ -348,7 +348,7 @@ onBeforeRouteLeave(async to => {
 
         <h2 class="text-title text-bold">Create Transaction Group</h2>
       </div>
-      <form class="mt-5" @submit.prevent="handleSaveGroup">
+      <form class="mt-5 flex-column-100" @submit.prevent="handleSaveGroup">
         <div class="d-flex justify-content-between">
           <div class="form-group col">
             <label class="form-label"
@@ -421,7 +421,7 @@ onBeforeRouteLeave(async to => {
           </AppButton>
         </div>
         <hr class="separator my-5 w-100" />
-        <div v-if="!groupEmpty">
+        <div v-if="!groupEmpty" class="fill-remaining pb-10">
           <div class="text-end mb-5">
             {{ `${transactionGroup.groupItems.length} Transactions` }}
           </div>
@@ -444,7 +444,7 @@ onBeforeRouteLeave(async to => {
                       : createTransactionId(groupItem.payerAccountId, groupItem.validStart)
                 }}
               </div>
-              <div class="d-flex col">
+              <div class="d-flex col justify-content-end">
                 <AppButton
                   type="button"
                   class="transaction-group-button-borderless"

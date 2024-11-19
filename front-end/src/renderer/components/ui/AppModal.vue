@@ -7,10 +7,12 @@ const props = withDefaults(
     show: boolean;
     closeOnEscape?: boolean;
     closeOnClickOutside?: boolean;
+    scrollable?: boolean;
   }>(),
   {
     closeOnEscape: true,
     closeOnClickOutside: true,
+    scrollable: false,
   },
 );
 
@@ -55,7 +57,9 @@ onBeforeUnmount(() => {
   >
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" ref="modalRef">
       <div class="modal-content">
+        <div v-if="scrollable" class="modal-header pb-0"><slot name="header"></slot></div>
         <div class="modal-body"><slot></slot></div>
+        <div v-if="scrollable" class="modal-footer p-0"><slot name="footer"></slot></div>
       </div>
     </div>
   </div>
