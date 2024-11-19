@@ -7,10 +7,13 @@ RUN npm install -g pnpm
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
+COPY scripts/postinstall.sh scripts/postinstall.sh
 COPY tsconfig.json tsconfig.json
 COPY nest-cli.json nest-cli.json
 COPY apps/notifications/package.json apps/notifications/package.json
 COPY apps/notifications/tsconfig.app.json apps/notifications/tsconfig.app.json
+
+ENV SKIP_NOTICE_GEN=true
 
 RUN pnpm install && cd apps/notifications && pnpm install
 
@@ -28,8 +31,11 @@ WORKDIR /usr/src/app
 
 COPY package.json ./
 COPY pnpm-lock.yaml ./
+COPY scripts/postinstall.sh scripts/postinstall.sh
 
 RUN npm install -g pnpm
+
+ENV SKIP_NOTICE_GEN=true
 
 RUN pnpm install --prod
 
