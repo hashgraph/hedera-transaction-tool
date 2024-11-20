@@ -302,6 +302,21 @@ async function handleOnFileChanged(e: Event) {
   }
 }
 
+/* Functions */
+function makeTransfer(index: number) {
+  const transfers = (
+    Transaction.fromBytes(
+      transactionGroup.groupItems[index].transactionBytes,
+    ) as TransferTransaction
+  ).hbarTransfersList;
+  const transfer =
+    transfers.length == 2
+      ? `${transfers[0].accountId} --> ${transfers[1].amount} --> ${transfers[1].accountId}`
+      : 'Multiple Transfers';
+
+  return transfer;
+}
+
 /* Hooks */
 onMounted(async () => {
   await handleLoadGroup();
@@ -423,7 +438,11 @@ onBeforeRouteLeave(async to => {
         <hr class="separator my-5 w-100" />
         <div v-if="!groupEmpty" class="fill-remaining pb-10">
           <div class="text-end mb-5">
-            {{ `${transactionGroup.groupItems.length} Transactions` }}
+            {{
+              transactionGroup.groupItems.length < 2
+                ? `1 Transaction`
+                : `${transactionGroup.groupItems.length} Transactions`
+            }}
           </div>
           <div
             v-for="(groupItem, index) in transactionGroup.groupItems"
@@ -437,11 +456,13 @@ onBeforeRouteLeave(async to => {
               </div>
               <div class="align-self-center text-truncate col text-center mx-5">
                 {{
-                  groupItem.description != ''
-                    ? groupItem.description
-                    : Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
-                      ? Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
-                      : createTransactionId(groupItem.payerAccountId, groupItem.validStart)
+                  groupItem.type == 'Transfer Transaction'
+                    ? makeTransfer(index)
+                    : groupItem.description != ''
+                      ? groupItem.description
+                      : Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
+                        ? Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
+                        : createTransactionId(groupItem.payerAccountId, groupItem.validStart)
                 }}
               </div>
               <div class="d-flex col justify-content-end">
