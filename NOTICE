@@ -212,10 +212,6 @@ The Initial Developer of @develar/schema-utils@2.6.5,
 is webpack Contrib (https://github.com/webpack/schema-utils).
 Copyright webpack Contrib. All Rights Reserved.
 
-The Initial Developer of @electron-toolkit/eslint-config@1.0.2,
-is Alex Wei (https://github.com/alex8088/electron-toolkit).
-Copyright Alex Wei. All Rights Reserved.
-
 The Initial Developer of @electron-toolkit/tsconfig@1.0.1,
 is Alex Wei (https://github.com/alex8088/electron-toolkit).
 Copyright Alex Wei. All Rights Reserved.
@@ -544,9 +540,6 @@ Copyright Rich Harris. All Rights Reserved.
 The Initial Developer of @rollup/rollup-darwin-arm64@4.26.0,
 is Lukas Taegert-Atkinson (https://github.com/rollup/rollup).
 Copyright Lukas Taegert-Atkinson. All Rights Reserved.
-
-This product includes software (@rushstack/eslint-patch@1.10.4) developed at
-(https://github.com/microsoft/rushstack).
 
 The Initial Developer of @sindresorhus/is@4.6.0,
 is Sindre Sorhus (https://github.com/sindresorhus/is).
