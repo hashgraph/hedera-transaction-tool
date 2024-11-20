@@ -36,5 +36,7 @@ spec:
               value: 'postgres'
             - name: POSTGRES_SYNCHRONIZE
               value: 'true'
+            - name: POSTGRES_MAX_POOL_SIZE
+              value: '2'
             - name: REDIS_URL
               value: 'redis://redis-service:6379'
