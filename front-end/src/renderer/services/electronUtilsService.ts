@@ -30,7 +30,7 @@ export const compareDataToHashes = async (data: string, hashes: string[]) =>
 export const saveFile = async (data: Uint8Array) => {
   try {
     await window.electronAPI.local.utils.saveFile(data.join(','));
-  } catch (error) {
+  } catch {
     throw new Error('Failed to save file');
   }
 };
@@ -51,7 +51,7 @@ export const showOpenDialog = async (
       properties,
       message,
     );
-  } catch (error) {
+  } catch {
     throw new Error('Failed to open the dialog');
   }
 };

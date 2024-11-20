@@ -42,7 +42,7 @@ const handleAdd = async (e: Event) => {
   try {
     const url = new URL(serverUrl.value);
     serverUrl.value = url.origin;
-  } catch (error) {
+  } catch {
     throw new Error('Invalid Server URL');
   }
   try {

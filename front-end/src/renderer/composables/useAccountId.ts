@@ -37,7 +37,7 @@ export default function useAccountId() {
             .toStringWithChecksum(networkStore.client as Client)
             .split('-')
         : accountIdFormatted.value;
-    } catch (error) {
+    } catch {
       return accountIdFormatted.value;
     }
   });
@@ -80,7 +80,7 @@ export default function useAccountId() {
 
       accountInfo.value = accountInfoRes;
       allowances.value = accountAllowancesRes;
-    } catch (e) {
+    } catch {
       resetData();
     }
   });

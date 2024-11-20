@@ -13,7 +13,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import { remove } from '@renderer/services/accountsService';
 
-import { isAccountId, isUserLoggedIn } from '@renderer/utils';
+import { isAccountId, isUserLoggedIn, safeAwait } from '@renderer/utils';
 import { createAccountDeleteTransaction, getAccountDeleteData } from '@renderer/utils/sdk';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
@@ -89,11 +89,7 @@ const handleExecuted = async () => {
     throw new Error('User is not logged in');
   }
 
-  try {
-    await remove(user.personal.id, [accountData.accountId.value]);
-  } catch {
-    /* Ignore if not found or error */
-  }
+  await safeAwait(remove(user.personal.id, [accountData.accountId.value]));
 
   setTimeout(async () => {
     await user.refetchKeys();

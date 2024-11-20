@@ -86,7 +86,7 @@ export const validateMnemonic = async (words: string[]) => {
     words = words.map(w => w.toLocaleLowerCase());
     await Mnemonic.fromWords(words);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 };

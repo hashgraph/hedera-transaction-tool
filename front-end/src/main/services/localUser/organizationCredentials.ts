@@ -68,7 +68,7 @@ export const shouldSignInOrganization = async (user_id: string, organization_id:
     });
 
     return await organizationCredentialsInvalid(org);
-  } catch (error) {
+  } catch {
     return true;
   }
 };
@@ -97,7 +97,7 @@ export const getCurrentUser = async (organizationServerUrl: string) => {
   try {
     const decoded: any = jwtDecode(token);
     return decoded;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -250,7 +250,7 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string | n
     let password = '';
     try {
       password = await decryptData(invalidCredential.password, decryptPassword);
-    } catch (error) {
+    } catch {
       throw new Error('Incorrect decryption password');
     }
 
@@ -265,7 +265,7 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string | n
         where: { id: invalidCredential.id },
         data: { jwtToken: accessToken },
       });
-    } catch (error) {
+    } catch {
       failedLogins.push(invalidCredential.organization);
     }
   }
@@ -314,7 +314,7 @@ export async function organizationCredentialsInvalid(
   try {
     const decoded: any = jwtDecode(token);
     if (decoded.exp * 1000 < Date.now()) return true;
-  } catch (error) {
+  } catch {
     return true;
   }
 

@@ -126,7 +126,7 @@ export default async function initDatabase() {
       });
 
       return migration;
-    } catch (error) {
+    } catch {
       await prisma.$disconnect();
       return null;
     }

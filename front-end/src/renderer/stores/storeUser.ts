@@ -162,7 +162,7 @@ const useUserStore = defineStore('user', () => {
           keyPairs,
           router,
         );
-      } catch (error) {
+      } catch {
         await selectOrganization(null);
       }
 

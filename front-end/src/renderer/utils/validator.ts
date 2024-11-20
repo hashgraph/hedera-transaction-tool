@@ -33,7 +33,7 @@ export function isPasswordStrong(password: string): {
 export function isPublicKey(key: string) {
   try {
     return Boolean(PublicKey.fromString(key));
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -41,7 +41,7 @@ export function isPublicKey(key: string) {
 export function isAccountId(id: string) {
   try {
     return Boolean(AccountId.fromString(id));
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -49,7 +49,7 @@ export function isAccountId(id: string) {
 export function isFileId(id: string) {
   try {
     return Boolean(FileId.fromString(id));
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -57,7 +57,7 @@ export function isFileId(id: string) {
 export function isContractId(id: string) {
   try {
     return Boolean(ContractId.fromString(id));
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -66,7 +66,7 @@ export function isUrl(url: string) {
   try {
     new URL(url);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

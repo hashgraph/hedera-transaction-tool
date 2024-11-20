@@ -246,7 +246,7 @@ async function checkShouldRegister() {
     const usersCount = await getUsersCount();
 
     shouldRegister.value = usersCount < 2; /* 2 because the first user is the default */
-  } catch (error) {
+  } catch {
     shouldRegister.value = true;
   }
 }

@@ -102,7 +102,7 @@ export const getUniquePath = async (dist: string, fileName: string) => {
   while (exists) {
     try {
       await fsp.access(fileDist, fs.constants.F_OK);
-    } catch (error) {
+    } catch {
       exists = false;
       break;
     }

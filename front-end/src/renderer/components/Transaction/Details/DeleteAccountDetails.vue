@@ -43,7 +43,7 @@ async function fetchTransactionInfo(payer: string, seconds: string, nanos: strin
         )?.amount || 0;
       transferredAmount.value = Hbar.from(Math.abs(amount), HbarUnit.Tinybar);
     }
-  } catch (error) {
+  } catch {
     /* Ignore if transaction not available in mirror node */
   }
 }

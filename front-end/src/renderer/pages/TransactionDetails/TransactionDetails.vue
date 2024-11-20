@@ -455,7 +455,7 @@ async function fetchTransaction(id: string | number) {
 
   try {
     sdkTransaction.value = SDKTransaction.fromBytes(transactionBytes);
-  } catch (error) {
+  } catch {
     throw new Error('Failed to deserialize transaction');
   }
 

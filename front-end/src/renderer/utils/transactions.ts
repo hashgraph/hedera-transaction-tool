@@ -42,7 +42,7 @@ export const getTransactionValidStart = (transaction: Transaction) => {
 export const getTransactionStatus = (transaction: Transaction): string => {
   try {
     return Status._fromCode(transaction.status_code).toString().split('_').join(' ');
-  } catch (error) {
+  } catch {
     return 'UNKNOWN';
   }
 };
@@ -58,7 +58,7 @@ export const getStatusFromCode = (code?: number): string | null => {
 
   try {
     return Status._fromCode(code).toString();
-  } catch (error) {
+  } catch {
     return 'UNKNOWN';
   }
 };

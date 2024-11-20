@@ -53,7 +53,7 @@ export class Updater {
       }
 
       return { version, files };
-    } catch (error) {
+    } catch {
       return null;
     }
   }

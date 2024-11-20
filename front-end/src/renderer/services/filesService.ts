@@ -5,7 +5,7 @@ import { commonIPCHandler } from '@renderer/utils';
 export const getAll = async (findArgs: Prisma.HederaFileFindManyArgs) => {
   try {
     return await window.electronAPI.local.files.getAll(findArgs);
-  } catch (error) {
+  } catch {
     return [];
   }
 };

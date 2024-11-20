@@ -10,7 +10,7 @@ export const login = async (serverUrl: string, email: string, password: string) 
     });
 
     return { id: data.user.id, accessToken: data.accessToken };
-  } catch (error: any) {
+  } catch {
     throw new Error('Failed Sign in Organization');
   }
 };
