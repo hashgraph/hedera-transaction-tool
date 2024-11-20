@@ -6,7 +6,8 @@ import {
   TransactionComment,
   TransactionSigner,
   TransactionApprover,
-  TransactionObserver, TransactionGroup, TransactionGroupItem,
+  TransactionObserver,
+  TransactionGroup,
 } from '@app/common/database/entities';
 
 import { MirrorNodeModule } from '@app/common';

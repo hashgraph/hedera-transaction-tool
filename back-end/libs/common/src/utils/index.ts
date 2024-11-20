@@ -14,7 +14,7 @@ export const asyncFilter = async <T>(list: T[], predicate: (t: T) => Promise<boo
   return list.filter((item, idx) => resolvedPredicates[idx]);
 };
 
-export function maskSensitiveData(data: any, fieldsToMask: string[]): any {
+export function maskSensitiveData(data, fieldsToMask: string[]) {
   if (!data || typeof data !== 'object') {
     return data;
   }

@@ -7,7 +7,7 @@ import { maskSensitiveData } from '@app/common';
 export class LoggerMiddleware implements NestMiddleware {
   constructor(@Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger) {}
 
-  use(req: any, res: any, next: () => void) {
+  use(req, res, next: () => void) {
     const { method, originalUrl, body = {}, query = {} } = req;
     const start = Date.now();
 
@@ -17,12 +17,11 @@ export class LoggerMiddleware implements NestMiddleware {
     res.on('finish', () => {
       const { statusCode } = res;
       const duration = Date.now() - start;
-      const payload = Object.keys(maskedBody).length || Object.keys(maskedQuery).length
-        ? ` - Payload: ${JSON.stringify({ body: maskedBody, query: maskedQuery })}`
-        : '';
-      this.logger.info(
-        `${method} ${originalUrl} ${statusCode} - ${duration}ms${payload}`
-      );
+      const payload =
+        Object.keys(maskedBody).length || Object.keys(maskedQuery).length
+          ? ` - Payload: ${JSON.stringify({ body: maskedBody, query: maskedQuery })}`
+          : '';
+      this.logger.info(`${method} ${originalUrl} ${statusCode} - ${duration}ms${payload}`);
     });
 
     next();
