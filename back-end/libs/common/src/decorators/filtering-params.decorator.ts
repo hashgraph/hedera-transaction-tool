@@ -9,7 +9,6 @@ export interface Filtering {
   value: string;
   isDate?: boolean;
 }
-[];
 
 export enum FilterRule {
   EQUALS = 'eq',

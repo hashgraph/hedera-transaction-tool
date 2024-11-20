@@ -24,7 +24,7 @@ export const isAccountId = (accountId: string) => {
   try {
     AccountId.fromString(accountId);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -33,7 +33,7 @@ export const isFileId = (accountId: string) => {
   try {
     FileId.fromString(accountId);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -42,7 +42,7 @@ export const isTransactionId = (transactionId: string) => {
   try {
     TransactionId.fromString(transactionId);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 };

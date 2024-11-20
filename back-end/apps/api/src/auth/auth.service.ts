@@ -114,7 +114,7 @@ export class AuthService {
       await this.usersService.updateUser(user, { status: UserStatus.NEW });
       const token = this.getOtpToken({ email: user.email, verified: true });
       return { token };
-    } catch (err) {
+    } catch {
       throw new InternalServerErrorException('Error while updating user status');
     }
   }

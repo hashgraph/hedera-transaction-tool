@@ -55,7 +55,7 @@ export const AuthWebsocketMiddleware = (
       } else {
         next({ name: 'Unauthorized', message: 'Unauthorized' });
       }
-    } catch (error) {
+    } catch {
       next({ name: 'Unauthorized', message: 'Unauthorized' });
     }
   };

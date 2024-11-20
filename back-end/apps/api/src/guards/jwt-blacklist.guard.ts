@@ -44,7 +44,7 @@ export function createJwtBlacklistGuard(extractJwt: (req) => string) {
         } else {
           return true;
         }
-      } catch (error) {
+      } catch {
         throw new UnauthorizedException();
       }
     }

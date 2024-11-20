@@ -1,4 +1,3 @@
-/* eslint-disable no-var */
 import { exec } from 'child_process';
 import * as util from 'util';
 
