@@ -32,7 +32,7 @@ import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 
 import { isAccountId, isContractId, isFileId } from '../validator';
 import { compareKeys } from '.';
-import { hexToUint8Array, stringToHex } from '..';
+import { hexToUint8Array } from '..';
 
 export type TransactionData = TransactionCommonData & TransactionSpecificData;
 
@@ -439,15 +439,15 @@ export const getServiceEndpoints = (data: ComponentServiceEndpoint[]) => {
   const endpoints = new Array<ServiceEndpoint>();
 
   for (const serviceEndpoint of data) {
-    const ipAddressV4 = serviceEndpoint.ipAddressV4?.trim();
-    const port = Number.parseInt(serviceEndpoint.port?.trim());
+    const ipAddressV4 = serviceEndpoint.ipAddressV4?.trim()?.split('.') || [];
     const domainName = serviceEndpoint.domainName?.trim();
+    const port = Number.parseInt(serviceEndpoint.port?.trim());
 
     if (ipAddressV4 || domainName) {
       const serviceEndpoint = new ServiceEndpoint();
 
       if (ipAddressV4) {
-        serviceEndpoint.setIpAddressV4(hexToUint8Array(stringToHex(ipAddressV4)));
+        serviceEndpoint.setIpAddressV4(Uint8Array.from(ipAddressV4.map(Number)));
       } else if (domainName) {
         serviceEndpoint.setDomainName(domainName);
       }
