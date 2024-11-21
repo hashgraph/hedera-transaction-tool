@@ -6,8 +6,9 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 /* Props */
 const props = withDefaults(
   defineProps<{
-    modelValue?: string | number;
     items: string[];
+    disableSpaces?: boolean;
+    modelValue?: string | number;
     dataTestid?: string;
   }>(),
   {
@@ -72,6 +73,8 @@ const handleKeyDown = (e: KeyboardEvent) => {
     toggleDropdown(false);
   } else if (e.key === 'Escape') {
     toggleDropdown(false);
+  } else if (e.code === 'Space' && props.disableSpaces) {
+    e.preventDefault();
   }
 
   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
