@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router';
 import { Transaction } from '@hashgraph/sdk';
 
 import { historyTitle, TRANSACTION_ACTION } from '@main/shared/constants';
+import { TransactionTypeName } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
@@ -318,7 +319,7 @@ watch(
                 {{ groupItem.transaction.transactionId }}
               </td>
               <td>
-                <span class="text-bold">{{ groupItem.transaction.name }}</span>
+                <span class="text-bold">{{ TransactionTypeName[groupItem.transaction.type] }}</span>
               </td>
               <td data-testid="td-group-valid-start-time">
                 {{ getDateStringExtended(new Date(groupItem.transaction.validStart)) }}
