@@ -49,17 +49,16 @@ export class FanOutService {
     await this.updateIsInAppNotified(notification.id, inApp.userIds, false);
 
     /* Process notifications */
-    try {
-      await this.sendNewToEmailProcessor(email.emails, notification, email.userIds);
-    } catch (error) {
-      console.log(error);
-    }
+    const res = await Promise.allSettled([
+      this.sendNewToEmailProcessor(email.emails, notification, email.userIds),
+      this.sendNewToInAppProcessor(notification, inApp.receivers),
+    ]);
 
-    try {
-      await this.sendNewToInAppProcessor(notification, inApp.receivers);
-    } catch (error) {
-      console.log(error);
-    }
+    res.forEach(r => {
+      if (r.status === 'rejected') {
+        console.error(r.reason);
+      }
+    });
   }
 
   async fanOutIndicatorsDelete(userIdToNotificationReceiversId: { [userId: number]: number[] }) {

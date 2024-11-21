@@ -19,7 +19,6 @@ import { createTransactionId } from '@renderer/utils/sdk';
 export interface GroupItem {
   transactionBytes: Uint8Array;
   type: string;
-  accountId: string;
   seq: string;
   groupId?: string;
   keyList: string[];
@@ -55,8 +54,6 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
         groupItems.value.push({
           transactionBytes: transaction.toBytes(),
           type: draft?.type,
-          // accountId: transaction.transactionId!.accountId!.toString(),
-          accountId: '',
           groupId: id,
           seq: item.seq,
           keyList: [],
@@ -113,7 +110,6 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     const newItem = {
       transactionBytes: transaction.toBytes(),
       type: baseItem.type,
-      accountId: baseItem.accountId,
       description: baseItem.description,
       seq: (Number.parseInt(baseItem.seq) + 1).toString(),
       keyList: baseItem.keyList,

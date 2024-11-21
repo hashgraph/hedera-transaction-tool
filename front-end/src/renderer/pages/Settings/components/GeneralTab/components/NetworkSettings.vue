@@ -121,7 +121,6 @@ onBeforeMount(() => {
         color="secondary"
         data-testid="tab-network-previewnet"
         class="text-nowrap"
-        disabled
         :class="{ active: networkStore.network === CommonNetwork.PREVIEWNET }"
         @click="handleCommonNetwork(CommonNetwork.PREVIEWNET)"
         >Previewnet</AppButton

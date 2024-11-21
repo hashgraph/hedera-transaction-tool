@@ -6,6 +6,7 @@ export enum BackEndTransactionType {
   ACCOUNT_CREATE = 'ACCOUNT CREATE',
   ACCOUNT_UPDATE = 'ACCOUNT UPDATE',
   ACCOUNT_DELETE = 'ACCOUNT DELETE',
+  ACCOUNT_ALLOWANCE_APPROVE = 'ACCOUNT ALLOWANCE APPROVE',
   FILE_CREATE = 'FILE CREATE',
   FILE_APPEND = 'FILE APPEND',
   FILE_UPDATE = 'FILE UPDATE',
@@ -14,7 +15,28 @@ export enum BackEndTransactionType {
   SYSTEM_DELETE = 'SYSTEM DELETE',
   SYSTEM_UNDELETE = 'SYSTEM UNDELETE',
   TRANSFER = 'TRANSFER',
+  NODE_CREATE = 'NODE CREATE',
+  NODE_UPDATE = 'NODE UPDATE',
+  NODE_DELETE = 'NODE DELETE',
 }
+
+export const TransactionTypeName = {
+  [BackEndTransactionType.ACCOUNT_CREATE]: 'Account Create Transaction',
+  [BackEndTransactionType.ACCOUNT_UPDATE]: 'Account Update Transaction',
+  [BackEndTransactionType.ACCOUNT_DELETE]: 'Account Delete Transaction',
+  [BackEndTransactionType.ACCOUNT_ALLOWANCE_APPROVE]: 'Account Allowance Approve Transaction',
+  [BackEndTransactionType.FILE_CREATE]: 'File Create Transaction',
+  [BackEndTransactionType.FILE_APPEND]: 'File Append Transaction',
+  [BackEndTransactionType.FILE_UPDATE]: 'File Update Transaction',
+  [BackEndTransactionType.FILE_DELETE]: 'File Delete Transaction',
+  [BackEndTransactionType.FREEZE]: 'Freeze Transaction',
+  [BackEndTransactionType.SYSTEM_DELETE]: 'System Delete Transaction',
+  [BackEndTransactionType.SYSTEM_UNDELETE]: 'System Undelete Transaction',
+  [BackEndTransactionType.TRANSFER]: 'Transfer Transaction',
+  [BackEndTransactionType.NODE_CREATE]: 'Node Create Transaction',
+  [BackEndTransactionType.NODE_UPDATE]: 'Node Update Transaction',
+  [BackEndTransactionType.NODE_DELETE]: 'Node Delete Transaction',
+};
 
 export enum TransactionStatus {
   NEW = 'NEW',

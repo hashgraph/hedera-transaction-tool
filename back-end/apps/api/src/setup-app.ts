@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Transport } from '@nestjs/microservices';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { json } from 'express';
 
 import { version } from '../package.json';
 
@@ -31,6 +32,7 @@ export function setupApp(app: NestExpressApplication, addLogger: boolean = true)
     app.use(loggerMiddleware.use.bind(loggerMiddleware));
   }
 
+  app.use(json({ limit: '2mb' }));
   app.enableCors({
     origin: true,
     credentials: true,

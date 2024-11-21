@@ -13,19 +13,25 @@ defineProps<{
 }>();
 
 /* Emits */
-defineEmits<{
+const emit = defineEmits<{
   (event: 'update:modelValue', value: string): void;
 }>();
 
 /* Stores */
 const user = useUserStore();
+
+/* Handlers */
+const handleUpdate = (value: string) => {
+  emit('update:modelValue', formatAccountId(value));
+};
 </script>
 <template>
   <AppAutoComplete
     :model-value="modelValue"
-    @update:model-value="$emit('update:modelValue', formatAccountId($event))"
+    @update:model-value="handleUpdate"
     :items="items || user.publicKeysToAccountsFlattened"
     :data-testid="dataTestid"
+    disable-spaces
     v-bind="$attrs"
   />
 </template>

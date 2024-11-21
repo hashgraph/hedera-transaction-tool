@@ -6,9 +6,10 @@ import { useToast } from 'vue-toast-notification';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Props */
-defineProps<{
+const props = defineProps<{
   id: string;
   file: { meta: File; content: Uint8Array; loadPercentage: number } | null;
+  maxSizeKb: number;
   showName?: boolean;
   showProgress?: boolean;
   accept?: string;
@@ -37,6 +38,11 @@ const handleFileImport = async (e: Event) => {
   const file = fileImportEl.files && fileImportEl.files[0];
 
   if (file) {
+    if (file.size > (props.maxSizeKb || 0) * 1024) {
+      toast.error(`File size exceeds ${props.maxSizeKb} KB`);
+      return;
+    }
+
     emit('update:file', { meta: file, content: new Uint8Array(), loadPercentage: 0 });
     emit('load:start');
 

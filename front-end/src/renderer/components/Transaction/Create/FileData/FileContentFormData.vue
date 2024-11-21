@@ -102,6 +102,7 @@ watch([file, manualContent], () => {
       v-model:file="file"
       :accept="accept"
       :disabled="manualContent.length > 0"
+      :max-size-kb="512"
       @load:start="handleFileLoadStart"
       @load:end="handleFileLoadEnd"
     />

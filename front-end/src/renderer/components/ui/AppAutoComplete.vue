@@ -6,8 +6,9 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 /* Props */
 const props = withDefaults(
   defineProps<{
-    modelValue?: string | number;
     items: string[];
+    disableSpaces?: boolean;
+    modelValue?: string | number;
     dataTestid?: string;
   }>(),
   {
@@ -70,6 +71,10 @@ const handleKeyDown = (e: KeyboardEvent) => {
       setValue(filteredItems.value[selectedIndex.value]);
     }
     toggleDropdown(false);
+  } else if (e.key === 'Escape') {
+    toggleDropdown(false);
+  } else if (e.code === 'Space' && props.disableSpaces) {
+    e.preventDefault();
   }
 
   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
@@ -149,6 +154,7 @@ function toggleDropdown(show: boolean) {
 
   dropdownRef.value.style.visibility = newVisibility;
   dropdownRef.value.style.opacity = newOpacity;
+  suggestionRef.value?.classList.toggle('d-none', !show);
 }
 
 function positionSuggestion() {
