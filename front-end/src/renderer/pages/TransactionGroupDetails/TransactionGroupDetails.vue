@@ -61,6 +61,8 @@ const shouldApprove = ref(false);
 const isConfirmModalShown = ref(false);
 const publicKeysRequiredToSign = ref<string[] | null>([]);
 const disableSignAll = ref(false);
+const isSigning = ref(false);
+const isApproving = ref(false);
 
 /* Injected */
 const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
@@ -133,6 +135,7 @@ const handleSignGroup = async () => {
   }
 
   try {
+    isSigning.value = true;
     if (group.value != undefined) {
       for (const groupItem of group.value.groupItems) {
         const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
@@ -156,6 +159,8 @@ const handleSignGroup = async () => {
     disableSignAll.value = true;
   } catch {
     toast.error('Transactions not signed');
+  } finally {
+    isSigning.value = false;
   }
 };
 
@@ -180,43 +185,51 @@ const handleApproveAll = async (approved: boolean, showModal?: boolean) => {
       return;
     }
 
-    const publicKey = user.selectedOrganization.userKeys[0].publicKey;
-    const privateKeyRaw = await decryptPrivateKey(
-      user.personal.id,
-      user.personal.password,
-      publicKey,
-    );
-    const privateKey = getPrivateKey(publicKey, privateKeyRaw);
+    try {
+      isApproving.value = true;
 
-    if (group.value != undefined) {
-      for (const item of group.value.groupItems) {
-        if (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id)) {
-          const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
-          const transaction = Transaction.fromBytes(transactionBytes);
-          const signature = getTransactionBodySignatureWithoutNodeAccountId(
-            privateKey,
-            transaction,
-          );
+      const publicKey = user.selectedOrganization.userKeys[0].publicKey;
+      const privateKeyRaw = await decryptPrivateKey(
+        user.personal.id,
+        user.personal.password,
+        publicKey,
+      );
+      const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
-          await sendApproverChoice(
-            user.selectedOrganization.serverUrl,
-            item.transaction.id,
-            user.selectedOrganization.userKeys[0].id,
-            signature,
-            approved,
-          );
+      if (group.value != undefined) {
+        for (const item of group.value.groupItems) {
+          if (
+            await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id)
+          ) {
+            const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
+            const transaction = Transaction.fromBytes(transactionBytes);
+            const signature = getTransactionBodySignatureWithoutNodeAccountId(
+              privateKey,
+              transaction,
+            );
+
+            await sendApproverChoice(
+              user.selectedOrganization.serverUrl,
+              item.transaction.id,
+              user.selectedOrganization.userKeys[0].id,
+              signature,
+              approved,
+            );
+          }
         }
       }
-    }
-    toast.success(`Transactions ${approved ? 'approved' : 'rejected'} successfully`);
+      toast.success(`Transactions ${approved ? 'approved' : 'rejected'} successfully`);
 
-    if (!approved) {
-      router.push({
-        name: 'transactions',
-        query: {
-          tab: historyTitle,
-        },
-      });
+      if (!approved) {
+        router.push({
+          name: 'transactions',
+          query: {
+            tab: historyTitle,
+          },
+        });
+      }
+    } finally {
+      isApproving.value = false;
     }
   };
 
@@ -342,6 +355,8 @@ watch(
           color="secondary"
           type="button"
           class="me-3"
+          :loading="isApproving"
+          loading-text="Rejecting..."
           @click="handleApproveAll(false, true)"
         >
           Reject All
@@ -351,6 +366,8 @@ watch(
           color="primary"
           type="button"
           class="me-3"
+          :loading="isApproving"
+          loading-text="Approving..."
           @click="handleApproveAll(true, true)"
         >
           Approve All
@@ -364,6 +381,8 @@ watch(
           "
           color="primary"
           type="button"
+          :loading="isSigning"
+          loading-text="Signing..."
           data-testid="button-sign-all-tx"
           @click="handleSignGroup"
         >
