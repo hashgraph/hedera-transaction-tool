@@ -149,6 +149,7 @@ function toggleDropdown(show: boolean) {
 
   dropdownRef.value.style.visibility = newVisibility;
   dropdownRef.value.style.opacity = newOpacity;
+  suggestionRef.value?.classList.toggle('d-none', !show);
 }
 
 function positionSuggestion() {
