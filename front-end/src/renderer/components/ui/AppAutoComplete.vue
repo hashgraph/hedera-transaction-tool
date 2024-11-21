@@ -70,6 +70,8 @@ const handleKeyDown = (e: KeyboardEvent) => {
       setValue(filteredItems.value[selectedIndex.value]);
     }
     toggleDropdown(false);
+  } else if (e.key === 'Escape') {
+    toggleDropdown(false);
   }
 
   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
