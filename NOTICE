@@ -212,10 +212,6 @@ The Initial Developer of @develar/schema-utils@2.6.5,
 is webpack Contrib (https://github.com/webpack/schema-utils).
 Copyright webpack Contrib. All Rights Reserved.
 
-The Initial Developer of @electron-toolkit/eslint-config@1.0.2,
-is Alex Wei (https://github.com/alex8088/electron-toolkit).
-Copyright Alex Wei. All Rights Reserved.
-
 The Initial Developer of @electron-toolkit/tsconfig@1.0.1,
 is Alex Wei (https://github.com/alex8088/electron-toolkit).
 Copyright Alex Wei. All Rights Reserved.
@@ -258,12 +254,28 @@ The Initial Developer of @eslint-community/regexpp@4.12.1,
 is Toru Nagashima (https://github.com/eslint-community/regexpp).
 Copyright Toru Nagashima. All Rights Reserved.
 
-The Initial Developer of @eslint/eslintrc@2.1.4,
+The Initial Developer of @eslint/config-array@0.19.0,
+is Nicholas C. Zakas (https://github.com/eslint/rewrite).
+Copyright Nicholas C. Zakas. All Rights Reserved.
+
+The Initial Developer of @eslint/core@0.9.0,
+is Nicholas C. Zakas (https://github.com/eslint/rewrite).
+Copyright Nicholas C. Zakas. All Rights Reserved.
+
+The Initial Developer of @eslint/eslintrc@3.2.0,
 is Nicholas C. Zakas (https://github.com/eslint/eslintrc).
 Copyright Nicholas C. Zakas. All Rights Reserved.
 
-This product includes software (@eslint/js@8.57.0) developed at
+This product includes software (@eslint/js@9.15.0) developed at
 (https://github.com/eslint/eslint).
+
+The Initial Developer of @eslint/object-schema@2.1.4,
+is Nicholas C. Zakas (https://github.com/eslint/rewrite).
+Copyright Nicholas C. Zakas. All Rights Reserved.
+
+The Initial Developer of @eslint/plugin-kit@0.2.3,
+is Nicholas C. Zakas (https://github.com/eslint/rewrite).
+Copyright Nicholas C. Zakas. All Rights Reserved.
 
 The Initial Developer of @ethersproject/abi@5.7.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
@@ -357,6 +369,14 @@ The Initial Developer of @hashgraph/proto@2.15.0-beta.4,
 is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
+The Initial Developer of @humanfs/core@0.19.1,
+is Nicholas C. Zakas (https://github.com/humanwhocodes/humanfs).
+Copyright Nicholas C. Zakas. All Rights Reserved.
+
+The Initial Developer of @humanfs/node@0.16.6,
+is Nicholas C. Zakas (https://github.com/humanwhocodes/humanfs).
+Copyright Nicholas C. Zakas. All Rights Reserved.
+
 The Initial Developer of @humanwhocodes/config-array@0.11.14,
 is Nicholas C. Zakas (https://github.com/humanwhocodes/config-array).
 Copyright Nicholas C. Zakas. All Rights Reserved.
@@ -368,6 +388,10 @@ Copyright Nicholas C. Zaks. All Rights Reserved.
 The Initial Developer of @humanwhocodes/object-schema@2.0.3,
 is Nicholas C. Zakas (https://github.com/humanwhocodes/object-schema).
 Copyright Nicholas C. Zakas. All Rights Reserved.
+
+The Initial Developer of @humanwhocodes/retry@0.4.1,
+is Nicholas C. Zaks (https://github.com/humanwhocodes/retry).
+Copyright Nicholas C. Zaks. All Rights Reserved.
 
 The Initial Developer of @isaacs/cliui@8.0.2,
 is Ben Coe (https://github.com/yargs/cliui).
@@ -517,9 +541,6 @@ The Initial Developer of @rollup/rollup-darwin-arm64@4.26.0,
 is Lukas Taegert-Atkinson (https://github.com/rollup/rollup).
 Copyright Lukas Taegert-Atkinson. All Rights Reserved.
 
-This product includes software (@rushstack/eslint-patch@1.10.4) developed at
-(https://github.com/microsoft/rushstack).
-
 The Initial Developer of @sindresorhus/is@4.6.0,
 is Sindre Sorhus (https://github.com/sindresorhus/is).
 Copyright Sindre Sorhus. All Rights Reserved.
@@ -592,35 +613,35 @@ This product includes software (@types/verror@1.10.10) developed at
 This product includes software (@types/yauzl@2.10.3) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
-This product includes software (@typescript-eslint/eslint-plugin@7.18.0) developed at
+This product includes software (@typescript-eslint/eslint-plugin@8.15.0) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
-This product includes software (@typescript-eslint/parser@7.18.0) developed at
+This product includes software (@typescript-eslint/parser@8.15.0) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
-This product includes software (@typescript-eslint/scope-manager@7.18.0) developed at
+This product includes software (@typescript-eslint/scope-manager@8.15.0) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
-This product includes software (@typescript-eslint/type-utils@7.18.0) developed at
+This product includes software (@typescript-eslint/type-utils@8.15.0) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
-This product includes software (@typescript-eslint/types@7.18.0) developed at
+This product includes software (@typescript-eslint/types@8.15.0) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
-This product includes software (@typescript-eslint/typescript-estree@7.18.0) developed at
+This product includes software (@typescript-eslint/typescript-estree@8.15.0) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
-This product includes software (@typescript-eslint/utils@7.18.0) developed at
+This product includes software (@typescript-eslint/utils@8.15.0) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
-This product includes software (@typescript-eslint/visitor-keys@7.18.0) developed at
+This product includes software (@typescript-eslint/visitor-keys@8.15.0) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
 The Initial Developer of @ungap/structured-clone@1.2.0,
 is Andrea Giammarchi (https://github.com/ungap/structured-clone).
 Copyright Andrea Giammarchi. All Rights Reserved.
 
-The Initial Developer of @vitejs/plugin-vue@5.1.5,
+The Initial Developer of @vitejs/plugin-vue@5.2.0,
 is Evan You (https://github.com/vitejs/vite-plugin-vue).
 Copyright Evan You. All Rights Reserved.
 
@@ -706,11 +727,11 @@ The Initial Developer of @vue/devtools-shared@7.6.4,
 is webfansplz (https://github.com/vuejs/devtools).
 Copyright webfansplz. All Rights Reserved.
 
-The Initial Developer of @vue/eslint-config-prettier@9.0.0,
+The Initial Developer of @vue/eslint-config-prettier@10.1.0,
 is Evan You (https://github.com/vuejs/eslint-config-prettier).
 Copyright Evan You. All Rights Reserved.
 
-The Initial Developer of @vue/eslint-config-typescript@13.0.0,
+The Initial Developer of @vue/eslint-config-typescript@14.1.3,
 is Evan You (https://github.com/vuejs/eslint-config-typescript).
 Copyright Evan You. All Rights Reserved.
 
@@ -1339,23 +1360,23 @@ The Initial Developer of eslint-plugin-prettier@5.2.1,
 is Teddy Katz (https://github.com/prettier/eslint-plugin-prettier).
 Copyright Teddy Katz. All Rights Reserved.
 
-The Initial Developer of eslint-plugin-vue@9.28.0,
+The Initial Developer of eslint-plugin-vue@9.31.0,
 is Toru Nagashima (https://github.com/vuejs/eslint-plugin-vue).
 Copyright Toru Nagashima. All Rights Reserved.
 
-This product includes software (eslint-scope@7.2.2) developed at
-(https://github.com/eslint/eslint-scope).
+This product includes software (eslint-scope@8.2.0) developed at
+(https://github.com/eslint/js).
 
-The Initial Developer of eslint-visitor-keys@3.4.3,
-is Toru Nagashima (https://github.com/eslint/eslint-visitor-keys).
+The Initial Developer of eslint-visitor-keys@4.2.0,
+is Toru Nagashima (https://github.com/eslint/js).
 Copyright Toru Nagashima. All Rights Reserved.
 
-The Initial Developer of eslint@8.57.0,
+The Initial Developer of eslint@9.15.0,
 is Nicholas C. Zakas (https://github.com/eslint/eslint).
 Copyright Nicholas C. Zakas. All Rights Reserved.
 
-The Initial Developer of espree@9.6.1,
-is Nicholas C. Zakas (https://github.com/eslint/espree).
+The Initial Developer of espree@10.3.0,
+is Nicholas C. Zakas (https://github.com/eslint/js).
 Copyright Nicholas C. Zakas. All Rights Reserved.
 
 The Initial Developer of esquery@1.6.0,
@@ -1445,9 +1466,9 @@ The Initial Developer of fd-slicer@1.1.0,
 is Andrew Kelley (https://github.com/andrewrk/node-fd-slicer).
 Copyright Andrew Kelley. All Rights Reserved.
 
-The Initial Developer of file-entry-cache@6.0.1,
-is Roy Riojas (https://github.com/royriojas/file-entry-cache).
-Copyright Roy Riojas. All Rights Reserved.
+The Initial Developer of file-entry-cache@8.0.0,
+is Jared Wray (https://github.com/jaredwray/file-entry-cache).
+Copyright Jared Wray. All Rights Reserved.
 
 The Initial Developer of file-uri-to-path@1.0.0,
 is Nathan Rajlich (https://github.com/TooTallNate/file-uri-to-path).
@@ -1465,7 +1486,7 @@ The Initial Developer of find-up@5.0.0,
 is Sindre Sorhus (https://github.com/sindresorhus/find-up).
 Copyright Sindre Sorhus. All Rights Reserved.
 
-The Initial Developer of flat-cache@3.2.0,
+The Initial Developer of flat-cache@4.0.1,
 is Jared Wray (https://github.com/jaredwray/flat-cache).
 Copyright Jared Wray. All Rights Reserved.
 
@@ -1544,7 +1565,7 @@ The Initial Developer of global-agent@3.0.0,
 is Gajus Kuizinas (https://github.com/gajus/global-agent).
 Copyright Gajus Kuizinas. All Rights Reserved.
 
-The Initial Developer of globals@13.24.0,
+The Initial Developer of globals@14.0.0,
 is Sindre Sorhus (https://github.com/sindresorhus/globals).
 Copyright Sindre Sorhus. All Rights Reserved.
 
@@ -2703,8 +2724,11 @@ The Initial Developer of type-fest@0.20.2,
 is Sindre Sorhus (https://github.com/sindresorhus/type-fest).
 Copyright Sindre Sorhus. All Rights Reserved.
 
-The Initial Developer of typescript@5.5.4,
-is Microsoft Corp. (https://github.com/Microsoft/TypeScript).
+This product includes software (typescript-eslint@8.15.0) developed at
+(https://github.com/typescript-eslint/typescript-eslint).
+
+The Initial Developer of typescript@5.6.3,
+is Microsoft Corp. (https://github.com/microsoft/TypeScript).
 Copyright Microsoft Corp.. All Rights Reserved.
 
 This product includes software (undici-types@5.26.5) developed at
@@ -2907,10 +2931,6 @@ The Initial Developer of @eslint-community/eslint-utils@4.4.0,
 is Toru Nagashima (https://github.com/eslint-community/eslint-utils).
 Copyright Toru Nagashima. All Rights Reserved.
 
-The Initial Developer of @eslint-community/regexpp@4.11.0,
-is Toru Nagashima (https://github.com/eslint-community/regexpp).
-Copyright Toru Nagashima. All Rights Reserved.
-
 The Initial Developer of @hashgraph/hedera-local@2.32.1,
 is hashgraph (github.com:hashgraph/hedera-local-node).
 Copyright hashgraph. All Rights Reserved.
@@ -3021,30 +3041,6 @@ This product includes software (@types/readline-sync@1.4.8) developed at
 This product includes software (@types/supertest@6.0.2) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
-This product includes software (@typescript-eslint/eslint-plugin@7.6.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/parser@7.6.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/scope-manager@7.6.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/type-utils@7.6.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/types@7.6.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/typescript-estree@7.6.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/utils@7.6.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/visitor-keys@7.6.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
 The Initial Developer of amqp-connection-manager@4.1.14,
 is Jason Walton (https://github.com/jwalton/node-amqp-connection-manager).
 Copyright Jason Walton. All Rights Reserved.
@@ -3067,13 +3063,13 @@ The Initial Developer of class-validator@0.14.1,
 is TypeStack contributors (https://github.com/typestack/class-validator).
 Copyright TypeStack contributors. All Rights Reserved.
 
-The Initial Developer of eslint-plugin-prettier@5.1.3,
-is Teddy Katz (https://github.com/prettier/eslint-plugin-prettier).
-Copyright Teddy Katz. All Rights Reserved.
-
 The Initial Developer of express@4.21.1,
 is TJ Holowaychuk (https://github.com/expressjs/express).
 Copyright TJ Holowaychuk. All Rights Reserved.
+
+The Initial Developer of globals@15.12.0,
+is Sindre Sorhus (https://github.com/sindresorhus/globals).
+Copyright Sindre Sorhus. All Rights Reserved.
 
 The Initial Developer of ioredis@5.4.1,
 is Zihua Li (https://github.com/luin/ioredis).

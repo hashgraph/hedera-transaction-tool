@@ -21,7 +21,7 @@ export const saveContentToPath = async (filePath: string, content: Buffer) => {
     await fs.writeFile(filePath, content);
 
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 };

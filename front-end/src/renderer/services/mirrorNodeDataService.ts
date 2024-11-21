@@ -210,7 +210,7 @@ export const getExchangeRateSet = async (mirrorNodeLink: string, controller?: Ab
     const exchangeRateSet: NetworkExchangeRateSetResponse = data;
 
     return exchangeRateSet;
-  } catch (error) {
+  } catch {
     throw new Error('Failed to fetch exchange rate');
   }
 };

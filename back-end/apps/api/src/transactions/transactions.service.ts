@@ -371,7 +371,7 @@ export class TransactionsService {
 
     try {
       await this.repo.save(transaction);
-    } catch (error) {
+    } catch {
       throw new BadRequestException(ErrorCodes.FST);
     }
 

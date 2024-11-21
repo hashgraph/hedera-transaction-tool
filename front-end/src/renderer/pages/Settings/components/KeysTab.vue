@@ -102,7 +102,7 @@ const decrypt = async () => {
         decrypted: decryptedKey,
       });
     }
-  } catch (err: any) {
+  } catch {
     toast.error('Failed to decrypt private key', { position: 'bottom-right' });
   }
 };

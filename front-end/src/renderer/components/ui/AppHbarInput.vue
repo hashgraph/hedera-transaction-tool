@@ -48,7 +48,7 @@ const handleUpdateValue = async (value: string) => {
   try {
     const hbar = Hbar.fromString(value || '0', HbarUnit.Hbar);
     emit('update:modelValue', hbar);
-  } catch (error) {
+  } catch {
     throw new Error('Invalid Hbar value');
   }
 };

@@ -43,7 +43,7 @@ export const createFileInfo = (props: {
   if (typeof props.fileId === 'string') {
     try {
       props.fileId = FileId.fromString(props.fileId);
-    } catch (error) {
+    } catch {
       props.fileId = FileId.fromString('0');
     }
   }
@@ -209,7 +209,7 @@ export const decodeProtobuffKey = (protobuffKey: string): Key | null => {
     }
 
     return null;
-  } catch (error) {
+  } catch {
     throw new Error('Failed to decode protobuf');
   }
 };

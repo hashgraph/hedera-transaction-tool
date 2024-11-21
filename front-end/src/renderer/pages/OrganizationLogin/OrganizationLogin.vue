@@ -137,7 +137,7 @@ watch([inputEmail, inputPassword], () => {
 onBeforeRouteLeave(async () => {
   try {
     await user.refetchUserState();
-  } catch (error) {
+  } catch {
     user.selectOrganization(null);
   }
 

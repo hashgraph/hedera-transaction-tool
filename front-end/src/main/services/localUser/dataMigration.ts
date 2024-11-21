@@ -120,7 +120,7 @@ export async function decryptMnemonic(
     let decrypted = decipher.update(new Uint8Array(encryptedText), undefined, 'utf8');
     decrypted += decipher.final();
     return decrypted;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

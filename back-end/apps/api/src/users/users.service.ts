@@ -47,7 +47,7 @@ export class UsersService {
 
     try {
       user = await this.getUser({ email });
-    } catch (error) {
+    } catch {
       throw new InternalServerErrorException('Failed to retrieve user.');
     }
 

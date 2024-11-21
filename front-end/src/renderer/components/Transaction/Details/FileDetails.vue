@@ -23,7 +23,7 @@ import { saveFile } from '@renderer/services/electronUtilsService';
 import { getTransactionInfo } from '@renderer/services/mirrorNodeDataService';
 import { add, getAll } from '@renderer/services/filesService';
 
-import { isUserLoggedIn, getFormattedDateFromTimestamp } from '@renderer/utils';
+import { isUserLoggedIn, getFormattedDateFromTimestamp, safeAwait } from '@renderer/utils';
 
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -70,18 +70,16 @@ const handleLinkEntity = async () => {
 
 /* Functions */
 async function fetchTransactionInfo(payer: string, seconds: string, nanos: string) {
-  try {
-    const { transactions } = await getTransactionInfo(
+  const { data } = await safeAwait(
+    getTransactionInfo(
       `${payer}-${seconds}-${nanos}`,
       network.mirrorNodeBaseURL,
       controller.value || undefined,
-    );
+    ),
+  );
 
-    if (transactions.length > 0) {
-      entityId.value = transactions[0].entity_id || null;
-    }
-  } catch (error) {
-    /* Ignore if transaction not available in mirror node */
+  if (data && data.transactions.length > 0) {
+    entityId.value = data.transactions[0].entity_id || null;
   }
 }
 

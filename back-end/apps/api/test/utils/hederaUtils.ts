@@ -148,16 +148,24 @@ export const updateAccount = async (
     throw new Error('newKeyPrivateKey is required when newKey is provided');
   }
 
-  options.newKey && transaction.setKey(options.newKey);
-  options.memo && transaction.setAccountMemo(options.memo);
-  options.declineStakingReward !== undefined &&
+  if (options.newKey) {
+    transaction.setKey(options.newKey);
+  }
+  if (options.memo) {
+    transaction.setAccountMemo(options.memo);
+  }
+  if (options.declineStakingReward !== undefined) {
     transaction.setDeclineStakingReward(options.declineStakingReward);
-  options.receiverSignatureRequired !== undefined &&
+  }
+  if (options.receiverSignatureRequired !== undefined) {
     transaction.setReceiverSignatureRequired(options.receiverSignatureRequired);
+  }
 
   transaction.freezeWith(client);
   await transaction.sign(oldAccountPrivateKey);
-  options.newKey && (await transaction.sign(options.newKeyPrivateKey));
+  if (options.newKey) {
+    await transaction.sign(options.newKeyPrivateKey);
+  }
 
   const response = await transaction.execute(client);
   const receipt = await response.getReceipt(client);

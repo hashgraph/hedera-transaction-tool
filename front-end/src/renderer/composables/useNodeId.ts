@@ -46,7 +46,7 @@ export default function useNodeId() {
       if (nodeInfoRes?.node_account_id) {
         accountData.accountId.value = nodeInfoRes.node_account_id.toString();
       }
-    } catch (e) {
+    } catch {
       resetData();
     }
   });

@@ -106,7 +106,7 @@ const handleInsert = () => {
     publicKey.value = '';
     selectedPublicKeys.value = [];
     emit('update:show', false);
-  } catch (error) {
+  } catch {
     throw new Error('Invalid public key/s');
   }
 };

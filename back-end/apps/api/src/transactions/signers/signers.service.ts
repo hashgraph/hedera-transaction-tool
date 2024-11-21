@@ -156,7 +156,7 @@ export class SignersService {
       /* Commit the database transaction */
       await queryRunner.commitTransaction();
       await queryRunner.release();
-    } catch (error) {
+    } catch {
       await queryRunner.rollbackTransaction();
       await queryRunner.release();
       throw new BadRequestException(ErrorCodes.FST);

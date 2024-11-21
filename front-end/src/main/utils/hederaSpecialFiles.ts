@@ -502,7 +502,7 @@ function parseBytesToJson<T>(bytes: Uint8Array): T {
   try {
     bytesString = JSON.parse(bytesString);
     return bytesString;
-  } catch (error) {
+  } catch {
     return bytesString;
   }
 }

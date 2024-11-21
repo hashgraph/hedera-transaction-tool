@@ -56,7 +56,7 @@ const checkShouldChoose = async () => {
 
     const usersCount = await getUsersCount();
     if (usersCount < 2) return true;
-  } catch (error) {
+  } catch {
     /* Not initialized */
     return true;
   }

@@ -436,7 +436,7 @@ export const getConnectedOrganization = async (
     };
 
     return connectedOrganization;
-  } catch (error) {
+  } catch {
     return activeloginRequired;
   }
 };
@@ -495,7 +495,7 @@ export const refetchUserState = async (organization: Ref<ConnectedOrganization |
     organization.value.userKeys = userKeys;
     organization.value.secretHashes = secretHashes;
     organization.value.isPasswordTemporary = passwordTemporary;
-  } catch (error) {
+  } catch {
     const activeloginRequired: ConnectedOrganization = {
       id: organization.value.id,
       nickname: organization.value.nickname,

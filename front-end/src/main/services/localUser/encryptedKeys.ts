@@ -177,7 +177,7 @@ export const decryptPrivateKeyFromPath = async (
       recoveryPhraseHashCode: info ? info.hashCode : null,
       index: info ? info.index : null,
     };
-  } catch (error) {
+  } catch {
     throw new Error('Incorrect encryption password');
   }
 };
