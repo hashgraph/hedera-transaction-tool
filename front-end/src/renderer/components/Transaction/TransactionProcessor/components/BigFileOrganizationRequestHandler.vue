@@ -138,7 +138,6 @@ function createGroupItem(transaction: Transaction, transactionKey: Key, seq: str
   const transactionBytes = transaction.toBytes();
 
   return {
-    accountId: '',
     approvers: props.approvers,
     description: '',
     keyList: flattenKeyList(transactionKey).map(pk => pk.toStringRaw()),

@@ -282,7 +282,6 @@ async function handleOnFileChanged(e: Event) {
             transactionGroup.addGroupItem({
               transactionBytes,
               type: 'Transfer Transaction',
-              accountId: '',
               seq: transactionGroup.groupItems.length.toString(),
               keyList: keys,
               observers: [],
@@ -433,7 +432,6 @@ onBeforeRouteLeave(async to => {
             <div class="d-flex justify-content-between p-4 transaction-group-row">
               <div class="align-self-center col">
                 <div>{{ groupItem.type }}</div>
-                <div v-if="groupItem.accountId">{{ groupItem.accountId }}</div>
               </div>
               <div class="align-self-center text-truncate col text-center mx-5">
                 {{
