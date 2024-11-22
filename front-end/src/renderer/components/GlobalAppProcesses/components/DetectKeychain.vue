@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { getUsersCount, resetDataLocal } from '@renderer/services/userService';
+import { getUsersCount } from '@renderer/services/userService';
 import {
   encrypt,
   getStaticUser,
@@ -14,6 +14,11 @@ import {
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+
+/* Emits */
+const emit = defineEmits<{
+  (event: 'ready'): void;
+}>();
 
 /* Stores */
 const user = useUserStore();
@@ -28,7 +33,6 @@ const handleSubmit = async (e: Event) => {
 };
 
 const handleChooseMode = async (useKeyChain: boolean) => {
-  await resetDataLocal();
   await initializeUseKeychain(useKeyChain);
 
   if (useKeyChain) {
@@ -74,6 +78,10 @@ const initialize = async () => {
 
   const shouldChoose = await checkShouldChoose();
   show.value = shouldChoose;
+
+  if (!shouldChoose) {
+    emit('ready');
+  }
 };
 
 /* Hooks */

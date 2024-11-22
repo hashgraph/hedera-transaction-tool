@@ -6,8 +6,6 @@ import 'bootstrap/dist/js/bootstrap.bundle.min';
 import useUserStore from '@renderer/stores/storeUser';
 import useThemeStore from '@renderer/stores/storeTheme';
 
-import useAutoLogin from '@renderer/composables/useAutoLogin';
-
 import {
   provideDynamicLayout,
   provideGlobalModalLoaderlRef,
@@ -34,9 +32,6 @@ const dynamicLayout = reactive({
   shouldSetupAccountClass: false,
   showMenu: false,
 });
-
-/* Composables */
-useAutoLogin(globalModalLoaderRef);
 
 /* Handlers */
 async function handleThemeChange() {
