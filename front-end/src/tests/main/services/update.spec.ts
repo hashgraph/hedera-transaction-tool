@@ -82,6 +82,8 @@ describe('Updater', () => {
     });
 
     it('should return update data if a matching file for MAC is found', async () => {
+      Object.defineProperty(process, 'platform', { value: 'darwin' });
+
       //@ts-expect-error
       vi.mocked(fs.readdir).mockResolvedValue(['hedera-transaction-tool-1.1.0-mac-universal.pkg']);
       //@ts-expect-error - Testing private method
