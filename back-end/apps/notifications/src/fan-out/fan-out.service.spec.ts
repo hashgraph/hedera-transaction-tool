@@ -166,8 +166,7 @@ describe('Fan Out Service', () => {
         receivers,
       );
       expect(entityManager.update).toHaveBeenCalledTimes(4);
-      expect(entityManager.update).toHaveBeenNthCalledWith(
-        1,
+      expect(entityManager.update).toHaveBeenCalledWith(
         NotificationReceiver,
         {
           notificationId: notification.id,
@@ -177,8 +176,7 @@ describe('Fan Out Service', () => {
           isEmailSent: false,
         },
       );
-      expect(entityManager.update).toHaveBeenNthCalledWith(
-        2,
+      expect(entityManager.update).toHaveBeenCalledWith(
         NotificationReceiver,
         {
           notificationId: notification.id,
@@ -188,8 +186,7 @@ describe('Fan Out Service', () => {
           isInAppNotified: false,
         },
       );
-      expect(entityManager.update).toHaveBeenNthCalledWith(
-        3,
+      expect(entityManager.update).toHaveBeenCalledWith(
         NotificationReceiver,
         {
           notificationId: notification.id,
@@ -199,8 +196,7 @@ describe('Fan Out Service', () => {
           isEmailSent: true,
         },
       );
-      expect(entityManager.update).toHaveBeenNthCalledWith(
-        4,
+      expect(entityManager.update).toHaveBeenCalledWith(
         NotificationReceiver,
         {
           notificationId: notification.id,

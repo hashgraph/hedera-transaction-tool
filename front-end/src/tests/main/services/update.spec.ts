@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as fs from 'fs/promises';
 import { app, BrowserWindow } from 'electron';
 
-import { LatestYML, Updater } from '@main/services/update';
+import { NewVersion, Updater } from '@main/services/update';
 
 vi.mock('fs/promises');
 vi.mock('electron', () => ({
@@ -39,102 +39,91 @@ describe('Updater', () => {
 
     it('should not proceed if update data is null', async () => {
       //@ts-expect-error - Testing private method
-      vi.spyOn(Updater, 'readLatestMacYml').mockResolvedValue(null);
-      await Updater.checkForUpdate('/path/to/location');
-      expect(mockWindow.webContents.send).not.toHaveBeenCalled();
-    });
-
-    it('should not proceed if files verification fails', async () => {
-      const updateData: LatestYML = { version: '1.1.0', files: ['file1', 'file2'] };
-      //@ts-expect-error - Testing private method
-      vi.spyOn(Updater, 'readLatestMacYml').mockResolvedValue(updateData);
-      //@ts-expect-error - Testing private method
-      vi.spyOn(Updater, 'verifyFiles').mockResolvedValue(false);
+      vi.spyOn(Updater, 'checkLocation').mockResolvedValue(null);
       await Updater.checkForUpdate('/path/to/location');
       expect(mockWindow.webContents.send).not.toHaveBeenCalled();
     });
 
     it('should send update message if a newer version is available', async () => {
-      const updateData: LatestYML = { version: '1.1.0', files: ['file1', 'file2'] };
+      const updateData: NewVersion = { version: '1.1.0', file: 'file1' };
       //@ts-expect-error - Testing private method
-      vi.spyOn(Updater, 'readLatestMacYml').mockResolvedValue(updateData);
-      //@ts-expect-error - Testing private method
-      vi.spyOn(Updater, 'verifyFiles').mockResolvedValue(true);
-      //@ts-expect-error - Testing private method
-      vi.spyOn(Updater, 'getFileForPlatform').mockImplementationOnce(() => 'artifact');
+      vi.spyOn(Updater, 'checkLocation').mockResolvedValue(updateData);
       await Updater.checkForUpdate('/path/to/location');
       expect(mockWindow.webContents.send).toHaveBeenCalledWith(
         'update:check-for-update-result',
-        'artifact',
+        'file1',
       );
     });
 
     it('should not send update message if the current version is up-to-date', async () => {
-      const updateData: LatestYML = { version: '1.0.0', files: ['file1', 'file2'] };
+      const updateData: NewVersion = { version: '1.0.0', file: 'file1' };
       //@ts-expect-error - Testing private method
-      vi.spyOn(Updater, 'readLatestMacYml').mockResolvedValue(updateData);
-      //@ts-expect-error - Testing private method
-      vi.spyOn(Updater, 'verifyFiles').mockResolvedValue(true);
+      vi.spyOn(Updater, 'checkLocation').mockResolvedValue(updateData);
+      vi.mocked(app.getVersion).mockReturnValue('1.0.0');
       await Updater.checkForUpdate('/path/to/location');
       expect(mockWindow.webContents.send).not.toHaveBeenCalled();
     });
   });
 
-  describe('readLatestMacYml', () => {
-    afterAll(() => {
-      vi.restoreAllMocks();
-    });
-
-    it('should return null if the file cannot be read', async () => {
-      vi.mocked(fs.readFile).mockRejectedValue(new Error('File not found'));
+  describe('checkLocation', () => {
+    it('should return null if no matching file is found', async () => {
+      //@ts-expect-error
+      vi.mocked(fs.readdir).mockResolvedValue(['some-other-file.txt']);
       //@ts-expect-error - Testing private method
-      const result = await Updater.readLatestMacYml('/path/to/location');
+      const result = await Updater.checkLocation('/path/to/location');
       expect(result).toBeNull();
     });
 
-    it('should return parsed data if the file is read successfully', async () => {
-      const fileContent = `
-version: 1.1.0
-files:
-  - url: file1
-  - url: file2
-`;
-      vi.mocked(fs.readFile).mockResolvedValue(fileContent);
+    it('should return null if an error occurs', async () => {
+      vi.mocked(fs.readdir).mockRejectedValue(new Error('Failed to read directory'));
       //@ts-expect-error - Testing private method
-      const result = await Updater.readLatestMacYml('/path/to/location');
-      expect(result).toEqual({ version: '1.1.0', files: ['file1', 'file2'] });
-    });
-
-    it('should return null if the version is not found', async () => {
-      const fileContent = `
-files:
-  - url: file1
-  - url: file2
-`;
-      vi.mocked(fs.readFile).mockResolvedValue(fileContent);
-      //@ts-expect-error - Testing private method
-      const result = await Updater.readLatestMacYml('/path/to/location');
+      const result = await Updater.checkLocation('/path/to/location');
       expect(result).toBeNull();
     });
-  });
 
-  describe('verifyFiles', () => {
-    afterAll(() => {
-      vi.restoreAllMocks();
+    it('should return update data if a matching file for MAC is found', async () => {
+      Object.defineProperty(process, 'platform', { value: 'darwin' });
+
+      //@ts-expect-error
+      vi.mocked(fs.readdir).mockResolvedValue(['hedera-transaction-tool-1.1.0-mac-universal.pkg']);
+      //@ts-expect-error - Testing private method
+      const result = await Updater.checkLocation('/path/to/location');
+      expect(result).toEqual({
+        version: '1.1.0',
+        file: 'hedera-transaction-tool-1.1.0-mac-universal.pkg',
+      });
     });
 
-    it('should return true if all files are present', async () => {
-      vi.mocked(fs.readdir).mockResolvedValue(['file1', 'file2'] as any);
+    it('should return update data if a matching file for MAC is found', async () => {
+      Object.defineProperty(process, 'platform', { value: 'win32' });
+
+      vi.mocked(fs.readdir).mockResolvedValue([
+        //@ts-expect-error
+        'hedera-transaction-tool-1.1.0-win32-universal.pkg',
+      ]);
       //@ts-expect-error - Testing private method
-      const result = await Updater.verifyFiles('/path/to/location', ['file1', 'file2']);
-      expect(result).toBe(true);
+      const result = await Updater.checkLocation('/path/to/location');
+      expect(result).toEqual({
+        version: '1.1.0',
+        file: 'hedera-transaction-tool-1.1.0-win32-universal.pkg',
+      });
     });
 
-    it('should return false if any file is missing', async () => {
-      vi.mocked(fs.readdir).mockResolvedValue(['file1'] as any);
+    it('should return update data if a matching file for MAC is found', async () => {
+      Object.defineProperty(process, 'platform', { value: 'linux' });
+
+      vi.mocked(fs.readdir).mockResolvedValue([
+        //@ts-expect-error
+        'hedera-transaction-tool-1.1.0-linux-universal.pkg',
+      ]);
       //@ts-expect-error - Testing private method
-      const result = await Updater.verifyFiles('/path/to/location', ['file1', 'file2']);
-      expect(result).toBe(false);
+      const result = await Updater.checkLocation('/path/to/location');
+      expect(result).toEqual({
+        version: '1.1.0',
+        file: 'hedera-transaction-tool-1.1.0-linux-universal.pkg',
+      });
+
+      Object.defineProperty(process, 'platform', { value: 'darwin' });
     });
   });
 
@@ -227,42 +216,6 @@ files:
       //@ts-expect-error - Testing private method
       const result = Updater.isNewerVersion('1.0.0-beta.2', '1.0.0-beta.10');
       expect(result).toBe(false);
-    });
-  });
-
-  describe('getFileForPlatform', () => {
-    afterAll(() => {
-      vi.restoreAllMocks();
-    });
-
-    it('should return the correct file for the current platform', () => {
-      const files = ['file1-x64', 'file2-arm64'];
-      const originalArch = process.arch;
-      Object.defineProperty(process, 'arch', { value: 'x64' });
-      //@ts-expect-error - Testing private method
-      const result = Updater.getFileForPlatform(files);
-      expect(result).toBe('file1-x64');
-      Object.defineProperty(process, 'arch', { value: originalArch });
-    });
-
-    it('should return null if no file matches the current platform', () => {
-      const files = ['file1-x64', 'file2-arm64'];
-      const originalArch = process.arch;
-      Object.defineProperty(process, 'arch', { value: 'ia32' });
-      //@ts-expect-error - Testing private method
-      const result = Updater.getFileForPlatform(files);
-      expect(result).toBeNull();
-      Object.defineProperty(process, 'arch', { value: originalArch });
-    });
-
-    it('should return the first matching file if multiple files match the current platform', () => {
-      const files = ['file1-x64', 'file2-x64'];
-      const originalArch = process.arch;
-      Object.defineProperty(process, 'arch', { value: 'x64' });
-      //@ts-expect-error - Testing private method
-      const result = Updater.getFileForPlatform(files);
-      expect(result).toBe('file1-x64');
-      Object.defineProperty(process, 'arch', { value: originalArch });
     });
   });
 });
