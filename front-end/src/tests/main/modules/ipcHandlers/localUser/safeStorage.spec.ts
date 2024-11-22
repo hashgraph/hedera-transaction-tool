@@ -84,6 +84,19 @@ describe('IPC handlers Safe Storage', () => {
     expect(addClaim).toHaveBeenCalledWith(STATIC_USER, USE_KEYCHAIN, 'false');
   });
 
+  test('Should throw if initializeUseKeychain handler is already called', async () => {
+    const handler = ipcMainMO.handle.mock.calls.find(
+      ([e]) => e === 'safeStorage:initializeUseKeychain',
+    );
+    expect(handler).toBeDefined();
+    vi.mocked(getClaims).mockResolvedValueOnce([{ claim_value: 'true' } as Claim]);
+    if (handler) {
+      await expect(() => handler[1](event, false)).rejects.toThrow(
+        'Keychain mode already initialized',
+      );
+    }
+  });
+
   test('Should set up getUseKeychain handler if initialized', async () => {
     const handler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'safeStorage:getUseKeychain');
     expect(handler).toBeDefined();

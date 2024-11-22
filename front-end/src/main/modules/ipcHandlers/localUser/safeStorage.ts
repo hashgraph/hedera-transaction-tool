@@ -2,7 +2,6 @@ import { ipcMain, safeStorage } from 'electron';
 
 import { USE_KEYCHAIN } from '@main/shared/constants';
 
-import { resetDatabase } from '@main/services/localUser/index';
 import { addClaim, getClaims } from '@main/services/localUser/claim';
 import { login, register } from '@main/services/localUser/auth';
 
@@ -26,8 +25,8 @@ export default () => {
 
   // Initializes the flag for keychain mode, can be used only once
   ipcMain.handle(createChannelName('initializeUseKeychain'), async (_e, useKeychain: boolean) => {
-    /* Resets the data */
-    await resetDatabase();
+    const flags = await getFlags();
+    if (flags.length > 0) throw new Error('Keychain mode already initialized');
 
     /* Creates a fake user to store the keychain mode flag */
     const staticUser = await register(STATIC_USER, STATIC_USER);
