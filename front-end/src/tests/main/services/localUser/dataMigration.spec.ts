@@ -255,13 +255,23 @@ describe('Data Migration', () => {
         Hbar.fromTinybars(1000).toString(HbarUnit.Tinybar),
       );
       expect(addClaim).toHaveBeenCalledWith(mockUserId, SELECTED_NETWORK, CommonNetwork.TESTNET);
-      expect(addClaim).toHaveBeenCalledWith(mockUserId, UPDATE_LOCATION, 'mockDir');
+      expect(addClaim).toHaveBeenCalledWith(mockUserId, UPDATE_LOCATION, 'mockDir/InputFiles');
       expect(addAccount).toHaveBeenCalledWith(
         mockUserId,
         '0.0.123',
         CommonNetwork.TESTNET,
         'account1',
       );
+    });
+
+    test('Should correctly migrate updates location when /InputFiles suffix exists', async () => {
+      const mockUserId = 'userId';
+      const mockContent = 'credentials={"mockDir/InputFiles": "svet"}';
+      vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
+
+      await migrateUserData(mockUserId);
+
+      expect(addClaim).toHaveBeenCalledWith(mockUserId, UPDATE_LOCATION, 'mockDir/InputFiles');
     });
 
     test('Should handle errors gracefully when reading properties file', async () => {
@@ -456,7 +466,7 @@ describe('Data Migration', () => {
         defaultMaxTransactionFee: null,
         currentNetwork: CommonNetwork.MAINNET,
       });
-      expect(addClaim).toHaveBeenCalledWith(mockUserId, UPDATE_LOCATION, 'mockDir');
+      expect(addClaim).toHaveBeenCalledWith(mockUserId, UPDATE_LOCATION, 'mockDir/InputFiles');
     });
   });
 
