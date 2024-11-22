@@ -61,7 +61,7 @@
 
 .btn-group-container {
   background-color: var(--#{$prefix}btn-group-container-bg-color);
-  border-radius: $border-radius;
+  border-radius: 10px;
   padding: 8px;
   box-shadow: 1px 1px 1px 0px #00000012 inset;
 }

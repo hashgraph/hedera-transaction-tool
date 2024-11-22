@@ -2,10 +2,10 @@
 import type { Network } from '@main/shared/interfaces';
 import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 
-import { inject, onBeforeMount, ref } from 'vue';
+import { computed, inject, onBeforeMount, ref } from 'vue';
 
 import { SELECTED_NETWORK } from '@main/shared/constants';
-import { CommonNetwork } from '@main/shared/enums';
+import { CommonNetwork, CommonNetworkNames } from '@main/shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -25,17 +25,28 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 const user = useUserStore();
 const networkStore = useNetworkStore();
 
+/* Composables */
+const toast = useToast();
+
+/* Injected */
+const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
+
 /* State */
 const mirrorNodeInputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const isCustomSettingsVisible = ref(false);
 
 const mirrorNodeBaseURL = ref('');
 
-/* Composables */
-const toast = useToast();
-
-/* Injected */
-const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
+/* Computed */
+const isCustomActive = computed(
+  () =>
+    ![
+      CommonNetwork.MAINNET,
+      CommonNetwork.TESTNET,
+      CommonNetwork.PREVIEWNET,
+      CommonNetwork.LOCAL_NODE,
+    ].includes(networkStore.network),
+);
 
 /* Handlers */
 const handleNetworkChange = async (network: Network) => {
@@ -48,8 +59,19 @@ const handleCommonNetwork = async (network: Network) => {
   await handleNetworkChange(network);
 };
 
-const handleMirrorNodeBaseURLChange = async (e: Event) => {
-  const value = (e.target as HTMLInputElement)?.value || '';
+const handleToggleCustomNetwork = async () => {
+  isCustomSettingsVisible.value = !isCustomSettingsVisible.value;
+
+  if (isCustomSettingsVisible.value) {
+    await applyCustomNetwork();
+  }
+};
+
+const handleMirrorNodeBaseURLChange = async () => {
+  if (!mirrorNodeInputRef.value?.inputRef) return;
+
+  const value = mirrorNodeInputRef.value.inputRef.value;
+
   if (!value.trim()) {
     forceSetMirrorNodeBaseURL(mirrorNodeBaseURL.value);
     return;
@@ -83,16 +105,18 @@ const forceSetMirrorNodeBaseURL = async (value: string) => {
   }
 };
 
+const applyCustomNetwork = async () => {
+  await withLoader(
+    () => handleMirrorNodeBaseURLChange(),
+    toast,
+    globalModalLoaderRef?.value,
+    'Failed to update network',
+  )();
+};
+
 /* Hooks */
 onBeforeMount(() => {
-  if (
-    ![
-      CommonNetwork.MAINNET,
-      CommonNetwork.TESTNET,
-      CommonNetwork.PREVIEWNET,
-      CommonNetwork.LOCAL_NODE,
-    ].includes(networkStore.network)
-  ) {
+  if (isCustomActive.value) {
     mirrorNodeBaseURL.value = networkStore.network;
   }
 });
@@ -100,57 +124,36 @@ onBeforeMount(() => {
 <template>
   <div class="fill-remaining border border-2 rounded-3 p-4">
     <p>Network</p>
-    <div class="btn-group rounded-3 overflow-x-auto w-100 pb-2 mt-4">
-      <AppButton
-        color="secondary"
-        data-testid="tab-network-mainnet"
-        class="text-nowrap"
-        :class="{ active: networkStore.network === CommonNetwork.MAINNET }"
-        @click="handleCommonNetwork(CommonNetwork.MAINNET)"
-        >Mainnet</AppButton
-      >
-      <AppButton
-        color="secondary"
-        data-testid="tab-network-testnet"
-        class="text-nowrap"
-        :class="{ active: networkStore.network === CommonNetwork.TESTNET }"
-        @click="handleCommonNetwork(CommonNetwork.TESTNET)"
-        >Testnet</AppButton
-      >
-      <AppButton
-        color="secondary"
-        data-testid="tab-network-previewnet"
-        class="text-nowrap"
-        :class="{ active: networkStore.network === CommonNetwork.PREVIEWNET }"
-        @click="handleCommonNetwork(CommonNetwork.PREVIEWNET)"
-        >Previewnet</AppButton
-      >
-      <AppButton
-        color="secondary"
-        data-testid="tab-network-local-node"
-        class="text-nowrap"
-        :class="{ active: networkStore.network === CommonNetwork.LOCAL_NODE }"
-        @click="handleCommonNetwork(CommonNetwork.LOCAL_NODE)"
-        >Local Node</AppButton
-      >
-      <AppButton
-        color="secondary"
-        data-testid="tab-network-custom"
-        class="text-nowrap"
-        :class="{
-          active: ![
-            CommonNetwork.MAINNET,
-            CommonNetwork.TESTNET,
-            CommonNetwork.PREVIEWNET,
-            CommonNetwork.LOCAL_NODE,
-          ].includes(networkStore.network as any),
-        }"
-        @click="isCustomSettingsVisible = !isCustomSettingsVisible"
-        >Custom</AppButton
-      >
+    <div class="btn-group-container mt-4" role="group">
+      <div class="btn-group gap-3 overflow-x-auto w-100">
+        <template v-for="network in CommonNetwork" :key="network">
+          <AppButton
+            class="rounded-3 text-nowrap"
+            :class="{
+              active: networkStore.network === network,
+              'text-body': networkStore.network !== network,
+            }"
+            :color="networkStore.network === network ? 'primary' : undefined"
+            @click="handleCommonNetwork(network)"
+            data-testid="tab-network-mainnet"
+            >{{ CommonNetworkNames[network] }}</AppButton
+          >
+        </template>
+        <AppButton
+          :color="isCustomActive ? 'primary' : undefined"
+          data-testid="tab-network-custom"
+          class="rounded-3 text-nowrap"
+          :class="{
+            active: isCustomActive,
+            'text-body': !isCustomActive,
+          }"
+          @click="handleToggleCustomNetwork"
+          >Custom</AppButton
+        >
+      </div>
     </div>
     <Transition name="fade" mode="out-in">
-      <div v-if="isCustomSettingsVisible" class="mt-4">
+      <div v-show="isCustomSettingsVisible" class="mt-4">
         <div class="mt-4">
           <label class="form-label">Mirror Node Base URL</label>
           <AppInput
@@ -161,14 +164,8 @@ onBeforeMount(() => {
             placeholder="Enter Mirror Node Base URL"
             data-testid="input-mirror-node-base-url"
             :model-value="formatMirrorNodeBaseURL(mirrorNodeBaseURL)"
-            @change="
-              withLoader(
-                () => handleMirrorNodeBaseURLChange($event),
-                toast,
-                globalModalLoaderRef,
-                'Failed to update network',
-              )()
-            "
+            @blur="applyCustomNetwork"
+            @change="applyCustomNetwork"
           />
         </div>
       </div>

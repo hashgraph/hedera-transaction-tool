@@ -170,25 +170,27 @@ watch(inputPassword, pass => {
 
       <div v-if="keychainAvailable">
         <label data-testid="label-email" class="form-label mt-4">Encryption mode</label>
-        <div class="btn-group w-100">
-          <AppButton
-            type="button"
-            class="min-w-unset"
-            :color="'secondary'"
-            :class="{ active: !useKeychain }"
-            @click="handleUseKeychain(false)"
-            data-testid="button-use-credentials"
-            >Credentials</AppButton
-          >
-          <AppButton
-            type="button"
-            class="min-w-unset"
-            :color="'secondary'"
-            :class="{ active: useKeychain }"
-            @click="handleUseKeychain(true)"
-            data-testid="button-use-keychain"
-            >Keychain</AppButton
-          >
+        <div class="btn-group-container mt-4" role="group">
+          <div class="btn-group gap-3 w-100">
+            <AppButton
+              class="rounded-3 min-w-unset"
+              :class="{ active: !useKeychain, 'text-body': useKeychain }"
+              :color="!useKeychain ? 'primary' : undefined"
+              @click="handleUseKeychain(false)"
+              type="button"
+              data-testid="button-use-credentials"
+              >Credentials</AppButton
+            >
+            <AppButton
+              class="rounded-3 min-w-unset"
+              :class="{ active: useKeychain, 'text-body': !useKeychain }"
+              :color="useKeychain ? 'primary' : undefined"
+              @click="handleUseKeychain(true)"
+              type="button"
+              data-testid="button-use-keychain"
+              >Keychain</AppButton
+            >
+          </div>
         </div>
       </div>
 

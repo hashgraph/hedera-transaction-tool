@@ -159,6 +159,7 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
       <template v-for="(tab, index) in Object.values(Tabs)" :key="tab">
         <div class="col-6 d-grid">
           <AppButton
+            class="min-w-unset"
             :color="currentTab === tab ? 'primary' : undefined"
             type="button"
             :data-testid="'tab-' + tab.toLowerCase()"
