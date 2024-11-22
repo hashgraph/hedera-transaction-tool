@@ -1,13 +1,22 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
+
+import { inject, onMounted, ref, watch } from 'vue';
 
 import { MIGRATION_STARTED } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 
+import { useToast } from 'vue-toast-notification';
+import useAutoLogin from '@renderer/composables/useAutoLogin';
+
 import { getUseKeychain } from '@renderer/services/safeStorageService';
 import { getUsersCount, resetDataLocal } from '@renderer/services/userService';
 import { getStoredClaim } from '@renderer/services/claimService';
+
+import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
+
+import { withLoader } from '@renderer/utils';
 
 import AutoLoginInOrganization from '@renderer/components/Organization/AutoLoginInOrganization.vue';
 import AppUpdate from './components/AppUpdate.vue';
@@ -18,13 +27,22 @@ import BeginDataMigration from './components/BeginDataMigration.vue';
 /* Stores */
 const user = useUserStore();
 
+/* Injected */
+const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
+
+/* Composables */
+const toast = useToast();
+const tryAutoLogin = useAutoLogin();
+
 /* State */
 const importantNoteRef = ref<InstanceType<typeof ImportantNote> | null>(null);
 const detectKeychainRef = ref<InstanceType<typeof DetectKeychain> | null>(null);
 const beginDataMigrationRef = ref<InstanceType<typeof BeginDataMigration> | null>(null);
 
+const precheckReady = ref(false);
 const importantNoteReady = ref(false);
 const migrationCheckReady = ref(false);
+const detectKeychainReady = ref(false);
 const migrate = ref(false);
 
 /* Handlers */
@@ -40,6 +58,11 @@ const handleBeginMigrationReadyState = async (ready: boolean) => {
   }
 };
 
+const handleDetectKeychainReadyState = () => {
+  detectKeychainReady.value = true;
+  withLoader(tryAutoLogin, toast, globalModalLoaderRef?.value)();
+};
+
 /* Hooks */
 onMounted(async () => {
   try {
@@ -48,13 +71,14 @@ onMounted(async () => {
     const migrationStarted = await getStoredClaim(undefined, MIGRATION_STARTED);
 
     if ((!useKeyChain && usersCount === 1) || migrationStarted) {
-      user.logout();
       await resetDataLocal();
-      await beginDataMigrationRef.value?.initialize();
+      precheckReady.value = true;
     }
   } catch {
     /* Not initialized */
   }
+
+  precheckReady.value = true;
 });
 
 watch(
@@ -74,7 +98,7 @@ watch(
 <template>
   <AppUpdate />
 
-  <template v-if="!user.personal?.isLoggedIn">
+  <template v-if="!user.personal?.isLoggedIn && precheckReady">
     <ImportantNote ref="importantNoteRef" @ready="handleImportantModalReady" />
 
     <template v-if="importantNoteReady">
@@ -86,11 +110,11 @@ watch(
       />
     </template>
     <template v-if="importantNoteReady && migrationCheckReady && !migrate">
-      <DetectKeychain ref="detectKeychainRef" />
+      <DetectKeychain ref="detectKeychainRef" @ready="handleDetectKeychainReadyState" />
     </template>
   </template>
 
-  <template v-if="importantNoteReady && migrationCheckReady">
+  <template v-if="detectKeychainReady">
     <AutoLoginInOrganization />
   </template>
 </template>

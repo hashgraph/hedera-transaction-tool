@@ -132,7 +132,6 @@ const toggleMigrationClaim = async (userId: string, start = false) => {
 
 /* Hooks */
 onMounted(async () => {
-  await resetDataLocal();
   user.setMigrating(true);
 });
 </script>

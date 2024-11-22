@@ -373,6 +373,7 @@ test.describe('Registration tests', () => {
 
   test('Verify user is deleted from the database after resetting account', async () => {
     // BeforeEach executes logout and reset account state, so we just verify it's no longer existing
+    await new Promise(resolve => setTimeout(resolve, 500));
     const userExists = await registrationPage.verifyUserExists(globalCredentials.email);
     expect(userExists).toBe(false);
   });

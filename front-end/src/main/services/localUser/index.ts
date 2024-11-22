@@ -22,9 +22,22 @@ import { setPrismaClient, createPrismaClient } from '@main/db/prisma';
 export const userStorageFolderName = 'User Storage';
 export const getUserStorageFolderPath = (email: string) => `User Storage/${email}`;
 
+let resettingDatabase = false;
+
+export const resetDatabase = async () => {
+  if (resettingDatabase) return;
+
+  try {
+    resettingDatabase = true;
+    await deleteDatabase();
+    setPrismaClient(createPrismaClient());
+    await initDatabase();
+  } finally {
+    resettingDatabase = false;
+  }
+};
+
 export const resetData = async () => {
   await session.fromPartition('persist:main')?.clearStorageData();
-  await deleteDatabase();
-  setPrismaClient(createPrismaClient());
-  await initDatabase();
+  await resetDatabase();
 };

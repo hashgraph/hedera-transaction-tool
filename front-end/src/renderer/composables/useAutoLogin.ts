@@ -1,4 +1,4 @@
-import { onMounted, ref, watch, type Ref } from 'vue';
+import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -7,19 +7,12 @@ import { getStaticUser, getUseKeychain } from '@renderer/services/safeStorageSer
 
 import { safeAwait } from '@renderer/utils';
 
-import GlobalModalLoader from '@renderer/components/GlobalModalLoader.vue';
-
-export default function useAutoLogin(
-  globalLoderRef: Ref<InstanceType<typeof GlobalModalLoader> | null>,
-) {
+export default function useAutoLogin() {
   /* Stores */
   const user = useUserStore();
 
   /* Composables */
   const router = useRouter();
-
-  /* State */
-  const finished = ref(false);
 
   /* Functions */
   const keychainLogin = async () => {
@@ -34,46 +27,24 @@ export default function useAutoLogin(
     return userId;
   };
 
-  const addLoaderTimeout = () => {
-    setTimeout(() => {
-      if (!finished.value) {
-        globalLoderRef.value?.close();
-      }
-    }, 10_000);
-  };
-
   /* Hooks */
   onMounted(async () => {
-    addLoaderTimeout();
+    await router.push({ name: 'login' });
+    user.logout();
+  });
 
-    router.push({ name: 'login' });
-
-    let userId: string | undefined;
-
+  return async () => {
     const { data: useKeychain } = await safeAwait(getUseKeychain());
     const loggedUser = localStorage.getItem('htx_user');
 
-    try {
-      if (useKeychain) {
-        userId = await keychainLogin();
-      } else if (loggedUser) {
-        userId = await localStorageLogin(loggedUser);
-      }
-
-      if (user.shouldSetupAccount) {
-        router.push({ name: 'accountSetup' });
-      }
-
-      if (!userId) {
-        user.logout();
-      }
-    } finally {
-      finished.value = true;
-      globalLoderRef.value?.close();
+    if (useKeychain) {
+      await keychainLogin();
+    } else if (loggedUser) {
+      await localStorageLogin(loggedUser);
     }
-  });
 
-  watch(globalLoderRef, newRef => {
-    if (!finished.value) newRef?.open();
-  });
+    if (user.shouldSetupAccount) {
+      router.push({ name: 'accountSetup' });
+    }
+  };
 }

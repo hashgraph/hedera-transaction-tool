@@ -61,6 +61,26 @@ describe('Services Local User Transactions', () => {
       expect(setPrismaClient).toHaveBeenCalled();
       expect(initDatabase).toHaveBeenCalled();
     });
+
+    test('Should not reset the database if it is already being reset', async () => {
+      let resolve: () => void;
+      const promise = new Promise<void>(r => {
+        resolve = r;
+      });
+
+      vi.mocked(deleteDatabase).mockImplementation(() => {
+        return promise;
+      });
+
+      const firstResetData = resetData();
+      const secondResetData = resetData();
+
+      expect(firstResetData).toStrictEqual(secondResetData);
+
+      resolve!();
+
+      await firstResetData;
+    });
   });
 
   describe('getUserStorageFolderPath', () => {
