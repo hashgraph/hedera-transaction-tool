@@ -26,10 +26,20 @@ export class Updater {
   private static async checkLocation(location: string): Promise<NewVersion | null> {
     try {
       const fileNames = await fs.readdir(location);
+
+      const os =
+        process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'win' : 'linux';
+
       const file = fileNames.find(
-        fileName => fileName.startsWith('hedera-transaction-tool-') && fileName.endsWith('.pkg'),
+        fileName =>
+          fileName.startsWith('hedera-transaction-tool-') &&
+          fileName.includes(os) &&
+          fileName.endsWith('-universal.pkg'),
       );
-      const version = file?.match(/hedera-transaction-tool-(\d+\.\d+\.\d+)-universal\.pkg/)?.[1];
+
+      const version = file?.match(
+        /hedera-transaction-tool-(\d+\.\d+\.\d+)-\w+-universal\.pkg/,
+      )?.[1];
 
       if (!file || !version) {
         return null;

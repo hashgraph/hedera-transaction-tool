@@ -81,15 +81,47 @@ describe('Updater', () => {
       expect(result).toBeNull();
     });
 
-    it('should return update data if a matching file is found', async () => {
+    it('should return update data if a matching file for MAC is found', async () => {
       //@ts-expect-error
-      vi.mocked(fs.readdir).mockResolvedValue(['hedera-transaction-tool-1.1.0-universal.pkg']);
+      vi.mocked(fs.readdir).mockResolvedValue(['hedera-transaction-tool-1.1.0-mac-universal.pkg']);
       //@ts-expect-error - Testing private method
       const result = await Updater.checkLocation('/path/to/location');
       expect(result).toEqual({
         version: '1.1.0',
-        file: 'hedera-transaction-tool-1.1.0-universal.pkg',
+        file: 'hedera-transaction-tool-1.1.0-mac-universal.pkg',
       });
+    });
+
+    it('should return update data if a matching file for MAC is found', async () => {
+      Object.defineProperty(process, 'platform', { value: 'win32' });
+
+      vi.mocked(fs.readdir).mockResolvedValue([
+        //@ts-expect-error
+        'hedera-transaction-tool-1.1.0-win32-universal.pkg',
+      ]);
+      //@ts-expect-error - Testing private method
+      const result = await Updater.checkLocation('/path/to/location');
+      expect(result).toEqual({
+        version: '1.1.0',
+        file: 'hedera-transaction-tool-1.1.0-win32-universal.pkg',
+      });
+    });
+
+    it('should return update data if a matching file for MAC is found', async () => {
+      Object.defineProperty(process, 'platform', { value: 'linux' });
+
+      vi.mocked(fs.readdir).mockResolvedValue([
+        //@ts-expect-error
+        'hedera-transaction-tool-1.1.0-linux-universal.pkg',
+      ]);
+      //@ts-expect-error - Testing private method
+      const result = await Updater.checkLocation('/path/to/location');
+      expect(result).toEqual({
+        version: '1.1.0',
+        file: 'hedera-transaction-tool-1.1.0-linux-universal.pkg',
+      });
+
+      Object.defineProperty(process, 'platform', { value: 'darwin' });
     });
   });
 
