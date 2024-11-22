@@ -125,7 +125,7 @@ onBeforeMount(() => {
   <div class="fill-remaining border border-2 rounded-3 p-4">
     <p>Network</p>
     <div class="btn-group-container mt-4" role="group">
-      <div class="btn-group gap-3 overflow-x-auto w-100 pb-2">
+      <div class="btn-group gap-3 overflow-x-auto w-100">
         <template v-for="network in CommonNetwork" :key="network">
           <AppButton
             class="rounded-3 text-nowrap"
