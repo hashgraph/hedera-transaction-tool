@@ -214,7 +214,7 @@ const columnClass = 'col-4 col-xxxl-3';
     <label class="form-label"
       >Gossip CA Certificate <span v-if="required" class="text-danger">*</span></label
     >
-    <AppInput
+    <AppTextArea
       :model-value="data.gossipCaCertificate"
       @update:model-value="
         emit('update:data', {
