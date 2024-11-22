@@ -86,12 +86,9 @@ function formatServicePort(event: Event) {
   const target = event.target as HTMLInputElement;
   servicePort.value = formatPort(target.value);
 }
-
-/* Misc */
-const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
-  <div class="form-group mt-6" :class="[columnClass]">
+  <div class="form-group mt-6" :class="['col-4 col-xxxl-3']">
     <label class="form-label"
       >Node Account ID <span v-if="required" class="text-danger">*</span></label
     >
@@ -107,7 +104,7 @@ const columnClass = 'col-4 col-xxxl-3';
       placeholder="Enter Node Account ID"
     />
   </div>
-  <div class="form-group mt-6" :class="[columnClass]">
+  <div class="form-group mt-6" :class="['col-4 col-xxxl-3']">
     <label class="form-label">Node Description</label>
     <AppInput
       :model-value="data.description"
@@ -210,7 +207,7 @@ const columnClass = 'col-4 col-xxxl-3';
 
   <hr class="separator my-5" />
 
-  <div class="form-group" :class="[columnClass]">
+  <div class="form-group" :class="['col-8 col-xxxl-6']">
     <label class="form-label"
       >Gossip CA Certificate <span v-if="required" class="text-danger">*</span></label
     >
