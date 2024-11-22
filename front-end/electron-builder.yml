@@ -1,4 +1,4 @@
-appId: com.electron.app
+appId: com.hiero.transactiontool.app
 productName: Hedera Transaction Tool
 artifactName: ${name}-${version}-${os}-${arch}.${ext}
 protocols:
@@ -30,6 +30,9 @@ mac:
       arch:
         - x64
         - arm64
+        - universal
+  x64ArchFiles: '*'
+  mergeASARs: true
 linux:
   target:
     - snap
