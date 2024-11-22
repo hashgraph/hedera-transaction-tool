@@ -2,11 +2,9 @@ import * as fs from 'fs/promises';
 
 import { app, BrowserWindow } from 'electron';
 
-const LATEST_MAY_YML = 'latest-mac.yml';
-
-export type LatestYML = {
+export type NewVersion = {
   version: string;
-  files: string[];
+  file: string;
 };
 
 export class Updater {
@@ -14,61 +12,33 @@ export class Updater {
     const [window] = BrowserWindow.getAllWindows();
     if (!window) return;
 
-    const updateData = await this.readLatestMacYml(location);
+    const updateData = await this.checkLocation(location);
 
-    if (!updateData || !(await this.verifyFiles(location, updateData.files))) {
+    if (!updateData) {
       return;
     }
 
     if (this.isNewerVersion(updateData.version, app.getVersion())) {
-      const file = this.getFileForPlatform(updateData.files);
-      window.webContents.send('update:check-for-update-result', file);
+      window.webContents.send('update:check-for-update-result', updateData.file);
     }
   }
 
-  private static async readLatestMacYml(location: string): Promise<LatestYML | null> {
+  private static async checkLocation(location: string): Promise<NewVersion | null> {
     try {
-      const file = await fs.readFile(`${location}/${LATEST_MAY_YML}`, {
-        encoding: 'utf-8',
-        flag: 'r',
-      });
+      const fileNames = await fs.readdir(location);
+      const file = fileNames.find(
+        fileName => fileName.startsWith('hedera-transaction-tool-') && fileName.endsWith('.pkg'),
+      );
+      const version = file?.match(/hedera-transaction-tool-(\d+\.\d+\.\d+)-universal\.pkg/)?.[1];
 
-      const lines = file.split('\n');
-      let version: string | null = null;
-
-      const files: string[] = [];
-      for (const line of lines) {
-        if (line) {
-          if (line.startsWith('version:')) {
-            version = line.split(': ')[1];
-          }
-          if (line.startsWith('  - url:')) {
-            files.push(line.split(': ')[1]);
-          }
-        }
-      }
-
-      if (!version) {
+      if (!file || !version) {
         return null;
       }
 
-      return { version, files };
+      return { version, file };
     } catch {
       return null;
     }
-  }
-
-  private static async verifyFiles(location: string, files: string[]) {
-    let fileNames = await fs.readdir(location);
-    fileNames = fileNames.map(file => file.replaceAll(' ', '-'));
-
-    for (const file of files) {
-      if (!fileNames.includes(file)) {
-        return false;
-      }
-    }
-
-    return true;
   }
 
   private static isNewerVersion(newVersion: string, currentVersion: string): boolean {
@@ -104,15 +74,5 @@ export class Updater {
     if (mainComparison !== 0) return mainComparison > 0;
 
     return compareParts(latest.preParts, current.preParts) > 0;
-  }
-
-  private static getFileForPlatform(files: string[]): string | null {
-    for (const file of files) {
-      if (file.includes(process.arch)) {
-        return file;
-      }
-    }
-
-    return null;
   }
 }
