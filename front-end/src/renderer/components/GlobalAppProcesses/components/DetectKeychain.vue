@@ -57,12 +57,12 @@ const checkShouldChoose = async () => {
 
     if (usersCount < 2 && keychainAvailable) return true;
 
-    await initializeUseKeychain(false);
     return false;
   } catch {
     /* Not initialized */
 
     if (!keychainAvailable) {
+      console.log('Initializing use keychain 2');
       await initializeUseKeychain(false);
       return false;
     }
