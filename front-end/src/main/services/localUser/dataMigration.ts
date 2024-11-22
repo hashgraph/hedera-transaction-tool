@@ -233,7 +233,10 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
     try {
       const credentialsObj = parsedContent[CREDENTIALS_DIRECTORY];
       if (credentialsObj && typeof credentialsObj === 'object') {
-        const updatesLocation = Object.keys(credentialsObj)[0];
+        let updatesLocation = Object.keys(credentialsObj)[0];
+        updatesLocation = updatesLocation.endsWith('/InputFiles')
+          ? updatesLocation
+          : updatesLocation + '/InputFiles';
         await addClaim(userId, UPDATE_LOCATION, updatesLocation);
       }
     } catch (error) {
