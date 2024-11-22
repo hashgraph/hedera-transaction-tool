@@ -48,34 +48,30 @@ const handleChooseMode = async (useKeyChain: boolean) => {
 const checkShouldChoose = async () => {
   const keychainAvailable = await isKeychainAvailable();
 
-  if (!keychainAvailable) {
-    await initializeUseKeychain(false);
-    return false;
-  }
-
   try {
     const useKeyChain = await getUseKeychain();
 
     if (useKeyChain) return false;
 
     const usersCount = await getUsersCount();
-    if (usersCount < 2) return true;
+
+    if (usersCount < 2 && keychainAvailable) return true;
+
+    await initializeUseKeychain(false);
+    return false;
   } catch {
     /* Not initialized */
+
+    if (!keychainAvailable) {
+      await initializeUseKeychain(false);
+      return false;
+    }
+
     return true;
   }
-
-  return false;
 };
 
 const initialize = async () => {
-  const keychainAvailable = await isKeychainAvailable();
-
-  if (!keychainAvailable) {
-    await initializeUseKeychain(false);
-    return;
-  }
-
   const shouldChoose = await checkShouldChoose();
   show.value = shouldChoose;
 
