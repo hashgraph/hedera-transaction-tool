@@ -47,10 +47,7 @@ const themeNames: Record<Theme, string> = {
         <template v-for="themeItem of themes" :key="themeItem">
           <AppButton
             class="rounded-3"
-            :class="{
-              active: theme === themeItem,
-              'text-body': theme !== themeItem,
-            }"
+            :class="{ active: theme === themeItem, 'text-body': theme !== themeItem }"
             :color="theme === themeItem ? 'primary' : undefined"
             @click="handleThemeChange(themeItem)"
             :data-testid="`tab-appearance-${themeItem}`"

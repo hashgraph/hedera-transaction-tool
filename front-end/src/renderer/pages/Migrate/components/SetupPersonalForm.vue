@@ -174,10 +174,7 @@ watch(inputPassword, pass => {
           <div class="btn-group gap-3 w-100">
             <AppButton
               class="rounded-3 min-w-unset"
-              :class="{
-                active: !useKeychain,
-                'text-body': useKeychain,
-              }"
+              :class="{ active: !useKeychain, 'text-body': useKeychain }"
               :color="!useKeychain ? 'primary' : undefined"
               @click="handleUseKeychain(false)"
               type="button"
@@ -186,10 +183,7 @@ watch(inputPassword, pass => {
             >
             <AppButton
               class="rounded-3 min-w-unset"
-              :class="{
-                active: useKeychain,
-                'text-body': !useKeychain,
-              }"
+              :class="{ active: useKeychain, 'text-body': !useKeychain }"
               :color="useKeychain ? 'primary' : undefined"
               @click="handleUseKeychain(true)"
               type="button"
