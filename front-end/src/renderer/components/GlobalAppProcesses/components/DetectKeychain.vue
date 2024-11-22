@@ -103,9 +103,7 @@ defineExpose({ initialize });
         <form @submit="handleSubmit">
           <h3 class="text-center text-title text-bold mt-3">Keychain Usage</h3>
 
-          <p class="text-center mt-4">
-            Do you want to use the keychain to encrypt your sensitive data?
-          </p>
+          <p class="text-center mt-4">Do you want to use the keychain to log into the app?</p>
 
           <hr class="separator my-5" />
 
