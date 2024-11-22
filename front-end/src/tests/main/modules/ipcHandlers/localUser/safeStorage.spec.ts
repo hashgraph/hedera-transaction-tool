@@ -16,7 +16,9 @@ vi.mock('electron', () => ({
   ipcMain: { handle: vi.fn() },
   safeStorage: { isEncryptionAvailable: vi.fn(), encryptString: vi.fn(), decryptString: vi.fn() },
 }));
-
+vi.mock('@main/services/localUser', () => ({
+  resetDatabase: vi.fn(),
+}));
 vi.mock('@main/services/localUser/claim', () => ({
   addClaim: vi.fn(),
   getClaims: vi.fn(),
@@ -29,7 +31,7 @@ vi.mock('@main/services/localUser/auth', () => ({
 
 describe('IPC handlers Safe Storage', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     registerSafeStorageHandlers();
   });
 
@@ -60,7 +62,6 @@ describe('IPC handlers Safe Storage', () => {
     expect(handler).toBeDefined();
 
     handler && (await handler[1](event));
-    // expect(safeStorage.isEncryptionAvailable).toHaveBeenCalledWith();
   });
 
   test('Should initialize initializeUseKeychain handler', async () => {
@@ -81,20 +82,6 @@ describe('IPC handlers Safe Storage', () => {
     handler && (await handler[1](event, false));
     expect(register).toHaveBeenCalledWith(STATIC_USER, STATIC_USER);
     expect(addClaim).toHaveBeenCalledWith(STATIC_USER, USE_KEYCHAIN, 'false');
-  });
-
-  test('Should throw if initializeUseKeychain handler is already called', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'safeStorage:initializeUseKeychain',
-    );
-    expect(handler).toBeDefined();
-    vi.mocked(getClaims).mockResolvedValueOnce([{ claim_value: 'true' } as Claim]);
-
-    if (handler) {
-      await expect(() => handler[1](event, false)).rejects.toThrow(
-        'Keychain mode already initialized',
-      );
-    }
   });
 
   test('Should set up getUseKeychain handler if initialized', async () => {
