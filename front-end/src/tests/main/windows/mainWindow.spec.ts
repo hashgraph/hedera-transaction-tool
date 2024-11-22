@@ -105,6 +105,7 @@ vi.mock('electron', () => {
   const nativeTheme = {
     on: vi.fn(),
     removeAllListeners: vi.fn(),
+    listenerCount: vi.fn(),
   };
 
   const session = {

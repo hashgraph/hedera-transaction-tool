@@ -3,12 +3,14 @@ import { BrowserWindow, ipcMain, nativeTheme } from 'electron';
 import { Theme } from '@main/shared/interfaces';
 
 export function sendUpdateThemeEventTo(window: BrowserWindow) {
-  nativeTheme.on('updated', () => {
-    window.webContents.send('theme:update', {
-      shouldUseDarkColors: nativeTheme.shouldUseDarkColors,
-      themeSource: nativeTheme.themeSource,
+  if (nativeTheme.listenerCount('updated') === 0) {
+    nativeTheme.on('updated', () => {
+      window.webContents.send('theme:update', {
+        shouldUseDarkColors: nativeTheme.shouldUseDarkColors,
+        themeSource: nativeTheme.themeSource,
+      });
     });
-  });
+  }
 }
 
 export function removeListeners() {

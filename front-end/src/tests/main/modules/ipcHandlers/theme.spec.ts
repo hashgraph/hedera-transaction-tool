@@ -28,6 +28,7 @@ vi.mock('electron', () => {
     },
     nativeTheme: {
       removeAllListeners: vi.fn(),
+      listenerCount: vi.fn(),
       shouldUseDarkColors: true,
       themeSource: 'system',
       on: vi.fn(),
@@ -97,6 +98,7 @@ describe('registerThemeListeners', () => {
 
 describe('sendUpdateThemeEventTo', () => {
   test('Should send the theme:update event to the window', () => {
+    vi.mocked(nativeTheme.listenerCount).mockReturnValueOnce(0);
     sendUpdateThemeEventTo(new BrowserWindow());
 
     const nativeThemeMO = nativeTheme as unknown as MockedObject<Electron.NativeTheme>;
