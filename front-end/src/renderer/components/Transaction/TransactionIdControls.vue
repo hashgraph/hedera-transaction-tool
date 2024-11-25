@@ -22,6 +22,7 @@ import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.
 /* Props */
 const props = defineProps<{
   payerId: string;
+  balance: string;
   validStart: Date;
   maxTransactionFee: Hbar;
 }>();
@@ -97,8 +98,7 @@ const columnClass = 'col-4 col-xxxl-3';
         ><span class="bi bi-exclamation-triangle-fill me-1"></span> Account is deleted</label
       >
       <label v-else-if="account.isValid.value" class="d-block form-label text-secondary"
-        >Balance:
-        {{ stringifyHbar((account.accountInfo.value?.balance as Hbar) || new Hbar(0)) }}</label
+        >Balance: {{ balance }}</label
       >
       <template v-if="!user.selectedOrganization">
         <AccountIdsSelect

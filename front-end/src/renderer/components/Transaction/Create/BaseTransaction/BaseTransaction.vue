@@ -7,7 +7,7 @@ import type {
 } from '@renderer/components/Transaction/TransactionProcessor';
 import type { CreateTransactionFunc } from '.';
 
-import { computed, reactive, ref } from 'vue';
+import { computed, nextTick, reactive, ref } from 'vue';
 import { Hbar, Transaction, KeyList } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -91,9 +91,13 @@ const transactionKey = computed(() => {
 });
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
+const handleDraftLoaded = async (transaction: Transaction) => {
   Object.assign(data, getTransactionCommonData(transaction));
   emit('draft-loaded', transaction);
+
+  payerData.accountId.value = data.payerId;
+  await payerData.fetchBalance();
+  // setTimeout(() => (payerData.accountId.value = data.payerId), 2000);
 };
 
 const handleCreate = async () => {
@@ -215,6 +219,7 @@ defineExpose({
         <TransactionIdControls
           class="mt-6"
           :payer-id="payerData.accountId.value"
+          :balance="payerData.balance.value.toString()"
           @update:payer-id="(payerData.accountId.value = $event), (data.payerId = $event)"
           v-model:valid-start="data.validStart"
           v-model:max-transaction-fee="data.maxTransactionFee as Hbar"
