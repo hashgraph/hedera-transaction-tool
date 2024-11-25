@@ -80,6 +80,13 @@ watch(
 );
 
 watch(
+  () => props.payerId,
+  () => {
+    account.accountId.value = props.payerId;
+  },
+);
+
+watch(
   () => user.publicKeyToAccounts,
   () => {
     handlePayerChange(user.publicKeysToAccountsFlattened[0]);

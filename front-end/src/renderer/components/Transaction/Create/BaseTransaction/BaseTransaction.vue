@@ -91,8 +91,10 @@ const transactionKey = computed(() => {
 });
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
-  Object.assign(data, getTransactionCommonData(transaction));
+const handleDraftLoaded = async (transaction: Transaction) => {
+  const commonData = getTransactionCommonData(transaction);
+  payerData.accountId.value = commonData.payerId;
+  Object.assign(data, commonData);
   emit('draft-loaded', transaction);
 };
 
