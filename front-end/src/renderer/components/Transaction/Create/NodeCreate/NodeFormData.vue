@@ -55,6 +55,24 @@ function handleAddServiceEndpoint() {
   servicePort.value = '';
 }
 
+function handleDeleteGossipEndpoint(index: number) {
+  const endpoints = props.data.gossipEndpoints;
+  endpoints.splice(index, 1);
+  emit('update:data', {
+    ...props.data,
+    gossipEndpoints: endpoints,
+  });
+}
+
+function handleDeleteServiceEndpoint(index: number) {
+  const endpoints = props.data.serviceEndpoints;
+  endpoints.splice(index, 1);
+  emit('update:data', {
+    ...props.data,
+    serviceEndpoints: endpoints,
+  });
+}
+
 /* Functions */
 function getEndpointData(ipOrDomain: string, port: string) {
   let ip = '';
@@ -142,21 +160,35 @@ function formatServicePort(event: Event) {
         placeholder="Enter Port"
       />
     </div>
-    <AppButton color="primary" type="button" class="align-self-end" @click="handleAddGossipEndpoint"
-      >Add Gossip Endpoint
+    <AppButton
+      color="primary"
+      type="button"
+      class="align-self-end"
+      @click="handleAddGossipEndpoint"
+    >
+      Add Gossip Endpoint
     </AppButton>
   </div>
 
-  <ul class="mt-5">
+  <ul v-if="data.gossipEndpoints.length > 0" class="mt-5">
     <li class="d-flex">
       <label class="form-label col text-center">IP/Domain</label>
-      <label class="form-label mx-5 col text-center">Port</label>
+      <label class="form-label col text-center">Port</label>
+      <div class="col-1" />
     </li>
     <li v-for="(endpoint, index) of data.gossipEndpoints" :key="index" class="d-flex">
       <div class="col text-center">
         {{ endpoint.ipAddressV4 ? endpoint.ipAddressV4 : endpoint.domainName }}
       </div>
       <div class="col text-center">{{ endpoint.port }}</div>
+      <AppButton
+        type="button"
+        color="danger"
+        class="col-1"
+        @click="handleDeleteGossipEndpoint(index)"
+        style="min-width: 0"
+        >Delete
+      </AppButton>
     </li>
   </ul>
 
@@ -192,16 +224,29 @@ function formatServicePort(event: Event) {
     </AppButton>
   </div>
 
-  <ul class="mt-5">
+  <ul v-if="data.serviceEndpoints.length > 0" class="mt-5">
     <li class="d-flex">
       <label class="form-label col text-center">IP/Domain</label>
-      <label class="form-label mx-5 col text-center">Port</label>
+      <label class="form-label col text-center">Port</label>
+      <div class="col-1" />
     </li>
-    <li v-for="(endpoint, index) of data.serviceEndpoints" :key="index" class="d-flex">
+    <li
+      v-for="(endpoint, index) of data.serviceEndpoints"
+      :key="index"
+      class="d-flex align-items-center"
+    >
       <div class="col text-center">
         {{ endpoint.ipAddressV4 ? endpoint.ipAddressV4 : endpoint.domainName }}
       </div>
       <div class="col text-center">{{ endpoint.port }}</div>
+      <AppButton
+        type="button"
+        color="danger"
+        class="col-1"
+        @click="handleDeleteServiceEndpoint(index)"
+        style="min-width: 0"
+        >Delete
+      </AppButton>
     </li>
   </ul>
 
