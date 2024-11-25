@@ -9,6 +9,7 @@ const props = defineProps<{
   withToggler?: boolean;
   index?: number;
   visibleInitially?: boolean;
+  verification?: boolean;
 }>();
 
 /* Emits */
@@ -43,6 +44,7 @@ const handldeWordInput = (e: Event) => {
     <span v-if="index" class="word-index text-small">{{ index }}.</span>
     <input
       class="form-control is-fill"
+      :class="verification ? 'border-pink' : ''"
       :type="inputType"
       :readonly="readonly"
       :value="word"

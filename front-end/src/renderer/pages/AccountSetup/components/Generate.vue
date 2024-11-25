@@ -101,6 +101,7 @@ watch(words, newWords => {
           :readonly="!indexesToVerify.includes(index)"
           :handle-word-change="newWord => handleWordChange(newWord, index)"
           visible-initially
+          :verification="indexesToVerify.includes(index)"
         />
       </template>
     </div>
@@ -171,12 +172,14 @@ watch(words, newWords => {
     </div>
   </div>
 
-  <div v-if="wordsConfirmed" class="row justify-content-end mt-5">
+  <div v-if="toVerify" class="d-flex justify-content-between mt-5 mx-3">
+    <div class="text-small align-self-center">Verify your Recovery Phrase</div>
     <div class="col-4">
       <AppButton
         data-testid="button-next-generate"
         color="primary"
         class="w-100"
+        :disabled="!wordsConfirmed"
         @click="handleNext"
         >Next</AppButton
       >
