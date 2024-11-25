@@ -135,7 +135,7 @@ onBeforeMount(() => {
             }"
             :color="networkStore.network === network ? 'primary' : undefined"
             @click="handleCommonNetwork(network)"
-            data-testid="tab-network-mainnet"
+            :data-testid="`tab-network-${network}`"
             >{{ CommonNetworkNames[network] }}</AppButton
           >
         </template>
