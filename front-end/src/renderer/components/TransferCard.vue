@@ -1,18 +1,11 @@
 <script setup lang="ts">
-import type { HederaAccount } from '@prisma/client';
-
-import { nextTick, onBeforeMount, ref, watch } from 'vue';
+import { nextTick, ref, watch } from 'vue';
 
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
-import useUserStore from '@renderer/stores/storeUser';
-import useNetworkStore from '@renderer/stores/storeNetwork';
-
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { getAll } from '@renderer/services/accountsService';
-
-import { stringifyHbar, isUserLoggedIn } from '@renderer/utils';
+import { stringifyHbar } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
@@ -48,17 +41,12 @@ const emit = defineEmits<{
   (event: 'restAdded', accountId: string, isApproved: boolean): void;
 }>();
 
-/* Stores */
-const user = useUserStore();
-const network = useNetworkStore();
-
 /* Composables */
 const accountData = useAccountId();
 
 /* State */
 const amount = ref<Hbar>(new Hbar(0));
 const isApprovedTransfer = ref(false);
-const accoundIds = ref<HederaAccount[]>([]);
 
 /* Handlers */
 const handleSubmit = () => {
@@ -101,18 +89,6 @@ function clearData() {
   isApprovedTransfer.value = false;
 }
 
-/* Hooks */
-onBeforeMount(async () => {
-  if (isUserLoggedIn(user.personal)) {
-    accoundIds.value = await getAll({
-      where: {
-        user_id: user.personal.id,
-        network: network.network,
-      },
-    });
-  }
-});
-
 /* Watchers */
 watch([amount, accountData.isValid], async ([newAmount]) => {
   if (
@@ -146,7 +122,6 @@ watch([amount, accountData.isValid], async ([newAmount]) => {
           :model-value="accountData.accountId.value"
           @update:model-value="accountData.accountId.value = $event"
           :filled="true"
-          :items="accoundIds.map(a => a.account_id).concat(user.publicKeysToAccountsFlattened)"
           placeholder="Enter Account ID"
           :data-testid="dataTestIdAccountIdInput"
         />
