@@ -3,10 +3,10 @@
   "version": "0.4.2",
   "description": "Transaction tool application",
   "author": {
-    "name": "LimeChain",
-    "url": "https://github.com/LimeChain"
+    "name": "Hedera",
+    "url": "https://github.com/hashgraph"
   },
-  "repository": "https://github.com/LimeChain/hedera-transaction-tool-release",
+  "repository": "https://github.com/hashgraph/hedera-transaction-tool",
   "main": "dist-electron/main/index.js",
   "scripts": {
     "format": "prettier --write .",
