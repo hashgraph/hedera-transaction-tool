@@ -44,8 +44,8 @@ const columnClass = 'col-4 col-xxxl-3';
           })
         "
         :filled="true"
-        data-testid="input-delete-account-id"
         placeholder="Enter Account ID"
+        data-testid="input-delete-account-id"
       />
     </div>
 
@@ -93,8 +93,8 @@ const columnClass = 'col-4 col-xxxl-3';
           })
         "
         :filled="true"
-        data-testid="input-transfer-account-id"
         placeholder="Enter Account ID"
+        data-testid="input-transfer-account-id"
       />
     </div>
 
