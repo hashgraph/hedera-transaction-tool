@@ -32,6 +32,8 @@ const emit = defineEmits<{
 
 /* Handlers */
 function handleAddGossipEndpoint() {
+  if (!gossipIpOrDomain.value.trim() || !gossipPort.value.trim()) return;
+
   emit('update:data', {
     ...props.data,
     gossipEndpoints: [
@@ -44,6 +46,8 @@ function handleAddGossipEndpoint() {
 }
 
 function handleAddServiceEndpoint() {
+  if (!serviceIpOrDomain.value.trim() || !servicePort.value.trim()) return;
+
   emit('update:data', {
     ...props.data,
     serviceEndpoints: [
