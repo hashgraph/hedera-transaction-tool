@@ -489,7 +489,6 @@ watch(files, newFiles => {
               <div class="d-flex align-items-center mt-3">
                 <div
                   v-if="selectMany"
-                  class="visible-on-hover activate-on-sibling-hover"
                   :selected="selectedFileIds.includes(file.file_id) ? true : undefined"
                 >
                   <AppCheckBox

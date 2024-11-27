@@ -290,7 +290,6 @@ onMounted(async () => {
               <div class="d-flex align-items-center mt-3">
                 <div
                   v-if="selectMany"
-                  class="visible-on-hover activate-on-sibling-hover"
                   :selected="selectedAccountIds.includes(account.account_id) ? true : undefined"
                 >
                   <AppCheckBox
