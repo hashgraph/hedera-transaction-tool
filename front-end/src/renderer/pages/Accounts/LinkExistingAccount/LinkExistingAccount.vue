@@ -72,8 +72,9 @@ const handleLinkAccount = async (e: Event) => {
       <div class="form-group">
         <label class="form-label">Hedera Account ID <span class="text-danger">*</span></label>
 
-        <label v-if="accountData.isValid.value" class="d-block form-label text-secondary"
-          >Balance: {{ accountData.accountInfo.value?.balance || 0 }}</label
+        <label class="d-block form-label text-secondary"
+          >Balance:
+          {{ accountData.isValid.value ? accountData.accountInfo.value?.balance || 0 : '-' }}</label
         >
         <AppInput
           :model-value="accountData.accountIdFormatted.value"

@@ -305,10 +305,6 @@ The Initial Developer of @hashgraph/hedera-local@2.32.1,
 is hashgraph (github.com:hashgraph/hedera-local-node).
 Copyright hashgraph. All Rights Reserved.
 
-The Initial Developer of @hashgraph/proto@2.15.0,
-is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
-Copyright Launchbadge. All Rights Reserved.
-
 The Initial Developer of @hashgraph/proto@2.15.0-beta.4,
 is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
@@ -473,10 +469,6 @@ This product includes software (@pkgjs/parseargs@0.11.0) developed at
 The Initial Developer of @pkgr/core@0.1.1,
 is JounQin (https://github.com/un-ts/pkgr).
 Copyright JounQin. All Rights Reserved.
-
-The Initial Developer of @playwright/test@1.48.2,
-is Microsoft Corporation (https://github.com/microsoft/playwright).
-Copyright Microsoft Corporation. All Rights Reserved.
 
 The Initial Developer of @polka/url@1.0.0-next.28,
 is Luke Edwards (https://github.com/lukeed/polka).
@@ -931,9 +923,6 @@ The Initial Developer of async-exit-hook@2.0.1,
 is Tapani Moilanen (https://github.com/tapppi/async-exit-hook).
 Copyright Tapani Moilanen. All Rights Reserved.
 
-This product includes software (async-retry@1.3.3) developed at
-(https://github.com/vercel/async-retry).
-
 The Initial Developer of async@3.2.6,
 is Caolan McMahon (https://github.com/caolan/async).
 Copyright Caolan McMahon. All Rights Reserved.
@@ -949,10 +938,6 @@ Copyright Ryan Zimmerman. All Rights Reserved.
 The Initial Developer of atomic-sleep@1.0.0,
 is David Mark Clements (https://github.com/davidmarkclements/atomic-sleep).
 Copyright David Mark Clements. All Rights Reserved.
-
-The Initial Developer of axios@1.7.7,
-is Matt Zabriskie (https://github.com/axios/axios).
-Copyright Matt Zabriskie. All Rights Reserved.
 
 The Initial Developer of axios@1.7.8,
 is Matt Zabriskie (https://github.com/axios/axios).
@@ -989,10 +974,6 @@ Copyright Sindre Sorhus. All Rights Reserved.
 The Initial Developer of bindings@1.5.0,
 is Nathan Rajlich (https://github.com/TooTallNate/node-bindings).
 Copyright Nathan Rajlich. All Rights Reserved.
-
-The Initial Developer of bip39@3.1.0,
-is Wei Lu (https://github.com/bitcoinjs/bip39).
-Copyright Wei Lu. All Rights Reserved.
 
 The Initial Developer of birpc@0.2.19,
 is Anthony Fu (https://github.com/antfu/birpc).
@@ -1265,10 +1246,6 @@ Copyright Josh Junon. All Rights Reserved.
 The Initial Developer of decompress-response@6.0.0,
 is Sindre Sorhus (https://github.com/sindresorhus/decompress-response).
 Copyright Sindre Sorhus. All Rights Reserved.
-
-The Initial Developer of deep-diff@1.0.2,
-is Phillip Clark (https://github.com/flitbit/diff).
-Copyright Phillip Clark. All Rights Reserved.
 
 The Initial Developer of deep-eql@5.0.2,
 is Jake Luer (https://github.com/chaijs/deep-eql).
@@ -1617,9 +1594,6 @@ Copyright Isaac Z. Schlueter. All Rights Reserved.
 The Initial Developer of fs.realpath@1.0.0,
 is Isaac Z. Schlueter (https://github.com/isaacs/fs.realpath).
 Copyright Isaac Z. Schlueter. All Rights Reserved.
-
-This product includes software (fsevents@2.3.2) developed at
-(https://github.com/fsevents/fsevents).
 
 This product includes software (fsevents@2.3.3) developed at
 (https://github.com/fsevents/fsevents).
@@ -2057,10 +2031,6 @@ The Initial Developer of long@4.0.0,
 is Daniel Wirtz (https://github.com/dcodeIO/long.js).
 Copyright Daniel Wirtz. All Rights Reserved.
 
-The Initial Developer of long@5.2.3,
-is Daniel Wirtz (https://github.com/dcodeIO/long.js).
-Copyright Daniel Wirtz. All Rights Reserved.
-
 The Initial Developer of loupe@3.1.2,
 is Veselin Todorov (https://github.com/chaijs/loupe).
 Copyright Veselin Todorov. All Rights Reserved.
@@ -2384,10 +2354,6 @@ The Initial Developer of pg@8.12.0,
 is Brian Carlson (https://github.com/brianc/node-postgres).
 Copyright Brian Carlson. All Rights Reserved.
 
-The Initial Developer of pg@8.13.1,
-is Brian Carlson (https://github.com/brianc/node-postgres).
-Copyright Brian Carlson. All Rights Reserved.
-
 The Initial Developer of picocolors@1.1.1,
 is Alexey Raspopov (https://github.com/alexeyraspopov/picocolors).
 Copyright Alexey Raspopov. All Rights Reserved.
@@ -2415,14 +2381,6 @@ Copyright James Sumners. All Rights Reserved.
 The Initial Developer of pino@8.21.0,
 is Matteo Collina (https://github.com/pinojs/pino).
 Copyright Matteo Collina. All Rights Reserved.
-
-The Initial Developer of playwright-core@1.48.2,
-is Microsoft Corporation (https://github.com/microsoft/playwright).
-Copyright Microsoft Corporation. All Rights Reserved.
-
-The Initial Developer of playwright@1.48.2,
-is Microsoft Corporation (https://github.com/microsoft/playwright).
-Copyright Microsoft Corporation. All Rights Reserved.
 
 The Initial Developer of plist@3.1.0,
 is Nathan Rajlich (https://github.com/TooTallNate/node-plist).
@@ -2745,10 +2703,6 @@ The Initial Developer of sprintf-js@1.1.3,
 is Alexandru Mărășteanu (https://github.com/alexei/sprintf.js).
 Copyright Alexandru Mărășteanu. All Rights Reserved.
 
-The Initial Developer of sqlite3@5.1.7,
-is Mapbox (https://github.com/TryGhost/node-sqlite3).
-Copyright Mapbox. All Rights Reserved.
-
 The Initial Developer of ssri@9.0.1,
 is GitHub Inc. (https://github.com/npm/ssri).
 Copyright GitHub Inc.. All Rights Reserved.
@@ -2976,9 +2930,6 @@ Copyright Mathias Bynens. All Rights Reserved.
 The Initial Developer of util-deprecate@1.0.2,
 is Nathan Rajlich (https://github.com/TooTallNate/util-deprecate).
 Copyright Nathan Rajlich. All Rights Reserved.
-
-This product includes software (uuid@10.0.0) developed at
-(https://github.com/uuidjs/uuid).
 
 This product includes software (verror@1.10.1) developed at
 (https://github.com/joyent/node-verror).
