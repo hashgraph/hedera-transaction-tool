@@ -95,7 +95,15 @@ async function getAllDependencies() {
   const deps = await Promise.all(dirs.map((dir) => getDependencies(dir)));
   deps.forEach((dep) => Object.assign(allDeps, dep));
 
-  return allDeps;
+  // Sort dependencies by name to ensure consistent order
+  const sortedDeps = Object.keys(allDeps)
+    .sort()
+    .reduce((acc, key) => {
+      acc[key] = allDeps[key];
+      return acc;
+    }, {});
+
+  return sortedDeps;
 }
 
 async function getDependencies(cwd) {
