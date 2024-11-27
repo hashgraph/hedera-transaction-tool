@@ -114,7 +114,7 @@ The Initial Developer of @hashgraph/sdk@2.44.0,
 is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
-The Initial Developer of @hashgraph/sdk@2.50.0,
+The Initial Developer of @hashgraph/sdk@2.53.0,
 is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
@@ -133,7 +133,7 @@ The Initial Developer of @playwright/test@1.42.1,
 is Microsoft Corporation (https://github.com/microsoft/playwright).
 Copyright Microsoft Corporation. All Rights Reserved.
 
-The Initial Developer of @playwright/test@1.47.0,
+The Initial Developer of @playwright/test@1.48.2,
 is Microsoft Corporation (https://github.com/microsoft/playwright).
 Copyright Microsoft Corporation. All Rights Reserved.
 
@@ -235,7 +235,7 @@ The Initial Developer of atomic-sleep@1.0.0,
 is David Mark Clements (https://github.com/davidmarkclements/atomic-sleep).
 Copyright David Mark Clements. All Rights Reserved.
 
-The Initial Developer of axios@1.7.7,
+The Initial Developer of axios@1.7.8,
 is Matt Zabriskie (https://github.com/axios/axios).
 Copyright Matt Zabriskie. All Rights Reserved.
 
@@ -721,7 +721,7 @@ The Initial Developer of pg-types@2.2.0,
 is Brian M. Carlson (https://github.com/brianc/node-pg-types).
 Copyright Brian M. Carlson. All Rights Reserved.
 
-The Initial Developer of pg@8.12.0,
+The Initial Developer of pg@8.13.1,
 is Brian Carlson (https://github.com/brianc/node-postgres).
 Copyright Brian Carlson. All Rights Reserved.
 
@@ -745,11 +745,11 @@ The Initial Developer of pino@8.21.0,
 is Matteo Collina (https://github.com/pinojs/pino).
 Copyright Matteo Collina. All Rights Reserved.
 
-The Initial Developer of playwright-core@1.47.0,
+The Initial Developer of playwright-core@1.48.2,
 is Microsoft Corporation (https://github.com/microsoft/playwright).
 Copyright Microsoft Corporation. All Rights Reserved.
 
-The Initial Developer of playwright@1.47.0,
+The Initial Developer of playwright@1.48.2,
 is Microsoft Corporation (https://github.com/microsoft/playwright).
 Copyright Microsoft Corporation. All Rights Reserved.
 
@@ -1230,10 +1230,6 @@ is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
 The Initial Developer of @hashgraph/proto@2.15.0-beta.4,
-is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
-Copyright Launchbadge. All Rights Reserved.
-
-The Initial Developer of @hashgraph/sdk@2.53.0,
 is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
@@ -3281,6 +3277,10 @@ Copyright https://github.com/felanios. All Rights Reserved.
 The Initial Developer of nest-winston@1.9.7,
 is Marco Polichetti (https://github.com/gremo/nest-winston).
 Copyright Marco Polichetti. All Rights Reserved.
+
+The Initial Developer of pg@8.12.0,
+is Brian Carlson (https://github.com/brianc/node-postgres).
+Copyright Brian Carlson. All Rights Reserved.
 
 The Initial Developer of readline-sync@1.4.10,
 is anseki (https://github.com/anseki/readline-sync).
