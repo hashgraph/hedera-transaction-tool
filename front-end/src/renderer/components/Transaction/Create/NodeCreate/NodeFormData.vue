@@ -142,8 +142,8 @@ function formatServicePort(event: Event) {
   <label class="form-label"
     >Gossip Endpoints <span v-if="required" class="text-danger">*</span></label
   >
-  <div class="d-flex">
-    <div class="col">
+  <div class="row align-items-end">
+    <div class="col-4 col-xxxl-3">
       <label class="form-label">IP/Domain</label>
       <input
         v-model="gossipIpOrDomain"
@@ -151,7 +151,8 @@ function formatServicePort(event: Event) {
         placeholder="Enter Domain Name or IP Address"
       />
     </div>
-    <div class="mx-5 col-2">
+
+    <div class="col-4 col-xxxl-3">
       <label class="form-label">Port</label>
       <input
         v-model="gossipPort"
@@ -160,45 +161,59 @@ function formatServicePort(event: Event) {
         placeholder="Enter Port"
       />
     </div>
-    <AppButton
-      color="primary"
-      type="button"
-      class="align-self-end"
-      @click="handleAddGossipEndpoint"
-    >
-      Add Gossip Endpoint
-    </AppButton>
+
+    <div class="col-4 col-xxxl-3">
+      <AppButton color="primary" type="button" @click="handleAddGossipEndpoint">
+        Add Gossip Endpoint
+      </AppButton>
+    </div>
   </div>
 
-  <ul v-if="data.gossipEndpoints.length > 0" class="mt-5">
-    <li class="d-flex">
-      <label class="form-label col text-center">IP/Domain</label>
-      <label class="form-label col text-center">Port</label>
-      <div class="col-1" />
-    </li>
-    <li v-for="(endpoint, index) of data.gossipEndpoints" :key="index" class="d-flex">
-      <div class="col text-center">
+  <div v-if="data.gossipEndpoints.length > 0" class="mt-5">
+    <div class="row">
+      <div class="col-4 col-xxxl-3">
+        <label class="form-label">IP/Domain</label>
+      </div>
+
+      <div class="col-4 col-xxxl-3">
+        <label class="form-label">Port</label>
+      </div>
+
+      <div class="col-4 col-xxxl-3 text-center">
+        <label class="form-label">Action</label>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-12 col-xxxl-9">
+        <hr class="separator mb-3" />
+      </div>
+    </div>
+
+    <div v-for="(endpoint, index) of data.gossipEndpoints" :key="index" class="row py-3">
+      <div class="col-4 col-xxxl-3 d-flex align-items-center text-small">
         {{ endpoint.ipAddressV4 ? endpoint.ipAddressV4 : endpoint.domainName }}
       </div>
-      <div class="col text-center">{{ endpoint.port }}</div>
-      <AppButton
-        type="button"
-        color="danger"
-        class="col-1"
-        @click="handleDeleteGossipEndpoint(index)"
-        style="min-width: 0"
-        >Delete
-      </AppButton>
-    </li>
-  </ul>
+      <div class="col-4 col-xxxl-3 d-flex align-items-center text-small">{{ endpoint.port }}</div>
+      <div class="col-4 col-xxxl-3 d-flex justify-content-center">
+        <AppButton
+          type="button"
+          color="danger"
+          class="col-1"
+          @click="handleDeleteGossipEndpoint(index)"
+          >Delete
+        </AppButton>
+      </div>
+    </div>
+  </div>
 
   <hr class="separator my-5" />
 
   <label class="form-label"
     >Service Endpoints <span v-if="required" class="text-danger">*</span></label
   >
-  <div class="d-flex">
-    <div class="col">
+  <div class="row align-items-end">
+    <div class="col-4 col-xxxl-3">
       <label class="form-label">IP/Domain</label>
       <input
         v-model="serviceIpOrDomain"
@@ -206,7 +221,8 @@ function formatServicePort(event: Event) {
         placeholder="Enter Domain Name or IP Address"
       />
     </div>
-    <div class="mx-5 col-2">
+
+    <div class="col-4 col-xxxl-3">
       <label class="form-label">Port</label>
       <input
         v-model="servicePort"
@@ -215,40 +231,49 @@ function formatServicePort(event: Event) {
         placeholder="Enter Port"
       />
     </div>
-    <AppButton
-      color="primary"
-      type="button"
-      class="align-self-end"
-      @click="handleAddServiceEndpoint"
-      >Add Service Endpoint
-    </AppButton>
+
+    <div class="col-4 col-xxxl-3">
+      <AppButton color="primary" type="button" @click="handleAddServiceEndpoint"
+        >Add Service Endpoint
+      </AppButton>
+    </div>
   </div>
 
-  <ul v-if="data.serviceEndpoints.length > 0" class="mt-5">
-    <li class="d-flex">
-      <label class="form-label col text-center">IP/Domain</label>
-      <label class="form-label col text-center">Port</label>
-      <div class="col-1" />
-    </li>
-    <li
-      v-for="(endpoint, index) of data.serviceEndpoints"
-      :key="index"
-      class="d-flex align-items-center"
-    >
-      <div class="col text-center">
+  <div v-if="data.serviceEndpoints.length > 0" class="mt-5">
+    <div class="row">
+      <div class="col-4 col-xxxl-3">
+        <label class="form-label">IP/Domain</label>
+      </div>
+      <div class="col-4 col-xxxl-3">
+        <label class="form-label">Port</label>
+      </div>
+      <div class="col-4 col-xxxl-3 text-center">
+        <label class="form-label">Action</label>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-12 col-xxxl-9">
+        <hr class="separator mb-3" />
+      </div>
+    </div>
+
+    <div v-for="(endpoint, index) of data.serviceEndpoints" :key="index" class="row py-3">
+      <div class="col-4 col-xxxl-3 d-flex align-items-center text-small">
         {{ endpoint.ipAddressV4 ? endpoint.ipAddressV4 : endpoint.domainName }}
       </div>
-      <div class="col text-center">{{ endpoint.port }}</div>
-      <AppButton
-        type="button"
-        color="danger"
-        class="col-1"
-        @click="handleDeleteServiceEndpoint(index)"
-        style="min-width: 0"
-        >Delete
-      </AppButton>
-    </li>
-  </ul>
+      <div class="col-4 col-xxxl-3 d-flex align-items-center text-small">{{ endpoint.port }}</div>
+      <div class="col-4 col-xxxl-3 d-flex justify-content-center">
+        <AppButton
+          type="button"
+          color="danger"
+          class="col-1"
+          @click="handleDeleteServiceEndpoint(index)"
+          >Delete
+        </AppButton>
+      </div>
+    </div>
+  </div>
 
   <hr class="separator my-5" />
 
