@@ -125,7 +125,7 @@ useSetDynamicLayout({
 // const specialFilesIds = specialFiles.map(f => f.file_id);
 
 /* State */
-// const files = ref<HederaFile[]>(specialFiles);
+// const files = ref<HederaFile[]>(specialFiles)s;
 const files = ref<HederaFile[]>([]);
 const selectedFile = ref<HederaFile | null>(null);
 const selectedFileDisplayContent = ref<string | null>(null);
