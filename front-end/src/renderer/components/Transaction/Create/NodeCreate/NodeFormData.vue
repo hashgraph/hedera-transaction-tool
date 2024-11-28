@@ -31,49 +31,44 @@ const emit = defineEmits<{
 }>();
 
 /* Handlers */
-function handleAddGossipEndpoint() {
-  if (!gossipIpOrDomain.value.trim() || !gossipPort.value.trim()) return;
+function handleAddEndpoint(key: 'gossip' | 'service') {
+  const variableMapping = {
+    gossip: {
+      ipOrDomain: gossipIpOrDomain,
+      port: gossipPort,
+      endpoints: props.data.gossipEndpoints,
+      key: 'gossipEndpoints',
+    },
+    service: {
+      ipOrDomain: serviceIpOrDomain,
+      port: servicePort,
+      endpoints: props.data.serviceEndpoints,
+      key: 'serviceEndpoints',
+    },
+  };
+
+  if (!variableMapping[key].ipOrDomain.value.trim() || !variableMapping[key].port.value.trim())
+    return;
 
   emit('update:data', {
     ...props.data,
-    gossipEndpoints: [
-      ...props.data.gossipEndpoints,
-      getEndpointData(gossipIpOrDomain.value, gossipPort.value),
+    [variableMapping[key].key]: [
+      ...variableMapping[key].endpoints,
+      getEndpointData(variableMapping[key].ipOrDomain.value, variableMapping[key].port.value),
     ],
   });
-  gossipIpOrDomain.value = '';
-  gossipPort.value = '';
+
+  variableMapping[key].ipOrDomain.value = '';
+  variableMapping[key].port.value = '';
 }
 
-function handleAddServiceEndpoint() {
-  if (!serviceIpOrDomain.value.trim() || !servicePort.value.trim()) return;
+function handleDeleteEndpoint(index: number, key: 'gossipEndpoints' | 'serviceEndpoints') {
+  const endpoints = props.data[key];
 
-  emit('update:data', {
-    ...props.data,
-    serviceEndpoints: [
-      ...props.data.serviceEndpoints,
-      getEndpointData(serviceIpOrDomain.value, servicePort.value),
-    ],
-  });
-  serviceIpOrDomain.value = '';
-  servicePort.value = '';
-}
-
-function handleDeleteGossipEndpoint(index: number) {
-  const endpoints = props.data.gossipEndpoints;
   endpoints.splice(index, 1);
   emit('update:data', {
     ...props.data,
-    gossipEndpoints: endpoints,
-  });
-}
-
-function handleDeleteServiceEndpoint(index: number) {
-  const endpoints = props.data.serviceEndpoints;
-  endpoints.splice(index, 1);
-  emit('update:data', {
-    ...props.data,
-    serviceEndpoints: endpoints,
+    [key]: endpoints,
   });
 }
 
@@ -95,20 +90,16 @@ function getEndpointData(ipOrDomain: string, port: string) {
   };
 }
 
-function formatPort(value: string) {
-  return value.replace(/[^0-9]/g, '');
-}
-
-function formatGossipPort(event: Event) {
+function formatPort(event: Event, key: 'gossip' | 'service') {
+  const portMapping = {
+    gossip: gossipPort,
+    service: servicePort,
+  };
   const target = event.target as HTMLInputElement;
-  gossipPort.value = formatPort(target.value);
-}
-
-function formatServicePort(event: Event) {
-  const target = event.target as HTMLInputElement;
-  servicePort.value = formatPort(target.value);
+  portMapping[key].value = target.value.replace(/[^0-9]/g, '');
 }
 </script>
+
 <template>
   <div class="form-group mt-6" :class="['col-4 col-xxxl-3']">
     <label class="form-label"
@@ -160,14 +151,14 @@ function formatServicePort(event: Event) {
       <label class="form-label">Port</label>
       <input
         v-model="gossipPort"
-        @input="formatGossipPort"
+        @input="formatPort($event, 'gossip')"
         class="form-control is-fill"
         placeholder="Enter Port"
       />
     </div>
 
     <div class="col-4 col-xxxl-3">
-      <AppButton color="primary" type="button" @click="handleAddGossipEndpoint">
+      <AppButton color="primary" type="button" @click="handleAddEndpoint('gossip')">
         Add Gossip Endpoint
       </AppButton>
     </div>
@@ -204,7 +195,7 @@ function formatServicePort(event: Event) {
           type="button"
           color="danger"
           class="col-1"
-          @click="handleDeleteGossipEndpoint(index)"
+          @click="handleDeleteEndpoint(index, 'gossipEndpoints')"
           >Delete
         </AppButton>
       </div>
@@ -230,14 +221,14 @@ function formatServicePort(event: Event) {
       <label class="form-label">Port</label>
       <input
         v-model="servicePort"
-        @input="formatServicePort"
+        @input="formatPort($event, 'service')"
         class="form-control is-fill"
         placeholder="Enter Port"
       />
     </div>
 
     <div class="col-4 col-xxxl-3">
-      <AppButton color="primary" type="button" @click="handleAddServiceEndpoint"
+      <AppButton color="primary" type="button" @click="handleAddEndpoint('service')"
         >Add Service Endpoint
       </AppButton>
     </div>
@@ -272,7 +263,7 @@ function formatServicePort(event: Event) {
           type="button"
           color="danger"
           class="col-1"
-          @click="handleDeleteServiceEndpoint(index)"
+          @click="handleDeleteEndpoint(index, 'serviceEndpoints')"
           >Delete
         </AppButton>
       </div>
