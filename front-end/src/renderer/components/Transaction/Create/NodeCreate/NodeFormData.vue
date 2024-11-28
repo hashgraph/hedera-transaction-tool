@@ -31,28 +31,45 @@ const emit = defineEmits<{
 }>();
 
 /* Handlers */
-function handleAddGossipEndpoint() {
+function handleAddEndpoint(key: 'gossip' | 'service') {
+  const variableMapping = {
+    gossip: {
+      ipOrDomain: gossipIpOrDomain,
+      port: gossipPort,
+      endpoints: props.data.gossipEndpoints,
+      key: 'gossipEndpoints',
+    },
+    service: {
+      ipOrDomain: serviceIpOrDomain,
+      port: servicePort,
+      endpoints: props.data.serviceEndpoints,
+      key: 'serviceEndpoints',
+    },
+  };
+
+  if (!variableMapping[key].ipOrDomain.value.trim() || !variableMapping[key].port.value.trim())
+    return;
+
   emit('update:data', {
     ...props.data,
-    gossipEndpoints: [
-      ...props.data.gossipEndpoints,
-      getEndpointData(gossipIpOrDomain.value, gossipPort.value),
+    [variableMapping[key].key]: [
+      ...variableMapping[key].endpoints,
+      getEndpointData(variableMapping[key].ipOrDomain.value, variableMapping[key].port.value),
     ],
   });
-  gossipIpOrDomain.value = '';
-  gossipPort.value = '';
+
+  variableMapping[key].ipOrDomain.value = '';
+  variableMapping[key].port.value = '';
 }
 
-function handleAddServiceEndpoint() {
+function handleDeleteEndpoint(index: number, key: 'gossipEndpoints' | 'serviceEndpoints') {
+  const endpoints = props.data[key];
+
+  endpoints.splice(index, 1);
   emit('update:data', {
     ...props.data,
-    serviceEndpoints: [
-      ...props.data.serviceEndpoints,
-      getEndpointData(serviceIpOrDomain.value, servicePort.value),
-    ],
+    [key]: endpoints,
   });
-  serviceIpOrDomain.value = '';
-  servicePort.value = '';
 }
 
 /* Functions */
@@ -73,20 +90,16 @@ function getEndpointData(ipOrDomain: string, port: string) {
   };
 }
 
-function formatPort(value: string) {
-  return value.replace(/[^0-9]/g, '');
-}
-
-function formatGossipPort(event: Event) {
+function formatPort(event: Event, key: 'gossip' | 'service') {
+  const portMapping = {
+    gossip: gossipPort,
+    service: servicePort,
+  };
   const target = event.target as HTMLInputElement;
-  gossipPort.value = formatPort(target.value);
-}
-
-function formatServicePort(event: Event) {
-  const target = event.target as HTMLInputElement;
-  servicePort.value = formatPort(target.value);
+  portMapping[key].value = target.value.replace(/[^0-9]/g, '');
 }
 </script>
+
 <template>
   <div class="form-group mt-6" :class="['col-4 col-xxxl-3']">
     <label class="form-label"
@@ -124,8 +137,8 @@ function formatServicePort(event: Event) {
   <label class="form-label"
     >Gossip Endpoints <span v-if="required" class="text-danger">*</span></label
   >
-  <div class="d-flex">
-    <div class="col">
+  <div class="row align-items-end">
+    <div class="col-4 col-xxxl-3">
       <label class="form-label">IP/Domain</label>
       <input
         v-model="gossipIpOrDomain"
@@ -133,40 +146,69 @@ function formatServicePort(event: Event) {
         placeholder="Enter Domain Name or IP Address"
       />
     </div>
-    <div class="mx-5 col-2">
+
+    <div class="col-4 col-xxxl-3">
       <label class="form-label">Port</label>
       <input
         v-model="gossipPort"
-        @input="formatGossipPort"
+        @input="formatPort($event, 'gossip')"
         class="form-control is-fill"
         placeholder="Enter Port"
       />
     </div>
-    <AppButton color="primary" type="button" class="align-self-end" @click="handleAddGossipEndpoint"
-      >Add Gossip Endpoint
-    </AppButton>
+
+    <div class="col-4 col-xxxl-3">
+      <AppButton color="primary" type="button" @click="handleAddEndpoint('gossip')">
+        Add Gossip Endpoint
+      </AppButton>
+    </div>
   </div>
 
-  <ul class="mt-5">
-    <li class="d-flex">
-      <label class="form-label col text-center">IP/Domain</label>
-      <label class="form-label mx-5 col text-center">Port</label>
-    </li>
-    <li v-for="(endpoint, index) of data.gossipEndpoints" :key="index" class="d-flex">
-      <div class="col text-center">
+  <div v-if="data.gossipEndpoints.length > 0" class="mt-5">
+    <div class="row">
+      <div class="col-4 col-xxxl-3">
+        <label class="form-label">IP/Domain</label>
+      </div>
+
+      <div class="col-4 col-xxxl-3">
+        <label class="form-label">Port</label>
+      </div>
+
+      <div class="col-4 col-xxxl-3 text-center">
+        <label class="form-label">Action</label>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-12 col-xxxl-9">
+        <hr class="separator mb-3" />
+      </div>
+    </div>
+
+    <div v-for="(endpoint, index) of data.gossipEndpoints" :key="index" class="row py-3">
+      <div class="col-4 col-xxxl-3 d-flex align-items-center text-small">
         {{ endpoint.ipAddressV4 ? endpoint.ipAddressV4 : endpoint.domainName }}
       </div>
-      <div class="col text-center">{{ endpoint.port }}</div>
-    </li>
-  </ul>
+      <div class="col-4 col-xxxl-3 d-flex align-items-center text-small">{{ endpoint.port }}</div>
+      <div class="col-4 col-xxxl-3 d-flex justify-content-center">
+        <AppButton
+          type="button"
+          color="danger"
+          class="col-1"
+          @click="handleDeleteEndpoint(index, 'gossipEndpoints')"
+          >Delete
+        </AppButton>
+      </div>
+    </div>
+  </div>
 
   <hr class="separator my-5" />
 
   <label class="form-label"
     >Service Endpoints <span v-if="required" class="text-danger">*</span></label
   >
-  <div class="d-flex">
-    <div class="col">
+  <div class="row align-items-end">
+    <div class="col-4 col-xxxl-3">
       <label class="form-label">IP/Domain</label>
       <input
         v-model="serviceIpOrDomain"
@@ -174,36 +216,59 @@ function formatServicePort(event: Event) {
         placeholder="Enter Domain Name or IP Address"
       />
     </div>
-    <div class="mx-5 col-2">
+
+    <div class="col-4 col-xxxl-3">
       <label class="form-label">Port</label>
       <input
         v-model="servicePort"
-        @input="formatServicePort"
+        @input="formatPort($event, 'service')"
         class="form-control is-fill"
         placeholder="Enter Port"
       />
     </div>
-    <AppButton
-      color="primary"
-      type="button"
-      class="align-self-end"
-      @click="handleAddServiceEndpoint"
-      >Add Service Endpoint
-    </AppButton>
+
+    <div class="col-4 col-xxxl-3">
+      <AppButton color="primary" type="button" @click="handleAddEndpoint('service')"
+        >Add Service Endpoint
+      </AppButton>
+    </div>
   </div>
 
-  <ul class="mt-5">
-    <li class="d-flex">
-      <label class="form-label col text-center">IP/Domain</label>
-      <label class="form-label mx-5 col text-center">Port</label>
-    </li>
-    <li v-for="(endpoint, index) of data.serviceEndpoints" :key="index" class="d-flex">
-      <div class="col text-center">
+  <div v-if="data.serviceEndpoints.length > 0" class="mt-5">
+    <div class="row">
+      <div class="col-4 col-xxxl-3">
+        <label class="form-label">IP/Domain</label>
+      </div>
+      <div class="col-4 col-xxxl-3">
+        <label class="form-label">Port</label>
+      </div>
+      <div class="col-4 col-xxxl-3 text-center">
+        <label class="form-label">Action</label>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-12 col-xxxl-9">
+        <hr class="separator mb-3" />
+      </div>
+    </div>
+
+    <div v-for="(endpoint, index) of data.serviceEndpoints" :key="index" class="row py-3">
+      <div class="col-4 col-xxxl-3 d-flex align-items-center text-small">
         {{ endpoint.ipAddressV4 ? endpoint.ipAddressV4 : endpoint.domainName }}
       </div>
-      <div class="col text-center">{{ endpoint.port }}</div>
-    </li>
-  </ul>
+      <div class="col-4 col-xxxl-3 d-flex align-items-center text-small">{{ endpoint.port }}</div>
+      <div class="col-4 col-xxxl-3 d-flex justify-content-center">
+        <AppButton
+          type="button"
+          color="danger"
+          class="col-1"
+          @click="handleDeleteEndpoint(index, 'serviceEndpoints')"
+          >Delete
+        </AppButton>
+      </div>
+    </div>
+  </div>
 
   <hr class="separator my-5" />
 
