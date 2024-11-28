@@ -53,6 +53,7 @@ const sorting = ref<{
   created_at: 'desc',
 });
 const selectMany = ref(false);
+const selectAll = ref(false);
 
 /* Computed */
 const hbarDollarAmount = computed(() => {
@@ -150,6 +151,21 @@ const handleSortAccounts = async (
   await fetchAccounts();
 };
 
+const handleSelect = (btnType: 'all' | 'many') => {
+  if (btnType === 'all') {
+    selectAll.value = !selectAll.value;
+    selectMany.value = false;
+    selectedAccountIds.value = accounts.value.map(account => account.account_id);
+    if (selectAll.value === false) {
+      selectedAccountIds.value = [];
+    }
+  } else {
+    selectMany.value = !selectMany.value;
+    selectAll.value = false;
+    selectedAccountIds.value = [];
+  }
+};
+
 /* Functions */
 async function fetchAccounts() {
   if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
@@ -220,76 +236,87 @@ onMounted(async () => {
             </ul>
           </div>
           <div class="d-flex align-items-center justify-content-between my-3">
-            <div class="dropdown">
-              <AppButton
-                class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
-                data-bs-toggle="dropdown"
-                ><i class="bi bi-arrow-down-up me-2"></i> Sort by</AppButton
-              >
-              <ul class="dropdown-menu text-small">
-                <li
-                  class="dropdown-item"
-                  :selected="sorting.account_id === 'asc' ? true : undefined"
-                  @click="handleSortAccounts('account_id', 'asc')"
+            <div class="rounded px-3">
+              <div class="dropdown">
+                <AppButton
+                  class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
+                  data-bs-toggle="dropdown"
+                  ><i class="bi bi-arrow-down-up me-2"></i> Sort by</AppButton
                 >
-                  Account ID Asc
-                </li>
-                <li
-                  class="dropdown-item"
-                  :selected="sorting.account_id === 'desc' ? true : undefined"
-                  @click="handleSortAccounts('account_id', 'desc')"
-                >
-                  Account ID Dsc
-                </li>
-                <li
-                  class="dropdown-item"
-                  :selected="sorting.nickname === 'asc' ? true : undefined"
-                  @click="handleSortAccounts('nickname', 'asc')"
-                >
-                  Nickname A-Z
-                </li>
-                <li
-                  class="dropdown-item"
-                  :selected="sorting.nickname === 'desc' ? true : undefined"
-                  @click="handleSortAccounts('nickname', 'desc')"
-                >
-                  Nickname Z-A
-                </li>
-                <li
-                  class="dropdown-item"
-                  :selected="sorting.created_at === 'asc' ? true : undefined"
-                  @click="handleSortAccounts('created_at', 'asc')"
-                >
-                  Date Added Asc
-                </li>
-                <li
-                  class="dropdown-item"
-                  :selected="sorting.created_at === 'desc' ? true : undefined"
-                  @click="handleSortAccounts('created_at', 'desc')"
-                >
-                  Date Added Dsc
-                </li>
-              </ul>
+                <ul class="dropdown-menu text-small">
+                  <li
+                    class="dropdown-item"
+                    :selected="sorting.account_id === 'asc' ? true : undefined"
+                    @click="handleSortAccounts('account_id', 'asc')"
+                  >
+                    Account ID Asc
+                  </li>
+                  <li
+                    class="dropdown-item"
+                    :selected="sorting.account_id === 'desc' ? true : undefined"
+                    @click="handleSortAccounts('account_id', 'desc')"
+                  >
+                    Account ID Dsc
+                  </li>
+                  <li
+                    class="dropdown-item"
+                    :selected="sorting.nickname === 'asc' ? true : undefined"
+                    @click="handleSortAccounts('nickname', 'asc')"
+                  >
+                    Nickname A-Z
+                  </li>
+                  <li
+                    class="dropdown-item"
+                    :selected="sorting.nickname === 'desc' ? true : undefined"
+                    @click="handleSortAccounts('nickname', 'desc')"
+                  >
+                    Nickname Z-A
+                  </li>
+                  <li
+                    class="dropdown-item"
+                    :selected="sorting.created_at === 'asc' ? true : undefined"
+                    @click="handleSortAccounts('created_at', 'asc')"
+                  >
+                    Date Added Asc
+                  </li>
+                  <li
+                    class="dropdown-item"
+                    :selected="sorting.created_at === 'desc' ? true : undefined"
+                    @click="handleSortAccounts('created_at', 'desc')"
+                  >
+                    Date Added Dsc
+                  </li>
+                </ul>
+              </div>
             </div>
-            <div class="transition-bg rounded px-3" :class="{ 'bg-secondary': selectMany }">
+
+            <div class="d-flex flex-column justify-content-between gap-3">
               <AppButton
-                class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
+                class="d-flex transition-bg align-items-center text-dark-emphasis min-w-unset border-0 p-1"
+                :class="{ 'bg-secondary': selectAll }"
                 data-testid="button-select-many-accounts"
-                @click="
-                  selectMany = !selectMany;
-                  selectedAccountIds = [];
-                "
+                @click="handleSelect('all')"
+              >
+                <i class="bi bi-check-all text-headline me-2"></i> Select all</AppButton
+              >
+
+              <AppButton
+                class="d-flex transition-bg align-items-center text-dark-emphasis min-w-unset border-0 p-1"
+                :class="{ 'bg-secondary': selectMany }"
+                data-testid="button-select-many-accounts"
+                @click="handleSelect('many')"
               >
                 <i class="bi bi-check-all text-headline me-2"></i> Select many</AppButton
               >
             </div>
           </div>
+
           <hr class="separator mb-5" />
           <div class="fill-remaining pe-3">
-            <template v-for="(account, index) in accounts" :key="account.accountId">
+            <template v-for="(account, index) in accounts" :key="account.account_id">
               <div class="d-flex align-items-center mt-3">
                 <div
-                  v-if="selectMany"
+                  v-if="selectMany || selectAll"
                   :selected="selectedAccountIds.includes(account.account_id) ? true : undefined"
                 >
                   <AppCheckBox
@@ -366,7 +393,7 @@ onMounted(async () => {
                     ><span class="bi bi-trash"></span> Remove</AppButton
                   >
                   <div
-                    v-if="!accountData.accountInfo.value?.deleted && !selectMany"
+                    v-if="!accountData.accountInfo.value?.deleted && !selectMany && !selectAll"
                     class="border-start ps-3"
                   >
                     <div class="dropdown">
