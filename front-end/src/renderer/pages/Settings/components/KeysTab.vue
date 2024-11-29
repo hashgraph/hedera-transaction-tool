@@ -221,7 +221,9 @@ watch(isDeleteModalShown, newVal => {
 </script>
 <template>
   <div class="flex-column-100">
-    <div class="mb-3">
+    <div
+      class="mb-3 d-flex flex-row justify-content-between flex-nowrap overflow-x-auto text-nowrap"
+    >
       <template v-for="(tab, i) in Object.values(Tabs)" :key="tab">
         <AppButton
           :data-testid="`tab-${tab}`"
@@ -232,6 +234,15 @@ watch(isDeleteModalShown, newVal => {
           @click="handleTabChange(tab)"
         >
           {{ tab }}
+        </AppButton>
+        <AppButton
+          v-if="i === Object.values(Tabs).length - 1"
+          class="min-w-unset ms-3"
+          color="danger"
+          data-testid="button-remove-account-card"
+          @click="isUnlinkAccountModalShown = true"
+        >
+          <span class="bi bi-trash"></span> Remove All
         </AppButton>
       </template>
     </div>
