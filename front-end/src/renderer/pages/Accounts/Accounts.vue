@@ -91,6 +91,7 @@ const handleCheckBoxUpdate = (isChecked: boolean, accountId: string) => {
           : accounts.value[0].account_id || '';
     }
   }
+  selectAll.value = selectedAccountIds.value.length === accounts.value.length;
 };
 
 const handleUnlinkAccount = async () => {
@@ -151,19 +152,19 @@ const handleSortAccounts = async (
   await fetchAccounts();
 };
 
-const handleSelect = (btnType: 'all' | 'many') => {
-  if (btnType === 'all') {
-    selectAll.value = !selectAll.value;
-    selectMany.value = false;
+const handleSelectAllAccounts = (isChecked: boolean) => {
+  selectAll.value = isChecked;
+  if (isChecked) {
     selectedAccountIds.value = accounts.value.map(account => account.account_id);
-    if (selectAll.value === false) {
-      selectedAccountIds.value = [];
-    }
   } else {
-    selectMany.value = !selectMany.value;
-    selectAll.value = false;
     selectedAccountIds.value = [];
   }
+};
+
+const handleToggleSelectMode = () => {
+  selectMany.value = !selectMany.value;
+  selectAll.value = false;
+  selectedAccountIds.value = [];
 };
 
 /* Functions */
@@ -290,33 +291,34 @@ onMounted(async () => {
               </div>
             </div>
 
-            <div class="d-flex flex-column justify-content-between gap-3">
+            <div>
               <AppButton
-                class="d-flex transition-bg align-items-center text-dark-emphasis min-w-unset border-0 p-1"
-                :class="{ 'bg-secondary': selectAll }"
-                data-testid="button-select-many-accounts"
-                @click="handleSelect('all')"
-              >
-                <i class="bi bi-check-all text-headline me-2"></i> Select all</AppButton
-              >
-
-              <AppButton
-                class="d-flex transition-bg align-items-center text-dark-emphasis min-w-unset border-0 p-1"
+                class="d-flex transition-bg align-items-center text-dark-emphasis min-w-unset border-0 p-3"
                 :class="{ 'bg-secondary': selectMany }"
                 data-testid="button-select-many-accounts"
-                @click="handleSelect('many')"
+                @click="handleToggleSelectMode"
               >
-                <i class="bi bi-check-all text-headline me-2"></i> Select many</AppButton
+                <i class="bi bi-check-all text-headline me-2"></i> Select</AppButton
               >
             </div>
           </div>
 
           <hr class="separator mb-5" />
           <div class="fill-remaining pe-3">
+            <div v-if="selectMany" class="d-flex flex-row flex-nowrap mb-4">
+              <AppCheckBox
+                name="select-card"
+                class="cursor-pointer"
+                type="radio"
+                :checked="selectAll"
+                @update:checked="handleSelectAllAccounts"
+              />
+              <label class="ms-2">Select all</label>
+            </div>
             <template v-for="(account, index) in accounts" :key="account.account_id">
               <div class="d-flex align-items-center mt-3">
                 <div
-                  v-if="selectMany || selectAll"
+                  v-if="selectMany"
                   :selected="selectedAccountIds.includes(account.account_id) ? true : undefined"
                 >
                   <AppCheckBox
@@ -388,6 +390,7 @@ onMounted(async () => {
                   <AppButton
                     class="min-w-unset"
                     color="danger"
+                    :disabled="selectedAccountIds.length < 1"
                     data-testid="button-remove-account-card"
                     @click="isUnlinkAccountModalShown = true"
                     ><span class="bi bi-trash"></span> Remove</AppButton
