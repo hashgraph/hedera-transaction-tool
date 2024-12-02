@@ -76,6 +76,7 @@ const handleSelectAccount = (accountId: string) => {
     accountData.accountId.value = accountId;
     selectedAccountIds.value = [accountId];
   }
+  selectAll.value = selectedAccountIds.value.length === accounts.value.length;
 };
 
 const handleCheckBoxUpdate = (isChecked: boolean, accountId: string) => {
