@@ -26,8 +26,8 @@ import UpdateNicknameModal from '@renderer/components/KeyPair/UpdateNicknameModa
 
 /* Stores */
 const user = useUserStore();
+console.log(user.keyPairs.length);
 const network = useNetworkStore();
-
 /* Composables */
 const toast = useToast();
 const router = useRouter();
@@ -44,6 +44,7 @@ enum Tabs {
 /* State */
 const isDeleteModalShown = ref(false);
 const isUpdateNicknameModalShown = ref(false);
+const deleteAll = ref(false);
 
 const decryptedKeys = ref<{ decrypted: string | null; publicKey: string }[]>([]);
 const publicKeysPrivateKeyToDecrypt = ref('');
@@ -52,6 +53,15 @@ const keyPairIdToEdit = ref<string | null>(null);
 const missingKeyPairIdToDelete = ref<number | null>(null);
 const currentTab = ref(Tabs.ALL);
 const isDeletingKey = ref(false);
+
+const modalMessage = computed(() =>
+  deleteAll.value
+    ? 'You are about to delete all key pairs. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?'
+    : user.keyPairs.filter(item => item.secret_hash != null).length === 1 &&
+        user.keyPairs[0].id === keyPairIdToDelete.value
+      ? 'You are about to delete the last key pair associated with the recovery phrase you have used to set up the Transaction Tool. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?'
+      : 'You are about to delete the selected key pair. Do you wish to continue?',
+);
 
 /* Computed */
 const externalMissingKeys = computed(() =>
@@ -117,6 +127,9 @@ const handleHideDecryptedKey = (publicKey: string) => {
 };
 
 const handleDeleteModal = (keyId: string) => {
+  if (deleteAll.value) {
+    deleteAll.value = false;
+  }
   keyPairIdToDelete.value = keyId;
   isDeleteModalShown.value = true;
 };
@@ -135,8 +148,7 @@ const handleDelete = async (e: Event) => {
     if (!isUserLoggedIn(user.personal)) {
       throw Error('User is not logged in');
     }
-
-    if (keyPairIdToDelete.value) {
+    if (keyPairIdToDelete.value || deleteAll.value) {
       if (isLoggedInOrganization(user.selectedOrganization)) {
         const organizationKeyToDelete = getUserKeyToDelete();
         await deleteKey(
@@ -147,9 +159,15 @@ const handleDelete = async (e: Event) => {
 
         await user.refetchUserState();
       }
-
-      await deleteKeyPair(keyPairIdToDelete.value);
-      toast.success(`Private key deleted successfully`, { position: 'bottom-right' });
+      if (deleteAll.value) {
+        for (const key of user.keyPairs) {
+          await deleteKeyPair(key.id);
+          toast.success(`All private keys deleted successfully`, { position: 'bottom-right' });
+        }
+      } else {
+        await deleteKeyPair(keyPairIdToDelete.value);
+        toast.success(`Private key deleted successfully`, { position: 'bottom-right' });
+      }
       await user.refetchKeys();
       user.refetchAccounts();
 
@@ -177,6 +195,7 @@ const handleDelete = async (e: Event) => {
     missingKeyPairIdToDelete.value = null;
     isDeletingKey.value = false;
     isDeleteModalShown.value = false;
+    deleteAll.value = false;
   }
 };
 
@@ -188,6 +207,12 @@ const handleCopy = (text: string, message: string) => {
 const handleStartNicknameEdit = (id: string) => {
   keyPairIdToEdit.value = id;
   isUpdateNicknameModalShown.value = true;
+};
+
+const handleRemoveAllClick = () => {
+  deleteAll.value = true;
+  keyPairIdToDelete.value = null;
+  isDeleteModalShown.value = true;
 };
 
 /* Functions */
@@ -240,7 +265,7 @@ watch(isDeleteModalShown, newVal => {
           class="min-w-unset ms-3"
           color="danger"
           data-testid="button-remove-account-card"
-          @click="isUnlinkAccountModalShown = true"
+          @click="handleRemoveAllClick"
         >
           <span class="bi bi-trash"></span> Remove All
         </AppButton>
@@ -475,19 +500,8 @@ watch(isDeleteModalShown, newVal => {
           </div>
           <form @submit="handleDelete">
             <h3 class="text-center text-title text-bold mt-3">Delete key pair</h3>
-            <p
-              v-if="
-                user.keyPairs.filter(item => item.secret_hash != null).length === 1 &&
-                user.keyPairs
-                  .filter(item => item.secret_hash != null)
-                  .map(k => k.id)
-                  .includes(keyPairIdToDelete || '')
-              "
-              class="text-center mt-4"
-            >
-              You are about to delete the last key pair associated with the recovery phrase you have
-              used to set up the Transaction Tool. If you choose to proceed, you will have to go
-              through creating or importing a recovery phrase again. Do you wish to continue?
+            <p class="text-center mt-4">
+              {{ modalMessage }}
             </p>
             <div class="d-grid mt-5">
               <AppButton
