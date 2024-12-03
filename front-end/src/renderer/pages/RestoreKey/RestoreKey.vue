@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import { inject, onBeforeMount, onUnmounted, ref, watch } from 'vue';
+import { inject, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
 import { Mnemonic } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
@@ -191,7 +191,7 @@ const handleFindEmptyIndex = async () => {
 /* Hooks */
 onBeforeMount(async () => {});
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
   user.recoveryPhrase = null;
 });
 
