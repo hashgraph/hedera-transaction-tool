@@ -113,20 +113,24 @@ const handleSaveKey = async () => {
       };
 
       if (isLoggedInOrganization(user.selectedOrganization)) {
-        if (
-          user.selectedOrganization.userKeys.some(k => k.publicKey === restoredKey.value?.publicKey)
-        ) {
+        const keyUploaded = user.selectedOrganization.userKeys.some(
+          k => k.publicKey === restoredKey.value?.publicKey,
+        );
+        const keyStored = user.keyPairs.some(k => k.public_key === restoredKey.value?.publicKey);
+        if (keyUploaded && keyStored) {
           throw new Error('Key pair already exists');
         }
 
         keyPair.organization_id = user.selectedOrganization.id;
         keyPair.organization_user_id = user.selectedOrganization.userId;
 
-        await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
-          publicKey: restoredKey.value.publicKey,
-          index: keyPair.index,
-          mnemonicHash: user.recoveryPhrase.hash,
-        });
+        if (!keyUploaded) {
+          await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
+            publicKey: restoredKey.value.publicKey,
+            index: keyPair.index,
+            mnemonicHash: user.recoveryPhrase.hash,
+          });
+        }
       }
 
       await user.storeKey(keyPair, user.recoveryPhrase.words, personalPassword, false);
