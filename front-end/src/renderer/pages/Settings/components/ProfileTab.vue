@@ -89,7 +89,7 @@ const handleChangePassword = async () => {
 
     await user.refetchAccounts();
   } catch (err: any) {
-    toast.error(err.message || 'Failed to change password', { position: 'bottom-right' });
+    toast.error(err.message || 'Failed to change password');
   } finally {
     isChangingPassword.value = false;
   }
@@ -97,7 +97,7 @@ const handleChangePassword = async () => {
 
 const handleResetData = async () => {
   await resetDataLocal();
-  toast.success('User data has been reset', { position: 'bottom-right' });
+  toast.success('User data has been reset');
   user.logout();
   router.push({ name: 'login' });
 };

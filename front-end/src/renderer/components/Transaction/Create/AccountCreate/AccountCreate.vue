@@ -78,7 +78,7 @@ const handleExecutedSuccess = async ({ receipt }: ExecutedSuccessData) => {
 
   const accountId = getEntityIdFromTransactionReceipt(receipt, 'accountId');
   await add(user.personal.id, accountId, network.network, nickname.value);
-  toast.success(`Account ${accountId} linked`, { position: 'bottom-right' });
+  toast.success(`Account ${accountId} linked`);
 };
 
 /* Functions */

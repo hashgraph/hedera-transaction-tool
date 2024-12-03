@@ -41,7 +41,7 @@ const handleUpdate = async (e: Event) => {
   const oldNickname = getNicknameById(props.keyPairId, user.keyPairs);
 
   if (nickname.value.trim() === (oldNickname || '')) {
-    toast.error('New nickname cannot be the same as the current one', { position: 'bottom-right' });
+    toast.error('New nickname cannot be the same as the current one');
     return;
   }
 
@@ -59,7 +59,7 @@ const handleUpdate = async (e: Event) => {
 
   if (success) {
     handleShow(false);
-    toast.success('Nickname updated successfully', { position: 'bottom-right' });
+    toast.success('Nickname updated successfully');
   }
 };
 

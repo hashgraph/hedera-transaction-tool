@@ -60,7 +60,7 @@ const handleLinkEntity = async () => {
     },
   });
 
-  toast.success(`Account ${entityId.value} linked`, { position: 'bottom-right' });
+  toast.success(`Account ${entityId.value} linked`);
 };
 
 /* Functions */

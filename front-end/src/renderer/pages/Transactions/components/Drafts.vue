@@ -123,7 +123,7 @@ const handleDeleteDraft = async (draft: TransactionDraft | TransactionGroup) => 
 
   await fetchDrafts();
 
-  toast.success(toastMessage, { position: 'bottom-right' });
+  toast.success(toastMessage);
 };
 
 const handleContinueDraft = async (draft: TransactionDraft | TransactionGroup) => {

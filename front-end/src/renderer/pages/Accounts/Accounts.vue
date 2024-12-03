@@ -104,7 +104,7 @@ const handleUnlinkAccount = async () => {
 
   isUnlinkAccountModalShown.value = false;
 
-  toast.success('Account Unlinked!', { position: 'bottom-right' });
+  toast.success('Account Unlinked!');
 };
 
 const handleStartNicknameEdit = () => {

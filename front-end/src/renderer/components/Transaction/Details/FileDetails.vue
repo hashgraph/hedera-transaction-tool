@@ -65,7 +65,7 @@ const handleLinkEntity = async () => {
     },
   });
 
-  toast.success(`File ${entityId.value} linked`, { position: 'bottom-right' });
+  toast.success(`File ${entityId.value} linked`);
 };
 
 /* Functions */

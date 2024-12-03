@@ -79,7 +79,7 @@ const addKeyToRestored = async (index: number) => {
       });
     }
   } catch {
-    toast.error(`Restoring key at index: ${index} failed`, { position: 'bottom-right' });
+    toast.error(`Restoring key at index: ${index} failed`);
   }
 };
 
@@ -175,16 +175,14 @@ const handleSave = async () => {
       );
     }
 
-    toast.success(`Key Pair${keys.value.length > 1 ? 's' : ''} saved successfully`, {
-      position: 'bottom-right',
-    });
+    toast.success(`Key Pair${keys.value.length > 1 ? 's' : ''} saved successfully`);
     router.push({ name: 'settingsKeys' });
   } catch (err: any) {
     let message = `Failed to store key pair${keys.value.length > 1 ? 's' : ''}`;
     if (err.message && typeof err.message === 'string') {
       message = err.message;
     }
-    toast.error(message, { position: 'bottom-right' });
+    toast.error(message);
   }
 
   await user.refetchUserState();

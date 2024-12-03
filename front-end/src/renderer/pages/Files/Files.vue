@@ -206,7 +206,7 @@ const handleUnlinkFile = async () => {
 
   isUnlinkFileModalShown.value = false;
 
-  toast.success('File Unlinked!', { position: 'bottom-right' });
+  toast.success('File Unlinked!');
 };
 
 const handleStartNicknameEdit = () => {

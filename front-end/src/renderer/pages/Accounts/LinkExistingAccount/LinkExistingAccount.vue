@@ -52,9 +52,9 @@ const handleLinkAccount = async (e: Event) => {
       );
 
       router.push({ name: 'accounts' });
-      toast.success('Account linked successfully!', { position: 'bottom-right' });
+      toast.success('Account linked successfully!');
     } catch (error: any) {
-      toast.error(error.message || 'Account link failed', { position: 'bottom-right' });
+      toast.error(error.message || 'Account link failed');
     }
   }
 };

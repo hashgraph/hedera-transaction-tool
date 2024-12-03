@@ -48,7 +48,7 @@ const handleSaveKeyList = async (e: Event) => {
   const keyListBytes = encodeKey(props.keyList);
   const newKey = await addComplexKey(user.personal.id, keyListBytes, nickname.value);
 
-  toast.success('Key list saved successfully', { position: 'bottom-right' });
+  toast.success('Key list saved successfully');
 
   props.onComplexKeySave(newKey);
 };

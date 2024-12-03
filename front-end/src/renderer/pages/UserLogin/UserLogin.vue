@@ -148,7 +148,7 @@ const handleOnFormSubmit = async (event: Event) => {
 const handleResetData = async () => {
   await resetDataLocal();
 
-  toast.success('User data has been reset', { position: 'bottom-right' });
+  toast.success('User data has been reset');
 
   inputEmailInvalid.value = false;
   inputPasswordInvalid.value = false;

@@ -87,14 +87,14 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     await draft.deleteIfNotTemplate();
 
     if (unmounted.value) {
-      toast.success('Transaction executed', { position: 'bottom-right' });
+      toast.success('Transaction executed');
     }
   } catch (err: any) {
     const data = JSON.parse(err.message);
     status = data.status;
 
     emit('transaction:executed', false, null, null);
-    toast.error(data.message, { position: 'bottom-right' });
+    toast.error(data.message);
   } finally {
     isExecuting.value = false;
   }

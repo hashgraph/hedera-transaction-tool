@@ -106,7 +106,7 @@ async function end() {
   isDecryptKeyModalShown.value = false;
 
   if (storedCount.value > 0) {
-    toast.success('Keys imported successfully', { position: 'bottom-right' });
+    toast.success('Keys imported successfully');
   }
 
   await user.refetchKeys();

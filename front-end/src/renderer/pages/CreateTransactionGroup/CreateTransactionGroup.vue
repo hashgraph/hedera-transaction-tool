@@ -71,7 +71,7 @@ async function handleSaveGroup() {
   }
 
   if (groupDescription.value.trim() === '') {
-    toast.error('Please enter a group description', { position: 'bottom-right' });
+    toast.error('Please enter a group description');
     return;
   }
 
@@ -161,7 +161,7 @@ const handleLoadGroup = async () => {
 
 async function handleSignSubmit() {
   if (groupDescription.value.trim() === '') {
-    toast.error('Group Description Required', { position: 'bottom-right' });
+    toast.error('Group Description Required');
     return;
   }
 
@@ -174,7 +174,7 @@ async function handleSignSubmit() {
 
     await transactionGroupProcessor.value?.process(requiredKey);
   } catch (err: any) {
-    toast.error(err.message || 'Failed to create transaction', { position: 'bottom-right' });
+    toast.error(err.message || 'Failed to create transaction');
   }
 }
 

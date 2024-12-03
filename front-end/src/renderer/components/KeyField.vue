@@ -112,7 +112,7 @@ const handleComplexKeyUpdate = async (keyList: KeyList) => {
     const keyListBytes = encodeKey(keyList);
     const updatedKey = await updateComplexKey(selectedComplexKey.value.id, keyListBytes);
     selectedComplexKey.value = updatedKey;
-    toast.success('Key list updated successfully', { position: 'bottom-right' });
+    toast.success('Key list updated successfully');
   }
 };
 
