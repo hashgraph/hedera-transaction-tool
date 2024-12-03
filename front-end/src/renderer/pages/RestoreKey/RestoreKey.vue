@@ -41,13 +41,13 @@ const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODA
 const step = ref(0);
 
 const index = ref(0);
-const nickname = ref('');
-
 const inputIndexInvalid = ref(false);
-
+const nickname = ref('');
 const restoredKey = ref<{ privateKey: string; publicKey: string; mnemonicHash: string } | null>(
   null,
 );
+
+const loadingText = ref<string | null>(null);
 
 /* Handlers */
 const handleImportRecoveryPhrase = () => step.value++;
@@ -60,6 +60,8 @@ const handleRestoreKey = async () => {
   }
 
   try {
+    loadingText.value = 'Restoring key pair...';
+
     const privateKey = await restorePrivateKey(
       user.recoveryPhrase.words,
       '',
@@ -99,6 +101,8 @@ const handleRestoreKey = async () => {
     step.value++;
   } catch (e) {
     toast.error(getErrorMessage(e, 'Failed to restore private key'));
+  } finally {
+    loadingText.value = null;
   }
 };
 
@@ -120,6 +124,8 @@ const handleSaveKey = async () => {
   }
 
   try {
+    loadingText.value = 'Saving key pair...';
+
     const keyPair: Prisma.KeyPairUncheckedCreateInput = {
       user_id: user.personal.id,
       index: Number(index.value),
@@ -163,6 +169,8 @@ const handleSaveKey = async () => {
     toast.error(getErrorMessage(e, 'Failed to store private key'), {
       position: 'bottom-right',
     });
+  } finally {
+    loadingText.value = null;
   }
 };
 
@@ -293,6 +301,8 @@ watch(step, async newStep => {
                 color="primary"
                 class="mt-4 d-block w-100"
                 :disabled="index < 0"
+                :loading="Boolean(loadingText)"
+                :loading-text="loadingText || ''"
                 >Continue</AppButton
               >
             </div>
@@ -318,6 +328,8 @@ watch(step, async newStep => {
                 data-testid="button-continue-nickname"
                 color="primary"
                 class="mt-4 d-block w-100"
+                :loading="Boolean(loadingText)"
+                :loading-text="loadingText || ''"
                 >Continue</AppButton
               >
             </div>
