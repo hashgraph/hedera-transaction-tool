@@ -1,9 +1,23 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+import { MIGRATE_MNEMONIC_KEYS } from '@renderer/router';
+
+import useUserStore from '@renderer/stores/storeUser';
+
+import { useRouter } from 'vue-router';
+
+import { isLoggedInOrganization } from '@renderer/utils';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import ImportExternalPrivateKeyModal from '@renderer/components/ImportExternalPrivateKeyModal.vue';
 import ImportEncrypted from '@renderer/components/KeyPair/ImportEncrypted';
+
+/* Stores */
+const user = useUserStore();
+
+/* Composables */
+const router = useRouter();
 
 /* State */
 const importEncryptedRef = ref<InstanceType<typeof ImportEncrypted> | null>(null);
@@ -17,6 +31,8 @@ const handleImportExternal = (type: 'ED25519' | 'ECDSA') => {
 };
 
 const handleImportEncrypted = () => importEncryptedRef.value?.process();
+
+const handleImportMnemonic = () => router.push({ name: MIGRATE_MNEMONIC_KEYS });
 </script>
 <template>
   <div class="dropdown">
@@ -48,6 +64,14 @@ const handleImportEncrypted = () => importEncryptedRef.value?.process();
         @click="handleImportEncrypted"
       >
         <span class="text-small">Encrypted keys</span>
+      </li>
+      <li
+        v-if="isLoggedInOrganization(user.selectedOrganization)"
+        data-testid="link-import-mnemonic"
+        class="dropdown-item cursor-pointer mt-3"
+        @click="handleImportMnemonic"
+      >
+        <span class="text-small">Mnemonic keys</span>
       </li>
     </ul>
   </div>
