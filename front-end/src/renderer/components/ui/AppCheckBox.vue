@@ -6,6 +6,7 @@ defineProps<{
   label?: string;
   disabled?: boolean;
   dataTestid?: string;
+  type?: 'checkbox' | 'radio';
 }>();
 
 /* Emits */
@@ -15,7 +16,7 @@ defineEmits(['update:checked']);
   <div class="form-check">
     <input
       class="form-check-input"
-      type="checkbox"
+      :type="type || 'checkbox'"
       :checked="checked"
       @input="$emit('update:checked', !checked)"
       :name="name"
