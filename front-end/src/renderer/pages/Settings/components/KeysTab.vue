@@ -237,7 +237,7 @@ watch(selectedRecoveryPhrase, newVal => {
 <template>
   <div class="flex-column-100">
     <div class="d-flex align-items-center gap-4 mb-3">
-      <div class="btn-group-container d-inline-flex mw-100" role="group">
+      <div class="btn-group-container d-inline-flex w-100" role="group">
         <div class="btn-group gap-3 overflow-x-auto">
           <AppButton
             :color="currentTab === Tabs.ALL ? 'primary' : undefined"
@@ -268,27 +268,25 @@ watch(selectedRecoveryPhrase, newVal => {
             :toggle-text="Tabs.RECOVERY_PHRASE"
             :active="currentTab === Tabs.RECOVERY_PHRASE"
             :color="'primary'"
+            button-class="rounded-3"
             class="overflow-auto text-nowrap"
             :style="{ maxWidth: '300px' }"
             toggler-icon
             color-on-active
           />
-        </div>
-      </div>
 
-      <div
-        v-if="
-          currentTab === Tabs.RECOVERY_PHRASE &&
-          missingKeys.some(k => k.mnemonicHash === selectedRecoveryPhrase)
-        "
-      >
-        <AppButton
-          color="primary"
-          :data-testid="`button-restore-lost-keys`"
-          class="rounded-3 text-nowrap min-w-unset"
-          @click="handleRedirectToRecoverMnemonicKeys()"
-          >Restore Missing Keys</AppButton
-        >
+          <AppButton
+            v-if="
+              currentTab === Tabs.RECOVERY_PHRASE &&
+              missingKeys.some(k => k.mnemonicHash === selectedRecoveryPhrase)
+            "
+            color="primary"
+            :data-testid="`button-restore-lost-keys`"
+            class="rounded-3 text-nowrap min-w-unset"
+            @click="handleRedirectToRecoverMnemonicKeys()"
+            >Restore Missing Keys</AppButton
+          >
+        </div>
       </div>
     </div>
 
