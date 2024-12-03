@@ -23,7 +23,11 @@ import { SELECTED_NETWORK, SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@main/share
 
 import { getUserState, healthCheck } from '@renderer/services/organization';
 import { getAccountIds, getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService';
-import { storeKeyPair as storeKey, getKeyPairs } from '@renderer/services/keyPairService';
+import {
+  storeKeyPair as storeKey,
+  getKeyPairs,
+  restorePrivateKey,
+} from '@renderer/services/keyPairService';
 import {
   shouldSignInOrganization,
   deleteOrganizationCredentials,
@@ -38,6 +42,7 @@ import {
 import { getStoredClaim } from '@renderer/services/claimService';
 
 import { safeAwait } from './safeAwait';
+import { getErrorMessage, throwError } from '.';
 
 /* Flags */
 export function assertUserLoggedIn(user: PersonalUser | null): asserts user is LoggedInUser {
@@ -586,6 +591,90 @@ export const toggleAuthTokenInSessionStorage = (
 export const getAuthTokenFromSessionStorage = (serverUrl: string): string | null => {
   const origin = new URL(serverUrl).origin;
   return sessionStorage.getItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`);
+};
+
+export const restoreOrganizationKeys = async (
+  organization: ConnectedOrganization,
+  recoveryPhrase: RecoveryPhrase | null,
+  personalUser: PersonalUser | null,
+  storedKeyPairs: KeyPair[],
+  currentPhraseOnly: boolean,
+) => {
+  assertIsLoggedInOrganization(organization);
+
+  if (!recoveryPhrase) {
+    throw new Error('Recovery phrase is required to restore keys');
+  }
+
+  const personalKeys = currentPhraseOnly ? [] : await getLocalKeyPairs(personalUser, null);
+
+  const failedRestoreMessages: string[] = [];
+  const keys: {
+    publicKey: string;
+    privateKey: string;
+    index: number;
+    mnemonicHash: string;
+    encrypted: boolean;
+  }[] = [];
+
+  const alreadyUploadedHash = await getSecretHashFromUploadedKeys(
+    recoveryPhrase,
+    organization.userKeys,
+  );
+
+  for (const organizationKey of organization.userKeys) {
+    const alreadyAddedForRestore = keys.some(k => k.publicKey === organizationKey.publicKey);
+    const keyIsStored = storedKeyPairs.some(kp => kp.public_key === organizationKey.publicKey);
+    const keyFromPersonalKeys = personalKeys.find(
+      pk => pk.public_key === organizationKey.publicKey,
+    );
+
+    try {
+      if (
+        !keyIsStored &&
+        !alreadyAddedForRestore &&
+        organizationKey.mnemonicHash &&
+        organizationKey.index != null
+      ) {
+        const key = {
+          publicKey: '',
+          privateKey: '',
+          index: organizationKey.index,
+          mnemonicHash: organizationKey.mnemonicHash,
+          encrypted: false,
+        };
+
+        if (organizationKey.mnemonicHash === alreadyUploadedHash) {
+          const privateKey = await restorePrivateKey(
+            recoveryPhrase.words,
+            '',
+            organizationKey.index,
+            'ED25519',
+          );
+          key.publicKey = privateKey.publicKey.toStringRaw();
+          key.privateKey = privateKey.toStringRaw();
+        } else if (!currentPhraseOnly && keyFromPersonalKeys) {
+          key.publicKey = keyFromPersonalKeys.public_key;
+          key.privateKey = keyFromPersonalKeys.private_key;
+          key.encrypted = true;
+        }
+
+        if (organizationKey.publicKey !== key.publicKey) {
+          throwError(
+            `Public key mismatch for organization key ${organizationKey.publicKey}, expected ${organizationKey.publicKey}, received ${key.publicKey}`,
+          );
+        }
+
+        keys.push(key);
+      }
+    } catch (e) {
+      failedRestoreMessages.push(
+        getErrorMessage(e, `Failed to restore key at index ${organizationKey.index}`),
+      );
+    }
+  }
+
+  return { keys, failedRestoreMessages };
 };
 
 const navigateToPreviousRoute = (router: Router) => {
