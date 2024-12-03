@@ -73,6 +73,31 @@ const recoveryPhraseHashes = computed(() =>
   ).map((hash, i) => ({ label: `Recovery Phrase ${i + 1}`, value: hash })),
 );
 
+const listedKeyPairs = computed(() => {
+  return user.keyPairs.filter(item => {
+    switch (currentTab.value) {
+      case Tabs.ALL:
+        return true;
+      case Tabs.RECOVERY_PHRASE:
+        return item.secret_hash !== null && item.secret_hash === selectedRecoveryPhrase.value;
+      case Tabs.PRIVATE_KEY:
+        return item.secret_hash === null;
+    }
+  });
+});
+
+const listedMissingKeyPairs = computed(() => {
+  return missingKeys.value.filter(keyPair => {
+    return (
+      currentTab.value === Tabs.ALL ||
+      (currentTab.value === Tabs.RECOVERY_PHRASE &&
+        keyPair.mnemonicHash &&
+        keyPair.mnemonicHash === selectedRecoveryPhrase.value) ||
+      (currentTab.value === Tabs.PRIVATE_KEY && !keyPair.mnemonicHash)
+    );
+  });
+});
+
 /* Handlers */
 const handleShowPrivateKey = async (publicKey: string) => {
   publicKeysPrivateKeyToDecrypt.value = publicKey;
@@ -188,6 +213,14 @@ const handleDelete = async () => {
     missingKeyPairIdToDelete.value = null;
     isDeletingKey.value = false;
     isDeleteModalShown.value = false;
+
+    if (
+      listedKeyPairs.value.length === 0 &&
+      listedMissingKeyPairs.value.length === 0 &&
+      currentTab.value === Tabs.RECOVERY_PHRASE
+    ) {
+      currentTab.value = Tabs.ALL;
+    }
   }
 };
 
@@ -307,19 +340,7 @@ watch(selectedRecoveryPhrase, newVal => {
           </tr>
         </thead>
         <tbody class="text-secondary">
-          <template
-            v-for="(keyPair, index) in user.keyPairs.filter(item => {
-              switch (currentTab) {
-                case Tabs.ALL:
-                  return true;
-                case Tabs.RECOVERY_PHRASE:
-                  return item.secret_hash !== null && item.secret_hash === selectedRecoveryPhrase;
-                case Tabs.PRIVATE_KEY:
-                  return item.secret_hash === null;
-              }
-            })"
-            :key="keyPair.public_key"
-          >
+          <template v-for="(keyPair, index) in listedKeyPairs" :key="keyPair.public_key">
             <tr>
               <td
                 :data-testid="`cell-index-${index}`"
@@ -433,17 +454,8 @@ watch(selectedRecoveryPhrase, newVal => {
             </tr>
           </template>
           <template v-if="isLoggedInOrganization(user.selectedOrganization)">
-            <template v-for="(keyPair, index) in missingKeys" :key="keyPair.publicKey">
-              <tr
-                v-if="
-                  currentTab === Tabs.ALL ||
-                  (currentTab === Tabs.RECOVERY_PHRASE &&
-                    keyPair.mnemonicHash &&
-                    keyPair.mnemonicHash === selectedRecoveryPhrase) ||
-                  (currentTab === Tabs.PRIVATE_KEY && !keyPair.mnemonicHash)
-                "
-                class="disabled-w-action position-relative"
-              >
+            <template v-for="(keyPair, index) in listedMissingKeyPairs" :key="keyPair.publicKey">
+              <tr class="disabled-w-action position-relative">
                 <td
                   v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
                   :data-testid="`cell-index-missing-${index}`"
