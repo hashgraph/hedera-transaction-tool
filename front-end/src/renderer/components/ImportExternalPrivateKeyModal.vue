@@ -10,7 +10,12 @@ import { useToast } from 'vue-toast-notification';
 
 import { generateExternalKeyPairFromString } from '@renderer/services/keyPairService';
 
-import { isLoggedInOrganization, isUserLoggedIn, safeDuplicateUploadKey } from '@renderer/utils';
+import {
+  getErrorMessage,
+  isLoggedInOrganization,
+  isUserLoggedIn,
+  safeDuplicateUploadKey,
+} from '@renderer/utils';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
@@ -41,63 +46,58 @@ const key = reactive<{ privateKey: string; nickname?: string }>({
   privateKey: '',
 });
 
-const handleImportExternalKey = async (e: Event) => {
-  e.preventDefault();
+const handleImportExternalKey = async () => {
+  /* Verify user is logged in with password */
+  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+  const personalPassword = user.getPassword();
+  if (!personalPassword && !user.personal.useKeychain) {
+    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+    userPasswordModalRef.value?.open(
+      'Enter personal password',
+      'Private key/s will be encrypted with this password',
+      handleImportExternalKey,
+    );
+    return;
+  }
 
-  const callback = async () => {
-    /* Verify user is logged in with password */
-    if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
-    const personalPassword = user.getPassword();
-    if (!personalPassword && !user.personal.useKeychain) {
-      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-      userPasswordModalRef.value?.open(
-        'Enter personal password',
-        'Private key/s will be encrypted with this password',
-        callback,
-      );
-      return;
+  try {
+    const keyPair: Prisma.KeyPairUncheckedCreateInput = {
+      user_id: user.personal.id,
+      ...generateExternalKeyPairFromString(key.privateKey, props.keyType, key.nickname || ''),
+      organization_id: null,
+      organization_user_id: null,
+      type: props.keyType,
+      secret_hash: null,
+    };
+
+    if (user.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
+      throw new Error('Key pair already exists');
     }
 
-    try {
-      const keyPair: Prisma.KeyPairUncheckedCreateInput = {
-        user_id: user.personal.id,
-        ...generateExternalKeyPairFromString(key.privateKey, props.keyType, key.nickname || ''),
-        organization_id: null,
-        organization_user_id: null,
-        type: props.keyType,
-        secret_hash: null,
-      };
-
+    if (isLoggedInOrganization(user.selectedOrganization)) {
       if (user.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
         throw new Error('Key pair already exists');
       }
 
-      if (isLoggedInOrganization(user.selectedOrganization)) {
-        if (user.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
-          throw new Error('Key pair already exists');
-        }
+      keyPair.organization_id = user.selectedOrganization.id;
+      keyPair.organization_user_id = user.selectedOrganization.userId;
 
-        keyPair.organization_id = user.selectedOrganization.id;
-        keyPair.organization_user_id = user.selectedOrganization.userId;
-
-        await safeDuplicateUploadKey(user.selectedOrganization, {
-          publicKey: keyPair.public_key,
-        });
-      }
-
-      await user.storeKey(keyPair, null, personalPassword, false);
-
-      await user.refetchUserState();
-
-      emit('update:show', false);
-
-      toast.success(`${props.keyType} private key imported successfully`);
-    } catch (err: any) {
-      toast.error(err.message || `Failed to import ${props.keyType} private key`);
+      await safeDuplicateUploadKey(user.selectedOrganization, {
+        publicKey: keyPair.public_key,
+      });
     }
-  };
 
-  await callback();
+    await user.storeKey(keyPair, null, personalPassword, false);
+    await user.refetchUserState();
+
+    emit('update:show', false);
+
+    toast.success(`${props.keyType} private key imported successfully`, {
+      position: 'bottom-right',
+    });
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, `Failed to import ${props.keyType} private key`));
+  }
 };
 
 /* Watchers */
@@ -122,7 +122,7 @@ watch(
       <div class="text-center mt-5">
         <i class="bi bi-key large-icon" style="line-height: 16px"></i>
       </div>
-      <form @submit="handleImportExternalKey">
+      <form @submit.prevent="handleImportExternalKey">
         <div class="form-group mt-4">
           <label class="form-label">Enter {{ keyType }} Private key</label>
           <AppInput
