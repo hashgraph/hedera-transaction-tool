@@ -166,9 +166,7 @@ const handleSaveKey = async () => {
     toast.success('Key Pair saved');
     router.push({ name: 'settingsKeys' });
   } catch (e) {
-    toast.error(getErrorMessage(e, 'Failed to store private key'), {
-      position: 'bottom-right',
-    });
+    toast.error(getErrorMessage(e, 'Failed to store private key'));
   } finally {
     loadingText.value = null;
   }

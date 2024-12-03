@@ -17,7 +17,12 @@ import { CommonNetwork } from '@main/shared/enums';
 import { deleteKey } from '@renderer/services/organization';
 import { decryptPrivateKey, deleteKeyPair } from '@renderer/services/keyPairService';
 
-import { assertUserLoggedIn, isLoggedInOrganization, safeAwait } from '@renderer/utils';
+import {
+  assertUserLoggedIn,
+  getErrorMessage,
+  isLoggedInOrganization,
+  safeAwait,
+} from '@renderer/utils';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
@@ -188,7 +193,7 @@ const handleDelete = async () => {
       );
     }
 
-    toast.success(`Private key deleted successfully`, { position: 'bottom-right' });
+    toast.success(`Private key deleted successfully`);
 
     await user.refetchUserState();
     await user.refetchKeys();
@@ -197,8 +202,8 @@ const handleDelete = async () => {
     if (user.shouldSetupAccount) {
       router.push({ name: 'accountSetup' });
     }
-  } catch (err: any) {
-    toast.error(err.message || 'Failed to delete key pair');
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, 'Failed to delete key pair'));
   } finally {
     keyPairIdToDelete.value = null;
     missingKeyPairIdToDelete.value = null;

@@ -12,7 +12,13 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { add } from '@renderer/services/filesService';
 
-import { isAccountId, isFileId, isUserLoggedIn, formatAccountId } from '@renderer/utils';
+import {
+  isAccountId,
+  isFileId,
+  isUserLoggedIn,
+  formatAccountId,
+  getErrorMessage,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -56,8 +62,8 @@ const handleLinkFile = async (e: Event) => {
 
       router.push({ name: 'files' });
       toast.success('File linked successfully!');
-    } catch (error: any) {
-      toast.error(error.message || 'File link failed');
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'File link failed'));
     }
   }
 };

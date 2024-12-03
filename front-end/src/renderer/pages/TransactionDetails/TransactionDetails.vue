@@ -53,6 +53,7 @@ import {
   isUserLoggedIn,
   computeSignatureKey,
   publicRequiredToSign,
+  getErrorMessage,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -293,8 +294,8 @@ const handleSign = async () => {
       );
       toast.success('Transaction signed successfully');
     }
-  } catch (error) {
-    toast.error(error instanceof Error ? error.message : 'Failed to sign transaction');
+  } catch (error: unknown) {
+    toast.error(getErrorMessage(error, 'Failed to sign transaction'));
   } finally {
     isSigning.value = false;
   }

@@ -24,6 +24,7 @@ import {
   isHederaSpecialFileId,
   formatAccountId,
   encodeString,
+  getErrorMessage,
 } from '@renderer/utils';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
@@ -93,12 +94,8 @@ const readFile = async () => {
     ).join(',');
 
     await updateLocalFileInfo(contentBytes, privateKey, keyPair.type);
-  } catch (err: any) {
-    let message = 'Failed to execute query';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message);
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, 'Failed to execute query'));
   } finally {
     network.client._operator = null;
     isLoading.value = false;
@@ -164,7 +161,7 @@ const updateLocalFileInfo = async (content: string, privateKey: string, privateK
       toast.success(`File ${fileId.value} linked`);
     }
   } catch (error: any) {
-    toast.error(error?.message || 'Failed to add/update file info');
+    toast.error(getErrorMessage(error, 'Failed to add/update file info'));
   }
 };
 

@@ -10,6 +10,7 @@ import { useToast } from 'vue-toast-notification';
 
 import {
   assertIsLoggedInOrganization,
+  getErrorMessage,
   isUserLoggedIn,
   restoreOrganizationKeys,
 } from '@renderer/utils';
@@ -47,7 +48,7 @@ const handleImportRecoveryPhrase = async () => {
     );
 
     for (const error of restoredKeys.failedRestoreMessages) {
-      toast.error(error, { position: 'bottom-right' });
+      toast.error(error);
     }
 
     if (restoredKeys.keys.length === 0) {
@@ -109,9 +110,7 @@ const storeKeys = async (
       );
       restoredKeys++;
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to store key pair', {
-        position: 'bottom-right',
-      });
+      toast.error(getErrorMessage(err, 'Failed to store key pair'));
     }
   }
 
@@ -119,7 +118,7 @@ const storeKeys = async (
   await user.refetchUserState();
 
   if (restoredKeys > 0) {
-    toast.success('Key Pairs restored', { position: 'bottom-right' });
+    toast.success('Key Pairs restored');
   }
   router.push({ name: 'settingsKeys' });
 };

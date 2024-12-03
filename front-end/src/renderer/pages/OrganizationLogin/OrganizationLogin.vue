@@ -11,7 +11,12 @@ import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 import { login } from '@renderer/services/organization';
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
-import { isLoggedOutOrganization, isUserLoggedIn, withLoader } from '@renderer/utils';
+import {
+  getErrorMessage,
+  isLoggedOutOrganization,
+  isUserLoggedIn,
+  withLoader,
+} from '@renderer/utils';
 
 import { GLOBAL_MODAL_LOADER_KEY, USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
@@ -98,11 +103,10 @@ const handleLogin = async () => {
       globalModalLoaderRef?.value,
       'Failed to change user mode',
     )();
-  } catch (error: any) {
+  } catch (error: unknown) {
     inputEmailInvalid.value = true;
     inputPasswordInvalid.value = true;
-
-    toast.error(error.message);
+    toast.error(getErrorMessage(error, 'Failed to sign in'));
   } finally {
     loading.value = false;
   }

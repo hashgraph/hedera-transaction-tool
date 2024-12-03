@@ -134,7 +134,7 @@ const restoreForOrganization = async (organization: ConnectedOrganization) => {
   }
 
   for (const error of restoredKeys.failedRestoreMessages) {
-    toast.error(error, { position: 'bottom-right' });
+    toast.error(error);
   }
 
   if (restoredKeys.keys.length === 0) {
@@ -218,9 +218,7 @@ const handleSave = async () => {
       }
       storedCount++;
     } catch (e) {
-      toast.error(getErrorMessage(e, `Failed to store key pair: ${key.publicKey}`), {
-        position: 'bottom-right',
-      });
+      toast.error(getErrorMessage(e, `Failed to store key pair: ${key.publicKey}`));
     }
   }
 

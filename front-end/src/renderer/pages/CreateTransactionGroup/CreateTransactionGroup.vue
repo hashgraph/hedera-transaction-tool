@@ -14,6 +14,7 @@ import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 import { deleteGroup } from '@renderer/services/transactionGroupsService';
 
 import {
+  getErrorMessage,
   getPropagationButtonLabel,
   isLoggedInOrganization,
   isUserLoggedIn,
@@ -173,8 +174,8 @@ async function handleSignSubmit() {
     const requiredKey = new KeyList(ownerKeys);
 
     await transactionGroupProcessor.value?.process(requiredKey);
-  } catch (err: any) {
-    toast.error(err.message || 'Failed to create transaction');
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, 'Failed to create transaction'));
   }
 }
 
