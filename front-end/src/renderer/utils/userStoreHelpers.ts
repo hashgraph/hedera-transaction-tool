@@ -1,6 +1,7 @@
 import type { Ref } from 'vue';
 import type { Router } from 'vue-router';
 import type { KeyPair, Organization } from '@prisma/client';
+import type { IUserKey } from '@main/shared/interfaces';
 import type {
   ConnectedOrganization,
   LoggedInOrganization,
@@ -29,7 +30,11 @@ import {
   getOrganizationTokens,
 } from '@renderer/services/organizationCredentials';
 import { deleteOrganization, getOrganizations } from '@renderer/services/organizationsService';
-import { hashData, compareHash } from '@renderer/services/electronUtilsService';
+import {
+  hashData,
+  compareHash,
+  compareDataToHashes,
+} from '@renderer/services/electronUtilsService';
 import { getStoredClaim } from '@renderer/services/claimService';
 
 import { safeAwait } from './safeAwait';
@@ -311,6 +316,19 @@ export const getKeysFromSecretHash = async (
   }
 
   return keysWithSecretHash;
+};
+
+export const getSecretHashFromUploadedKeys = async (
+  recoveryPhrase: RecoveryPhrase,
+  keys: IUserKey[],
+) => {
+  const allHashes: string[] = [];
+  for (const key of keys) {
+    if (key.mnemonicHash) {
+      allHashes.push(key.mnemonicHash);
+    }
+  }
+  return await compareDataToHashes([...recoveryPhrase.words].toString(), allHashes);
 };
 
 export const getNickname = (publicKey: string, keyPairs: KeyPair[]): string | undefined => {
