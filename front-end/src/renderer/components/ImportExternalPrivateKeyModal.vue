@@ -9,9 +9,8 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useToast } from 'vue-toast-notification';
 
 import { generateExternalKeyPairFromString } from '@renderer/services/keyPairService';
-import { uploadKey } from '@renderer/services/organization';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import { isLoggedInOrganization, isUserLoggedIn, safeDuplicateUploadKey } from '@renderer/utils';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
@@ -74,17 +73,14 @@ const handleImportExternalKey = async (e: Event) => {
       }
 
       if (isLoggedInOrganization(user.selectedOrganization)) {
-        if (
-          user.selectedOrganization.userKeys.some(k => k.publicKey === keyPair.public_key) &&
-          user.keyPairs.find(kp => kp.public_key === keyPair.public_key)
-        ) {
+        if (user.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
           throw new Error('Key pair already exists');
         }
 
         keyPair.organization_id = user.selectedOrganization.id;
         keyPair.organization_user_id = user.selectedOrganization.userId;
 
-        await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
+        await safeDuplicateUploadKey(user.selectedOrganization, {
           publicKey: keyPair.public_key,
         });
       }

@@ -11,13 +11,13 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
 import { restorePrivateKey } from '@renderer/services/keyPairService';
-import { uploadKey } from '@renderer/services/organization';
 
 import {
   getErrorMessage,
   getSecretHashFromUploadedKeys,
   isLoggedInOrganization,
   isUserLoggedIn,
+  safeDuplicateUploadKey,
 } from '@renderer/utils';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
@@ -135,13 +135,11 @@ const handleSaveKey = async () => {
       keyPair.organization_id = user.selectedOrganization.id;
       keyPair.organization_user_id = user.selectedOrganization.userId;
 
-      if (!keyUploaded) {
-        await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
-          publicKey: restoredKey.value.publicKey,
-          index: keyPair.index,
-          mnemonicHash: restoredKey.value.mnemonicHash,
-        });
-      }
+      await safeDuplicateUploadKey(user.selectedOrganization, {
+        publicKey: restoredKey.value.publicKey,
+        index: keyPair.index,
+        mnemonicHash: restoredKey.value.mnemonicHash,
+      });
     }
 
     if (!keyStored) {

@@ -13,9 +13,12 @@ import {
   decryptEncryptedKey,
 } from '@renderer/services/encryptedKeys';
 import { storeKeyPair } from '@renderer/services/keyPairService';
-import { uploadKey } from '@renderer/services/organization';
 
-import { assertUserLoggedIn, isLoggedInOrganization } from '@renderer/utils';
+import {
+  assertUserLoggedIn,
+  isLoggedInOrganization,
+  safeDuplicateUploadKey,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -163,14 +166,12 @@ async function storeKey(key: {
     keyPair.organization_id = user.selectedOrganization.id;
     keyPair.organization_user_id = user.selectedOrganization.userId;
 
-    if (!user.selectedOrganization.userKeys.some(k => k.publicKey === publicKey.toStringRaw())) {
-      await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
-        publicKey: publicKey.toStringRaw(),
-        index: matchedRecoveryPhraseHashCode && key.index !== null ? key.index : undefined,
-        mnemonicHash:
-          matchedRecoveryPhraseHashCode && key.index !== null ? props.mnemonicHash : undefined,
-      });
-    }
+    await safeDuplicateUploadKey(user.selectedOrganization, {
+      publicKey: publicKey.toStringRaw(),
+      index: matchedRecoveryPhraseHashCode && key.index !== null ? key.index : undefined,
+      mnemonicHash:
+        matchedRecoveryPhraseHashCode && key.index !== null ? props.mnemonicHash : undefined,
+    });
   }
 
   await storeKeyPair(keyPair, personalPassword, false);

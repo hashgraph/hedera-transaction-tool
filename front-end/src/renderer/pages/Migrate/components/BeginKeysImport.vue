@@ -10,7 +10,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { getDataMigrationKeysPath } from '@renderer/services/migrateDataService';
 import { searchEncryptedKeys } from '@renderer/services/encryptedKeys';
 import { restorePrivateKey, storeKeyPair } from '@renderer/services/keyPairService';
-import { uploadKey, deleteKey, getUserState } from '@renderer/services/organization';
+import { getUserState } from '@renderer/services/organization';
 import { compareHash } from '@renderer/services/electronUtilsService';
 
 import {
@@ -18,6 +18,7 @@ import {
   isLoggedInOrganization,
   isUserLoggedIn,
   safeAwait,
+  safeDuplicateUploadKey,
 } from '@renderer/utils';
 
 import DecryptKeys from '@renderer/components/KeyPair/ImportEncrypted/components/DecryptKeys.vue';
@@ -53,9 +54,7 @@ const restoreOnEmpty = async (userKeysWithMnemonic: IUserKeyWithMnemonic[]) => {
 
   if (userKeysWithMnemonic.length === 0) {
     for (let i = 0; i < 99; i++) {
-      const result = await safeAwait(
-        restoreKeyPair(user.selectedOrganization.serverUrl, i, 'Default', true),
-      );
+      const result = await safeAwait(restoreKeyPair(i, 'Default', true));
       if (!result.error) break;
     }
   }
@@ -66,7 +65,6 @@ const restoreExistingKeys = async () => {
     throw new Error('(BUG) Organization user id not set');
 
   const { userKeys } = await getUserState(user.selectedOrganization.serverUrl);
-
   const userKeysWithMnemonic = userKeys.filter(userKeyHasMnemonic);
 
   await restoreOnEmpty(userKeysWithMnemonic);
@@ -79,41 +77,21 @@ const restoreExistingKeys = async () => {
      * If keys from multiple mnemonic phrases are present, they will be deleted as the system supports only one mnemonic phrase
      */
     if (userKeyHasMnemonic(userKey)) {
-      const { data: matchedHash, error } = await safeAwait(
+      const { data: matchedHash } = await safeAwait(
         compareHash([...props.recoveryPhrase.words].toString(), userKey.mnemonicHash),
       );
 
-      if (!error && matchedHash) {
+      if (matchedHash) {
         const alreadyRestored = user.keyPairs.some(kp => kp.public_key === userKey.publicKey);
         if (!alreadyRestored) {
-          await safeAwait(
-            restoreKeyPair(
-              user.selectedOrganization.serverUrl,
-              userKey.index,
-              `Restored Key ${i + 1}`,
-              false,
-            ),
-          );
+          await safeAwait(restoreKeyPair(userKey.index, `Restored Key ${i + 1}`, false));
         }
-      } else {
-        await safeAwait(
-          deleteKey(
-            user.selectedOrganization.serverUrl,
-            user.selectedOrganization.userId,
-            userKey.id,
-          ),
-        );
       }
     }
   }
 };
 
-const restoreKeyPair = async (
-  organizationURL: string,
-  index: number,
-  nickname: string,
-  upload: boolean,
-) => {
+const restoreKeyPair = async (index: number, nickname: string, upload: boolean) => {
   if (!props.recoveryPhrase) throw new Error('(BUG) Recovery phrase not set');
   if (!isUserLoggedIn(user.personal)) throw new Error('(BUG) Organization user id not set');
   if (!isLoggedInOrganization(user.selectedOrganization))
@@ -141,7 +119,7 @@ const restoreKeyPair = async (
   };
 
   if (upload) {
-    await uploadKey(organizationURL, user.selectedOrganization.userId, {
+    await safeDuplicateUploadKey(user.selectedOrganization, {
       publicKey: keyPair.public_key,
       index: keyPair.index,
       mnemonicHash: keyPair.secret_hash || undefined,

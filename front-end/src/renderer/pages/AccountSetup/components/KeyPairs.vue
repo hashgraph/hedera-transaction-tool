@@ -14,7 +14,6 @@ import { useRouter } from 'vue-router';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { restorePrivateKey } from '@renderer/services/keyPairService';
-import { uploadKey } from '@renderer/services/organization';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
@@ -25,6 +24,7 @@ import {
   isUserLoggedIn,
   restoreOrganizationKeys,
   safeAwait,
+  safeDuplicateUploadKey,
   throwError,
 } from '@renderer/utils';
 
@@ -198,13 +198,11 @@ const handleSave = async () => {
         keyPair.organization_id = user.selectedOrganization.id;
         keyPair.organization_user_id = user.selectedOrganization.userId;
 
-        if (!user.selectedOrganization.userKeys.some(k => k.publicKey === key.publicKey)) {
-          await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
-            publicKey: key.publicKey,
-            index: key.index,
-            mnemonicHash: key.mnemonicHash,
-          });
-        }
+        await safeDuplicateUploadKey(user.selectedOrganization, {
+          publicKey: key.publicKey,
+          index: key.index,
+          mnemonicHash: key.mnemonicHash,
+        });
       }
 
       await user.storeKey(
