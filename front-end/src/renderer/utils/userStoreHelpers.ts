@@ -21,7 +21,7 @@ import { Mnemonic } from '@hashgraph/sdk';
 
 import { SELECTED_NETWORK, SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@main/shared/constants';
 
-import { getUserState, healthCheck } from '@renderer/services/organization';
+import { getUserState, healthCheck, uploadKey } from '@renderer/services/organization';
 import { getAccountIds, getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService';
 import {
   storeKeyPair as storeKey,
@@ -675,6 +675,19 @@ export const restoreOrganizationKeys = async (
   }
 
   return { keys, failedRestoreMessages };
+};
+
+export const safeDuplicateUploadKey = async (
+  organization: ConnectedOrganization,
+  key: { publicKey: string; index?: number; mnemonicHash?: string },
+) => {
+  if (isLoggedInOrganization(organization)) {
+    const keyUploaded = organization.userKeys.some(k => k.publicKey === key.publicKey);
+
+    if (!keyUploaded) {
+      await uploadKey(organization.serverUrl, organization.userId, key);
+    }
+  }
 };
 
 const navigateToPreviousRoute = (router: Router) => {
