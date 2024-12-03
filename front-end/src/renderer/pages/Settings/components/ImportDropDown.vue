@@ -63,7 +63,7 @@ const handleImportMnemonic = () => router.push({ name: RESTORE_KEY });
         class="dropdown-item cursor-pointer mt-3"
         @click="handleImportMnemonic"
       >
-        <span class="text-small">Recovery Phrase keys</span>
+        <span class="text-small">Recovery Phrase</span>
       </li>
     </ul>
   </div>
