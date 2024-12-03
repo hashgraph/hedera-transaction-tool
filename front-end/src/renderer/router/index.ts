@@ -55,7 +55,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/contact-list', name: 'contactList', component: ContactList },
   { path: '/help', name: 'help', component: Help },
   { path: '/account-setup', name: 'accountSetup', component: AccountSetup },
-  { path: '/restore-key', name: 'restoreKey', component: RestoreKey },
+  { path: '/restore-key', name: constants.RESTORE_KEY, component: RestoreKey },
   { path: '/migrate', name: 'migrate', component: Migrate },
   {
     path: '/restore-mnemonic-keys',

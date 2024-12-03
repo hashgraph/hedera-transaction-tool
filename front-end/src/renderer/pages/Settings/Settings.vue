@@ -3,6 +3,8 @@ import type { TabItem } from '@renderer/components/ui/AppTabs.vue';
 
 import { computed, ref, watch } from 'vue';
 
+import { RESTORE_KEY } from '@renderer/router';
+
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter, RouterView } from 'vue-router';
@@ -110,7 +112,7 @@ watch(router.currentRoute, newRoute => {
           <AppButton
             data-testid="button-restore"
             color="secondary"
-            @click="$router.push({ name: 'restoreKey' })"
+            @click="$router.push({ name: RESTORE_KEY })"
           >
             Generate
           </AppButton>

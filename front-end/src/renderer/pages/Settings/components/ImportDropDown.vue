@@ -3,18 +3,11 @@ import { ref } from 'vue';
 
 import { MIGRATE_MNEMONIC_KEYS } from '@renderer/router';
 
-import useUserStore from '@renderer/stores/storeUser';
-
 import { useRouter } from 'vue-router';
-
-import { isLoggedInOrganization } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import ImportExternalPrivateKeyModal from '@renderer/components/ImportExternalPrivateKeyModal.vue';
 import ImportEncrypted from '@renderer/components/KeyPair/ImportEncrypted';
-
-/* Stores */
-const user = useUserStore();
 
 /* Composables */
 const router = useRouter();
@@ -66,7 +59,6 @@ const handleImportMnemonic = () => router.push({ name: MIGRATE_MNEMONIC_KEYS });
         <span class="text-small">Encrypted keys</span>
       </li>
       <li
-        v-if="isLoggedInOrganization(user.selectedOrganization)"
         data-testid="link-import-mnemonic"
         class="dropdown-item cursor-pointer mt-3"
         @click="handleImportMnemonic"
