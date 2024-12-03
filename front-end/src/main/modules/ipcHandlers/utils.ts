@@ -13,19 +13,22 @@ export default () => {
 
   ipcMain.on(createChannelName('openPath'), (_e, path: string) => shell.openPath(path));
 
-  ipcMain.handle(createChannelName('hash'), (_e, data: string): string => {
-    return bcrypt.hashSync(data, 10);
-  });
-
-  ipcMain.handle(createChannelName('compareHash'), (_e, data: string, hash: string): boolean => {
-    return bcrypt.compareSync(data, hash);
+  ipcMain.handle(createChannelName('hash'), async (_e, data: string): Promise<string> => {
+    return await bcrypt.hash(data, 10);
   });
 
   ipcMain.handle(
+    createChannelName('compareHash'),
+    async (_e, data: string, hash: string): Promise<boolean> => {
+      return await bcrypt.compare(data, hash);
+    },
+  );
+
+  ipcMain.handle(
     createChannelName('compareDataToHashes'),
-    (_e, data: string, hashes: string[]): string | null => {
+    async (_e, data: string, hashes: string[]): Promise<string | null> => {
       for (const hash of hashes) {
-        const matched = bcrypt.compareSync(data, hash);
+        const matched = await bcrypt.compare(data, hash);
         if (matched) return hash;
       }
 
