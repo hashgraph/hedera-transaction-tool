@@ -138,9 +138,7 @@ const handleMissingKeyDeleteModal = (id: number) => {
   isDeleteModalShown.value = true;
 };
 
-const handleDelete = async (e: Event) => {
-  e.preventDefault();
-
+const handleDelete = async () => {
   try {
     isDeletingKey.value = true;
 
@@ -525,7 +523,7 @@ watch(selectedRecoveryPhrase, newVal => {
           <div class="text-center">
             <AppCustomIcon :name="'bin'" style="height: 160px" />
           </div>
-          <form @submit="handleDelete">
+          <form @submit.prevent="handleDelete">
             <h3 class="text-center text-title text-bold mt-3">Delete key pair</h3>
             <p
               v-if="
