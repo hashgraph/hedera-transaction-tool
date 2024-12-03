@@ -36,7 +36,7 @@ const OrganizationLogin = () => import('@renderer/pages/OrganizationLogin');
 const OrganizationsTab = () => import('@renderer/pages/Settings/components/OrganizationsTab.vue');
 const TransactionDetails = () => import('@renderer/pages/TransactionDetails');
 const Migrate = () => import('@renderer/pages/Migrate');
-const RestoreMnemonicKeys = () => import('@renderer/pages/RestoreMnemonicKeys');
+const RestoreMissingKeys = () => import('@renderer/pages/RestoreMissingKeys');
 
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/transactions' },
@@ -58,9 +58,9 @@ const routes: RouteRecordRaw[] = [
   { path: '/restore-key', name: constants.RESTORE_KEY, component: RestoreKey },
   { path: '/migrate', name: 'migrate', component: Migrate },
   {
-    path: '/restore-mnemonic-keys',
-    name: constants.MIGRATE_MNEMONIC_KEYS,
-    component: RestoreMnemonicKeys,
+    path: '/restore-missing-keys',
+    name: constants.RESTORE_MISSING_KEYS,
+    component: RestoreMissingKeys,
   },
   {
     path: '/create-transaction/:type/:seq?',

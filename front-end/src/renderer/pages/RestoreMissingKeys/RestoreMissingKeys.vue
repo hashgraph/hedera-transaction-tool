@@ -139,7 +139,7 @@ onBeforeUnmount(() => {
         <!-- Step 1 -->
         <div v-if="step === 0" class="w-100">
           <h1 class="text-display text-bold text-center">
-            Restore shared keys from Recovery Phrase
+            Restore missing keys from Recovery Phrase
           </h1>
           <div
             class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"

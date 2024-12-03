@@ -1,2 +1,2 @@
-export const MIGRATE_MNEMONIC_KEYS = 'restore-mnemonic-keys';
+export const RESTORE_MISSING_KEYS = 'restore-missing-keys';
 export const RESTORE_KEY = 'restoreKey';
