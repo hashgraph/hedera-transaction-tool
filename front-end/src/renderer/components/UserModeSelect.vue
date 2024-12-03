@@ -18,7 +18,7 @@ import AddOrganizationModal from '@renderer/components/Organization/AddOrganizat
 import AppButton from '@renderer/components/ui/AppButton.vue';
 
 /* Misc */
-const personalModeText = 'My Transactions';
+const personalModeText = 'Personal mode';
 
 /* Stores */
 const user = useUserStore();
