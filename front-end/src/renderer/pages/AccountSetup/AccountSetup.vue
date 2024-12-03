@@ -44,7 +44,7 @@ const stepperItems = ref<{ title: string; name: StepName }[]>([
   { title: 'Key Pairs', name: 'keyPairs' },
 ]);
 const selectedPersonalKeyPair = ref<KeyPair | null>(null);
-const isSaving = ref(false);
+const nextLoadingText = ref<string | null>(null);
 
 /* Handlers */
 const handleBack = () => {
@@ -65,10 +65,10 @@ const handleNext = async () => {
 
   if (currentIndex + 1 === stepperItems.value.length) {
     try {
-      isSaving.value = true;
+      nextLoadingText.value = 'Saving...';
       await keyPairsComponent.value?.handleSave();
     } finally {
-      isSaving.value = false;
+      nextLoadingText.value = null;
     }
   } else {
     step.value.current =
@@ -178,6 +178,8 @@ onBeforeRouteLeave(async () => {
             ref="keyPairsComponent"
             v-model:step="step"
             :selected-personal-key-pair="selectedPersonalKeyPair"
+            @restore:start="nextLoadingText = 'Restoring key pairs...'"
+            @restore:end="nextLoadingText = null"
           />
         </template>
       </Transition>
@@ -203,9 +205,9 @@ onBeforeRouteLeave(async () => {
           @click="handleNext"
           class="ms-3 mt-6"
           data-testid="button-next"
-          :disabled="isSaving"
-          :loading="isSaving"
-          loading-text="Saving..."
+          :disabled="Boolean(nextLoadingText)"
+          :loading="Boolean(nextLoadingText)"
+          :loading-text="nextLoadingText || ''"
           >Next</AppButton
         >
       </div>

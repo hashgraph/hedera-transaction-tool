@@ -14,17 +14,29 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { restorePrivateKey } from '@renderer/services/keyPairService';
 import { uploadKey } from '@renderer/services/organization';
+import { compareHash } from '@renderer/services/electronUtilsService';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
-import { getWidthOfElementWithText, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import {
+  getLocalKeyPairs,
+  getWidthOfElementWithText,
+  isLoggedInOrganization,
+  isUserLoggedIn,
+  safeAwait,
+} from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { compareHash } from '@renderer/services/electronUtilsService';
 
 /* Props */
 const props = defineProps<{
   selectedPersonalKeyPair: KeyPair | null;
+}>();
+
+/* Emits */
+const emit = defineEmits<{
+  (event: 'restore:start'): void;
+  (event: 'restore:end'): void;
 }>();
 
 /* Stores */
@@ -40,11 +52,9 @@ const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODA
 
 /* State */
 const nickname = ref(props.selectedPersonalKeyPair?.nickname || '');
-
 const privateKeyRef = ref<HTMLSpanElement | null>(null);
 const privateKeyHidden = ref(true);
 const starCount = ref(0);
-
 const keys = ref<{ publicKey: string; privateKey: string; index: number; encrypted: boolean }[]>(
   [],
 );
@@ -90,8 +100,9 @@ const restoreKeys = async () => {
       throw new Error('Recovery phrase is not set');
     }
 
-    for (let i = 0; i < user.selectedOrganization.userKeys.length; i++) {
-      const key = user.selectedOrganization.userKeys[i];
+    const organizationKeys = user.selectedOrganization.userKeys;
+    for (let i = 0; i < organizationKeys.length; i++) {
+      const key = organizationKeys[i];
 
       if (
         !keyExists(key.publicKey) &&
@@ -111,6 +122,25 @@ const restoreKeys = async () => {
 
     if (keys.value.length === 0) {
       await addKeyToRestored(0);
+    }
+
+    const personalKeys = await getLocalKeyPairs(user.personal, null);
+    for (const organizationKey of organizationKeys) {
+      const alreadyAddedForRestore = keys.value.some(
+        k => k.publicKey === organizationKey.publicKey,
+      );
+      const keyFromPersonalKeys = personalKeys.find(
+        pk => pk.public_key === organizationKey.publicKey,
+      );
+
+      if (!alreadyAddedForRestore && keyFromPersonalKeys) {
+        keys.value.push({
+          publicKey: keyFromPersonalKeys.public_key,
+          privateKey: keyFromPersonalKeys.private_key,
+          index: keyFromPersonalKeys.index,
+          encrypted: true,
+        });
+      }
     }
   } else {
     if (props.selectedPersonalKeyPair) {
@@ -203,7 +233,9 @@ const handleSave = async () => {
 
 /* Hooks */
 onBeforeMount(async () => {
-  await restoreKeys();
+  emit('restore:start');
+  await safeAwait(restoreKeys());
+  emit('restore:end');
 
   if (privateKeyRef.value) {
     const privateKeyWidth = getWidthOfElementWithText(
