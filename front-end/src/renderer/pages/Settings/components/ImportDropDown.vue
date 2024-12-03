@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import { MIGRATE_MNEMONIC_KEYS } from '@renderer/router';
+import { RESTORE_KEY } from '@renderer/router';
 
 import { useRouter } from 'vue-router';
 
@@ -25,7 +25,7 @@ const handleImportExternal = (type: 'ED25519' | 'ECDSA') => {
 
 const handleImportEncrypted = () => importEncryptedRef.value?.process();
 
-const handleImportMnemonic = () => router.push({ name: MIGRATE_MNEMONIC_KEYS });
+const handleImportMnemonic = () => router.push({ name: RESTORE_KEY });
 </script>
 <template>
   <div class="dropdown">
