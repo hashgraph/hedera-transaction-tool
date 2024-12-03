@@ -2,7 +2,7 @@
 import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
 import { inject, onBeforeUnmount, ref, watch } from 'vue';
-import { Mnemonic, PrivateKey } from '@hashgraph/sdk';
+import { PrivateKey } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -14,6 +14,7 @@ import { restorePrivateKey } from '@renderer/services/keyPairService';
 import { uploadKey } from '@renderer/services/organization';
 
 import {
+  getErrorMessage,
   getSecretHashFromUploadedKeys,
   isLoggedInOrganization,
   isUserLoggedIn,
@@ -37,15 +38,15 @@ const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODA
 
 /* State */
 const step = ref(0);
-const ableToContinue = ref(false);
 
-const recoveryPhrase = ref([]);
 const index = ref(0);
 const nickname = ref('');
 
 const inputIndexInvalid = ref(false);
 
-const restoredKey = ref<{ privateKey: string; publicKey: string } | null>(null);
+const restoredKey = ref<{ privateKey: string; publicKey: string; mnemonicHash: string } | null>(
+  null,
+);
 
 /* Handlers */
 const handleImportRecoveryPhrase = () => step.value++;
@@ -73,11 +74,22 @@ const handleRestoreKey = async () => {
     restoredKey.value = {
       privateKey: privateKey.toStringRaw(),
       publicKey: privateKey.publicKey.toStringRaw(),
+      mnemonicHash: user.recoveryPhrase.hash,
     };
 
+    if (isLoggedInOrganization(user.selectedOrganization)) {
+      const alreadyUploadedHash = await getSecretHashFromUploadedKeys(
+        user.recoveryPhrase,
+        user.selectedOrganization.userKeys,
+      );
+      if (alreadyUploadedHash) {
+        restoredKey.value.mnemonicHash = alreadyUploadedHash;
+      }
+    }
+
     step.value++;
-  } catch (err) {
-    toast.error(err instanceof Error ? err.message : 'Failed to restore private key');
+  } catch (e) {
+    toast.error(getErrorMessage(e, 'Failed to restore private key'));
   }
 };
 
@@ -94,10 +106,6 @@ const handleSaveKey = async () => {
     return;
   }
 
-  if (!user.recoveryPhrase) {
-    throw new Error('Recovery phrase not found');
-  }
-
   if (!restoredKey.value) {
     throw new Error('Restored key not found');
   }
@@ -111,15 +119,15 @@ const handleSaveKey = async () => {
       type: 'ED25519',
       organization_id: null,
       organization_user_id: null,
-      secret_hash: user.recoveryPhrase.hash,
+      secret_hash: restoredKey.value.mnemonicHash,
       nickname: nickname.value || null,
     };
 
+    const keyStored = user.keyPairs.find(k => k.public_key === restoredKey.value?.publicKey);
     if (isLoggedInOrganization(user.selectedOrganization)) {
       const keyUploaded = user.selectedOrganization.userKeys.some(
         k => k.publicKey === restoredKey.value?.publicKey,
       );
-      const keyStored = user.keyPairs.find(k => k.public_key === restoredKey.value?.publicKey);
       if (keyUploaded && keyStored) {
         throw new Error('Key pair already exists');
       }
@@ -127,31 +135,25 @@ const handleSaveKey = async () => {
       keyPair.organization_id = user.selectedOrganization.id;
       keyPair.organization_user_id = user.selectedOrganization.userId;
 
-      const alreadyUploadedHash = await getSecretHashFromUploadedKeys(
-        user.recoveryPhrase,
-        user.selectedOrganization.userKeys,
-      );
-      if (alreadyUploadedHash) {
-        keyPair.secret_hash = alreadyUploadedHash;
-      }
-
       if (!keyUploaded) {
         await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
           publicKey: restoredKey.value.publicKey,
           index: keyPair.index,
-          mnemonicHash: alreadyUploadedHash || user.recoveryPhrase.hash,
+          mnemonicHash: restoredKey.value.mnemonicHash,
         });
       }
     }
 
-    await user.storeKey(keyPair, user.recoveryPhrase.words, personalPassword, false);
+    if (!keyStored) {
+      await user.storeKey(keyPair, restoredKey.value.mnemonicHash, personalPassword, false);
+    }
     user.recoveryPhrase = null;
     await user.refetchUserState();
 
     toast.success('Key Pair saved');
     router.push({ name: 'settingsKeys' });
-  } catch (err) {
-    toast.error(err instanceof Error ? err.message : 'Failed to store key pair', {
+  } catch (e) {
+    toast.error(getErrorMessage(e, 'Failed to store private key'), {
       position: 'bottom-right',
     });
   }
@@ -180,9 +182,7 @@ const handleFindEmptyIndex = async () => {
 
 /* Functions */
 const keyExists = (privateKey: PrivateKey) => {
-  return user.keyPairs.some(
-    kp => kp.public_key === privateKey.publicKey.toStringRaw() && kp.public_key !== '',
-  );
+  return user.keyPairs.some(kp => kp.public_key === privateKey.publicKey.toStringRaw());
 };
 
 /* Hooks */
@@ -191,19 +191,6 @@ onBeforeUnmount(() => {
 });
 
 /* Watchers */
-watch(recoveryPhrase, async newRecoveryPhrase => {
-  if (!newRecoveryPhrase) {
-    ableToContinue.value = false;
-  } else if (newRecoveryPhrase.length === 24) {
-    try {
-      await Mnemonic.fromWords(recoveryPhrase.value || []);
-      ableToContinue.value = true;
-    } catch {
-      ableToContinue.value = false;
-    }
-  }
-});
-
 watch(index, () => (inputIndexInvalid.value = false));
 
 watch(step, async newStep => {
