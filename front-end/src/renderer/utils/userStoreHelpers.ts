@@ -29,11 +29,7 @@ import {
   getOrganizationTokens,
 } from '@renderer/services/organizationCredentials';
 import { deleteOrganization, getOrganizations } from '@renderer/services/organizationsService';
-import {
-  hashData,
-  compareDataToHashes,
-  compareHash,
-} from '@renderer/services/electronUtilsService';
+import { hashData, compareHash } from '@renderer/services/electronUtilsService';
 import { getStoredClaim } from '@renderer/services/claimService';
 
 import { safeAwait } from './safeAwait';
@@ -161,26 +157,17 @@ export const createRecoveryPhrase = async (words: string[]): Promise<RecoveryPhr
 
 export const storeKeyPair = async (
   keyPair: Prisma.KeyPairUncheckedCreateInput,
-  secretHashes: string[],
   mnemonic: string[] | string | null,
   password: string | null,
   encrypted: boolean,
 ) => {
-  if (secretHashes.length > 0 && mnemonic) {
+  if (mnemonic) {
     if (Array.isArray(mnemonic)) {
-      const matchedHash = await compareDataToHashes([...mnemonic].toString(), [...secretHashes]);
-      if (!matchedHash) {
-        throw Error('Different recovery phrase is used!');
-      }
-      keyPair.secret_hash = matchedHash;
+      keyPair.secret_hash = await hashData([...mnemonic].toString());
     } else {
-      if (!secretHashes.includes(mnemonic)) {
-        throw Error('Different recovery phrase is used!');
-      }
       keyPair.secret_hash = mnemonic;
     }
   }
-
   await storeKey(keyPair, password, encrypted);
 };
 

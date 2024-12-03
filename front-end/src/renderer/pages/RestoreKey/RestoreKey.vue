@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import { inject, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
-import { Mnemonic } from '@hashgraph/sdk';
+import { inject, onBeforeUnmount, ref, watch } from 'vue';
+import { Mnemonic, PrivateKey } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -44,16 +44,11 @@ const inputIndexInvalid = ref(false);
 const restoredKey = ref<{ privateKey: string; publicKey: string } | null>(null);
 
 /* Handlers */
-const handleFinish = (e: Event) => {
-  e.preventDefault();
-  step.value++;
-};
+const handleImportRecoveryPhrase = () => step.value++;
 
 const handleClearWords = () => (user.recoveryPhrase = null);
 
-const handleRestoreKey = async (e: Event) => {
-  e.preventDefault();
-
+const handleRestoreKey = async () => {
   if (!user.recoveryPhrase) {
     throw new Error('Recovery phrase not found');
   }
@@ -66,108 +61,94 @@ const handleRestoreKey = async (e: Event) => {
       'ED25519',
     );
 
-    if (
-      user.keyPairs.some(
-        kp => kp.public_key === privateKey.publicKey.toStringRaw() && kp.public_key !== '',
-      )
-    ) {
-      inputIndexInvalid.value = true;
-      return;
+    if (keyExists(privateKey)) {
+      return (inputIndexInvalid.value = true);
     }
-    inputIndexInvalid.value = false;
 
+    inputIndexInvalid.value = false;
     restoredKey.value = {
       privateKey: privateKey.toStringRaw(),
       publicKey: privateKey.publicKey.toStringRaw(),
     };
 
     step.value++;
-  } catch (err: any) {
+  } catch (err) {
     let message = 'Failed to restore private key';
-    if (err.message && typeof err.message === 'string') {
+    if (err instanceof Error && typeof err.message === 'string') {
       message = err.message;
     }
     toast.error(message);
   }
 };
 
-const handleSaveKey = async (e: Event) => {
-  e.preventDefault();
+const handleSaveKey = async () => {
+  if (!isUserLoggedIn(user.personal)) throw Error('User is not logged in');
+  const personalPassword = user.getPassword();
+  if (!personalPassword && !user.personal.useKeychain) {
+    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+    userPasswordModalRef.value?.open(
+      'Enter your application password',
+      'Enter your application password to decrypt your key',
+      handleSaveKey,
+    );
+    return;
+  }
 
-  const callback = async () => {
-    if (!isUserLoggedIn(user.personal)) throw Error('User is not logged in');
-    const personalPassword = user.getPassword();
-    if (!personalPassword && !user.personal.useKeychain) {
-      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-      userPasswordModalRef.value?.open(
-        'Enter your application password',
-        'Enter your application password to decrypt your key',
-        callback,
-      );
-      return;
-    }
+  if (!user.recoveryPhrase) {
+    throw new Error('Recovery phrase not found');
+  }
 
-    if (!user.recoveryPhrase) {
-      throw new Error('Recovery phrase not found');
-    }
+  if (restoredKey.value) {
+    try {
+      const keyPair: Prisma.KeyPairUncheckedCreateInput = {
+        user_id: user.personal.id,
+        index: Number(index.value),
+        private_key: restoredKey.value.privateKey,
+        public_key: restoredKey.value.publicKey,
+        type: 'ED25519',
+        organization_id: null,
+        organization_user_id: null,
+        secret_hash: user.recoveryPhrase.hash,
+        nickname: nickname.value || null,
+      };
 
-    if (restoredKey.value) {
-      try {
-        const keyPair: Prisma.KeyPairUncheckedCreateInput = {
-          user_id: user.personal.id,
-          index: Number(index.value),
-          private_key: restoredKey.value.privateKey,
-          public_key: restoredKey.value.publicKey,
-          type: 'ED25519',
-          organization_id: null,
-          organization_user_id: null,
-          secret_hash: user.recoveryPhrase.hash,
-          nickname: nickname.value || null,
-        };
-
-        if (isLoggedInOrganization(user.selectedOrganization)) {
-          if (
-            user.selectedOrganization.userKeys.some(
-              k => k.publicKey === restoredKey.value?.publicKey,
-            )
-          ) {
-            throw new Error('Key pair already exists');
-          }
-
-          keyPair.organization_id = user.selectedOrganization.id;
-          keyPair.organization_user_id = user.selectedOrganization.userId;
-
-          await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
-            publicKey: restoredKey.value.publicKey,
-            index: keyPair.index,
-            mnemonicHash: user.recoveryPhrase.hash,
-          });
+      if (isLoggedInOrganization(user.selectedOrganization)) {
+        if (
+          user.selectedOrganization.userKeys.some(k => k.publicKey === restoredKey.value?.publicKey)
+        ) {
+          throw new Error('Key pair already exists');
         }
 
-        await user.storeKey(keyPair, user.recoveryPhrase.words, personalPassword, false);
-        user.recoveryPhrase = null;
-        await user.refetchUserState();
+        keyPair.organization_id = user.selectedOrganization.id;
+        keyPair.organization_user_id = user.selectedOrganization.userId;
 
-        toast.success('Key Pair saved');
-        router.push({ name: 'settingsKeys' });
-      } catch (err: any) {
-        let message = 'Failed to store key pair';
-        if (err.message && typeof err.message === 'string') {
-          message = err.message;
-        }
-        toast.error(message);
+        await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
+          publicKey: restoredKey.value.publicKey,
+          index: keyPair.index,
+          mnemonicHash: user.recoveryPhrase.hash,
+        });
       }
-    }
-  };
 
-  await callback();
+      await user.storeKey(keyPair, user.recoveryPhrase.words, personalPassword, false);
+      user.recoveryPhrase = null;
+      await user.refetchUserState();
+
+      toast.success('Key Pair saved');
+      router.push({ name: 'settingsKeys' });
+    } catch (err) {
+      let message = 'Failed to store key pair';
+      if (err instanceof Error && typeof err.message === 'string') {
+        message = err.message;
+      }
+      toast.error(message, { position: 'bottom-right' });
+    }
+  }
 };
 
 const handleFindEmptyIndex = async () => {
   if (!user.recoveryPhrase) return;
 
   let exists = false;
-
   do {
     const privateKey = await restorePrivateKey(
       user.recoveryPhrase.words,
@@ -176,11 +157,7 @@ const handleFindEmptyIndex = async () => {
       'ED25519',
     );
 
-    if (
-      user.keyPairs.some(
-        kp => kp.public_key === privateKey.publicKey.toStringRaw() && kp.public_key !== '',
-      )
-    ) {
+    if (keyExists(privateKey)) {
       index.value++;
       exists = true;
     } else {
@@ -189,9 +166,14 @@ const handleFindEmptyIndex = async () => {
   } while (exists);
 };
 
-/* Hooks */
-onBeforeMount(async () => {});
+/* Functions */
+const keyExists = (privateKey: PrivateKey) => {
+  return user.keyPairs.some(
+    kp => kp.public_key === privateKey.publicKey.toStringRaw() && kp.public_key !== '',
+  );
+};
 
+/* Hooks */
 onBeforeUnmount(() => {
   user.recoveryPhrase = null;
 });
@@ -210,9 +192,7 @@ watch(recoveryPhrase, async newRecoveryPhrase => {
   }
 });
 
-watch(index, () => {
-  inputIndexInvalid.value = false;
-});
+watch(index, () => (inputIndexInvalid.value = false));
 
 watch(step, async newStep => {
   if (newStep === 2) {
@@ -255,7 +235,11 @@ watch(step, async newStep => {
         </div>
 
         <!-- Step 2 -->
-        <form v-else-if="step === 1" @submit="handleFinish" class="fill-remaining">
+        <form
+          v-else-if="step === 1"
+          @submit.prevent="handleImportRecoveryPhrase"
+          class="fill-remaining"
+        >
           <h1 class="text-display text-bold text-center">Enter your recovery phrase</h1>
           <div class="mt-8">
             <Import />
@@ -279,7 +263,7 @@ watch(step, async newStep => {
         </form>
 
         <!-- Step 3 -->
-        <form v-else-if="step === 2" class="w-100" @submit="handleRestoreKey">
+        <form v-else-if="step === 2" class="w-100" @submit.prevent="handleRestoreKey">
           <h1 class="text-display text-bold text-center">Provide Index of Key</h1>
           <p class="text-main mt-5 text-center">Please enter the index of the key</p>
           <div
@@ -310,7 +294,7 @@ watch(step, async newStep => {
         </form>
 
         <!-- Step 4 -->
-        <form v-else-if="step === 3" class="w-100" @submit="handleSaveKey">
+        <form v-else-if="step === 3" class="w-100" @submit.prevent="handleSaveKey">
           <h1 class="text-display text-bold text-center">Enter nickname</h1>
           <p class="text-main mt-5 text-center">Please enter your nickname (optional)</p>
           <div
