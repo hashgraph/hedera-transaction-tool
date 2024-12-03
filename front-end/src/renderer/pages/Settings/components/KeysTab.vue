@@ -4,6 +4,8 @@ import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 import { computed, inject, ref, watch } from 'vue';
 import { PublicKey } from '@hashgraph/sdk';
 
+import { RESTORE_MISSING_KEYS } from '@renderer/router';
+
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
@@ -201,6 +203,10 @@ const handleStartNicknameEdit = (id: string) => {
   isUpdateNicknameModalShown.value = true;
 };
 
+const handleRedirectToRecoverMnemonicKeys = () => {
+  router.push({ name: RESTORE_MISSING_KEYS });
+};
+
 /* Functions */
 function getUserKeyToDelete() {
   const localKey = user.keyPairs.find(kp => kp.id === keyPairIdToDelete.value);
@@ -230,7 +236,7 @@ watch(selectedRecoveryPhrase, newVal => {
 </script>
 <template>
   <div class="flex-column-100">
-    <div>
+    <div class="d-flex gap-4">
       <div class="btn-group-container d-inline-flex mw-100 mb-3" role="group">
         <div class="btn-group gap-3 overflow-x-auto">
           <AppButton
@@ -268,6 +274,21 @@ watch(selectedRecoveryPhrase, newVal => {
             color-on-active
           />
         </div>
+      </div>
+
+      <div
+        v-if="
+          currentTab === Tabs.RECOVERY_PHRASE &&
+          missingKeys.some(k => k.mnemonicHash === selectedRecoveryPhrase)
+        "
+      >
+        <AppButton
+          color="primary"
+          :data-testid="`button-restore-lost-keys`"
+          class="rounded-3 text-nowrap min-w-unset"
+          @click="handleRedirectToRecoverMnemonicKeys()"
+          >Restore Missing Keys</AppButton
+        >
       </div>
     </div>
 
