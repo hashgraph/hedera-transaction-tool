@@ -13,7 +13,11 @@ import { useToast } from 'vue-toast-notification';
 import { restorePrivateKey } from '@renderer/services/keyPairService';
 import { uploadKey } from '@renderer/services/organization';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import {
+  getSecretHashFromUploadedKeys,
+  isLoggedInOrganization,
+  isUserLoggedIn,
+} from '@renderer/utils';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
@@ -73,11 +77,7 @@ const handleRestoreKey = async () => {
 
     step.value++;
   } catch (err) {
-    let message = 'Failed to restore private key';
-    if (err instanceof Error && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message);
+    toast.error(err instanceof Error ? err.message : 'Failed to restore private key');
   }
 };
 
@@ -98,54 +98,62 @@ const handleSaveKey = async () => {
     throw new Error('Recovery phrase not found');
   }
 
-  if (restoredKey.value) {
-    try {
-      const keyPair: Prisma.KeyPairUncheckedCreateInput = {
-        user_id: user.personal.id,
-        index: Number(index.value),
-        private_key: restoredKey.value.privateKey,
-        public_key: restoredKey.value.publicKey,
-        type: 'ED25519',
-        organization_id: null,
-        organization_user_id: null,
-        secret_hash: user.recoveryPhrase.hash,
-        nickname: nickname.value || null,
-      };
+  if (!restoredKey.value) {
+    throw new Error('Restored key not found');
+  }
 
-      if (isLoggedInOrganization(user.selectedOrganization)) {
-        const keyUploaded = user.selectedOrganization.userKeys.some(
-          k => k.publicKey === restoredKey.value?.publicKey,
-        );
-        const keyStored = user.keyPairs.some(k => k.public_key === restoredKey.value?.publicKey);
-        if (keyUploaded && keyStored) {
-          throw new Error('Key pair already exists');
-        }
+  try {
+    const keyPair: Prisma.KeyPairUncheckedCreateInput = {
+      user_id: user.personal.id,
+      index: Number(index.value),
+      private_key: restoredKey.value.privateKey,
+      public_key: restoredKey.value.publicKey,
+      type: 'ED25519',
+      organization_id: null,
+      organization_user_id: null,
+      secret_hash: user.recoveryPhrase.hash,
+      nickname: nickname.value || null,
+    };
 
-        keyPair.organization_id = user.selectedOrganization.id;
-        keyPair.organization_user_id = user.selectedOrganization.userId;
-
-        if (!keyUploaded) {
-          await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
-            publicKey: restoredKey.value.publicKey,
-            index: keyPair.index,
-            mnemonicHash: user.recoveryPhrase.hash,
-          });
-        }
+    if (isLoggedInOrganization(user.selectedOrganization)) {
+      const keyUploaded = user.selectedOrganization.userKeys.some(
+        k => k.publicKey === restoredKey.value?.publicKey,
+      );
+      const keyStored = user.keyPairs.find(k => k.public_key === restoredKey.value?.publicKey);
+      if (keyUploaded && keyStored) {
+        throw new Error('Key pair already exists');
       }
 
-      await user.storeKey(keyPair, user.recoveryPhrase.words, personalPassword, false);
-      user.recoveryPhrase = null;
-      await user.refetchUserState();
+      keyPair.organization_id = user.selectedOrganization.id;
+      keyPair.organization_user_id = user.selectedOrganization.userId;
 
-      toast.success('Key Pair saved');
-      router.push({ name: 'settingsKeys' });
-    } catch (err) {
-      let message = 'Failed to store key pair';
-      if (err instanceof Error && typeof err.message === 'string') {
-        message = err.message;
+      const alreadyUploadedHash = await getSecretHashFromUploadedKeys(
+        user.recoveryPhrase,
+        user.selectedOrganization.userKeys,
+      );
+      if (alreadyUploadedHash) {
+        keyPair.secret_hash = alreadyUploadedHash;
       }
-      toast.error(message, { position: 'bottom-right' });
+
+      if (!keyUploaded) {
+        await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
+          publicKey: restoredKey.value.publicKey,
+          index: keyPair.index,
+          mnemonicHash: alreadyUploadedHash || user.recoveryPhrase.hash,
+        });
+      }
     }
+
+    await user.storeKey(keyPair, user.recoveryPhrase.words, personalPassword, false);
+    user.recoveryPhrase = null;
+    await user.refetchUserState();
+
+    toast.success('Key Pair saved');
+    router.push({ name: 'settingsKeys' });
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : 'Failed to store key pair', {
+      position: 'bottom-right',
+    });
   }
 };
 
