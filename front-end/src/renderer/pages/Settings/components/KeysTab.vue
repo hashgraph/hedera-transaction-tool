@@ -54,10 +54,10 @@ const currentTab = ref(Tabs.ALL);
 const isDeletingKey = ref(false);
 
 /* Computed */
-const externalMissingKeys = computed(() =>
+const missingKeys = computed(() =>
   isLoggedInOrganization(user.selectedOrganization)
     ? user.selectedOrganization.userKeys.filter(
-        key => !user.keyPairs.find(kp => kp.public_key === key.publicKey),
+        key => !user.keyPairs.some(kp => kp.public_key === key.publicKey),
       )
     : [],
 );
@@ -373,16 +373,22 @@ watch(isDeleteModalShown, newVal => {
                 </td>
               </tr>
             </template>
-            <template
-              v-if="
-                (currentTab === Tabs.ALL || currentTab === Tabs.PRIVATE_KEY) &&
-                isLoggedInOrganization(user.selectedOrganization)
-              "
-            >
-              <template v-for="(keyPair, index) in externalMissingKeys" :key="keyPair.publicKey">
-                <tr class="disabled-w-action position-relative">
-                  <td v-if="currentTab === Tabs.ALL" :data-testid="`cell-index-missing-${index}`">
-                    N/A
+            <template v-if="isLoggedInOrganization(user.selectedOrganization)">
+              <template v-for="(keyPair, index) in missingKeys" :key="keyPair.publicKey">
+                <tr
+                  v-if="
+                    currentTab === Tabs.ALL ||
+                    (keyPair.mnemonicHash && currentTab === Tabs.RECOVERY_PHRASE) ||
+                    (!keyPair.mnemonicHash && currentTab === Tabs.PRIVATE_KEY)
+                  "
+                  class="disabled-w-action position-relative"
+                >
+                  <td
+                    v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
+                    :data-testid="`cell-index-missing-${index}`"
+                    class="text-end"
+                  >
+                    {{ keyPair.index != null && keyPair.index >= 0 ? keyPair.index : 'N/A' }}
                   </td>
                   <td :data-testid="`cell-nickname-missing-${index}`">N/A</td>
                   <td :data-testid="`cell-account-missing-${index}`">
