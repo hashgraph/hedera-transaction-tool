@@ -17,7 +17,7 @@ import { CommonNetwork } from '@main/shared/enums';
 import { deleteKey } from '@renderer/services/organization';
 import { decryptPrivateKey, deleteKeyPair } from '@renderer/services/keyPairService';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import { assertUserLoggedIn, isLoggedInOrganization, safeAwait } from '@renderer/utils';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
@@ -111,7 +111,7 @@ const handleTabChange = (tab: Tabs) => {
 
 const decrypt = async () => {
   try {
-    if (!isUserLoggedIn(user.personal)) throw Error('User is not logged in');
+    assertUserLoggedIn(user.personal);
     const personalPassword = user.getPassword();
     if (!personalPassword && !user.personal.useKeychain) {
       if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
@@ -167,44 +167,35 @@ const handleDelete = async () => {
   try {
     isDeletingKey.value = true;
 
-    if (!isUserLoggedIn(user.personal)) {
-      throw Error('User is not logged in');
-    }
+    let organizationKeyIdToDelete: number | null = null;
 
     if (keyPairIdToDelete.value) {
-      if (isLoggedInOrganization(user.selectedOrganization)) {
-        const organizationKeyToDelete = getUserKeyToDelete();
-        if (organizationKeyToDelete) {
-          await deleteKey(
-            user.selectedOrganization.serverUrl,
-            user.selectedOrganization.userId,
-            organizationKeyToDelete.id,
-          );
-          await user.refetchUserState();
-        }
-      }
+      const organizationKeyToDelete = getUserKeyToDelete();
+      organizationKeyIdToDelete = organizationKeyToDelete?.id || null;
 
       await deleteKeyPair(keyPairIdToDelete.value);
-      toast.success(`Private key deleted successfully`);
-      await user.refetchKeys();
-      user.refetchAccounts();
+    } else if (missingKeyPairIdToDelete.value) {
+      organizationKeyIdToDelete = missingKeyPairIdToDelete.value;
+    }
 
-      isDeleteModalShown.value = false;
-
-      if (user.shouldSetupAccount) {
-        router.push({ name: 'accountSetup' });
-      }
-    } else if (
-      missingKeyPairIdToDelete.value &&
-      isLoggedInOrganization(user.selectedOrganization)
-    ) {
-      await deleteKey(
-        user.selectedOrganization.serverUrl,
-        user.selectedOrganization.userId,
-        missingKeyPairIdToDelete.value,
+    if (organizationKeyIdToDelete && isLoggedInOrganization(user.selectedOrganization)) {
+      await safeAwait(
+        deleteKey(
+          user.selectedOrganization.serverUrl,
+          user.selectedOrganization.userId,
+          organizationKeyIdToDelete,
+        ),
       );
-      await user.refetchUserState();
-      toast.success(`Private key deleted successfully`);
+    }
+
+    toast.success(`Private key deleted successfully`, { position: 'bottom-right' });
+
+    await user.refetchUserState();
+    await user.refetchKeys();
+    user.refetchAccounts();
+
+    if (user.shouldSetupAccount) {
+      router.push({ name: 'accountSetup' });
     }
   } catch (err: any) {
     toast.error(err.message || 'Failed to delete key pair');
@@ -213,14 +204,6 @@ const handleDelete = async () => {
     missingKeyPairIdToDelete.value = null;
     isDeletingKey.value = false;
     isDeleteModalShown.value = false;
-
-    if (
-      listedKeyPairs.value.length === 0 &&
-      listedMissingKeyPairs.value.length === 0 &&
-      currentTab.value === Tabs.RECOVERY_PHRASE
-    ) {
-      currentTab.value = Tabs.ALL;
-    }
   }
 };
 
@@ -245,11 +228,11 @@ function getUserKeyToDelete() {
     throw Error('Local key not found');
   }
 
-  if (!isLoggedInOrganization(user.selectedOrganization)) {
-    throw Error('User is not logged in the organization');
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    return user.selectedOrganization.userKeys.find(key => key.publicKey === localKey.public_key);
   }
 
-  return user.selectedOrganization.userKeys.find(key => key.publicKey === localKey.public_key);
+  return null;
 }
 
 /* Watchers */
@@ -262,6 +245,16 @@ watch(isDeleteModalShown, newVal => {
 watch(selectedRecoveryPhrase, newVal => {
   if (newVal) {
     currentTab.value = Tabs.RECOVERY_PHRASE;
+  }
+});
+
+watch(isDeletingKey, () => {
+  if (
+    listedKeyPairs.value.length === 0 &&
+    listedMissingKeyPairs.value.length === 0 &&
+    currentTab.value === Tabs.RECOVERY_PHRASE
+  ) {
+    currentTab.value = Tabs.ALL;
   }
 });
 </script>
