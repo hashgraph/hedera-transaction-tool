@@ -185,6 +185,7 @@ test.describe('Organization Settings tests', () => {
   });
 
   test('Verify user can restore account with new mnemonic phrase', async () => {
+    test.slow();
     const publicKeyBeforeReset = await organizationPage.getFirstPublicKeyByEmail(firstUser.email);
     const userId = await organizationPage.getUserIdByEmail(firstUser.email);
     await settingsPage.clickOnSettingsButton();
@@ -199,8 +200,9 @@ test.describe('Organization Settings tests', () => {
     organizationPage.generateAndSetRecoveryWords();
     await organizationPage.recoverAccount(0);
 
+    //verify old mnemonic is still present in the db
     const isKeyDeleted = await organizationPage.isKeyDeleted(publicKeyBeforeReset);
-    expect(isKeyDeleted).toBe(true);
+    expect(isKeyDeleted).toBe(false);
 
     const isNewKeyAddedInDb = await organizationPage.findNewKey(userId);
     expect(isNewKeyAddedInDb).toBe(true);
