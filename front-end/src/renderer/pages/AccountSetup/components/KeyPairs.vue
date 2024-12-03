@@ -20,6 +20,7 @@ import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 import { getWidthOfElementWithText, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { compareHash } from '@renderer/services/electronUtilsService';
 
 /* Props */
 const props = defineProps<{
@@ -84,10 +85,7 @@ const addKeyToRestored = async (index: number) => {
 };
 
 const restoreKeys = async () => {
-  if (
-    isLoggedInOrganization(user.selectedOrganization) &&
-    user.selectedOrganization.secretHashes.length > 0
-  ) {
+  if (isLoggedInOrganization(user.selectedOrganization)) {
     if (!user.recoveryPhrase) {
       throw new Error('Recovery phrase is not set');
     }
@@ -95,9 +93,24 @@ const restoreKeys = async () => {
     for (let i = 0; i < user.selectedOrganization.userKeys.length; i++) {
       const key = user.selectedOrganization.userKeys[i];
 
-      if (keyExists(key.publicKey) || key.index === undefined || key.index === null) continue;
+      if (
+        !keyExists(key.publicKey) &&
+        key.mnemonicHash &&
+        key.index !== undefined &&
+        key.index !== null
+      ) {
+        const isFromRecoveryPhrase = await compareHash(
+          [...user.recoveryPhrase.words].toString(),
+          key.mnemonicHash,
+        );
+        if (isFromRecoveryPhrase) {
+          await addKeyToRestored(key.index);
+        }
+      }
+    }
 
-      await addKeyToRestored(key.index);
+    if (keys.value.length === 0) {
+      await addKeyToRestored(0);
     }
   } else {
     if (props.selectedPersonalKeyPair) {
@@ -162,7 +175,7 @@ const handleSave = async () => {
         }
       }
 
-      const recoveryWords = user.recoveryPhrase?.words || []; //TS cannot assert that recoveryPhrase is set
+      const recoveryWords = user.recoveryPhrase?.words || [];
 
       await user.storeKey(
         keyPair,
@@ -177,9 +190,9 @@ const handleSave = async () => {
 
     toast.success(`Key Pair${keys.value.length > 1 ? 's' : ''} saved successfully`);
     router.push({ name: 'settingsKeys' });
-  } catch (err: any) {
+  } catch (err) {
     let message = `Failed to store key pair${keys.value.length > 1 ? 's' : ''}`;
-    if (err.message && typeof err.message === 'string') {
+    if (err instanceof Error && typeof err.message === 'string') {
       message = err.message;
     }
     toast.error(message);

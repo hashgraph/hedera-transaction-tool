@@ -146,17 +146,6 @@ onBeforeRouteLeave(async () => {
                   : 'Set your Recovery Phrase and Key Pairs'
               }}
             </p>
-            <p
-              v-if="
-                isLoggedInOrganization(user.selectedOrganization) &&
-                user.selectedOrganization.secretHashes.length > 0
-              "
-              data-testid="text-set-recovery-phrase"
-              class="text-main text-secondary text-center mt-0"
-            >
-              You can enter a new one to overwrite the existing Key Pairs from the old Recovery
-              Phrase
-            </p>
           </div>
 
           <div class="mt-5 w-100">

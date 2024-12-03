@@ -94,7 +94,7 @@ export const accountSetupRequired = (
   if (
     !organization.userKeys
       .filter(key => key.mnemonicHash)
-      .every(key => localKeys.some(k => k.public_key === key.publicKey))
+      .some(key => localKeys.some(k => k.public_key === key.publicKey))
   )
     return true;
 
@@ -117,7 +117,7 @@ export const accountSetupRequiredParts = (
   if (
     !organization.userKeys
       .filter(key => key.mnemonicHash)
-      .every(key => localKeys.some(k => k.public_key === key.publicKey))
+      .some(key => localKeys.some(k => k.public_key === key.publicKey))
   )
     parts.add('keys');
 
