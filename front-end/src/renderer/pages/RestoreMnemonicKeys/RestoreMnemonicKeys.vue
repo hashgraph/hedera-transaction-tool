@@ -93,10 +93,10 @@ const storeKeys = async (
           type: 'ED25519',
           organization_id: user.selectedOrganization.id,
           organization_user_id: user.selectedOrganization.userId,
-          secret_hash: user.recoveryPhrase.hash,
+          secret_hash: key.mnemonicHash,
           nickname: null,
         },
-        user.recoveryPhrase.words,
+        key.mnemonicHash,
         personalPassword,
         false,
       );
