@@ -153,6 +153,19 @@ class RegistrationPage extends BasePage {
     return allTilesArePresent;
   }
 
+  async verifyAtLeastOneMnemonicFieldCleared() {
+    for (let i = 1; i <= 24; i++) {
+      const wordFieldSelector = this.getRecoveryWordSelector(i);
+      const fieldValue = await this.window.getByTestId(wordFieldSelector).inputValue();
+      if (fieldValue === '') {
+        console.log(`Field ${i} is cleared.`);
+        return true;
+      }
+    }
+    return false;
+  }
+
+
   async verifyAllMnemonicFieldsCleared() {
     let allFieldsCleared = true;
     for (let i = 1; i <= 24; i++) {
@@ -325,8 +338,27 @@ class RegistrationPage extends BasePage {
   }
 
   async clickOnClearButton() {
-    await this.click(this.clearButtonSelector);
+    const maxRetries = 10;
+    let retries = 0;
+
+    while (retries < maxRetries) {
+      await this.click(this.clearButtonSelector);
+
+      const atLeastOneFieldCleared = await this.verifyAtLeastOneMnemonicFieldCleared();
+
+      if (atLeastOneFieldCleared) {
+        break;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      retries++;
+    }
+
+    if (retries === maxRetries) {
+      throw new Error('Failed to clear at least one mnemonic field after maximum retries');
+    }
   }
+
 
   async clickOnNextButton() {
     await this.click(this.nextButtonSelector);
