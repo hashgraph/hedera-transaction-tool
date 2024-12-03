@@ -236,8 +236,8 @@ watch(selectedRecoveryPhrase, newVal => {
 </script>
 <template>
   <div class="flex-column-100">
-    <div class="d-flex gap-4">
-      <div class="btn-group-container d-inline-flex mw-100 mb-3" role="group">
+    <div class="d-flex align-items-center gap-4 mb-3">
+      <div class="btn-group-container d-inline-flex mw-100" role="group">
         <div class="btn-group gap-3 overflow-x-auto">
           <AppButton
             :color="currentTab === Tabs.ALL ? 'primary' : undefined"
