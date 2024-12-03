@@ -21,7 +21,7 @@ app.use(createPinia());
 
 addGuards(router);
 
-app.use(ToastPlugin);
+app.use(ToastPlugin, { position: 'bottom-right' });
 
 /* App config */
 const toast = useToast();
@@ -35,7 +35,7 @@ app.config.errorHandler = (err: any) => {
     message = err.message;
   }
 
-  toast.error(message, { position: 'bottom-right' });
+  toast.error(message);
 };
 
 /* Custom Components */

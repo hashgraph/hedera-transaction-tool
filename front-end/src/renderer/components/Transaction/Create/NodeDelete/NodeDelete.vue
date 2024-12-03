@@ -51,7 +51,7 @@ const handleUpdateData = (newData: NodeDeleteData) => {
 };
 
 const handleExecutedSuccess = async () => {
-  toast.success(`Node ${data.nodeId} Deleted`, { position: 'bottom-right' });
+  toast.success(`Node ${data.nodeId} Deleted`);
 };
 
 /* Functions */

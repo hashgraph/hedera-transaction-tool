@@ -51,7 +51,7 @@ const handleAdd = async (e: Event) => {
       serverUrl: serverUrl.value,
       key: '',
     });
-    toast.success('Organization Added', { position: 'bottom-right' });
+    toast.success('Organization Added');
     emit('added', organization);
     emit('update:show', false);
   } catch (err: any) {
@@ -59,7 +59,7 @@ const handleAdd = async (e: Event) => {
     if (err.message && typeof err.message === 'string') {
       message = err.message;
     }
-    toast.error(message, { position: 'bottom-right' });
+    toast.error(message);
   }
 };
 

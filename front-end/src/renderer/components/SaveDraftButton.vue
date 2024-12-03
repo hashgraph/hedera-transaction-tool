@@ -64,7 +64,7 @@ const saveDraft = async () => {
           transactionBytes: transactionBytes.toString(),
           description: props.description,
         });
-        toast.success('Draft updated', { position: 'bottom-right' });
+        toast.success('Draft updated');
         props.handleDraftUpdated && props.handleDraftUpdated(loadedDraft.id);
       } else {
         await sendAddDraft(user.personal.id, transactionBytes);
@@ -88,7 +88,7 @@ const handleModalSaveDraftSubmit = (e: Event) => {
 async function sendAddDraft(userId: string, transactionBytes: Uint8Array) {
   const { id } = await addDraft(userId, transactionBytes, props.description);
   props.handleDraftAdded && props.handleDraftAdded(id);
-  toast.success('Draft saved', { position: 'bottom-right' });
+  toast.success('Draft saved');
 }
 
 function getTransactionBytes() {

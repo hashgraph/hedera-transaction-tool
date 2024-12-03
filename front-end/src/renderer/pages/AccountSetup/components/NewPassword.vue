@@ -103,13 +103,13 @@ const handleChangePassword = async () => {
 
       props.handleContinue();
 
-      toast.success('Password changed successfully', { position: 'bottom-right' });
+      toast.success('Password changed successfully');
     } catch (err: any) {
       let message = 'Failed to change password';
       if (err.message && typeof err.message === 'string') {
         message = err.message;
       }
-      toast.error(message, { position: 'bottom-right' });
+      toast.error(message);
     } finally {
       isLoading.value = false;
     }

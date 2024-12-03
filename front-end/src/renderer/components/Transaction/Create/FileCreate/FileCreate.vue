@@ -101,7 +101,7 @@ const handleExecutedSuccess = async ({ receipt }: ExecutedSuccessData) => {
   };
 
   await add(file);
-  toast.success(`File ${newFileId} linked`, { position: 'bottom-right' });
+  toast.success(`File ${newFileId} linked`);
 };
 
 /* Functions */

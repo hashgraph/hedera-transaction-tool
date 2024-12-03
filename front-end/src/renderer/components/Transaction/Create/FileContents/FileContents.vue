@@ -86,7 +86,7 @@ const readFile = async () => {
 
     const response = await readContent(privateKey, keyPair.type);
 
-    toast.success('File content read', { position: 'bottom-right' });
+    toast.success('File content read');
 
     const contentBytes = (
       isHederaSpecialFileId(fileId.value) ? encodeString(response) : response
@@ -98,7 +98,7 @@ const readFile = async () => {
     if (err.message && typeof err.message === 'string') {
       message = err.message;
     }
-    toast.error(message, { position: 'bottom-right' });
+    toast.error(message);
   } finally {
     network.client._operator = null;
     isLoading.value = false;
@@ -150,7 +150,7 @@ const updateLocalFileInfo = async (content: string, privateKey: string, privateK
         lastRefreshed: new Date(),
       });
 
-      toast.success('Stored file info updated', { position: 'bottom-right' });
+      toast.success('Stored file info updated');
     } else {
       await add({
         user_id: user.personal.id,
@@ -161,10 +161,10 @@ const updateLocalFileInfo = async (content: string, privateKey: string, privateK
         lastRefreshed: new Date(),
       });
 
-      toast.success(`File ${fileId.value} linked`, { position: 'bottom-right' });
+      toast.success(`File ${fileId.value} linked`);
     }
   } catch (error: any) {
-    toast.error(error?.message || 'Failed to add/update file info', { position: 'bottom-right' });
+    toast.error(error?.message || 'Failed to add/update file info');
   }
 };
 

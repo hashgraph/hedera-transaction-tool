@@ -160,7 +160,7 @@ async function signAfterConfirm() {
       await executeTransaction(signedTransactionBytes, groupItem);
     }
   } catch (err: any) {
-    toast.error(err.message || 'Transaction signing failed', { position: 'bottom-right' });
+    toast.error(err.message || 'Transaction signing failed');
   } finally {
     isSigning.value = false;
   }
@@ -233,13 +233,13 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
     // }
 
     if (unmounted.value) {
-      toast.success('Transaction executed', { position: 'bottom-right' });
+      toast.success('Transaction executed');
     }
   } catch (err: any) {
     const data = JSON.parse(err.message);
     status = data.status;
 
-    toast.error(data.message, { position: 'bottom-right' });
+    toast.error(data.message);
   } finally {
     isExecuting.value = false;
   }

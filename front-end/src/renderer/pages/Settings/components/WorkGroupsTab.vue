@@ -35,13 +35,13 @@ const handleAddOrganization = async (e: Event) => {
         key: newOrganizationServerPublicKey.value,
       });
 
-      toast.success('Organization added successfully', { position: 'bottom-right' });
+      toast.success('Organization added successfully');
     } catch (err: any) {
       let message = 'Failed to add organization';
       if (err.message && typeof err.message === 'string') {
         message = err.message;
       }
-      toast.error(message, { position: 'bottom-right' });
+      toast.error(message);
     }
   }
 };
@@ -50,13 +50,13 @@ const handleAddOrganization = async (e: Event) => {
 //   try {
 //     await deleteOrganization(id);
 
-//     toast.success('Organization removed successfully', { position: 'bottom-right' });
+//     toast.success('Organization removed successfully');
 //   } catch (err: any) {
 //     let message = 'Failed to remove organization';
 //     if (err.message && typeof err.message === 'string') {
 //       message = err.message;
 //     }
-//     toast.error(message, { position: 'bottom-right' });
+//     toast.error(message);
 //   }
 // };
 

@@ -103,7 +103,7 @@ const decrypt = async () => {
       });
     }
   } catch {
-    toast.error('Failed to decrypt private key', { position: 'bottom-right' });
+    toast.error('Failed to decrypt private key');
   }
 };
 
@@ -149,7 +149,7 @@ const handleDelete = async (e: Event) => {
       }
 
       await deleteKeyPair(keyPairIdToDelete.value);
-      toast.success(`Private key deleted successfully`, { position: 'bottom-right' });
+      toast.success(`Private key deleted successfully`);
       await user.refetchKeys();
       user.refetchAccounts();
 
@@ -168,10 +168,10 @@ const handleDelete = async (e: Event) => {
         missingKeyPairIdToDelete.value,
       );
       await user.refetchUserState();
-      toast.success(`Private key deleted successfully`, { position: 'bottom-right' });
+      toast.success(`Private key deleted successfully`);
     }
   } catch (err: any) {
-    toast.error(err.message || 'Failed to delete key pair', { position: 'bottom-right' });
+    toast.error(err.message || 'Failed to delete key pair');
   } finally {
     keyPairIdToDelete.value = null;
     missingKeyPairIdToDelete.value = null;
@@ -182,7 +182,7 @@ const handleDelete = async (e: Event) => {
 
 const handleCopy = (text: string, message: string) => {
   navigator.clipboard.writeText(text);
-  toast.success(message, { position: 'bottom-right' });
+  toast.success(message);
 };
 
 const handleStartNicknameEdit = (id: string) => {

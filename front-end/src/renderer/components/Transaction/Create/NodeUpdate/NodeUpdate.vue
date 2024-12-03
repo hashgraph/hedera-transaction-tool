@@ -84,7 +84,7 @@ const handleUpdateData = (newData: NodeUpdateData) => {
 };
 
 const handleExecutedSuccess = async () => {
-  toast.success(`Node ${data.nodeAccountId} Updated`, { position: 'bottom-right' });
+  toast.success(`Node ${data.nodeAccountId} Updated`);
 };
 
 /* Functions */

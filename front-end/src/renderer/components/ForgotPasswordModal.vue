@@ -134,7 +134,7 @@ async function handleNewPassword() {
 
     emit('update:show', false);
 
-    toast.success('Password changed successfully', { position: 'bottom-right' });
+    toast.success('Password changed successfully');
   } catch (error) {
     toast.error(error instanceof Error ? error.message : 'Failed to set new password');
   }

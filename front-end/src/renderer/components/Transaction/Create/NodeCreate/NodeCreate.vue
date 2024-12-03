@@ -67,7 +67,7 @@ const handleExecutedSuccess = async () => {
     throw new Error('User is not logged in');
   }
 
-  toast.success(`Node ${data.nodeAccountId} Created`, { position: 'bottom-right' });
+  toast.success(`Node ${data.nodeAccountId} Created`);
 };
 
 /* Functions */

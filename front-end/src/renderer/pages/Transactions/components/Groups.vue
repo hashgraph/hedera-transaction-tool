@@ -71,7 +71,7 @@ const handleDeleteGroup = async (id: string) => {
 
   await fetchGroups();
 
-  toast.success('Group successfully deleted', { position: 'bottom-right' });
+  toast.success('Group successfully deleted');
 };
 
 const handleContinueGroup = async (id: string) => {

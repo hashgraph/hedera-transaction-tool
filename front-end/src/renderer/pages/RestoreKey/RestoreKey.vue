@@ -86,7 +86,7 @@ const handleRestoreKey = async (e: Event) => {
     if (err.message && typeof err.message === 'string') {
       message = err.message;
     }
-    toast.error(message, { position: 'bottom-right' });
+    toast.error(message);
   }
 };
 
@@ -147,14 +147,14 @@ const handleSaveKey = async (e: Event) => {
         user.recoveryPhrase = null;
         await user.refetchUserState();
 
-        toast.success('Key Pair saved', { position: 'bottom-right' });
+        toast.success('Key Pair saved');
         router.push({ name: 'settingsKeys' });
       } catch (err: any) {
         let message = 'Failed to store key pair';
         if (err.message && typeof err.message === 'string') {
           message = err.message;
         }
-        toast.error(message, { position: 'bottom-right' });
+        toast.error(message);
       }
     }
   };

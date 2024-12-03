@@ -95,13 +95,9 @@ const handleImportExternalKey = async (e: Event) => {
 
       emit('update:show', false);
 
-      toast.success(`${props.keyType} private key imported successfully`, {
-        position: 'bottom-right',
-      });
+      toast.success(`${props.keyType} private key imported successfully`);
     } catch (err: any) {
-      toast.error(err.message || `Failed to import ${props.keyType} private key`, {
-        position: 'bottom-right',
-      });
+      toast.error(err.message || `Failed to import ${props.keyType} private key`);
     }
   };
 

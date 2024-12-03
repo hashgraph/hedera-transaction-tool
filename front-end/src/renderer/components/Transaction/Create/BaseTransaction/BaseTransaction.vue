@@ -117,9 +117,7 @@ const handleCreate = async () => {
 const handleExecuted = async ({ success, response, receipt }: ExecutedData) => {
   isProcessed.value = true;
   if (success && response && receipt) {
-    toast.success(`${getTransactionType(transaction.value)} Executed`, {
-      position: 'bottom-right',
-    });
+    toast.success(`${getTransactionType(transaction.value)} Executed`);
     emit('executed:success', { success, response, receipt });
   }
   emit('executed', { success, response, receipt });
