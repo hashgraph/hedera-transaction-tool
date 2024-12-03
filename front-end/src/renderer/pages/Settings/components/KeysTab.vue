@@ -139,13 +139,14 @@ const handleDelete = async (e: Event) => {
     if (keyPairIdToDelete.value) {
       if (isLoggedInOrganization(user.selectedOrganization)) {
         const organizationKeyToDelete = getUserKeyToDelete();
-        await deleteKey(
-          user.selectedOrganization.serverUrl,
-          user.selectedOrganization.userId,
-          organizationKeyToDelete.id,
-        );
-
-        await user.refetchUserState();
+        if (organizationKeyToDelete) {
+          await deleteKey(
+            user.selectedOrganization.serverUrl,
+            user.selectedOrganization.userId,
+            organizationKeyToDelete.id,
+          );
+          await user.refetchUserState();
+        }
       }
 
       await deleteKeyPair(keyPairIdToDelete.value);
@@ -201,15 +202,7 @@ function getUserKeyToDelete() {
     throw Error('User is not logged in the organization');
   }
 
-  const organiationKey = user.selectedOrganization.userKeys.find(
-    key => key.publicKey === localKey.public_key,
-  );
-
-  if (!organiationKey) {
-    throw Error('Organization key not found');
-  }
-
-  return organiationKey;
+  return user.selectedOrganization.userKeys.find(key => key.publicKey === localKey.public_key);
 }
 
 /* Watchers */
