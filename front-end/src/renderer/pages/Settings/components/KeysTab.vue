@@ -20,8 +20,9 @@ import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
 import UpdateNicknameModal from '@renderer/components/KeyPair/UpdateNicknameModal.vue';
 
 /* Stores */
@@ -52,6 +53,7 @@ const keyPairIdToEdit = ref<string | null>(null);
 const missingKeyPairIdToDelete = ref<number | null>(null);
 const currentTab = ref(Tabs.ALL);
 const isDeletingKey = ref(false);
+const selectedRecoveryPhrase = ref<string>('');
 
 /* Computed */
 const missingKeys = computed(() =>
@@ -62,6 +64,13 @@ const missingKeys = computed(() =>
     : [],
 );
 
+const recoveryPhraseHashes = computed(() =>
+  (isLoggedInOrganization(user.selectedOrganization)
+    ? user.selectedOrganization.secretHashes
+    : user.secretHashes
+  ).map((hash, i) => ({ label: `Recovery Phrase ${i + 1}`, value: hash })),
+);
+
 /* Handlers */
 const handleShowPrivateKey = async (publicKey: string) => {
   publicKeysPrivateKeyToDecrypt.value = publicKey;
@@ -70,6 +79,7 @@ const handleShowPrivateKey = async (publicKey: string) => {
 
 const handleTabChange = (tab: Tabs) => {
   currentTab.value = tab;
+  selectedRecoveryPhrase.value = '';
 };
 
 const decrypt = async () => {
@@ -211,23 +221,56 @@ watch(isDeleteModalShown, newVal => {
     keyPairIdToDelete.value = null;
   }
 });
+
+watch(selectedRecoveryPhrase, newVal => {
+  if (newVal) {
+    currentTab.value = Tabs.RECOVERY_PHRASE;
+  }
+});
 </script>
 <template>
   <div class="flex-column-100">
-    <div class="mb-3">
-      <template v-for="(tab, i) in Object.values(Tabs)" :key="tab">
-        <AppButton
-          :data-testid="`tab-${tab}`"
-          type="button"
-          color="borderless"
-          class="min-w-unset"
-          :class="[tab === currentTab ? 'active' : '', i !== 0 ? 'ms-3' : '']"
-          @click="handleTabChange(tab)"
-        >
-          {{ tab }}
-        </AppButton>
-      </template>
+    <div>
+      <div class="btn-group-container d-inline-flex mw-100 mb-3" role="group">
+        <div class="btn-group gap-3 overflow-x-auto">
+          <AppButton
+            :color="currentTab === Tabs.ALL ? 'primary' : undefined"
+            :data-testid="`tab-${Tabs.ALL}`"
+            class="rounded-3 text-nowrap min-w-unset"
+            :class="{
+              active: currentTab === Tabs.ALL,
+              'text-body': currentTab !== Tabs.ALL,
+            }"
+            @click="handleTabChange(Tabs.ALL)"
+            >{{ Tabs.ALL }}</AppButton
+          >
+
+          <AppButton
+            :color="currentTab === Tabs.PRIVATE_KEY ? 'primary' : undefined"
+            :data-testid="`tab-${Tabs.PRIVATE_KEY}`"
+            class="rounded-3 text-nowrap min-w-unset"
+            :class="{
+              active: currentTab === Tabs.PRIVATE_KEY,
+              'text-body': currentTab !== Tabs.PRIVATE_KEY,
+            }"
+            @click="handleTabChange(Tabs.PRIVATE_KEY)"
+            >{{ Tabs.PRIVATE_KEY }}</AppButton
+          >
+          <AppDropDown
+            v-model:value="selectedRecoveryPhrase"
+            :items="recoveryPhraseHashes"
+            :toggle-text="Tabs.RECOVERY_PHRASE"
+            :active="currentTab === Tabs.RECOVERY_PHRASE"
+            :color="'primary'"
+            class="overflow-auto text-nowrap"
+            :style="{ maxWidth: '300px' }"
+            toggler-icon
+            color-on-active
+          />
+        </div>
+      </div>
     </div>
+
     <div class="fill-remaining mt-4">
       <div class="overflow-auto">
         <table class="table-custom">
@@ -254,7 +297,7 @@ watch(isDeleteModalShown, newVal => {
                   case Tabs.ALL:
                     return true;
                   case Tabs.RECOVERY_PHRASE:
-                    return item.secret_hash !== null;
+                    return item.secret_hash !== null && item.secret_hash === selectedRecoveryPhrase;
                   case Tabs.PRIVATE_KEY:
                     return item.secret_hash === null;
                 }
@@ -378,8 +421,10 @@ watch(isDeleteModalShown, newVal => {
                 <tr
                   v-if="
                     currentTab === Tabs.ALL ||
-                    (keyPair.mnemonicHash && currentTab === Tabs.RECOVERY_PHRASE) ||
-                    (!keyPair.mnemonicHash && currentTab === Tabs.PRIVATE_KEY)
+                    (currentTab === Tabs.RECOVERY_PHRASE &&
+                      keyPair.mnemonicHash &&
+                      keyPair.mnemonicHash === selectedRecoveryPhrase) ||
+                    (currentTab === Tabs.PRIVATE_KEY && !keyPair.mnemonicHash)
                   "
                   class="disabled-w-action position-relative"
                 >
