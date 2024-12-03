@@ -39,11 +39,11 @@ const handleImportMnemonic = () => router.push({ name: MIGRATE_MNEMONIC_KEYS });
     <AppButton
       color="primary"
       data-testid="button-restore-dropdown"
-      class="w-100 min-w-unset d-flex align-items-center justify-content-center"
+      class="min-w-unset d-flex align-items-center justify-content-center"
       data-bs-toggle="dropdown"
       ><i class="bi bi-plus text-main me-2"></i> Import</AppButton
     >
-    <ul class="dropdown-menu w-100 mt-3">
+    <ul class="dropdown-menu mt-3">
       <li
         data-testid="link-import-ed25519-key"
         class="dropdown-item cursor-pointer"
@@ -71,7 +71,7 @@ const handleImportMnemonic = () => router.push({ name: MIGRATE_MNEMONIC_KEYS });
         class="dropdown-item cursor-pointer mt-3"
         @click="handleImportMnemonic"
       >
-        <span class="text-small">Mnemonic keys</span>
+        <span class="text-small">Recovery Phrase keys</span>
       </li>
     </ul>
   </div>

@@ -206,7 +206,7 @@ watch(step, async newStep => {
 </script>
 <template>
   <div class="flex-column-100 p-8">
-    <div class="position-absolute">
+    <div class="position-relative">
       <AppButton color="secondary" @click="$router.back()">Back</AppButton>
     </div>
     <div class="flex-centered flex-column-100">
@@ -244,7 +244,7 @@ watch(step, async newStep => {
           @submit.prevent="handleImportRecoveryPhrase"
           class="fill-remaining"
         >
-          <h1 class="text-display text-bold text-center">Enter your recovery phrase</h1>
+          <h1 class="text-display text-bold text-center">Enter your Recovery Phrase</h1>
           <div class="mt-8">
             <Import />
             <div class="row justify-content-between mt-6">
@@ -253,7 +253,7 @@ watch(step, async newStep => {
                   >Clear</AppButton
                 >
               </div>
-              <div v-if="user.recoveryPhrase" class="col-4 d-grid">
+              <div class="col-4 d-grid">
                 <AppButton
                   color="primary"
                   data-testid="button-continue-phrase"
