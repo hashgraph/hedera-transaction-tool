@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import { inject, onBeforeMount, onUnmounted, ref, watch } from 'vue';
-import { Mnemonic } from '@hashgraph/sdk';
+import { inject, onBeforeUnmount, ref, watch } from 'vue';
+import { PrivateKey } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -11,9 +11,15 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
 import { restorePrivateKey } from '@renderer/services/keyPairService';
-import { uploadKey } from '@renderer/services/organization';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import {
+  getErrorMessage,
+  getSecretHashFromLocalKeys,
+  getSecretHashFromUploadedKeys,
+  isLoggedInOrganization,
+  isUserLoggedIn,
+  safeDuplicateUploadKey,
+} from '@renderer/utils';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
@@ -33,31 +39,29 @@ const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODA
 
 /* State */
 const step = ref(0);
-const ableToContinue = ref(false);
 
-const recoveryPhrase = ref([]);
 const index = ref(0);
-const nickname = ref('');
-
 const inputIndexInvalid = ref(false);
-const importRef = ref<InstanceType<typeof Import> | null>(null);
+const nickname = ref('');
+const restoredKey = ref<{ privateKey: string; publicKey: string; mnemonicHash: string } | null>(
+  null,
+);
 
-const restoredKey = ref<{ privateKey: string; publicKey: string } | null>(null);
+const loadingText = ref<string | null>(null);
 
 /* Handlers */
-const handleFinish = (e: Event) => {
-  e.preventDefault();
-  step.value++;
-};
+const handleImportRecoveryPhrase = () => step.value++;
 
-const handleRestoreKey = async (e: Event) => {
-  e.preventDefault();
+const handleClearWords = () => (user.recoveryPhrase = null);
 
+const handleRestoreKey = async () => {
   if (!user.recoveryPhrase) {
     throw new Error('Recovery phrase not found');
   }
 
   try {
+    loadingText.value = 'Restoring key pair...';
+
     const privateKey = await restorePrivateKey(
       user.recoveryPhrase.words,
       '',
@@ -65,108 +69,113 @@ const handleRestoreKey = async (e: Event) => {
       'ED25519',
     );
 
-    if (
-      user.keyPairs.some(
-        kp => kp.public_key === privateKey.publicKey.toStringRaw() && kp.public_key !== '',
-      )
-    ) {
-      inputIndexInvalid.value = true;
-      return;
+    if (keyExists(privateKey)) {
+      return (inputIndexInvalid.value = true);
     }
-    inputIndexInvalid.value = false;
 
+    inputIndexInvalid.value = false;
     restoredKey.value = {
       privateKey: privateKey.toStringRaw(),
       publicKey: privateKey.publicKey.toStringRaw(),
+      mnemonicHash: user.recoveryPhrase.hash,
     };
 
-    step.value++;
-  } catch (err: any) {
-    let message = 'Failed to restore private key';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
+    if (isLoggedInOrganization(user.selectedOrganization)) {
+      const alreadyUploadedHash = await getSecretHashFromUploadedKeys(
+        user.recoveryPhrase,
+        user.selectedOrganization.userKeys,
+      );
+      if (alreadyUploadedHash) {
+        restoredKey.value.mnemonicHash = alreadyUploadedHash;
+      }
+    } else {
+      const alreadyStoredHash = await getSecretHashFromLocalKeys(
+        user.recoveryPhrase,
+        user.keyPairs,
+      );
+      if (alreadyStoredHash) {
+        restoredKey.value.mnemonicHash = alreadyStoredHash;
+      }
     }
-    toast.error(message);
+
+    step.value++;
+  } catch (e) {
+    toast.error(getErrorMessage(e, 'Failed to restore private key'));
+  } finally {
+    loadingText.value = null;
   }
 };
 
-const handleSaveKey = async (e: Event) => {
-  e.preventDefault();
+const handleSaveKey = async () => {
+  if (!isUserLoggedIn(user.personal)) throw Error('User is not logged in');
+  const personalPassword = user.getPassword();
+  if (!personalPassword && !user.personal.useKeychain) {
+    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
+    userPasswordModalRef.value?.open(
+      'Enter your application password',
+      'Enter your application password to decrypt your key',
+      handleSaveKey,
+    );
+    return;
+  }
 
-  const callback = async () => {
-    if (!isUserLoggedIn(user.personal)) throw Error('User is not logged in');
-    const personalPassword = user.getPassword();
-    if (!personalPassword && !user.personal.useKeychain) {
-      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-      userPasswordModalRef.value?.open(
-        'Enter your application password',
-        'Enter your application password to decrypt your key',
-        callback,
+  if (!restoredKey.value) {
+    throw new Error('Restored key not found');
+  }
+
+  try {
+    loadingText.value = 'Saving key pair...';
+
+    const keyPair: Prisma.KeyPairUncheckedCreateInput = {
+      user_id: user.personal.id,
+      index: Number(index.value),
+      private_key: restoredKey.value.privateKey,
+      public_key: restoredKey.value.publicKey,
+      type: 'ED25519',
+      organization_id: null,
+      organization_user_id: null,
+      secret_hash: restoredKey.value.mnemonicHash,
+      nickname: nickname.value || null,
+    };
+
+    const keyStored = user.keyPairs.find(k => k.public_key === restoredKey.value?.publicKey);
+    if (isLoggedInOrganization(user.selectedOrganization)) {
+      const keyUploaded = user.selectedOrganization.userKeys.some(
+        k => k.publicKey === restoredKey.value?.publicKey,
       );
-      return;
-    }
-
-    if (!user.recoveryPhrase) {
-      throw new Error('Recovery phrase not found');
-    }
-
-    if (restoredKey.value) {
-      try {
-        const keyPair: Prisma.KeyPairUncheckedCreateInput = {
-          user_id: user.personal.id,
-          index: Number(index.value),
-          private_key: restoredKey.value.privateKey,
-          public_key: restoredKey.value.publicKey,
-          type: 'ED25519',
-          organization_id: null,
-          organization_user_id: null,
-          secret_hash: user.recoveryPhrase.hash,
-          nickname: nickname.value || null,
-        };
-
-        if (isLoggedInOrganization(user.selectedOrganization)) {
-          if (
-            user.selectedOrganization.userKeys.some(
-              k => k.publicKey === restoredKey.value?.publicKey,
-            )
-          ) {
-            throw new Error('Key pair already exists');
-          }
-
-          keyPair.organization_id = user.selectedOrganization.id;
-          keyPair.organization_user_id = user.selectedOrganization.userId;
-
-          await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
-            publicKey: restoredKey.value.publicKey,
-            index: keyPair.index,
-            mnemonicHash: user.recoveryPhrase.hash,
-          });
-        }
-
-        await user.storeKey(keyPair, user.recoveryPhrase.words, personalPassword, false);
-        user.recoveryPhrase = null;
-        await user.refetchUserState();
-
-        toast.success('Key Pair saved');
-        router.push({ name: 'settingsKeys' });
-      } catch (err: any) {
-        let message = 'Failed to store key pair';
-        if (err.message && typeof err.message === 'string') {
-          message = err.message;
-        }
-        toast.error(message);
+      if (keyUploaded && keyStored) {
+        throw new Error('Key pair already exists');
       }
-    }
-  };
 
-  await callback();
+      keyPair.organization_id = user.selectedOrganization.id;
+      keyPair.organization_user_id = user.selectedOrganization.userId;
+
+      await safeDuplicateUploadKey(user.selectedOrganization, {
+        publicKey: restoredKey.value.publicKey,
+        index: keyPair.index,
+        mnemonicHash: restoredKey.value.mnemonicHash,
+      });
+    }
+
+    if (!keyStored) {
+      await user.storeKey(keyPair, restoredKey.value.mnemonicHash, personalPassword, false);
+    }
+    user.recoveryPhrase = null;
+    await user.refetchUserState();
+
+    toast.success('Key Pair saved');
+    router.push({ name: 'settingsKeys' });
+  } catch (e) {
+    toast.error(getErrorMessage(e, 'Failed to store private key'));
+  } finally {
+    loadingText.value = null;
+  }
 };
 
 const handleFindEmptyIndex = async () => {
   if (!user.recoveryPhrase) return;
 
   let exists = false;
-
   do {
     const privateKey = await restorePrivateKey(
       user.recoveryPhrase.words,
@@ -175,11 +184,7 @@ const handleFindEmptyIndex = async () => {
       'ED25519',
     );
 
-    if (
-      user.keyPairs.some(
-        kp => kp.public_key === privateKey.publicKey.toStringRaw() && kp.public_key !== '',
-      )
-    ) {
+    if (keyExists(privateKey)) {
       index.value++;
       exists = true;
     } else {
@@ -188,30 +193,18 @@ const handleFindEmptyIndex = async () => {
   } while (exists);
 };
 
-/* Hooks */
-onBeforeMount(async () => {});
+/* Functions */
+const keyExists = (privateKey: PrivateKey) => {
+  return user.keyPairs.some(kp => kp.public_key === privateKey.publicKey.toStringRaw());
+};
 
-onUnmounted(() => {
+/* Hooks */
+onBeforeUnmount(() => {
   user.recoveryPhrase = null;
 });
 
 /* Watchers */
-watch(recoveryPhrase, async newRecoveryPhrase => {
-  if (!newRecoveryPhrase) {
-    ableToContinue.value = false;
-  } else if (newRecoveryPhrase.length === 24) {
-    try {
-      await Mnemonic.fromWords(recoveryPhrase.value || []);
-      ableToContinue.value = true;
-    } catch {
-      ableToContinue.value = false;
-    }
-  }
-});
-
-watch(index, () => {
-  inputIndexInvalid.value = false;
-});
+watch(index, () => (inputIndexInvalid.value = false));
 
 watch(step, async newStep => {
   if (newStep === 2) {
@@ -221,7 +214,7 @@ watch(step, async newStep => {
 </script>
 <template>
   <div class="flex-column-100 p-8">
-    <div class="position-absolute">
+    <div class="position-relative">
       <AppButton color="secondary" @click="$router.back()">Back</AppButton>
     </div>
     <div class="flex-centered flex-column-100">
@@ -254,21 +247,21 @@ watch(step, async newStep => {
         </div>
 
         <!-- Step 2 -->
-        <form v-else-if="step === 1" @submit="handleFinish" class="fill-remaining">
-          <h1 class="text-display text-bold text-center">Enter your recovery phrase</h1>
+        <form
+          v-else-if="step === 1"
+          @submit.prevent="handleImportRecoveryPhrase"
+          class="fill-remaining"
+        >
+          <h1 class="text-display text-bold text-center">Enter your Recovery Phrase</h1>
           <div class="mt-8">
-            <Import
-              ref="importRef"
-              :handle-continue="handleFinish"
-              :secret-hashes="user.secretHashes"
-            />
+            <Import />
             <div class="row justify-content-between mt-6">
               <div class="col-4 d-grid">
-                <AppButton type="button" color="secondary" @click="importRef?.clearWords()"
+                <AppButton type="button" color="secondary" @click="handleClearWords"
                   >Clear</AppButton
                 >
               </div>
-              <div v-if="user.recoveryPhrase" class="col-4 d-grid">
+              <div class="col-4 d-grid">
                 <AppButton
                   color="primary"
                   data-testid="button-continue-phrase"
@@ -282,7 +275,7 @@ watch(step, async newStep => {
         </form>
 
         <!-- Step 3 -->
-        <form v-else-if="step === 2" class="w-100" @submit="handleRestoreKey">
+        <form v-else-if="step === 2" class="w-100" @submit.prevent="handleRestoreKey">
           <h1 class="text-display text-bold text-center">Provide Index of Key</h1>
           <p class="text-main mt-5 text-center">Please enter the index of the key</p>
           <div
@@ -306,6 +299,8 @@ watch(step, async newStep => {
                 color="primary"
                 class="mt-4 d-block w-100"
                 :disabled="index < 0"
+                :loading="Boolean(loadingText)"
+                :loading-text="loadingText || ''"
                 >Continue</AppButton
               >
             </div>
@@ -313,7 +308,7 @@ watch(step, async newStep => {
         </form>
 
         <!-- Step 4 -->
-        <form v-else-if="step === 3" class="w-100" @submit="handleSaveKey">
+        <form v-else-if="step === 3" class="w-100" @submit.prevent="handleSaveKey">
           <h1 class="text-display text-bold text-center">Enter nickname</h1>
           <p class="text-main mt-5 text-center">Please enter your nickname (optional)</p>
           <div
@@ -331,6 +326,8 @@ watch(step, async newStep => {
                 data-testid="button-continue-nickname"
                 color="primary"
                 class="mt-4 d-block w-100"
+                :loading="Boolean(loadingText)"
+                :loading-text="loadingText || ''"
                 >Continue</AppButton
               >
             </div>

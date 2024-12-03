@@ -43,6 +43,7 @@ import {
   uint8ToHex,
   isLoggedInOrganization,
   isUserLoggedIn,
+  getErrorMessage,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -159,8 +160,8 @@ async function signAfterConfirm() {
 
       await executeTransaction(signedTransactionBytes, groupItem);
     }
-  } catch (err: any) {
-    toast.error(err.message || 'Transaction signing failed');
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, 'Transaction signing failed'));
   } finally {
     isSigning.value = false;
   }

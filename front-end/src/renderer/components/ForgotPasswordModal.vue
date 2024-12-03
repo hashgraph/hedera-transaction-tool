@@ -9,7 +9,7 @@ import { resetPassword, setPassword, verifyReset } from '@renderer/services/orga
 import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
 import { comparePasswords } from '@renderer/services/userService';
 
-import { isEmail, isLoggedOutOrganization, isUserLoggedIn } from '@renderer/utils';
+import { getErrorMessage, isEmail, isLoggedOutOrganization, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -79,7 +79,7 @@ async function handleEmailEnter() {
     shouldEnterToken.value = true;
     setTimeout(() => otpInputRef.value?.focus(), 100);
   } catch (error: unknown) {
-    toast.error(error instanceof Error ? error.message : 'Failed to request password reset');
+    toast.error(getErrorMessage(error, 'Failed to request password reset'));
   }
 }
 
@@ -98,7 +98,7 @@ async function handleTokenEnter() {
     shouldEnterToken.value = false;
     shouldSetNewPassword.value = true;
   } catch (error: unknown) {
-    toast.error(error instanceof Error ? error.message : 'Failed to verify OTP');
+    toast.error(getErrorMessage(error, 'Failed to verify OTP'));
   }
 }
 
@@ -136,7 +136,7 @@ async function handleNewPassword() {
 
     toast.success('Password changed successfully');
   } catch (error) {
-    toast.error(error instanceof Error ? error.message : 'Failed to set new password');
+    toast.error(getErrorMessage(error, 'Failed to set new password'));
   }
 }
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { KeyPair } from '@prisma/client';
 import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
+import type { ConnectedOrganization } from '@renderer/types';
 
 import { inject, onBeforeMount, onUpdated, ref } from 'vue';
 
@@ -13,17 +14,31 @@ import { useRouter } from 'vue-router';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { restorePrivateKey } from '@renderer/services/keyPairService';
-import { uploadKey } from '@renderer/services/organization';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
-import { getWidthOfElementWithText, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import {
+  getErrorMessage,
+  getWidthOfElementWithText,
+  isLoggedInOrganization,
+  isUserLoggedIn,
+  restoreOrganizationKeys,
+  safeAwait,
+  safeDuplicateUploadKey,
+  throwError,
+} from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Props */
 const props = defineProps<{
   selectedPersonalKeyPair: KeyPair | null;
+}>();
+
+/* Emits */
+const emit = defineEmits<{
+  (event: 'restore:start'): void;
+  (event: 'restore:end'): void;
 }>();
 
 /* Stores */
@@ -39,23 +54,28 @@ const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODA
 
 /* State */
 const nickname = ref(props.selectedPersonalKeyPair?.nickname || '');
-
 const privateKeyRef = ref<HTMLSpanElement | null>(null);
 const privateKeyHidden = ref(true);
 const starCount = ref(0);
-
-const keys = ref<{ publicKey: string; privateKey: string; index: number; encrypted: boolean }[]>(
-  [],
-);
+const keys = ref<
+  {
+    publicKey: string;
+    privateKey: string;
+    index: number;
+    mnemonicHash: string;
+    encrypted: boolean;
+  }[]
+>([]);
 
 /* Misc Functions */
-const keyExists = (publicKey: string) => user.keyPairs.some(kp => kp.public_key === publicKey);
-
-const addKeyToRestored = async (index: number) => {
-  if (!user.recoveryPhrase && !props.selectedPersonalKeyPair) {
-    throw new Error('Recovery phrase is not set or personal key pair is not selected');
-  }
-
+const addKeyToRestored = async (index: number, mnemonicHash: string, veirificationKey?: string) => {
+  const key = {
+    publicKey: '',
+    privateKey: '',
+    index,
+    mnemonicHash,
+    encrypted: false,
+  };
   try {
     if (user.recoveryPhrase) {
       const restoredPrivateKey = await restorePrivateKey(
@@ -64,47 +84,83 @@ const addKeyToRestored = async (index: number) => {
         index,
         'ED25519',
       );
-      keys.value.push({
-        publicKey: restoredPrivateKey.publicKey.toStringRaw(),
-        privateKey: restoredPrivateKey.toStringRaw(),
-        index,
-        encrypted: false,
-      });
+      key.publicKey = restoredPrivateKey.publicKey.toStringRaw();
+      key.privateKey = restoredPrivateKey.toStringRaw();
     } else if (props.selectedPersonalKeyPair) {
-      keys.value.push({
-        publicKey: props.selectedPersonalKeyPair.public_key,
-        privateKey: props.selectedPersonalKeyPair.private_key,
-        index,
-        encrypted: true,
-      });
+      key.publicKey = props.selectedPersonalKeyPair.public_key;
+      key.privateKey = props.selectedPersonalKeyPair.private_key;
+      key.encrypted = true;
     }
-  } catch {
-    toast.error(`Restoring key at index: ${index} failed`);
+
+    if (key.publicKey !== '') {
+      if (veirificationKey && veirificationKey !== key.publicKey) {
+        throw new Error(
+          'Verification key does not match the restored key, ensure that the key type is ED25519',
+        );
+      }
+
+      keys.value.push(key);
+    }
+  } catch (e) {
+    toast.error(getErrorMessage(e, `Restoring key at index: ${index} failed`));
+  }
+};
+
+const restoreDefaultKey = async () => {
+  if (!user.recoveryPhrase) {
+    throw new Error('Recovery phrase is not set');
+  }
+  await addKeyToRestored(0, user.recoveryPhrase.hash);
+};
+
+const restoreForExistingKey = async (key: KeyPair) => {
+  if (!key.secret_hash) {
+    throw new Error('(BUG) Recovery phrase is not set on the existing key pair');
+  }
+  await addKeyToRestored(key.index, key.secret_hash, key.public_key);
+};
+
+const restoreForOrganization = async (organization: ConnectedOrganization) => {
+  const restoredKeys = await restoreOrganizationKeys(
+    organization,
+    user.recoveryPhrase,
+    user.personal,
+    user.keyPairs,
+    false,
+  );
+
+  for (const key of restoredKeys.keys) {
+    keys.value.push(key);
+  }
+
+  for (const error of restoredKeys.failedRestoreMessages) {
+    toast.error(error);
+  }
+
+  if (restoredKeys.keys.length === 0) {
+    await restoreDefaultKey();
   }
 };
 
 const restoreKeys = async () => {
-  if (
-    isLoggedInOrganization(user.selectedOrganization) &&
-    user.selectedOrganization.secretHashes.length > 0
-  ) {
-    if (!user.recoveryPhrase) {
-      throw new Error('Recovery phrase is not set');
-    }
-
-    for (let i = 0; i < user.selectedOrganization.userKeys.length; i++) {
-      const key = user.selectedOrganization.userKeys[i];
-
-      if (keyExists(key.publicKey) || key.index === undefined || key.index === null) continue;
-
-      await addKeyToRestored(key.index);
-    }
+  if (props.selectedPersonalKeyPair) {
+    await restoreForExistingKey(props.selectedPersonalKeyPair);
+  } else if (isLoggedInOrganization(user.selectedOrganization)) {
+    await restoreForOrganization(user.selectedOrganization);
   } else {
-    if (props.selectedPersonalKeyPair) {
-      await addKeyToRestored(props.selectedPersonalKeyPair.index);
-    } else {
-      await addKeyToRestored(0);
-    }
+    await restoreDefaultKey();
+  }
+};
+
+const setPrivateKeyStarCount = () => {
+  if (privateKeyRef.value) {
+    const privateKeyWidth = getWidthOfElementWithText(
+      privateKeyRef.value,
+      keys.value[0].privateKey,
+    );
+    const starWidth = getWidthOfElementWithText(privateKeyRef.value, '*');
+
+    starCount.value = Math.round(privateKeyWidth / starWidth);
   }
 };
 
@@ -114,7 +170,6 @@ const handleSave = async () => {
 
   if (!isUserLoggedIn(user.personal)) throw Error('User is not logged in');
   const personalPassword = user.getPassword();
-
   if (!personalPassword && !user.personal.useKeychain) {
     if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
     userPasswordModalRef.value?.open(
@@ -125,81 +180,66 @@ const handleSave = async () => {
     return;
   }
 
-  if (
-    (!user.recoveryPhrase || user.recoveryPhrase.words.length === 0) &&
-    !props.selectedPersonalKeyPair
-  ) {
-    throw new Error('Recovery phrase is not set or personal key pair is not selected');
-  }
+  let storedCount = 0;
+  for (let i = 0; i < keys.value.length; i++) {
+    const key = keys.value[i];
+    const keyPair: Prisma.KeyPairUncheckedCreateInput = {
+      user_id: user.personal.id,
+      index: key.index,
+      public_key: key.publicKey,
+      private_key: key.privateKey,
+      type: 'ED25519',
+      organization_id: null,
+      organization_user_id: null,
+      secret_hash: key.mnemonicHash,
+      nickname: i === 0 && nickname.value ? nickname.value : null,
+    };
 
-  try {
-    for (let i = 0; i < keys.value.length; i++) {
-      const key = keys.value[i];
-
-      const keyPair: Prisma.KeyPairUncheckedCreateInput = {
-        user_id: user.personal.id,
-        index: key.index,
-        public_key: key.publicKey,
-        private_key: key.privateKey,
-        type: 'ED25519',
-        organization_id: null,
-        organization_user_id: null,
-        secret_hash: user.recoveryPhrase?.hash || props.selectedPersonalKeyPair?.secret_hash,
-        nickname: i === 0 && nickname.value ? nickname.value : null,
-      };
-
+    try {
       if (isLoggedInOrganization(user.selectedOrganization)) {
         keyPair.organization_id = user.selectedOrganization.id;
         keyPair.organization_user_id = user.selectedOrganization.userId;
 
-        if (!user.selectedOrganization.userKeys.some(k => k.publicKey === key.publicKey)) {
-          await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
-            publicKey: key.publicKey,
-            index: key.index,
-            mnemonicHash:
-              user.recoveryPhrase?.hash || props.selectedPersonalKeyPair?.secret_hash || '',
-          });
-        }
+        await safeDuplicateUploadKey(user.selectedOrganization, {
+          publicKey: key.publicKey,
+          index: key.index,
+          mnemonicHash: key.mnemonicHash,
+        });
       }
-
-      const recoveryWords = user.recoveryPhrase?.words || []; //TS cannot assert that recoveryPhrase is set
 
       await user.storeKey(
         keyPair,
-        props.selectedPersonalKeyPair ? props.selectedPersonalKeyPair.secret_hash : recoveryWords,
+        key.mnemonicHash,
         personalPassword,
         Boolean(props.selectedPersonalKeyPair),
       );
-      user.secretHashes.push(
-        user.recoveryPhrase?.hash || props.selectedPersonalKeyPair?.secret_hash || '',
-      );
+      if (!user.secretHashes.includes(key.mnemonicHash)) {
+        user.secretHashes.push(key.mnemonicHash);
+      }
+      storedCount++;
+    } catch (e) {
+      toast.error(getErrorMessage(e, `Failed to store key pair: ${key.publicKey}`));
     }
-
-    toast.success(`Key Pair${keys.value.length > 1 ? 's' : ''} saved successfully`);
-    router.push({ name: 'settingsKeys' });
-  } catch (err: any) {
-    let message = `Failed to store key pair${keys.value.length > 1 ? 's' : ''}`;
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message);
   }
+
+  if (storedCount > 0) {
+    toast.success(`Key Pair${storedCount > 1 ? 's' : ''} saved successfully`);
+  }
+  router.push({ name: 'settingsKeys' });
 
   await user.refetchUserState();
 };
 
 /* Hooks */
 onBeforeMount(async () => {
-  await restoreKeys();
+  emit('restore:start');
+  const { error } = await safeAwait(restoreKeys());
+  emit('restore:end');
 
-  if (privateKeyRef.value) {
-    const privateKeyWidth = getWidthOfElementWithText(
-      privateKeyRef.value,
-      keys.value[0].privateKey,
-    );
-    const starWidth = getWidthOfElementWithText(privateKeyRef.value, '*');
+  setPrivateKeyStarCount();
 
-    starCount.value = Math.round(privateKeyWidth / starWidth);
+  if (error) {
+    throwError(getErrorMessage(error, 'Failed to restore keys'));
   }
 });
 

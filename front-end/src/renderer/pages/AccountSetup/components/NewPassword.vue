@@ -14,7 +14,7 @@ import { updateOrganizationCredentials } from '@renderer/services/organizationCr
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import { getErrorMessage, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -104,12 +104,8 @@ const handleChangePassword = async () => {
       props.handleContinue();
 
       toast.success('Password changed successfully');
-    } catch (err: any) {
-      let message = 'Failed to change password';
-      if (err.message && typeof err.message === 'string') {
-        message = err.message;
-      }
-      toast.error(message);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to change password'));
     } finally {
       isLoading.value = false;
     }

@@ -139,7 +139,7 @@ const useUserStore = defineStore('user', () => {
     password: string | null,
     encrypted: boolean,
   ) => {
-    await ush.storeKeyPair(keyPair, secretHashes.value, mnemonic, password, encrypted);
+    await ush.storeKeyPair(keyPair, mnemonic, password, encrypted);
     await refetchKeys();
     refetchAccounts();
   };

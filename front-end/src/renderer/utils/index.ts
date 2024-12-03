@@ -125,3 +125,10 @@ export const withLoader = (
     }
   };
 };
+
+export const throwError = (errorMessage: string) => {
+  throw new Error(errorMessage);
+};
+
+export const getErrorMessage = (error: unknown, defaultErrorMessage: string) =>
+  error instanceof Error ? error.message : defaultErrorMessage;

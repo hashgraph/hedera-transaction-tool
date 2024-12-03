@@ -12,7 +12,7 @@ import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
 
 import { add } from '@renderer/services/accountsService';
 
-import { isUserLoggedIn, formatAccountId } from '@renderer/utils';
+import { isUserLoggedIn, formatAccountId, getErrorMessage } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -53,8 +53,8 @@ const handleLinkAccount = async (e: Event) => {
 
       router.push({ name: 'accounts' });
       toast.success('Account linked successfully!');
-    } catch (error: any) {
-      toast.error(error.message || 'Account link failed');
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Account link failed'));
     }
   }
 };

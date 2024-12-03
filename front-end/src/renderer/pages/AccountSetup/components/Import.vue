@@ -4,36 +4,19 @@ import { onBeforeMount, ref, watch } from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { validateMnemonic } from '@renderer/services/keyPairService';
-import { compareDataToHashes } from '@renderer/services/electronUtilsService';
 
 import AppRecoveryPhraseWord from '@renderer/components/ui/AppRecoveryPhraseWord.vue';
 
-/* Props */
-const props = defineProps<{
-  secretHashes: string[];
-}>();
+/* Constants */
+const WORD_COUNT = 24;
+const getDefaultWords = () => Array(WORD_COUNT).fill('');
 
 /* Stores */
 const user = useUserStore();
 
 /* State */
-const words = ref<string[]>(Array(24).fill(''));
-
+const words = ref<string[]>(getDefaultWords());
 const isMnemonicValid = ref(false);
-const isSecretHashValid = ref(true);
-
-/* Misc Functions */
-const validateMatchingSecretHash = async () => {
-  if (!isMnemonicValid.value) return;
-
-  if (props.secretHashes.length > 0) {
-    const matchedHash = await compareDataToHashes(words.value.toString(), props.secretHashes);
-    isSecretHashValid.value = Boolean(matchedHash);
-    return;
-  }
-
-  isSecretHashValid.value = true;
-};
 
 /* Handlers */
 const handleWordChange = (newWord: string, index: number) => {
@@ -41,30 +24,25 @@ const handleWordChange = (newWord: string, index: number) => {
   words.value = [...words.value];
 };
 
-const handlePaste = async (e: Event, index: number) => {
-  e.preventDefault();
-
+const handlePaste = async (index: number) => {
   const items = await navigator.clipboard.readText();
 
   const mnemonic = items
     .toLocaleLowerCase()
     .split(/[\s,]+|,\s*|\n/)
     .filter(w => w)
-    .slice(0, 24);
+    .slice(0, WORD_COUNT);
 
   const isValid = await validateMnemonic(mnemonic);
-
   if (isValid && Array.isArray(mnemonic)) {
     words.value = mnemonic;
-
-    await validateMatchingSecretHash();
   } else if (mnemonic.length === 1) {
     handleWordChange(mnemonic[0], index);
   }
 };
 
 const handleClearWords = () => {
-  words.value = Array(24).fill('');
+  words.value = getDefaultWords();
 };
 
 /* Hooks */
@@ -76,19 +54,24 @@ onBeforeMount(() => {
 
 /* Watchers */
 watch(words, async newWords => {
-  isMnemonicValid.value = await validateMnemonic(newWords.map(w => w.toLocaleLowerCase()));
-  await validateMatchingSecretHash();
+  const normalizedWords = newWords.map(w => w.toLocaleLowerCase());
+  isMnemonicValid.value = await validateMnemonic(normalizedWords);
 
-  if (isMnemonicValid.value && isSecretHashValid.value) {
-    return await user.setRecoveryPhrase(words.value.map(w => w.toLocaleLowerCase()));
+  if (isMnemonicValid.value) {
+    await user.setRecoveryPhrase(normalizedWords);
+  } else {
+    user.recoveryPhrase = null;
   }
-  user.recoveryPhrase = null;
 });
 
-/* Exposes */
-defineExpose({
-  clearWords: handleClearWords,
-});
+watch(
+  () => user.recoveryPhrase,
+  async newRecoveryPhrase => {
+    if (!newRecoveryPhrase) {
+      handleClearWords();
+    }
+  },
+);
 </script>
 <template>
   <div>
@@ -100,10 +83,9 @@ defineExpose({
           :index="index + 1"
           :handle-word-change="newWord => handleWordChange(newWord, index)"
           visible-initially
-          @paste="handlePaste($event, index)"
+          @paste.prevent="handlePaste(index)"
         />
       </template>
     </div>
-    <p v-if="!isSecretHashValid" class="mt-3 text-danger">Recovery phrase not match yours</p>
   </div>
 </template>

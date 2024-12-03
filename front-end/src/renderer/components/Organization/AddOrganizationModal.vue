@@ -9,6 +9,8 @@ import { useToast } from 'vue-toast-notification';
 
 import { addOrganization } from '@renderer/services/organizationsService';
 
+import { getErrorMessage } from '@renderer/utils';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -54,12 +56,8 @@ const handleAdd = async (e: Event) => {
     toast.success('Organization Added');
     emit('added', organization);
     emit('update:show', false);
-  } catch (err: any) {
-    let message = 'Failed to add organization';
-    if (err.message && typeof err.message === 'string') {
-      message = err.message;
-    }
-    toast.error(message);
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, 'Failed to add organization'));
   }
 };
 

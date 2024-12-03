@@ -2,11 +2,14 @@ import type { RouteRecordRaw } from 'vue-router';
 import { createRouter, createWebHistory } from 'vue-router';
 
 import { attachMeta } from './meta';
+import * as constants from '@renderer/router/constants';
 
 import Transactions from '@renderer/pages/Transactions';
 import UserLogin from '@renderer/pages/UserLogin';
 import CreateTransactionGroup from '@renderer/pages/CreateTransactionGroup/CreateTransactionGroup.vue';
 import TransactionGroupDetails from '@renderer/pages/TransactionGroupDetails/TransactionGroupDetails.vue';
+
+export * from './constants';
 
 const StyleGuide = () => import('@renderer/pages/Styleguide');
 const Accounts = () => import('@renderer/pages/Accounts');
@@ -33,6 +36,7 @@ const OrganizationLogin = () => import('@renderer/pages/OrganizationLogin');
 const OrganizationsTab = () => import('@renderer/pages/Settings/components/OrganizationsTab.vue');
 const TransactionDetails = () => import('@renderer/pages/TransactionDetails');
 const Migrate = () => import('@renderer/pages/Migrate');
+const RestoreMissingKeys = () => import('@renderer/pages/RestoreMissingKeys');
 
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/transactions' },
@@ -51,8 +55,13 @@ const routes: RouteRecordRaw[] = [
   { path: '/contact-list', name: 'contactList', component: ContactList },
   { path: '/help', name: 'help', component: Help },
   { path: '/account-setup', name: 'accountSetup', component: AccountSetup },
-  { path: '/restore-key', name: 'restoreKey', component: RestoreKey },
+  { path: '/restore-key', name: constants.RESTORE_KEY, component: RestoreKey },
   { path: '/migrate', name: 'migrate', component: Migrate },
+  {
+    path: '/restore-missing-keys',
+    name: constants.RESTORE_MISSING_KEYS,
+    component: RestoreMissingKeys,
+  },
   {
     path: '/create-transaction/:type/:seq?',
     name: 'createTransaction',

@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+import { RESTORE_KEY } from '@renderer/router';
+
+import { useRouter } from 'vue-router';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import ImportExternalPrivateKeyModal from '@renderer/components/ImportExternalPrivateKeyModal.vue';
 import ImportEncrypted from '@renderer/components/KeyPair/ImportEncrypted';
+
+/* Composables */
+const router = useRouter();
 
 /* State */
 const importEncryptedRef = ref<InstanceType<typeof ImportEncrypted> | null>(null);
@@ -17,17 +24,19 @@ const handleImportExternal = (type: 'ED25519' | 'ECDSA') => {
 };
 
 const handleImportEncrypted = () => importEncryptedRef.value?.process();
+
+const handleImportMnemonic = () => router.push({ name: RESTORE_KEY });
 </script>
 <template>
   <div class="dropdown">
     <AppButton
       color="primary"
       data-testid="button-restore-dropdown"
-      class="w-100 min-w-unset d-flex align-items-center justify-content-center"
+      class="min-w-unset d-flex align-items-center justify-content-center"
       data-bs-toggle="dropdown"
       ><i class="bi bi-plus text-main me-2"></i> Import</AppButton
     >
-    <ul class="dropdown-menu w-100 mt-3">
+    <ul class="dropdown-menu mt-3">
       <li
         data-testid="link-import-ed25519-key"
         class="dropdown-item cursor-pointer"
@@ -48,6 +57,13 @@ const handleImportEncrypted = () => importEncryptedRef.value?.process();
         @click="handleImportEncrypted"
       >
         <span class="text-small">Encrypted keys</span>
+      </li>
+      <li
+        data-testid="link-import-mnemonic"
+        class="dropdown-item cursor-pointer mt-3"
+        @click="handleImportMnemonic"
+      >
+        <span class="text-small">Recovery Phrase</span>
       </li>
     </ul>
   </div>

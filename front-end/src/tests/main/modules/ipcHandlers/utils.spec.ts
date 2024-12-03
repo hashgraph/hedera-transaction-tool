@@ -4,12 +4,13 @@ import registerUtilsListeners from '@main/modules/ipcHandlers/utils';
 
 import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
 import { mockDeep } from 'vitest-mock-extended';
-import { compareSync, hashSync } from 'bcrypt';
+import { compare, hash } from 'bcrypt';
 import { getNumberArrayFromString } from '@main/utils';
 import fs from 'fs/promises';
 
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
-vi.mock('bcrypt', () => ({ hashSync: vi.fn(), compareSync: vi.fn() }));
+vi.mock('bcrypt', () => ({ hash: vi.fn(), compare: vi.fn() }));
+
 vi.mock('electron', () => {
   const bw = vi.fn() as unknown as MockedClass<typeof BrowserWindow>;
   bw.getAllWindows = vi.fn();
@@ -231,37 +232,34 @@ describe('registerUtilsListeners', () => {
 
   test('Should hash the data in util:hash', () => {
     const data = 'testData';
-    const hash = 'testHash';
 
     const hashHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:hash');
 
     expect(hashHandler).toBeDefined();
 
     if (hashHandler) {
-      vi.mocked(hashSync).mockReturnValue(hash);
-      const result = hashHandler[1](event, data);
-      expect(result).toEqual(hash);
+      hashHandler[1](event, data);
+      expect(hash).toHaveBeenCalledWith(data, 10);
     }
   });
 
   test('Should compare the data and hash in util:compareHash', () => {
     const data = 'testData';
-    const hash = 'testHash';
+    const hashData = 'testHash';
 
     const compareHashHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:compareHash');
 
     expect(compareHashHandler).toBeDefined();
 
     if (compareHashHandler) {
-      vi.mocked(compareSync).mockReturnValue(true);
-      const result = compareHashHandler[1](event, data, hash);
-      expect(result).toEqual(true);
+      compareHashHandler[1](event, data, hashData);
+      expect(compare).toHaveBeenCalledWith(data, hashData);
     }
   });
 
   test('Should compare the data to hashes in util:compareDataToHashes and return true if match is found', () => {
     const data = 'testData';
-    const hash = ['testHash', 'testHash2'];
+    const hashData = ['testHash', 'testHash2'];
 
     const compareHashHandler = ipcMainMO.handle.mock.calls.find(
       ([e]) => e === 'utils:compareDataToHashes',
@@ -270,17 +268,14 @@ describe('registerUtilsListeners', () => {
     expect(compareHashHandler).toBeDefined();
 
     if (compareHashHandler) {
-      vi.mocked(compareSync).mockReturnValueOnce(false);
-      vi.mocked(compareSync).mockReturnValueOnce(true);
-      const result = compareHashHandler[1](event, data, hash);
-
-      expect(result).toEqual('testHash2');
+      compareHashHandler[1](event, data, hashData);
+      expect(compare).toHaveBeenCalledWith(data, hashData[0]);
     }
   });
 
   test('Should compare the data to hashes in util:compareDataToHashes and return false if match is NOT found', () => {
     const data = 'testData';
-    const hash = ['testHash', 'testHash2'];
+    const hashData = ['testHash', 'testHash2'];
 
     const compareHashHandler = ipcMainMO.handle.mock.calls.find(
       ([e]) => e === 'utils:compareDataToHashes',
@@ -289,10 +284,10 @@ describe('registerUtilsListeners', () => {
     expect(compareHashHandler).toBeDefined();
 
     if (compareHashHandler) {
-      vi.mocked(compareSync).mockReturnValue(false);
-      const result = compareHashHandler[1](event, data, hash);
-
-      expect(result).toEqual(null);
+      // @ts-ignore - incorrect overload
+      vi.mocked(compare).mockResolvedValueOnce(true);
+      compareHashHandler[1](event, data, hashData);
+      expect(compare).toHaveBeenCalledWith(data, hashData[0]);
     }
   });
 

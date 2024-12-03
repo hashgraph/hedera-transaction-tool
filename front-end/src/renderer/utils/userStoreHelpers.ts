@@ -1,6 +1,7 @@
 import type { Ref } from 'vue';
 import type { Router } from 'vue-router';
 import type { KeyPair, Organization } from '@prisma/client';
+import type { IUserKey } from '@main/shared/interfaces';
 import type {
   ConnectedOrganization,
   LoggedInOrganization,
@@ -20,9 +21,13 @@ import { Mnemonic } from '@hashgraph/sdk';
 
 import { SELECTED_NETWORK, SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@main/shared/constants';
 
-import { getUserState, healthCheck } from '@renderer/services/organization';
+import { getUserState, healthCheck, uploadKey } from '@renderer/services/organization';
 import { getAccountIds, getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService';
-import { storeKeyPair as storeKey, getKeyPairs } from '@renderer/services/keyPairService';
+import {
+  storeKeyPair as storeKey,
+  getKeyPairs,
+  restorePrivateKey,
+} from '@renderer/services/keyPairService';
 import {
   shouldSignInOrganization,
   deleteOrganizationCredentials,
@@ -31,12 +36,13 @@ import {
 import { deleteOrganization, getOrganizations } from '@renderer/services/organizationsService';
 import {
   hashData,
-  compareDataToHashes,
   compareHash,
+  compareDataToHashes,
 } from '@renderer/services/electronUtilsService';
 import { getStoredClaim } from '@renderer/services/claimService';
 
 import { safeAwait } from './safeAwait';
+import { getErrorMessage, throwError } from '.';
 
 /* Flags */
 export function assertUserLoggedIn(user: PersonalUser | null): asserts user is LoggedInUser {
@@ -98,7 +104,7 @@ export const accountSetupRequired = (
   if (
     !organization.userKeys
       .filter(key => key.mnemonicHash)
-      .every(key => localKeys.some(k => k.public_key === key.publicKey))
+      .some(key => localKeys.some(k => k.public_key === key.publicKey))
   )
     return true;
 
@@ -121,7 +127,7 @@ export const accountSetupRequiredParts = (
   if (
     !organization.userKeys
       .filter(key => key.mnemonicHash)
-      .every(key => localKeys.some(k => k.public_key === key.publicKey))
+      .some(key => localKeys.some(k => k.public_key === key.publicKey))
   )
     parts.add('keys');
 
@@ -161,26 +167,17 @@ export const createRecoveryPhrase = async (words: string[]): Promise<RecoveryPhr
 
 export const storeKeyPair = async (
   keyPair: Prisma.KeyPairUncheckedCreateInput,
-  secretHashes: string[],
   mnemonic: string[] | string | null,
   password: string | null,
   encrypted: boolean,
 ) => {
-  if (secretHashes.length > 0 && mnemonic) {
+  if (mnemonic) {
     if (Array.isArray(mnemonic)) {
-      const matchedHash = await compareDataToHashes([...mnemonic].toString(), [...secretHashes]);
-      if (!matchedHash) {
-        throw Error('Different recovery phrase is used!');
-      }
-      keyPair.secret_hash = matchedHash;
+      keyPair.secret_hash = await hashData([...mnemonic].toString());
     } else {
-      if (!secretHashes.includes(mnemonic)) {
-        throw Error('Different recovery phrase is used!');
-      }
       keyPair.secret_hash = mnemonic;
     }
   }
-
   await storeKey(keyPair, password, encrypted);
 };
 
@@ -324,6 +321,30 @@ export const getKeysFromSecretHash = async (
   }
 
   return keysWithSecretHash;
+};
+
+export const getSecretHashFromLocalKeys = async (
+  recoveryPhrase: RecoveryPhrase,
+  keys: KeyPair[],
+) => {
+  const allHashes: string[] = [];
+  for (const key of keys) {
+    if (key.secret_hash && !allHashes.includes(key.secret_hash)) allHashes.push(key.secret_hash);
+  }
+  return await compareDataToHashes([...recoveryPhrase.words].toString(), allHashes);
+};
+
+export const getSecretHashFromUploadedKeys = async (
+  recoveryPhrase: RecoveryPhrase,
+  keys: IUserKey[],
+) => {
+  const allHashes: string[] = [];
+  for (const key of keys) {
+    if (key.mnemonicHash && !allHashes.includes(key.mnemonicHash)) {
+      allHashes.push(key.mnemonicHash);
+    }
+  }
+  return await compareDataToHashes([...recoveryPhrase.words].toString(), allHashes);
 };
 
 export const getNickname = (publicKey: string, keyPairs: KeyPair[]): string | undefined => {
@@ -581,6 +602,105 @@ export const toggleAuthTokenInSessionStorage = (
 export const getAuthTokenFromSessionStorage = (serverUrl: string): string | null => {
   const origin = new URL(serverUrl).origin;
   return sessionStorage.getItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`);
+};
+
+export const restoreOrganizationKeys = async (
+  organization: ConnectedOrganization,
+  recoveryPhrase: RecoveryPhrase | null,
+  personalUser: PersonalUser | null,
+  storedKeyPairs: KeyPair[],
+  currentPhraseOnly: boolean,
+) => {
+  assertIsLoggedInOrganization(organization);
+
+  if (!recoveryPhrase) {
+    throw new Error('Recovery phrase is required to restore keys');
+  }
+
+  const personalKeys = currentPhraseOnly ? [] : await getLocalKeyPairs(personalUser, null);
+
+  const failedRestoreMessages: string[] = [];
+  const keys: {
+    publicKey: string;
+    privateKey: string;
+    index: number;
+    mnemonicHash: string;
+    encrypted: boolean;
+  }[] = [];
+
+  const alreadyUploadedHash = await getSecretHashFromUploadedKeys(
+    recoveryPhrase,
+    organization.userKeys,
+  );
+
+  for (const organizationKey of organization.userKeys) {
+    const alreadyAddedForRestore = keys.some(k => k.publicKey === organizationKey.publicKey);
+    const keyIsStored = storedKeyPairs.some(kp => kp.public_key === organizationKey.publicKey);
+    const keyFromPersonalKeys = personalKeys.find(
+      pk => pk.public_key === organizationKey.publicKey,
+    );
+
+    try {
+      if (
+        !keyIsStored &&
+        !alreadyAddedForRestore &&
+        organizationKey.mnemonicHash &&
+        organizationKey.index != null
+      ) {
+        const key = {
+          publicKey: '',
+          privateKey: '',
+          index: organizationKey.index,
+          mnemonicHash: organizationKey.mnemonicHash,
+          encrypted: false,
+        };
+
+        if (organizationKey.mnemonicHash === alreadyUploadedHash) {
+          const privateKey = await restorePrivateKey(
+            recoveryPhrase.words,
+            '',
+            organizationKey.index,
+            'ED25519',
+          );
+          key.publicKey = privateKey.publicKey.toStringRaw();
+          key.privateKey = privateKey.toStringRaw();
+        } else if (!currentPhraseOnly && keyFromPersonalKeys) {
+          key.publicKey = keyFromPersonalKeys.public_key;
+          key.privateKey = keyFromPersonalKeys.private_key;
+          key.encrypted = true;
+        }
+
+        if (key.publicKey !== '') {
+          if (organizationKey.publicKey !== key.publicKey) {
+            throwError(
+              `Public key mismatch for organization key: expected ${organizationKey.publicKey}, received ${key.publicKey}`,
+            );
+          }
+
+          keys.push(key);
+        }
+      }
+    } catch (e) {
+      failedRestoreMessages.push(
+        getErrorMessage(e, `Failed to restore key at index ${organizationKey.index}`),
+      );
+    }
+  }
+
+  return { keys, failedRestoreMessages };
+};
+
+export const safeDuplicateUploadKey = async (
+  organization: ConnectedOrganization,
+  key: { publicKey: string; index?: number; mnemonicHash?: string },
+) => {
+  if (isLoggedInOrganization(organization)) {
+    const keyUploaded = organization.userKeys.some(k => k.publicKey === key.publicKey);
+
+    if (!keyUploaded) {
+      await uploadKey(organization.serverUrl, organization.userId, key);
+    }
+  }
 };
 
 const navigateToPreviousRoute = (router: Router) => {

@@ -53,6 +53,7 @@ import {
   isUserLoggedIn,
   computeSignatureKey,
   publicRequiredToSign,
+  getErrorMessage,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -263,17 +264,38 @@ const handleSign = async () => {
       network.mirrorNodeBaseURL,
     );
 
-    await uploadSignatureMap(
-      user.personal.id,
-      password,
-      user.selectedOrganization,
-      publicKeysRequired,
-      SDKTransaction.fromBytes(sdkTransaction.value.toBytes()),
-      orgTransaction.value.id,
-    );
-    toast.success('Transaction signed successfully');
-  } catch (error) {
-    toast.error(error instanceof Error ? error.message : 'Failed to sign transaction');
+    const restoredRequiredKeys = [];
+    const requiredNonRestoredKeys = [];
+
+    for (const requiredKey of publicKeysRequired) {
+      if (user.keyPairs.some(k => k.public_key === requiredKey)) {
+        restoredRequiredKeys.push(requiredKey);
+      } else {
+        requiredNonRestoredKeys.push(requiredKey);
+      }
+    }
+
+    if (requiredNonRestoredKeys.length > 0) {
+      toast.error(
+        `You need to restore the following public keys to fully sign the transaction: ${requiredNonRestoredKeys.join(
+          ', ',
+        )}`,
+      );
+    }
+
+    if (restoredRequiredKeys.length > 0) {
+      await uploadSignatureMap(
+        user.personal.id,
+        password,
+        user.selectedOrganization,
+        restoredRequiredKeys,
+        SDKTransaction.fromBytes(sdkTransaction.value.toBytes()),
+        orgTransaction.value.id,
+      );
+      toast.success('Transaction signed successfully');
+    }
+  } catch (error: unknown) {
+    toast.error(getErrorMessage(error, 'Failed to sign transaction'));
   } finally {
     isSigning.value = false;
   }

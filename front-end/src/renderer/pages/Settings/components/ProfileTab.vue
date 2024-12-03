@@ -14,7 +14,7 @@ import { updateOrganizationCredentials } from '@renderer/services/organizationCr
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import { getErrorMessage, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -88,8 +88,8 @@ const handleChangePassword = async () => {
     isSuccessModalShown.value = true;
 
     await user.refetchAccounts();
-  } catch (err: any) {
-    toast.error(err.message || 'Failed to change password');
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, 'Failed to change password'));
   } finally {
     isChangingPassword.value = false;
   }

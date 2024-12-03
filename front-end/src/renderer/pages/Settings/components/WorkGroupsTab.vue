@@ -5,11 +5,9 @@ import { onBeforeMount, ref } from 'vue';
 
 import { useToast } from 'vue-toast-notification';
 
-import {
-  getOrganizations,
-  // deleteOrganization,
-  addOrganization,
-} from '@renderer/services/organizationsService';
+import { getOrganizations, addOrganization } from '@renderer/services/organizationsService';
+
+import { getErrorMessage } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -37,28 +35,10 @@ const handleAddOrganization = async (e: Event) => {
 
       toast.success('Organization added successfully');
     } catch (err: any) {
-      let message = 'Failed to add organization';
-      if (err.message && typeof err.message === 'string') {
-        message = err.message;
-      }
-      toast.error(message);
+      toast.error(getErrorMessage(err, 'Failed to add organization'));
     }
   }
 };
-
-// const handleRemoveOrganization = async (id: string) => {
-//   try {
-//     await deleteOrganization(id);
-
-//     toast.success('Organization removed successfully');
-//   } catch (err: any) {
-//     let message = 'Failed to remove organization';
-//     if (err.message && typeof err.message === 'string') {
-//       message = err.message;
-//     }
-//     toast.error(message);
-//   }
-// };
 
 /* Hooks */
 onBeforeMount(async () => {
