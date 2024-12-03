@@ -267,7 +267,7 @@ watch(selectedRecoveryPhrase, newVal => {
             :active="currentTab === Tabs.RECOVERY_PHRASE"
             :color="'primary'"
             button-class="rounded-3"
-            class="overflow-auto text-nowrap"
+            class="text-nowrap"
             :style="{ maxWidth: '300px' }"
             toggler-icon
             color-on-active
@@ -288,82 +288,193 @@ watch(selectedRecoveryPhrase, newVal => {
       </div>
     </div>
 
-    <div class="fill-remaining mt-4">
-      <div class="overflow-auto">
-        <table class="table-custom">
-          <thead>
-            <tr>
-              <th
-                v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
-                class="w-10 text-end"
-              >
-                Index
-              </th>
-              <th>Nickname</th>
-              <th>Account ID</th>
-              <th>Key Type</th>
-              <th>Public Key</th>
-              <th>Private Key</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody class="text-secondary">
-            <template
-              v-for="(keyPair, index) in user.keyPairs.filter(item => {
-                switch (currentTab) {
-                  case Tabs.ALL:
-                    return true;
-                  case Tabs.RECOVERY_PHRASE:
-                    return item.secret_hash !== null && item.secret_hash === selectedRecoveryPhrase;
-                  case Tabs.PRIVATE_KEY:
-                    return item.secret_hash === null;
-                }
-              })"
-              :key="keyPair.public_key"
+    <div class="fill-remaining overflow-x-auto pe-4 pb-2 mt-4">
+      <table class="table-custom">
+        <thead>
+          <tr>
+            <th
+              v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
+              class="w-10 text-end"
             >
-              <tr>
+              Index
+            </th>
+            <th>Nickname</th>
+            <th>Account ID</th>
+            <th>Key Type</th>
+            <th>Public Key</th>
+            <th>Private Key</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody class="text-secondary">
+          <template
+            v-for="(keyPair, index) in user.keyPairs.filter(item => {
+              switch (currentTab) {
+                case Tabs.ALL:
+                  return true;
+                case Tabs.RECOVERY_PHRASE:
+                  return item.secret_hash !== null && item.secret_hash === selectedRecoveryPhrase;
+                case Tabs.PRIVATE_KEY:
+                  return item.secret_hash === null;
+              }
+            })"
+            :key="keyPair.public_key"
+          >
+            <tr>
+              <td
+                :data-testid="`cell-index-${index}`"
+                v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
+                class="text-end"
+              >
+                {{ keyPair.index >= 0 ? keyPair.index : 'N/A' }}
+              </td>
+              <td :data-testid="`cell-nickname-${index}`">
+                <span
+                  class="bi bi-pencil-square text-main text-primary me-3 cursor-pointer"
+                  data-testid="button-change-key-nickname"
+                  @click="handleStartNicknameEdit(keyPair.id)"
+                ></span>
+                {{ keyPair.nickname || 'N/A' }}
+              </td>
+              <td :data-testid="`cell-account-${index}`">
+                <span
+                  v-if="
+                    user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.public_key)
+                      ?.accounts[0]?.account
+                  "
+                  :class="{
+                    'text-mainnet': network.network === CommonNetwork.MAINNET,
+                    'text-testnet': network.network === CommonNetwork.TESTNET,
+                    'text-previewnet': network.network === CommonNetwork.PREVIEWNET,
+                    'text-info': ![
+                      CommonNetwork.MAINNET,
+                      CommonNetwork.TESTNET,
+                      CommonNetwork.PREVIEWNET,
+                    ].includes(network.network),
+                  }"
+                >
+                  {{
+                    user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.public_key)
+                      ?.accounts[0]?.account
+                  }}
+                </span>
+                <span v-else>N/A</span>
+              </td>
+              <td :data-testid="`cell-key-type-${index}`">
+                {{
+                  PublicKey.fromString(keyPair.public_key)._key._type === 'secp256k1'
+                    ? 'ECDSA'
+                    : 'ED25519'
+                }}
+              </td>
+              <td>
+                <p class="d-flex text-nowrap">
+                  <span
+                    :data-testid="`span-public-key-${index}`"
+                    class="d-inline-block text-truncate"
+                    style="width: 12vw"
+                    >{{ keyPair.public_key }}</span
+                  >
+                  <span
+                    :data-testid="`span-copy-public-key-${index}`"
+                    class="bi bi-copy cursor-pointer ms-3"
+                    @click="handleCopy(keyPair.public_key, 'Public Key copied successfully')"
+                  ></span>
+                </p>
+              </td>
+              <td>
+                <p class="d-flex text-nowrap">
+                  <template v-if="decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)">
+                    <span
+                      :data-testid="`span-private-key-${index}`"
+                      class="d-inline-block text-truncate"
+                      style="width: 12vw"
+                      >{{
+                        decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)?.decrypted
+                      }}</span
+                    >
+                    <span
+                      :data-testid="`span-copy-private-key-${index}`"
+                      class="bi bi-copy cursor-pointer ms-3"
+                      @click="
+                        handleCopy(
+                          decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)
+                            ?.decrypted || '',
+                          'Private Key copied successfully',
+                        )
+                      "
+                    ></span>
+                    <span
+                      :data-testid="`span-hide-private-key-${index}`"
+                      class="bi bi-eye-slash cursor-pointer ms-3"
+                      @click="handleHideDecryptedKey(keyPair.public_key)"
+                    ></span>
+                  </template>
+                  <template v-else>
+                    {{ '*'.repeat(16) }}
+                    <span
+                      :data-testid="`span-show-modal-${index}`"
+                      class="bi bi-eye cursor-pointer ms-3"
+                      @click="handleShowPrivateKey(keyPair.public_key)"
+                    ></span>
+                  </template>
+                </p>
+              </td>
+              <td class="text-center">
+                <AppButton
+                  size="small"
+                  color="danger"
+                  :data-testid="`button-delete-key-${index}`"
+                  @click="handleDeleteModal(keyPair.id)"
+                  class="min-w-unset"
+                  ><span class="bi bi-trash"></span
+                ></AppButton>
+              </td>
+            </tr>
+          </template>
+          <template v-if="isLoggedInOrganization(user.selectedOrganization)">
+            <template v-for="(keyPair, index) in missingKeys" :key="keyPair.publicKey">
+              <tr
+                v-if="
+                  currentTab === Tabs.ALL ||
+                  (currentTab === Tabs.RECOVERY_PHRASE &&
+                    keyPair.mnemonicHash &&
+                    keyPair.mnemonicHash === selectedRecoveryPhrase) ||
+                  (currentTab === Tabs.PRIVATE_KEY && !keyPair.mnemonicHash)
+                "
+                class="disabled-w-action position-relative"
+              >
                 <td
-                  :data-testid="`cell-index-${index}`"
                   v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
+                  :data-testid="`cell-index-missing-${index}`"
                   class="text-end"
                 >
-                  {{ keyPair.index >= 0 ? keyPair.index : 'N/A' }}
+                  {{ keyPair.index != null && keyPair.index >= 0 ? keyPair.index : 'N/A' }}
                 </td>
-                <td :data-testid="`cell-nickname-${index}`">
-                  <span
-                    class="bi bi-pencil-square text-main text-primary me-3 cursor-pointer"
-                    data-testid="button-change-key-nickname"
-                    @click="handleStartNicknameEdit(keyPair.id)"
-                  ></span>
-                  {{ keyPair.nickname || 'N/A' }}
-                </td>
-                <td :data-testid="`cell-account-${index}`">
+                <td :data-testid="`cell-nickname-missing-${index}`">N/A</td>
+                <td :data-testid="`cell-account-missing-${index}`">
                   <span
                     v-if="
-                      user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.public_key)
+                      user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.publicKey)
                         ?.accounts[0]?.account
                     "
                     :class="{
-                      'text-mainnet': network.network === CommonNetwork.MAINNET,
-                      'text-testnet': network.network === CommonNetwork.TESTNET,
-                      'text-previewnet': network.network === CommonNetwork.PREVIEWNET,
-                      'text-info': ![
-                        CommonNetwork.MAINNET,
-                        CommonNetwork.TESTNET,
-                        CommonNetwork.PREVIEWNET,
-                      ].includes(network.network),
+                      'text-mainnet': network.network === 'mainnet',
+                      'text-testnet': network.network === 'testnet',
+                      'text-previewnet': network.network === 'previewnet',
+                      'text-info': network.network === 'local-node',
                     }"
                   >
                     {{
-                      user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.public_key)
+                      user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.publicKey)
                         ?.accounts[0]?.account
                     }}
                   </span>
                   <span v-else>N/A</span>
                 </td>
-                <td :data-testid="`cell-key-type-${index}`">
+                <td :data-testid="`cell-key-type-missing-${index}`">
                   {{
-                    PublicKey.fromString(keyPair.public_key)._key._type === 'secp256k1'
+                    PublicKey.fromString(keyPair.publicKey)._key._type === 'secp256k1'
                       ? 'ECDSA'
                       : 'ED25519'
                   }}
@@ -371,150 +482,36 @@ watch(selectedRecoveryPhrase, newVal => {
                 <td>
                   <p class="d-flex text-nowrap">
                     <span
-                      :data-testid="`span-public-key-${index}`"
+                      :data-testid="`span-public-key-missing-${index}`"
                       class="d-inline-block text-truncate"
                       style="width: 12vw"
-                      >{{ keyPair.public_key }}</span
+                      >{{ keyPair.publicKey }}</span
                     >
                     <span
-                      :data-testid="`span-copy-public-key-${index}`"
+                      :data-testid="`span-copy-public-key-missing-${index}`"
                       class="bi bi-copy cursor-pointer ms-3"
-                      @click="handleCopy(keyPair.public_key, 'Public Key copied successfully')"
+                      @click="handleCopy(keyPair.publicKey, 'Public Key copied successfully')"
                     ></span>
                   </p>
                 </td>
                 <td>
-                  <p class="d-flex text-nowrap">
-                    <template v-if="decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)">
-                      <span
-                        :data-testid="`span-private-key-${index}`"
-                        class="d-inline-block text-truncate"
-                        style="width: 12vw"
-                        >{{
-                          decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)?.decrypted
-                        }}</span
-                      >
-                      <span
-                        :data-testid="`span-copy-private-key-${index}`"
-                        class="bi bi-copy cursor-pointer ms-3"
-                        @click="
-                          handleCopy(
-                            decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)
-                              ?.decrypted || '',
-                            'Private Key copied successfully',
-                          )
-                        "
-                      ></span>
-                      <span
-                        :data-testid="`span-hide-private-key-${index}`"
-                        class="bi bi-eye-slash cursor-pointer ms-3"
-                        @click="handleHideDecryptedKey(keyPair.public_key)"
-                      ></span>
-                    </template>
-                    <template v-else>
-                      {{ '*'.repeat(16) }}
-                      <span
-                        :data-testid="`span-show-modal-${index}`"
-                        class="bi bi-eye cursor-pointer ms-3"
-                        @click="handleShowPrivateKey(keyPair.public_key)"
-                      ></span>
-                    </template>
-                  </p>
+                  <p class="d-flex text-nowrap">N/A</p>
                 </td>
                 <td class="text-center">
                   <AppButton
                     size="small"
                     color="danger"
                     :data-testid="`button-delete-key-${index}`"
-                    @click="handleDeleteModal(keyPair.id)"
+                    @click="handleMissingKeyDeleteModal(keyPair.id)"
                     class="min-w-unset"
-                    ><span class="bi bi-trash"></span
-                  ></AppButton>
+                    >Delete missing key</AppButton
+                  >
                 </td>
               </tr>
             </template>
-            <template v-if="isLoggedInOrganization(user.selectedOrganization)">
-              <template v-for="(keyPair, index) in missingKeys" :key="keyPair.publicKey">
-                <tr
-                  v-if="
-                    currentTab === Tabs.ALL ||
-                    (currentTab === Tabs.RECOVERY_PHRASE &&
-                      keyPair.mnemonicHash &&
-                      keyPair.mnemonicHash === selectedRecoveryPhrase) ||
-                    (currentTab === Tabs.PRIVATE_KEY && !keyPair.mnemonicHash)
-                  "
-                  class="disabled-w-action position-relative"
-                >
-                  <td
-                    v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
-                    :data-testid="`cell-index-missing-${index}`"
-                    class="text-end"
-                  >
-                    {{ keyPair.index != null && keyPair.index >= 0 ? keyPair.index : 'N/A' }}
-                  </td>
-                  <td :data-testid="`cell-nickname-missing-${index}`">N/A</td>
-                  <td :data-testid="`cell-account-missing-${index}`">
-                    <span
-                      v-if="
-                        user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.publicKey)
-                          ?.accounts[0]?.account
-                      "
-                      :class="{
-                        'text-mainnet': network.network === 'mainnet',
-                        'text-testnet': network.network === 'testnet',
-                        'text-previewnet': network.network === 'previewnet',
-                        'text-info': network.network === 'local-node',
-                      }"
-                    >
-                      {{
-                        user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.publicKey)
-                          ?.accounts[0]?.account
-                      }}
-                    </span>
-                    <span v-else>N/A</span>
-                  </td>
-                  <td :data-testid="`cell-key-type-missing-${index}`">
-                    {{
-                      PublicKey.fromString(keyPair.publicKey)._key._type === 'secp256k1'
-                        ? 'ECDSA'
-                        : 'ED25519'
-                    }}
-                  </td>
-                  <td>
-                    <p class="d-flex text-nowrap">
-                      <span
-                        :data-testid="`span-public-key-missing-${index}`"
-                        class="d-inline-block text-truncate"
-                        style="width: 12vw"
-                        >{{ keyPair.publicKey }}</span
-                      >
-                      <span
-                        :data-testid="`span-copy-public-key-missing-${index}`"
-                        class="bi bi-copy cursor-pointer ms-3"
-                        @click="handleCopy(keyPair.publicKey, 'Public Key copied successfully')"
-                      ></span>
-                    </p>
-                  </td>
-                  <td>
-                    <p class="d-flex text-nowrap">N/A</p>
-                  </td>
-                  <td class="text-center">
-                    <AppButton
-                      size="small"
-                      color="danger"
-                      :data-testid="`button-delete-key-${index}`"
-                      @click="handleMissingKeyDeleteModal(keyPair.id)"
-                      class="min-w-unset"
-                      >Delete missing key</AppButton
-                    >
-                  </td>
-                </tr>
-              </template>
-            </template>
-          </tbody>
-        </table>
-      </div>
-
+          </template>
+        </tbody>
+      </table>
       <AppModal v-model:show="isDeleteModalShown" class="common-modal">
         <div class="p-5">
           <div>
