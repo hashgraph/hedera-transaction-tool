@@ -1,0 +1,158 @@
+const BasePage = require('./BasePage');
+const TransactionPage = require('./TransactionPage');
+
+class GroupPage extends BasePage {
+  constructor(window) {
+    super(window);
+    this.window = window;
+    this.transactionPage = new TransactionPage(window);
+  }
+
+  /* Selectors */
+
+  // Buttons
+  saveGroupButtonSelector = 'button-save-group';
+  signAndExecuteButtonSelector = 'button-sign-submit';
+  addTransactionButtonSelector = 'button-add-transaction';
+  transactionGroupButtonSelector = 'span-group-transaction';
+  deleteGroupButtonSelector = 'button-delete-group-modal';
+  continueEditingButtonSelector = 'button-continue-editing';
+  addToGroupButtonSelector = 'button-add-to-group';
+  discardModalDraftButtonSelector = 'button-discard-group-modal';
+  discardDraftTransactionModalButtonSelector = 'button-discard-draft-for-group-modal';
+
+  // Messages
+  toastMessageSelector = '.v-toast__text';
+
+  // Inputs
+  descriptionInputSelector = 'input-transaction-group-description';
+
+  //Indexes
+  transactionTypeIndexSelector = 'span-transaction-type-';
+  transactionTimestampIndexSelector = 'span-transaction-timestamp-';
+  transactionDeleteButtonIndexSelector = 'button-transaction-delete-';
+  transactionDuplicateButtonIndexSelector = 'button-transaction-duplicate-';
+  transactionEditButtonIndexSelector = 'button-transaction-edit-';
+
+  // Method to close the group modal if it appears
+  async deleteGroupModal() {
+    // Wait for the button to be visible with a timeout
+    const modalButton = this.window.getByTestId(this.deleteGroupButtonSelector);
+    await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(e => {});
+
+    // If the modal is visible, then click the button to close the modal
+    if (await modalButton.isVisible()) {
+      await modalButton.click();
+    }
+  }
+
+  // Method to close the 'Save Group Draft' modal if it appears
+  async closeGroupDraftModal() {
+    // Wait for the button to be visible with a timeout
+    const modalButton = this.window.getByTestId(this.discardModalDraftButtonSelector);
+    await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(e => {});
+
+    // If the modal is visible, then click the button to close the modal
+    if (await modalButton.isVisible()) {
+      await modalButton.click();
+    }
+  }
+
+  // Method to close the 'Save Draft for Group' modal if it appears
+  async closeDraftTransactionModal() {
+    // Wait for the button to be visible with a timeout
+    const modalButton = this.window.getByTestId(this.discardDraftTransactionModalButtonSelector);
+    await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(e => {});
+
+    // If the modal is visible, then click the button to close the modal
+    if (await modalButton.isVisible()) {
+      await modalButton.click();
+    }
+  }
+
+  async clickOnSaveGroupButton() {
+    await this.click(this.saveGroupButtonSelector);
+  }
+
+  async clickOnSignAndExecuteButton() {
+    await this.click(this.signAndExecuteButtonSelector);
+  }
+
+  async clickOnAddTransactionButton() {
+    await this.click(this.addTransactionButtonSelector);
+  }
+
+  async fillDescription(description) {
+    await this.fill(this.descriptionInputSelector, description);
+  }
+
+  async verifyGroupElements() {
+    const checks = await Promise.all([
+      this.isElementVisible(this.saveGroupButtonSelector),
+      this.isElementVisible(this.signAndExecuteButtonSelector),
+      this.isElementVisible(this.addTransactionButtonSelector),
+      this.isElementVisible(this.descriptionInputSelector),
+    ]);
+
+    return checks.every(isTrue => isTrue);
+  }
+
+  async navigateToGroupTransaction() {
+    await this.click(this.transactionPage.createNewTransactionButtonSelector);
+    await this.click(this.transactionGroupButtonSelector);
+  }
+
+  async clickOnDeleteGroupButton() {
+    await this.click(this.deleteGroupButtonSelector);
+  }
+
+  async clickOnContinueEditingButton() {
+    await this.click(this.continueEditingButtonSelector);
+  }
+
+  async isDeleteModalVisible() {
+    return this.isElementVisible(this.deleteGroupButtonSelector);
+  }
+
+  async getToastMessage() {
+    return await this.getText(this.toastMessageSelector, null, 5000);
+  }
+
+  async clickAddToGroupButton() {
+    await this.click(this.addToGroupButtonSelector);
+  }
+
+  async getTransactionType(index) {
+    return await this.getText(this.transactionTypeIndexSelector + index);
+  }
+
+
+  async getTransactionTimestamp(index) {
+    return await this.getText(this.transactionTimestampIndexSelector + index);
+  }
+
+  async clickTransactionDeleteButton(index) {
+    await this.click(this.transactionDeleteButtonIndexSelector + index);
+  }
+
+  async clickTransactionDuplicateButton(index) {
+    await this.click(this.transactionDuplicateButtonIndexSelector + index);
+  }
+
+  async clickTransactionEditButton(index) {
+    await this.click(this.transactionEditButtonIndexSelector + index);
+  }
+
+  async isTransactionVisible(index) {
+    return this.isElementVisible(this.transactionTypeIndexSelector + index);
+  }
+
+  async addSingleTransactionToGroup() {
+    await this.fillDescription('test');
+    await this.clickOnAddTransactionButton();
+    await this.transactionPage.clickOnCreateAccountTransaction();
+    await this.clickAddToGroupButton();
+  }
+}
+
+module.exports = GroupPage;

@@ -95,7 +95,7 @@ async function resetDbState() {
     'HederaFile',
     'KeyPair',
     'OrganizationCredentials',
-    '"Transaction"',
+    'Transaction',
     'TransactionDraft',
   ];
 
