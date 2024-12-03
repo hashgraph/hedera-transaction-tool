@@ -16,7 +16,6 @@ const user = useUserStore();
 
 /* State */
 const words = ref<string[]>(getDefaultWords());
-
 const isMnemonicValid = ref(false);
 
 /* Handlers */
@@ -65,10 +64,14 @@ watch(words, async newWords => {
   }
 });
 
-/* Exposes */
-defineExpose({
-  clearWords: handleClearWords,
-});
+watch(
+  () => user.recoveryPhrase,
+  async newRecoveryPhrase => {
+    if (!newRecoveryPhrase) {
+      handleClearWords();
+    }
+  },
+);
 </script>
 <template>
   <div>

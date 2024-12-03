@@ -40,7 +40,6 @@ const index = ref(0);
 const nickname = ref('');
 
 const inputIndexInvalid = ref(false);
-const importRef = ref<InstanceType<typeof Import> | null>(null);
 
 const restoredKey = ref<{ privateKey: string; publicKey: string } | null>(null);
 
@@ -49,6 +48,8 @@ const handleFinish = (e: Event) => {
   e.preventDefault();
   step.value++;
 };
+
+const handleClearWords = () => (user.recoveryPhrase = null);
 
 const handleRestoreKey = async (e: Event) => {
   e.preventDefault();
@@ -257,14 +258,10 @@ watch(step, async newStep => {
         <form v-else-if="step === 1" @submit="handleFinish" class="fill-remaining">
           <h1 class="text-display text-bold text-center">Enter your recovery phrase</h1>
           <div class="mt-8">
-            <Import
-              ref="importRef"
-              :handle-continue="handleFinish"
-              :secret-hashes="user.secretHashes"
-            />
+            <Import />
             <div class="row justify-content-between mt-6">
               <div class="col-4 d-grid">
-                <AppButton type="button" color="secondary" @click="importRef?.clearWords()"
+                <AppButton type="button" color="secondary" @click="handleClearWords"
                   >Clear</AppButton
                 >
               </div>

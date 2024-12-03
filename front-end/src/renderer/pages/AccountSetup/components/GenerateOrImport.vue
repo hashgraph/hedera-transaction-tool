@@ -29,7 +29,6 @@ const props = defineProps<{
 const emit = defineEmits(['update:selectedPersonalKeyPair']);
 
 /* Stores */
-const importRef = ref<InstanceType<typeof Import> | null>(null);
 const user = useUserStore();
 
 /* Constants */
@@ -50,6 +49,8 @@ const differentSecretHashModalShown = ref(false);
 const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title);
 
 /* Handlers */
+const handleClearWords = () => (user.recoveryPhrase = null);
+
 const handleNextWithValidation = async () => {
   if (!user.recoveryPhrase) {
     throw new Error('Recovery phrase is not set');
@@ -123,9 +124,9 @@ watch(activeTabTitle, newTitle => {
         <Generate :handle-next="handleNext" />
       </template>
       <template v-else-if="activeTabTitle === importExistingTitle">
-        <Import ref="importRef" :secret-hashes="user.secretHashes" />
+        <Import />
         <div class="flex-between-centered mt-6">
-          <AppButton data-testid="button-clear" color="borderless" @click="importRef?.clearWords()"
+          <AppButton data-testid="button-clear" color="borderless" @click="handleClearWords"
             >Clear</AppButton
           >
           <AppButton

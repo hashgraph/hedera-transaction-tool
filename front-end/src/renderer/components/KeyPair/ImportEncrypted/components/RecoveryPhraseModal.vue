@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-
 import useUserStore from '@renderer/stores/storeUser';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -23,9 +21,6 @@ const emit = defineEmits<{
 /* Stores */
 const user = useUserStore();
 
-/* State */
-const importRef = ref<InstanceType<typeof Import> | null>(null);
-
 /* Handlers */
 const handleSubmit = (event: Event) => {
   event.preventDefault();
@@ -45,9 +40,8 @@ const handleClose = (show: boolean) => {
 };
 
 /* Handlers */
-
 const handleClearWords = () => {
-  importRef.value?.clearWords();
+  user.recoveryPhrase = null;
 };
 </script>
 <template>
@@ -72,7 +66,7 @@ const handleClearWords = () => {
 
         <p class="text-center">You may skip this step and all keys will be marked as external</p>
 
-        <Import ref="importRef" :secret-hashes="user.secretHashes" class="mt-4" />
+        <Import class="mt-4" />
 
         <hr class="separator my-5" />
 
