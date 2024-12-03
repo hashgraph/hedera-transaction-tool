@@ -92,13 +92,15 @@ const addKeyToRestored = async (index: number, mnemonicHash: string, veirificati
       key.encrypted = true;
     }
 
-    if (veirificationKey && veirificationKey !== key.publicKey) {
-      throw new Error(
-        'Verification key does not match the restored key, ensure that the key type is ED25519',
-      );
-    }
+    if (key.publicKey !== '') {
+      if (veirificationKey && veirificationKey !== key.publicKey) {
+        throw new Error(
+          'Verification key does not match the restored key, ensure that the key type is ED25519',
+        );
+      }
 
-    keys.value.push(key);
+      keys.value.push(key);
+    }
   } catch (e) {
     toast.error(getErrorMessage(e, `Restoring key at index: ${index} failed`));
   }

@@ -670,13 +670,15 @@ export const restoreOrganizationKeys = async (
           key.encrypted = true;
         }
 
-        if (organizationKey.publicKey !== key.publicKey) {
-          throwError(
-            `Public key mismatch for organization key ${organizationKey.publicKey}, expected ${organizationKey.publicKey}, received ${key.publicKey}`,
-          );
-        }
+        if (key.publicKey !== '') {
+          if (organizationKey.publicKey !== key.publicKey) {
+            throwError(
+              `Public key mismatch for organization key: expected ${organizationKey.publicKey}, received ${key.publicKey}`,
+            );
+          }
 
-        keys.push(key);
+          keys.push(key);
+        }
       }
     } catch (e) {
       failedRestoreMessages.push(

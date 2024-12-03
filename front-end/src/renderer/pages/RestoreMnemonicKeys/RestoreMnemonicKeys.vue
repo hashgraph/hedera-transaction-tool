@@ -31,27 +31,34 @@ const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODA
 
 /* State */
 const step = ref(0);
+const loadingText = ref<string | null>(null);
 
 /* Handlers */
 const handleImportRecoveryPhrase = async () => {
-  assertIsLoggedInOrganization(user.selectedOrganization);
-  const restoredKeys = await restoreOrganizationKeys(
-    user.selectedOrganization,
-    user.recoveryPhrase,
-    user.personal,
-    user.keyPairs,
-    true,
-  );
+  try {
+    loadingText.value = 'Restoring keys...';
+    assertIsLoggedInOrganization(user.selectedOrganization);
+    const restoredKeys = await restoreOrganizationKeys(
+      user.selectedOrganization,
+      user.recoveryPhrase,
+      user.personal,
+      user.keyPairs,
+      true,
+    );
 
-  for (const error of restoredKeys.failedRestoreMessages) {
-    toast.error(error, { position: 'bottom-right' });
+    for (const error of restoredKeys.failedRestoreMessages) {
+      toast.error(error, { position: 'bottom-right' });
+    }
+
+    if (restoredKeys.keys.length === 0) {
+      throw new Error('No keys to restore');
+    }
+
+    loadingText.value = 'Storing keys...';
+    await storeKeys(restoredKeys.keys);
+  } finally {
+    loadingText.value = null;
   }
-
-  if (restoredKeys.keys.length === 0) {
-    throw new Error('No keys to restore');
-  }
-
-  await storeKeys(restoredKeys.keys);
 };
 
 const handleClearWords = () => (user.recoveryPhrase = null);
@@ -178,6 +185,8 @@ onBeforeUnmount(() => {
                   color="primary"
                   data-testid="button-continue-phrase"
                   :disabled="!user.recoveryPhrase"
+                  :loading="Boolean(loadingText)"
+                  :loading-text="loadingText || ''"
                   type="submit"
                   >Continue</AppButton
                 >
