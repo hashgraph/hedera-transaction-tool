@@ -324,7 +324,7 @@ export const getSecretHashFromUploadedKeys = async (
 ) => {
   const allHashes: string[] = [];
   for (const key of keys) {
-    if (key.mnemonicHash) {
+    if (key.mnemonicHash && !allHashes.includes(key.mnemonicHash)) {
       allHashes.push(key.mnemonicHash);
     }
   }
