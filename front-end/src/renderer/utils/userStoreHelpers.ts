@@ -323,6 +323,17 @@ export const getKeysFromSecretHash = async (
   return keysWithSecretHash;
 };
 
+export const getSecretHashFromLocalKeys = async (
+  recoveryPhrase: RecoveryPhrase,
+  keys: KeyPair[],
+) => {
+  const allHashes: string[] = [];
+  for (const key of keys) {
+    if (key.secret_hash && !allHashes.includes(key.secret_hash)) allHashes.push(key.secret_hash);
+  }
+  return await compareDataToHashes([...recoveryPhrase.words].toString(), allHashes);
+};
+
 export const getSecretHashFromUploadedKeys = async (
   recoveryPhrase: RecoveryPhrase,
   keys: IUserKey[],

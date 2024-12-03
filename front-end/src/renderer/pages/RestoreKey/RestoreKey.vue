@@ -14,6 +14,7 @@ import { restorePrivateKey } from '@renderer/services/keyPairService';
 
 import {
   getErrorMessage,
+  getSecretHashFromLocalKeys,
   getSecretHashFromUploadedKeys,
   isLoggedInOrganization,
   isUserLoggedIn,
@@ -84,6 +85,14 @@ const handleRestoreKey = async () => {
       );
       if (alreadyUploadedHash) {
         restoredKey.value.mnemonicHash = alreadyUploadedHash;
+      }
+    } else {
+      const alreadyStoredHash = await getSecretHashFromLocalKeys(
+        user.recoveryPhrase,
+        user.keyPairs,
+      );
+      if (alreadyStoredHash) {
+        restoredKey.value.mnemonicHash = alreadyStoredHash;
       }
     }
 
