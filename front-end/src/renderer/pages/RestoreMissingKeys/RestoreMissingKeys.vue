@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import { inject, onBeforeUnmount, ref } from 'vue';
+import { inject, onMounted, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -124,7 +124,7 @@ const storeKeys = async (
 };
 
 /* Hooks */
-onBeforeUnmount(() => {
+onMounted(() => {
   user.recoveryPhrase = null;
 });
 </script>
