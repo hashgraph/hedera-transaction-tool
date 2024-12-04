@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
-
-import { computed, inject, ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { hashData } from '@renderer/services/electronUtilsService';
 
-import { getKeysFromSecretHash, isUserLoggedIn } from '@renderer/utils';
-
-import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
+import { getKeysFromSecretHash } from '@renderer/utils';
 
 import DecryptKeyModal from '@renderer/components/KeyPair/ImportEncrypted/components/DecryptKeyModal.vue';
 
@@ -30,9 +27,7 @@ const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
-
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
 const isDecryptKeyModalShown = ref(false);
@@ -74,17 +69,10 @@ async function process(keyPaths: string[], words: string[] | null) {
   }
 
   /* Verify user is logged in with password */
-  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
-  const personalPassword = user.getPassword();
-  if (!personalPassword && !user.personal.useKeychain) {
-    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-    userPasswordModalRef.value?.open(
-      'Enter personal password',
-      'Private key/s will be encrypted with this password',
-      nextKey,
-    );
-    return;
-  }
+  const personalPassword = getPassword(nextKey, {
+    subHeading: 'Private key/s will be encrypted with this password',
+  });
+  if (passwordModalOpened(personalPassword)) return;
 
   await nextKey();
 }
