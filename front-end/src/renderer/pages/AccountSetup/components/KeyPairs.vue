@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import type { KeyPair } from '@prisma/client';
-import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 import type { ConnectedOrganization } from '@renderer/types';
 
-import { inject, onBeforeMount, onUpdated, ref } from 'vue';
+import { onBeforeMount, onUpdated, ref } from 'vue';
 
 import { Prisma } from '@prisma/client';
 
@@ -12,16 +11,15 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { restorePrivateKey } from '@renderer/services/keyPairService';
 
-import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
-
 import {
+  assertUserLoggedIn,
   getErrorMessage,
   getWidthOfElementWithText,
   isLoggedInOrganization,
-  isUserLoggedIn,
   restoreOrganizationKeys,
   safeAwait,
   safeDuplicateUploadKey,
@@ -48,9 +46,7 @@ const user = useUserStore();
 const toast = useToast();
 const router = useRouter();
 const createTooltips = useCreateTooltips();
-
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
 const nickname = ref(props.selectedPersonalKeyPair?.nickname || '');
@@ -168,17 +164,11 @@ const setPrivateKeyStarCount = () => {
 const handleSave = async () => {
   if (keys.value.length === 0) throw Error('No key pairs to save');
 
-  if (!isUserLoggedIn(user.personal)) throw Error('User is not logged in');
-  const personalPassword = user.getPassword();
-  if (!personalPassword && !user.personal.useKeychain) {
-    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-    userPasswordModalRef.value?.open(
-      'Enter personal password',
-      'Private key/s will be encrypted with this password',
-      handleSave,
-    );
-    return;
-  }
+  assertUserLoggedIn(user.personal);
+  const personalPassword = getPassword(handleSave, {
+    subHeading: 'Private key/s will be encrypted with this password',
+  });
+  if (passwordModalOpened(personalPassword)) return;
 
   let storedCount = 0;
   for (let i = 0; i < keys.value.length; i++) {
