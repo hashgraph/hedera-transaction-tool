@@ -22,8 +22,8 @@ export default function usePersonalPassword() {
   function getPassword(
     callback: (password: string) => void,
     modalOptions?: {
-      heading?: string;
-      subHeading?: string;
+      heading?: string | null;
+      subHeading?: string | null;
     },
   ): PersonalPasswordResult {
     assertUserLoggedIn(user.personal);
