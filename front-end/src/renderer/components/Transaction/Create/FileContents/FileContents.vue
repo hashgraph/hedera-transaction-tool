@@ -202,8 +202,9 @@ const columnClass = 'col-4 col-xxxl-3';
         <div class="row align-items-end">
           <div class="form-group" :class="[columnClass]">
             <label class="form-label">Payer ID <span class="text-danger">*</span></label>
-            <label v-if="payerData.isValid.value" class="d-block form-label text-secondary"
-              >Balance: {{ payerData.accountInfo.value?.balance || 0 }}</label
+            <label class="d-block form-label text-secondary"
+              >Balance:
+              {{ payerData.isValid.value ? payerData.accountInfo.value?.balance || 0 : '-' }}</label
             >
             <AccountIdsSelect
               v-model:account-id="payerData.accountId.value"
