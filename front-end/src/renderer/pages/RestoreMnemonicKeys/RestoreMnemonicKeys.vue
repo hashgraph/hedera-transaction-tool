@@ -200,7 +200,7 @@ onBeforeUnmount(() => {
           @submit.prevent="handleImportRecoveryPhrase"
           class="fill-remaining"
         >
-          <h1 class="text-display text-bold text-center">Enter your recovery phrase</h1>
+          <h1 class="text-display text-bold text-center">Enter your Recovery Phrase</h1>
           <div class="mt-8">
             <Import />
             <div class="row justify-content-between mt-6">
