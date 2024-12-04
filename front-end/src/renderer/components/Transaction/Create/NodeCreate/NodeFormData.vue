@@ -27,9 +27,9 @@ const hash = ref('');
 const grpcCertificate = ref('');
 const gossipCaCertificate = ref('');
 const gossipInput = useTemplateRef('gossipInput');
-const grpcInput = ref<HTMLInputElement | null>(null);
-const gossipFile = ref<HTMLInputElement | null>(null);
-const grpcFile = ref<HTMLInputElement | null>(null);
+const grpcInput = useTemplateRef('grpcInput');
+const gossipFile = useTemplateRef('gossipFile');
+const grpcFile = useTemplateRef('grpcFile');
 
 const validIp =
   '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]).){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$';
@@ -88,15 +88,19 @@ async function handleInputGossipCert(e: Event) {
 
 async function handleUpdateGossipCert(str: string) {
   const publicKey = str.split('-----')[2];
-  if (!str) {
+  if (!publicKey) {
     publicKeyHash.value = '';
+    emit('update:data', {
+      ...props.data,
+      gossipCaCertificate: new Uint8Array(),
+    });
   } else {
     publicKeyHash.value = await sha384(publicKey);
+    emit('update:data', {
+      ...props.data,
+      gossipCaCertificate: await x509BytesFromPem(str),
+    });
   }
-  emit('update:data', {
-    ...props.data,
-    gossipCaCertificate: await x509BytesFromPem(str),
-  });
 }
 
 async function handleInputGrpcCert(e: Event) {
@@ -128,9 +132,11 @@ async function handleOnGossipFileChanged(e: Event) {
   const reader = new FileReader();
   const target = e.target as HTMLInputElement;
   reader.readAsText(target.files![0]);
-  reader.onload = () => {
-    gossipCaCertificate.value = reader.result as string;
-    void handleUpdateGossipCert(gossipCaCertificate.value);
+  reader.onload = async () => {
+    if (typeof reader.result === 'string') {
+      gossipCaCertificate.value = reader.result;
+      await handleUpdateGossipCert(gossipCaCertificate.value);
+    }
   };
 
   if (gossipFile.value != null) {
@@ -148,9 +154,11 @@ async function handleOnGrpcFileChanged(e: Event) {
   const reader = new FileReader();
   const target = e.target as HTMLInputElement;
   reader.readAsText(target.files![0]);
-  reader.onload = () => {
-    grpcCertificate.value = reader.result as string;
-    void handleUpdateGrpcCert(grpcCertificate.value);
+  reader.onload = async () => {
+    if (typeof reader.result === 'string') {
+      grpcCertificate.value = reader.result;
+      await handleUpdateGrpcCert(grpcCertificate.value);
+    }
   };
 
   if (grpcFile.value != null) {

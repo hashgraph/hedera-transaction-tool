@@ -32,7 +32,7 @@ import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 
 import { isAccountId, isContractId, isFileId } from '../validator';
 import { compareKeys } from '.';
-import { hexToUint8Array, uint8ToHex } from '..';
+import { hexToUint8Array } from '..';
 
 export type TransactionData = TransactionCommonData & TransactionSpecificData;
 
@@ -497,7 +497,7 @@ const setNodeData = (
     transaction.setServiceEndpoints(txServiceEndpoints);
   }
 
-  if (data.gossipCaCertificate) {
+  if (data.gossipCaCertificate.length > 0) {
     transaction.setGossipCaCertificate(data.gossipCaCertificate);
   }
 

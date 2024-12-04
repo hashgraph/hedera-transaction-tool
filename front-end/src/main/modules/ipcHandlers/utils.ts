@@ -85,7 +85,6 @@ export default () => {
   );
 
   ipcMain.handle(createChannelName('sha384'), async (_e, str: string) => {
-    console.log(str);
     return createHash('sha384').update(str).digest('hex');
   });
 
