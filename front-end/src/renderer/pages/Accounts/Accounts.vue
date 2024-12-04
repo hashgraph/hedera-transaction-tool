@@ -310,7 +310,7 @@ onMounted(async () => {
               <AppCheckBox
                 name="select-card"
                 class="cursor-pointer"
-                type="radio"
+                type="checkbox"
                 :checked="selectAll"
                 @update:checked="handleSelectAllAccounts"
               />
