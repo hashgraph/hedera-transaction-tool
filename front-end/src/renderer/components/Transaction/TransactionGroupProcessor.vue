@@ -2,9 +2,8 @@
 import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 import type { GroupItem } from '@renderer/stores/storeTransactionGroup';
 import type { ApiGroupItem, IGroup } from '@renderer/services/organization';
-import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import { computed, nextTick, onBeforeUnmount, ref, inject } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
 
 import { Key, KeyList, Transaction, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
@@ -14,6 +13,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { useToast } from 'vue-toast-notification';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { execute, signTransaction, storeTransaction } from '@renderer/services/transactionService';
 import { decryptPrivateKey, flattenKeyList } from '@renderer/services/keyPairService';
@@ -31,7 +31,6 @@ import {
   getApiGroupById,
 } from '@renderer/services/organization';
 
-import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 import { createTransactionId } from '@renderer/utils/sdk';
 
 import {
@@ -67,9 +66,7 @@ const transactionGroup = useTransactionGroupStore();
 
 /* Composables */
 const toast = useToast();
-
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
 const transactionResult = ref<{
@@ -122,9 +119,7 @@ async function signAfterConfirm() {
     throw new Error('Transaction not provided');
   }
 
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
+  assertUserLoggedIn(user.personal);
 
   if (user.selectedOrganization) {
     throw new Error(
@@ -133,17 +128,10 @@ async function signAfterConfirm() {
   }
 
   /* Verifies the user has entered his password */
-  const personalPassword = user.getPassword();
-  if (!personalPassword && !user.personal.useKeychain) {
-    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-    isConfirmShown.value = false;
-    userPasswordModalRef.value?.open(
-      'Enter your application password',
-      'Enter your application password to sign the transaction',
-      signAfterConfirm,
-    );
-    return;
-  }
+  const personalPassword = getPassword(signAfterConfirm, {
+    subHeading: 'Enter your application password to sign the transaction',
+  });
+  if (passwordModalOpened(personalPassword)) return;
 
   try {
     isConfirmShown.value = true;
@@ -300,16 +288,10 @@ async function sendSignedTransactionsToOrganization() {
 
   /* Verifies the user has entered his password */
   assertUserLoggedIn(user.personal);
-  const personalPassword = user.getPassword();
-  if (!personalPassword && !user.personal.useKeychain) {
-    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-    userPasswordModalRef.value?.open(
-      'Enter your application password',
-      'Enter your application password to sign as a creator',
-      sendSignedTransactionsToOrganization,
-    );
-    return;
-  }
+  const personalPassword = getPassword(signAfterConfirm, {
+    subHeading: 'Enter your application password to sign as a creator',
+  });
+  if (passwordModalOpened(personalPassword)) return;
 
   /* Verifies there is actual transaction to process */
   if (!transactionGroup.groupItems[0].transactionBytes) throw new Error('No Transactions provided');
