@@ -1,22 +1,16 @@
 <script setup lang="ts">
-import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
-
-import { inject, onMounted, ref, watch } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 
 import { MIGRATION_STARTED } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
 import useAutoLogin from '@renderer/composables/useAutoLogin';
+import useLoader from '@renderer/composables/useLoader';
 
 import { getUseKeychain } from '@renderer/services/safeStorageService';
 import { getUsersCount, resetDataLocal } from '@renderer/services/userService';
 import { getStoredClaim } from '@renderer/services/claimService';
-
-import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
-
-import { withLoader } from '@renderer/utils';
 
 import AutoLoginInOrganization from '@renderer/components/Organization/AutoLoginInOrganization.vue';
 import AppUpdate from './components/AppUpdate.vue';
@@ -27,12 +21,9 @@ import BeginDataMigration from './components/BeginDataMigration.vue';
 /* Stores */
 const user = useUserStore();
 
-/* Injected */
-const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
-
 /* Composables */
-const toast = useToast();
 const tryAutoLogin = useAutoLogin();
+const withLoader = useLoader();
 
 /* State */
 const importantNoteRef = ref<InstanceType<typeof ImportantNote> | null>(null);
@@ -58,9 +49,9 @@ const handleBeginMigrationReadyState = async (ready: boolean) => {
   }
 };
 
-const handleDetectKeychainReadyState = () => {
+const handleDetectKeychainReadyState = async () => {
   detectKeychainReady.value = true;
-  withLoader(tryAutoLogin, toast, globalModalLoaderRef?.value)();
+  await withLoader(tryAutoLogin);
 };
 
 /* Hooks */
