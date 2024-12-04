@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { IGroup, TransactionApproverDto } from '@main/shared/interfaces';
 import type { GroupItem } from '@renderer/stores/storeTransactionGroup';
-import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 import { addApprovers, addObservers, type ApiGroupItem } from '@renderer/services/organization';
 import type { Handler, TransactionRequest } from '..';
 
-import { inject, ref } from 'vue';
+import { ref } from 'vue';
 import { Transaction, FileUpdateTransaction, Hbar, Key } from '@hashgraph/sdk';
 
 import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
@@ -13,7 +12,7 @@ import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { decryptPrivateKey, flattenKeyList } from '@renderer/services/keyPairService';
 import {
@@ -56,8 +55,8 @@ const emit = defineEmits<{
 const user = useUserStore();
 const network = useNetworkStore();
 
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+/* Composables */
+const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
 const nextHandler = ref<Handler | null>(null);
@@ -162,34 +161,21 @@ function createGroupItems(req: TransactionRequest) {
 }
 
 async function signGroupItems(groupItems: GroupItem[]) {
-  const callback = async () => {
-    assertUserLoggedIn(user.personal);
-    const personalPassword = user.getPassword();
-    if (!personalPassword && !user.personal.useKeychain) {
-      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-      userPasswordModalRef.value?.open(
-        'Enter your application password',
-        'Enter your application password to sign as a creator',
-        callback,
-      );
-      return;
-    }
+  assertUserLoggedIn(user.personal);
+  const personalPassword = getPassword(signGroupItems.bind(null, groupItems), {
+    subHeading: 'Enter your application password to sign as a creato',
+  });
+  if (passwordModalOpened(personalPassword)) return;
 
-    const keyToSignWith = user.keyPairs[0].public_key;
-    const privateKeyRaw = await decryptPrivateKey(
-      user.personal.id,
-      personalPassword,
-      keyToSignWith,
-    );
-    const privateKey = getPrivateKey(keyToSignWith, privateKeyRaw);
+  const keyToSignWith = user.keyPairs[0].public_key;
+  const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, keyToSignWith);
+  const privateKey = getPrivateKey(keyToSignWith, privateKeyRaw);
 
-    await submitGroup(
-      groupItems,
-      groupItems.map(g => uint8ToHex(privateKey.sign(g.transactionBytes))),
-      keyToSignWith,
-    );
-  };
-  await callback();
+  await submitGroup(
+    groupItems,
+    groupItems.map(g => uint8ToHex(privateKey.sign(g.transactionBytes))),
+    keyToSignWith,
+  );
 }
 
 async function submitGroup(groupItems: GroupItem[], signature: string[], keyToSignWith: string) {
