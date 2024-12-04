@@ -303,17 +303,6 @@ watch(isDeletingKey, () => {
             @click="handleRedirectToRecoverMnemonicKeys()"
             >Restore Missing Keys</AppButton
           >
-          <AppButton
-            v-if="
-              currentTab === Tabs.RECOVERY_PHRASE &&
-              missingKeys.some(k => k.mnemonicHash === selectedRecoveryPhrase)
-            "
-            color="primary"
-            :data-testid="`button-restore-lost-keys`"
-            class="rounded-3 text-nowrap min-w-unset"
-            @click="handleRedirectToRecoverMnemonicKeys()"
-            >Restore Missing Keys</AppButton
-          >
         </div>
       </div>
     </div>
