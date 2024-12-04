@@ -13,11 +13,7 @@ export * from './constants';
 
 const StyleGuide = () => import('@renderer/pages/Styleguide');
 const Accounts = () => import('@renderer/pages/Accounts');
-const Tokens = () => import('@renderer/pages/Tokens');
-const Help = () => import('@renderer/pages/Help');
 const Settings = () => import('@renderer/pages/Settings');
-const SmartContracts = () => import('@renderer/pages/SmartContracts');
-const ConsensusService = () => import('@renderer/pages/ConsensusService');
 const Files = () => import('@renderer/pages/Files');
 const ContactList = () => import('@renderer/pages/ContactList');
 const SignUpUser = () => import('@renderer/pages/ContactList/SignUpUser');
@@ -45,14 +41,10 @@ const routes: RouteRecordRaw[] = [
   { path: '/transactions', name: 'transactions', component: Transactions },
   { path: '/accounts/link-existing', name: 'linkExistingAccount', component: LinkExistingAccount },
   { path: '/accounts', name: 'accounts', component: Accounts },
-  { path: '/tokens', name: 'tokens', component: Tokens },
-  { path: '/smart-contracts', name: 'smartContracts', component: SmartContracts },
-  { path: '/consensus-service', name: 'consensusService', component: ConsensusService },
   { path: '/files', name: 'files', component: Files },
   { path: '/files/link-existing', name: 'linkExistingFile', component: LinkExistingFile },
   { path: '/contact-list/create', name: 'signUpUser', component: SignUpUser },
   { path: '/contact-list', name: 'contactList', component: ContactList },
-  { path: '/help', name: 'help', component: Help },
   { path: '/account-setup', name: 'accountSetup', component: AccountSetup },
   { path: '/restore-key', name: constants.RESTORE_KEY, component: RestoreKey },
   { path: '/migrate', name: 'migrate', component: Migrate },
