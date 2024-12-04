@@ -6,7 +6,6 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useLoader from '@renderer/composables/useLoader';
-
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useSetDynamicLayout, { DEFAULT_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
