@@ -7,7 +7,6 @@ const withoutAuthRoutes = [
   // 'settingsGeneral',
   // 'settingsWorkGroups',
   'help',
-  'forgotPassword',
 ];
 
 const onlyAdminRoutes = ['signUpUser'];

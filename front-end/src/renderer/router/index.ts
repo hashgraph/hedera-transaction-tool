@@ -29,7 +29,6 @@ const NotificationsTab = () => import('@renderer/pages/Settings/components/Notif
 const RestoreKey = () => import('@renderer/pages/RestoreKey');
 const CreateTransaction = () => import('@renderer/pages/CreateTransaction');
 const ProfileTab = () => import('@renderer/pages/Settings/components/ProfileTab.vue');
-const ForgotPassword = () => import('@renderer/pages/ForgotPassword');
 const LinkExistingAccount = () => import('@renderer/pages/Accounts/LinkExistingAccount');
 const LinkExistingFile = () => import('@renderer/pages/Files/LinkExistingFile');
 const OrganizationLogin = () => import('@renderer/pages/OrganizationLogin');
@@ -72,7 +71,6 @@ const routes: RouteRecordRaw[] = [
     name: 'createTransactionGroup',
     component: CreateTransactionGroup,
   },
-  { path: '/forgot-password', name: 'forgotPassword', component: ForgotPassword },
   {
     path: '/transaction/:id',
     name: 'transactionDetails',
