@@ -3,11 +3,16 @@ import { ref } from 'vue';
 
 import { RESTORE_KEY } from '@renderer/router';
 
+import useUserStore from '@renderer/stores/storeUser';
+
 import { useRouter } from 'vue-router';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import ImportExternalPrivateKeyModal from '@renderer/components/ImportExternalPrivateKeyModal.vue';
 import ImportEncrypted from '@renderer/components/KeyPair/ImportEncrypted';
+
+/* Stores */
+const user = useUserStore();
 
 /* Composables */
 const router = useRouter();
@@ -25,7 +30,10 @@ const handleImportExternal = (type: 'ED25519' | 'ECDSA') => {
 
 const handleImportEncrypted = () => importEncryptedRef.value?.process();
 
-const handleImportMnemonic = () => router.push({ name: RESTORE_KEY });
+const handleImportMnemonic = async () => {
+  await user.setRecoveryPhrase(null);
+  await router.push({ name: RESTORE_KEY });
+};
 </script>
 <template>
   <div class="dropdown">
