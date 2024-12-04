@@ -211,13 +211,11 @@ const handleSave = async () => {
       toast.error(getErrorMessage(e, `Failed to store key pair: ${key.publicKey}`));
     }
   }
-  router.push({ name: 'settingsKeys' });
 
   if (storedCount > 0) {
     toast.success(`Key Pair${storedCount > 1 ? 's' : ''} saved successfully`);
   }
   router.push({ name: 'settingsKeys' });
-
   await user.refetchUserState();
 };
 
