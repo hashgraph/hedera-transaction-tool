@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import type { Organization } from '@prisma/client';
-import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import { inject, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { tryAutoSignIn } from '@renderer/services/organizationCredentials';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
-import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
+import { tryAutoSignIn } from '@renderer/services/organizationCredentials';
 
 import { isUserLoggedIn } from '@renderer/utils';
 
@@ -18,8 +17,8 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 /* Stores */
 const user = useUserStore();
 
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+/* Composables */
+const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
 const checked = ref(false);
@@ -55,16 +54,10 @@ async function openPasswordModalIfRequired() {
 
     if (organizationToSignIn.length === 0) return;
 
-    const personalPassword = user.getPassword();
-    if (!personalPassword && !user.personal.useKeychain) {
-      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-      userPasswordModalRef.value?.open(
-        null,
-        'Sign in to your organizations with expired token',
-        handleAutoLogin,
-      );
-      return;
-    }
+    const personalPassword = getPassword(handleAutoLogin, {
+      subHeading: 'Sign in to your organizations with expired token',
+    });
+    if (passwordModalOpened(personalPassword)) return;
 
     await handleAutoLogin(personalPassword || null);
   }
