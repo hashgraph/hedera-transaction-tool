@@ -1,20 +1,17 @@
 <script setup lang="ts">
-import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
-
-import { inject, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useContactsStore from '@renderer/stores/storeContacts';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import { useToast } from 'vue-toast-notification';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { changePassword } from '@renderer/services/organization/auth';
 import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
-import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
-
-import { getErrorMessage, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import { assertIsLoggedInOrganization, assertUserLoggedIn, getErrorMessage } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -31,9 +28,7 @@ const notifications = useNotificationsStore();
 
 /* Composables */
 const toast = useToast();
-
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
 const currentPassword = ref('');
@@ -54,21 +49,12 @@ const handleFormSubmit = async (event: Event) => {
 };
 
 const handleChangePassword = async () => {
-  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
-  const personalPassword = user.getPassword();
-  if (!personalPassword && !user.personal.useKeychain) {
-    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-    userPasswordModalRef.value?.open(
-      'Enter personal password',
-      'New password will be encrypted with this password',
-      handleChangePassword,
-    );
-    return;
-  }
-
-  if (!isLoggedInOrganization(user.selectedOrganization)) {
-    throw new Error('User is not logged in an organization.');
-  }
+  assertIsLoggedInOrganization(user.selectedOrganization);
+  assertUserLoggedIn(user.personal);
+  const personalPassword = getPassword(handleChangePassword, {
+    subHeading: 'New password will be encrypted with this password',
+  });
+  if (passwordModalOpened(personalPassword)) return;
 
   currentPasswordInvalid.value = currentPassword.value.trim().length === 0;
   newPasswordInvalid.value = newPassword.value.trim().length < 8;
