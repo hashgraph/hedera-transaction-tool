@@ -209,6 +209,14 @@ const handleDelete = async () => {
     missingKeyPairIdToDelete.value = null;
     isDeletingKey.value = false;
     isDeleteModalShown.value = false;
+
+    if (
+      listedKeyPairs.value.length === 0 &&
+      listedMissingKeyPairs.value.length === 0 &&
+      currentTab.value === Tabs.RECOVERY_PHRASE
+    ) {
+      currentTab.value = Tabs.ALL;
+    }
   }
 };
 
