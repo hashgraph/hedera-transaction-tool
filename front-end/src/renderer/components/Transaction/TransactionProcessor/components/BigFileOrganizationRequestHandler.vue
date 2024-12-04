@@ -163,7 +163,7 @@ function createGroupItems(req: TransactionRequest) {
 async function signGroupItems(groupItems: GroupItem[]) {
   assertUserLoggedIn(user.personal);
   const personalPassword = getPassword(signGroupItems.bind(null, groupItems), {
-    subHeading: 'Enter your application password to sign as a creato',
+    subHeading: 'Enter your application password to sign as a creator',
   });
   if (passwordModalOpened(personalPassword)) return;
 
