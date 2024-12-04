@@ -20,7 +20,6 @@ import { add, getAll, update } from '@renderer/services/filesService';
 
 import {
   assertUserLoggedIn,
-  isUserLoggedIn,
   isFileId,
   isHederaSpecialFileId,
   formatAccountId,
@@ -117,7 +116,7 @@ const readContent = async (privateKey: string, privateKeyType: string) => {
 };
 
 const updateLocalFileInfo = async (content: string, privateKey: string, privateKeyType: string) => {
-  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+  assertUserLoggedIn(user.personal);
 
   try {
     const fileInfoQuery = new FileInfoQuery()
@@ -166,9 +165,7 @@ onMounted(async () => {
     fileId.value = route.query.fileId.toString();
   }
 
-  if (!isUserLoggedIn(user.personal)) {
-    throw Error('User is not logged in');
-  }
+  assertUserLoggedIn(user.personal);
 
   storedFiles.value = await getAll({
     where: {
