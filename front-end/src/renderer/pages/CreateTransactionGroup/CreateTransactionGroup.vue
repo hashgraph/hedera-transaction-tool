@@ -9,7 +9,7 @@ import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 import { useToast } from 'vue-toast-notification';
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
-import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { deleteGroup } from '@renderer/services/transactionGroupsService';
 
@@ -40,11 +40,7 @@ const router = useRouter();
 const route = useRoute();
 const toast = useToast();
 const payerData = useAccountId();
-useSetDynamicLayout({
-  loggedInClass: true,
-  shouldSetupAccountClass: false,
-  showMenu: true,
-});
+useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 /* State */
 const groupDescription = ref('');

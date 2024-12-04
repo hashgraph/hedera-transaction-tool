@@ -1,24 +1,18 @@
 <script setup lang="ts">
-import type { GLOBAL_MODAL_LOADER_TYPE, USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
-import { inject, onMounted, ref, watch } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
-import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+import useLoader from '@renderer/composables/useLoader';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
+import useSetDynamicLayout, { DEFAULT_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { login } from '@renderer/services/organization';
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
-import {
-  getErrorMessage,
-  isLoggedOutOrganization,
-  isUserLoggedIn,
-  withLoader,
-} from '@renderer/utils';
-
-import { GLOBAL_MODAL_LOADER_KEY, USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
+import { assertUserLoggedIn, getErrorMessage, isLoggedOutOrganization } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -30,15 +24,9 @@ const user = useUserStore();
 /* Composables */
 const router = useRouter();
 const toast = useToast();
-useSetDynamicLayout({
-  loggedInClass: false,
-  shouldSetupAccountClass: false,
-  showMenu: false,
-});
-
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
-const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
+const withLoader = useLoader();
+useSetDynamicLayout(DEFAULT_LAYOUT);
+const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
 const loading = ref(false);
@@ -58,20 +46,15 @@ const handleOnFormSubmit = async (e: Event) => {
 };
 
 const handleLogin = async () => {
-  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
-  const personalPassword = user.getPassword();
-  if (!personalPassword && !user.personal.useKeychain) {
-    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-    userPasswordModalRef.value?.open(
-      'Enter your application password',
-      'Enter your application password to encrypt your organization credentials',
-      handleLogin,
-    );
-    return;
-  }
+  assertUserLoggedIn(user.personal);
+  const personalPassword = getPassword(handleLogin, {
+    subHeading: 'Enter your application password to encrypt your organization credentials',
+  });
+  if (passwordModalOpened(personalPassword)) return;
 
-  if (!isLoggedOutOrganization(user.selectedOrganization))
+  if (!isLoggedOutOrganization(user.selectedOrganization)) {
     throw new Error('Please select active organization');
+  }
 
   try {
     loading.value = true;
@@ -95,15 +78,8 @@ const handleLogin = async () => {
 
     loading.value = false;
 
-    await withLoader(
-      async () => {
-        await user.refetchOrganizations();
-      },
-      toast,
-      globalModalLoaderRef?.value,
-      'Failed to change user mode',
-    )();
-  } catch (error: unknown) {
+    await withLoader(user.refetchOrganizations, 'Failed to change user mode');
+  } catch (error: any) {
     inputEmailInvalid.value = true;
     inputPasswordInvalid.value = true;
     toast.error(getErrorMessage(error, 'Failed to sign in'));
@@ -113,14 +89,6 @@ const handleLogin = async () => {
 };
 
 const handleForgotPassword = () => {
-  // const personalPassword = user.getPassword();
-  // if (!personalPassword) {
-  //   if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-  //   userPasswordModalRef.value?.open('Enter personal password', null, handleForgotPassword);
-  // } else {
-  //   forgotPasswordModalShown.value = true;
-  // }
-
   forgotPasswordModalShown.value = true;
 };
 

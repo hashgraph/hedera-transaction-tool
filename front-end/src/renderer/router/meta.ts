@@ -6,8 +6,6 @@ const withoutAuthRoutes = [
   'migrate',
   // 'settingsGeneral',
   // 'settingsWorkGroups',
-  'help',
-  'forgotPassword',
 ];
 
 const onlyAdminRoutes = ['signUpUser'];

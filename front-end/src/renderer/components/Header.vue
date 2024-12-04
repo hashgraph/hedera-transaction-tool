@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { Network } from '@main/shared/interfaces';
-import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 
-import { inject, onUpdated } from 'vue';
+import { onUpdated } from 'vue';
 
 import { CommonNetwork } from '@main/shared/enums';
 
@@ -10,15 +9,13 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
+import useLoader from '@renderer/composables/useLoader';
 
 import { logout } from '@renderer/services/organization';
 import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
-import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
-
-import { isUserLoggedIn, toggleAuthTokenInSessionStorage, withLoader } from '@renderer/utils';
+import { isUserLoggedIn, toggleAuthTokenInSessionStorage } from '@renderer/utils';
 
 import Logo from '@renderer/components/Logo.vue';
 import LogoText from '@renderer/components/LogoText.vue';
@@ -53,10 +50,7 @@ const networkStore = useNetworkStore();
 /* Composables */
 const router = useRouter();
 const createTooltips = useCreateTooltips();
-const toast = useToast();
-
-/* Injected */
-const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
+const withLoader = useLoader();
 
 /* Handlers */
 const handleLogout = async () => {
@@ -77,9 +71,7 @@ const handleLogout = async () => {
 };
 
 /* Hooks */
-onUpdated(() => {
-  createTooltips();
-});
+onUpdated(createTooltips);
 </script>
 
 <template>
@@ -124,7 +116,7 @@ onUpdated(() => {
         "
         class="container-icon"
         data-testid="button-logout"
-        @click="withLoader(handleLogout, toast, globalModalLoaderRef)()"
+        @click="withLoader(handleLogout)"
         data-bs-toggle="tooltip"
         data-bs-trigger="hover"
         data-bs-placement="bottom"

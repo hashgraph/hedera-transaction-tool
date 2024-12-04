@@ -5,7 +5,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
-import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { signUp } from '@renderer/services/organization';
 import { addContact } from '@renderer/services/contactsService';
@@ -21,11 +21,7 @@ const user = useUserStore();
 /* Composables */
 const router = useRouter();
 const toast = useToast();
-useSetDynamicLayout({
-  loggedInClass: true,
-  shouldSetupAccountClass: false,
-  showMenu: true,
-});
+useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 /* State */
 const email = ref('');

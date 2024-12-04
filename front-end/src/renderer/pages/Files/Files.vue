@@ -14,7 +14,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
-import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { getAll, remove, showStoredFileInTemp, update } from '@renderer/services/filesService';
 import { flattenKeyList, getKeyListLevels } from '@renderer/services/keyPairService';
@@ -37,11 +37,7 @@ const network = useNetworkStore();
 
 /* Composables */
 const createTooltips = useCreateTooltips();
-useSetDynamicLayout({
-  loggedInClass: true,
-  shouldSetupAccountClass: false,
-  showMenu: true,
-});
+useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 // const specialFiles: HederaFile[] = [
 //   {

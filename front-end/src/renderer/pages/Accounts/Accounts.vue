@@ -10,7 +10,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
-import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { getAll, remove, changeNickname } from '@renderer/services/accountsService';
 import { getKeyListLevels } from '@renderer/services/keyPairService';
@@ -34,11 +34,7 @@ const network = useNetworkStore();
 /* Composables */
 const toast = useToast();
 const accountData = useAccountId();
-useSetDynamicLayout({
-  loggedInClass: true,
-  shouldSetupAccountClass: false,
-  showMenu: true,
-});
+useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 /* State */
 const accounts = ref<HederaAccount[]>([]);

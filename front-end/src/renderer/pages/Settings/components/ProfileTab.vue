@@ -1,20 +1,22 @@
 <script setup lang="ts">
-import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
-
-import { inject, ref } from 'vue';
+import { ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { changePassword, resetDataLocal } from '@renderer/services/userService';
 import { changePassword as organizationChangePassword } from '@renderer/services/organization/auth';
 import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
-import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
-
-import { getErrorMessage, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import {
+  assertUserLoggedIn,
+  getErrorMessage,
+  isLoggedInOrganization,
+  isUserLoggedIn,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -27,9 +29,7 @@ const user = useUserStore();
 /* Composables */
 const toast = useToast();
 const router = useRouter();
-
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
 const currentPassword = ref('');
@@ -45,24 +45,16 @@ const handleChangePassword = async () => {
   try {
     isChangingPassword.value = true;
 
-    if (!isUserLoggedIn(user.personal)) {
-      throw new Error('User is not logged in');
-    }
+    assertUserLoggedIn(user.personal);
 
     if (currentPassword.value.length === 0 || newPassword.value.length === 0) {
       throw new Error('Password cannot be empty');
     }
     if (isLoggedInOrganization(user.selectedOrganization)) {
-      const personalPassword = user.getPassword();
-      if (!personalPassword && !user.personal.useKeychain) {
-        if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-        userPasswordModalRef.value?.open(
-          'Enter your application password',
-          'Enter your application password to encrpyt your organization credentials',
-          handleChangePassword,
-        );
-        return;
-      }
+      const personalPassword = getPassword(handleChangePassword, {
+        subHeading: 'Enter your application password to encrpyt your organization credentials',
+      });
+      if (passwordModalOpened(personalPassword)) return;
 
       await organizationChangePassword(
         user.selectedOrganization.serverUrl,

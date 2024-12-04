@@ -1,23 +1,21 @@
 <script setup lang="ts">
-import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
-import { inject, reactive, watch } from 'vue';
+import { reactive, watch } from 'vue';
 
 import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { generateExternalKeyPairFromString } from '@renderer/services/keyPairService';
 
 import {
+  assertUserLoggedIn,
   getErrorMessage,
   isLoggedInOrganization,
-  isUserLoggedIn,
   safeDuplicateUploadKey,
 } from '@renderer/utils';
-
-import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -37,9 +35,7 @@ const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
-
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
 const key = reactive<{ privateKey: string; nickname?: string }>({
@@ -47,18 +43,11 @@ const key = reactive<{ privateKey: string; nickname?: string }>({
 });
 
 const handleImportExternalKey = async () => {
-  /* Verify user is logged in with password */
-  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
-  const personalPassword = user.getPassword();
-  if (!personalPassword && !user.personal.useKeychain) {
-    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-    userPasswordModalRef.value?.open(
-      'Enter personal password',
-      'Private key/s will be encrypted with this password',
-      handleImportExternalKey,
-    );
-    return;
-  }
+  assertUserLoggedIn(user.personal);
+  const personalPassword = getPassword(handleImportExternalKey, {
+    subHeading: 'Private key/s will be encrypted with this password',
+  });
+  if (passwordModalOpened(personalPassword)) return;
 
   try {
     const keyPair: Prisma.KeyPairUncheckedCreateInput = {

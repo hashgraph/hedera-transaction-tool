@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
-
-import { inject, onBeforeUnmount, ref, watch } from 'vue';
+import { onBeforeUnmount, ref, watch } from 'vue';
 import { PrivateKey } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
@@ -9,19 +7,19 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
+import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { restorePrivateKey } from '@renderer/services/keyPairService';
 
 import {
+  assertUserLoggedIn,
   getErrorMessage,
   getSecretHashFromLocalKeys,
   getSecretHashFromUploadedKeys,
   isLoggedInOrganization,
-  isUserLoggedIn,
   safeDuplicateUploadKey,
 } from '@renderer/utils';
-
-import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -33,9 +31,8 @@ const user = useUserStore();
 /* Composables */
 const toast = useToast();
 const router = useRouter();
-
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+useSetDynamicLayout(LOGGED_IN_LAYOUT);
+const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
 const step = ref(0);
@@ -107,17 +104,11 @@ const handleRestoreKey = async () => {
 };
 
 const handleSaveKey = async () => {
-  if (!isUserLoggedIn(user.personal)) throw Error('User is not logged in');
-  const personalPassword = user.getPassword();
-  if (!personalPassword && !user.personal.useKeychain) {
-    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-    userPasswordModalRef.value?.open(
-      'Enter your application password',
-      'Enter your application password to decrypt your key',
-      handleSaveKey,
-    );
-    return;
-  }
+  assertUserLoggedIn(user.personal);
+  const personalPassword = getPassword(handleSaveKey, {
+    subHeading: 'Enter your application password to decrypt your key',
+  });
+  if (passwordModalOpened(personalPassword)) return;
 
   if (!restoredKey.value) {
     throw new Error('Restored key not found');

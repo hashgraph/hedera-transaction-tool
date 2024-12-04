@@ -57,21 +57,6 @@ const getMenuItems = (): MenuItem[] => [
     title: 'Files',
     icon: 'bi bi-file-text',
   },
-  // {
-  //   link: '/tokens',
-  //   title: 'Tokens',
-  //   icon: 'bi bi-coin',
-  // },
-  // {
-  //   link: '/smart-contracts',
-  //   title: 'Smart Contracts',
-  //   icon: 'bi bi-arrows-angle-contract',
-  // },
-  // {
-  //   link: '/consensus-service',
-  //   title: 'Consensus Service',
-  //   icon: 'bi bi-shield-check',
-  // },
   {
     link: '/contact-list',
     testid: 'button-contact-list',
@@ -131,9 +116,6 @@ const organizationOnly = ['/contact-list'];
         :class="{ active: $route.path.startsWith('/settings') }"
         ><i class="bi bi-gear"></i><span>Settings</span></RouterLink
       >
-      <!-- <RouterLink class="link-menu mt-2" to="/help"
-        ><i class="bi bi-question-circle"></i><span>Help</span></RouterLink
-      > -->
     </div>
   </div>
 </template>

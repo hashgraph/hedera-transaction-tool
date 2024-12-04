@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { Network } from '@main/shared/interfaces';
-import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 
-import { computed, inject, onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 
 import { SELECTED_NETWORK } from '@main/shared/constants';
 import { CommonNetwork, CommonNetworkNames } from '@main/shared/enums';
@@ -10,13 +9,11 @@ import { CommonNetwork, CommonNetworkNames } from '@main/shared/enums';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useToast } from 'vue-toast-notification';
-
-import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
+import useLoader from '@renderer/composables/useLoader';
 
 import { add, getStoredClaim, update } from '@renderer/services/claimService';
 
-import { isUserLoggedIn, withLoader } from '@renderer/utils';
+import { isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -26,10 +23,7 @@ const user = useUserStore();
 const networkStore = useNetworkStore();
 
 /* Composables */
-const toast = useToast();
-
-/* Injected */
-const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
+const withLoader = useLoader();
 
 /* State */
 const mirrorNodeInputRef = ref<InstanceType<typeof AppInput> | null>(null);
@@ -106,12 +100,7 @@ const forceSetMirrorNodeBaseURL = async (value: string) => {
 };
 
 const applyCustomNetwork = async () => {
-  await withLoader(
-    () => handleMirrorNodeBaseURLChange(),
-    toast,
-    globalModalLoaderRef?.value,
-    'Failed to update network',
-  )();
+  await withLoader(handleMirrorNodeBaseURLChange, 'Failed to update network');
 };
 
 /* Hooks */

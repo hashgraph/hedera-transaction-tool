@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
-
-import { computed, inject, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { PublicKey } from '@hashgraph/sdk';
 
 import { RESTORE_MISSING_KEYS } from '@renderer/router';
@@ -11,6 +9,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { CommonNetwork } from '@main/shared/enums';
 
@@ -23,8 +22,6 @@ import {
   isLoggedInOrganization,
   safeAwait,
 } from '@renderer/utils';
-
-import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
@@ -39,9 +36,7 @@ const network = useNetworkStore();
 /* Composables */
 const toast = useToast();
 const router = useRouter();
-
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 enum Tabs {
   ALL = 'All',
@@ -117,16 +112,10 @@ const handleTabChange = (tab: Tabs) => {
 const decrypt = async () => {
   try {
     assertUserLoggedIn(user.personal);
-    const personalPassword = user.getPassword();
-    if (!personalPassword && !user.personal.useKeychain) {
-      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-      userPasswordModalRef.value?.open(
-        'Enter your application password',
-        'Enter your application password to decrypt your key',
-        decrypt,
-      );
-      return;
-    }
+    const personalPassword = getPassword(decrypt, {
+      subHeading: 'Enter your application password to decrypt your key',
+    });
+    if (passwordModalOpened(personalPassword)) return;
 
     const keyFromDecrypted = decryptedKeys.value.find(
       kp => kp.publicKey === publicKeysPrivateKeyToDecrypt.value,
@@ -303,7 +292,6 @@ watch(isDeletingKey, () => {
             toggler-icon
             color-on-active
           />
-
           <AppButton
             v-if="
               currentTab === Tabs.RECOVERY_PHRASE &&

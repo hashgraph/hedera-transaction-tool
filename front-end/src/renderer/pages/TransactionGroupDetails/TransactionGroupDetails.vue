@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { IGroup } from '@renderer/services/organization';
-import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import { computed, inject, onBeforeMount, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { Transaction } from '@hashgraph/sdk';
 
@@ -16,6 +15,8 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
 import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
+import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import {
   getApiGroupById,
@@ -32,12 +33,9 @@ import {
   redirectToDetails,
   hexToUint8Array,
   isLoggedInOrganization,
-  isLoggedInWithPassword,
   isUserLoggedIn,
   publicRequiredToSign,
 } from '@renderer/utils';
-
-import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -53,6 +51,8 @@ const nextTransaction = useNextTransactionStore();
 const router = useRouter();
 const toast = useToast();
 const ws = useDisposableWs();
+useSetDynamicLayout(LOGGED_IN_LAYOUT);
+const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
 const group = ref<IGroup>();
@@ -63,9 +63,6 @@ const publicKeysRequiredToSign = ref<string[] | null>([]);
 const disableSignAll = ref(false);
 const isSigning = ref(false);
 const isApproving = ref(false);
-
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
 
 /* Handlers */
 async function handleFetchGroup(id: string | number) {
@@ -123,16 +120,10 @@ const handleSignGroup = async () => {
     throw new Error('User is not logged in organization');
   }
 
-  const password = user.getPassword();
-  if (!password && !user.personal.useKeychain) {
-    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-    userPasswordModalRef.value?.open(
-      'Enter your application password',
-      'Enter your application password to decrypt your private key',
-      handleSignGroup,
-    );
-    return;
-  }
+  const personalPassword = getPassword(handleSignGroup, {
+    subHeading: 'Enter your application password to decrypt your private key',
+  });
+  if (passwordModalOpened(personalPassword)) return;
 
   try {
     isSigning.value = true;
@@ -147,7 +138,7 @@ const handleSignGroup = async () => {
         );
         await uploadSignatureMap(
           user.personal.id,
-          password,
+          personalPassword,
           user.selectedOrganization,
           publicKeysRequired,
           Transaction.fromBytes(transaction.toBytes()),
@@ -175,15 +166,10 @@ const handleApproveAll = async (approved: boolean, showModal?: boolean) => {
       throw new Error('User is not logged in organization');
     }
 
-    if (!isLoggedInWithPassword(user.personal)) {
-      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-      userPasswordModalRef.value?.open(
-        'Enter your application password',
-        'Enter your application password to decrypt your private key',
-        callback,
-      );
-      return;
-    }
+    const personalPassword = getPassword(callback, {
+      subHeading: 'Enter your application password to decrypt your private key',
+    });
+    if (passwordModalOpened(personalPassword)) return;
 
     try {
       isApproving.value = true;

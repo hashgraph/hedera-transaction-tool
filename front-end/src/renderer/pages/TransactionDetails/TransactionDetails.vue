@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@main/shared/interfaces';
-import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import { computed, inject, onBeforeMount, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
@@ -20,7 +19,8 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
 import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
-import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
+import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import {
   cancelTransaction,
@@ -31,8 +31,6 @@ import {
 } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
-
-import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import {
   getTransactionDateExtended,
@@ -78,14 +76,8 @@ const nextTransaction = useNextTransactionStore();
 const router = useRouter();
 const toast = useToast();
 const ws = useDisposableWs();
-useSetDynamicLayout({
-  loggedInClass: true,
-  shouldSetupAccountClass: false,
-  showMenu: true,
-});
-
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+const { getPassword, passwordModalOpened } = usePersonalPassword();
+useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);
@@ -244,16 +236,10 @@ const handleSign = async () => {
     throw new Error('User is not logged in organization');
   }
 
-  const password = user.getPassword();
-  if (!password && !user.personal.useKeychain) {
-    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-    userPasswordModalRef.value?.open(
-      'Enter your application password',
-      'Enter your application password to decrypt your private key',
-      handleSign,
-    );
-    return;
-  }
+  const personalPassword = getPassword(handleSign, {
+    subHeading: 'Enter your application password to decrypt your private key',
+  });
+  if (passwordModalOpened(personalPassword)) return;
 
   try {
     isSigning.value = true;
@@ -286,7 +272,7 @@ const handleSign = async () => {
     if (restoredRequiredKeys.length > 0) {
       await uploadSignatureMap(
         user.personal.id,
-        password,
+        personalPassword,
         user.selectedOrganization,
         restoredRequiredKeys,
         SDKTransaction.fromBytes(sdkTransaction.value.toBytes()),
@@ -325,16 +311,10 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
       throw new Error('User is not logged in organization');
     }
 
-    const personalPassword = user.getPassword();
-    if (!personalPassword && !user.personal.useKeychain) {
-      if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-      userPasswordModalRef.value?.open(
-        'Enter your application password',
-        'Enter your application password to decrypt your private key',
-        callback,
-      );
-      return;
-    }
+    const personalPassword = getPassword(callback, {
+      subHeading: 'Enter your application password to decrypt your private key',
+    });
+    if (passwordModalOpened(personalPassword)) return;
 
     try {
       if (approved) {
