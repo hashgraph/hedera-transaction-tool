@@ -292,7 +292,6 @@ watch(isDeletingKey, () => {
             toggler-icon
             color-on-active
           />
-
           <AppButton
             v-if="
               currentTab === Tabs.RECOVERY_PHRASE &&
@@ -304,8 +303,6 @@ watch(isDeletingKey, () => {
             @click="handleRedirectToRecoverMnemonicKeys()"
             >Restore Missing Keys</AppButton
           >
-        </div>
-      </div>
           <AppButton
             v-if="
               currentTab === Tabs.RECOVERY_PHRASE &&
