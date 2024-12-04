@@ -8,10 +8,11 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
-import { compareHash } from '@renderer/services/electronUtilsService';
-import { restorePrivateKey } from '@renderer/services/keyPairService';
-
-import { assertIsLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import {
+  assertIsLoggedInOrganization,
+  isUserLoggedIn,
+  restoreOrganizationKeys,
+} from '@renderer/utils';
 
 import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
@@ -33,12 +34,24 @@ const step = ref(0);
 
 /* Handlers */
 const handleImportRecoveryPhrase = async () => {
-  const keys = await restoreKeys();
-  if (keys.length === 0) {
+  assertIsLoggedInOrganization(user.selectedOrganization);
+  const restoredKeys = await restoreOrganizationKeys(
+    user.selectedOrganization,
+    user.recoveryPhrase,
+    user.personal,
+    user.keyPairs,
+    true,
+  );
+
+  for (const error of restoredKeys.failedRestoreMessages) {
+    toast.error(error, { position: 'bottom-right' });
+  }
+
+  if (restoredKeys.keys.length === 0) {
     throw new Error('No keys to restore');
   }
 
-  await storeKeys(keys);
+  await storeKeys(restoredKeys.keys);
 };
 
 const handleClearWords = () => (user.recoveryPhrase = null);
@@ -48,6 +61,7 @@ const storeKeys = async (
     publicKey: string;
     privateKey: string;
     index: number;
+    mnemonicHash: string;
   }[],
 ) => {
   if (!isUserLoggedIn(user.personal)) throw Error('User is not logged in');
@@ -101,56 +115,6 @@ const storeKeys = async (
     toast.success('Key Pairs restored', { position: 'bottom-right' });
   }
   router.push({ name: 'settingsKeys' });
-};
-
-/* Functions */
-const restoreKeys = async () => {
-  assertIsLoggedInOrganization(user.selectedOrganization);
-  if (!user.recoveryPhrase) {
-    throw new Error('Recovery phrase is not set');
-  }
-
-  const keys: { publicKey: string; privateKey: string; index: number }[] = [];
-
-  const organizationKeys = user.selectedOrganization.userKeys;
-  for (let i = 0; i < organizationKeys.length; i++) {
-    const key = organizationKeys[i];
-
-    const keyAlreadyRestored =
-      keys.some(k => k.publicKey === key.publicKey) ||
-      user.keyPairs.some(kp => kp.public_key === key.publicKey && kp.public_key !== '');
-
-    try {
-      if (
-        !keyAlreadyRestored &&
-        key.mnemonicHash &&
-        key.index !== undefined &&
-        key.index !== null
-      ) {
-        const isFromRecoveryPhrase = await compareHash(
-          [...user.recoveryPhrase.words].toString(),
-          key.mnemonicHash,
-        );
-        if (isFromRecoveryPhrase) {
-          const privateKey = await restorePrivateKey(
-            user.recoveryPhrase.words,
-            '',
-            key.index,
-            'ED25519',
-          );
-          keys.push({
-            publicKey: privateKey.publicKey.toStringRaw(),
-            privateKey: privateKey.toStringRaw(),
-            index: key.index,
-          });
-        }
-      }
-    } catch (error) {
-      console.log('Failed to restore key', error);
-    }
-  }
-
-  return keys;
 };
 
 /* Hooks */
