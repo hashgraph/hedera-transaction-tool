@@ -32,7 +32,7 @@ import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 
 import { isAccountId, isContractId, isFileId } from '../validator';
 import { compareKeys } from '.';
-import { hexToUint8Array } from '..';
+import { hexToUint8Array, uint8ToHex } from '..';
 
 export type TransactionData = TransactionCommonData & TransactionSpecificData;
 
@@ -126,7 +126,7 @@ export type NodeData = {
   description: string;
   gossipEndpoints: ComponentServiceEndpoint[];
   serviceEndpoints: ComponentServiceEndpoint[];
-  gossipCaCertificate: string;
+  gossipCaCertificate: Uint8Array;
   certificateHash: string;
   adminKey: Key | null;
 };
@@ -498,10 +498,7 @@ const setNodeData = (
   }
 
   if (data.gossipCaCertificate) {
-    const uint8array = hexToUint8Array(data.gossipCaCertificate);
-    if (uint8array.length > 0) {
-      transaction.setGossipCaCertificate(uint8array);
-    }
+    transaction.setGossipCaCertificate(data.gossipCaCertificate);
   }
 
   if (data.adminKey && oldData?.admin_key) {

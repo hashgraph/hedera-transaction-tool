@@ -20,6 +20,8 @@ export default {
       message: string,
     ): Promise<OpenDialogReturnValue> =>
       ipcRenderer.invoke('utils:showOpenDialog', title, buttonLabel, filters, properties, message),
+    sha384: (str: string): Promise<string> => ipcRenderer.invoke('utils:sha384', str),
+    x509BytesFromPem: (pem: string): Promise<Uint8Array> => ipcRenderer.invoke('utils:x509BytesFromPem', pem),
     quit: (): Promise<void> => ipcRenderer.invoke('utils:quit'),
   },
 };

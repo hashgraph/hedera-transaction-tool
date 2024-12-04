@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { NodeData } from '@renderer/utils/sdk';
 
-import { ref } from 'vue';
+import { ref, useTemplateRef } from 'vue';
 
 import { formatAccountId } from '@renderer/utils';
+import { sha384, x509BytesFromPem } from '@renderer/services/electronUtilsService';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -21,6 +22,14 @@ const gossipIpOrDomain = ref('');
 const serviceIpOrDomain = ref('');
 const gossipPort = ref('');
 const servicePort = ref('');
+const publicKeyHash = ref('');
+const hash = ref('');
+const grpcCertificate = ref('');
+const gossipCaCertificate = ref('');
+const gossipInput = useTemplateRef('gossipInput');
+const grpcInput = ref<HTMLInputElement | null>(null);
+const gossipFile = ref<HTMLInputElement | null>(null);
+const grpcFile = ref<HTMLInputElement | null>(null);
 
 const validIp =
   '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]).){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$';
@@ -70,6 +79,83 @@ function handleDeleteEndpoint(index: number, key: 'gossipEndpoints' | 'serviceEn
     ...props.data,
     [key]: endpoints,
   });
+}
+
+async function handleInputGossipCert(e: Event) {
+  const target = e.target as HTMLInputElement;
+  await handleUpdateGossipCert(target.value);
+}
+
+async function handleUpdateGossipCert(str: string) {
+  const publicKey = str.split('-----')[2];
+  if (!str) {
+    publicKeyHash.value = '';
+  } else {
+    publicKeyHash.value = await sha384(publicKey);
+  }
+  emit('update:data', {
+    ...props.data,
+    gossipCaCertificate: await x509BytesFromPem(str),
+  });
+}
+
+async function handleInputGrpcCert(e: Event) {
+  const target = e.target as HTMLInputElement;
+  await handleUpdateGrpcCert(target.value);
+}
+
+async function handleUpdateGrpcCert(str: string) {
+  if (!str) {
+    hash.value = '';
+  } else if (!str.endsWith('\n')) {
+    hash.value = await sha384(str + '\n');
+  } else {
+    hash.value = await sha384(str);
+  }
+  emit('update:data', {
+    ...props.data,
+    certificateHash: hash.value,
+  });
+}
+
+function handleOnImportGossipClick() {
+  if (gossipFile.value != null) {
+    gossipFile.value.click();
+  }
+}
+
+async function handleOnGossipFileChanged(e: Event) {
+  const reader = new FileReader();
+  const target = e.target as HTMLInputElement;
+  reader.readAsText(target.files![0]);
+  reader.onload = () => {
+    gossipCaCertificate.value = reader.result as string;
+    void handleUpdateGossipCert(gossipCaCertificate.value);
+  };
+
+  if (gossipFile.value != null) {
+    gossipFile.value.value = '';
+  }
+}
+
+function handleOnImportGrpcClick() {
+  if (grpcFile.value != null) {
+    grpcFile.value.click();
+  }
+}
+
+async function handleOnGrpcFileChanged(e: Event) {
+  const reader = new FileReader();
+  const target = e.target as HTMLInputElement;
+  reader.readAsText(target.files![0]);
+  reader.onload = () => {
+    grpcCertificate.value = reader.result as string;
+    void handleUpdateGrpcCert(grpcCertificate.value);
+  };
+
+  if (grpcFile.value != null) {
+    grpcFile.value.value = '';
+  }
 }
 
 /* Functions */
@@ -273,35 +359,49 @@ function formatPort(event: Event, key: 'gossip' | 'service') {
   <hr class="separator my-5" />
 
   <div class="form-group" :class="['col-8 col-xxxl-6']">
-    <label class="form-label"
-      >Gossip CA Certificate <span v-if="required" class="text-danger">*</span></label
-    >
+    <div class="d-flex align-items-center mb-3">
+      <label class="form-label mb-0"
+        >Gossip CA Certificate <span v-if="required" class="text-danger">*</span></label
+      >
+      <input type="file" accept=".pem" ref="gossipFile" @change="handleOnGossipFileChanged" />
+      <AppButton type="button" color="primary" class="ms-5" @click="handleOnImportGossipClick">
+        Upload Pem
+      </AppButton>
+    </div>
     <AppTextArea
-      :model-value="data.gossipCaCertificate"
-      @update:model-value="
-        emit('update:data', {
-          ...data,
-          gossipCaCertificate: $event.startsWith('0x') ? $event.slice(2) : $event,
-        })
-      "
+      :model-value="gossipCaCertificate"
+      ref="gossipInput"
+      @input="handleInputGossipCert"
       :filled="true"
       placeholder="Enter Gossip CA Certificate"
     />
   </div>
 
+  <div class="form-group mt-6 col-8 col-xxxl-6">
+    <label class="form-label">Public Key Hash</label>
+    {{ publicKeyHash }}
+  </div>
+
   <div class="form-group mt-6" :class="['col-8 col-xxxl-6']">
-    <label class="form-label">GRPC Certificate Hash</label>
+    <div class="d-flex align-items-center mb-3">
+      <label class="form-label mb-0">GRPC Certificate</label>
+      <input type="file" accept=".pem" ref="grpcFile" @change="handleOnGrpcFileChanged" />
+      <AppButton type="button" color="primary" class="ms-5" @click="handleOnImportGrpcClick">
+        Upload Pem
+      </AppButton>
+    </div>
     <AppTextArea
-      :model-value="data.certificateHash"
-      @update:model-value="
-        emit('update:data', {
-          ...data,
-          certificateHash: $event,
-        })
-      "
+      :model-value="grpcCertificate"
+      ref="grpcInput"
+      @input="handleInputGrpcCert"
       :filled="true"
-      placeholder="Enter GRPC Certificate Hash"
+      placeholder="Enter GRPC Certificate"
     />
+  </div>
+
+  <div class="form-group mt-6 col-8 col-xxxl-6">
+    <label class="form-label">Certificate Hash</label>
+    {{ data.certificateHash }}
   </div>
 
   <hr class="separator my-5" />

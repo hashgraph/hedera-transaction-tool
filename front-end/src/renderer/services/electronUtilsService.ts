@@ -2,6 +2,8 @@ import type { FileFilter, OpenDialogReturnValue } from 'electron';
 
 import { commonIPCHandler } from '@renderer/utils';
 
+import * as crypto from 'crypto';
+
 /* Open external URL */
 export const openExternal = (url: string) => window.electronAPI.local.utils.openExternal(url);
 
@@ -55,6 +57,24 @@ export const showOpenDialog = async (
     throw new Error('Failed to open the dialog');
   }
 };
+
+export async function sha384(str: string): Promise<string> {
+  try {
+    return await window.electronAPI.local.utils.sha384(str);
+  } catch {
+    throw new Error('Failed to hash');
+  }
+}
+
+/* get public key from PEM */
+export async function x509BytesFromPem(pem: string): Promise<Uint8Array> {
+  try {
+    return await window.electronAPI.local.utils.x509BytesFromPem(pem);
+  } catch {
+    throw new Error('Failed to get certificate');
+  }
+};
+
 
 /* Quits the application */
 export const quit = async () =>
