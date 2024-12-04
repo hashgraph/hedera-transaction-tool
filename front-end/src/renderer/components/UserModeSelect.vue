@@ -1,18 +1,13 @@
 <script setup lang="ts">
 import type { Organization } from '@prisma/client';
-import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 
-import { computed, inject, onMounted, onUpdated, ref, watch } from 'vue';
+import { computed, onMounted, onUpdated, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
 
+import useLoader from '@renderer/composables/useLoader';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
-import { useToast } from 'vue-toast-notification';
-
-import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
-
-import { withLoader } from '@renderer/utils';
 
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -25,11 +20,8 @@ const user = useUserStore();
 const notifications = useNotificationsStore();
 
 /* Composables */
+const withLoader = useLoader();
 const createTooltips = useCreateTooltips();
-const toast = useToast();
-
-/* Injected */
-const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
 
 /* State */
 const selectedMode = ref<string>('personal');
@@ -169,14 +161,7 @@ watch(() => user.selectedOrganization, initialize);
           data-testid="dropdown-item-0"
           data-value="personal"
           class="dropdown-item cursor-pointer"
-          @click="
-            withLoader(
-              handleUserModeChange.bind(null, $event),
-              toast,
-              globalModalLoaderRef,
-              'Failed to select user mode',
-            )()
-          "
+          @click="withLoader(handleUserModeChange.bind(null, $event), 'Failed to select user mode')"
         >
           <span class="text-small">{{ personalModeText }}</span>
         </li>
@@ -185,12 +170,7 @@ watch(() => user.selectedOrganization, initialize);
             :data-testid="'dropdown-item-' + (index + 1)"
             class="dropdown-item cursor-pointer mt-3"
             @click="
-              withLoader(
-                handleUserModeChange.bind(null, $event),
-                toast,
-                globalModalLoaderRef,
-                'Failed to select user mode',
-              )()
+              withLoader(handleUserModeChange.bind(null, $event), 'Failed to select user mode')
             "
             :data-value="organization.id"
           >
