@@ -1,18 +1,16 @@
 <script setup lang="ts">
-import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 import type { Handler, TransactionRequest } from '..';
 
-import { computed, inject, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { Transaction } from '@hashgraph/sdk';
 
-import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
-import { assertUserLoggedIn, getTransactionType, stringifyHbar } from '@renderer/utils';
-
-import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
+import { getTransactionType, stringifyHbar } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -24,10 +22,9 @@ defineProps<{
 
 /* Stores */
 const network = useNetworkStore();
-const user = useUserStore();
 
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+/* Composables */
+const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
 const request = ref<TransactionRequest | null>(null);
@@ -61,32 +58,16 @@ function setShow(value: boolean) {
 }
 
 /* Handlers */
-const handleConfirmTransaction = async (e: Event) => {
-  e.preventDefault();
-
-  const hasPassword = assertPassword();
-  if (!hasPassword) return;
+const handleConfirmTransaction = async () => {
+  const personalPassword = getPassword(next, {
+    subHeading: 'Enter your application password to sign the transaction',
+  });
+  if (passwordModalOpened(personalPassword)) return;
 
   await next();
 };
 
 /* Functions */
-function assertPassword() {
-  assertUserLoggedIn(user.personal);
-  const personalPassword = user.getPassword();
-  if (!personalPassword && !user.personal.useKeychain) {
-    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-    show.value = false;
-    userPasswordModalRef.value?.open(
-      'Enter your application password',
-      'Enter your application password to sign the transaction',
-      next,
-    );
-    return false;
-  }
-
-  return true;
-}
 
 function reset() {
   request.value = null;
@@ -110,7 +91,7 @@ defineExpose({
       <div class="text-center">
         <i class="bi bi-arrow-left-right large-icon"></i>
       </div>
-      <form v-if="transaction" @submit="handleConfirmTransaction">
+      <form v-if="transaction" @submit.prevent="handleConfirmTransaction">
         <h3 class="text-center text-title text-bold mt-5">Confirm Transaction</h3>
         <div class="container-main-bg text-small p-4 mt-5">
           <div class="d-flex justify-content-between p-3">
