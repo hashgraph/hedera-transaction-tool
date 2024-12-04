@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { HederaFile } from '@prisma/client';
-import type { USER_PASSWORD_MODAL_TYPE } from '@renderer/providers';
 
-import { inject, onMounted, ref, watch } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { FileContentsQuery, FileId, FileInfoQuery, Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import { DISPLAY_FILE_SIZE_LIMIT } from '@main/shared/constants';
@@ -13,12 +12,14 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { useToast } from 'vue-toast-notification';
 import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { executeQuery } from '@renderer/services/transactionService';
 import { add, getAll, update } from '@renderer/services/filesService';
 
 import {
+  assertUserLoggedIn,
   isUserLoggedIn,
   isFileId,
   isHederaSpecialFileId,
@@ -26,8 +27,6 @@ import {
   encodeString,
   getErrorMessage,
 } from '@renderer/utils';
-
-import { USER_PASSWORD_MODAL_KEY } from '@renderer/providers';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
@@ -42,9 +41,7 @@ const network = useNetworkStore();
 const toast = useToast();
 const payerData = useAccountId();
 const route = useRoute();
-
-/* Injected */
-const userPasswordModalRef = inject<USER_PASSWORD_MODAL_TYPE>(USER_PASSWORD_MODAL_KEY);
+const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
 const maxQueryFee = ref<Hbar>(new Hbar(2));
@@ -55,17 +52,11 @@ const storedFiles = ref<HederaFile[]>([]);
 
 /* Functions */
 const readFile = async () => {
-  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
-  const personalPassword = user.getPassword();
-  if (!personalPassword && !user.personal.useKeychain) {
-    if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-    userPasswordModalRef.value?.open(
-      'Enter your application password',
-      'Enter your application password to decrypt your keys and sign the transaction',
-      readFile,
-    );
-    return;
-  }
+  assertUserLoggedIn(user.personal);
+  const personalPassword = getPassword(readFile, {
+    subHeading: 'Enter your application password to decrypt your keys and sign the transaction',
+  });
+  if (passwordModalOpened(personalPassword)) return;
 
   try {
     isLoading.value = true;
