@@ -1,25 +1,19 @@
 <script setup lang="ts">
-import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
-import { inject, onMounted, ref, watch } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
+import useLoader from '@renderer/composables/useLoader';
+
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useSetDynamicLayout, { DEFAULT_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { login } from '@renderer/services/organization';
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
-import {
-  assertUserLoggedIn,
-  getErrorMessage,
-  isLoggedOutOrganization,
-  withLoader,
-} from '@renderer/utils';
-
-import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
+import { assertUserLoggedIn, getErrorMessage, isLoggedOutOrganization } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -31,11 +25,9 @@ const user = useUserStore();
 /* Composables */
 const router = useRouter();
 const toast = useToast();
+const withLoader = useLoader();
 useSetDynamicLayout(DEFAULT_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
-
-/* Injected */
-const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
 
 /* State */
 const loading = ref(false);
@@ -87,15 +79,8 @@ const handleLogin = async () => {
 
     loading.value = false;
 
-    await withLoader(
-      async () => {
-        await user.refetchOrganizations();
-      },
-      toast,
-      globalModalLoaderRef?.value,
-      'Failed to change user mode',
-    )();
-  } catch (error: unknown) {
+    await withLoader(user.refetchOrganizations, 'Failed to change user mode');
+  } catch (error: any) {
     inputEmailInvalid.value = true;
     inputPasswordInvalid.value = true;
     toast.error(getErrorMessage(error, 'Failed to sign in'));
@@ -105,14 +90,6 @@ const handleLogin = async () => {
 };
 
 const handleForgotPassword = () => {
-  // const personalPassword = user.getPassword();
-  // if (!personalPassword) {
-  //   if (!userPasswordModalRef) throw new Error('User password modal ref is not provided');
-  //   userPasswordModalRef.value?.open('Enter personal password', null, handleForgotPassword);
-  // } else {
-  //   forgotPasswordModalShown.value = true;
-  // }
-
   forgotPasswordModalShown.value = true;
 };
 
