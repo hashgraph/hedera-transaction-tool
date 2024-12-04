@@ -7,6 +7,22 @@ export type DYNAMIC_LAYOUT_TYPE = {
   showMenu: boolean;
 };
 
+export const DEFAULT_LAYOUT: DYNAMIC_LAYOUT_TYPE = {
+  loggedInClass: false,
+  shouldSetupAccountClass: false,
+  showMenu: false,
+};
+export const LOGGED_IN_LAYOUT: DYNAMIC_LAYOUT_TYPE = {
+  loggedInClass: true,
+  shouldSetupAccountClass: false,
+  showMenu: true,
+};
+export const ACCOUNT_SETUP_LAYOUT: DYNAMIC_LAYOUT_TYPE = {
+  loggedInClass: true,
+  shouldSetupAccountClass: true,
+  showMenu: false,
+};
+
 export const provideDynamicLayout = (value: DYNAMIC_LAYOUT_TYPE) => {
   provide(DYNAMIC_LAYOUT_KEY, value);
 };

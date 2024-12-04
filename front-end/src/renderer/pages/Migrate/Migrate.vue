@@ -9,7 +9,7 @@ import { MIGRATION_STARTED } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+import useSetDynamicLayout, { DEFAULT_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import { useRouter } from 'vue-router';
 
 import { resetDataLocal } from '@renderer/services/userService';
@@ -32,12 +32,8 @@ type StepName = 'recoveryPhrase' | 'personal' | 'organization' | 'summary';
 const user = useUserStore();
 
 /* Composables */
-useSetDynamicLayout({
-  loggedInClass: false,
-  shouldSetupAccountClass: false,
-  showMenu: false,
-});
 const router = useRouter();
+useSetDynamicLayout(DEFAULT_LAYOUT);
 
 /* State */
 const step = ref<StepName>('recoveryPhrase');

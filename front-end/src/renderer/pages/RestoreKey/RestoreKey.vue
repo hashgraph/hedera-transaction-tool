@@ -8,6 +8,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
+import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { restorePrivateKey } from '@renderer/services/keyPairService';
 
@@ -30,6 +31,7 @@ const user = useUserStore();
 /* Composables */
 const toast = useToast();
 const router = useRouter();
+useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */

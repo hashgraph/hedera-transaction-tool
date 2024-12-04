@@ -20,7 +20,7 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
-import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import {
   cancelTransaction,
@@ -77,11 +77,7 @@ const router = useRouter();
 const toast = useToast();
 const ws = useDisposableWs();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
-useSetDynamicLayout({
-  loggedInClass: true,
-  shouldSetupAccountClass: false,
-  showMenu: true,
-});
+useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);

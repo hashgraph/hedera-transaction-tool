@@ -16,6 +16,7 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
+import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import {
   getApiGroupById,
@@ -50,6 +51,7 @@ const nextTransaction = useNextTransactionStore();
 const router = useRouter();
 const toast = useToast();
 const ws = useDisposableWs();
+useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */

@@ -10,7 +10,7 @@ import useContactsStore from '@renderer/stores/storeContacts';
 
 import { useToast } from 'vue-toast-notification';
 import useRedirectOnOnlyOrganization from '@renderer/composables/useRedirectOnOnlyOrganization';
-import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { deleteUser } from '@renderer/services/organization';
 import { removeContact } from '@renderer/services/contactsService';
@@ -31,11 +31,7 @@ const contacts = useContactsStore();
 /* Composables */
 const toast = useToast();
 useRedirectOnOnlyOrganization();
-useSetDynamicLayout({
-  loggedInClass: true,
-  shouldSetupAccountClass: false,
-  showMenu: true,
-});
+useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 /* State */
 const fetching = ref(false);

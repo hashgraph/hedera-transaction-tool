@@ -7,7 +7,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
-import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+import useSetDynamicLayout, { DEFAULT_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { login } from '@renderer/services/organization';
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
@@ -31,12 +31,8 @@ const user = useUserStore();
 /* Composables */
 const router = useRouter();
 const toast = useToast();
+useSetDynamicLayout(DEFAULT_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
-useSetDynamicLayout({
-  loggedInClass: false,
-  shouldSetupAccountClass: false,
-  showMenu: false,
-});
 
 /* Injected */
 const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);

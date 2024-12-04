@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import txTypeComponentMapping from '@renderer/components/Transaction/Create/txTypeComponentMapping';
-import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 /* Composables */
-useSetDynamicLayout({
-  loggedInClass: true,
-  shouldSetupAccountClass: false,
-  showMenu: true,
-});
+useSetDynamicLayout(LOGGED_IN_LAYOUT);
 </script>
 
 <template>

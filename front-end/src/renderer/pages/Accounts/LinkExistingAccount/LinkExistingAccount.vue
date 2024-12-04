@@ -8,7 +8,7 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
-import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { add } from '@renderer/services/accountsService';
 
@@ -25,11 +25,7 @@ const network = useNetworkStore();
 const router = useRouter();
 const toast = useToast();
 useCreateTooltips();
-useSetDynamicLayout({
-  loggedInClass: true,
-  shouldSetupAccountClass: false,
-  showMenu: true,
-});
+useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 /* State */
 const accountData = useAccountId();

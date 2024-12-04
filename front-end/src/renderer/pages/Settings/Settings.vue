@@ -8,7 +8,7 @@ import { RESTORE_KEY } from '@renderer/router';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter, RouterView } from 'vue-router';
-import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { isLoggedInOrganization } from '@renderer/utils';
 
@@ -21,11 +21,7 @@ const user = useUserStore();
 
 /* Composables */
 const router = useRouter();
-useSetDynamicLayout({
-  loggedInClass: true,
-  shouldSetupAccountClass: false,
-  showMenu: true,
-});
+useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 /* Misc */
 const generalTitle = 'General';

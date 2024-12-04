@@ -7,7 +7,9 @@ import { onBeforeRouteLeave } from 'vue-router';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
-import useSetDynamicLayout from '@renderer/composables/useSetDynamicLayout';
+import useSetDynamicLayout, {
+  ACCOUNT_SETUP_LAYOUT,
+} from '@renderer/composables/useSetDynamicLayout';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
@@ -26,11 +28,7 @@ const user = useUserStore();
 
 /* Composables */
 const router = useRouter();
-useSetDynamicLayout({
-  loggedInClass: true,
-  shouldSetupAccountClass: true,
-  showMenu: false,
-});
+useSetDynamicLayout(ACCOUNT_SETUP_LAYOUT);
 
 /* State */
 const keyPairsComponent = ref<InstanceType<typeof KeyPairs> | null>(null);
