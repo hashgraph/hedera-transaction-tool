@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 import type { TabItem } from '@renderer/components/ui/AppTabs.vue';
 
-import { computed, inject, onBeforeMount, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import { NotificationType } from '@main/shared/interfaces';
 import {
@@ -19,14 +18,11 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { getTransactionsToSign } from '@renderer/services/organization';
 
-import { isLoggedInOrganization, isOrganizationActive, withLoader } from '@renderer/utils';
-
-import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
+import { isLoggedInOrganization, isOrganizationActive } from '@renderer/utils';
 
 import AppTabs from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -38,6 +34,7 @@ import ReadyToSign from './components/ReadyToSign.vue';
 import InProgress from './components/InProgress.vue';
 import ReadyForExecution from './components/ReadyForExecution.vue';
 import ReadyForReview from './components/ReadyForReview.vue';
+import useLoader from '@renderer/composables/useLoader';
 
 /* Stores */
 const user = useUserStore();
@@ -46,11 +43,8 @@ const notifications = useNotificationsStore();
 
 /* Composables */
 const router = useRouter();
-const toast = useToast();
+const withLoader = useLoader();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
-
-/* Injected */
-const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
 
 /* State */
 const organizationTabs: TabItem[] = [
@@ -139,22 +133,18 @@ function setQueryTab(title: string) {
 async function syncTab(forceCheckSign = false) {
   setTabItems();
 
-  await withLoader(
-    async () => {
-      const tab = router.currentRoute.value.query.tab?.toString();
+  await withLoader(async () => {
+    const tab = router.currentRoute.value.query.tab?.toString();
 
-      if (tab) {
-        const newIndex = tabItems.value.findIndex(t => t.title === tab);
-        activeTabIndex.value = newIndex >= 0 ? newIndex : activeTabIndex.value;
-      } else {
-        await changeTabIfReadyToSign();
-      }
+    if (tab) {
+      const newIndex = tabItems.value.findIndex(t => t.title === tab);
+      activeTabIndex.value = newIndex >= 0 ? newIndex : activeTabIndex.value;
+    } else {
+      await changeTabIfReadyToSign();
+    }
 
-      if (forceCheckSign) await changeTabIfReadyToSign();
-    },
-    toast,
-    globalModalLoaderRef?.value,
-  )();
+    if (forceCheckSign) await changeTabIfReadyToSign();
+  });
 }
 
 async function changeTabIfReadyToSign() {
