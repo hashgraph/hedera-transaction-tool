@@ -209,13 +209,11 @@ const handleDelete = async () => {
       return;
     }
 
-    if (keyPairIdToDelete.value || deleteAll.value) {
+    if (keyPairIdToDelete.value) {
       const organizationKeyToDelete = getUserKeyToDelete();
       organizationKeyIdToDelete = organizationKeyToDelete?.id || null;
 
-      if (keyPairIdToDelete.value) {
-        await deleteKeyPair(keyPairIdToDelete.value);
-      }
+      await deleteKeyPair(keyPairIdToDelete.value);
     } else if (missingKeyPairIdToDelete.value) {
       organizationKeyIdToDelete = missingKeyPairIdToDelete.value;
     }
