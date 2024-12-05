@@ -42,8 +42,8 @@ const columnClass = 'col-4 col-xxxl-3';
   <div class="row align-items-end">
     <div class="form-group" :class="[columnClass]">
       <label class="form-label">Owner ID <span class="text-danger">*</span></label>
-      <label v-if="ownerInfo" class="form-label d-block text-secondary"
-        >Balance: {{ stringifyHbar(ownerInfo.balance || new Hbar(0)) }}</label
+      <label class="form-label d-block text-secondary"
+        >Balance: {{ ownerInfo ? stringifyHbar(ownerInfo.balance || new Hbar(0)) : '-' }}</label
       >
 
       <AppInput

@@ -103,9 +103,13 @@ const columnClass = 'col-4 col-xxxl-3';
       <label v-if="account.accountInfo.value?.deleted" class="d-block form-label text-danger me-3"
         ><span class="bi bi-exclamation-triangle-fill me-1"></span> Account is deleted</label
       >
-      <label v-else-if="account.isValid.value" class="d-block form-label text-secondary"
+      <label class="d-block form-label text-secondary"
         >Balance:
-        {{ stringifyHbar((account.accountInfo.value?.balance as Hbar) || new Hbar(0)) }}</label
+        {{
+          account.isValid.value
+            ? stringifyHbar((account.accountInfo.value?.balance as Hbar) || new Hbar(0))
+            : '-'
+        }}</label
       >
       <template v-if="!user.selectedOrganization">
         <AccountIdsSelect

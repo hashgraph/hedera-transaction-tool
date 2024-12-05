@@ -109,12 +109,12 @@ watch([amount, accountData.isValid], async ([newAmount]) => {
         <label v-if="accountData.accountInfo.value?.deleted" class="form-label text-danger me-3"
           ><span class="bi bi-exclamation-triangle-fill me-1"></span> Account is deleted</label
         >
-        <label
-          v-else-if="showBalanceInLabel && accountData.isValid.value"
-          class="form-label text-secondary"
+        <label class="form-label text-secondary"
           >Balance:
           {{
-            stringifyHbar((accountData.accountInfo.value?.balance as Hbar) || new Hbar(0))
+            showBalanceInLabel && accountData.isValid.value
+              ? stringifyHbar((accountData.accountInfo.value?.balance as Hbar) || new Hbar(0))
+              : '-'
           }}</label
         >
 
