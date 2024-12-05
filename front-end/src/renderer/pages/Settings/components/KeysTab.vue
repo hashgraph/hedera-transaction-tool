@@ -188,12 +188,15 @@ const handleDelete = async () => {
     let organizationKeyIdToDelete: number | null = null;
 
     if (deleteAll.value) {
-      for (const key of listedKeyPairs.value) {
-        await deleteKeyPair(key.id);
+      if (listedKeyPairs.value) {
+        for (const key of listedKeyPairs.value) {
+          await deleteKeyPair(key.id);
+        }
       }
-
-      for (const key of listedMissingKeyPairs.value) {
-        await deleteKeyPair(key.id.toString());
+      if (listedMissingKeyPairs.value) {
+        for (const key of listedMissingKeyPairs.value) {
+          await deleteKeyPair(key.id.toString());
+        }
       }
 
       toast.success('All keys deleted successfully', { position: 'bottom-right' });
