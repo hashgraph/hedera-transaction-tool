@@ -195,15 +195,15 @@ onBeforeRouteLeave(async () => {
           >
         </div>
         <AppButton
+          v-if="
+            (user.recoveryPhrase && step.current !== 'recoveryPhrase') ||
+            (isLoggedInOrganization(user.selectedOrganization) && selectedPersonalKeyPair !== null)
+          "
           color="primary"
           @click="handleNext"
           class="ms-3 mt-6"
           data-testid="button-next"
-          :disabled="
-            Boolean(nextLoadingText) ||
-            (user.recoveryPhrase && step.current !== 'recoveryPhrase') ||
-            (isLoggedInOrganization(user.selectedOrganization) && selectedPersonalKeyPair !== null)
-          "
+          :disabled="Boolean(nextLoadingText)"
           :loading="Boolean(nextLoadingText)"
           :loading-text="nextLoadingText || ''"
           >Next</AppButton
