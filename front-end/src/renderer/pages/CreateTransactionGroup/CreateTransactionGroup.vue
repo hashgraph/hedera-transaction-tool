@@ -380,6 +380,7 @@ onBeforeRouteLeave(async to => {
               type="button"
               @click="handleDeleteAll"
               class="ms-4 text-danger"
+              data-testid="button-delete-all"
             >
               Delete All</AppButton
             >
@@ -571,7 +572,7 @@ onBeforeRouteLeave(async to => {
           >
             Delete Group
           </AppButton>
-          <AppButton color="primary" data-testid="button-continue-editing" type="submit">
+          <AppButton color="primary" data-testid="button-continue-editing " type="submit">
             Continue Editing
           </AppButton>
         </div>
@@ -601,6 +602,7 @@ onBeforeRouteLeave(async to => {
             type="button"
             @click="handleConfirmDeleteAll"
             class="text-danger"
+            data-testid="button-confirm-delete-all"
           >
             Confirm</AppButton
           >

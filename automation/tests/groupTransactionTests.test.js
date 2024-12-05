@@ -168,4 +168,25 @@ test.describe('Group transaction tests', () => {
     expect(await transactionPage.getTransactionMemoText()).toBe(transactionMemo);
     expect(await transactionPage.getMemoText()).toBe(accountMemo);
   });
+
+  test('Verify user can delete transaction from the group', async () => {
+    await groupPage.addSingleTransactionToGroup();
+
+    await groupPage.clickTransactionDeleteButton(0);
+
+    //verifying that the transaction is deleted
+    expect(await groupPage.isEmptyTransactionTextVisible()).toBe(true);
+    expect(await groupPage.isTransactionVisible(0)).toBe(false);
+  });
+
+  test('Verify user can many transactions at once(delete all)', async () => {
+    await groupPage.addSingleTransactionToGroup(10);
+
+    await groupPage.clickOnDeleteAllButton();
+    await groupPage.clickOnConfirmDeleteAllButton();
+
+    //verifying that the transaction is deleted
+    expect(await groupPage.isEmptyTransactionTextVisible()).toBe(true);
+    expect(await groupPage.isTransactionVisible(0)).toBe(false);
+  });
 });

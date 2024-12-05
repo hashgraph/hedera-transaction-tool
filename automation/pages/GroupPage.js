@@ -20,9 +20,12 @@ class GroupPage extends BasePage {
   addToGroupButtonSelector = 'button-add-to-group';
   discardModalDraftButtonSelector = 'button-discard-group-modal';
   discardDraftTransactionModalButtonSelector = 'button-discard-draft-for-group-modal';
+  deleteAllButtonSelector = 'button-delete-all';
+  confirmDeleteAllButtonSelector = 'button-confirm-delete-all';
 
   // Messages
   toastMessageSelector = '.v-toast__text';
+  emptyTransactionTextSelector = 'p-empty-transaction-text';
 
   // Inputs
   descriptionInputSelector = 'input-transaction-group-description';
@@ -147,11 +150,25 @@ class GroupPage extends BasePage {
     return this.isElementVisible(this.transactionTypeIndexSelector + index);
   }
 
-  async addSingleTransactionToGroup() {
+  async addSingleTransactionToGroup(numberOfTransactions = 1) {
     await this.fillDescription('test');
-    await this.clickOnAddTransactionButton();
-    await this.transactionPage.clickOnCreateAccountTransaction();
-    await this.clickAddToGroupButton();
+    for (let i = 0; i < numberOfTransactions; i++) {
+      await this.clickOnAddTransactionButton();
+      await this.transactionPage.clickOnCreateAccountTransaction();
+      await this.clickAddToGroupButton();
+    }
+  }
+
+  async isEmptyTransactionTextVisible() {
+    return this.isElementVisible(this.emptyTransactionTextSelector);
+  }
+
+  async clickOnDeleteAllButton() {
+    await this.click(this.deleteAllButtonSelector);
+  }
+
+  async clickOnConfirmDeleteAllButton() {
+    await this.click(this.confirmDeleteAllButtonSelector);
   }
 }
 
