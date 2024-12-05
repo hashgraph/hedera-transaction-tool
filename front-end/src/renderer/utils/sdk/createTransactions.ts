@@ -126,7 +126,7 @@ export type NodeData = {
   description: string;
   gossipEndpoints: ComponentServiceEndpoint[];
   serviceEndpoints: ComponentServiceEndpoint[];
-  gossipCaCertificate: string;
+  gossipCaCertificate: Uint8Array;
   certificateHash: string;
   adminKey: Key | null;
 };
@@ -497,11 +497,8 @@ const setNodeData = (
     transaction.setServiceEndpoints(txServiceEndpoints);
   }
 
-  if (data.gossipCaCertificate) {
-    const uint8array = hexToUint8Array(data.gossipCaCertificate);
-    if (uint8array.length > 0) {
-      transaction.setGossipCaCertificate(uint8array);
-    }
+  if (data.gossipCaCertificate.length > 0) {
+    transaction.setGossipCaCertificate(data.gossipCaCertificate);
   }
 
   if (data.adminKey && oldData?.admin_key) {

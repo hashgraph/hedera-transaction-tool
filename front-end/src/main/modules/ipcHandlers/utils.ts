@@ -4,6 +4,8 @@ import { BrowserWindow, app, dialog, ipcMain, shell, FileFilter } from 'electron
 
 import * as bcrypt from 'bcrypt';
 
+import { createHash, X509Certificate } from 'crypto';
+
 import { getNumberArrayFromString } from '@main/utils';
 
 const createChannelName = (...props: string[]) => ['utils', ...props].join(':');
@@ -81,6 +83,17 @@ export default () => {
       });
     },
   );
+
+  ipcMain.handle(createChannelName('sha384'), async (_e, str: string) => {
+    return createHash('sha384').update(str).digest('hex');
+  });
+
+  ipcMain.handle(createChannelName('x509BytesFromPem'), async (_e, pem: string) => {
+    /* Parse the PEM file to get the public key info */
+    const cert = new X509Certificate(pem);
+
+    return new Uint8Array(cert.raw);
+  });
 
   ipcMain.handle(createChannelName('quit'), async () => {
     app.quit();
