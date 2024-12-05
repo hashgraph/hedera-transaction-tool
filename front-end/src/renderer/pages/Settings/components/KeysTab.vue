@@ -101,6 +101,13 @@ const listedMissingKeyPairs = computed(() => {
 
 const modalMessage = computed(() => {
   if (currentTab.value === Tabs.PRIVATE_KEY) {
+    const isLastPrivateKey = user.keyPairs.filter(item => item.secret_hash === null).length === 1;
+    if (deleteAll.value) {
+      return 'You are about to delete all key pairs imported from private keys. Do you wish to continue?';
+    }
+    if (isLastPrivateKey) {
+      return 'You are about to delete the last key pair imported from a private key. Do you wish to continue?';
+    }
     return 'You are about to delete the selected key pair. Do you wish to continue?';
   }
 
