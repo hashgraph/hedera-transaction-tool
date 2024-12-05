@@ -13,6 +13,7 @@ import { getTransactionFromBytes } from '@renderer/utils';
 /* Emits */
 const emit = defineEmits<{
   (event: 'draft-loaded', transaction: Transaction): void;
+  (event: 'details-loaded', details: string): void;
 }>();
 
 /* Stores */
@@ -36,6 +37,9 @@ const handleLoadFromDraft = async () => {
   if (!group) {
     const draft = await getDraft(draftId);
     transactionBytes = draft.transactionBytes;
+    if (draft.details) {
+      emit('details-loaded', draft.details);
+    }
   } else if (groupIndex) {
     transactionBytes = transactionGroup.groupItems[Number(groupIndex)].transactionBytes.toString();
   }

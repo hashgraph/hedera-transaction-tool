@@ -29,7 +29,8 @@ const data = reactive<NodeData>({
   description: '',
   gossipEndpoints: [],
   serviceEndpoints: [],
-  gossipCaCertificate: '',
+  gossipCaCertificate: new Uint8Array(),
+  gossipCaCertificateText: '',
   certificateHash: '',
   adminKey: null,
 });
@@ -54,9 +55,13 @@ const transactionKey = computed(() => {
 });
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
-  handleUpdateData(getNodeData(transaction));
-};
+async function handleDraftLoaded(transaction: Transaction) {
+  handleUpdateData(await getNodeData(transaction));
+}
+
+async function handleDetailsLoaded(details: string) {
+  handleUpdateData({ ...data, certificateHash: details });
+}
 
 const handleUpdateData = (newData: NodeData) => {
   Object.assign(data, newData);
@@ -104,6 +109,8 @@ const preCreateAssert = () => {
     :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"
     @draft-loaded="handleDraftLoaded"
+    @details-loaded="handleDetailsLoaded"
+    :details="data.certificateHash"
   >
     <template #default>
       <NodeFormData :data="data as NodeData" @update:data="handleUpdateData" required />

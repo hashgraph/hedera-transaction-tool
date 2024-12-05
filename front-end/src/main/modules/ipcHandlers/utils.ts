@@ -6,6 +6,8 @@ import * as bcrypt from 'bcrypt';
 
 import { createHash, X509Certificate } from 'crypto';
 
+import { pki } from 'node-forge';
+
 import { getNumberArrayFromString } from '@main/utils';
 
 const createChannelName = (...props: string[]) => ['utils', ...props].join(':');
@@ -89,11 +91,30 @@ export default () => {
   });
 
   ipcMain.handle(createChannelName('x509BytesFromPem'), async (_e, pem: string) => {
-    /* Parse the PEM file to get the public key info */
-    const cert = new X509Certificate(pem);
+    /* Parse the PEM file to get X509 cert bytes*/
 
-    return new Uint8Array(cert.raw);
+    const isValidPem = /-----BEGIN CERTIFICATE-----\n[\s\S]+\n-----END CERTIFICATE-----/;
+
+    if (isValidPem.test(pem)) {
+      try {
+        const cert = new X509Certificate(pem);
+
+        const bytes = new Uint8Array(cert.raw);
+
+        return bytes;
+      } catch {
+        throw new Error("Error parsing the certificate")
+      }
+    } else {
+      return new Uint8Array
+    }
   });
+
+  ipcMain.handle(createChannelName('pemFromX509Bytes'), async (_e, certBytes: Uint8Array) => {
+    const cert = new X509Certificate(certBytes);
+
+    return cert.toString();
+   })
 
   ipcMain.handle(createChannelName('quit'), async () => {
     app.quit();

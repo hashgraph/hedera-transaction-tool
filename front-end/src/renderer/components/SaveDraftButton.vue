@@ -32,6 +32,7 @@ const props = defineProps<{
   getTransaction?: () => Transaction;
   description: string;
   isExecuted: boolean;
+  details?: string;
 }>();
 
 /* Stores */
@@ -67,13 +68,13 @@ const saveDraft = async () => {
         toast.success('Draft updated');
         props.handleDraftUpdated && props.handleDraftUpdated(loadedDraft.id);
       } else {
-        await sendAddDraft(user.personal.id, transactionBytes);
+        await sendAddDraft(user.personal.id, transactionBytes, props.details);
       }
     } catch (error) {
       console.log(error);
     }
   } else {
-    await sendAddDraft(user.personal.id, transactionBytes);
+    await sendAddDraft(user.personal.id, transactionBytes, props.details);
   }
 };
 
@@ -85,8 +86,8 @@ const handleModalSaveDraftSubmit = (e: Event) => {
 };
 
 /* Functions */
-async function sendAddDraft(userId: string, transactionBytes: Uint8Array) {
-  const { id } = await addDraft(userId, transactionBytes, props.description);
+async function sendAddDraft(userId: string, transactionBytes: Uint8Array, details?: string) {
+  const { id } = await addDraft(userId, transactionBytes, props.description, details);
   props.handleDraftAdded && props.handleDraftAdded(id);
   toast.success('Draft saved');
 }

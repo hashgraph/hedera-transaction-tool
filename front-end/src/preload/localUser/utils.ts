@@ -22,6 +22,7 @@ export default {
       ipcRenderer.invoke('utils:showOpenDialog', title, buttonLabel, filters, properties, message),
     sha384: (str: string): Promise<string> => ipcRenderer.invoke('utils:sha384', str),
     x509BytesFromPem: (pem: string): Promise<Uint8Array> => ipcRenderer.invoke('utils:x509BytesFromPem', pem),
+    pemFromX509Bytes: (certBytes: Uint8Array): Promise<string> => ipcRenderer.invoke('utils:pemFromX509Bytes', certBytes),
     quit: (): Promise<void> => ipcRenderer.invoke('utils:quit'),
   },
 };

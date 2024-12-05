@@ -32,7 +32,8 @@ const data = reactive<NodeUpdateData>({
   description: '',
   gossipEndpoints: [],
   serviceEndpoints: [],
-  gossipCaCertificate: '',
+  gossipCaCertificate: new Uint8Array(),
+  gossipCaCertificateText: '',
   certificateHash: '',
   adminKey: null,
 });
@@ -65,7 +66,7 @@ const transactionKey = computed(() => {
 });
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
+async function handleDraftLoaded(transaction: Transaction) {
   if (transaction instanceof NodeUpdateTransaction) {
     if (transaction.nodeId) {
       nodeData.nodeId.value = transaction.nodeId.toNumber();
@@ -74,13 +75,19 @@ const handleDraftLoaded = (transaction: Transaction) => {
       newNodeAccountData.accountId.value = transaction.accountId.toString();
     }
   }
-  handleUpdateData(getNodeUpdateData(transaction));
-};
+  handleUpdateData(await getNodeUpdateData(transaction));
+  console.log(data.gossipCaCertificate.length);
+}
+
+async function handleDetailsLoaded(details: string) {
+  handleUpdateData({ ...data, certificateHash: details });
+}
 
 const handleUpdateData = (newData: NodeUpdateData) => {
   nodeData.nodeId.value = parseInt(newData.nodeId);
   newNodeAccountData.accountId.value = newData.nodeAccountId;
   Object.assign(data, newData);
+  console.log(data.gossipCaCertificate.length);
 };
 
 const handleExecutedSuccess = async () => {
@@ -102,7 +109,7 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.description = '';
     data.gossipEndpoints = [];
     data.serviceEndpoints = [];
-    data.gossipCaCertificate = '';
+    data.gossipCaCertificate = data.gossipCaCertificate;
     data.certificateHash = '';
     data.adminKey = null;
   } else if (!route.query.draftId) {
@@ -111,7 +118,7 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.description = nodeInfo.description || '';
     data.gossipEndpoints = [];
     data.serviceEndpoints = [];
-    data.gossipCaCertificate = '';
+    data.gossipCaCertificate = data.gossipCaCertificate;
     data.certificateHash = '';
     data.adminKey = nodeInfo.admin_key;
   }
@@ -125,6 +132,8 @@ watch(nodeData.nodeInfo, nodeInfo => {
     :transaction-base-key="transactionKey"
     @executed:success="handleExecutedSuccess"
     @draft-loaded="handleDraftLoaded"
+    @details-loaded="handleDetailsLoaded"
+    :details="data.certificateHash"
   >
     <template #default>
       <NodeUpdateFormData :data="data as NodeUpdateData" @update:data="handleUpdateData" />

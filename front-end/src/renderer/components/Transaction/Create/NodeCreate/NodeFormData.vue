@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import type { NodeData } from '@renderer/utils/sdk';
 
-import { ref, useTemplateRef } from 'vue';
+import { onMounted, ref, useTemplateRef } from 'vue';
 
 import { formatAccountId } from '@renderer/utils';
-import { sha384, x509BytesFromPem } from '@renderer/services/electronUtilsService';
+import {
+  pemFromX509Bytes,
+  sha384,
+  x509BytesFromPem,
+} from '@renderer/services/electronUtilsService';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -134,8 +138,12 @@ async function handleOnGossipFileChanged(e: Event) {
   reader.readAsText(target.files![0]);
   reader.onload = async () => {
     if (typeof reader.result === 'string') {
-      gossipCaCertificate.value = reader.result;
-      await handleUpdateGossipCert(gossipCaCertificate.value);
+      // gossipCaCertificate.value = reader.result;
+      emit('update:data', {
+        ...props.data,
+        gossipCaCertificateText: reader.result,
+      });
+      await handleUpdateGossipCert(reader.result);
     }
   };
 
@@ -377,7 +385,7 @@ function formatPort(event: Event, key: 'gossip' | 'service') {
       </AppButton>
     </div>
     <AppTextArea
-      :model-value="gossipCaCertificate"
+      :model-value="data.gossipCaCertificateText"
       ref="gossipInput"
       @input="handleInputGossipCert"
       :filled="true"

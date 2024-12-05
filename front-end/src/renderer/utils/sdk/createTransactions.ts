@@ -127,6 +127,7 @@ export type NodeData = {
   gossipEndpoints: ComponentServiceEndpoint[];
   serviceEndpoints: ComponentServiceEndpoint[];
   gossipCaCertificate: Uint8Array;
+  gossipCaCertificateText: string;
   certificateHash: string;
   adminKey: Key | null;
 };

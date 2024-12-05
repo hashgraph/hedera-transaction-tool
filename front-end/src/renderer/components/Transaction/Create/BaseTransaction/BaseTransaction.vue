@@ -42,6 +42,7 @@ const props = defineProps<{
   preCreateAssert?: () => boolean | void;
   createDisabled?: boolean;
   transactionBaseKey?: KeyList;
+  details?: string;
 }>();
 
 /* Emits */
@@ -51,6 +52,7 @@ const emit = defineEmits<{
   (event: 'submitted', id: number, body: string): void;
   (event: 'group:submitted', id: number): void;
   (event: 'draft-loaded', transaction: Transaction): void;
+  (event: 'details-loaded', details: string): void;
 }>();
 
 /* Stores */
@@ -97,6 +99,10 @@ const handleDraftLoaded = async (transaction: Transaction) => {
   Object.assign(data, commonData);
   emit('draft-loaded', transaction);
 };
+
+function handleDetailsLoaded(details: string) {
+  emit('details-loaded', details);
+}
 
 const handleCreate = async () => {
   basePreCreateAssert();
@@ -203,6 +209,7 @@ defineExpose({
         "
         @add-to-group="handleGroupAction('add')"
         @edit-group-item="handleGroupAction('edit')"
+        :details="details"
       />
 
       <hr class="separator my-5" />
@@ -251,7 +258,7 @@ defineExpose({
       :on-local-stored="handleLocalStored"
     />
 
-    <BaseDraftLoad @draft-loaded="handleDraftLoaded" />
+    <BaseDraftLoad @draft-loaded="handleDraftLoaded" @details-loaded="handleDetailsLoaded" />
     <BaseGroupHandler
       ref="baseGroupHandlerRef"
       :create-transaction="() => props.createTransaction({ ...data } as TransactionCommonData)"

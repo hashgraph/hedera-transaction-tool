@@ -62,10 +62,16 @@ export async function sha384(str: string): Promise<string> {
   }, 'Failed to hash');
 }
 
-/* get public key from PEM */
+/* get x509 certificate bytes from PEM */
 export async function x509BytesFromPem(pem: string): Promise<Uint8Array> {
   return commonIPCHandler(async () => {
     return await window.electronAPI.local.utils.x509BytesFromPem(pem);
+  }, 'Failed to get certificate');
+};
+
+export async function pemFromX509Bytes(certBytes: Uint8Array): Promise<string> {
+  return commonIPCHandler(async () => {
+    return await window.electronAPI.local.utils.pemFromX509Bytes(certBytes);
   }, 'Failed to get certificate');
 };
 

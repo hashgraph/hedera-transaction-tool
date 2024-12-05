@@ -13,6 +13,7 @@ defineProps<{
   createTransaction?: () => Transaction;
   createButtonDisabled?: boolean;
   description?: string;
+  details?: string;
 }>();
 
 /* Emits */
@@ -39,6 +40,7 @@ defineEmits<{
               :get-transaction="createTransaction"
               :description="description || ''"
               :is-executed="isProcessed"
+              :details="details"
             />
             <AppButton
               color="primary"
