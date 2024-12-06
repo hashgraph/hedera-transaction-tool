@@ -89,9 +89,24 @@ export default () => {
   });
 
   ipcMain.handle(createChannelName('x509BytesFromPem'), async (_e, pem: string) => {
-    /* Parse the PEM file to get the public key info */
-    const cert = new X509Certificate(pem);
+    const PEM_HEADER = '-----BEGIN CERTIFICATE-----';
 
+    const pemBufferFromUTF8 = Buffer.from(pem, 'utf8');
+    const pemBufferFromHex = Buffer.from(pem, 'hex');
+
+    let pemData: Buffer | string = '';
+
+    if (pem.includes(PEM_HEADER) && pemBufferFromUTF8.length > 0) {
+      pemData = pemBufferFromUTF8;
+    } else if (pemBufferFromHex.length > 0) {
+      pemData = pemBufferFromHex;
+    }
+
+    if (!pemData || pemData.length === 0) {
+      throw new Error('Invalid PEM');
+    }
+
+    const cert = new X509Certificate(pemData);
     return new Uint8Array(cert.raw);
   });
 

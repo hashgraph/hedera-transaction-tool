@@ -3,7 +3,7 @@ import type { NodeData } from '@renderer/utils/sdk';
 
 import { ref, useTemplateRef } from 'vue';
 
-import { formatAccountId } from '@renderer/utils';
+import { formatAccountId, hexToUint8Array } from '@renderer/utils';
 import { sha384, x509BytesFromPem } from '@renderer/services/electronUtilsService';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -87,20 +87,17 @@ async function handleInputGossipCert(e: Event) {
 }
 
 async function handleUpdateGossipCert(str: string) {
-  const publicKey = str.split('-----')[2];
-  if (!publicKey) {
-    publicKeyHash.value = '';
-    emit('update:data', {
-      ...props.data,
-      gossipCaCertificate: new Uint8Array(),
-    });
-  } else {
-    publicKeyHash.value = await sha384(publicKey);
-    emit('update:data', {
-      ...props.data,
-      gossipCaCertificate: await x509BytesFromPem(str),
-    });
+  let gossipCaCertificate = Uint8Array.from([]);
+  if (str.trim().length !== 0) {
+    // publicKeyHash.value = await sha384(publicKey);
+    gossipCaCertificate = await x509BytesFromPem(str);
   }
+
+  publicKeyHash.value = '';
+  emit('update:data', {
+    ...props.data,
+    gossipCaCertificate,
+  });
 }
 
 async function handleInputGrpcCert(e: Event) {
@@ -118,7 +115,7 @@ async function handleUpdateGrpcCert(str: string) {
   }
   emit('update:data', {
     ...props.data,
-    certificateHash: hash.value,
+    certificateHash: hexToUint8Array(hash.value),
   });
 }
 
