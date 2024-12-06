@@ -88,28 +88,36 @@ export default () => {
     return createHash('sha384').update(str).digest('hex');
   });
 
-  ipcMain.handle(createChannelName('x509BytesFromPem'), async (_e, pem: string) => {
+  ipcMain.handle(createChannelName('x509BytesFromPem'), async (_e, pem: string | Uint8Array) => {
     const PEM_HEADER = '-----BEGIN CERTIFICATE-----';
 
-    const pemBufferFromUTF8 = Buffer.from(pem, 'utf8');
-    const pemBufferFromHex = Buffer.from(pem, 'hex');
+    let cert: X509Certificate | null = null;
 
-    let pemData: Buffer | string = '';
+    if (pem instanceof Uint8Array) {
+      cert = new X509Certificate(pem);
+    } else {
+      const pemBufferFromUTF8 = Buffer.from(pem, 'utf8');
+      const pemBufferFromHex = Buffer.from(pem, 'hex');
 
-    if (pem.includes(PEM_HEADER) && pemBufferFromUTF8.length > 0) {
-      pemData = pemBufferFromUTF8;
-    } else if (pemBufferFromHex.length > 0) {
-      pemData = pemBufferFromHex;
+      let pemData: Buffer | string = '';
+
+      if (pem.includes(PEM_HEADER) && pemBufferFromUTF8.length > 0) {
+        pemData = pemBufferFromUTF8;
+      } else if (pemBufferFromHex.length > 0) {
+        pemData = pemBufferFromHex;
+      }
+
+      if (!pemData || pemData.length === 0) {
+        throw new Error('Invalid PEM');
+      }
+
+      cert = new X509Certificate(pemData);
     }
 
-    if (!pemData || pemData.length === 0) {
-      throw new Error('Invalid PEM');
-    }
-
-    const cert = new X509Certificate(pemData);
     return {
       raw: new Uint8Array(cert.raw),
       hash: createHash('sha384').update(cert.raw).digest('hex'),
+      text: cert.toString(),
     };
   });
 

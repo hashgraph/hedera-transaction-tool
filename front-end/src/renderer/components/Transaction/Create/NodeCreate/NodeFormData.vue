@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { NodeData } from '@renderer/utils/sdk';
 
-import { ref, useTemplateRef } from 'vue';
+import { ref, useTemplateRef, watch } from 'vue';
 
 import { formatAccountId, hexToUint8Array, uint8ToHex } from '@renderer/utils';
 import { sha384, x509BytesFromPem } from '@renderer/services/electronUtilsService';
@@ -25,7 +25,7 @@ const servicePort = ref('');
 const publicKeyHash = ref('');
 const hash = ref('');
 const grpcCertificate = ref('');
-const gossipCaCertificate = ref('');
+const gossipCaCertificateText = ref('');
 const gossipInput = useTemplateRef('gossipInput');
 const grpcInput = useTemplateRef('grpcInput');
 const gossipFile = useTemplateRef('gossipFile');
@@ -133,8 +133,8 @@ async function handleOnGossipFileChanged(e: Event) {
   reader.readAsText(target.files![0]);
   reader.onload = async () => {
     if (typeof reader.result === 'string') {
-      gossipCaCertificate.value = reader.result;
-      await handleUpdateGossipCert(gossipCaCertificate.value);
+      gossipCaCertificateText.value = reader.result;
+      await handleUpdateGossipCert(gossipCaCertificateText.value);
     }
   };
 
@@ -191,6 +191,19 @@ function formatPort(event: Event, key: 'gossip' | 'service') {
   const target = event.target as HTMLInputElement;
   portMapping[key].value = target.value.replace(/[^0-9]/g, '');
 }
+
+/* Watchers */
+watch(
+  () => props.data.gossipCaCertificate,
+  async () => {
+    const { hash, text } = await x509BytesFromPem(props.data.gossipCaCertificate);
+    publicKeyHash.value = hash;
+    gossipCaCertificateText.value = text;
+  },
+  {
+    once: true,
+  },
+);
 </script>
 
 <template>
@@ -376,7 +389,7 @@ function formatPort(event: Event, key: 'gossip' | 'service') {
       </AppButton>
     </div>
     <AppTextArea
-      :model-value="gossipCaCertificate"
+      :model-value="gossipCaCertificateText"
       ref="gossipInput"
       @input="handleInputGossipCert"
       :filled="true"
