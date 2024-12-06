@@ -194,7 +194,7 @@ watch(
       placeholder="Enter Node Account ID"
     />
   </div>
-  <div class="form-group mt-6" :class="['col-4 col-xxxl-3']">
+  <div class="form-group mt-6 col-8 col-xxxl-6">
     <label class="form-label">Node Description</label>
     <AppInput
       :model-value="data.description"
@@ -205,6 +205,7 @@ watch(
         })
       "
       :filled="true"
+      maxlength="100"
       placeholder="Enter Node Description"
     />
   </div>
