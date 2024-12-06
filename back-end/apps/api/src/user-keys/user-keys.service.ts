@@ -7,7 +7,7 @@ import { User, UserKey } from '@entities';
 
 import { UploadUserKeyDto } from './dtos';
 
-export const MAX_USER_KEYS = 20;
+export const MAX_USER_KEYS = 500;
 
 @Injectable()
 export class UserKeysService {

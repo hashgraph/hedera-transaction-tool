@@ -61,7 +61,7 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.ANF]: 'Approver not found',
   [ErrorCodes.RANF]: 'Root approver not found',
   [ErrorCodes.ONF]: 'Observer not found',
-  [ErrorCodes.UMK]: 'User must have up to 20 keys', //Check MAX_USER_KEYS
+  [ErrorCodes.UMK]: 'User must have up to 500 keys', //Check MAX_USER_KEYS
   [ErrorCodes.ISNMPN]: 'Invalid signature map node parameters',
   [ErrorCodes.KNF]: 'Key not found',
   [ErrorCodes.NNF]: 'Notification not found',
