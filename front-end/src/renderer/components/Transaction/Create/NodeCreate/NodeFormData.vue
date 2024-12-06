@@ -83,16 +83,18 @@ async function handleUpdateGossipCert(str: string) {
   let gossipCaCertificate = Uint8Array.from([]);
   publicKeyHash.value = '';
 
-  if (str.trim().length !== 0) {
-    const { raw, hash } = await x509BytesFromPem(str);
-    gossipCaCertificate = raw;
-    publicKeyHash.value = hash;
+  try {
+    if (str.trim().length !== 0) {
+      const { raw, hash } = await x509BytesFromPem(str);
+      gossipCaCertificate = raw;
+      publicKeyHash.value = hash;
+    }
+  } finally {
+    emit('update:data', {
+      ...props.data,
+      gossipCaCertificate,
+    });
   }
-
-  emit('update:data', {
-    ...props.data,
-    gossipCaCertificate,
-  });
 }
 
 async function handleUpdateGrpcCert(str: string) {
