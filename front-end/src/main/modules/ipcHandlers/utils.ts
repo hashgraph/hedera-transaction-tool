@@ -96,13 +96,11 @@ export default () => {
     if (pem instanceof Uint8Array) {
       cert = new X509Certificate(pem);
     } else {
-      const pemBufferFromUTF8 = Buffer.from(pem, 'utf8');
+      let pemData: Buffer | string = '';
       const pemBufferFromHex = Buffer.from(pem, 'hex');
 
-      let pemData: Buffer | string = '';
-
-      if (pem.includes(PEM_HEADER) && pemBufferFromUTF8.length > 0) {
-        pemData = pemBufferFromUTF8;
+      if (pem.includes(PEM_HEADER)) {
+        pemData = Buffer.from(pem, 'utf8');
       } else if (pemBufferFromHex.length > 0) {
         pemData = pemBufferFromHex;
       }
