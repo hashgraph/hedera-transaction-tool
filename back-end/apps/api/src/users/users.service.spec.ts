@@ -98,12 +98,10 @@ describe('UsersService', () => {
 
     await service.createUser(email, password);
 
-    expect(userRepository.restore).toHaveBeenCalledWith(userCopy.id);
-    delete userCopy.deletedAt;
-
     expect(userRepository.save).toHaveBeenCalledWith({
       ...userCopy,
       status: 'NEW',
+      deletedAt: null,
     });
   });
 
