@@ -47,6 +47,7 @@ enum Tabs {
 /* State */
 const isDeleteModalShown = ref(false);
 const isUpdateNicknameModalShown = ref(false);
+const deleteAll = ref(false);
 
 const decryptedKeys = ref<{ decrypted: string | null; publicKey: string }[]>([]);
 const publicKeysPrivateKeyToDecrypt = ref('');
@@ -96,6 +97,38 @@ const listedMissingKeyPairs = computed(() => {
       (currentTab.value === Tabs.PRIVATE_KEY && !keyPair.mnemonicHash)
     );
   });
+});
+
+const modalMessage = computed(() => {
+  const isLastPrivateKey = user.keyPairs.filter(item => item.secret_hash === null).length === 1;
+  const isLastRecoveryPhraseKey =
+    user.keyPairs.filter(item => item.secret_hash != null).length === 1 &&
+    user.keyPairs[0].id === keyPairIdToDelete.value;
+
+  if (currentTab.value === Tabs.PRIVATE_KEY) {
+    if (deleteAll.value) {
+      return 'You are about to delete all key pairs imported from private keys. Do you wish to continue?';
+    }
+    if (isLastPrivateKey) {
+      return 'You are about to delete the last key pair imported from a private key. Do you wish to continue?';
+    }
+
+    return 'You are about to delete the selected key pair. Do you wish to continue?';
+  }
+
+  if (deleteAll.value) {
+    return 'You are about to delete all key pairs. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?';
+  }
+
+  if (isLastRecoveryPhraseKey) {
+    return 'You are about to delete the last key pair associated with the recovery phrase you have used to set up the Transaction Tool. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?';
+  }
+
+  if (isLastPrivateKey) {
+    return 'You are about to delete the last key pair imported from a private key. Do you wish to continue?';
+  }
+
+  return 'You are about to delete the selected key pair. Do you wish to continue?';
 });
 
 /* Handlers */
@@ -148,6 +181,9 @@ const handleHideDecryptedKey = (publicKey: string) => {
 };
 
 const handleDeleteModal = (keyId: string) => {
+  if (deleteAll.value) {
+    deleteAll.value = false;
+  }
   keyPairIdToDelete.value = keyId;
   isDeleteModalShown.value = true;
 };
@@ -161,32 +197,63 @@ const handleDelete = async () => {
   try {
     isDeletingKey.value = true;
 
-    let organizationKeyIdToDelete: number | null = null;
+    const deleteSingleKey = async (keyId: string | number) => {
+      const organizationKeyToDelete = getUserKeyToDelete(keyId.toString());
+      const organizationKeyIdToDelete = organizationKeyToDelete?.id || null;
+
+      await deleteKeyPair(keyId.toString());
+
+      if (organizationKeyIdToDelete && isLoggedInOrganization(user.selectedOrganization)) {
+        await safeAwait(
+          deleteKey(
+            user.selectedOrganization.serverUrl,
+            user.selectedOrganization.userId,
+            organizationKeyIdToDelete,
+          ),
+        );
+      }
+    };
+
+    if (deleteAll.value) {
+      const deleteAllKeys = async () => {
+        if (listedKeyPairs.value) {
+          for (const key of listedKeyPairs.value) {
+            await deleteSingleKey(key.id);
+          }
+        }
+
+        if (listedMissingKeyPairs.value) {
+          for (const key of listedMissingKeyPairs.value) {
+            await deleteSingleKey(key.id);
+          }
+        }
+      };
+
+      await deleteAllKeys();
+
+      toast.success('All keys deleted successfully', { position: 'bottom-right' });
+
+      await user.refetchUserState();
+      await user.refetchKeys();
+      await user.refetchAccounts();
+
+      if (user.shouldSetupAccount) {
+        router.push({ name: 'accountSetup' });
+      }
+      return;
+    }
 
     if (keyPairIdToDelete.value) {
-      const organizationKeyToDelete = getUserKeyToDelete();
-      organizationKeyIdToDelete = organizationKeyToDelete?.id || null;
-
-      await deleteKeyPair(keyPairIdToDelete.value);
+      await deleteSingleKey(keyPairIdToDelete.value);
     } else if (missingKeyPairIdToDelete.value) {
-      organizationKeyIdToDelete = missingKeyPairIdToDelete.value;
+      await deleteSingleKey(missingKeyPairIdToDelete.value);
     }
 
-    if (organizationKeyIdToDelete && isLoggedInOrganization(user.selectedOrganization)) {
-      await safeAwait(
-        deleteKey(
-          user.selectedOrganization.serverUrl,
-          user.selectedOrganization.userId,
-          organizationKeyIdToDelete,
-        ),
-      );
-    }
-
-    toast.success(`Private key deleted successfully`);
+    toast.success('Private key deleted successfully');
 
     await user.refetchUserState();
     await user.refetchKeys();
-    user.refetchAccounts();
+    await user.refetchAccounts();
 
     if (user.shouldSetupAccount) {
       router.push({ name: 'accountSetup' });
@@ -198,6 +265,7 @@ const handleDelete = async () => {
     missingKeyPairIdToDelete.value = null;
     isDeletingKey.value = false;
     isDeleteModalShown.value = false;
+    deleteAll.value = false;
   }
 };
 
@@ -214,10 +282,15 @@ const handleStartNicknameEdit = (id: string) => {
 const handleRedirectToRecoverMnemonicKeys = () => {
   router.push({ name: RESTORE_MISSING_KEYS });
 };
+const handleRemoveAllClick = () => {
+  deleteAll.value = true;
+  keyPairIdToDelete.value = null;
+  isDeleteModalShown.value = true;
+};
 
 /* Functions */
-function getUserKeyToDelete() {
-  const localKey = user.keyPairs.find(kp => kp.id === keyPairIdToDelete.value);
+function getUserKeyToDelete(keyPairId: string) {
+  const localKey = user.keyPairs.find(kp => kp.id === keyPairId);
   if (!localKey) {
     throw Error('Local key not found');
   }
@@ -303,6 +376,16 @@ watch(isDeletingKey, () => {
             @click="handleRedirectToRecoverMnemonicKeys()"
             >Restore Missing Keys</AppButton
           >
+
+          <AppButton
+            v-if="listedKeyPairs.length > 0 || listedMissingKeyPairs.length > 0"
+            class="rounded-3 text-nowrap min-w-unset"
+            color="danger"
+            data-testid="button-remove-all-keys"
+            @click="handleRemoveAllClick"
+          >
+            <span class="bi bi-trash"></span> Remove All
+          </AppButton>
         </div>
       </div>
     </div>
@@ -520,19 +603,8 @@ watch(isDeletingKey, () => {
           </div>
           <form @submit.prevent="handleDelete">
             <h3 class="text-center text-title text-bold mt-3">Delete key pair</h3>
-            <p
-              v-if="
-                user.keyPairs.filter(item => item.secret_hash != null).length === 1 &&
-                user.keyPairs
-                  .filter(item => item.secret_hash != null)
-                  .map(k => k.id)
-                  .includes(keyPairIdToDelete || '')
-              "
-              class="text-center mt-4"
-            >
-              You are about to delete the last key pair associated with the recovery phrase you have
-              used to set up the Transaction Tool. If you choose to proceed, you will have to go
-              through creating or importing a recovery phrase again. Do you wish to continue?
+            <p class="text-center mt-4">
+              {{ modalMessage }}
             </p>
             <div class="d-grid mt-5">
               <AppButton
