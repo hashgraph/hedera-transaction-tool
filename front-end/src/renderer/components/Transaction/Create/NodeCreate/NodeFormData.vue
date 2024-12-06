@@ -396,7 +396,7 @@ watch(
 
   <div class="form-group mt-6 col-8 col-xxxl-6">
     <label class="form-label">Public Key Hash</label>
-    {{ publicKeyHash }}
+    <p class="overflow-auto">{{ publicKeyHash }}</p>
   </div>
 
   <div class="form-group mt-6" :class="['col-8 col-xxxl-6']">
@@ -417,7 +417,7 @@ watch(
 
   <div class="form-group mt-6 col-8 col-xxxl-6">
     <label class="form-label">Certificate Hash</label>
-    {{ uint8ToHex(data.certificateHash) }}
+    <p class="overflow-auto">{{ uint8ToHex(data.certificateHash) }}</p>
   </div>
 
   <hr class="separator my-5" />
