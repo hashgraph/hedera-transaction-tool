@@ -107,7 +107,10 @@ export default () => {
     }
 
     const cert = new X509Certificate(pemData);
-    return new Uint8Array(cert.raw);
+    return {
+      raw: new Uint8Array(cert.raw),
+      hash: createHash('sha384').update(cert.raw).digest('hex'),
+    };
   });
 
   ipcMain.handle(createChannelName('quit'), async () => {

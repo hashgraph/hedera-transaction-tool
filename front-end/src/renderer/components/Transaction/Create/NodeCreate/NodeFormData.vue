@@ -88,12 +88,14 @@ async function handleInputGossipCert(e: Event) {
 
 async function handleUpdateGossipCert(str: string) {
   let gossipCaCertificate = Uint8Array.from([]);
+  publicKeyHash.value = '';
+
   if (str.trim().length !== 0) {
-    // publicKeyHash.value = await sha384(publicKey);
-    gossipCaCertificate = await x509BytesFromPem(str);
+    const { raw, hash } = await x509BytesFromPem(str);
+    gossipCaCertificate = raw;
+    publicKeyHash.value = hash;
   }
 
-  publicKeyHash.value = '';
   emit('update:data', {
     ...props.data,
     gossipCaCertificate,
