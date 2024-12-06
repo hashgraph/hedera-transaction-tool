@@ -232,20 +232,13 @@ export function getNodeData(transaction: Transaction): NodeData {
   const gossipEndpoints = getEndpointData(transaction.gossipEndpoints || []);
   const serviceEndpoints = getEndpointData(transaction.serviceEndpoints || []);
 
-  const gossipCaCertificate = transaction.gossipCaCertificate
-    ? uint8ToHex(transaction.gossipCaCertificate)
-    : '';
-  const certificateHash = transaction.certificateHash
-    ? uint8ToHex(transaction.certificateHash)
-    : '';
-
   return {
     nodeAccountId: transaction.accountId?.toString() || '',
     description: transaction.description || '',
     gossipEndpoints: gossipEndpoints || [],
     serviceEndpoints: serviceEndpoints || [],
-    gossipCaCertificate: gossipCaCertificate,
-    certificateHash: certificateHash,
+    gossipCaCertificate: transaction.gossipCaCertificate || Uint8Array.from([]),
+    certificateHash: transaction.certificateHash || Uint8Array.from([]),
     adminKey: transaction.adminKey,
   };
 }
