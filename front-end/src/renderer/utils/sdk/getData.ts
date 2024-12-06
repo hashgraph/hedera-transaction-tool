@@ -44,7 +44,7 @@ import type {
   TransferHbarData,
 } from './createTransactions';
 import { getMaximumExpirationTime, getMinimumExpirationTime } from '.';
-import { hexToString, uint8ToHex } from '..';
+import { uint8ToHex } from '..';
 
 export const getTransactionCommonData = (transaction: Transaction): TransactionCommonData => {
   const transactionId = transaction.transactionId;
@@ -206,7 +206,7 @@ export const getEndpointData = (
   for (const endpoint of serviceEndpoints) {
     const ipAddressV4 =
       endpoint.getIpAddressV4 && endpoint.getIpAddressV4.length > 0
-        ? hexToString(uint8ToHex(endpoint.getIpAddressV4))
+        ? endpoint.getIpAddressV4.join('.')
         : '';
     const port = endpoint.getPort ? endpoint.getPort.toString() : '';
     const domainName = endpoint.getDomainName || '';
@@ -232,20 +232,13 @@ export function getNodeData(transaction: Transaction): NodeData {
   const gossipEndpoints = getEndpointData(transaction.gossipEndpoints || []);
   const serviceEndpoints = getEndpointData(transaction.serviceEndpoints || []);
 
-  const gossipCaCertificate = transaction.gossipCaCertificate
-    ? uint8ToHex(transaction.gossipCaCertificate)
-    : '';
-  const certificateHash = transaction.certificateHash
-    ? uint8ToHex(transaction.certificateHash)
-    : '';
-
   return {
     nodeAccountId: transaction.accountId?.toString() || '',
     description: transaction.description || '',
     gossipEndpoints: gossipEndpoints || [],
     serviceEndpoints: serviceEndpoints || [],
-    gossipCaCertificate: gossipCaCertificate,
-    certificateHash: certificateHash,
+    gossipCaCertificate: transaction.gossipCaCertificate || Uint8Array.from([]),
+    certificateHash: transaction.certificateHash || Uint8Array.from([]),
     adminKey: transaction.adminKey,
   };
 }

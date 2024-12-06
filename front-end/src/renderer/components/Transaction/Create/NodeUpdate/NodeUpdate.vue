@@ -32,8 +32,8 @@ const data = reactive<NodeUpdateData>({
   description: '',
   gossipEndpoints: [],
   serviceEndpoints: [],
-  gossipCaCertificate: '',
-  certificateHash: '',
+  gossipCaCertificate: Uint8Array.from([]),
+  certificateHash: Uint8Array.from([]),
   adminKey: null,
 });
 
@@ -102,8 +102,8 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.description = '';
     data.gossipEndpoints = [];
     data.serviceEndpoints = [];
-    data.gossipCaCertificate = '';
-    data.certificateHash = '';
+    data.gossipCaCertificate = Uint8Array.from([]);
+    data.certificateHash = Uint8Array.from([]);
     data.adminKey = null;
   } else if (!route.query.draftId) {
     data.nodeAccountId = nodeInfo.node_account_id?.toString() || '';
@@ -111,8 +111,8 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.description = nodeInfo.description || '';
     data.gossipEndpoints = [];
     data.serviceEndpoints = [];
-    data.gossipCaCertificate = '';
-    data.certificateHash = '';
+    data.gossipCaCertificate = Uint8Array.from([]);
+    data.certificateHash = Uint8Array.from([]);
     data.adminKey = nodeInfo.admin_key;
   }
 });

@@ -1,43 +1,25 @@
-import { MockedClass, MockedObject } from 'vitest';
+import { MockedObject } from 'vitest';
+import { mockDeep } from 'vitest-mock-extended';
 
 import registerUtilsListeners from '@main/modules/ipcHandlers/utils';
 
 import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
-import { mockDeep } from 'vitest-mock-extended';
 import { compare, hash } from 'bcrypt';
 import { getNumberArrayFromString } from '@main/utils';
 import fs from 'fs/promises';
+import { createHash, X509Certificate } from 'crypto';
 
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
 vi.mock('bcrypt', () => ({ hash: vi.fn(), compare: vi.fn() }));
-
+vi.mock('crypto');
 vi.mock('electron', () => {
-  const bw = vi.fn() as unknown as MockedClass<typeof BrowserWindow>;
-  bw.getAllWindows = vi.fn();
-  Object.defineProperty(bw.prototype, 'webContents', {
-    value: {
-      send: vi.fn(),
-    },
-    writable: false,
-    enumerable: true,
-  });
-
   return {
-    BrowserWindow: bw,
-    ipcMain: {
-      on: vi.fn(),
-      handle: vi.fn(),
-    },
-    shell: {
-      openExternal: vi.fn(),
-      showItemInFolder: vi.fn(),
-      openPath: vi.fn(),
-    },
-    app: {
-      getPath: vi.fn(),
-      quit: vi.fn(),
-    },
-    dialog: { showSaveDialog: vi.fn(), showErrorBox: vi.fn(), showOpenDialog: vi.fn() },
+    default: mockDeep<Electron.App>(),
+    app: mockDeep<Electron.App>(),
+    BrowserWindow: mockDeep<BrowserWindow>(),
+    shell: mockDeep<Electron.Session>(),
+    dialog: mockDeep<Electron.Session>(),
+    ipcMain: mockDeep<Electron.IpcMain>(),
   };
 });
 vi.mock('fs/promises', () => ({
@@ -86,9 +68,20 @@ describe('registerUtilsListeners', () => {
   const event: Electron.IpcMainEvent = mockDeep<Electron.IpcMainEvent>();
 
   test('Should register handlers for each util', () => {
-    const utils = ['hash', 'saveFile', 'quit'];
+    const utils = [
+      'hash',
+      'compareHash',
+      'compareDataToHashes',
+      'saveFile',
+      'showOpenDialog',
+      'sha384',
+      'x509BytesFromPem',
+      'quit',
+    ];
 
     expect(ipcMainMO.on).toHaveBeenCalledWith('utils:openExternal', expect.any(Function));
+
+    console.log(ipcMainMO.handle.mock.calls);
 
     expect(
       utils.every(util =>
@@ -411,5 +404,153 @@ describe('registerUtilsListeners', () => {
       await quitHandler[1](event);
       expect(app.quit).toHaveBeenCalled();
     }
+  });
+
+  test('Should hash the data in util:sha384', async () => {
+    const data = 'testData';
+    const hashedData = 'hashedData';
+
+    vi.mocked(createHash).mockReturnValue({
+      update: vi.fn().mockReturnThis(),
+      digest: vi.fn().mockReturnValue(hashedData),
+    } as unknown as ReturnType<typeof createHash>);
+
+    const sha384Handler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:sha384');
+
+    expect(sha384Handler).toBeDefined();
+
+    if (sha384Handler) {
+      const result = await sha384Handler[1](event, data);
+      expect(createHash).toHaveBeenCalledWith('sha384');
+      expect(result).toBe(hashedData);
+    }
+  });
+
+  describe('x509BytesFromPem', () => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+      registerUtilsListeners();
+    });
+
+    test('Should handle x509BytesFromPem with PEM string', async () => {
+      const pem =
+        '-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1\n-----END CERTIFICATE-----';
+      const certRaw = new Uint8Array([1, 2, 3, 4]);
+      const certHash = 'hashedCert';
+      const certText = 'certText';
+
+      const mockX509Certificate = {
+        raw: certRaw,
+        toString: vi.fn().mockReturnValue(certText),
+      };
+
+      vi.mocked(X509Certificate).mockImplementation(
+        () => mockX509Certificate as unknown as X509Certificate,
+      );
+      vi.mocked(createHash).mockReturnValue({
+        update: vi.fn().mockReturnThis(),
+        digest: vi.fn().mockReturnValue(certHash),
+      } as unknown as ReturnType<typeof createHash>);
+
+      const x509BytesFromPemHandler = ipcMainMO.handle.mock.calls.find(
+        ([e]) => e === 'utils:x509BytesFromPem',
+      );
+
+      expect(x509BytesFromPemHandler).toBeDefined();
+
+      if (x509BytesFromPemHandler) {
+        const result = await x509BytesFromPemHandler[1](event, pem);
+        expect(result).toEqual({
+          raw: certRaw,
+          hash: certHash,
+          text: certText,
+        });
+      }
+    });
+
+    test('Should handle x509BytesFromPem with hex PEM string', async () => {
+      const pem =
+        '2d2d2d2d2d424547494e2043455254494649434154452d2d2d2d2d0a4d494942496a414e42676b7168696b693947397730304241514541310a2d2d2d2d2d454e442043455254494649434154452d2d2d2d2d';
+      const certRaw = new Uint8Array([1, 2, 3, 4]);
+      const certHash = 'hashedCert';
+      const certText = 'certText';
+
+      const mockX509Certificate = {
+        raw: certRaw,
+        toString: vi.fn().mockReturnValue(certText),
+      };
+
+      vi.mocked(X509Certificate).mockImplementation(
+        () => mockX509Certificate as unknown as X509Certificate,
+      );
+      vi.mocked(createHash).mockReturnValue({
+        update: vi.fn().mockReturnThis(),
+        digest: vi.fn().mockReturnValue(certHash),
+      } as unknown as ReturnType<typeof createHash>);
+
+      const x509BytesFromPemHandler = ipcMainMO.handle.mock.calls.find(
+        ([e]) => e === 'utils:x509BytesFromPem',
+      );
+
+      expect(x509BytesFromPemHandler).toBeDefined();
+
+      if (x509BytesFromPemHandler) {
+        const result = await x509BytesFromPemHandler[1](event, pem);
+        expect(result).toEqual({
+          raw: certRaw,
+          hash: certHash,
+          text: certText,
+        });
+      }
+    });
+
+    test('Should handle x509BytesFromPem with Uint8Array', async () => {
+      const pem = new Uint8Array([48, 130, 1, 10, 2, 130, 1, 1, 0, 217, 48, 130, 1, 10]);
+      const certRaw = new Uint8Array([1, 2, 3, 4]);
+      const certHash = 'hashedCert';
+      const certText = 'certText';
+
+      const mockX509Certificate = {
+        raw: certRaw,
+        toString: vi.fn().mockReturnValue(certText),
+      };
+
+      vi.mocked(X509Certificate).mockImplementation(
+        () => mockX509Certificate as unknown as X509Certificate,
+      );
+      vi.mocked(createHash).mockReturnValue({
+        update: vi.fn().mockReturnThis(),
+        digest: vi.fn().mockReturnValue(certHash),
+      } as unknown as ReturnType<typeof createHash>);
+
+      const x509BytesFromPemHandler = ipcMainMO.handle.mock.calls.find(
+        ([e]) => e === 'utils:x509BytesFromPem',
+      );
+
+      expect(x509BytesFromPemHandler).toBeDefined();
+
+      if (x509BytesFromPemHandler) {
+        const result = await x509BytesFromPemHandler[1](event, pem);
+        expect(result).toEqual({
+          raw: certRaw,
+          hash: certHash,
+          text: certText,
+        });
+      }
+    });
+
+    test('Should throw error for invalid PEM in x509BytesFromPem', async () => {
+      const pem = 'invalid-pem';
+
+      const x509BytesFromPemHandler = ipcMainMO.handle.mock.calls.find(
+        ([e]) => e === 'utils:x509BytesFromPem',
+      );
+
+      expect(x509BytesFromPemHandler).toBeDefined();
+
+      if (x509BytesFromPemHandler) {
+        await expect(x509BytesFromPemHandler[1](event, pem)).rejects.toThrow('Invalid PEM');
+      }
+    });
   });
 });

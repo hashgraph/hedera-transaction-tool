@@ -84,15 +84,39 @@ export default () => {
     },
   );
 
-  ipcMain.handle(createChannelName('sha384'), async (_e, str: string) => {
-    return createHash('sha384').update(str).digest('hex');
+  ipcMain.handle(createChannelName('sha384'), async (_e, str: string): Promise<string> => {
+    return await createHash('sha384').update(str).digest('hex');
   });
 
-  ipcMain.handle(createChannelName('x509BytesFromPem'), async (_e, pem: string) => {
-    /* Parse the PEM file to get the public key info */
-    const cert = new X509Certificate(pem);
+  ipcMain.handle(createChannelName('x509BytesFromPem'), async (_e, pem: string | Uint8Array) => {
+    const PEM_HEADER = '-----BEGIN CERTIFICATE-----';
 
-    return new Uint8Array(cert.raw);
+    let cert: X509Certificate | null = null;
+
+    if (pem instanceof Uint8Array) {
+      cert = new X509Certificate(pem);
+    } else {
+      let pemData: Buffer | string = '';
+      const pemBufferFromHex = Buffer.from(pem, 'hex');
+
+      if (pem.includes(PEM_HEADER)) {
+        pemData = Buffer.from(pem, 'utf8');
+      } else if (pemBufferFromHex.length > 0) {
+        pemData = pemBufferFromHex;
+      }
+
+      if (!pemData || pemData.length === 0) {
+        throw new Error('Invalid PEM');
+      }
+
+      cert = new X509Certificate(pemData);
+    }
+
+    return {
+      raw: new Uint8Array(cert.raw),
+      hash: createHash('sha384').update(cert.raw).digest('hex'),
+      text: cert.toString(),
+    };
   });
 
   ipcMain.handle(createChannelName('quit'), async () => {

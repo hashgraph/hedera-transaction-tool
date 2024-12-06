@@ -63,12 +63,13 @@ export async function sha384(str: string): Promise<string> {
 }
 
 /* get public key from PEM */
-export async function x509BytesFromPem(pem: string): Promise<Uint8Array> {
-  return commonIPCHandler(async () => {
+export async function x509BytesFromPem(pem: string | Uint8Array) {
+  try {
     return await window.electronAPI.local.utils.x509BytesFromPem(pem);
-  }, 'Failed to get certificate');
-};
-
+  } catch {
+    throw new Error('Error parsing the certificate');
+  }
+}
 
 /* Quits the application */
 export const quit = async () =>

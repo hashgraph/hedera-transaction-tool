@@ -32,7 +32,6 @@ import { MEMO_MAX_LENGTH } from '@main/shared/constants';
 
 import { isAccountId, isContractId, isFileId } from '../validator';
 import { compareKeys } from '.';
-import { hexToUint8Array } from '..';
 
 export type TransactionData = TransactionCommonData & TransactionSpecificData;
 
@@ -127,7 +126,7 @@ export type NodeData = {
   gossipEndpoints: ComponentServiceEndpoint[];
   serviceEndpoints: ComponentServiceEndpoint[];
   gossipCaCertificate: Uint8Array;
-  certificateHash: string;
+  certificateHash: Uint8Array;
   adminKey: Key | null;
 };
 
@@ -439,14 +438,18 @@ export const getServiceEndpoints = (data: ComponentServiceEndpoint[]) => {
   const endpoints = new Array<ServiceEndpoint>();
 
   for (const serviceEndpoint of data) {
-    const ipAddressV4 = serviceEndpoint.ipAddressV4?.trim()?.split('.') || [];
+    const ipAddressV4 =
+      serviceEndpoint.ipAddressV4
+        ?.trim()
+        ?.split('.')
+        .filter(oct => oct.length > 0) || [];
     const domainName = serviceEndpoint.domainName?.trim();
     const port = Number.parseInt(serviceEndpoint.port?.trim());
 
     if (ipAddressV4 || domainName) {
       const serviceEndpoint = new ServiceEndpoint();
 
-      if (ipAddressV4) {
+      if (ipAddressV4.length > 0) {
         serviceEndpoint.setIpAddressV4(Uint8Array.from(ipAddressV4.map(Number)));
       } else if (domainName) {
         serviceEndpoint.setDomainName(domainName);
@@ -475,13 +478,6 @@ const setNodeData = (
     transaction.setDescription(data.description);
   }
 
-  if (data.certificateHash) {
-    const uint8array = hexToUint8Array(data.certificateHash);
-    if (uint8array.length > 0) {
-      transaction.setCertificateHash(hexToUint8Array(data.certificateHash));
-    }
-  }
-
   if (
     isAccountId(data.nodeAccountId) &&
     data.nodeAccountId !== oldData?.node_account_id?.toString()
@@ -495,6 +491,10 @@ const setNodeData = (
 
   if (txServiceEndpoints.length > 0) {
     transaction.setServiceEndpoints(txServiceEndpoints);
+  }
+
+  if (data.certificateHash.length > 0) {
+    transaction.setCertificateHash(data.certificateHash);
   }
 
   if (data.gossipCaCertificate.length > 0) {

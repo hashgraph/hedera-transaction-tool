@@ -29,8 +29,8 @@ const data = reactive<NodeData>({
   description: '',
   gossipEndpoints: [],
   serviceEndpoints: [],
-  gossipCaCertificate: '',
-  certificateHash: '',
+  gossipCaCertificate: Uint8Array.from([]),
+  certificateHash: Uint8Array.from([]),
   adminKey: null,
 });
 
