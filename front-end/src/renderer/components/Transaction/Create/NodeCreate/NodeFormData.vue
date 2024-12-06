@@ -79,11 +79,6 @@ function handleDeleteEndpoint(index: number, key: 'gossipEndpoints' | 'serviceEn
   });
 }
 
-async function handleInputGossipCert(e: Event) {
-  const target = e.target as HTMLInputElement;
-  await handleUpdateGossipCert(target.value);
-}
-
 async function handleUpdateGossipCert(str: string) {
   let gossipCaCertificate = Uint8Array.from([]);
   publicKeyHash.value = '';
@@ -98,11 +93,6 @@ async function handleUpdateGossipCert(str: string) {
     ...props.data,
     gossipCaCertificate,
   });
-}
-
-async function handleInputGrpcCert(e: Event) {
-  const target = e.target as HTMLInputElement;
-  await handleUpdateGrpcCert(target.value);
 }
 
 async function handleUpdateGrpcCert(str: string) {
@@ -198,9 +188,7 @@ watch(
     publicKeyHash.value = hash;
     gossipCaCertificateText.value = text;
   },
-  {
-    once: true,
-  },
+  { once: true },
 );
 </script>
 
@@ -388,7 +376,7 @@ watch(
     </div>
     <AppTextArea
       :model-value="gossipCaCertificateText"
-      @input="handleInputGossipCert"
+      @update:model-value="handleUpdateGossipCert"
       :filled="true"
       placeholder="Enter Gossip CA Certificate"
     />
@@ -409,7 +397,7 @@ watch(
     </div>
     <AppTextArea
       :model-value="grpcCertificate"
-      @input="handleInputGrpcCert"
+      @update:model-value="handleUpdateGrpcCert"
       :filled="true"
       placeholder="Enter GRPC Certificate"
     />
