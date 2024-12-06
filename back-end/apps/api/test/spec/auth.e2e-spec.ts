@@ -3,15 +3,16 @@ import { ClientProxy } from '@nestjs/microservices';
 import * as request from 'supertest';
 
 import { totp } from 'otplib';
+import * as bcrypt from 'bcryptjs';
 
 import { API_SERVICE } from '@app/common';
-import { UserStatus } from '@entities';
+import { User, UserStatus } from '@entities';
 
 import { closeApp, createNestApp } from '../utils';
 import { Endpoint } from '../utils/httpUtils';
-import { resetDatabase, resetUsersState } from '../utils/databaseUtil';
+import { getRepository, getUser, resetDatabase, resetUsersState } from '../utils/databaseUtil';
 
-import { admin, dummy, invalidEmail, validEmail } from '../utils/constants';
+import { admin, dummy, dummyNew, invalidEmail, validEmail } from '../utils/constants';
 
 describe('Auth (e2e)', () => {
   let app: NestExpressApplication;
@@ -128,6 +129,33 @@ describe('Auth (e2e)', () => {
             createdAt: expect.any(String),
           });
         });
+    });
+
+    it("(POST) should restore deleted user's account", async () => {
+      const userRepo = await getRepository(User);
+      const usersEndpoint = new Endpoint(server, '/users');
+      const loginEndpoint = new Endpoint(server, '/auth/login');
+
+      let user = await getUser('userNew');
+
+      await usersEndpoint.delete(`${user.id}`, adminAuthToken).expect(200);
+
+      await endpoint
+        .post({ email: user.email }, null, adminAuthToken)
+        .expect(201)
+        .then(res => {
+          expect(res.body).toEqual({
+            id: expect.any(Number),
+            email: user.email,
+            createdAt: user.createdAt.toISOString(),
+          });
+        });
+
+      const salt = await bcrypt.genSalt();
+      const hash = await bcrypt.hash(dummyNew.password, salt);
+      await userRepo.update({ id: user.id }, { password: hash });
+
+      await loginEndpoint.post({ email: user.email, password: dummyNew.password }).expect(200);
     });
 
     it('(POST) should not register new user if sender is not logged', () => {
