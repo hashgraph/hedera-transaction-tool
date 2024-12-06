@@ -446,7 +446,7 @@ export const getServiceEndpoints = (data: ComponentServiceEndpoint[]) => {
     if (ipAddressV4 || domainName) {
       const serviceEndpoint = new ServiceEndpoint();
 
-      if (ipAddressV4) {
+      if (ipAddressV4.length > 0) {
         serviceEndpoint.setIpAddressV4(Uint8Array.from(ipAddressV4.map(Number)));
       } else if (domainName) {
         serviceEndpoint.setDomainName(domainName);
