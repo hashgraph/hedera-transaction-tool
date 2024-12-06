@@ -4,11 +4,11 @@ import { BadRequestException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { ErrorCodes } from '@app/common';
+import { ErrorCodes, MAX_USER_KEYS } from '@app/common';
 import { attachKeys } from '@app/common/utils';
 import { User, UserKey } from '@entities';
 
-import { MAX_USER_KEYS, UserKeysService } from './user-keys.service';
+import { UserKeysService } from './user-keys.service';
 
 import { UploadUserKeyDto } from './dtos';
 

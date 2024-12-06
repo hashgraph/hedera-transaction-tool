@@ -1,13 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 
-import { BlacklistService, guardMock } from '@app/common';
+import { MAX_USER_KEYS, BlacklistService, guardMock } from '@app/common';
 import { User, UserKey, UserStatus } from '@entities';
 
 import { VerifiedUserGuard } from '../guards';
 
 import { UserKeysController } from './user-keys.controller';
-import { MAX_USER_KEYS, UserKeysService } from './user-keys.service';
+import { UserKeysService } from './user-keys.service';
 
 describe('UserKeysController', () => {
   let controller: UserKeysController;

@@ -1,13 +1,12 @@
 import { NestExpressApplication } from '@nestjs/platform-express';
 
+import { MAX_USER_KEYS } from '@app/common';
 import { User } from '@entities';
 
 import { closeApp, createNestApp, login } from '../utils';
 import { getUser, getUserKeys, resetDatabase } from '../utils/databaseUtil';
 import { Endpoint } from '../utils/httpUtils';
 import { generatePrivateKey } from '../utils/hederaUtils';
-
-import { MAX_USER_KEYS } from '../../src/user-keys/user-keys.service';
 
 describe('User Keys (e2e)', () => {
   let app: NestExpressApplication;

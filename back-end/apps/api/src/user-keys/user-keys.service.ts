@@ -2,12 +2,10 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsRelations, FindOptionsWhere, Repository } from 'typeorm';
 
-import { attachKeys, ErrorCodes } from '@app/common';
+import { attachKeys, ErrorCodes, MAX_USER_KEYS } from '@app/common';
 import { User, UserKey } from '@entities';
 
 import { UploadUserKeyDto } from './dtos';
-
-export const MAX_USER_KEYS = 500;
 
 @Injectable()
 export class UserKeysService {
