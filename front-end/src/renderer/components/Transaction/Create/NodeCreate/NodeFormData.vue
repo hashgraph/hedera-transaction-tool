@@ -102,6 +102,8 @@ async function handleUpdateGrpcCert(str: string) {
     hash.value = '';
   } else if (!str.endsWith('\n')) {
     hash.value = await sha384(str + '\n');
+  } else if (str.match(/(\n\r?)+$/)) {
+    hash.value = await sha384(str.replace(/(\n\r?)+$/, '\n'));
   } else {
     hash.value = await sha384(str);
   }
