@@ -158,6 +158,18 @@ describe('Auth (e2e)', () => {
       await loginEndpoint.post({ email: user.email, password: dummyNew.password }).expect(200);
     });
 
+    it('(POST) should not register new user if already exists', async () => {
+      await endpoint
+        .post(
+          {
+            email: validEmail,
+          },
+          null,
+          adminAuthToken,
+        )
+        .expect(422);
+    });
+
     it('(POST) should not register new user if sender is not logged', () => {
       return endpoint
         .post({
