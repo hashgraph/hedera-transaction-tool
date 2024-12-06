@@ -109,47 +109,30 @@ async function handleUpdateGrpcCert(str: string) {
   });
 }
 
-function handleOnImportGossipClick() {
-  if (gossipFile.value != null) {
-    gossipFile.value.click();
+function handleImportClick(field: 'gossip' | 'grpc') {
+  const fileRef = field === 'gossip' ? gossipFile : grpcFile;
+  if (fileRef.value != null) {
+    fileRef.value.click();
   }
 }
 
-async function handleOnGossipFileChanged(e: Event) {
+async function handlePEMFileChange(e: Event, field: 'gossip' | 'grpc') {
+  const textField = field === 'gossip' ? gossipCaCertificateText : grpcCertificate;
+  const handler = field === 'gossip' ? handleUpdateGossipCert : handleUpdateGrpcCert;
+  const fileRef = field === 'gossip' ? gossipFile : grpcFile;
+
   const reader = new FileReader();
   const target = e.target as HTMLInputElement;
   reader.readAsText(target.files![0]);
   reader.onload = async () => {
     if (typeof reader.result === 'string') {
-      gossipCaCertificateText.value = reader.result;
-      await handleUpdateGossipCert(gossipCaCertificateText.value);
+      textField.value = reader.result;
+      await handler(textField.value);
     }
   };
 
-  if (gossipFile.value != null) {
-    gossipFile.value.value = '';
-  }
-}
-
-function handleOnImportGrpcClick() {
-  if (grpcFile.value != null) {
-    grpcFile.value.click();
-  }
-}
-
-async function handleOnGrpcFileChanged(e: Event) {
-  const reader = new FileReader();
-  const target = e.target as HTMLInputElement;
-  reader.readAsText(target.files![0]);
-  reader.onload = async () => {
-    if (typeof reader.result === 'string') {
-      grpcCertificate.value = reader.result;
-      await handleUpdateGrpcCert(grpcCertificate.value);
-    }
-  };
-
-  if (grpcFile.value != null) {
-    grpcFile.value.value = '';
+  if (fileRef.value != null) {
+    fileRef.value.value = '';
   }
 }
 
@@ -369,8 +352,13 @@ watch(
       <label class="form-label mb-0"
         >Gossip CA Certificate <span v-if="required" class="text-danger">*</span></label
       >
-      <input type="file" accept=".pem" ref="gossipFile" @change="handleOnGossipFileChanged" />
-      <AppButton type="button" color="primary" class="ms-5" @click="handleOnImportGossipClick">
+      <input
+        type="file"
+        accept=".pem"
+        ref="gossipFile"
+        @change="handlePEMFileChange($event, 'gossip')"
+      />
+      <AppButton type="button" color="primary" class="ms-5" @click="handleImportClick('gossip')">
         Upload Pem
       </AppButton>
     </div>
@@ -390,8 +378,13 @@ watch(
   <div class="form-group mt-6" :class="['col-8 col-xxxl-6']">
     <div class="d-flex align-items-center mb-3">
       <label class="form-label mb-0">GRPC Certificate</label>
-      <input type="file" accept=".pem" ref="grpcFile" @change="handleOnGrpcFileChanged" />
-      <AppButton type="button" color="primary" class="ms-5" @click="handleOnImportGrpcClick">
+      <input
+        type="file"
+        accept=".pem"
+        ref="grpcFile"
+        @change="handlePEMFileChange($event, 'grpc')"
+      />
+      <AppButton type="button" color="primary" class="ms-5" @click="handleImportClick('grpc')">
         Upload Pem
       </AppButton>
     </div>
