@@ -3,7 +3,7 @@ import type { NodeData } from '@renderer/utils/sdk';
 
 import { ref, useTemplateRef } from 'vue';
 
-import { formatAccountId, hexToUint8Array } from '@renderer/utils';
+import { formatAccountId, hexToUint8Array, uint8ToHex } from '@renderer/utils';
 import { sha384, x509BytesFromPem } from '@renderer/services/electronUtilsService';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -408,7 +408,7 @@ function formatPort(event: Event, key: 'gossip' | 'service') {
 
   <div class="form-group mt-6 col-8 col-xxxl-6">
     <label class="form-label">Certificate Hash</label>
-    {{ data.certificateHash }}
+    {{ uint8ToHex(data.certificateHash) }}
   </div>
 
   <hr class="separator my-5" />
