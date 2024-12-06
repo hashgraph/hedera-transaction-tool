@@ -3,19 +3,23 @@ import type { NodeData } from '@renderer/utils/sdk';
 
 import { ref, useTemplateRef, watch } from 'vue';
 
-import { formatAccountId, hexToUint8Array, uint8ToHex } from '@renderer/utils';
+import { formatAccountId, hexToUint8Array, uint8ToHex, validate100CharInput } from '@renderer/utils';
 import { sha384, x509BytesFromPem } from '@renderer/services/electronUtilsService';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
 import KeyField from '@renderer/components/KeyField.vue';
+import { useToast } from 'vue-toast-notification';
 
 /* Props */
 const props = defineProps<{
   data: NodeData;
   required?: boolean;
 }>();
+
+/* Composables */
+const toast = useToast();
 
 /* State */
 const gossipIpOrDomain = ref('');
@@ -28,6 +32,7 @@ const grpcCertificate = ref('');
 const gossipCaCertificateText = ref('');
 const gossipFile = useTemplateRef('gossipFile');
 const grpcFile = useTemplateRef('grpcFile');
+const nodeDescriptionError = ref(false);
 
 const validIp =
   '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]).){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$';
@@ -138,6 +143,19 @@ async function handlePEMFileChange(e: Event, field: 'gossip' | 'grpc') {
   }
 }
 
+function handleInputValidation(e: Event) {
+  const target = e.target as HTMLInputElement;
+  try {
+    validate100CharInput(target.value, 'Transaction Memo');
+    nodeDescriptionError.value = false;
+  } catch (err) {
+    if (err instanceof Error) {
+      nodeDescriptionError.value = true;
+      toast.error(err.message);
+    }
+  }
+}
+
 /* Functions */
 function getEndpointData(ipOrDomain: string, port: string) {
   let ip = '';
@@ -194,9 +212,10 @@ watch(
       placeholder="Enter Node Account ID"
     />
   </div>
-  <div class="form-group mt-6" :class="['col-4 col-xxxl-3']">
+  <div class="form-group mt-6 col-8 col-xxxl-6">
     <label class="form-label">Node Description</label>
     <AppInput
+      @input="handleInputValidation"
       :model-value="data.description"
       @update:model-value="
         emit('update:data', {
@@ -205,7 +224,9 @@ watch(
         })
       "
       :filled="true"
+      maxlength="100"
       placeholder="Enter Node Description"
+      :class="[nodeDescriptionError ? 'is-invalid' : '']"
     />
   </div>
 

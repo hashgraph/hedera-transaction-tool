@@ -40,6 +40,12 @@ export const validateFileUpdateTransaction = (transaction: Transaction) => {
   }
 };
 
+export function validate100CharInput(str: string, inputDescription: string) {
+  if (str.length > 100) {
+    throw new Error(`${inputDescription} is limited to 100 characters`);
+  }
+}
+
 export const transactionIs = <T extends Transaction>(
   type: new (...args: any[]) => T,
   transaction: Transaction,

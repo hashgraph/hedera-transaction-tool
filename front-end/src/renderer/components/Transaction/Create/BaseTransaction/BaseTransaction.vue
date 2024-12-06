@@ -22,7 +22,7 @@ import {
   redirectToDetails,
   redirectToGroupDetails,
 } from '@renderer/utils';
-import { getTransactionCommonData } from '@renderer/utils/sdk';
+import { getTransactionCommonData, validate100CharInput } from '@renderer/utils/sdk';
 import { getPropagationButtonLabel } from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -80,6 +80,7 @@ const approvers = ref<TransactionApproverDto[]>([]);
 
 const isProcessed = ref(false);
 const groupActionTaken = ref(false);
+const memoError = ref(false);
 
 /* Computed */
 const transaction = computed(() => props.createTransaction({ ...data } as TransactionCommonData));
@@ -162,6 +163,19 @@ function handleFetchedPayerAccountId(fetchedPayerAccountId: string) {
   payerData.accountId.value = fetchedPayerAccountId;
 }
 
+function handleInputValidation(e: Event) {
+  const target = e.target as HTMLInputElement;
+  try {
+    validate100CharInput(target.value, 'Transaction Memo');
+    memoError.value = false;
+  } catch (err) {
+    if (err instanceof Error) {
+      memoError.value = true;
+      toast.error(err.message);
+    }
+  }
+}
+
 /* Functions */
 function basePreCreateAssert() {
   if (!isAccountId(payerData.accountId.value)) {
@@ -224,11 +238,13 @@ defineExpose({
           <div class="form-group col-8 col-xxxl-6">
             <label class="form-label">Transaction Memo</label>
             <AppInput
+              @input="handleInputValidation"
               data-testid="input-transaction-memo"
               v-model="data.transactionMemo"
               :filled="true"
               maxlength="100"
               placeholder="Enter Transaction Memo"
+              :class="[memoError ? 'is-invalid' : '']"
             />
           </div>
         </div>
