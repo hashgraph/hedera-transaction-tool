@@ -85,7 +85,7 @@ watch(activeTabTitle, newTitle => {
             >Clear</AppButton
           >
           <AppButton
-            v-if="user.recoveryPhrase"
+            :disabled="user.recoveryPhrase === null"
             color="primary"
             @click="handleNext"
             data-testid="button-next-import"
