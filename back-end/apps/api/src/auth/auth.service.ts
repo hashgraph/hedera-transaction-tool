@@ -9,7 +9,6 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { ClientProxy } from '@nestjs/microservices';
 
-import * as crypto from 'crypto';
 import { totp } from 'otplib';
 import * as bcrypt from 'bcryptjs';
 
@@ -141,8 +140,10 @@ export class AuthService {
 
   /* Generate a random password */
   private generatePassword() {
-    const randomValue = crypto.getRandomValues(new Uint32Array(12));
-    return Buffer.from(randomValue).toString('base64').replaceAll('=', '');
+    const getRandomLetters = (length: number) =>
+      Array.from({ length }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join('');
+
+    return `${getRandomLetters(5)}-${getRandomLetters(5)}`;
   }
 
   /* Attempt to authenticate the token. */
