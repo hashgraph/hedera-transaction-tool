@@ -168,7 +168,7 @@ jobs:
         working-directory: front-end
 
       - name: Run unit tests
-        run: pnpm run test:${{ matrix.test-suite.command }}:coverage
+        run: pnpm run test:main:coverage
         working-directory: front-end
 
       - name: Upload coverage to Codecov
