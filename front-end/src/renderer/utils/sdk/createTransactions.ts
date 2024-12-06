@@ -439,7 +439,11 @@ export const getServiceEndpoints = (data: ComponentServiceEndpoint[]) => {
   const endpoints = new Array<ServiceEndpoint>();
 
   for (const serviceEndpoint of data) {
-    const ipAddressV4 = serviceEndpoint.ipAddressV4?.trim()?.split('.') || [];
+    const ipAddressV4 =
+      serviceEndpoint.ipAddressV4
+        ?.trim()
+        ?.split('.')
+        .filter(oct => oct.length > 0) || [];
     const domainName = serviceEndpoint.domainName?.trim();
     const port = Number.parseInt(serviceEndpoint.port?.trim());
 
