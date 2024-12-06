@@ -84,8 +84,8 @@ export default () => {
     },
   );
 
-  ipcMain.handle(createChannelName('sha384'), async (_e, str: string) => {
-    return createHash('sha384').update(str).digest('hex');
+  ipcMain.handle(createChannelName('sha384'), async (_e, str: string): Promise<string> => {
+    return await createHash('sha384').update(str).digest('hex');
   });
 
   ipcMain.handle(createChannelName('x509BytesFromPem'), async (_e, pem: string | Uint8Array) => {
