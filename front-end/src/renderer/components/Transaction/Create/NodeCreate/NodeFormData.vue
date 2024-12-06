@@ -26,8 +26,6 @@ const publicKeyHash = ref('');
 const hash = ref('');
 const grpcCertificate = ref('');
 const gossipCaCertificateText = ref('');
-const gossipInput = useTemplateRef('gossipInput');
-const grpcInput = useTemplateRef('grpcInput');
 const gossipFile = useTemplateRef('gossipFile');
 const grpcFile = useTemplateRef('grpcFile');
 
@@ -390,7 +388,6 @@ watch(
     </div>
     <AppTextArea
       :model-value="gossipCaCertificateText"
-      ref="gossipInput"
       @input="handleInputGossipCert"
       :filled="true"
       placeholder="Enter Gossip CA Certificate"
@@ -412,7 +409,6 @@ watch(
     </div>
     <AppTextArea
       :model-value="grpcCertificate"
-      ref="grpcInput"
       @input="handleInputGrpcCert"
       :filled="true"
       placeholder="Enter GRPC Certificate"
