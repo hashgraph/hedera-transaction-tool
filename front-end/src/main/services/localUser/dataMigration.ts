@@ -91,6 +91,26 @@ export async function generateArgon2id(password: string, salt: Buffer) {
   return argon2.hash(password, options);
 }
 
+export async function decryptLegacyMnemonic(
+  inputPath: string,
+  password: string,
+): Promise<string | null> {
+  /* Read the encrypted data from the file */
+  const data = await fs.promises.readFile(inputPath, { flag: 'r' });
+
+  const iterationCount = 65536;
+  const keyLength = 32; // 256 bits
+  const salt = Buffer.from([1, 2, 3, 4, 5, 6, 7, 8]);
+
+  const key = crypto.pbkdf2Sync(password, salt, iterationCount, keyLength, 'sha256');
+  const header = Buffer.from('AES|256|CBC|PKCS5Padding|', 'utf-8');
+  if (data.length < header.length || !header.equals(data.slice(0, header.length))) {
+    const decipher = crypto.createDecipheriv('aes-256-ecb', key, null);
+    const decrypted = Buffer.concat([decipher.update(data), decipher.final()]);
+    return decrypted.toString('utf-8');
+  }
+}
+
 export async function decryptMnemonic(
   inputPath: string,
   token: string,
@@ -117,10 +137,10 @@ export async function decryptMnemonic(
 
   try {
     /* Decrypt the encrypted text */
-    let decrypted = decipher.update(new Uint8Array(encryptedText), undefined, 'utf8');
-    decrypted += decipher.final();
-    return decrypted;
-  } catch {
+    const decrypted = Buffer.concat([decipher.update(encryptedText), decipher.final()]);
+    return decrypted.toString('utf-8');
+  } catch (error) {
+    console.log('Error decrypting mnemonic:', error);
     return null;
   }
 }
@@ -140,7 +160,15 @@ export async function decryptMigrationMnemonic(password: string): Promise<string
   const token = parsedContent.hash;
   if (!token) throw Error('No hash found at location');
 
-  const words = await decryptMnemonic(getMnemonicPath(), token, password);
+  const isLegacy = parsedContent.legacy;
+
+  let words: string[] | null;
+  if (isLegacy) {
+    words = await decryptLegacyMnemonic(getMnemonicPath(), password);
+  } else {
+    words = await decryptMnemonic(getMnemonicPath(), token, password);
+  }
+
   if (words) return words.split(' ');
 
   return null;
