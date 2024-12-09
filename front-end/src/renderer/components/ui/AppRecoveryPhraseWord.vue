@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 
 /* Props */
 const props = defineProps<{
@@ -17,6 +17,7 @@ const emit = defineEmits(['update:word']);
 
 /* State */
 const isVisible = ref(props.visibleInitially);
+const inputRef = ref<HTMLInputElement | null>(null);
 
 /* Getters */
 const inputType = computed(() => (isVisible.value ? 'text' : 'password'));
@@ -32,6 +33,35 @@ const handldeWordInput = (e: Event) => {
 
   emit('update:word', value);
 };
+
+const handleKeyDown = (e: KeyboardEvent) => {
+  const inputs = document.querySelectorAll('input[data-testid^="input-recovery-word-"]');
+  const currentIndex = Array.from(inputs).findIndex(input => input === e.target);
+
+  if (e.key === 'ArrowRight' && currentIndex < inputs.length - 1) {
+    e.preventDefault();
+    (inputs[currentIndex + 1] as HTMLInputElement).focus();
+    const nextInput = inputs[currentIndex + 1] as HTMLInputElement;
+    nextInput.setSelectionRange(nextInput.value.length, nextInput.value.length);
+  } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
+    e.preventDefault();
+    (inputs[currentIndex - 1] as HTMLInputElement).focus();
+    const previousInput = inputs[currentIndex - 1] as HTMLInputElement;
+    previousInput.setSelectionRange(previousInput.value.length, previousInput.value.length);
+  } else if (e.key === 'ArrowDown' && currentIndex < inputs.length - 4) {
+    e.preventDefault();
+    (inputs[currentIndex + 4] as HTMLInputElement).focus();
+  } else if (e.key === 'ArrowUp' && currentIndex >= 4) {
+    e.preventDefault();
+    (inputs[currentIndex - 4] as HTMLInputElement).focus();
+  }
+};
+
+onMounted(() => {
+  if (props.index === 1) {
+    inputRef.value?.focus();
+  }
+});
 </script>
 <template>
   <div
@@ -43,12 +73,14 @@ const handldeWordInput = (e: Event) => {
   >
     <span v-if="index" class="word-index text-small">{{ index }}.</span>
     <input
+      ref="inputRef"
       class="form-control is-fill"
       :class="verification ? 'border-pink' : ''"
       :type="inputType"
       :readonly="readonly"
       :value="word"
       @input="handldeWordInput"
+      @keydown="handleKeyDown"
       :data-testid="`input-recovery-word-${index}`"
     />
     <Transition name="fade" mode="out-in" v-if="withToggler">
