@@ -78,6 +78,7 @@ watch(
     <div class="row flex-wrap g-12px mx-0">
       <template v-for="(word, index) in words || []" :key="index">
         <AppRecoveryPhraseWord
+          :is-focused="index === 0 ? true : false"
           class="col-3"
           :word="word"
           :index="index + 1"
