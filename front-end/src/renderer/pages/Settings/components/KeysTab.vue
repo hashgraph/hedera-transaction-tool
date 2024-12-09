@@ -49,15 +49,14 @@ enum Tabs {
 const isDeleteModalShown = ref(false);
 const isUpdateNicknameModalShown = ref(false);
 const deleteAll = ref(false);
-const isSelectMany = ref(false);
+const isSelectAll = ref(false);
 const selectedKeyPairIdsToDelete = ref<string[]>([]);
 const selectedMissingKeyPairIdsToDelete = ref<string[]>([]);
+const selectMany = ref(false);
 
 const decryptedKeys = ref<{ decrypted: string | null; publicKey: string }[]>([]);
 const publicKeysPrivateKeyToDecrypt = ref('');
-const keyPairIdToDelete = ref<string | null>(null);
 const keyPairIdToEdit = ref<string | null>(null);
-const missingKeyPairIdToDelete = ref<number | null>(null);
 const currentTab = ref(Tabs.ALL);
 const isDeletingKey = ref(false);
 const selectedRecoveryPhrase = ref<string>('');
@@ -185,77 +184,57 @@ const handleHideDecryptedKey = (publicKey: string) => {
   }
 };
 
-// do we have to keep the buttons for deleting a single key pair?
 const handleDeleteModal = (keyId: string) => {
+  selectedKeyPairIdsToDelete.value = [];
+  isSelectAll.value = false;
   deleteAll.value = false;
-  isSelectMany.value = false;
-  // reset deleteAll/select values if we keep the button
-  keyPairIdToDelete.value = keyId;
+  selectedKeyPairIdsToDelete.value = [keyId];
   isDeleteModalShown.value = true;
 };
 
-// .....?
 const handleMissingKeyDeleteModal = (id: number) => {
+  selectedMissingKeyPairIdsToDelete.value = [];
+  isSelectAll.value = false;
   deleteAll.value = false;
-  isSelectMany.value = false;
-  // reset deleteAll/select values if we keep the button
-  missingKeyPairIdToDelete.value = id;
+  selectedMissingKeyPairIdsToDelete.value = [id.toString()];
   isDeleteModalShown.value = true;
+};
+
+const deleteOrganization = async (organizationKeyIdToDelete: number | null) => {
+  if (organizationKeyIdToDelete && isLoggedInOrganization(user.selectedOrganization)) {
+    await safeAwait(
+      deleteKey(
+        user.selectedOrganization.serverUrl,
+        user.selectedOrganization.userId,
+        organizationKeyIdToDelete,
+      ),
+    );
+  }
 };
 
 const handleDelete = async () => {
   try {
     isDeletingKey.value = true;
-    let organizationKeyIdToDelete: number | null = null;
-
-    const deleteOrganization = async () => {
-      if (organizationKeyIdToDelete && isLoggedInOrganization(user.selectedOrganization)) {
-        await safeAwait(
-          deleteKey(
-            user.selectedOrganization.serverUrl,
-            user.selectedOrganization.userId,
-            organizationKeyIdToDelete,
-          ),
-        );
-      }
-    };
 
     if (selectedKeyPairIdsToDelete.value.length > 0) {
       for (const keyPairId of selectedKeyPairIdsToDelete.value) {
-        const organizationKeyToDelete = getUserKeyToDelete(keyPairId);
-        organizationKeyIdToDelete = organizationKeyToDelete?.id || null;
-        await deleteKeyPair(keyPairId);
-        await deleteOrganization();
-        organizationKeyIdToDelete = null;
+        try {
+          const organizationKeyToDelete = getUserKeyToDelete(keyPairId);
+          await deleteKeyPair(keyPairId);
+          await deleteOrganization(organizationKeyToDelete?.id || null);
+        } catch (error: unknown) {
+          toast.error(getErrorMessage(error, 'Unable to delete one or more key pair(s)'));
+        }
       }
     }
 
     if (selectedMissingKeyPairIdsToDelete.value.length > 0) {
       for (const keyPairId of selectedMissingKeyPairIdsToDelete.value) {
-        organizationKeyIdToDelete = Number(keyPairId);
-        await deleteOrganization();
-        organizationKeyIdToDelete = null;
+        await deleteOrganization(Number(keyPairId));
       }
     }
 
-    toast.success('All keys deleted successfully', { position: 'bottom-right' });
-
-    await user.refetchUserState();
-    await user.refetchKeys();
-    await user.refetchAccounts();
-
-    if (user.shouldSetupAccount) {
-      router.push({ name: 'accountSetup' });
-    }
-    // return;
-
-    /* if (keyPairIdToDelete.value) {
-      await deleteSingleKey(keyPairIdToDelete.value);
-    } else if (missingKeyPairIdToDelete.value) {
-      await deleteSingleKey(missingKeyPairIdToDelete.value);
-    }
-
-    toast.success('Private key deleted successfully');
+    toast.success('Private key(s) deleted successfully', { position: 'bottom-right' });
 
     await user.refetchUserState();
     await user.refetchKeys();
@@ -263,29 +242,38 @@ const handleDelete = async () => {
 
     if (user.shouldSetupAccount) {
       router.push({ name: 'accountSetup' });
-    } */
+    }
   } catch (err: unknown) {
     toast.error(getErrorMessage(err, 'Failed to delete key pair'));
   } finally {
-    /* keyPairIdToDelete.value = null;
-    missingKeyPairIdToDelete.value = null; */
     selectedKeyPairIdsToDelete.value = [];
     selectedMissingKeyPairIdsToDelete.value = [];
     isDeletingKey.value = false;
     isDeleteModalShown.value = false;
     deleteAll.value = false;
-    isSelectMany.value = false;
+    isSelectAll.value = false;
   }
 };
 
 const handleSelectMany = () => {
-  isSelectMany.value = !isSelectMany.value;
+  isSelectAll.value = !isSelectAll.value;
   const allListedKeyPairIds = listedKeyPairs.value.map(key => key.id);
   const allListedMissingKeyPairIds = listedMissingKeyPairs.value.map(key => key.id.toString());
-  if (isSelectMany.value) {
+  if (isSelectAll.value) {
     selectedKeyPairIdsToDelete.value = allListedKeyPairIds;
     selectedMissingKeyPairIdsToDelete.value = allListedMissingKeyPairIds;
   } else {
+    selectedKeyPairIdsToDelete.value = [];
+    selectedMissingKeyPairIdsToDelete.value = [];
+  }
+};
+
+const handleSelect = () => {
+  selectMany.value = !selectMany.value;
+
+  if (selectMany.value === false) {
+    isSelectAll.value = false;
+    deleteAll.value === false;
     selectedKeyPairIdsToDelete.value = [];
     selectedMissingKeyPairIdsToDelete.value = [];
   }
@@ -303,9 +291,9 @@ const handleCheckBox = (keyPairId: string, isMissing: boolean) => {
   const checkLength = checkAllKeysSelected();
 
   if (checkLength) {
-    isSelectMany.value = true;
+    isSelectAll.value = true;
   } else {
-    isSelectMany.value = false;
+    isSelectAll.value = false;
   }
 };
 
@@ -323,13 +311,11 @@ const handleRedirectToRecoverMnemonicKeys = () => {
   router.push({ name: RESTORE_MISSING_KEYS });
 };
 const handleRemoveClick = () => {
-  if (isSelectMany.value) {
+  if (isSelectAll.value) {
     deleteAll.value = true;
   } else {
     deleteAll.value = false;
   }
-  /* keyPairIdToDelete.value = null;
-  missingKeyPairIdToDelete.value = null; */
   isDeleteModalShown.value = true;
 };
 
@@ -359,12 +345,6 @@ const checkAllKeysSelected = () => {
 };
 
 /* Watchers */
-watch(isDeleteModalShown, newVal => {
-  if (!newVal) {
-    keyPairIdToDelete.value = null;
-  }
-});
-
 watch(selectedRecoveryPhrase, newVal => {
   if (newVal) {
     currentTab.value = Tabs.RECOVERY_PHRASE;
@@ -384,7 +364,7 @@ watch(isDeletingKey, () => {
 watch([currentTab, selectedRecoveryPhrase], () => {
   selectedKeyPairIdsToDelete.value = [];
   selectedMissingKeyPairIdsToDelete.value = [];
-  isSelectMany.value = false;
+  isSelectAll.value = false;
 });
 </script>
 <template>
@@ -443,7 +423,18 @@ watch([currentTab, selectedRecoveryPhrase], () => {
             v-if="listedKeyPairs.length > 0 || listedMissingKeyPairs.length > 0"
             class="d-flex align-items-center rounded-3 text-nowrap min-w-unset"
             data-testid="button-select-many-accounts"
-            :active="isSelectMany"
+            :active="selectMany"
+            @click="handleSelect"
+            :color="selectMany ? 'secondary' : undefined"
+          >
+            <i class="bi bi-check-all me-2"></i> Select
+          </AppButton>
+
+          <AppButton
+            v-if="selectMany && (listedKeyPairs.length > 0 || listedMissingKeyPairs.length > 0)"
+            class="d-flex align-items-center rounded-3 text-nowrap min-w-unset"
+            data-testid="button-select-many-accounts"
+            :active="isSelectAll"
             @click="handleSelectMany"
             :color="checkAllKeysSelected() ? 'secondary' : undefined"
           >
@@ -471,7 +462,7 @@ watch([currentTab, selectedRecoveryPhrase], () => {
       <table class="table-custom">
         <thead>
           <tr>
-            <th class="w-10 text-center">Select</th>
+            <th v-if="selectMany" class="w-10 text-center">Select</th>
             <th
               v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
               class="w-10 text-center"
@@ -489,18 +480,19 @@ watch([currentTab, selectedRecoveryPhrase], () => {
         <tbody class="text-secondary">
           <template v-for="(keyPair, index) in listedKeyPairs" :key="keyPair.public_key">
             <tr>
-              <td>
+              <td v-if="selectMany">
                 <AppCheckBox
-                  :checked="selectedKeyPairIdsToDelete.includes(keyPair.id) || isSelectMany"
+                  :checked="selectedKeyPairIdsToDelete.includes(keyPair.id) || isSelectAll"
                   @update:checked="handleCheckBox(keyPair.id, false)"
                   name="select-card"
                   :data-testid="'checkbox-multiple-keys-id-' + index"
-                  class="cursor-pointer"
+                  class="cursor-pointer d-flex justify-content-center"
                 />
               </td>
               <td
                 :data-testid="`cell-index-${index}`"
                 v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
+                class="text-center"
               >
                 {{ keyPair.index >= 0 ? keyPair.index : 'N/A' }}
               </td>
@@ -611,16 +603,16 @@ watch([currentTab, selectedRecoveryPhrase], () => {
           <template v-if="isLoggedInOrganization(user.selectedOrganization)">
             <template v-for="(keyPair, index) in listedMissingKeyPairs" :key="keyPair.publicKey">
               <tr class="disabled-w-action position-relative">
-                <td>
+                <td v-if="selectMany">
                   <AppCheckBox
                     :checked="
                       selectedMissingKeyPairIdsToDelete.includes(keyPair.id.toString()) ||
-                      isSelectMany
+                      isSelectAll
                     "
                     @update:checked="handleCheckBox(keyPair.id.toString(), true)"
                     name="select-card"
                     :data-testid="'checkbox-multiple-keys-id-' + index"
-                    class="cursor-pointer"
+                    class="cursor-pointer d-flex justify-content-center"
                   />
                 </td>
                 <td
