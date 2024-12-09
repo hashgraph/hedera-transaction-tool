@@ -237,6 +237,9 @@ watch(
   <label class="form-label"
     >Gossip Endpoints <span v-if="required" class="text-danger">*</span></label
   >
+  <div class="text-micro mb-3">
+    First endpoint must be for internal host, second endpoint must be for external host
+  </div>
   <div class="row align-items-end">
     <div class="col-4 col-xxxl-3">
       <label class="form-label">IP/Domain</label>
@@ -266,15 +269,16 @@ watch(
 
   <div v-if="data.gossipEndpoints.length > 0" class="mt-5">
     <div class="row">
-      <div class="col-4 col-xxxl-3">
+      <div class="col-3 col-xxxl-3" />
+      <div class="col-3 col-xxxl-3">
         <label class="form-label">IP/Domain</label>
       </div>
 
-      <div class="col-4 col-xxxl-3">
+      <div class="col-3 col-xxxl-3">
         <label class="form-label">Port</label>
       </div>
 
-      <div class="col-4 col-xxxl-3 text-center">
+      <div class="col-3 col-xxxl-3 text-center">
         <label class="form-label">Action</label>
       </div>
     </div>
@@ -286,11 +290,15 @@ watch(
     </div>
 
     <div v-for="(endpoint, index) of data.gossipEndpoints" :key="index" class="row py-3">
-      <div class="col-4 col-xxxl-3 d-flex align-items-center text-small">
+      <div class="col-3 col-xxxl-3 d-flex align-items-center text-small">
+        <div v-if="index === 0">Internal</div>
+        <div v-if="index === 1">External</div>
+      </div>
+      <div class="col-3 col-xxxl-3 d-flex align-items-center text-small">
         {{ endpoint.ipAddressV4 ? endpoint.ipAddressV4 : endpoint.domainName }}
       </div>
-      <div class="col-4 col-xxxl-3 d-flex align-items-center text-small">{{ endpoint.port }}</div>
-      <div class="col-4 col-xxxl-3 d-flex justify-content-center">
+      <div class="col-3 col-xxxl-3 d-flex align-items-center text-small">{{ endpoint.port }}</div>
+      <div class="col-3 col-xxxl-3 d-flex justify-content-center">
         <AppButton
           type="button"
           color="danger"
