@@ -69,8 +69,25 @@ describe('Data Migration', () => {
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(Buffer.from([1, 2, 3, 4, 5, 6, 7, 8]));
       vi.mocked(crypto.createDecipheriv).mockReturnValue({
-        update: vi.fn().mockReturnValue(mockDecryptedMnemonic),
-        final: vi.fn().mockReturnValue(''),
+        update: vi.fn().mockReturnValue(Buffer.from(mockDecryptedMnemonic)),
+        final: vi.fn().mockReturnValue(Buffer.from('')),
+        setAuthTag: vi.fn(),
+      } as unknown as crypto.Decipher);
+
+      const result = await decryptMigrationMnemonic(mockPassword);
+      expect(result).toEqual(mockDecryptedMnemonic.split(' '));
+    });
+
+    test('Should correctly decrypt legacy mnemonic', async () => {
+      const mockContent = 'hash=UeMaPSnZhVWUZyQBzmHnSChoYUUOTouHW+MQ66ILRiwFMQyQgVlkjF2R19BB0qXa\nlegacy=true';
+      const mockPassword = 'password';
+      const mockDecryptedMnemonic = 'word1 word2 word3';
+
+      vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
+      vi.mocked(fs.promises.readFile).mockResolvedValueOnce(Buffer.from([1, 2, 3, 4, 5, 6, 7, 8]));
+      vi.mocked(crypto.createDecipheriv).mockReturnValue({
+        update: vi.fn().mockReturnValue(Buffer.from(mockDecryptedMnemonic)),
+        final: vi.fn().mockReturnValue(Buffer.from('')),
         setAuthTag: vi.fn(),
       } as unknown as crypto.Decipher);
 
