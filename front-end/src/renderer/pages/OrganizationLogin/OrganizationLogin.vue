@@ -17,6 +17,7 @@ import { assertUserLoggedIn, getErrorMessage, isLoggedOutOrganization } from '@r
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import ForgotPasswordModal from '@renderer/components/ForgotPasswordModal.vue';
+import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -115,11 +116,7 @@ onBeforeRouteLeave(async () => {
 
   if (!user.selectedOrganization) return true;
 
-  if (user.selectedOrganization.loginRequired) {
-    return false;
-  }
-
-  return true;
+  return !user.selectedOrganization.loginRequired;
 });
 </script>
 <template>
@@ -141,11 +138,10 @@ onBeforeRouteLeave(async () => {
         />
         <div v-if="inputEmailInvalid" class="invalid-feedback">Invalid e-mail.</div>
         <label class="form-label mt-4">Password</label>
-        <AppInput
+        <AppPasswordInput
           v-model="inputPassword"
           :filled="true"
           data-testid="input-login-password-for-organization"
-          type="password"
           :class="{ 'is-invalid': inputPasswordInvalid }"
           placeholder="Enter password"
         />

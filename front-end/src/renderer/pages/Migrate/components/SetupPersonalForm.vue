@@ -10,6 +10,7 @@ import { isEmail, isPasswordStrong } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 
 /* Types */
 export type ModelValue =
@@ -213,10 +214,9 @@ watch(inputPassword, pass => {
       <!-- Password -->
       <div :key="useKeychain.toString()">
         <label data-testid="label-password" class="form-label mt-4">Password</label>
-        <AppInput
+        <AppPasswordInput
           v-model="inputPassword"
           :filled="true"
-          type="password"
           :class="{ 'is-invalid': inputPasswordInvalid }"
           :disabled="useKeychain"
           placeholder="Enter password"
