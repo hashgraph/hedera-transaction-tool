@@ -128,10 +128,11 @@ const modalMessage = computed(() => {
     return 'You are about to delete all key pairs associated with recovery phrase. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?';
   }
 
+  if (allPrivateKeyPairsSelected) {
+    return 'You are about to delete all key pairs imported from private keys. Do you wish to continue?';
+  }
+
   if (currentTab.value === Tabs.PRIVATE_KEY) {
-    if (allPrivateKeyPairsSelected) {
-      return 'You are about to delete all key pairs imported from private keys. Do you wish to continue?';
-    }
     return 'You are about do delete the selected key pair(s) imported from a private key. Do you wish to continue?';
   }
 
