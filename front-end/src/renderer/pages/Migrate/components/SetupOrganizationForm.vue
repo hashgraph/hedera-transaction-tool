@@ -7,6 +7,7 @@ import { isPasswordStrong, isUrl } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 
 /* Types */
 export type ModelValue = {
@@ -145,10 +146,9 @@ watch(inputNewOrganizationPassword, pass => {
         <label data-testid="label-temp-password" class="form-label"
           >Temporary Organization Password</label
         >
-        <AppInput
+        <AppPasswordInput
           v-model="inputTemporaryOrganizationPassword"
           :filled="true"
-          type="password"
           placeholder="Enter password"
           data-testid="input-temporary-organization-password"
         />
@@ -157,10 +157,9 @@ watch(inputNewOrganizationPassword, pass => {
       <!-- New Organization Password -->
       <div class="mt-4">
         <label data-testid="label-new-password" class="form-label">New Organization Password</label>
-        <AppInput
+        <AppPasswordInput
           v-model="inputNewOrganizationPassword"
           :filled="true"
-          type="password"
           placeholder="Enter password"
           data-testid="input-new-organization-password"
         />

@@ -20,8 +20,8 @@ import {
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -112,20 +112,18 @@ const handleResetData = async () => {
       <h3 class="text-main">Password</h3>
       <div class="form-group mt-4">
         <label class="form-label">Current Password <span class="text-danger">*</span></label>
-        <AppInput
+        <AppPasswordInput
           v-model="currentPassword"
           data-testid="input-current-password"
-          type="password"
           placeholder="Enter Current Password"
           :filled="true"
         />
       </div>
       <div class="mt-4 form-group">
         <label class="form-label">New Password <span class="text-danger">*</span></label>
-        <AppInput
+        <AppPasswordInput
           v-model="newPassword"
           data-testid="input-new-password"
-          type="password"
           placeholder="Enter New Password"
           :filled="true"
         />
