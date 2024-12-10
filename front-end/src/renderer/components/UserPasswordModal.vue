@@ -9,8 +9,8 @@ import { isLoggedInWithPassword, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -96,11 +96,10 @@ defineExpose({
         </p>
         <div class="form-group mt-5 mb-4">
           <label class="form-label">Password</label>
-          <AppInput
+          <AppPasswordInput
             v-model="password"
             data-testid="input-encrypt-password"
             size="small"
-            type="password"
             :filled="true"
           />
         </div>

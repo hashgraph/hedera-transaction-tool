@@ -2,8 +2,8 @@
 import { ref } from 'vue';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 
 /* Props */
 defineProps<{
@@ -55,10 +55,9 @@ const handleClose = () => {
 
         <div class="form-group mt-4">
           <label class="form-label">Password</label>
-          <AppInput
+          <AppPasswordInput
             v-model="password"
             size="small"
-            type="password"
             name="password"
             :filled="true"
             placeholder="Type the password to decrypt the mnemonic phrase"

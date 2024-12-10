@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 
 /* Types */
 export type ModelValue = {
@@ -53,10 +53,9 @@ watch(inputRecoveryPhrasePassword, () => (inputRecoveryPhrasePasswordError.value
       <!-- Mnemonic Password -->
       <div class="mt-5">
         <label data-testid="label-password" class="form-label">Recovery Phrase Password</label>
-        <AppInput
+        <AppPasswordInput
           v-model="inputRecoveryPhrasePassword"
           :filled="true"
-          type="password"
           :class="{ 'is-invalid': inputRecoveryPhrasePasswordError }"
           placeholder="Enter password"
           data-testid="input-recovery-phrase-decryption-password"
