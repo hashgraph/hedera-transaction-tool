@@ -104,10 +104,22 @@ const listedMissingKeyPairs = computed(() => {
 });
 
 const modalMessage = computed(() => {
+  const recoveryPhraseKeyIds = user.keyPairs
+    .filter(item => item.secret_hash != null)
+    .map(item => item.id);
+
+  const allRecoveryPhraseKeyPairsSelected = recoveryPhraseKeyIds.every(id =>
+    selectedKeyPairIdsToDelete.value.includes(id),
+  );
+
   if (currentTab.value === Tabs.PRIVATE_KEY) {
     if (deleteAll.value) {
       return 'You are about to delete all key pairs imported from private keys. Do you wish to continue?';
     }
+  }
+
+  if (allRecoveryPhraseKeyPairsSelected && !deleteAll.value) {
+    return 'You are about to delete all key pairs associated with recovery phrase. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?';
   }
 
   if (deleteAll.value && currentTab.value === Tabs.ALL) {
@@ -115,7 +127,10 @@ const modalMessage = computed(() => {
   }
 
   if (currentTab.value === Tabs.RECOVERY_PHRASE && deleteAll.value) {
-    return 'You are about to delete all key pairs associated with the recovery phrase you have selected. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?';
+    if (allRecoveryPhraseKeyPairsSelected) {
+      ('You are about to delete all key pairs associated with the recovery phrase you have selected. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?');
+    }
+    return 'You are about to delete all key pair(s) associated with the recovery phrase you have selected. Do you wish to continue?';
   }
 
   return 'You are about to delete the selected key pair(s). Do you wish to continue?';
@@ -170,15 +185,20 @@ const handleHideDecryptedKey = (publicKey: string) => {
   }
 };
 
+// do we have to keep the buttons for deleting a single key pair?
 const handleDeleteModal = (keyId: string) => {
-  if (deleteAll.value) {
-    deleteAll.value = false;
-  }
+  deleteAll.value = false;
+  isSelectMany.value = false;
+  // reset deleteAll/select values if we keep the button
   keyPairIdToDelete.value = keyId;
   isDeleteModalShown.value = true;
 };
 
+// .....?
 const handleMissingKeyDeleteModal = (id: number) => {
+  deleteAll.value = false;
+  isSelectMany.value = false;
+  // reset deleteAll/select values if we keep the button
   missingKeyPairIdToDelete.value = id;
   isDeleteModalShown.value = true;
 };
@@ -186,20 +206,9 @@ const handleMissingKeyDeleteModal = (id: number) => {
 const handleDelete = async () => {
   try {
     isDeletingKey.value = true;
+    let organizationKeyIdToDelete: number | null = null;
 
-    const deleteSingleKey = async (keyId: string | number) => {
-      const organizationKeyToDelete = getUserKeyToDelete(keyId.toString());
-      const organizationKeyIdToDelete = organizationKeyToDelete?.id || null;
-
-      //localId in the parameter : string only
-
-      // two arrays for missingKeys number[]
-      // localKeys string[]
-
-      // safeAwait for all missing keys (backend)
-
-      await deleteKeyPair(keyId.toString());
-
+    const deleteOrganization = async () => {
       if (organizationKeyIdToDelete && isLoggedInOrganization(user.selectedOrganization)) {
         await safeAwait(
           deleteKey(
@@ -211,36 +220,36 @@ const handleDelete = async () => {
       }
     };
 
-    if (deleteAll.value) {
-      const deleteAllKeys = async () => {
-        if (listedKeyPairs.value) {
-          for (const key of listedKeyPairs.value) {
-            await deleteSingleKey(key.id);
-          }
-        }
-
-        if (listedMissingKeyPairs.value) {
-          for (const key of listedMissingKeyPairs.value) {
-            await deleteSingleKey(key.id);
-          }
-        }
-      };
-
-      await deleteAllKeys();
-
-      toast.success('All keys deleted successfully', { position: 'bottom-right' });
-
-      await user.refetchUserState();
-      await user.refetchKeys();
-      user.refetchAccounts();
-
-      if (user.shouldSetupAccount) {
-        router.push({ name: 'accountSetup' });
+    if (selectedKeyPairIdsToDelete.value.length > 0) {
+      for (const keyPairId of selectedKeyPairIdsToDelete.value) {
+        const organizationKeyToDelete = getUserKeyToDelete(keyPairId);
+        organizationKeyIdToDelete = organizationKeyToDelete?.id || null;
+        await deleteKeyPair(keyPairId);
+        await deleteOrganization();
+        organizationKeyIdToDelete = null;
       }
-      return;
     }
 
-    if (keyPairIdToDelete.value) {
+    if (selectedMissingKeyPairIdsToDelete.value.length > 0) {
+      for (const keyPairId of selectedMissingKeyPairIdsToDelete.value) {
+        organizationKeyIdToDelete = Number(keyPairId);
+        await deleteOrganization();
+        organizationKeyIdToDelete = null;
+      }
+    }
+
+    toast.success('All keys deleted successfully', { position: 'bottom-right' });
+
+    await user.refetchUserState();
+    await user.refetchKeys();
+    await user.refetchAccounts();
+
+    if (user.shouldSetupAccount) {
+      router.push({ name: 'accountSetup' });
+    }
+    // return;
+
+    /* if (keyPairIdToDelete.value) {
       await deleteSingleKey(keyPairIdToDelete.value);
     } else if (missingKeyPairIdToDelete.value) {
       await deleteSingleKey(missingKeyPairIdToDelete.value);
@@ -254,33 +263,32 @@ const handleDelete = async () => {
 
     if (user.shouldSetupAccount) {
       router.push({ name: 'accountSetup' });
-    }
+    } */
   } catch (err: unknown) {
     toast.error(getErrorMessage(err, 'Failed to delete key pair'));
   } finally {
-    keyPairIdToDelete.value = null;
-    missingKeyPairIdToDelete.value = null;
+    /* keyPairIdToDelete.value = null;
+    missingKeyPairIdToDelete.value = null; */
+    selectedKeyPairIdsToDelete.value = [];
+    selectedMissingKeyPairIdsToDelete.value = [];
     isDeletingKey.value = false;
     isDeleteModalShown.value = false;
     deleteAll.value = false;
+    isSelectMany.value = false;
   }
 };
 
 const handleSelectMany = () => {
   isSelectMany.value = !isSelectMany.value;
-  const allListedKeyPairsIds = listedKeyPairs.value.map(key => key.id);
-  const allListedMissingKeyPairsIds = listedMissingKeyPairs.value.map(key => key.id.toString());
+  const allListedKeyPairIds = listedKeyPairs.value.map(key => key.id);
+  const allListedMissingKeyPairIds = listedMissingKeyPairs.value.map(key => key.id.toString());
   if (isSelectMany.value) {
-    selectedKeyPairIdsToDelete.value = allListedKeyPairsIds;
-    selectedMissingKeyPairIdsToDelete.value = allListedMissingKeyPairsIds;
+    selectedKeyPairIdsToDelete.value = allListedKeyPairIds;
+    selectedMissingKeyPairIdsToDelete.value = allListedMissingKeyPairIds;
   } else {
     selectedKeyPairIdsToDelete.value = [];
     selectedMissingKeyPairIdsToDelete.value = [];
   }
-
-  console.log(selectedKeyPairIdsToDelete.value);
-  console.log(selectedMissingKeyPairIdsToDelete.value);
-  console.log(selectedKeyPairIdsToDelete.value.length === listedKeyPairs.value.length);
 };
 
 const handleCheckBox = (keyPairId: string, isMissing: boolean) => {
@@ -299,8 +307,6 @@ const handleCheckBox = (keyPairId: string, isMissing: boolean) => {
   } else {
     isSelectMany.value = false;
   }
-  console.log(selectedKeyPairIdsToDelete.value);
-  console.log(isSelectMany.value);
 };
 
 const handleCopy = (text: string, message: string) => {
@@ -322,7 +328,8 @@ const handleRemoveClick = () => {
   } else {
     deleteAll.value = false;
   }
-  keyPairIdToDelete.value = null;
+  /* keyPairIdToDelete.value = null;
+  missingKeyPairIdToDelete.value = null; */
   isDeleteModalShown.value = true;
 };
 
