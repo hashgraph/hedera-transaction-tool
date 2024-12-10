@@ -14,7 +14,7 @@ import { updateOrganizationCredentials } from '@renderer/services/organizationCr
 import { assertIsLoggedInOrganization, assertUserLoggedIn, getErrorMessage } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 
 /* Props */
 const props = defineProps<{
@@ -112,31 +112,28 @@ watch(confirmPassword, val => {
     <p class="text-main text-center mt-5">Please enter new password</p>
     <form @submit="handleFormSubmit" class="row justify-content-center w-100 mt-5">
       <div class="col-12 col-md-8 col-lg-6">
-        <AppInput
+        <AppPasswordInput
           v-model="currentPassword"
           :filled="true"
           :class="{ 'is-invalid': currentPasswordInvalid }"
-          type="password"
           placeholder="Current Password"
         />
         <div v-if="currentPasswordInvalid" class="invalid-feedback">
           Current password is required.
         </div>
-        <AppInput
+        <AppPasswordInput
           v-model="newPassword"
           :filled="true"
           class="mt-4"
           :class="{ 'is-invalid': newPasswordInvalid }"
-          type="password"
           placeholder="New Password"
         />
         <div v-if="newPasswordInvalid" class="invalid-feedback">Invalid password.</div>
-        <AppInput
+        <AppPasswordInput
           v-model="confirmPassword"
           :filled="true"
           class="mt-4"
           :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
-          type="password"
           placeholder="Confirm New Password"
         />
         <div v-if="inputConfirmPasswordInvalid" class="invalid-feedback">
