@@ -176,16 +176,26 @@ const handleDelete = async () => {
 
     let organizationKeyIdToDelete: number | null = null;
 
-    // Handle deleting all keys
     if (deleteAll.value) {
       for (const key of listedKeyPairs.value) {
         await deleteKeyPair(key.id);
       }
+
       for (const key of listedMissingKeyPairs.value) {
         await deleteKeyPair(key.id.toString());
       }
 
-      toast.success(`All keys deleted successfully`, { position: 'bottom-right' });
+      toast.success('All keys deleted successfully', { position: 'bottom-right' });
+
+      await user.refetchUserState();
+      await user.refetchKeys();
+      await user.refetchAccounts();
+
+      if (user.shouldSetupAccount) {
+        router.push({ name: 'accountSetup' });
+      }
+
+      return;
     }
 
     if (keyPairIdToDelete.value || deleteAll.value) {
@@ -213,7 +223,7 @@ const handleDelete = async () => {
 
     await user.refetchUserState();
     await user.refetchKeys();
-    user.refetchAccounts();
+    await user.refetchAccounts();
 
     if (user.shouldSetupAccount) {
       router.push({ name: 'accountSetup' });
