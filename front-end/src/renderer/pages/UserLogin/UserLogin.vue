@@ -20,6 +20,7 @@ import { getErrorMessage, isEmail, isUserLoggedIn } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
 
 /* Stores */
@@ -282,10 +283,10 @@ watch(inputEmail, pass => {
           Invalid e-mail.
         </div>
         <label data-testid="label-password" class="form-label mt-4">Password</label>
-        <AppInput
+        <AppPasswordInput
           v-model="inputPassword"
           :filled="true"
-          type="password"
+          :show-icon="!shouldRegister"
           :class="{ 'is-invalid': inputPasswordInvalid }"
           placeholder="Enter password"
           :data-bs-toggle="shouldRegister ? 'tooltip' : ''"
