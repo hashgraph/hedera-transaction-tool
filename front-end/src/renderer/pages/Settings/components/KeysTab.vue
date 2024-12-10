@@ -60,6 +60,8 @@ const keyPairIdToEdit = ref<string | null>(null);
 const currentTab = ref(Tabs.ALL);
 const isDeletingKey = ref(false);
 const selectedRecoveryPhrase = ref<string>('');
+const deleteSingleLocal = ref<string[]>([]);
+const deleteSingleMissing = ref<string[]>([]);
 
 /* Computed */
 const missingKeys = computed(() =>
@@ -185,18 +187,18 @@ const handleHideDecryptedKey = (publicKey: string) => {
 };
 
 const handleDeleteModal = (keyId: string) => {
-  selectedKeyPairIdsToDelete.value = [];
+  deleteSingleLocal.value = [];
   isSelectAll.value = false;
   deleteAll.value = false;
-  selectedKeyPairIdsToDelete.value = [keyId];
+  deleteSingleLocal.value = [keyId];
   isDeleteModalShown.value = true;
 };
 
 const handleMissingKeyDeleteModal = (id: number) => {
-  selectedMissingKeyPairIdsToDelete.value = [];
+  deleteSingleMissing.value = [];
   isSelectAll.value = false;
   deleteAll.value = false;
-  selectedMissingKeyPairIdsToDelete.value = [id.toString()];
+  deleteSingleMissing.value = [id.toString()];
   isDeleteModalShown.value = true;
 };
 
@@ -213,11 +215,15 @@ const deleteOrganization = async (organizationKeyIdToDelete: number | null) => {
 };
 
 const handleDelete = async () => {
+  const activeLocalArray =
+    deleteSingleLocal.value.length > 0 ? deleteSingleLocal : selectedKeyPairIdsToDelete;
+  const activeMissingArray =
+    deleteSingleMissing.value.length > 0 ? deleteSingleMissing : selectedMissingKeyPairIdsToDelete;
   try {
     isDeletingKey.value = true;
 
-    if (selectedKeyPairIdsToDelete.value.length > 0) {
-      for (const keyPairId of selectedKeyPairIdsToDelete.value) {
+    if (activeLocalArray.value.length > 0) {
+      for (const keyPairId of activeLocalArray.value) {
         try {
           const organizationKeyToDelete = getUserKeyToDelete(keyPairId);
           await deleteKeyPair(keyPairId);
@@ -228,8 +234,8 @@ const handleDelete = async () => {
       }
     }
 
-    if (selectedMissingKeyPairIdsToDelete.value.length > 0) {
-      for (const keyPairId of selectedMissingKeyPairIdsToDelete.value) {
+    if (activeMissingArray.value.length > 0) {
+      for (const keyPairId of activeMissingArray.value) {
         await deleteOrganization(Number(keyPairId));
       }
     }
@@ -252,6 +258,8 @@ const handleDelete = async () => {
     isDeleteModalShown.value = false;
     deleteAll.value = false;
     isSelectAll.value = false;
+    deleteSingleLocal.value = [];
+    deleteSingleMissing.value = [];
   }
 };
 
@@ -263,17 +271,6 @@ const handleSelectMany = () => {
     selectedKeyPairIdsToDelete.value = allListedKeyPairIds;
     selectedMissingKeyPairIdsToDelete.value = allListedMissingKeyPairIds;
   } else {
-    selectedKeyPairIdsToDelete.value = [];
-    selectedMissingKeyPairIdsToDelete.value = [];
-  }
-};
-
-const handleSelect = () => {
-  selectMany.value = !selectMany.value;
-
-  if (selectMany.value === false) {
-    isSelectAll.value = false;
-    deleteAll.value === false;
     selectedKeyPairIdsToDelete.value = [];
     selectedMissingKeyPairIdsToDelete.value = [];
   }
@@ -319,6 +316,12 @@ const handleRemoveClick = () => {
   isDeleteModalShown.value = true;
 };
 
+const handleCloseModal = () => {
+  deleteSingleLocal.value = [];
+  deleteSingleMissing.value = [];
+  isDeleteModalShown.value = false;
+};
+
 /* Functions */
 function getUserKeyToDelete(keyPairId: string) {
   const localKey = user.keyPairs.find(kp => kp.id === keyPairId);
@@ -341,6 +344,22 @@ const checkAllKeysSelected = () => {
     return true;
   } else {
     return false;
+  }
+};
+
+const isCheckBoxDisabled = () => {
+  const allPrivateKeys = user.keyPairs.filter(item => item.secret_hash === null);
+  if (currentTab.value === Tabs.ALL) {
+    if (listedKeyPairs.value.length === 0 && listedMissingKeyPairs.value.length === 0) {
+      return true;
+    }
+    return false;
+  } else if (currentTab.value === Tabs.PRIVATE_KEY) {
+    if (allPrivateKeys.length === 0) {
+      return true;
+    } else {
+      return false;
+    }
   }
 };
 
@@ -419,69 +438,50 @@ watch([currentTab, selectedRecoveryPhrase], () => {
             @click="handleRedirectToRecoverMnemonicKeys()"
             >Restore Missing Keys</AppButton
           >
-
-          <AppButton
-            v-if="listedKeyPairs.length > 0 || listedMissingKeyPairs.length > 0"
-            class="d-flex align-items-center rounded-3 text-nowrap min-w-unset"
-            data-testid="button-select-many-accounts"
-            :active="selectMany"
-            @click="handleSelect"
-            :color="selectMany ? 'secondary' : undefined"
-          >
-            <i class="bi bi-check-all me-2"></i> Select
-          </AppButton>
-
-          <AppButton
-            v-if="selectMany && (listedKeyPairs.length > 0 || listedMissingKeyPairs.length > 0)"
-            class="d-flex align-items-center rounded-3 text-nowrap min-w-unset"
-            data-testid="button-select-many-accounts"
-            :active="isSelectAll"
-            @click="handleSelectMany"
-            :color="checkAllKeysSelected() ? 'secondary' : undefined"
-          >
-            <i class="bi bi-check-all me-2"></i> Select all</AppButton
-          >
-
-          <AppButton
-            v-if="listedKeyPairs.length > 0 || listedMissingKeyPairs.length > 0"
-            class="rounded-3 text-nowrap min-w-unset"
-            color="danger"
-            :disabled="
-              selectedKeyPairIdsToDelete.length === 0 &&
-              selectedMissingKeyPairIdsToDelete.length === 0
-            "
-            data-testid="button-remove-all-keys"
-            @click="handleRemoveClick"
-          >
-            <span class="bi bi-trash"></span> Remove
-          </AppButton>
         </div>
       </div>
     </div>
 
     <div class="fill-remaining overflow-x-auto pe-4 pb-2 mt-4">
-      <table class="table-custom">
+      <table class="table-custom fixed-height">
         <thead>
           <tr>
-            <th v-if="selectMany" class="w-10 text-center">Select</th>
-            <th
-              v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
-              class="w-10 text-center"
-            >
-              Index
+            <th>
+              <AppCheckBox
+                :checked="isSelectAll"
+                @update:checked="handleSelectMany"
+                name="select-card"
+                :data-testid="'checkbox-select-all-keys'"
+                class="cursor-pointer keys-tab"
+                :disabled="isCheckBoxDisabled()"
+              />
             </th>
+            <th class="w-10 text-center">Index</th>
             <th>Nickname</th>
             <th>Account ID</th>
             <th>Key Type</th>
             <th>Public Key</th>
             <th>Private Key</th>
-            <th></th>
+            <th class="text-center">
+              <AppButton
+                v-if="
+                  selectedKeyPairIdsToDelete.length > 0 ||
+                  selectedMissingKeyPairIdsToDelete.length > 0
+                "
+                size="small"
+                color="danger"
+                :data-testid="`button-delete-key-all`"
+                @click="handleRemoveClick"
+                class="min-w-unset"
+                ><span class="bi bi-trash"></span
+              ></AppButton>
+            </th>
           </tr>
         </thead>
         <tbody class="text-secondary">
           <template v-for="(keyPair, index) in listedKeyPairs" :key="keyPair.public_key">
             <tr>
-              <td v-if="selectMany">
+              <td>
                 <AppCheckBox
                   :checked="selectedKeyPairIdsToDelete.includes(keyPair.id) || isSelectAll"
                   @update:checked="handleCheckBox(keyPair.id, false)"
@@ -490,11 +490,7 @@ watch([currentTab, selectedRecoveryPhrase], () => {
                   class="cursor-pointer d-flex justify-content-center"
                 />
               </td>
-              <td
-                :data-testid="`cell-index-${index}`"
-                v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
-                class="text-center"
-              >
+              <td :data-testid="`cell-index-${index}`" class="text-center">
                 {{ keyPair.index >= 0 ? keyPair.index : 'N/A' }}
               </td>
               <td :data-testid="`cell-nickname-${index}`">
@@ -591,6 +587,10 @@ watch([currentTab, selectedRecoveryPhrase], () => {
               </td>
               <td class="text-center">
                 <AppButton
+                  v-if="
+                    selectedKeyPairIdsToDelete.length === 0 &&
+                    selectedMissingKeyPairIdsToDelete.length === 0
+                  "
                   size="small"
                   color="danger"
                   :data-testid="`button-delete-key-${index}`"
@@ -604,7 +604,7 @@ watch([currentTab, selectedRecoveryPhrase], () => {
           <template v-if="isLoggedInOrganization(user.selectedOrganization)">
             <template v-for="(keyPair, index) in listedMissingKeyPairs" :key="keyPair.publicKey">
               <tr class="disabled-w-action position-relative">
-                <td v-if="selectMany">
+                <td>
                   <AppCheckBox
                     :checked="
                       selectedMissingKeyPairIdsToDelete.includes(keyPair.id.toString()) ||
@@ -616,11 +616,7 @@ watch([currentTab, selectedRecoveryPhrase], () => {
                     class="cursor-pointer d-flex justify-content-center"
                   />
                 </td>
-                <td
-                  v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
-                  :data-testid="`cell-index-missing-${index}`"
-                  class="text-end"
-                >
+                <td :data-testid="`cell-index-missing-${index}`" class="text-end">
                   {{ keyPair.index != null && keyPair.index >= 0 ? keyPair.index : 'N/A' }}
                 </td>
                 <td :data-testid="`cell-nickname-missing-${index}`">N/A</td>
@@ -687,7 +683,7 @@ watch([currentTab, selectedRecoveryPhrase], () => {
       <AppModal v-model:show="isDeleteModalShown" class="common-modal">
         <div class="p-5">
           <div>
-            <i class="bi bi-x-lg cursor-pointer" @click="isDeleteModalShown = false"></i>
+            <i class="bi bi-x-lg cursor-pointer" @click="handleCloseModal"></i>
           </div>
           <div class="text-center">
             <AppCustomIcon :name="'bin'" style="height: 160px" />
