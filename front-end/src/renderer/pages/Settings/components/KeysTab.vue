@@ -24,6 +24,7 @@ import {
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -48,6 +49,9 @@ enum Tabs {
 const isDeleteModalShown = ref(false);
 const isUpdateNicknameModalShown = ref(false);
 const deleteAll = ref(false);
+const isSelectMany = ref(false);
+const selectedKeyPairIdsToDelete = ref<string[]>([]);
+const selectedMissingKeyPairIdsToDelete = ref<string[]>([]);
 
 const decryptedKeys = ref<{ decrypted: string | null; publicKey: string }[]>([]);
 const publicKeysPrivateKeyToDecrypt = ref('');
@@ -100,35 +104,21 @@ const listedMissingKeyPairs = computed(() => {
 });
 
 const modalMessage = computed(() => {
-  const isLastPrivateKey = user.keyPairs.filter(item => item.secret_hash === null).length === 1;
-  const isLastRecoveryPhraseKey =
-    user.keyPairs.filter(item => item.secret_hash != null).length === 1 &&
-    user.keyPairs[0].id === keyPairIdToDelete.value;
-
   if (currentTab.value === Tabs.PRIVATE_KEY) {
     if (deleteAll.value) {
       return 'You are about to delete all key pairs imported from private keys. Do you wish to continue?';
     }
-    if (isLastPrivateKey) {
-      return 'You are about to delete the last key pair imported from a private key. Do you wish to continue?';
-    }
-
-    return 'You are about to delete the selected key pair. Do you wish to continue?';
   }
 
-  if (deleteAll.value) {
+  if (deleteAll.value && currentTab.value === Tabs.ALL) {
     return 'You are about to delete all key pairs. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?';
   }
 
-  if (isLastRecoveryPhraseKey) {
-    return 'You are about to delete the last key pair associated with the recovery phrase you have used to set up the Transaction Tool. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?';
+  if (currentTab.value === Tabs.RECOVERY_PHRASE && deleteAll.value) {
+    return 'You are about to delete all key pairs associated with the recovery phrase you have selected. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?';
   }
 
-  if (isLastPrivateKey) {
-    return 'You are about to delete the last key pair imported from a private key. Do you wish to continue?';
-  }
-
-  return 'You are about to delete the selected key pair. Do you wish to continue?';
+  return 'You are about to delete the selected key pair(s). Do you wish to continue?';
 });
 
 /* Handlers */
@@ -201,6 +191,13 @@ const handleDelete = async () => {
       const organizationKeyToDelete = getUserKeyToDelete(keyId.toString());
       const organizationKeyIdToDelete = organizationKeyToDelete?.id || null;
 
+      //localId in the parameter : string only
+
+      // two arrays for missingKeys number[]
+      // localKeys string[]
+
+      // safeAwait for all missing keys (backend)
+
       await deleteKeyPair(keyId.toString());
 
       if (organizationKeyIdToDelete && isLoggedInOrganization(user.selectedOrganization)) {
@@ -235,7 +232,7 @@ const handleDelete = async () => {
 
       await user.refetchUserState();
       await user.refetchKeys();
-      await user.refetchAccounts();
+      user.refetchAccounts();
 
       if (user.shouldSetupAccount) {
         router.push({ name: 'accountSetup' });
@@ -253,7 +250,7 @@ const handleDelete = async () => {
 
     await user.refetchUserState();
     await user.refetchKeys();
-    await user.refetchAccounts();
+    user.refetchAccounts();
 
     if (user.shouldSetupAccount) {
       router.push({ name: 'accountSetup' });
@@ -269,6 +266,43 @@ const handleDelete = async () => {
   }
 };
 
+const handleSelectMany = () => {
+  isSelectMany.value = !isSelectMany.value;
+  const allListedKeyPairsIds = listedKeyPairs.value.map(key => key.id);
+  const allListedMissingKeyPairsIds = listedMissingKeyPairs.value.map(key => key.id.toString());
+  if (isSelectMany.value) {
+    selectedKeyPairIdsToDelete.value = allListedKeyPairsIds;
+    selectedMissingKeyPairIdsToDelete.value = allListedMissingKeyPairsIds;
+  } else {
+    selectedKeyPairIdsToDelete.value = [];
+    selectedMissingKeyPairIdsToDelete.value = [];
+  }
+
+  console.log(selectedKeyPairIdsToDelete.value);
+  console.log(selectedMissingKeyPairIdsToDelete.value);
+  console.log(selectedKeyPairIdsToDelete.value.length === listedKeyPairs.value.length);
+};
+
+const handleCheckBox = (keyPairId: string, isMissing: boolean) => {
+  const arrayToChange = isMissing ? selectedMissingKeyPairIdsToDelete : selectedKeyPairIdsToDelete;
+  const index = arrayToChange.value.indexOf(keyPairId);
+  if (index > -1) {
+    arrayToChange.value = arrayToChange.value.filter(id => id !== keyPairId);
+  } else {
+    arrayToChange.value = [...arrayToChange.value, keyPairId];
+  }
+
+  const checkLength = checkAllKeysSelected();
+
+  if (checkLength) {
+    isSelectMany.value = true;
+  } else {
+    isSelectMany.value = false;
+  }
+  console.log(selectedKeyPairIdsToDelete.value);
+  console.log(isSelectMany.value);
+};
+
 const handleCopy = (text: string, message: string) => {
   navigator.clipboard.writeText(text);
   toast.success(message);
@@ -282,8 +316,12 @@ const handleStartNicknameEdit = (id: string) => {
 const handleRedirectToRecoverMnemonicKeys = () => {
   router.push({ name: RESTORE_MISSING_KEYS });
 };
-const handleRemoveAllClick = () => {
-  deleteAll.value = true;
+const handleRemoveClick = () => {
+  if (isSelectMany.value) {
+    deleteAll.value = true;
+  } else {
+    deleteAll.value = false;
+  }
   keyPairIdToDelete.value = null;
   isDeleteModalShown.value = true;
 };
@@ -301,6 +339,17 @@ function getUserKeyToDelete(keyPairId: string) {
 
   return null;
 }
+
+const checkAllKeysSelected = () => {
+  if (
+    selectedKeyPairIdsToDelete.value.length === listedKeyPairs.value.length &&
+    selectedMissingKeyPairIdsToDelete.value.length === listedMissingKeyPairs.value.length
+  ) {
+    return true;
+  } else {
+    return false;
+  }
+};
 
 /* Watchers */
 watch(isDeleteModalShown, newVal => {
@@ -323,6 +372,12 @@ watch(isDeletingKey, () => {
   ) {
     currentTab.value = Tabs.ALL;
   }
+});
+
+watch([currentTab, selectedRecoveryPhrase], () => {
+  selectedKeyPairIdsToDelete.value = [];
+  selectedMissingKeyPairIdsToDelete.value = [];
+  isSelectMany.value = false;
 });
 </script>
 <template>
@@ -379,12 +434,27 @@ watch(isDeletingKey, () => {
 
           <AppButton
             v-if="listedKeyPairs.length > 0 || listedMissingKeyPairs.length > 0"
+            class="d-flex align-items-center rounded-3 text-nowrap min-w-unset"
+            data-testid="button-select-many-accounts"
+            :active="isSelectMany"
+            @click="handleSelectMany"
+            :color="checkAllKeysSelected() ? 'secondary' : undefined"
+          >
+            <i class="bi bi-check-all me-2"></i> Select all</AppButton
+          >
+
+          <AppButton
+            v-if="listedKeyPairs.length > 0 || listedMissingKeyPairs.length > 0"
             class="rounded-3 text-nowrap min-w-unset"
             color="danger"
+            :disabled="
+              selectedKeyPairIdsToDelete.length === 0 &&
+              selectedMissingKeyPairIdsToDelete.length === 0
+            "
             data-testid="button-remove-all-keys"
-            @click="handleRemoveAllClick"
+            @click="handleRemoveClick"
           >
-            <span class="bi bi-trash"></span> Remove All
+            <span class="bi bi-trash"></span> Remove
           </AppButton>
         </div>
       </div>
@@ -394,9 +464,10 @@ watch(isDeletingKey, () => {
       <table class="table-custom">
         <thead>
           <tr>
+            <th class="w-10 text-center">Select</th>
             <th
               v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
-              class="w-10 text-end"
+              class="w-10 text-center"
             >
               Index
             </th>
@@ -411,10 +482,18 @@ watch(isDeletingKey, () => {
         <tbody class="text-secondary">
           <template v-for="(keyPair, index) in listedKeyPairs" :key="keyPair.public_key">
             <tr>
+              <td>
+                <AppCheckBox
+                  :checked="selectedKeyPairIdsToDelete.includes(keyPair.id) || isSelectMany"
+                  @update:checked="handleCheckBox(keyPair.id, false)"
+                  name="select-card"
+                  :data-testid="'checkbox-multiple-keys-id-' + index"
+                  class="cursor-pointer"
+                />
+              </td>
               <td
                 :data-testid="`cell-index-${index}`"
                 v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
-                class="text-end"
               >
                 {{ keyPair.index >= 0 ? keyPair.index : 'N/A' }}
               </td>
@@ -525,6 +604,18 @@ watch(isDeletingKey, () => {
           <template v-if="isLoggedInOrganization(user.selectedOrganization)">
             <template v-for="(keyPair, index) in listedMissingKeyPairs" :key="keyPair.publicKey">
               <tr class="disabled-w-action position-relative">
+                <td>
+                  <AppCheckBox
+                    :checked="
+                      selectedMissingKeyPairIdsToDelete.includes(keyPair.id.toString()) ||
+                      isSelectMany
+                    "
+                    @update:checked="handleCheckBox(keyPair.id.toString(), true)"
+                    name="select-card"
+                    :data-testid="'checkbox-multiple-keys-id-' + index"
+                    class="cursor-pointer"
+                  />
+                </td>
                 <td
                   v-if="currentTab === Tabs.RECOVERY_PHRASE || currentTab === Tabs.ALL"
                   :data-testid="`cell-index-missing-${index}`"
