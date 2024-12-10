@@ -116,7 +116,7 @@ watch(router.currentRoute, newRoute => {
         </div>
       </div>
       <div class="flex-column-100 overflow-hidden mt-7">
-        <AppTabs :items="visibleTabItems" v-model:active-index="activeTabIndex" class="pe-4">
+        <AppTabs :items="visibleTabItems" v-model:active-index="activeTabIndex">
           <template #[activeTabTitle]>
             <div class="fill-remaining pe-4 mt-6">
               <RouterView />
