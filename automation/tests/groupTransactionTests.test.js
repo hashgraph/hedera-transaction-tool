@@ -267,7 +267,6 @@ test.describe('Group transaction tests', () => {
   });
 
   test('Verify user can execute different transactions in a group', async () => {
-    test.slow();
     await groupPage.addSingleTransactionToGroup();
     await groupPage.addSingleTransactionToGroup(1, true);
 
@@ -295,7 +294,6 @@ test.describe('Group transaction tests', () => {
   });
 
   test('Verify transaction and linked group items and transaction group exists in db', async () => {
-    test.slow();
     await groupPage.addSingleTransactionToGroup();
     const txId = await groupPage.getTransactionTimestamp(0);
     await groupPage.clickOnSignAndExecuteButton();
