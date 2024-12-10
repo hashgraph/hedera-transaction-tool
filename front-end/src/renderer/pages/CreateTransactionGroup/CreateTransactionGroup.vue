@@ -384,7 +384,9 @@ onBeforeRouteLeave(async to => {
             >
               Delete All</AppButton
             >
-            <AppButton color="primary" data-testid="button-save-group" type="submit" class="ms-4">Save Group</AppButton>
+            <AppButton color="primary" data-testid="button-save-group" type="submit" class="ms-4"
+              >Save Group</AppButton
+            >
             <AppButton
               color="primary"
               type="button"
@@ -453,8 +455,10 @@ onBeforeRouteLeave(async to => {
               <div class="align-self-center col">
                 <div :data-testid="'span-transaction-type-' + index">{{ groupItem.type }}</div>
               </div>
-              <div class="align-self-center text-truncate col text-center mx-5"
-                :data-testid="'span-transaction-timestamp-' + index">
+              <div
+                class="align-self-center text-truncate col text-center mx-5"
+                :data-testid="'span-transaction-timestamp-' + index"
+              >
                 {{
                   groupItem.type == 'Transfer Transaction'
                     ? makeTransfer(index)
@@ -572,7 +576,7 @@ onBeforeRouteLeave(async to => {
           >
             Delete Group
           </AppButton>
-          <AppButton color="primary" data-testid="button-continue-editing " type="submit">
+          <AppButton color="primary" data-testid="button-continue-editing" type="submit">
             Continue Editing
           </AppButton>
         </div>

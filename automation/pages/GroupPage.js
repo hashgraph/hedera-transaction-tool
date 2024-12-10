@@ -1,5 +1,6 @@
 const BasePage = require('./BasePage');
 const TransactionPage = require('./TransactionPage');
+const { getTransactionGroupsForTransactionId } = require('../utils/databaseQueries');
 
 class GroupPage extends BasePage {
   constructor(window) {
@@ -22,6 +23,7 @@ class GroupPage extends BasePage {
   discardDraftTransactionModalButtonSelector = 'button-discard-draft-for-group-modal';
   deleteAllButtonSelector = 'button-delete-all';
   confirmDeleteAllButtonSelector = 'button-confirm-delete-all';
+  confirmGroupTransactionButtonSelector = 'button-confirm-group-transaction';
 
   // Messages
   toastMessageSelector = '.v-toast__text';
@@ -129,7 +131,6 @@ class GroupPage extends BasePage {
     return await this.getText(this.transactionTypeIndexSelector + index);
   }
 
-
   async getTransactionTimestamp(index) {
     return await this.getText(this.transactionTimestampIndexSelector + index);
   }
@@ -150,12 +151,19 @@ class GroupPage extends BasePage {
     return this.isElementVisible(this.transactionTypeIndexSelector + index);
   }
 
-  async addSingleTransactionToGroup(numberOfTransactions = 1) {
-    await this.fillDescription('test');
-    for (let i = 0; i < numberOfTransactions; i++) {
+  async addSingleTransactionToGroup(numberOfTransactions = 1, isFileTransaction = false) {
+    if (isFileTransaction) {
       await this.clickOnAddTransactionButton();
-      await this.transactionPage.clickOnCreateAccountTransaction();
+      await this.transactionPage.clickOnFileServiceLink();
+      await this.transactionPage.clickOnFileCreateTransaction();
       await this.clickAddToGroupButton();
+    } else {
+      await this.fillDescription('test');
+      for (let i = 0; i < numberOfTransactions; i++) {
+        await this.clickOnAddTransactionButton();
+        await this.transactionPage.clickOnCreateAccountTransaction();
+        await this.clickAddToGroupButton();
+      }
     }
   }
 
@@ -169,6 +177,20 @@ class GroupPage extends BasePage {
 
   async clickOnConfirmDeleteAllButton() {
     await this.click(this.confirmDeleteAllButtonSelector);
+  }
+
+  async clickOnConfirmGroupTransactionButton() {
+    await this.click(this.confirmGroupTransactionButtonSelector);
+  }
+
+  /**
+   * Checks if transaction groups exist for the given transaction ID.
+   *
+   * @param {string} transactionId - The ID of the transaction to check.
+   * @returns {Promise<boolean>} A promise that resolves to true if transaction groups exist, otherwise false.
+   */
+  async doTransactionGroupsExist(transactionId) {
+    return !!(await getTransactionGroupsForTransactionId(transactionId));
   }
 }
 

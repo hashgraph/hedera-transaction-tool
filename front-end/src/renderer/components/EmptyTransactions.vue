@@ -24,7 +24,9 @@ const isTransactionSelectionModalShown = ref(false);
       <span class="bi bi-arrow-left-right text-huge text-secondary"></span>
     </div>
     <div class="mt-3">
-      <p data-testid="p-empty-transaction-text" class="text-title text-semi-bold">There are no Transactions at the moment.</p>
+      <p data-testid="p-empty-transaction-text" class="text-title text-semi-bold">
+        There are no Transactions at the moment.
+      </p>
     </div>
     <div class="mt-3">
       <p class="text-main text-muted">

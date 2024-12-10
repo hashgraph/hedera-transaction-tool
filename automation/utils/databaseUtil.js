@@ -97,6 +97,8 @@ async function resetDbState() {
     'OrganizationCredentials',
     'Transaction',
     'TransactionDraft',
+    'GroupItem',
+    'TransactionGroup',
   ];
 
   try {

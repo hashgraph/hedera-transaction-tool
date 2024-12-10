@@ -3,7 +3,8 @@ const {
   setupApp,
   closeApp,
   generateRandomEmail,
-  generateRandomPassword, setupEnvironmentForTransactions,
+  generateRandomPassword,
+  setupEnvironmentForTransactions,
 } = require('../utils/util');
 const { getPrivateKey, generateEd25519KeyPair } = require('../utils/keyUtil');
 const RegistrationPage = require('../pages/RegistrationPage.js');
@@ -54,7 +55,6 @@ test.describe('Group transaction tests', () => {
     await groupPage.deleteGroupModal();
 
     await groupPage.navigateToGroupTransaction();
-
   });
 
   test.afterAll(async () => {
@@ -62,15 +62,13 @@ test.describe('Group transaction tests', () => {
     await resetDbState();
   });
 
-
-
   test('Verify group transaction elements', async () => {
     const isAllElementsPresent = await groupPage.verifyGroupElements();
     expect(isAllElementsPresent).toBe(true);
   });
 
   test('Verify delete group action does not save the group', async () => {
-    await groupPage.fillDescription("test");
+    await groupPage.fillDescription('test');
 
     //attempt to leave the transaction group page
     await transactionPage.clickOnTransactionsMenuButton();
@@ -85,7 +83,7 @@ test.describe('Group transaction tests', () => {
   });
 
   test('Verify continue editing action saves the group', async () => {
-    await groupPage.fillDescription("test");
+    await groupPage.fillDescription('test');
 
     //attempt to leave the transaction group page
     await transactionPage.clickOnTransactionsMenuButton();
@@ -98,6 +96,16 @@ test.describe('Group transaction tests', () => {
     expect(await groupPage.verifyGroupElements()).toBe(true);
   });
 
+  test('Verify user can delete transaction from the group', async () => {
+    await groupPage.addSingleTransactionToGroup();
+
+    await groupPage.clickTransactionDeleteButton(0);
+
+    //verifying that the transaction is deleted
+    expect(await groupPage.isEmptyTransactionTextVisible()).toBe(true);
+    expect(await groupPage.isTransactionVisible(0)).toBe(false);
+  });
+
   test('Verify description is mandatory for saving group transaction', async () => {
     await groupPage.clickOnSaveGroupButton();
 
@@ -108,14 +116,14 @@ test.describe('Group transaction tests', () => {
   test('Verify user can add transaction to the group', async () => {
     await groupPage.addSingleTransactionToGroup();
 
-    expect(await groupPage.getTransactionType(0)).toBe("Account Create Transaction");
+    expect(await groupPage.getTransactionType(0)).toBe('Account Create Transaction');
   });
 
   test('Verify user can edit transaction in the group', async () => {
-    const initialFunds = "50";
-    const maxAutoTokenAssociation = "10";
-    const transactionMemo = "test memo";
-    const accountMemo = "test account memo";
+    const initialFunds = '50';
+    const maxAutoTokenAssociation = '10';
+    const transactionMemo = 'test memo';
+    const accountMemo = 'test account memo';
 
     await groupPage.addSingleTransactionToGroup();
 
@@ -127,13 +135,12 @@ test.describe('Group transaction tests', () => {
     await transactionPage.fillInMemo(accountMemo);
     await groupPage.clickAddToGroupButton();
 
-
     //verifying that there is no duplicate transaction
     expect(await groupPage.isTransactionVisible(1)).toBe(false);
 
     //verifying that the transaction data is updated
     await groupPage.clickTransactionEditButton(0);
-    expect(await transactionPage.getTransactionTypeHeaderText()).toBe("Account Create Transaction");
+    expect(await transactionPage.getTransactionTypeHeaderText()).toBe('Account Create Transaction');
     expect(await transactionPage.getInitialFundsValue()).toBe(initialFunds);
     expect(await transactionPage.getFilledMaxAccountAssociations()).toBe(maxAutoTokenAssociation);
     expect(await transactionPage.getTransactionMemoText()).toBe(transactionMemo);
@@ -141,10 +148,10 @@ test.describe('Group transaction tests', () => {
   });
 
   test('Verify user can duplicate transaction in the group', async () => {
-    const initialFunds = "50";
-    const maxAutoTokenAssociation = "10";
-    const transactionMemo = "test memo";
-    const accountMemo = "test account memo";
+    const initialFunds = '50';
+    const maxAutoTokenAssociation = '10';
+    const transactionMemo = 'test memo';
+    const accountMemo = 'test account memo';
 
     await groupPage.addSingleTransactionToGroup();
 
@@ -159,27 +166,17 @@ test.describe('Group transaction tests', () => {
     await groupPage.clickTransactionDuplicateButton(0);
 
     //verifying that the transaction is duplicated
-    expect(await groupPage.getTransactionType(1)).toBe("Account Create Transaction");
+    expect(await groupPage.getTransactionType(1)).toBe('Account Create Transaction');
 
     await groupPage.clickTransactionEditButton(1);
-    expect(await transactionPage.getTransactionTypeHeaderText()).toBe("Account Create Transaction");
+    expect(await transactionPage.getTransactionTypeHeaderText()).toBe('Account Create Transaction');
     expect(await transactionPage.getInitialFundsValue()).toBe(initialFunds);
     expect(await transactionPage.getFilledMaxAccountAssociations()).toBe(maxAutoTokenAssociation);
     expect(await transactionPage.getTransactionMemoText()).toBe(transactionMemo);
     expect(await transactionPage.getMemoText()).toBe(accountMemo);
   });
 
-  test('Verify user can delete transaction from the group', async () => {
-    await groupPage.addSingleTransactionToGroup();
-
-    await groupPage.clickTransactionDeleteButton(0);
-
-    //verifying that the transaction is deleted
-    expect(await groupPage.isEmptyTransactionTextVisible()).toBe(true);
-    expect(await groupPage.isTransactionVisible(0)).toBe(false);
-  });
-
-  test('Verify user can many transactions at once(delete all)', async () => {
+  test('Verify user can delete many transactions at once(delete all)', async () => {
     await groupPage.addSingleTransactionToGroup(10);
 
     await groupPage.clickOnDeleteAllButton();
@@ -188,5 +185,121 @@ test.describe('Group transaction tests', () => {
     //verifying that the transaction is deleted
     expect(await groupPage.isEmptyTransactionTextVisible()).toBe(true);
     expect(await groupPage.isTransactionVisible(0)).toBe(false);
+  });
+
+  test('Verify user can save a transaction group', async () => {
+    await groupPage.addSingleTransactionToGroup();
+
+    await groupPage.clickOnSaveGroupButton();
+    await transactionPage.clickOnDraftsMenuButton();
+    await transactionPage.clickOnFirstDraftContinueButton();
+
+    expect(await groupPage.getTransactionType(0)).toBe('Account Create Transaction');
+
+    await transactionPage.navigateToDrafts();
+    await transactionPage.deleteFirstDraft();
+  });
+
+  test('Verify user can delete a transaction group', async () => {
+    await groupPage.addSingleTransactionToGroup();
+
+    await groupPage.clickOnSaveGroupButton();
+    await transactionPage.navigateToDrafts();
+    await transactionPage.deleteFirstDraft();
+
+    const isContinueButtonVisible = await transactionPage.isFirstDraftContinueButtonVisible();
+    expect(isContinueButtonVisible).toBe(false);
+  });
+
+  test('Verify user can execute group transaction', async () => {
+    await groupPage.addSingleTransactionToGroup();
+    const txId = await groupPage.getTransactionTimestamp(0);
+
+    await groupPage.clickOnSignAndExecuteButton();
+    await groupPage.clickOnConfirmGroupTransactionButton();
+
+    const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
+    const transactionType = transactionDetails.transactions[0]?.name;
+    const newAccount = transactionDetails.transactions[0]?.entity_id;
+    const result = transactionDetails.transactions[0]?.result;
+
+    expect(transactionType).toBe('CRYPTOCREATEACCOUNT');
+    expect(newAccount).toBeTruthy();
+    expect(result).toBe('SUCCESS');
+  });
+
+  test('Verify user can execute duplicated group transactions', async () => {
+    await groupPage.addSingleTransactionToGroup();
+    // Duplicate the transaction twice
+    await groupPage.clickTransactionDuplicateButton(0);
+    await groupPage.clickTransactionDuplicateButton(0);
+
+    const txId = await groupPage.getTransactionTimestamp(0);
+    const secondTxId = await groupPage.getTransactionTimestamp(1);
+    const thirdTxId = await groupPage.getTransactionTimestamp(2);
+
+    await groupPage.clickOnSignAndExecuteButton();
+    await groupPage.clickOnConfirmGroupTransactionButton();
+
+    const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
+    const transactionType = transactionDetails.transactions[0]?.name;
+    const newAccount = transactionDetails.transactions[0]?.entity_id;
+    const result = transactionDetails.transactions[0]?.result;
+    expect(transactionType).toBe('CRYPTOCREATEACCOUNT');
+    expect(newAccount).toBeTruthy();
+    expect(result).toBe('SUCCESS');
+
+    const secondTransactionDetails = await transactionPage.mirrorGetTransactionResponse(secondTxId);
+    const secondTransactionType = secondTransactionDetails.transactions[0]?.name;
+    const secondNewAccount = secondTransactionDetails.transactions[0]?.entity_id;
+    const secondResult = secondTransactionDetails.transactions[0]?.result;
+    expect(secondTransactionType).toBe('CRYPTOCREATEACCOUNT');
+    expect(secondNewAccount).toBeTruthy();
+    expect(secondResult).toBe('SUCCESS');
+
+    const thirdTransactionDetails = await transactionPage.mirrorGetTransactionResponse(thirdTxId);
+    const thirdTransactionType = thirdTransactionDetails.transactions[0]?.name;
+    const thirdNewAccount = thirdTransactionDetails.transactions[0]?.entity_id;
+    const thirdResult = thirdTransactionDetails.transactions[0]?.result;
+    expect(thirdTransactionType).toBe('CRYPTOCREATEACCOUNT');
+    expect(thirdNewAccount).toBeTruthy();
+    expect(thirdResult).toBe('SUCCESS');
+  });
+
+  test('Verify user can execute different transactions in a group', async () => {
+    test.slow();
+    await groupPage.addSingleTransactionToGroup();
+    await groupPage.addSingleTransactionToGroup(1, true);
+
+    const txId = await groupPage.getTransactionTimestamp(0);
+    const secondTxId = await groupPage.getTransactionTimestamp(1);
+
+    await groupPage.clickOnSignAndExecuteButton();
+    await groupPage.clickOnConfirmGroupTransactionButton();
+
+    const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
+    const transactionType = transactionDetails.transactions[0]?.name;
+    const newAccount = transactionDetails.transactions[0]?.entity_id;
+    const result = transactionDetails.transactions[0]?.result;
+    expect(transactionType).toBe('CRYPTOCREATEACCOUNT');
+    expect(newAccount).toBeTruthy();
+    expect(result).toBe('SUCCESS');
+
+    const secondTransactionDetails = await transactionPage.mirrorGetTransactionResponse(secondTxId);
+    const secondTransactionType = secondTransactionDetails.transactions[0]?.name;
+    const secondNewAccount = secondTransactionDetails.transactions[0]?.entity_id;
+    const secondResult = secondTransactionDetails.transactions[0]?.result;
+    expect(secondTransactionType).toBe('FILECREATE');
+    expect(secondNewAccount).toBeTruthy();
+    expect(secondResult).toBe('SUCCESS');
+  });
+
+  test('Verify transaction and linked group items and transaction group exists in db', async () => {
+    test.slow();
+    await groupPage.addSingleTransactionToGroup();
+    const txId = await groupPage.getTransactionTimestamp(0);
+    await groupPage.clickOnSignAndExecuteButton();
+    await groupPage.clickOnConfirmGroupTransactionButton();
+    expect(await groupPage.doTransactionGroupsExist(txId)).toBe(true);
   });
 });
