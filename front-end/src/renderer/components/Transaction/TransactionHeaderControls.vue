@@ -58,6 +58,7 @@ defineEmits<{
           <AppButton
             color="primary"
             type="button"
+            data-testid="button-add-to-group"
             @click="$route.params.seq ? $emit('edit-group-item') : $emit('add-to-group')"
             :disabled="createButtonDisabled"
           >

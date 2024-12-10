@@ -16,7 +16,6 @@ content-type: application/json
 
 The response should include an access token:
 
-
 ```
 {
   "user": {
@@ -148,6 +147,7 @@ content-type: application/json
 It may be desired to group some transactions together such as File Update and File Append.
 
 Transaction Group Request (replace "accessTokenHere" with your access token):
+
 ```
 POST https://example.com/transaction-groups
 Authorization: Bearer accessTokenHere
@@ -178,7 +178,9 @@ content-type: application/json
 ```
 
 ### Adding Approvers
+
 Single Threshold Approvers Request (replace "accessTokenHere" with your access token):
+
 ```
 POST https://example.com/transactions/1/approvers
 Authorization: Bearer accessTokenHere
@@ -194,6 +196,7 @@ content-type: application/json
 ```
 
 Multiple Threshold Approvers Request (replace "accessTokenHere" with your access token):
+
 ```
 POST https://example.com/transactions/1/approvers
 Authorization: Bearer accessTokenHere
@@ -226,6 +229,7 @@ content-type: application/json
 ```
 
 ### Adding Observers
+
 Observers Request (replace "accessTokenHere" with your access token):
 
 ```
