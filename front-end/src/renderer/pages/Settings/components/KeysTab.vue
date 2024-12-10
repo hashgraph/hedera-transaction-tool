@@ -99,14 +99,18 @@ const listedMissingKeyPairs = computed(() => {
   });
 });
 
-const modalMessage = computed(() =>
-  deleteAll.value
+const modalMessage = computed(() => {
+  if (currentTab.value === Tabs.PRIVATE_KEY) {
+    return 'You are about to delete the selected key pair. Do you wish to continue?';
+  }
+
+  return deleteAll.value
     ? 'You are about to delete all key pairs. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?'
     : user.keyPairs.filter(item => item.secret_hash != null).length === 1 &&
         user.keyPairs[0].id === keyPairIdToDelete.value
       ? 'You are about to delete the last key pair associated with the recovery phrase you have used to set up the Transaction Tool. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?'
-      : 'You are about to delete the selected key pair. Do you wish to continue?',
-);
+      : 'You are about to delete the selected key pair. Do you wish to continue?';
+});
 
 /* Handlers */
 const handleShowPrivateKey = async (publicKey: string) => {
