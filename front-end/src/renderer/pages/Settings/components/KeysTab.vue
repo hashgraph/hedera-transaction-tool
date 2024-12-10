@@ -100,23 +100,35 @@ const listedMissingKeyPairs = computed(() => {
 });
 
 const modalMessage = computed(() => {
+  const isLastPrivateKey = user.keyPairs.filter(item => item.secret_hash === null).length === 1;
+  const isLastRecoveryPhraseKey =
+    user.keyPairs.filter(item => item.secret_hash != null).length === 1 &&
+    user.keyPairs[0].id === keyPairIdToDelete.value;
+
   if (currentTab.value === Tabs.PRIVATE_KEY) {
-    const isLastPrivateKey = user.keyPairs.filter(item => item.secret_hash === null).length === 1;
     if (deleteAll.value) {
       return 'You are about to delete all key pairs imported from private keys. Do you wish to continue?';
     }
     if (isLastPrivateKey) {
       return 'You are about to delete the last key pair imported from a private key. Do you wish to continue?';
     }
+
     return 'You are about to delete the selected key pair. Do you wish to continue?';
   }
 
-  return deleteAll.value
-    ? 'You are about to delete all key pairs. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?'
-    : user.keyPairs.filter(item => item.secret_hash != null).length === 1 &&
-        user.keyPairs[0].id === keyPairIdToDelete.value
-      ? 'You are about to delete the last key pair associated with the recovery phrase you have used to set up the Transaction Tool. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?'
-      : 'You are about to delete the selected key pair. Do you wish to continue?';
+  if (deleteAll.value) {
+    return 'You are about to delete all key pairs. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?';
+  }
+
+  if (isLastRecoveryPhraseKey) {
+    return 'You are about to delete the last key pair associated with the recovery phrase you have used to set up the Transaction Tool. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?';
+  }
+
+  if (isLastPrivateKey) {
+    return 'You are about to delete the last key pair imported from a private key. Do you wish to continue?';
+  }
+
+  return 'You are about to delete the selected key pair. Do you wish to continue?';
 });
 
 /* Handlers */
@@ -185,19 +197,39 @@ const handleDelete = async () => {
   try {
     isDeletingKey.value = true;
 
-    let organizationKeyIdToDelete: number | null = null;
+    const deleteSingleKey = async (keyId: string | number) => {
+      const organizationKeyToDelete = getUserKeyToDelete(keyId.toString());
+      const organizationKeyIdToDelete = organizationKeyToDelete?.id || null;
+
+      await deleteKeyPair(keyId.toString());
+
+      if (organizationKeyIdToDelete && isLoggedInOrganization(user.selectedOrganization)) {
+        await safeAwait(
+          deleteKey(
+            user.selectedOrganization.serverUrl,
+            user.selectedOrganization.userId,
+            organizationKeyIdToDelete,
+          ),
+        );
+      }
+    };
 
     if (deleteAll.value) {
-      if (listedKeyPairs.value) {
-        for (const key of listedKeyPairs.value) {
-          await deleteKeyPair(key.id);
+      const deleteAllKeys = async () => {
+        if (listedKeyPairs.value) {
+          for (const key of listedKeyPairs.value) {
+            await deleteSingleKey(key.id);
+          }
         }
-      }
-      if (listedMissingKeyPairs.value) {
-        for (const key of listedMissingKeyPairs.value) {
-          await deleteKeyPair(key.id.toString());
+
+        if (listedMissingKeyPairs.value) {
+          for (const key of listedMissingKeyPairs.value) {
+            await deleteSingleKey(key.id);
+          }
         }
-      }
+      };
+
+      await deleteAllKeys();
 
       toast.success('All keys deleted successfully', { position: 'bottom-right' });
 
@@ -208,30 +240,16 @@ const handleDelete = async () => {
       if (user.shouldSetupAccount) {
         router.push({ name: 'accountSetup' });
       }
-
       return;
     }
 
     if (keyPairIdToDelete.value) {
-      const organizationKeyToDelete = getUserKeyToDelete();
-      organizationKeyIdToDelete = organizationKeyToDelete?.id || null;
-
-      await deleteKeyPair(keyPairIdToDelete.value);
+      await deleteSingleKey(keyPairIdToDelete.value);
     } else if (missingKeyPairIdToDelete.value) {
-      organizationKeyIdToDelete = missingKeyPairIdToDelete.value;
+      await deleteSingleKey(missingKeyPairIdToDelete.value);
     }
 
-    if (organizationKeyIdToDelete && isLoggedInOrganization(user.selectedOrganization)) {
-      await safeAwait(
-        deleteKey(
-          user.selectedOrganization.serverUrl,
-          user.selectedOrganization.userId,
-          organizationKeyIdToDelete,
-        ),
-      );
-    }
-
-    toast.success(`Private key deleted successfully`);
+    toast.success('Private key deleted successfully');
 
     await user.refetchUserState();
     await user.refetchKeys();
@@ -271,8 +289,8 @@ const handleRemoveAllClick = () => {
 };
 
 /* Functions */
-function getUserKeyToDelete() {
-  const localKey = user.keyPairs.find(kp => kp.id === keyPairIdToDelete.value);
+function getUserKeyToDelete(keyPairId: string) {
+  const localKey = user.keyPairs.find(kp => kp.id === keyPairId);
   if (!localKey) {
     throw Error('Local key not found');
   }
