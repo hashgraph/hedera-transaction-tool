@@ -39,40 +39,26 @@ class GroupPage extends BasePage {
   transactionDuplicateButtonIndexSelector = 'button-transaction-duplicate-';
   transactionEditButtonIndexSelector = 'button-transaction-edit-';
 
-  // Method to close the group modal if it appears
+  async closeModalIfVisible(selector) {
+    const modalButton = this.window.getByTestId(selector);
+
+    await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(e => {});
+
+    if (await modalButton.isVisible()) {
+      await modalButton.click();
+    }
+  }
+
   async deleteGroupModal() {
-    // Wait for the button to be visible with a timeout
-    const modalButton = this.window.getByTestId(this.deleteGroupButtonSelector);
-    await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(e => {});
-
-    // If the modal is visible, then click the button to close the modal
-    if (await modalButton.isVisible()) {
-      await modalButton.click();
-    }
+    await this.closeModalIfVisible(this.deleteGroupButtonSelector);
   }
 
-  // Method to close the 'Save Group Draft' modal if it appears
   async closeGroupDraftModal() {
-    // Wait for the button to be visible with a timeout
-    const modalButton = this.window.getByTestId(this.discardModalDraftButtonSelector);
-    await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(e => {});
-
-    // If the modal is visible, then click the button to close the modal
-    if (await modalButton.isVisible()) {
-      await modalButton.click();
-    }
+    await this.closeModalIfVisible(this.discardModalDraftButtonSelector);
   }
 
-  // Method to close the 'Save Draft for Group' modal if it appears
   async closeDraftTransactionModal() {
-    // Wait for the button to be visible with a timeout
-    const modalButton = this.window.getByTestId(this.discardDraftTransactionModalButtonSelector);
-    await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(e => {});
-
-    // If the modal is visible, then click the button to close the modal
-    if (await modalButton.isVisible()) {
-      await modalButton.click();
-    }
+    await this.closeModalIfVisible(this.discardDraftTransactionModalButtonSelector);
   }
 
   async clickOnSaveGroupButton() {

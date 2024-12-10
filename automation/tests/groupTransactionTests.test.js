@@ -1,4 +1,11 @@
 const { test } = require('@playwright/test');
+const { expect } = require('playwright/test');
+const RegistrationPage = require('../pages/RegistrationPage.js');
+const LoginPage = require('../pages/LoginPage');
+const SettingsPage = require('../pages/SettingsPage');
+const TransactionPage = require('../pages/TransactionPage');
+const GroupPage = require('../pages/GroupPage');
+const { resetDbState } = require('../utils/databaseUtil');
 const {
   setupApp,
   closeApp,
@@ -6,14 +13,6 @@ const {
   generateRandomPassword,
   setupEnvironmentForTransactions,
 } = require('../utils/util');
-const { getPrivateKey, generateEd25519KeyPair } = require('../utils/keyUtil');
-const RegistrationPage = require('../pages/RegistrationPage.js');
-const { expect } = require('playwright/test');
-const LoginPage = require('../pages/LoginPage');
-const SettingsPage = require('../pages/SettingsPage');
-const TransactionPage = require('../pages/TransactionPage');
-const GroupPage = require('../pages/GroupPage');
-const { resetDbState } = require('../utils/databaseUtil');
 
 let app, window;
 let globalCredentials = { email: '', password: '' };
