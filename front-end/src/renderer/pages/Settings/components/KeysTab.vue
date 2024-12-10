@@ -365,6 +365,7 @@ watch([currentTab, selectedRecoveryPhrase], () => {
   selectedKeyPairIdsToDelete.value = [];
   selectedMissingKeyPairIdsToDelete.value = [];
   isSelectAll.value = false;
+  selectMany.value = false;
 });
 </script>
 <template>
