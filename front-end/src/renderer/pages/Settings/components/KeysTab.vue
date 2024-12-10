@@ -109,29 +109,34 @@ const modalMessage = computed(() => {
     .filter(item => item.secret_hash != null)
     .map(item => item.id);
 
+  const privateKeyIds = user.keyPairs.filter(item => item.secret_hash == null).map(item => item.id);
+
+  const activeArray =
+    deleteSingleLocal.value.length > 0 ? deleteSingleLocal : selectedKeyPairIdsToDelete;
+
   const allRecoveryPhraseKeyPairsSelected = recoveryPhraseKeyIds.every(id =>
-    selectedKeyPairIdsToDelete.value.includes(id),
+    activeArray.value.includes(id),
   );
 
-  if (currentTab.value === Tabs.PRIVATE_KEY) {
-    if (deleteAll.value) {
-      return 'You are about to delete all key pairs imported from private keys. Do you wish to continue?';
-    }
-  }
-
-  if (allRecoveryPhraseKeyPairsSelected && !deleteAll.value) {
-    return 'You are about to delete all key pairs associated with recovery phrase. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?';
-  }
+  const allPrivateKeyPairsSelected = privateKeyIds.every(id => activeArray.value.includes(id));
 
   if (deleteAll.value && currentTab.value === Tabs.ALL) {
     return 'You are about to delete all key pairs. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?';
   }
 
-  if (currentTab.value === Tabs.RECOVERY_PHRASE && deleteAll.value) {
-    if (allRecoveryPhraseKeyPairsSelected) {
-      ('You are about to delete all key pairs associated with the recovery phrase you have selected. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?');
+  if (allRecoveryPhraseKeyPairsSelected) {
+    return 'You are about to delete all key pairs associated with recovery phrase. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?';
+  }
+
+  if (currentTab.value === Tabs.PRIVATE_KEY) {
+    if (allPrivateKeyPairsSelected) {
+      return 'You are about to delete all key pairs imported from private keys. Do you wish to continue?';
     }
-    return 'You are about to delete all key pair(s) associated with the recovery phrase you have selected. Do you wish to continue?';
+    return 'You are about do delete the selected key pair(s) imported from a private key. Do you wish to continue?';
+  }
+
+  if (currentTab.value === Tabs.RECOVERY_PHRASE) {
+    return 'You are about to delete the selected key pair(s) associated with this recovery phrase. Do you wish to continue?';
   }
 
   return 'You are about to delete the selected key pair(s). Do you wish to continue?';
