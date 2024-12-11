@@ -51,7 +51,7 @@ const isUpdateNicknameModalShown = ref(false);
 const deleteAll = ref(false);
 const isSelectAll = ref(false);
 const selectedKeyPairIdsToDelete = ref<string[]>([]);
-const selectedMissingKeyPairIdsToDelete = ref<string[]>([]);
+const selectedMissingKeyPairIdsToDelete = ref<number[]>([]);
 const selectMany = ref(false);
 
 const decryptedKeys = ref<{ decrypted: string | null; publicKey: string }[]>([]);
@@ -61,7 +61,7 @@ const currentTab = ref(Tabs.ALL);
 const isDeletingKey = ref(false);
 const selectedRecoveryPhrase = ref<string>('');
 const deleteSingleLocal = ref<string[]>([]);
-const deleteSingleMissing = ref<string[]>([]);
+const deleteSingleMissing = ref<number[]>([]);
 
 /* Computed */
 const missingKeys = computed(() =>
@@ -193,7 +193,6 @@ const handleHideDecryptedKey = (publicKey: string) => {
 };
 
 const handleDeleteModal = (keyId: string) => {
-  deleteSingleLocal.value = [];
   isSelectAll.value = false;
   deleteAll.value = false;
   deleteSingleLocal.value = [keyId];
@@ -201,10 +200,9 @@ const handleDeleteModal = (keyId: string) => {
 };
 
 const handleMissingKeyDeleteModal = (id: number) => {
-  deleteSingleMissing.value = [];
   isSelectAll.value = false;
   deleteAll.value = false;
-  deleteSingleMissing.value = [id.toString()];
+  deleteSingleMissing.value = [id];
   isDeleteModalShown.value = true;
 };
 
@@ -242,7 +240,7 @@ const handleDelete = async () => {
 
     if (activeMissingArray.value.length > 0) {
       for (const keyPairId of activeMissingArray.value) {
-        await deleteOrganization(Number(keyPairId));
+        await deleteOrganization(keyPairId);
       }
     }
 
@@ -272,7 +270,7 @@ const handleDelete = async () => {
 const handleSelectMany = () => {
   isSelectAll.value = !isSelectAll.value;
   const allListedKeyPairIds = listedKeyPairs.value.map(key => key.id);
-  const allListedMissingKeyPairIds = listedMissingKeyPairs.value.map(key => key.id.toString());
+  const allListedMissingKeyPairIds = listedMissingKeyPairs.value.map(key => key.id);
   if (isSelectAll.value) {
     selectedKeyPairIdsToDelete.value = allListedKeyPairIds;
     selectedMissingKeyPairIdsToDelete.value = allListedMissingKeyPairIds;
@@ -282,22 +280,16 @@ const handleSelectMany = () => {
   }
 };
 
-const handleCheckBox = (keyPairId: string, isMissing: boolean) => {
-  const arrayToChange = isMissing ? selectedMissingKeyPairIdsToDelete : selectedKeyPairIdsToDelete;
-  const index = arrayToChange.value.indexOf(keyPairId);
-  if (index > -1) {
-    arrayToChange.value = arrayToChange.value.filter(id => id !== keyPairId);
-  } else {
-    arrayToChange.value = [...arrayToChange.value, keyPairId];
-  }
+const handleCheckBox = (keyPairId: string | number) => {
+  const arrayToChange =
+    typeof keyPairId === 'number' ? selectedMissingKeyPairIdsToDelete : selectedKeyPairIdsToDelete;
 
-  const checkLength = checkAllKeysSelected();
+  // @ts-ignore: TypeScript cannot infer the type relationship here
+  arrayToChange.value = arrayToChange.value.includes(keyPairId)
+    ? arrayToChange.value.filter(id => id !== keyPairId)
+    : [...arrayToChange.value, keyPairId];
 
-  if (checkLength) {
-    isSelectAll.value = true;
-  } else {
-    isSelectAll.value = false;
-  }
+  isSelectAll.value = checkAllKeysSelected();
 };
 
 const handleCopy = (text: string, message: string) => {
@@ -492,7 +484,7 @@ watch([currentTab, selectedRecoveryPhrase], () => {
               <td>
                 <AppCheckBox
                   :checked="selectedKeyPairIdsToDelete.includes(keyPair.id) || isSelectAll"
-                  @update:checked="handleCheckBox(keyPair.id, false)"
+                  @update:checked="handleCheckBox(keyPair.id)"
                   name="select-card"
                   :data-testid="'checkbox-multiple-keys-id-' + index"
                   class="cursor-pointer d-flex justify-content-center"
@@ -616,11 +608,8 @@ watch([currentTab, selectedRecoveryPhrase], () => {
               <tr class="disabled-w-action position-relative">
                 <td>
                   <AppCheckBox
-                    :checked="
-                      selectedMissingKeyPairIdsToDelete.includes(keyPair.id.toString()) ||
-                      isSelectAll
-                    "
-                    @update:checked="handleCheckBox(keyPair.id.toString(), true)"
+                    :checked="selectedMissingKeyPairIdsToDelete.includes(keyPair.id) || isSelectAll"
+                    @update:checked="handleCheckBox(keyPair.id)"
                     name="select-card"
                     :data-testid="'checkbox-multiple-keys-id-' + index"
                     class="cursor-pointer d-flex justify-content-center"
@@ -682,6 +671,12 @@ watch([currentTab, selectedRecoveryPhrase], () => {
                     :data-testid="`button-delete-key-${index}`"
                     @click="handleMissingKeyDeleteModal(keyPair.id)"
                     class="min-w-unset"
+                    :class="
+                      selectedKeyPairIdsToDelete.length === 0 &&
+                      selectedMissingKeyPairIdsToDelete.length === 0
+                        ? null
+                        : 'visibility-hidden'
+                    "
                     >Delete missing key</AppButton
                   >
                 </td>
@@ -699,7 +694,14 @@ watch([currentTab, selectedRecoveryPhrase], () => {
             <AppCustomIcon :name="'bin'" style="height: 160px" />
           </div>
           <form @submit.prevent="handleDelete">
-            <h3 class="text-center text-title text-bold mt-3">Delete key pair</h3>
+            <h3 class="text-center text-title text-bold mt-3">
+              Delete key
+              {{
+                selectedKeyPairIdsToDelete.length + selectedMissingKeyPairIdsToDelete.length > 1
+                  ? 'pairs'
+                  : 'pair'
+              }}
+            </h3>
             <p class="text-center mt-4">
               {{ modalMessage }}
             </p>
