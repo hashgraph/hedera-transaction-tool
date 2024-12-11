@@ -449,7 +449,7 @@ watch([currentTab, selectedRecoveryPhrase], () => {
     </div>
 
     <div class="fill-remaining overflow-x-auto pe-4 pb-2 mt-4">
-      <table class="table-custom fixed-height">
+      <table class="table-custom">
         <thead>
           <tr>
             <th>
@@ -470,15 +470,17 @@ watch([currentTab, selectedRecoveryPhrase], () => {
             <th>Private Key</th>
             <th class="text-center">
               <AppButton
-                v-if="
-                  selectedKeyPairIdsToDelete.length > 0 ||
-                  selectedMissingKeyPairIdsToDelete.length > 0
-                "
                 size="small"
                 color="danger"
                 :data-testid="`button-delete-key-all`"
                 @click="handleRemoveClick"
                 class="min-w-unset"
+                :class="
+                  selectedKeyPairIdsToDelete.length > 0 ||
+                  selectedMissingKeyPairIdsToDelete.length > 0
+                    ? null
+                    : 'visibility-hidden'
+                "
                 ><span class="bi bi-trash"></span
               ></AppButton>
             </th>
@@ -593,15 +595,17 @@ watch([currentTab, selectedRecoveryPhrase], () => {
               </td>
               <td class="text-center">
                 <AppButton
-                  v-if="
-                    selectedKeyPairIdsToDelete.length === 0 &&
-                    selectedMissingKeyPairIdsToDelete.length === 0
-                  "
                   size="small"
                   color="danger"
                   :data-testid="`button-delete-key-${index}`"
                   @click="handleDeleteModal(keyPair.id)"
                   class="min-w-unset"
+                  :class="
+                    selectedKeyPairIdsToDelete.length === 0 &&
+                    selectedMissingKeyPairIdsToDelete.length === 0
+                      ? null
+                      : 'visibility-hidden'
+                  "
                   ><span class="bi bi-trash"></span
                 ></AppButton>
               </td>

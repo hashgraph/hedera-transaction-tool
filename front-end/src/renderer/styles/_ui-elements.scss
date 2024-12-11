@@ -524,15 +524,6 @@
   }
 }
 
-.table-custom.fixed-height {
-  thead tr:nth-child(1) {
-    height: 50px;
-  }
-  tbody tr {
-    height: 70px;
-  }
-}
-
 /* Tooltip */
 .wide-tooltip {
   --#{$prefix}tooltip-max-width: 280px;
