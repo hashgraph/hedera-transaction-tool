@@ -48,12 +48,10 @@ export class AuthService {
 
     const existingUser = await this.usersService.getUser({ email: dto.email }, true);
     let user: User;
-    if (existingUser) {
-      console.log(existingUser);
-      return;
-    }
+
     if (existingUser && !existingUser.deletedAt && existingUser.status === UserStatus.NEW) {
-      user = await this.usersService.updateUser(user, { password: tempPassword });
+      const hashedPass = await this.usersService.getSaltedHash(tempPassword);
+      user = await this.usersService.updateUserById(existingUser.id, { password: hashedPass });
     } else {
       user = await this.usersService.createUser(dto.email, tempPassword);
     }
