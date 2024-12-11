@@ -477,7 +477,11 @@ defineExpose({
           <AppButton type="button" color="borderless" @click="isConfirmShown = false"
             >Cancel</AppButton
           >
-          <AppButton color="primary" type="button" @click.prevent="handleConfirmTransaction"
+          <AppButton
+            color="primary"
+            data-testid="button-confirm-group-transaction"
+            type="button"
+            @click.prevent="handleConfirmTransaction"
             >Confirm</AppButton
           >
         </div>

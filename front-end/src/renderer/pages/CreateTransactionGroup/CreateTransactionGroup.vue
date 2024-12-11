@@ -370,6 +370,7 @@ onBeforeRouteLeave(async to => {
               @update:modelValue="descriptionUpdated"
               filled
               placeholder="Enter Description"
+              data-testid="input-transaction-group-description"
             />
           </div>
           <div class="mt-4 align-self-end">
@@ -379,15 +380,19 @@ onBeforeRouteLeave(async to => {
               type="button"
               @click="handleDeleteAll"
               class="ms-4 text-danger"
+              data-testid="button-delete-all"
             >
               Delete All</AppButton
             >
-            <AppButton color="primary" type="submit" class="ms-4">Save Group</AppButton>
+            <AppButton color="primary" data-testid="button-save-group" type="submit" class="ms-4"
+              >Save Group</AppButton
+            >
             <AppButton
               color="primary"
               type="button"
               @click="handleSignSubmit"
               class="ms-4"
+              data-testid="button-sign-submit"
               :disabled="transactionGroup.groupItems.length == 0"
             >
               <span class="bi bi-send"></span>
@@ -428,6 +433,7 @@ onBeforeRouteLeave(async to => {
             type="button"
             class="text-main text-primary"
             @click="isTransactionSelectionModalShown = true"
+            data-testid="button-add-transaction"
             ><i class="bi bi-plus-lg"></i> <span>Add Transaction</span>
           </AppButton>
         </div>
@@ -447,9 +453,12 @@ onBeforeRouteLeave(async to => {
           >
             <div class="d-flex justify-content-between p-4 transaction-group-row">
               <div class="align-self-center col">
-                <div>{{ groupItem.type }}</div>
+                <div :data-testid="'span-transaction-type-' + index">{{ groupItem.type }}</div>
               </div>
-              <div class="align-self-center text-truncate col text-center mx-5">
+              <div
+                class="align-self-center text-truncate col text-center mx-5"
+                :data-testid="'span-transaction-timestamp-' + index"
+              >
                 {{
                   groupItem.type == 'Transfer Transaction'
                     ? makeTransfer(index)
@@ -466,6 +475,7 @@ onBeforeRouteLeave(async to => {
                   class="transaction-group-button-borderless"
                   @click="handleDeleteGroupItem(index)"
                   style="min-width: 0"
+                  :data-testid="'button-transaction-delete-' + index"
                   >Delete
                 </AppButton>
                 <AppButton
@@ -473,11 +483,13 @@ onBeforeRouteLeave(async to => {
                   class="transaction-group-button-borderless"
                   @click="handleDuplicateGroupItem(index)"
                   style="min-width: 0"
+                  :data-testid="'button-transaction-duplicate-' + index"
                   >Duplicate
                 </AppButton>
                 <AppButton
                   type="button"
                   class="transaction-group-button"
+                  :data-testid="'button-transaction-edit-' + index"
                   @click="handleEditGroupItem(index, groupItem.type)"
                 >
                   Edit
@@ -564,7 +576,7 @@ onBeforeRouteLeave(async to => {
           >
             Delete Group
           </AppButton>
-          <AppButton color="primary" data-testid="button-save-draft-modal" type="submit">
+          <AppButton color="primary" data-testid="button-continue-editing" type="submit">
             Continue Editing
           </AppButton>
         </div>
@@ -594,6 +606,7 @@ onBeforeRouteLeave(async to => {
             type="button"
             @click="handleConfirmDeleteAll"
             class="text-danger"
+            data-testid="button-confirm-delete-all"
           >
             Confirm</AppButton
           >

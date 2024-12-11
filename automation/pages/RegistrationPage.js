@@ -165,7 +165,6 @@ class RegistrationPage extends BasePage {
     return false;
   }
 
-
   async verifyAllMnemonicFieldsCleared() {
     let allFieldsCleared = true;
     for (let i = 1; i <= 24; i++) {
@@ -350,7 +349,7 @@ class RegistrationPage extends BasePage {
         break;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 100));
       retries++;
     }
 
@@ -358,7 +357,6 @@ class RegistrationPage extends BasePage {
       throw new Error('Failed to clear at least one mnemonic field after maximum retries');
     }
   }
-
 
   async clickOnNextButton() {
     await this.click(this.nextButtonSelector);
