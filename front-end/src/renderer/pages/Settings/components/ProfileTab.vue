@@ -7,7 +7,7 @@ import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
-import { changePassword, resetDataLocal } from '@renderer/services/userService';
+import { changePassword } from '@renderer/services/userService';
 import { changePassword as organizationChangePassword } from '@renderer/services/organization/auth';
 import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
@@ -19,9 +19,10 @@ import {
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -87,12 +88,7 @@ const handleChangePassword = async () => {
   }
 };
 
-const handleResetData = async () => {
-  await resetDataLocal();
-  toast.success('User data has been reset');
-  user.logout();
-  router.push({ name: 'login' });
-};
+const handleResetData = async () => router.push({ name: 'login' });
 </script>
 <template>
   <div
@@ -165,15 +161,7 @@ const handleResetData = async () => {
       </div>
     </AppModal>
     <AppModal v-model:show="isSuccessModalShown" class="common-modal">
-      <form
-        class="p-5"
-        @submit="
-          e => {
-            e.preventDefault();
-            isSuccessModalShown = false;
-          }
-        "
-      >
+      <form class="p-5" @submit.prevent="isSuccessModalShown = false">
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="isSuccessModalShown = false"></i>
         </div>
@@ -193,15 +181,7 @@ const handleResetData = async () => {
   <div
     v-if="isUserLoggedIn(user.personal) && user.personal.useKeychain && !user.selectedOrganization"
   >
-    <form
-      class="w-50 p-4 border rounded"
-      @submit="
-        e => {
-          e.preventDefault();
-          isResetDataModalShown = true;
-        }
-      "
-    >
+    <form class="w-50 p-4 border rounded" @submit.prevent="isResetDataModalShown = true">
       <h3 class="text-main">Reset Application</h3>
 
       <div class="d-grid">
@@ -210,34 +190,6 @@ const handleResetData = async () => {
         >
       </div>
     </form>
-    <AppModal v-model:show="isResetDataModalShown" class="common-modal">
-      <div class="p-5">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          @click="isResetDataModalShown = false"
-        ></i>
-        <div class="text-center">
-          <AppCustomIcon :name="'bin'" style="height: 160px" />
-        </div>
-        <h3 class="text-center text-title text-bold">Reset Data</h3>
-        <p class="text-center text-small text-secondary mt-4">
-          Are you sure you want to reset the app data?
-        </p>
-
-        <hr class="separator my-5" />
-
-        <div class="flex-between-centered gap-4">
-          <AppButton
-            data-testid="button-reset-cancel"
-            color="borderless"
-            @click="isResetDataModalShown = false"
-            >Cancel</AppButton
-          >
-          <AppButton data-testid="button-reset" color="danger" @click="handleResetData"
-            >Reset</AppButton
-          >
-        </div>
-      </div>
-    </AppModal>
+    <ResetDataModal v-model:show="isResetDataModalShown" @data:reset="handleResetData" />
   </div>
 </template>
