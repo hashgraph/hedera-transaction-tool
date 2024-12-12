@@ -20,7 +20,7 @@ import {
 
 import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 
-import { isEmail, isUserLoggedIn } from '@renderer/utils';
+import { isEmail, isPasswordStrong, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -69,7 +69,7 @@ const handleOnFormSubmit = async (event: Event) => {
   if (shouldRegister.value) {
     inputEmailInvalid.value = inputEmail.value.trim() === '' || !isEmail(inputEmail.value);
     inputPasswordInvalid.value =
-      inputPassword.value.trim() === '' || !isPasswordStrong(inputPassword.value);
+      inputPassword.value.trim() === '' || !isPasswordStrong(inputPassword.value).result;
     inputConfirmPasswordInvalid.value =
       inputPassword.value.trim() !== inputConfirmPassword.value.trim();
   }
@@ -161,7 +161,7 @@ const handleResetData = async () => {
 
 /* Hooks */
 onMounted(async () => {
-  isPasswordStrong(inputPassword.value);
+  passwordRequirements.length = isPasswordStrong(inputPassword.value).length;
   await checkShouldRegister();
   if (shouldRegister.value) {
     createTooltips();
@@ -170,29 +170,6 @@ onMounted(async () => {
 });
 
 /* Misc */
-function isPasswordStrong(password: string) {
-  const validationRegex = [
-    { regex: /.{10,}/ }, // min 10 letters,
-    // { regex: /[0-9]/ }, // numbers from 0 - 9
-    // { regex: /[a-z]/ }, // letters from a - z (lowercase)
-    // { regex: /[A-Z]/ }, // letters from A-Z (uppercase),
-    // { regex: /[^A-Za-z0-9]/ }, // special characters
-  ];
-
-  passwordRequirements.length = validationRegex[0].regex.test(password);
-  // passwordRequirements.number = validationRegex[1].regex.test(password);
-  // passwordRequirements.lowercase = validationRegex[2].regex.test(password);
-  // passwordRequirements.uppercase = validationRegex[3].regex.test(password);
-  // passwordRequirements.special = validationRegex[4].regex.test(password);
-
-  const isStrong = validationRegex.reduce((isStrong, item) => {
-    const isValid = item.regex.test(password);
-    return isStrong && isValid;
-  }, true);
-
-  return isStrong;
-}
-
 function setTooltipContent() {
   // tooltipContent.value = `
   //         <div class='d-flex flex-column align-items-start px-3'>
@@ -251,16 +228,18 @@ async function checkShouldRegister() {
 /* Watchers */
 watch(inputPassword, pass => {
   inputConfirmPasswordInvalid.value = false;
-  if (isPasswordStrong(pass) || pass.length === 0) {
+  if (isPasswordStrong(pass).result || pass.length === 0) {
     inputPasswordInvalid.value = false;
   }
   setTooltipContent();
 });
+
 watch(inputConfirmPassword, pass => {
   if (pass.length === 0) {
     inputPasswordInvalid.value = false;
   }
 });
+
 watch(inputEmail, pass => {
   if (shouldRegister.value && (isEmail(pass) || pass.length === 0)) {
     inputEmailInvalid.value = false;
