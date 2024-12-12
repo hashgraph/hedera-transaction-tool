@@ -24,6 +24,7 @@ import {
   safeAwait,
   safeDuplicateUploadKey,
   throwError,
+  updateOrganizationKeysHash,
 } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -117,6 +118,9 @@ const restoreForExistingKey = async (key: KeyPair) => {
 };
 
 const restoreForOrganization = async (organization: ConnectedOrganization) => {
+  await updateOrganizationKeysHash(organization, user.recoveryPhrase);
+  await user.refetchUserState();
+
   const restoredKeys = await restoreOrganizationKeys(
     organization,
     user.recoveryPhrase,

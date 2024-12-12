@@ -21,7 +21,12 @@ import { Mnemonic } from '@hashgraph/sdk';
 
 import { SELECTED_NETWORK, SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@main/shared/constants';
 
-import { getUserState, healthCheck, uploadKey } from '@renderer/services/organization';
+import {
+  getUserState,
+  healthCheck,
+  updateKey as updateOrganizationKey,
+  uploadKey,
+} from '@renderer/services/organization';
 import { getAccountIds, getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService';
 import {
   storeKeyPair as storeKey,
@@ -331,20 +336,39 @@ export const getSecretHashFromLocalKeys = async (
   for (const key of keys) {
     if (key.secret_hash && !allHashes.includes(key.secret_hash)) allHashes.push(key.secret_hash);
   }
-  return await compareDataToHashes([...recoveryPhrase.words].toString(), allHashes);
+  return await compareDataToHashes(getRecoveryPhraseHashValue(recoveryPhrase.words), allHashes);
 };
 
 export const getSecretHashFromUploadedKeys = async (
   recoveryPhrase: RecoveryPhrase,
   keys: IUserKey[],
-) => {
+): Promise<string | null> => {
   const allHashes: string[] = [];
   for (const key of keys) {
     if (key.mnemonicHash && !allHashes.includes(key.mnemonicHash)) {
       allHashes.push(key.mnemonicHash);
     }
   }
-  return await compareDataToHashes([...recoveryPhrase.words].toString(), allHashes);
+  return await compareDataToHashes(getRecoveryPhraseHashValue(recoveryPhrase.words), allHashes);
+};
+
+export const getUploadedKeysFromRecoveryPhrase = async (
+  recoveryPhrase: RecoveryPhrase,
+  keys: IUserKey[],
+): Promise<IUserKey[]> => {
+  const userKeys: IUserKey[] = [];
+  for (const key of keys) {
+    if (key.mnemonicHash) {
+      const match = await compareHash(
+        getRecoveryPhraseHashValue(recoveryPhrase.words),
+        key.mnemonicHash,
+      );
+      if (match) {
+        userKeys.push(key);
+      }
+    }
+  }
+  return userKeys;
 };
 
 export const getNickname = (publicKey: string, keyPairs: KeyPair[]): string | undefined => {
@@ -704,6 +728,28 @@ export const safeDuplicateUploadKey = async (
     if (!keyUploaded) {
       await uploadKey(organization.serverUrl, organization.userId, key);
     }
+  }
+};
+
+export const updateOrganizationKeysHash = async (
+  organization: ConnectedOrganization,
+  recoveryPhrase: RecoveryPhrase | null,
+) => {
+  assertIsLoggedInOrganization(organization);
+
+  if (!recoveryPhrase) {
+    throw new Error('Recovery phrase is required to restore keys');
+  }
+
+  const keys = await getUploadedKeysFromRecoveryPhrase(recoveryPhrase, organization.userKeys);
+
+  for (const key of keys) {
+    await updateOrganizationKey(
+      organization.serverUrl,
+      organization.userId,
+      key.id,
+      recoveryPhrase.hash,
+    );
   }
 };
 
