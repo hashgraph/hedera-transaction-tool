@@ -60,7 +60,7 @@ async function process(keyPaths: string[], words: string[] | null) {
 
   allKeyPaths.value = keyPaths;
   mnemonic.value = words;
-  mnemomicHash.value = words ? await hashData(words.toString()) : null;
+  mnemomicHash.value = words ? await hashData(words.toString(), true) : null;
 
   if (words) {
     indexesFromMnemonic.value = (await getKeysFromSecretHash(user.keyPairs, words)).map(
