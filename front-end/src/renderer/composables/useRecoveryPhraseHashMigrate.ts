@@ -48,21 +48,28 @@ export default function useRecoveryPhraseHashMigrate() {
 
   const getKeysToUpdateForRecoveryPhrase = async (
     recoveryPhraseWords: string[],
+    localKeyPairsToUpdate?: KeyPair[],
   ): Promise<KeyPair[]> => {
-    const localKeyPairsToUpdate = await getRequiredKeysToMigrate();
-    const keyIds: KeyPair[] = [];
+    localKeyPairsToUpdate = localKeyPairsToUpdate || (await getRequiredKeysToMigrate());
+    const keyPairs: KeyPair[] = [];
+    const isHashForRecoveryPhrase = new Map<string, boolean>();
 
     for (const localKeyPair of localKeyPairsToUpdate) {
       if (localKeyPair.secret_hash) {
-        const { data } = await safeAwait(
-          compareHash(getRecoveryPhraseHashValue(recoveryPhraseWords), localKeyPair.secret_hash),
-        );
-        if (data) {
-          keyIds.push(localKeyPair);
+        if (isHashForRecoveryPhrase.has(localKeyPair.secret_hash)) {
+          keyPairs.push(localKeyPair);
+        } else {
+          const { data } = await safeAwait(
+            compareHash(getRecoveryPhraseHashValue(recoveryPhraseWords), localKeyPair.secret_hash),
+          );
+          if (data) {
+            keyPairs.push(localKeyPair);
+            isHashForRecoveryPhrase.set(localKeyPair.secret_hash, true);
+          }
         }
       }
     }
-    return keyIds;
+    return keyPairs;
   };
 
   const updateKeyPairsHash = async (
@@ -96,66 +103,14 @@ export default function useRecoveryPhraseHashMigrate() {
 
     const personalKeys = await getKeyPairs(user.personal.id, null);
     const hashToKeys: { [hash: string]: KeyPair[] } = {};
-    const keyAddedToUpdate: { [localKeyId: string]: boolean } = {};
+    const keyAddedToUpdate: Set<string> = new Set();
 
     if (user.recoveryPhrase) {
-      const personalKeysSecretHashes: string[] = [];
-      for (const personalKey of personalKeys) {
-        if (
-          personalKey.secret_hash &&
-          personalKey.secret_hash.includes(ARGON_HEADER) &&
-          !personalKeysSecretHashes.includes(personalKey.secret_hash)
-        ) {
-          personalKeysSecretHashes.push(personalKey.secret_hash);
-        }
-      }
-
-      let argonHashForRecoveryPhrase: string | null = null;
-
-      for (const personalKeyHash of personalKeysSecretHashes) {
-        const { data } = await safeAwait(
-          compareHash(getRecoveryPhraseHashValue(user.recoveryPhrase.words), personalKeyHash),
-        );
-
-        if (data) {
-          argonHashForRecoveryPhrase = personalKeyHash;
-          hashToKeys[argonHashForRecoveryPhrase] = [];
-          break;
-        }
-      }
-
-      const localOrganizationKeyHashes: string[] = [];
-      const localOrganizationHashToKeys: { [hash: string]: KeyPair[] } = {};
-      for (const localOrganizationKey of localOrganizationKeys) {
-        if (
-          localOrganizationKey.secret_hash &&
-          !localOrganizationKey.secret_hash.includes(ARGON_HEADER)
-        ) {
-          if (!localOrganizationKeyHashes.includes(localOrganizationKey.secret_hash)) {
-            localOrganizationKeyHashes.push(localOrganizationKey.secret_hash);
-          }
-          if (!localOrganizationHashToKeys[localOrganizationKey.secret_hash]) {
-            localOrganizationHashToKeys[localOrganizationKey.secret_hash] = [];
-          }
-          localOrganizationHashToKeys[localOrganizationKey.secret_hash].push(localOrganizationKey);
-        }
-      }
-
-      if (argonHashForRecoveryPhrase) {
-        for (const localOrganizationKeyHash of localOrganizationKeyHashes) {
-          const { data } = await safeAwait(
-            compareHash(
-              getRecoveryPhraseHashValue(user.recoveryPhrase.words),
-              localOrganizationKeyHash,
-            ),
-          );
-
-          if (data) {
-            hashToKeys[argonHashForRecoveryPhrase] =
-              localOrganizationHashToKeys[localOrganizationKeyHash];
-          }
-        }
-      }
+      const keyPairsForRecoveryPhrase = await getKeysToUpdateForRecoveryPhrase(
+        user.recoveryPhrase.words,
+        localOrganizationKeys,
+      );
+      hashToKeys[user.recoveryPhrase.hash] = keyPairsForRecoveryPhrase;
     }
 
     for (const personalKey of personalKeys) {
@@ -169,7 +124,7 @@ export default function useRecoveryPhraseHashMigrate() {
         if (organizationKey) {
           for (const localOrganizationKey of localOrganizationKeys) {
             const hasSameHash = localOrganizationKey.secret_hash === organizationKey.secret_hash;
-            const isAlreadyAdded = keyAddedToUpdate[localOrganizationKey.id];
+            const isAlreadyAdded = keyAddedToUpdate.has(localOrganizationKey.id);
 
             if (hasSameHash && !isAlreadyAdded) {
               if (!hashToKeys[personalKey.secret_hash]) {
@@ -177,7 +132,7 @@ export default function useRecoveryPhraseHashMigrate() {
               }
 
               hashToKeys[personalKey.secret_hash].push(localOrganizationKey);
-              keyAddedToUpdate[localOrganizationKey.id] = true;
+              keyAddedToUpdate.add(localOrganizationKey.id);
             }
           }
         }
