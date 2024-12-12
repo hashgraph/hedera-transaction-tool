@@ -54,9 +54,11 @@ const handleOnFormSubmit = async () => {
   inputOrganizationURLInvalid.value = organizationURL === '' || !checkUrl(organizationURL);
 
   if (
-    inputOrganizationURLInvalid.value || props.personalUser.useKeychain
-      ? organizationEmail.length === 0
-      : false || temporaryOrganizationPassword.length === 0 || loginError.value
+    inputOrganizationURLInvalid.value ||
+    (props.personalUser.useKeychain
+      ? organizationEmail.length === 0 : false) ||
+    temporaryOrganizationPassword.length === 0 ||
+    loginError.value
   )
     return;
 
@@ -87,7 +89,7 @@ watch(inputOrganizationURL, url => {
   if (checkUrl(url) || url.length === 0) inputOrganizationURLInvalid.value = false;
 });
 watch(inputNewOrganizationPassword, pass => {
-  if (isPasswordStrong(pass) && pass !== inputTemporaryOrganizationPassword.value)
+  if (isPasswordStrong(pass).result && pass !== inputTemporaryOrganizationPassword.value)
     inputOrganizationURLInvalid.value = false;
 });
 </script>
