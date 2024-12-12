@@ -17,9 +17,6 @@ const props = withDefaults(
   },
 );
 
-/* Emits */
-const emit = defineEmits(['update:modelValue']);
-
 /* Composables */
 const attrs = useAttrs();
 
