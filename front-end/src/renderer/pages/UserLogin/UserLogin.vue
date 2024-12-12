@@ -10,6 +10,7 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useSetDynamicLayout, { DEFAULT_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
+import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 
 import {
   loginLocal,
@@ -35,6 +36,7 @@ const user = useUserStore();
 const toast = useToast();
 const router = useRouter();
 const createTooltips = useCreateTooltips();
+const { redirectIfRequiredKeysToMigrate } = useRecoveryPhraseHashMigrate();
 useSetDynamicLayout(DEFAULT_LAYOUT);
 
 /* Injected */
@@ -129,6 +131,10 @@ const handleOnFormSubmit = async (event: Event) => {
         if (user.secretHashes.length === 0) {
           router.push({ name: 'accountSetup' });
         } else {
+          if (await redirectIfRequiredKeysToMigrate()) {
+            return;
+          }
+
           router.push(
             router.previousPath ? { path: router.previousPath } : { name: 'transactions' },
           );
