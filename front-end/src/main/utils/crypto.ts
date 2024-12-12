@@ -1,4 +1,6 @@
 import crypto from 'crypto';
+import * as argon2 from 'argon2';
+import * as bcrypt from 'bcrypt';
 
 export function deriveKey(password: string, salt: Buffer) {
   const iterations = 2560;
@@ -38,4 +40,22 @@ export function decrypt(data: string, password: string) {
   const decrypted = decipher.update(text, 'base64', 'utf8') + decipher.final('utf8');
 
   return decrypted;
+}
+
+export async function hash(data: string, usePseudoSalt = false): Promise<string> {
+  const pseudoSalt = Buffer.from(data.slice(0, 16));
+  return await argon2.hash(data, {
+    salt: usePseudoSalt ? pseudoSalt : undefined,
+  });
+}
+
+export async function verifyHash(hash: string, data: string): Promise<boolean> {
+  return await argon2.verify(hash, data);
+}
+
+export async function dualCompareHash(data: string, hash: string) {
+  const matchBcrypt = await bcrypt.compare(data, hash);
+  const matchArgon2 = await verifyHash(hash, data);
+
+  return matchBcrypt || matchArgon2;
 }
