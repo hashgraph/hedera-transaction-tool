@@ -15,7 +15,7 @@ import { addContact, updateContact } from '@renderer/services/contactsService';
 import { getAccountsByPublicKeysParallel } from '@renderer/services/mirrorNodeDataService';
 import { signUp } from '@renderer/services/organization';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import { getErrorMessage, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -102,7 +102,7 @@ const handleResend = async () => {
     }
     toast.success('Email sent successfully');
   } catch (error: unknown) {
-    toast.error('Error while sending email. Please try again.');
+    toast.error(getErrorMessage(error, 'Error while sending email. Please try again.'));
   }
 };
 
