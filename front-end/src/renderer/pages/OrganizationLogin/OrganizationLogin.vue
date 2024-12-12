@@ -17,8 +17,8 @@ import { assertUserLoggedIn, getErrorMessage, isLoggedOutOrganization } from '@r
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import ForgotPasswordModal from '@renderer/components/ForgotPasswordModal.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
+import ForgotPasswordModal from '@renderer/components/ForgotPasswordModal.vue';
 
 /* Stores */
 const user = useUserStore();
