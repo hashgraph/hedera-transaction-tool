@@ -80,9 +80,6 @@ describe('registerUtilsListeners', () => {
     ];
 
     expect(ipcMainMO.on).toHaveBeenCalledWith('utils:openExternal', expect.any(Function));
-
-    console.log(ipcMainMO.handle.mock.calls);
-
     expect(
       utils.every(util =>
         ipcMainMO.handle.mock.calls.some(([channel]) => channel === `utils:${util}`),
