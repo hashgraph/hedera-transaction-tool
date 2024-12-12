@@ -292,5 +292,67 @@ describe('User Keys (e2e)', () => {
 
       await endpoint.delete(`/2/keys/${userKeys[0].id}`, userAuthToken).expect(400);
     });
+
+    it('(PATCH) should update mnemonic hash', async () => {
+      let userKeys = await getUserKeys(user.id);
+      expect(userKeys).not.toHaveLength(0);
+
+      const firstKeyId = userKeys[0].id;
+      let key = userKeys.find(k => k.id === firstKeyId);
+      const oldIndex = key.index;
+
+      const newMnemonicHash = '0xabcd';
+
+      const { body } = await endpoint
+        .patch({ mnemonicHash: newMnemonicHash }, `/2/keys/${firstKeyId}`, userAuthToken)
+        .expect(200);
+
+      userKeys = await getUserKeys(user.id);
+      key = userKeys.find(k => k.id === firstKeyId);
+
+      expect(body.mnemonicHash).toEqual(newMnemonicHash);
+      expect(body.index).toEqual(oldIndex);
+      expect(key.mnemonicHash).toEqual(body.mnemonicHash);
+      expect(key.index).toEqual(oldIndex);
+    });
+
+    it('(PATCH) should not update mnemonic hash if key not yours', async () => {
+      let userKeys = await getUserKeys(admin.id);
+      expect(userKeys).not.toHaveLength(0);
+
+      const newMnemonicHash = '0xabcd';
+
+      await endpoint
+        .patch({ mnemonicHash: newMnemonicHash }, `/2/keys/${userKeys[0].id}`, userAuthToken)
+        .expect(400);
+    });
+
+    it('(PATCH) should set index along with mnemonic hash', async () => {
+      let userKeys = await getUserKeys(user.id);
+      expect(userKeys).not.toHaveLength(0);
+
+      const firstKeyId = userKeys[0].id;
+      let key = userKeys.find(k => k.id === firstKeyId);
+
+      const newMnemonicHash = '0xabcd';
+      const newIndex = 123;
+
+      const { body } = await endpoint
+        .patch(
+          { mnemonicHash: newMnemonicHash, index: newIndex },
+          `/2/keys/${firstKeyId}`,
+          userAuthToken,
+        )
+        .expect(200);
+
+      userKeys = await getUserKeys(user.id);
+      key = userKeys.find(k => k.id === firstKeyId);
+
+      expect(body.mnemonicHash).toEqual(newMnemonicHash);
+      expect(body.index).toEqual(newIndex);
+
+      expect(key.mnemonicHash).toEqual(body.mnemonicHash);
+      expect(key.index).toEqual(body.index);
+    });
   });
 });
