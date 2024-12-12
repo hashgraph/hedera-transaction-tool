@@ -98,6 +98,66 @@ export default function useRecoveryPhraseHashMigrate() {
     const hashToKeys: { [hash: string]: KeyPair[] } = {};
     const keyAddedToUpdate: { [localKeyId: string]: boolean } = {};
 
+    if (user.recoveryPhrase) {
+      const personalKeysSecretHashes: string[] = [];
+      for (const personalKey of personalKeys) {
+        if (
+          personalKey.secret_hash &&
+          personalKey.secret_hash.includes(ARGON_HEADER) &&
+          !personalKeysSecretHashes.includes(personalKey.secret_hash)
+        ) {
+          personalKeysSecretHashes.push(personalKey.secret_hash);
+        }
+      }
+
+      let argonHashForRecoveryPhrase: string | null = null;
+
+      for (const personalKeyHash of personalKeysSecretHashes) {
+        const { data } = await safeAwait(
+          compareHash(getRecoveryPhraseHashValue(user.recoveryPhrase.words), personalKeyHash),
+        );
+
+        if (data) {
+          argonHashForRecoveryPhrase = personalKeyHash;
+          hashToKeys[argonHashForRecoveryPhrase] = [];
+          break;
+        }
+      }
+
+      const localOrganizationKeyHashes: string[] = [];
+      const localOrganizationHashToKeys: { [hash: string]: KeyPair[] } = {};
+      for (const localOrganizationKey of localOrganizationKeys) {
+        if (
+          localOrganizationKey.secret_hash &&
+          !localOrganizationKey.secret_hash.includes(ARGON_HEADER)
+        ) {
+          if (!localOrganizationKeyHashes.includes(localOrganizationKey.secret_hash)) {
+            localOrganizationKeyHashes.push(localOrganizationKey.secret_hash);
+          }
+          if (!localOrganizationHashToKeys[localOrganizationKey.secret_hash]) {
+            localOrganizationHashToKeys[localOrganizationKey.secret_hash] = [];
+          }
+          localOrganizationHashToKeys[localOrganizationKey.secret_hash].push(localOrganizationKey);
+        }
+      }
+
+      if (argonHashForRecoveryPhrase) {
+        for (const localOrganizationKeyHash of localOrganizationKeyHashes) {
+          const { data } = await safeAwait(
+            compareHash(
+              getRecoveryPhraseHashValue(user.recoveryPhrase.words),
+              localOrganizationKeyHash,
+            ),
+          );
+
+          if (data) {
+            hashToKeys[argonHashForRecoveryPhrase] =
+              localOrganizationHashToKeys[localOrganizationKeyHash];
+          }
+        }
+      }
+    }
+
     for (const personalKey of personalKeys) {
       const isArgonHash = personalKey.secret_hash?.includes(ARGON_HEADER);
 
