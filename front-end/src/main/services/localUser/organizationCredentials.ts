@@ -122,10 +122,8 @@ export const organizationCredentialsExists = async (organization_id: string, use
 
   try {
     return (await prisma.organizationCredentials.count({
-      where: { user_id, organization_id },
-    })) > 0
-      ? true
-      : false;
+      where: {user_id, organization_id},
+    })) > 0;
   } catch (error) {
     console.log(error);
     return false;
@@ -201,7 +199,8 @@ export const updateOrganizationCredentials = async (
     });
 
     if (!credentials) {
-      throw new Error('User credentials for this organization not found');
+      console.log('User credentials for this organization not found');
+      return false;
     }
 
     await prisma.organizationCredentials.update({
