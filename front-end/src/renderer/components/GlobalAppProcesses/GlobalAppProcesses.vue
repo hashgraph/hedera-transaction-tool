@@ -63,7 +63,6 @@ onMounted(async () => {
 
     if ((!useKeyChain && usersCount === 1) || migrationStarted) {
       await resetDataLocal();
-      precheckReady.value = true;
     }
   } catch {
     /* Not initialized */
@@ -72,6 +71,7 @@ onMounted(async () => {
   precheckReady.value = true;
 });
 
+/* Watchers */
 watch(
   () => user.personal,
   async () => {
