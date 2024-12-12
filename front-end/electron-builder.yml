@@ -28,9 +28,9 @@ mac:
         - arm64
     - target: 'pkg'
       arch:
-        - x64
+        #- x64
         - arm64
-        - universal
+        #- universal
   x64ArchFiles: '*'
   mergeASARs: true
 linux:

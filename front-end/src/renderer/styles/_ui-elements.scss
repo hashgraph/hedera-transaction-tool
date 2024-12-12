@@ -512,6 +512,18 @@
   }
 }
 
+/* KeysTab */
+
+.form-check.keys-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  .form-check-input {
+    height: 14px;
+    width: 14px;
+  }
+}
+
 /* Tooltip */
 .wide-tooltip {
   --#{$prefix}tooltip-max-width: 280px;
