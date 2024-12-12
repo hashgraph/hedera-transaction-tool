@@ -97,8 +97,58 @@ export default function useRecoveryPhraseHashMigrate() {
     await user.refetchKeys();
   };
 
+  const tryMigrateOrganizationKeys = async (localOrganizationKeys: KeyPair[]) => {
+    if (!isUserLoggedIn(user.personal)) {
+      return localOrganizationKeys;
+    }
+
+    const personalKeys = await getKeyPairs(user.personal.id, null);
+
+    const hashToKeys: {
+      [hash: string]: KeyPair[];
+    } = {};
+    const keyAddedToUpdate: { [localKeyId: string]: boolean } = {};
+
+    for (const personalKey of personalKeys) {
+      const isArgonHash = personalKey.secret_hash?.includes(ARGON_HEADER);
+
+      if (personalKey.secret_hash && isArgonHash) {
+        const organizationKey = localOrganizationKeys.find(
+          lok => lok.public_key === personalKey.public_key,
+        );
+
+        if (organizationKey) {
+          for (const localOrganizationKey of localOrganizationKeys) {
+            const hasSameHash = localOrganizationKey.secret_hash === organizationKey.secret_hash;
+            const isAlreadyAdded = keyAddedToUpdate[localOrganizationKey.id];
+
+            if (hasSameHash && !isAlreadyAdded) {
+              if (!hashToKeys[personalKey.secret_hash]) {
+                hashToKeys[personalKey.secret_hash] = [];
+              }
+
+              hashToKeys[personalKey.secret_hash].push(localOrganizationKey);
+              keyAddedToUpdate[localOrganizationKey.id] = true;
+            }
+          }
+        }
+      }
+    }
+
+    for (const [hash, keys] of Object.entries(hashToKeys)) {
+      await safeAwait(updateKeyPairsHash(keys, hash));
+    }
+  };
+
   const redirectIfRequiredKeysToMigrate = async () => {
-    if ((await getRequiredKeysToMigrate()).length > 0) {
+    let keysToMigrate = await getRequiredKeysToMigrate();
+
+    if (isLoggedInOrganization(user.selectedOrganization) && keysToMigrate.length > 0) {
+      await safeAwait(tryMigrateOrganizationKeys(keysToMigrate));
+      keysToMigrate = await getRequiredKeysToMigrate();
+    }
+
+    if (keysToMigrate.length > 0) {
       await router.push({ name: MIGRATE_RECOVERY_PHRASE_HASH });
       return true;
     } else if (route.name === MIGRATE_RECOVERY_PHRASE_HASH) {
