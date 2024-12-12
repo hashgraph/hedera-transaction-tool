@@ -79,7 +79,8 @@ describe('Data Migration', () => {
     });
 
     test('Should correctly decrypt legacy mnemonic', async () => {
-      const mockContent = 'hash=UeMaPSnZhVWUZyQBzmHnSChoYUUOTouHW+MQ66ILRiwFMQyQgVlkjF2R19BB0qXa\nlegacy=true';
+      const mockContent =
+        'hash=UeMaPSnZhVWUZyQBzmHnSChoYUUOTouHW+MQ66ILRiwFMQyQgVlkjF2R19BB0qXa\nlegacy=true';
       const mockPassword = 'password';
       const mockDecryptedMnemonic = 'word1 word2 word3';
 
@@ -93,6 +94,20 @@ describe('Data Migration', () => {
 
       const result = await decryptMigrationMnemonic(mockPassword);
       expect(result).toEqual(mockDecryptedMnemonic.split(' '));
+    });
+
+    test('Should return null if no legacy mnemonic', async () => {
+      const mockContent =
+        'hash=UeMaPSnZhVWUZyQBzmHnSChoYUUOTouHW+MQ66ILRiwFMQyQgVlkjF2R19BB0qXa\nlegacy=true';
+      const mockPassword = 'password';
+
+      vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
+      vi.mocked(fs.promises.readFile).mockResolvedValueOnce(
+        Buffer.from('AES|256|CBC|PKCS5Padding|'),
+      );
+
+      const result = await decryptMigrationMnemonic(mockPassword);
+      expect(result).toEqual(null);
     });
 
     test('Should throw error when hash is not found', async () => {

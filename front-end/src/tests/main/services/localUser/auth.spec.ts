@@ -3,16 +3,16 @@ import { expect, vi } from 'vitest';
 import prisma from '@main/db/__mocks__/prisma';
 
 import { randomUUID } from 'crypto';
-import { compareSync, hashSync } from 'bcrypt';
 
 import * as auth from '@main/services/localUser/auth';
 import { changeDecryptionPassword } from '@main/services/localUser/keyPairs';
+import { dualCompareHash, hash } from '@main/utils/crypto';
 
 vi.mock('crypto', () => ({ randomUUID: vi.fn() }));
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
 vi.mock('@main/db/prisma');
-vi.mock('bcrypt', () => ({ hashSync: vi.fn(), compareSync: vi.fn() }));
-vi.mock('@main/services/localUser/keyPairs', () => ({ changeDecryptionPassword: vi.fn() }));
+vi.mock('@main/utils/crypto');
+vi.mock('@main/services/localUser/keyPairs');
 
 describe('Services Local User Auth', () => {
   beforeEach(() => {
@@ -31,12 +31,12 @@ describe('Services Local User Auth', () => {
       const hashed = 'hashed-password';
 
       vi.mocked(randomUUID).mockReturnValue(uuid);
-      vi.mocked(hashSync).mockReturnValue(hashed);
+      vi.mocked(hash).mockResolvedValueOnce(hashed);
 
       await auth.register(email, password);
 
       expect(randomUUID).toHaveBeenCalledTimes(1);
-      expect(hashSync).toHaveBeenCalledWith(password, 10);
+      expect(hash).toHaveBeenCalledWith(password);
       expect(prisma.user.create).toHaveBeenCalledWith({
         data: {
           id: uuid,
@@ -59,12 +59,12 @@ describe('Services Local User Auth', () => {
       const hashed = 'hashed-password';
 
       vi.mocked(randomUUID).mockReturnValue(uuid);
-      vi.mocked(hashSync).mockReturnValue(hashed);
+      vi.mocked(hash).mockResolvedValueOnce(hashed);
 
       await auth.register(email, password);
 
       expect(randomUUID).toHaveBeenCalledTimes(1);
-      expect(hashSync).toHaveBeenCalledWith(password, 10);
+      expect(hash).toHaveBeenCalledWith(password);
       expect(prisma.user.create).toHaveBeenCalledWith({
         data: {
           id: uuid,
@@ -99,20 +99,37 @@ describe('Services Local User Auth', () => {
       const incorrectPassword = 'incorrect_password';
 
       prisma.user.findFirst.mockResolvedValue(user);
-      vi.mocked(hashSync).mockReturnValue(incorrectPassword);
-      vi.mocked(compareSync).mockReturnValue(false);
+      vi.mocked(hash).mockResolvedValueOnce(incorrectPassword);
+      vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: false, isBcrypt: false });
 
       await expect(auth.login(user.email, incorrectPassword)).rejects.toThrow('Incorrect password');
     });
 
     test('Should return the user if the email and password are correct', async () => {
       prisma.user.findFirst.mockResolvedValue(user);
-      vi.mocked(hashSync).mockReturnValue(user.password);
-      vi.mocked(compareSync).mockReturnValue(true);
+      vi.mocked(hash).mockResolvedValueOnce(user.password);
+      vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: true, isBcrypt: false });
 
       const result = await auth.login(user.email, user.password);
 
       expect(result).toStrictEqual(user);
+    });
+
+    test('Should update the password if the password is encrypted with bcrypt', async () => {
+      prisma.user.findFirst.mockResolvedValue(user);
+      vi.mocked(hash).mockResolvedValueOnce(user.password);
+      vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: true, isBcrypt: true });
+
+      await auth.login(user.email, user.password);
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: {
+          id: user.id,
+        },
+        data: {
+          password: user.password,
+        },
+      });
     });
   });
 
@@ -170,9 +187,8 @@ describe('Services Local User Auth', () => {
     test('Should return true if the password is correct', async () => {
       prisma.user.findFirst.mockResolvedValue(user);
 
-      vi.mocked(hashSync).mockReturnValue(user.password);
-      vi.mocked(compareSync).mockReturnValue(true);
-
+      vi.mocked(hash).mockResolvedValueOnce(user.password);
+      vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: true, isBcrypt: false });
       const result = await auth.comparePasswords(user.id, user.password);
 
       expect(result).toBe(true);
@@ -182,8 +198,8 @@ describe('Services Local User Auth', () => {
       const incorrectPassword = 'incorrect_password';
       prisma.user.findFirst.mockResolvedValue(user);
 
-      vi.mocked(hashSync).mockReturnValue(incorrectPassword);
-      vi.mocked(compareSync).mockReturnValue(false);
+      vi.mocked(hash).mockResolvedValueOnce(incorrectPassword);
+      vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: false, isBcrypt: false });
 
       const result = await auth.comparePasswords(user.id, incorrectPassword);
 
@@ -211,8 +227,8 @@ describe('Services Local User Auth', () => {
       const oldPassword = 'oldPassword';
       const newPassword = 'newPassword';
 
-      vi.mocked(hashSync).mockReturnValue(oldPassword);
-      vi.mocked(compareSync).mockReturnValue(false);
+      vi.mocked(hash).mockResolvedValueOnce(oldPassword);
+      vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: false, isBcrypt: false });
 
       await expect(auth.changePassword(userId, oldPassword, newPassword)).rejects.toThrow(
         'Incorrect current password',
@@ -223,8 +239,8 @@ describe('Services Local User Auth', () => {
       const userId = '123';
       const newPassword = 'newPassword';
 
-      vi.mocked(hashSync).mockReturnValue(userPassword);
-      vi.mocked(compareSync).mockReturnValue(true);
+      vi.mocked(hash).mockResolvedValueOnce(userPassword);
+      vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: true, isBcrypt: false });
 
       await auth.changePassword(userId, userPassword, newPassword);
 
