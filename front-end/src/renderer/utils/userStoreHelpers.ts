@@ -153,7 +153,7 @@ export const createPersonalUser = (
 export const createRecoveryPhrase = async (words: string[]): Promise<RecoveryPhrase> => {
   try {
     const mnemonic = await Mnemonic.fromWords(words);
-    const hash = await hashData(words.toString(), true);
+    const hash = await hashData(getRecoveryPhraseHashValue(words), true);
 
     return {
       mnemonic,
@@ -173,7 +173,7 @@ export const storeKeyPair = async (
 ) => {
   if (mnemonic) {
     if (Array.isArray(mnemonic)) {
-      keyPair.secret_hash = await hashData([...mnemonic].toString(), true);
+      keyPair.secret_hash = await hashData(getRecoveryPhraseHashValue(mnemonic), true);
     } else {
       keyPair.secret_hash = mnemonic;
     }
@@ -394,6 +394,10 @@ export const flattenAccountIds = (
   });
 
   return accountIds;
+};
+
+export const getRecoveryPhraseHashValue = (words: string[]) => {
+  return [...words].toString();
 };
 
 /* Organization */

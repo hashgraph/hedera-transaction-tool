@@ -8,7 +8,7 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { hashData } from '@renderer/services/electronUtilsService';
 
-import { getKeysFromSecretHash } from '@renderer/utils';
+import { getKeysFromSecretHash, getRecoveryPhraseHashValue } from '@renderer/utils';
 
 import DecryptKeyModal from '@renderer/components/KeyPair/ImportEncrypted/components/DecryptKeyModal.vue';
 
@@ -60,7 +60,7 @@ async function process(keyPaths: string[], words: string[] | null) {
 
   allKeyPaths.value = keyPaths;
   mnemonic.value = words;
-  mnemomicHash.value = words ? await hashData(words.toString(), true) : null;
+  mnemomicHash.value = words ? await hashData(getRecoveryPhraseHashValue(words), true) : null;
 
   if (words) {
     indexesFromMnemonic.value = (await getKeysFromSecretHash(user.keyPairs, words)).map(
