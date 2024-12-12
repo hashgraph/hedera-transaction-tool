@@ -24,47 +24,39 @@ export default function useRecoveryPhraseHashMigrate() {
   /* Constants */
   const ARGON_HEADER = 'argon2';
 
+  /* Stores */
+  const user = useUserStore();
+
   /* Composables */
   const router = useRouter();
   const route = useRoute();
 
-  /* Stores */
-  const user = useUserStore();
-
   /* Functions */
-  const getRequiredKeysToMigrate = async () => {
+  const getRequiredKeysToMigrate = async (): Promise<KeyPair[]> => {
     if (!isUserLoggedIn(user.personal)) {
       return [];
     }
-
-    const keyPairsToMigrate: KeyPair[] = [];
 
     const localKeysPairs = await getKeyPairs(
       user.personal.id,
       user.selectedOrganization?.id || null,
     );
-
-    for (const localKeyPair of localKeysPairs) {
-      const hasHash = localKeyPair.secret_hash !== null;
-      const isArgonHash = localKeyPair.secret_hash?.includes(ARGON_HEADER);
-
-      if (hasHash && !isArgonHash) {
-        keyPairsToMigrate.push(localKeyPair);
-      }
-    }
-
-    return keyPairsToMigrate;
+    return localKeysPairs.filter(
+      localKeyPair => localKeyPair.secret_hash && !localKeyPair.secret_hash.includes(ARGON_HEADER),
+    );
   };
 
-  const getKeysToUpdateForRecoveryPhrase = async (recoveryPhraseWords: string[]) => {
-    const keyIds: KeyPair[] = [];
+  const getKeysToUpdateForRecoveryPhrase = async (
+    recoveryPhraseWords: string[],
+  ): Promise<KeyPair[]> => {
     const localKeyPairsToUpdate = await getRequiredKeysToMigrate();
+    const keyIds: KeyPair[] = [];
+
     for (const localKeyPair of localKeyPairsToUpdate) {
       if (localKeyPair.secret_hash) {
         const { data } = await safeAwait(
           compareHash(getRecoveryPhraseHashValue(recoveryPhraseWords), localKeyPair.secret_hash),
         );
-
         if (data) {
           keyIds.push(localKeyPair);
         }
@@ -73,13 +65,15 @@ export default function useRecoveryPhraseHashMigrate() {
     return keyIds;
   };
 
-  const updateKeyPairsHash = async (localKeyPairs: KeyPair[], recoveryPhraseHash: string) => {
+  const updateKeyPairsHash = async (
+    localKeyPairs: KeyPair[],
+    recoveryPhraseHash: string,
+  ): Promise<void> => {
     for (const localKeyPair of localKeyPairs) {
       if (isLoggedInOrganization(user.selectedOrganization)) {
         const organizationKeyPair = user.selectedOrganization.userKeys.find(
           key => key.publicKey === localKeyPair.public_key,
         );
-
         if (organizationKeyPair) {
           await updateOrganizationKey(
             user.selectedOrganization.serverUrl,
@@ -89,24 +83,19 @@ export default function useRecoveryPhraseHashMigrate() {
           );
         }
       }
-
       await updateLocalMnemonicHash(localKeyPair.id, recoveryPhraseHash);
     }
-
     await user.refetchUserState();
     await user.refetchKeys();
   };
 
-  const tryMigrateOrganizationKeys = async (localOrganizationKeys: KeyPair[]) => {
+  const tryMigrateOrganizationKeys = async (localOrganizationKeys: KeyPair[]): Promise<void> => {
     if (!isUserLoggedIn(user.personal)) {
-      return localOrganizationKeys;
+      return;
     }
 
     const personalKeys = await getKeyPairs(user.personal.id, null);
-
-    const hashToKeys: {
-      [hash: string]: KeyPair[];
-    } = {};
+    const hashToKeys: { [hash: string]: KeyPair[] } = {};
     const keyAddedToUpdate: { [localKeyId: string]: boolean } = {};
 
     for (const personalKey of personalKeys) {
@@ -140,7 +129,7 @@ export default function useRecoveryPhraseHashMigrate() {
     }
   };
 
-  const redirectIfRequiredKeysToMigrate = async () => {
+  const redirectIfRequiredKeysToMigrate = async (): Promise<boolean> => {
     let keysToMigrate = await getRequiredKeysToMigrate();
 
     if (isLoggedInOrganization(user.selectedOrganization) && keysToMigrate.length > 0) {
