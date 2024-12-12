@@ -135,4 +135,20 @@ describe('UserKeysController', () => {
       await expect(controller.removeKey(user, 1)).rejects.toThrow(Error);
     });
   });
+
+  describe('updateKey', () => {
+    it('should remove a key', async () => {
+      await controller.updateKey(user, 1, { mnemonicHash: '0xabc' });
+
+      expect(userKeysService.updateMnemonicHash).toHaveBeenCalledWith(user, 1, {
+        mnemonicHash: '0xabc',
+      });
+    });
+
+    it('should return an error if key does not exist', async () => {
+      userKeysService.updateMnemonicHash.mockRejectedValue(new Error('Key not found'));
+
+      await expect(controller.updateKey(user, 1, { mnemonicHash: '0xacb' })).rejects.toThrow(Error);
+    });
+  });
 });
