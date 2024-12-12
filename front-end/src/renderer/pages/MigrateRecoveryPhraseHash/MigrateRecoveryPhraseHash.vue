@@ -26,10 +26,10 @@ const user = useUserStore();
 useSetDynamicLayout(ACCOUNT_SETUP_LAYOUT);
 const toast = useToast();
 const router = useRouter();
-const { getKeysToUpdateForRecoveryPhrase, updateLocalKeysHash } = useRecoveryPhraseHashMigrate();
+const { getKeysToUpdateForRecoveryPhrase, updateKeyPairsHash } = useRecoveryPhraseHashMigrate();
 
 /* State */
-const keysIdToUpdate = ref<KeyPair[]>([]);
+const keysToUpdate = ref<KeyPair[]>([]);
 const loadingText = ref<string | null>(null);
 const isRecoveryPhraseValid = ref<boolean>(false);
 const errorMessage = ref<string | null>(null);
@@ -43,7 +43,7 @@ const handleVerify = async () => {
     return;
   }
 
-  keysIdToUpdate.value = [];
+  keysToUpdate.value = [];
   loadingText.value = 'Verifying recovery phrase...';
 
   const { data, error } = await safeAwait(
@@ -54,7 +54,7 @@ const handleVerify = async () => {
     errorMessage.value = error instanceof Error ? error.message : 'An unknown error occurred';
     isRecoveryPhraseValid.value = false;
   } else if (data && data.length > 0) {
-    keysIdToUpdate.value = data;
+    keysToUpdate.value = data;
     errorMessage.value = null;
     isRecoveryPhraseValid.value = true;
   } else {
@@ -72,7 +72,7 @@ const handleContinue = async () => {
 
   try {
     loadingText.value = 'Updating recovery phrase hash...';
-    await updateLocalKeysHash(keysIdToUpdate.value, user.recoveryPhrase.hash);
+    await updateKeyPairsHash(keysToUpdate.value, user.recoveryPhrase.hash);
     toast.success('Recovery phrase hash updated successfully');
     await router.push({ name: 'transactions' });
   } finally {

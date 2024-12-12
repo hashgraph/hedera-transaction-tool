@@ -11,8 +11,14 @@ import {
   updateMnemonicHash as updateLocalMnemonicHash,
 } from '@renderer/services/keyPairService';
 import { compareHash } from '@renderer/services/electronUtilsService';
+import { updateKey as updateOrganizationKey } from '@renderer/services/organization';
 
-import { getRecoveryPhraseHashValue, isUserLoggedIn, safeAwait } from '@renderer/utils';
+import {
+  getRecoveryPhraseHashValue,
+  isLoggedInOrganization,
+  isUserLoggedIn,
+  safeAwait,
+} from '@renderer/utils';
 
 export default function useRecoveryPhraseHashMigrate() {
   /* Constants */
@@ -67,10 +73,28 @@ export default function useRecoveryPhraseHashMigrate() {
     return keyIds;
   };
 
-  const updateLocalKeysHash = async (localKeyPairs: KeyPair[], recoveryPhraseHash: string) => {
-    for (const localKey of localKeyPairs) {
-      await updateLocalMnemonicHash(localKey.id, recoveryPhraseHash);
+  const updateKeyPairsHash = async (localKeyPairs: KeyPair[], recoveryPhraseHash: string) => {
+    for (const localKeyPair of localKeyPairs) {
+      if (isLoggedInOrganization(user.selectedOrganization)) {
+        const organizationKeyPair = user.selectedOrganization.userKeys.find(
+          key => key.publicKey === localKeyPair.public_key,
+        );
+
+        if (organizationKeyPair) {
+          await updateOrganizationKey(
+            user.selectedOrganization.serverUrl,
+            user.selectedOrganization.userId,
+            organizationKeyPair.id,
+            recoveryPhraseHash,
+          );
+        }
+      }
+
+      await updateLocalMnemonicHash(localKeyPair.id, recoveryPhraseHash);
     }
+
+    await user.refetchUserState();
+    await user.refetchKeys();
   };
 
   const redirectIfRequiredKeysToMigrate = async () => {
@@ -89,6 +113,6 @@ export default function useRecoveryPhraseHashMigrate() {
     getRequiredKeysToMigrate,
     getKeysToUpdateForRecoveryPhrase,
     redirectIfRequiredKeysToMigrate,
-    updateLocalKeysHash,
+    updateKeyPairsHash,
   };
 }
