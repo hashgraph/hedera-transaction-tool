@@ -9,7 +9,7 @@ import { resetPassword, setPassword, verifyReset } from '@renderer/services/orga
 import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
 import { comparePasswords } from '@renderer/services/userService';
 
-import { getErrorMessage, isEmail, isLoggedOutOrganization, isUserLoggedIn } from '@renderer/utils';
+import { getErrorMessage, isEmail, isLoggedOutOrganization, isPasswordStrong, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -46,9 +46,7 @@ const otp = ref<{
 const personalPassword = ref('');
 const personalPasswordInvalid = ref(false);
 const newPassword = ref('');
-const confirmPassword = ref('');
 const newPasswordInvalid = ref(false);
-const inputConfirmPasswordInvalid = ref(false);
 
 const shouldEnterToken = ref(false);
 const shouldSetNewPassword = ref(false);
@@ -112,13 +110,11 @@ async function handleNewPassword() {
   const isPasswordCorrect = await comparePasswords(user.personal.id, personalPassword.value);
 
   personalPasswordInvalid.value = !isPasswordCorrect;
-  newPasswordInvalid.value = newPassword.value.trim().length < 8;
-  inputConfirmPasswordInvalid.value = newPassword.value !== confirmPassword.value;
+  newPasswordInvalid.value = !isPasswordStrong(newPassword.value);
 
   if (personalPasswordInvalid.value && !user.personal.useKeychain)
     throw new Error('Incorrect personal password');
-  if (newPasswordInvalid.value) throw new Error('Password must be at least 8 characters long');
-  if (inputConfirmPasswordInvalid.value) throw new Error('Passwords do not match');
+  if (newPasswordInvalid.value) throw new Error('Password must be at least 10 characters long');
 
   try {
     !user.personal.useKeychain && user.setPassword(personalPassword.value);
@@ -163,11 +159,15 @@ watch(
     shouldSetNewPassword.value = false;
     otp.value = null;
     newPassword.value = '';
-    confirmPassword.value = '';
     newPasswordInvalid.value = false;
-    inputConfirmPasswordInvalid.value = false;
   },
 );
+
+watch(newPassword, pass => {
+  if (isPasswordStrong(pass).result || pass.length === 0) {
+    newPasswordInvalid.value = false;
+  }
+});
 </script>
 <template>
   <AppModal
@@ -204,7 +204,7 @@ watch(
 
           <div v-else-if="shouldEnterToken" class="my-4">
             <p class="text-center text-small text-secondary mb-4">
-              Please enter the one time password, received on your email
+              Please enter the one time password, received in your email
             </p>
             <OTPInput ref="otpInputRef" @otp-changed="newOtp => (otp = newOtp)" />
             <div class="text-center mt-4">
@@ -215,34 +215,26 @@ watch(
           </div>
 
           <div v-else-if="shouldSetNewPassword">
-            <AppPasswordInput
-              v-if="isUserLoggedIn(user.personal) && !user.personal.useKeychain"
-              v-model="personalPassword"
-              :filled="true"
-              class="mt-4"
-              :class="{ 'is-invalid': personalPasswordInvalid }"
-              placeholder="Personal Password"
-            />
-            <div v-if="personalPasswordInvalid" class="invalid-feedback">
-              Incorrect personal password
+            <div class="mt-4">
+              <AppPasswordInput
+                v-if="isUserLoggedIn(user.personal) && !user.personal.useKeychain"
+                v-model="personalPassword"
+                :filled="true"
+                :class="{ 'is-invalid': personalPasswordInvalid }"
+                placeholder="Personal Password"
+              />
+              <div v-if="personalPasswordInvalid" class="invalid-feedback">
+                Incorrect personal password
+              </div>
             </div>
-            <AppPasswordInput
-              v-model="newPassword"
-              :filled="true"
-              class="mt-4"
-              :class="{ 'is-invalid': newPasswordInvalid }"
-              placeholder="New Password"
-            />
-            <div v-if="newPasswordInvalid" class="invalid-feedback">Invalid password.</div>
-            <AppPasswordInput
-              v-model="confirmPassword"
-              :filled="true"
-              class="mt-4"
-              :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
-              placeholder="Confirm New Password"
-            />
-            <div v-if="inputConfirmPasswordInvalid" class="invalid-feedback">
-              Passwords do not match.
+            <div class="mt-4">
+              <AppPasswordInput
+                v-model="newPassword"
+                :filled="true"
+                :class="{ 'is-invalid': newPasswordInvalid }"
+                placeholder="New Password"
+              />
+              <div v-if="newPasswordInvalid" class="invalid-feedback">Invalid password.</div>
             </div>
           </div>
         </Transition>
