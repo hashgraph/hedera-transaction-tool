@@ -57,5 +57,5 @@ export async function dualCompareHash(data: string, hash: string) {
   const matchBcrypt = await bcrypt.compare(data, hash);
   const matchArgon2 = await verifyHash(hash, data);
 
-  return matchBcrypt || matchArgon2;
+  return { correct: matchBcrypt || matchArgon2, isBcrypt: matchBcrypt };
 }

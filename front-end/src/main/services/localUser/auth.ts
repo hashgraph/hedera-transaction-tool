@@ -36,14 +36,16 @@ export const login = async (email: string, password: string, _autoRegister?: boo
   // } else if (email != firstUser.email) {
   //   throw new Error('Incorrect email');
   // }
-  const correct = await dualCompareHash(password, user.password);
+  const { correct, isBcrypt } = await dualCompareHash(password, user.password);
 
   if (!correct) {
     throw new Error('Incorrect password');
   }
 
   /* Temporary to migrate users to new hashing algorithm */
-  await updatePassword(user.id, password);
+  if (isBcrypt) {
+    await updatePassword(user.id, password);
+  }
 
   return user;
 };
@@ -76,7 +78,8 @@ export const comparePasswords = async (userId: string, password: string) => {
     throw new Error('User not found');
   }
 
-  return await dualCompareHash(password, firstUser.password);
+  const { correct } = await dualCompareHash(password, firstUser.password);
+  return correct;
 };
 
 export const changePassword = async (userId: string, oldPassword: string, newPassword: string) => {
