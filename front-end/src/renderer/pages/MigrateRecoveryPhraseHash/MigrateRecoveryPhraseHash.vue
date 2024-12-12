@@ -58,7 +58,7 @@ const handleVerify = async () => {
     errorMessage.value = null;
     isRecoveryPhraseValid.value = true;
   } else {
-    errorMessage.value = "Recovery phrase doesn't match the one for your keys";
+    errorMessage.value = "Recovery phrase doesn't match your keys";
     isRecoveryPhraseValid.value = false;
   }
 
