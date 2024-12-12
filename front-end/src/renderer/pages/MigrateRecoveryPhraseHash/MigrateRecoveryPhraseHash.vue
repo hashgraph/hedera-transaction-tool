@@ -1,0 +1,146 @@
+<script setup lang="ts">
+import type { KeyPair } from '@prisma/client';
+
+import { onMounted, ref, watch } from 'vue';
+
+import useUserStore from '@renderer/stores/storeUser';
+
+import { useToast } from 'vue-toast-notification';
+import { useRouter } from 'vue-router';
+import useSetDynamicLayout, {
+  ACCOUNT_SETUP_LAYOUT,
+} from '@renderer/composables/useSetDynamicLayout';
+import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
+
+import { safeAwait } from '@renderer/utils';
+
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import Import from '../AccountSetup/components/Import.vue';
+import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
+
+/* Stores */
+const user = useUserStore();
+
+/* Composables */
+useSetDynamicLayout(ACCOUNT_SETUP_LAYOUT);
+const toast = useToast();
+const router = useRouter();
+const { getKeysToUpdateForRecoveryPhrase, updateLocalKeysHash } = useRecoveryPhraseHashMigrate();
+
+/* State */
+const keysIdToUpdate = ref<KeyPair[]>([]);
+const loadingText = ref<string | null>(null);
+const isRecoveryPhraseValid = ref<boolean>(false);
+const errorMessage = ref<string | null>(null);
+const isResetDataModalShown = ref<boolean>(false);
+
+/* Handlers */
+const handleVerify = async () => {
+  if (!user.recoveryPhrase) {
+    errorMessage.value = null;
+    return;
+  }
+
+  keysIdToUpdate.value = [];
+  loadingText.value = 'Verifying recovery phrase...';
+
+  const { data, error } = await safeAwait(
+    getKeysToUpdateForRecoveryPhrase(user.recoveryPhrase.words),
+  );
+
+  if (error) {
+    errorMessage.value = error instanceof Error ? error.message : 'An unknown error occurred';
+    isRecoveryPhraseValid.value = false;
+  } else if (data && data.length > 0) {
+    keysIdToUpdate.value = data;
+    errorMessage.value = null;
+    isRecoveryPhraseValid.value = true;
+  } else {
+    errorMessage.value = "Recovery phrase doesn't match the one for your keys";
+    isRecoveryPhraseValid.value = false;
+  }
+
+  loadingText.value = null;
+};
+
+const handleContinue = async () => {
+  if (!user.recoveryPhrase) {
+    return;
+  }
+
+  try {
+    loadingText.value = 'Updating recovery phrase hash...';
+    await updateLocalKeysHash(keysIdToUpdate.value, user.recoveryPhrase.hash);
+    toast.success('Recovery phrase hash updated successfully');
+    await router.push({ name: 'transactions' });
+  } finally {
+    loadingText.value = null;
+  }
+};
+
+const handleOpenResetModal = () => (isResetDataModalShown.value = true);
+const handleDataReset = () => router.push({ name: 'login' });
+
+/* Hooks */
+onMounted(async () => {
+  await user.setRecoveryPhrase(null);
+});
+
+/* Watchers */
+watch(() => user.recoveryPhrase, handleVerify);
+</script>
+<template>
+  <div class="flex-column-100 flex-centered p-6">
+    <div class="fill-remaining d-flex align-items-center">
+      <div class="container-dark-border bg-modal-surface glow-dark-bg p-5">
+        <h4 class="text-title text-semi-bold text-center">Recovery Phrase</h4>
+        <p class="text-main text-center mt-3">
+          All previously created private keys need to be rematched to a mnemonic. This process is
+          required before the application can be used. Enter your recovery phrase to rematch your
+          keys.
+        </p>
+        <div class="mt-4">
+          <Import />
+        </div>
+
+        <div class="flex-centered justify-content-between mt-5 ms-3">
+          <div>
+            <p class="text-danger">
+              {{ errorMessage }}
+            </p>
+          </div>
+          <div class="d-flex gap-3">
+            <div
+              v-if="
+                (user.personal &&
+                  user.personal.isLoggedIn &&
+                  user.personal.useKeychain &&
+                  !user.selectedOrganization) ||
+                (user.selectedOrganization && !user.selectedOrganization.loginRequired)
+              "
+            >
+              <AppButton
+                color="secondary"
+                @click="handleOpenResetModal"
+                data-testid="button-open-reset-modal"
+                >Reset data</AppButton
+              >
+              <ResetDataModal v-model:show="isResetDataModalShown" @data:reset="handleDataReset" />
+            </div>
+            <div>
+              <AppButton
+                color="primary"
+                @click="handleContinue"
+                data-testid="button-next"
+                :disabled="Boolean(loadingText) || !user.recoveryPhrase || !isRecoveryPhraseValid"
+                :loading="Boolean(loadingText)"
+                :loading-text="loadingText || ''"
+                >Continue</AppButton
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
