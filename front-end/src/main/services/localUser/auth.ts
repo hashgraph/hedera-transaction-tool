@@ -1,7 +1,8 @@
 import { randomUUID } from 'crypto';
-import * as bcrypt from 'bcrypt';
 
 import { getPrismaClient } from '@main/db/prisma';
+import { hash, dualCompareHash } from '@main/utils/crypto';
+
 import { changeDecryptionPassword } from './keyPairs';
 
 export const register = async (email: string, password: string) => {
@@ -11,7 +12,7 @@ export const register = async (email: string, password: string) => {
     data: {
       id: randomUUID(),
       email: email,
-      password: bcrypt.hashSync(password, 10),
+      password: await hash(password),
     },
   });
 };
@@ -35,12 +36,14 @@ export const login = async (email: string, password: string, _autoRegister?: boo
   // } else if (email != firstUser.email) {
   //   throw new Error('Incorrect email');
   // }
-
-  const correct = bcrypt.compareSync(password, user.password);
+  const correct = await dualCompareHash(password, user.password);
 
   if (!correct) {
     throw new Error('Incorrect password');
   }
+
+  /* Temporary to migrate users to new hashing algorithm */
+  await updatePassword(user.id, password);
 
   return user;
 };
@@ -73,26 +76,28 @@ export const comparePasswords = async (userId: string, password: string) => {
     throw new Error('User not found');
   }
 
-  return bcrypt.compareSync(password, firstUser.password);
+  return await dualCompareHash(password, firstUser.password);
 };
 
 export const changePassword = async (userId: string, oldPassword: string, newPassword: string) => {
-  const prisma = getPrismaClient();
-
   const isOldCorrect = await comparePasswords(userId, oldPassword);
 
   if (isOldCorrect) {
-    await prisma.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        password: bcrypt.hashSync(newPassword, 10),
-      },
-    });
+    await updatePassword(userId, newPassword);
   } else {
     throw new Error('Incorrect current password');
   }
 
   await changeDecryptionPassword(userId, oldPassword, newPassword);
+};
+
+export const updatePassword = async (id: string, password: string) => {
+  await getPrismaClient().user.update({
+    where: {
+      id,
+    },
+    data: {
+      password: await hash(password),
+    },
+  });
 };
