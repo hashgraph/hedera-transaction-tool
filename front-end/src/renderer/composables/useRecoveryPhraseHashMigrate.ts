@@ -4,7 +4,7 @@ import { MIGRATE_RECOVERY_PHRASE_HASH } from '@renderer/router';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import {
   getKeyPairs,
@@ -20,6 +20,7 @@ export default function useRecoveryPhraseHashMigrate() {
 
   /* Composables */
   const router = useRouter();
+  const route = useRoute();
 
   /* Stores */
   const user = useUserStore();
@@ -76,6 +77,10 @@ export default function useRecoveryPhraseHashMigrate() {
     if ((await getRequiredKeysToMigrate()).length > 0) {
       await router.push({ name: MIGRATE_RECOVERY_PHRASE_HASH });
       return true;
+    } else if (route.name === MIGRATE_RECOVERY_PHRASE_HASH) {
+      await router.push(
+        router.previousPath ? { path: router.previousPath } : { name: 'transactions' },
+      );
     }
     return false;
   };

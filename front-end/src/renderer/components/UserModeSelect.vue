@@ -8,6 +8,7 @@ import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import useLoader from '@renderer/composables/useLoader';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
+import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -22,6 +23,7 @@ const notifications = useNotificationsStore();
 /* Composables */
 const withLoader = useLoader();
 const createTooltips = useCreateTooltips();
+const { redirectIfRequiredKeysToMigrate } = useRecoveryPhraseHashMigrate();
 
 /* State */
 const selectedMode = ref<string>('personal');
@@ -49,6 +51,7 @@ const handleUserModeChange = async (e: Event) => {
     selectedMode.value = 'personal';
     dropDownValue.value = personalModeText;
     await user.selectOrganization(null);
+    await redirectIfRequiredKeysToMigrate();
   } else {
     selectedMode.value = org ? org.id : 'personal';
     const organizationNickname =
@@ -68,6 +71,8 @@ const handleUserModeChange = async (e: Event) => {
     if (user.selectedOrganization?.isServerActive) {
       dropDownValue.value = organizationNickname;
     }
+
+    await redirectIfRequiredKeysToMigrate();
   }
 };
 
