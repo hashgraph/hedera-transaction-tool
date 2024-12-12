@@ -17,6 +17,7 @@ import { safeAwait } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import Import from '../AccountSetup/components/Import.vue';
 import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
+import DeleteAllKeysRequiringHashMigrationModal from '@renderer/components/modals/DeleteAllKeysRequiringHashMigrationModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -33,6 +34,7 @@ const loadingText = ref<string | null>(null);
 const isRecoveryPhraseValid = ref<boolean>(false);
 const errorMessage = ref<string | null>(null);
 const isResetDataModalShown = ref<boolean>(false);
+const isDeleteAllModalShown = ref<boolean>(false);
 
 /* Handlers */
 const handleVerify = async () => {
@@ -81,6 +83,17 @@ const handleContinue = async () => {
 const handleOpenResetModal = () => (isResetDataModalShown.value = true);
 const handleDataReset = () => router.push({ name: 'login' });
 
+const handleOpenDeleteAllKeysModal = () => (isDeleteAllModalShown.value = true);
+const handleKeysDeleted = async () => {
+  await user.refetchUserState();
+  await user.refetchKeys();
+  user.refetchAccounts();
+
+  if (user.shouldSetupAccount) {
+    router.push({ name: 'accountSetup' });
+  }
+};
+
 /* Hooks */
 onMounted(async () => {
   await user.setRecoveryPhrase(null);
@@ -110,23 +123,42 @@ watch(() => user.recoveryPhrase, handleVerify);
             </p>
           </div>
           <div class="d-flex gap-3">
-            <div
-              v-if="
-                (user.personal &&
-                  user.personal.isLoggedIn &&
-                  user.personal.useKeychain &&
-                  !user.selectedOrganization) ||
-                (user.selectedOrganization && !user.selectedOrganization.loginRequired)
+            <template v-if="user.selectedOrganization">
+              <div>
+                <AppButton
+                  color="secondary"
+                  @click="handleOpenDeleteAllKeysModal"
+                  data-testid="button-open-delete-all-keys-modal"
+                  >Delete All Keys</AppButton
+                >
+                <DeleteAllKeysRequiringHashMigrationModal
+                  v-model:show="isDeleteAllModalShown"
+                  @keys:deleted="handleKeysDeleted"
+                />
+              </div>
+            </template>
+            <template
+              v-else-if="
+                user.personal &&
+                user.personal.isLoggedIn &&
+                user.personal.useKeychain &&
+                !user.selectedOrganization
               "
             >
-              <AppButton
-                color="secondary"
-                @click="handleOpenResetModal"
-                data-testid="button-open-reset-modal"
-                >Reset data</AppButton
-              >
-              <ResetDataModal v-model:show="isResetDataModalShown" @data:reset="handleDataReset" />
-            </div>
+              <div>
+                <AppButton
+                  color="secondary"
+                  @click="handleOpenResetModal"
+                  data-testid="button-open-reset-modal"
+                  >Reset data</AppButton
+                >
+                <ResetDataModal
+                  v-model:show="isResetDataModalShown"
+                  @data:reset="handleDataReset"
+                />
+              </div>
+            </template>
+
             <div>
               <AppButton
                 color="primary"
