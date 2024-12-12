@@ -9,9 +9,9 @@ export const openExternal = (url: string) => window.electronAPI.local.utils.open
 export const openPath = (path: string) => window.electronAPI.local.utils.openPath(path);
 
 /* Hash data */
-export const hashData = async (data: string) =>
+export const hashData = async (data: string, pseudoSalt: boolean = false) =>
   commonIPCHandler(async () => {
-    return await window.electronAPI.local.utils.hash(data);
+    return await window.electronAPI.local.utils.hash(data, pseudoSalt);
   }, 'Failed to hash data');
 
 /* Compare hash */
