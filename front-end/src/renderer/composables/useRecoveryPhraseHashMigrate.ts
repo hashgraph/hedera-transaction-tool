@@ -32,12 +32,12 @@ export default function useRecoveryPhraseHashMigrate() {
 
     const keyPairsToMigrate: KeyPair[] = [];
 
-    const allLocalKeysPairs = await getKeyPairs(
+    const localKeysPairs = await getKeyPairs(
       user.personal.id,
       user.selectedOrganization?.id || null,
     );
 
-    for (const localKeyPair of allLocalKeysPairs) {
+    for (const localKeyPair of localKeysPairs) {
       const hasHash = localKeyPair.secret_hash !== null;
       const isArgonHash = localKeyPair.secret_hash?.includes(ARGON_HEADER);
 
