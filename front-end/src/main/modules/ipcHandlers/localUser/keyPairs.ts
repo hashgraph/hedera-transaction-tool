@@ -12,6 +12,7 @@ import {
   getSecretHashes,
   deleteKeyPair,
   updateNickname,
+  updateMnemonicHash,
 } from '@main/services/localUser';
 
 const createChannelName = (...props) => ['keyPairs', ...props].join(':');
@@ -86,6 +87,14 @@ export default () => {
     createChannelName('updateNickname'),
     async (_e, keyPairId: string, nickname: string) => {
       await updateNickname(keyPairId, nickname);
+    },
+  );
+
+  // Update key pair mnemonic hash
+  ipcMain.handle(
+    createChannelName('updateMnemonicHash'),
+    async (_e, keyPairId: string, mnemonicHash: string) => {
+      await updateMnemonicHash(keyPairId, mnemonicHash);
     },
   );
 };

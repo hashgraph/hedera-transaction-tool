@@ -35,5 +35,7 @@ export default {
       ipcRenderer.invoke('keyPairs:deleteKeyPair', keyPairId),
     updateNickname: (keyPairId: string, nickname: string): Promise<void> =>
       ipcRenderer.invoke('keyPairs:updateNickname', keyPairId, nickname),
+    updateMnemonicHash: (keyPairId: string, mnemonicHash: string): Promise<void> =>
+      ipcRenderer.invoke('keyPairs:updateMnemonicHash', keyPairId, mnemonicHash),
   },
 };

@@ -80,6 +80,12 @@ export const updateNickname = async (keyPairId: string, nickname: string) =>
     return await window.electronAPI.local.keyPairs.updateNickname(keyPairId, nickname);
   }, 'Failed to update nickname');
 
+/* Update mnemonic hash of a key pair */
+export const updateMnemonicHash = async (keyPairId: string, mnemonicHash: string) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.keyPairs.updateMnemonicHash(keyPairId, mnemonicHash);
+  }, 'Failed to update recovery phrase hash');
+
 /* Validates if the provided recovery phrase is valid according to BIP-39 */
 export const validateMnemonic = async (words: string[]) => {
   try {

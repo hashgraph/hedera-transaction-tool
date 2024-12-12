@@ -12,6 +12,7 @@ import {
   getSecretHashes,
   deleteKeyPair,
   updateNickname,
+  updateMnemonicHash,
 } from '@main/services/localUser';
 import { MockedObject } from 'vitest';
 import { mockDeep } from 'vitest-mock-extended';
@@ -30,6 +31,7 @@ vi.mock('@main/services/localUser', () => ({
   getSecretHashes: vi.fn(),
   deleteKeyPair: vi.fn(),
   updateNickname: vi.fn(),
+  updateMnemonicHash: vi.fn(),
 }));
 
 describe('IPC handlers Key Pairs', () => {
@@ -50,6 +52,8 @@ describe('IPC handlers Key Pairs', () => {
       'getSecretHashes',
       'deleteEncryptedPrivateKeys',
       'clear',
+      'updateNickname',
+      'updateMnemonicHash',
     ];
 
     expect(
@@ -174,5 +178,16 @@ describe('IPC handlers Key Pairs', () => {
 
     handler && (await handler[1](event, keyPairId, nickname));
     expect(updateNickname).toHaveBeenCalledWith(keyPairId, nickname);
+  });
+
+  test('Should set up updateMnemonicHash handler', async () => {
+    const handler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'keyPairs:updateMnemonicHash');
+    expect(handler).toBeDefined();
+
+    const keyPairId = 'keyPairId';
+    const mnemonicHash = 'mnemonicHash';
+
+    handler && (await handler[1](event, keyPairId, mnemonicHash));
+    expect(updateMnemonicHash).toHaveBeenCalledWith(keyPairId, mnemonicHash);
   });
 });
