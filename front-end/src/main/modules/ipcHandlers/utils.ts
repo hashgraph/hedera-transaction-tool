@@ -2,11 +2,10 @@ import fs from 'fs/promises';
 
 import { BrowserWindow, app, dialog, ipcMain, shell, FileFilter } from 'electron';
 
-import * as bcrypt from 'bcrypt';
-
 import { createHash, X509Certificate } from 'crypto';
 
 import { getNumberArrayFromString } from '@main/utils';
+import { dualCompareHash, hash } from '@main/utils/crypto';
 
 const createChannelName = (...props: string[]) => ['utils', ...props].join(':');
 
@@ -15,14 +14,18 @@ export default () => {
 
   ipcMain.on(createChannelName('openPath'), (_e, path: string) => shell.openPath(path));
 
-  ipcMain.handle(createChannelName('hash'), async (_e, data: string): Promise<string> => {
-    return await bcrypt.hash(data, 10);
-  });
+  ipcMain.handle(
+    createChannelName('hash'),
+    async (_e, data: string, pseudoSalt = false): Promise<string> => {
+      return await hash(data, pseudoSalt);
+    },
+  );
 
   ipcMain.handle(
     createChannelName('compareHash'),
     async (_e, data: string, hash: string): Promise<boolean> => {
-      return await bcrypt.compare(data, hash);
+      const { correct } = await dualCompareHash(data, hash);
+      return correct;
     },
   );
 
@@ -30,8 +33,8 @@ export default () => {
     createChannelName('compareDataToHashes'),
     async (_e, data: string, hashes: string[]): Promise<string | null> => {
       for (const hash of hashes) {
-        const matched = await bcrypt.compare(data, hash);
-        if (matched) return hash;
+        const { correct } = await dualCompareHash(data, hash);
+        if (correct) return hash;
       }
 
       return null;
