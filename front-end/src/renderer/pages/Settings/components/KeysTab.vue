@@ -471,7 +471,7 @@ watch([currentTab, selectedRecoveryPhrase], () => {
                   selectedKeyPairIdsToDelete.length > 0 ||
                   selectedMissingKeyPairIdsToDelete.length > 0
                     ? null
-                    : 'visibility-hidden'
+                    : 'invisible'
                 "
                 ><span class="bi bi-trash"></span
               ></AppButton>
@@ -596,7 +596,7 @@ watch([currentTab, selectedRecoveryPhrase], () => {
                     selectedKeyPairIdsToDelete.length === 0 &&
                     selectedMissingKeyPairIdsToDelete.length === 0
                       ? null
-                      : 'visibility-hidden'
+                      : 'invisible'
                   "
                   ><span class="bi bi-trash"></span
                 ></AppButton>
@@ -675,7 +675,7 @@ watch([currentTab, selectedRecoveryPhrase], () => {
                       selectedKeyPairIdsToDelete.length === 0 &&
                       selectedMissingKeyPairIdsToDelete.length === 0
                         ? null
-                        : 'visibility-hidden'
+                        : 'invisible'
                     "
                     >Delete missing key</AppButton
                   >
