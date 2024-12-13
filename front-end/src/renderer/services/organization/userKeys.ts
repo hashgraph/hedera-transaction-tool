@@ -43,3 +43,21 @@ export const deleteKey = async (
       `${organizationServerUrl}/${controller[0]}/${organizationUserId}/${controller[1]}/${keyId}`,
     );
   }, 'Failed to delete user key');
+
+/* Update key's recovery phrase hash and/or index from the organization */
+export const updateKey = async (
+  organizationServerUrl: string,
+  organizationUserId: number,
+  keyId: number,
+  mnemonicHash: string,
+  index?: number,
+) =>
+  commonRequestHandler(async () => {
+    await axiosWithCredentials.patch(
+      `${organizationServerUrl}/${controller[0]}/${organizationUserId}/${controller[1]}/${keyId}`,
+      {
+        mnemonicHash,
+        index,
+      },
+    );
+  }, 'Failed to update user key');

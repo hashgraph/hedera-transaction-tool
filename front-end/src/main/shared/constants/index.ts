@@ -17,6 +17,7 @@ export const SELECTED_NETWORK = 'selected_network';
 export const USE_KEYCHAIN = 'use_keychain';
 export const UPDATE_LOCATION = 'update_location';
 export const MIGRATION_STARTED = 'migration_started';
+export const RECOVERY_PHRASE_HASH_UPDATED = 'recovery_phrase_hash_updated';
 
 /* Transaction tabs */
 export const draftsTitle = 'Drafts';

@@ -10,7 +10,7 @@ import { User, UserKey } from '@entities';
 
 import { UserKeysService } from './user-keys.service';
 
-import { UploadUserKeyDto } from './dtos';
+import { UpdateUserKeyMnemonicHashDto, UploadUserKeyDto } from './dtos';
 
 jest.mock('@app/common/utils');
 describe('UserKeysService', () => {
@@ -270,6 +270,52 @@ describe('UserKeysService', () => {
 
       expect(repo.count).toHaveBeenCalledWith({ where: { userId } });
       expect(result).toEqual(expectedCount);
+    });
+  });
+
+  describe('updateMnemonicHash', () => {
+    let user: User;
+    let dto: UpdateUserKeyMnemonicHashDto;
+    let userKey: UserKey;
+
+    beforeEach(() => {
+      jest.resetAllMocks();
+      user = { id: 1 } as User;
+      dto = { mnemonicHash: 'new-hash', index: 1 };
+      userKey = { id: 1, userId: user.id, mnemonicHash: 'old-hash', index: 0 } as UserKey;
+    });
+
+    it('should throw BadRequestException if the key does not exist', async () => {
+      service.getUserKey = jest.fn().mockResolvedValue(undefined);
+
+      await expect(service.updateMnemonicHash(user, 1, dto)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if the key is not owned by the user', async () => {
+      const anotherUser = { id: 2 } as User;
+      service.getUserKey = jest.fn().mockResolvedValue({ ...userKey, userId: anotherUser.id });
+
+      await expect(service.updateMnemonicHash(user, 1, dto)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should update the mnemonic hash and index if the key exists and is owned by the user', async () => {
+      service.getUserKey = jest.fn().mockResolvedValue(userKey);
+      repo.update.mockResolvedValue(undefined);
+
+      const result = await service.updateMnemonicHash(user, 1, dto);
+
+      expect(repo.update).toHaveBeenCalledWith({ id: 1 }, { mnemonicHash: 'new-hash', index: 1 });
+      expect(result).toEqual({ ...userKey, mnemonicHash: 'new-hash', index: 1 });
+    });
+
+    it('should update the mnemonic hash and keep the existing index if not provided', async () => {
+      service.getUserKey = jest.fn().mockResolvedValue(userKey);
+      repo.update.mockResolvedValue(undefined);
+      console.log('last cakk');
+
+      await service.updateMnemonicHash(user, 1, { mnemonicHash: 'new-hash' });
+
+      expect(repo.update).toHaveBeenCalledWith({ id: 1 }, { mnemonicHash: 'new-hash' });
     });
   });
 });

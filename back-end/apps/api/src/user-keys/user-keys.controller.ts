@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -16,7 +17,7 @@ import { User, UserKey } from '@entities';
 import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../guards';
 import { GetUser } from '../decorators';
 
-import { UploadUserKeyDto, UserKeyDto } from './dtos';
+import { UpdateUserKeyMnemonicHashDto, UploadUserKeyDto, UserKeyDto } from './dtos';
 import { UserKeysService } from './user-keys.service';
 
 @ApiTags('User Keys')
@@ -67,5 +68,22 @@ export class UserKeysController {
   async removeKey(@GetUser() user: User, @Param('id', ParseIntPipe) id: number): Promise<boolean> {
     // If this returns the result, the dto can't decode the id as things are null
     return this.userKeysService.removeUserKey(user, id);
+  }
+
+  @ApiOperation({
+    summary: "Updates user key's mnemonic hash and/or index",
+    description: 'Updates the mnemonic hash and/or index for the provided user key id.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: UserKeyDto,
+  })
+  @Patch('/:id')
+  async updateKey(
+    @GetUser() user: User,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: UpdateUserKeyMnemonicHashDto,
+  ): Promise<UserKey> {
+    return this.userKeysService.updateMnemonicHash(user, id, body);
   }
 }

@@ -5,7 +5,7 @@ import { FindOptionsRelations, FindOptionsWhere, Repository } from 'typeorm';
 import { attachKeys, ErrorCodes, MAX_USER_KEYS } from '@app/common';
 import { User, UserKey } from '@entities';
 
-import { UploadUserKeyDto } from './dtos';
+import { UpdateUserKeyMnemonicHashDto, UploadUserKeyDto } from './dtos';
 
 @Injectable()
 export class UserKeysService {
@@ -105,5 +105,28 @@ export class UserKeysService {
   /* Returns the count of the user keys for the provided user */
   async getUserKeysCount(userId: number): Promise<number> {
     return this.repo.count({ where: { userId } });
+  }
+
+  /* Update mnemonic hash for the provided user key */
+  async updateMnemonicHash(
+    user: User,
+    id: number,
+    dto: UpdateUserKeyMnemonicHashDto,
+  ): Promise<UserKey> {
+    const userKey = await this.getUserKey({ id });
+
+    if (!userKey) {
+      throw new BadRequestException(ErrorCodes.KNF);
+    }
+
+    if (userKey.userId !== user.id) {
+      throw new BadRequestException(ErrorCodes.PNY);
+    }
+
+    await this.repo.update({ id }, { mnemonicHash: dto.mnemonicHash, index: dto.index });
+    userKey.mnemonicHash = dto.mnemonicHash;
+    userKey.index = dto.index || userKey.index;
+
+    return userKey;
   }
 }

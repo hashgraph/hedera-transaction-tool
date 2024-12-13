@@ -15,6 +15,7 @@ import {
   getKeyPairs,
   getSecretHashes,
   storeKeyPair,
+  updateMnemonicHash,
   updateNickname,
 } from '@main/services/localUser/keyPairs';
 import { getOrganization } from '@main/services/localUser/organizations';
@@ -378,6 +379,23 @@ describe('Services Local User Key Pairs', () => {
       expect(prisma.keyPair.update).toHaveBeenCalledWith({
         where: { id: keyPair.id },
         data: { nickname },
+      });
+    });
+  });
+
+  describe('updateMnemonicHash', () => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+    });
+
+    test('Should update the nickname of the key pair', async () => {
+      const mnemonicHash = '0xabc';
+
+      await updateMnemonicHash(keyPair.id, mnemonicHash);
+
+      expect(prisma.keyPair.update).toHaveBeenCalledWith({
+        where: { id: keyPair.id },
+        data: { secret_hash: mnemonicHash },
       });
     });
   });

@@ -109,6 +109,8 @@ export async function decryptLegacyMnemonic(
     const decrypted = Buffer.concat([decipher.update(data), decipher.final()]);
     return decrypted.toString('utf-8');
   }
+
+  return null;
 }
 
 export async function decryptMnemonic(
@@ -162,7 +164,7 @@ export async function decryptMigrationMnemonic(password: string): Promise<string
 
   const isLegacy = parsedContent.legacy;
 
-  let words: string[] | null;
+  let words: string | null;
   if (isLegacy) {
     words = await decryptLegacyMnemonic(getMnemonicPath(), password);
   } else {
