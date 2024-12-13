@@ -146,22 +146,23 @@ A helm chart is forthcoming. Until then, use the following commands once connect
     kubectl exec -it <podname> -- psql -h localhost -U postgres --password -p 5432
 
 ## Adding a Local Organization to Your Local Development Environment
-In order to add the local organization to your front end application, you will need to provide an email and password.
+To add the local organization to your application, you will need to create an admin user. When you create your admin user, 
+you will need to enter an email address and password.
 
 ### Create your admin
-To complete this step, you need your local database up and running. The script will create a new admin user for your in your local database.
-1. Go to the backend/scripts folder and create a .env file
+Make sure you need your local database up and running. The script will create a new admin user for your in your local database.
+1. Go to the `backend/scripts` folder 
 2. Run the following command:
 ``` 
 pnpm run create-admin
 ```
-3. You will get prompted for an email address. You can use any email address. 
-4. You will get prompted for a password. You can enter any password
+3. Enter an email address. You can use any email address. 
+4. Enter a password. You can enter any password.
 
 ### Add an Organization
 1. Go to the Transaction Tool application
 2. Add an organization
-3. Enter an organization name
+3. Enter a name for your local organization
 4. Enter the local server URL: https:/localhost:3001
 
 ### Resetting Local Postgres Data
@@ -221,4 +222,4 @@ pnpm run test:e2e**
 If you are having issues getting your local development environment set up consider the following:
    - Delete the `node_modules` folder in the `frontend` or `backend` or both directories. Reinstall `node_modules`  with `pnpm install`
    - Delete the `pgdata` folder found in the `backend` directory. Run `docker compose --build`
-   - Make sure you are connected to your local development backend to observe the pushed changes and not your staging backend :D 
+   - Verify you are connected to your local development backend to observe the deployed changes and not your staging backend :D 
