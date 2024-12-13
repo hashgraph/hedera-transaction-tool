@@ -150,7 +150,7 @@ In order to add the local organization to your front end application, you will n
 
 ### Create your admin
 To complete this step, you need your local database up and running. The script will create a new admin user for your in your local database.
-1. Go to the backend/scripts folder and create a .env file
+1. Go to the `backend/scripts`
 2. Run the following command:
 ``` 
 pnpm run create-admin
@@ -169,7 +169,7 @@ To reset the local postgres database, do the following:
 ```
 docker-compose down
 rm -rf <back-end base directory>/pgdata
-docker-compose up
+qdocker-compose up
 ```
 
 ## Tests
