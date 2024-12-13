@@ -21,7 +21,7 @@ app.use(createPinia());
 
 addGuards(router);
 
-app.use(ToastPlugin, { position: 'bottom-right' });
+app.use(ToastPlugin, { position: 'bottom-right', duration: 4000 });
 
 /* App config */
 const toast = useToast();
