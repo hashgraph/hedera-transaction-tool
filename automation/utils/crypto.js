@@ -1,4 +1,5 @@
 const crypto = require('node:crypto');
+const argon2 = require('argon2');
 
 function deriveKey(password, salt) {
   const iterations = 2560;
@@ -38,4 +39,20 @@ function decrypt(data, password) {
   return decipher.update(text, 'base64', 'utf8') + decipher.final('utf8');
 }
 
-module.exports = { encrypt, decrypt };
+async function argonHash(data, usePseudoSalt = false) {
+  let pseudoSalt;
+  if (usePseudoSalt) {
+    const paddedData = data.padEnd(16, 'x');
+    pseudoSalt = Buffer.from(paddedData.slice(0, 16));
+  }
+
+  return await argon2.hash(data, {
+    salt: pseudoSalt,
+  });
+}
+
+async function verifyArgonHash(hash, data) {
+  return await argon2.verify(hash, data);
+}
+
+module.exports = { encrypt, decrypt, argonHash, verifyArgonHash };
