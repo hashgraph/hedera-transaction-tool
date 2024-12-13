@@ -243,7 +243,7 @@ class OrganizationPage extends BasePage {
     const mnemonic = await Mnemonic.generate();
 
     // Hash the mnemonic phrase
-    const mnemonicHash = argonHash(mnemonic.toString(), true);
+    const mnemonicHash = await argonHash(mnemonic.toString(), true);
 
     const privateKey = await mnemonic.toStandardEd25519PrivateKey('', 0);
 
