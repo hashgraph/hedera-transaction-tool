@@ -42,8 +42,8 @@ async function createAppForDevelopment(): Promise<NestExpressApplication> {
     const key = fs.readFileSync(path.resolve(__dirname, '../../../cert/key.pem'));
     const cert = fs.readFileSync(path.resolve(__dirname, '../../../cert/cert.pem'));
     options.httpsOptions = { key, cert };
-  } catch (error) {
-    console.log(error);
+  } catch {
+    console.warn('No self-signed SSL certificate found. Running in HTTP mode.');
   }
 
   return (await NestFactory.create(ApiModule, options)) as NestExpressApplication;
