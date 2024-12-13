@@ -161,12 +161,7 @@ describe('Auth (e2e)', () => {
     it('(POST) should update password and resend email if users status is NEW and the sender is an admin', async () => {
       const userRepo = await getRepository(User);
 
-      const user = await userRepo.save({
-        email: validEmail,
-        status: UserStatus.NEW,
-        deletedAt: null,
-        password: 'oldHashedPassword',
-      });
+      const user = await getUser('userNew');
 
       await endpoint
         .post({ email: user.email }, null, adminAuthToken)
@@ -175,21 +170,23 @@ describe('Auth (e2e)', () => {
           expect(res.body).toEqual({
             email: user.email,
             createdAt: expect.any(String),
+            id: expect.any(Number),
           });
         });
 
       const updatedUser = await userRepo.findOne({ where: { email: user.email } });
 
       expect(updatedUser).toBeDefined();
-      expect(updatedUser?.password).not.toBe('oldHashedPassword');
+      expect(updatedUser?.password).not.toBe(user.password);
       expect(updatedUser?.status).toBe(UserStatus.NEW);
     });
 
     it('(POST) should not register new user if already exists', async () => {
+      const user = await getUser('user');
       await endpoint
         .post(
           {
-            email: validEmail,
+            email: user.email,
           },
           null,
           adminAuthToken,
