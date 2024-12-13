@@ -13,7 +13,7 @@ import AddOrganizationModal from '@renderer/components/Organization/AddOrganizat
 import AppButton from '@renderer/components/ui/AppButton.vue';
 
 /* Misc */
-const personalModeText = 'Personal mode';
+const personalModeText = 'Personal';
 
 /* Stores */
 const user = useUserStore();
