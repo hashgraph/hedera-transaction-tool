@@ -135,6 +135,39 @@ describe('AuthService', () => {
     );
   });
 
+  it('should update the password and resend an email for an existing user with status NEW', async () => {
+    const dto: SignUpUserDto = { email: 'test@test.com' };
+
+    jest.spyOn(userService, 'getUser').mockResolvedValue({
+      id: 1,
+      email: dto.email,
+      status: UserStatus.NEW,
+      deletedAt: null,
+    } as User);
+
+    jest.spyOn(userService, 'getSaltedHash').mockResolvedValue('hashedPassword');
+
+    jest.spyOn(userService, 'updateUserById').mockResolvedValue({
+      id: 1,
+      email: dto.email,
+      status: UserStatus.NEW,
+      password: 'hashedPassword',
+    } as User);
+
+    await service.signUpByAdmin(dto, 'http://localhost');
+
+    expect(userService.getUser).toHaveBeenCalledWith({ email: dto.email }, true);
+
+    expect(userService.getSaltedHash).toHaveBeenCalledWith(expect.any(String));
+
+    expect(userService.updateUserById).toHaveBeenCalledWith(1, { password: 'hashedPassword' });
+
+    expect(notificationsService.emit).toHaveBeenCalledWith(
+      'notify_email',
+      expect.objectContaining({ email: dto.email }),
+    );
+  });
+
   it('should login user', async () => {
     const { user } = await invokeLogin(false);
 

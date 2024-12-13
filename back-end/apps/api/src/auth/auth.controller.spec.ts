@@ -84,14 +84,30 @@ describe('AuthController', () => {
       expect(await controller.signUp({ email: 'john@test.com' }, request)).toBe(result);
     });
 
-    it('should throw an error if the user already exists', async () => {
+    it('should throw an error if the user already exists or return an updated user if it exists but its status is NEW', async () => {
       jest.mocked(request.get).mockImplementationOnce(() => 'localhost');
       jest
-        .spyOn(controller, 'signUp')
-        .mockRejectedValue(new UnprocessableEntityException('Email already exists.'));
-
+        .spyOn(authService, 'signUpByAdmin')
+        .mockRejectedValueOnce(new UnprocessableEntityException('Email already exists.'));
       await expect(controller.signUp({ email: 'john@test.com' }, request)).rejects.toThrow(
         'Email already exists.',
+      );
+
+      jest.spyOn(authService, 'signUpByAdmin').mockResolvedValueOnce({
+        id: 1,
+        email: 'john@test.com',
+        status: UserStatus.NEW,
+        password: 'newHashedPassword',
+      } as User);
+
+      const result = await controller.signUp({ email: 'john@test.com' }, request);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          email: 'john@test.com',
+          status: UserStatus.NEW,
+          password: 'newHashedPassword',
+        }),
       );
     });
 

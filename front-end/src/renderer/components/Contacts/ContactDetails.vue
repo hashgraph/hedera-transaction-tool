@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { HederaAccount } from '@prisma/client';
 import type { AccountInfo, Contact } from '@main/shared/interfaces';
+import { useToast } from 'vue-toast-notification';
 
 import { onBeforeMount, ref, watch } from 'vue';
 
@@ -12,8 +13,9 @@ import useContactsStore from '@renderer/stores/storeContacts';
 
 import { addContact, updateContact } from '@renderer/services/contactsService';
 import { getAccountsByPublicKeysParallel } from '@renderer/services/mirrorNodeDataService';
+import { signUp } from '@renderer/services/organization';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import { getErrorMessage, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -25,6 +27,9 @@ const props = defineProps<{
   contact: Contact;
   linkedAccounts: HederaAccount[];
 }>();
+
+/* Composables */
+const toast = useToast();
 
 /* Stores */
 const user = useUserStore();
@@ -89,6 +94,18 @@ const handleAccountsLookup = async () => {
   );
 };
 
+const handleResend = async () => {
+  try {
+    if (user.selectedOrganization?.serverUrl) {
+      const email = props.contact.user.email;
+      await signUp(user.selectedOrganization.serverUrl, email);
+    }
+    toast.success('Email sent successfully');
+  } catch (error: unknown) {
+    toast.error(getErrorMessage(error, 'Error while sending email. Please try again.'));
+  }
+};
+
 /* Hooks */
 onBeforeMount(async () => {
   await handleAccountsLookup();
@@ -126,13 +143,23 @@ watch(
         ></span>
       </p>
     </div>
-    <div class="d-flex gap-3">
+    <div
+      v-if="
+        isLoggedInOrganization(user.selectedOrganization) &&
+        user.selectedOrganization.admin &&
+        contact.user.id !== user.selectedOrganization.userId
+      "
+      class="d-flex gap-3"
+    >
       <AppButton
-        v-if="
-          isLoggedInOrganization(user.selectedOrganization) &&
-          user.selectedOrganization.admin &&
-          contact.user.id !== user.selectedOrganization.userId
-        "
+        v-if="contact.user.status === 'NEW'"
+        data-testid="button-resend-email-from-contact-list"
+        class="min-w-unset"
+        color="secondary"
+        @click="handleResend"
+        >Resend email</AppButton
+      >
+      <AppButton
         data-testid="button-remove-account-from-contact-list"
         class="min-w-unset"
         color="danger"
