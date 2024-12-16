@@ -62,6 +62,15 @@ function handleSelectContact(id: number) {
   selectedId.value = id;
 }
 
+const handleFetchContacts = async () => {
+  try {
+    fetching.value = true;
+    await contacts.fetch();
+  } finally {
+    fetching.value = false;
+  }
+};
+
 async function handleRemove() {
   if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
   if (!contact.value) throw new Error('Contact is not selected');
@@ -75,22 +84,12 @@ async function handleRemove() {
 
   selectedId.value = null;
 
-  try {
-    fetching.value = true;
-    await contacts.fetch();
-  } finally {
-    fetching.value = false;
-  }
+  await handleFetchContacts();
 }
 
 /* Hooks */
 onBeforeMount(async () => {
-  try {
-    fetching.value = true;
-    await contacts.fetch();
-  } finally {
-    fetching.value = false;
-  }
+  await handleFetchContacts();
 
   if (isUserLoggedIn(user.personal)) {
     linkedAccounts.value = await getAll({
