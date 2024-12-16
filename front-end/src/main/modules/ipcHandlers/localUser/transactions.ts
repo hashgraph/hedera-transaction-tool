@@ -10,20 +10,20 @@ import {
   getTransactionsCount,
   getTransaction,
 } from '@main/services/localUser';
-import { createIPCChannel } from '@main/utils/electronInfra';
+import { createIPCChannel, renameFunc } from '@main/utils/electronInfra';
 
 export default () => {
   /* Transactions */
   createIPCChannel('transactions', [
-    setClient,
-    freezeTransaction,
-    signTransaction,
-    executeTransaction,
-    executeQuery,
-    storeTransaction,
-    getTransactions,
-    getTransaction,
-    getTransactionsCount,
-    encodeSpecialFile,
+    renameFunc(setClient, 'setClient'),
+    renameFunc(freezeTransaction, 'freezeTransaction'),
+    renameFunc(signTransaction, 'signTransaction'),
+    renameFunc(executeTransaction, 'executeTransaction'),
+    renameFunc(executeQuery, 'executeQuery'),
+    renameFunc(storeTransaction, 'storeTransaction'),
+    renameFunc(getTransactions, 'getTransactions'),
+    renameFunc(getTransaction, 'getTransaction'),
+    renameFunc(getTransactionsCount, 'getTransactionsCount'),
+    renameFunc(encodeSpecialFile, 'encodeSpecialFile'),
   ]);
 };
