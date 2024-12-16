@@ -133,6 +133,7 @@ watch(newPassword, pass => {
           :filled="true"
         />
       </div>
+      add stuff here
       <div class="mt-4 form-group">
         <label class="form-label">New Password <span class="text-danger">*</span></label>
         <AppPasswordInput
