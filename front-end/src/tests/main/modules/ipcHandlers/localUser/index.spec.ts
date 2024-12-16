@@ -8,7 +8,6 @@ import listenForComplexKeyEvents from '@main/modules/ipcHandlers/localUser/compl
 import listenForOrganizationEvents from '@main/modules/ipcHandlers/localUser/organizations';
 import listenForOrganizationCredentialsEvents from '@main/modules/ipcHandlers/localUser/organizationCredentials';
 import listenForContactEvents from '@main/modules/ipcHandlers/localUser/contacts';
-import listenForPublicKeyLinkedEvents from '@main/modules/ipcHandlers/localUser/publicKeyLinked';
 import listenForPublicEncryptedKeysEvents from '@main/modules/ipcHandlers/localUser/encryptedKeys';
 
 vi.mock('@main/db/prisma', () => ({ getPath: vi.fn() }));
@@ -29,7 +28,6 @@ vi.mock('@main/modules/ipcHandlers/localUser/organizationCredentials', () => ({
   default: vi.fn(),
 }));
 vi.mock('@main/modules/ipcHandlers/localUser/contacts', () => ({ default: vi.fn() }));
-vi.mock('@main/modules/ipcHandlers/localUser/publicKeyLinked', () => ({ default: vi.fn() }));
 vi.mock('@main/modules/ipcHandlers/localUser/encryptedKeys', () => ({ default: vi.fn() }));
 
 describe('index', () => {
@@ -45,7 +43,6 @@ describe('index', () => {
     expect(listenForOrganizationEvents).toHaveBeenCalled();
     expect(listenForOrganizationCredentialsEvents).toHaveBeenCalled();
     expect(listenForContactEvents).toHaveBeenCalled();
-    expect(listenForPublicKeyLinkedEvents).toHaveBeenCalled();
     expect(listenForPublicEncryptedKeysEvents).toHaveBeenCalled();
   });
 });

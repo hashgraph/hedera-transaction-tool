@@ -13,7 +13,6 @@ import organizationsAPI from './organizations';
 import organizationCredentialsAPI from './organizationCredentials';
 import deepLinkAPI from './deepLink';
 import contactsAPI from './contacts';
-import contactPublicKeys from './linkedPublicKeys';
 import encryptedKeys from './encryptedKeys';
 import claim from './claim';
 import safeStorage from './safeStorage';
@@ -36,7 +35,6 @@ export default {
   ...organizationCredentialsAPI,
   ...deepLinkAPI,
   ...contactsAPI,
-  ...contactPublicKeys,
   ...encryptedKeys,
   ...claim,
   ...safeStorage,

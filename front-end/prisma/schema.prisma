@@ -30,7 +30,6 @@ model User {
   TransactionDraft        TransactionDraft[]
   ComplexKey              ComplexKey[]
   Contact                 Contact[]
-  PublicKeyLinked         PublicKeyLinked[]
   Claim                   Claim[]
 }
 
@@ -155,14 +154,6 @@ model Contact {
   nickname                   String
   user                       User         @relation(fields: [user_id], references: [id])
   organization               Organization @relation(fields: [organization_id], references: [id])
-}
-
-model PublicKeyLinked {
-  id        String @id @default(uuid())
-  user_id   String
-  publicKey String
-  nickname  String
-  user      User   @relation(fields: [user_id], references: [id])
 }
 
 model TransactionGroup {
