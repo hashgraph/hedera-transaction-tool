@@ -81,11 +81,17 @@ docker-compose up
 
 This mode is used for testing the client application in development mode.
 
-**HTTPS Mode**
+**HTTPS Mode (Preferred)**
 
 For HTTPS mode, you are required to create a self-signed certificate. Often used to test on BUILT electron client application. Please execute the following commands:
 
+Make sure you have `mkcert` installed (on MACyou can install it with)
+
+```bash
+brew install mkcert
 ```
+
+```bash
 # if you don't have the cert directory
 mkdir -p cert
 mkcert -install
@@ -110,22 +116,24 @@ The default ports are:
 
 ### Deploy Using Kubernetes
 
+#### [For local deployment on Kubernetes refer here](./k8s/dev/README.md)
+
 When deploying to a server, it may be desired to use Kubernetes. The docker images are currently private. They must be created and pushed to an accessible location. Update the deployment files as needed.
 
 A helm chart is forthcoming. Until then, use the following commands once connected to a cluster:
 
 1.  Create the namespace:
 
-```
-     kubectl create -f ./namespace.yaml
-```
+    ```
+    kubectl create -f ./namespace.yaml
+    ```
 
 2.  Setup postgres:
 
-```
-  kubectl apply -f ./postgres-secret.yaml
-  kubectl apply -f ./postgres-deployment.yaml
-```
+    ```
+      kubectl apply -f ./postgres-secret.yaml
+      kubectl apply -f ./postgres-deployment.yaml
+    ```
 
 3.  Install the helm chart and apply the rabbitmq definition:
 
@@ -186,7 +194,7 @@ Make sure you need your local database up and running. The script will create a 
 2. Run the following command:
 
 ```
-pnpm run create-admin
+pnpm create-admin
 ```
 
 3. Enter an email address. You can use any email address.
@@ -197,7 +205,7 @@ pnpm run create-admin
 1. Go to the Transaction Tool application
 2. Add an organization
 3. Enter a name for your local organization
-4. Enter the local server URL: https:/localhost:3001
+4. Enter the local server URL: `https:/localhost:3001` or `http:/localhost:3001`
 
 ### Resetting Local Postgres Data
 
@@ -220,17 +228,17 @@ Tests are run per service. Navigate to the service you want to test. There you c
 **API**
 
     cd apps/api
-    pnpm run test:cov
+    pnpm test:cov
 
 **Notifications**
 
     cd apps/notifications
-    pnpm run test:cov
+    pnpm test:cov
 
 **Chain**
 
     cd apps/chain
-    pnpm run test:cov
+    pnpm test:cov
 
 ### E2E
 
@@ -246,16 +254,22 @@ Things to notice:
 
 - Note that after running the tests you may receive an error when starting the back-end with `docker compose`. This problem is mitigated by recreating the back-end containers, to do so start the back-end with the `--force-recreate` flag:
 
+  ```bash
   docker compose up --force-recreate
+  ```
 
 - Note that the `Hedera Localnet` may boot up slowly, if you want to speed-up the process, start it manually by running:
 
-**pnpx hedera start -d**
+  ```bash
+  pnpx hedera restart -d
+  ```
 
 After the reading the above notes, start the tests:
 
-**cd apps/api
-pnpm run test:e2e**
+```bash
+cd apps/api
+pnpm test:e2e
+```
 
 # Troubleshooting
 
@@ -263,4 +277,4 @@ If you are having issues getting your local development environment set up consi
 
 - Delete the `node_modules` folder in the `frontend` or `backend` or both directories. Reinstall `node_modules` with `pnpm install`
 - Delete the `pgdata` folder found in the `backend` directory. Run `docker compose --build`
-- Verify you are connected to your local development backend to observe the deployed changes and not your staging backend :D
+- Verify you are connected to your local development backend to observe the deployed changes and not your staging backend
