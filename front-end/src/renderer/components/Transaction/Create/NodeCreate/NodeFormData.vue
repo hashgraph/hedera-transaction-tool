@@ -3,14 +3,23 @@ import type { NodeData } from '@renderer/utils/sdk';
 
 import { ref, useTemplateRef, watch } from 'vue';
 
-import { formatAccountId, hexToUint8Array, uint8ToHex, validate100CharInput } from '@renderer/utils';
+import { useToast } from 'vue-toast-notification';
+
 import { sha384, x509BytesFromPem } from '@renderer/services/electronUtilsService';
+
+import {
+  formatAccountId,
+  getErrorMessage,
+  hexToUint8Array,
+  safeAwait,
+  uint8ToHex,
+  validate100CharInput,
+} from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
 import KeyField from '@renderer/components/KeyField.vue';
-import { useToast } from 'vue-toast-notification';
 
 /* Props */
 const props = defineProps<{
@@ -88,18 +97,19 @@ async function handleUpdateGossipCert(str: string) {
   let gossipCaCertificate = Uint8Array.from([]);
   publicKeyHash.value = '';
 
-  try {
-    if (str.trim().length !== 0) {
-      const { raw, hash } = await x509BytesFromPem(str);
-      gossipCaCertificate = raw;
-      publicKeyHash.value = hash;
+  if (str.trim().length !== 0) {
+    const { data } = await safeAwait(x509BytesFromPem(str));
+
+    if (data) {
+      gossipCaCertificate = data.raw;
+      publicKeyHash.value = data.hash;
     }
-  } finally {
-    emit('update:data', {
-      ...props.data,
-      gossipCaCertificate,
-    });
   }
+
+  emit('update:data', {
+    ...props.data,
+    gossipCaCertificate,
+  });
 }
 
 async function handleUpdateGrpcCert(str: string) {
@@ -150,11 +160,9 @@ function handleInputValidation(e: Event) {
   try {
     validate100CharInput(target.value, 'Transaction Memo');
     nodeDescriptionError.value = false;
-  } catch (err) {
-    if (err instanceof Error) {
-      nodeDescriptionError.value = true;
-      toast.error(err.message);
-    }
+  } catch (error) {
+    toast.error(getErrorMessage(error, 'Invalid Node Description'));
+    nodeDescriptionError.value = true;
   }
 }
 
