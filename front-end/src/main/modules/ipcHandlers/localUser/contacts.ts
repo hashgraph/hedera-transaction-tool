@@ -4,9 +4,14 @@ import {
   removeContact,
   updateContact,
 } from '@main/services/localUser/contacts';
-import { createIPCChannel } from '@main/utils/electronInfra';
+import { createIPCChannel, renameFunc } from '@main/utils/electronInfra';
 
 export default () => {
   /* Contacts */
-  createIPCChannel('contacts', [addContact, getOrganizationContacts, updateContact, removeContact]);
+  createIPCChannel('contacts', [
+    renameFunc(addContact, 'addContact'),
+    renameFunc(getOrganizationContacts, 'getOrganizationContacts'),
+    renameFunc(updateContact, 'updateContact'),
+    renameFunc(removeContact, 'removeContact'),
+  ]);
 };
