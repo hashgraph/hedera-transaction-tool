@@ -70,14 +70,15 @@ const handleContinue = async () => {
     return;
   }
 
-  try {
-    loadingText.value = 'Updating recovery phrase hash...';
-    await updateKeyPairsHash(keysToUpdate.value, user.recoveryPhrase.hash);
+  loadingText.value = 'Updating recovery phrase hash...';
+  const { error } = await safeAwait(
+    updateKeyPairsHash(keysToUpdate.value, user.recoveryPhrase.hash),
+  );
+  if (!error) {
     toast.success('Recovery phrase hash updated successfully');
     await router.push({ name: 'transactions' });
-  } finally {
-    loadingText.value = null;
   }
+  loadingText.value = null;
 };
 
 const handleOpenResetModal = () => (isResetDataModalShown.value = true);
