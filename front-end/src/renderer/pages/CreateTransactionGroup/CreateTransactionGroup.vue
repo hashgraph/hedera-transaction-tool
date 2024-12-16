@@ -484,10 +484,13 @@ onBeforeRouteLeave(async to => {
             </div>
           </div>
         </div>
+        <template v-if="groupEmpty">
+          <div class="fill-remaining flex-centered">
+            <EmptyTransactions group />
+          </div>
+        </template>
       </form>
-      <div v-if="groupEmpty">
-        <EmptyTransactions class="absolute-centered w-100" group />
-      </div>
+
       <TransactionSelectionModal
         v-if="isTransactionSelectionModalShown"
         v-model:show="isTransactionSelectionModalShown"
