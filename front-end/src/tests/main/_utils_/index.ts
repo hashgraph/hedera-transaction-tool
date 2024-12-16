@@ -19,7 +19,23 @@ export const getIPCHandler = (name: string) => {
   return handler;
 };
 
+export const getIPCListener = (name: string) => {
+  const listener = vi.mocked(ipcMain).on.mock.calls.find(([e]) => e === name);
+  expect(listener).toBeDefined();
+
+  if (!listener) {
+    throw new Error(`Listener for ${name} is not defined`);
+  }
+
+  return listener;
+};
+
 export const invokeIPCHandler = async (name: string, ...args: any[]) => {
   const handler = getIPCHandler(name);
   await handler[1](event, ...args);
+};
+
+export const invokeIPCListener = (name: string, ...args: any[]) => {
+  const listener = getIPCListener(name);
+  listener[1](event, ...args);
 };
