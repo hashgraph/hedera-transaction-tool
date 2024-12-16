@@ -90,8 +90,8 @@ const handleChangePassword = async () => {
       props.handleContinue();
 
       toast.success('Password changed successfully');
-    } catch (err: unknown) {
-      toast.error(getErrorMessage(err, 'Failed to change password'));
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to change password'));
     } finally {
       isLoading.value = false;
     }

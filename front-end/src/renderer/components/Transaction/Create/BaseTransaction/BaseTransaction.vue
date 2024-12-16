@@ -17,6 +17,7 @@ import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import {
+  getErrorMessage,
   getTransactionType,
   isAccountId,
   redirectToDetails,
@@ -34,7 +35,7 @@ import TransactionIdControls from '@renderer/components/Transaction/TransactionI
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
 import BaseDraftLoad from '@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.vue';
 import BaseGroupHandler from '@renderer/components/Transaction/Create/BaseTransaction/BaseGroupHandler.vue';
-import BaseApproversObserverData from './BaseApproversObserverData.vue';
+import BaseApproversObserverData from '@renderer/components/Transaction/Create/BaseTransaction/BaseApproversObserverData.vue';
 
 /* Props */
 const props = defineProps<{
@@ -168,11 +169,9 @@ function handleInputValidation(e: Event) {
   try {
     validate100CharInput(target.value, 'Transaction Memo');
     memoError.value = false;
-  } catch (err) {
-    if (err instanceof Error) {
-      memoError.value = true;
-      toast.error(err.message);
-    }
+  } catch (error) {
+    toast.error(getErrorMessage(error, 'Invalid Transaction Memo'));
+    memoError.value = true;
   }
 }
 

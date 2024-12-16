@@ -96,8 +96,8 @@ const handleRestoreKey = async () => {
     }
 
     step.value++;
-  } catch (e) {
-    toast.error(getErrorMessage(e, 'Failed to restore private key'));
+  } catch (error) {
+    toast.error(getErrorMessage(error, 'Failed to restore private key'));
   } finally {
     loadingText.value = null;
   }
@@ -156,8 +156,8 @@ const handleSaveKey = async () => {
 
     toast.success('Key Pair saved');
     router.push({ name: 'settingsKeys' });
-  } catch (e) {
-    toast.error(getErrorMessage(e, 'Failed to store private key'));
+  } catch (error) {
+    toast.error(getErrorMessage(error, 'Failed to store private key'));
   } finally {
     loadingText.value = null;
   }

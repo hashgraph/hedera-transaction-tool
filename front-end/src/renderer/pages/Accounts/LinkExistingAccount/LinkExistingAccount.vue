@@ -49,7 +49,7 @@ const handleLinkAccount = async (e: Event) => {
 
       router.push({ name: 'accounts' });
       toast.success('Account linked successfully!');
-    } catch (error: unknown) {
+    } catch (error) {
       toast.error(getErrorMessage(error, 'Account link failed'));
     }
   }

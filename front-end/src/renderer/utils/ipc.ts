@@ -6,7 +6,7 @@ export const getMessageFromIPCError = (err: any, msg: string) => {
 export const commonIPCHandler = async <T>(callback: () => Promise<T>, defaultMessage: string) => {
   try {
     return await callback();
-  } catch (err: any) {
-    throw Error(getMessageFromIPCError(err, defaultMessage));
+  } catch (error) {
+    throw Error(getMessageFromIPCError(error, defaultMessage));
   }
 };

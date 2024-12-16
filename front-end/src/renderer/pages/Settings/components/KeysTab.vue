@@ -232,7 +232,7 @@ const handleDelete = async () => {
           const organizationKeyToDelete = getUserKeyToDelete(keyPairId);
           await deleteKeyPair(keyPairId);
           await deleteOrganization(organizationKeyToDelete?.id || null);
-        } catch (error: unknown) {
+        } catch (error) {
           toast.error(getErrorMessage(error, 'Unable to delete one or more key pair(s)'));
         }
       }
@@ -253,8 +253,8 @@ const handleDelete = async () => {
     if (user.shouldSetupAccount) {
       router.push({ name: 'accountSetup' });
     }
-  } catch (err: unknown) {
-    toast.error(getErrorMessage(err, 'Failed to delete key pair'));
+  } catch (error) {
+    toast.error(getErrorMessage(error, 'Failed to delete key pair'));
   } finally {
     selectedKeyPairIdsToDelete.value = [];
     selectedMissingKeyPairIdsToDelete.value = [];

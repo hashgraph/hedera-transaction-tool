@@ -170,8 +170,8 @@ async function handleSignSubmit() {
     const requiredKey = new KeyList(ownerKeys);
 
     await transactionGroupProcessor.value?.process(requiredKey);
-  } catch (err: unknown) {
-    toast.error(getErrorMessage(err, 'Failed to create transaction'));
+  } catch (error) {
+    toast.error(getErrorMessage(error, 'Failed to create transaction'));
   }
 }
 

@@ -34,8 +34,8 @@ const handleAddOrganization = async (e: Event) => {
       });
 
       toast.success('Organization added successfully');
-    } catch (err: any) {
-      toast.error(getErrorMessage(err, 'Failed to add organization'));
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to add organization'));
     }
   }
 };

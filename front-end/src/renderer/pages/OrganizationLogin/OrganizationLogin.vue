@@ -79,10 +79,10 @@ const handleLogin = async () => {
       redirectIfRequiredKeysToMigrate,
       'Failed to redirect to recovery phrase migration',
     );
-  } catch (error: any) {
+  } catch (error) {
+    toast.error(getErrorMessage(error, 'Failed to sign in'));
     inputEmailInvalid.value = true;
     inputPasswordInvalid.value = true;
-    toast.error(getErrorMessage(error, 'Failed to sign in'));
   } finally {
     loading.value = false;
   }

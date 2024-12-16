@@ -280,7 +280,7 @@ const handleSign = async () => {
       );
       toast.success('Transaction signed successfully');
     }
-  } catch (error: unknown) {
+  } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to sign transaction'));
   } finally {
     isSigning.value = false;
