@@ -19,6 +19,7 @@ import { getErrorMessage, isEmail, isPasswordStrong, isUserLoggedIn } from '@ren
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
+import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
