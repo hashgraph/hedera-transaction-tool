@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -15,6 +15,7 @@ import {
   assertUserLoggedIn,
   getErrorMessage,
   isLoggedInOrganization,
+  isPasswordStrong,
   isUserLoggedIn,
 } from '@renderer/utils';
 
@@ -35,6 +36,7 @@ const { getPassword, passwordModalOpened } = usePersonalPassword();
 /* State */
 const currentPassword = ref('');
 const newPassword = ref('');
+const newPasswordInvalid = ref(false);
 
 const isConfirmModalShown = ref(false);
 const isSuccessModalShown = ref(false);
@@ -51,6 +53,11 @@ const handleChangePassword = async () => {
     if (currentPassword.value.length === 0 || newPassword.value.length === 0) {
       throw new Error('Password cannot be empty');
     }
+
+    newPasswordInvalid.value = !isPasswordStrong(newPassword.value);
+
+    if (newPasswordInvalid.value) throw new Error('Password must be at least 10 characters long');
+
     if (isLoggedInOrganization(user.selectedOrganization)) {
       const personalPassword = getPassword(handleChangePassword, {
         subHeading: 'Enter your application password to encrpyt your organization credentials',
@@ -63,7 +70,7 @@ const handleChangePassword = async () => {
         newPassword.value,
       );
 
-      await updateOrganizationCredentials(
+      const isUpdated = await updateOrganizationCredentials(
         user.selectedOrganization.id,
         user.personal.id,
         undefined,
@@ -71,6 +78,10 @@ const handleChangePassword = async () => {
         undefined,
         personalPassword || undefined,
       );
+
+      if (!isUpdated) {
+        throw new Error('Failed to update organization credentials');
+      }
     } else {
       await changePassword(user.personal.id, currentPassword.value, newPassword.value);
       user.setPassword(newPassword.value);
@@ -89,6 +100,13 @@ const handleChangePassword = async () => {
 };
 
 const handleResetData = async () => router.push({ name: 'login' });
+
+/* Watchers */
+watch(newPassword, pass => {
+  if (isPasswordStrong(pass).result || pass.length === 0) {
+    newPasswordInvalid.value = false;
+  }
+});
 </script>
 <template>
   <div
@@ -115,14 +133,17 @@ const handleResetData = async () => router.push({ name: 'login' });
           :filled="true"
         />
       </div>
+      add stuff here
       <div class="mt-4 form-group">
         <label class="form-label">New Password <span class="text-danger">*</span></label>
         <AppPasswordInput
           v-model="newPassword"
+          :filled="true"
+          :class="{ 'is-invalid': newPasswordInvalid }"
           data-testid="input-new-password"
           placeholder="Enter New Password"
-          :filled="true"
         />
+        <div v-if="newPasswordInvalid" class="invalid-feedback">Invalid password.</div>
       </div>
       <div class="d-grid">
         <AppButton color="primary" data-testid="button-change-password" type="submit" class="mt-4"

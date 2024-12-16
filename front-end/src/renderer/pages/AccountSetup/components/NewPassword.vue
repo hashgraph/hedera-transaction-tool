@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useContactsStore from '@renderer/stores/storeContacts';
@@ -11,7 +11,7 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import { changePassword } from '@renderer/services/organization/auth';
 import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
-import { assertIsLoggedInOrganization, assertUserLoggedIn, getErrorMessage } from '@renderer/utils';
+import { assertIsLoggedInOrganization, assertUserLoggedIn, getErrorMessage, isPasswordStrong } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
@@ -33,11 +33,9 @@ const { getPassword, passwordModalOpened } = usePersonalPassword();
 /* State */
 const currentPassword = ref('');
 const newPassword = ref('');
-const confirmPassword = ref('');
 
 const currentPasswordInvalid = ref(false);
 const newPasswordInvalid = ref(false);
-const inputConfirmPasswordInvalid = ref(false);
 
 const isLoading = ref(false);
 
@@ -57,13 +55,11 @@ const handleChangePassword = async () => {
   if (passwordModalOpened(personalPassword)) return;
 
   currentPasswordInvalid.value = currentPassword.value.trim().length === 0;
-  newPasswordInvalid.value = newPassword.value.trim().length < 8;
-  inputConfirmPasswordInvalid.value = newPassword.value !== confirmPassword.value;
+  newPasswordInvalid.value = !isPasswordStrong(newPassword.value);
 
   if (
     !currentPasswordInvalid.value &&
-    !newPasswordInvalid.value &&
-    !inputConfirmPasswordInvalid.value
+    !newPasswordInvalid.value
   ) {
     try {
       isLoading.value = true;
@@ -74,7 +70,7 @@ const handleChangePassword = async () => {
         newPassword.value,
       );
 
-      await updateOrganizationCredentials(
+      const isUpdated = await updateOrganizationCredentials(
         user.selectedOrganization.id,
         user.personal.id,
         undefined,
@@ -82,6 +78,10 @@ const handleChangePassword = async () => {
         undefined,
         personalPassword || undefined,
       );
+
+      if (!isUpdated) {
+        throw new Error('User credentials for this organization not found');
+      }
 
       await user.refetchUserState();
       await contacts.fetch();
@@ -99,9 +99,9 @@ const handleChangePassword = async () => {
 };
 
 /* Watchers */
-watch(confirmPassword, val => {
-  if (val.length === 0 || newPassword.value === val) {
-    inputConfirmPasswordInvalid.value = false;
+watch(newPassword, pass => {
+  if (isPasswordStrong(pass).result || pass.length === 0) {
+    newPasswordInvalid.value = false;
   }
 });
 </script>
@@ -121,23 +121,14 @@ watch(confirmPassword, val => {
         <div v-if="currentPasswordInvalid" class="invalid-feedback">
           Current password is required.
         </div>
-        <AppPasswordInput
-          v-model="newPassword"
-          :filled="true"
-          class="mt-4"
-          :class="{ 'is-invalid': newPasswordInvalid }"
-          placeholder="New Password"
-        />
-        <div v-if="newPasswordInvalid" class="invalid-feedback">Invalid password.</div>
-        <AppPasswordInput
-          v-model="confirmPassword"
-          :filled="true"
-          class="mt-4"
-          :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
-          placeholder="Confirm New Password"
-        />
-        <div v-if="inputConfirmPasswordInvalid" class="invalid-feedback">
-          Passwords do not match.
+        <div class="mt-4">
+          <AppPasswordInput
+            v-model="newPassword"
+            :filled="true"
+            :class="{ 'is-invalid': newPasswordInvalid }"
+            placeholder="New Password"
+          />
+          <div v-if="newPasswordInvalid" class="invalid-feedback">Invalid password.</div>
         </div>
         <AppButton
           color="primary"
@@ -145,7 +136,7 @@ watch(confirmPassword, val => {
           type="submit"
           class="w-100 mt-5"
           :loading="isLoading"
-          :disabled="newPassword.length === 0 || confirmPassword.length === 0"
+          :disabled="newPasswordInvalid || currentPasswordInvalid"
           >Continue</AppButton
         >
       </div>
