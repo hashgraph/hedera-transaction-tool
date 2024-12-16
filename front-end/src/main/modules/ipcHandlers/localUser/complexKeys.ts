@@ -12,7 +12,7 @@ export default () => {
   createIPCChannel('complexKeys', [
     renameFunc(addComplexKey, 'add'),
     renameFunc(getComplexKeys, 'getAll'),
-    getComplexKey,
+    renameFunc(getComplexKey, 'getComplexKey'),
     renameFunc(updateComplexKey, 'update'),
     renameFunc(deleteComplexKey, 'delete'),
   ]);
