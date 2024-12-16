@@ -2,9 +2,7 @@ import { mockDeep } from 'vitest-mock-extended';
 
 import { ipcMain } from 'electron';
 
-vi.mock('electron', () => ({
-  ipcMain: mockDeep<Electron.IpcMain>(),
-}));
+vi.mock('electron', () => mockDeep());
 
 const event: Electron.IpcMainEvent = mockDeep<Electron.IpcMainEvent>();
 
