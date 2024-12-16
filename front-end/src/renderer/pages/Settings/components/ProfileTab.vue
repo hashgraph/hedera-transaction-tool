@@ -21,7 +21,7 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
 
 /* Stores */
@@ -108,20 +108,18 @@ const handleResetData = async () => router.push({ name: 'login' });
       <h3 class="text-main">Password</h3>
       <div class="form-group mt-4">
         <label class="form-label">Current Password <span class="text-danger">*</span></label>
-        <AppInput
+        <AppPasswordInput
           v-model="currentPassword"
           data-testid="input-current-password"
-          type="password"
           placeholder="Enter Current Password"
           :filled="true"
         />
       </div>
       <div class="mt-4 form-group">
         <label class="form-label">New Password <span class="text-danger">*</span></label>
-        <AppInput
+        <AppPasswordInput
           v-model="newPassword"
           data-testid="input-new-password"
-          type="password"
           placeholder="Enter New Password"
           :filled="true"
         />

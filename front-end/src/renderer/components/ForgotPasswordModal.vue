@@ -16,6 +16,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import OTPInput from '@renderer/components/OTPInput.vue';
+import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 
 /* Props */
 const props = defineProps<{
@@ -214,33 +215,30 @@ watch(
           </div>
 
           <div v-else-if="shouldSetNewPassword">
-            <AppInput
+            <AppPasswordInput
               v-if="isUserLoggedIn(user.personal) && !user.personal.useKeychain"
               v-model="personalPassword"
               :filled="true"
               class="mt-4"
               :class="{ 'is-invalid': personalPasswordInvalid }"
-              type="password"
               placeholder="Personal Password"
             />
             <div v-if="personalPasswordInvalid" class="invalid-feedback">
               Incorrect personal password
             </div>
-            <AppInput
+            <AppPasswordInput
               v-model="newPassword"
               :filled="true"
               class="mt-4"
               :class="{ 'is-invalid': newPasswordInvalid }"
-              type="password"
               placeholder="New Password"
             />
             <div v-if="newPasswordInvalid" class="invalid-feedback">Invalid password.</div>
-            <AppInput
+            <AppPasswordInput
               v-model="confirmPassword"
               :filled="true"
               class="mt-4"
               :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
-              type="password"
               placeholder="Confirm New Password"
             />
             <div v-if="inputConfirmPasswordInvalid" class="invalid-feedback">
