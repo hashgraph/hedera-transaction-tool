@@ -11,21 +11,21 @@ import {
   updateGroup,
   deleteGroupItem,
 } from '@main/services/localUser';
-import { createIPCChannel } from '@main/utils/electronInfra';
+import { createIPCChannel, renameFunc } from '@main/utils/electronInfra';
 
 export default () => {
   /* Transaction Groups */
   createIPCChannel('transactionGroups', [
-    addGroup,
-    addGroupItem,
-    getGroups,
-    getGroup,
-    getGroupItem,
-    getGroupItems,
-    getGroupsCount,
-    updateGroup,
-    editGroupItem,
-    deleteGroup,
-    deleteGroupItem,
+    renameFunc(addGroup, 'addGroup'),
+    renameFunc(addGroupItem, 'addGroupItem'),
+    renameFunc(getGroups, 'getGroups'),
+    renameFunc(getGroup, 'getGroup'),
+    renameFunc(getGroupItem, 'getGroupItem'),
+    renameFunc(getGroupItems, 'getGroupItems'),
+    renameFunc(getGroupsCount, 'getGroupsCount'),
+    renameFunc(updateGroup, 'updateGroup'),
+    renameFunc(editGroupItem, 'editGroupItem'),
+    renameFunc(deleteGroup, 'deleteGroup'),
+    renameFunc(deleteGroupItem, 'deleteGroupItem'),
   ]);
 };

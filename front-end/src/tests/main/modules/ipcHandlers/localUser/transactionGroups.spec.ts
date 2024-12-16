@@ -1,4 +1,6 @@
-import { ipcMain } from 'electron';
+import { mockDeep } from 'vitest-mock-extended';
+
+import { getIPCHandler, invokeIPCHandler } from '../../../_utils_';
 
 import registerTransactionGroupsHandlers from '@main/modules/ipcHandlers/localUser/transactionGroups';
 import {
@@ -15,35 +17,18 @@ import {
   deleteGroupItem,
 } from '@main/services/localUser';
 import { Prisma, GroupItem } from '@prisma/client';
-import { MockedObject } from 'vitest';
-import { mockDeep } from 'vitest-mock-extended';
 
-vi.mock('electron', () => ({
-  ipcMain: { handle: vi.fn() },
-}));
-
-vi.mock('@main/services/localUser', () => ({
-  addGroup: vi.fn(),
-  addGroupItem: vi.fn(),
-  getGroup: vi.fn(),
-  getGroups: vi.fn(),
-  getGroupsCount: vi.fn(),
-  getGroupItems: vi.fn(),
-  deleteGroup: vi.fn(),
-  editGroupItem: vi.fn(),
-  getGroupItem: vi.fn(),
-  updateGroup: vi.fn(),
-  deleteGroupItem: vi.fn(),
-}));
+vi.mock('@main/services/localUser', () => mockDeep());
 
 describe('IPC handlers transaction groups', () => {
+  const groupId = 'groupId';
+  const userId = 'userId';
+  const seq = '1';
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     registerTransactionGroupsHandlers();
   });
-
-  const ipcMainMO = ipcMain as unknown as MockedObject<Electron.IpcMain>;
-  const event: Electron.IpcMainEvent = mockDeep<Electron.IpcMainEvent>();
 
   test('Should register handlers for each event', () => {
     const events = [
@@ -60,154 +45,86 @@ describe('IPC handlers transaction groups', () => {
       'deleteGroupItem',
     ];
 
-    expect(
-      events.every(e =>
-        ipcMainMO.handle.mock.calls.some(([channel]) => channel === `transactionGroups:${e}`),
-      ),
-    ).toBe(true);
+    expect(events.every(e => getIPCHandler(`transactionGroups:${e}`))).toBe(true);
   });
 
   test('Should set up getGroups handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'transactionGroups:getGroups');
-    expect(handler).toBeDefined();
-
     const findArgs: Prisma.TransactionGroupFindManyArgs = { where: { id: 'userId' } };
 
-    handler && (await handler[1](event, findArgs));
+    await invokeIPCHandler('transactionGroups:getGroups', findArgs);
     expect(getGroups).toHaveBeenCalledWith(findArgs);
   });
 
   test('Should set up getGroup handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'transactionGroups:getGroup');
-    expect(handler).toBeDefined();
-
-    const id = 'groupId';
-
-    handler && (await handler[1](event, id));
-    expect(getGroup).toHaveBeenCalledWith(id);
+    await invokeIPCHandler('transactionGroups:getGroup', groupId);
+    expect(getGroup).toHaveBeenCalledWith(groupId);
   });
 
   test('Should set up getGroupItem handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'transactionGroups:getGroupItem',
-    );
-    expect(handler).toBeDefined();
-
-    const id = 'groupId';
-    const seq = '1';
-
-    handler && (await handler[1](event, id, seq));
-    expect(getGroupItem).toHaveBeenCalledWith(id, seq);
+    await invokeIPCHandler('transactionGroups:getGroupItem', groupId, seq);
+    expect(getGroupItem).toHaveBeenCalledWith(groupId, seq);
   });
 
   test('Should set up addGroup handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'transactionGroups:addGroup');
-    expect(handler).toBeDefined();
-
     const transactionGroup: Prisma.TransactionGroupUncheckedCreateInput = {
       description: 'description',
       atomic: false,
     };
 
-    handler && (await handler[1](event, transactionGroup));
+    await invokeIPCHandler('transactionGroups:addGroup', transactionGroup);
     expect(addGroup).toHaveBeenCalledWith(transactionGroup);
   });
 
   test('Should set up updateGroup handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'transactionGroups:updateGroup',
-    );
-    expect(handler).toBeDefined();
-
-    const id = 'groupId';
     const group: Prisma.TransactionGroupUncheckedUpdateInput = {
       description: 'new description',
       atomic: true,
     };
 
-    handler && (await handler[1](event, id, group));
-    expect(updateGroup).toHaveBeenCalledWith(id, group);
+    await invokeIPCHandler('transactionGroups:updateGroup', groupId, group);
+    expect(updateGroup).toHaveBeenCalledWith(groupId, group);
   });
 
   test('Should set up addGroupItem handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'transactionGroups:addGroupItem',
-    );
-    expect(handler).toBeDefined();
-
-    const groupItem: Prisma.GroupItemUncheckedCreateInput = {
+    const groupItemCreate: Prisma.GroupItemUncheckedCreateInput = {
       transaction_group_id: 'groupId',
       seq: '1',
       transaction_draft_id: 'draftId',
     };
 
-    handler && (await handler[1](event, groupItem));
-    expect(addGroupItem).toHaveBeenCalledWith(groupItem);
+    await invokeIPCHandler('transactionGroups:addGroupItem', groupItemCreate);
+    expect(addGroupItem).toHaveBeenCalledWith(groupItemCreate);
   });
 
   test('Should set up getGroupItems handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'transactionGroups:getGroupItems',
-    );
-    expect(handler).toBeDefined();
-
-    const id = 'groupId';
-
-    handler && (await handler[1](event, id));
-    expect(getGroupItems).toHaveBeenCalledWith(id);
+    await invokeIPCHandler('transactionGroups:getGroupItems', groupId);
+    expect(getGroupItems).toHaveBeenCalledWith(groupId);
   });
 
   test('Should set up getGroupsCount handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'transactionGroups:getGroupsCount',
-    );
-    expect(handler).toBeDefined();
-
-    const userId = 'userId';
-
-    handler && (await handler[1](event, userId));
+    await invokeIPCHandler('transactionGroups:getGroupsCount', userId);
     expect(getGroupsCount).toHaveBeenCalledWith(userId);
   });
 
   test('Should set up deleteGroup handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'transactionGroups:deleteGroup',
-    );
-    expect(handler).toBeDefined();
-
-    const id = 'groupId';
-
-    handler && (await handler[1](event, id));
-    expect(deleteGroup).toHaveBeenCalledWith(id);
+    await invokeIPCHandler('transactionGroups:deleteGroup', groupId);
+    expect(deleteGroup).toHaveBeenCalledWith(groupId);
   });
 
   test('Should set up editGroupItem handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'transactionGroups:editGroupItem',
-    );
-    expect(handler).toBeDefined();
-
-    const groupItem: GroupItem = {
+    const groupItemEdit: GroupItem = {
       transaction_group_id: 'groupId',
       seq: '1',
       transaction_draft_id: 'draftId',
       transaction_id: 'txId',
     };
 
-    handler && (await handler[1](event, groupItem));
-    expect(editGroupItem).toHaveBeenCalledWith(groupItem);
+    await invokeIPCHandler('transactionGroups:editGroupItem', groupItemEdit);
+    expect(editGroupItem).toHaveBeenCalledWith(groupItemEdit);
   });
 
   test('Should set up deleteGroupItem handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'transactionGroups:deleteGroupItem',
-    );
-    expect(handler).toBeDefined();
-
-    const id = 'groupId';
-    const seq = '1';
-
-    handler && (await handler[1](event, id, seq));
-    expect(deleteGroupItem).toHaveBeenCalledWith(id, seq);
+    await invokeIPCHandler('transactionGroups:deleteGroupItem', groupId, seq);
+    expect(deleteGroupItem).toHaveBeenCalledWith(groupId, seq);
   });
 });
