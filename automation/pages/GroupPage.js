@@ -153,6 +153,28 @@ class GroupPage extends BasePage {
     }
   }
 
+  async addOrgTransferTransactionToGroup(numberOfTransactions = 1, fromAccountId, amount) {
+    await this.fillDescription('test');
+    for (let i = 0; i < numberOfTransactions; i++) {
+      await this.clickOnAddTransactionButton();
+      await this.transactionPage.clickOnTransferTokensTransaction()
+
+      await this.fill(this.transactionPage.transferFromAccountIdInputSelector, fromAccountId);
+      await this.transactionPage.fillInTransferAmountFromAccount(amount);
+
+      const payerAccountId = await this.getTextFromInputField(
+        this.transactionPage.payerDropdownSelector,
+      );
+      await this.transactionPage.fillInTransferToAccountId(payerAccountId);
+
+      await this.transactionPage.clickOnAddTransferFromButton();
+      await this.transactionPage.fillInTransferAmountToAccount(amount);
+      await this.transactionPage.clickOnAddTransferToButton();
+
+      await this.clickAddToGroupButton();
+    }
+  }
+
   async isEmptyTransactionTextVisible() {
     return this.isElementVisible(this.emptyTransactionTextSelector);
   }

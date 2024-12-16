@@ -14,7 +14,6 @@ const OrganizationPage = require('../pages/OrganizationPage');
 const SettingsPage = require('../pages/SettingsPage');
 const ContactListPage = require('../pages/ContactListPage');
 const { resetDbState, resetPostgresDbState } = require('../utils/databaseUtil');
-const { getAssociatedAccounts } = require('../utils/mirrorNodeAPI');
 
 let app, window;
 let globalCredentials = { email: '', password: '' };
