@@ -9,9 +9,9 @@ import { createIPCChannel, renameFunc } from '@main/utils/electronInfra';
 export default () => {
   /* Organizations */
   createIPCChannel('organizations', [
-    addOrganization,
-    getOrganizations,
-    updateOrganization,
+    renameFunc(addOrganization, 'addOrganization'),
+    renameFunc(getOrganizations, 'getOrganizations'),
+    renameFunc(updateOrganization, 'updateOrganization'),
     renameFunc(removeOrganization, 'deleteOrganization'),
   ]);
 };
