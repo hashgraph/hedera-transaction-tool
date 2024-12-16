@@ -1,7 +1,7 @@
 import { getNodeAddressBook } from '@main/services/localUser';
-import { createIPCChannel } from '@main/utils/electronInfra';
+import { createIPCChannel, renameFunc } from '@main/utils/electronInfra';
 
 export default () => {
   /* SDK */
-  createIPCChannel('sdk', [getNodeAddressBook]);
+  createIPCChannel('sdk', [renameFunc(getNodeAddressBook, 'getNodeAddressBook')]);
 };
