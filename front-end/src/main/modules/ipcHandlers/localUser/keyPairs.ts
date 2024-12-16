@@ -21,13 +21,13 @@ export default () => {
   createIPCChannel('keyPairs', [
     renameFunc(storeKeyPair, 'store'),
     renameFunc(getKeyPairs, 'getAll'),
-    getSecretHashes,
-    changeDecryptionPassword,
-    updateNickname,
-    updateMnemonicHash,
-    deleteEncryptedPrivateKeys,
-    deleteKeyPair,
-    decryptPrivateKey,
+    renameFunc(getSecretHashes, 'getSecretHashes'),
+    renameFunc(changeDecryptionPassword, 'changeDecryptionPassword'),
+    renameFunc(updateNickname, 'updateNickname'),
+    renameFunc(updateMnemonicHash, 'updateMnemonicHash'),
+    renameFunc(deleteEncryptedPrivateKeys, 'deleteEncryptedPrivateKeys'),
+    renameFunc(deleteKeyPair, 'deleteKeyPair'),
+    renameFunc(decryptPrivateKey, 'decryptPrivateKey'),
   ]);
 
   // Clear keys file
