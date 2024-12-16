@@ -15,7 +15,7 @@ export default () => {
     renameFunc(getFiles, 'getAll'),
     renameFunc(updateFile, 'update'),
     renameFunc(removeFiles, 'remove'),
-    showStoredFileInTemp,
-    decodeProto,
+    renameFunc(showStoredFileInTemp, 'showStoredFileInTemp'),
+    renameFunc(decodeProto, 'decodeProto'),
   ]);
 };
