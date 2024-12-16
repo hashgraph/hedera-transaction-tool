@@ -5,6 +5,7 @@ import { HederaFile, Prisma } from '@prisma/client';
 
 import { getPrismaClient } from '@main/db/prisma';
 import { deleteDirectory, getNumberArrayFromString, saveContentToPath } from '@main/utils';
+import { safeAwait } from '@main/utils/safeAwait';
 
 export const getFiles = async (findArgs: Prisma.HederaFileFindManyArgs) => {
   const prisma = getPrismaClient();
@@ -140,12 +141,8 @@ export const showContentInTemp = async (content: Buffer, fileId: string) => {
 };
 
 export const deleteTempFolder = async (folder: string) => {
-  try {
-    const directoryPath = path.join(app.getPath('temp'), folder);
-    await deleteDirectory(directoryPath);
-  } catch {
-    /* Empty */
-  }
+  const directoryPath = path.join(app.getPath('temp'), folder);
+  await safeAwait(deleteDirectory(directoryPath));
 };
 
 export const deleteAllTempFolders = async () => {

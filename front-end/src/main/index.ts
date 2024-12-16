@@ -9,9 +9,10 @@ import createMenu from '@main/modules/menu';
 import handleDeepLink, { PROTOCOL_NAME } from '@main/modules/deepLink';
 import registerIpcListeners from '@main/modules/ipcHandlers';
 
-import { restoreOrCreateWindow } from '@main/windows/mainWindow';
+import { safeAwait } from '@main/utils/safeAwait';
+import { deleteAllTempFolders } from '@main/services/localUser';
 
-import { deleteAllTempFolders } from './services/localUser';
+import { restoreOrCreateWindow } from '@main/windows/mainWindow';
 
 let mainWindow: BrowserWindow | null;
 
@@ -66,11 +67,7 @@ function attachAppEvents() {
       e.preventDefault();
 
       deleteRetires++;
-      try {
-        await deleteAllTempFolders();
-      } catch {
-        /* Empty */
-      }
+      await safeAwait(deleteAllTempFolders());
 
       app.quit();
     }

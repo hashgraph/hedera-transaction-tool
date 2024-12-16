@@ -6,8 +6,8 @@ export const getGroups = async (findArgs: Prisma.TransactionGroupFindManyArgs) =
 
   try {
     return await prisma.transactionGroup.findMany(findArgs);
-  } catch (error: any) {
-    throw new Error(error.message || 'Failed to fetch transaction groups');
+  } catch (error: unknown) {
+    throw new Error(error instanceof Error ? error.message : 'Failed to fetch transaction groups');
   }
 };
 
@@ -109,8 +109,8 @@ export const getGroupsCount = async (userId: string) => {
     });
 
     return count;
-  } catch (error: any) {
-    throw new Error(error.message || 'Failed to get drafts count');
+  } catch (error: unknown) {
+    throw new Error(error instanceof Error ? error.message : 'Failed to get drafts count');
   }
 };
 

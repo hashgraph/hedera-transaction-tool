@@ -17,6 +17,7 @@ import {
 } from '@main/shared/constants';
 
 import { parseNetwork } from '@main/utils/parsers';
+import { safeAwait } from '@main/utils/safeAwait';
 
 import { addAccount } from './accounts';
 import { addClaim } from './claim';
@@ -237,14 +238,15 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
       parsedContent[USER_PROPERTIES_DEFAULT_MAX_TRANSACTION_FEE_KEY],
     );
     if (!isNaN(defaultMaxTransactionFee)) {
-      try {
-        result.defaultMaxTransactionFee = defaultMaxTransactionFee;
-        await addClaim(
+      result.defaultMaxTransactionFee = defaultMaxTransactionFee;
+      const { error } = await safeAwait(
+        addClaim(
           userId,
           DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
           Hbar.fromTinybars(result.defaultMaxTransactionFee).toString(HbarUnit.Tinybar),
-        );
-      } catch (error) {
+        ),
+      );
+      if (error) {
         console.log(error);
       }
     }
@@ -253,24 +255,22 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
       parsedContent[USER_PROPERTIES_CURRENT_NETWORK_KEY],
       defaultNetwork,
     );
-    try {
-      result.currentNetwork = defaultNetwork;
-      await addClaim(userId, SELECTED_NETWORK, defaultNetwork);
-    } catch (error) {
+    result.currentNetwork = defaultNetwork;
+    const { error } = await safeAwait(addClaim(userId, SELECTED_NETWORK, defaultNetwork));
+    if (error) {
       console.log(error);
     }
 
-    try {
-      const credentialsObj = parsedContent[CREDENTIALS_DIRECTORY];
-      if (credentialsObj && typeof credentialsObj === 'object') {
-        let updatesLocation = Object.keys(credentialsObj)[0];
-        updatesLocation = updatesLocation.endsWith('/InputFiles')
-          ? updatesLocation
-          : updatesLocation + '/InputFiles';
-        await addClaim(userId, UPDATE_LOCATION, updatesLocation);
+    const credentialsObj = parsedContent[CREDENTIALS_DIRECTORY];
+    if (credentialsObj && typeof credentialsObj === 'object') {
+      let updatesLocation = Object.keys(credentialsObj)[0];
+      updatesLocation = updatesLocation.endsWith('/InputFiles')
+        ? updatesLocation
+        : updatesLocation + '/InputFiles';
+      const { error } = await safeAwait(addClaim(userId, UPDATE_LOCATION, updatesLocation));
+      if (error) {
+        console.log(error);
       }
-    } catch (error) {
-      console.log(error);
     }
   } catch (error) {
     console.log(error);
@@ -280,10 +280,11 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
     const accountDataList = await getAccountInfoFromFile(getAccountsPath(), defaultNetwork);
 
     for (const accountData of accountDataList) {
-      try {
-        await addAccount(userId, accountData.accountID, accountData.network, accountData.nickname);
-        result.accountsImported++;
-      } catch (error) {
+      const { error } = await safeAwait(
+        addAccount(userId, accountData.accountID, accountData.network, accountData.nickname),
+      );
+      result.accountsImported++;
+      if (error) {
         console.log(error);
       }
     }

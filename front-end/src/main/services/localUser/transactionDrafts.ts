@@ -90,7 +90,7 @@ export const getDraftsCount = async (userId: string) => {
     });
 
     return count;
-  } catch (error: any) {
-    throw new Error(error.message || 'Failed to get drafts count');
+  } catch (error: unknown) {
+    throw new Error(error instanceof Error ? error.message : 'Failed to get drafts count');
   }
 };

@@ -78,9 +78,9 @@ export const storeKeyPair = async (
     await prisma.keyPair.create({
       data: keyPair,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.log(error);
-    throw new Error(error.message || 'Failed to store key pair');
+    throw new Error(error instanceof Error ? error.message : 'Failed to store key pair');
   }
 };
 

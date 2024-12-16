@@ -53,12 +53,7 @@ export default () => {
       });
       if (!filePath.trim() || canceled) return;
 
-      try {
-        await fs.writeFile(filePath, Uint8Array.from(content));
-      } catch (error: any) {
-        dialog.showErrorBox('Failed to save file', error?.message || 'Unknown error');
-        console.log(error);
-      }
+      await fs.writeFile(filePath, Uint8Array.from(content));
     } catch (error: any) {
       dialog.showErrorBox('Failed to save file', error?.message || 'Unknown error');
     }
