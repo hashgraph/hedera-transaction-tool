@@ -1,9 +1,3 @@
-import { ipcMain } from 'electron';
-
-import { Prisma } from '@prisma/client';
-
-import { HederaSpecialFileId } from '@main/shared/interfaces';
-
 import {
   addFile,
   getFiles,
@@ -12,42 +6,16 @@ import {
   updateFile,
 } from '@main/services/localUser/files';
 import { decodeProto } from '@main/utils/hederaSpecialFiles';
-
-const createChannelName = (...props) => ['files', ...props].join(':');
+import { createIPCChannel, renameFunc } from '@main/utils/electronInfra';
 
 export default () => {
   /* Files */
-
-  // Get all
-  ipcMain.handle(createChannelName('getAll'), (_e, findArgs: Prisma.HederaFileFindManyArgs) =>
-    getFiles(findArgs),
-  );
-
-  // Add
-  ipcMain.handle(createChannelName('add'), (_e, file: Prisma.HederaFileUncheckedCreateInput) =>
-    addFile(file),
-  );
-
-  // Update
-  ipcMain.handle(
-    createChannelName('update'),
-    (_e, fileId: string, userId: string, file: Prisma.HederaFileUncheckedUpdateInput) =>
-      updateFile(fileId, userId, file),
-  );
-
-  // Remove
-  ipcMain.handle(createChannelName('remove'), (_e, userId: string, fileIds: string[]) =>
-    removeFiles(userId, fileIds),
-  );
-
-  // Show in temp folder
-  ipcMain.handle(createChannelName('showStoredFileInTemp'), (_e, userId: string, fileId: string) =>
-    showStoredFileInTemp(userId, fileId),
-  );
-
-  // Decodes a special file proto
-  ipcMain.handle(
-    createChannelName('decodeProto'),
-    (_e, fileId: HederaSpecialFileId, bytes: Uint8Array) => decodeProto(fileId, bytes),
-  );
+  createIPCChannel('files', [
+    renameFunc(addFile, 'add'),
+    renameFunc(getFiles, 'getAll'),
+    renameFunc(updateFile, 'update'),
+    renameFunc(removeFiles, 'remove'),
+    showStoredFileInTemp,
+    decodeProto,
+  ]);
 };
