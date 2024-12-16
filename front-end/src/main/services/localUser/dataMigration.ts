@@ -283,9 +283,10 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
       const { error } = await safeAwait(
         addAccount(userId, accountData.accountID, accountData.network, accountData.nickname),
       );
-      result.accountsImported++;
       if (error) {
         console.log(error);
+      } else {
+        result.accountsImported++;
       }
     }
   } catch (error) {
