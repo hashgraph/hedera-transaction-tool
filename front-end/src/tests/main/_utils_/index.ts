@@ -32,7 +32,7 @@ export const getIPCListener = (name: string) => {
 
 export const invokeIPCHandler = async (name: string, ...args: any[]) => {
   const handler = getIPCHandler(name);
-  await handler[1](event, ...args);
+  return await handler[1](event, ...args);
 };
 
 export const invokeIPCListener = (name: string, ...args: any[]) => {
