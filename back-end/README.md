@@ -22,14 +22,14 @@ To set-yup the front end application, you will need to follow this addition read
 - Version check: `pnpm --version`
 - [Docker Desktop](https://docs.docker.com/desktop/install/mac-install/)
 
-# 1. Clone the project
+## 1. Clone the project
 
 ```bash
 git clone https://github.com/hashgraph/hedera-transaction-tool.git
 cd back-end
 ```
 
-# 2. Install Dependencies
+## 2. Install Dependencies
 
 ```bash
 pnpm install
