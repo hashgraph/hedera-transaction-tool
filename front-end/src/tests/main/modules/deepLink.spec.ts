@@ -4,10 +4,6 @@ import deepLink, { PROTOCOL_NAME } from '@main/modules/deepLink';
 
 import { BrowserWindow } from 'electron';
 
-vi.mock('electron', () => ({
-  BrowserWindow: vi.fn(),
-}));
-
 describe('deepLink', () => {
   let window: BrowserWindow;
   let event: { preventDefault: () => void; readonly defaultPrevented: boolean };
