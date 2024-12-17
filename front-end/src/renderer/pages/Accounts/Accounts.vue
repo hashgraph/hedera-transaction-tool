@@ -151,9 +151,9 @@ const handleSortAccounts = async (
   await fetchAccounts();
 };
 
-const handleSelectAllAccounts = (isChecked: boolean) => {
-  selectAll.value = isChecked;
-  if (isChecked) {
+const handleSelectAllAccounts = () => {
+  selectAll.value = !selectAll.value;
+  if (selectAll.value) {
     selectedAccountIds.value = accounts.value.map(account => account.account_id);
   } else {
     selectedAccountIds.value = [];
@@ -306,14 +306,15 @@ onMounted(async () => {
           <hr class="separator mb-5" />
           <div class="fill-remaining pe-3">
             <div v-if="selectMany" class="d-flex flex-row align-items-center flex-nowrap mb-4">
-              <AppCheckBox
-                name="select-card"
-                class="cursor-pointer"
-                type="checkbox"
-                :checked="selectAll"
-                @update:checked="handleSelectAllAccounts"
-              />
-              <label class="ms-2">Select all</label>
+              <div class="cursor-pointer d-flex" @click="handleSelectAllAccounts">
+                <AppCheckBox
+                  name="select-card"
+                  class="cursor-pointer"
+                  type="checkbox"
+                  :checked="selectAll"
+                />
+                <span class="ms-4">Select all</span>
+              </div>
               <AppButton
                 size="small"
                 class="min-w-unset ms-auto"

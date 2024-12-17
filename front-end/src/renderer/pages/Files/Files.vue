@@ -283,9 +283,9 @@ const handleSortFiles = async (
   await fetchFiles();
 };
 
-const handleSelectAllAccounts = (isChecked: boolean) => {
-  selectAll.value = isChecked;
-  if (isChecked) {
+const handleSelectAllFiles = () => {
+  selectAll.value = !selectAll.value;
+  if (selectAll.value) {
     selectedFileIds.value = files.value.map(file => file.file_id);
   } else {
     selectedFileIds.value = [];
@@ -502,14 +502,15 @@ watch(files, newFiles => {
 
           <div class="fill-remaining pe-3">
             <div v-if="selectMany" class="d-flex flex-row align-items-center flex-nowrap mb-4">
-              <AppCheckBox
-                name="select-card"
-                class="cursor-pointer"
-                type="checkbox"
-                :checked="selectAll"
-                @update:checked="handleSelectAllAccounts"
-              />
-              <label class="ms-2">Select all</label>
+              <div class="d-flex cursor-pointer" @click="handleSelectAllFiles">
+                <AppCheckBox
+                  name="select-card"
+                  class="cursor-pointer"
+                  type="checkbox"
+                  :checked="selectAll"
+                />
+                <span class="ms-4">Select all</span>
+              </div>
               <AppButton
                 size="small"
                 class="min-w-unset ms-auto"
