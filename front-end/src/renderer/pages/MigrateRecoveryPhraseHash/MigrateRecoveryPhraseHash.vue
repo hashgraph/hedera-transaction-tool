@@ -104,8 +104,8 @@ onMounted(async () => {
 watch(() => user.recoveryPhrase, handleVerify);
 </script>
 <template>
-  <div class="flex-column-100 flex-centered p-6">
-    <div class="fill-remaining d-flex align-items-center">
+  <div class="flex-column-100 flex-centered">
+    <div class="fill-remaining d-flex align-items-center p-6">
       <div class="container-dark-border bg-modal-surface glow-dark-bg p-5">
         <h4 class="text-title text-semi-bold text-center">Recovery Phrase</h4>
         <p class="text-main text-center mt-3">
