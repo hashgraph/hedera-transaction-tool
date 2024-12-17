@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 
-import { inject, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+import { inject, onMounted, reactive, ref, watch } from 'vue';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -239,21 +239,6 @@ async function checkShouldRegister() {
     shouldRegister.value = true;
   }
 }
-const containerRef = ref<HTMLDivElement | undefined>(undefined);
-
-const refocus = () => {
-  if (containerRef.value) {
-    focusFirstInput(containerRef.value);
-  }
-};
-
-onMounted(() => {
-  window.addEventListener('external-modal-closed', refocus);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('external-modal-closed', refocus);
-});
 
 /* Watchers */
 watch(inputPassword, pass => {
@@ -275,11 +260,7 @@ watch(inputEmail, pass => {
 });
 </script>
 <template>
-  <div
-    class="p-10 flex-column flex-centered flex-1 overflow-hidden"
-    ref="containerRef"
-    v-focus-first-input
-  >
+  <div class="p-10 flex-column flex-centered flex-1 overflow-hidden" v-focus-first-input>
     <div class="container-dark-border glow-dark-bg p-5">
       <h4 class="text-title text-semi-bold text-center">
         {{ shouldRegister ? 'Register' : 'Sign In' }}

@@ -12,7 +12,7 @@ import DatePicker from '@vuepic/vue-datepicker';
 
 import App from './App.vue';
 
-import { AutoFocusDirective } from './utils';
+import { AutoFocusFirstInputDirective } from './utils';
 
 const app = createApp(App);
 
@@ -25,7 +25,7 @@ addGuards(router);
 
 app.use(ToastPlugin, { position: 'bottom-right', duration: 4000 });
 
-app.directive('focus-first-input', AutoFocusDirective);
+app.directive('focus-first-input', AutoFocusFirstInputDirective);
 
 /* App config */
 const toast = useToast();
