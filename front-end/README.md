@@ -5,68 +5,69 @@
 The Hedera Transaction Tool application is a demo application that allows a user to generate keys, create, sign, and submit transactions to a Hedera network. This software is designed for use solely by the Hedera Council and staff. The software is being released as open source as example code only, and is not intended or suitable for use in its current form by anyone other than members of the Hedera Council and Hedera personnel. If you are not a Hedera Council member or staff member, use of this application or of the code in its current form is not recommended
 and is at your own risk.
 
-## Prerequisites
+# Prerequisites
 
-Node version: `20.17.0`
+- [Node](https://nodejs.org/en/download/package-manager) version: >=`22.12.0`
+- Version check: `node-v`
+- [pnpm](https://pnpm.io/installation) version: >=`9.13.1`
+- Version check: `pnpm --version`
+- [python-setuptools](https://pypi.org/project/setuptools) version: >=`75.6.0`
 
-If you use another version, please use [n](https://github.com/tj/n) to manage.
-
-`pnpm` version: `9.9.0`
-
-To upgrade to the latest pnpm version please run:
+Installation of `pnpm`:
 
 ```bash
 npm install -g pnpm@latest
 ```
 
-### Install dependencies ⏬
+Installation of `python-setuptools` with `brew`:
+
+```bash
+brew install python-setuptools
+```
+
+## 1. Clone the project
+
+```bash
+git clone https://github.com/hashgraph/hedera-transaction-tool.git
+cd back-end
+```
+
+## 2. Install dependencies
 
 ```bash
 pnpm install
 ```
 
-### Start developing ⚒️
-
-Generate prisma client:
+## 3. Generate Prisma client library
 
 ```bash
 npx prisma generate
 ```
 
-Run in development mode:
+## 4. Start developing
 
 ```bash
-pnpm run dev
+pnpm dev
 ```
 
-### Additional Commands
-
-Build the app localy
+## 5. Build for distribution
 
 ```bash
-pnpm run build # builds application, distributable files can be found in "dist" folder
-
-# OR
-
 pnpm run build:mac # uses mac as build target
 ```
 
-Run the tests
+## 6. Run the unit tests
 
 ```bash
-pnpm run test:main # run tests for the main folder
+pnpm test:main # run tests for the main process
 ```
 
 Run the tests with coverage
 
 ```bash
-pnpm run test:main:coverage # run tests for the main folder
+pnpm test:main:coverage # run tests for the main process
 ```
 
-## Publish
+## 7. Troubleshooting
 
-1. Create Draft release with the proper tag (version in `package.json` needs to match) and prefix `v`
-2. Genereate Classic access token (check the `repo` option)
-3. Generate self sign certificate (TBD)
-4. Run in terminal `GH_TOKEN=<ACCESS_TOKEN> pnpm run publish`
-5. Go to Releases and click `Publish release`
+- If a problem with the @prisma/client occur, try running `npx prisma generate` or reinstall the `node_modules` and then run `npx prisma generate`
