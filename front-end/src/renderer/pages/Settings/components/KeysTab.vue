@@ -19,6 +19,7 @@ import { decryptPrivateKey, deleteKeyPair } from '@renderer/services/keyPairServ
 import {
   assertUserLoggedIn,
   getErrorMessage,
+  getRecoveryPhraseNickname,
   isLoggedInOrganization,
   safeAwait,
 } from '@renderer/utils';
@@ -29,6 +30,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import UpdateNicknameModal from '@renderer/components/KeyPair/UpdateNicknameModal.vue';
+import UpdateRecoveryPhraseNickname from '@renderer/components/modals/UpdateRecoveryPhraseNicknameModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -48,6 +50,7 @@ enum Tabs {
 /* State */
 const isDeleteModalShown = ref(false);
 const isUpdateNicknameModalShown = ref(false);
+const isUpdateRecoveryPhraseNicknameModalShown = ref(false);
 const deleteAll = ref(false);
 const isSelectAll = ref(false);
 const selectedKeyPairIdsToDelete = ref<string[]>([]);
@@ -72,12 +75,16 @@ const missingKeys = computed(() =>
     : [],
 );
 
-const recoveryPhraseHashes = computed(() =>
-  (isLoggedInOrganization(user.selectedOrganization)
+const recoveryPhraseHashes = computed(() => {
+  const listedMnemonicHashes = isLoggedInOrganization(user.selectedOrganization)
     ? user.selectedOrganization.secretHashes
-    : user.secretHashes
-  ).map((hash, i) => ({ label: `Recovery Phrase ${i + 1}`, value: hash })),
-);
+    : user.secretHashes;
+
+  return listedMnemonicHashes.map((hash, i) => ({
+    label: getRecoveryPhraseNickname(user.mnemonics, hash) || `Recovery Phrase ${i + 1}`,
+    value: hash,
+  }));
+});
 
 const listedKeyPairs = computed(() => {
   return user.keyPairs.filter(item => {
@@ -390,6 +397,7 @@ watch([currentTab, selectedRecoveryPhrase], () => {
     <div class="d-flex align-items-center gap-4 mb-3">
       <div class="btn-group-container d-inline-flex w-100" role="group">
         <div class="btn-group gap-3 overflow-x-auto">
+          <!-- All -->
           <AppButton
             :color="currentTab === Tabs.ALL ? 'primary' : undefined"
             :data-testid="`tab-${Tabs.ALL}`"
@@ -402,6 +410,7 @@ watch([currentTab, selectedRecoveryPhrase], () => {
             >{{ Tabs.ALL }}</AppButton
           >
 
+          <!-- Imported from Private Key -->
           <AppButton
             :color="currentTab === Tabs.PRIVATE_KEY ? 'primary' : undefined"
             :data-testid="`tab-${Tabs.PRIVATE_KEY}`"
@@ -413,6 +422,8 @@ watch([currentTab, selectedRecoveryPhrase], () => {
             @click="handleTabChange(Tabs.PRIVATE_KEY)"
             >{{ Tabs.PRIVATE_KEY }}</AppButton
           >
+
+          <!-- Imported from Recovery Phrase DropDown -->
           <AppDropDown
             v-model:value="selectedRecoveryPhrase"
             :items="recoveryPhraseHashes"
@@ -425,6 +436,23 @@ watch([currentTab, selectedRecoveryPhrase], () => {
             toggler-icon
             color-on-active
           />
+
+          <!-- Set/Change Recovery Phrase nickname -->
+          <AppButton
+            v-if="currentTab === Tabs.RECOVERY_PHRASE"
+            color="secondary"
+            :data-testid="`button-change-nickname`"
+            class="rounded-3 text-nowrap min-w-unset"
+            @click="isUpdateRecoveryPhraseNicknameModalShown = true"
+            >{{
+              !user.mnemonics.some(m => m.mnemonicHash === selectedRecoveryPhrase)
+                ? 'Set'
+                : 'Change'
+            }}
+            Recovery Phrase Nickname</AppButton
+          >
+
+          <!-- Restore missing keys from recovery phrase -->
           <AppButton
             v-if="
               currentTab === Tabs.RECOVERY_PHRASE &&
@@ -719,6 +747,11 @@ watch([currentTab, selectedRecoveryPhrase], () => {
           </form>
         </div>
       </AppModal>
+
+      <UpdateRecoveryPhraseNickname
+        v-model:show="isUpdateRecoveryPhraseNicknameModalShown"
+        :recovery-phrase-hash="selectedRecoveryPhrase"
+      />
 
       <UpdateNicknameModal
         v-model:show="isUpdateNicknameModalShown"
