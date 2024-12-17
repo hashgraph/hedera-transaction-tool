@@ -68,8 +68,7 @@ const restoreExistingKeys = async () => {
   const { userKeys } = await getUserState(user.selectedOrganization.serverUrl);
   const keysToRestore = props.selectedKeys.length > 0 ? props.selectedKeys : userKeys;
   const userKeysWithMnemonic = keysToRestore.filter(userKeyHasMnemonic);
-  console.log('Props: ', props.selectedKeys);
-  console.log('Arr: ', keysToRestore);
+
   await restoreOnEmpty(userKeysWithMnemonic);
 
   for (let i = 0; i < userKeysWithMnemonic.length; i++) {
