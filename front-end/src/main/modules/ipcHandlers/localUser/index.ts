@@ -14,6 +14,7 @@ import listenForClaimEvents from './claim';
 import listenForSafeStorageEvents from './safeStorage';
 import listenForDataMigrationEvents from './dataMigration';
 import listenForSDKEvents from './sdk';
+import listenForMnemonicEvents from './mnemonic';
 
 export default () => {
   listenForKeyPairEvents();
@@ -32,4 +33,5 @@ export default () => {
   listenForSafeStorageEvents();
   listenForDataMigrationEvents();
   listenForSDKEvents();
+  listenForMnemonicEvents();
 };

@@ -6,16 +6,19 @@ import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
+import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNickname';
+
 import { isLoggedInOrganization } from '@renderer/utils';
 
 import AppTabs from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import Import from '@renderer/components/RecoveryPhrase/Import.vue';
+import RecoveryPhraseNicknameInput from '@renderer/components/RecoveryPhrase/RecoveryPhraseNicknameInput.vue';
 import Generate from './Generate.vue';
-import Import from './Import.vue';
 import UseExistingKey from './UseExistingKey.vue';
 
 /* Props */
-defineProps<{
+const props = defineProps<{
   selectedPersonalKeyPair: KeyPair | null;
   handleNext: () => void;
 }>();
@@ -25,6 +28,9 @@ const emit = defineEmits(['update:selectedPersonalKeyPair']);
 
 /* Stores */
 const user = useUserStore();
+
+/* Composables */
+const recoveryPhraseNickname = useRecoveryPhraseNickname();
 
 /* Constants */
 const createNewTitle = 'Create New';
@@ -38,12 +44,19 @@ const tabItems = ref<TabItem[]>([
   { title: useExistingKeyTitle },
 ]);
 const activeTabIndex = ref(1);
+const mnemonicHashNickname = ref('');
 
 /* Getters */
 const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title);
 
 /* Handlers */
 const handleClearWords = () => (user.recoveryPhrase = null);
+
+const handleImport = async () => {
+  if (user.recoveryPhrase === null) return;
+  await recoveryPhraseNickname.set(user.recoveryPhrase.hash, mnemonicHashNickname.value);
+  await props.handleNext();
+};
 
 /* Hooks */
 onBeforeMount(() => {
@@ -80,6 +93,17 @@ watch(activeTabTitle, newTitle => {
       </template>
       <template v-else-if="activeTabTitle === importExistingTitle">
         <Import />
+
+        <div class="form-group mt-4">
+          <label class="form-label">Enter Recovery Phrase Nickname</label>
+          <RecoveryPhraseNicknameInput
+            v-model="mnemonicHashNickname"
+            :mnemonic-hash="user.recoveryPhrase?.hash"
+            :filled="true"
+            data-testid="input-recovery-phrase-nickname"
+          />
+        </div>
+
         <div class="flex-between-centered mt-6">
           <AppButton data-testid="button-clear" color="borderless" @click="handleClearWords"
             >Clear</AppButton
@@ -87,7 +111,7 @@ watch(activeTabTitle, newTitle => {
           <AppButton
             :disabled="user.recoveryPhrase === null"
             color="primary"
-            @click="handleNext"
+            @click="handleImport"
             data-testid="button-next-import"
             >Next</AppButton
           >

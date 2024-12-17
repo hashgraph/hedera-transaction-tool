@@ -18,6 +18,7 @@ import claim from './claim';
 import safeStorage from './safeStorage';
 import dataMigration from './dataMigration';
 import sdk from './sdk';
+import mnemonic from './mnemonic';
 
 export default {
   ...updateAPI,
@@ -40,4 +41,5 @@ export default {
   ...safeStorage,
   ...dataMigration,
   ...sdk,
+  ...mnemonic,
 };

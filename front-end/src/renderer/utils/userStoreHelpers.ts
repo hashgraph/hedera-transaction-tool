@@ -1,6 +1,6 @@
 import type { Ref } from 'vue';
 import type { Router } from 'vue-router';
-import type { KeyPair, Organization } from '@prisma/client';
+import type { KeyPair, Organization, Mnemonic as LocalMnemonic } from '@prisma/client';
 import type { IUserKey } from '@main/shared/interfaces';
 import type {
   ConnectedOrganization,
@@ -45,6 +45,7 @@ import {
   compareDataToHashes,
 } from '@renderer/services/electronUtilsService';
 import { getStoredClaim } from '@renderer/services/claimService';
+import { get as getStoredMnemonics } from '@renderer/services/mnemonicService';
 
 import { safeAwait } from './safeAwait';
 import { getErrorMessage, throwError } from '.';
@@ -191,9 +192,7 @@ export const getLocalKeyPairs = async (
   user: PersonalUser | null,
   selectedOrganization: ConnectedOrganization | null,
 ) => {
-  if (!user?.isLoggedIn) {
-    throw Error('Login to fetch keys');
-  }
+  assertUserLoggedIn(user);
 
   let keyPairs = await getKeyPairs(
     user.id,
@@ -297,6 +296,14 @@ export const setupSafeNetwork = async (
 ) => {
   const { data } = await safeAwait(getStoredClaim(userId, SELECTED_NETWORK));
   await safeAwait(setNetwork(data));
+};
+
+export const updateMnemonics = async (
+  mnemonics: Ref<LocalMnemonic[]>,
+  user: PersonalUser | null,
+) => {
+  assertUserLoggedIn(user);
+  mnemonics.value = await getStoredMnemonics({ where: { user_id: user.id } });
 };
 
 /* Computations */
@@ -494,9 +501,11 @@ export const afterOrganizationSelection = async (
   user: PersonalUser | null,
   organization: Ref<ConnectedOrganization | null>,
   keyPairs: Ref<KeyPair[]>,
+  mnemonics: Ref<LocalMnemonic[]>,
   router: Router,
 ) => {
   await updateKeyPairs(keyPairs, user, organization.value);
+  await updateMnemonics(mnemonics, user);
   await nextTick();
 
   if (!organization.value) {

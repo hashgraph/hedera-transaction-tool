@@ -2,17 +2,16 @@
 import { computed, ref } from 'vue';
 
 /* Props */
-const props = withDefaults(
-  defineProps<{
-    modelValue?: string | number;
-    filled?: boolean;
-    size?: 'small' | 'large' | undefined;
-    autoTrim?: boolean;
-  }>(),
-  {
-    autoTrim: true,
-  },
-);
+export type Props = {
+  modelValue?: string | number;
+  filled?: boolean;
+  size?: 'small' | 'large' | undefined;
+  autoTrim?: boolean;
+};
+
+const props = withDefaults(defineProps<Props>(), {
+  autoTrim: true,
+});
 
 /* Emits */
 const emit = defineEmits(['update:modelValue']);

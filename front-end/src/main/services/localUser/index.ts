@@ -12,6 +12,7 @@ export * from './contacts';
 export * from './encryptedKeys';
 export * from './dataMigration';
 export * from './sdk';
+export * from './mnemonic';
 
 import { session } from 'electron';
 
