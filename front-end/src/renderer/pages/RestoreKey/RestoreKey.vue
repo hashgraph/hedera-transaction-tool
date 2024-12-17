@@ -40,7 +40,6 @@ const recoveryPhraseNickname = useRecoveryPhraseNickname();
 
 /* State */
 const step = ref(0);
-
 const index = ref(0);
 const inputIndexInvalid = ref(false);
 const nickname = ref('');
