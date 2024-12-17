@@ -23,6 +23,11 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
 
+/* Emits */
+const emit = defineEmits<{
+  (event: 'data:reset', value: void): void;
+}>();
+
 /* Stores */
 const user = useUserStore();
 
@@ -71,9 +76,7 @@ const isPrimaryButtonDisabled = computed(() => {
 });
 
 /* Handlers */
-const handleOnFormSubmit = async (event: Event) => {
-  event.preventDefault();
-
+const handleOnFormSubmit = async () => {
   if (
     shouldRegister.value &&
     !inputConfirmPasswordInvalid.value &&
@@ -149,6 +152,7 @@ const handleResetData = async () => {
   inputConfirmPasswordInvalid.value = false;
 
   await checkShouldRegister();
+  emit('data:reset');
 
   createTooltips();
   setTooltipContent();
@@ -202,10 +206,8 @@ async function checkShouldRegister() {
 onMounted(async () => {
   passwordRequirements.length = isPasswordStrong(inputPassword.value).length;
   await checkShouldRegister();
-  if (shouldRegister.value) {
-    createTooltips();
-    setTooltipContent();
-  }
+  createTooltips();
+  setTooltipContent();
 });
 
 /* Watchers */
@@ -241,7 +243,7 @@ watch(inputEmail, pass => {
 </script>
 
 <template>
-  <form @submit="handleOnFormSubmit" class="form-login mt-5 w-100">
+  <form @submit.prevent="handleOnFormSubmit" class="form-login mt-5 w-100">
     <label data-testid="label-email" class="form-label">Email</label>
     <AppInput
       data-testid="input-email"

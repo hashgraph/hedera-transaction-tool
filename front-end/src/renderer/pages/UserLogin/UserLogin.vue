@@ -40,7 +40,7 @@ async function checkShouldRegister() {
         {{ shouldRegister ? 'Enter e-mail and password' : 'Enter your e-mail and password' }}
       </p>
 
-      <EmailLoginForm />
+      <EmailLoginForm v-model:should-register="shouldRegister" @data:reset="checkShouldRegister" />
 
       <template v-if="shouldRegister">
         <AppSeparator class="my-5" text="or" />
