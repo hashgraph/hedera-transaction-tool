@@ -41,6 +41,7 @@ const handleChooseMode = async (useKeyChain: boolean) => {
     await user.login(staticUser.id, staticUser.email, true);
   }
 
+  window.dispatchEvent(new Event('external-modal-closed'));
   show.value = false;
 };
 
