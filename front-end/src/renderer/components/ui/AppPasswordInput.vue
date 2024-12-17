@@ -3,6 +3,7 @@ import { computed, ref, useAttrs } from 'vue';
 
 import AppInput from './AppInput.vue';
 
+/* Options */
 defineOptions({
   inheritAttrs: false
 })
