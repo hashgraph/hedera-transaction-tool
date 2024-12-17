@@ -25,7 +25,7 @@ addGuards(router);
 
 app.use(ToastPlugin, { position: 'bottom-right', duration: 4000 });
 
-app.directive('auto-focus', AutoFocusDirective);
+app.directive('focus-first-input', AutoFocusDirective);
 
 /* App config */
 const toast = useToast();

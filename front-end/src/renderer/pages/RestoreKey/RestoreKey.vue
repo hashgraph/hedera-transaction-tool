@@ -266,7 +266,12 @@ watch(step, async newStep => {
         </form>
 
         <!-- Step 3 -->
-        <form v-else-if="step === 2" class="w-100" @submit.prevent="handleRestoreKey" v-auto-focus>
+        <form
+          v-else-if="step === 2"
+          class="w-100"
+          @submit.prevent="handleRestoreKey"
+          v-focus-first-input
+        >
           <h1 class="text-display text-bold text-center">Provide Index of Key</h1>
           <p class="text-main mt-5 text-center">Please enter the index of the key</p>
           <div
@@ -299,7 +304,12 @@ watch(step, async newStep => {
         </form>
 
         <!-- Step 4 -->
-        <form v-else-if="step === 3" class="w-100" @submit.prevent="handleSaveKey" v-auto-focus>
+        <form
+          v-else-if="step === 3"
+          class="w-100"
+          @submit.prevent="handleSaveKey"
+          v-focus-first-input
+        >
           <h1 class="text-display text-bold text-center">Enter nickname</h1>
           <p class="text-main mt-5 text-center">Please enter your nickname (optional)</p>
           <div

@@ -75,7 +75,7 @@ watch(
 </script>
 <template>
   <div>
-    <div class="row flex-wrap g-12px mx-0" v-auto-focus>
+    <div class="row flex-wrap g-12px mx-0" v-focus-first-input>
       <template v-for="(word, index) in words || []" :key="index">
         <AppRecoveryPhraseWord
           class="col-3"

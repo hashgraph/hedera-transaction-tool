@@ -197,7 +197,7 @@ defineExpose({
 });
 </script>
 <template>
-  <div class="flex-column-100 overflow-hidden" v-auto-focus>
+  <div class="flex-column-100 overflow-hidden" v-focus-first-input>
     <form @submit.prevent="handleCreate" class="flex-column-100">
       <TransactionHeaderControls
         :is-processed="isProcessed"

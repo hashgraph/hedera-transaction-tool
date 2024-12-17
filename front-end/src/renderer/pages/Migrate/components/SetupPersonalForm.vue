@@ -158,7 +158,7 @@ watch(inputPassword, pass => {
 });
 </script>
 <template>
-  <form @submit="handleOnFormSubmit" class="flex-column-100" v-auto-focus>
+  <form @submit="handleOnFormSubmit" class="flex-column-100" v-focus-first-input>
     <div class="fill-remaining">
       <p class="text-secondary text-small lh-base text-center">
         Fill the information for authenticating in the application

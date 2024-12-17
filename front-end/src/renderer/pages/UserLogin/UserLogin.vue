@@ -260,7 +260,7 @@ watch(inputEmail, pass => {
 });
 </script>
 <template>
-  <div class="p-10 flex-column flex-centered flex-1 overflow-hidden" v-auto-focus>
+  <div class="p-10 flex-column flex-centered flex-1 overflow-hidden" v-focus-first-input>
     <div class="container-dark-border glow-dark-bg p-5">
       <h4 class="text-title text-semi-bold text-center">
         {{ shouldRegister ? 'Register' : 'Sign In' }}
