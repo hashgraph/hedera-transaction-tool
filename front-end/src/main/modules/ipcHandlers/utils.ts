@@ -89,6 +89,10 @@ export default () => {
   ipcMain.handle(createChannelName('x509BytesFromPem'), async (_e, pem: string | Uint8Array) => {
     const PEM_HEADER = '-----BEGIN CERTIFICATE-----';
 
+    if (!pem || (typeof pem === 'string' && pem.trim() === '') || (pem instanceof Uint8Array && pem.length === 0)) {
+      return;
+    }
+
     let cert: X509Certificate | null = null;
 
     if (pem instanceof Uint8Array) {
