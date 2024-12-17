@@ -114,7 +114,7 @@ const handleBlur = (inputType: string, value: string) => {
 };
 
 /* Watchers */
-watch(currentPassword, pass => {
+watch(currentPassword, () => {
   currentPasswordInvalid.value = false;
 });
 

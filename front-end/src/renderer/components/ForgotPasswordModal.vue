@@ -191,7 +191,7 @@ watch(
   },
 );
 
-watch(personalPassword, pass => {
+watch(personalPassword, () => {
   personalPasswordInvalid.value = false;
 });
 

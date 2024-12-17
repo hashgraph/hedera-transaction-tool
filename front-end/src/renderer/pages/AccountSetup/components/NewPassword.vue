@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useContactsStore from '@renderer/stores/storeContacts';
@@ -121,7 +121,7 @@ const handleBlur = (inputType: string, value: string) => {
 };
 
 /* Watchers */
-watch(currentPassword, pass => {
+watch(currentPassword, () => {
   currentPasswordInvalid.value = false;
 });
 
