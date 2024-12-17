@@ -9,7 +9,7 @@ import {
   LoggerMiddleware,
   LoggerModule,
   HealthModule,
-  NotificationsProxyModule
+  NotificationsProxyModule,
 } from '@app/common';
 
 import getEnvFilePaths from './config/envFilePaths';

@@ -668,7 +668,7 @@ watch(files, newFiles => {
                       size="small"
                       @click="
                         isUserLoggedIn(user.personal) &&
-                          showStoredFileInTemp(user.personal.id, selectedFile.file_id)
+                        showStoredFileInTemp(user.personal.id, selectedFile.file_id)
                       "
                       >View</AppButton
                     >

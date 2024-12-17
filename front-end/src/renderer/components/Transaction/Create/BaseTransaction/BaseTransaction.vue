@@ -228,7 +228,7 @@ defineExpose({
         <TransactionIdControls
           class="mt-6"
           :payer-id="payerData.accountId.value"
-          @update:payer-id="(payerData.accountId.value = $event), (data.payerId = $event)"
+          @update:payer-id="((payerData.accountId.value = $event), (data.payerId = $event))"
           v-model:valid-start="data.validStart"
           v-model:max-transaction-fee="data.maxTransactionFee as Hbar"
         />

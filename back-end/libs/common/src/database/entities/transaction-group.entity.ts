@@ -9,10 +9,10 @@ export class TransactionGroup {
   @Column()
   description: string;
 
-  @Column({ default: false})
+  @Column({ default: false })
   atomic: boolean;
 
-  @Column({ default: false})
+  @Column({ default: false })
   sequential: boolean;
 
   @CreateDateColumn()
