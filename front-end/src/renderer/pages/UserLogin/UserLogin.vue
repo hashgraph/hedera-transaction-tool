@@ -7,6 +7,7 @@ import { getUsersCount } from '@renderer/services/userService';
 
 import EmailLoginForm from './components/EmailLoginForm.vue';
 import AppSeparator from '@renderer/components/ui/AppSeparator.vue';
+import KeychainOption from './components/KeychainOption.vue';
 
 /* Composables */
 useSetDynamicLayout(DEFAULT_LAYOUT);
@@ -41,7 +42,11 @@ async function checkShouldRegister() {
 
       <EmailLoginForm />
 
-      <AppSeparator class="my-5" text="or" />
+      <template v-if="shouldRegister">
+        <AppSeparator class="my-5" text="or" />
+
+        <KeychainOption />
+      </template>
     </div>
   </div>
 </template>
