@@ -8,13 +8,11 @@ import Import from '@renderer/components/RecoveryPhrase/Import.vue';
 /* Props */
 defineProps<{
   show: boolean;
-  mnemonic: string[] | null;
 }>();
 
 /* Emits */
 const emit = defineEmits<{
   (event: 'update:show', show: boolean): void;
-  (event: 'update:mnemonic', mnemonic: string[] | null): void;
   (event: 'continue'): void;
 }>();
 
@@ -22,26 +20,25 @@ const emit = defineEmits<{
 const user = useUserStore();
 
 /* Handlers */
-const handleSubmit = (event: Event) => {
-  event.preventDefault();
+const handleSubmit = () => {
   if (!user.recoveryPhrase) throw new Error('Recovery phrase is required');
-  emit('update:mnemonic', user.recoveryPhrase.words);
+  user.setRecoveryPhrase(user.recoveryPhrase.words);
   emit('continue');
 };
 
 const handleSkip = () => {
-  emit('update:mnemonic', null);
+  user.setRecoveryPhrase(null);
   emit('continue');
 };
 
 const handleClose = (show: boolean) => {
-  emit('update:mnemonic', null);
+  user.setRecoveryPhrase(null);
   emit('update:show', show);
 };
 
 /* Handlers */
 const handleClearWords = () => {
-  user.recoveryPhrase = null;
+  user.setRecoveryPhrase(null);
 };
 </script>
 <template>
@@ -57,7 +54,7 @@ const handleClearWords = () => {
       <div class="text-center mt-4">
         <i class="bi bi-key large-icon" style="line-height: 16px"></i>
       </div>
-      <form @submit="handleSubmit">
+      <form @submit.prevent="handleSubmit">
         <h3 class="text-center text-title text-bold mt-3">Import recovery phrase (Optional)</h3>
 
         <p class="text-center mt-4">
