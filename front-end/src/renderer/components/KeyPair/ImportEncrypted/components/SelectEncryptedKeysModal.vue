@@ -8,7 +8,7 @@ import { safeAwait } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
+import EncryptedKeysBox from './EncryptedKeysBox.vue';
 
 /* Props */
 const props = defineProps<{
@@ -25,7 +25,7 @@ const emit = defineEmits<{
 
 /* State */
 const foundKeyPaths = ref<string[] | null>(null);
-const selectedKeyPaths = ref<string[] | null>(null);
+const selectedKeyPaths = ref<string[]>([]);
 const searching = ref(false);
 
 /* Computed */
@@ -33,10 +33,6 @@ const fileNames = computed(() => {
   return (
     foundKeyPaths.value?.map(path => path.split('/').pop()?.split('.').slice(0, -1).join('.')) || []
   );
-});
-
-const selectedCount = computed(() => {
-  return selectedKeyPaths.value ? selectedKeyPaths.value.length : 0;
 });
 
 /* Handlers */
@@ -69,6 +65,7 @@ const handleSelect = async () => {
   if (result.canceled) return;
 
   foundKeyPaths.value = null;
+  selectedKeyPaths.value = [];
 
   searching.value = true;
 
@@ -77,24 +74,14 @@ const handleSelect = async () => {
   if (data) {
     if (searching.value) {
       foundKeyPaths.value = data;
-      selectedKeyPaths.value = data; // Auto-select all items
+      selectedKeyPaths.value = data;
     } else {
       foundKeyPaths.value = null;
-      selectedKeyPaths.value = null;
+      selectedKeyPaths.value = [];
     }
   }
 
   searching.value = false;
-};
-
-const handleCheckboxChecked = (path: string, checked: boolean) => {
-  if (!selectedKeyPaths.value) return;
-
-  if (checked) {
-    selectedKeyPaths.value = [...selectedKeyPaths.value, path];
-  } else {
-    selectedKeyPaths.value = selectedKeyPaths.value.filter(p => p !== path);
-  }
 };
 
 /* Function */
@@ -131,24 +118,13 @@ watch(
           Select either a folder or a zip file containing the encrypted keys.
         </p>
 
-        <div v-if="foundKeyPaths != null" class="border rounded p-3 mt-4">
-          <ul class="overflow-x-hidden" style="max-height: 30vh">
-            <li v-for="(path, index) in foundKeyPaths" :key="path">
-              <AppCheckBox
-                :checked="selectedKeyPaths ? selectedKeyPaths.includes(path) : false"
-                @update:checked="handleCheckboxChecked(path, $event)"
-                :name="`checkbox-found-key-path-${path}`"
-                :label="fileNames[index]"
-                :data-testid="`checkbox-found-key-path-${path}`"
-              ></AppCheckBox>
-            </li>
-          </ul>
-        </div>
-
-        <p v-if="foundKeyPaths && foundKeyPaths.length > 0" class="text-end mt-2">
-          {{ selectedCount }} of {{ foundKeyPaths.length }} key{{ selectedCount > 1 ? 's' : '' }}
-          selected
-        </p>
+        <EncryptedKeysBox
+          v-if="foundKeyPaths"
+          :keys="foundKeyPaths"
+          :fileNames="fileNames as string[]"
+          :selectedKeys="selectedKeyPaths || []"
+          @update:selectedKeys="selectedKeyPaths = $event"
+        />
 
         <div class="d-flex justify-content-between mt-4">
           <AppButton
@@ -163,7 +139,7 @@ watch(
           >
           <AppButton
             data-testid="button-import-encrypted-keys"
-            :disabled="!foundKeyPaths || foundKeyPaths.length === 0"
+            :disabled="selectedKeyPaths.length === 0"
             type="submit"
             color="primary"
             >Import</AppButton
