@@ -2,7 +2,7 @@
 import type { MigrateUserDataResult } from '@main/shared/interfaces/migration';
 import type { RecoveryPhrase } from '@renderer/types';
 import type { PersonalUser } from './components/SetupPersonal.vue';
-
+import { decryptKeysFromFiles } from '@renderer/services/encryptedKeys';
 import { computed, onMounted, ref } from 'vue';
 
 import { MIGRATION_STARTED } from '@main/shared/constants';
@@ -27,9 +27,34 @@ import Summary from './components/Summary.vue';
 import SelectKeys from './components/SelectKeys.vue';
 import type { IUserKey, IUserKeyWithNickname } from '@main/shared/interfaces';
 import { getUserState } from '@renderer/services/organization';
+import { getDataMigrationKeysPath } from '@renderer/services/migrateDataService';
+import { searchEncryptedKeys } from '@renderer/services/encryptedKeys';
+import { PrivateKey } from '@hashgraph/sdk';
 
 /* Types */
 type StepName = 'recoveryPhrase' | 'personal' | 'organization' | 'selectKeys' | 'summary';
+
+/* Classes */
+class DecryptedKeyWithPublic {
+  fileName: string;
+  privateKey: string;
+  recoveryPhraseHashCode: number | null;
+  index: number | null;
+  publicKey: string;
+  constructor(
+    fileName: string,
+    privateKey: string,
+    recoveryPhraseHashCode: number | null,
+    index: number | null,
+    publicKey: string,
+  ) {
+    this.fileName = fileName;
+    this.privateKey = privateKey;
+    this.recoveryPhraseHashCode = recoveryPhraseHashCode;
+    this.index = index;
+    this.publicKey = publicKey;
+  }
+}
 
 /* Stores */
 const user = useUserStore();
@@ -51,6 +76,7 @@ const keysImported = ref(0);
 const importedUserData = ref<MigrateUserDataResult | null>(null);
 const allUserKeysToRecover = ref<IUserKeyWithNickname[]>([]);
 const selectedKeysToRecover = ref<IUserKey[]>([]);
+const allDecryptedKeys = ref<DecryptedKeyWithPublic[]>([]);
 
 /* Computed */
 const heading = computed(() => {
@@ -138,6 +164,31 @@ const initializeUserStore = async () => {
         nickname: nickname || null,
       };
     });
+  }
+  const keysPath = await getDataMigrationKeysPath();
+  const encryptedKeyPaths = await searchEncryptedKeys([keysPath]);
+  if (recoveryPhrasePassword.value) {
+    const decryptedKeys = await decryptKeysFromFiles(
+      encryptedKeyPaths,
+      recoveryPhrase.value.words,
+      recoveryPhrasePassword.value,
+    );
+    const decryptedArr = decryptedKeys.map((key, index) => {
+      const unformattedPrivate = PrivateKey.fromStringDer(key.privateKey);
+      const formattedPrivate = unformattedPrivate.toStringRaw();
+      const formattedPublic = unformattedPrivate.publicKey.toStringRaw();
+      const fileName =
+        encryptedKeyPaths[index].split('/').pop()?.split('.').slice(0, -1).join('.') || '';
+      return new DecryptedKeyWithPublic(
+        fileName,
+        formattedPrivate,
+        key.recoveryPhraseHashCode,
+        key.index,
+        formattedPublic,
+      );
+    });
+    allDecryptedKeys.value = decryptedArr;
+    console.log(decryptedArr);
   }
 };
 

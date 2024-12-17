@@ -40,3 +40,28 @@ export const calculateRecoveryPhraseHashCode = (words: string[]) => {
   }
   return hashCode;
 };
+
+export const decryptKeysFromFiles = async (
+  filePaths: string[],
+  mnemonic: string[] | null,
+  password: string,
+) => {
+  const decryptedKeys: {
+    privateKey: string;
+    recoveryPhraseHashCode: number | null;
+    index: number | null;
+  }[] = [];
+
+  const recoveryPhraseHashCode = mnemonic ? calculateRecoveryPhraseHashCode(mnemonic) : null;
+
+  for (const path of filePaths) {
+    try {
+      const decryptedKey = await decryptEncryptedKey(path, password, null, recoveryPhraseHashCode);
+      decryptedKeys.push(decryptedKey);
+    } catch (error) {
+      console.error(`Failed to decrypt key at path: ${path}`, error);
+    }
+  }
+
+  return decryptedKeys;
+};

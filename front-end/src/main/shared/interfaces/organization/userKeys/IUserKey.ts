@@ -15,3 +15,10 @@ export interface IUserKeyWithMnemonic extends IUserKey {
 export interface IUserKeyWithNickname extends IUserKey {
   nickname: string | null;
 }
+
+export interface IDecryptedKey {
+  fileName: string;
+  privateKey: string;
+  recoveryPhraseHashCode: number | null;
+  index: number | null;
+}
