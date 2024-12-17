@@ -7,7 +7,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { add, update } from '@renderer/services/mnemonicService';
 
-import { assertUserLoggedIn } from '@renderer/utils';
+import { assertUserLoggedIn, throwError } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -38,6 +38,10 @@ const handleUpdate = async () => {
 
   try {
     loadingText.value = 'Updating...';
+
+    if (!nickname.value.trim()) {
+      throwError('Nickname cannot be empty');
+    }
 
     const nicknameExists = user.mnemonics.some(m => m.mnemonicHash === props.recoveryPhraseHash);
     const actionFunction = nicknameExists ? update : add;
