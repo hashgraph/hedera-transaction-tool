@@ -29,7 +29,7 @@ import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import UpdateNicknameModal from '@renderer/components/KeyPair/UpdateNicknameModal.vue';
+import UpdateNicknameModal from '@renderer/components/modals/UpdateNicknameModal.vue';
 import UpdateRecoveryPhraseNickname from '@renderer/components/modals/UpdateRecoveryPhraseNicknameModal.vue';
 
 /* Stores */
