@@ -5,7 +5,8 @@ export default {
   utils: {
     openExternal: (url: string) => ipcRenderer.send('utils:openExternal', url),
     openPath: (path: string) => ipcRenderer.send('utils:openPath', path),
-    hash: (data: string): Promise<string> => ipcRenderer.invoke('utils:hash', data),
+    hash: (data: string, pseudoSalt: boolean = false): Promise<string> =>
+      ipcRenderer.invoke('utils:hash', data, pseudoSalt),
     compareHash: (data: string, hash: string): Promise<boolean> =>
       ipcRenderer.invoke('utils:compareHash', data, hash),
     compareDataToHashes: (data: string, hashes: string[]): Promise<string | null> =>

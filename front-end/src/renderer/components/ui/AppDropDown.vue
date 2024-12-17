@@ -67,7 +67,7 @@ watch(
   <div ref="dropdownRef" class="dropdown">
     <AppButton
       :color="(colorOnActive && active) || !colorOnActive ? color : undefined"
-      class="d-flex align-items-center justify-content-center"
+      class="d-flex align-items-center justify-content-center text-body"
       data-bs-toggle="dropdown"
       data-bs-auto-close="true"
       data-bs-popper-config='{"strategy":"fixed"}'

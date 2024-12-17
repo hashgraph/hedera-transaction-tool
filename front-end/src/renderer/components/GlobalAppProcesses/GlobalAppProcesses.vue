@@ -7,6 +7,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import useAutoLogin from '@renderer/composables/useAutoLogin';
 import useLoader from '@renderer/composables/useLoader';
+import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 
 import { getUseKeychain } from '@renderer/services/safeStorageService';
 import { getUsersCount, resetDataLocal } from '@renderer/services/userService';
@@ -22,8 +23,9 @@ import BeginDataMigration from './components/BeginDataMigration.vue';
 const user = useUserStore();
 
 /* Composables */
-const tryAutoLogin = useAutoLogin();
 const withLoader = useLoader();
+const tryAutoLogin = useAutoLogin();
+const { redirectIfRequiredKeysToMigrate } = useRecoveryPhraseHashMigrate();
 
 /* State */
 const importantNoteRef = ref<InstanceType<typeof ImportantNote> | null>(null);
@@ -52,6 +54,7 @@ const handleBeginMigrationReadyState = async (ready: boolean) => {
 const handleDetectKeychainReadyState = async () => {
   detectKeychainReady.value = true;
   await withLoader(tryAutoLogin);
+  await redirectIfRequiredKeysToMigrate();
 };
 
 /* Hooks */
@@ -63,7 +66,6 @@ onMounted(async () => {
 
     if ((!useKeyChain && usersCount === 1) || migrationStarted) {
       await resetDataLocal();
-      precheckReady.value = true;
     }
   } catch {
     /* Not initialized */
@@ -72,6 +74,7 @@ onMounted(async () => {
   precheckReady.value = true;
 });
 
+/* Watchers */
 watch(
   () => user.personal,
   async () => {

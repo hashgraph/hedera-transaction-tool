@@ -32,6 +32,7 @@ const OrganizationsTab = () => import('@renderer/pages/Settings/components/Organ
 const TransactionDetails = () => import('@renderer/pages/TransactionDetails');
 const Migrate = () => import('@renderer/pages/Migrate');
 const RestoreMissingKeys = () => import('@renderer/pages/RestoreMissingKeys');
+const MigrateRecoveryPhraseHash = () => import('@renderer/pages/MigrateRecoveryPhraseHash');
 
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/transactions' },
@@ -48,6 +49,11 @@ const routes: RouteRecordRaw[] = [
   { path: '/account-setup', name: 'accountSetup', component: AccountSetup },
   { path: '/restore-key', name: constants.RESTORE_KEY, component: RestoreKey },
   { path: '/migrate', name: 'migrate', component: Migrate },
+  {
+    path: '/migrate-recovery-phrase-hash',
+    name: constants.MIGRATE_RECOVERY_PHRASE_HASH,
+    component: MigrateRecoveryPhraseHash,
+  },
   {
     path: '/restore-missing-keys',
     name: constants.RESTORE_MISSING_KEYS,

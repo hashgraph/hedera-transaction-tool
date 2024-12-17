@@ -36,6 +36,11 @@ mac:
 linux:
   target:
     - snap
+pkg:
+  # overwrite the app without strictly requiring the same identifier
+  hasStrictIdentifier: false
+  # force the app to be installed in /Applications, not overwriting in any other location
+  isRelocatable: false
 publish:
   provider: github
 extraResources:

@@ -1,8 +1,7 @@
 import { createTestUsersBatch } from '../utils/databaseUtil';
 import { generateMnemonic } from '../utils/keyUtil';
-const bcrypt = require('bcryptjs');
 const { Mnemonic } = require('@hashgraph/sdk');
-const { encrypt } = require('../utils/crypto');
+const { encrypt, argonHash } = require('../utils/crypto');
 const {
   encodeExchangeRates,
   encodeFeeSchedule,
@@ -244,7 +243,7 @@ class OrganizationPage extends BasePage {
     const mnemonic = await Mnemonic.generate();
 
     // Hash the mnemonic phrase
-    const mnemonicHash = bcrypt.hashSync(mnemonic._mnemonic.words.toString(), 10);
+    const mnemonicHash = await argonHash(mnemonic.toString(), true);
 
     const privateKey = await mnemonic.toStandardEd25519PrivateKey('', 0);
 

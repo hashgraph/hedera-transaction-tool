@@ -46,7 +46,15 @@ export class AuthService {
   async signUpByAdmin(dto: SignUpUserDto, url: string): Promise<User> {
     const tempPassword = this.generatePassword();
 
-    const user = await this.usersService.createUser(dto.email, tempPassword);
+    const existingUser = await this.usersService.getUser({ email: dto.email }, true);
+    let user: User;
+
+    if (existingUser && !existingUser.deletedAt && existingUser.status === UserStatus.NEW) {
+      const hashedPass = await this.usersService.getSaltedHash(tempPassword);
+      user = await this.usersService.updateUserById(existingUser.id, { password: hashedPass });
+    } else {
+      user = await this.usersService.createUser(dto.email, tempPassword);
+    }
 
     this.notificationsService.emit<undefined, NotifyEmailDto>(NOTIFY_EMAIL, {
       subject: 'Hedera Transaction Tool Registration',
@@ -141,7 +149,9 @@ export class AuthService {
   /* Generate a random password */
   private generatePassword() {
     const getRandomLetters = (length: number) =>
-      Array.from({ length }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join('');
+      Array.from({ length }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join(
+        '',
+      );
 
     return `${getRandomLetters(5)}-${getRandomLetters(5)}`;
   }

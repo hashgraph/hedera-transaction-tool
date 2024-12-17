@@ -8,6 +8,7 @@ import { useToast } from 'vue-toast-notification';
 import useLoader from '@renderer/composables/useLoader';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useSetDynamicLayout, { DEFAULT_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
+import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 
 import { login } from '@renderer/services/organization';
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
@@ -28,6 +29,7 @@ const toast = useToast();
 const withLoader = useLoader();
 useSetDynamicLayout(DEFAULT_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
+const { redirectIfRequiredKeysToMigrate } = useRecoveryPhraseHashMigrate();
 
 /* State */
 const loading = ref(false);
@@ -40,12 +42,6 @@ const inputPasswordInvalid = ref(false);
 const forgotPasswordModalShown = ref(false);
 
 /* Handlers */
-const handleOnFormSubmit = async (e: Event) => {
-  e.preventDefault();
-
-  handleLogin();
-};
-
 const handleLogin = async () => {
   assertUserLoggedIn(user.personal);
   const personalPassword = getPassword(handleLogin, {
@@ -80,6 +76,10 @@ const handleLogin = async () => {
     loading.value = false;
 
     await withLoader(user.refetchOrganizations, 'Failed to change user mode');
+    await withLoader(
+      redirectIfRequiredKeysToMigrate,
+      'Failed to redirect to recovery phrase migration',
+    );
   } catch (error: any) {
     inputEmailInvalid.value = true;
     inputPasswordInvalid.value = true;
@@ -127,7 +127,7 @@ onBeforeRouteLeave(async () => {
         Organization <span class="text-pink">{{ user.selectedOrganization?.nickname }}</span>
       </p>
 
-      <form @submit="handleOnFormSubmit" class="form-login mt-5">
+      <form @submit.prevent="handleLogin" class="form-login mt-5">
         <label class="form-label">Email</label>
         <AppInput
           v-model="inputEmail"

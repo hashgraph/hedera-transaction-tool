@@ -206,6 +206,20 @@ export const updateNickname = async (keyPairId: string, nickname: string) => {
   });
 };
 
+// Update key pair mnemonic hash
+export const updateMnemonicHash = async (keyPairId: string, secret_hash: string) => {
+  const prisma = getPrismaClient();
+
+  await prisma.keyPair.update({
+    where: {
+      id: keyPairId,
+    },
+    data: {
+      secret_hash,
+    },
+  });
+};
+
 async function extendWhere(where: Prisma.KeyPairWhereInput, organization_id?: string | null) {
   if (organization_id !== undefined) {
     if (organization_id === null) {

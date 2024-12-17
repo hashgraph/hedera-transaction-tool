@@ -1,10 +1,18 @@
 import type { Router } from 'vue-router';
 
+import { MIGRATE_RECOVERY_PHRASE_HASH } from './constants';
+
 import useUserStore from '@renderer/stores/storeUser';
 
 import { isLoggedInOrganization } from '@renderer/utils';
 
-const exludedPreviousPaths = ['login', 'organizationLogin', 'accountSetup', 'migrate'];
+const exludedPreviousPaths = [
+  'login',
+  'organizationLogin',
+  'accountSetup',
+  'migrate',
+  MIGRATE_RECOVERY_PHRASE_HASH,
+];
 
 export function addGuards(router: Router) {
   const user = useUserStore();

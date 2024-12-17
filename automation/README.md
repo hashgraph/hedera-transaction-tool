@@ -133,3 +133,9 @@ npx playwright test tests/OrganizationNotificationTests
 ```bash
 npx playwright test tests/SystemFileTests
 ```
+
+### 12. Group transaction tests
+
+```bash
+npx playwright test tests/GroupTransactionTests
+```

@@ -4,8 +4,8 @@ import { mockDeep } from 'vitest-mock-extended';
 import registerUtilsListeners from '@main/modules/ipcHandlers/utils';
 
 import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
-import { compare, hash } from 'bcrypt';
 import { getNumberArrayFromString } from '@main/utils';
+import { hash, dualCompareHash } from '@main/utils/crypto';
 import fs from 'fs/promises';
 import { createHash, X509Certificate } from 'crypto';
 
@@ -42,6 +42,7 @@ vi.mock('@hashgraph/proto', () => ({
 }));
 vi.mock('@main/utils/crypto', () => ({
   hash: vi.fn(),
+  dualCompareHash: vi.fn(),
 }));
 vi.mock('@main/utils', () => {
   return {
@@ -80,9 +81,6 @@ describe('registerUtilsListeners', () => {
     ];
 
     expect(ipcMainMO.on).toHaveBeenCalledWith('utils:openExternal', expect.any(Function));
-
-    console.log(ipcMainMO.handle.mock.calls);
-
     expect(
       utils.every(util =>
         ipcMainMO.handle.mock.calls.some(([channel]) => channel === `utils:${util}`),
@@ -232,7 +230,7 @@ describe('registerUtilsListeners', () => {
 
     if (hashHandler) {
       hashHandler[1](event, data);
-      expect(hash).toHaveBeenCalledWith(data, 10);
+      expect(hash).toHaveBeenCalledWith(data, false);
     }
   });
 
@@ -244,43 +242,48 @@ describe('registerUtilsListeners', () => {
 
     expect(compareHashHandler).toBeDefined();
 
+    vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: false, isBcrypt: false });
+
     if (compareHashHandler) {
       compareHashHandler[1](event, data, hashData);
-      expect(compare).toHaveBeenCalledWith(data, hashData);
+      expect(dualCompareHash).toHaveBeenCalledWith(data, hashData);
     }
   });
 
-  test('Should compare the data to hashes in util:compareDataToHashes and return true if match is found', () => {
+  test('Should compare the data to hashes in util:compareDataToHashes and return the hash if match is found', async () => {
     const data = 'testData';
     const hashData = ['testHash', 'testHash2'];
 
-    const compareHashHandler = ipcMainMO.handle.mock.calls.find(
+    const compareDataToHasheshHandler = ipcMainMO.handle.mock.calls.find(
       ([e]) => e === 'utils:compareDataToHashes',
     );
 
-    expect(compareHashHandler).toBeDefined();
+    expect(compareDataToHasheshHandler).toBeDefined();
 
-    if (compareHashHandler) {
-      compareHashHandler[1](event, data, hashData);
-      expect(compare).toHaveBeenCalledWith(data, hashData[0]);
+    if (compareDataToHasheshHandler) {
+      vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: true, isBcrypt: false });
+      await compareDataToHasheshHandler[1](event, data, hashData);
+      expect(dualCompareHash).toHaveBeenCalledWith(data, hashData[0]);
     }
   });
 
-  test('Should compare the data to hashes in util:compareDataToHashes and return false if match is NOT found', () => {
+  test('Should compare the data to hashes in util:compareDataToHashes and return null if match is NOT found', async () => {
     const data = 'testData';
     const hashData = ['testHash', 'testHash2'];
 
-    const compareHashHandler = ipcMainMO.handle.mock.calls.find(
+    const compareDataToHasheshHandler = ipcMainMO.handle.mock.calls.find(
       ([e]) => e === 'utils:compareDataToHashes',
     );
 
-    expect(compareHashHandler).toBeDefined();
+    expect(compareDataToHasheshHandler).toBeDefined();
 
-    if (compareHashHandler) {
-      // @ts-ignore - incorrect overload
-      vi.mocked(compare).mockResolvedValueOnce(true);
-      compareHashHandler[1](event, data, hashData);
-      expect(compare).toHaveBeenCalledWith(data, hashData[0]);
+    if (compareDataToHasheshHandler) {
+      vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: false, isBcrypt: false });
+      vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: false, isBcrypt: false });
+      const result = await compareDataToHasheshHandler[1](event, data, hashData);
+      expect(dualCompareHash).toHaveBeenCalledWith(data, hashData[0]);
+      expect(dualCompareHash).toHaveBeenCalledWith(data, hashData[1]);
+      expect(result).toBeNull();
     }
   });
 

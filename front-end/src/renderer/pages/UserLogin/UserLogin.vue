@@ -7,35 +7,29 @@ import Tooltip from 'bootstrap/js/dist/tooltip';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useSetDynamicLayout, { DEFAULT_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
+import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 
-import {
-  loginLocal,
-  registerLocal,
-  resetDataLocal,
-  getUsersCount,
-} from '@renderer/services/userService';
+import { loginLocal, registerLocal, getUsersCount } from '@renderer/services/userService';
 
 import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 
 import { isEmail, isPasswordStrong, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
-import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
+import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
 
 /* Stores */
 const user = useUserStore();
 
 /* Composables */
-const toast = useToast();
 const router = useRouter();
 const createTooltips = useCreateTooltips();
+const { redirectIfRequiredKeysToMigrate } = useRecoveryPhraseHashMigrate();
 useSetDynamicLayout(DEFAULT_LAYOUT);
 
 /* Injected */
@@ -130,6 +124,10 @@ const handleOnFormSubmit = async (event: Event) => {
         if (user.secretHashes.length === 0) {
           router.push({ name: 'accountSetup' });
         } else {
+          if (await redirectIfRequiredKeysToMigrate()) {
+            return;
+          }
+
           router.push(
             router.previousPath ? { path: router.previousPath } : { name: 'transactions' },
           );
@@ -143,10 +141,6 @@ const handleOnFormSubmit = async (event: Event) => {
 };
 
 const handleResetData = async () => {
-  await resetDataLocal();
-
-  toast.success('User data has been reset');
-
   inputEmailInvalid.value = false;
   inputPasswordInvalid.value = false;
   inputConfirmPasswordInvalid.value = false;
@@ -155,8 +149,6 @@ const handleResetData = async () => {
 
   createTooltips();
   setTooltipContent();
-  isResetDataModalShown.value = false;
-  user.logout();
 };
 
 /* Hooks */
@@ -327,6 +319,7 @@ watch(inputEmail, pass => {
             data-testid="link-reset"
             >Reset account</span
           >
+          <ResetDataModal v-model:show="isResetDataModalShown" @data:reset="handleResetData" />
         </div>
 
         <div class="row justify-content-end mt-5">
@@ -343,35 +336,6 @@ watch(inputEmail, pass => {
           </div>
         </div>
       </form>
-      <AppModal v-model:show="isResetDataModalShown" class="common-modal">
-        <div class="p-4">
-          <i
-            class="bi bi-x-lg d-inline-block cursor-pointer"
-            @click="isResetDataModalShown = false"
-          ></i>
-          <div class="text-center">
-            <AppCustomIcon :name="'bin'" style="height: 160px" />
-          </div>
-          <h3 class="text-center text-title text-bold">Reset Data</h3>
-          <p class="text-center text-small text-secondary mt-4">
-            Are you sure you want to reset the app data?
-          </p>
-
-          <hr class="separator my-5" />
-
-          <div class="flex-between-centered gap-4">
-            <AppButton
-              data-testid="button-reset-cancel"
-              color="borderless"
-              @click="isResetDataModalShown = false"
-              >Cancel</AppButton
-            >
-            <AppButton data-testid="button-reset" color="danger" @click="handleResetData"
-              >Reset</AppButton
-            >
-          </div>
-        </div>
-      </AppModal>
     </div>
   </div>
 </template>

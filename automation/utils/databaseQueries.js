@@ -625,6 +625,79 @@ async function getLatestNotificationStatusByEmail(email) {
   }
 }
 
+/**
+ * Retrieves all TransactionGroup rows associated with the given `transaction_id` (not the primary key `id`) from the Transaction table.
+ *
+ * This function follows these steps:
+ * 1. Finds the Transaction row by its `transaction_id` field.
+ * 2. Uses the retrieved Transaction's primary key `id` to find related GroupItem entries.
+ * 3. Uses the GroupItem entries to find associated TransactionGroup rows.
+ *
+ * @param {string} inputTransactionId - The `transaction_id` value from the Transaction table (not the primary key `id`).
+ * @return {Promise<object[]>} A promise that resolves to an array of TransactionGroup rows.
+ *                            If no matching transaction or group items are found, it returns an empty array.
+ * @throws {Error} If there is an error executing any query.
+ */
+async function getTransactionGroupsForTransactionId(inputTransactionId) {
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  // 1. Get the Transaction by its transaction_id column
+  let query = `
+    SELECT id
+  FROM "Transaction"
+  WHERE transaction_id = ?
+  `;
+
+  let result;
+  try {
+    result = await queryDatabase(query, [inputTransactionId]);
+  } catch (error) {
+    console.error('Error fetching Transaction by transaction_id:', error);
+    return [];
+  }
+
+  if (!result || result.length === 0) {
+    // No transaction found for the given transaction_id
+    return [];
+  }
+
+  const transactionId = result.id;
+
+  // 2. Get GroupItem rows for this Transaction's id
+  query = `
+    SELECT transaction_group_id
+  FROM "GroupItem"
+  WHERE transaction_id = ?
+  `;
+
+  try {
+    result = await queryDatabase(query, [transactionId]);
+  } catch (error) {
+    console.error('Error fetching GroupItem by Transaction.id:', error);
+    return [];
+  }
+
+  if (!result || result.length === 0) {
+    // No GroupItem found for the given Transaction.id
+    return [];
+  }
+
+  const transactionGroupIds = result.transaction_group_id;
+
+  // 3. Find the TransactionGroup rows by these transaction_group_id values
+  query = `
+    SELECT *
+    FROM "TransactionGroup"
+  WHERE id = ?
+  `;
+
+  try {
+    return await queryDatabase(query, transactionGroupIds);
+  } catch (error) {
+    console.error('Error fetching TransactionGroup by transaction_group_ids:', error);
+    return [];
+  }
+}
+
 module.exports = {
   verifyTransactionExists,
   verifyAccountExists,
@@ -648,4 +721,5 @@ module.exports = {
   insertKeyPair,
   disableNotificationsForTestUsers,
   getLatestNotificationStatusByEmail,
+  getTransactionGroupsForTransactionId,
 };

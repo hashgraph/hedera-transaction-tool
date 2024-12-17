@@ -45,11 +45,16 @@ const contact = computed<Contact | null>(
 );
 
 const contactList = computed(() =>
-  contacts.contacts.filter(c =>
-    isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin
-      ? true
-      : c.userKeys.length > 0,
-  ),
+  contacts.contacts
+    .filter(c =>
+      isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin
+        ? true
+        : c.userKeys.length > 0,
+    )
+    .sort((a, b) => {
+      const getPriority = (user: typeof a.user) => (user.admin ? 0 : user.status === 'NEW' ? 1 : 2);
+      return getPriority(a.user) - getPriority(b.user);
+    }),
 );
 
 /* Handlers */
