@@ -16,15 +16,19 @@ export default function useRecoveryPhraseNickname() {
   const set = async (mnemonicHash: string, nickname: string) => {
     assertUserLoggedIn(user.personal);
 
-    const nicknameExists = user.mnemonics.some(m => m.mnemonicHash === mnemonicHash);
+    const existingMnemonicData = user.mnemonics.find(m => m.mnemonicHash === mnemonicHash);
 
-    if (!nickname && nicknameExists) {
+    if (existingMnemonicData && existingMnemonicData.nickname === nickname) {
+      return;
+    }
+
+    if (!nickname && existingMnemonicData) {
       await remove(user.personal.id, [mnemonicHash]);
       await user.refetchMnemonics();
       return;
     }
 
-    if (nicknameExists) {
+    if (existingMnemonicData) {
       await update(user.personal.id, mnemonicHash, nickname);
     } else {
       await add(user.personal.id, mnemonicHash, nickname);
