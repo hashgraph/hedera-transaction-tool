@@ -4,7 +4,7 @@ import { add, update, remove } from '@renderer/services/mnemonicService';
 
 import { assertUserLoggedIn } from '@renderer/utils';
 
-export default function useRecoveryPhraseHashMigrate() {
+export default function useRecoveryPhraseNickname() {
   /* Stores */
   const user = useUserStore();
 
