@@ -2442,10 +2442,6 @@ Copyright George Zahariev. All Rights Reserved.
 This product includes software (prettier-linter-helpers@1.0.0) developed at
 (https://github.com/prettier/prettier-linter-helpers).
 
-The Initial Developer of prettier@3.3.3,
-is James Long (https://github.com/prettier/prettier).
-Copyright James Long. All Rights Reserved.
-
 The Initial Developer of prettier@3.4.2,
 is James Long (https://github.com/prettier/prettier).
 Copyright James Long. All Rights Reserved.
@@ -3035,7 +3031,7 @@ The Initial Developer of vue-eslint-parser@9.4.3,
 is Toru Nagashima (https://github.com/vuejs/vue-eslint-parser).
 Copyright Toru Nagashima. All Rights Reserved.
 
-The Initial Developer of vue-router@4.4.0,
+The Initial Developer of vue-router@4.5.0,
 is Eduardo San Martin Morote (https://github.com/vuejs/router).
 Copyright Eduardo San Martin Morote. All Rights Reserved.
 
