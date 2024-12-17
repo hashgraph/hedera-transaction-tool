@@ -10,7 +10,7 @@ import { useRouter } from 'vue-router';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 
-import { loginLocal, registerLocal, getUsersCount } from '@renderer/services/userService';
+import { loginLocal, registerLocal } from '@renderer/services/userService';
 import { initializeUseKeychain } from '@renderer/services/safeStorageService';
 
 import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
@@ -23,9 +23,15 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
 
+/* Props */
+const props = defineProps<{
+  shouldRegister: boolean;
+}>();
+
 /* Emits */
 const emit = defineEmits<{
   (event: 'data:reset', value: void): void;
+  (event: 'update:shouldRegister', value: boolean): void;
 }>();
 
 /* Stores */
@@ -56,7 +62,6 @@ const passwordRequirements = reactive({
   // special: false,
 });
 const tooltipContent = ref('');
-const shouldRegister = ref(false);
 const keepLoggedIn = ref(false);
 const isResetDataModalShown = ref(false);
 
@@ -69,7 +74,7 @@ const isPrimaryButtonDisabled = computed(() => {
   return (
     !isEmail(inputEmail.value) ||
     inputPassword.value.length === 0 ||
-    (shouldRegister.value &&
+    (props.shouldRegister &&
       (!isPasswordStrong(inputPassword.value).result ||
         inputPassword.value !== inputConfirmPassword.value))
   );
@@ -78,7 +83,7 @@ const isPrimaryButtonDisabled = computed(() => {
 /* Handlers */
 const handleOnFormSubmit = async () => {
   if (
-    shouldRegister.value &&
+    props.shouldRegister &&
     !inputConfirmPasswordInvalid.value &&
     !inputEmailInvalid.value &&
     !inputPasswordInvalid.value
@@ -99,7 +104,7 @@ const handleOnFormSubmit = async () => {
     }
 
     router.push({ name: 'accountSetup' });
-  } else if (!shouldRegister.value) {
+  } else if (!props.shouldRegister) {
     let userData: { id: string; email: string } | null = null;
 
     try {
@@ -151,16 +156,17 @@ const handleResetData = async () => {
   inputPasswordInvalid.value = false;
   inputConfirmPasswordInvalid.value = false;
 
-  await checkShouldRegister();
   emit('data:reset');
 
-  createTooltips();
-  setTooltipContent();
+  setTimeout(() => {
+    createTooltips();
+    setTooltipContent();
+  }, 300);
 };
 
 const handleBlur = (inputType: string, value: string) => {
   // When any input loses focus, set its invalid state
-  if (shouldRegister.value) {
+  if (props.shouldRegister) {
     // If the value is empty, the user will expect it to be invalid and does
     // not need to see the warning
     const isEmpty = value.length === 0;
@@ -192,29 +198,23 @@ function setTooltipContent() {
   });
 }
 
-async function checkShouldRegister() {
-  try {
-    const usersCount = await getUsersCount();
-
-    shouldRegister.value = usersCount < 2; /* 2 because the first user is the default */
-  } catch {
-    shouldRegister.value = true;
-  }
-}
-
 /* Hooks */
 onMounted(async () => {
   passwordRequirements.length = isPasswordStrong(inputPassword.value).length;
-  await checkShouldRegister();
-  createTooltips();
-  setTooltipContent();
+
+  setTimeout(() => {
+    createTooltips();
+    setTooltipContent();
+  }, 300);
 });
 
 /* Watchers */
 watch(inputPassword, pass => {
   inputConfirmPasswordInvalid.value = false;
-  if (shouldRegister.value) {
-    if (isPasswordStrong(pass).result || pass.length === 0) {
+  if (props.shouldRegister) {
+    const { result, length } = isPasswordStrong(pass);
+    passwordRequirements.length = length;
+    if (result || pass.length === 0) {
       inputPasswordInvalid.value = false;
     }
   } else {
@@ -231,7 +231,7 @@ watch(inputConfirmPassword, pass => {
 });
 
 watch(inputEmail, pass => {
-  if (shouldRegister.value) {
+  if (props.shouldRegister) {
     if (isEmail(pass) || pass.length === 0) {
       inputEmailInvalid.value = false;
     }
