@@ -36,6 +36,7 @@ const { getPassword, passwordModalOpened } = usePersonalPassword();
 /* State */
 const currentPassword = ref('');
 const newPassword = ref('');
+const currentPasswordInvalid = ref(false);
 const newPasswordInvalid = ref(false);
 
 const isConfirmModalShown = ref(false);
@@ -131,12 +132,7 @@ watch(newPassword, pass => {
   >
     <form
       class="w-50 p-4 border rounded"
-      @submit="
-        e => {
-          e.preventDefault();
-          isConfirmModalShown = true;
-        }
-      "
+      @submit.prevent="isConfirmModalShown = true"
     >
       <h3 class="text-main">Password</h3>
       <div class="form-group mt-4">
