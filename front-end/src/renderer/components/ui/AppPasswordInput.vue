@@ -3,15 +3,9 @@ import { computed, ref, useAttrs } from 'vue';
 
 import AppInput from './AppInput.vue';
 
-const excludedAttrs = [
-  'data-testid',
-  'data-bs-toggle',
-  'data-bs-animation',
-  'data-bs-placement',
-  'data-bs-custom-class',
-  'data-bs-html',
-  'data-bs-title'
-];
+defineOptions({
+  inheritAttrs: false
+})
 
 /* Props */
 const props = withDefaults(
@@ -34,18 +28,9 @@ const attrs = useAttrs();
 const isPasswordVisible = ref(false);
 
 /* Computed */
-const filteredAttrs = computed(() => {
-  return Object.keys(attrs).reduce((acc, key) => {
-    if (!excludedAttrs.includes(key)) {
-      acc[key] = attrs[key];
-    }
-    return acc;
-  }, {} as Record<string, any>);
-});
-
 const mergedProps = computed(() => ({
   ...props,
-  ...filteredAttrs.value,
+  ...attrs,
 }));
 
 /* Functions */
