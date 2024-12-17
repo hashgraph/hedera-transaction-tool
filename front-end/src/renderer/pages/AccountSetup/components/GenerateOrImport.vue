@@ -10,8 +10,8 @@ import { isLoggedInOrganization } from '@renderer/utils';
 
 import AppTabs from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import Import from '@renderer/components/RecoveryPhrase/Import.vue';
 import Generate from './Generate.vue';
-import Import from './Import.vue';
 import UseExistingKey from './UseExistingKey.vue';
 
 /* Props */

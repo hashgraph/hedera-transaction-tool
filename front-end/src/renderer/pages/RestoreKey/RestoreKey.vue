@@ -23,7 +23,7 @@ import {
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import Import from '@renderer/pages/AccountSetup/components/Import.vue';
+import Import from '@renderer/components/RecoveryPhrase/Import.vue';
 
 /* Stores */
 const user = useUserStore();

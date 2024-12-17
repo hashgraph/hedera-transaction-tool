@@ -3,7 +3,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import Import from '@renderer/pages/AccountSetup/components/Import.vue';
+import Import from '@renderer/components/RecoveryPhrase/Import.vue';
 
 /* Props */
 defineProps<{

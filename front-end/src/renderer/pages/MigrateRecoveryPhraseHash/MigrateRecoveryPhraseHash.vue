@@ -15,7 +15,7 @@ import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhras
 import { safeAwait } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import Import from '../AccountSetup/components/Import.vue';
+import Import from '@renderer/components/RecoveryPhrase/Import.vue';
 import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
 import DeleteAllKeysRequiringHashMigrationModal from '@renderer/components/modals/DeleteAllKeysRequiringHashMigrationModal.vue';
 
