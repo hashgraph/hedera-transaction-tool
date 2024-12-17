@@ -392,6 +392,13 @@ watch([currentTab, selectedRecoveryPhrase], () => {
   isSelectAll.value = false;
   selectMany.value = false;
 });
+
+watch(
+  () => user.selectedOrganization,
+  () => {
+    currentTab.value = Tabs.ALL;
+  },
+);
 </script>
 <template>
   <div class="flex-column-100">
