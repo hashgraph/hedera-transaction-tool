@@ -103,6 +103,8 @@ const handleUnlinkAccount = async () => {
 
   isUnlinkAccountModalShown.value = false;
 
+  selectedAccountIds.value = [];
+  selectAll.value = false;
   toast.success('Account Unlinked!');
 };
 
@@ -238,64 +240,61 @@ onMounted(async () => {
             </ul>
           </div>
           <div class="d-flex align-items-center justify-content-between my-3">
-            <div class="rounded px-3">
-              <div class="dropdown">
-                <AppButton
-                  class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
-                  data-bs-toggle="dropdown"
-                  ><i class="bi bi-arrow-down-up me-2"></i> Sort by</AppButton
+            <div class="dropdown">
+              <AppButton
+                class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
+                data-bs-toggle="dropdown"
+                ><i class="bi bi-arrow-down-up me-2"></i> Sort by</AppButton
+              >
+              <ul class="dropdown-menu text-small">
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.account_id === 'asc' ? true : undefined"
+                  @click="handleSortAccounts('account_id', 'asc')"
                 >
-                <ul class="dropdown-menu text-small">
-                  <li
-                    class="dropdown-item"
-                    :selected="sorting.account_id === 'asc' ? true : undefined"
-                    @click="handleSortAccounts('account_id', 'asc')"
-                  >
-                    Account ID Asc
-                  </li>
-                  <li
-                    class="dropdown-item"
-                    :selected="sorting.account_id === 'desc' ? true : undefined"
-                    @click="handleSortAccounts('account_id', 'desc')"
-                  >
-                    Account ID Dsc
-                  </li>
-                  <li
-                    class="dropdown-item"
-                    :selected="sorting.nickname === 'asc' ? true : undefined"
-                    @click="handleSortAccounts('nickname', 'asc')"
-                  >
-                    Nickname A-Z
-                  </li>
-                  <li
-                    class="dropdown-item"
-                    :selected="sorting.nickname === 'desc' ? true : undefined"
-                    @click="handleSortAccounts('nickname', 'desc')"
-                  >
-                    Nickname Z-A
-                  </li>
-                  <li
-                    class="dropdown-item"
-                    :selected="sorting.created_at === 'asc' ? true : undefined"
-                    @click="handleSortAccounts('created_at', 'asc')"
-                  >
-                    Date Added Asc
-                  </li>
-                  <li
-                    class="dropdown-item"
-                    :selected="sorting.created_at === 'desc' ? true : undefined"
-                    @click="handleSortAccounts('created_at', 'desc')"
-                  >
-                    Date Added Dsc
-                  </li>
-                </ul>
-              </div>
+                  Account ID Asc
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.account_id === 'desc' ? true : undefined"
+                  @click="handleSortAccounts('account_id', 'desc')"
+                >
+                  Account ID Dsc
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.nickname === 'asc' ? true : undefined"
+                  @click="handleSortAccounts('nickname', 'asc')"
+                >
+                  Nickname A-Z
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.nickname === 'desc' ? true : undefined"
+                  @click="handleSortAccounts('nickname', 'desc')"
+                >
+                  Nickname Z-A
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.created_at === 'asc' ? true : undefined"
+                  @click="handleSortAccounts('created_at', 'asc')"
+                >
+                  Date Added Asc
+                </li>
+                <li
+                  class="dropdown-item"
+                  :selected="sorting.created_at === 'desc' ? true : undefined"
+                  @click="handleSortAccounts('created_at', 'desc')"
+                >
+                  Date Added Dsc
+                </li>
+              </ul>
             </div>
 
-            <div>
+            <div class="transition-bg rounded px-3" :class="{ 'bg-secondary': selectMany }">
               <AppButton
-                class="d-flex transition-bg align-items-center text-dark-emphasis min-w-unset border-0 p-3"
-                :class="{ 'bg-secondary': selectMany }"
+                class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-1"
                 data-testid="button-select-many-accounts"
                 @click="handleToggleSelectMode"
               >
@@ -306,7 +305,7 @@ onMounted(async () => {
 
           <hr class="separator mb-5" />
           <div class="fill-remaining pe-3">
-            <div v-if="selectMany" class="d-flex flex-row flex-nowrap mb-4">
+            <div v-if="selectMany" class="d-flex flex-row align-items-center flex-nowrap mb-4">
               <AppCheckBox
                 name="select-card"
                 class="cursor-pointer"
@@ -315,6 +314,15 @@ onMounted(async () => {
                 @update:checked="handleSelectAllAccounts"
               />
               <label class="ms-2">Select all</label>
+              <AppButton
+                size="small"
+                class="min-w-unset ms-auto"
+                color="danger"
+                :disabled="selectedAccountIds.length < 1"
+                data-testid="button-remove-account-card"
+                @click="isUnlinkAccountModalShown = true"
+                ><span class="bi bi-trash"></span
+              ></AppButton>
             </div>
             <template v-for="(account, index) in accounts" :key="account.account_id">
               <div class="d-flex align-items-center mt-3">
@@ -387,6 +395,7 @@ onMounted(async () => {
                 </div>
                 <div class="d-flex gap-3">
                   <AppButton
+                    v-if="!selectMany"
                     class="min-w-unset"
                     color="danger"
                     :disabled="selectedAccountIds.length < 1"

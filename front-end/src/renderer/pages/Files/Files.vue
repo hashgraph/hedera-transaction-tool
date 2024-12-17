@@ -138,6 +138,7 @@ const sorting = ref<{
   created_at: 'desc',
 });
 const selectMany = ref(false);
+const selectAll = ref(false);
 
 /* Computed */
 const selectedFileInfo = computed(() =>
@@ -184,6 +185,7 @@ const handleCheckBoxUpdate = (isChecked: boolean, fileId: string) => {
           : files.value[0] || null;
     }
   }
+  selectAll.value = selectedFileIds.value.length === files.value.length;
 };
 
 const handleUnlinkFile = async () => {
@@ -202,6 +204,8 @@ const handleUnlinkFile = async () => {
 
   isUnlinkFileModalShown.value = false;
 
+  selectedFileIds.value = [];
+  selectAll.value = false;
   toast.success('File Unlinked!');
 };
 
@@ -277,6 +281,25 @@ const handleSortFiles = async (
   };
 
   await fetchFiles();
+};
+
+const handleSelectAllAccounts = (isChecked: boolean) => {
+  selectAll.value = isChecked;
+  if (isChecked) {
+    selectedFileIds.value = files.value.map(file => file.file_id);
+  } else {
+    selectedFileIds.value = [];
+  }
+};
+
+const handleToggleSelectMode = () => {
+  selectMany.value = !selectMany.value;
+  selectAll.value = false;
+  if (selectMany.value === false) {
+    selectedFileIds.value = files.value.length > 0 ? [files.value[0].file_id] : [];
+  } else {
+    selectedFileIds.value = [];
+  }
 };
 
 /* Functions */
@@ -467,25 +490,40 @@ watch(files, newFiles => {
             </div>
             <div class="transition-bg rounded px-3" :class="{ 'bg-secondary': selectMany }">
               <AppButton
-                class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
+                class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-1"
                 data-testid="button-select-many-files"
-                @click="
-                  selectMany = !selectMany;
-                  selectedFileIds = [];
-                "
+                @click="handleToggleSelectMode"
               >
-                <i class="bi bi-check-all text-headline me-2"></i> Select many</AppButton
+                <i class="bi bi-check-all text-headline me-2"></i> Select</AppButton
               >
             </div>
           </div>
           <hr class="separator mb-5" />
 
           <div class="fill-remaining pe-3">
+            <div v-if="selectMany" class="d-flex flex-row align-items-center flex-nowrap mb-4">
+              <AppCheckBox
+                name="select-card"
+                class="cursor-pointer"
+                type="checkbox"
+                :checked="selectAll"
+                @update:checked="handleSelectAllAccounts"
+              />
+              <label class="ms-2">Select all</label>
+              <AppButton
+                size="small"
+                class="min-w-unset ms-auto"
+                color="danger"
+                :disabled="selectedFileIds.length < 1"
+                data-testid="button-remove-account-card"
+                @click="isUnlinkFileModalShown = true"
+                ><span class="bi bi-trash"></span
+              ></AppButton>
+            </div>
             <template v-for="(file, index) in files" :key="file.fileId">
               <div class="d-flex align-items-center mt-3">
                 <div
                   v-if="selectMany"
-                  class="visible-on-hover activate-on-sibling-hover"
                   :selected="selectedFileIds.includes(file.file_id) ? true : undefined"
                 >
                   <AppCheckBox
@@ -497,11 +535,9 @@ watch(files, newFiles => {
                   />
                 </div>
                 <div
-                  class="container-multiple-select activate-on-sibling-hover overflow-hidden w-100 p-4 mt-3"
+                  class="container-multiple-select activate-on-sibling-hover overflow-hidden w-100 p-4"
                   :class="{
-                    'is-selected':
-                      selectedFile?.file_id === file.file_id ||
-                      selectedFileIds.includes(file.file_id),
+                    'is-selected': selectedFileIds.includes(file.file_id),
                   }"
                   @click="handleSelectFile(file.file_id)"
                 >
@@ -550,7 +586,7 @@ watch(files, newFiles => {
                     ></span>
                   </p>
                 </div>
-                <div v-if="selectedFile" class="d-flex gap-3">
+                <div v-if="selectedFile && !selectMany" class="d-flex gap-3">
                   <AppButton
                     class="min-w-unset"
                     color="danger"
@@ -558,7 +594,7 @@ watch(files, newFiles => {
                     data-testid="button-remove-file-card"
                     ><span class="bi bi-trash"></span> Remove</AppButton
                   >
-                  <div v-if="!selectMany" class="border-start ps-3">
+                  <div class="border-start ps-3">
                     <AppButton
                       class="min-w-unset"
                       color="borderless"
@@ -573,7 +609,7 @@ watch(files, newFiles => {
                       ><span class="bi bi-arrow-repeat"></span> Update</AppButton
                     >
                   </div>
-                  <div v-if="!selectMany" class="border-start ps-3">
+                  <div class="border-start ps-3">
                     <AppButton
                       class="min-w-unset"
                       color="borderless"
@@ -588,7 +624,7 @@ watch(files, newFiles => {
                       ><span class="bi bi-plus-square-dotted"></span> Append</AppButton
                     >
                   </div>
-                  <div v-if="!selectMany" class="border-start ps-3">
+                  <div class="border-start ps-3">
                     <AppButton
                       class="min-w-unset"
                       color="borderless"
