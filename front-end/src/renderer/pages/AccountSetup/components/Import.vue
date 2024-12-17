@@ -17,6 +17,7 @@ const user = useUserStore();
 /* State */
 const words = ref<string[]>(getDefaultWords());
 const isMnemonicValid = ref(false);
+const inputRefs = ref<(InstanceType<typeof AppRecoveryPhraseWord> | null)[]>([]);
 
 /* Handlers */
 const handleWordChange = (newWord: string, index: number) => {
@@ -43,6 +44,34 @@ const handlePaste = async (index: number) => {
 
 const handleClearWords = () => {
   words.value = getDefaultWords();
+};
+
+const onKeyDownHandler = (e: KeyboardEvent) => {
+  const inputs = inputRefs.value.map(ref => ref?.inputRef).filter(Boolean) as HTMLInputElement[];
+  const currentIndex = inputs.findIndex(input => input === e.target);
+  const moveCursorToEnd = (input: HTMLInputElement) => {
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  };
+
+  if (e.key === 'ArrowRight' && currentIndex < inputs.length - 1) {
+    e.preventDefault();
+    moveCursorToEnd(inputs[currentIndex + 1]);
+  } else if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    if (currentIndex > 0) {
+      moveCursorToEnd(inputs[currentIndex - 1]);
+    }
+  } else if (e.key === 'ArrowDown' && currentIndex + 4 < inputs.length) {
+    e.preventDefault();
+    moveCursorToEnd(inputs[currentIndex + 4]);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (currentIndex - 4 >= 0) {
+      // Move to the input above
+      moveCursorToEnd(inputs[currentIndex - 4]);
+    }
+  }
 };
 
 /* Hooks */
@@ -78,11 +107,13 @@ watch(
     <div class="row flex-wrap g-12px mx-0" v-focus-first-input>
       <template v-for="(word, index) in words || []" :key="index">
         <AppRecoveryPhraseWord
+          ref="inputRefs"
           class="col-3"
           :word="word"
           :index="index + 1"
           :handle-word-change="newWord => handleWordChange(newWord, index)"
           visible-initially
+          @keydown="onKeyDownHandler"
           @paste.prevent="handlePaste(index)"
         />
       </template>

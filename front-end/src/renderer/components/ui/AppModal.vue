@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { focusFirstInput } from '@renderer/utils';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 /* Props */
@@ -40,9 +39,6 @@ const handleClickOutside = (event: Event) => {
 onMounted(() => {
   document.addEventListener('keydown', handleKeyDown);
   document.addEventListener('mousedown', handleClickOutside);
-  if (modalRef.value) {
-    focusFirstInput(modalRef.value);
-  }
 });
 
 onBeforeUnmount(() => {
@@ -59,7 +55,7 @@ onBeforeUnmount(() => {
     data-testid="modal-confirm-transaction"
     :style="{ display: show ? 'block' : 'none' }"
   >
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" ref="modalRef">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" v-focus-first-input>
       <div class="modal-content">
         <div v-if="scrollable" class="modal-header pb-0"><slot name="header"></slot></div>
         <div class="modal-body"><slot></slot></div>

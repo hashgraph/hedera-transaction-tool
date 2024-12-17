@@ -36,28 +36,7 @@ const handldeWordInput = (e: Event) => {
   emit('update:word', value);
 };
 
-const handleKeyDown = (e: KeyboardEvent) => {
-  const inputs = document.querySelectorAll('input[data-testid^="input-recovery-word-"]');
-  const currentIndex = Array.from(inputs).findIndex(input => input === e.target);
-
-  if (e.key === 'ArrowRight' && currentIndex < inputs.length - 1) {
-    e.preventDefault();
-    (inputs[currentIndex + 1] as HTMLInputElement).focus();
-    const nextInput = inputs[currentIndex + 1] as HTMLInputElement;
-    nextInput.setSelectionRange(nextInput.value.length, nextInput.value.length);
-  } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
-    e.preventDefault();
-    (inputs[currentIndex - 1] as HTMLInputElement).focus();
-    const previousInput = inputs[currentIndex - 1] as HTMLInputElement;
-    previousInput.setSelectionRange(previousInput.value.length, previousInput.value.length);
-  } else if (e.key === 'ArrowDown' && currentIndex < inputs.length - 4) {
-    e.preventDefault();
-    (inputs[currentIndex + 4] as HTMLInputElement).focus();
-  } else if (e.key === 'ArrowUp' && currentIndex >= 4) {
-    e.preventDefault();
-    (inputs[currentIndex - 4] as HTMLInputElement).focus();
-  }
-};
+defineExpose({ inputRef });
 </script>
 <template>
   <div
@@ -76,7 +55,6 @@ const handleKeyDown = (e: KeyboardEvent) => {
       :readonly="readonly"
       :value="word"
       @input="handldeWordInput"
-      @keydown="handleKeyDown"
       :data-testid="`input-recovery-word-${index}`"
     />
     <Transition name="fade" mode="out-in" v-if="withToggler">
