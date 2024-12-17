@@ -73,6 +73,7 @@ test.describe('Organization Group Tx tests', () => {
     await organizationPage.addComplexKeyAccountForTransactions();
 
     complexKeyAccountId = organizationPage.getComplexAccountId();
+    groupPage.organizationPage = organizationPage;
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
   });
@@ -109,7 +110,34 @@ test.describe('Organization Group Tx tests', () => {
   });
 
   test('Verify user can execute group transaction in organization', async () => {
-    test.slow()
-    await groupPage.addOrgTransferTransactionToGroup(2, complexKeyAccountId, '10');
+    test.slow();
+    await groupPage.addOrgAllowanceTransactionToGroup(2, complexKeyAccountId, '10');
+    const txId = await groupPage.getTransactionTimestamp(0);
+    const secondTxId = await groupPage.getTransactionTimestamp(1);
+
+    await groupPage.clickOnSignAndExecuteButton();
+    await groupPage.clickOnConfirmGroupTransactionButton();
+    await groupPage.clickOnSignAllButton();
+    await loginPage.waitForToastToDisappear();
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.logoutFromOrganization();
+    await groupPage.logInAndSignGroupTransactionsByAllUsers(globalCredentials.password);
+    await organizationPage.signInOrganization(
+      firstUser.email,
+      firstUser.password,
+      globalCredentials.password,
+    );
+
+    const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
+    const transactionType = transactionDetails.transactions[0]?.name;
+    const result = transactionDetails.transactions[0]?.result;
+    expect(transactionType).toBe('CRYPTOAPPROVEALLOWANCE');
+    expect(result).toBe('SUCCESS');
+
+    const secondTransactionDetails = await transactionPage.mirrorGetTransactionResponse(secondTxId);
+    const secondTransactionType = secondTransactionDetails.transactions[0]?.name;
+    const secondResult = secondTransactionDetails.transactions[0]?.result;
+    expect(secondTransactionType).toBe('CRYPTOAPPROVEALLOWANCE');
+    expect(secondResult).toBe('SUCCESS');
   });
 });

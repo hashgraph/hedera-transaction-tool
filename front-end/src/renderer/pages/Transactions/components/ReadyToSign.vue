@@ -323,7 +323,10 @@ watch(
                     }}
                   </td>
                   <td class="text-center">
-                    <AppButton @click="redirectToGroupDetails($router, group[0])" color="secondary"
+                    <AppButton
+                      @click="redirectToGroupDetails($router, group[0])"
+                      color="secondary"
+                      data-testid="button-group-details"
                       >Details</AppButton
                     >
                   </td>

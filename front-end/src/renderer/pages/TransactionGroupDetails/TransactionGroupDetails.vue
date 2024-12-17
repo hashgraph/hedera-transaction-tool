@@ -312,7 +312,7 @@ watch(
           </tr>
         </thead>
         <tbody>
-          <template v-for="groupItem in group?.groupItems" :key="groupItem.seq">
+          <template v-for="(groupItem, index) in group?.groupItems" :key="groupItem.seq">
             <tr>
               <td data-testid="td-group-transaction-id">
                 {{ groupItem.transaction.transactionId }}
@@ -328,6 +328,7 @@ watch(
                   type="button"
                   color="secondary"
                   @click.prevent="handleSign(groupItem.transaction.id)"
+                  :data-testid="`button-group-transaction-${index}`"
                   >Details</AppButton
                 >
               </td>

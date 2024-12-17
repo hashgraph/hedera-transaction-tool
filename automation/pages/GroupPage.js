@@ -1,5 +1,6 @@
 const BasePage = require('./BasePage');
 const TransactionPage = require('./TransactionPage');
+const OrganizationPage = require('./OrganizationPage');
 const { getTransactionGroupsForTransactionId } = require('../utils/databaseQueries');
 
 class GroupPage extends BasePage {
@@ -7,6 +8,7 @@ class GroupPage extends BasePage {
     super(window);
     this.window = window;
     this.transactionPage = new TransactionPage(window);
+    this.organizationPage = new OrganizationPage(window);
   }
 
   /* Selectors */
@@ -24,6 +26,7 @@ class GroupPage extends BasePage {
   deleteAllButtonSelector = 'button-delete-all';
   confirmDeleteAllButtonSelector = 'button-confirm-delete-all';
   confirmGroupTransactionButtonSelector = 'button-confirm-group-transaction';
+  detailsGroupButtonSelector = 'button-group-details';
 
   // Messages
   toastMessageSelector = '.v-toast__text';
@@ -38,6 +41,7 @@ class GroupPage extends BasePage {
   transactionDeleteButtonIndexSelector = 'button-transaction-delete-';
   transactionDuplicateButtonIndexSelector = 'button-transaction-duplicate-';
   transactionEditButtonIndexSelector = 'button-transaction-edit-';
+  orgTransactionDetailsButtonIndexSelector = 'button-group-transaction-';
 
   async closeModalIfVisible(selector) {
     const modalButton = this.window.getByTestId(selector);
@@ -175,6 +179,23 @@ class GroupPage extends BasePage {
     }
   }
 
+  async addOrgAllowanceTransactionToGroup(numberOfTransactions = 1, allowanceOwner, amount) {
+    await this.fillDescription('test');
+    for (let i = 0; i < numberOfTransactions; i++) {
+      await this.clickOnAddTransactionButton();
+      await this.transactionPage.clickOnApproveAllowanceTransaction()
+
+      await this.transactionPage.fillInAllowanceOwner(allowanceOwner);
+      await this.transactionPage.fillInAllowanceAmount(amount);
+      await this.transactionPage.fillInSpenderAccountId(
+        await this.getTextFromInputField(this.transactionPage.payerDropdownSelector),
+        this.addToGroupButtonSelector
+      );
+
+      await this.clickAddToGroupButton();
+    }
+  }
+
   async isEmptyTransactionTextVisible() {
     return this.isElementVisible(this.emptyTransactionTextSelector);
   }
@@ -199,6 +220,51 @@ class GroupPage extends BasePage {
    */
   async doTransactionGroupsExist(transactionId) {
     return !!(await getTransactionGroupsForTransactionId(transactionId));
+  }
+
+  async clickOnDetailsGroupButton() {
+    await this.click(this.detailsGroupButtonSelector);
+  }
+
+  async clickOnTransactionDetailsButton(index) {
+    await this.click(this.orgTransactionDetailsButtonIndexSelector + index);
+  }
+
+  async logInAndSignGroupTransactionsByAllUsers(encryptionPassword) {
+      for (let i = 1; i < this.organizationPage.users.length; i++) {
+        console.log(`Signing transaction for user ${i}`);
+        const user = this.organizationPage.users[i];
+        await this.organizationPage.signInOrganization(user.email, user.password, encryptionPassword);
+        await this.transactionPage.clickOnTransactionsMenuButton();
+        await this.organizationPage.clickOnReadyToSignTab();
+        await this.clickOnDetailsGroupButton();
+        await this.clickOnTransactionDetailsButton(0);
+
+        // Initially sign the first transaction
+        await this.organizationPage.clickOnSignTransactionButton();
+
+        // After signing, we check if there's a "Next" button to continue to the next transaction
+        let hasNext = await this.isElementVisible(this.organizationPage.nextTransactionButtonSelector);
+
+        while (hasNext) {
+          // Click on the "Next" button to move to the next transaction
+          await this.click(this.organizationPage.nextTransactionButtonSelector);
+
+          // Now the button transforms into "Sign" for the next transaction
+          // Sign this transaction as well
+          await this.organizationPage.clickOnSignTransactionButton();
+
+          // Check again if there's another transaction after this one
+          hasNext = await this.isElementVisible(this.organizationPage.nextTransactionButtonSelector);
+        }
+
+        await this.organizationPage.logoutFromOrganization();
+      }
+  }
+
+  async clickOnSignAllButton(){
+    await this.click(this.organizationPage.signAllTransactionsButtonSelector);
+    await this.waitForElementToDisappear(this.organizationPage.signAllTransactionsButtonSelector);
   }
 }
 
