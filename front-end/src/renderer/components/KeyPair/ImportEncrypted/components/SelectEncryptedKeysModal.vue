@@ -73,7 +73,10 @@ const handleSelect = async () => {
 
   if (data) {
     if (searching.value) {
-      foundKeyPaths.value = encryptedKeyPaths;
+      foundKeyPaths.value = data;
+      selectedKeyPaths.value = data;
+    } else {
+      foundKeyPaths.value = null;
       selectedKeyPaths.value = [];
     }
   }
