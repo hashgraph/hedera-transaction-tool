@@ -137,6 +137,9 @@ async function handleNewPassword() {
     !user.personal.useKeychain && user.setPassword(personalPassword.value);
     await setPassword(user.selectedOrganization.serverUrl, newPassword.value, token.value);
 
+    // Update organization credentials, if they exist.
+    // If not, ignore as the password has already been submitted to the backend
+    // and the user will now go through the process as if for the first time.
     await updateOrganizationCredentials(
       user.selectedOrganization.id,
       user.personal.id,
