@@ -21,8 +21,8 @@ import {
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 
 /* Props */
 const props = defineProps<{
@@ -225,10 +225,9 @@ watch(
 
         <div class="form-group mt-4">
           <label class="form-label">Enter Decryption Password</label>
-          <AppInput
+          <AppPasswordInput
             v-model="decryptPassword"
             size="small"
-            type="password"
             name="decrypt-key-password"
             :filled="true"
             :disabled="decrypting"
