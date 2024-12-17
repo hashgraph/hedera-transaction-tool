@@ -3,7 +3,12 @@ import type { NodeData } from '@renderer/utils/sdk';
 
 import { ref, useTemplateRef, watch } from 'vue';
 
-import { formatAccountId, hexToUint8Array, uint8ToHex, validate100CharInput } from '@renderer/utils';
+import {
+  formatAccountId,
+  hexToUint8Array,
+  uint8ToHex,
+  validate100CharInput,
+} from '@renderer/utils';
 import { sha384, x509BytesFromPem } from '@renderer/services/electronUtilsService';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';

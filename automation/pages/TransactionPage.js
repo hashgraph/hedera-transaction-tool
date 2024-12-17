@@ -774,11 +774,11 @@ class TransactionPage extends BasePage {
     );
   }
 
-  async fillInSpenderAccountId(accountId) {
+  async fillInSpenderAccountId(accountId, defaultButtonSelector= this.signAndSubmitButtonSelector) {
     await this.fillInAccountId(
       accountId,
       this.allowanceSpenderAccountSelector,
-      this.signAndSubmitButtonSelector,
+      defaultButtonSelector,
     );
   }
 
