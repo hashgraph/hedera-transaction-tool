@@ -184,8 +184,6 @@ function setTooltipContent() {
   const tooltipList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
   Array.from(tooltipList).forEach(tooltipEl => {
     const tooltip = Tooltip.getInstance(tooltipEl);
-    console.log(tooltip);
-
     tooltip?.setContent({ '.tooltip-inner': tooltipContent.value });
   });
 }
