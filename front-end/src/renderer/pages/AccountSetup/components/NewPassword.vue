@@ -11,7 +11,12 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import { changePassword } from '@renderer/services/organization/auth';
 import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
-import { assertIsLoggedInOrganization, assertUserLoggedIn, getErrorMessage, isPasswordStrong } from '@renderer/utils';
+import {
+  assertIsLoggedInOrganization,
+  assertUserLoggedIn,
+  getErrorMessage,
+  isPasswordStrong
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
@@ -39,6 +44,13 @@ const newPasswordInvalid = ref(false);
 
 const isLoading = ref(false);
 
+/* Computed */
+const isPrimaryButtonDisabled = computed(() => {
+  return currentPassword.value.length === 0 ||
+    currentPasswordInvalid.value ||
+    !isPasswordStrong(newPassword.value).result;
+});
+
 /* Handlers */
 const handleFormSubmit = async (event: Event) => {
   event.preventDefault();
@@ -53,9 +65,6 @@ const handleChangePassword = async () => {
     subHeading: 'New password will be encrypted with this password',
   });
   if (passwordModalOpened(personalPassword)) return;
-
-  currentPasswordInvalid.value = currentPassword.value.trim().length === 0;
-  newPasswordInvalid.value = !isPasswordStrong(newPassword.value);
 
   if (
     !currentPasswordInvalid.value &&
@@ -98,7 +107,24 @@ const handleChangePassword = async () => {
   }
 };
 
+const handleBlur = (inputType: string, value: string) => {
+  const isEmpty = value.length === 0;
+  // When any input loses focus, set its invalid state
+  if (inputType === 'currentPassword') {
+    // For current password, it is invalid if empty and the user should see the message
+    currentPasswordInvalid.value = isEmpty;
+  } else if (inputType === 'newPassword') {
+    // For new password, it is invalid if it is not strong, but don't show the message if it is empty
+    // as the button is disabled anyway
+    newPasswordInvalid.value = !isPasswordStrong(value).result && !isEmpty;
+  }
+};
+
 /* Watchers */
+watch(currentPassword, pass => {
+  currentPasswordInvalid.value = false;
+});
+
 watch(newPassword, pass => {
   if (isPasswordStrong(pass).result || pass.length === 0) {
     newPasswordInvalid.value = false;
@@ -117,6 +143,7 @@ watch(newPassword, pass => {
           :filled="true"
           :class="{ 'is-invalid': currentPasswordInvalid }"
           placeholder="Current Password"
+          @blur="handleBlur('currentPassword', $event.target.value)"
         />
         <div v-if="currentPasswordInvalid" class="invalid-feedback">
           Current password is required.
@@ -127,6 +154,7 @@ watch(newPassword, pass => {
             :filled="true"
             :class="{ 'is-invalid': newPasswordInvalid }"
             placeholder="New Password"
+            @blur="handleBlur('newPassword', $event.target.value)"
           />
           <div v-if="newPasswordInvalid" class="invalid-feedback">Invalid password.</div>
         </div>
@@ -136,7 +164,7 @@ watch(newPassword, pass => {
           type="submit"
           class="w-100 mt-5"
           :loading="isLoading"
-          :disabled="newPasswordInvalid || currentPasswordInvalid"
+          :disabled="isPrimaryButtonDisabled"
           >Continue</AppButton
         >
       </div>
