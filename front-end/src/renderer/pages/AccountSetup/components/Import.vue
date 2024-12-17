@@ -68,7 +68,6 @@ const onKeyDownHandler = (e: KeyboardEvent) => {
   } else if (e.key === 'ArrowUp') {
     e.preventDefault();
     if (currentIndex - 4 >= 0) {
-      // Move to the input above
       moveCursorToEnd(inputs[currentIndex - 4]);
     }
   }
