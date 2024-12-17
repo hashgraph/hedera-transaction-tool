@@ -31,7 +31,6 @@ describe('Electron entry file', async () => {
 
   const assertEventHandler = (event: string) => {
     const handler = vi.mocked(app).on.mock.calls.find(([ev]) => ev === event);
-
     expect(handler).toBeDefined();
     expect(handler![1]).toBeDefined();
     if (!handler) {
