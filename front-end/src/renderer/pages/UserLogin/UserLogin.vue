@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 
-import { inject, onMounted, reactive, ref, watch } from 'vue';
+import { computed, inject, onMounted, reactive, ref, watch } from 'vue';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -15,11 +15,12 @@ import { loginLocal, registerLocal, getUsersCount } from '@renderer/services/use
 
 import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 
-import { getErrorMessage, isEmail, isUserLoggedIn } from '@renderer/utils';
+import { getErrorMessage, isEmail, isPasswordStrong, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
 
 /* Stores */
@@ -55,17 +56,24 @@ const shouldRegister = ref(false);
 const keepLoggedIn = ref(false);
 const isResetDataModalShown = ref(false);
 
+/* Computed */
+const isPrimaryButtonDisabled = computed(() => {
+  // The button is disabled if the email is not valid,
+  // or the password is not entered
+  // of if registering, the password is not strong enough
+  // or the confirm password does not match
+  return (
+    !isEmail(inputEmail.value) ||
+    inputPassword.value.length === 0 ||
+    (shouldRegister.value &&
+      (!isPasswordStrong(inputPassword.value).result ||
+        inputPassword.value !== inputConfirmPassword.value))
+  );
+});
+
 /* Handlers */
 const handleOnFormSubmit = async (event: Event) => {
   event.preventDefault();
-
-  if (shouldRegister.value) {
-    inputEmailInvalid.value = inputEmail.value.trim() === '' || !isEmail(inputEmail.value);
-    inputPasswordInvalid.value =
-      inputPassword.value.trim() === '' || !isPasswordStrong(inputPassword.value);
-    inputConfirmPasswordInvalid.value =
-      inputPassword.value.trim() !== inputConfirmPassword.value.trim();
-  }
 
   if (
     shouldRegister.value &&
@@ -98,17 +106,11 @@ const handleOnFormSubmit = async (event: Event) => {
         keepLoggedIn.value,
         false,
       );
-    } catch (error) {
-      inputEmailInvalid.value = false;
-      inputPasswordInvalid.value = false;
-
+    } catch (error: any) {
       const message = getErrorMessage(error, 'Invalid email or password');
-      if (message.includes('email')) {
-        inputEmailInvalid.value = true;
-      }
-      if (message.includes('password')) {
-        inputPasswordInvalid.value = true;
-      }
+      const isInvalid = message.includes('email') || message.includes('password');
+      inputEmailInvalid.value = isInvalid;
+      inputPasswordInvalid.value = isInvalid;
     } finally {
       buttonLoading.value = false;
     }
@@ -151,9 +153,25 @@ const handleResetData = async () => {
   setTooltipContent();
 };
 
+const handleBlur = (inputType: string, value: string) => {
+  // When any input loses focus, set its invalid state
+  if (shouldRegister.value) {
+    // If the value is empty, the user will expect it to be invalid and does
+    // not need to see the warning
+    const isEmpty = value.length === 0;
+    if (inputType === 'email') {
+      inputEmailInvalid.value = !isEmpty && !isEmail(value);
+    } else if (inputType === 'inputPassword') {
+      inputPasswordInvalid.value = !isEmpty && !isPasswordStrong(value).result;
+    } else if (inputType === 'inputConfirmPassword') {
+      inputConfirmPasswordInvalid.value = !isEmpty && value.trim() !== inputPassword.value?.trim();
+    }
+  }
+};
+
 /* Hooks */
 onMounted(async () => {
-  isPasswordStrong(inputPassword.value);
+  passwordRequirements.length = isPasswordStrong(inputPassword.value).length;
   await checkShouldRegister();
   if (shouldRegister.value) {
     createTooltips();
@@ -162,29 +180,6 @@ onMounted(async () => {
 });
 
 /* Misc */
-function isPasswordStrong(password: string) {
-  const validationRegex = [
-    { regex: /.{10,}/ }, // min 10 letters,
-    // { regex: /[0-9]/ }, // numbers from 0 - 9
-    // { regex: /[a-z]/ }, // letters from a - z (lowercase)
-    // { regex: /[A-Z]/ }, // letters from A-Z (uppercase),
-    // { regex: /[^A-Za-z0-9]/ }, // special characters
-  ];
-
-  passwordRequirements.length = validationRegex[0].regex.test(password);
-  // passwordRequirements.number = validationRegex[1].regex.test(password);
-  // passwordRequirements.lowercase = validationRegex[2].regex.test(password);
-  // passwordRequirements.uppercase = validationRegex[3].regex.test(password);
-  // passwordRequirements.special = validationRegex[4].regex.test(password);
-
-  const isStrong = validationRegex.reduce((isStrong, item) => {
-    const isValid = item.regex.test(password);
-    return isStrong && isValid;
-  }, true);
-
-  return isStrong;
-}
-
 function setTooltipContent() {
   // tooltipContent.value = `
   //         <div class='d-flex flex-column align-items-start px-3'>
@@ -243,19 +238,31 @@ async function checkShouldRegister() {
 /* Watchers */
 watch(inputPassword, pass => {
   inputConfirmPasswordInvalid.value = false;
-  if (isPasswordStrong(pass) || pass.length === 0) {
+  if (shouldRegister.value) {
+    if (isPasswordStrong(pass).result || pass.length === 0) {
+      inputPasswordInvalid.value = false;
+    }
+  } else {
+    inputEmailInvalid.value = false;
     inputPasswordInvalid.value = false;
   }
   setTooltipContent();
 });
+
 watch(inputConfirmPassword, pass => {
-  if (pass.length === 0) {
-    inputPasswordInvalid.value = false;
+  if (pass.trim() === inputPassword.value?.trim()) {
+    inputConfirmPasswordInvalid.value = false;
   }
 });
+
 watch(inputEmail, pass => {
-  if (shouldRegister.value && (isEmail(pass) || pass.length === 0)) {
+  if (shouldRegister.value) {
+    if (isEmail(pass) || pass.length === 0) {
+      inputEmailInvalid.value = false;
+    }
+  } else {
     inputEmailInvalid.value = false;
+    inputPasswordInvalid.value = false;
   }
 });
 </script>
@@ -277,15 +284,16 @@ watch(inputEmail, pass => {
           :filled="true"
           :class="{ 'is-invalid': inputEmailInvalid }"
           placeholder="Enter email"
+          @blur="handleBlur('email', $event.target.value)"
         />
         <div v-if="inputEmailInvalid" data-testid="invalid-text-email" class="invalid-feedback">
-          Invalid e-mail.
+          Invalid e-mail
         </div>
         <label data-testid="label-password" class="form-label mt-4">Password</label>
-        <AppInput
+        <AppPasswordInput
           v-model="inputPassword"
           :filled="true"
-          type="password"
+          :show-icon="!shouldRegister"
           :class="{ 'is-invalid': inputPasswordInvalid }"
           placeholder="Enter password"
           :data-bs-toggle="shouldRegister ? 'tooltip' : ''"
@@ -295,32 +303,34 @@ watch(inputEmail, pass => {
           data-bs-html="true"
           data-bs-title="_"
           data-testid="input-password"
+          @blur="handleBlur('inputPassword', $event.target.value)"
         />
         <div
           v-if="inputPasswordInvalid"
           data-testid="invalid-text-password"
           class="invalid-feedback"
         >
-          Invalid password.
+          Invalid password
         </div>
         <template v-if="shouldRegister">
           <label data-testid="label-password-confirm" class="form-label mt-4"
             >Confirm password</label
           >
-          <AppInput
+          <AppPasswordInput
             v-model="inputConfirmPassword"
             :filled="true"
             type="password"
             :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
             placeholder="Confirm password"
             data-testid="input-password-confirm"
+            @blur="handleBlur('inputConfirmPassword', $event.target.value)"
           />
           <div
             v-if="inputConfirmPasswordInvalid"
             data-testid="invalid-text-password-not-match"
             class="invalid-feedback"
           >
-            Password do not match.
+            Password do not match
           </div>
         </template>
 
@@ -351,7 +361,7 @@ watch(inputEmail, pass => {
               type="submit"
               class="w-100"
               :loading="buttonLoading"
-              :disabled="inputEmail.length === 0 || inputPassword.length === 0"
+              :disabled="isPrimaryButtonDisabled"
               >{{ shouldRegister ? 'Next' : 'Sign in' }}</AppButton
             >
           </div>

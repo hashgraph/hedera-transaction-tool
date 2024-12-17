@@ -1,33 +1,21 @@
 import { AccountId, ContractId, FileId, PublicKey } from '@hashgraph/sdk';
 
 export function isEmail(email: string) {
-  if (/^[A-Za-z0-9_!#$%&'*+/=?`{|}~^.-]+@[A-Za-z0-9.-]+$/.test(email)) {
-    return true;
-  }
-  return false;
+  return /^[A-Za-z0-9_!#$%&'*+/=?`{|}~^.-]+@[A-Za-z0-9.-]+$/.test(email);
 }
 
 export function isPasswordStrong(password: string): {
   length: boolean;
   result: boolean;
 } {
-  const result = {
-    length: false,
-    result: false,
+  const validationRegex = [
+    /.{10,}/, // min 10 letters
+  ];
+
+  return {
+    length: validationRegex[0].test(password),
+    result: validationRegex.every(regex => regex.test(password)),
   };
-
-  const validationRegex = [{ regex: /.{10,}/ }];
-
-  result.length = validationRegex[0].regex.test(password);
-
-  const isStrong = validationRegex.reduce((isStrong, item) => {
-    const isValid = item.regex.test(password);
-    return isStrong && isValid;
-  }, true);
-
-  result.result = isStrong;
-
-  return result;
 }
 
 export function isPublicKey(key: string) {
