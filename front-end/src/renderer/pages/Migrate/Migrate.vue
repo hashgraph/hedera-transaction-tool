@@ -163,7 +163,7 @@ onMounted(async () => {
       <h4 class="text-title text-semi-bold text-center">{{ heading }}</h4>
 
       <h5 v-if="step === 'selectKeys'" class="text-title fs-6 mt-4 text-normal text-center">
-        Select either a folder or a zip file containing the encrypted keys
+        You can import either one of the decrypted keys or just select all of them.
       </h5>
 
       <div class="fill-remaining mt-4">
