@@ -10,14 +10,17 @@ const props = defineProps<{
   index?: number;
   visibleInitially?: boolean;
   verification?: boolean;
+  isFocused?: boolean;
 }>();
 
 /* Emits */
 const emit = defineEmits(['update:word']);
 
+/* Ref */
+const inputRef = ref<HTMLInputElement | null>(null);
+
 /* State */
 const isVisible = ref(props.visibleInitially);
-const inputRef = ref<HTMLInputElement | null>(null);
 
 /* Getters */
 const inputType = computed(() => (isVisible.value ? 'text' : 'password'));
@@ -58,8 +61,9 @@ const handleKeyDown = (e: KeyboardEvent) => {
 };
 
 onMounted(() => {
-  if (props.index === 1) {
+  if (props.isFocused) {
     inputRef.value?.focus();
+    inputRef.value?.setSelectionRange(inputRef.value.value.length, inputRef.value.value.length);
   }
 });
 </script>
