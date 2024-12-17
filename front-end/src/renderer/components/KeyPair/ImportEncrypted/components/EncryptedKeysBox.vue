@@ -53,7 +53,7 @@ watch(
 <template>
   <div v-if="keys.length > 0" class="border rounded p-3 mt-4">
     <ul class="overflow-x-hidden" style="max-height: 30vh">
-      <li class="d-flex flex-row align-items-center gap-3">
+      <li class="d-flex flex-row align-items-center gap-3 border-bottom mb-2">
         <AppCheckBox
           :checked="isAllSelected"
           @update:checked="handleSelectAll"
@@ -61,7 +61,7 @@ watch(
           :data-testid="'checkbox-select-all-keys-component'"
           class="cursor-pointer"
         />
-        <span><i class="bi bi-check-all"></i></span>
+        <span>Select all</span>
       </li>
       <li v-for="(key, index) in keys" :key="key" class="d-flex flex-row align-items-center gap-3">
         <AppCheckBox
