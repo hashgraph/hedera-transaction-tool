@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -43,6 +43,13 @@ const isSuccessModalShown = ref(false);
 const isChangingPassword = ref(false);
 const isResetDataModalShown = ref(false);
 
+/* Computed */
+const isPrimaryButtonDisabled = computed(() => {
+  return currentPassword.value.length === 0 ||
+    !isPasswordStrong(newPassword.value).result ||
+    isChangingPassword.value;
+});
+
 /* Handlers */
 const handleChangePassword = async () => {
   try {
@@ -54,13 +61,11 @@ const handleChangePassword = async () => {
       throw new Error('Password cannot be empty');
     }
 
-    newPasswordInvalid.value = !isPasswordStrong(newPassword.value);
-
     if (newPasswordInvalid.value) throw new Error('Password must be at least 10 characters long');
 
     if (isLoggedInOrganization(user.selectedOrganization)) {
       const personalPassword = getPassword(handleChangePassword, {
-        subHeading: 'Enter your application password to encrpyt your organization credentials',
+        subHeading: 'Enter your application password to encrypt your organization credentials',
       });
       if (passwordModalOpened(personalPassword)) return;
 
@@ -101,7 +106,17 @@ const handleChangePassword = async () => {
 
 const handleResetData = async () => router.push({ name: 'login' });
 
+const handleBlur = (inputType: string, value: string) => {
+  if (inputType === 'newPassword') {
+    newPasswordInvalid.value = value.length !==0 && !isPasswordStrong(value).result;
+  }
+};
+
 /* Watchers */
+watch(currentPassword, pass => {
+  currentPasswordInvalid.value = false;
+});
+
 watch(newPassword, pass => {
   if (isPasswordStrong(pass).result || pass.length === 0) {
     newPasswordInvalid.value = false;
@@ -141,11 +156,16 @@ watch(newPassword, pass => {
           :class="{ 'is-invalid': newPasswordInvalid }"
           data-testid="input-new-password"
           placeholder="Enter New Password"
+          @blur="handleBlur('newPassword', $event.target.value)"
         />
-        <div v-if="newPasswordInvalid" class="invalid-feedback">Invalid password.</div>
+        <div v-if="newPasswordInvalid" class="invalid-feedback">Invalid password</div>
       </div>
-      <div class="d-grid">
-        <AppButton color="primary" data-testid="button-change-password" type="submit" class="mt-4"
+      <div class="d-grid mt-4">
+        <AppButton
+          color="primary"
+          data-testid="button-change-password"
+          type="submit"
+          :disabled="isPrimaryButtonDisabled"
           >Change Password</AppButton
         >
       </div>

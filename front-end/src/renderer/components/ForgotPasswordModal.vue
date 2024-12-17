@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -55,6 +55,20 @@ const token = ref<string | null>(null);
 
 const onOTPReceivedUnsubscribe = ref<() => void>();
 
+/* Computed */
+const isPrimaryButtonDisabled = computed(() => {
+  if (!shouldEnterToken.value && !shouldSetNewPassword.value) {
+    return !isEmail(email.value);
+  } else if (!shouldSetNewPassword.value) {
+    return !otp.value?.isValid;
+  } else if (shouldSetNewPassword.value) {
+    return !isPasswordStrong(newPassword.value).result ||
+      (isUserLoggedIn(user.personal) && !user.personal.useKeychain &&
+        personalPassword.value.length === 0);
+  }
+  return true;
+});
+
 /* Handlers */
 const handleSubmit = async (e: Event) => {
   e.preventDefault();
@@ -107,13 +121,16 @@ async function handleNewPassword() {
     throw new Error('Please select organization');
   if (!token.value) throw new Error('OTP token is not set');
 
-  const isPasswordCorrect = await comparePasswords(user.personal.id, personalPassword.value);
+  if (!user.personal.useKeychain) {
+    const isPasswordCorrect = await comparePasswords(user.personal.id, personalPassword.value);
 
-  personalPasswordInvalid.value = !isPasswordCorrect;
-  newPasswordInvalid.value = !isPasswordStrong(newPassword.value);
+    personalPasswordInvalid.value = !isPasswordCorrect;
 
-  if (personalPasswordInvalid.value && !user.personal.useKeychain)
-    throw new Error('Incorrect personal password');
+    if (personalPasswordInvalid.value) {
+      throw new Error('Incorrect personal password');
+    }
+  }
+
   if (newPasswordInvalid.value) throw new Error('Password must be at least 10 characters long');
 
   try {
@@ -134,6 +151,12 @@ async function handleNewPassword() {
     toast.success('Password changed successfully');
   } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to set new password'));
+  }
+}
+
+function handleBlur(field: string, value: string) {
+  if (field === 'newPassword') {
+    newPasswordInvalid.value = !isPasswordStrong(value).result && value.length !== 0;
   }
 }
 
@@ -158,10 +181,16 @@ watch(
     shouldEnterToken.value = false;
     shouldSetNewPassword.value = false;
     otp.value = null;
+    personalPassword.value = '';
+    personalPasswordInvalid.value = false;
     newPassword.value = '';
     newPasswordInvalid.value = false;
   },
 );
+
+watch(personalPassword, pass => {
+  personalPasswordInvalid.value = false;
+});
 
 watch(newPassword, pass => {
   if (isPasswordStrong(pass).result || pass.length === 0) {
@@ -233,8 +262,9 @@ watch(newPassword, pass => {
                 :filled="true"
                 :class="{ 'is-invalid': newPasswordInvalid }"
                 placeholder="New Password"
+                @blur="handleBlur('newPassword', $event.target.value)"
               />
-              <div v-if="newPasswordInvalid" class="invalid-feedback">Invalid password.</div>
+              <div v-if="newPasswordInvalid" class="invalid-feedback">Invalid password</div>
             </div>
           </div>
         </Transition>
@@ -244,7 +274,7 @@ watch(newPassword, pass => {
           <AppButton color="borderless" type="button" @click="emit('update:show', false)"
             >Cancel</AppButton
           >
-          <AppButton color="primary" :disabled="email.length === 0" type="submit"
+          <AppButton color="primary" :disabled="isPrimaryButtonDisabled" type="submit"
             >Continue</AppButton
           >
         </div>

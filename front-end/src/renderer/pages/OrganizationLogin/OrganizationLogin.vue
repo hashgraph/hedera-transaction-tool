@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -13,7 +13,7 @@ import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhras
 import { login } from '@renderer/services/organization';
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
-import { assertUserLoggedIn, getErrorMessage, isLoggedOutOrganization } from '@renderer/utils';
+import { assertUserLoggedIn, getErrorMessage, isEmail, isLoggedOutOrganization } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -40,6 +40,11 @@ const inputEmailInvalid = ref(false);
 const inputPasswordInvalid = ref(false);
 
 const forgotPasswordModalShown = ref(false);
+
+/* Computed */
+const isPrimaryButtonDisabled = computed(() => {
+  return !isEmail(inputEmail.value) || inputPassword.value.length === 0;
+});
 
 /* Handlers */
 const handleLogin = async () => {
@@ -90,6 +95,8 @@ const handleLogin = async () => {
 };
 
 const handleForgotPassword = () => {
+  inputEmail.value = '';
+  inputPassword.value = '';
   forgotPasswordModalShown.value = true;
 };
 
@@ -136,7 +143,7 @@ onBeforeRouteLeave(async () => {
           :class="{ 'is-invalid': inputEmailInvalid }"
           placeholder="Enter email"
         />
-        <div v-if="inputEmailInvalid" class="invalid-feedback">Invalid e-mail.</div>
+        <div v-if="inputEmailInvalid" class="invalid-feedback">Invalid e-mail</div>
         <label class="form-label mt-4">Password</label>
         <AppPasswordInput
           v-model="inputPassword"
@@ -145,7 +152,7 @@ onBeforeRouteLeave(async () => {
           :class="{ 'is-invalid': inputPasswordInvalid }"
           placeholder="Enter password"
         />
-        <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password.</div>
+        <div v-if="inputPasswordInvalid" class="invalid-feedback">Invalid password</div>
 
         <div class="flex-centered justify-content-between gap-3 mt-3">
           <span @click="handleForgotPassword" class="text-small link-primary cursor-pointer"
@@ -160,7 +167,7 @@ onBeforeRouteLeave(async () => {
               type="submit"
               data-testid="button-sign-in-organization-user"
               :loading="loading"
-              :disabled="inputEmail.length === 0 || inputPassword.length === 0"
+              :disabled="isPrimaryButtonDisabled"
               >Sign in</AppButton
             >
           </div>
