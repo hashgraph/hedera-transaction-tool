@@ -65,8 +65,10 @@ const restoreExistingKeys = async () => {
   if (!isLoggedInOrganization(user.selectedOrganization))
     throw new Error('(BUG) Organization user id not set');
 
-  const { userKeys } = await getUserState(user.selectedOrganization.serverUrl);
-  const keysToRestore = props.selectedKeys.length > 0 ? props.selectedKeys : userKeys;
+  const keysToRestore =
+    props.selectedKeys.length > 0
+      ? props.selectedKeys
+      : await getUserState(user.selectedOrganization.serverUrl).then(state => state.userKeys);
   const userKeysWithMnemonic = keysToRestore.filter(userKeyHasMnemonic);
 
   await restoreOnEmpty(userKeysWithMnemonic);
