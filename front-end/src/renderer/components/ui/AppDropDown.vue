@@ -67,16 +67,18 @@ watch(
   <div ref="dropdownRef" class="dropdown">
     <AppButton
       :color="(colorOnActive && active) || !colorOnActive ? color : undefined"
-      class="d-flex align-items-center justify-content-center text-body"
+      class="d-flex flex-centered justify-content-between text-body mw-100"
       data-bs-toggle="dropdown"
       data-bs-auto-close="true"
       data-bs-popper-config='{"strategy":"fixed"}'
       :data-testid="dataTestid"
       :class="buttonClass"
     >
-      <div class="mw-100">
-        {{ selected?.label || toggleText }}
-        <i v-if="togglerIcon" class="bi bi-chevron-down ms-3"></i>
+      <div class="col-11 text-start overflow-hidden">
+        <span>{{ selected?.label || toggleText }}</span>
+      </div>
+      <div class="col-1 ms-3">
+        <i v-if="togglerIcon" class="bi bi-chevron-down flex-1"></i>
       </div>
     </AppButton>
     <ul class="dropdown-menu mt-3">
