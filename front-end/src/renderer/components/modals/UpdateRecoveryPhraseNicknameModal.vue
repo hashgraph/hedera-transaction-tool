@@ -4,10 +4,9 @@ import { ref, watch } from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
+import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNickname';
 
-import { add, update } from '@renderer/services/mnemonicService';
-
-import { assertUserLoggedIn, throwError } from '@renderer/utils';
+import { assertUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -27,6 +26,7 @@ const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
+const recoveryPhraseNickname = useRecoveryPhraseNickname();
 
 /* State */
 const nickname = ref('');
@@ -39,15 +39,7 @@ const handleUpdate = async () => {
   try {
     loadingText.value = 'Updating...';
 
-    if (!nickname.value.trim()) {
-      throwError('Nickname cannot be empty');
-    }
-
-    const nicknameExists = user.mnemonics.some(m => m.mnemonicHash === props.recoveryPhraseHash);
-    const actionFunction = nicknameExists ? update : add;
-
-    await actionFunction(user.personal.id, props.recoveryPhraseHash, nickname.value);
-    await user.refetchMnemonics();
+    await recoveryPhraseNickname.set(props.recoveryPhraseHash, nickname.value);
 
     toast.success('Nickname updated successfully');
 

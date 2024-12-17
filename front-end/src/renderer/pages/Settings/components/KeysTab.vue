@@ -10,6 +10,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
+import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNickname';
 
 import { CommonNetwork } from '@main/shared/enums';
 
@@ -19,7 +20,6 @@ import { decryptPrivateKey, deleteKeyPair } from '@renderer/services/keyPairServ
 import {
   assertUserLoggedIn,
   getErrorMessage,
-  getRecoveryPhraseNickname,
   isLoggedInOrganization,
   safeAwait,
 } from '@renderer/utils';
@@ -40,6 +40,7 @@ const network = useNetworkStore();
 const toast = useToast();
 const router = useRouter();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
+const recoveryPhraseNickname = useRecoveryPhraseNickname();
 
 enum Tabs {
   ALL = 'All',
@@ -81,7 +82,7 @@ const recoveryPhraseHashes = computed(() => {
     : user.secretHashes;
 
   return listedMnemonicHashes.map((hash, i) => ({
-    label: getRecoveryPhraseNickname(user.mnemonics, hash) || `Recovery Phrase ${i + 1}`,
+    label: recoveryPhraseNickname.get(hash) || `Recovery Phrase ${i + 1}`,
     value: hash,
   }));
 });

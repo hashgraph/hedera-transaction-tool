@@ -388,10 +388,6 @@ export const getNicknameById = (id: string, keyPairs: KeyPair[]): string | undef
   return keyPair?.nickname || undefined;
 };
 
-export const getRecoveryPhraseNickname = (mnemonics: LocalMnemonic[], mnemonicHash: string) => {
-  return mnemonics.find(m => m.mnemonicHash === mnemonicHash)?.nickname || null;
-};
-
 export const flattenAccountIds = (
   publicKeyToAccounts: PublicKeyAccounts[],
   withDeleted = false,
