@@ -37,3 +37,8 @@ export const invokeIPCListener = (name: string, ...args: any[]) => {
   const listener = getIPCListener(name);
   listener[1](event, ...args);
 };
+
+export const invokeIPCListener = (name: string, ...args: any[]) => {
+  const listener = getIPCListener(name);
+  listener[1](event, ...args);
+};
