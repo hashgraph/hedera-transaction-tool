@@ -1,4 +1,4 @@
-// import KeysTab from './KeysTab.vue';
+import KeysTab from './KeysTab.vue';
 
 export enum Tabs {
   ALL = 'All',
@@ -6,4 +6,4 @@ export enum Tabs {
   PRIVATE_KEY = 'Imported from Private Key',
 }
 
-// export default KeysTab;
+export default KeysTab;

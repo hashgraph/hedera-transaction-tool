@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Tabs } from './KeysTab';
+import { Tabs } from '.';
 
 import { computed, ref, watch } from 'vue';
 import { PublicKey } from '@hashgraph/sdk';
@@ -19,8 +19,8 @@ import { assertUserLoggedIn, isLoggedInOrganization } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import UpdateNicknameModal from '@renderer/components/modals/UpdateNicknameModal.vue';
-import TabHeading from './KeysTab/components/TabHeading.vue';
-import DeleteKeyPairsModal from './KeysTab/components/DeleteKeyPairsModal.vue';
+import TabHeading from './components/TabHeading.vue';
+import DeleteKeyPairsModal from './components/DeleteKeyPairsModal.vue';
 
 /* Stores */
 const user = useUserStore();

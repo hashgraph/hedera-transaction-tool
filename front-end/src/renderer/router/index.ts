@@ -20,7 +20,7 @@ const SignUpUser = () => import('@renderer/pages/ContactList/SignUpUser');
 const AccountSetup = () => import('@renderer/pages/AccountSetup');
 const GeneralTab = () => import('@renderer/pages/Settings/components/GeneralTab');
 const WorkGroupsTab = () => import('@renderer/pages/Settings/components/WorkGroupsTab.vue');
-const KeysTab = () => import('@renderer/pages/Settings/components/KeysTab.vue');
+const KeysTab = () => import('@renderer/pages/Settings/components/KeysTab');
 const NotificationsTab = () => import('@renderer/pages/Settings/components/NotificationsTab.vue');
 const RestoreKey = () => import('@renderer/pages/RestoreKey');
 const CreateTransaction = () => import('@renderer/pages/CreateTransaction');
