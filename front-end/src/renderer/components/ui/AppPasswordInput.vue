@@ -69,6 +69,7 @@ const togglePasswordVisibility = () => {
       type="button"
       class="position-absolute border-0 bg-transparent cursor-pointer"
       style="right: 10px;"
+      tabindex="-1"
       @click="togglePasswordVisibility"
     >
       <span :class="isPasswordVisible ? 'bi bi-eye-slash' : 'bi bi-eye'" />
