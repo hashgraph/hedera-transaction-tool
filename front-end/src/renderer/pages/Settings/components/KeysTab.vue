@@ -1,36 +1,26 @@
 <script setup lang="ts">
+import { Tabs } from './KeysTab';
+
 import { computed, ref, watch } from 'vue';
 import { PublicKey } from '@hashgraph/sdk';
-
-import { RESTORE_MISSING_KEYS } from '@renderer/router';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
-import { useRouter } from 'vue-router';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
-import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNickname';
 
 import { CommonNetwork } from '@main/shared/enums';
 
-import { deleteKey } from '@renderer/services/organization';
-import { decryptPrivateKey, deleteKeyPair } from '@renderer/services/keyPairService';
+import { decryptPrivateKey } from '@renderer/services/keyPairService';
 
-import {
-  assertUserLoggedIn,
-  getErrorMessage,
-  isLoggedInOrganization,
-  safeAwait,
-} from '@renderer/utils';
+import { assertUserLoggedIn, isLoggedInOrganization } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
-import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
-import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
-import AppModal from '@renderer/components/ui/AppModal.vue';
 import UpdateNicknameModal from '@renderer/components/modals/UpdateNicknameModal.vue';
-import UpdateRecoveryPhraseNickname from '@renderer/components/modals/UpdateRecoveryPhraseNicknameModal.vue';
+import TabHeading from './KeysTab/components/TabHeading.vue';
+import DeleteKeyPairsModal from './KeysTab/components/DeleteKeyPairsModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -38,34 +28,23 @@ const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
-const router = useRouter();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
-const recoveryPhraseNickname = useRecoveryPhraseNickname();
-
-enum Tabs {
-  ALL = 'All',
-  RECOVERY_PHRASE = 'Imported from Recovery Phrase',
-  PRIVATE_KEY = 'Imported from Private Key',
-}
 
 /* State */
-const isDeleteModalShown = ref(false);
-const isUpdateNicknameModalShown = ref(false);
-const isUpdateRecoveryPhraseNicknameModalShown = ref(false);
-const deleteAll = ref(false);
-const isSelectAll = ref(false);
-const selectedKeyPairIdsToDelete = ref<string[]>([]);
-const selectedMissingKeyPairIdsToDelete = ref<number[]>([]);
-const selectMany = ref(false);
-
 const decryptedKeys = ref<{ decrypted: string | null; publicKey: string }[]>([]);
 const publicKeysPrivateKeyToDecrypt = ref('');
+
+const isUpdateNicknameModalShown = ref(false);
 const keyPairIdToEdit = ref<string | null>(null);
-const currentTab = ref(Tabs.ALL);
-const isDeletingKey = ref(false);
+
+const selectedTab = ref(Tabs.ALL);
 const selectedRecoveryPhrase = ref<string>('');
-const deleteSingleLocal = ref<string[]>([]);
-const deleteSingleMissing = ref<number[]>([]);
+
+const isDeleteModalShown = ref(false);
+const selectedKeyPairIdsToDelete = ref<string[]>([]);
+const selectedMissingKeyPairIdsToDelete = ref<number[]>([]);
+const deleteSingleLocal = ref<string | null>(null);
+const deleteSingleMissing = ref<number | null>(null);
 
 /* Computed */
 const missingKeys = computed(() =>
@@ -76,20 +55,9 @@ const missingKeys = computed(() =>
     : [],
 );
 
-const recoveryPhraseHashes = computed(() => {
-  const listedMnemonicHashes = isLoggedInOrganization(user.selectedOrganization)
-    ? user.selectedOrganization.secretHashes
-    : user.secretHashes;
-
-  return listedMnemonicHashes.map((hash, i) => ({
-    label: recoveryPhraseNickname.get(hash) || `Recovery Phrase ${i + 1}`,
-    value: hash,
-  }));
-});
-
 const listedKeyPairs = computed(() => {
   return user.keyPairs.filter(item => {
-    switch (currentTab.value) {
+    switch (selectedTab.value) {
       case Tabs.ALL:
         return true;
       case Tabs.RECOVERY_PHRASE:
@@ -103,63 +71,34 @@ const listedKeyPairs = computed(() => {
 const listedMissingKeyPairs = computed(() => {
   return missingKeys.value.filter(keyPair => {
     return (
-      currentTab.value === Tabs.ALL ||
-      (currentTab.value === Tabs.RECOVERY_PHRASE &&
+      selectedTab.value === Tabs.ALL ||
+      (selectedTab.value === Tabs.RECOVERY_PHRASE &&
         keyPair.mnemonicHash &&
         keyPair.mnemonicHash === selectedRecoveryPhrase.value) ||
-      (currentTab.value === Tabs.PRIVATE_KEY && !keyPair.mnemonicHash)
+      (selectedTab.value === Tabs.PRIVATE_KEY && !keyPair.mnemonicHash)
     );
   });
 });
 
-const modalMessage = computed(() => {
-  const recoveryPhraseKeyIds = user.keyPairs
-    .filter(item => item.secret_hash != null)
-    .map(item => item.id);
+const allKeysSelected = computed(
+  () =>
+    selectedKeyPairIdsToDelete.value.length === listedKeyPairs.value.length &&
+    selectedMissingKeyPairIdsToDelete.value.length === listedMissingKeyPairs.value.length,
+);
 
-  const privateKeyIds = user.keyPairs.filter(item => item.secret_hash == null).map(item => item.id);
-
-  const activeArray =
-    deleteSingleLocal.value.length > 0 ? deleteSingleLocal : selectedKeyPairIdsToDelete;
-
-  const allRecoveryPhraseKeyPairsSelected = recoveryPhraseKeyIds.every(id =>
-    activeArray.value.includes(id),
-  );
-
-  const allPrivateKeyPairsSelected = privateKeyIds.every(id => activeArray.value.includes(id));
-
-  if (deleteAll.value && currentTab.value === Tabs.ALL) {
-    return 'You are about to delete all key pairs. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?';
-  }
-
-  if (allRecoveryPhraseKeyPairsSelected) {
-    return 'You are about to delete all key pairs associated with recovery phrase. If you choose to proceed, you will have to go through creating or importing a recovery phrase again. Do you wish to continue?';
-  }
-
-  if (allPrivateKeyPairsSelected) {
-    return 'You are about to delete all key pairs imported from private keys. Do you wish to continue?';
-  }
-
-  if (currentTab.value === Tabs.PRIVATE_KEY) {
-    return 'You are about do delete the selected key pair(s) imported from a private key. Do you wish to continue?';
-  }
-
-  if (currentTab.value === Tabs.RECOVERY_PHRASE) {
-    return 'You are about to delete the selected key pair(s) associated with this recovery phrase. Do you wish to continue?';
-  }
-
-  return 'You are about to delete the selected key pair(s). Do you wish to continue?';
-});
+const isSelectAllDisabled = computed(
+  () => listedKeyPairs.value.length === 0 && listedMissingKeyPairs.value.length === 0,
+);
 
 /* Handlers */
+const handleStartNicknameEdit = (id: string) => {
+  keyPairIdToEdit.value = id;
+  isUpdateNicknameModalShown.value = true;
+};
+
 const handleShowPrivateKey = async (publicKey: string) => {
   publicKeysPrivateKeyToDecrypt.value = publicKey;
   await decrypt();
-};
-
-const handleTabChange = (tab: Tabs) => {
-  currentTab.value = tab;
-  selectedRecoveryPhrase.value = '';
 };
 
 const decrypt = async () => {
@@ -200,86 +139,15 @@ const handleHideDecryptedKey = (publicKey: string) => {
   }
 };
 
-const handleDeleteModal = (keyId: string) => {
-  isSelectAll.value = false;
-  deleteAll.value = false;
-  deleteSingleLocal.value = [keyId];
-  isDeleteModalShown.value = true;
+const handleCopy = (text: string, message: string) => {
+  navigator.clipboard.writeText(text);
+  toast.success(message);
 };
 
-const handleMissingKeyDeleteModal = (id: number) => {
-  isSelectAll.value = false;
-  deleteAll.value = false;
-  deleteSingleMissing.value = [id];
-  isDeleteModalShown.value = true;
-};
-
-const deleteOrganization = async (organizationKeyIdToDelete: number | null) => {
-  if (organizationKeyIdToDelete && isLoggedInOrganization(user.selectedOrganization)) {
-    await safeAwait(
-      deleteKey(
-        user.selectedOrganization.serverUrl,
-        user.selectedOrganization.userId,
-        organizationKeyIdToDelete,
-      ),
-    );
-  }
-};
-
-const handleDelete = async () => {
-  const activeLocalArray =
-    deleteSingleLocal.value.length > 0 ? deleteSingleLocal : selectedKeyPairIdsToDelete;
-  const activeMissingArray =
-    deleteSingleMissing.value.length > 0 ? deleteSingleMissing : selectedMissingKeyPairIdsToDelete;
-  try {
-    isDeletingKey.value = true;
-
-    if (activeLocalArray.value.length > 0) {
-      for (const keyPairId of activeLocalArray.value) {
-        try {
-          const organizationKeyToDelete = getUserKeyToDelete(keyPairId);
-          await deleteKeyPair(keyPairId);
-          await deleteOrganization(organizationKeyToDelete?.id || null);
-        } catch (error) {
-          toast.error(getErrorMessage(error, 'Unable to delete one or more key pair(s)'));
-        }
-      }
-    }
-
-    if (activeMissingArray.value.length > 0) {
-      for (const keyPairId of activeMissingArray.value) {
-        await deleteOrganization(keyPairId);
-      }
-    }
-
-    toast.success('Private key(s) deleted successfully', { position: 'bottom-right' });
-
-    await user.refetchUserState();
-    await user.refetchKeys();
-    user.refetchAccounts();
-
-    if (user.shouldSetupAccount) {
-      router.push({ name: 'accountSetup' });
-    }
-  } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to delete key pair'));
-  } finally {
-    selectedKeyPairIdsToDelete.value = [];
-    selectedMissingKeyPairIdsToDelete.value = [];
-    isDeletingKey.value = false;
-    isDeleteModalShown.value = false;
-    deleteAll.value = false;
-    isSelectAll.value = false;
-    deleteSingleLocal.value = [];
-    deleteSingleMissing.value = [];
-  }
-};
-
-const handleSelectMany = () => {
-  isSelectAll.value = !isSelectAll.value;
+const handleSelectAll = () => {
   const allListedKeyPairIds = listedKeyPairs.value.map(key => key.id);
   const allListedMissingKeyPairIds = listedMissingKeyPairs.value.map(key => key.id);
-  if (isSelectAll.value) {
+  if (!allKeysSelected.value) {
     selectedKeyPairIdsToDelete.value = allListedKeyPairIds;
     selectedMissingKeyPairIdsToDelete.value = allListedMissingKeyPairIds;
   } else {
@@ -296,184 +164,35 @@ const handleCheckBox = (keyPairId: string | number) => {
   arrayToChange.value = arrayToChange.value.includes(keyPairId)
     ? arrayToChange.value.filter(id => id !== keyPairId)
     : [...arrayToChange.value, keyPairId];
-
-  isSelectAll.value = checkAllKeysSelected();
 };
 
-const handleCopy = (text: string, message: string) => {
-  navigator.clipboard.writeText(text);
-  toast.success(message);
-};
-
-const handleStartNicknameEdit = (id: string) => {
-  keyPairIdToEdit.value = id;
-  isUpdateNicknameModalShown.value = true;
-};
-
-const handleRedirectToRecoverMnemonicKeys = () => {
-  router.push({ name: RESTORE_MISSING_KEYS });
-};
-const handleRemoveClick = () => {
-  if (isSelectAll.value) {
-    deleteAll.value = true;
-  } else {
-    deleteAll.value = false;
-  }
+const handleDeleteModal = (keyId: string) => {
+  deleteSingleLocal.value = keyId;
   isDeleteModalShown.value = true;
 };
 
-const handleCloseModal = () => {
-  deleteSingleLocal.value = [];
-  deleteSingleMissing.value = [];
-  isDeleteModalShown.value = false;
+const handleMissingKeyDeleteModal = (id: number) => {
+  deleteSingleMissing.value = id;
+  isDeleteModalShown.value = true;
 };
 
-/* Functions */
-function getUserKeyToDelete(keyPairId: string) {
-  const localKey = user.keyPairs.find(kp => kp.id === keyPairId);
-  if (!localKey) {
-    throw Error('Local key not found');
-  }
-
-  if (isLoggedInOrganization(user.selectedOrganization)) {
-    return user.selectedOrganization.userKeys.find(key => key.publicKey === localKey.public_key);
-  }
-
-  return null;
-}
-
-const checkAllKeysSelected = () => {
-  if (
-    selectedKeyPairIdsToDelete.value.length === listedKeyPairs.value.length &&
-    selectedMissingKeyPairIdsToDelete.value.length === listedMissingKeyPairs.value.length
-  ) {
-    return true;
-  } else {
-    return false;
-  }
-};
-
-const isCheckBoxDisabled = () => {
-  const allPrivateKeys = user.keyPairs.filter(item => item.secret_hash === null);
-  if (currentTab.value === Tabs.ALL) {
-    if (listedKeyPairs.value.length === 0 && listedMissingKeyPairs.value.length === 0) {
-      return true;
-    }
-    return false;
-  } else if (currentTab.value === Tabs.PRIVATE_KEY) {
-    if (allPrivateKeys.length === 0) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-};
+const handleDeleteSelectedClick = () => (isDeleteModalShown.value = true);
 
 /* Watchers */
-watch(selectedRecoveryPhrase, newVal => {
-  if (newVal) {
-    currentTab.value = Tabs.RECOVERY_PHRASE;
-  }
-});
-
-watch(isDeletingKey, () => {
-  if (
-    listedKeyPairs.value.length === 0 &&
-    listedMissingKeyPairs.value.length === 0 &&
-    currentTab.value === Tabs.RECOVERY_PHRASE
-  ) {
-    currentTab.value = Tabs.ALL;
-  }
-});
-
-watch([currentTab, selectedRecoveryPhrase], () => {
+watch([selectedTab, selectedRecoveryPhrase], () => {
   selectedKeyPairIdsToDelete.value = [];
   selectedMissingKeyPairIdsToDelete.value = [];
-  isSelectAll.value = false;
-  selectMany.value = false;
 });
-
-watch(
-  () => user.selectedOrganization,
-  () => {
-    currentTab.value = Tabs.ALL;
-  },
-);
 </script>
 <template>
   <div class="flex-column-100">
-    <div class="d-flex align-items-center gap-4 mb-3">
-      <div class="btn-group-container d-inline-flex w-100" role="group">
-        <div class="btn-group gap-3 overflow-x-auto">
-          <!-- All -->
-          <AppButton
-            :color="currentTab === Tabs.ALL ? 'primary' : undefined"
-            :data-testid="`tab-${Tabs.ALL}`"
-            class="rounded-3 text-nowrap min-w-unset"
-            :class="{
-              active: currentTab === Tabs.ALL,
-              'text-body': currentTab !== Tabs.ALL,
-            }"
-            @click="handleTabChange(Tabs.ALL)"
-            >{{ Tabs.ALL }}</AppButton
-          >
-
-          <!-- Imported from Private Key -->
-          <AppButton
-            :color="currentTab === Tabs.PRIVATE_KEY ? 'primary' : undefined"
-            :data-testid="`tab-${Tabs.PRIVATE_KEY}`"
-            class="rounded-3 text-nowrap min-w-unset"
-            :class="{
-              active: currentTab === Tabs.PRIVATE_KEY,
-              'text-body': currentTab !== Tabs.PRIVATE_KEY,
-            }"
-            @click="handleTabChange(Tabs.PRIVATE_KEY)"
-            >{{ Tabs.PRIVATE_KEY }}</AppButton
-          >
-
-          <!-- Imported from Recovery Phrase DropDown -->
-          <AppDropDown
-            v-model:value="selectedRecoveryPhrase"
-            :items="recoveryPhraseHashes"
-            :toggle-text="Tabs.RECOVERY_PHRASE"
-            :active="currentTab === Tabs.RECOVERY_PHRASE"
-            :color="'primary'"
-            button-class="rounded-3"
-            class="text-nowrap"
-            :style="{ maxWidth: '300px' }"
-            toggler-icon
-            color-on-active
-          />
-
-          <!-- Set/Change Recovery Phrase nickname -->
-          <AppButton
-            v-if="currentTab === Tabs.RECOVERY_PHRASE"
-            color="secondary"
-            :data-testid="`button-change-nickname`"
-            class="rounded-3 text-nowrap min-w-unset"
-            @click="isUpdateRecoveryPhraseNicknameModalShown = true"
-            >{{
-              !user.mnemonics.some(m => m.mnemonicHash === selectedRecoveryPhrase)
-                ? 'Set'
-                : 'Change'
-            }}
-            Recovery Phrase Nickname</AppButton
-          >
-
-          <!-- Restore missing keys from recovery phrase -->
-          <AppButton
-            v-if="
-              currentTab === Tabs.RECOVERY_PHRASE &&
-              missingKeys.some(k => k.mnemonicHash === selectedRecoveryPhrase)
-            "
-            color="primary"
-            :data-testid="`button-restore-lost-keys`"
-            class="rounded-3 text-nowrap min-w-unset"
-            @click="handleRedirectToRecoverMnemonicKeys()"
-            >Restore Missing Keys</AppButton
-          >
-        </div>
-      </div>
+    <div>
+      <TabHeading
+        v-model:selected-tab="selectedTab"
+        v-model:selected-recovery-phrase="selectedRecoveryPhrase"
+        :listed-key-pairs="listedKeyPairs"
+        :listed-missing-key-pairs="listedMissingKeyPairs"
+      />
     </div>
 
     <div class="fill-remaining overflow-x-auto pe-4 pb-2 mt-4">
@@ -482,12 +201,14 @@ watch(
           <tr>
             <th>
               <AppCheckBox
-                :checked="isSelectAll"
-                @update:checked="handleSelectMany"
+                :checked="
+                  allKeysSelected && (listedKeyPairs.length > 0 || listedMissingKeyPairs.length > 0)
+                "
+                @update:checked="handleSelectAll"
                 name="select-card"
                 :data-testid="'checkbox-select-all-keys'"
                 class="cursor-pointer keys-tab"
-                :disabled="isCheckBoxDisabled()"
+                :disabled="isSelectAllDisabled"
               />
             </th>
             <th class="w-10 text-center">Index</th>
@@ -501,7 +222,7 @@ watch(
                 size="small"
                 color="danger"
                 :data-testid="`button-delete-key-all`"
-                @click="handleRemoveClick"
+                @click="handleDeleteSelectedClick"
                 class="min-w-unset"
                 :class="
                   selectedKeyPairIdsToDelete.length > 0 ||
@@ -519,7 +240,7 @@ watch(
             <tr>
               <td>
                 <AppCheckBox
-                  :checked="selectedKeyPairIdsToDelete.includes(keyPair.id) || isSelectAll"
+                  :checked="selectedKeyPairIdsToDelete.includes(keyPair.id)"
                   @update:checked="handleCheckBox(keyPair.id)"
                   name="select-card"
                   :data-testid="'checkbox-multiple-keys-id-' + index"
@@ -644,7 +365,7 @@ watch(
               <tr class="disabled-w-action position-relative">
                 <td>
                   <AppCheckBox
-                    :checked="selectedMissingKeyPairIdsToDelete.includes(keyPair.id) || isSelectAll"
+                    :checked="selectedMissingKeyPairIdsToDelete.includes(keyPair.id)"
                     @update:checked="handleCheckBox(keyPair.id)"
                     name="select-card"
                     :data-testid="'checkbox-multiple-keys-id-' + index"
@@ -721,44 +442,15 @@ watch(
           </template>
         </tbody>
       </table>
-      <AppModal v-model:show="isDeleteModalShown" class="common-modal">
-        <div class="p-5">
-          <div>
-            <i class="bi bi-x-lg cursor-pointer" @click="handleCloseModal"></i>
-          </div>
-          <div class="text-center">
-            <AppCustomIcon :name="'bin'" style="height: 160px" />
-          </div>
-          <form @submit.prevent="handleDelete">
-            <h3 class="text-center text-title text-bold mt-3">
-              Delete key
-              {{
-                selectedKeyPairIdsToDelete.length + selectedMissingKeyPairIdsToDelete.length > 1
-                  ? 'pairs'
-                  : 'pair'
-              }}
-            </h3>
-            <p class="text-center mt-4">
-              {{ modalMessage }}
-            </p>
-            <div class="d-grid mt-5">
-              <AppButton
-                type="submit"
-                data-testid="button-delete-keypair"
-                color="danger"
-                :disabled="isDeletingKey"
-                :loading="isDeletingKey"
-                loading-text="Deleting..."
-                >Delete</AppButton
-              >
-            </div>
-          </form>
-        </div>
-      </AppModal>
 
-      <UpdateRecoveryPhraseNickname
-        v-model:show="isUpdateRecoveryPhraseNicknameModalShown"
-        :recovery-phrase-hash="selectedRecoveryPhrase"
+      <DeleteKeyPairsModal
+        v-model:show="isDeleteModalShown"
+        :selected-tab="selectedTab"
+        :all-selected="allKeysSelected"
+        v-model:selected-ids="selectedKeyPairIdsToDelete"
+        v-model:selected-missing-ids="selectedMissingKeyPairIdsToDelete"
+        v-model:selected-single-id="deleteSingleLocal"
+        v-model:selected-single-missing-id="deleteSingleMissing"
       />
 
       <UpdateNicknameModal
