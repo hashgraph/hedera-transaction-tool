@@ -272,7 +272,7 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string | n
   return failedLogins;
 };
 
-/* Ecnrypt data */
+/* Encrypt data */
 async function encryptData(data: string, encryptPassword?: string | null) {
   const useKeychain = await getUseKeychainClaim();
 
