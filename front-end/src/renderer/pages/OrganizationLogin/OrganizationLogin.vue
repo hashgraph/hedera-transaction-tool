@@ -19,7 +19,6 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import ForgotPasswordModal from '@renderer/components/ForgotPasswordModal.vue';
-import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 
 /* Stores */
 const user = useUserStore();
