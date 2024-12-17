@@ -1,115 +1,251 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-# Hedera Transaction Tool Backend
+# Getting Started
 
-The Hedera Transaction Tool application is a demo application that allows a user to generate keys, create, sign, and submit transactions to a Hedera network. This software is designed for use solely by the Hedera Council and staff. The software is being released as open source as example code only, and is not intended or suitable for use in its current form by anyone other than members of the Hedera Council and Hedera personnel. If you are not a Hedera Council member or staff member, use of this application or of the code in its current form is not recommended
-and is at your own risk.
+The Transaction Tool backend is responsible for facilitating the process by which a transaction is required to be
+signed by multiple users. This includes creating, sharing, collecting signatures, preparing for submission, and executing
+the transactions to the specified network.
 
-The `back-end` directory contains the following microservices:
+**Personal User Mode**: You do not need to set up your local backend to use the application in personal mode.
+Personal mode allows you to create, sign and submit transactions that requires one user to sign.
 
-### API
+**Organizational User Mode**:
+The Transaction Tool application can be used without setting up the
+back end in personal mode. The backend is not required if you are not developing features in the Organization flow.
+To setup the front end application, you will need to follow this addition readme.
 
-The first module should serve as the main API responsible for handling user requests, managing user authentication and authorization, and handling database operations. This module will handle tasks such as user management, authentication, transaction creation, transaction operations, notifications, and all other user-required methods.
+# Prerequisites
 
-### Chain
-
-Functions as a chain processor that is responsible for monitoring the Hedera mainnet, executing transactions, and updating the transaction statuses in real time. This module will listen for events on the Hedera mainnet, execute transactions according to the user's actions, and update the transaction statuses based on the response from the Hedera network.
-
-## Prerequisites
-
-- [Node](https://nodejs.org/en/download/package-manager) version: >=`20.9.0`
-- [pnpm](https://pnpm.io/installation) version: >=`8.15.6`
+- [Node](https://nodejs.org/en/download/package-manager) version: >=`22.12.0`
+- Version check: `node-v`
+- [pnpm](https://pnpm.io/installation) version: >=`9.13.1`
+- Version check: `pnpm --version`
 - [Docker Desktop](https://docs.docker.com/desktop/install/mac-install/)
-- [Brevo](https://www.brevo.com/pricing/?utm_source=adwords_brand&utm_medium=lastclick&utm_content=SendinBlue&utm_extension=sitelinks&utm_term=brevo&utm_matchtype=e&utm_campaign=20011980161&utm_network=g&km_adid=683810310625&km_adposition=&km_device=c&utm_adgroupid=151171466311&gad_source=1&gclid=CjwKCAjwupGyBhBBEiwA0UcqaJ5UFQ8uNznjz1kUfokSV1JhaWfwqFgXrNfRrB2jqE0g4LCLaKNxpBoCsw8QAvD_BwE) username and password
 
-If you use another version, please use [n](https://github.com/tj/n) to manage.
+## 1. Clone the project
 
-### Install dependencies ⏬
+```bash
+git clone https://github.com/hashgraph/hedera-transaction-tool.git
+cd back-end
+```
+
+## 2. Install Dependencies
 
 ```bash
 pnpm install
 ```
 
-Before running the project please create `.env` in `back-end`, `apps/api`, `apps/chain`,
-and `apps/notifications`. See the example.env in each location for the required variables.
-Or copy the existing example.env in each location.
+## 3. Fill `.env` files
 
-```shell
-cp example.env .env
+There are `example.env` files in the following directories:
+
+- `apps/api`
+- `apps/chain`
+- `apps/notifications`
+- `scripts`
+- the root one
+
+1. Create a `.env` from the `example.env` files. The default values works for development
+
+## 4. Create Brevo Account
+
+Brevo account enables you to set-up the notification system in the application. You will need to create a free tier Brevo account
+
+1. Create a free tier [Brevo account](https://onboarding.brevo.com/account/register)
+2. Login to your account
+3. Click on the drop down menu on the top right of the page next to the notifications icon
+4. Click on SMTP & API
+5. Copy the SMTP key value
+6. Enter the SMTP key in the apps/api/notifications `.env`
+
+```
+   BREVO_USERNAME=<your brevo username>
+   BREVO_PASSWORD=<your brevo password>
 ```
 
-### Choose the mode in which the application will work
+## 5. Deploy
 
-### Start developing ⚒️
+You can deploy the backend for local development in two ways
 
-(Often used to test on electron client application in development mode)
+- Docker
+- Kubernetes
 
-As some services are dependent on other services, they must be run together.
-This can be done in docker. Install and run Docker Desktop.
+### Deploy Using Docker
 
-1. Make sure you don't have `cert` folder, containing self-signed certificate for HTTPS mode
-2. Make sure you have not set `NODE_ENV=production` in your `.env` files or it should be `development`
-3. From the root directory, run:
+**HTTP Mode**
+In the root of the `backend` directory run the following Docker command:
 
 ```bash
 docker-compose up
 ```
 
-`Important! If error is received, add --force-recreate`
+This mode is used for testing the client application in development mode.
 
-### Start developing on HTTPS ⚒️ or Prepare for Automation tests
+**HTTPS Mode (Preferred)**
 
-(Often used to test on BUILT electron client application)
+For HTTPS mode, you are required to create a self-signed certificate. Often used to test on BUILT electron client application. Please execute the following commands:
 
-1. First you need to create self-signed certificate
+Make sure you have `mkcert` installed (on MACyou can install it with)
 
-   ```bash
-   mkdir -p cert # if you don't have the cert directory
-   mkcert -install
-   mkcert -key-file ./cert/key.pem -cert-file ./cert/cert.pem localhost
-   ```
+```bash
+brew install mkcert
+```
 
-2. Next, set the `NODE_ENV` to `testing`, do this in every `.env`
+```bash
+# if you don't have the cert directory
+mkdir -p cert
+mkcert -install
+mkcert -key-file ./cert/key.pem -cert-file ./cert/cert.pem localhost
+```
 
-3. Run
-   ```bash
-   docker-compose up
-   ```
+Run the following Docker command
+
+```bash
+docker-compose up
+```
+
+**Exposed Endpoints**
+All ports are defined in the docker-compose.yaml file
+The default ports are:
+
+| Type                           | Endpoint                                        |
+| ------------------------------ | ----------------------------------------------- |
+| API Service Endpoint           | [http://localhost:3001](http://localhost:3001/) |
+| Notifications Service Endpoint | [http://localhost:3020](http://localhost:3020/) |
+| PgAdmin                        | [http://localhost:5050](http://localhost:5050/) |
+
+### Deploy Using Kubernetes
+
+#### [For local deployment on Kubernetes refer here](./k8s/dev/README.md)
+
+When deploying to a server, it may be desired to use Kubernetes. The docker images are currently private. They must be created and pushed to an accessible location. Update the deployment files as needed.
+
+A helm chart is forthcoming. Until then, use the following commands once connected to a cluster:
+
+1.  Create the namespace:
+
+    ```
+    kubectl create -f ./namespace.yaml
+    ```
+
+2.  Setup postgres:
+
+    ```
+      kubectl apply -f ./postgres-secret.yaml
+      kubectl apply -f ./postgres-deployment.yaml
+    ```
+
+3.  Install the helm chart and apply the rabbitmq definition:
+
+    ```
+    kubectl apply -f ./rabbitmq-secret.yaml
+
+    helm repo add bitnami https://charts.bitnami.com/bitnami
+    helm install back-end bitnami/rabbitmq-cluster-operator \
+      -f ./rabbitmq-values.yaml \
+      --namespace hedera-transaction-tool
+
+    kubectl apply -f ./rabbitmq-definition.yaml
+    ```
+
+4.  Install the helm chart for redis:
+    ```
+    helm install redis bitnami/redis --namespace hedera-transaction-tool --set auth.enabled=false --set architecture=standalone
+    ```
+5.  Apply the required secrets:
+    ```
+    kubectl apply -f ./jwt-secret.yaml
+    kubectl apply -f ./otp-secret.yaml
+    kubectl apply -f ./brevo-secret.yaml
+    ```
+6.  Deploy the services. Until migration is properly in place, the first time the api service is deployed, ensure that POSTGRES_SYNCHRONIZE is set to true in the yaml:
+    ```
+    kubectl apply -f ./api-deployment.yaml
+    kubectl apply -f ./chain-deployment.yaml
+    kubectl apply -f ./notifications-deployment.yaml
+    ```
+7.  The IP for the ingress can be set by the controller, or it can be set as a static IP. Either remove the loadBalancerIp value, or set it with a reserved IP.
+
+8.  Install the ingress controller, and ingress.
+    ```
+    helm repo add traefik https://helm.traefik.io/traefik
+    helm repo update
+    helm install traefik traefik/traefik -f traefik-values.yaml
+    ```
+    Apply the ingress:
+    ```
+    kubectl apply -f ./ingress.yaml
+    ```
+9.  Using the actual name of the Postgres pod, connect to Postgres to create the admin user:
+    ```
+    kubectl exec -it <podname> -- psql -h localhost -U postgres --password -p 5432
+    ```
+
+## Adding a Local Organization to Your Local Development Environment
+
+To add the local organization to your application, you will need to create an admin user. When you create your admin user,
+you will need to enter an email address and password.
+
+### Create your admin
+
+Make sure you need your local database up and running. The script will create a new admin user for your in your local database.
+
+1. Go to the `backend/scripts` folder
+2. Run the following command:
+
+```
+pnpm create-admin
+```
+
+3. Enter an email address. You can use any email address.
+4. Enter a password. You can enter any password.
+
+### Add an Organization
+
+1. Go to the Transaction Tool application
+2. Add an organization
+3. Enter a name for your local organization
+4. Enter the local server URL: `https:/localhost:3001` or `http:/localhost:3001`
 
 ### Resetting Local Postgres Data
 
 To reset the local postgres database, do the following:
 
-```bash
+```
 docker-compose down
 rm -rf <back-end base directory>/pgdata
 docker-compose up
 ```
 
-### Running tests
+## Tests
+
+- Unit/Integration Tests
+- E2E Tests
+
+### Unit/Integration
 
 Tests are run per service. Navigate to the service you want to test. There you can use the test commands to run the tests and see the coverage
+**API**
 
-```bash
-cd apps/api
-pnpm run test:cov
-```
+    cd apps/api
+    pnpm test:cov
 
-```bash
-cd apps/notifications
-pnpm run test:cov
-```
+**Notifications**
 
-```bash
-cd apps/chain
-pnpm run test:cov
-```
+    cd apps/notifications
+    pnpm test:cov
 
-### Running E2E test
+**Chain**
 
+    cd apps/chain
+    pnpm test:cov
+
+### E2E
+
+Make sure you have Docker running.
 The first task is to start Docker!
 
-To run the E2E tests navigate to the the desired service and follow the steps below: \
+To run the E2E tests navigate to the the desired service and follow the steps below:  
 A testing containers for `Postgres`, `Redis`, `RabbitMQ` and `Hedera Localnet` will be started once you run the test command.
 
 Things to notice:
@@ -118,119 +254,27 @@ Things to notice:
 
 - Note that after running the tests you may receive an error when starting the back-end with `docker compose`. This problem is mitigated by recreating the back-end containers, to do so start the back-end with the `--force-recreate` flag:
 
-```bash
-docker compose up --force-recreate
-```
+  ```bash
+  docker compose up --force-recreate
+  ```
 
 - Note that the `Hedera Localnet` may boot up slowly, if you want to speed-up the process, start it manually by running:
 
-```bash
-pnpx hedera start -d
-```
+  ```bash
+  pnpx hedera restart -d
+  ```
 
 After the reading the above notes, start the tests:
 
 ```bash
 cd apps/api
-pnpm run test:e2e
+pnpm test:e2e
 ```
 
-### Exposed Endpoints
+# Troubleshooting
 
-All ports are defined in the [`docker-compose.yaml`](./docker-compose.yaml)
+If you are having issues getting your local development environment set up consider the following:
 
-The defaults are:
-
-| Type                           | Endpoint                                       |
-| ------------------------------ | ---------------------------------------------- |
-| API Service Endpoint           | [http://localhost:3001](http://localhost:3001) |
-| Notifications Service Endpoint | [http://localhost:3020](http://localhost:3020) |
-| PgAdmin                        | [http://localhost:5050](http://localhost:5050) |
-
-### Create Admin
-
-1. Make sure at least the database is running or just `docker compose up`
-2. Create `.env` file inside `scripts` folder
-3. Run `pnpm run create-admin` and follow the steps
-
-### Deploy on Kubernetes
-
-#### <b>A simple Kubernetes development deployment in [here](./k8s/dev/README.md)</b>
-
-When deploying to a server, it may be desired to use Kubernetes.
-The docker images are currently private. They must be created and pushed
-to an accessible location. Examples of the secret files are supplied,
-the secrets need to be encoded to be set. Update the deployment files as needed.
-
-A helm chart is forthcoming.
-Until then, use the following commands once connected to a cluster:
-
-1. Create the namespace:
-
-   ```bash
-   kubectl create -f ./namespace.yaml
-   ```
-
-2. Setup postgres:
-
-   ```bash
-   kubectl apply -f ./postgres-secret.yaml
-   kubectl apply -f ./postgres-deployment.yaml
-   ```
-
-3. Install the helm chart and apply the rabbitmq definition:
-
-   ```bash
-   kubectl apply -f ./rabbitmq-secret.yaml
-
-   helm repo add bitnami https://charts.bitnami.com/bitnami
-   helm install back-end bitnami/rabbitmq-cluster-operator \
-     -f ./rabbitmq-values.yaml \
-     --namespace hedera-transaction-tool
-
-   kubectl apply -f ./rabbitmq-definition.yaml
-   ```
-
-4. Install the helm chart for redis:
-
-   ```bash
-   helm install redis bitnami/redis --namespace hedera-transaction-tool --set auth.enabled=false --set architecture=standalone
-   ```
-
-5. Apply the required secrets:
-
-   ```bash
-   kubectl apply -f ./jwt-secret.yaml
-   kubectl apply -f ./otp-secret.yaml
-   kubectl apply -f ./brevo-secret.yaml
-   ```
-
-6. Deploy the services. Until migration is properly in place, the first time the api service is deployed, ensure that POSTGRES_SYNCHRONIZE is set to true in the yaml:
-
-   ```bash
-   kubectl apply -f ./api-deployment.yaml
-   kubectl apply -f ./chain-deployment.yaml
-   kubectl apply -f ./notifications-deployment.yaml
-   ```
-
-7. The IP for the ingress can be set by the controller, or it can be set as a static IP. Either remove the loadBalancerIp value, or set it with a reserved IP.
-
-8. Install the ingress controller, and ingress.
-
-   ```bash
-   helm repo add traefik https://helm.traefik.io/traefik
-   helm repo update
-   helm install traefik traefik/traefik -f traefik-values.yaml
-   ```
-
-   Apply the ingress:
-
-   ```bash
-   kubectl apply -f ./ingress.yaml
-   ```
-
-9. Using the actual name of the Postgres pod, connect to Postgres to create the admin user:
-
-   ```bash
-   kubectl exec -it <podname> -- psql -h localhost -U postgres --password -p 5432
-   ```
+- Delete the `node_modules` folder in the `frontend` or `backend` or both directories. Reinstall `node_modules` with `pnpm install`
+- Delete the `pgdata` folder found in the `backend` directory. Run `docker compose --build`
+- Verify you are connected to your local development backend to observe the deployed changes and not your staging backend
