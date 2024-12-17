@@ -11,6 +11,7 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 
 import { loginLocal, registerLocal, getUsersCount } from '@renderer/services/userService';
+import { initializeUseKeychain } from '@renderer/services/safeStorageService';
 
 import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 
@@ -79,6 +80,8 @@ const handleOnFormSubmit = async (event: Event) => {
     !inputEmailInvalid.value &&
     !inputPasswordInvalid.value
   ) {
+    await initializeUseKeychain(false);
+
     buttonLoading.value = true;
     const { id, email } = await registerLocal(
       inputEmail.value.trim(),
