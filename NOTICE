@@ -950,10 +950,6 @@ The Initial Developer of atomic-sleep@1.0.0,
 is David Mark Clements (https://github.com/davidmarkclements/atomic-sleep).
 Copyright David Mark Clements. All Rights Reserved.
 
-The Initial Developer of axios@1.7.7,
-is Matt Zabriskie (https://github.com/axios/axios).
-Copyright Matt Zabriskie. All Rights Reserved.
-
 The Initial Developer of axios@1.7.8,
 is Matt Zabriskie (https://github.com/axios/axios).
 Copyright Matt Zabriskie. All Rights Reserved.
@@ -1364,7 +1360,7 @@ The Initial Developer of electron-builder@25.1.8,
 is Vladimir Krivosheev (https://github.com/electron-userland/electron-builder).
 Copyright Vladimir Krivosheev. All Rights Reserved.
 
-The Initial Developer of electron-log@5.2.2,
+The Initial Developer of electron-log@5.2.3,
 is Alexey Prokhorov (https://github.com/megahertz/electron-log).
 Copyright Alexey Prokhorov. All Rights Reserved.
 
@@ -2188,7 +2184,7 @@ The Initial Developer of murlock@4.0.0,
 is https://github.com/felanios (https://github.com/felanios/murlock).
 Copyright https://github.com/felanios. All Rights Reserved.
 
-The Initial Developer of nanoid@3.3.7,
+The Initial Developer of nanoid@3.3.8,
 is Andrey Sitnik (https://github.com/ai/nanoid).
 Copyright Andrey Sitnik. All Rights Reserved.
 
