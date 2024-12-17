@@ -55,7 +55,6 @@ provideUserModalRef(userPasswordModalRef);
 provideGlobalModalLoaderlRef(globalModalLoaderRef);
 provideDynamicLayout(dynamicLayout);
 </script>
-
 <template>
   <AppHeader
     :class="{

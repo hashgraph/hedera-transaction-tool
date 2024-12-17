@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref } from 'vue';
 
 /* Props */
 const props = defineProps<{
@@ -10,7 +10,6 @@ const props = defineProps<{
   index?: number;
   visibleInitially?: boolean;
   verification?: boolean;
-  isFocused?: boolean;
 }>();
 
 /* Emits */
@@ -59,13 +58,6 @@ const handleKeyDown = (e: KeyboardEvent) => {
     (inputs[currentIndex - 4] as HTMLInputElement).focus();
   }
 };
-
-onMounted(() => {
-  if (props.isFocused) {
-    inputRef.value?.focus();
-    inputRef.value?.setSelectionRange(inputRef.value.value.length, inputRef.value.value.length);
-  }
-});
 </script>
 <template>
   <div

@@ -123,7 +123,7 @@ onBeforeRouteLeave(async () => {
 });
 </script>
 <template>
-  <div class="p-10 flex-column flex-centered flex-1 overflow-hidden">
+  <div class="p-10 flex-column flex-centered flex-1 overflow-hidden" v-auto-focus>
     <div class="container-dark-border glow-dark-bg p-5" style="max-width: 530px">
       <h4 class="text-title text-semi-bold text-center">Sign In</h4>
       <p class="text-secondary text-small text-truncate lh-base text-center mt-3">

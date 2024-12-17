@@ -95,6 +95,7 @@ const handleResetData = async () => router.push({ name: 'login' });
     v-if="
       (isUserLoggedIn(user.personal) && !user.personal.useKeychain) || user.selectedOrganization
     "
+    v-auto-focus
   >
     <form
       class="w-50 p-4 border rounded"

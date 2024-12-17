@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { focusFirstInput } from '@renderer/utils';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 /* Props */
@@ -39,6 +40,9 @@ const handleClickOutside = (event: Event) => {
 onMounted(() => {
   document.addEventListener('keydown', handleKeyDown);
   document.addEventListener('mousedown', handleClickOutside);
+  if (modalRef.value) {
+    focusFirstInput(modalRef.value);
+  }
 });
 
 onBeforeUnmount(() => {
@@ -51,7 +55,7 @@ onBeforeUnmount(() => {
     v-bind="$attrs"
     class="modal fade show"
     aria-labelledby="exampleModalLabel"
-    aria-hidden="true"
+    :aria-hidden="!show"
     data-testid="modal-confirm-transaction"
     :style="{ display: show ? 'block' : 'none' }"
   >
