@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Prisma } from '@prisma/client';
-import type { IUserKey, IUserKeyWithMnemonic } from '@main/shared/interfaces';
+import type { DecryptedKeyWithPublic, IUserKeyWithMnemonic } from '@main/shared/interfaces';
 import type { RecoveryPhrase } from '@renderer/types';
 
 import { ref, watch } from 'vue';
@@ -27,7 +27,7 @@ import DecryptKeys from '@renderer/components/KeyPair/ImportEncrypted/components
 const props = defineProps<{
   recoveryPhrase: RecoveryPhrase;
   recoveryPhrasePassword: string;
-  selectedKeys: IUserKey[];
+  selectedKeys?: DecryptedKeyWithPublic[];
 }>();
 
 /* Emits */
@@ -65,11 +65,8 @@ const restoreExistingKeys = async () => {
   if (!isLoggedInOrganization(user.selectedOrganization))
     throw new Error('(BUG) Organization user id not set');
 
-  const keysToRestore =
-    props.selectedKeys.length > 0
-      ? props.selectedKeys
-      : await getUserState(user.selectedOrganization.serverUrl).then(state => state.userKeys);
-  const userKeysWithMnemonic = keysToRestore.filter(userKeyHasMnemonic);
+  const { userKeys } = await getUserState(user.selectedOrganization.serverUrl);
+  const userKeysWithMnemonic = userKeys.filter(userKeyHasMnemonic);
 
   await restoreOnEmpty(userKeysWithMnemonic);
 
@@ -138,10 +135,15 @@ const restoreKeyPair = async (index: number, nickname: string, upload: boolean) 
 watch(decryptKeysRef, async () => {
   if (!decryptKeysRef.value) return;
 
-  const keysPath = await getDataMigrationKeysPath();
-  const encryptedKeyPaths = await searchEncryptedKeys([keysPath]);
+  if (props.selectedKeys && props.selectedKeys.length > 0) {
+    const selectedKeyPaths = props.selectedKeys.map(key => key.filepath);
+    await decryptKeysRef.value?.process(selectedKeyPaths, props.recoveryPhrase.words);
+  } else {
+    const keysPath = await getDataMigrationKeysPath();
+    const encryptedKeyPaths = await searchEncryptedKeys([keysPath]);
 
-  await decryptKeysRef.value?.process(encryptedKeyPaths, props.recoveryPhrase.words);
+    await decryptKeysRef.value?.process(encryptedKeyPaths, props.recoveryPhrase.words);
+  }
 });
 </script>
 <template>

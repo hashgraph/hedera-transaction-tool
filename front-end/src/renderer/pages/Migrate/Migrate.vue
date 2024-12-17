@@ -16,7 +16,7 @@ import { resetDataLocal } from '@renderer/services/userService';
 import { getStaticUser } from '@renderer/services/safeStorageService';
 import { add, remove } from '@renderer/services/claimService';
 
-import { getNickname, safeAwait } from '@renderer/utils';
+import { safeAwait } from '@renderer/utils';
 
 import DecryptRecoveryPhrase from './components/DecryptRecoveryPhrase.vue';
 import SetupPersonal from './components/SetupPersonal.vue';
@@ -25,36 +25,13 @@ import ImportUserData from './components/ImportUserData.vue';
 import BeginKeysImport from './components/BeginKeysImport.vue';
 import Summary from './components/Summary.vue';
 import SelectKeys from './components/SelectKeys.vue';
-import type { IUserKey, IUserKeyWithNickname } from '@main/shared/interfaces';
-import { getUserState } from '@renderer/services/organization';
+import { DecryptedKeyWithPublic } from '@main/shared/interfaces';
 import { getDataMigrationKeysPath } from '@renderer/services/migrateDataService';
 import { searchEncryptedKeys } from '@renderer/services/encryptedKeys';
 import { PrivateKey } from '@hashgraph/sdk';
 
 /* Types */
 type StepName = 'recoveryPhrase' | 'personal' | 'organization' | 'selectKeys' | 'summary';
-
-/* Classes */
-class DecryptedKeyWithPublic {
-  fileName: string;
-  privateKey: string;
-  recoveryPhraseHashCode: number | null;
-  index: number | null;
-  publicKey: string;
-  constructor(
-    fileName: string,
-    privateKey: string,
-    recoveryPhraseHashCode: number | null,
-    index: number | null,
-    publicKey: string,
-  ) {
-    this.fileName = fileName;
-    this.privateKey = privateKey;
-    this.recoveryPhraseHashCode = recoveryPhraseHashCode;
-    this.index = index;
-    this.publicKey = publicKey;
-  }
-}
 
 /* Stores */
 const user = useUserStore();
@@ -74,9 +51,8 @@ const organizationId = ref<string | null>(null);
 const userInitialized = ref(false);
 const keysImported = ref(0);
 const importedUserData = ref<MigrateUserDataResult | null>(null);
-const allUserKeysToRecover = ref<IUserKeyWithNickname[]>([]);
-const selectedKeysToRecover = ref<IUserKey[]>([]);
-const allDecryptedKeys = ref<DecryptedKeyWithPublic[]>([]);
+const allUserKeysToRecover = ref<DecryptedKeyWithPublic[]>([]);
+const selectedKeysToRecover = ref<DecryptedKeyWithPublic[]>([]);
 
 /* Computed */
 const heading = computed(() => {
@@ -110,6 +86,26 @@ const handleSetRecoveryPhrase = async (value: {
 }) => {
   recoveryPhrase.value = value.recoveryPhrase;
   recoveryPhrasePassword.value = value.recoveryPhrasePassword;
+
+  const keysPath = await getDataMigrationKeysPath();
+  const encryptedKeyPaths = await searchEncryptedKeys([keysPath]);
+  if (recoveryPhrasePassword.value) {
+    const decryptedKeys = await decryptKeysFromFiles(
+      encryptedKeyPaths,
+      recoveryPhrase.value.words,
+      recoveryPhrasePassword.value,
+    );
+    const decryptedArr = decryptedKeys.map((key, index) => {
+      const privateKey = PrivateKey.fromStringDer(key.privateKey);
+      const formattedPublic = privateKey.publicKey.toStringRaw();
+      const fileName =
+        encryptedKeyPaths[index].split('/').pop()?.split('.').slice(0, -1).join('.') || '';
+      const filepath = encryptedKeyPaths[index];
+      return new DecryptedKeyWithPublic(fileName, formattedPublic, filepath);
+    });
+    allUserKeysToRecover.value = decryptedArr;
+  }
+
   step.value = 'personal';
 };
 
@@ -133,7 +129,7 @@ const handleKeysImported = async (value: number) => {
   step.value = 'summary';
 };
 
-const handleSelectedKeys = (keysToRecover: IUserKey[]) => {
+const handleSelectedKeys = (keysToRecover: DecryptedKeyWithPublic[]) => {
   selectedKeysToRecover.value = keysToRecover;
 };
 
@@ -154,42 +150,6 @@ const initializeUserStore = async () => {
   await user.selectOrganization(user.organizations[0]);
   await user.setRecoveryPhrase(recoveryPhrase.value.words);
   personalUser.value.password && user.setPassword(personalUser.value.password);
-  if (user.selectedOrganization?.serverUrl) {
-    const { userKeys } = await getUserState(user.selectedOrganization.serverUrl);
-
-    allUserKeysToRecover.value = userKeys.map(userKey => {
-      const nickname = getNickname(userKey.publicKey, user.keyPairs);
-      return {
-        ...userKey,
-        nickname: nickname || null,
-      };
-    });
-  }
-  const keysPath = await getDataMigrationKeysPath();
-  const encryptedKeyPaths = await searchEncryptedKeys([keysPath]);
-  if (recoveryPhrasePassword.value) {
-    const decryptedKeys = await decryptKeysFromFiles(
-      encryptedKeyPaths,
-      recoveryPhrase.value.words,
-      recoveryPhrasePassword.value,
-    );
-    const decryptedArr = decryptedKeys.map((key, index) => {
-      const unformattedPrivate = PrivateKey.fromStringDer(key.privateKey);
-      const formattedPrivate = unformattedPrivate.toStringRaw();
-      const formattedPublic = unformattedPrivate.publicKey.toStringRaw();
-      const fileName =
-        encryptedKeyPaths[index].split('/').pop()?.split('.').slice(0, -1).join('.') || '';
-      return new DecryptedKeyWithPublic(
-        fileName,
-        formattedPrivate,
-        key.recoveryPhraseHashCode,
-        key.index,
-        formattedPublic,
-      );
-    });
-    allDecryptedKeys.value = decryptedArr;
-    console.log(decryptedArr);
-  }
 };
 
 const toggleMigrationClaim = async (userId: string, start = false) => {
@@ -244,7 +204,6 @@ onMounted(async () => {
         </template>
 
         <!-- Select Keys Step -->
-
         <template
           v-if="
             stepIs('selectKeys') &&

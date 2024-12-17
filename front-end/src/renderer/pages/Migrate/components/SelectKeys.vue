@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import type { IUserKey, IUserKeyWithNickname } from '@main/shared/interfaces';
+import type { DecryptedKeyWithPublic } from '@main/shared/interfaces';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import { ref } from 'vue';
 
 const props = defineProps<{
-  keysToRecover: IUserKeyWithNickname[];
+  keysToRecover: DecryptedKeyWithPublic[];
 }>();
 
 /* Emits */
 const emit = defineEmits<{
   (event: 'migration:cancel'): void;
-  (event: 'selected-keys', selectedKeys: IUserKey[]): void;
+  (event: 'selected-keys', selectedKeys: DecryptedKeyWithPublic[]): void;
 }>();
 
 /* State */
@@ -38,11 +38,12 @@ const handleSelectMany = () => {
 
 const handleCancel = () => emit('migration:cancel');
 
-const handleContinue = () =>
-  emit(
-    'selected-keys',
-    props.keysToRecover.filter(key => selectedKeys.value.includes(key.publicKey)) as IUserKey[],
+const handleContinue = () => {
+  const filteredKeys = props.keysToRecover.filter(key =>
+    selectedKeys.value.includes(key.publicKey),
   );
+  emit('selected-keys', filteredKeys);
+};
 
 /* Functions */
 const checkAllKeysSelected = () => {
@@ -86,7 +87,7 @@ const formatKey = (key: string) => {
                 />
               </td>
               <td :data-testid="`cell-nickname-${index}`">
-                {{ key.nickname ? key.nickname : 'N/A' }}
+                {{ key.fileName ? key.fileName : 'N/A' }}
               </td>
 
               <td>
