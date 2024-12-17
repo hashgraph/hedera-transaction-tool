@@ -4,7 +4,7 @@ import { ref } from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 
 import SelectEncryptedKeysModal from '@renderer/components/KeyPair/ImportEncrypted/components/SelectEncryptedKeysModal.vue';
-import RecoveryPhraseModal from '@renderer/components/KeyPair/ImportEncrypted/components/RecoveryPhraseModal.vue';
+import RecoveryPhraseModal from '@renderer/components/modals/RecoveryPhraseModal.vue';
 import DecryptKeys from '@renderer/components/KeyPair/ImportEncrypted/components/DecryptKeys.vue';
 
 /* Stores */
