@@ -4,6 +4,7 @@ import type { RecoveryPhrase } from '@renderer/types';
 import type { PersonalUser } from './components/SetupPersonal.vue';
 import { computed, onMounted, ref } from 'vue';
 
+import { KeyPathWithName } from '@main/shared/interfaces';
 import { MIGRATION_STARTED } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -14,6 +15,8 @@ import { useRouter } from 'vue-router';
 import { resetDataLocal } from '@renderer/services/userService';
 import { getStaticUser } from '@renderer/services/safeStorageService';
 import { add, remove } from '@renderer/services/claimService';
+import { getDataMigrationKeysPath } from '@renderer/services/migrateDataService';
+import { searchEncryptedKeys } from '@renderer/services/encryptedKeys';
 
 import { safeAwait } from '@renderer/utils';
 
@@ -24,9 +27,6 @@ import ImportUserData from './components/ImportUserData.vue';
 import BeginKeysImport from './components/BeginKeysImport.vue';
 import Summary from './components/Summary.vue';
 import SelectKeys from './components/SelectKeys.vue';
-import { KeyPathWithName } from '@main/shared/interfaces';
-import { getDataMigrationKeysPath } from '@renderer/services/migrateDataService';
-import { searchEncryptedKeys } from '@renderer/services/encryptedKeys';
 
 /* Types */
 type StepName = 'recoveryPhrase' | 'personal' | 'organization' | 'selectKeys' | 'summary';
