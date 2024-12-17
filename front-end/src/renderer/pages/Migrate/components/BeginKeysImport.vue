@@ -140,12 +140,8 @@ watch(decryptKeysRef, async () => {
 
   const keysPath = await getDataMigrationKeysPath();
   const encryptedKeyPaths = await searchEncryptedKeys([keysPath]);
-  const selectedKeyPublicKeys = props.selectedKeys.map(key => key.publicKey);
-  const filteredPaths = encryptedKeyPaths.filter(path =>
-    selectedKeyPublicKeys.some(publicKey => path.includes(publicKey)),
-  );
 
-  await decryptKeysRef.value?.process(filteredPaths, props.recoveryPhrase.words);
+  await decryptKeysRef.value?.process(encryptedKeyPaths, props.recoveryPhrase.words);
 });
 </script>
 <template>
