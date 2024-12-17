@@ -64,7 +64,7 @@ watch(
 );
 </script>
 <template>
-  <div class="p-5">
+  <div class="p-5" v-focus-first-input>
     <div class="d-flex align-items-center">
       <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="$router.back()">
         <i class="bi bi-arrow-left"></i>

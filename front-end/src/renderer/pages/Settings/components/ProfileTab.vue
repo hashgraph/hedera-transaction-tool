@@ -129,6 +129,7 @@ watch(newPassword, pass => {
     v-if="
       (isUserLoggedIn(user.personal) && !user.personal.useKeychain) || user.selectedOrganization
     "
+    v-focus-first-input
   >
     <form
       class="w-50 p-4 border rounded"

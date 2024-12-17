@@ -11,6 +11,7 @@ export * from './router';
 export * from './userStoreHelpers';
 export * from './sdk';
 export * from './transactionSignatureModels';
+export * from './autoFocus';
 
 export const getDateTimeLocalInputValue = (date: Date) => {
   const tzo = -date.getTimezoneOffset();

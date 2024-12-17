@@ -94,7 +94,7 @@ watch(inputNewOrganizationPassword, pass => {
 });
 </script>
 <template>
-  <form @submit.prevent="handleOnFormSubmit" class="flex-column-100">
+  <form @submit.prevent="handleOnFormSubmit" class="flex-column-100" v-focus-first-input>
     <div class="fill-remaining">
       <p class="text-secondary text-small lh-base text-center">
         Fill the information to setup your organization

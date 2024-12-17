@@ -203,6 +203,7 @@ watch(newPassword, pass => {
 </script>
 <template>
   <AppModal
+    v-if="show"
     :show="show"
     :class="{
       'common-modal': !shouldEnterToken,

@@ -51,11 +51,15 @@ onBeforeUnmount(() => {
     v-bind="$attrs"
     class="modal fade show"
     aria-labelledby="exampleModalLabel"
-    aria-hidden="true"
+    :aria-hidden="!show"
     data-testid="modal-confirm-transaction"
     :style="{ display: show ? 'block' : 'none' }"
   >
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" ref="modalRef">
+    <div
+      class="modal-dialog modal-dialog-centered modal-dialog-scrollable"
+      ref="modalRef"
+      v-focus-first-input
+    >
       <div class="modal-content">
         <div v-if="scrollable" class="modal-header pb-0"><slot name="header"></slot></div>
         <div class="modal-body"><slot></slot></div>

@@ -15,6 +15,9 @@ const props = defineProps<{
 /* Emits */
 const emit = defineEmits(['update:word']);
 
+/* Ref */
+const inputRef = ref<HTMLInputElement | null>(null);
+
 /* State */
 const isVisible = ref(props.visibleInitially);
 
@@ -32,6 +35,8 @@ const handldeWordInput = (e: Event) => {
 
   emit('update:word', value);
 };
+
+defineExpose({ inputRef });
 </script>
 <template>
   <div
@@ -43,6 +48,7 @@ const handldeWordInput = (e: Event) => {
   >
     <span v-if="index" class="word-index text-small">{{ index }}.</span>
     <input
+      ref="inputRef"
       class="form-control is-fill"
       :class="verification ? 'border-pink' : ''"
       :type="inputType"

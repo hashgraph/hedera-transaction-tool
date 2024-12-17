@@ -69,7 +69,7 @@ const handleLinkFile = async (e: Event) => {
 };
 </script>
 <template>
-  <div class="p-5">
+  <div class="p-5" v-focus-first-input>
     <AppButton
       color="primary"
       class="d-flex align-items-center justify-content-center"
