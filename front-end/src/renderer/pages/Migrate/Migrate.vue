@@ -2,7 +2,6 @@
 import type { MigrateUserDataResult } from '@main/shared/interfaces/migration';
 import type { RecoveryPhrase } from '@renderer/types';
 import type { PersonalUser } from './components/SetupPersonal.vue';
-import { decryptKeysFromFiles } from '@renderer/services/encryptedKeys';
 import { computed, onMounted, ref } from 'vue';
 
 import { MIGRATION_STARTED } from '@main/shared/constants';
@@ -25,10 +24,9 @@ import ImportUserData from './components/ImportUserData.vue';
 import BeginKeysImport from './components/BeginKeysImport.vue';
 import Summary from './components/Summary.vue';
 import SelectKeys from './components/SelectKeys.vue';
-import { DecryptedKeyWithPublic } from '@main/shared/interfaces';
+import { KeyPathWithName } from '@main/shared/interfaces';
 import { getDataMigrationKeysPath } from '@renderer/services/migrateDataService';
 import { searchEncryptedKeys } from '@renderer/services/encryptedKeys';
-import { PrivateKey } from '@hashgraph/sdk';
 
 /* Types */
 type StepName = 'recoveryPhrase' | 'personal' | 'organization' | 'selectKeys' | 'summary';
@@ -51,8 +49,8 @@ const organizationId = ref<string | null>(null);
 const userInitialized = ref(false);
 const keysImported = ref(0);
 const importedUserData = ref<MigrateUserDataResult | null>(null);
-const allUserKeysToRecover = ref<DecryptedKeyWithPublic[]>([]);
-const selectedKeysToRecover = ref<DecryptedKeyWithPublic[]>([]);
+const allUserKeysToRecover = ref<KeyPathWithName[]>([]);
+const selectedKeysToRecover = ref<KeyPathWithName[]>([]);
 
 /* Computed */
 const heading = computed(() => {
@@ -89,22 +87,13 @@ const handleSetRecoveryPhrase = async (value: {
 
   const keysPath = await getDataMigrationKeysPath();
   const encryptedKeyPaths = await searchEncryptedKeys([keysPath]);
-  if (recoveryPhrasePassword.value) {
-    const decryptedKeys = await decryptKeysFromFiles(
-      encryptedKeyPaths,
-      recoveryPhrase.value.words,
-      recoveryPhrasePassword.value,
+  const keyNames = encryptedKeyPaths.map(path => {
+    return new KeyPathWithName(
+      path.split('/').pop()?.split('.').slice(0, -1).join('.') || '',
+      path,
     );
-    const decryptedArr = decryptedKeys.map((key, index) => {
-      const privateKey = PrivateKey.fromStringDer(key.privateKey);
-      const formattedPublic = privateKey.publicKey.toStringRaw();
-      const fileName =
-        encryptedKeyPaths[index].split('/').pop()?.split('.').slice(0, -1).join('.') || '';
-      const filepath = encryptedKeyPaths[index];
-      return new DecryptedKeyWithPublic(fileName, formattedPublic, filepath);
-    });
-    allUserKeysToRecover.value = decryptedArr;
-  }
+  });
+  allUserKeysToRecover.value = keyNames;
 
   step.value = 'personal';
 };
@@ -129,7 +118,7 @@ const handleKeysImported = async (value: number) => {
   step.value = 'summary';
 };
 
-const handleSelectedKeys = (keysToRecover: DecryptedKeyWithPublic[]) => {
+const handleSelectedKeys = (keysToRecover: KeyPathWithName[]) => {
   selectedKeysToRecover.value = keysToRecover;
 };
 
@@ -172,6 +161,10 @@ onMounted(async () => {
       :class="step === 'selectKeys' ? 'custom-key-modal' : null"
     >
       <h4 class="text-title text-semi-bold text-center">{{ heading }}</h4>
+
+      <h5 v-if="step === 'selectKeys'" class="text-title fs-6 mt-4 text-normal text-center">
+        Select either a folder or a zip file containing the encrypted keys
+      </h5>
 
       <div class="fill-remaining mt-4">
         <!-- Decrypt Recovery Phrase Step -->

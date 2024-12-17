@@ -24,13 +24,11 @@ export interface IDecryptedKey {
 }
 
 /* Classes */
-export class DecryptedKeyWithPublic {
+export class KeyPathWithName {
   fileName: string;
-  publicKey: string;
   filepath: string;
-  constructor(fileName: string, publicKey: string, filepath: string) {
+  constructor(fileName: string, filepath: string) {
     this.fileName = fileName;
-    this.publicKey = publicKey;
     this.filepath = filepath;
   }
 }

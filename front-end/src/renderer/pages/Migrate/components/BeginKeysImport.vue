@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Prisma } from '@prisma/client';
-import type { DecryptedKeyWithPublic, IUserKeyWithMnemonic } from '@main/shared/interfaces';
+import type { KeyPathWithName, IUserKeyWithMnemonic } from '@main/shared/interfaces';
 import type { RecoveryPhrase } from '@renderer/types';
 
 import { ref, watch } from 'vue';
@@ -27,7 +27,7 @@ import DecryptKeys from '@renderer/components/KeyPair/ImportEncrypted/components
 const props = defineProps<{
   recoveryPhrase: RecoveryPhrase;
   recoveryPhrasePassword: string;
-  selectedKeys?: DecryptedKeyWithPublic[];
+  selectedKeys?: KeyPathWithName[];
 }>();
 
 /* Emits */
