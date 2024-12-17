@@ -62,7 +62,7 @@ const handleLinkFile = async (e: Event) => {
 
       router.push({ name: 'files' });
       toast.success('File linked successfully!');
-    } catch (error: unknown) {
+    } catch (error) {
       toast.error(getErrorMessage(error, 'File link failed'));
     }
   }

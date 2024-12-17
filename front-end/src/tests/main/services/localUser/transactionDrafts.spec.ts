@@ -180,9 +180,15 @@ describe('Services Local User Public Keys Linked', () => {
     test('Should throw error if failed to get count', async () => {
       const userId = 'user1';
 
-      prisma.transactionDraft.count.mockRejectedValue('Transaction draft Database error');
+      prisma.transactionDraft.count.mockRejectedValueOnce('Transaction draft Database error');
+      prisma.transactionDraft.count.mockRejectedValueOnce(
+        new Error('Transaction draft Database error'),
+      );
 
       expect(() => getDraftsCount(userId)).rejects.toThrow('Failed to get drafts count');
+      expect(() => getDraftsCount(userId)).rejects.toThrow(
+        new Error('Transaction draft Database error'),
+      );
     });
   });
 });

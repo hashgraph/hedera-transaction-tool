@@ -84,8 +84,8 @@ const readFile = async () => {
     ).join(',');
 
     await updateLocalFileInfo(contentBytes, privateKey, keyPair.type);
-  } catch (err: unknown) {
-    toast.error(getErrorMessage(err, 'Failed to execute query'));
+  } catch (error) {
+    toast.error(getErrorMessage(error, 'Failed to execute query'));
   } finally {
     network.client._operator = null;
     isLoading.value = false;
@@ -150,7 +150,7 @@ const updateLocalFileInfo = async (content: string, privateKey: string, privateK
 
       toast.success(`File ${fileId.value} linked`);
     }
-  } catch (error: any) {
+  } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to add/update file info'));
   }
 };

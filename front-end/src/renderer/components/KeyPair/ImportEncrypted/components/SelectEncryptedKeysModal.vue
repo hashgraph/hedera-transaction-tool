@@ -4,6 +4,8 @@ import { computed, ref, watch } from 'vue';
 import { showOpenDialog } from '@renderer/services/electronUtilsService';
 import { searchEncryptedKeys, abortFileSearch } from '@renderer/services/encryptedKeys';
 
+import { safeAwait } from '@renderer/utils';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
@@ -68,21 +70,21 @@ const handleSelect = async () => {
 
   foundKeyPaths.value = null;
 
-  try {
-    searching.value = true;
+  searching.value = true;
 
-    const encryptedKeyPaths = await searchEncryptedKeys(result.filePaths);
+  const { data } = await safeAwait(searchEncryptedKeys(result.filePaths));
 
+  if (data) {
     if (searching.value) {
-      foundKeyPaths.value = encryptedKeyPaths;
-      selectedKeyPaths.value = encryptedKeyPaths; // Auto-select all items
+      foundKeyPaths.value = data;
+      selectedKeyPaths.value = data; // Auto-select all items
     } else {
       foundKeyPaths.value = null;
       selectedKeyPaths.value = null;
     }
-  } finally {
-    searching.value = false;
   }
+
+  searching.value = false;
 };
 
 const handleCheckboxChecked = (path: string, checked: boolean) => {

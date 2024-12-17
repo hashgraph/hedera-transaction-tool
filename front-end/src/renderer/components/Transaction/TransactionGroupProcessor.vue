@@ -148,8 +148,8 @@ async function signAfterConfirm() {
 
       await executeTransaction(signedTransactionBytes, groupItem);
     }
-  } catch (err: unknown) {
-    toast.error(getErrorMessage(err, 'Transaction signing failed'));
+  } catch (error) {
+    toast.error(getErrorMessage(error, 'Transaction signing failed'));
   } finally {
     isSigning.value = false;
   }
@@ -224,8 +224,8 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
     if (unmounted.value) {
       toast.success('Transaction executed');
     }
-  } catch (err: any) {
-    const data = JSON.parse(err.message);
+  } catch (error) {
+    const data = JSON.parse(getErrorMessage(error, 'Transaction execution failed'));
     status = data.status;
 
     toast.error(data.message);

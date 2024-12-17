@@ -193,10 +193,10 @@ export const executeQuery = async (
     } else {
       return response;
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.log(error);
     client._operator = null;
-    throw new Error(error.message);
+    throw new Error(error instanceof Error ? error.message : 'Failed to execute query');
   }
 };
 
@@ -216,9 +216,9 @@ export const storeTransaction = async (transaction: Prisma.TransactionUncheckedC
     return await prisma.transaction.create({
       data: transaction,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.log(error);
-    throw new Error(error.message || 'Failed to store transaction');
+    throw new Error(error instanceof Error ? error.message : 'Failed to store transaction');
   }
 };
 
@@ -234,8 +234,8 @@ export const getTransactions = async (findArgs: Prisma.TransactionFindManyArgs) 
     });
 
     return transactions;
-  } catch (error: any) {
-    throw new Error(error.message || 'Failed to fetch transactions');
+  } catch (error: unknown) {
+    throw new Error(error instanceof Error ? error.message : 'Failed to fetch transactions');
   }
 };
 
@@ -251,8 +251,8 @@ export const getTransactionsCount = async (userId: string) => {
     });
 
     return count;
-  } catch (error: any) {
-    throw new Error(error.message || 'Failed to get transactions count');
+  } catch (error: unknown) {
+    throw new Error(error instanceof Error ? error.message : 'Failed to get transactions count');
   }
 };
 
@@ -272,8 +272,10 @@ export const getTransaction = async (id: string) => {
     transaction.body = Uint8Array.from(Buffer.from(transaction.body, 'hex')).toString();
 
     return transaction;
-  } catch (error: any) {
-    throw new Error(error.message || `Failed to fetch transaction with id: ${id}`);
+  } catch (error: unknown) {
+    throw new Error(
+      error instanceof Error ? error.message : `Failed to fetch transaction with id: ${id}`,
+    );
   }
 };
 
@@ -285,8 +287,8 @@ export const encodeSpecialFile = async (content: Uint8Array, fileId: string) => 
     } else {
       throw new Error('File is not one of special files');
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.log(error);
-    throw new Error(error.message || 'Failed to encode special file');
+    throw new Error(error instanceof Error ? error.message : 'Failed to encode special file');
   }
 };

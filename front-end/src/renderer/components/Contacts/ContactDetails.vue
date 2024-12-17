@@ -101,7 +101,7 @@ const handleResend = async () => {
       await signUp(user.selectedOrganization.serverUrl, email);
     }
     toast.success('Email sent successfully');
-  } catch (error: unknown) {
+  } catch (error) {
     toast.error(getErrorMessage(error, 'Error while sending email. Please try again.'));
   }
 };

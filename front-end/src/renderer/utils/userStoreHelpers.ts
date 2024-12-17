@@ -708,9 +708,9 @@ export const restoreOrganizationKeys = async (
           keys.push(key);
         }
       }
-    } catch (e) {
+    } catch (error) {
       failedRestoreMessages.push(
-        getErrorMessage(e, `Failed to restore key at index ${organizationKey.index}`),
+        getErrorMessage(error, `Failed to restore key at index ${organizationKey.index}`),
       );
     }
   }

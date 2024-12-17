@@ -34,8 +34,8 @@ export const getSignatureEntities = (transaction: Transaction) => {
     };
 
     return result;
-  } catch (err) {
-    console.log(err);
+  } catch (error) {
+    console.log(error);
     return {
       accounts: [],
       receiverAccounts: [],

@@ -100,8 +100,8 @@ const storeKeys = async (
         false,
       );
       restoredKeys++;
-    } catch (err) {
-      toast.error(getErrorMessage(err, 'Failed to store key pair'));
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to store key pair'));
     }
   }
 

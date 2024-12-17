@@ -18,7 +18,7 @@ export const commonRequestHandler = async <T>(
 ) => {
   try {
     return await callback();
-  } catch (error: any) {
+  } catch (error) {
     let message = defaultMessage;
 
     if (error instanceof AxiosError) {

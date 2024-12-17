@@ -2,7 +2,6 @@
 import type { ITransactionFull } from '@main/shared/interfaces';
 
 import { onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
-
 import { Transaction, AccountDeleteTransaction, Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import { TransactionStatus } from '@main/shared/interfaces';
@@ -11,7 +10,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getTransactionInfo } from '@renderer/services/mirrorNodeDataService';
 
-import { stringifyHbar } from '@renderer/utils';
+import { safeAwait, stringifyHbar } from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{
@@ -28,23 +27,23 @@ const transferredAmount = ref<Hbar | undefined>(new Hbar(0));
 
 /* Functions */
 async function fetchTransactionInfo(payer: string, seconds: string, nanos: string) {
-  try {
-    const { transactions } = await getTransactionInfo(
+  const { data } = await safeAwait(
+    getTransactionInfo(
       `${payer}-${seconds}-${nanos}`,
       network.mirrorNodeBaseURL,
       controller.value || undefined,
-    );
+    ),
+  );
 
-    if (transactions.length > 0 && props.transaction instanceof AccountDeleteTransaction) {
+  if (data) {
+    if (data.transactions.length > 0 && props.transaction instanceof AccountDeleteTransaction) {
       const deletedAccountId = props.transaction.accountId?.toString();
       const amount =
-        transactions[0].transfers?.find(
+        data.transactions[0].transfers?.find(
           transfer => transfer.account?.toString() === deletedAccountId,
         )?.amount || 0;
       transferredAmount.value = Hbar.from(Math.abs(amount), HbarUnit.Tinybar);
     }
-  } catch {
-    /* Ignore if transaction not available in mirror node */
   }
 }
 

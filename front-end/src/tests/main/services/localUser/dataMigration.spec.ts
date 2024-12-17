@@ -25,6 +25,7 @@ import {
 } from '@main/services/localUser/dataMigration';
 import { addAccount } from '@main/services/localUser/accounts';
 import { addClaim } from '@main/services/localUser/claim';
+import { safeAwait } from '@main/utils/safeAwait';
 
 vi.mock('fs');
 vi.mock('path');
@@ -35,6 +36,7 @@ vi.mock('electron', () => ({
 }));
 vi.mock('@main/services/localUser/accounts');
 vi.mock('@main/services/localUser/claim');
+vi.mock('@main/utils/safeAwait');
 
 describe('Data Migration', () => {
   beforeEach(() => {
@@ -275,6 +277,11 @@ describe('Data Migration', () => {
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
       mockAccounts();
 
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+
       const result = await migrateUserData(mockUserId);
       expect(result).toEqual({
         accountsImported: 1,
@@ -301,6 +308,11 @@ describe('Data Migration', () => {
       const mockContent = 'credentials={"mockDir/InputFiles": "svet"}';
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
 
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+
       await migrateUserData(mockUserId);
 
       expect(addClaim).toHaveBeenCalledWith(mockUserId, UPDATE_LOCATION, 'mockDir/InputFiles');
@@ -324,7 +336,17 @@ describe('Data Migration', () => {
 
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
       mockAccounts();
-      vi.mocked(addClaim).mockRejectedValue(new Error('Claim error'));
+
+      vi.mocked(safeAwait).mockResolvedValueOnce({
+        data: undefined,
+        error: new Error('Claim error'),
+      });
+      vi.mocked(safeAwait).mockResolvedValueOnce({
+        data: undefined,
+        error: new Error('failed to add claim'),
+      });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
 
       const result = await migrateUserData(mockUserId);
       expect(result).toEqual({
@@ -351,7 +373,12 @@ describe('Data Migration', () => {
 
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
       mockAccounts();
-      vi.mocked(addAccount).mockRejectedValue(new Error('Account error'));
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({
+        data: undefined,
+        error: new Error('Add account error'),
+      });
 
       const result = await migrateUserData(mockUserId);
       expect(result).toEqual({
@@ -379,6 +406,11 @@ describe('Data Migration', () => {
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
       mockAccounts();
 
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+
       const result = await migrateUserData(mockUserId);
       expect(result).toEqual({
         accountsImported: 1,
@@ -400,6 +432,11 @@ describe('Data Migration', () => {
 
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
       mockAccounts();
+
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
 
       const result = await migrateUserData(mockUserId);
       expect(result).toEqual({
@@ -428,6 +465,11 @@ describe('Data Migration', () => {
       vi.mocked(fs.promises.readdir).mockResolvedValue([]);
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
 
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+
       const result = await migrateUserData(mockUserId);
       expect(result).toEqual({
         accountsImported: 0,
@@ -448,6 +490,11 @@ describe('Data Migration', () => {
 
       vi.mocked(fs.promises.readFile).mockResolvedValue(mockContent);
       vi.mocked(fs.promises.readdir).mockRejectedValue(new Error('Read error'));
+
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
 
       const result = await migrateUserData(mockUserId);
       expect(result).toEqual({
@@ -471,6 +518,11 @@ describe('Data Migration', () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.promises.readdir).mockRejectedValueOnce(new Error('Read dir error'));
 
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+
       const result = await migrateUserData(mockUserId);
       expect(result).toEqual({
         accountsImported: 0,
@@ -489,7 +541,13 @@ describe('Data Migration', () => {
       const mockUserId = 'userId';
       const mockContent = 'credentials={"mockDir": "svet"}';
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
-      vi.mocked(addClaim).mockImplementationOnce(vi.fn());
+
+      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
+      vi.mocked(safeAwait).mockResolvedValueOnce({
+        data: undefined,
+        error: new Error('Claim error'),
+      });
+
       vi.mocked(addClaim).mockRejectedValueOnce(new Error('Claim error'));
 
       const result = await migrateUserData(mockUserId);

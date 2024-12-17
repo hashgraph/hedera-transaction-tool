@@ -13,7 +13,7 @@ import { deleteDraft } from './transactionDraftsService';
 export const getGroups = async (findArgs: Prisma.TransactionGroupFindManyArgs) => {
   try {
     return await window.electronAPI.local.transactionGroups.getGroups(findArgs);
-  } catch (error: any) {
+  } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to fetch transaction groups'));
   }
 };
@@ -21,7 +21,7 @@ export const getGroups = async (findArgs: Prisma.TransactionGroupFindManyArgs) =
 export const getGroup = async (id: string) => {
   try {
     return await window.electronAPI.local.transactionGroups.getGroup(id);
-  } catch (error: any) {
+  } catch (error) {
     throw Error(getMessageFromIPCError(error, `Failed to fetch transaction group with id: ${id}`));
   }
 };
@@ -29,7 +29,7 @@ export const getGroup = async (id: string) => {
 export async function getGroupItems(id: string) {
   try {
     return await window.electronAPI.local.transactionGroups.getGroupItems(id);
-  } catch (error: any) {
+  } catch (error) {
     throw Error(
       getMessageFromIPCError(error, `Failed to fetch transaction group items with id: ${id}`),
     );
@@ -39,7 +39,7 @@ export async function getGroupItems(id: string) {
 export async function getGroupItem(id: string, seq: string) {
   try {
     return await window.electronAPI.local.transactionGroups.getGroupItem(id, seq);
-  } catch (error: any) {
+  } catch (error) {
     throw Error(
       getMessageFromIPCError(error, `Failed to fetch transaction group items with id: ${id}`),
     );
@@ -74,7 +74,7 @@ export const addGroupWithDrafts = async (
       await window.electronAPI.local.transactionGroups.addGroupItem(groupItem);
     }
     return group.id;
-  } catch (error: any) {
+  } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to add transaction draft'));
   }
 };
@@ -91,7 +91,7 @@ export async function addGroupItem(
   };
   try {
     await window.electronAPI.local.transactionGroups.addGroupItem(groupItemStruct);
-  } catch (error: any) {
+  } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to add groupItem'));
   }
 }
@@ -105,7 +105,7 @@ export async function addGroup(description: string, atomic: boolean) {
   };
   try {
     return await window.electronAPI.local.transactionGroups.addGroup(transactionGroup);
-  } catch (error: any) {
+  } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to add transaction draft'));
   }
 }
@@ -169,7 +169,7 @@ export async function updateGroup(
         await window.electronAPI.local.transactionGroups.addGroupItem(groupItem);
       }
     }
-  } catch (error: any) {
+  } catch (error) {
     throw Error(getMessageFromIPCError(error, `Failed to fetch transaction group with id: ${id}`));
   }
 }
@@ -177,7 +177,7 @@ export async function updateGroup(
 export const deleteGroup = async (id: string) => {
   try {
     return await window.electronAPI.local.transactionGroups.deleteGroup(id);
-  } catch (error: any) {
+  } catch (error) {
     throw Error(getMessageFromIPCError(error, `Failed to delete transaction group with id: ${id}`));
   }
 };
@@ -187,7 +187,7 @@ export const deleteGroup = async (id: string) => {
 //     return await window.electronAPI.local.transactionDrafts.draftExists(
 //       transactionBytes.toString(),
 //     );
-//   } catch (error: any) {
+//   } catch (error) {
 //     throw Error(getMessageFromIPCError(error, `Failed to determine if transaction draft exist`));
 //   }
 // };
@@ -196,15 +196,15 @@ export const deleteGroup = async (id: string) => {
 export const getGroupsCount = async (userId: string) => {
   try {
     return await window.electronAPI.local.transactionGroups.getGroupsCount(userId);
-  } catch (err: any) {
-    throw Error(getMessageFromIPCError(err, 'Failed to get transactions count'));
+  } catch (error) {
+    throw Error(getMessageFromIPCError(error, 'Failed to get transactions count'));
   }
 };
 
 export async function editGroupItem(groupItem: GroupItem) {
   try {
     return await window.electronAPI.local.transactionGroups.editGroupItem(groupItem);
-  } catch (err: any) {
-    throw Error(getMessageFromIPCError(err, 'Failed to update group item'));
+  } catch (error) {
+    throw Error(getMessageFromIPCError(error, 'Failed to update group item'));
   }
 }

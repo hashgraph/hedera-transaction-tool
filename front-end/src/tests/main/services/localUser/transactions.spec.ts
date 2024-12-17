@@ -566,13 +566,24 @@ describe('Services Local User Transactions', () => {
         }),
       };
 
+      const queryMock2 = {
+        execute: vi.fn().mockImplementation(() => {
+          throw errorMessage;
+        }),
+      };
+
       vi.spyOn(SDK.Query, 'fromBytes').mockReturnValue(queryMock as unknown as SDK.Query<any>);
       vi.spyOn(SDK.PrivateKey, 'fromStringED25519').mockReturnValue(
         privateKey as unknown as SDK.PrivateKey,
       );
 
-      expect(() => executeQuery(queryBytes, accountId, privateKey, privateKeyType)).rejects.toThrow(
-        errorMessage,
+      await expect(executeQuery(queryBytes, accountId, privateKey, privateKeyType)).rejects.toThrow(
+        new Error(errorMessage),
+      );
+
+      vi.spyOn(SDK.Query, 'fromBytes').mockReturnValue(queryMock2 as unknown as SDK.Query<any>);
+      await expect(executeQuery(queryBytes, accountId, privateKey, privateKeyType)).rejects.toThrow(
+        'Failed to execute query',
       );
     });
 
@@ -680,7 +691,7 @@ describe('Services Local User Transactions', () => {
 
     test('Should throw if storing transaction fails', async () => {
       vi.mocked(getNumberArrayFromString).mockImplementation(() => {
-        throw new Error();
+        throw '';
       });
 
       expect(
@@ -738,7 +749,7 @@ describe('Services Local User Transactions', () => {
         },
       };
 
-      prisma.transaction.findMany.mockRejectedValue(new Error());
+      prisma.transaction.findMany.mockRejectedValue('');
 
       await expect(getTransactions(findArgs)).rejects.toThrow('Failed to fetch transactions');
     });
@@ -777,7 +788,7 @@ describe('Services Local User Transactions', () => {
     test('Should throw custom error if getting transactions count fails', async () => {
       const userId = '123';
 
-      prisma.transaction.count.mockRejectedValue(new Error());
+      prisma.transaction.count.mockRejectedValue('');
 
       await expect(getTransactionsCount(userId)).rejects.toThrow(
         'Failed to get transactions count',
@@ -822,7 +833,7 @@ describe('Services Local User Transactions', () => {
     test('Should throw if fetching transaction fails', async () => {
       const id = '123';
 
-      prisma.transaction.findFirst.mockRejectedValue(new Error());
+      prisma.transaction.findFirst.mockRejectedValue('');
 
       await expect(getTransaction(id)).rejects.toThrow(
         `Failed to fetch transaction with id: ${id}`,
@@ -879,7 +890,7 @@ describe('Services Local User Transactions', () => {
 
       vi.mocked(isHederaSpecialFileId).mockReturnValue(true);
       vi.mocked(encodeHederaSpecialFile).mockImplementation(() => {
-        throw new Error();
+        throw '';
       });
 
       await expect(encodeSpecialFile(content, fileId)).rejects.toThrow(

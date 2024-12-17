@@ -78,7 +78,7 @@ async function handleEmailEnter() {
 
     shouldEnterToken.value = true;
     setTimeout(() => otpInputRef.value?.focus(), 100);
-  } catch (error: unknown) {
+  } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to request password reset'));
   }
 }
@@ -97,7 +97,7 @@ async function handleTokenEnter() {
 
     shouldEnterToken.value = false;
     shouldSetNewPassword.value = true;
-  } catch (error: unknown) {
+  } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to verify OTP'));
   }
 }

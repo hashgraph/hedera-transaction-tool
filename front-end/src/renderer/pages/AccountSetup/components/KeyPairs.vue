@@ -98,8 +98,8 @@ const addKeyToRestored = async (index: number, mnemonicHash: string, veirificati
 
       keys.value.push(key);
     }
-  } catch (e) {
-    toast.error(getErrorMessage(e, `Restoring key at index: ${index} failed`));
+  } catch (error) {
+    toast.error(getErrorMessage(error, `Restoring key at index: ${index} failed`));
   }
 };
 
@@ -211,8 +211,8 @@ const handleSave = async () => {
         user.secretHashes.push(key.mnemonicHash);
       }
       storedCount++;
-    } catch (e) {
-      toast.error(getErrorMessage(e, `Failed to store key pair: ${key.publicKey}`));
+    } catch (error) {
+      toast.error(getErrorMessage(error, `Failed to store key pair: ${key.publicKey}`));
     }
   }
 

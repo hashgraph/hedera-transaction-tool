@@ -15,7 +15,7 @@ import { loginLocal, registerLocal, getUsersCount } from '@renderer/services/use
 
 import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 
-import { isEmail, isUserLoggedIn } from '@renderer/utils';
+import { getErrorMessage, isEmail, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
@@ -98,14 +98,15 @@ const handleOnFormSubmit = async (event: Event) => {
         keepLoggedIn.value,
         false,
       );
-    } catch (error: any) {
+    } catch (error) {
       inputEmailInvalid.value = false;
       inputPasswordInvalid.value = false;
 
-      if (error.message.includes('email')) {
+      const message = getErrorMessage(error, 'Invalid email or password');
+      if (message.includes('email')) {
         inputEmailInvalid.value = true;
       }
-      if (error.message.includes('password')) {
+      if (message.includes('password')) {
         inputPasswordInvalid.value = true;
       }
     } finally {
