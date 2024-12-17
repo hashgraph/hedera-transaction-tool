@@ -7,6 +7,7 @@ import {
   Abortable,
   decryptPrivateKeyFromPath,
 } from '@main/services/localUser';
+import { createIPCChannel, renameFunc } from '@main/utils/electronInfra';
 
 const createChannelName = (...props) => ['encryptedKeys', ...props].join(':');
 
@@ -26,17 +27,5 @@ export default () => {
     getFileStreamEventEmitter().emit(searchEncryptedKeysAbort);
   });
 
-  // Decrypts the encrypted key in the given file path
-  ipcMain.handle(
-    createChannelName('decryptEncryptedKey'),
-    async (
-      _e,
-      filePath: string,
-      password: string,
-      skipIndexes: number[] | null,
-      skipHashCode: number | null,
-    ) => {
-      return await decryptPrivateKeyFromPath(filePath, password, skipIndexes, skipHashCode);
-    },
-  );
+  createIPCChannel('encryptedKeys', [renameFunc(decryptPrivateKeyFromPath, 'decryptEncryptedKey')]);
 };

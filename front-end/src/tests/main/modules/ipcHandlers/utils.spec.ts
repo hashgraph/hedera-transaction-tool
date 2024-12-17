@@ -1,5 +1,6 @@
-import { MockedObject } from 'vitest';
 import { mockDeep } from 'vitest-mock-extended';
+
+import { getIPCHandler, getIPCListener, invokeIPCHandler, invokeIPCListener } from '../../_utils_';
 
 import registerUtilsListeners from '@main/modules/ipcHandlers/utils';
 
@@ -9,47 +10,14 @@ import { hash, dualCompareHash } from '@main/utils/crypto';
 import fs from 'fs/promises';
 import { createHash, X509Certificate } from 'crypto';
 
-vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
-vi.mock('bcrypt', () => ({ hash: vi.fn(), compare: vi.fn() }));
-vi.mock('crypto');
-vi.mock('electron', () => {
-  return {
-    default: mockDeep<Electron.App>(),
-    app: mockDeep<Electron.App>(),
-    BrowserWindow: mockDeep<BrowserWindow>(),
-    shell: mockDeep<Electron.Session>(),
-    dialog: mockDeep<Electron.Session>(),
-    ipcMain: mockDeep<Electron.IpcMain>(),
-  };
-});
-vi.mock('fs/promises', () => ({
-  default: {
-    writeFile: vi.fn(),
-  },
-}));
-vi.mock('path', () => ({
-  default: {
-    join: vi.fn(),
-  },
-}));
-vi.mock('@hashgraph/proto', () => ({
-  proto: {
-    Key: {
-      create: vi.fn(),
-      decode: vi.fn(),
-    },
-  },
-}));
-vi.mock('@main/utils/crypto', () => ({
-  hash: vi.fn(),
-  dualCompareHash: vi.fn(),
-}));
-vi.mock('@main/utils', () => {
-  return {
-    getNumberArrayFromString: vi.fn(),
-    saveContentToPath: vi.fn(),
-  };
-});
+vi.mock('bcrypt', () => mockDeep());
+vi.mock('crypto', () => mockDeep());
+vi.mock('electron', () => mockDeep());
+vi.mock('fs/promises', () => mockDeep());
+vi.mock('path', () => mockDeep());
+vi.mock('@hashgraph/proto', () => mockDeep());
+vi.mock('@main/utils/crypto', () => mockDeep());
+vi.mock('@main/utils', () => mockDeep());
 
 describe('createChannelName', () => {
   test('Should create correct channel name', () => {
@@ -65,11 +33,9 @@ describe('registerUtilsListeners', () => {
     registerUtilsListeners();
   });
 
-  const ipcMainMO = ipcMain as unknown as MockedObject<Electron.IpcMain>;
-  const event: Electron.IpcMainEvent = mockDeep<Electron.IpcMainEvent>();
-
   test('Should register handlers for each util', () => {
-    const utils = [
+    const eventListeners = ['openExternal', 'openPath'];
+    const eventHandlers = [
       'hash',
       'compareHash',
       'compareDataToHashes',
@@ -80,21 +46,14 @@ describe('registerUtilsListeners', () => {
       'quit',
     ];
 
-    expect(ipcMainMO.on).toHaveBeenCalledWith('utils:openExternal', expect.any(Function));
-    expect(
-      utils.every(util =>
-        ipcMainMO.handle.mock.calls.some(([channel]) => channel === `utils:${util}`),
-      ),
-    ).toBe(true);
+    expect(eventListeners.every(util => getIPCListener(`utils:${util}`))).toBe(true);
+    expect(eventHandlers.every(util => getIPCHandler(`utils:${util}`))).toBe(true);
   });
 
-  test('Should call open external on util:openExternal', () => {
+  test('Should call open external on util:openExternal', async () => {
     const url = 'some-url.com';
 
-    const openExternalHandler = ipcMainMO.on.mock.calls.find(([event]) => {
-      return event === 'utils:openExternal';
-    });
-    openExternalHandler && openExternalHandler[1](event, url);
+    await invokeIPCListener('utils:openExternal', url);
     expect(shell.openExternal).toHaveBeenCalledWith(url);
   });
 
@@ -112,13 +71,7 @@ describe('registerUtilsListeners', () => {
     vi.mocked(dialog.showSaveDialog).mockResolvedValue({ filePath, canceled });
     vi.mocked(fs.writeFile).mockResolvedValue(undefined);
 
-    const saveFileHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:saveFile');
-
-    expect(saveFileHandler).toBeDefined();
-
-    if (saveFileHandler) {
-      await saveFileHandler[1](event, uint8ArrayString);
-    }
+    await invokeIPCHandler('utils:saveFile', uint8ArrayString);
 
     expect(BrowserWindow.getAllWindows).toHaveBeenCalled();
     expect(getNumberArrayFromString).toHaveBeenCalledWith(uint8ArrayString);
@@ -132,13 +85,7 @@ describe('registerUtilsListeners', () => {
 
     vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows);
 
-    const saveFileHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:saveFile');
-
-    expect(saveFileHandler).toBeDefined();
-
-    if (saveFileHandler) {
-      await saveFileHandler[1](event);
-    }
+    await invokeIPCHandler('utils:saveFile');
 
     expect(BrowserWindow.getAllWindows).toHaveBeenCalled();
     expect(getNumberArrayFromString).not.toHaveBeenCalled();
@@ -160,16 +107,10 @@ describe('registerUtilsListeners', () => {
       canceled: true,
     });
 
-    const saveFileHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:saveFile');
-
-    expect(saveFileHandler).toBeDefined();
-
-    if (saveFileHandler) {
-      await saveFileHandler[1](event, uint8ArrayString);
-      expect(fs.writeFile).not.toHaveBeenCalled();
-      await saveFileHandler[1](event, uint8ArrayString);
-      expect(fs.writeFile).not.toHaveBeenCalled();
-    }
+    await invokeIPCHandler('utils:saveFile', uint8ArrayString);
+    expect(fs.writeFile).not.toHaveBeenCalled();
+    await invokeIPCHandler('utils:saveFile', uint8ArrayString);
+    expect(fs.writeFile).not.toHaveBeenCalled();
   });
 
   test('Should show error in dialog if fail to write in util:saveFile', async () => {
@@ -186,16 +127,10 @@ describe('registerUtilsListeners', () => {
     vi.mocked(fs.writeFile).mockRejectedValueOnce(new Error('An error'));
     vi.mocked(fs.writeFile).mockRejectedValueOnce(undefined);
 
-    const saveFileHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:saveFile');
-
-    expect(saveFileHandler).toBeDefined();
-
-    if (saveFileHandler) {
-      await saveFileHandler[1](event, uint8ArrayString);
-      expect(dialog.showErrorBox).toHaveBeenCalledWith('Failed to save file', 'An error');
-      await saveFileHandler[1](event, uint8ArrayString);
-      expect(dialog.showErrorBox).toHaveBeenCalledWith('Failed to save file', 'Unknown error');
-    }
+    await invokeIPCHandler('utils:saveFile', uint8ArrayString);
+    expect(dialog.showErrorBox).toHaveBeenCalledWith('Failed to save file', 'An error');
+    await invokeIPCHandler('utils:saveFile', uint8ArrayString);
+    expect(dialog.showErrorBox).toHaveBeenCalledWith('Failed to save file', 'Unknown error');
   });
 
   test('Should show error in dialog if error in util:saveFile', async () => {
@@ -209,82 +144,49 @@ describe('registerUtilsListeners', () => {
     vi.mocked(dialog.showSaveDialog).mockRejectedValueOnce(new Error('An error'));
     vi.mocked(dialog.showSaveDialog).mockRejectedValueOnce(undefined);
 
-    const saveFileHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:saveFile');
-
-    expect(saveFileHandler).toBeDefined();
-
-    if (saveFileHandler) {
-      await saveFileHandler[1](event, uint8ArrayString);
-      expect(dialog.showErrorBox).toHaveBeenCalledWith('Failed to save file', 'An error');
-      await saveFileHandler[1](event, uint8ArrayString);
-      expect(dialog.showErrorBox).toHaveBeenCalledWith('Failed to save file', 'Unknown error');
-    }
+    await invokeIPCHandler('utils:saveFile', uint8ArrayString);
+    expect(dialog.showErrorBox).toHaveBeenCalledWith('Failed to save file', 'An error');
+    await invokeIPCHandler('utils:saveFile', uint8ArrayString);
+    expect(dialog.showErrorBox).toHaveBeenCalledWith('Failed to save file', 'Unknown error');
   });
 
-  test('Should hash the data in util:hash', () => {
+  test('Should hash the data in util:hash', async () => {
     const data = 'testData';
 
-    const hashHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:hash');
+    await invokeIPCHandler('utils:hash', data);
 
-    expect(hashHandler).toBeDefined();
-
-    if (hashHandler) {
-      hashHandler[1](event, data);
-      expect(hash).toHaveBeenCalledWith(data, false);
-    }
+    expect(hash).toHaveBeenCalledWith(data, false);
   });
 
-  test('Should compare the data and hash in util:compareHash', () => {
+  test('Should compare the data and hash in util:compareHash', async () => {
     const data = 'testData';
     const hashData = 'testHash';
 
-    const compareHashHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:compareHash');
-
-    expect(compareHashHandler).toBeDefined();
-
     vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: false, isBcrypt: false });
 
-    if (compareHashHandler) {
-      compareHashHandler[1](event, data, hashData);
-      expect(dualCompareHash).toHaveBeenCalledWith(data, hashData);
-    }
+    await invokeIPCHandler('utils:compareHash', data, hashData);
+    expect(dualCompareHash).toHaveBeenCalledWith(data, hashData);
   });
 
   test('Should compare the data to hashes in util:compareDataToHashes and return the hash if match is found', async () => {
     const data = 'testData';
     const hashData = ['testHash', 'testHash2'];
 
-    const compareDataToHasheshHandler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'utils:compareDataToHashes',
-    );
-
-    expect(compareDataToHasheshHandler).toBeDefined();
-
-    if (compareDataToHasheshHandler) {
-      vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: true, isBcrypt: false });
-      await compareDataToHasheshHandler[1](event, data, hashData);
-      expect(dualCompareHash).toHaveBeenCalledWith(data, hashData[0]);
-    }
+    vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: true, isBcrypt: false });
+    await invokeIPCHandler('utils:compareDataToHashes', data, hashData);
+    expect(dualCompareHash).toHaveBeenCalledWith(data, hashData[0]);
   });
 
   test('Should compare the data to hashes in util:compareDataToHashes and return null if match is NOT found', async () => {
     const data = 'testData';
     const hashData = ['testHash', 'testHash2'];
 
-    const compareDataToHasheshHandler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'utils:compareDataToHashes',
-    );
-
-    expect(compareDataToHasheshHandler).toBeDefined();
-
-    if (compareDataToHasheshHandler) {
-      vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: false, isBcrypt: false });
-      vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: false, isBcrypt: false });
-      const result = await compareDataToHasheshHandler[1](event, data, hashData);
-      expect(dualCompareHash).toHaveBeenCalledWith(data, hashData[0]);
-      expect(dualCompareHash).toHaveBeenCalledWith(data, hashData[1]);
-      expect(result).toBeNull();
-    }
+    vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: false, isBcrypt: false });
+    vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: false, isBcrypt: false });
+    const result = await invokeIPCHandler('utils:compareDataToHashes', data, hashData);
+    expect(dualCompareHash).toHaveBeenCalledWith(data, hashData[0]);
+    expect(dualCompareHash).toHaveBeenCalledWith(data, hashData[1]);
+    expect(result).toBeNull();
   });
 
   test('Should call showOpenDialog with correct parameters in util:showOpenDialog', async () => {
@@ -295,36 +197,28 @@ describe('registerUtilsListeners', () => {
     const properties = ['openFile'];
     const message = 'Select a file to open';
 
-    const showOpenDialogHandler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'utils:showOpenDialog',
+    const dialogReturnValue = { filePaths: ['/path/to/file.txt'], canceled: false };
+    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+    vi.mocked(dialog.showOpenDialog).mockResolvedValue(dialogReturnValue);
+
+    const result = await invokeIPCHandler(
+      'utils:showOpenDialog',
+      title,
+      buttonLabel,
+      filters,
+      properties,
+      message,
     );
 
-    expect(showOpenDialogHandler).toBeDefined();
-
-    if (showOpenDialogHandler) {
-      const dialogReturnValue = { filePaths: ['/path/to/file.txt'], canceled: false };
-      vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
-      vi.mocked(dialog.showOpenDialog).mockResolvedValue(dialogReturnValue);
-
-      const result = await showOpenDialogHandler[1](
-        event,
-        title,
-        buttonLabel,
-        filters,
-        properties,
-        message,
-      );
-
-      expect(BrowserWindow.getAllWindows).toHaveBeenCalled();
-      expect(dialog.showOpenDialog).toHaveBeenCalledWith(windows[0], {
-        title,
-        buttonLabel,
-        filters,
-        properties,
-        message,
-      });
-      expect(result).toEqual(dialogReturnValue);
-    }
+    expect(BrowserWindow.getAllWindows).toHaveBeenCalled();
+    expect(dialog.showOpenDialog).toHaveBeenCalledWith(windows[0], {
+      title,
+      buttonLabel,
+      filters,
+      properties,
+      message,
+    });
+    expect(result).toEqual(dialogReturnValue);
   });
 
   test('Should return undefined if no windows in util:showOpenDialog', async () => {
@@ -334,28 +228,20 @@ describe('registerUtilsListeners', () => {
     const properties = ['openFile'];
     const message = 'Select a file to open';
 
-    const showOpenDialogHandler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'utils:showOpenDialog',
+    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([]);
+
+    const result = await invokeIPCHandler(
+      'utils:showOpenDialog',
+      title,
+      buttonLabel,
+      filters,
+      properties,
+      message,
     );
 
-    expect(showOpenDialogHandler).toBeDefined();
-
-    if (showOpenDialogHandler) {
-      vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([]);
-
-      const result = await showOpenDialogHandler[1](
-        event,
-        title,
-        buttonLabel,
-        filters,
-        properties,
-        message,
-      );
-
-      expect(BrowserWindow.getAllWindows).toHaveBeenCalled();
-      expect(dialog.showOpenDialog).not.toHaveBeenCalled();
-      expect(result).toBeUndefined();
-    }
+    expect(BrowserWindow.getAllWindows).toHaveBeenCalled();
+    expect(dialog.showOpenDialog).not.toHaveBeenCalled();
+    expect(result).toBeUndefined();
   });
 
   test('Should return undefined if dialog is canceled in util:showOpenDialog', async () => {
@@ -366,47 +252,33 @@ describe('registerUtilsListeners', () => {
     const properties = ['openFile'];
     const message = 'Select a file to open';
 
-    const showOpenDialogHandler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'utils:showOpenDialog',
+    const dialogReturnValue = { filePaths: [], canceled: true };
+    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+    vi.mocked(dialog.showOpenDialog).mockResolvedValue(dialogReturnValue);
+
+    const result = await invokeIPCHandler(
+      'utils:showOpenDialog',
+      title,
+      buttonLabel,
+      filters,
+      properties,
+      message,
     );
 
-    expect(showOpenDialogHandler).toBeDefined();
-
-    if (showOpenDialogHandler) {
-      const dialogReturnValue = { filePaths: [], canceled: true };
-      vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
-      vi.mocked(dialog.showOpenDialog).mockResolvedValue(dialogReturnValue);
-
-      const result = await showOpenDialogHandler[1](
-        event,
-        title,
-        buttonLabel,
-        filters,
-        properties,
-        message,
-      );
-
-      expect(BrowserWindow.getAllWindows).toHaveBeenCalled();
-      expect(dialog.showOpenDialog).toHaveBeenCalledWith(windows[0], {
-        title,
-        buttonLabel,
-        filters,
-        properties,
-        message,
-      });
-      expect(result).toBe(dialogReturnValue);
-    }
+    expect(BrowserWindow.getAllWindows).toHaveBeenCalled();
+    expect(dialog.showOpenDialog).toHaveBeenCalledWith(windows[0], {
+      title,
+      buttonLabel,
+      filters,
+      properties,
+      message,
+    });
+    expect(result).toBe(dialogReturnValue);
   });
 
   test('Should invoke app.quit in util:quit', async () => {
-    const quitHandler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:quit');
-
-    expect(quitHandler).toBeDefined();
-
-    if (quitHandler) {
-      await quitHandler[1](event);
-      expect(app.quit).toHaveBeenCalled();
-    }
+    await invokeIPCHandler('utils:quit');
+    expect(app.quit).toHaveBeenCalled();
   });
 
   test('Should hash the data in util:sha384', async () => {
@@ -418,15 +290,10 @@ describe('registerUtilsListeners', () => {
       digest: vi.fn().mockReturnValue(hashedData),
     } as unknown as ReturnType<typeof createHash>);
 
-    const sha384Handler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'utils:sha384');
+    const result = await invokeIPCHandler('utils:sha384', data);
 
-    expect(sha384Handler).toBeDefined();
-
-    if (sha384Handler) {
-      const result = await sha384Handler[1](event, data);
-      expect(createHash).toHaveBeenCalledWith('sha384');
-      expect(result).toBe(hashedData);
-    }
+    expect(createHash).toHaveBeenCalledWith('sha384');
+    expect(result).toBe(hashedData);
   });
 
   describe('x509BytesFromPem', () => {
@@ -455,20 +322,12 @@ describe('registerUtilsListeners', () => {
         digest: vi.fn().mockReturnValue(certHash),
       } as unknown as ReturnType<typeof createHash>);
 
-      const x509BytesFromPemHandler = ipcMainMO.handle.mock.calls.find(
-        ([e]) => e === 'utils:x509BytesFromPem',
-      );
-
-      expect(x509BytesFromPemHandler).toBeDefined();
-
-      if (x509BytesFromPemHandler) {
-        const result = await x509BytesFromPemHandler[1](event, pem);
-        expect(result).toEqual({
-          raw: certRaw,
-          hash: certHash,
-          text: certText,
-        });
-      }
+      const result = await invokeIPCHandler('utils:x509BytesFromPem', pem);
+      expect(result).toEqual({
+        raw: certRaw,
+        hash: certHash,
+        text: certText,
+      });
     });
 
     test('Should handle x509BytesFromPem with hex PEM string', async () => {
@@ -491,20 +350,12 @@ describe('registerUtilsListeners', () => {
         digest: vi.fn().mockReturnValue(certHash),
       } as unknown as ReturnType<typeof createHash>);
 
-      const x509BytesFromPemHandler = ipcMainMO.handle.mock.calls.find(
-        ([e]) => e === 'utils:x509BytesFromPem',
-      );
-
-      expect(x509BytesFromPemHandler).toBeDefined();
-
-      if (x509BytesFromPemHandler) {
-        const result = await x509BytesFromPemHandler[1](event, pem);
-        expect(result).toEqual({
-          raw: certRaw,
-          hash: certHash,
-          text: certText,
-        });
-      }
+      const result = await invokeIPCHandler('utils:x509BytesFromPem', pem);
+      expect(result).toEqual({
+        raw: certRaw,
+        hash: certHash,
+        text: certText,
+      });
     });
 
     test('Should handle x509BytesFromPem with Uint8Array', async () => {
@@ -526,34 +377,18 @@ describe('registerUtilsListeners', () => {
         digest: vi.fn().mockReturnValue(certHash),
       } as unknown as ReturnType<typeof createHash>);
 
-      const x509BytesFromPemHandler = ipcMainMO.handle.mock.calls.find(
-        ([e]) => e === 'utils:x509BytesFromPem',
-      );
-
-      expect(x509BytesFromPemHandler).toBeDefined();
-
-      if (x509BytesFromPemHandler) {
-        const result = await x509BytesFromPemHandler[1](event, pem);
-        expect(result).toEqual({
-          raw: certRaw,
-          hash: certHash,
-          text: certText,
-        });
-      }
+      const result = await invokeIPCHandler('utils:x509BytesFromPem', pem);
+      expect(result).toEqual({
+        raw: certRaw,
+        hash: certHash,
+        text: certText,
+      });
     });
 
     test('Should throw error for invalid PEM in x509BytesFromPem', async () => {
       const pem = 'invalid-pem';
 
-      const x509BytesFromPemHandler = ipcMainMO.handle.mock.calls.find(
-        ([e]) => e === 'utils:x509BytesFromPem',
-      );
-
-      expect(x509BytesFromPemHandler).toBeDefined();
-
-      if (x509BytesFromPemHandler) {
-        await expect(x509BytesFromPemHandler[1](event, pem)).rejects.toThrow('Invalid PEM');
-      }
+      await expect(invokeIPCHandler('utils:x509BytesFromPem', pem)).rejects.toThrow('Invalid PEM');
     });
   });
 });

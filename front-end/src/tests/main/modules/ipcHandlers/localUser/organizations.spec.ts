@@ -1,4 +1,6 @@
-import { ipcMain } from 'electron';
+import { mockDeep } from 'vitest-mock-extended';
+
+import { getIPCHandler, invokeIPCHandler } from '../../../_utils_';
 
 import registerOrganizationsHandlers from '@main/modules/ipcHandlers/localUser/organizations';
 import {
@@ -8,28 +10,16 @@ import {
   removeOrganization,
 } from '@main/services/localUser';
 import { Prisma } from '@prisma/client';
-import { MockedObject } from 'vitest';
-import { mockDeep } from 'vitest-mock-extended';
 
-vi.mock('electron', () => ({
-  ipcMain: { handle: vi.fn() },
-}));
-
-vi.mock('@main/services/localUser', () => ({
-  getOrganizations: vi.fn(),
-  addOrganization: vi.fn(),
-  updateOrganization: vi.fn(),
-  removeOrganization: vi.fn(),
-}));
+vi.mock('@main/services/localUser', () => mockDeep());
 
 describe('IPC handlers organizations', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     registerOrganizationsHandlers();
   });
 
-  const ipcMainMO = ipcMain as unknown as MockedObject<Electron.IpcMain>;
-  const event: Electron.IpcMainEvent = mockDeep<Electron.IpcMainEvent>();
+  const id = 'orgId';
 
   test('Should register handlers for each event', () => {
     const event = [
@@ -38,64 +28,36 @@ describe('IPC handlers organizations', () => {
       'updateOrganization',
       'deleteOrganization',
     ];
-
-    expect(
-      event.every(util =>
-        ipcMainMO.handle.mock.calls.some(([channel]) => channel === `organizations:${util}`),
-      ),
-    ).toBe(true);
+    expect(event.every(util => getIPCHandler(`organizations:${util}`))).toBe(true);
   });
 
   test('Should set up getOrganizations handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'organizations:getOrganizations',
-    );
-    expect(handler).toBeDefined();
-
-    handler && (await handler[1](event));
+    await invokeIPCHandler('organizations:getOrganizations');
     expect(getOrganizations).toHaveBeenCalled();
   });
 
   test('Should set up addOrganization handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'organizations:addOrganization',
-    );
-    expect(handler).toBeDefined();
-
     const organization: Prisma.OrganizationCreateInput = {
       nickname: 'Test Organization',
       serverUrl: 'url',
       key: 'key',
     };
 
-    handler && (await handler[1](event, organization));
+    await invokeIPCHandler('organizations:addOrganization', organization);
     expect(addOrganization).toHaveBeenCalledWith(organization);
   });
 
   test('Should set up updateOrganization handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'organizations:updateOrganization',
-    );
-    expect(handler).toBeDefined();
-
-    const id = 'orgId';
     const organization: Prisma.OrganizationUncheckedUpdateWithoutOrganizationCredentialsInput = {
       nickname: 'Updated Organization',
     };
 
-    handler && (await handler[1](event, id, organization));
+    await invokeIPCHandler('organizations:updateOrganization', id, organization);
     expect(updateOrganization).toHaveBeenCalledWith(id, organization);
   });
 
   test('Should set up deleteOrganization handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'organizations:deleteOrganization',
-    );
-    expect(handler).toBeDefined();
-
-    const id = 'orgId';
-
-    handler && (await handler[1](event, id));
+    await invokeIPCHandler('organizations:deleteOrganization', id);
     expect(removeOrganization).toHaveBeenCalledWith(id);
   });
 });

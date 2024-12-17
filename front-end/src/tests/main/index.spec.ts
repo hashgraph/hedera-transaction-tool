@@ -1,4 +1,3 @@
-import { MockedObject } from 'vitest';
 import { mockDeep } from 'vitest-mock-extended';
 
 import { app, BrowserWindow, session } from 'electron';
@@ -10,55 +9,29 @@ import initLogger from '@main/modules/logger';
 import createMenu from '@main/modules/menu';
 import handleDeepLink, { PROTOCOL_NAME } from '@main/modules/deepLink';
 import registerIpcListeners from '@main/modules/ipcHandlers';
-
 import { restoreOrCreateWindow } from '@main/windows/mainWindow';
-
 import { deleteAllTempFolders } from '@main/services/localUser';
 
-vi.mock('path', () => ({
-  default: {
-    join: vi.fn(),
-  },
-}));
-vi.mock('@electron-toolkit/utils', () => ({
-  optimizer: {
-    watchWindowShortcuts: vi.fn(),
-  },
-  is: vi.fn(),
-}));
-vi.mock('electron', () => {
-  const bw = vi.fn();
-  bw.prototype = mockDeep<BrowserWindow>();
-
-  return {
-    default: mockDeep<Electron.App>(),
-    app: mockDeep<Electron.App>(),
-    BrowserWindow: bw,
-    session: mockDeep<Electron.Session>(),
-  };
-});
-vi.mock('@main/db/init', () => ({ default: vi.fn() }));
-vi.mock('@main/services/localUser', () => ({ deleteAllTempFolders: vi.fn() }));
-vi.mock('@main/modules/logger', () => ({ default: vi.fn() }));
-vi.mock('@main/modules/menu', () => ({
-  default: vi.fn(),
-}));
+vi.mock('path', () => mockDeep());
+vi.mock('@electron-toolkit/utils', () => mockDeep());
+vi.mock('electron', () => mockDeep());
+vi.mock('@main/db/init', () => mockDeep());
+vi.mock('@main/services/localUser', () => mockDeep());
+vi.mock('@main/modules/logger', () => mockDeep());
+vi.mock('@main/modules/menu', () => mockDeep());
 vi.mock('@main/modules/deepLink', () => ({
   default: vi.fn(),
   PROTOCOL_NAME: 'test-protocol',
 }));
-vi.mock('@main/modules/ipcHandlers', () => ({ default: vi.fn() }));
-vi.mock('@main/windows/mainWindow', () => ({
-  restoreOrCreateWindow: vi.fn(),
-}));
+vi.mock('@main/modules/ipcHandlers', () => mockDeep());
+vi.mock('@main/windows/mainWindow', () => mockDeep());
 
 describe('Electron entry file', async () => {
   await import('@main/index');
 
-  const appMO = app as unknown as MockedObject<Electron.App>;
-
   const assertEventHandler = (event: string) => {
-    const handler = appMO.on.mock.calls.find(([ev]) => ev === event);
+    const handler = vi.mocked(app).on.mock.calls.find(([ev]) => ev === event);
+
     expect(handler).toBeDefined();
     expect(handler![1]).toBeDefined();
     if (!handler) {
@@ -77,7 +50,7 @@ describe('Electron entry file', async () => {
     vi.mocked(restoreOrCreateWindow).mockResolvedValue(new BrowserWindow());
 
     //@ts-expect-error Incorrect type definition
-    const readyHandler = appMO.on.mock.calls.find(([event]) => event === 'ready');
+    const readyHandler = vi.mocked(app).on.mock.calls.find(([event]) => event === 'ready');
     expect(readyHandler).toBeDefined();
     expect(readyHandler![1]).toBeDefined();
 
@@ -96,7 +69,7 @@ describe('Electron entry file', async () => {
   });
 
   test('Should attach watcher for dev tools opener in dev mone', async () => {
-    const browserWindowCreatedHandler = appMO.on.mock.calls.find(
+    const browserWindowCreatedHandler = vi.mocked(app).on.mock.calls.find(
       //@ts-expect-error Incorrect type definition
       ([event]) => event === 'browser-window-created',
     );
@@ -109,9 +82,9 @@ describe('Electron entry file', async () => {
   });
 
   test("Should quit the app when all windows are closed and it's not macOS", async () => {
-    const windowAllClosedHandler = appMO.on.mock.calls.find(
-      ([event]) => event === 'window-all-closed',
-    );
+    const windowAllClosedHandler = vi
+      .mocked(app)
+      .on.mock.calls.find(([event]) => event === 'window-all-closed');
     expect(windowAllClosedHandler).toBeDefined();
     expect(windowAllClosedHandler![1]).toBeDefined();
 

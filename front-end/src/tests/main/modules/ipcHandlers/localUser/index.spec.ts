@@ -1,3 +1,5 @@
+import { mockDeep } from 'vitest-mock-extended';
+
 import registerListeners from '@main/modules/ipcHandlers/localUser';
 import listenForKeyPairEvents from '@main/modules/ipcHandlers/localUser/keyPairs';
 import listenForAccountsEvents from '@main/modules/ipcHandlers/localUser/accounts';
@@ -8,7 +10,6 @@ import listenForComplexKeyEvents from '@main/modules/ipcHandlers/localUser/compl
 import listenForOrganizationEvents from '@main/modules/ipcHandlers/localUser/organizations';
 import listenForOrganizationCredentialsEvents from '@main/modules/ipcHandlers/localUser/organizationCredentials';
 import listenForContactEvents from '@main/modules/ipcHandlers/localUser/contacts';
-import listenForPublicKeyLinkedEvents from '@main/modules/ipcHandlers/localUser/publicKeyLinked';
 import listenForPublicEncryptedKeysEvents from '@main/modules/ipcHandlers/localUser/encryptedKeys';
 
 vi.mock('@main/db/prisma', () => ({ getPath: vi.fn() }));
@@ -18,19 +19,16 @@ vi.mock('electron', () => ({
   ipcMain: { handle: vi.fn() },
 }));
 
-vi.mock('@main/modules/ipcHandlers/localUser/keyPairs', () => ({ default: vi.fn() }));
-vi.mock('@main/modules/ipcHandlers/localUser/accounts', () => ({ default: vi.fn() }));
-vi.mock('@main/modules/ipcHandlers/localUser/transactions', () => ({ default: vi.fn() }));
-vi.mock('@main/modules/ipcHandlers/localUser/files', () => ({ default: vi.fn() }));
-vi.mock('@main/modules/ipcHandlers/localUser/transactionDrafts', () => ({ default: vi.fn() }));
-vi.mock('@main/modules/ipcHandlers/localUser/complexKeys', () => ({ default: vi.fn() }));
-vi.mock('@main/modules/ipcHandlers/localUser/organizations', () => ({ default: vi.fn() }));
-vi.mock('@main/modules/ipcHandlers/localUser/organizationCredentials', () => ({
-  default: vi.fn(),
-}));
-vi.mock('@main/modules/ipcHandlers/localUser/contacts', () => ({ default: vi.fn() }));
-vi.mock('@main/modules/ipcHandlers/localUser/publicKeyLinked', () => ({ default: vi.fn() }));
-vi.mock('@main/modules/ipcHandlers/localUser/encryptedKeys', () => ({ default: vi.fn() }));
+vi.mock('@main/modules/ipcHandlers/localUser/keyPairs', () => mockDeep());
+vi.mock('@main/modules/ipcHandlers/localUser/accounts', () => mockDeep());
+vi.mock('@main/modules/ipcHandlers/localUser/transactions', () => mockDeep());
+vi.mock('@main/modules/ipcHandlers/localUser/files', () => mockDeep());
+vi.mock('@main/modules/ipcHandlers/localUser/transactionDrafts', () => mockDeep());
+vi.mock('@main/modules/ipcHandlers/localUser/complexKeys', () => mockDeep());
+vi.mock('@main/modules/ipcHandlers/localUser/organizations', () => mockDeep());
+vi.mock('@main/modules/ipcHandlers/localUser/organizationCredentials', () => mockDeep());
+vi.mock('@main/modules/ipcHandlers/localUser/contacts', () => mockDeep());
+vi.mock('@main/modules/ipcHandlers/localUser/encryptedKeys', () => mockDeep());
 
 describe('index', () => {
   test('should call all event listeners', () => {
@@ -45,7 +43,6 @@ describe('index', () => {
     expect(listenForOrganizationEvents).toHaveBeenCalled();
     expect(listenForOrganizationCredentialsEvents).toHaveBeenCalled();
     expect(listenForContactEvents).toHaveBeenCalled();
-    expect(listenForPublicKeyLinkedEvents).toHaveBeenCalled();
     expect(listenForPublicEncryptedKeysEvents).toHaveBeenCalled();
   });
 });

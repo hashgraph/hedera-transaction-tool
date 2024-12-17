@@ -9,7 +9,6 @@ import listenForComplexKeyEvents from './complexKeys';
 import listenForOrganizationEvents from './organizations';
 import listenForOrganizationCredentialsEvents from './organizationCredentials';
 import listenForContactEvents from './contacts';
-import listenForPublicKeyLinkedEvents from './publicKeyLinked';
 import listenForEncryptedKeysEvents from './encryptedKeys';
 import listenForClaimEvents from './claim';
 import listenForSafeStorageEvents from './safeStorage';
@@ -28,7 +27,6 @@ export default () => {
   listenForOrganizationEvents();
   listenForOrganizationCredentialsEvents();
   listenForContactEvents();
-  listenForPublicKeyLinkedEvents();
   listenForEncryptedKeysEvents();
   listenForClaimEvents();
   listenForSafeStorageEvents();

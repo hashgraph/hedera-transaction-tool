@@ -1,5 +1,6 @@
-import { MockedObject } from 'vitest';
 import { mockDeep } from 'vitest-mock-extended';
+
+import { getIPCHandler, invokeIPCHandler } from '../../../_utils_';
 
 import registerTransactionsHandlers from '@main/modules/ipcHandlers/localUser/transactions';
 
@@ -17,34 +18,19 @@ import {
   getTransactionsCount,
   getTransaction,
 } from '@main/services/localUser';
-import { ipcMain } from 'electron';
 
-vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
-vi.mock('electron', () => ({
-  ipcMain: { handle: vi.fn() },
-}));
-
-vi.mock('@main/services/localUser', () => ({
-  executeQuery: vi.fn(),
-  executeTransaction: vi.fn(),
-  getTransactions: vi.fn(),
-  storeTransaction: vi.fn(),
-  encodeSpecialFile: vi.fn(),
-  setClient: vi.fn(),
-  freezeTransaction: vi.fn(),
-  signTransaction: vi.fn(),
-  getTransactionsCount: vi.fn(),
-  getTransaction: vi.fn(),
-}));
+vi.mock('@main/services/localUser', () => mockDeep());
 
 describe('IPC handlers Accounts', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     registerTransactionsHandlers();
   });
 
-  const ipcMainMO = ipcMain as unknown as MockedObject<Electron.IpcMain>;
-  const event: Electron.IpcMainEvent = mockDeep<Electron.IpcMainEvent>();
+  const userId = 'userId';
+  const fileId = 'fileId';
+  const transactionId = 'transactionId';
+  const userPassword = 'userPassword';
 
   test('Should register handlers for each event', () => {
     const events = [
@@ -59,47 +45,35 @@ describe('IPC handlers Accounts', () => {
       'getTransactionsCount',
       'encodeSpecialFile',
     ];
-
-    expect(
-      events.every(e =>
-        ipcMainMO.handle.mock.calls.some(([channel]) => channel === `transactions:${e}`),
-      ),
-    ).toBe(true);
+    expect(events.every(e => getIPCHandler(`transactions:${e}`))).toBe(true);
   });
 
   test('Should set up setClient handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'transactions:setClient');
-    expect(handler).toBeDefined();
-
     const mirrorNetwork = ['mainnet'];
     const ledgerId = '0x0';
 
-    handler && (await handler[1](event, mirrorNetwork, ledgerId));
+    await invokeIPCHandler('transactions:setClient', mirrorNetwork, ledgerId);
     expect(setClient).toHaveBeenCalledWith(mirrorNetwork, ledgerId);
   });
 
   test('Should set up freezeTransaction handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'transactions:freezeTransaction',
-    );
-    expect(handler).toBeDefined();
-
     const transactionBytes = new Uint8Array();
 
-    handler && (await handler[1](event, transactionBytes));
+    await invokeIPCHandler('transactions:freezeTransaction', transactionBytes);
     expect(freezeTransaction).toHaveBeenCalledWith(transactionBytes);
   });
 
   test('Should set up signTransaction handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'transactions:signTransaction');
-    expect(handler).toBeDefined();
-
     const transactionBytes = new Uint8Array();
     const publicKeys = ['publicKey'];
-    const userId = 'userId';
-    const userPassword = 'userPassword';
 
-    handler && (await handler[1](event, transactionBytes, publicKeys, userId, userPassword));
+    await invokeIPCHandler(
+      'transactions:signTransaction',
+      transactionBytes,
+      publicKeys,
+      userId,
+      userPassword,
+    );
     expect(signTransaction).toHaveBeenCalledWith(
       transactionBytes,
       publicKeys,
@@ -109,36 +83,29 @@ describe('IPC handlers Accounts', () => {
   });
 
   test('Should set up executeTransaction handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'transactions:executeTransaction',
-    );
-    expect(handler).toBeDefined();
-
     const transactionBytes = new Uint8Array();
 
-    handler && (await handler[1](event, transactionBytes));
+    await invokeIPCHandler('transactions:executeTransaction', transactionBytes);
     expect(executeTransaction).toHaveBeenCalledWith(transactionBytes);
   });
 
   test('Should set up executeQuery handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'transactions:executeQuery');
-    expect(handler).toBeDefined();
-
     const queryBytes = new Uint8Array();
     const accountId = 'accountId';
     const privateKey = 'privateKey';
     const privateKeyType = 'privateKeyType';
 
-    handler && (await handler[1](event, queryBytes, accountId, privateKey, privateKeyType));
+    await invokeIPCHandler(
+      'transactions:executeQuery',
+      queryBytes,
+      accountId,
+      privateKey,
+      privateKeyType,
+    );
     expect(executeQuery).toHaveBeenCalledWith(queryBytes, accountId, privateKey, privateKeyType);
   });
 
   test('Should set up storeTransaction handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'transactions:storeTransaction',
-    );
-    expect(handler).toBeDefined();
-
     const transaction: Prisma.TransactionUncheckedCreateInput = {
       id: 'transactionId',
       user_id: 'userId',
@@ -157,54 +124,33 @@ describe('IPC handlers Accounts', () => {
       body: 'content',
     };
 
-    handler && (await handler[1](event, transaction));
+    await invokeIPCHandler('transactions:storeTransaction', transaction);
     expect(storeTransaction).toHaveBeenCalledWith(transaction);
   });
 
   test('Should set up getTransactions handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'transactions:getTransactions');
-    expect(handler).toBeDefined();
-
     const findArgs: Prisma.TransactionFindManyArgs = {
       where: { user_id: 'userId' },
     };
 
-    handler && (await handler[1](event, findArgs));
+    await invokeIPCHandler('transactions:getTransactions', findArgs);
     expect(getTransactions).toHaveBeenCalledWith(findArgs);
   });
 
   test('Should set up getTransaction handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(([e]) => e === 'transactions:getTransaction');
-    expect(handler).toBeDefined();
-
-    const id = 'transactionId';
-
-    handler && (await handler[1](event, id));
-    expect(getTransaction).toHaveBeenCalledWith(id);
+    await invokeIPCHandler('transactions:getTransaction', transactionId);
+    expect(getTransaction).toHaveBeenCalledWith(transactionId);
   });
 
   test('Should set up getTransactionsCount handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'transactions:getTransactionsCount',
-    );
-    expect(handler).toBeDefined();
-
-    const userId = 'userId';
-
-    handler && (await handler[1](event, userId));
+    await invokeIPCHandler('transactions:getTransactionsCount', userId);
     expect(getTransactionsCount).toHaveBeenCalledWith(userId);
   });
 
   test('Should set up encodeSpecialFile handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'transactions:encodeSpecialFile',
-    );
-    expect(handler).toBeDefined();
-
     const content = new Uint8Array();
-    const fileId = 'fileId';
 
-    handler && (await handler[1](event, content, fileId));
+    await invokeIPCHandler('transactions:encodeSpecialFile', content, fileId);
     expect(encodeSpecialFile).toHaveBeenCalledWith(content, fileId);
   });
 });

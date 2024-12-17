@@ -1,24 +1,12 @@
-import { MockedObject } from 'vitest';
-
-import registerUpdateListeners from '@main/modules/ipcHandlers/update';
-import { Updater } from '@main/services/update';
-
-import { ipcMain } from 'electron';
 import { mockDeep } from 'vitest-mock-extended';
 
-vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
-vi.mock('electron', () => {
-  return {
-    app: {
-      getVersion: () => '1.0.0',
-    },
-    ipcMain: {
-      on: vi.fn(),
-      handle: vi.fn(),
-    },
-  };
-});
-vi.mock('@main/services/localUser/update');
+import { getIPCHandler, getIPCListener, invokeIPCHandler, invokeIPCListener } from '../../_utils_';
+
+import registerUpdateListeners from '@main/modules/ipcHandlers/update';
+import { app } from 'electron';
+import { Updater } from '@main/services/update';
+
+vi.mock('@main/services/localUser/update', () => mockDeep());
 
 describe('registerUpdateListeners', () => {
   beforeEach(() => {
@@ -26,51 +14,27 @@ describe('registerUpdateListeners', () => {
     registerUpdateListeners();
   });
 
-  const ipcMainMO = ipcMain as unknown as MockedObject<Electron.IpcMain>;
-  const event: Electron.IpcMainEvent = mockDeep<Electron.IpcMainEvent>();
-
   test('Should register handlers for each update event', () => {
     const onEventNames = ['check-for-update'];
     const handleEventNames = ['get-version'];
 
-    expect(
-      onEventNames.every(util =>
-        ipcMainMO.on.mock.calls.some(([channel]) => channel === `update:${util}`),
-      ),
-    ).toBe(true);
-
-    expect(
-      handleEventNames.every(util =>
-        ipcMainMO.handle.mock.calls.some(([channel]) => channel === `update:${util}`),
-      ),
-    ).toBe(true);
+    expect(onEventNames.every(util => getIPCListener(`update:${util}`))).toBe(true);
+    expect(handleEventNames.every(util => getIPCHandler(`update:${util}`))).toBe(true);
   });
 
-  test('Should start checking for updates', () => {
-    const checkForUpdateHandler = ipcMainMO.on.mock.calls.find(([event]) => {
-      return event === 'update:check-for-update';
-    });
-
-    expect(checkForUpdateHandler).toBeDefined();
-
+  test('Should start checking for updates', async () => {
     vi.spyOn(Updater, 'checkForUpdate');
 
-    if (checkForUpdateHandler) {
-      checkForUpdateHandler[1](event);
-      expect(Updater.checkForUpdate).toBeCalledTimes(1);
-    }
+    await invokeIPCListener('update:check-for-update');
+
+    expect(Updater.checkForUpdate).toBeCalledTimes(1);
   });
 
   test('Should get version', async () => {
-    const getVersionHandler = ipcMainMO.handle.mock.calls.find(([event]) => {
-      return event === 'update:get-version';
-    });
+    vi.mocked(app.getVersion).mockReturnValue('1.0.0');
 
-    expect(getVersionHandler).toBeDefined();
+    const result = await invokeIPCHandler('update:get-version');
 
-    if (getVersionHandler) {
-      const result = getVersionHandler[1](event);
-      expect(result).toBe('1.0.0');
-    }
+    expect(result).toBe('1.0.0');
   });
 });

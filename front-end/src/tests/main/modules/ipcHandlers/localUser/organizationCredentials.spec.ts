@@ -1,5 +1,6 @@
-import { MockedObject } from 'vitest';
 import { mockDeep } from 'vitest-mock-extended';
+
+import { getIPCHandler, invokeIPCHandler } from '../../../_utils_';
 
 import registerOrganizationCredentialsHandlers from '@main/modules/ipcHandlers/localUser/organizationCredentials';
 
@@ -12,34 +13,26 @@ import {
   deleteOrganizationCredentials,
   tryAutoSignIn,
 } from '@main/services/localUser';
-import { ipcMain } from 'electron';
 
-vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
-vi.mock('electron', () => ({
-  ipcMain: { handle: vi.fn() },
-}));
-
-vi.mock('@main/services/localUser', () => ({
-  getOrganizationTokens: vi.fn(),
-  organizationsToSignIn: vi.fn(),
-  shouldSignInOrganization: vi.fn(),
-  addOrganizationCredentials: vi.fn(),
-  updateOrganizationCredentials: vi.fn(),
-  deleteOrganizationCredentials: vi.fn(),
-  tryAutoSignIn: vi.fn(),
-}));
+vi.mock('@main/services/localUser', () => mockDeep());
 
 describe('IPC handlers organization credentials', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     registerOrganizationCredentialsHandlers();
   });
 
-  const ipcMainMO = ipcMain as unknown as MockedObject<Electron.IpcMain>;
-  const event: Electron.IpcMainEvent = mockDeep<Electron.IpcMainEvent>();
+  const user_id = 'userId';
+  const email = 'email';
+  const password = 'password';
+  const organization_id = 'organizationId';
+  const jwtToken = 'token';
+  const encryptPassword = 'encryptPassword';
+  const decryptPassword = 'decryptPassword';
+  const updateIfExists = false;
 
   test('Should register handlers for each event', () => {
-    const ежент = [
+    const events = [
       'getOrganizationTokens',
       'organizationsToSignIn',
       'shouldSignInOrganization',
@@ -48,76 +41,40 @@ describe('IPC handlers organization credentials', () => {
       'deleteOrganizationCredentials',
       'tryAutoSignIn',
     ];
-
-    expect(
-      ежент.every(е =>
-        ipcMainMO.handle.mock.calls.some(([channel]) => channel === `organizationCredentials:${е}`),
-      ),
-    ).toBe(true);
+    expect(events.every(e => getIPCHandler(`organizationCredentials:${e}`))).toBe(true);
   });
 
   test('Should set up getOrganizationTokens handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'organizationCredentials:getOrganizationTokens',
-    );
-    expect(handler).toBeDefined();
-
-    const user_id = 'userId';
-
-    handler && (await handler[1](event, user_id));
+    await invokeIPCHandler('organizationCredentials:getOrganizationTokens', user_id);
     expect(getOrganizationTokens).toHaveBeenCalledWith(user_id);
   });
 
   test('Should set up organizationsToSignIn handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'organizationCredentials:organizationsToSignIn',
-    );
-    expect(handler).toBeDefined();
-
-    const user_id = 'userId';
-
-    handler && (await handler[1](event, user_id));
+    await invokeIPCHandler('organizationCredentials:organizationsToSignIn', user_id);
     expect(organizationsToSignIn).toHaveBeenCalledWith(user_id);
   });
 
   test('Should set up shouldSignInOrganization handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'organizationCredentials:shouldSignInOrganization',
-    );
-    expect(handler).toBeDefined();
-
-    const user_id = 'userId';
     const organization_id = 'organizationId';
-
-    handler && (await handler[1](event, user_id, organization_id));
+    await invokeIPCHandler(
+      'organizationCredentials:shouldSignInOrganization',
+      user_id,
+      organization_id,
+    );
     expect(shouldSignInOrganization).toHaveBeenCalledWith(user_id, organization_id);
   });
 
   test('Should set up addOrganizationCredentials handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'organizationCredentials:addOrganizationCredentials',
+    await invokeIPCHandler(
+      'organizationCredentials:addOrganizationCredentials',
+      email,
+      password,
+      organization_id,
+      user_id,
+      jwtToken,
+      encryptPassword,
+      updateIfExists,
     );
-    expect(handler).toBeDefined();
-
-    const email = 'email';
-    const password = 'password';
-    const organization_id = 'organizationId';
-    const user_id = 'userId';
-    const jwtToken = 'token';
-    const encryptPassword = 'encryptPassword';
-    const updateIfExists = false;
-
-    handler &&
-      (await handler[1](
-        event,
-        email,
-        password,
-        organization_id,
-        user_id,
-        jwtToken,
-        encryptPassword,
-        updateIfExists,
-      ));
     expect(addOrganizationCredentials).toHaveBeenCalledWith(
       email,
       password,
@@ -130,53 +87,36 @@ describe('IPC handlers organization credentials', () => {
   });
 
   test('Should set up updateOrganizationCredentials handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'organizationCredentials:updateOrganizationCredentials',
+    await invokeIPCHandler(
+      'organizationCredentials:updateOrganizationCredentials',
+      organization_id,
+      user_id,
+      email,
+      password,
+      jwtToken,
+      encryptPassword,
     );
-    expect(handler).toBeDefined();
-
-    const organization_id = 'organizationId';
-    const user_id = 'userId';
-    const email = 'email';
-    const password = 'password';
-    const token = 'token';
-    const encryptPassword = 'encryptPassword';
-
-    handler &&
-      (await handler[1](event, organization_id, user_id, email, password, token, encryptPassword));
     expect(updateOrganizationCredentials).toHaveBeenCalledWith(
       organization_id,
       user_id,
       email,
       password,
-      token,
+      jwtToken,
       encryptPassword,
     );
   });
 
   test('Should set up deleteOrganizationCredentials handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'organizationCredentials:deleteOrganizationCredentials',
+    await invokeIPCHandler(
+      'organizationCredentials:deleteOrganizationCredentials',
+      organization_id,
+      user_id,
     );
-    expect(handler).toBeDefined();
-
-    const organization_id = 'organizationId';
-    const user_id = 'userId';
-
-    handler && (await handler[1](event, organization_id, user_id));
     expect(deleteOrganizationCredentials).toHaveBeenCalledWith(organization_id, user_id);
   });
 
   test('Should set up tryAutoSignIn handler', async () => {
-    const handler = ipcMainMO.handle.mock.calls.find(
-      ([e]) => e === 'organizationCredentials:tryAutoSignIn',
-    );
-    expect(handler).toBeDefined();
-
-    const user_id = 'userId';
-    const decryptPassword = 'decryptPassword';
-
-    handler && (await handler[1](event, user_id, decryptPassword));
+    await invokeIPCHandler('organizationCredentials:tryAutoSignIn', user_id, decryptPassword);
     expect(tryAutoSignIn).toHaveBeenCalledWith(user_id, decryptPassword);
   });
 });

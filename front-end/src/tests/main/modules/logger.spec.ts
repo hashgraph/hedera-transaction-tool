@@ -1,42 +1,15 @@
-import { MockedClass, MockedObject } from 'vitest';
+import { mockDeep } from 'vitest-mock-extended';
 
 import setupLoggers, { getAppUpdateLogger, getDatabaseLogger } from '@main/modules/logger';
 
 import { is } from '@electron-toolkit/utils';
-import { BrowserWindow } from 'electron';
-import logger, { MainLogger } from 'electron-log';
+import logger from 'electron-log';
 
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
-vi.mock('electron', () => {
-  const bw = vi.fn() as unknown as MockedClass<typeof BrowserWindow>;
-
-  Object.defineProperty(bw.prototype, 'webContents', {
-    value: {
-      send: vi.fn(),
-    },
-    writable: false,
-    enumerable: true,
-  });
-
-  return {
-    BrowserWindow: bw,
-    ipcMain: {
-      on: vi.fn(),
-    },
-  };
-});
+vi.mock('electron', () => mockDeep());
 vi.mock('electron-log', () => ({
   default: {
-    default: {
-      errorHandler: {
-        startCatching: vi.fn(),
-      },
-      transports: {
-        file: {},
-        console: {},
-      },
-      log: vi.fn(),
-    },
+    default: mockDeep(),
     create: vi.fn().mockReturnValue({
       errorHandler: {
         startCatching: vi.fn(),
@@ -150,21 +123,15 @@ describe('logger', () => {
   test('Should log to correct loggers', () => {
     setupLoggers();
 
-    const loggerMO = logger as unknown as MockedObject<
-      MainLogger & {
-        default: MainLogger;
-      }
-    >;
-
     console.log('test');
-    expect(loggerMO.default.log).toHaveBeenCalledWith('test');
-    expect(loggerMO.create.mock.results[0].value.log).toHaveBeenCalledWith('test');
+    expect(vi.mocked(logger).default.log).toHaveBeenCalledWith('test');
+    expect(vi.mocked(logger).create.mock.results[0].value.log).toHaveBeenCalledWith('test');
 
     console.info('test');
-    expect(loggerMO.create.mock.results[0].value.log).toHaveBeenCalledWith('test');
+    expect(vi.mocked(logger).create.mock.results[0].value.log).toHaveBeenCalledWith('test');
 
     console.error('test');
-    expect(loggerMO.default.log).toHaveBeenCalledWith('test');
-    expect(loggerMO.create.mock.results[1].value.log).toHaveBeenCalledWith('test');
+    expect(vi.mocked(logger).default.log).toHaveBeenCalledWith('test');
+    expect(vi.mocked(logger).create.mock.results[1].value.log).toHaveBeenCalledWith('test');
   });
 });

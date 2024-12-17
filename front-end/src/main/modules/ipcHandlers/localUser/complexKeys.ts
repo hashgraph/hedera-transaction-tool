@@ -1,5 +1,3 @@
-import { ipcMain } from 'electron';
-
 import {
   addComplexKey,
   getComplexKeys,
@@ -7,31 +5,15 @@ import {
   deleteComplexKey,
   updateComplexKey,
 } from '@main/services/localUser/complexKeys';
-
-const createChannelName = (...props) => ['complexKeys', ...props].join(':');
+import { createIPCChannel, renameFunc } from '@main/utils/electronInfra';
 
 export default () => {
-  // Adds a new complex key
-  ipcMain.handle(
-    createChannelName('add'),
-    async (_e, userId: string, keyListBytes: Uint8Array, nickname: string) =>
-      addComplexKey(userId, keyListBytes, nickname),
-  );
-
-  // Get all stored complex keys
-  ipcMain.handle(createChannelName('getAll'), async (_e, userId: string) => getComplexKeys(userId));
-
-  // Returns particular complex key of a user
-  ipcMain.handle(
-    createChannelName('getComplexKey'),
-    async (_e, userId: string, keyListBytes: Uint8Array) => getComplexKey(userId, keyListBytes),
-  );
-
-  // Delete complex key
-  ipcMain.handle(createChannelName('delete'), async (_e, id: string) => deleteComplexKey(id));
-
-  // Updates existing complex key
-  ipcMain.handle(createChannelName('update'), async (_e, id: string, newKeyListBytes: Uint8Array) =>
-    updateComplexKey(id, newKeyListBytes),
-  );
+  /* Complex Keys */
+  createIPCChannel('complexKeys', [
+    renameFunc(addComplexKey, 'add'),
+    renameFunc(getComplexKeys, 'getAll'),
+    renameFunc(getComplexKey, 'getComplexKey'),
+    renameFunc(updateComplexKey, 'update'),
+    renameFunc(deleteComplexKey, 'delete'),
+  ]);
 };

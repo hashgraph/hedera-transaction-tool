@@ -1,5 +1,3 @@
-import { ipcMain } from 'electron';
-
 import {
   changePassword,
   comparePasswords,
@@ -8,39 +6,16 @@ import {
   register,
   resetData,
 } from '@main/services/localUser';
-
-const createChannelName = (...props) => ['localUser', ...props].join(':');
+import { createIPCChannel, renameFunc } from '@main/utils/electronInfra';
 
 export default () => {
   /* Local User */
-
-  // Login
-  ipcMain.handle(
-    createChannelName('login'),
-    (_e, email: string, password: string, autoRegister?: boolean) =>
-      login(email, password, autoRegister),
-  );
-
-  // Register
-  ipcMain.handle(createChannelName('register'), (_e, email: string, password: string) =>
-    register(email, password),
-  );
-
-  // Reset
-  ipcMain.handle(createChannelName('resetData'), () => resetData());
-
-  // Check if user has been registered
-  ipcMain.handle(createChannelName('usersCount'), () => getUsersCount());
-
-  // Check if user's password matches a given one
-  ipcMain.handle(createChannelName('comparePasswords'), (_e, userId: string, password: string) =>
-    comparePasswords(userId, password),
-  );
-
-  // Change user's password
-  ipcMain.handle(
-    createChannelName('changePassword'),
-    (_e, userId: string, oldPassword: string, newPassword: string) =>
-      changePassword(userId, oldPassword, newPassword),
-  );
+  createIPCChannel('localUser', [
+    renameFunc(login, 'login'),
+    renameFunc(register, 'register'),
+    renameFunc(resetData, 'resetData'),
+    renameFunc(comparePasswords, 'comparePasswords'),
+    renameFunc(changePassword, 'changePassword'),
+    renameFunc(getUsersCount, 'usersCount'),
+  ]);
 };
