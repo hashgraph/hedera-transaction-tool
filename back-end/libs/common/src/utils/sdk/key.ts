@@ -78,7 +78,10 @@ export function isPublicKeyInKeyList(publicKey: PublicKey | string, key: Key) {
  * @param publicKeys
  * @param keyList
  */
-export function computeShortenedPublicKeyList(publicKeys: string[], keyList: KeyList): PublicKey[] | null {
+export function computeShortenedPublicKeyList(
+  publicKeys: string[],
+  keyList: KeyList,
+): PublicKey[] | null {
   const result = [];
   const secondary = [];
   const threshold = keyList.threshold ? keyList.threshold : keyList.toArray().length;

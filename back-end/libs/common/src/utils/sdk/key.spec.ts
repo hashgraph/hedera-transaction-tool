@@ -5,21 +5,50 @@ import { computeShortenedPublicKeyList } from '.';
 jest.mock('@app/common');
 
 describe('computeShortenedPublicKeyList', () => {
-  let publicKey1, publicKey2, publicKey3, publicKey4, publicKey5, publicKey6, publicKey7, publicKey8, publicKey9, publicKey10;
+  let publicKey1,
+    publicKey2,
+    publicKey3,
+    publicKey4,
+    publicKey5,
+    publicKey6,
+    publicKey7,
+    publicKey8,
+    publicKey9,
+    publicKey10;
   let nestedKeyList1, nestedKeyList2, nestedKeyList3, keyList;
 
   beforeEach(() => {
     // Arrange
-    publicKey1 = PublicKey.fromString('88defdd627af7e31a426fd1e2fb002a5a1c1d3867470f8780bffd3cde341dd7b');
-    publicKey2 = PublicKey.fromString('8def969ba1fd9d0a35ee05c50b5c457289be2da03349cf85525e1d27313a2fe5');
-    publicKey3 = PublicKey.fromString('ac7ef83748ff29bb7b38b4371cba009569ae14a0c07b0a03322e9bb889c2001b');
-    publicKey4 = PublicKey.fromString('28e33ec2d03112ef622c6cb4eb3b64bb6d8f3456c2789a6432d5914ff65b348b');
-    publicKey5 = PublicKey.fromString('306ae720394ab634a25edb3aac7f3edb7a69c68b93dcd622624627e65b268965');
-    publicKey6 = PublicKey.fromString('6da4f02864695f91ed71013268aa51af10b61331d157f6a7d292d39afd7062f9');
-    publicKey7 = PublicKey.fromString('da2d595b2d4529d3dd83f5f414f2c973502078950f11e137ae922bada6d25eb5');
-    publicKey8 = PublicKey.fromString('56db22d604963e20a89030392905d25a00d853e3a6aa3885ba86c8879d6b72c9');
-    publicKey9 = PublicKey.fromString('2b633e211fbb485f9641cf33feb5e41775c49d426e038ac53a139786f1a3f986');
-    publicKey10 = PublicKey.fromString('e495e50c5f81e3c5947d9093aec82c7ed1f02074b08f12e35f7d2d3cfa2906b2');
+    publicKey1 = PublicKey.fromString(
+      '88defdd627af7e31a426fd1e2fb002a5a1c1d3867470f8780bffd3cde341dd7b',
+    );
+    publicKey2 = PublicKey.fromString(
+      '8def969ba1fd9d0a35ee05c50b5c457289be2da03349cf85525e1d27313a2fe5',
+    );
+    publicKey3 = PublicKey.fromString(
+      'ac7ef83748ff29bb7b38b4371cba009569ae14a0c07b0a03322e9bb889c2001b',
+    );
+    publicKey4 = PublicKey.fromString(
+      '28e33ec2d03112ef622c6cb4eb3b64bb6d8f3456c2789a6432d5914ff65b348b',
+    );
+    publicKey5 = PublicKey.fromString(
+      '306ae720394ab634a25edb3aac7f3edb7a69c68b93dcd622624627e65b268965',
+    );
+    publicKey6 = PublicKey.fromString(
+      '6da4f02864695f91ed71013268aa51af10b61331d157f6a7d292d39afd7062f9',
+    );
+    publicKey7 = PublicKey.fromString(
+      'da2d595b2d4529d3dd83f5f414f2c973502078950f11e137ae922bada6d25eb5',
+    );
+    publicKey8 = PublicKey.fromString(
+      '56db22d604963e20a89030392905d25a00d853e3a6aa3885ba86c8879d6b72c9',
+    );
+    publicKey9 = PublicKey.fromString(
+      '2b633e211fbb485f9641cf33feb5e41775c49d426e038ac53a139786f1a3f986',
+    );
+    publicKey10 = PublicKey.fromString(
+      'e495e50c5f81e3c5947d9093aec82c7ed1f02074b08f12e35f7d2d3cfa2906b2',
+    );
 
     nestedKeyList1 = new KeyList([publicKey4, publicKey5, publicKey6]);
     nestedKeyList2 = new KeyList([publicKey7, publicKey8, nestedKeyList1]);

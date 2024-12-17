@@ -1,10 +1,4 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Transaction } from './transaction.entity';
 import { User } from './user.entity';
 
@@ -13,10 +7,10 @@ export class TransactionComment {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Transaction, (transaction) => transaction.comments)
+  @ManyToOne(() => Transaction, transaction => transaction.comments)
   transaction: Transaction;
 
-  @ManyToOne(() => User, (user) => user.comments)
+  @ManyToOne(() => User, user => user.comments)
   user: User;
 
   @Column()

@@ -8,11 +8,9 @@ export class NotFoundExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const status = exception.getStatus();
 
-    response
-      .status(status)
-      .json({
-        statusCode: status,
-        message: 'Route not found',
-      });
+    response.status(status).json({
+      statusCode: status,
+      message: 'Route not found',
+    });
   }
 }

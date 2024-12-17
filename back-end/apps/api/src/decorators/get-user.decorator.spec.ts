@@ -22,7 +22,7 @@ describe('GetUser Decorator', () => {
 
     const mockExecutionContext: ExecutionContext = {
       switchToHttp: jest.fn().mockReturnThis(),
-      getRequest: jest.fn().mockReturnValue( { user }),
+      getRequest: jest.fn().mockReturnValue({ user }),
     } as unknown as ExecutionContext;
 
     const userFactory = GetUserFactory(null, mockExecutionContext);

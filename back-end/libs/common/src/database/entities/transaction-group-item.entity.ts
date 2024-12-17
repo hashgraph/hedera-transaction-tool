@@ -1,4 +1,12 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryColumn, RelationId } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToOne,
+  PrimaryColumn,
+  RelationId,
+} from 'typeorm';
 import { TransactionGroup, Transaction } from './';
 
 @Entity()
