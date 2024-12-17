@@ -12,7 +12,7 @@ Personal mode allows you to create, sign and submit transactions that requires o
 **Organizational User Mode**:
 The Transaction Tool application can be used without setting up the
 back end in personal mode. The backend is not required if you are not developing features in the Organization flow.
-To set-yup the front end application, you will need to follow this addition readme.
+To setup the front end application, you will need to follow this addition readme.
 
 # Prerequisites
 
