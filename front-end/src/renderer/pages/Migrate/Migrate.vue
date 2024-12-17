@@ -16,7 +16,7 @@ import { resetDataLocal } from '@renderer/services/userService';
 import { getStaticUser } from '@renderer/services/safeStorageService';
 import { add, remove } from '@renderer/services/claimService';
 
-import { safeAwait } from '@renderer/utils';
+import { getNickname, safeAwait } from '@renderer/utils';
 
 import DecryptRecoveryPhrase from './components/DecryptRecoveryPhrase.vue';
 import SetupPersonal from './components/SetupPersonal.vue';
@@ -24,9 +24,12 @@ import SetupOrganization from './components/SetupOrganization.vue';
 import ImportUserData from './components/ImportUserData.vue';
 import BeginKeysImport from './components/BeginKeysImport.vue';
 import Summary from './components/Summary.vue';
+import SelectKeys from './components/SelectKeys.vue';
+import type { IUserKey, IUserKeyWithNickname } from '@main/shared/interfaces';
+import { getUserState } from '@renderer/services/organization';
 
 /* Types */
-type StepName = 'recoveryPhrase' | 'personal' | 'organization' | 'summary';
+type StepName = 'recoveryPhrase' | 'personal' | 'organization' | 'selectKeys' | 'summary';
 
 /* Stores */
 const user = useUserStore();
@@ -46,6 +49,8 @@ const organizationId = ref<string | null>(null);
 const userInitialized = ref(false);
 const keysImported = ref(0);
 const importedUserData = ref<MigrateUserDataResult | null>(null);
+const allUserKeysToRecover = ref<IUserKeyWithNickname[]>([]);
+const selectedKeysToRecover = ref<IUserKey[]>([]);
 
 /* Computed */
 const heading = computed(() => {
@@ -56,6 +61,8 @@ const heading = computed(() => {
       return 'Personal Information';
     case 'organization':
       return 'Organization Information';
+    case 'selectKeys':
+      return 'Select Keys To Recover';
     case 'summary':
       return 'Summary';
     default:
@@ -90,6 +97,7 @@ const handleSetOrganizationId = async (value: string) => {
   organizationId.value = value;
   await initializeUserStore();
   userInitialized.value = true;
+  step.value = 'selectKeys';
 };
 
 const handleKeysImported = async (value: number) => {
@@ -97,6 +105,10 @@ const handleKeysImported = async (value: number) => {
   await toggleMigrationClaim(personalUser.value.personalId, false);
   keysImported.value = value;
   step.value = 'summary';
+};
+
+const handleSelectedKeys = (keysToRecover: IUserKey[]) => {
+  selectedKeysToRecover.value = keysToRecover;
 };
 
 /* Functions */
@@ -116,6 +128,17 @@ const initializeUserStore = async () => {
   await user.selectOrganization(user.organizations[0]);
   await user.setRecoveryPhrase(recoveryPhrase.value.words);
   personalUser.value.password && user.setPassword(personalUser.value.password);
+  if (user.selectedOrganization?.serverUrl) {
+    const { userKeys } = await getUserState(user.selectedOrganization.serverUrl);
+
+    allUserKeysToRecover.value = userKeys.map(userKey => {
+      const nickname = getNickname(userKey.publicKey, user.keyPairs);
+      return {
+        ...userKey,
+        nickname: nickname || null,
+      };
+    });
+  }
 };
 
 const toggleMigrationClaim = async (userId: string, start = false) => {
@@ -133,7 +156,10 @@ onMounted(async () => {
 </script>
 <template>
   <div class="flex-column flex-centered flex-1 overflow-hidden p-6">
-    <div class="container-dark-border bg-modal-surface glow-dark-bg p-5">
+    <div
+      class="container-dark-border bg-modal-surface glow-dark-bg p-5"
+      :class="step === 'selectKeys' ? 'custom-key-modal' : null"
+    >
       <h4 class="text-title text-semi-bold text-center">{{ heading }}</h4>
 
       <div class="fill-remaining mt-4">
@@ -164,12 +190,32 @@ onMounted(async () => {
             @set-organization-id="handleSetOrganizationId"
             @migration:cancel="handleStopMigration"
           />
+        </template>
 
-          <template v-if="userInitialized">
+        <!-- Select Keys Step -->
+
+        <template
+          v-if="
+            stepIs('selectKeys') &&
+            recoveryPhrase &&
+            recoveryPhrasePassword &&
+            personalUser &&
+            allUserKeysToRecover.length > 0
+          "
+        >
+          <SelectKeys
+            v-if="userInitialized"
+            :keys-to-recover="allUserKeysToRecover"
+            @migration:cancel="handleStopMigration"
+            @selected-keys="handleSelectedKeys"
+          />
+
+          <template v-if="selectedKeysToRecover.length > 0">
             <ImportUserData @importedUserData="importedUserData = $event" />
             <BeginKeysImport
               :recovery-phrase="recoveryPhrase"
               :recovery-phrase-password="recoveryPhrasePassword"
+              :selected-keys="selectedKeysToRecover"
               @keys-imported="handleKeysImported"
             />
           </template>

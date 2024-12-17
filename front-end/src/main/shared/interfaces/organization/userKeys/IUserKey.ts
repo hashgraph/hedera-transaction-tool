@@ -11,3 +11,7 @@ export interface IUserKeyWithMnemonic extends IUserKey {
   mnemonicHash: string;
   index: number;
 }
+
+export interface IUserKeyWithNickname extends IUserKey {
+  nickname: string | null;
+}

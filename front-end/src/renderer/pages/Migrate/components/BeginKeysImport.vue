@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Prisma } from '@prisma/client';
-import type { IUserKeyWithMnemonic } from '@main/shared/interfaces';
+import type { IUserKey, IUserKeyWithMnemonic } from '@main/shared/interfaces';
 import type { RecoveryPhrase } from '@renderer/types';
 
 import { ref, watch } from 'vue';
@@ -27,6 +27,7 @@ import DecryptKeys from '@renderer/components/KeyPair/ImportEncrypted/components
 const props = defineProps<{
   recoveryPhrase: RecoveryPhrase;
   recoveryPhrasePassword: string;
+  selectedKeys: IUserKey[];
 }>();
 
 /* Emits */
@@ -65,8 +66,10 @@ const restoreExistingKeys = async () => {
     throw new Error('(BUG) Organization user id not set');
 
   const { userKeys } = await getUserState(user.selectedOrganization.serverUrl);
-  const userKeysWithMnemonic = userKeys.filter(userKeyHasMnemonic);
-
+  const keysToRestore = props.selectedKeys.length > 0 ? props.selectedKeys : userKeys;
+  const userKeysWithMnemonic = keysToRestore.filter(userKeyHasMnemonic);
+  console.log('Props: ', props.selectedKeys);
+  console.log('Arr: ', keysToRestore);
   await restoreOnEmpty(userKeysWithMnemonic);
 
   for (let i = 0; i < userKeysWithMnemonic.length; i++) {
