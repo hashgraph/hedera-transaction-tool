@@ -39,7 +39,6 @@ test.describe('Registration tests', () => {
   test('Verify rejection of invalid email format in the registration form', async () => {
     await registrationPage.typeEmail('wrong.gmail');
     await registrationPage.typePassword('test');
-    await registrationPage.submitRegistration();
 
     const errorMessage = (await registrationPage.getEmailErrorMessage()).trim();
 
@@ -49,7 +48,6 @@ test.describe('Registration tests', () => {
   test('Verify e-mail field accepts valid format', async () => {
     await registrationPage.typeEmail('test23@test.com');
     await registrationPage.typePassword('test');
-    await registrationPage.submitRegistration();
 
     const isErrorMessageVisible = await registrationPage.isEmailErrorMessageVisible();
 
@@ -57,9 +55,11 @@ test.describe('Registration tests', () => {
   });
 
   test('Verify password field rejects empty password', async () => {
-    await registrationPage.typeEmail('test@test.com');
+    await registrationPage.typeEmail('test@test.co');
     await registrationPage.typePassword('test');
-    await registrationPage.submitRegistration();
+
+    //this is to trigger validation
+    await registrationPage.typeEmail('m');
 
     const errorMessage = (await registrationPage.getPasswordErrorMessage()).trim();
 
@@ -67,11 +67,9 @@ test.describe('Registration tests', () => {
   });
 
   test('Verify confirm password field rejects mismatching passwords', async () => {
+    await registrationPage.typePassword('matching');
+    await registrationPage.typeConfirmPassword('not-matching');
     await registrationPage.typeEmail('test@test.com');
-    await registrationPage.typePassword('test');
-    await registrationPage.typeConfirmPassword('notTest');
-
-    await registrationPage.submitRegistration();
 
     const errorMessage = (await registrationPage.getConfirmPasswordErrorMessage()).trim();
 

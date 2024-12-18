@@ -260,7 +260,6 @@ watch(inputEmail, pass => {
     <AppPasswordInput
       v-model="inputPassword"
       :filled="true"
-      :show-icon="!shouldRegister"
       :class="{ 'is-invalid': inputPasswordInvalid }"
       placeholder="Enter password"
       :data-bs-toggle="shouldRegister ? 'tooltip' : ''"

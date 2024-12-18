@@ -13,6 +13,7 @@ class FilePage extends BasePage {
 
   // Buttons
   removeFileCardButtonSelector = 'button-remove-file-card';
+  removeMultipleButtonSelector = 'button-remove-multiple-files';
   updateFileButtonSelector = 'button-update-file';
   appendFileButtonSelector = 'button-append-file';
   readFileButtonSelector = 'button-read-file';
@@ -45,6 +46,10 @@ class FilePage extends BasePage {
 
   async clickOnRemoveFileCardButton() {
     await this.click(this.removeFileCardButtonSelector);
+  }
+
+  async clickOnRemoveMultipleButton() {
+    await this.click(this.removeMultipleButtonSelector);
   }
 
   async clickOnUpdateFileButton() {

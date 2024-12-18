@@ -16,6 +16,7 @@ class AccountPage extends BasePage {
   // Buttons
   editButtonSelector = 'button-edit-account';
   removeButtonSelector = 'button-remove-account-card';
+  removeMultipleButtonSelector = 'button-remove-multiple-accounts';
   addNewButtonSelector = 'button-add-new-account';
   createNewLinkSelector = 'link-create-new-account';
   addExistingLinkSelector = 'link-add-existing-account';
@@ -53,6 +54,10 @@ class AccountPage extends BasePage {
 
   async clickOnRemoveButton() {
     await this.click(this.removeButtonSelector);
+  }
+
+  async clickOnRemoveMultipleButton() {
+    await this.click(this.removeMultipleButtonSelector);
   }
 
   async clickOnAddNewButton() {
