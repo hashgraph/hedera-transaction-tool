@@ -405,7 +405,7 @@ onMounted(async () => {
                     ><span class="bi bi-trash"></span> Remove</AppButton
                   >
                   <div
-                    v-if="!accountData.accountInfo.value?.deleted && !selectMany && !allSelected"
+                    v-if="!accountData.accountInfo.value?.deleted && !selectMany"
                     class="border-start ps-3"
                   >
                     <div class="dropdown">
