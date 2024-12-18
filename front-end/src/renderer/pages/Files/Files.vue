@@ -515,7 +515,7 @@ watch(files, newFiles => {
                 class="min-w-unset ms-auto"
                 color="danger"
                 :disabled="selectedFileIds.length < 1"
-                data-testid="button-remove-account-card"
+                data-testid="button-remove-multiple-files"
                 @click="isUnlinkFileModalShown = true"
                 ><span class="bi bi-trash"></span
               ></AppButton>

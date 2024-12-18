@@ -320,7 +320,7 @@ onMounted(async () => {
                 class="min-w-unset ms-auto"
                 color="danger"
                 :disabled="selectedAccountIds.length < 1"
-                data-testid="button-remove-account-card"
+                data-testid="button-remove-multiple-accounts"
                 @click="isUnlinkAccountModalShown = true"
                 ><span class="bi bi-trash"></span
               ></AppButton>
