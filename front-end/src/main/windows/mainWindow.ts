@@ -21,7 +21,7 @@ async function createWindow() {
     width: Math.round(width * 0.9),
     height: Math.round(height * 0.9),
     minWidth: 960,
-    minHeight: 400,
+    minHeight: 750,
     webPreferences: {
       preload,
       nodeIntegration: false,

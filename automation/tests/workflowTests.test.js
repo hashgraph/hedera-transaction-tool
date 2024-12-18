@@ -193,7 +193,7 @@ test.describe('Workflow tests', () => {
     await accountPage.clickOnAccountCheckbox(accountFromList);
     await accountPage.clickOnAccountCheckbox(newAccountId);
     await loginPage.waitForToastToDisappear();
-    await accountPage.clickOnRemoveButton();
+    await accountPage.clickOnRemoveMultipleButton();
     await accountPage.unlinkAccounts();
     await accountPage.addAccountToUnliked(newAccountId);
     await accountPage.addAccountToUnliked(accountFromList);
@@ -343,7 +343,7 @@ test.describe('Workflow tests', () => {
     await filePage.clickOnSelectManyFilesButton();
     await filePage.clickOnFileCheckbox(fileFromPage);
     await filePage.clickOnFileCheckbox(fileId);
-    await filePage.clickOnRemoveFileCardButton();
+    await filePage.clickOnRemoveMultipleButton();
     await filePage.clickOnConfirmUnlinkFileButton();
 
     await filePage.addFileToUnliked(fileFromPage);
