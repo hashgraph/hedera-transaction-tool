@@ -153,7 +153,7 @@ const selectedFileIdWithChecksum = computed(
       .split('-'),
 );
 
-const selectAll = computed(() => {
+const allSelected = computed(() => {
   return selectedFileIds.value.length > 0 && selectedFileIds.value.length === files.value.length;
 });
 
@@ -285,7 +285,7 @@ const handleSortFiles = async (
 };
 
 const handleSelectAllFiles = () => {
-  if (selectedFileIds.value.length !== files.value.length) {
+  if (!allSelected.value) {
     selectedFileIds.value = files.value.map(file => file.file_id);
   } else {
     selectedFileIds.value = [];
@@ -506,7 +506,7 @@ watch(files, newFiles => {
                   name="select-card"
                   class="cursor-pointer"
                   type="checkbox"
-                  :checked="selectAll"
+                  :checked="allSelected"
                 />
                 <span class="ms-4">Select all</span>
               </div>

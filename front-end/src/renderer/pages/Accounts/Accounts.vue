@@ -59,7 +59,7 @@ const hbarDollarAmount = computed(() => {
   return getDollarAmount(network.currentRate, accountData.accountInfo.value.balance.toBigNumber());
 });
 
-const selectAll = computed(() => {
+const allSelected = computed(() => {
   return (
     selectedAccountIds.value.length > 0 && selectedAccountIds.value.length === accounts.value.length
   );
@@ -154,7 +154,7 @@ const handleSortAccounts = async (
 };
 
 const handleSelectAllAccounts = () => {
-  if (selectedAccountIds.value.length !== accounts.value.length) {
+  if (!allSelected.value) {
     selectedAccountIds.value = accounts.value.map(account => account.account_id);
   } else {
     selectedAccountIds.value = [];
@@ -311,7 +311,7 @@ onMounted(async () => {
                   name="select-card"
                   class="cursor-pointer"
                   type="checkbox"
-                  :checked="selectAll"
+                  :checked="allSelected"
                 />
                 <span class="ms-4">Select all</span>
               </div>
@@ -405,7 +405,7 @@ onMounted(async () => {
                     ><span class="bi bi-trash"></span> Remove</AppButton
                   >
                   <div
-                    v-if="!accountData.accountInfo.value?.deleted && !selectMany && !selectAll"
+                    v-if="!accountData.accountInfo.value?.deleted && !selectMany && !allSelected"
                     class="border-start ps-3"
                   >
                     <div class="dropdown">
