@@ -49,7 +49,6 @@ const sorting = ref<{
   created_at: 'desc',
 });
 const selectMany = ref(false);
-const selectAll = ref(false);
 
 /* Computed */
 const hbarDollarAmount = computed(() => {
@@ -58,6 +57,12 @@ const hbarDollarAmount = computed(() => {
   }
 
   return getDollarAmount(network.currentRate, accountData.accountInfo.value.balance.toBigNumber());
+});
+
+const selectAll = computed(() => {
+  return (
+    selectedAccountIds.value.length > 0 && selectedAccountIds.value.length === accounts.value.length
+  );
 });
 
 /* Handlers */
@@ -72,7 +77,6 @@ const handleSelectAccount = (accountId: string) => {
     accountData.accountId.value = accountId;
     selectedAccountIds.value = [accountId];
   }
-  selectAll.value = selectedAccountIds.value.length === accounts.value.length;
 };
 
 const handleCheckBoxUpdate = (isChecked: boolean, accountId: string) => {
@@ -88,7 +92,6 @@ const handleCheckBoxUpdate = (isChecked: boolean, accountId: string) => {
           : accounts.value[0].account_id || '';
     }
   }
-  selectAll.value = selectedAccountIds.value.length === accounts.value.length;
 };
 
 const handleUnlinkAccount = async () => {
@@ -104,7 +107,6 @@ const handleUnlinkAccount = async () => {
   isUnlinkAccountModalShown.value = false;
 
   selectedAccountIds.value = [];
-  selectAll.value = false;
   toast.success('Account Unlinked!');
 };
 
@@ -152,8 +154,7 @@ const handleSortAccounts = async (
 };
 
 const handleSelectAllAccounts = () => {
-  selectAll.value = !selectAll.value;
-  if (selectAll.value) {
+  if (selectedAccountIds.value.length !== accounts.value.length) {
     selectedAccountIds.value = accounts.value.map(account => account.account_id);
   } else {
     selectedAccountIds.value = [];
@@ -162,7 +163,6 @@ const handleSelectAllAccounts = () => {
 
 const handleToggleSelectMode = () => {
   selectMany.value = !selectMany.value;
-  selectAll.value = false;
   if (selectMany.value === false) {
     selectedAccountIds.value = accounts.value.length > 0 ? [accounts.value[0].account_id] : [];
   } else {

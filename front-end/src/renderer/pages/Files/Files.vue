@@ -138,7 +138,6 @@ const sorting = ref<{
   created_at: 'desc',
 });
 const selectMany = ref(false);
-const selectAll = ref(false);
 
 /* Computed */
 const selectedFileInfo = computed(() =>
@@ -153,6 +152,10 @@ const selectedFileIdWithChecksum = computed(
       .toStringWithChecksum(network.client as Client)
       .split('-'),
 );
+
+const selectAll = computed(() => {
+  return selectedFileIds.value.length > 0 && selectedFileIds.value.length === files.value.length;
+});
 
 /* Composables */
 const toast = useToast();
@@ -185,7 +188,6 @@ const handleCheckBoxUpdate = (isChecked: boolean, fileId: string) => {
           : files.value[0] || null;
     }
   }
-  selectAll.value = selectedFileIds.value.length === files.value.length;
 };
 
 const handleUnlinkFile = async () => {
@@ -205,7 +207,6 @@ const handleUnlinkFile = async () => {
   isUnlinkFileModalShown.value = false;
 
   selectedFileIds.value = [];
-  selectAll.value = false;
   toast.success('File Unlinked!');
 };
 
@@ -284,8 +285,7 @@ const handleSortFiles = async (
 };
 
 const handleSelectAllFiles = () => {
-  selectAll.value = !selectAll.value;
-  if (selectAll.value) {
+  if (selectedFileIds.value.length !== files.value.length) {
     selectedFileIds.value = files.value.map(file => file.file_id);
   } else {
     selectedFileIds.value = [];
@@ -294,7 +294,6 @@ const handleSelectAllFiles = () => {
 
 const handleToggleSelectMode = () => {
   selectMany.value = !selectMany.value;
-  selectAll.value = false;
   if (selectMany.value === false) {
     selectedFileIds.value = files.value.length > 0 ? [files.value[0].file_id] : [];
   } else {
