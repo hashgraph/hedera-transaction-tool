@@ -39,9 +39,6 @@ async function resetAppState(window, app) {
   if (canMigrate) {
     await loginPage.closeMigrationModal();
   }
-  if (process.platform === 'darwin') {
-    await loginPage.closeKeyChainModal();
-  }
 }
 
 async function closeApp(app) {
