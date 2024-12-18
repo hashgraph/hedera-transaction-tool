@@ -2,7 +2,7 @@
 ##### Global Protection Rule ######
 ###################################
 # NOTE: This rule is overriden by the more specific rules below. This is the catch-all rule for all files not covered by the more specific rules below.
-*                                               @hashgraph/transaction-tool @jbair06 @ramto @SvetBorislavov 
+*                                               @hashgraph/transaction-tool @SvetBorislavov 
 
 #########################
 #####  Core Files  ######
@@ -15,7 +15,7 @@
 /.github/workflows/                             @hashgraph/devops-ci @hashgraph/devops-ci-committers @hashgraph/transaction-tool
 
 # Self-protection for root CODEOWNERS files (this file should not exist and should definitely require approval)
-/CODEOWNERS                                      @hashgraph/release-engineering-managers
+/CODEOWNERS                                     @hashgraph/release-engineering-managers
 
 # Protect the repository root files
 /README.md                                      @hashgraph/devops-ci @hashgraph/devops-ci-committers @hashgraph/release-engineering-managers @hashgraph/transaction-tool
