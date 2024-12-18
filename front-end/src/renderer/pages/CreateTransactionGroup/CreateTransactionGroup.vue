@@ -64,6 +64,10 @@ async function saveTransactionGroup() {
     throw new Error('Please enter a group description');
   }
 
+  if (transactionGroup.groupItems.length === 0) {
+    throw new Error('Please add at least one transaction to the group');
+  }
+
   await transactionGroup.saveGroup(user.personal.id, groupDescription.value);
   transactionGroup.clearGroup();
 }
