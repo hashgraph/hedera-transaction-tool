@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, useTemplateRef } from 'vue';
 
 /* Props */
 const props = defineProps<{
@@ -15,10 +15,8 @@ const props = defineProps<{
 /* Emits */
 const emit = defineEmits(['update:word']);
 
-/* Ref */
-const inputRef = ref<HTMLInputElement | null>(null);
-
 /* State */
+const inputRef = useTemplateRef<HTMLInputElement>('inputRef');
 const isVisible = ref(props.visibleInitially);
 
 /* Getters */

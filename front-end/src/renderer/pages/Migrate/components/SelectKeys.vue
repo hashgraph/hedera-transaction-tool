@@ -18,7 +18,6 @@ const emit = defineEmits<{
 const selectedKeys = ref<string[]>([]);
 
 /* Handlers */
-
 const handleCancel = () => emit('migration:cancel');
 
 const handleContinue = () => {

@@ -23,10 +23,10 @@ const emit = defineEmits<{
 }>();
 
 /* Handlers */
-const handleChoose = (migrate: boolean) => {
+const handleChoose = async (migrate: boolean) => {
   if (migrate) {
     emit('migrate:start');
-    router.push({ name: 'migrate' });
+    await router.push({ name: 'migrate' });
   }
 
   emit('ready');

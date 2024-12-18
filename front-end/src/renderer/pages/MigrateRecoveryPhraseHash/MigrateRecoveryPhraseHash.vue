@@ -37,6 +37,11 @@ const isResetDataModalShown = ref<boolean>(false);
 const isDeleteAllModalShown = ref<boolean>(false);
 
 /* Handlers */
+const handleSkip = async () => {
+  await user.setRecoveryPhrase(null);
+  await router.push({ name: 'transactions' });
+};
+
 const handleVerify = async () => {
   if (!user.recoveryPhrase) {
     errorMessage.value = null;
@@ -104,8 +109,8 @@ onMounted(async () => {
 watch(() => user.recoveryPhrase, handleVerify);
 </script>
 <template>
-  <div class="flex-column-100 flex-centered p-6">
-    <div class="fill-remaining d-flex align-items-center">
+  <div class="flex-column-100 flex-centered">
+    <div class="fill-remaining d-flex align-items-center p-6">
       <div class="container-dark-border bg-modal-surface glow-dark-bg p-5">
         <h4 class="text-title text-semi-bold text-center">Recovery Phrase</h4>
         <p class="text-main text-center mt-3">
@@ -117,12 +122,19 @@ watch(() => user.recoveryPhrase, handleVerify);
           <Import />
         </div>
 
+        <div class="mt-5 ms-3">
+          <p class="text-danger">
+            {{ errorMessage }}
+          </p>
+        </div>
+
         <div class="flex-centered justify-content-between mt-5 ms-3">
           <div>
-            <p class="text-danger">
-              {{ errorMessage }}
-            </p>
+            <AppButton color="secondary" @click="handleSkip" data-testid="button-skip"
+              >Skip</AppButton
+            >
           </div>
+
           <div class="d-flex gap-3">
             <template v-if="user.selectedOrganization">
               <div>

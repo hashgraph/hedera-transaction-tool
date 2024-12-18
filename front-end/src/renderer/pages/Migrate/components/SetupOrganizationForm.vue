@@ -55,12 +55,11 @@ const handleOnFormSubmit = async () => {
 
   if (
     inputOrganizationURLInvalid.value ||
-    (props.personalUser.useKeychain
-      ? organizationEmail.length === 0 : false) ||
-    temporaryOrganizationPassword.length === 0 ||
-    loginError.value
-  )
+    (props.personalUser.useKeychain ? organizationEmail.length === 0 : false) ||
+    temporaryOrganizationPassword.length === 0
+  ) {
     return;
+  }
 
   const result = await props.submitCallback({
     organizationURL,

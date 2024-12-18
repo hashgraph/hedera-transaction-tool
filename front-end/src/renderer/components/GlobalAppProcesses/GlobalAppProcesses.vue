@@ -16,7 +16,6 @@ import { getStoredClaim } from '@renderer/services/claimService';
 import AutoLoginInOrganization from '@renderer/components/Organization/AutoLoginInOrganization.vue';
 import AppUpdate from './components/AppUpdate.vue';
 import ImportantNote from './components/ImportantNote.vue';
-import DetectKeychain from './components/DetectKeychain.vue';
 import BeginDataMigration from './components/BeginDataMigration.vue';
 
 /* Stores */
@@ -29,13 +28,10 @@ const { redirectIfRequiredKeysToMigrate } = useRecoveryPhraseHashMigrate();
 
 /* State */
 const importantNoteRef = ref<InstanceType<typeof ImportantNote> | null>(null);
-const detectKeychainRef = ref<InstanceType<typeof DetectKeychain> | null>(null);
 const beginDataMigrationRef = ref<InstanceType<typeof BeginDataMigration> | null>(null);
 
 const precheckReady = ref(false);
 const importantNoteReady = ref(false);
-const migrationCheckReady = ref(false);
-const detectKeychainReady = ref(false);
 const migrate = ref(false);
 
 /* Handlers */
@@ -44,15 +40,7 @@ const handleImportantModalReady = async () => {
   await beginDataMigrationRef.value?.initialize();
 };
 
-const handleBeginMigrationReadyState = async (ready: boolean) => {
-  migrationCheckReady.value = ready;
-  if (ready) {
-    await detectKeychainRef.value?.initialize();
-  }
-};
-
-const handleDetectKeychainReadyState = async () => {
-  detectKeychainReady.value = true;
+const handleBeginMigrationReadyState = async () => {
   await withLoader(tryAutoLogin);
   await redirectIfRequiredKeysToMigrate();
 };
@@ -80,7 +68,6 @@ watch(
   async () => {
     if (!user.personal?.isLoggedIn) {
       importantNoteReady.value = false;
-      migrationCheckReady.value = false;
       migrate.value = false;
 
       importantNoteRef.value?.initialize();
@@ -98,17 +85,13 @@ watch(
     <template v-if="importantNoteReady">
       <BeginDataMigration
         ref="beginDataMigrationRef"
-        @ready="handleBeginMigrationReadyState(true)"
-        @ready:not="handleBeginMigrationReadyState(false)"
+        @ready="handleBeginMigrationReadyState()"
         @migrate:start="migrate = true"
       />
     </template>
-    <template v-if="importantNoteReady && migrationCheckReady && !migrate">
-      <DetectKeychain ref="detectKeychainRef" @ready="handleDetectKeychainReadyState" />
-    </template>
   </template>
 
-  <template v-if="detectKeychainReady">
+  <template v-if="user.personal?.isLoggedIn">
     <AutoLoginInOrganization />
   </template>
 </template>
