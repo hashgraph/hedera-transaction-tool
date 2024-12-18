@@ -77,9 +77,7 @@ const saveDraft = async () => {
   }
 };
 
-const handleModalSaveDraftSubmit = (e: Event) => {
-  e.preventDefault();
-
+const handleModalSaveDraftSubmit = () => {
   props.handleSaveDraft ? props.handleSaveDraft() : saveDraft();
   routeTo.value && router.push(routeTo.value);
 };
@@ -153,7 +151,7 @@ onBeforeRouteLeave(async to => {
       :close-on-escape="false"
       class="small-modal"
     >
-      <form class="text-center p-4" @submit="handleModalSaveDraftSubmit">
+      <form class="text-center p-4" @submit.prevent="handleModalSaveDraftSubmit">
         <div class="text-start">
           <i class="bi bi-x-lg cursor-pointer" @click="isSaveDraftModalShown = false"></i>
         </div>

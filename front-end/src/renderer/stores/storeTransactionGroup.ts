@@ -47,11 +47,13 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     description.value = group.description;
     const items = await getGroupItems(id);
     const drafts = await getDrafts(findArgs);
+    const groupItemsToAdd: GroupItem[] = [];
+
     for (const item of items) {
       const draft = drafts.find(draft => draft.id == item.transaction_draft_id);
       if (draft?.transactionBytes) {
         const transaction = getTransactionFromBytes(draft.transactionBytes);
-        groupItems.value.push({
+        groupItemsToAdd.push({
           transactionBytes: transaction.toBytes(),
           type: draft?.type,
           groupId: id,
@@ -65,6 +67,8 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
         });
       }
     }
+
+    groupItems.value = groupItemsToAdd;
   }
 
   function clearGroup() {
@@ -75,21 +79,25 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   }
 
   function addGroupItem(groupItem: GroupItem) {
-    groupItems.value.push(groupItem);
+    groupItems.value = [...groupItems.value, groupItem];
     setModified();
   }
 
   function editGroupItem(newGroupItem: GroupItem) {
     for (const [i] of groupItems.value.entries()) {
       if (i == Number.parseInt(newGroupItem.seq)) {
-        groupItems.value[i] = newGroupItem;
+        groupItems.value = [
+          ...groupItems.value.slice(0, i),
+          newGroupItem,
+          ...groupItems.value.slice(i + 1),
+        ];
       }
     }
     setModified();
   }
 
   function removeGroupItem(index: number) {
-    groupItems.value.splice(index, 1);
+    groupItems.value = [...groupItems.value.slice(0, index), ...groupItems.value.slice(index + 1)];
     setModified();
   }
 
@@ -100,6 +108,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
    * @param index
    */
   function duplicateGroupItem(index: number) {
+    const lastItem = groupItems.value[groupItems.value.length - 1];
     const baseItem = groupItems.value[index];
     const newDate = findUniqueValidStart(
       baseItem.payerAccountId,
@@ -111,14 +120,15 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       transactionBytes: transaction.toBytes(),
       type: baseItem.type,
       description: baseItem.description,
-      seq: (Number.parseInt(baseItem.seq) + 1).toString(),
+      seq: (Number.parseInt(lastItem.seq) + 1).toString(),
       keyList: baseItem.keyList,
       observers: baseItem.observers,
       approvers: baseItem.approvers,
       payerAccountId: baseItem.payerAccountId,
       validStart: newDate,
     };
-    groupItems.value.splice(index + 1, 0, newItem);
+
+    groupItems.value = [...groupItems.value, newItem];
     setModified();
   }
 
