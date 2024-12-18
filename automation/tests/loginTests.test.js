@@ -50,7 +50,7 @@ test.describe('Login tests', () => {
     await loginPage.login(globalCredentials.email, incorrectPassword);
     const passwordErrorMessage = (await loginPage.getLoginPasswordErrorMessage()).trim();
 
-    expect(passwordErrorMessage).toBe('Invalid password.');
+    expect(passwordErrorMessage).toBe('Invalid password');
   });
 
   test('Verify that login with incorrect email shows an error message', async () => {
@@ -59,7 +59,7 @@ test.describe('Login tests', () => {
     await loginPage.login(incorrectEmail, globalCredentials.password);
     const passwordErrorMessage = (await loginPage.getLoginEmailErrorMessage()).trim();
 
-    expect(passwordErrorMessage).toBe('Invalid e-mail.');
+    expect(passwordErrorMessage).toBe('Invalid e-mail');
   });
 
   test('Verify all essential elements are present on the login page', async () => {

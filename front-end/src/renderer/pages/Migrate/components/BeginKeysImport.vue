@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Prisma } from '@prisma/client';
-import type { IUserKeyWithMnemonic } from '@main/shared/interfaces';
+import type { KeyPathWithName, IUserKeyWithMnemonic } from '@main/shared/interfaces';
 import type { RecoveryPhrase } from '@renderer/types';
 
 import { ref, watch } from 'vue';
@@ -27,6 +27,7 @@ import DecryptKeys from '@renderer/components/KeyPair/ImportEncrypted/components
 const props = defineProps<{
   recoveryPhrase: RecoveryPhrase;
   recoveryPhrasePassword: string;
+  selectedKeys?: KeyPathWithName[];
 }>();
 
 /* Emits */
@@ -134,9 +135,15 @@ const restoreKeyPair = async (index: number, nickname: string, upload: boolean) 
 watch(decryptKeysRef, async () => {
   if (!decryptKeysRef.value) return;
 
-  const keysPath = await getDataMigrationKeysPath();
-  const encryptedKeyPaths = await searchEncryptedKeys([keysPath]);
-  await decryptKeysRef.value?.process(encryptedKeyPaths, props.recoveryPhrase.words);
+  if (props.selectedKeys && props.selectedKeys.length > 0) {
+    const selectedKeyPaths = props.selectedKeys.map(key => key.filepath);
+    await decryptKeysRef.value?.process(selectedKeyPaths, props.recoveryPhrase.words);
+  } else {
+    const keysPath = await getDataMigrationKeysPath();
+    const encryptedKeyPaths = await searchEncryptedKeys([keysPath]);
+
+    await decryptKeysRef.value?.process(encryptedKeyPaths, props.recoveryPhrase.words);
+  }
 });
 </script>
 <template>

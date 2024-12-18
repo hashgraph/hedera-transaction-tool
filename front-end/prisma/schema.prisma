@@ -31,6 +31,7 @@ model User {
   ComplexKey              ComplexKey[]
   Contact                 Contact[]
   Claim                   Claim[]
+  Mnemonic                Mnemonic[]
 }
 
 model KeyPair {
@@ -185,4 +186,14 @@ model Claim {
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
   user        User     @relation(fields: [user_id], references: [id])
+}
+
+model Mnemonic {
+  id           String   @id @default(uuid())
+  user_id      String
+  mnemonicHash String
+  nickname     String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  user         User     @relation(fields: [user_id], references: [id])
 }

@@ -98,6 +98,7 @@ watch(
 </script>
 <template>
   <AppModal
+    v-if="show"
     :show="show"
     @update:show="$emit('update:show', $event)"
     class="common-modal"

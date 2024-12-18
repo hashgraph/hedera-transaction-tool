@@ -499,17 +499,17 @@ describe('Services Local User Organization Credentials', () => {
       });
     });
 
-    test('Should throw error if encrypt password is not provided', async () => {
+    test('Should return false if credentials are not found', async () => {
       const email = 'email';
       const password = 'password';
       const encryptPassword = 'password for encryption';
 
-      expect(() =>
-        updateOrganizationCredentials('123', '321', email, password, undefined, encryptPassword),
-      ).rejects.toThrow('Failed to update organization credentials');
+      const result = await updateOrganizationCredentials('123', '321', email, password, undefined, encryptPassword);
+
+      expect(result).toBe(false);
     });
 
-    test('Should throw error if credentials are not found', async () => {
+    test('Should throw error if encrypt password is not provided', async () => {
       const email = 'email';
       const password = 'password';
 

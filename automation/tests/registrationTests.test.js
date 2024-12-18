@@ -43,7 +43,7 @@ test.describe('Registration tests', () => {
 
     const errorMessage = (await registrationPage.getEmailErrorMessage()).trim();
 
-    expect(errorMessage).toBe('Invalid e-mail.');
+    expect(errorMessage).toBe('Invalid e-mail');
   });
 
   test('Verify e-mail field accepts valid format', async () => {
@@ -63,7 +63,7 @@ test.describe('Registration tests', () => {
 
     const errorMessage = (await registrationPage.getPasswordErrorMessage()).trim();
 
-    expect(errorMessage).toBe('Invalid password.');
+    expect(errorMessage).toBe('Invalid password');
   });
 
   test('Verify confirm password field rejects mismatching passwords', async () => {
@@ -75,7 +75,7 @@ test.describe('Registration tests', () => {
 
     const errorMessage = (await registrationPage.getConfirmPasswordErrorMessage()).trim();
 
-    expect(errorMessage).toBe('Password do not match.');
+    expect(errorMessage).toBe('Password do not match');
   });
 
   test('Verify elements on account setup page are correct', async () => {

@@ -7,6 +7,7 @@ import { isPasswordStrong, isUrl } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 
 /* Types */
 export type ModelValue = {
@@ -53,11 +54,12 @@ const handleOnFormSubmit = async () => {
   inputOrganizationURLInvalid.value = organizationURL === '' || !checkUrl(organizationURL);
 
   if (
-    inputOrganizationURLInvalid.value || props.personalUser.useKeychain
-      ? organizationEmail.length === 0
-      : false || temporaryOrganizationPassword.length === 0 || loginError.value
-  )
+    inputOrganizationURLInvalid.value ||
+    (props.personalUser.useKeychain ? organizationEmail.length === 0 : false) ||
+    temporaryOrganizationPassword.length === 0
+  ) {
     return;
+  }
 
   const result = await props.submitCallback({
     organizationURL,
@@ -86,12 +88,12 @@ watch(inputOrganizationURL, url => {
   if (checkUrl(url) || url.length === 0) inputOrganizationURLInvalid.value = false;
 });
 watch(inputNewOrganizationPassword, pass => {
-  if (isPasswordStrong(pass) && pass !== inputTemporaryOrganizationPassword.value)
+  if (isPasswordStrong(pass).result && pass !== inputTemporaryOrganizationPassword.value)
     inputOrganizationURLInvalid.value = false;
 });
 </script>
 <template>
-  <form @submit.prevent="handleOnFormSubmit" class="flex-column-100">
+  <form @submit.prevent="handleOnFormSubmit" class="flex-column-100" v-focus-first-input>
     <div class="fill-remaining">
       <p class="text-secondary text-small lh-base text-center">
         Fill the information to setup your organization
@@ -145,10 +147,9 @@ watch(inputNewOrganizationPassword, pass => {
         <label data-testid="label-temp-password" class="form-label"
           >Temporary Organization Password</label
         >
-        <AppInput
+        <AppPasswordInput
           v-model="inputTemporaryOrganizationPassword"
           :filled="true"
-          type="password"
           placeholder="Enter password"
           data-testid="input-temporary-organization-password"
         />
@@ -157,10 +158,9 @@ watch(inputNewOrganizationPassword, pass => {
       <!-- New Organization Password -->
       <div class="mt-4">
         <label data-testid="label-new-password" class="form-label">New Organization Password</label>
-        <AppInput
+        <AppPasswordInput
           v-model="inputNewOrganizationPassword"
           :filled="true"
-          type="password"
           placeholder="Enter password"
           data-testid="input-new-organization-password"
         />

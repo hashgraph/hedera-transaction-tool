@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, useTemplateRef } from 'vue';
 
 /* Props */
 const props = defineProps<{
@@ -16,6 +16,7 @@ const props = defineProps<{
 const emit = defineEmits(['update:word']);
 
 /* State */
+const inputRef = useTemplateRef<HTMLInputElement>('inputRef');
 const isVisible = ref(props.visibleInitially);
 
 /* Getters */
@@ -32,6 +33,8 @@ const handldeWordInput = (e: Event) => {
 
   emit('update:word', value);
 };
+
+defineExpose({ inputRef });
 </script>
 <template>
   <div
@@ -43,6 +46,7 @@ const handldeWordInput = (e: Event) => {
   >
     <span v-if="index" class="word-index text-small">{{ index }}.</span>
     <input
+      ref="inputRef"
       class="form-control is-fill"
       :class="verification ? 'border-pink' : ''"
       :type="inputType"

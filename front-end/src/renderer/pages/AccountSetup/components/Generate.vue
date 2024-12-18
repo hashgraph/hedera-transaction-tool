@@ -5,15 +5,17 @@ import { Mnemonic } from '@hashgraph/sdk';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
+import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNickname';
 
 import { validateMnemonic } from '@renderer/services/keyPairService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppRecoveryPhraseWord from '@renderer/components/ui/AppRecoveryPhraseWord.vue';
+import RecoveryPhraseNicknameInput from '@renderer/components/RecoveryPhrase/RecoveryPhraseNicknameInput.vue';
 
 /* Props */
-defineProps<{
+const props = defineProps<{
   handleNext: () => void;
 }>();
 
@@ -22,6 +24,7 @@ const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
+const recoveryPhraseNickname = useRecoveryPhraseNickname();
 
 /* State */
 const words = ref(Array(24).fill(''));
@@ -31,6 +34,7 @@ const indexesToVerify = ref<number[]>([]);
 const checkboxChecked = ref(false);
 const wordsConfirmed = ref(false);
 const toVerify = ref(false);
+const mnemonicHashNickname = ref('');
 
 /* Handlers */
 const handleGeneratePhrase = async () => {
@@ -81,6 +85,12 @@ const handleWordChange = (newWord: string, index: number) => {
 const handleCopyRecoveryPhrase = () => {
   navigator.clipboard.writeText(words.value.join(', '));
   toast.success('Recovery phrase copied');
+};
+
+const handleGenerate = async () => {
+  if (user.recoveryPhrase === null) return;
+  await recoveryPhraseNickname.set(user.recoveryPhrase.hash, mnemonicHashNickname.value);
+  await props.handleNext();
 };
 
 /* Watchers */
@@ -172,17 +182,29 @@ watch(words, newWords => {
     </div>
   </div>
 
-  <div v-if="toVerify" class="d-flex justify-content-between mt-5 mx-3">
-    <div class="text-small align-self-center">Verify your Recovery Phrase</div>
-    <div class="col-4">
-      <AppButton
-        data-testid="button-next-generate"
-        color="primary"
-        class="w-100"
-        :disabled="!wordsConfirmed"
-        @click="handleNext"
-        >Next</AppButton
-      >
+  <template v-if="toVerify">
+    <div class="form-group mt-4">
+      <label class="form-label">Enter Recovery Phrase Nickname</label>
+      <RecoveryPhraseNicknameInput
+        v-model="mnemonicHashNickname"
+        :mnemonic-hash="user.recoveryPhrase?.hash"
+        :filled="true"
+        data-testid="input-recovery-phrase-nickname"
+      />
     </div>
-  </div>
+
+    <div class="d-flex justify-content-between mt-5 mx-3">
+      <div class="text-small align-self-center">Verify your Recovery Phrase</div>
+      <div class="col-4">
+        <AppButton
+          data-testid="button-next-generate"
+          color="primary"
+          class="w-100"
+          :disabled="!wordsConfirmed"
+          @click="handleGenerate"
+          >Next</AppButton
+        >
+      </div>
+    </div>
+  </template>
 </template>

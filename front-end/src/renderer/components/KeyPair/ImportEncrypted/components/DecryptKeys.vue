@@ -15,6 +15,7 @@ import DecryptKeyModal from '@renderer/components/KeyPair/ImportEncrypted/compon
 /* Props */
 defineProps<{
   defaultPassword?: string;
+  allPaths?: string[];
 }>();
 
 /* Emits */

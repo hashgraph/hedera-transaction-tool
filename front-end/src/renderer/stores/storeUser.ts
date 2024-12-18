@@ -1,4 +1,4 @@
-import type { KeyPair, Organization } from '@prisma/client';
+import type { KeyPair, Mnemonic, Organization } from '@prisma/client';
 
 import type {
   PersonalUser,
@@ -37,6 +37,7 @@ const useUserStore = defineStore('user', () => {
   const publicKeyToAccounts = ref<PublicKeyAccounts[]>([]);
   const recoveryPhrase = ref<RecoveryPhrase | null>(null);
   const keyPairs = ref<KeyPair[]>([]);
+  const mnemonics = ref<Mnemonic[]>([]);
 
   /** Personal */
   const personal = ref<PersonalUser | null>(null);
@@ -133,6 +134,10 @@ const useUserStore = defineStore('user', () => {
     await ush.updateKeyPairs(keyPairs, personal.value, selectedOrganization.value);
   };
 
+  const refetchMnemonics = async () => {
+    await ush.updateMnemonics(mnemonics, personal.value);
+  };
+
   const storeKey = async (
     keyPair: Prisma.KeyPairUncheckedCreateInput,
     mnemonic: string[] | string | null,
@@ -150,7 +155,13 @@ const useUserStore = defineStore('user', () => {
 
     if (!organization) {
       selectedOrganization.value = null;
-      await ush.afterOrganizationSelection(personal.value, selectedOrganization, keyPairs, router);
+      await ush.afterOrganizationSelection(
+        personal.value,
+        selectedOrganization,
+        keyPairs,
+        mnemonics,
+        router,
+      );
       await Promise.allSettled([contacts.fetch(), notifications.setup(), ws.setup()]);
     } else {
       selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
@@ -160,6 +171,7 @@ const useUserStore = defineStore('user', () => {
           personal.value,
           selectedOrganization,
           keyPairs,
+          mnemonics,
           router,
         );
       } catch {
@@ -232,6 +244,7 @@ const useUserStore = defineStore('user', () => {
     publicKeys,
     shouldSetupAccount,
     migrating,
+    mnemonics,
     deleteOrganization,
     getJwtToken,
     getPassword,
@@ -239,6 +252,7 @@ const useUserStore = defineStore('user', () => {
     logout,
     refetchAccounts,
     refetchKeys,
+    refetchMnemonics,
     refetchOrganizations,
     refetchUserState,
     selectOrganization,

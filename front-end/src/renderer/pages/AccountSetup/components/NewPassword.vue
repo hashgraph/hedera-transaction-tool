@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useContactsStore from '@renderer/stores/storeContacts';
@@ -11,10 +11,15 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import { changePassword } from '@renderer/services/organization/auth';
 import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
-import { assertIsLoggedInOrganization, assertUserLoggedIn, getErrorMessage } from '@renderer/utils';
+import {
+  assertIsLoggedInOrganization,
+  assertUserLoggedIn,
+  getErrorMessage,
+  isPasswordStrong
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 
 /* Props */
 const props = defineProps<{
@@ -33,13 +38,18 @@ const { getPassword, passwordModalOpened } = usePersonalPassword();
 /* State */
 const currentPassword = ref('');
 const newPassword = ref('');
-const confirmPassword = ref('');
 
 const currentPasswordInvalid = ref(false);
 const newPasswordInvalid = ref(false);
-const inputConfirmPasswordInvalid = ref(false);
 
 const isLoading = ref(false);
+
+/* Computed */
+const isPrimaryButtonDisabled = computed(() => {
+  return currentPassword.value.length === 0 ||
+    currentPasswordInvalid.value ||
+    !isPasswordStrong(newPassword.value).result;
+});
 
 /* Handlers */
 const handleFormSubmit = async (event: Event) => {
@@ -56,14 +66,9 @@ const handleChangePassword = async () => {
   });
   if (passwordModalOpened(personalPassword)) return;
 
-  currentPasswordInvalid.value = currentPassword.value.trim().length === 0;
-  newPasswordInvalid.value = newPassword.value.trim().length < 8;
-  inputConfirmPasswordInvalid.value = newPassword.value !== confirmPassword.value;
-
   if (
     !currentPasswordInvalid.value &&
-    !newPasswordInvalid.value &&
-    !inputConfirmPasswordInvalid.value
+    !newPasswordInvalid.value
   ) {
     try {
       isLoading.value = true;
@@ -74,7 +79,7 @@ const handleChangePassword = async () => {
         newPassword.value,
       );
 
-      await updateOrganizationCredentials(
+      const isUpdated = await updateOrganizationCredentials(
         user.selectedOrganization.id,
         user.personal.id,
         undefined,
@@ -82,6 +87,10 @@ const handleChangePassword = async () => {
         undefined,
         personalPassword || undefined,
       );
+
+      if (!isUpdated) {
+        throw new Error('User credentials for this organization not found');
+      }
 
       await user.refetchUserState();
       await contacts.fetch();
@@ -98,10 +107,27 @@ const handleChangePassword = async () => {
   }
 };
 
+const handleBlur = (inputType: string, value: string) => {
+  const isEmpty = value.length === 0;
+  // When any input loses focus, set its invalid state
+  if (inputType === 'currentPassword') {
+    // For current password, it is invalid if empty and the user should see the message
+    currentPasswordInvalid.value = isEmpty;
+  } else if (inputType === 'newPassword') {
+    // For new password, it is invalid if it is not strong, but don't show the message if it is empty
+    // as the button is disabled anyway
+    newPasswordInvalid.value = !isPasswordStrong(value).result && !isEmpty;
+  }
+};
+
 /* Watchers */
-watch(confirmPassword, val => {
-  if (val.length === 0 || newPassword.value === val) {
-    inputConfirmPasswordInvalid.value = false;
+watch(currentPassword, () => {
+  currentPasswordInvalid.value = false;
+});
+
+watch(newPassword, pass => {
+  if (isPasswordStrong(pass).result || pass.length === 0) {
+    newPasswordInvalid.value = false;
   }
 });
 </script>
@@ -112,35 +138,25 @@ watch(confirmPassword, val => {
     <p class="text-main text-center mt-5">Please enter new password</p>
     <form @submit="handleFormSubmit" class="row justify-content-center w-100 mt-5">
       <div class="col-12 col-md-8 col-lg-6">
-        <AppInput
+        <AppPasswordInput
           v-model="currentPassword"
           :filled="true"
           :class="{ 'is-invalid': currentPasswordInvalid }"
-          type="password"
           placeholder="Current Password"
+          @blur="handleBlur('currentPassword', $event.target.value)"
         />
         <div v-if="currentPasswordInvalid" class="invalid-feedback">
           Current password is required.
         </div>
-        <AppInput
-          v-model="newPassword"
-          :filled="true"
-          class="mt-4"
-          :class="{ 'is-invalid': newPasswordInvalid }"
-          type="password"
-          placeholder="New Password"
-        />
-        <div v-if="newPasswordInvalid" class="invalid-feedback">Invalid password.</div>
-        <AppInput
-          v-model="confirmPassword"
-          :filled="true"
-          class="mt-4"
-          :class="{ 'is-invalid': inputConfirmPasswordInvalid }"
-          type="password"
-          placeholder="Confirm New Password"
-        />
-        <div v-if="inputConfirmPasswordInvalid" class="invalid-feedback">
-          Passwords do not match.
+        <div class="mt-4">
+          <AppPasswordInput
+            v-model="newPassword"
+            :filled="true"
+            :class="{ 'is-invalid': newPasswordInvalid }"
+            placeholder="New Password"
+            @blur="handleBlur('newPassword', $event.target.value)"
+          />
+          <div v-if="newPasswordInvalid" class="invalid-feedback">Invalid password.</div>
         </div>
         <AppButton
           color="primary"
@@ -148,7 +164,7 @@ watch(confirmPassword, val => {
           type="submit"
           class="w-100 mt-5"
           :loading="isLoading"
-          :disabled="newPassword.length === 0 || confirmPassword.length === 0"
+          :disabled="isPrimaryButtonDisabled"
           >Continue</AppButton
         >
       </div>

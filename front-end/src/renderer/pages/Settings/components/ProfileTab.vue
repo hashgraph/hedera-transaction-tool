@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -15,13 +15,14 @@ import {
   assertUserLoggedIn,
   getErrorMessage,
   isLoggedInOrganization,
+  isPasswordStrong,
   isUserLoggedIn,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
 
 /* Stores */
@@ -35,11 +36,20 @@ const { getPassword, passwordModalOpened } = usePersonalPassword();
 /* State */
 const currentPassword = ref('');
 const newPassword = ref('');
+const currentPasswordInvalid = ref(false);
+const newPasswordInvalid = ref(false);
 
 const isConfirmModalShown = ref(false);
 const isSuccessModalShown = ref(false);
 const isChangingPassword = ref(false);
 const isResetDataModalShown = ref(false);
+
+/* Computed */
+const isPrimaryButtonDisabled = computed(() => {
+  return currentPassword.value.length === 0 ||
+    !isPasswordStrong(newPassword.value).result ||
+    isChangingPassword.value;
+});
 
 /* Handlers */
 const handleChangePassword = async () => {
@@ -51,9 +61,12 @@ const handleChangePassword = async () => {
     if (currentPassword.value.length === 0 || newPassword.value.length === 0) {
       throw new Error('Password cannot be empty');
     }
+
+    if (newPasswordInvalid.value) throw new Error('Password must be at least 10 characters long');
+
     if (isLoggedInOrganization(user.selectedOrganization)) {
       const personalPassword = getPassword(handleChangePassword, {
-        subHeading: 'Enter your application password to encrpyt your organization credentials',
+        subHeading: 'Enter your application password to encrypt your organization credentials',
       });
       if (passwordModalOpened(personalPassword)) return;
 
@@ -63,7 +76,7 @@ const handleChangePassword = async () => {
         newPassword.value,
       );
 
-      await updateOrganizationCredentials(
+      const isUpdated = await updateOrganizationCredentials(
         user.selectedOrganization.id,
         user.personal.id,
         undefined,
@@ -71,6 +84,10 @@ const handleChangePassword = async () => {
         undefined,
         personalPassword || undefined,
       );
+
+      if (!isUpdated) {
+        throw new Error('Failed to update organization credentials');
+      }
     } else {
       await changePassword(user.personal.id, currentPassword.value, newPassword.value);
       user.setPassword(newPassword.value);
@@ -89,45 +106,63 @@ const handleChangePassword = async () => {
 };
 
 const handleResetData = async () => router.push({ name: 'login' });
+
+const handleBlur = (inputType: string, value: string) => {
+  if (inputType === 'newPassword') {
+    newPasswordInvalid.value = value.length !==0 && !isPasswordStrong(value).result;
+  }
+};
+
+/* Watchers */
+watch(currentPassword, () => {
+  currentPasswordInvalid.value = false;
+});
+
+watch(newPassword, pass => {
+  if (isPasswordStrong(pass).result || pass.length === 0) {
+    newPasswordInvalid.value = false;
+  }
+});
 </script>
 <template>
   <div
     v-if="
       (isUserLoggedIn(user.personal) && !user.personal.useKeychain) || user.selectedOrganization
     "
+    v-focus-first-input
   >
     <form
       class="w-50 p-4 border rounded"
-      @submit="
-        e => {
-          e.preventDefault();
-          isConfirmModalShown = true;
-        }
-      "
+      @submit.prevent="isConfirmModalShown = true"
     >
       <h3 class="text-main">Password</h3>
       <div class="form-group mt-4">
         <label class="form-label">Current Password <span class="text-danger">*</span></label>
-        <AppInput
+        <AppPasswordInput
           v-model="currentPassword"
           data-testid="input-current-password"
-          type="password"
           placeholder="Enter Current Password"
           :filled="true"
         />
       </div>
       <div class="mt-4 form-group">
         <label class="form-label">New Password <span class="text-danger">*</span></label>
-        <AppInput
+        <AppPasswordInput
           v-model="newPassword"
-          data-testid="input-new-password"
-          type="password"
-          placeholder="Enter New Password"
           :filled="true"
+          :class="{ 'is-invalid': newPasswordInvalid }"
+          data-testid="input-new-password"
+          placeholder="Enter New Password"
+          @blur="handleBlur('newPassword', $event.target.value)"
         />
+        <div v-if="newPasswordInvalid" class="invalid-feedback">Invalid password</div>
       </div>
-      <div class="d-grid">
-        <AppButton color="primary" data-testid="button-change-password" type="submit" class="mt-4"
+      <div class="d-grid mt-4">
+        <AppButton
+          color="primary"
+          data-testid="button-change-password"
+          type="submit"
+          :disabled="isPrimaryButtonDisabled"
           >Change Password</AppButton
         >
       </div>
