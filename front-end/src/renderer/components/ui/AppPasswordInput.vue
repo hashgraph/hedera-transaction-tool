@@ -11,7 +11,6 @@ defineOptions({
 /* Props */
 const props = withDefaults(
   defineProps<{
-    modelValue?: string | number;
     filled?: boolean;
     size?: 'small' | 'large' | undefined;
     autoTrim?: boolean;
@@ -43,6 +42,7 @@ const togglePasswordVisibility = () => {
 <template>
   <div
     class="password-input-wrapper d-flex align-items-center position-relative"
+    :class="$attrs.class"
   >
     <AppInput
       class="pe-7"
