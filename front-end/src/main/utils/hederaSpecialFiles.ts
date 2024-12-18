@@ -128,13 +128,15 @@ function stringifyCurrentAndNextFeeSchedule(
   function stringifyFeeSchedule(feeSchedule: FeeSchedule) {
     // Expiration Time
     if (feeSchedule.expirationTime) {
-      feeSchedule.expirationTime = feeSchedule?.expirationTime?.seconds.toString() as any;
+      // @ts-ignore mutate the original object
+      feeSchedule.expirationTime = feeSchedule?.expirationTime?.seconds.toString();
     }
 
     feeSchedule.transactionFeeSchedule?.forEach(feeSchedule => {
       // Fee Schedule Hedera Functionality
       if (feeSchedule.hederaFunctionality) {
-        feeSchedule.hederaFunctionality = feeSchedule.hederaFunctionality?.toString() as any;
+        // @ts-ignore mutate the original object
+        feeSchedule.hederaFunctionality = feeSchedule.hederaFunctionality?.toString();
       }
 
       // Fee Schedule Fee Data
@@ -154,7 +156,8 @@ function stringifyCurrentAndNextFeeSchedule(
   function stringifyFeeData(feeData: FeeData) {
     // Fee Data Type
     if (feeData.feeDataType) {
-      feeData.feeDataType = feeData.feeDataType.toString() as any;
+      // @ts-ignore mutate the original object
+      feeData.feeDataType = feeData.feeDataType.toString();
     }
 
     // Fee Node Data
@@ -176,17 +179,28 @@ function stringifyCurrentAndNextFeeSchedule(
   }
 
   function stringifyFeeComponent(feeComponent: FeeComponents) {
-    feeComponent.min = feeComponent.min.toString();
-    feeComponent.max = feeComponent.max.toString();
-    feeComponent.constant = feeComponent.constant.toString();
-    feeComponent.transactionBandwidthByte = feeComponent.transactionBandwidthByte.toString();
-    feeComponent.transactionVerification = feeComponent.transactionVerification.toString();
-    feeComponent.transactionRamByteHour = feeComponent.transactionRamByteHour.toString();
-    feeComponent.transactionStorageByteHour = feeComponent.transactionStorageByteHour.toString();
-    feeComponent.contractTransactionGas = feeComponent.contractTransactionGas.toString();
-    feeComponent.transferVolumeHbar = feeComponent.transferVolumeHbar.toString();
-    feeComponent.responseMemoryByte = feeComponent.responseMemoryByte.toString();
-    feeComponent.responseDiskByte = feeComponent.responseDiskByte.toString();
+    // @ts-ignore mutate the original object
+    feeComponent.min = feeComponent.min?.toString();
+    // @ts-ignore mutate the original object
+    feeComponent.max = feeComponent.max?.toString();
+    // @ts-ignore mutate the original object
+    feeComponent.constant = feeComponent.constant?.toString();
+    // @ts-ignore mutate the original object
+    feeComponent.transactionBandwidthByte = feeComponent.transactionBandwidthByte?.toString();
+    // @ts-ignore mutate the original object
+    feeComponent.transactionVerification = feeComponent.transactionVerification?.toString();
+    // @ts-ignore mutate the original object
+    feeComponent.transactionRamByteHour = feeComponent.transactionRamByteHour?.toString();
+    // @ts-ignore mutate the original object
+    feeComponent.transactionStorageByteHour = feeComponent.transactionStorageByteHour?.toString();
+    // @ts-ignore mutate the original object
+    feeComponent.contractTransactionGas = feeComponent.contractTransactionGas?.toString();
+    // @ts-ignore mutate the original object
+    feeComponent.transferVolumeHbar = feeComponent.transferVolumeHbar?.toString();
+    // @ts-ignore mutate the original object
+    feeComponent.responseMemoryByte = feeComponent.responseMemoryByte?.toString();
+    // @ts-ignore mutate the original object
+    feeComponent.responseDiskByte = feeComponent.responseDiskByte?.toString();
 
     return feeComponent;
   }

@@ -59,7 +59,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     </h3>
     <template
       v-for="(approval, i) in transaction.tokenApprovals"
-      :key="`${i}${approval.ownerAccountId?.toString()}${approval.spenderAccountId?.toString()}${approval.tokenId.toString()}${stringifyHbar(approval.amount || Hbar.fromString('0'))}`"
+      :key="`${i}${approval.ownerAccountId?.toString()}${approval.spenderAccountId?.toString()}${approval.tokenId.toString()}${stringifyHbar(approval.amount ? new Hbar(approval.amount) : Hbar.fromString('0'))}`"
     >
       <div class="row flex-wrap my-3" :class="{ 'mt-0': i === 0 }">
         <div v-if="approval.ownerAccountId" :class="commonColClass">
@@ -77,7 +77,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
         <div :class="commonColClass">
           <h4 :class="detailItemLabelClass">Amount</h4>
           <p :class="detailItemValueClass">
-            {{ stringifyHbar(approval.amount || Hbar.fromString('0')) }}
+            {{ stringifyHbar(approval.amount ? new Hbar(approval.amount) : Hbar.fromString('0')) }}
           </p>
         </div>
       </div>
