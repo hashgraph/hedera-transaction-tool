@@ -14,22 +14,22 @@ import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/use
 import { deleteGroup } from '@renderer/services/transactionGroupsService';
 
 import {
+  assertUserLoggedIn,
   getErrorMessage,
   getPropagationButtonLabel,
   isLoggedInOrganization,
-  isUserLoggedIn,
   redirectToGroupDetails,
 } from '@renderer/utils';
 import { createTransactionId } from '@renderer/utils/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import TransactionSelectionModal from '@renderer/components/TransactionSelectionModal.vue';
 import TransactionGroupProcessor from '@renderer/components/Transaction/TransactionGroupProcessor.vue';
+import SaveTransactionGroupModal from '@renderer/components/modals/SaveTransactionGroupModal.vue';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
@@ -47,7 +47,6 @@ const groupDescription = ref('');
 const isTransactionSelectionModalShown = ref(false);
 const transactionGroupProcessor = ref<typeof TransactionGroupProcessor | null>(null);
 const file = ref<HTMLInputElement | null>(null);
-const isSaveGroupModalShown = ref(false);
 const wantToDeleteModalShown = ref(false);
 const showAreYouSure = ref(false);
 
@@ -58,22 +57,22 @@ const transactionKey = computed(() => {
 });
 
 /* Handlers */
-async function handleSaveGroup() {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
+async function saveTransactionGroup() {
+  assertUserLoggedIn(user.personal);
+
+  if (!groupDescription.value) {
+    throw new Error('Please enter a group description');
   }
 
-  if (isSaveGroupModalShown.value) {
-    isSaveGroupModalShown.value = false;
-  }
-
-  if (groupDescription.value.trim() === '') {
-    toast.error('Please enter a group description');
-    return;
+  if (transactionGroup.groupItems.length === 0) {
+    throw new Error('Please add at least one transaction to the group');
   }
 
   await transactionGroup.saveGroup(user.personal.id, groupDescription.value);
   transactionGroup.clearGroup();
+}
+async function handleSaveGroup() {
+  await saveTransactionGroup();
   router.push('transactions');
 }
 
@@ -121,11 +120,6 @@ function handleBack() {
   router.push('transactions');
 }
 
-async function handleDiscard() {
-  transactionGroup.clearGroup();
-  router.push('transactions');
-}
-
 async function handleDelete() {
   if (route.query.id) {
     await deleteGroup(route.query.id.toString());
@@ -140,9 +134,7 @@ const handleLoadGroup = async () => {
     return;
   }
 
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
+  assertUserLoggedIn(user.personal);
 
   await transactionGroup.fetchGroup(route.query.id.toString(), {
     where: {
@@ -321,7 +313,6 @@ onMounted(async () => {
   groupDescription.value = transactionGroup.description;
 });
 
-// onBeforeRouteLeave(async to => {
 onBeforeRouteLeave(async to => {
   if (
     transactionGroup.isModified() &&
@@ -339,13 +330,6 @@ onBeforeRouteLeave(async to => {
 
   if (to.fullPath.startsWith('/create-transaction/')) {
     return true;
-  }
-
-  if (transactionGroup.isModified()) {
-    isSaveGroupModalShown.value = true;
-    return false;
-  } else {
-    transactionGroup.clearGroup();
   }
 
   return true;
@@ -519,41 +503,8 @@ onBeforeRouteLeave(async to => {
       </TransactionGroupProcessor>
     </div>
 
-    <AppModal
-      :show="isSaveGroupModalShown"
-      :close-on-click-outside="false"
-      :close-on-escape="false"
-      class="small-modal"
-    >
-      <form class="text-center p-4" @submit.prevent="handleSaveGroup">
-        <div class="text-start">
-          <i class="bi bi-x-lg cursor-pointer" @click="isSaveGroupModalShown = false"></i>
-        </div>
-        <div>
-          <AppCustomIcon :name="'lock'" style="height: 160px" />
-        </div>
-        <h2 class="text-title text-semi-bold mt-3">Save Group?</h2>
-        <p class="text-small text-secondary mt-3">
-          Pick up exactly where you left off, without compromising your flow or losing valuable
-          time.
-        </p>
+    <SaveTransactionGroupModal :save-transaction-group="saveTransactionGroup" />
 
-        <hr class="separator my-5" />
-
-        <div class="flex-between-centered gap-4">
-          <AppButton
-            color="borderless"
-            data-testid="button-discard-group-modal"
-            type="button"
-            @click="handleDiscard"
-            >Discard</AppButton
-          >
-          <AppButton color="primary" data-testid="button-save-draft-modal" type="submit"
-            >Save</AppButton
-          >
-        </div>
-      </form>
-    </AppModal>
     <AppModal
       :show="wantToDeleteModalShown"
       :close-on-click-outside="false"
