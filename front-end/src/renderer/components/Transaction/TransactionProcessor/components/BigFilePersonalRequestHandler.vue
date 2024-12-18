@@ -214,13 +214,15 @@ function createAppendTransaction() {
   if (!fileId.value) throw new Error('File ID is missing');
 
   const originalTransactionId = originalTransaction.value.transactionId;
+  const maxTransactionFee = originalTransaction.value.maxTransactionFee;
   if (!originalTransactionId) throw new Error('Original transaction ID is missing');
   if (!originalTransactionId.accountId) throw new Error('Transaction payer ID is missing');
   if (!originalTransactionId.validStart) throw new Error('Transaction valid start is missing');
+  if (!maxTransactionFee) throw new Error('Transaction max fee is missing');
 
   const append = new FileAppendTransaction()
     .setTransactionValidDuration(180)
-    .setMaxTransactionFee(originalTransaction.value.maxTransactionFee)
+    .setMaxTransactionFee(maxTransactionFee)
     .setTransactionId(
       createTransactionId(
         originalTransactionId.accountId,

@@ -430,14 +430,13 @@ export const formatSignatureMap = (signatureMap: SignatureMap) => {
   return result;
 };
 
-export const parseHbar = (hbar: string | number | null, unit: HbarUnit) => {
+export const parseHbar = (hbar: number | null, unit: HbarUnit): Hbar | null => {
+  hbar = parseInt(hbar?.toString() || '');
   if (!hbar) {
     return null;
   }
 
-  hbar = hbar.toString();
-
-  if (hbar.startsWith('-')) {
+  if (hbar < 0) {
     return null;
   }
 

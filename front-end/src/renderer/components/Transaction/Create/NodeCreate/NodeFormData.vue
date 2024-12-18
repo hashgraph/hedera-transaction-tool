@@ -197,9 +197,12 @@ function formatPort(event: Event, key: 'gossip' | 'service') {
 watch(
   () => props.data.gossipCaCertificate,
   async () => {
-    const { hash, text } = await x509BytesFromPem(props.data.gossipCaCertificate);
-    publicKeyHash.value = hash;
-    gossipCaCertificateText.value = text;
+    const result = await x509BytesFromPem(props.data.gossipCaCertificate);
+    if (result) {
+      const { hash, text } = result;
+      publicKeyHash.value = hash;
+      gossipCaCertificateText.value = text;
+    }
   },
   { once: true },
 );

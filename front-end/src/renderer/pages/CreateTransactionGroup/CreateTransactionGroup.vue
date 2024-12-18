@@ -259,7 +259,9 @@ async function handleOnFileChanged(e: Event) {
             const transaction = new TransferTransaction()
               .setTransactionValidDuration(txValidDuration ? Number.parseInt(txValidDuration) : 180)
               .setMaxTransactionFee(
-                transactionFee ? new Hbar(transactionFee) : maxTransactionFee.value,
+                transactionFee
+                  ? new Hbar(transactionFee)
+                  : Hbar.fromString(maxTransactionFee.value.toString()),
               );
 
             transaction.setTransactionId(

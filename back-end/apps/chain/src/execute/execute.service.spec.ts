@@ -9,6 +9,7 @@ import {
   Client,
   FileUpdateTransaction,
   KeyList,
+  Long,
   NodeUpdateTransaction,
   Transaction as SDKTransaction,
   Status,
@@ -74,7 +75,7 @@ describe('ExecuteService', () => {
     baseTransaction: Partial<Transaction>,
   ): Partial<Transaction> => ({
     ...baseTransaction,
-    transactionBytes: new NodeUpdateTransaction().setNodeId(2).toBytes() as Buffer,
+    transactionBytes: new NodeUpdateTransaction().setNodeId(Long.fromValue(2)).toBytes() as Buffer,
   });
 
   const getTransaction = (
