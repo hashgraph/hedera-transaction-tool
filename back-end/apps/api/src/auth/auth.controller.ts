@@ -48,13 +48,32 @@ export class AuthController {
 
   /* Register new users by admins */
   @ApiOperation({
-    summary: 'Create a new User',
+    summary: 'Create a new User or update his password and resend it through email',
     description:
       "Admins can create a new user by providing an email for the user. The password will be generated and sent to the user's email.",
   })
   @ApiResponse({
     status: 201,
+    description: 'User successfully created or updated. Returns the User object.',
     type: AuthDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'User already exists but was not confirmed. Password has been updated and sent to their email.',
+    type: AuthDto,
+  })
+  @ApiResponse({
+    status: 422,
+    description: 'Email already exists and the user has been confirmed.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request. Invalid data provided.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden. Admin privileges required.',
   })
   @Post('/signup')
   @Serialize(AuthDto)
