@@ -39,6 +39,10 @@ import {
 } from './dtos';
 
 @ApiTags('Authentication')
+@ApiResponse({
+  status: 403,
+  description: 'Forbidden. Admin privileges required.',
+})
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -70,10 +74,6 @@ export class AuthController {
   @ApiResponse({
     status: 400,
     description: 'Bad Request. Invalid data provided.',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden. Admin privileges required.',
   })
   @Post('/signup')
   @Serialize(AuthDto)
