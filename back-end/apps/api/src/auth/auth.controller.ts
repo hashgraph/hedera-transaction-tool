@@ -43,6 +43,10 @@ import {
   status: 403,
   description: 'Forbidden. Admin privileges required.',
 })
+@ApiResponse({
+  status: 400,
+  description: 'Bad Request. Invalid data provided.',
+})
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -62,18 +66,8 @@ export class AuthController {
     type: AuthDto,
   })
   @ApiResponse({
-    status: 200,
-    description:
-      'User already exists but was not confirmed. Password has been updated and sent to their email.',
-    type: AuthDto,
-  })
-  @ApiResponse({
     status: 422,
     description: 'Email already exists and the user has been confirmed.',
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad Request. Invalid data provided.',
   })
   @Post('/signup')
   @Serialize(AuthDto)
