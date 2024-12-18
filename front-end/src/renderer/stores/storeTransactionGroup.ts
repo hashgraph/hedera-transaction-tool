@@ -108,6 +108,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
    * @param index
    */
   function duplicateGroupItem(index: number) {
+    const lastItem = groupItems.value[groupItems.value.length - 1];
     const baseItem = groupItems.value[index];
     const newDate = findUniqueValidStart(
       baseItem.payerAccountId,
@@ -119,7 +120,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       transactionBytes: transaction.toBytes(),
       type: baseItem.type,
       description: baseItem.description,
-      seq: (Number.parseInt(baseItem.seq) + 1).toString(),
+      seq: (Number.parseInt(lastItem.seq) + 1).toString(),
       keyList: baseItem.keyList,
       observers: baseItem.observers,
       approvers: baseItem.approvers,
