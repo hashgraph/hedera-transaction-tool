@@ -213,7 +213,6 @@ watch(inputPassword, pass => {
       </div>
     </template>
 
-    <!-- Submit -->
     <div class="mt-5">
       <AppButton
         color="secondary"
