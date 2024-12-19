@@ -4,6 +4,7 @@ const withoutAuthRoutes = [
   'login',
   'styleGuide',
   'migrate',
+  'index',
   // 'settingsGeneral',
   // 'settingsWorkGroups',
 ];
