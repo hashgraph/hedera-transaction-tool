@@ -204,7 +204,7 @@ onBeforeUnmount(() => {
 
 onBeforeMount(() => {
   if (user?.recoveryPhrase) {
-    step.value += 2;
+    step.value += 1;
   }
 });
 
