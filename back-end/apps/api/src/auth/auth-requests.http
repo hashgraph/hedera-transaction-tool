@@ -6,6 +6,14 @@ content-type: application/json
   "email": "john.bair+16@swirldslabs.com"
 }
 
+### Update the password of already created but not confirmed user and send it to his email
+POST http://localhost:3001/auth/signup
+content-type: application/json
+
+{
+  "email": "john.bair+16@swirldslabs.com"
+}
+
 ### Log in local
 POST http://localhost:3001/auth/login
 content-type: application/json

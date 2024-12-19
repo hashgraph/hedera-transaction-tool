@@ -88,6 +88,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'User is verified and an authentication token is returned along with the user.',
+    type: LoginResponseDto,
   })
   @Post('/login')
   @HttpCode(200)
