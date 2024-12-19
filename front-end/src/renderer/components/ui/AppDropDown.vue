@@ -67,12 +67,12 @@ watch(
   <div ref="dropdownRef" class="dropdown">
     <AppButton
       :color="(colorOnActive && active) || !colorOnActive ? color : undefined"
-      class="d-flex flex-centered justify-content-between text-body mw-100"
+      class="d-flex flex-centered justify-content-between mw-100"
       data-bs-toggle="dropdown"
       data-bs-auto-close="true"
       data-bs-popper-config='{"strategy":"fixed"}'
       :data-testid="dataTestid"
-      :class="buttonClass"
+      :class="[buttonClass, active ? null : 'text-body']"
     >
       <div class="col-11 text-start overflow-hidden">
         <span>{{ selected?.label || toggleText }}</span>
@@ -84,7 +84,7 @@ watch(
     <ul class="dropdown-menu mt-3">
       <template v-for="item of items" :key="item.value">
         <li
-          class="dropdown-item cursor-pointer"
+          class="dropdown-item cursor-pointer text-body"
           :class="{ active: item.value === value }"
           @click="handleSelect(item.value)"
           :data-testid="`dropdown-item-${item.value}${item.label}`"
