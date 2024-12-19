@@ -99,6 +99,7 @@ const handleOnFormSubmit = async () => {
 
     await user.login(id, email, false);
     await user.refetchOrganizations();
+    await user.setupStores();
 
     if (isUserLoggedIn(user.personal)) {
       user.setPassword(inputPassword.value);
@@ -130,6 +131,8 @@ const handleOnFormSubmit = async () => {
         globalModalLoaderRef?.value?.open();
         await user.login(userData.id, userData.email.trim(), false);
         await user.refetchOrganizations();
+        await user.setupStores();
+
         if (isUserLoggedIn(user.personal)) {
           user.setPassword(inputPassword.value);
         }
