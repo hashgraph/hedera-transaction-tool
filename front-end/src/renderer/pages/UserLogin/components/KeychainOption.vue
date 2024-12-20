@@ -26,6 +26,7 @@ const handleUseKeychain = async () => {
   const staticUser = await getStaticUser();
   await user.login(staticUser.id, staticUser.email, true);
   await user.refetchOrganizations();
+  await user.setupStores();
 };
 
 /* Hooks */
