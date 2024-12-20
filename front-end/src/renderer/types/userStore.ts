@@ -26,22 +26,34 @@ export type LoggedInUserWithPassword = {
 
 export type PersonalUser = LoggedOutUser | LoggedInUser | LoggedInUserWithPassword;
 
+type OrganizationLoading = {
+  isLoading: true;
+};
+
+export type OrganizationLoaded = {
+  isLoading: false;
+};
+
 type OrganizationInactiveServer = {
+  isLoading: false;
   isServerActive: false;
   loginRequired: false;
 };
 
 export type OrganizationActiveServer = {
+  isLoading: false;
   isServerActive: true;
   loginRequired: boolean;
 };
 
 export type LoggedOutOrganization = {
+  isLoading: false;
   isServerActive: true;
   loginRequired: true;
 };
 
 export type LoggedInOrganization = {
+  isLoading: false;
   isServerActive: true;
   loginRequired: false;
   userId: number;
@@ -54,8 +66,12 @@ export type LoggedInOrganization = {
 
 export type ConnectedOrganization = Organization &
   (
-    | OrganizationInactiveServer
-    | (OrganizationActiveServer & (LoggedInOrganization | LoggedOutOrganization))
+    | OrganizationLoading
+    | (OrganizationLoaded &
+        (
+          | OrganizationInactiveServer
+          | (OrganizationActiveServer & (LoggedInOrganization | LoggedOutOrganization))
+        ))
   );
 
 export type OrganizationTokens = {
