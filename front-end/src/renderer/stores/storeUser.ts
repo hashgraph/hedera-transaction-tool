@@ -18,16 +18,10 @@ import useAfterOrganizationSelection from '@renderer/composables/user/useAfterOr
 import * as ush from '@renderer/utils/userStoreHelpers';
 
 import useNetworkStore from './storeNetwork';
-import useContactsStore from './storeContacts';
-import useWebsocketConnection from './storeWebsocketConnection';
-import useNotificationsStore from './storeNotifications';
 
 const useUserStore = defineStore('user', () => {
   /* Stores */
   const network = useNetworkStore();
-  const contacts = useContactsStore();
-  const notifications = useNotificationsStore();
-  const ws = useWebsocketConnection();
 
   /* Composables */
   const afterOrganizationSelection = useAfterOrganizationSelection();
@@ -63,10 +57,6 @@ const useUserStore = defineStore('user', () => {
   );
 
   /* Actions */
-  /** Setup */
-  const setupStores = () =>
-    Promise.allSettled([contacts.fetch(), notifications.setup(), ws.setup()]);
-
   /** Personal */
   const login = async (id: string, email: string, useKeychain: boolean) => {
     personal.value = ush.createPersonalUser(id, email, useKeychain);
@@ -220,7 +210,6 @@ const useUserStore = defineStore('user', () => {
     setPassword,
     setPasswordStoreDuration,
     setRecoveryPhrase,
-    setupStores,
     storeKey,
   };
 
