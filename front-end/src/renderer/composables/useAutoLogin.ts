@@ -1,5 +1,4 @@
 import { onMounted } from 'vue';
-import { useRouter } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -10,9 +9,6 @@ import { safeAwait } from '@renderer/utils';
 export default function useAutoLogin() {
   /* Stores */
   const user = useUserStore();
-
-  /* Composables */
-  const router = useRouter();
 
   /* Functions */
   const keychainLogin = async () => {
@@ -40,10 +36,6 @@ export default function useAutoLogin() {
       await keychainLogin();
     } else if (loggedUser) {
       await localStorageLogin(loggedUser);
-    }
-
-    if (user.shouldSetupAccount) {
-      await router.push({ name: 'accountSetup' });
     }
   };
 }

@@ -16,8 +16,6 @@ import type {
   OrganizationLoaded,
 } from '@renderer/types';
 
-import { nextTick } from 'vue';
-
 import { Prisma } from '@prisma/client';
 import { Mnemonic } from '@hashgraph/sdk';
 
@@ -203,7 +201,7 @@ export const storeKeyPair = async (
 
 /* Fetching */
 export const getLocalKeyPairs = async (
-  user: PersonalUser | null,
+  user: LoggedInUser,
   selectedOrganization: ConnectedOrganization | null,
 ) => {
   assertUserLoggedIn(user);
@@ -447,11 +445,13 @@ export const getRecoveryPhraseHashValue = (words: string[]) => {
 
 /* Organization */
 export const getConnectedOrganization = async (
-  organization: Organization,
+  organization: Organization | null,
   user: PersonalUser | null,
-): Promise<ConnectedOrganization> => {
-  if (!isUserLoggedIn(user)) {
-    throw Error('Login to select organization');
+): Promise<ConnectedOrganization | null> => {
+  assertUserLoggedIn(user);
+
+  if (!organization) {
+    return null;
   }
 
   let isActive = false;
@@ -513,48 +513,6 @@ export const getConnectedOrganization = async (
   }
 };
 
-export const afterOrganizationSelection = async (
-  user: PersonalUser | null,
-  organization: Ref<ConnectedOrganization | null>,
-  keyPairs: Ref<KeyPair[]>,
-  mnemonics: Ref<LocalMnemonic[]>,
-  router: Router,
-) => {
-  await updateKeyPairs(keyPairs, user, organization.value);
-  await updateMnemonics(mnemonics, user);
-  await nextTick();
-
-  if (!organization.value) {
-    navigateToPreviousRoute(router);
-    return;
-  }
-
-  if (!isOrganizationActive(organization.value)) {
-    organization.value = null;
-
-    await updateKeyPairs(keyPairs, user, organization.value);
-    await nextTick();
-
-    navigateToPreviousRoute(router);
-    return;
-  }
-
-  if (isLoggedOutOrganization(organization.value)) {
-    router.push({ name: 'organizationLogin' });
-    return;
-  }
-
-  if (
-    isLoggedInOrganization(organization.value) &&
-    accountSetupRequired(organization.value, keyPairs.value)
-  ) {
-    router.push({ name: 'accountSetup' });
-    return;
-  }
-
-  navigateToPreviousRoute(router);
-};
-
 export const refetchUserState = async (organization: Ref<ConnectedOrganization | null>) => {
   if (!organization || !isLoggedInOrganization(organization.value)) return;
 
@@ -595,8 +553,10 @@ export const updateConnectedOrganizations = async (
   const result = await Promise.allSettled(
     organizations.map(async (organization, index) => {
       const connectedOrg = await getConnectedOrganization(organization, user);
-      organizationsRef.value[index] = connectedOrg;
-      organizationsRef.value = [...organizationsRef.value];
+      if (connectedOrg) {
+        organizationsRef.value[index] = connectedOrg;
+        organizationsRef.value = [...organizationsRef.value];
+      }
     }),
   );
 
@@ -670,6 +630,7 @@ export const restoreOrganizationKeys = async (
   storedKeyPairs: KeyPair[],
   currentPhraseOnly: boolean,
 ) => {
+  assertUserLoggedIn(personalUser);
   assertIsLoggedInOrganization(organization);
 
   if (!recoveryPhrase) {
@@ -784,7 +745,7 @@ export const updateOrganizationKeysHash = async (
   }
 };
 
-const navigateToPreviousRoute = (router: Router) => {
+export const navigateToPreviousRoute = (router: Router) => {
   const currentRoute = router.currentRoute.value;
   if (router.previousPath) {
     currentRoute.path !== router.previousPath && router.push(router.previousPath);
