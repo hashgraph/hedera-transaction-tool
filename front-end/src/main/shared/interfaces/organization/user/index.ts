@@ -1,4 +1,4 @@
-import { IUserKey } from '../userKeys';
+import type { IUserKey } from '../userKeys';
 
 export interface IUser {
   id: number;
