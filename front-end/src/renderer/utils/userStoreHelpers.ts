@@ -201,10 +201,12 @@ export const storeKeyPair = async (
 
 /* Fetching */
 export const getLocalKeyPairs = async (
-  user: LoggedInUser,
+  user: PersonalUser | null,
   selectedOrganization: ConnectedOrganization | null,
 ) => {
-  assertUserLoggedIn(user);
+  if (!isUserLoggedIn(user)) {
+    return [];
+  }
 
   let keyPairs = await getKeyPairs(
     user.id,
@@ -227,19 +229,6 @@ export const getLocalKeyPairs = async (
   });
 
   return keyPairs;
-};
-
-export const updateKeyPairs = async (
-  keyPairs: Ref<KeyPair[]>,
-  user: PersonalUser | null,
-  selectedOrganization: ConnectedOrganization | null,
-) => {
-  if (user?.isLoggedIn) {
-    const newKeys = await getLocalKeyPairs(user, selectedOrganization);
-    keyPairs.value = newKeys;
-  } else {
-    keyPairs.value = [];
-  }
 };
 
 export const getPublicKeysToAccounts = async (keyPairs: KeyPair[], mirrorNodeBaseURL: string) => {
@@ -513,31 +502,32 @@ export const getConnectedOrganization = async (
   }
 };
 
-export const refetchUserState = async (organization: Ref<ConnectedOrganization | null>) => {
-  if (!organization || !isLoggedInOrganization(organization.value)) return;
+export const refetchUserState = async (organization: ConnectedOrganization | null) => {
+  if (!organization || !isLoggedInOrganization(organization)) return organization;
 
   try {
     const { id, email, admin, userKeys, secretHashes, passwordTemporary } = await getUserState(
-      organization.value.serverUrl,
+      organization.serverUrl,
     );
 
-    organization.value.userId = id;
-    organization.value.email = email;
-    organization.value.admin = admin;
-    organization.value.userKeys = userKeys;
-    organization.value.secretHashes = secretHashes;
-    organization.value.isPasswordTemporary = passwordTemporary;
+    organization.userId = id;
+    organization.email = email;
+    organization.admin = admin;
+    organization.userKeys = userKeys;
+    organization.secretHashes = secretHashes;
+    organization.isPasswordTemporary = passwordTemporary;
+    return organization;
   } catch {
     const activeloginRequired: ConnectedOrganization = {
-      id: organization.value.id,
-      nickname: organization.value.nickname,
-      serverUrl: organization.value.serverUrl,
-      key: organization.value.key,
+      id: organization.id,
+      nickname: organization.nickname,
+      serverUrl: organization.serverUrl,
+      key: organization.key,
       isLoading: false,
       isServerActive: true,
       loginRequired: true,
     };
-    organization.value = activeloginRequired;
+    return activeloginRequired;
   }
 };
 
