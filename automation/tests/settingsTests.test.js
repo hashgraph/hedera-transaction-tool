@@ -85,7 +85,7 @@ test.describe('Settings tests', () => {
     await settingsPage.clickOnNicknameContinueButton();
 
     const toastMessage = await registrationPage.getToastMessage();
-    expect(toastMessage).toBe('Key blue saved');
+    expect(toastMessage).toBe('Key pair saved');
 
     // key pair was successfully restored, so we increment the index
     await settingsPage.incrementIndex();
