@@ -202,12 +202,6 @@ onBeforeUnmount(() => {
   user.recoveryPhrase = null;
 });
 
-onBeforeMount(() => {
-  if (user?.recoveryPhrase) {
-    step.value += 1;
-  }
-});
-
 /* Watchers */
 watch(index, () => (inputIndexInvalid.value = false));
 
