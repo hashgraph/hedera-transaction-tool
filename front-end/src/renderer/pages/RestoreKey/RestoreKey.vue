@@ -292,7 +292,7 @@ watch(step, async newStep => {
           v-focus-first-input
         >
           <h1 class="text-display text-bold text-center">Provide Index of Key</h1>
-          <p class="text-main mt-5 text-center">Please enter the index of the key</p>
+          <p class="text-main mt-5 text-center">Enter the index of the private key you want to generate from the recovery phrase</p>
           <div
             class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
           >
@@ -329,8 +329,8 @@ watch(step, async newStep => {
           @submit.prevent="handleSaveKey"
           v-focus-first-input
         >
-          <h1 class="text-display text-bold text-center">Enter nickname</h1>
-          <p class="text-main mt-5 text-center">Please enter your nickname (optional)</p>
+          <h1 class="text-display text-bold text-center">Enter Key Nickname</h1>
+          <p class="text-main mt-5 text-center">You can optionally enter a nickname for the private key generated at {{ index }} to reference it more easily later</p>
           <div
             class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
           >
