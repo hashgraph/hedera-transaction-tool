@@ -47,7 +47,7 @@ watch(inputRecoveryPhrasePassword, () => (inputRecoveryPhrasePasswordError.value
   <form @submit="handleOnFormSubmit" class="flex-column-100">
     <div class="fill-remaining">
       <p class="text-secondary text-small lh-base text-center">
-        Enter password for decrypting the recovery phrase from the old tool
+        Enter your recovery phrase password from the old tool
       </p>
 
       <!-- Mnemonic Password -->
