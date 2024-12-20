@@ -1,6 +1,6 @@
 import type { Ref } from 'vue';
 import type { Router } from 'vue-router';
-import type { KeyPair, Organization, Mnemonic as LocalMnemonic } from '@prisma/client';
+import type { KeyPair, Organization } from '@prisma/client';
 import type { IUserKey } from '@main/shared/interfaces';
 import type {
   ConnectedOrganization,
@@ -260,35 +260,37 @@ export const getPublicKeysToAccounts = async (keyPairs: KeyPair[], mirrorNodeBas
   return publicKeyToAccounts;
 };
 
-export const setPublicKeyToAccounts = async (
-  publicKeyToAccounts: Ref<PublicKeyAccounts[]>,
+export const getPublicKeyToAccounts = async (
+  publicKeyToAccounts: PublicKeyAccounts[],
   keyPairs: KeyPair[],
   mirrorNodeBaseURL: string,
 ) => {
-  publicKeyToAccounts.value = [];
-
   for (const { public_key } of keyPairs) {
     let next: string | null = null;
 
     do {
-      const { accounts, nextUrl } = await getAccountIds(mirrorNodeBaseURL, public_key, next);
-      next = nextUrl;
+      //@ts-ignore - data cannot infer type
+      const { data } = await safeAwait(getAccountIds(mirrorNodeBaseURL, public_key, next));
+      if (data) {
+        next = data.nextUrl;
 
-      const publicKeyPair = publicKeyToAccounts.value.findIndex(
-        pkToAcc => pkToAcc.publicKey === public_key,
-      );
+        const publicKeyPair = publicKeyToAccounts.findIndex(
+          pkToAcc => pkToAcc.publicKey === public_key,
+        );
 
-      if (publicKeyPair >= 0) {
-        publicKeyToAccounts.value[publicKeyPair].accounts?.push(...(accounts || []));
-      } else {
-        publicKeyToAccounts.value.push({
-          publicKey: public_key,
-          accounts: accounts || [],
-        });
+        if (publicKeyPair >= 0) {
+          publicKeyToAccounts[publicKeyPair].accounts?.push(...(data.accounts || []));
+        } else {
+          publicKeyToAccounts.push({
+            publicKey: public_key,
+            accounts: data.accounts || [],
+          });
+        }
       }
-      publicKeyToAccounts.value = [...publicKeyToAccounts.value];
     } while (next);
   }
+
+  return [...publicKeyToAccounts];
 };
 
 export const setupSafeNetwork = async (
@@ -299,12 +301,11 @@ export const setupSafeNetwork = async (
   await safeAwait(setNetwork(data));
 };
 
-export const updateMnemonics = async (
-  mnemonics: Ref<LocalMnemonic[]>,
-  user: PersonalUser | null,
-) => {
-  assertUserLoggedIn(user);
-  mnemonics.value = await getStoredMnemonics({ where: { user_id: user.id } });
+export const getMnemonics = async (user: PersonalUser | null) => {
+  if (!isUserLoggedIn(user)) {
+    return [];
+  }
+  return await getStoredMnemonics({ where: { user_id: user.id } });
 };
 
 /* Computations */

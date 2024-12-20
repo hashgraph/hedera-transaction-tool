@@ -126,8 +126,9 @@ const useUserStore = defineStore('user', () => {
   };
 
   const refetchAccounts = async () => {
-    await ush.setPublicKeyToAccounts(
-      publicKeyToAccounts,
+    publicKeyToAccounts.value = [];
+    publicKeyToAccounts.value = await ush.getPublicKeyToAccounts(
+      publicKeyToAccounts.value,
       keyPairs.value,
       network.mirrorNodeBaseURL,
     );
@@ -138,7 +139,7 @@ const useUserStore = defineStore('user', () => {
   };
 
   const refetchMnemonics = async () => {
-    await ush.updateMnemonics(mnemonics, personal.value);
+    mnemonics.value = await ush.getMnemonics(personal.value);
   };
 
   const storeKey = async (
@@ -164,12 +165,12 @@ const useUserStore = defineStore('user', () => {
 
   const refetchOrganizations = async () => {
     await ush.updateConnectedOrganizations(organizations, personal.value);
-    const updatedSelectedOrganization = organizations.value.find(
-      o => o.id === selectedOrganization.value?.id,
-    );
     organizationTokens.value = await ush.getOrganizationJwtTokens(personal.value);
     ush.setSessionStorageTokens(organizations.value, organizationTokens.value);
 
+    const updatedSelectedOrganization = organizations.value.find(
+      o => o.id === selectedOrganization.value?.id,
+    );
     if (updatedSelectedOrganization) {
       await selectOrganization(updatedSelectedOrganization);
     }
