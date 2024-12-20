@@ -273,7 +273,7 @@ test.describe('Registration tests', () => {
     await registrationPage.clickOnFinalNextButtonWithRetry();
 
     const toastMessage = await registrationPage.getToastMessage();
-    expect(toastMessage).toBe('Key pair saved successfully');
+    expect(toastMessage).toBe('Key Pair saved successfully');
   });
 
   test('Verify successful registration through "Import Existing" flow', async () => {
@@ -304,7 +304,7 @@ test.describe('Registration tests', () => {
     await registrationPage.clickOnFinalNextButtonWithRetry();
 
     const toastMessage = await registrationPage.getToastMessage();
-    expect(toastMessage).toBe('Key pair saved successfully');
+    expect(toastMessage).toBe('Key Pair saved successfully');
   });
 
   test('Verify user is stored in the database after registration', async () => {
