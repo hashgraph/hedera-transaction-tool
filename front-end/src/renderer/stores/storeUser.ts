@@ -73,8 +73,8 @@ const useUserStore = defineStore('user', () => {
   const logout = () => {
     personal.value = ush.createPersonalUser();
     selectedOrganization.value = null;
-    organizations.value.splice(0, organizations.value.length);
-    publicKeyToAccounts.value.splice(0, publicKeyToAccounts.value.length);
+    organizations.value = [];
+    publicKeyToAccounts.value = [];
     keyPairs.value = [];
     recoveryPhrase.value = null;
   };
@@ -196,7 +196,7 @@ const useUserStore = defineStore('user', () => {
   const refetchUserState = async () => await ush.refetchUserState(selectedOrganization);
 
   const refetchOrganizations = async () => {
-    organizations.value = await ush.getConnectedOrganizations(personal.value);
+    await ush.updateConnectedOrganizations(organizations, personal.value);
     const updatedSelectedOrganization = organizations.value.find(
       o => o.id === selectedOrganization.value?.id,
     );
