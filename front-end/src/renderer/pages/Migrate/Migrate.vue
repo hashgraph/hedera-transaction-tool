@@ -56,7 +56,7 @@ const selectedKeysToRecover = ref<KeyPathWithName[]>([]);
 const heading = computed(() => {
   switch (step.value) {
     case 'recoveryPhrase':
-      return 'Decrypt Recovery Phrase';
+      return 'Recovery Phrase Password';
     case 'personal':
       return 'Personal Information';
     case 'organization':

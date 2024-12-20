@@ -37,7 +37,7 @@ const decryptRecoveryPhrase = async (recoveryPhrasePassword: string) => {
   const { data, error } = await safeAwait(decryptMigrationMnemonic(recoveryPhrasePassword));
 
   if (error || !data)
-    throw new Error('Mnemonic phrase decryption failed. Try a different password.');
+    throw new Error('Recovery phrase password is incorrect. Try a different password.');
 
   emit('setRecoveryPhrase', {
     recoveryPhrase: await createRecoveryPhrase(data),
