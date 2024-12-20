@@ -237,7 +237,7 @@ const handleSign = async () => {
   }
 
   const personalPassword = getPassword(handleSign, {
-    subHeading: 'Enter your application password to decrypt your private key',
+    subHeading: 'Enter your application password to access your private key',
   });
   if (passwordModalOpened(personalPassword)) return;
 
@@ -312,7 +312,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
     }
 
     const personalPassword = getPassword(callback, {
-      subHeading: 'Enter your application password to decrypt your private key',
+      subHeading: 'Enter your application password to access your private key',
     });
     if (passwordModalOpened(personalPassword)) return;
 
@@ -528,6 +528,7 @@ const sectionHeadingClass = 'd-flex justify-content-between align-items-center';
 const detailItemLabelClass = 'text-micro text-semi-bold text-dark-blue';
 const detailItemValueClass = 'text-small mt-1';
 const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
+const descriptionColClass = 'col-6 col-lg-5 col-xl-12 col-xxl-3 overflow-hidden py-3';
 const reject = 'Reject';
 const approve = 'Approve';
 const sign = 'Sign';
@@ -618,7 +619,7 @@ const cancel = 'Cancel';
             <div class="fill-remaining mt-5 pe-4">
               <div class="row flex-wrap">
                 <!-- Description -->
-                <div :class="commonColClass">
+                <div :class="descriptionColClass">
                   <div
                     v-if="
                       (
