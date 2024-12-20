@@ -528,7 +528,7 @@ const sectionHeadingClass = 'd-flex justify-content-between align-items-center';
 const detailItemLabelClass = 'text-micro text-semi-bold text-dark-blue';
 const detailItemValueClass = 'text-small mt-1';
 const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
-const descriptionColClass = 'col-6 col-lg-5 col-xl-12 col-xxl-3 overflow-hidden py-3';
+const descriptionColClass = 'col-12 col-lg-12 col-xl-12 col-xxl-12\'';
 const reject = 'Reject';
 const approve = 'Approve';
 const sign = 'Sign';
@@ -630,7 +630,9 @@ const cancel = 'Cancel';
                     "
                   >
                     <h4 :class="detailItemLabelClass">Description</h4>
-                    <p :class="detailItemValueClass" data-testid="p-description-field">
+                    <p :class="detailItemValueClass" data-testid="p-description-field"
+                       style="white-space: normal; word-break: break-word; overflow-wrap: break-word;"
+                    >
                       {{ orgTransaction?.description || localTransaction?.description }}
                     </p>
                   </div>
