@@ -162,7 +162,7 @@ const handleSaveKey = async () => {
     user.recoveryPhrase = null;
     await user.refetchUserState();
 
-    toast.success('Key Pair saved');
+    toast.success('Key pair saved');
     router.push({ name: 'settingsKeys' });
   } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to store private key'));
