@@ -281,7 +281,7 @@ class RegistrationPage extends BasePage {
     await this.clickOnFinalNextButtonWithRetry();
 
     const toastMessage = await this.getToastMessage();
-    expect(toastMessage).toBe('Key Pair saved successfully');
+    expect(toastMessage).toBe('Key pair saved successfully');
   }
 
   async verifyUserExists(email) {

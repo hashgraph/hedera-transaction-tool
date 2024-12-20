@@ -85,7 +85,7 @@ test.describe('Settings tests', () => {
     await settingsPage.clickOnNicknameContinueButton();
 
     const toastMessage = await registrationPage.getToastMessage();
-    expect(toastMessage).toBe('Key Pair saved');
+    expect(toastMessage).toBe('Key pair saved');
 
     // key pair was successfully restored, so we increment the index
     await settingsPage.incrementIndex();
@@ -115,7 +115,7 @@ test.describe('Settings tests', () => {
     await settingsPage.clickOnNicknameContinueButton();
 
     const toastMessage = await registrationPage.getToastMessage();
-    expect(toastMessage).toBe('Key Pair saved');
+    expect(toastMessage).toBe('Key pair saved');
 
     // key pair was successfully restored, so we increment the index
     await settingsPage.incrementIndex();
