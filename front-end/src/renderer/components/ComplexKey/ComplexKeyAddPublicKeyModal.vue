@@ -154,12 +154,13 @@ function filterKeyList(keyList: { publicKey: string; nickname: string | null }[]
         <hr class="separator my-5" />
 
         <template v-if="isLoggedInOrganization(user.selectedOrganization)">
-          <div class="btn-group d-flex justify-content-between">
+          <div class="btn-group d-flex justify-content-between gap-3">
             <template v-for="kt in KeyTab" :key="kt">
               <AppButton
+                class="rounded-3 text-nowrap"
                 @click="handleKeyTabChange(kt)"
-                :class="{ active: currentTab === kt }"
-                color="secondary"
+                :class="{ active: currentTab === kt, 'text-body': currentTab !== kt }"
+                :color="currentTab === kt ? 'primary' : undefined"
                 type="button"
                 data-testid="tab-keys-my"
                 >{{ kt }}</AppButton
