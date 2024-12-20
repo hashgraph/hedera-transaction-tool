@@ -13,7 +13,13 @@ import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhras
 import { login } from '@renderer/services/organization';
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
-import { assertUserLoggedIn, getErrorMessage, isEmail, isLoggedOutOrganization } from '@renderer/utils';
+import {
+  assertUserLoggedIn,
+  getErrorMessage,
+  isEmail,
+  isLoggedOutOrganization,
+  isOrganizationActive,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -123,7 +129,9 @@ onBeforeRouteLeave(async () => {
 
   if (!user.selectedOrganization) return true;
 
-  return !user.selectedOrganization.loginRequired;
+  return (
+    isOrganizationActive(user.selectedOrganization) && !user.selectedOrganization.loginRequired
+  );
 });
 </script>
 <template>

@@ -9,7 +9,7 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { tryAutoSignIn } from '@renderer/services/organizationCredentials';
 
-import { isUserLoggedIn } from '@renderer/utils';
+import { isOrganizationActive, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -34,7 +34,7 @@ const handleAutoLogin = async (password: string | null) => {
 
   loginFailedForOrganizations.value = await tryAutoSignIn(user.personal.id, password);
   loginTriedForOrganizations.value = user.organizations
-    .filter(org => org.loginRequired)
+    .filter(org => isOrganizationActive(org) && org.loginRequired)
     .map(org => ({ id: org.id, nickname: org.nickname, serverUrl: org.serverUrl, key: org.key }));
 
   loginsSummaryModalShow.value = true;
@@ -50,7 +50,9 @@ const handleSubmitFailedOrganizations = (e: Event) => {
 /* Functions */
 async function openPasswordModalIfRequired() {
   if (isUserLoggedIn(user.personal)) {
-    const organizationToSignIn = user.organizations.filter(org => org.loginRequired);
+    const organizationToSignIn = user.organizations.filter(
+      org => isOrganizationActive(org) && org.loginRequired,
+    );
 
     if (organizationToSignIn.length === 0) return;
 
