@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
+import { onBeforeUnmount, ref, watch } from 'vue';
 import { PrivateKey } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
