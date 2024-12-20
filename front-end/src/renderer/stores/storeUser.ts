@@ -153,10 +153,14 @@ const useUserStore = defineStore('user', () => {
   const refetchUserState = async () =>
     (selectedOrganization.value = await ush.refetchUserState(selectedOrganization.value));
 
-  const refetchOrganizations = async () => {
-    await ush.updateConnectedOrganizations(organizations, personal.value);
+  const refetchOrganizationTokens = async () => {
     organizationTokens.value = await ush.getOrganizationJwtTokens(personal.value);
     ush.setSessionStorageTokens(organizations.value, organizationTokens.value);
+  };
+
+  const refetchOrganizations = async () => {
+    await ush.updateConnectedOrganizations(organizations, personal.value);
+    await refetchOrganizationTokens();
   };
 
   const deleteOrganization = async (organizationId: string) => {
@@ -202,6 +206,7 @@ const useUserStore = defineStore('user', () => {
     refetchKeys,
     refetchMnemonics,
     refetchOrganizations,
+    refetchOrganizationTokens,
     refetchUserState,
     selectOrganization,
     setMigrating,
