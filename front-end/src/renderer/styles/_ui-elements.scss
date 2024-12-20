@@ -680,6 +680,7 @@
   .dropdown-item {
     border-radius: $border-radius;
     cursor: pointer;
+    overflow: hidden;
 
     &:hover,
     &[selected] {
