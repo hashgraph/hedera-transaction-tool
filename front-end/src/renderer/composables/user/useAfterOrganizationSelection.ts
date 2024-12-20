@@ -1,4 +1,7 @@
 import useUserStore from '@renderer/stores/storeUser';
+import useContactsStore from '@renderer/stores/storeContacts';
+import useNotificationsStore from '@renderer/stores/storeNotifications';
+import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -18,6 +21,9 @@ import {
 export default function useAfterOrganizationSelection() {
   /* Stores */
   const user = useUserStore();
+  const contacts = useContactsStore();
+  const notifications = useNotificationsStore();
+  const ws = useWebsocketConnection();
 
   /* Composables */
   const router = useRouter();
@@ -40,6 +46,11 @@ export default function useAfterOrganizationSelection() {
     user.mnemonics = mnemonics;
 
     return { keyPairs, mnemonics };
+  };
+
+  const setupStores = async () => {
+    const results = await Promise.allSettled([contacts.fetch(), notifications.setup(), ws.setup()]);
+    results.forEach(r => r.status === 'rejected' && toast.error(r.reason));
   };
 
   const handleNavigation = async () => {
@@ -67,9 +78,7 @@ export default function useAfterOrganizationSelection() {
     await handleStates();
     await handleNavigation();
 
-    const results = await user.setupStores();
-    results.forEach(r => r.status === 'rejected' && toast.error(r.reason));
-
+    setupStores();
     user.refetchAccounts();
   };
 
