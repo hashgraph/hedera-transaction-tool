@@ -7,7 +7,7 @@ and is at your own risk.
 
 ## Documentation
 
-The user guide for this application can be found [here][https://docs.hedera.com/hedera-transactions-tool).
+The user guide for this application can be found [here](https://docs.hedera.com/hedera-transactions-tool).
 
 ## Contributing
 
