@@ -35,7 +35,7 @@ onMounted(async () => {
 </script>
 <template>
   <div class="row">
-    <div class="form-group" :class="['col-8 col-xxxl-6']">
+    <div class="form-group" :class="['col-11']">
       <label class="form-label">Transaction Description</label>
       <AppTextArea
         :model-value="description"
