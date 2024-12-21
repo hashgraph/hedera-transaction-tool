@@ -219,38 +219,7 @@ watch(step, async newStep => {
     <div class="flex-centered flex-column-100">
       <Transition name="fade" mode="out-in">
         <!-- Step 1 -->
-        <div v-if="step === 0" class="w-100">
-          <h1 class="text-display text-bold text-center">Restore Key Pair</h1>
-          <div
-            class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
-          >
-            <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-              <AppButton
-                size="large"
-                data-testid="button-continue"
-                color="primary"
-                class="d-block w-100"
-                @click="user.recoveryPhrase ? (step += 2) : step++"
-                >Continue</AppButton
-              >
-              <AppButton
-                size="large"
-                data-testid="button-cancel"
-                color="secondary"
-                class="mt-4 d-block w-100"
-                @click="$router.back()"
-                >Cancel</AppButton
-              >
-            </div>
-          </div>
-        </div>
-
-        <!-- Step 2 -->
-        <form
-          v-else-if="step === 1"
-          @submit.prevent="handleImportRecoveryPhrase"
-          class="fill-remaining"
-        >
+        <form v-if="step === 0" @submit.prevent="handleImportRecoveryPhrase" class="fill-remaining">
           <h1 class="text-display text-bold text-center">Enter your Recovery Phrase</h1>
           <div class="mt-8">
             <Import />
@@ -284,9 +253,9 @@ watch(step, async newStep => {
           </div>
         </form>
 
-        <!-- Step 3 -->
+        <!-- Step 2 -->
         <form
-          v-else-if="step === 2"
+          v-else-if="step === 1"
           class="w-100"
           @submit.prevent="handleRestoreKey"
           v-focus-first-input
@@ -322,9 +291,9 @@ watch(step, async newStep => {
           </div>
         </form>
 
-        <!-- Step 4 -->
+        <!-- Step 3 -->
         <form
-          v-else-if="step === 3"
+          v-else-if="step === 2"
           class="w-100"
           @submit.prevent="handleSaveKey"
           v-focus-first-input

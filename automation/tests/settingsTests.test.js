@@ -67,15 +67,9 @@ test.describe('Settings tests', () => {
     await settingsPage.clickOnKeysTab();
 
     await settingsPage.clickOnRestoreButton();
-    await settingsPage.clickOnContinueButton();
 
-    const isMnemonicRequired = settingsPage.isElementVisible(
-      registrationPage.getRecoveryWordSelector(1),
-    );
-    if (isMnemonicRequired) {
-      await registrationPage.fillAllMissingRecoveryPhraseWords();
-      await settingsPage.clickOnContinuePhraseButton();
-    }
+    await registrationPage.fillAllMissingRecoveryPhraseWords();
+    await settingsPage.clickOnContinuePhraseButton();
 
     await settingsPage.fillInIndex(settingsPage.currentIndex);
     await settingsPage.clickOnIndexContinueButton();
@@ -97,15 +91,9 @@ test.describe('Settings tests', () => {
     const rowCountBeforeRestore = await settingsPage.getKeyRowCount();
 
     await settingsPage.clickOnRestoreButton();
-    await settingsPage.clickOnContinueButton();
 
-    const isMnemonicRequired = settingsPage.isElementVisible(
-      registrationPage.getRecoveryWordSelector(1),
-    );
-    if (isMnemonicRequired) {
-      await registrationPage.fillAllMissingRecoveryPhraseWords();
-      await settingsPage.clickOnContinuePhraseButton();
-    }
+    await registrationPage.fillAllMissingRecoveryPhraseWords();
+    await settingsPage.clickOnContinuePhraseButton();
 
     await settingsPage.fillInIndex(settingsPage.currentIndex);
     await settingsPage.clickOnIndexContinueButton();
@@ -140,15 +128,10 @@ test.describe('Settings tests', () => {
     await settingsPage.clickOnKeysTab();
 
     await settingsPage.clickOnRestoreButton();
-    await settingsPage.clickOnContinueButton();
 
-    const isMnemonicRequired = settingsPage.isElementVisible(
-      registrationPage.getRecoveryWordSelector(1),
-    );
-    if (isMnemonicRequired) {
-      await registrationPage.fillAllMissingRecoveryPhraseWords();
-      await settingsPage.clickOnContinuePhraseButton();
-    }
+    await registrationPage.fillAllMissingRecoveryPhraseWords();
+    await settingsPage.clickOnContinuePhraseButton();
+
     const currentIndex = settingsPage.currentIndex;
     await settingsPage.fillInIndex(settingsPage.currentIndex);
     await settingsPage.clickOnIndexContinueButton();
