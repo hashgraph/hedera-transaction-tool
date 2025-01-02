@@ -10,7 +10,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { updateOrganization } from '@renderer/services/organizationsService';
 
-import { isUserLoggedIn, toggleAuthTokenInSessionStorage } from '@renderer/utils';
+import { assertUserLoggedIn, toggleAuthTokenInSessionStorage } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -30,9 +30,7 @@ const addOrganizationModalShown = ref(false);
 
 /* Handlers */
 const handleDeleteConnection = async (organizationId: string) => {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
+  assertUserLoggedIn(user.personal);
 
   const serverUrl = user.organizations.find(org => org.id === organizationId)?.serverUrl || '';
   ws.disconnect(serverUrl);
@@ -59,9 +57,7 @@ const handleStartNicknameEdit = (index: number) => {
 };
 
 const handleChangeNickname = async (e: Event) => {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
+  assertUserLoggedIn(user.personal);
 
   const index = editedIndex.value;
   editedIndex.value = -1;
