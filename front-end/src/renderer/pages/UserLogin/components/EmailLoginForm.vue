@@ -9,6 +9,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter } from 'vue-router';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
+import useSetupStores from '@renderer/composables/user/useSetupStores';
 
 import { loginLocal, registerLocal } from '@renderer/services/userService';
 import { initializeUseKeychain } from '@renderer/services/safeStorageService';
@@ -40,6 +41,7 @@ const user = useUserStore();
 /* Composables */
 const router = useRouter();
 const createTooltips = useCreateTooltips();
+const setupStores = useSetupStores();
 const { redirectIfRequiredKeysToMigrate } = useRecoveryPhraseHashMigrate();
 
 /* Injected */
@@ -99,7 +101,7 @@ const handleOnFormSubmit = async () => {
 
     await user.login(id, email, false);
     await user.refetchOrganizations();
-    await user.setupStores();
+    setupStores();
 
     if (isUserLoggedIn(user.personal)) {
       user.setPassword(inputPassword.value);
@@ -131,7 +133,7 @@ const handleOnFormSubmit = async () => {
         globalModalLoaderRef?.value?.open();
         await user.login(userData.id, userData.email.trim(), false);
         await user.refetchOrganizations();
-        await user.setupStores();
+        setupStores();
 
         if (isUserLoggedIn(user.personal)) {
           user.setPassword(inputPassword.value);

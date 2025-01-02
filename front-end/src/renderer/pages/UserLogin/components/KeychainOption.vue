@@ -3,6 +3,8 @@ import { onMounted, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
+import useSetupStores from '@renderer/composables/user/useSetupStores';
+
 import {
   encrypt,
   getStaticUser,
@@ -15,6 +17,9 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 /* Stores */
 const user = useUserStore();
 
+/* Composables */
+const setupStores = useSetupStores();
+
 /* State */
 const show = ref(false);
 
@@ -26,7 +31,7 @@ const handleUseKeychain = async () => {
   const staticUser = await getStaticUser();
   await user.login(staticUser.id, staticUser.email, true);
   await user.refetchOrganizations();
-  await user.setupStores();
+  setupStores();
 };
 
 /* Hooks */
