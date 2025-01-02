@@ -167,7 +167,7 @@ watch(() => user.selectedOrganization, initialize);
         <li
           data-testid="dropdown-item-0"
           data-value="personal"
-          class="dropdown-item cursor-pointer"
+          class="dropdown-item"
           @click="withLoader(handleUserModeChange.bind(null, $event), 'Failed to select user mode')"
         >
           <span class="text-small">{{ personalModeText }}</span>
@@ -175,20 +175,26 @@ watch(() => user.selectedOrganization, initialize);
         <template v-for="(organization, index) in user.organizations" :key="organization.id">
           <li
             :data-testid="'dropdown-item-' + (index + 1)"
-            class="dropdown-item cursor-pointer mt-3"
+            class="dropdown-item flex-between-centered gap-3 mt-3"
             @click="
               withLoader(handleUserModeChange.bind(null, $event), 'Failed to select user mode')
             "
             :data-value="organization.id"
           >
-            <span
-              class="text-small position-relative"
-              :class="{
-                'indicator-circle-before':
-                  (indicatorNotifications[organization.serverUrl] || []).length > 0,
-              }"
-              >{{ organization.nickname }}</span
-            >
+            <div class="text-truncate">
+              <span
+                class="text-small position-relative"
+                :class="{
+                  'indicator-circle-before':
+                    (indicatorNotifications[organization.serverUrl] || []).length > 0,
+                }"
+                >{{ organization.nickname }}</span
+              >
+            </div>
+
+            <div v-if="organization.isLoading">
+              <span class="text-primary spinner-border spinner-border-sm"></span>
+            </div>
           </li>
         </template>
       </ul>

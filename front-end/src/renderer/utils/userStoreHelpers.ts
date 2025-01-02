@@ -583,19 +583,24 @@ export const refetchUserState = async (organization: Ref<ConnectedOrganization |
   }
 };
 
-export const getConnectedOrganizations = async (user: PersonalUser | null) => {
+export const updateConnectedOrganizations = async (
+  organizationsRef: Ref<ConnectedOrganization[]>,
+  user: PersonalUser | null,
+) => {
   const organizations = await getOrganizations();
+  organizationsRef.value = organizations.map(org => ({ ...org, isLoading: true }));
+
   const connectedOrganizations: ConnectedOrganization[] = [];
 
-  const results = await Promise.allSettled(
-    organizations.map(organization => getConnectedOrganization(organization, user)),
+  const result = await Promise.allSettled(
+    organizations.map(async (organization, index) => {
+      const connectedOrg = await getConnectedOrganization(organization, user);
+      organizationsRef.value[index] = connectedOrg;
+      organizationsRef.value = [...organizationsRef.value];
+    }),
   );
 
-  results.forEach(result => {
-    if (result.status === 'fulfilled') {
-      connectedOrganizations.push(result.value);
-    }
-  });
+  result.forEach(res => res.status === 'rejected' && console.log(res.reason));
 
   return connectedOrganizations;
 };
