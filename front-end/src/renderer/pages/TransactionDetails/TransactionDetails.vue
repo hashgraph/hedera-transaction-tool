@@ -527,6 +527,7 @@ watch(
 const sectionHeadingClass = 'd-flex justify-content-between align-items-center';
 const detailItemLabelClass = 'text-micro text-semi-bold text-dark-blue';
 const detailItemValueClass = 'text-small mt-1 text-break';
+const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 const reject = 'Reject';
 const approve = 'Approve';
 const sign = 'Sign';
@@ -617,7 +618,7 @@ const cancel = 'Cancel';
             <div class="fill-remaining mt-5 pe-4">
               <div class="row flex-wrap">
                 <!-- Description -->
-                <div :class="'col-11'">
+                <div class="col-11">
                   <div
                     v-if="
                       (
