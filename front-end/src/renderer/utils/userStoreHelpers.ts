@@ -12,6 +12,8 @@ import type {
   RecoveryPhrase,
   LoggedInUserWithPassword,
   OrganizationTokens,
+  OrganizationActiveServer,
+  OrganizationLoaded,
 } from '@renderer/types';
 
 import { nextTick } from 'vue';
@@ -76,14 +78,21 @@ export const isLoggedInWithValidPassword = (
   return !isExpired;
 };
 
-export const isOrganizationActive = (organization: ConnectedOrganization | null): boolean => {
-  return organization !== null && organization.isServerActive;
+export const isOrganizationActive = (
+  organization: ConnectedOrganization | null,
+): organization is ConnectedOrganization & OrganizationLoaded & OrganizationActiveServer => {
+  return organization !== null && !organization.isLoading && organization.isServerActive;
 };
 
 export const isLoggedOutOrganization = (
   organization: ConnectedOrganization | null,
 ): organization is Organization & LoggedOutOrganization => {
-  return organization !== null && organization.isServerActive && organization.loginRequired;
+  return (
+    organization !== null &&
+    !organization.isLoading &&
+    organization.isServerActive &&
+    organization.loginRequired
+  );
 };
 
 export function assertIsLoggedInOrganization(
@@ -95,7 +104,12 @@ export function assertIsLoggedInOrganization(
 export const isLoggedInOrganization = (
   organization: ConnectedOrganization | null,
 ): organization is Organization & LoggedInOrganization => {
-  return organization !== null && organization.isServerActive && !organization.loginRequired;
+  return (
+    organization !== null &&
+    !organization.isLoading &&
+    organization.isServerActive &&
+    !organization.loginRequired
+  );
 };
 
 export const accountSetupRequired = (
@@ -449,12 +463,14 @@ export const getConnectedOrganization = async (
 
   const inactiveServer: ConnectedOrganization = {
     ...organization,
+    isLoading: false,
     isServerActive: false,
     loginRequired: false,
   };
 
   const activeloginRequired: ConnectedOrganization = {
     ...organization,
+    isLoading: false,
     isServerActive: true,
     loginRequired: true,
   };
@@ -481,6 +497,7 @@ export const getConnectedOrganization = async (
 
     const connectedOrganization: ConnectedOrganization = {
       ...organization,
+      isLoading: false,
       isServerActive: isActive,
       loginRequired: false,
       userId: id,
@@ -490,7 +507,6 @@ export const getConnectedOrganization = async (
       secretHashes,
       userKeys,
     };
-
     return connectedOrganization;
   } catch {
     return activeloginRequired;
@@ -559,6 +575,7 @@ export const refetchUserState = async (organization: Ref<ConnectedOrganization |
       nickname: organization.value.nickname,
       serverUrl: organization.value.serverUrl,
       key: organization.value.key,
+      isLoading: false,
       isServerActive: true,
       loginRequired: true,
     };
