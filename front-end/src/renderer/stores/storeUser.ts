@@ -134,7 +134,7 @@ const useUserStore = defineStore('user', () => {
   };
 
   const refetchKeys = async () => {
-    await ush.updateKeyPairs(keyPairs, personal.value, selectedOrganization.value);
+    keyPairs.value = await ush.getLocalKeyPairs(personal.value, selectedOrganization.value);
   };
 
   const refetchMnemonics = async () => {
@@ -159,7 +159,8 @@ const useUserStore = defineStore('user', () => {
     await afterOrganizationSelection();
   };
 
-  const refetchUserState = async () => await ush.refetchUserState(selectedOrganization);
+  const refetchUserState = async () =>
+    (selectedOrganization.value = await ush.refetchUserState(selectedOrganization.value));
 
   const refetchOrganizations = async () => {
     await ush.updateConnectedOrganizations(organizations, personal.value);
