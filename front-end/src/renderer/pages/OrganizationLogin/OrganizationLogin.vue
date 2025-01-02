@@ -82,11 +82,16 @@ const handleLogin = async () => {
       personalPassword,
       true,
     );
+    await user.refetchOrganizationTokens();
+
     toast.success('Successfully signed in');
 
     loading.value = false;
 
-    await withLoader(user.refetchOrganizations, 'Failed to change user mode');
+    await withLoader(
+      user.selectOrganization.bind(null, user.selectedOrganization),
+      'Failed to change user mode',
+    );
     await withLoader(
       redirectIfRequiredKeysToMigrate,
       'Failed to redirect to recovery phrase migration',
@@ -121,16 +126,9 @@ watch([inputEmail, inputPassword], () => {
 
 /* Guards */
 onBeforeRouteLeave(async () => {
-  try {
-    await user.refetchUserState();
-  } catch {
-    user.selectOrganization(null);
-  }
-
-  if (!user.selectedOrganization) return true;
-
   return (
-    isOrganizationActive(user.selectedOrganization) && !user.selectedOrganization.loginRequired
+    !user.selectedOrganization ||
+    (isOrganizationActive(user.selectedOrganization) && !user.selectedOrganization.loginRequired)
   );
 });
 </script>
