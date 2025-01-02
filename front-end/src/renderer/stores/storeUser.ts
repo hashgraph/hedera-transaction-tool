@@ -63,6 +63,10 @@ const useUserStore = defineStore('user', () => {
   );
 
   /* Actions */
+  /** Setup */
+  const setupStores = () =>
+    Promise.allSettled([contacts.fetch(), notifications.setup(), ws.setup()]);
+
   /** Personal */
   const login = async (id: string, email: string, useKeychain: boolean) => {
     personal.value = ush.createPersonalUser(id, email, useKeychain);
@@ -161,7 +165,7 @@ const useUserStore = defineStore('user', () => {
         mnemonics,
         router,
       );
-      await Promise.allSettled([contacts.fetch(), notifications.setup(), ws.setup()]);
+      await setupStores();
     } else {
       selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
 
@@ -177,11 +181,7 @@ const useUserStore = defineStore('user', () => {
         await selectOrganization(null);
       }
 
-      const results = await Promise.allSettled([
-        contacts.fetch(),
-        notifications.setup(),
-        ws.setup(),
-      ]);
+      const results = await setupStores();
 
       results.forEach(result => {
         if (result.status === 'rejected') {
@@ -259,6 +259,7 @@ const useUserStore = defineStore('user', () => {
     setPassword,
     setPasswordStoreDuration,
     setRecoveryPhrase,
+    setupStores,
     storeKey,
   };
 

@@ -43,6 +43,8 @@ const handleImportantModalReady = async () => {
 const handleBeginMigrationReadyState = async () => {
   await withLoader(tryAutoLogin);
   await user.refetchOrganizations();
+  await user.setupStores();
+
   await redirectIfRequiredKeysToMigrate();
 };
 
