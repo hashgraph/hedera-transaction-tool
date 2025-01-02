@@ -67,7 +67,6 @@ const useUserStore = defineStore('user', () => {
   const login = async (id: string, email: string, useKeychain: boolean) => {
     personal.value = ush.createPersonalUser(id, email, useKeychain);
     await ush.setupSafeNetwork(id, network.setup);
-    await refetchOrganizations();
     await selectOrganization(null);
   };
 

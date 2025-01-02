@@ -29,7 +29,6 @@ export default function useAutoLogin() {
 
   /* Hooks */
   onMounted(async () => {
-    await router.push({ name: 'login' });
     user.logout();
   });
 
@@ -44,7 +43,7 @@ export default function useAutoLogin() {
     }
 
     if (user.shouldSetupAccount) {
-      router.push({ name: 'accountSetup' });
+      await router.push({ name: 'accountSetup' });
     }
   };
 }

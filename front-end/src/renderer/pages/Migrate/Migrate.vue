@@ -135,6 +135,7 @@ const initializeUserStore = async () => {
   } else {
     await user.login(personalUser.value.personalId, personalUser.value.email, false);
   }
+  await user.refetchOrganizations();
 
   await user.selectOrganization(user.organizations[0]);
   await user.setRecoveryPhrase(recoveryPhrase.value.words);
