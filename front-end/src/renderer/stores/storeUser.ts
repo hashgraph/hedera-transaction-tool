@@ -167,13 +167,6 @@ const useUserStore = defineStore('user', () => {
     await ush.updateConnectedOrganizations(organizations, personal.value);
     organizationTokens.value = await ush.getOrganizationJwtTokens(personal.value);
     ush.setSessionStorageTokens(organizations.value, organizationTokens.value);
-
-    const updatedSelectedOrganization = organizations.value.find(
-      o => o.id === selectedOrganization.value?.id,
-    );
-    if (updatedSelectedOrganization) {
-      await selectOrganization(updatedSelectedOrganization);
-    }
   };
 
   const deleteOrganization = async (organizationId: string) => {
