@@ -92,10 +92,14 @@ const handleLogin = async () => {
     await withLoader(
       user.selectOrganization.bind(null, user.selectedOrganization),
       'Failed to change user mode',
+      10000,
+      false,
     );
     await withLoader(
       redirectIfRequiredKeysToMigrate,
       'Failed to redirect to recovery phrase migration',
+      10000,
+      false,
     );
   } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to sign in'));

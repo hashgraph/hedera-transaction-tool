@@ -100,7 +100,7 @@ const forceSetMirrorNodeBaseURL = async (value: string) => {
 };
 
 const applyCustomNetwork = async () => {
-  await withLoader(handleMirrorNodeBaseURLChange, 'Failed to update network');
+  await withLoader(handleMirrorNodeBaseURLChange, 'Failed to update network', 10000, false);
 };
 
 /* Hooks */
