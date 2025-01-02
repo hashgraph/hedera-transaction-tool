@@ -65,7 +65,6 @@ const handleLogout = async () => {
     await logout(serverUrl);
     await updateOrganizationCredentials(id, user.personal.id, undefined, undefined, null);
     toggleAuthTokenInSessionStorage(serverUrl, '', true);
-    await user.selectOrganization(null);
     await user.selectOrganization({ id, nickname, serverUrl, key });
   } else {
     localStorage.removeItem('htx_user');
