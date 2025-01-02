@@ -16,7 +16,13 @@ import { initializeUseKeychain } from '@renderer/services/safeStorageService';
 
 import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 
-import { getErrorMessage, isEmail, isPasswordStrong, isUserLoggedIn } from '@renderer/utils';
+import {
+  getErrorMessage,
+  isEmail,
+  isPasswordStrong,
+  isUserLoggedIn,
+  redirectToPrevious,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
@@ -119,7 +125,7 @@ const handleOnFormSubmit = async () => {
         keepLoggedIn.value,
         false,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error, 'Invalid email or password');
       const isInvalid = message.includes('email') || message.includes('password');
       inputEmailInvalid.value = isInvalid;
@@ -146,9 +152,7 @@ const handleOnFormSubmit = async () => {
             return;
           }
 
-          await router.push(
-            router.previousPath ? { path: router.previousPath } : { name: 'transactions' },
-          );
+          await redirectToPrevious(router, { name: 'transactions' });
         }
       } finally {
         buttonLoading.value = false;

@@ -19,6 +19,7 @@ import {
   isEmail,
   isLoggedOutOrganization,
   isOrganizationActive,
+  redirectToPrevious,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -112,9 +113,9 @@ const handleForgotPassword = () => {
 };
 
 /* Hooks */
-onMounted(() => {
+onMounted(async () => {
   if (!user.selectedOrganization) {
-    router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
+    await redirectToPrevious(router, { name: 'transactions' });
   }
 });
 
