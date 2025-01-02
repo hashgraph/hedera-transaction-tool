@@ -1,6 +1,9 @@
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import { IsEnum } from 'class-validator';
+
 import { UserStatus } from '@entities';
+
+import { UserKeyDto } from '../../user-keys/dtos';
 
 export class UserDto {
   @Expose()
@@ -24,4 +27,8 @@ export class UserDto {
 
   @Expose()
   deletedAt?: Date;
+
+  @Expose()
+  @Type(() => UserKeyDto)
+  keys: UserKeyDto;
 }
