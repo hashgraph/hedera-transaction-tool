@@ -11,6 +11,7 @@ const exludedPreviousPaths = [
   'organizationLogin',
   'accountSetup',
   'migrate',
+  'index',
   MIGRATE_RECOVERY_PHRASE_HASH,
 ];
 

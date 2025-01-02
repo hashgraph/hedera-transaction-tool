@@ -8,6 +8,7 @@ import Transactions from '@renderer/pages/Transactions';
 import UserLogin from '@renderer/pages/UserLogin';
 import CreateTransactionGroup from '@renderer/pages/CreateTransactionGroup/CreateTransactionGroup.vue';
 import TransactionGroupDetails from '@renderer/pages/TransactionGroupDetails/TransactionGroupDetails.vue';
+import Empty from '@renderer/pages/Empty';
 
 export * from './constants';
 
@@ -35,7 +36,7 @@ const RestoreMissingKeys = () => import('@renderer/pages/RestoreMissingKeys');
 const MigrateRecoveryPhraseHash = () => import('@renderer/pages/MigrateRecoveryPhraseHash');
 
 const routes: RouteRecordRaw[] = [
-  { path: '/', redirect: '/transactions' },
+  { path: '/', name: 'index', component: Empty },
   { path: '/login', name: 'login', component: UserLogin },
   { path: '/organization-login', name: 'organizationLogin', component: OrganizationLogin },
   { path: '/style-guide', name: 'styleGuide', component: StyleGuide },
