@@ -10,6 +10,8 @@ import useLoader from '@renderer/composables/useLoader';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 
+import { isOrganizationActive } from '@renderer/utils';
+
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 
@@ -68,7 +70,7 @@ const handleUserModeChange = async (e: Event) => {
         : null,
     );
 
-    if (user.selectedOrganization?.isServerActive) {
+    if (isOrganizationActive(user.selectedOrganization)) {
       dropDownValue.value = organizationNickname;
     }
 
@@ -84,7 +86,7 @@ const handleAddOrganization = async (organization: Organization) => {
   await user.refetchOrganizations();
   await user.selectOrganization(organization);
 
-  if (user.selectedOrganization?.isServerActive) {
+  if (isOrganizationActive(user.selectedOrganization)) {
     selectedMode.value = organization.id;
 
     const organizationNickname =
@@ -116,7 +118,7 @@ watch(
   (current, prev) => {
     const lastAddedOrganization = user.organizations[user.organizations.length - 1];
 
-    if (user.selectedOrganization?.isServerActive) {
+    if (isOrganizationActive(user.selectedOrganization)) {
       // Check if organization was added or removed
       if (current.length > prev.length) {
         selectedMode.value = lastAddedOrganization.id;

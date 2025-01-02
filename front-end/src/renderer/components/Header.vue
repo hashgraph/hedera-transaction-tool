@@ -15,7 +15,11 @@ import useLoader from '@renderer/composables/useLoader';
 import { logout } from '@renderer/services/organization';
 import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
-import { isUserLoggedIn, toggleAuthTokenInSessionStorage } from '@renderer/utils';
+import {
+  isLoggedInOrganization,
+  isUserLoggedIn,
+  toggleAuthTokenInSessionStorage,
+} from '@renderer/utils';
 
 import Logo from '@renderer/components/Logo.vue';
 import LogoText from '@renderer/components/LogoText.vue';
@@ -108,11 +112,10 @@ onUpdated(createTooltips);
       </div>
       <span
         v-if="
-          (user.personal &&
-            user.personal.isLoggedIn &&
+          (isUserLoggedIn(user.personal) &&
             !user.personal.useKeychain &&
             !user.selectedOrganization) ||
-          (user.selectedOrganization && !user.selectedOrganization.loginRequired)
+          isLoggedInOrganization(user.selectedOrganization)
         "
         class="container-icon"
         data-testid="button-logout"

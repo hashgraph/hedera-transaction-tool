@@ -3,6 +3,8 @@ import { ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
+import { isOrganizationActive } from '@renderer/utils';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 
@@ -26,7 +28,7 @@ watch(
   selectedOrganization => {
     if (!selectedOrganization) return;
 
-    if (!selectedOrganization.isServerActive) {
+    if (!isOrganizationActive(selectedOrganization)) {
       inactiveSelectedOrganizationModalShown.value = true;
       throw new Error('Organization server is not reachable');
     }
