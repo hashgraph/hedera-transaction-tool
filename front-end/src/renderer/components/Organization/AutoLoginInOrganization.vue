@@ -33,19 +33,15 @@ const handleAutoLogin = async (password: string | null) => {
   if (!user.personal.useKeychain && !password) throw new Error('Password is required');
 
   loginFailedForOrganizations.value = await tryAutoSignIn(user.personal.id, password);
+
   loginTriedForOrganizations.value = user.organizations
     .filter(org => isOrganizationActive(org) && org.loginRequired)
     .map(org => ({ id: org.id, nickname: org.nickname, serverUrl: org.serverUrl, key: org.key }));
 
-  loginsSummaryModalShow.value = true;
-
   await user.refetchOrganizations();
 };
 
-const handleSubmitFailedOrganizations = (e: Event) => {
-  e.preventDefault();
-  loginsSummaryModalShow.value = false;
-};
+const handleClose = () => (loginsSummaryModalShow.value = false);
 
 /* Functions */
 async function openPasswordModalIfRequired() {
@@ -69,7 +65,8 @@ async function openPasswordModalIfRequired() {
 watch(
   () => user.organizations,
   async () => {
-    if (!checked.value) {
+    const allLoaded = user.organizations.every(org => !org.isLoading);
+    if (!checked.value && allLoaded) {
       checked.value = true;
       await openPasswordModalIfRequired();
     }
@@ -87,7 +84,7 @@ watch(
       <div>
         <i class="bi bi-x-lg cursor-pointer" @click="loginsSummaryModalShow = false"></i>
       </div>
-      <form class="mt-3" @submit="handleSubmitFailedOrganizations">
+      <form class="mt-3" @submit.prevent="handleClose">
         <h3 class="text-center text-title text-bold">Organizations summary</h3>
         <div class="mt-4">
           <template v-for="org in loginTriedForOrganizations" :key="org.id">
