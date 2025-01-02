@@ -181,18 +181,17 @@ watch(() => user.selectedOrganization, initialize);
             "
             :data-value="organization.id"
           >
-            <div class="text-truncate">
-              <span
-                class="text-small position-relative"
-                :class="{
-                  'indicator-circle-before':
-                    (indicatorNotifications[organization.serverUrl] || []).length > 0,
-                }"
-                >{{ organization.nickname }}</span
-              >
+            <div
+              class="position-relative flex-1 col-10"
+              :class="{
+                'indicator-circle-before':
+                  (indicatorNotifications[organization.serverUrl] || []).length > 0,
+              }"
+            >
+              <div class="text-small text-truncate">{{ organization.nickname }}</div>
             </div>
 
-            <div v-if="organization.isLoading">
+            <div v-if="organization.isLoading" class="col-2 text-center">
               <span class="text-primary spinner-border spinner-border-sm"></span>
             </div>
           </li>
