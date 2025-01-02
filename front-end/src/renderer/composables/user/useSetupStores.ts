@@ -14,7 +14,17 @@ export default function useSetupStores() {
 
   const setupStores = async () => {
     const results = await Promise.allSettled([contacts.fetch(), notifications.setup(), ws.setup()]);
-    results.forEach(r => r.status === 'rejected' && toast.error(r.reason));
+    results.forEach(r => {
+      if (r.status === 'rejected') {
+        const errorMessage =
+          r.reason instanceof Error
+            ? r.reason.message
+            : typeof r.reason === 'string'
+              ? r.reason
+              : 'An unknown error occurred';
+        toast.error(errorMessage);
+      }
+    });
   };
 
   return setupStores;
