@@ -13,7 +13,7 @@ import { defineStore } from 'pinia';
 
 import { Prisma } from '@prisma/client';
 
-import { useRouter } from 'vue-router';
+import useAfterOrganizationSelection from '@renderer/composables/user/useAfterOrganizationSelection';
 
 import * as ush from '@renderer/utils/userStoreHelpers';
 
@@ -30,7 +30,7 @@ const useUserStore = defineStore('user', () => {
   const ws = useWebsocketConnection();
 
   /* Composables */
-  const router = useRouter();
+  const afterOrganizationSelection = useAfterOrganizationSelection();
 
   /* State */
   /** Keys */
@@ -155,42 +155,8 @@ const useUserStore = defineStore('user', () => {
   /* Organization */
   const selectOrganization = async (organization: Organization | null) => {
     await nextTick();
-
-    if (!organization) {
-      selectedOrganization.value = null;
-      await ush.afterOrganizationSelection(
-        personal.value,
-        selectedOrganization,
-        keyPairs,
-        mnemonics,
-        router,
-      );
-      await setupStores();
-    } else {
-      selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
-
-      try {
-        await ush.afterOrganizationSelection(
-          personal.value,
-          selectedOrganization,
-          keyPairs,
-          mnemonics,
-          router,
-        );
-      } catch {
-        await selectOrganization(null);
-      }
-
-      const results = await setupStores();
-
-      results.forEach(result => {
-        if (result.status === 'rejected') {
-          throw result.reason;
-        }
-      });
-    }
-
-    refetchAccounts();
+    selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
+    await afterOrganizationSelection();
   };
 
   const refetchUserState = async () => await ush.refetchUserState(selectedOrganization);
