@@ -36,7 +36,7 @@ const useContactsStore = defineStore('contacts', () => {
 
   /* Actions */
   async function fetch() {
-    if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+    if (!isUserLoggedIn(user.personal)) return;
 
     if (isLoggedInOrganization(user.selectedOrganization)) {
       if (user.selectedOrganization.isPasswordTemporary) return;

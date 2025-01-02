@@ -1,6 +1,5 @@
 import type { Ref } from 'vue';
-import type { Router } from 'vue-router';
-import type { KeyPair, Organization, Mnemonic as LocalMnemonic } from '@prisma/client';
+import type { KeyPair, Organization } from '@prisma/client';
 import type { IUserKey } from '@main/shared/interfaces';
 import type {
   ConnectedOrganization,
@@ -12,9 +11,9 @@ import type {
   RecoveryPhrase,
   LoggedInUserWithPassword,
   OrganizationTokens,
+  OrganizationActiveServer,
+  OrganizationLoaded,
 } from '@renderer/types';
-
-import { nextTick } from 'vue';
 
 import { Prisma } from '@prisma/client';
 import { Mnemonic } from '@hashgraph/sdk';
@@ -76,14 +75,21 @@ export const isLoggedInWithValidPassword = (
   return !isExpired;
 };
 
-export const isOrganizationActive = (organization: ConnectedOrganization | null): boolean => {
-  return organization !== null && organization.isServerActive;
+export const isOrganizationActive = (
+  organization: ConnectedOrganization | null,
+): organization is ConnectedOrganization & OrganizationLoaded & OrganizationActiveServer => {
+  return organization !== null && !organization.isLoading && organization.isServerActive;
 };
 
 export const isLoggedOutOrganization = (
   organization: ConnectedOrganization | null,
 ): organization is Organization & LoggedOutOrganization => {
-  return organization !== null && organization.isServerActive && organization.loginRequired;
+  return (
+    organization !== null &&
+    !organization.isLoading &&
+    organization.isServerActive &&
+    organization.loginRequired
+  );
 };
 
 export function assertIsLoggedInOrganization(
@@ -95,7 +101,12 @@ export function assertIsLoggedInOrganization(
 export const isLoggedInOrganization = (
   organization: ConnectedOrganization | null,
 ): organization is Organization & LoggedInOrganization => {
-  return organization !== null && organization.isServerActive && !organization.loginRequired;
+  return (
+    organization !== null &&
+    !organization.isLoading &&
+    organization.isServerActive &&
+    !organization.loginRequired
+  );
 };
 
 export const accountSetupRequired = (
@@ -192,7 +203,9 @@ export const getLocalKeyPairs = async (
   user: PersonalUser | null,
   selectedOrganization: ConnectedOrganization | null,
 ) => {
-  assertUserLoggedIn(user);
+  if (!isUserLoggedIn(user)) {
+    return [];
+  }
 
   let keyPairs = await getKeyPairs(
     user.id,
@@ -215,19 +228,6 @@ export const getLocalKeyPairs = async (
   });
 
   return keyPairs;
-};
-
-export const updateKeyPairs = async (
-  keyPairs: Ref<KeyPair[]>,
-  user: PersonalUser | null,
-  selectedOrganization: ConnectedOrganization | null,
-) => {
-  if (user?.isLoggedIn) {
-    const newKeys = await getLocalKeyPairs(user, selectedOrganization);
-    keyPairs.value = newKeys;
-  } else {
-    keyPairs.value = [];
-  }
 };
 
 export const getPublicKeysToAccounts = async (keyPairs: KeyPair[], mirrorNodeBaseURL: string) => {
@@ -259,35 +259,37 @@ export const getPublicKeysToAccounts = async (keyPairs: KeyPair[], mirrorNodeBas
   return publicKeyToAccounts;
 };
 
-export const setPublicKeyToAccounts = async (
-  publicKeyToAccounts: Ref<PublicKeyAccounts[]>,
+export const getPublicKeyToAccounts = async (
+  publicKeyToAccounts: PublicKeyAccounts[],
   keyPairs: KeyPair[],
   mirrorNodeBaseURL: string,
 ) => {
-  publicKeyToAccounts.value = [];
-
   for (const { public_key } of keyPairs) {
     let next: string | null = null;
 
     do {
-      const { accounts, nextUrl } = await getAccountIds(mirrorNodeBaseURL, public_key, next);
-      next = nextUrl;
+      //@ts-ignore - data cannot infer type
+      const { data } = await safeAwait(getAccountIds(mirrorNodeBaseURL, public_key, next));
+      if (data) {
+        next = data.nextUrl;
 
-      const publicKeyPair = publicKeyToAccounts.value.findIndex(
-        pkToAcc => pkToAcc.publicKey === public_key,
-      );
+        const publicKeyPair = publicKeyToAccounts.findIndex(
+          pkToAcc => pkToAcc.publicKey === public_key,
+        );
 
-      if (publicKeyPair >= 0) {
-        publicKeyToAccounts.value[publicKeyPair].accounts?.push(...(accounts || []));
-      } else {
-        publicKeyToAccounts.value.push({
-          publicKey: public_key,
-          accounts: accounts || [],
-        });
+        if (publicKeyPair >= 0) {
+          publicKeyToAccounts[publicKeyPair].accounts?.push(...(data.accounts || []));
+        } else {
+          publicKeyToAccounts.push({
+            publicKey: public_key,
+            accounts: data.accounts || [],
+          });
+        }
       }
-      publicKeyToAccounts.value = [...publicKeyToAccounts.value];
     } while (next);
   }
+
+  return [...publicKeyToAccounts];
 };
 
 export const setupSafeNetwork = async (
@@ -298,12 +300,11 @@ export const setupSafeNetwork = async (
   await safeAwait(setNetwork(data));
 };
 
-export const updateMnemonics = async (
-  mnemonics: Ref<LocalMnemonic[]>,
-  user: PersonalUser | null,
-) => {
-  assertUserLoggedIn(user);
-  mnemonics.value = await getStoredMnemonics({ where: { user_id: user.id } });
+export const getMnemonics = async (user: PersonalUser | null) => {
+  if (!isUserLoggedIn(user)) {
+    return [];
+  }
+  return await getStoredMnemonics({ where: { user_id: user.id } });
 };
 
 /* Computations */
@@ -433,11 +434,13 @@ export const getRecoveryPhraseHashValue = (words: string[]) => {
 
 /* Organization */
 export const getConnectedOrganization = async (
-  organization: Organization,
+  organization: Organization | null,
   user: PersonalUser | null,
-): Promise<ConnectedOrganization> => {
-  if (!isUserLoggedIn(user)) {
-    throw Error('Login to select organization');
+): Promise<ConnectedOrganization | null> => {
+  assertUserLoggedIn(user);
+
+  if (!organization) {
+    return null;
   }
 
   let isActive = false;
@@ -449,12 +452,14 @@ export const getConnectedOrganization = async (
 
   const inactiveServer: ConnectedOrganization = {
     ...organization,
+    isLoading: false,
     isServerActive: false,
     loginRequired: false,
   };
 
   const activeloginRequired: ConnectedOrganization = {
     ...organization,
+    isLoading: false,
     isServerActive: true,
     loginRequired: true,
   };
@@ -481,6 +486,7 @@ export const getConnectedOrganization = async (
 
     const connectedOrganization: ConnectedOrganization = {
       ...organization,
+      isLoading: false,
       isServerActive: isActive,
       loginRequired: false,
       userId: id,
@@ -490,95 +496,61 @@ export const getConnectedOrganization = async (
       secretHashes,
       userKeys,
     };
-
     return connectedOrganization;
   } catch {
     return activeloginRequired;
   }
 };
 
-export const afterOrganizationSelection = async (
-  user: PersonalUser | null,
-  organization: Ref<ConnectedOrganization | null>,
-  keyPairs: Ref<KeyPair[]>,
-  mnemonics: Ref<LocalMnemonic[]>,
-  router: Router,
-) => {
-  await updateKeyPairs(keyPairs, user, organization.value);
-  await updateMnemonics(mnemonics, user);
-  await nextTick();
-
-  if (!organization.value) {
-    navigateToPreviousRoute(router);
-    return;
-  }
-
-  if (!isOrganizationActive(organization.value)) {
-    organization.value = null;
-
-    await updateKeyPairs(keyPairs, user, organization.value);
-    await nextTick();
-
-    navigateToPreviousRoute(router);
-    return;
-  }
-
-  if (isLoggedOutOrganization(organization.value)) {
-    router.push({ name: 'organizationLogin' });
-    return;
-  }
-
-  if (
-    isLoggedInOrganization(organization.value) &&
-    accountSetupRequired(organization.value, keyPairs.value)
-  ) {
-    router.push({ name: 'accountSetup' });
-    return;
-  }
-
-  navigateToPreviousRoute(router);
-};
-
-export const refetchUserState = async (organization: Ref<ConnectedOrganization | null>) => {
-  if (!organization || !isLoggedInOrganization(organization.value)) return;
+export const refetchUserState = async (organization: ConnectedOrganization | null) => {
+  if (!organization || !isLoggedInOrganization(organization)) return organization;
 
   try {
     const { id, email, admin, userKeys, secretHashes, passwordTemporary } = await getUserState(
-      organization.value.serverUrl,
+      organization.serverUrl,
     );
 
-    organization.value.userId = id;
-    organization.value.email = email;
-    organization.value.admin = admin;
-    organization.value.userKeys = userKeys;
-    organization.value.secretHashes = secretHashes;
-    organization.value.isPasswordTemporary = passwordTemporary;
+    organization.userId = id;
+    organization.email = email;
+    organization.admin = admin;
+    organization.userKeys = userKeys;
+    organization.secretHashes = secretHashes;
+    organization.isPasswordTemporary = passwordTemporary;
+    return organization;
   } catch {
     const activeloginRequired: ConnectedOrganization = {
-      id: organization.value.id,
-      nickname: organization.value.nickname,
-      serverUrl: organization.value.serverUrl,
-      key: organization.value.key,
+      id: organization.id,
+      nickname: organization.nickname,
+      serverUrl: organization.serverUrl,
+      key: organization.key,
+      isLoading: false,
       isServerActive: true,
       loginRequired: true,
     };
-    organization.value = activeloginRequired;
+    return activeloginRequired;
   }
 };
 
-export const getConnectedOrganizations = async (user: PersonalUser | null) => {
+export const updateConnectedOrganizations = async (
+  organizationsRef: Ref<ConnectedOrganization[]>,
+  user: PersonalUser | null,
+) => {
   const organizations = await getOrganizations();
+  organizationsRef.value = organizations.map(org => ({ ...org, isLoading: true }));
+
   const connectedOrganizations: ConnectedOrganization[] = [];
 
-  const results = await Promise.allSettled(
-    organizations.map(organization => getConnectedOrganization(organization, user)),
+  const result = await Promise.allSettled(
+    organizations.map(async (organization, index) => {
+      const connectedOrg = await getConnectedOrganization(organization, user);
+      if (connectedOrg) {
+        organizationsRef.value[index] = connectedOrg;
+        organizationsRef.value = [...organizationsRef.value];
+      }
+    }),
   );
 
-  results.forEach(result => {
-    if (result.status === 'fulfilled') {
-      connectedOrganizations.push(result.value);
-    }
-  });
+  result.forEach(res => res.status === 'rejected' && console.log(res.reason));
 
   return connectedOrganizations;
 };
@@ -648,6 +620,7 @@ export const restoreOrganizationKeys = async (
   storedKeyPairs: KeyPair[],
   currentPhraseOnly: boolean,
 ) => {
+  assertUserLoggedIn(personalUser);
   assertIsLoggedInOrganization(organization);
 
   if (!recoveryPhrase) {
@@ -759,14 +732,5 @@ export const updateOrganizationKeysHash = async (
       key.id,
       recoveryPhrase.hash,
     );
-  }
-};
-
-const navigateToPreviousRoute = (router: Router) => {
-  const currentRoute = router.currentRoute.value;
-  if (router.previousPath) {
-    currentRoute.path !== router.previousPath && router.push(router.previousPath);
-  } else {
-    currentRoute.name !== 'transactions' && router.push({ name: 'transactions' });
   }
 };

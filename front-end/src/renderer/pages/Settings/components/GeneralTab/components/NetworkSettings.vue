@@ -44,8 +44,8 @@ const isCustomActive = computed(
 
 /* Handlers */
 const handleNetworkChange = async (network: Network) => {
-  await updateSelectedNetwork(network);
   await networkStore.setNetwork(network);
+  await updateSelectedNetwork(network);
 };
 
 const handleCommonNetwork = async (network: Network) => {
@@ -100,7 +100,7 @@ const forceSetMirrorNodeBaseURL = async (value: string) => {
 };
 
 const applyCustomNetwork = async () => {
-  await withLoader(handleMirrorNodeBaseURLChange, 'Failed to update network');
+  await withLoader(handleMirrorNodeBaseURLChange, 'Failed to update network', 10000, false);
 };
 
 /* Hooks */

@@ -13,7 +13,14 @@ import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhras
 import { login } from '@renderer/services/organization';
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
 
-import { assertUserLoggedIn, getErrorMessage, isEmail, isLoggedOutOrganization } from '@renderer/utils';
+import {
+  assertUserLoggedIn,
+  getErrorMessage,
+  isEmail,
+  isLoggedOutOrganization,
+  isOrganizationActive,
+  redirectToPrevious,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -76,14 +83,23 @@ const handleLogin = async () => {
       personalPassword,
       true,
     );
+    await user.refetchOrganizationTokens();
+
     toast.success('Successfully signed in');
 
     loading.value = false;
 
-    await withLoader(user.refetchOrganizations, 'Failed to change user mode');
+    await withLoader(
+      user.selectOrganization.bind(null, user.selectedOrganization),
+      'Failed to change user mode',
+      10000,
+      false,
+    );
     await withLoader(
       redirectIfRequiredKeysToMigrate,
       'Failed to redirect to recovery phrase migration',
+      10000,
+      false,
     );
   } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to sign in'));
@@ -101,9 +117,9 @@ const handleForgotPassword = () => {
 };
 
 /* Hooks */
-onMounted(() => {
+onMounted(async () => {
   if (!user.selectedOrganization) {
-    router.push(router.previousPath ? { path: router.previousPath } : { name: 'transactions' });
+    await redirectToPrevious(router, { name: 'transactions' });
   }
 });
 
@@ -115,15 +131,10 @@ watch([inputEmail, inputPassword], () => {
 
 /* Guards */
 onBeforeRouteLeave(async () => {
-  try {
-    await user.refetchUserState();
-  } catch {
-    user.selectOrganization(null);
-  }
-
-  if (!user.selectedOrganization) return true;
-
-  return !user.selectedOrganization.loginRequired;
+  return (
+    !user.selectedOrganization ||
+    (isOrganizationActive(user.selectedOrganization) && !user.selectedOrganization.loginRequired)
+  );
 });
 </script>
 <template>

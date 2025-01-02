@@ -12,7 +12,7 @@ import DatePicker from '@vuepic/vue-datepicker';
 
 import App from './App.vue';
 
-import { AutoFocusFirstInputDirective } from './utils';
+import { AutoFocusFirstInputDirective, getErrorMessage } from './utils';
 
 const app = createApp(App);
 
@@ -30,16 +30,9 @@ app.directive('focus-first-input', AutoFocusFirstInputDirective);
 /* App config */
 const toast = useToast();
 
-app.config.errorHandler = (err: any) => {
+app.config.errorHandler = (err: unknown) => {
   console.log(err);
-
-  let message = 'An error occured';
-
-  if (err.message) {
-    message = err.message;
-  }
-
-  toast.error(message);
+  toast.error(getErrorMessage(err, 'An error occured'));
 };
 
 /* Custom Components */

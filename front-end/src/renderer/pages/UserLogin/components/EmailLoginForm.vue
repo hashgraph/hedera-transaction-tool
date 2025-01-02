@@ -9,13 +9,20 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter } from 'vue-router';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
+import useSetupStores from '@renderer/composables/user/useSetupStores';
 
 import { loginLocal, registerLocal } from '@renderer/services/userService';
 import { initializeUseKeychain } from '@renderer/services/safeStorageService';
 
 import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 
-import { getErrorMessage, isEmail, isPasswordStrong, isUserLoggedIn } from '@renderer/utils';
+import {
+  getErrorMessage,
+  isEmail,
+  isPasswordStrong,
+  isUserLoggedIn,
+  redirectToPrevious,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
@@ -40,6 +47,7 @@ const user = useUserStore();
 /* Composables */
 const router = useRouter();
 const createTooltips = useCreateTooltips();
+const setupStores = useSetupStores();
 const { redirectIfRequiredKeysToMigrate } = useRecoveryPhraseHashMigrate();
 
 /* Injected */
@@ -98,12 +106,14 @@ const handleOnFormSubmit = async () => {
     );
 
     await user.login(id, email, false);
+    await user.refetchOrganizations();
+    setupStores();
 
     if (isUserLoggedIn(user.personal)) {
       user.setPassword(inputPassword.value);
     }
 
-    router.push({ name: 'accountSetup' });
+    await router.push({ name: 'accountSetup' });
   } else if (!props.shouldRegister) {
     let userData: { id: string; email: string } | null = null;
 
@@ -115,7 +125,7 @@ const handleOnFormSubmit = async () => {
         keepLoggedIn.value,
         false,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error, 'Invalid email or password');
       const isInvalid = message.includes('email') || message.includes('password');
       inputEmailInvalid.value = isInvalid;
@@ -128,20 +138,21 @@ const handleOnFormSubmit = async () => {
       try {
         globalModalLoaderRef?.value?.open();
         await user.login(userData.id, userData.email.trim(), false);
+        await user.refetchOrganizations();
+        setupStores();
+
         if (isUserLoggedIn(user.personal)) {
           user.setPassword(inputPassword.value);
         }
 
         if (user.secretHashes.length === 0) {
-          router.push({ name: 'accountSetup' });
+          await router.push({ name: 'accountSetup' });
         } else {
           if (await redirectIfRequiredKeysToMigrate()) {
             return;
           }
 
-          router.push(
-            router.previousPath ? { path: router.previousPath } : { name: 'transactions' },
-          );
+          await redirectToPrevious(router, { name: 'transactions' });
         }
       } finally {
         buttonLoading.value = false;

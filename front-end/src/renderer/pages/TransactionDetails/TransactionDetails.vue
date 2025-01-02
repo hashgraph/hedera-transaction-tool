@@ -441,7 +441,7 @@ async function fetchTransaction(id: string | number) {
         orgTransaction.value.id,
       );
     } catch (error) {
-      router.previousPath ? router.back() : router.push({ name: 'transactions' });
+      router.back();
       throw error;
     }
   } else {
@@ -450,7 +450,7 @@ async function fetchTransaction(id: string | number) {
       transactionBytes = getUInt8ArrayFromBytesString(localTransaction.value.body);
       publicKeysRequiredToSign.value = null;
     } catch (error) {
-      router.previousPath ? router.back() : router.push({ name: 'transactions' });
+      router.back();
       throw error;
     }
   }

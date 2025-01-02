@@ -41,7 +41,7 @@ const useNotificationsStore = defineStore('notifications', () => {
 
   /** Preferences **/
   async function fetchPreferences() {
-    if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+    if (!isUserLoggedIn(user.personal)) return;
 
     if (isLoggedInOrganization(user.selectedOrganization)) {
       const userPreferences = await getUserNotificationPreferences(
@@ -76,7 +76,7 @@ const useNotificationsStore = defineStore('notifications', () => {
 
   /** Notifications **/
   async function fetchNotifications() {
-    if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+    if (!isUserLoggedIn(user.personal)) return;
 
     const severUrls = user.organizations.map(o => o.serverUrl);
     const results = await Promise.allSettled(

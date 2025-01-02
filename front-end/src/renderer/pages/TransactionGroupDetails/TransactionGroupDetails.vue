@@ -87,7 +87,7 @@ async function handleFetchGroup(id: string | number) {
         }
       }
     } catch (error) {
-      router.previousPath ? router.back() : router.push({ name: 'transactions' });
+      router.back();
       throw error;
     }
   } else {

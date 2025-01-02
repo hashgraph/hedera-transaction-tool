@@ -9,7 +9,7 @@ const controller = 'users';
 
 /* Get information about current user */
 export const getUserState = async (organizationServerUrl: string) => {
-  const { id, status, email, admin } = await getMe(organizationServerUrl);
+  const { id, status, email, admin, keys } = await getMe(organizationServerUrl);
 
   const user: {
     id: number;
@@ -29,11 +29,15 @@ export const getUserState = async (organizationServerUrl: string) => {
 
   if (user.passwordTemporary) return user;
 
-  const keys = await getUserKeys(organizationServerUrl, id);
+  /* Backward compatibility */
+  let userKeys: IUserKey[] = keys;
+  if (!userKeys) {
+    userKeys = await getUserKeys(organizationServerUrl, id);
+  }
 
-  user.userKeys.push(...keys);
+  user.userKeys.push(...userKeys);
   user.secretHashes.push(
-    ...keys.reduce<string[]>((acc, curr) => {
+    ...userKeys.reduce<string[]>((acc, curr) => {
       if (curr.mnemonicHash && !acc.includes(curr.mnemonicHash)) {
         acc.push(curr.mnemonicHash);
       }

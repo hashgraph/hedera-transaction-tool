@@ -144,7 +144,7 @@ async function syncTab(forceCheckSign = false) {
     }
 
     if (forceCheckSign) await changeTabIfReadyToSign();
-  });
+  }, 'Failed to sync tab', 10000, false);
 }
 
 async function changeTabIfReadyToSign() {

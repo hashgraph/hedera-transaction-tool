@@ -13,24 +13,18 @@ import { defineStore } from 'pinia';
 
 import { Prisma } from '@prisma/client';
 
-import { useRouter } from 'vue-router';
+import useAfterOrganizationSelection from '@renderer/composables/user/useAfterOrganizationSelection';
 
 import * as ush from '@renderer/utils/userStoreHelpers';
 
 import useNetworkStore from './storeNetwork';
-import useContactsStore from './storeContacts';
-import useWebsocketConnection from './storeWebsocketConnection';
-import useNotificationsStore from './storeNotifications';
 
 const useUserStore = defineStore('user', () => {
   /* Stores */
   const network = useNetworkStore();
-  const contacts = useContactsStore();
-  const notifications = useNotificationsStore();
-  const ws = useWebsocketConnection();
 
   /* Composables */
-  const router = useRouter();
+  const afterOrganizationSelection = useAfterOrganizationSelection();
 
   /* State */
   /** Keys */
@@ -67,15 +61,14 @@ const useUserStore = defineStore('user', () => {
   const login = async (id: string, email: string, useKeychain: boolean) => {
     personal.value = ush.createPersonalUser(id, email, useKeychain);
     await ush.setupSafeNetwork(id, network.setup);
-    await refetchOrganizations();
     await selectOrganization(null);
   };
 
   const logout = () => {
     personal.value = ush.createPersonalUser();
     selectedOrganization.value = null;
-    organizations.value.splice(0, organizations.value.length);
-    publicKeyToAccounts.value.splice(0, publicKeyToAccounts.value.length);
+    organizations.value = [];
+    publicKeyToAccounts.value = [];
     keyPairs.value = [];
     recoveryPhrase.value = null;
   };
@@ -123,19 +116,20 @@ const useUserStore = defineStore('user', () => {
   };
 
   const refetchAccounts = async () => {
-    await ush.setPublicKeyToAccounts(
-      publicKeyToAccounts,
+    publicKeyToAccounts.value = [];
+    publicKeyToAccounts.value = await ush.getPublicKeyToAccounts(
+      publicKeyToAccounts.value,
       keyPairs.value,
       network.mirrorNodeBaseURL,
     );
   };
 
   const refetchKeys = async () => {
-    await ush.updateKeyPairs(keyPairs, personal.value, selectedOrganization.value);
+    keyPairs.value = await ush.getLocalKeyPairs(personal.value, selectedOrganization.value);
   };
 
   const refetchMnemonics = async () => {
-    await ush.updateMnemonics(mnemonics, personal.value);
+    mnemonics.value = await ush.getMnemonics(personal.value);
   };
 
   const storeKey = async (
@@ -152,61 +146,21 @@ const useUserStore = defineStore('user', () => {
   /* Organization */
   const selectOrganization = async (organization: Organization | null) => {
     await nextTick();
-
-    if (!organization) {
-      selectedOrganization.value = null;
-      await ush.afterOrganizationSelection(
-        personal.value,
-        selectedOrganization,
-        keyPairs,
-        mnemonics,
-        router,
-      );
-      await Promise.allSettled([contacts.fetch(), notifications.setup(), ws.setup()]);
-    } else {
-      selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
-
-      try {
-        await ush.afterOrganizationSelection(
-          personal.value,
-          selectedOrganization,
-          keyPairs,
-          mnemonics,
-          router,
-        );
-      } catch {
-        await selectOrganization(null);
-      }
-
-      const results = await Promise.allSettled([
-        contacts.fetch(),
-        notifications.setup(),
-        ws.setup(),
-      ]);
-
-      results.forEach(result => {
-        if (result.status === 'rejected') {
-          throw result.reason;
-        }
-      });
-    }
-
-    refetchAccounts();
+    selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
+    await afterOrganizationSelection();
   };
 
-  const refetchUserState = async () => await ush.refetchUserState(selectedOrganization);
+  const refetchUserState = async () =>
+    (selectedOrganization.value = await ush.refetchUserState(selectedOrganization.value));
 
-  const refetchOrganizations = async () => {
-    organizations.value = await ush.getConnectedOrganizations(personal.value);
-    const updatedSelectedOrganization = organizations.value.find(
-      o => o.id === selectedOrganization.value?.id,
-    );
+  const refetchOrganizationTokens = async () => {
     organizationTokens.value = await ush.getOrganizationJwtTokens(personal.value);
     ush.setSessionStorageTokens(organizations.value, organizationTokens.value);
+  };
 
-    if (updatedSelectedOrganization) {
-      await selectOrganization(updatedSelectedOrganization);
-    }
+  const refetchOrganizations = async () => {
+    await ush.updateConnectedOrganizations(organizations, personal.value);
+    await refetchOrganizationTokens();
   };
 
   const deleteOrganization = async (organizationId: string) => {
@@ -219,9 +173,7 @@ const useUserStore = defineStore('user', () => {
   };
 
   /* Migration */
-  const setMigrating = (value: boolean) => {
-    migrating.value = value;
-  };
+  const setMigrating = (value: boolean) => (migrating.value = value);
 
   /* Watchers */
   watch(
@@ -254,6 +206,7 @@ const useUserStore = defineStore('user', () => {
     refetchKeys,
     refetchMnemonics,
     refetchOrganizations,
+    refetchOrganizationTokens,
     refetchUserState,
     selectOrganization,
     setMigrating,
