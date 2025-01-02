@@ -191,7 +191,7 @@ watch(() => user.selectedOrganization, initialize);
               <div class="text-small text-truncate">{{ organization.nickname }}</div>
             </div>
 
-            <div v-if="organization.isLoading" class="col-2 text-center">
+            <div v-if="organization.isLoading" class="flex-centered col-2">
               <span class="text-primary spinner-border spinner-border-sm"></span>
             </div>
           </li>
