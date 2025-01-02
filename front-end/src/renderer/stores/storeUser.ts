@@ -169,9 +169,7 @@ const useUserStore = defineStore('user', () => {
   };
 
   /* Migration */
-  const setMigrating = (value: boolean) => {
-    migrating.value = value;
-  };
+  const setMigrating = (value: boolean) => (migrating.value = value);
 
   /* Watchers */
   watch(
