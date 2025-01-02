@@ -11,7 +11,6 @@ import {
   getLocalKeyPairs,
   isLoggedOutOrganization,
   isOrganizationActive,
-  navigateToPreviousRoute,
   safeAwait,
 } from '@renderer/utils';
 
@@ -60,7 +59,14 @@ export default function useAfterOrganizationSelection() {
       return;
     }
 
-    navigateToPreviousRoute(router);
+    const currentRoute = router.currentRoute.value;
+    const previousPath = router.previousPath;
+
+    if (previousPath && currentRoute.path !== previousPath) {
+      await router.push(previousPath);
+    } else if (currentRoute.name !== 'transactions') {
+      await router.push({ name: 'transactions' });
+    }
   };
 
   const afterOrganizationSelection = async () => {

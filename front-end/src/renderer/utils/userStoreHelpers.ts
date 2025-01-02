@@ -1,5 +1,4 @@
 import type { Ref } from 'vue';
-import type { Router } from 'vue-router';
 import type { KeyPair, Organization } from '@prisma/client';
 import type { IUserKey } from '@main/shared/interfaces';
 import type {
@@ -733,14 +732,5 @@ export const updateOrganizationKeysHash = async (
       key.id,
       recoveryPhrase.hash,
     );
-  }
-};
-
-export const navigateToPreviousRoute = (router: Router) => {
-  const currentRoute = router.currentRoute.value;
-  if (router.previousPath) {
-    currentRoute.path !== router.previousPath && router.push(router.previousPath);
-  } else {
-    currentRoute.name !== 'transactions' && router.push({ name: 'transactions' });
   }
 };
