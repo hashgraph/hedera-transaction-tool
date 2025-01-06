@@ -140,4 +140,9 @@ test.describe('Organization Group Tx tests', () => {
     expect(secondTransactionType).toBe('CRYPTOAPPROVEALLOWANCE');
     expect(secondResult).toBe('SUCCESS');
   });
+
+  test('Verify user can import csv transactions', async () => {
+    test.slow();
+    await groupPage.generateAndImportCsvFile(complexKeyAccountId);
+  });
 });

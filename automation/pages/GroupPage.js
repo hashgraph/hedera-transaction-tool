@@ -1,7 +1,9 @@
+const path = require('path');
 const BasePage = require('./BasePage');
 const TransactionPage = require('./TransactionPage');
 const OrganizationPage = require('./OrganizationPage');
 const { getTransactionGroupsForTransactionId } = require('../utils/databaseQueries');
+const { generateCSVFile } = require('../utils/csvGenerator');
 
 class GroupPage extends BasePage {
   constructor(window) {
@@ -27,6 +29,7 @@ class GroupPage extends BasePage {
   confirmDeleteAllButtonSelector = 'button-confirm-delete-all';
   confirmGroupTransactionButtonSelector = 'button-confirm-group-transaction';
   detailsGroupButtonSelector = 'button-group-details';
+  importCsvButtonSelector = 'button-import-csv';
 
   // Messages
   toastMessageSelector = '.v-toast__text';
@@ -179,6 +182,19 @@ class GroupPage extends BasePage {
     }
   }
 
+  async generateAndImportCsvFile(fromAccountId){
+    const fileName = 'groupTransactions.csv';
+    const receiverAccount = '0.0.1031';
+    generateCSVFile({
+      senderAccount: fromAccountId,
+      accountId: receiverAccount,
+      startingAmount: 1,
+      numberOfTransactions: 10,
+      fileName: fileName,
+    })
+    await this.uploadFile(this.importCsvButtonSelector, path.resolve(__dirname, '..', 'data', fileName));
+  }
+
   async addOrgAllowanceTransactionToGroup(numberOfTransactions = 1, allowanceOwner, amount) {
     await this.fillDescription('test');
     for (let i = 0; i < numberOfTransactions; i++) {
@@ -266,6 +282,8 @@ class GroupPage extends BasePage {
     await this.click(this.organizationPage.signAllTransactionsButtonSelector);
     await this.waitForElementToDisappear(this.organizationPage.signAllTransactionsButtonSelector);
   }
+
+
 }
 
 module.exports = GroupPage;
