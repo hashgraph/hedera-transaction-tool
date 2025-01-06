@@ -221,6 +221,27 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     return modified.value;
   }
 
+  function updateTransactionValidStarts(newGroupValidStart: Date) {
+    groupItems.value = groupItems.value.map((item, index) => {
+      if (item.validStart < newGroupValidStart) {
+        const updatedValidStart = findUniqueValidStart(
+          item.payerAccountId,
+          newGroupValidStart.getTime() + index,
+        );
+        const transaction = Transaction.fromBytes(item.transactionBytes);
+        transaction.setTransactionId(createTransactionId(item.payerAccountId, updatedValidStart));
+
+        return {
+          ...item,
+          transactionBytes: transaction.toBytes(),
+          validStart: updatedValidStart,
+        };
+      }
+      return item;
+    });
+    setModified();
+  }
+
   // function getObservers() {
   //   const observers = new Array<number>();
   //   for (const groupItem of groupItems.value) {
@@ -251,6 +272,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     hasApprovers,
     setModified,
     isModified,
+    updateTransactionValidStarts,
   };
 });
 

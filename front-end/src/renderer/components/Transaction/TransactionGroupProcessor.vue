@@ -121,9 +121,9 @@ async function signAfterConfirm() {
 
   assertUserLoggedIn(user.personal);
 
-  if (user.selectedOrganization) {
+  if (!user.selectedOrganization) {
     throw new Error(
-      "User is in organization mode, shouldn't be able to sign before submitting to organization",
+      "User is in personal mode, shouldn't be able to sign before submitting to organization",
     );
   }
 

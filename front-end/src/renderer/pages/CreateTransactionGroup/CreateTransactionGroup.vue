@@ -30,6 +30,7 @@ import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import TransactionSelectionModal from '@renderer/components/TransactionSelectionModal.vue';
 import TransactionGroupProcessor from '@renderer/components/Transaction/TransactionGroupProcessor.vue';
 import SaveTransactionGroupModal from '@renderer/components/modals/SaveTransactionGroupModal.vue';
+import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
@@ -49,6 +50,7 @@ const transactionGroupProcessor = ref<typeof TransactionGroupProcessor | null>(n
 const file = ref<HTMLInputElement | null>(null);
 const wantToDeleteModalShown = ref(false);
 const showAreYouSure = ref(false);
+const groupValidStart = ref(new Date());
 
 const groupEmpty = computed(() => transactionGroup.groupItems.length == 0);
 
@@ -292,6 +294,11 @@ async function handleOnFileChanged(e: Event) {
   }
 }
 
+function updateGroupValidStart(newDate: Date) {
+  groupValidStart.value = newDate;
+  transactionGroup.updateTransactionValidStarts(newDate);
+}
+
 /* Functions */
 function makeTransfer(index: number) {
   const transfers = (
@@ -425,12 +432,24 @@ onBeforeRouteLeave(async to => {
         </div>
         <hr class="separator my-5 w-100" />
         <div v-if="!groupEmpty" class="fill-remaining pb-10">
-          <div class="text-end mb-5">
-            {{
-              transactionGroup.groupItems.length < 2
-                ? `1 Transaction`
-                : `${transactionGroup.groupItems.length} Transactions`
-            }}
+          <div class="d-flex justify-content-between align-items-center mb-5">
+            <div>
+              <label class="form-label"
+                >Group Valid Start <span class="text-muted text-italic">- Local time</span></label
+              >
+              <RunningClockDatePicker
+                v-model="groupValidStart"
+                :nowButtonVisible="true"
+                @update:modelValue="updateGroupValidStart"
+              />
+            </div>
+            <div>
+              {{
+                transactionGroup.groupItems.length < 2
+                  ? `1 Transaction`
+                  : `${transactionGroup.groupItems.length} Transactions`
+              }}
+            </div>
           </div>
           <div
             v-for="(groupItem, index) in transactionGroup.groupItems"
