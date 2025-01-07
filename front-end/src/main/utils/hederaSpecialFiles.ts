@@ -313,13 +313,13 @@ function encodeExchangeRates(content: Uint8Array) {
 
   if (protoExchangeRateSet.currentRate?.expirationTime) {
     protoExchangeRateSet.currentRate.expirationTime = proto.TimestampSeconds.create({
-      seconds: protoExchangeRateSet.currentRate.expirationTime,
+      seconds: protoExchangeRateSet.currentRate.expirationTime.seconds,
     });
   }
 
   if (protoExchangeRateSet.nextRate?.expirationTime) {
     protoExchangeRateSet.nextRate.expirationTime = proto.TimestampSeconds.create({
-      seconds: protoExchangeRateSet.nextRate.expirationTime,
+      seconds: protoExchangeRateSet.nextRate.expirationTime.seconds,
     });
   }
 
