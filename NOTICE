@@ -576,13 +576,13 @@ The Initial Developer of @szmarczak/http-timer@4.0.6,
 is Szymon Marczak (https://github.com/szmarczak/http-timer).
 Copyright Szymon Marczak. All Rights Reserved.
 
-This product includes software (@testcontainers/postgresql@10.14.0) developed at
+This product includes software (@testcontainers/postgresql@10.16.0) developed at
 (https://github.com/testcontainers/testcontainers-node).
 
-This product includes software (@testcontainers/rabbitmq@10.14.0) developed at
+This product includes software (@testcontainers/rabbitmq@10.16.0) developed at
 (https://github.com/testcontainers/testcontainers-node).
 
-This product includes software (@testcontainers/redis@10.14.0) developed at
+This product includes software (@testcontainers/redis@10.16.0) developed at
 (https://github.com/testcontainers/testcontainers-node).
 
 The Initial Developer of @tootallnate/once@2.0.0,
@@ -2841,7 +2841,7 @@ The Initial Developer of test-exclude@7.0.1,
 is Ben Coe (https://github.com/istanbuljs/test-exclude).
 Copyright Ben Coe. All Rights Reserved.
 
-The Initial Developer of testcontainers@10.14.0,
+The Initial Developer of testcontainers@10.16.0,
 is Cristian Greco (https://github.com/testcontainers/testcontainers-node).
 Copyright Cristian Greco. All Rights Reserved.
 
