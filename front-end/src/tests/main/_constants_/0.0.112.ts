@@ -22,11 +22,15 @@ export const protoInput = `{
   "currentRate": {
     "hbarEquiv": 30000,
     "centEquiv": 316955,
-    "expirationTime": 1708599600
+    "expirationTime": {
+      "seconds": 1708599600
+    }
   },
   "nextRate": {
     "hbarEquiv": 30000,
     "centEquiv": 322683,
-    "expirationTime": 1708603200
+    "expirationTime": {
+      "seconds": 1708603200
+    }
   }
 }`;
