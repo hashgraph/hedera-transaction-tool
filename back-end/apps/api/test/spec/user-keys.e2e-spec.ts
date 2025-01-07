@@ -317,7 +317,7 @@ describe('User Keys (e2e)', () => {
     });
 
     it('(PATCH) should not update mnemonic hash if key not yours', async () => {
-      let userKeys = await getUserKeys(admin.id);
+      const userKeys = await getUserKeys(admin.id);
       expect(userKeys).not.toHaveLength(0);
 
       const newMnemonicHash = '0xabcd';

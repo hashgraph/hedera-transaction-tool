@@ -136,7 +136,7 @@ describe('Auth (e2e)', () => {
       const usersEndpoint = new Endpoint(server, '/users');
       const loginEndpoint = new Endpoint(server, '/auth/login');
 
-      let user = await getUser('userNew');
+      const user = await getUser('userNew');
 
       await usersEndpoint.delete(`${user.id}`, adminAuthToken).expect(200);
 
