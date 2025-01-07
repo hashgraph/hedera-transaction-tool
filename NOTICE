@@ -1118,8 +1118,8 @@ The Initial Developer of cacache@16.1.3,
 is GitHub Inc. (https://github.com/npm/cacache).
 Copyright GitHub Inc.. All Rights Reserved.
 
-This product includes software (cache-manager-redis-yet@5.1.4) developed at
-(https://github.com/jaredwray/cacheable).
+This product includes software (cache-manager-redis-yet@5.1.5) developed at
+(https://github.com/jaredwray/cache-manager-stores).
 
 This product includes software (cache-manager@5.7.6) developed at
 (https://github.com/jaredwray/cacheable).
