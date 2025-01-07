@@ -67,7 +67,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "3.2.0",
-    "@eslint/js": "9.15.0",
+    "@eslint/js": "9.17.0",
     "@hashgraph/hedera-local": "2.32.1",
     "@nestjs/cli": "10.4.5",
     "@nestjs/schematics": "10.2.3",
