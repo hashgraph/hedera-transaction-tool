@@ -68,6 +68,7 @@ describe('Users (e2e)', () => {
         createdAt: expect.any(String),
         updatedAt: expect.any(String),
         deletedAt: null,
+        keys: expect.any(Array),
       });
     });
 
@@ -82,6 +83,7 @@ describe('Users (e2e)', () => {
         createdAt: expect.any(String),
         updatedAt: expect.any(String),
         deletedAt: null,
+        keys: expect.any(Array),
       });
     });
 
@@ -108,6 +110,7 @@ describe('Users (e2e)', () => {
         createdAt: expect.any(String),
         updatedAt: expect.any(String),
         deletedAt: null,
+        keys: expect.any(Array),
       });
     });
 
@@ -130,6 +133,7 @@ describe('Users (e2e)', () => {
         createdAt: expect.any(String),
         updatedAt: expect.any(String),
         deletedAt: null,
+        keys: expect.any(Array),
       });
 
       await resetUsersState();

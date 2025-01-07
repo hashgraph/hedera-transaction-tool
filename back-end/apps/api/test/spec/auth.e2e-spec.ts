@@ -78,6 +78,7 @@ describe('Auth (e2e)', () => {
               status: UserStatus.NONE,
               updatedAt: expect.any(String),
               deletedAt: null,
+              keys: expect.any(Array),
             },
             accessToken: expect.any(String),
           });
