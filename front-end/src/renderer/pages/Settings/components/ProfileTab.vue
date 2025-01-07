@@ -46,9 +46,11 @@ const isResetDataModalShown = ref(false);
 
 /* Computed */
 const isPrimaryButtonDisabled = computed(() => {
-  return currentPassword.value.length === 0 ||
+  return (
+    currentPassword.value.length === 0 ||
     !isPasswordStrong(newPassword.value).result ||
-    isChangingPassword.value;
+    isChangingPassword.value
+  );
 });
 
 /* Handlers */
@@ -109,7 +111,7 @@ const handleResetData = async () => router.push({ name: 'login' });
 
 const handleBlur = (inputType: string, value: string) => {
   if (inputType === 'newPassword') {
-    newPasswordInvalid.value = value.length !==0 && !isPasswordStrong(value).result;
+    newPasswordInvalid.value = value.length !== 0 && !isPasswordStrong(value).result;
   }
 };
 
@@ -131,10 +133,7 @@ watch(newPassword, pass => {
     "
     v-focus-first-input
   >
-    <form
-      class="w-50 p-4 border rounded"
-      @submit.prevent="isConfirmModalShown = true"
-    >
+    <form class="w-50 p-4 border rounded" @submit.prevent="isConfirmModalShown = true">
       <h3 class="text-main">Password</h3>
       <div class="form-group mt-4">
         <label class="form-label">Current Password <span class="text-danger">*</span></label>

@@ -504,7 +504,14 @@ describe('Services Local User Organization Credentials', () => {
       const password = 'password';
       const encryptPassword = 'password for encryption';
 
-      const result = await updateOrganizationCredentials('123', '321', email, password, undefined, encryptPassword);
+      const result = await updateOrganizationCredentials(
+        '123',
+        '321',
+        email,
+        password,
+        undefined,
+        encryptPassword,
+      );
 
       expect(result).toBe(false);
     });

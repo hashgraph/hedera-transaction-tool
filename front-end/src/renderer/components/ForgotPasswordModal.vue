@@ -9,7 +9,13 @@ import { resetPassword, setPassword, verifyReset } from '@renderer/services/orga
 import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
 import { comparePasswords } from '@renderer/services/userService';
 
-import { getErrorMessage, isEmail, isLoggedOutOrganization, isPasswordStrong, isUserLoggedIn } from '@renderer/utils';
+import {
+  getErrorMessage,
+  isEmail,
+  isLoggedOutOrganization,
+  isPasswordStrong,
+  isUserLoggedIn,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
@@ -62,9 +68,12 @@ const isPrimaryButtonDisabled = computed(() => {
   } else if (!shouldSetNewPassword.value) {
     return !otp.value?.isValid;
   } else if (shouldSetNewPassword.value) {
-    return !isPasswordStrong(newPassword.value).result ||
-      (isUserLoggedIn(user.personal) && !user.personal.useKeychain &&
-        personalPassword.value.length === 0);
+    return (
+      !isPasswordStrong(newPassword.value).result ||
+      (isUserLoggedIn(user.personal) &&
+        !user.personal.useKeychain &&
+        personalPassword.value.length === 0)
+    );
   }
   return true;
 });
