@@ -178,10 +178,6 @@ Copyright Samuel Attard. All Rights Reserved.
 This product includes software (@esbuild/darwin-arm64@0.24.2) developed at
 (https://github.com/evanw/esbuild).
 
-The Initial Developer of @eslint-community/eslint-utils@4.4.0,
-is Toru Nagashima (https://github.com/eslint-community/eslint-utils).
-Copyright Toru Nagashima. All Rights Reserved.
-
 The Initial Developer of @eslint-community/eslint-utils@4.4.1,
 is Toru Nagashima (https://github.com/eslint-community/eslint-utils).
 Copyright Toru Nagashima. All Rights Reserved.
@@ -194,7 +190,15 @@ The Initial Developer of @eslint/config-array@0.19.0,
 is Nicholas C. Zakas (https://github.com/eslint/rewrite).
 Copyright Nicholas C. Zakas. All Rights Reserved.
 
+The Initial Developer of @eslint/config-array@0.19.1,
+is Nicholas C. Zakas (https://github.com/eslint/rewrite).
+Copyright Nicholas C. Zakas. All Rights Reserved.
+
 The Initial Developer of @eslint/core@0.9.0,
+is Nicholas C. Zakas (https://github.com/eslint/rewrite).
+Copyright Nicholas C. Zakas. All Rights Reserved.
+
+The Initial Developer of @eslint/core@0.9.1,
 is Nicholas C. Zakas (https://github.com/eslint/rewrite).
 Copyright Nicholas C. Zakas. All Rights Reserved.
 
@@ -209,7 +213,15 @@ The Initial Developer of @eslint/object-schema@2.1.4,
 is Nicholas C. Zakas (https://github.com/eslint/rewrite).
 Copyright Nicholas C. Zakas. All Rights Reserved.
 
+The Initial Developer of @eslint/object-schema@2.1.5,
+is Nicholas C. Zakas (https://github.com/eslint/rewrite).
+Copyright Nicholas C. Zakas. All Rights Reserved.
+
 The Initial Developer of @eslint/plugin-kit@0.2.3,
+is Nicholas C. Zakas (https://github.com/eslint/rewrite).
+Copyright Nicholas C. Zakas. All Rights Reserved.
+
+The Initial Developer of @eslint/plugin-kit@0.2.4,
 is Nicholas C. Zakas (https://github.com/eslint/rewrite).
 Copyright Nicholas C. Zakas. All Rights Reserved.
 
@@ -616,7 +628,7 @@ This product includes software (@types/eslint-scope@3.7.7) developed at
 This product includes software (@types/eslint@8.56.12) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
-This product includes software (@types/eslint@9.6.0) developed at
+This product includes software (@types/eslint@9.6.1) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/estree@1.0.6) developed at
