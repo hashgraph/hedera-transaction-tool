@@ -2391,10 +2391,6 @@ Copyright Andrew Kelley. All Rights Reserved.
 This product includes software (perfect-debounce@1.0.0) developed at
 (https://github.com/unjs/perfect-debounce).
 
-The Initial Developer of pg@8.12.0,
-is Brian Carlson (https://github.com/brianc/node-postgres).
-Copyright Brian Carlson. All Rights Reserved.
-
 The Initial Developer of pg@8.13.1,
 is Brian Carlson (https://github.com/brianc/node-postgres).
 Copyright Brian Carlson. All Rights Reserved.
