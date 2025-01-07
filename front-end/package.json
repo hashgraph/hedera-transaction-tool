@@ -28,8 +28,8 @@
   },
   "dependencies": {
     "@electron-toolkit/utils": "3.0.0",
-    "@hashgraph/proto": "2.15.0-beta.4",
-    "@hashgraph/sdk": "2.55.1",
+    "@hashgraph/proto": "2.16.0-beta.4",
+    "@hashgraph/sdk": "2.56.0",
     "@prisma/client": "5.22.0",
     "@vuepic/vue-datepicker": "10.0.0",
     "argon2": "0.41.1",

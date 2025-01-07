@@ -305,15 +305,11 @@ The Initial Developer of @hashgraph/hedera-local@2.32.1,
 is hashgraph (github.com:hashgraph/hedera-local-node).
 Copyright hashgraph. All Rights Reserved.
 
-The Initial Developer of @hashgraph/proto@2.15.0,
+The Initial Developer of @hashgraph/proto@2.16.0-beta.4,
 is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
-The Initial Developer of @hashgraph/proto@2.15.0-beta.4,
-is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
-Copyright Launchbadge. All Rights Reserved.
-
-The Initial Developer of @hashgraph/sdk@2.55.1,
+The Initial Developer of @hashgraph/sdk@2.56.0,
 is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
@@ -2052,10 +2048,6 @@ The Initial Developer of log-symbols@4.1.0,
 is Sindre Sorhus (https://github.com/sindresorhus/log-symbols).
 Copyright Sindre Sorhus. All Rights Reserved.
 
-The Initial Developer of long@4.0.0,
-is Daniel Wirtz (https://github.com/dcodeIO/long.js).
-Copyright Daniel Wirtz. All Rights Reserved.
-
 The Initial Developer of long@5.2.3,
 is Daniel Wirtz (https://github.com/dcodeIO/long.js).
 Copyright Daniel Wirtz. All Rights Reserved.
@@ -2476,7 +2468,7 @@ The Initial Developer of promise-retry@2.0.1,
 is IndigoUnited (https://github.com/IndigoUnited/node-promise-retry).
 Copyright IndigoUnited. All Rights Reserved.
 
-The Initial Developer of protobufjs@7.4.0,
+The Initial Developer of protobufjs@7.2.5,
 is Daniel Wirtz (https://github.com/protobufjs/protobuf.js).
 Copyright Daniel Wirtz. All Rights Reserved.
 

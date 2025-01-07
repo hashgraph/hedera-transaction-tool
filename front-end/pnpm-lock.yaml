@@ -12,11 +12,11 @@ importers:
         specifier: 3.0.0
         version: 3.0.0(electron@33.2.0)
       '@hashgraph/proto':
-        specifier: 2.15.0-beta.4
-        version: 2.15.0-beta.4
+        specifier: 2.16.0-beta.4
+        version: 2.16.0-beta.4
       '@hashgraph/sdk':
-        specifier: 2.55.1
-        version: 2.55.1
+        specifier: 2.56.0
+        version: 2.56.0
       '@prisma/client':
         specifier: 5.22.0
         version: 5.22.0(prisma@5.22.0)
@@ -624,16 +624,12 @@ packages:
       expo-random:
         optional: true
 
-  '@hashgraph/proto@2.15.0-beta.4':
-    resolution: {integrity: sha512-da51j1RCHm+uXpQNM0KJ7qbhUJLTp6Avw8GdL+PQCbZ4lBwKAo8jjJ5rRjf1odsN1+zKl+JF7SMmKZB8PY229Q==}
+  '@hashgraph/proto@2.16.0-beta.4':
+    resolution: {integrity: sha512-83yRXVqnPUq85T+KHhWcehRbuM04VY+lSjB43yI/n6Ync6gd+aoETEjNhG0DxB6w4vkR6XLQ814racUzOD+91w==}
     engines: {node: '>=10.0.0'}
 
-  '@hashgraph/proto@2.16.0-beta.3':
-    resolution: {integrity: sha512-gbnE8MXi8N7CGqKXt6FFOFYeEvmcQczRkNICiBEhRLO3YmYWuHyE7MU8cWuSt1KnB8kahw90TbxOYAlCxa317g==}
-    engines: {node: '>=10.0.0'}
-
-  '@hashgraph/sdk@2.55.1':
-    resolution: {integrity: sha512-fiY+V2jVk+vOtIScvtF7gGfsFeSBej2+ESzWDzNT8XklB8bAdKtDeI4w7iNLtxXdP7lkoHRJaxbB9ZHU3dPv/Q==}
+  '@hashgraph/sdk@2.56.0':
+    resolution: {integrity: sha512-lIYRb6oahKdWFcbm8nPWLj6KcYTTbMgeTlrDw6PpBaRcFS2SfpmIzW+l+7Kc3Uw3iJnZ+pgY7svqYPO6B3ZK+w==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
       expo: ^49.0.16
@@ -2473,9 +2469,6 @@ packages:
     resolution: {integrity: sha512-8XPvpAA8uyhfteu8pIvQxpJZ7SYYdpUivZpGy6sFsBuKRY/7rQGavedeB8aK+Zkyq6upMFVL/9AW6vOYzfRyLg==}
     engines: {node: '>=10'}
 
-  long@4.0.0:
-    resolution: {integrity: sha512-XsP+KhQif4bjX1kbuSiySJFNAehNxgLb6hPRGJ9QsUr8ajHkuXGdrHmFUTUUXhDwVX2R5bY4JNZEwbUiMhV+MA==}
-
   long@5.2.3:
     resolution: {integrity: sha512-lcHwpNoggQTObv5apGNCTdJrO69eHOZMi4BNC+rTLER8iHAqGrUVeLh/irVIM7zTw2bOXA8T6uNPeujwOLg/2Q==}
 
@@ -4252,17 +4245,12 @@ snapshots:
       tweetnacl: 1.0.3
       utf8: 3.0.0
 
-  '@hashgraph/proto@2.15.0-beta.4':
-    dependencies:
-      long: 4.0.0
-      protobufjs: 7.4.0
-
-  '@hashgraph/proto@2.16.0-beta.3':
+  '@hashgraph/proto@2.16.0-beta.4':
     dependencies:
       long: 5.2.3
       protobufjs: 7.2.5
 
-  '@hashgraph/sdk@2.55.1':
+  '@hashgraph/sdk@2.56.0':
     dependencies:
       '@ethersproject/abi': 5.7.0
       '@ethersproject/bignumber': 5.7.0
@@ -4270,7 +4258,7 @@ snapshots:
       '@ethersproject/rlp': 5.7.0
       '@grpc/grpc-js': 1.8.2
       '@hashgraph/cryptography': 1.4.8-beta.10
-      '@hashgraph/proto': 2.16.0-beta.3
+      '@hashgraph/proto': 2.16.0-beta.4
       axios: 1.7.9
       bignumber.js: 9.1.2
       bn.js: 5.2.1
@@ -6442,8 +6430,6 @@ snapshots:
     dependencies:
       chalk: 4.1.2
       is-unicode-supported: 0.1.0
-
-  long@4.0.0: {}
 
   long@5.2.3: {}
 
