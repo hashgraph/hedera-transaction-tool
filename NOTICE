@@ -742,19 +742,19 @@ The Initial Developer of @vue/babel-plugin-resolve-type@1.2.5,
 is 三咲智子 (https://github.com/vuejs/babel-plugin-jsx).
 Copyright 三咲智子. All Rights Reserved.
 
-The Initial Developer of @vue/compiler-core@3.5.12,
+The Initial Developer of @vue/compiler-core@3.5.13,
 is Evan You (https://github.com/vuejs/core).
 Copyright Evan You. All Rights Reserved.
 
-The Initial Developer of @vue/compiler-dom@3.5.12,
+The Initial Developer of @vue/compiler-dom@3.5.13,
 is Evan You (https://github.com/vuejs/core).
 Copyright Evan You. All Rights Reserved.
 
-The Initial Developer of @vue/compiler-sfc@3.5.12,
+The Initial Developer of @vue/compiler-sfc@3.5.13,
 is Evan You (https://github.com/vuejs/core).
 Copyright Evan You. All Rights Reserved.
 
-The Initial Developer of @vue/compiler-ssr@3.5.12,
+The Initial Developer of @vue/compiler-ssr@3.5.13,
 is Evan You (https://github.com/vuejs/core).
 Copyright Evan You. All Rights Reserved.
 
@@ -789,23 +789,23 @@ Copyright Evan You. All Rights Reserved.
 This product includes software (@vue/language-core@2.2.0) developed at
 (https://github.com/vuejs/language-tools).
 
-The Initial Developer of @vue/reactivity@3.5.12,
+The Initial Developer of @vue/reactivity@3.5.13,
 is Evan You (https://github.com/vuejs/core).
 Copyright Evan You. All Rights Reserved.
 
-The Initial Developer of @vue/runtime-core@3.5.12,
+The Initial Developer of @vue/runtime-core@3.5.13,
 is Evan You (https://github.com/vuejs/core).
 Copyright Evan You. All Rights Reserved.
 
-The Initial Developer of @vue/runtime-dom@3.5.12,
+The Initial Developer of @vue/runtime-dom@3.5.13,
 is Evan You (https://github.com/vuejs/core).
 Copyright Evan You. All Rights Reserved.
 
-The Initial Developer of @vue/server-renderer@3.5.12,
+The Initial Developer of @vue/server-renderer@3.5.13,
 is Evan You (https://github.com/vuejs/core).
 Copyright Evan You. All Rights Reserved.
 
-The Initial Developer of @vue/shared@3.5.12,
+The Initial Developer of @vue/shared@3.5.13,
 is Evan You (https://github.com/vuejs/core).
 Copyright Evan You. All Rights Reserved.
 
@@ -3041,7 +3041,7 @@ Copyright ankurk91. All Rights Reserved.
 This product includes software (vue-tsc@2.2.0) developed at
 (https://github.com/vuejs/language-tools).
 
-The Initial Developer of vue@3.5.12,
+The Initial Developer of vue@3.5.13,
 is Evan You (https://github.com/vuejs/core).
 Copyright Evan You. All Rights Reserved.
 
