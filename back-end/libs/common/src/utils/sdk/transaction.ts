@@ -231,7 +231,7 @@ export const verifyTransactionBodyWithoutNodeAccountIdSignature = (
   publicKey = publicKey instanceof PublicKey ? publicKey : PublicKey.fromString(publicKey);
 
   /* Deserialize Signature */
-  signature = signature instanceof Buffer ? signature : decode(signature);
+  signature = typeof signature === 'string' ? decode(signature) : signature;
 
   try {
     return publicKey.verify(bodyBytes, signature);
