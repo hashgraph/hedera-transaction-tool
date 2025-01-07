@@ -3,7 +3,7 @@
 import * as path from 'path';
 
 import * as dotenv from 'dotenv';
-import * as chalk from 'chalk';
+import * as pc from 'picocolors';
 import * as bcrypt from 'bcryptjs';
 
 import { DataSource } from 'typeorm';
@@ -58,18 +58,18 @@ async function main() {
     const salt = await bcrypt.genSalt();
     const hash = await bcrypt.hash(user.password, salt);
     user.password = hash;
-    console.log(`Password set: ${chalk.blue(hash)}\n`);
+    console.log(`Password set: ${pc.blue(hash)}\n`);
 
     /* Create user in database */
     try {
       user = await userRepo.save(user);
     } catch (error) {
-      console.log(chalk.red(error.message));
+      console.log(pc.red(error.message));
     }
   }
 
   /* Exit */
-  console.log(chalk.redBright('\nExiting...'));
+  console.log(pc.redBright('\nExiting...'));
   process.exit(0);
 }
 
@@ -121,7 +121,7 @@ async function connectDatabase() {
 
   await dataSource.initialize();
 
-  console.log(chalk.cyan.underline('Connected to database \n'));
+  console.log(pc.underline(pc.cyan('Connected to database \n')));
 
   return dataSource;
 }
