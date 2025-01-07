@@ -554,8 +554,16 @@ The Initial Developer of @rollup/rollup-darwin-arm64@4.26.0,
 is Lukas Taegert-Atkinson (https://github.com/rollup/rollup).
 Copyright Lukas Taegert-Atkinson. All Rights Reserved.
 
+The Initial Developer of @sec-ant/readable-stream@0.4.1,
+is Ze-Zheng Wu (https://github.com/Sec-ant/readable-stream).
+Copyright Ze-Zheng Wu. All Rights Reserved.
+
 The Initial Developer of @sindresorhus/is@4.6.0,
 is Sindre Sorhus (https://github.com/sindresorhus/is).
+Copyright Sindre Sorhus. All Rights Reserved.
+
+The Initial Developer of @sindresorhus/merge-streams@4.0.0,
+is Sindre Sorhus (https://github.com/sindresorhus/merge-streams).
 Copyright Sindre Sorhus. All Rights Reserved.
 
 This product includes software (@socket.io/component-emitter@3.1.2) developed at
@@ -766,15 +774,15 @@ The Initial Developer of @vue/devtools-api@6.6.4,
 is Guillaume Chau (https://github.com/vuejs/vue-devtools).
 Copyright Guillaume Chau. All Rights Reserved.
 
-The Initial Developer of @vue/devtools-core@7.6.4,
+The Initial Developer of @vue/devtools-core@7.6.8,
 is webfansplz (https://github.com/vuejs/devtools).
 Copyright webfansplz. All Rights Reserved.
 
-The Initial Developer of @vue/devtools-kit@7.6.4,
+The Initial Developer of @vue/devtools-kit@7.6.8,
 is webfansplz (https://github.com/vuejs/devtools).
 Copyright webfansplz. All Rights Reserved.
 
-The Initial Developer of @vue/devtools-shared@7.6.4,
+The Initial Developer of @vue/devtools-shared@7.6.8,
 is webfansplz (https://github.com/vuejs/devtools).
 Copyright webfansplz. All Rights Reserved.
 
@@ -1495,7 +1503,7 @@ The Initial Developer of events@3.3.0,
 is Irakli Gozalishvili (https://github.com/Gozala/events).
 Copyright Irakli Gozalishvili. All Rights Reserved.
 
-The Initial Developer of execa@8.0.1,
+The Initial Developer of execa@9.5.2,
 is Sindre Sorhus (https://github.com/sindresorhus/execa).
 Copyright Sindre Sorhus. All Rights Reserved.
 
@@ -1560,6 +1568,10 @@ Copyright Matteo Collina. All Rights Reserved.
 The Initial Developer of fd-slicer@1.1.0,
 is Andrew Kelley (https://github.com/andrewrk/node-fd-slicer).
 Copyright Andrew Kelley. All Rights Reserved.
+
+The Initial Developer of figures@6.1.0,
+is Sindre Sorhus (https://github.com/sindresorhus/figures).
+Copyright Sindre Sorhus. All Rights Reserved.
 
 The Initial Developer of file-entry-cache@8.0.0,
 is Jared Wray (https://github.com/jaredwray/file-entry-cache).
@@ -1643,7 +1655,7 @@ The Initial Developer of get-intrinsic@1.2.4,
 is Jordan Harband (https://github.com/ljharb/get-intrinsic).
 Copyright Jordan Harband. All Rights Reserved.
 
-The Initial Developer of get-stream@8.0.1,
+The Initial Developer of get-stream@9.0.1,
 is Sindre Sorhus (https://github.com/sindresorhus/get-stream).
 Copyright Sindre Sorhus. All Rights Reserved.
 
@@ -1764,7 +1776,7 @@ The Initial Developer of https-proxy-agent@5.0.1,
 is Nathan Rajlich (https://github.com/TooTallNate/node-https-proxy-agent).
 Copyright Nathan Rajlich. All Rights Reserved.
 
-The Initial Developer of human-signals@5.0.0,
+The Initial Developer of human-signals@8.0.0,
 is ehmicky (https://github.com/ehmicky/human-signals).
 Copyright ehmicky. All Rights Reserved.
 
@@ -1867,11 +1879,15 @@ The Initial Developer of is-number@7.0.0,
 is Jon Schlinkert (https://github.com/jonschlinkert/is-number).
 Copyright Jon Schlinkert. All Rights Reserved.
 
-The Initial Developer of is-stream@3.0.0,
+The Initial Developer of is-plain-obj@4.1.0,
+is Sindre Sorhus (https://github.com/sindresorhus/is-plain-obj).
+Copyright Sindre Sorhus. All Rights Reserved.
+
+The Initial Developer of is-stream@4.0.1,
 is Sindre Sorhus (https://github.com/sindresorhus/is-stream).
 Copyright Sindre Sorhus. All Rights Reserved.
 
-The Initial Developer of is-unicode-supported@0.1.0,
+The Initial Developer of is-unicode-supported@2.1.0,
 is Sindre Sorhus (https://github.com/sindresorhus/is-unicode-supported).
 Copyright Sindre Sorhus. All Rights Reserved.
 
@@ -2108,7 +2124,7 @@ The Initial Developer of mime@2.6.0,
 is Robert Kieffer (https://github.com/broofa/mime).
 Copyright Robert Kieffer. All Rights Reserved.
 
-The Initial Developer of mimic-fn@4.0.0,
+The Initial Developer of mimic-fn@2.1.0,
 is Sindre Sorhus (https://github.com/sindresorhus/mimic-fn).
 Copyright Sindre Sorhus. All Rights Reserved.
 
@@ -2183,7 +2199,7 @@ The Initial Developer of murlock@4.0.0,
 is https://github.com/felanios (https://github.com/felanios/murlock).
 Copyright https://github.com/felanios. All Rights Reserved.
 
-The Initial Developer of nanoid@3.3.8,
+The Initial Developer of nanoid@5.0.9,
 is Andrey Sitnik (https://github.com/ai/nanoid).
 Copyright Andrey Sitnik. All Rights Reserved.
 
@@ -2253,7 +2269,7 @@ The Initial Developer of normalize-url@6.1.0,
 is Sindre Sorhus (https://github.com/sindresorhus/normalize-url).
 Copyright Sindre Sorhus. All Rights Reserved.
 
-The Initial Developer of npm-run-path@5.3.0,
+The Initial Developer of npm-run-path@6.0.0,
 is Sindre Sorhus (https://github.com/sindresorhus/npm-run-path).
 Copyright Sindre Sorhus. All Rights Reserved.
 
@@ -2281,7 +2297,7 @@ The Initial Developer of once@1.4.0,
 is Isaac Z. Schlueter (https://github.com/isaacs/once).
 Copyright Isaac Z. Schlueter. All Rights Reserved.
 
-The Initial Developer of onetime@6.0.0,
+The Initial Developer of onetime@5.1.2,
 is Sindre Sorhus (https://github.com/sindresorhus/onetime).
 Copyright Sindre Sorhus. All Rights Reserved.
 
@@ -2323,6 +2339,10 @@ Copyright Isaac Z. Schlueter. All Rights Reserved.
 
 The Initial Developer of parent-module@1.0.1,
 is Sindre Sorhus (https://github.com/sindresorhus/parent-module).
+Copyright Sindre Sorhus. All Rights Reserved.
+
+The Initial Developer of parse-ms@4.0.0,
+is Sindre Sorhus (https://github.com/sindresorhus/parse-ms).
 Copyright Sindre Sorhus. All Rights Reserved.
 
 The Initial Developer of passport-jwt@4.0.1,
@@ -2444,6 +2464,10 @@ This product includes software (prettier-linter-helpers@1.0.0) developed at
 The Initial Developer of prettier@3.4.2,
 is James Long (https://github.com/prettier/prettier).
 Copyright James Long. All Rights Reserved.
+
+The Initial Developer of pretty-ms@9.2.0,
+is Sindre Sorhus (https://github.com/sindresorhus/pretty-ms).
+Copyright Sindre Sorhus. All Rights Reserved.
 
 The Initial Developer of prisma@5.22.0,
 is Tim Suchanek (https://github.com/prisma/prisma).
@@ -2770,7 +2794,7 @@ The Initial Developer of strip-ansi@6.0.1,
 is Sindre Sorhus (https://github.com/chalk/strip-ansi).
 Copyright Sindre Sorhus. All Rights Reserved.
 
-The Initial Developer of strip-final-newline@3.0.0,
+The Initial Developer of strip-final-newline@4.0.0,
 is Sindre Sorhus (https://github.com/sindresorhus/strip-final-newline).
 Copyright Sindre Sorhus. All Rights Reserved.
 
@@ -2932,6 +2956,10 @@ Copyright Microsoft Corp.. All Rights Reserved.
 This product includes software (undici-types@6.20.0) developed at
 (https://github.com/nodejs/undici).
 
+The Initial Developer of unicorn-magic@0.3.0,
+is Sindre Sorhus (https://github.com/sindresorhus/unicorn-magic).
+Copyright Sindre Sorhus. All Rights Reserved.
+
 The Initial Developer of unique-filename@2.0.1,
 is GitHub Inc. (https://github.com/npm/unique-filename).
 Copyright GitHub Inc.. All Rights Reserved.
@@ -2978,7 +3006,7 @@ This product includes software (uuid@10.0.0) developed at
 This product includes software (verror@1.10.1) developed at
 (https://github.com/joyent/node-verror).
 
-The Initial Developer of vite-hot-client@0.2.3,
+The Initial Developer of vite-hot-client@0.2.4,
 is Anthony Fu (https://github.com/antfu/vite-hot-client).
 Copyright Anthony Fu. All Rights Reserved.
 
@@ -2994,15 +3022,15 @@ The Initial Developer of vite-plugin-eslint@1.8.1,
 is Xiang Gao (https://github.com/gxmari007/vite-plugin-eslint).
 Copyright Xiang Gao. All Rights Reserved.
 
-The Initial Developer of vite-plugin-inspect@0.8.7,
+The Initial Developer of vite-plugin-inspect@0.8.9,
 is Anthony Fu (https://github.com/antfu/vite-plugin-inspect).
 Copyright Anthony Fu. All Rights Reserved.
 
-The Initial Developer of vite-plugin-vue-devtools@7.6.4,
+The Initial Developer of vite-plugin-vue-devtools@7.6.8,
 is webfansplz (https://github.com/vuejs/devtools).
 Copyright webfansplz. All Rights Reserved.
 
-The Initial Developer of vite-plugin-vue-inspector@5.2.0,
+The Initial Developer of vite-plugin-vue-inspector@5.3.1,
 is webfansplz (https://github.com/webfansplz/vite-plugin-vue-inspector).
 Copyright webfansplz. All Rights Reserved.
 
@@ -3126,6 +3154,10 @@ Copyright Josh Wolfe. All Rights Reserved.
 
 The Initial Developer of yocto-queue@0.1.0,
 is Sindre Sorhus (https://github.com/sindresorhus/yocto-queue).
+Copyright Sindre Sorhus. All Rights Reserved.
+
+The Initial Developer of yoctocolors@2.1.1,
+is Sindre Sorhus (https://github.com/sindresorhus/yoctocolors).
 Copyright Sindre Sorhus. All Rights Reserved.
 
 The Initial Developer of zip-stream@4.1.1,
