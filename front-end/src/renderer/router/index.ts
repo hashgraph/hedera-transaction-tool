@@ -35,7 +35,7 @@ const RestoreMissingKeys = () => import('@renderer/pages/RestoreMissingKeys');
 const MigrateRecoveryPhraseHash = () => import('@renderer/pages/MigrateRecoveryPhraseHash');
 
 const routes: RouteRecordRaw[] = [
-  { path: '/', redirect: '/transactions' },
+  { path: '/', name: 'index', redirect: '/transactions' },
   { path: '/login', name: 'login', component: UserLogin },
   { path: '/organization-login', name: 'organizationLogin', component: OrganizationLogin },
   { path: '/style-guide', name: 'styleGuide', component: StyleGuide },

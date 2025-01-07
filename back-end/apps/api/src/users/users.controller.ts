@@ -48,7 +48,7 @@ export class UsersController {
   })
   @ApiResponse({
     status: 200,
-    type: [UserDto],
+    type: UserDto,
   })
   @AllowNonVerifiedUser()
   @Get('/me')

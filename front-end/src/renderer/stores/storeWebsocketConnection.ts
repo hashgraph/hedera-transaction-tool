@@ -17,7 +17,7 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
 
   /* Actions */
   async function setup() {
-    if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+    if (!isUserLoggedIn(user.personal)) return;
 
     const newSockets: typeof sockets.value = {};
     const serverUrls = user.organizations.map(o => o.serverUrl);

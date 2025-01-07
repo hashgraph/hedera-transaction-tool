@@ -7,6 +7,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import useAutoLogin from '@renderer/composables/useAutoLogin';
 import useLoader from '@renderer/composables/useLoader';
+import useSetupStores from '@renderer/composables/user/useSetupStores';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 
 import { getUseKeychain } from '@renderer/services/safeStorageService';
@@ -24,6 +25,7 @@ const user = useUserStore();
 /* Composables */
 const withLoader = useLoader();
 const tryAutoLogin = useAutoLogin();
+const setupStores = useSetupStores();
 const { redirectIfRequiredKeysToMigrate } = useRecoveryPhraseHashMigrate();
 
 /* State */
@@ -42,6 +44,9 @@ const handleImportantModalReady = async () => {
 
 const handleBeginMigrationReadyState = async () => {
   await withLoader(tryAutoLogin);
+  await user.refetchOrganizations();
+  await setupStores();
+
   await redirectIfRequiredKeysToMigrate();
 };
 

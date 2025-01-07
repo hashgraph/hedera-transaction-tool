@@ -17,6 +17,7 @@ import {
   getRecoveryPhraseHashValue,
   isLoggedInOrganization,
   isUserLoggedIn,
+  redirectToPrevious,
   safeAwait,
 } from '@renderer/utils';
 
@@ -156,9 +157,7 @@ export default function useRecoveryPhraseHashMigrate() {
       await router.push({ name: MIGRATE_RECOVERY_PHRASE_HASH });
       return true;
     } else if (route.name === MIGRATE_RECOVERY_PHRASE_HASH) {
-      await router.push(
-        router.previousPath ? { path: router.previousPath } : { name: 'transactions' },
-      );
+      await redirectToPrevious(router, { name: 'transactions' });
     }
     return false;
   };

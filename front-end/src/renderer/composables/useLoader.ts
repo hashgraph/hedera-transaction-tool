@@ -20,13 +20,14 @@ export default function useLoader() {
     fn: () => any,
     defaultErrorMessage = 'Failed to perform operation',
     timeout = 10000, // default timeout of 10 seconds
+    background = true,
   ) {
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Operation timed out')), timeout),
     );
 
     try {
-      globalModalLoaderRef?.value?.open();
+      globalModalLoaderRef?.value?.open(background);
       return await Promise.race([fn(), timeoutPromise]);
     } catch (error) {
       toast.error(getErrorMessage(error, defaultErrorMessage));

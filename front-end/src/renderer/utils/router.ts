@@ -1,4 +1,4 @@
-import type { Router } from 'vue-router';
+import type { RouteLocationRaw, Router } from 'vue-router';
 
 export const KEEP_NEXT_QUERY_KEY = 'keepNextTransaction';
 
@@ -28,4 +28,8 @@ export const redirectToGroupDetails = (router: Router, id: string | number, repl
     params: { id },
     replace,
   });
+};
+
+export const redirectToPrevious = async (router: Router, defaultRoute: RouteLocationRaw) => {
+  await router.push(router.previousPath ?? defaultRoute);
 };
