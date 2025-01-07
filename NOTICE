@@ -682,25 +682,49 @@ This product includes software (@types/yauzl@2.10.3) developed at
 This product includes software (@typescript-eslint/eslint-plugin@8.15.0) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
+This product includes software (@typescript-eslint/eslint-plugin@8.19.1) developed at
+(https://github.com/typescript-eslint/typescript-eslint).
+
 This product includes software (@typescript-eslint/parser@8.15.0) developed at
+(https://github.com/typescript-eslint/typescript-eslint).
+
+This product includes software (@typescript-eslint/parser@8.19.1) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
 This product includes software (@typescript-eslint/scope-manager@8.15.0) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
+This product includes software (@typescript-eslint/scope-manager@8.19.1) developed at
+(https://github.com/typescript-eslint/typescript-eslint).
+
 This product includes software (@typescript-eslint/type-utils@8.15.0) developed at
+(https://github.com/typescript-eslint/typescript-eslint).
+
+This product includes software (@typescript-eslint/type-utils@8.19.1) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
 This product includes software (@typescript-eslint/types@8.15.0) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
+This product includes software (@typescript-eslint/types@8.19.1) developed at
+(https://github.com/typescript-eslint/typescript-eslint).
+
 This product includes software (@typescript-eslint/typescript-estree@8.15.0) developed at
+(https://github.com/typescript-eslint/typescript-eslint).
+
+This product includes software (@typescript-eslint/typescript-estree@8.19.1) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
 This product includes software (@typescript-eslint/utils@8.15.0) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
+This product includes software (@typescript-eslint/utils@8.19.1) developed at
+(https://github.com/typescript-eslint/typescript-eslint).
+
 This product includes software (@typescript-eslint/visitor-keys@8.15.0) developed at
+(https://github.com/typescript-eslint/typescript-eslint).
+
+This product includes software (@typescript-eslint/visitor-keys@8.19.1) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
 The Initial Developer of @vitejs/plugin-vue@5.2.1,
