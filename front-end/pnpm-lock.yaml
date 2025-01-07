@@ -110,7 +110,7 @@ importers:
         version: 10.1.0(@types/eslint@8.56.12)(eslint@9.17.0)(prettier@3.4.2)
       '@vue/eslint-config-typescript':
         specifier: 14.1.3
-        version: 14.1.3(@typescript-eslint/parser@8.15.0(eslint@9.17.0)(typescript@5.6.3))(eslint-plugin-vue@9.31.0(eslint@9.17.0))(eslint@9.17.0)(typescript@5.6.3)
+        version: 14.1.3(@typescript-eslint/parser@8.15.0(eslint@9.17.0)(typescript@5.6.3))(eslint-plugin-vue@9.32.0(eslint@9.17.0))(eslint@9.17.0)(typescript@5.6.3)
       '@vue/tsconfig':
         specifier: 0.7.0
         version: 0.7.0(typescript@5.6.3)(vue@3.5.12(typescript@5.6.3))
@@ -124,8 +124,8 @@ importers:
         specifier: 9.17.0
         version: 9.17.0
       eslint-plugin-vue:
-        specifier: 9.31.0
-        version: 9.31.0(eslint@9.17.0)
+        specifier: 9.32.0
+        version: 9.32.0(eslint@9.17.0)
       prebuild-install:
         specifier: 7.1.2
         version: 7.1.2
@@ -1851,8 +1851,8 @@ packages:
       eslint-config-prettier:
         optional: true
 
-  eslint-plugin-vue@9.31.0:
-    resolution: {integrity: sha512-aYMUCgivhz1o4tLkRHj5oq9YgYPM4/EJc0M7TAKRLCUA5OYxRLAhYEVD2nLtTwLyixEFI+/QXSvKU9ESZFgqjQ==}
+  eslint-plugin-vue@9.32.0:
+    resolution: {integrity: sha512-b/Y05HYmnB/32wqVcjxjHZzNpwxj1onBOvqW89W+V+XNG1dRuaFbNd3vT9CLbr2LXjEoq+3vn8DanWf7XU22Ug==}
     engines: {node: ^14.17.0 || >=16.0.0}
     peerDependencies:
       eslint: ^6.2.0 || ^7.0.0 || ^8.0.0 || ^9.0.0
@@ -4322,7 +4322,7 @@ snapshots:
 
   '@malept/cross-spawn-promise@1.1.1':
     dependencies:
-      cross-spawn: 7.0.5
+      cross-spawn: 7.0.6
 
   '@malept/cross-spawn-promise@2.0.0':
     dependencies:
@@ -4847,11 +4847,11 @@ snapshots:
     transitivePeerDependencies:
       - '@types/eslint'
 
-  '@vue/eslint-config-typescript@14.1.3(@typescript-eslint/parser@8.15.0(eslint@9.17.0)(typescript@5.6.3))(eslint-plugin-vue@9.31.0(eslint@9.17.0))(eslint@9.17.0)(typescript@5.6.3)':
+  '@vue/eslint-config-typescript@14.1.3(@typescript-eslint/parser@8.15.0(eslint@9.17.0)(typescript@5.6.3))(eslint-plugin-vue@9.32.0(eslint@9.17.0))(eslint@9.17.0)(typescript@5.6.3)':
     dependencies:
       '@typescript-eslint/eslint-plugin': 8.15.0(@typescript-eslint/parser@8.15.0(eslint@9.17.0)(typescript@5.6.3))(eslint@9.17.0)(typescript@5.6.3)
       eslint: 9.17.0
-      eslint-plugin-vue: 9.31.0(eslint@9.17.0)
+      eslint-plugin-vue: 9.32.0(eslint@9.17.0)
       fast-glob: 3.3.2
       typescript-eslint: 8.15.0(eslint@9.17.0)(typescript@5.6.3)
       vue-eslint-parser: 9.4.3(eslint@9.17.0)
@@ -5251,7 +5251,7 @@ snapshots:
       bluebird-lst: 1.0.9
       builder-util-runtime: 9.2.4
       chalk: 4.1.2
-      cross-spawn: 7.0.5
+      cross-spawn: 7.0.6
       debug: 4.3.7
       fs-extra: 10.1.0
       http-proxy-agent: 5.0.0
@@ -5774,7 +5774,7 @@ snapshots:
       '@types/eslint': 8.56.12
       eslint-config-prettier: 9.1.0(eslint@9.17.0)
 
-  eslint-plugin-vue@9.31.0(eslint@9.17.0):
+  eslint-plugin-vue@9.32.0(eslint@9.17.0):
     dependencies:
       '@eslint-community/eslint-utils': 4.4.1(eslint@9.17.0)
       eslint: 9.17.0
