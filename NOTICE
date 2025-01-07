@@ -383,7 +383,7 @@ Copyright Kamil Mysliwiec. All Rights Reserved.
 This product includes software (@nestjs/cli@10.4.5) developed at
 (https://github.com/nestjs/nest-cli).
 
-The Initial Developer of @nestjs/common@10.4.5,
+The Initial Developer of @nestjs/common@10.4.15,
 is Kamil Mysliwiec (https://github.com/nestjs/nest).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
@@ -391,7 +391,7 @@ The Initial Developer of @nestjs/config@3.3.0,
 is Kamil Mysliwiec (https://github.com/nestjs/config).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
-The Initial Developer of @nestjs/core@10.4.5,
+The Initial Developer of @nestjs/core@10.4.15,
 is Kamil Mysliwiec (https://github.com/nestjs/nest).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
@@ -399,7 +399,7 @@ The Initial Developer of @nestjs/jwt@10.2.0,
 is Kamil Mysliwiec (https://github.com/nestjs/jwt).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
-The Initial Developer of @nestjs/microservices@10.4.5,
+The Initial Developer of @nestjs/microservices@10.4.15,
 is Kamil Mysliwiec (https://github.com/nestjs/nest).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
@@ -407,11 +407,11 @@ The Initial Developer of @nestjs/passport@10.0.3,
 is Kamil Mysliwiec (https://github.com/nestjs/passport).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
-The Initial Developer of @nestjs/platform-express@10.4.5,
+The Initial Developer of @nestjs/platform-express@10.4.15,
 is Kamil Mysliwiec (https://github.com/nestjs/nest).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
-The Initial Developer of @nestjs/platform-socket.io@10.4.5,
+The Initial Developer of @nestjs/platform-socket.io@10.4.15,
 is Kamil Mysliwiec (https://github.com/nestjs/nest).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
@@ -426,7 +426,7 @@ The Initial Developer of @nestjs/swagger@7.4.2,
 is Kamil Mysliwiec (https://github.com/nestjs/swagger).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
-The Initial Developer of @nestjs/testing@10.4.5,
+The Initial Developer of @nestjs/testing@10.4.15,
 is Kamil Mysliwiec (https://github.com/nestjs/nest).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
@@ -438,7 +438,7 @@ The Initial Developer of @nestjs/typeorm@10.0.2,
 is Kamil Mysliwiec (https://github.com/nestjs/typeorm).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
-The Initial Developer of @nestjs/websockets@10.4.5,
+The Initial Developer of @nestjs/websockets@10.4.15,
 is Kamil Mysliwiec (https://github.com/nestjs/nest).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
