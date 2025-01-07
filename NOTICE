@@ -175,7 +175,7 @@ The Initial Developer of @electron/universal@2.0.1,
 is Samuel Attard (https://github.com/electron/universal).
 Copyright Samuel Attard. All Rights Reserved.
 
-This product includes software (@esbuild/darwin-arm64@0.21.5) developed at
+This product includes software (@esbuild/darwin-arm64@0.24.2) developed at
 (https://github.com/evanw/esbuild).
 
 The Initial Developer of @eslint-community/eslint-utils@4.4.0,
@@ -1440,7 +1440,7 @@ The Initial Developer of es6-error@4.1.1,
 is Ben Youngblood (https://github.com/bjyoungblood/es6-error).
 Copyright Ben Youngblood. All Rights Reserved.
 
-This product includes software (esbuild@0.21.5) developed at
+This product includes software (esbuild@0.24.2) developed at
 (https://github.com/evanw/esbuild).
 
 The Initial Developer of escalade@3.2.0,
@@ -3034,7 +3034,7 @@ The Initial Developer of vite-plugin-vue-inspector@5.3.1,
 is webfansplz (https://github.com/webfansplz/vite-plugin-vue-inspector).
 Copyright webfansplz. All Rights Reserved.
 
-The Initial Developer of vite@5.4.11,
+The Initial Developer of vite@6.0.7,
 is Evan You (https://github.com/vitejs/vite).
 Copyright Evan You. All Rights Reserved.
 
