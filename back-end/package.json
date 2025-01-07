@@ -69,7 +69,7 @@
     "@eslint/eslintrc": "3.2.0",
     "@eslint/js": "9.17.0",
     "@hashgraph/hedera-local": "2.32.1",
-    "@nestjs/cli": "10.4.5",
+    "@nestjs/cli": "10.4.9",
     "@nestjs/schematics": "10.2.3",
     "@nestjs/testing": "10.4.15",
     "@testcontainers/postgresql": "10.14.0",

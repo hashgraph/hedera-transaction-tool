@@ -380,7 +380,7 @@ The Initial Developer of @nestjs/cache-manager@2.3.0,
 is Kamil Mysliwiec (https://github.com/nestjs/cache-manager).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
-This product includes software (@nestjs/cli@10.4.5) developed at
+This product includes software (@nestjs/cli@10.4.9) developed at
 (https://github.com/nestjs/nest-cli).
 
 The Initial Developer of @nestjs/common@10.4.15,
@@ -608,6 +608,9 @@ This product includes software (@types/cacheable-request@6.0.3) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/debug@4.1.12) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
+This product includes software (@types/eslint-scope@3.7.7) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/eslint@8.56.12) developed at
