@@ -721,13 +721,13 @@ This product includes software (@vitest/spy@2.1.8) developed at
 This product includes software (@vitest/utils@2.1.8) developed at
 (https://github.com/vitest-dev/vitest).
 
-This product includes software (@volar/language-core@2.4.10) developed at
+This product includes software (@volar/language-core@2.4.11) developed at
 (https://github.com/volarjs/volar.js).
 
-This product includes software (@volar/source-map@2.4.10) developed at
+This product includes software (@volar/source-map@2.4.11) developed at
 (https://github.com/volarjs/volar.js).
 
-This product includes software (@volar/typescript@2.4.10) developed at
+This product includes software (@volar/typescript@2.4.11) developed at
 (https://github.com/volarjs/volar.js).
 
 The Initial Developer of @vue/babel-helper-vue-transform-on@1.2.5,
@@ -786,7 +786,7 @@ The Initial Developer of @vue/eslint-config-typescript@14.1.3,
 is Evan You (https://github.com/vuejs/eslint-config-typescript).
 Copyright Evan You. All Rights Reserved.
 
-This product includes software (@vue/language-core@2.1.10) developed at
+This product includes software (@vue/language-core@2.2.0) developed at
 (https://github.com/vuejs/language-tools).
 
 The Initial Developer of @vue/reactivity@3.5.12,
@@ -854,7 +854,7 @@ The Initial Developer of ajv@6.12.6,
 is Evgeny Poberezkin (https://github.com/ajv-validator/ajv).
 Copyright Evgeny Poberezkin. All Rights Reserved.
 
-This product includes software (alien-signals@0.2.2) developed at
+This product includes software (alien-signals@0.4.12) developed at
 (https://github.com/johnsoncodehk/signals).
 
 The Initial Developer of amqp-connection-manager@4.1.14,
@@ -3038,7 +3038,7 @@ The Initial Developer of vue-toast-notification@3.1.3,
 is ankurk91 (https://github.com/ankurk91/vue-toast-notification).
 Copyright ankurk91. All Rights Reserved.
 
-This product includes software (vue-tsc@2.1.10) developed at
+This product includes software (vue-tsc@2.2.0) developed at
 (https://github.com/vuejs/language-tools).
 
 The Initial Developer of vue@3.5.12,

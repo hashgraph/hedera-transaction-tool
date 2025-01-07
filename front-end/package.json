@@ -80,7 +80,7 @@
     "vitest": "2.1.8",
     "vitest-mock-extended": "2.0.2",
     "vue": "3.5.12",
-    "vue-tsc": "2.1.10"
+    "vue-tsc": "2.2.0"
   },
   "engines": {
     "node": ">=22.12.0"
