@@ -136,8 +136,8 @@ importers:
         specifier: 9.17.0
         version: 9.17.0
       '@hashgraph/hedera-local':
-        specifier: 2.32.1
-        version: 2.32.1(mocha@10.7.0)
+        specifier: 2.32.6
+        version: 2.32.6(mocha@10.7.0)
       '@nestjs/cli':
         specifier: 10.4.9
         version: 10.4.9
@@ -591,8 +591,8 @@ packages:
       expo-random:
         optional: true
 
-  '@hashgraph/hedera-local@2.32.1':
-    resolution: {integrity: sha512-E39mMv40/tpvQIvpTf6Ua5zjLEZ/bZjSFO1zXLeMlWA+xJVp9pSfVwPfsLvsB8vKv7/99W+WwO6wqBCOt5B24Q==}
+  '@hashgraph/hedera-local@2.32.6':
+    resolution: {integrity: sha512-SzRIFMFLDZ8P5jhzVb51+hMz4yKky7GZgkhOxeCAC1vWQQTp6PE6H56g3Gg/o6vefDcIRytwhlj/dvC3ZgMZLA==}
     hasBin: true
 
   '@hashgraph/proto@2.16.0-beta.4':
@@ -5023,7 +5023,7 @@ snapshots:
       tweetnacl: 1.0.3
       utf8: 3.0.0
 
-  '@hashgraph/hedera-local@2.32.1(mocha@10.7.0)':
+  '@hashgraph/hedera-local@2.32.6(mocha@10.7.0)':
     dependencies:
       '@hashgraph/sdk': 2.56.0
       csv-parser: 3.0.0
