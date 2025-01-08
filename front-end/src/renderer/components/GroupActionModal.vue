@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { onBeforeRouteLeave } from 'vue-router';
 
-import { useRoute } from 'vue-router';
+import { onBeforeRouteLeave, useRouter, useRoute } from 'vue-router';
+
+import { redirectToPrevious } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -13,6 +14,7 @@ const props = defineProps<{
 }>();
 
 /* Composables */
+const router = useRouter();
 const route = useRoute();
 
 /* State */
@@ -39,9 +41,10 @@ function handleGroupAction() {
 }
 
 /* Hooks */
-onBeforeRouteLeave(async () => {
+onBeforeRouteLeave(async to => {
   if (route.query.group == 'true' && isGroupActionModalShown.value == false && !props.skip) {
     isGroupActionModalShown.value = true;
+    router.previousPath = to.path;
     return false;
   }
   return true;
@@ -68,7 +71,7 @@ onBeforeRouteLeave(async () => {
           color="borderless"
           data-testid="button-discard-draft-for-group-modal"
           type="button"
-          @click="$router.back()"
+          @click="redirectToPrevious(router, '/transactions')"
           >Discard</AppButton
         >
         <AppButton
