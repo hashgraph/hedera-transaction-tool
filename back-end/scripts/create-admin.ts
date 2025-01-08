@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as rl from 'readline-sync';
 
 import * as dotenv from 'dotenv';
-import * as chalk from 'chalk';
+import * as pc from 'picocolors';
 import * as bcrypt from 'bcryptjs';
 
 import { DataSource } from 'typeorm';
@@ -44,21 +44,21 @@ async function main() {
   });
 
   /* Getting user's email */
-  const email: string = rl.questionEMail(`Enter ${chalk.blue('email')}: `);
+  const email: string = rl.questionEMail(`Enter ${pc.blue('email')}: `);
   try {
     const emailExists = await userRepo.count({ where: { email } });
     if (emailExists) throw new Error('Email already exists');
 
     user.email = email;
   } catch (error) {
-    console.log(chalk.red(error.message));
-    console.log(chalk.redBright('\nExiting...'));
+    console.log(pc.red(error.message));
+    console.log(pc.redBright('\nExiting...'));
     process.exit(0);
   }
-  console.log(`Email set: ${chalk.blue(email)}`);
+  console.log(`Email set: ${pc.blue(email)}`);
 
   /* Getting user's password */
-  const password = rl.questionNewPassword(`\nEnter ${chalk.red('password')}: `, {
+  const password = rl.questionNewPassword(`\nEnter ${pc.red('password')}: `, {
     min: 8,
     max: 1000,
     limitMessage: 'Password must be at least 8 characters long',
@@ -66,22 +66,22 @@ async function main() {
   const salt = await bcrypt.genSalt();
   const hash = await bcrypt.hash(password, salt);
   user.password = hash;
-  console.log(`Password set: ${chalk.blue(hash)}\n`);
+  console.log(`Password set: ${pc.blue(hash)}\n`);
 
   /* Create user in database */
   try {
     const newUser = await userRepo.save(user);
-    console.log(chalk.green('User created successfully\n'));
-    console.log(`User ID: ${chalk.cyan(newUser.id)}`);
-    console.log(`Email: ${chalk.cyan(newUser.email)}`);
-    console.log(`Password hash: ${chalk.cyan(newUser.password)}`);
-    console.log(`Admin: ${chalk.cyan(newUser.admin)}`);
+    console.log(pc.green('User created successfully\n'));
+    console.log(`User ID: ${pc.cyan(newUser.id)}`);
+    console.log(`Email: ${pc.cyan(newUser.email)}`);
+    console.log(`Password hash: ${pc.cyan(newUser.password)}`);
+    console.log(`Admin: ${pc.cyan(newUser.admin.toString())}`);
   } catch (error) {
-    console.log(chalk.red(error.message));
+    console.log(pc.red(error.message));
   }
 
   /* Exit */
-  console.log(chalk.redBright('\nExiting...'));
+  console.log(pc.redBright('\nExiting...'));
   process.exit(0);
 }
 
@@ -133,7 +133,7 @@ async function connectDatabase() {
 
   await dataSource.initialize();
 
-  console.log(chalk.cyan.underline('Connected to database \n'));
+  console.log(pc.cyan(pc.underline('Connected to database \n')));
 
   return dataSource;
 }

@@ -1,4 +1,4 @@
-import * as chalk from 'chalk';
+import * as pc from 'picocolors';
 import * as bcrypt from 'bcryptjs';
 
 import { DataSource, DeepPartial, EntityTarget, ObjectLiteral } from 'typeorm';
@@ -92,7 +92,7 @@ export async function createUser(
   try {
     return await userRepo.save(user);
   } catch (error) {
-    console.log(chalk.red(error.message));
+    console.log(pc.red(error.message));
   }
 }
 
@@ -109,7 +109,7 @@ export async function attachKeyToUser(userId: number, key: DeepPartial<UserKey>)
   try {
     return await userKeyRepo.save(userKey);
   } catch (error) {
-    console.log(chalk.red(error.message));
+    console.log(pc.red(error.message));
   }
 }
 
@@ -126,7 +126,7 @@ export async function addUsers() {
   } = await generatePrivateKey();
 
   if (!admin || !user || !userNew) {
-    console.log(chalk.red('Failed to add users'));
+    console.log(pc.red('Failed to add users'));
     return;
   }
 
@@ -142,7 +142,7 @@ export async function addUsers() {
     index: index1,
   });
 
-  console.log(chalk.green('Users added successfully \n'));
+  console.log(pc.green('Users added successfully \n'));
   console.log(`Id: ${admin.id}, Admin: ${admin.email}, ${adminPassword}, ${publicKeyRaw}`);
   console.log(`Id: ${user.id}, User: ${user.email}, ${dummyPassword}, ${publicKeyRaw1} \n`);
   console.log(`Id: ${userNew.id}, User: ${userNew.email}, ${dummyNewPassword} \n`);
@@ -153,7 +153,7 @@ export async function addHederaLocalnetAccounts() {
   const user = await getUser('user');
 
   if (!admin || !user) {
-    console.log(chalk.red('Failed to add users'));
+    console.log(pc.red('Failed to add users'));
     return;
   }
 
@@ -182,7 +182,7 @@ export async function resetUsersState() {
     const userNew = await userRepo.findOne({ where: { email: dummyNewEmail }, withDeleted: true });
 
     if (!admin || !user || !userNew) {
-      console.log(chalk.red('Failed to reset users state'));
+      console.log(pc.red('Failed to reset users state'));
       return;
     }
 
@@ -206,9 +206,9 @@ export async function resetUsersState() {
     await userRepo.save(user);
     await userRepo.save(userNew);
 
-    console.log(chalk.green('Users state reset successfully \n'));
+    console.log(pc.green('Users state reset successfully \n'));
   } catch (error) {
-    console.log(chalk.red(error.message));
+    console.log(pc.red(error.message));
   }
 }
 
@@ -218,7 +218,7 @@ export async function getUsers() {
   try {
     return userRepo.find();
   } catch (error) {
-    console.log(chalk.red(error.message));
+    console.log(pc.red(error.message));
   }
 }
 
@@ -236,7 +236,7 @@ export async function getUserKeys(id?: number) {
         : undefined,
     );
   } catch (error) {
-    console.log(chalk.red(error.message));
+    console.log(pc.red(error.message));
   }
 }
 
@@ -254,7 +254,7 @@ export async function getUserKey(userId: number, publicKey: string) {
     });
     return userKey;
   } catch (error) {
-    console.log(chalk.red(error.message));
+    console.log(pc.red(error.message));
   }
 }
 
@@ -268,7 +268,7 @@ export async function getUser(type: 'admin' | 'user' | 'userNew') {
       },
     });
   } catch (error) {
-    console.log(chalk.red(error.message));
+    console.log(pc.red(error.message));
   }
 }
 
@@ -279,9 +279,9 @@ export async function clearUsers() {
   try {
     await userKeyRepo.delete({});
     await userRepo.delete({});
-    console.log(chalk.green('Users cleared successfully \n'));
+    console.log(pc.green('Users cleared successfully \n'));
   } catch (error) {
-    console.log(chalk.red(error.message));
+    console.log(pc.red(error.message));
   }
 }
 
@@ -293,7 +293,7 @@ export async function addTransactions() {
   const user = await getUser('user');
 
   if (!admin || !user) {
-    console.log(chalk.red('Failed to add transactions'));
+    console.log(pc.red('Failed to add transactions'));
     return;
   }
 
@@ -390,7 +390,7 @@ export async function addTransactions() {
 
   client.close();
 
-  console.log(chalk.green('Transactions added successfully \n'));
+  console.log(pc.green('Transactions added successfully \n'));
 
   return {
     userTransactions,
@@ -408,7 +408,7 @@ export async function getTransactions() {
   try {
     return await transactionRepo.find();
   } catch (error) {
-    console.log(chalk.red(error.message));
+    console.log(pc.red(error.message));
   }
 }
 
@@ -436,9 +436,9 @@ export async function addNotifications() {
     await notificationsRepo.save(notification);
     await notificationsRepo.save(notification2);
     await notificationsRepo.save(notification3);
-    console.log(chalk.green('Notifications added successfully \n'));
+    console.log(pc.green('Notifications added successfully \n'));
   } catch (error) {
-    console.log(chalk.red(error.message));
+    console.log(pc.red(error.message));
     return;
   }
 
@@ -446,7 +446,7 @@ export async function addNotifications() {
   const admin = await getUser('admin');
 
   if (!user || !admin) {
-    console.log(chalk.red('Failed to add notifications'));
+    console.log(pc.red('Failed to add notifications'));
     return;
   }
 
@@ -470,9 +470,9 @@ export async function addNotifications() {
     await notificationReceiverRepo.save(notificationReceiver);
     await notificationReceiverRepo.save(notificationReceiver2);
     await notificationReceiverRepo.save(notificationReceiver3);
-    console.log(chalk.green('Notification receivers added successfully \n'));
+    console.log(pc.green('Notification receivers added successfully \n'));
   } catch (error) {
-    console.log(chalk.red(error.message));
+    console.log(pc.red(error.message));
   }
 }
 
@@ -484,9 +484,9 @@ export async function resetDatabase() {
 
     await addUsers();
 
-    console.log(chalk.green('Database reset successfully \n'));
+    console.log(pc.green('Database reset successfully \n'));
   } catch (error) {
-    console.log(chalk.red(error.message));
+    console.log(pc.red(error.message));
   }
 }
 
@@ -501,7 +501,7 @@ export async function withDisposableDataSource<T>(
   try {
     return await callback(dataSource, ...args);
   } catch (error) {
-    console.log(chalk.red(error.message));
+    console.log(pc.red(error.message));
   }
 
   await dataSource.destroy();
@@ -553,7 +553,7 @@ async function connectDatabase() {
 
   await dataSource.initialize();
 
-  console.log(chalk.cyan.underline('Connected to database \n'));
+  console.log(pc.cyan(pc.underline('Connected to database \n')));
 
   return dataSource;
 }

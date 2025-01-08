@@ -16,6 +16,8 @@ module.exports = [
       '**/dist-electron',
       '**/out',
       '**/.gitignore',
+      '**/release',
+      '**/coverage',
     ],
   },
   ...pluginVue.configs['flat/essential'],

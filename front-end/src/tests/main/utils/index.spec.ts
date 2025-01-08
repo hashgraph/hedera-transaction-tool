@@ -30,7 +30,7 @@ describe('General utilities', () => {
 
     const uint8Array = JSONtoUInt8Array(jsonObject);
 
-    expectTypeOf(uint8Array).toEqualTypeOf<Uint8Array>();
+    expect(uint8Array).toBeInstanceOf(Uint8Array);
   });
 
   test('saveContentToPath: Saves content to path', async () => {

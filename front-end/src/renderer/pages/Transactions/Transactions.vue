@@ -133,18 +133,23 @@ function setQueryTab(title: string) {
 async function syncTab(forceCheckSign = false) {
   setTabItems();
 
-  await withLoader(async () => {
-    const tab = router.currentRoute.value.query.tab?.toString();
+  await withLoader(
+    async () => {
+      const tab = router.currentRoute.value.query.tab?.toString();
 
-    if (tab) {
-      const newIndex = tabItems.value.findIndex(t => t.title === tab);
-      activeTabIndex.value = newIndex >= 0 ? newIndex : activeTabIndex.value;
-    } else {
-      await changeTabIfReadyToSign();
-    }
+      if (tab) {
+        const newIndex = tabItems.value.findIndex(t => t.title === tab);
+        activeTabIndex.value = newIndex >= 0 ? newIndex : activeTabIndex.value;
+      } else {
+        await changeTabIfReadyToSign();
+      }
 
-    if (forceCheckSign) await changeTabIfReadyToSign();
-  }, 'Failed to sync tab', 10000, false);
+      if (forceCheckSign) await changeTabIfReadyToSign();
+    },
+    'Failed to sync tab',
+    10000,
+    false,
+  );
 }
 
 async function changeTabIfReadyToSign() {

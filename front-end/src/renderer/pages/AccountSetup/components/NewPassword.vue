@@ -15,7 +15,7 @@ import {
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
   getErrorMessage,
-  isPasswordStrong
+  isPasswordStrong,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -46,9 +46,11 @@ const isLoading = ref(false);
 
 /* Computed */
 const isPrimaryButtonDisabled = computed(() => {
-  return currentPassword.value.length === 0 ||
+  return (
+    currentPassword.value.length === 0 ||
     currentPasswordInvalid.value ||
-    !isPasswordStrong(newPassword.value).result;
+    !isPasswordStrong(newPassword.value).result
+  );
 });
 
 /* Handlers */
@@ -66,10 +68,7 @@ const handleChangePassword = async () => {
   });
   if (passwordModalOpened(personalPassword)) return;
 
-  if (
-    !currentPasswordInvalid.value &&
-    !newPasswordInvalid.value
-  ) {
+  if (!currentPasswordInvalid.value && !newPasswordInvalid.value) {
     try {
       isLoading.value = true;
 

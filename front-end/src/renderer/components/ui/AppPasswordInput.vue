@@ -5,8 +5,8 @@ import AppInput from './AppInput.vue';
 
 /* Options */
 defineOptions({
-  inheritAttrs: false
-})
+  inheritAttrs: false,
+});
 
 /* Props */
 const props = withDefaults(
@@ -54,7 +54,7 @@ const togglePasswordVisibility = () => {
       v-if="props.showIcon"
       type="button"
       class="position-absolute border-0 bg-transparent cursor-pointer"
-      style="right: 10px;"
+      style="right: 10px"
       tabindex="-1"
       @click="togglePasswordVisibility"
     >

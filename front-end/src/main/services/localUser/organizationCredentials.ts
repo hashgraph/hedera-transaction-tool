@@ -121,9 +121,11 @@ export const organizationCredentialsExists = async (organization_id: string, use
   const prisma = getPrismaClient();
 
   try {
-    return (await prisma.organizationCredentials.count({
-      where: {user_id, organization_id},
-    })) > 0;
+    return (
+      (await prisma.organizationCredentials.count({
+        where: { user_id, organization_id },
+      })) > 0
+    );
   } catch (error) {
     console.log(error);
     return false;

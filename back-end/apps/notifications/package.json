@@ -20,6 +20,6 @@
     "socket.io": "4.8.1"
   },
   "devDependencies": {
-    "@types/nodemailer": "6.4.16"
+    "@types/nodemailer": "6.4.17"
   }
 }
