@@ -157,6 +157,7 @@ async function handleSignSubmit() {
   }
 
   try {
+    transactionGroup.updateTransactionValidStarts(groupValidStart.value);
     const ownerKeys = new Array<PublicKey>();
     for (const key of user.keyPairs) {
       ownerKeys.push(PublicKey.fromString(key.public_key));
@@ -296,7 +297,6 @@ async function handleOnFileChanged(e: Event) {
 
 function updateGroupValidStart(newDate: Date) {
   groupValidStart.value = newDate;
-  transactionGroup.updateTransactionValidStarts(newDate);
 }
 
 /* Functions */
