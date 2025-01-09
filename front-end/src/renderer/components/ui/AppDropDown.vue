@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 
 /* Props */
 const props = defineProps<{
   toggleText: string;
-  value: string;
   items: { label: string; value: string }[];
   color?: 'primary' | 'secondary' | 'borderless' | 'danger';
   active?: boolean;
@@ -17,18 +17,15 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'update:value', value: string): void;
+  (event: 'select', value: string): void;
 }>();
 
 /* State */
 const dropdownRef = ref<HTMLDivElement | null>(null);
 
-/* Computed */
-const selected = computed(() => props.items.find(i => i.value === props.value));
-
 /* Handlers */
 const handleSelect = (value: string) => {
-  emit('update:value', value);
+  emit('select', value);
   forceHideContent();
 };
 
@@ -75,7 +72,7 @@ watch(
       :class="[buttonClass, active ? null : 'text-body']"
     >
       <div class="col-11 text-start overflow-hidden">
-        <span>{{ selected?.label || toggleText }}</span>
+        <span>{{ toggleText }}</span>
       </div>
       <div class="col-1 ms-3">
         <i v-if="togglerIcon" class="bi bi-chevron-down flex-1"></i>
@@ -85,10 +82,8 @@ watch(
       <template v-for="item of items" :key="item.value">
         <li
           class="dropdown-item cursor-pointer text-body"
-          :class="{ active: item.value === value }"
           @click="handleSelect(item.value)"
           :data-testid="`dropdown-item-${item.value}${item.label}`"
-          :selected="item.value === value ? true : undefined"
         >
           <span class="text-small">{{ item.label }}</span>
         </li>
