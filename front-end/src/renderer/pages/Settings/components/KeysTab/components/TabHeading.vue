@@ -15,7 +15,7 @@ import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNi
 import { isLoggedInOrganization } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
+import AppSelect from '@renderer/components/ui/AppSelect.vue';
 import UpdateRecoveryPhraseNickname from '@renderer/components/modals/UpdateRecoveryPhraseNicknameModal.vue';
 
 /* Props */
@@ -132,7 +132,7 @@ watch(
       >
 
       <!-- Imported from Recovery Phrase DropDown -->
-      <AppDropDown
+      <AppSelect
         :value="selectedRecoveryPhrase"
         @update:value="emit('update:selectedRecoveryPhrase', $event)"
         :items="recoveryPhraseHashes"
