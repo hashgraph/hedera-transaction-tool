@@ -26,11 +26,16 @@ export const getTransactionPayerId = (transaction: Transaction) =>
 export const getTransactionValidStart = (transaction: Transaction) =>
   transaction.transactionId?.validStart?.toDate() || null;
 
-export const getTransactionType = (transaction: Transaction, short = false) => {
+export const getTransactionType = (
+  transaction: Transaction,
+  short = false,
+  removeTransaction = false,
+) => {
   return transaction.constructor.name
     .slice(transaction.constructor.name.startsWith('_') ? 1 : 0)
     .split(/(?=[A-Z])/)
-    .join(short ? '' : ' ');
+    .join(short ? '' : ' ')
+    .replace(removeTransaction ? ' Transaction' : '', '');
 };
 
 export const getFreezeTypeString = (freezeType: FreezeType) => {
