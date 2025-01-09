@@ -181,7 +181,8 @@ export const getTransactionsForUser = async (
       !status.includes(TransactionStatus.EXECUTED) &&
       !status.includes(TransactionStatus.FAILED) &&
       !status.includes(TransactionStatus.EXPIRED) &&
-      !status.includes(TransactionStatus.CANCELED);
+      !status.includes(TransactionStatus.CANCELED) &&
+      !status.includes(TransactionStatus.ARCHIVED);
     const validStartTimestamp = new Date(Date.now() - 180 * 1_000).getTime();
 
     const filtering = `&filter=status:in:${status.join(',')}${withValidStart ? `&filter=validStart:gte:${validStartTimestamp}` : ''}&filter=mirrorNetwork:eq:${network}`;

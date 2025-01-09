@@ -55,6 +55,7 @@ const ws = useDisposableWs();
 const { oldNotifications } = useMarkNotifications([
   NotificationType.TRANSACTION_INDICATOR_EXECUTED,
   NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+  NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
 ]);
 
 /* State */
@@ -149,6 +150,7 @@ function setNotifiedTransactions() {
     [
       NotificationType.TRANSACTION_INDICATOR_EXECUTED,
       NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+      NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
     ],
   );
 }
