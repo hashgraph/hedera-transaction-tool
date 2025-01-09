@@ -40,6 +40,10 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
+
+/* Types */
+type ActionMore = 'export' | 'markAsSignOnly';
 
 /* Props */
 const props = defineProps<{
@@ -108,6 +112,14 @@ const canSign = computed(() => {
   const userShouldSign = publicKeysRequiredToSign.value.length > 0;
 
   return userShouldSign && transactionIsInProgress.value;
+});
+
+const dropDownItems = computed(() => {
+  const items: { label: string; value: ActionMore }[] = [{ label: 'Export', value: 'export' }];
+  if (canCancel.value) {
+    items.push({ label: 'Mark sign-only', value: 'markAsSignOnly' });
+  }
+  return items;
 });
 
 /* Handlers */
@@ -307,6 +319,14 @@ const handleSubmit = async (e: Event) => {
   }
 };
 
+const handleDropDownItem = (value: ActionMore) => {
+  if (value === 'export') {
+    console.log('Export');
+  } else if (value === 'markAsSignOnly') {
+    console.log('Mark as sign-only');
+  }
+};
+
 /* Watchers */
 watch(
   () => props.organizationTransaction,
@@ -367,6 +387,17 @@ const cancel = 'Cancel';
         </template>
       </Transition>
       <Transition name="fade" mode="out-in">
+        <template v-if="!canCancel && (organizationTransaction || localTransaction)">
+          <AppDropDown
+            :color="'secondary'"
+            toggle-text="More"
+            toggler-icon
+            :items="dropDownItems"
+            @select="handleDropDownItem($event as ActionMore)"
+          />
+        </template>
+      </Transition>
+      <Transition name="fade" mode="out-in">
         <template v-if="isLoggedInOrganization(user.selectedOrganization) && shouldApprove">
           <div>
             <AppButton color="secondary" type="submit" class="me-3">{{ reject }}</AppButton>
@@ -399,6 +430,17 @@ const cancel = 'Cancel';
               next
             }}</AppButton>
           </div>
+        </template>
+      </Transition>
+      <Transition name="fade" mode="out-in">
+        <template v-if="canCancel && (organizationTransaction || localTransaction)">
+          <AppDropDown
+            :color="'secondary'"
+            toggle-text="More"
+            toggler-icon
+            :items="dropDownItems"
+            @select="handleDropDownItem($event as ActionMore)"
+          />
         </template>
       </Transition>
     </div>
