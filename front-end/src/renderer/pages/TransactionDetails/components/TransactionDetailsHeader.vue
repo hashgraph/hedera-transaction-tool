@@ -2,7 +2,7 @@
 import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@main/shared/interfaces';
 
-import { computed, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
@@ -43,7 +43,22 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 
 /* Types */
-type ActionMore = 'export' | 'markAsSignOnly';
+type ActionButton = 'Reject' | 'Approve' | 'Sign' | 'Next' | 'Cancel' | 'Export' | 'Mark sign-only';
+
+/* Misc */
+const reject: ActionButton = 'Reject';
+const approve: ActionButton = 'Approve';
+const sign: ActionButton = 'Sign';
+const next: ActionButton = 'Next';
+const cancel: ActionButton = 'Cancel';
+const exportName: ActionButton = 'Export';
+const markAsSignOnly: ActionButton = 'Mark sign-only';
+
+const primaryButtons: ActionButton[] = [reject, approve, sign, next];
+const buttonsDataTestIds: { [key: string]: string } = {
+  [sign]: 'button-sign-org-transaction',
+  [next]: 'button-next-org-transaction',
+};
 
 /* Props */
 const props = defineProps<{
@@ -72,11 +87,15 @@ const confirmModalButtonText = ref('');
 const confirmModalLoadingText = ref('');
 const confirmCallback = ref<((...args: any[]) => void) | null>(null);
 
+const loadingStates = reactive<{ [key: string]: string | null }>({
+  [reject]: null,
+  [approve]: null,
+  [sign]: null,
+});
+const isConfirmModalLoadingState = ref(false);
+
 const publicKeysRequiredToSign = ref<string[] | null>(null);
 const shouldApprove = ref<boolean>(false);
-const isSigning = ref(false);
-const isApproving = ref(false);
-const isConfirmModalLoadingState = ref(false);
 
 /* Computed */
 const creator = computed(() => {
@@ -114,13 +133,22 @@ const canSign = computed(() => {
   return userShouldSign && transactionIsInProgress.value;
 });
 
-const dropDownItems = computed(() => {
-  const items: { label: string; value: ActionMore }[] = [{ label: 'Export', value: 'export' }];
-  if (canCancel.value) {
-    items.push({ label: 'Mark sign-only', value: 'markAsSignOnly' });
-  }
-  return items;
+const visibleButtons = computed(() => {
+  const buttons: ActionButton[] = [];
+
+  /* The order is important */
+  shouldApprove.value && buttons.push(reject, approve);
+  canSign.value && !shouldApprove.value && buttons.push(sign);
+  props.nextId && !shouldApprove.value && !canSign.value && buttons.push(next);
+  canCancel.value && buttons.push(cancel, markAsSignOnly);
+  buttons.push(exportName);
+
+  return buttons;
 });
+
+const dropDownItems = computed(() =>
+  visibleButtons.value.slice(1).map(item => ({ label: item, value: item })),
+);
 
 /* Handlers */
 const handleBack = () => {
@@ -148,7 +176,7 @@ const handleSign = async () => {
   if (passwordModalOpened(personalPassword)) return;
 
   try {
-    isSigning.value = true;
+    loadingStates[sign] = 'Signing...';
 
     const publicKeysRequired = await publicRequiredToSign(
       props.sdkTransaction,
@@ -189,7 +217,7 @@ const handleSign = async () => {
   } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to sign transaction'));
   } finally {
-    isSigning.value = false;
+    loadingStates[sign] = null;
   }
 };
 
@@ -219,8 +247,9 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
 
     try {
       if (approved) {
-        isApproving.value = true;
+        loadingStates[approve] = 'Approving...';
       } else {
+        loadingStates[reject] = 'Rejecting...';
         isConfirmModalLoadingState.value = true;
       }
 
@@ -249,7 +278,8 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
       isConfirmModalShown.value = false;
       throw error;
     } finally {
-      isApproving.value = false;
+      loadingStates[approve] = null;
+      loadingStates[reject] = null;
       isConfirmModalLoadingState.value = false;
       confirmModalLoadingText.value = '';
     }
@@ -308,7 +338,8 @@ const handleNext = () => {
 const handleSubmit = async (e: Event) => {
   const buttonContent = (e as SubmitEvent).submitter?.textContent || '';
 
-  if ([reject, approve].includes(buttonContent)) {
+  const approvalButtons: string[] = [reject, approve];
+  if (approvalButtons.includes(buttonContent)) {
     await handleApprove(buttonContent === approve, true);
   } else if (buttonContent === sign) {
     await handleSign();
@@ -319,11 +350,13 @@ const handleSubmit = async (e: Event) => {
   }
 };
 
-const handleDropDownItem = (value: ActionMore) => {
-  if (value === 'export') {
+const handleDropDownItem = async (value: ActionButton) => {
+  if (value === 'Export') {
     console.log('Export');
-  } else if (value === 'markAsSignOnly') {
+  } else if (value === 'Mark sign-only') {
     console.log('Mark as sign-only');
+  } else if (value === 'Cancel') {
+    await handleCancel(true);
   }
 };
 
@@ -351,13 +384,6 @@ watch(
     );
   },
 );
-
-/* Misc */
-const reject = 'Reject';
-const approve = 'Approve';
-const sign = 'Sign';
-const next = 'Next';
-const cancel = 'Cancel';
 </script>
 <template>
   <form
@@ -380,66 +406,28 @@ const cancel = 'Cancel';
 
     <div class="flex-centered gap-4">
       <Transition name="fade" mode="out-in">
-        <template v-if="canCancel">
+        <template v-if="visibleButtons.length > 0">
           <div>
-            <AppButton color="secondary" type="submit" class="me-3">{{ cancel }}</AppButton>
+            <AppButton
+              :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
+              :loading="Boolean(loadingStates[visibleButtons[0]])"
+              :loading-text="loadingStates[visibleButtons[0]] || ''"
+              :data-testid="buttonsDataTestIds[visibleButtons[0]]"
+              type="submit"
+              class="me-3"
+              >{{ visibleButtons[0] }}
+            </AppButton>
           </div>
         </template>
       </Transition>
       <Transition name="fade" mode="out-in">
-        <template v-if="!canCancel && (organizationTransaction || localTransaction)">
+        <template v-if="visibleButtons.length > 1">
           <AppDropDown
             :color="'secondary'"
             toggle-text="More"
             toggler-icon
             :items="dropDownItems"
-            @select="handleDropDownItem($event as ActionMore)"
-          />
-        </template>
-      </Transition>
-      <Transition name="fade" mode="out-in">
-        <template v-if="isLoggedInOrganization(user.selectedOrganization) && shouldApprove">
-          <div>
-            <AppButton color="secondary" type="submit" class="me-3">{{ reject }}</AppButton>
-            <AppButton
-              color="primary"
-              type="submit"
-              :disabled="isApproving"
-              :loading="isApproving"
-              loading-text="Approving..."
-              >{{ approve }}</AppButton
-            >
-          </div>
-        </template>
-        <template v-else-if="canSign">
-          <div>
-            <AppButton
-              color="primary"
-              data-testid="button-sign-org-transaction"
-              type="submit"
-              :disabled="isSigning"
-              :loading="isSigning"
-              loading-text="Signing..."
-              >{{ sign }}</AppButton
-            >
-          </div>
-        </template>
-        <template v-else-if="nextId">
-          <div>
-            <AppButton color="primary" data-testid="button-next-org-transaction" type="submit">{{
-              next
-            }}</AppButton>
-          </div>
-        </template>
-      </Transition>
-      <Transition name="fade" mode="out-in">
-        <template v-if="canCancel && (organizationTransaction || localTransaction)">
-          <AppDropDown
-            :color="'secondary'"
-            toggle-text="More"
-            toggler-icon
-            :items="dropDownItems"
-            @select="handleDropDownItem($event as ActionMore)"
+            @select="handleDropDownItem($event as ActionButton)"
           />
         </template>
       </Transition>
