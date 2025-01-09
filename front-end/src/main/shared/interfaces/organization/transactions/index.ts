@@ -39,14 +39,16 @@ export const TransactionTypeName = {
 };
 
 export enum TransactionStatus {
-  NEW = 'NEW',
-  REJECTED = 'REJECTED',
+  NEW = 'NEW', // unused
   CANCELED = 'CANCELED',
+  SIGN_ONLY = 'SIGN_ONLY',
+  REJECTED = 'REJECTED',
   WAITING_FOR_SIGNATURES = 'WAITING FOR SIGNATURES',
   WAITING_FOR_EXECUTION = 'WAITING FOR EXECUTION',
   EXECUTED = 'EXECUTED',
   FAILED = 'FAILED',
   EXPIRED = 'EXPIRED',
+  ARCHIVED = 'ARCHIVED',
 }
 
 export interface ITransaction {
