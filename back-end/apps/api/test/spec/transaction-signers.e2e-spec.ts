@@ -6,6 +6,7 @@ import {
   AccountUpdateTransaction,
   KeyList,
   SignatureMap,
+  Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
 import { ErrorCodes } from '@app/common';
@@ -213,36 +214,59 @@ describe('Transactions (e2e)', () => {
       );
     });
 
-    it('(POST) should NOT upload a signature for a transaction that has been canceled', async () => {
-      const transaction = addedTransactions.userTransactions[0];
-      await transactionRepo.update(
-        { id: transaction.id },
-        {
-          status: TransactionStatus.CANCELED,
-        },
-      );
-      const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
-      await sdkTransaction.sign(localnet1003.privateKey);
-      const signatureMap = getSignatureMapForPublicKeys(
-        [localnet1003.publicKeyRaw],
-        sdkTransaction,
-      );
+    describe('(POST) transaction status checks', () => {
+      let transaction: Transaction;
+      let signatureMap: SignatureMap;
+      let sdkTransaction: SDKTransaction;
 
-      const { status, body } = await endpoint.post(
-        {
-          signatureMap: formatSignatureMap(signatureMap),
-        },
-        `/${transaction.id}/signers`,
-        userAuthToken,
-      );
+      beforeAll(async () => {
+        transaction = addedTransactions.userTransactions[0];
+        sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
+        await sdkTransaction.sign(localnet1003.privateKey);
+        signatureMap = getSignatureMapForPublicKeys([localnet1003.publicKeyRaw], sdkTransaction);
+      });
 
-      expect(status).toBe(400);
-      expect(body).toEqual(
-        expect.objectContaining({
-          statusCode: 400,
-          code: ErrorCodes.TC,
-        }),
-      );
+      it('(POST) should NOT upload a signature for a transaction that has been canceled', async () => {
+        await transactionRepo.update(
+          { id: transaction.id },
+          { status: TransactionStatus.CANCELED },
+        );
+
+        const { status, body } = await endpoint.post(
+          { signatureMap: formatSignatureMap(signatureMap) },
+          `/${transaction.id}/signers`,
+          userAuthToken,
+        );
+
+        expect(status).toBe(400);
+        expect(body).toEqual(
+          expect.objectContaining({
+            statusCode: 400,
+            code: ErrorCodes.TC,
+          }),
+        );
+      });
+
+      it('(POST) should NOT upload a signature for a transaction that has been archived', async () => {
+        await transactionRepo.update(
+          { id: transaction.id },
+          { status: TransactionStatus.ARCHIVED },
+        );
+
+        const { status, body } = await endpoint.post(
+          { signatureMap: formatSignatureMap(signatureMap) },
+          `/${transaction.id}/signers`,
+          userAuthToken,
+        );
+
+        expect(status).toBe(400);
+        expect(body).toEqual(
+          expect.objectContaining({
+            statusCode: 400,
+            code: ErrorCodes.TA,
+          }),
+        );
+      });
     });
 
     it('(POST) should NOT upload invalid body', async () => {

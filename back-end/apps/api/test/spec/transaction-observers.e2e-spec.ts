@@ -319,6 +319,7 @@ describe('Transaction Observers (e2e)', () => {
         TransactionStatus.EXPIRED,
         TransactionStatus.FAILED,
         TransactionStatus.CANCELED,
+        TransactionStatus.ARCHIVED,
       ];
 
       const transaction = await createTransaction(user, localnet1003, localnet1003);

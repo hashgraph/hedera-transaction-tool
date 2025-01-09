@@ -137,7 +137,7 @@ describe('Transactions (e2e)', () => {
       );
     });
 
-    it('(POST) should create a transaction with and ID of a canceled transaction', async () => {
+    it('(POST) should create a transaction with an ID of a canceled transaction', async () => {
       const transaction = await createTransaction();
 
       const { body: newTransaction } = await endpoint.post(transaction, null, userAuthToken);
@@ -165,6 +165,8 @@ describe('Transactions (e2e)', () => {
         }),
       );
     });
+
+    it.todo('(POST) should create a transaction with an ID of an archived transaction');
 
     it('(POST) should not create a transaction if user is not verified', async () => {
       const countBefore = await repo.count();
@@ -423,6 +425,7 @@ describe('Transactions (e2e)', () => {
       TransactionStatus.FAILED,
       TransactionStatus.EXPIRED,
       TransactionStatus.CANCELED,
+      TransactionStatus.ARCHIVED,
     ];
     const forbiddenStatuses = Object.values(TransactionStatus).filter(
       s => !allowedStatuses.includes(s),
@@ -816,6 +819,27 @@ describe('Transactions (e2e)', () => {
       expect(status).toEqual(400);
       expect(transactionFromDb?.status).not.toEqual(TransactionStatus.CANCELED);
     });
+  });
+
+  describe('/transactions/archive/:transactionId', () => {
+    let endpoint: Endpoint;
+
+    beforeAll(() => {
+      endpoint = new Endpoint(server, '/transactions/cancel');
+    });
+
+    afterAll(async () => {
+      await resetDatabase();
+      await addHederaLocalnetAccounts();
+      testsAddedTransactionsCountUser = 0;
+      testsAddedTransactionsCountAdmin = 0;
+      addedTransactions = await addTransactions();
+    });
+
+    it.todo('(PATCH) should archive a transaction if creator');
+    it.todo('(PATCH) should not archive a transaction if not creator');
+    it.todo('(PATCH) should not archive a transaction if not verified');
+    it.todo("(PATCH) should not archive a transaction if it's already executed");
   });
 
   describe('/transactions/:transactionId', () => {
