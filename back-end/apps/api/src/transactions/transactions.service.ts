@@ -428,6 +428,45 @@ export class TransactionsService {
     return true;
   }
 
+  /* Mark the transaction as sign only. */
+  async markAsSignOnlyTransaction(id: number, user: User): Promise<boolean> {
+    const transaction = await this.getTransactionForCreator(id, user);
+
+    if (
+      ![
+        TransactionStatus.NEW,
+        TransactionStatus.WAITING_FOR_SIGNATURES,
+        TransactionStatus.WAITING_FOR_EXECUTION,
+        TransactionStatus.SIGN_ONLY,
+      ].includes(transaction.status)
+    ) {
+      throw new BadRequestException(ErrorCodes.OTIP);
+    }
+
+    await this.repo.update({ id }, { status: TransactionStatus.SIGN_ONLY });
+
+    notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.SIGN_ONLY);
+    notifyTransactionAction(this.notificationsService);
+
+    return true;
+  }
+
+  /* Archive the transaction if the transaction is sign only. */
+  async archiveTransaction(id: number, user: User): Promise<boolean> {
+    const transaction = await this.getTransactionForCreator(id, user);
+
+    if (![TransactionStatus.SIGN_ONLY].includes(transaction.status)) {
+      throw new BadRequestException(ErrorCodes.OSONT);
+    }
+
+    await this.repo.update({ id }, { status: TransactionStatus.ARCHIVED });
+
+    notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.ARCHIVED);
+    notifyTransactionAction(this.notificationsService);
+
+    return true;
+  }
+
   /* Get the transaction with the provided id if user has access */
   async getTransactionWithVerifiedAccess(transactionId: number, user: User) {
     const transaction = await this.getTransactionById(transactionId);
