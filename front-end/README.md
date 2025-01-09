@@ -29,7 +29,7 @@ brew install python-setuptools
 
 ```bash
 git clone https://github.com/hashgraph/hedera-transaction-tool.git
-cd back-end
+cd front-end
 ```
 
 ## 2. Install dependencies
