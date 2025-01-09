@@ -274,9 +274,7 @@ describe('TransactionsController', () => {
         .spyOn(controller, 'deleteTransaction')
         .mockRejectedValue(new BadRequestException('Transaction not found'));
 
-      await expect(controller.deleteTransaction(user, 1)).rejects.toThrowError(
-        'Transaction not found',
-      );
+      await expect(controller.deleteTransaction(user, 1)).rejects.toThrow('Transaction not found');
     });
   });
 
@@ -293,8 +291,46 @@ describe('TransactionsController', () => {
         .spyOn(controller, 'cancelTransaction')
         .mockRejectedValue(new BadRequestException('Transaction cannot be canceled'));
 
-      await expect(controller.cancelTransaction(user, 1)).rejects.toThrowError(
+      await expect(controller.cancelTransaction(user, 1)).rejects.toThrow(
         'Transaction cannot be canceled',
+      );
+    });
+  });
+
+  describe('markAsSignOnlyTransaction', () => {
+    it('should return a boolean indicating if the transaction has been marked as sign only', async () => {
+      const result = true;
+      transactionService.markAsSignOnlyTransaction.mockResolvedValue(result);
+
+      expect(await controller.markAsSignOnlyTransaction(user, 1)).toBe(result);
+    });
+
+    it('should return a boolean indicating if the transaction has not been marked as sign only', async () => {
+      jest
+        .spyOn(controller, 'markAsSignOnlyTransaction')
+        .mockRejectedValue(new BadRequestException('Transaction cannot be marked as sign only'));
+
+      await expect(controller.markAsSignOnlyTransaction(user, 1)).rejects.toThrow(
+        'Transaction cannot be marked as sign only',
+      );
+    });
+  });
+
+  describe('archiveTransaction', () => {
+    it('should return a boolean indicating if the transaction has been archiveed', async () => {
+      const result = true;
+      transactionService.archiveTransaction.mockResolvedValue(result);
+
+      expect(await controller.archiveTransaction(user, 1)).toBe(result);
+    });
+
+    it('should return a boolean indicating if the transaction has not been archiveed', async () => {
+      jest
+        .spyOn(controller, 'archiveTransaction')
+        .mockRejectedValue(new BadRequestException('Transaction cannot be archived'));
+
+      await expect(controller.archiveTransaction(user, 1)).rejects.toThrow(
+        'Transaction cannot be archived',
       );
     });
   });
