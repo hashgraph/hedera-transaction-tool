@@ -31,9 +31,10 @@ class GroupPage extends BasePage {
   detailsGroupButtonSelector = 'button-group-details';
   importCsvButtonSelector = 'button-import-csv';
 
-  // Messages
+  // Text
   toastMessageSelector = '.v-toast__text';
   emptyTransactionTextSelector = 'p-empty-transaction-text';
+  transactionGroupDetailsIdSelector = 'td-group-transaction-id';
 
   // Inputs
   descriptionInputSelector = 'input-transaction-group-description';
@@ -128,6 +129,31 @@ class GroupPage extends BasePage {
     return await this.getText(this.transactionTimestampIndexSelector + index);
   }
 
+  async getTransactionGroupDetailsId(index) {
+    return await this.getText(this.transactionGroupDetailsIdSelector, index);
+  }
+
+  async getAllTransactionTimestamps(numberOfTransactions) {
+    const timestamps = [];
+    for (let i = 0; i < numberOfTransactions; i++) {
+      timestamps.push(await this.getTransactionGroupDetailsId(i));
+    }
+    return timestamps;
+  }
+
+  async verifyAllTransactionsAreSuccessful(timestampsForVerification) {
+    for (let i = 0; i < timestampsForVerification.length; i++) {
+      const transactionDetails = await this.transactionPage.mirrorGetTransactionResponse(
+        timestampsForVerification[i],
+      );
+      const result = transactionDetails.transactions[0]?.result;
+      if (result !== 'SUCCESS') {
+        return false;
+      }
+    }
+    return true;
+  }
+
   async clickTransactionDeleteButton(index) {
     await this.click(this.transactionDeleteButtonIndexSelector + index);
   }
@@ -160,52 +186,33 @@ class GroupPage extends BasePage {
     }
   }
 
-  async addOrgTransferTransactionToGroup(numberOfTransactions = 1, fromAccountId, amount) {
-    await this.fillDescription('test');
-    for (let i = 0; i < numberOfTransactions; i++) {
-      await this.clickOnAddTransactionButton();
-      await this.transactionPage.clickOnTransferTokensTransaction()
-
-      await this.fill(this.transactionPage.transferFromAccountIdInputSelector, fromAccountId);
-      await this.transactionPage.fillInTransferAmountFromAccount(amount);
-
-      const payerAccountId = await this.getTextFromInputField(
-        this.transactionPage.payerDropdownSelector,
-      );
-      await this.transactionPage.fillInTransferToAccountId(payerAccountId);
-
-      await this.transactionPage.clickOnAddTransferFromButton();
-      await this.transactionPage.fillInTransferAmountToAccount(amount);
-      await this.transactionPage.clickOnAddTransferToButton();
-
-      await this.clickAddToGroupButton();
-    }
-  }
-
-  async generateAndImportCsvFile(fromAccountId){
+  async generateAndImportCsvFile(fromAccountId, numberOfTransactions = 10) {
     const fileName = 'groupTransactions.csv';
     const receiverAccount = '0.0.1031';
     generateCSVFile({
       senderAccount: fromAccountId,
       accountId: receiverAccount,
       startingAmount: 1,
-      numberOfTransactions: 10,
+      numberOfTransactions: numberOfTransactions,
       fileName: fileName,
-    })
-    await this.uploadFile(this.importCsvButtonSelector, path.resolve(__dirname, '..', 'data', fileName));
+    });
+    await this.uploadFile(
+      this.importCsvButtonSelector,
+      path.resolve(__dirname, '..', 'data', fileName),
+    );
   }
 
   async addOrgAllowanceTransactionToGroup(numberOfTransactions = 1, allowanceOwner, amount) {
     await this.fillDescription('test');
     for (let i = 0; i < numberOfTransactions; i++) {
       await this.clickOnAddTransactionButton();
-      await this.transactionPage.clickOnApproveAllowanceTransaction()
+      await this.transactionPage.clickOnApproveAllowanceTransaction();
 
       await this.transactionPage.fillInAllowanceOwner(allowanceOwner);
       await this.transactionPage.fillInAllowanceAmount(amount);
       await this.transactionPage.fillInSpenderAccountId(
         await this.getTextFromInputField(this.transactionPage.payerDropdownSelector),
-        this.addToGroupButtonSelector
+        this.addToGroupButtonSelector,
       );
 
       await this.clickAddToGroupButton();
@@ -247,43 +254,43 @@ class GroupPage extends BasePage {
   }
 
   async logInAndSignGroupTransactionsByAllUsers(encryptionPassword) {
-      for (let i = 1; i < this.organizationPage.users.length; i++) {
-        console.log(`Signing transaction for user ${i}`);
-        const user = this.organizationPage.users[i];
-        await this.organizationPage.signInOrganization(user.email, user.password, encryptionPassword);
-        await this.transactionPage.clickOnTransactionsMenuButton();
-        await this.organizationPage.clickOnReadyToSignTab();
-        await this.clickOnDetailsGroupButton();
-        await this.clickOnTransactionDetailsButton(0);
+    for (let i = 1; i < this.organizationPage.users.length; i++) {
+      console.log(`Signing transaction for user ${i}`);
+      const user = this.organizationPage.users[i];
+      await this.organizationPage.signInOrganization(user.email, user.password, encryptionPassword);
+      await this.transactionPage.clickOnTransactionsMenuButton();
+      await this.organizationPage.clickOnReadyToSignTab();
+      await this.clickOnDetailsGroupButton();
+      await this.clickOnTransactionDetailsButton(0);
 
-        // Initially sign the first transaction
+      // Initially sign the first transaction
+      await this.organizationPage.clickOnSignTransactionButton();
+
+      // After signing, we check if there's a "Next" button to continue to the next transaction
+      let hasNext = await this.isElementVisible(
+        this.organizationPage.nextTransactionButtonSelector,
+      );
+
+      while (hasNext) {
+        // Click on the "Next" button to move to the next transaction
+        await this.click(this.organizationPage.nextTransactionButtonSelector);
+
+        // Now the button transforms into "Sign" for the next transaction
+        // Sign this transaction as well
         await this.organizationPage.clickOnSignTransactionButton();
 
-        // After signing, we check if there's a "Next" button to continue to the next transaction
-        let hasNext = await this.isElementVisible(this.organizationPage.nextTransactionButtonSelector);
-
-        while (hasNext) {
-          // Click on the "Next" button to move to the next transaction
-          await this.click(this.organizationPage.nextTransactionButtonSelector);
-
-          // Now the button transforms into "Sign" for the next transaction
-          // Sign this transaction as well
-          await this.organizationPage.clickOnSignTransactionButton();
-
-          // Check again if there's another transaction after this one
-          hasNext = await this.isElementVisible(this.organizationPage.nextTransactionButtonSelector);
-        }
-
-        await this.organizationPage.logoutFromOrganization();
+        // Check again if there's another transaction after this one
+        hasNext = await this.isElementVisible(this.organizationPage.nextTransactionButtonSelector);
       }
+
+      await this.organizationPage.logoutFromOrganization();
+    }
   }
 
-  async clickOnSignAllButton(){
+  async clickOnSignAllButton() {
     await this.click(this.organizationPage.signAllTransactionsButtonSelector);
     await this.waitForElementToDisappear(this.organizationPage.signAllTransactionsButtonSelector);
   }
-
-
 }
 
 module.exports = GroupPage;

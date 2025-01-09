@@ -13,21 +13,21 @@ const path = require('path');
  * @param {string} [senderTime='14:35'] - The sending time (static or configurable).
  */
 function generateCSVFile({
-                           senderAccount = '0.0.1031',
-                           accountId = '0.0.1030',
-                           startingAmount = 1,
-                           numberOfTransactions = 5,
-                           fileName = 'output.csv',
-                           date = '9/4/24',
-                           senderTime = '14:35'
-                         } = {}) {
+  senderAccount = '0.0.1031',
+  accountId = '0.0.1030',
+  startingAmount = 1,
+  numberOfTransactions = 5,
+  fileName = 'output.csv',
+  date = '9/4/24',
+  senderTime = '14:35',
+} = {}) {
   // Construct the CSV lines
   // Header lines
   const lines = [
     `Sender Account,${senderAccount},,`,
     `Sending Time,${senderTime},,`,
     `Node IDs,,,`,
-    `AccountID,Amount,Start Date,memo`
+    `AccountID,Amount,Start Date,memo`,
   ];
 
   // Amounts increment by 1 each line
@@ -37,7 +37,7 @@ function generateCSVFile({
     lines.push(`${accountId},${amount},${date},${memo}`);
   }
 
-  // Join all lines with a newline character
+  // Join all lines
   const csvContent = lines.join('\n');
 
   // Ensure the data directory exists
@@ -54,5 +54,5 @@ function generateCSVFile({
 }
 
 module.exports = {
-  generateCSVFile
+  generateCSVFile,
 };
