@@ -130,6 +130,7 @@ export class ApproversService {
         TransactionStatus.EXPIRED,
         TransactionStatus.FAILED,
         TransactionStatus.CANCELED,
+        TransactionStatus.ARCHIVED,
       ].includes(transaction.status)
     )
       return approvers;

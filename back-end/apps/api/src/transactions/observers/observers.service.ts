@@ -96,6 +96,7 @@ export class ObserversService {
         TransactionStatus.EXPIRED,
         TransactionStatus.FAILED,
         TransactionStatus.CANCELED,
+        TransactionStatus.ARCHIVED,
       ].includes(transaction.status)
     )
       return transaction.observers;

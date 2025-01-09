@@ -114,6 +114,10 @@ export class SignersService {
     if (transaction.status === TransactionStatus.CANCELED)
       throw new BadRequestException(ErrorCodes.TC); //TO DO Move in guard
 
+    /* Checks if the transaction is archived */
+    if (transaction.status === TransactionStatus.ARCHIVED)
+      throw new BadRequestException(ErrorCodes.TA); //TO DO Move in guard
+
     /* Validates the signatures */
     const { data: publicKeys, error } = safe<PublicKey[]>(
       validateSignature.bind(this, sdkTransaction, map),

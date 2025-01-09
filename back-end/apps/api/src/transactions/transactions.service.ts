@@ -204,6 +204,7 @@ export class TransactionsService {
           TransactionStatus.FAILED,
           TransactionStatus.EXPIRED,
           TransactionStatus.CANCELED,
+          TransactionStatus.ARCHIVED,
         ]),
       ),
     };
@@ -266,6 +267,7 @@ export class TransactionsService {
           TransactionStatus.FAILED,
           TransactionStatus.EXPIRED,
           TransactionStatus.CANCELED,
+          TransactionStatus.ARCHIVED,
         ]),
       ),
     };
@@ -340,7 +342,13 @@ export class TransactionsService {
       where: [
         {
           transactionId: sdkTransaction.transactionId.toString(),
-          status: Not(In([TransactionStatus.CANCELED, TransactionStatus.REJECTED])),
+          status: Not(
+            In([
+              TransactionStatus.CANCELED,
+              TransactionStatus.REJECTED,
+              TransactionStatus.ARCHIVED,
+            ]),
+          ),
         },
       ],
     });
@@ -403,9 +411,10 @@ export class TransactionsService {
 
     if (
       ![
+        TransactionStatus.NEW,
         TransactionStatus.WAITING_FOR_SIGNATURES,
         TransactionStatus.WAITING_FOR_EXECUTION,
-        TransactionStatus.NEW,
+        TransactionStatus.SIGN_ONLY,
       ].includes(transaction.status)
     ) {
       throw new BadRequestException(ErrorCodes.OTIP);
@@ -461,6 +470,7 @@ export class TransactionsService {
         TransactionStatus.EXPIRED,
         TransactionStatus.FAILED,
         TransactionStatus.CANCELED,
+        TransactionStatus.ARCHIVED,
       ].includes(transaction.status)
     )
       return true;
@@ -519,6 +529,7 @@ export class TransactionsService {
       TransactionStatus.FAILED,
       TransactionStatus.EXPIRED,
       TransactionStatus.CANCELED,
+      TransactionStatus.ARCHIVED,
     ];
     const forbiddenStatuses = Object.values(TransactionStatus).filter(
       s => !allowedStatuses.includes(s),
