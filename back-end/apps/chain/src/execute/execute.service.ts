@@ -184,7 +184,7 @@ export class ExecuteService {
       case TransactionStatus.CANCELED:
         throw new Error('Transaction has been canceled.');
       case TransactionStatus.SIGN_ONLY:
-        throw new Error('Transaction is sign only.');
+        throw new Error('Transaction is sign-only.');
       case TransactionStatus.ARCHIVED:
         throw new Error('Transaction is archived.');
     }
