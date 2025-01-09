@@ -41,7 +41,7 @@ pnpm install
 ## 3. Generate Prisma client library
 
 ```bash
-npx prisma generate
+pnpm generate:database
 ```
 
 ## 4. Start developing
