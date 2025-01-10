@@ -12,7 +12,7 @@ const path = require('path');
  * @param {string} [date='9/4/24'] - The date to use for each transaction line.
  * @param {string} [senderTime='14:35'] - The sending time (static or configurable).
  */
-function generateCSVFile({
+async function generateCSVFile({
   senderAccount = '0.0.1031',
   accountId = '0.0.1030',
   startingAmount = 1,

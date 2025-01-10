@@ -189,7 +189,7 @@ class GroupPage extends BasePage {
   async generateAndImportCsvFile(fromAccountId, numberOfTransactions = 10) {
     const fileName = 'groupTransactions.csv';
     const receiverAccount = '0.0.1031';
-    generateCSVFile({
+    await generateCSVFile({
       senderAccount: fromAccountId,
       accountId: receiverAccount,
       startingAmount: 1,
@@ -287,9 +287,37 @@ class GroupPage extends BasePage {
     }
   }
 
-  async clickOnSignAllButton() {
-    await this.click(this.organizationPage.signAllTransactionsButtonSelector);
-    await this.waitForElementToDisappear(this.organizationPage.signAllTransactionsButtonSelector);
+  async clickOnSignAllButton(retries = 3, retryDelay = 1000) {
+    const selector = this.organizationPage.signAllTransactionsButtonSelector;
+
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      console.log(`Attempt ${attempt}/${retries} to click "Sign All" button.`);
+
+      try {
+        // Attempt to click the button
+        await this.click(selector);
+
+        // Wait for it to disappear (tweak timeouts as needed)
+        await this.waitForElementToDisappear(selector, 10000, 30000);
+
+        // If no error was thrown, we succeeded — break out
+        console.log(
+          `Successfully clicked "Sign All" button and it disappeared on attempt #${attempt}.`,
+        );
+        return; // or break;
+      } catch (error) {
+        console.error(`Attempt #${attempt} to click "Sign All" button failed: ${error.message}`);
+
+        if (attempt < retries) {
+          console.log(`Retrying in ${retryDelay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        } else {
+          throw new Error(
+            `Failed to click "Sign All" button and wait for it to disappear after ${retries} attempts.`,
+          );
+        }
+      }
+    }
   }
 }
 

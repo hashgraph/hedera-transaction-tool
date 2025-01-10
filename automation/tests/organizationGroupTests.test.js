@@ -1,10 +1,9 @@
 const { test } = require('@playwright/test');
-const RegistrationPage = require('../pages/RegistrationPage.js');
 const { expect } = require('playwright/test');
+const RegistrationPage = require('../pages/RegistrationPage.js');
 const LoginPage = require('../pages/LoginPage');
 const TransactionPage = require('../pages/TransactionPage');
 const OrganizationPage = require('../pages/OrganizationPage');
-const SettingsPage = require('../pages/SettingsPage');
 const GroupPage = require('../pages/GroupPage');
 const { resetDbState, resetPostgresDbState } = require('../utils/databaseUtil');
 const { disableNotificationsForTestUsers } = require('../utils/databaseQueries');
@@ -18,7 +17,7 @@ const {
 
 let app, window;
 let globalCredentials = { email: '', password: '' };
-let registrationPage, loginPage, transactionPage, organizationPage, settingsPage, groupPage;
+let registrationPage, loginPage, transactionPage, organizationPage, groupPage;
 let firstUser, secondUser, thirdUser;
 let complexKeyAccountId;
 
@@ -31,7 +30,6 @@ test.describe('Organization Group Tx tests', () => {
     loginPage = new LoginPage(window);
     transactionPage = new TransactionPage(window);
     organizationPage = new OrganizationPage(window);
-    settingsPage = new SettingsPage(window);
     registrationPage = new RegistrationPage(window);
     groupPage = new GroupPage(window);
 
