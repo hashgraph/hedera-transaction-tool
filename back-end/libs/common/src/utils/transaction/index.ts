@@ -3,7 +3,6 @@ import { Key, NodeUpdateTransaction, Transaction as SDKTransaction } from '@hash
 import { EntityManager, In, Not } from 'typeorm';
 
 import {
-  isExpired,
   getSignatureEntities,
   isPublicKeyInKeyList,
   MirrorNodeService,
@@ -26,9 +25,6 @@ export const keysRequiredToSign = async (
 
   /* Deserialize the transaction */
   const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
-
-  /* Ignore if expired */
-  if (isExpired(sdkTransaction)) return [];
 
   /* Get the user signatures for this transaction */
   const signatures = await entityManager.find(TransactionSigner, {
