@@ -179,15 +179,7 @@ export const getTransactionsForUser = async (
   sort?: { property: string; direction: 'asc' | 'desc' }[],
 ): Promise<PaginatedResourceDto<ITransaction>> =>
   commonRequestHandler(async () => {
-    const withValidStart =
-      !status.includes(TransactionStatus.EXECUTED) &&
-      !status.includes(TransactionStatus.FAILED) &&
-      !status.includes(TransactionStatus.EXPIRED) &&
-      !status.includes(TransactionStatus.CANCELED) &&
-      !status.includes(TransactionStatus.ARCHIVED);
-    const validStartTimestamp = new Date(Date.now() - 180 * 1_000).getTime();
-
-    const filtering = `&filter=status:in:${status.join(',')}${withValidStart ? `&filter=validStart:gte:${validStartTimestamp}` : ''}&filter=mirrorNetwork:eq:${network}`;
+    const filtering = `&filter=status:in:${status.join(',')}&filter=mirrorNetwork:eq:${network}`;
     const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
 
     const { data } = await axiosWithCredentials.get(
