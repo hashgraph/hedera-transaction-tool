@@ -43,7 +43,15 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 
 /* Types */
-type ActionButton = 'Reject' | 'Approve' | 'Sign' | 'Next' | 'Cancel' | 'Export' | 'Mark sign-only';
+type ActionButton =
+  | 'Reject'
+  | 'Approve'
+  | 'Sign'
+  | 'Next'
+  | 'Cancel'
+  | 'Export'
+  | 'Mark sign-only'
+  | 'Archive';
 
 /* Misc */
 const reject: ActionButton = 'Reject';
@@ -53,6 +61,7 @@ const next: ActionButton = 'Next';
 const cancel: ActionButton = 'Cancel';
 const exportName: ActionButton = 'Export';
 const markAsSignOnly: ActionButton = 'Mark sign-only';
+const archive: ActionButton = 'Archive';
 
 const primaryButtons: ActionButton[] = [reject, approve, sign, next];
 const buttonsDataTestIds: { [key: string]: string } = {
@@ -113,6 +122,7 @@ const transactionIsInProgress = computed(
       TransactionStatus.NEW,
       TransactionStatus.WAITING_FOR_EXECUTION,
       TransactionStatus.WAITING_FOR_SIGNATURES,
+      TransactionStatus.SIGN_ONLY,
     ].includes(props.organizationTransaction.status),
 );
 
@@ -136,11 +146,15 @@ const canSign = computed(() => {
 const visibleButtons = computed(() => {
   const buttons: ActionButton[] = [];
 
+  const status = props.organizationTransaction?.status;
+
   /* The order is important */
   shouldApprove.value && buttons.push(reject, approve);
   canSign.value && !shouldApprove.value && buttons.push(sign);
   props.nextId && !shouldApprove.value && !canSign.value && buttons.push(next);
-  canCancel.value && buttons.push(cancel, markAsSignOnly);
+  canCancel.value && status !== TransactionStatus.SIGN_ONLY && buttons.push(cancel);
+  canCancel.value && status !== TransactionStatus.SIGN_ONLY && buttons.push(markAsSignOnly);
+  status === TransactionStatus.SIGN_ONLY && buttons.push(archive);
   buttons.push(exportName);
 
   return buttons;
@@ -421,7 +435,7 @@ watch(
         </template>
       </Transition>
       <Transition name="fade" mode="out-in">
-        <template v-if="visibleButtons.length > 1">
+        <template v-if="visibleButtons.length > 2">
           <AppDropDown
             :color="'secondary'"
             toggle-text="More"
@@ -429,6 +443,19 @@ watch(
             :items="dropDownItems"
             @select="handleDropDownItem($event as ActionButton)"
           />
+        </template>
+        <template v-else-if="visibleButtons.length === 2">
+          <div>
+            <AppButton
+              :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
+              :loading="Boolean(loadingStates[visibleButtons[1]])"
+              :loading-text="loadingStates[visibleButtons[1]] || ''"
+              :data-testid="buttonsDataTestIds[visibleButtons[1]]"
+              type="submit"
+              class="me-3"
+              >{{ visibleButtons[1] }}
+            </AppButton>
+          </div>
         </template>
       </Transition>
     </div>
