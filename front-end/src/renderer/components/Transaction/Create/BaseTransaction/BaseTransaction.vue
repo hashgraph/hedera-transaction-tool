@@ -68,6 +68,7 @@ const baseGroupHandlerRef = ref<InstanceType<typeof BaseGroupHandler> | null>(nu
 
 const name = ref('');
 const description = ref('');
+const isSignOnly = ref(false);
 
 const data = reactive<TransactionCommonData>({
   payerId: '',
@@ -110,6 +111,7 @@ const handleCreate = async () => {
       transactionBytes: props.createTransaction({ ...data } as TransactionCommonData).toBytes(),
       name: name.value.trim(),
       description: description.value.trim(),
+      isSignOnly: isSignOnly.value,
     },
     observers.value,
     approvers.value,
@@ -200,6 +202,7 @@ defineExpose({
   <div class="flex-column-100 overflow-hidden" v-focus-first-input>
     <form @submit.prevent="handleCreate" class="flex-column-100">
       <TransactionHeaderControls
+        v-model:is-sign-only="isSignOnly"
         :is-processed="isProcessed"
         :create-transaction="() => props.createTransaction({ ...data } as TransactionCommonData)"
         :description="description"
