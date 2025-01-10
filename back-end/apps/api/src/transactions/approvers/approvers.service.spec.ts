@@ -1462,7 +1462,7 @@ describe('ApproversService', () => {
       dataSource.manager.findOne.mockResolvedValueOnce(transaction);
 
       await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
-        ErrorCodes.TAX,
+        ErrorCodes.TNRA,
       );
       expectNotifyNotCalled();
     });
@@ -1487,7 +1487,7 @@ describe('ApproversService', () => {
       dataSource.manager.findOne.mockResolvedValueOnce(transaction);
 
       await expect(service.approveTransaction(dto, transaction.id, user)).rejects.toThrow(
-        ErrorCodes.TC,
+        ErrorCodes.TNRA,
       );
       expectNotifyNotCalled();
     });
