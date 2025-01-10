@@ -16,6 +16,7 @@ import { closeApp, createNestApp, login } from '../utils';
 import {
   addHederaLocalnetAccounts,
   addTransactions,
+  getExpiredTransaction,
   getRepository,
   getUser,
   getUserKey,
@@ -105,6 +106,58 @@ describe('Transactions (e2e)', () => {
           id: transaction.id,
         }),
       ]);
+    });
+
+    it('(POST) should upload a signature map for a transaction that is expired but sign-only', async () => {
+      let sdkTransaction = getExpiredTransaction(localnet1003.accountId);
+      const buffer = Buffer.from(sdkTransaction.toBytes()).toString('hex');
+
+      const createRes = await endpoint.post(
+        {
+          name: 'TEST Simple Account Create Transaction',
+          description: 'TEST This is a simple account create transaction',
+          transactionBytes: buffer,
+          creatorKeyId: userKey1003.id,
+          signature: Buffer.from(localnet1003.privateKey.sign(sdkTransaction.toBytes())).toString(
+            'hex',
+          ),
+          mirrorNetwork: localnet1003.mirrorNetwork,
+        },
+        '',
+        userAuthToken,
+      );
+      expect(createRes.status).toBe(201);
+
+      const getRes = await endpoint.get(`/${createRes.body.id}`, userAuthToken);
+      expect(getRes.status).toBe(200);
+
+      sdkTransaction = AccountCreateTransaction.fromBytes(
+        Buffer.from(getRes.body.transactionBytes, 'hex'),
+      );
+
+      await sdkTransaction.sign(localnet1003.privateKey);
+      const signatureMap = getSignatureMapForPublicKeys(
+        [localnet1003.publicKeyRaw],
+        sdkTransaction,
+      );
+
+      const response = await endpoint.post(
+        {
+          signatureMap: formatSignatureMap(signatureMap),
+        },
+        `/${createRes.body.id}/signers`,
+        userAuthToken,
+      );
+
+      const signerEntry = await transactionSignerRepo.findOne({
+        where: {
+          transactionId: createRes.body.id.id,
+          userKeyId: userKey1003.id,
+        },
+      });
+
+      expect(signerEntry).toBeDefined();
+      expect(response.status).toBe(201);
     });
 
     it('(POST) should upload a signature map 2 public keys for a transaction', async () => {
@@ -242,7 +295,7 @@ describe('Transactions (e2e)', () => {
         expect(body).toEqual(
           expect.objectContaining({
             statusCode: 400,
-            code: ErrorCodes.TC,
+            code: ErrorCodes.TNRS,
           }),
         );
       });
@@ -263,7 +316,7 @@ describe('Transactions (e2e)', () => {
         expect(body).toEqual(
           expect.objectContaining({
             statusCode: 400,
-            code: ErrorCodes.TA,
+            code: ErrorCodes.TNRS,
           }),
         );
       });

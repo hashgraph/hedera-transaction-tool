@@ -5,6 +5,7 @@ import { DataSource, DeepPartial, EntityTarget, ObjectLiteral } from 'typeorm';
 import {
   AccountCreateTransaction,
   AccountUpdateTransaction,
+  AccountId,
   Client,
   FileCreateTransaction,
   KeyList,
@@ -410,6 +411,12 @@ export async function getTransactions() {
   } catch (error) {
     console.log(pc.red(error.message));
   }
+}
+
+export function getExpiredTransaction(payerId: AccountId): SDKTransaction {
+  return new AccountCreateTransaction().setTransactionId(
+    createTransactionId(payerId, new Date(Date.now() - 1000)),
+  );
 }
 
 export async function addNotifications() {
