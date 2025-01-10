@@ -5,7 +5,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 
 /* Props */
 const props = defineProps<{
-  toggleText: string;
+  toggleText?: string;
   items: { label: string; value: string }[];
   color?: 'primary' | 'secondary' | 'borderless' | 'danger';
   active?: boolean;
@@ -13,6 +13,7 @@ const props = defineProps<{
   togglerIcon?: boolean;
   colorOnActive?: boolean;
   buttonClass?: string;
+  compact?: boolean;
 }>();
 
 /* Emits */
@@ -69,14 +70,19 @@ watch(
       data-bs-auto-close="true"
       data-bs-popper-config='{"strategy":"fixed"}'
       :data-testid="dataTestid"
-      :class="[buttonClass, active ? null : 'text-body']"
+      :class="[active ? null : 'text-body', compact ? 'min-w-unset px-4' : '', buttonClass]"
     >
-      <div class="col-11 text-start overflow-hidden">
-        <span>{{ toggleText }}</span>
-      </div>
-      <div class="col-1 ms-3">
-        <i v-if="togglerIcon" class="bi bi-chevron-down flex-1"></i>
-      </div>
+      <template v-if="compact">
+        <i class="bi bi-three-dots-vertical"></i>
+      </template>
+      <template v-else>
+        <div class="col-11 text-start overflow-hidden">
+          <span>{{ toggleText }}</span>
+        </div>
+        <div class="col-1 ms-3">
+          <i v-if="togglerIcon" class="bi bi-chevron-down flex-1"></i>
+        </div>
+      </template>
     </AppButton>
     <ul class="dropdown-menu mt-3">
       <template v-for="item of items" :key="item.value">
