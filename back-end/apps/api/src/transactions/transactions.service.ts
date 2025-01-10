@@ -330,7 +330,7 @@ export class TransactionsService {
 
     /* Check if the transaction is expired */
     const sdkTransaction = SDKTransaction.fromBytes(dto.transactionBytes);
-    if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
+    if (isExpired(sdkTransaction) && !dto.isSignOnly) throw new BadRequestException(ErrorCodes.TE);
 
     /* Check if the transaction body is over the max size */
     if (isTransactionBodyOverMaxSize(sdkTransaction)) {
