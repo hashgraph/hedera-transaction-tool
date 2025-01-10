@@ -377,6 +377,10 @@ export class TransactionsService {
     });
     client.close();
 
+    if (dto.isSignOnly) {
+      transaction.status = TransactionStatus.SIGN_ONLY;
+    }
+
     try {
       await this.repo.save(transaction);
     } catch {

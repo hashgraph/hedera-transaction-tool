@@ -137,6 +137,28 @@ describe('Transactions (e2e)', () => {
       );
     });
 
+    it("(POST) should create a transaction marked as 'sign only'", async () => {
+      const transaction = await createTransaction();
+
+      const { status, body } = await endpoint.post(
+        { ...transaction, isSignOnly: true },
+        null,
+        userAuthToken,
+      );
+      testsAddedTransactionsCountUser++;
+
+      expect(status).toEqual(201);
+      expect(body.transactionBytes).not.toEqual(transaction.transactionBytes);
+      expect(body).toMatchObject(
+        expect.objectContaining({
+          name: transaction.name,
+          description: transaction.description,
+          status: TransactionStatus.SIGN_ONLY,
+          creatorKeyId: transaction.creatorKeyId,
+        }),
+      );
+    });
+
     it('(POST) should create a transaction with an ID of a canceled transaction', async () => {
       const transaction = await createTransaction();
 

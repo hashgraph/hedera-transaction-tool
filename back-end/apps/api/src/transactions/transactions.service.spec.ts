@@ -427,6 +427,51 @@ describe('TransactionsService', () => {
       client.close();
     });
 
+    it('should create a sign-only transaction', async () => {
+      const sdkTransaction = new AccountCreateTransaction().setTransactionId(
+        new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
+      );
+
+      const dto: CreateTransactionDto = {
+        name: 'Transaction 1',
+        description: 'Description',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+        isSignOnly: true,
+      };
+
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
+      });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+      transactionsRepo.count.mockResolvedValueOnce(0);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      transactionsRepo.create.mockImplementationOnce(
+        (input: DeepPartial<Transaction>) => ({ ...input }) as Transaction,
+      );
+      transactionsRepo.save.mockImplementationOnce(async (t: Transaction) => {
+        t.id = 1;
+        return t;
+      });
+
+      await service.createTransaction(dto, user as User);
+
+      expect(transactionsRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: TransactionStatus.SIGN_ONLY }),
+      );
+      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, 1);
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+
+      client.close();
+    });
+
     it.skip('should throw on transaction create if transaction creator not same', async () => {
       const dto: CreateTransactionDto = {
         name: 'Transaction 1',
