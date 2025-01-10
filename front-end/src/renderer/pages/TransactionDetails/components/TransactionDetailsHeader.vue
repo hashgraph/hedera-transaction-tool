@@ -438,9 +438,8 @@ watch(
         <template v-if="visibleButtons.length > 2">
           <AppDropDown
             :color="'secondary'"
-            toggle-text="More"
-            toggler-icon
             :items="dropDownItems"
+            compact
             @select="handleDropDownItem($event as ActionButton)"
           />
         </template>
