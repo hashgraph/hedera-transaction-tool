@@ -2,7 +2,7 @@
 import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@main/shared/interfaces';
 
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
@@ -96,6 +96,7 @@ const confirmModalButtonText = ref('');
 const confirmModalLoadingText = ref('');
 const confirmCallback = ref<((...args: any[]) => void) | null>(null);
 
+const fullyLoaded = ref(false);
 const loadingStates = reactive<{ [key: string]: string | null }>({
   [reject]: null,
   [approve]: null,
@@ -146,14 +147,14 @@ const canSign = computed(() => {
 const visibleButtons = computed(() => {
   const buttons: ActionButton[] = [];
 
+  if (!fullyLoaded.value) return buttons;
   const status = props.organizationTransaction?.status;
 
   /* The order is important */
   shouldApprove.value && buttons.push(reject, approve);
   canSign.value && !shouldApprove.value && buttons.push(sign);
   props.nextId && !shouldApprove.value && !canSign.value && buttons.push(next);
-  canCancel.value && status !== TransactionStatus.SIGN_ONLY && buttons.push(cancel);
-  canCancel.value && status !== TransactionStatus.SIGN_ONLY && buttons.push(markAsSignOnly);
+  canCancel.value && status !== TransactionStatus.SIGN_ONLY && buttons.push(cancel, markAsSignOnly);
   status === TransactionStatus.SIGN_ONLY && buttons.push(archive);
   buttons.push(exportName);
 
@@ -374,11 +375,20 @@ const handleDropDownItem = async (value: ActionButton) => {
   }
 };
 
+/* Hooks */
+onMounted(() => {
+  if (!isLoggedInOrganization(user.selectedOrganization)) {
+    fullyLoaded.value = true;
+  }
+});
+
 /* Watchers */
 watch(
   () => props.organizationTransaction,
   async transaction => {
     assertIsLoggedInOrganization(user.selectedOrganization);
+
+    fullyLoaded.value = false;
 
     if (!transaction) {
       publicKeysRequiredToSign.value = null;
@@ -386,15 +396,24 @@ watch(
       return;
     }
 
-    publicKeysRequiredToSign.value = await publicRequiredToSign(
-      SDKTransaction.fromBytes(hexToUint8Array(transaction.transactionBytes)),
-      user.selectedOrganization.userKeys,
-      network.mirrorNodeBaseURL,
-    );
+    const results = await Promise.allSettled([
+      publicRequiredToSign(
+        SDKTransaction.fromBytes(hexToUint8Array(transaction.transactionBytes)),
+        user.selectedOrganization.userKeys,
+        network.mirrorNodeBaseURL,
+      ),
+      getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id),
+    ]);
 
-    shouldApprove.value = await getUserShouldApprove(
-      user.selectedOrganization.serverUrl,
-      transaction.id,
+    results[0].status === 'fulfilled' && (publicKeysRequiredToSign.value = results[0].value);
+    results[1].status === 'fulfilled' && (shouldApprove.value = results[1].value);
+
+    fullyLoaded.value = true;
+
+    results.forEach(
+      r =>
+        r.status === 'rejected' &&
+        toast.error(getErrorMessage(r.reason, 'Failed to load transaction details')),
     );
   },
 );
