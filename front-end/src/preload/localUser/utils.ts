@@ -21,6 +21,25 @@ export default {
       message: string,
     ): Promise<OpenDialogReturnValue> =>
       ipcRenderer.invoke('utils:showOpenDialog', title, buttonLabel, filters, properties, message),
+    saveFileNamed: (
+      data: Uint8Array,
+      name: string,
+      title: string,
+      buttonLabel: string,
+      filters: FileFilter[],
+      properties: ('openFile' | 'openDirectory' | 'multiSelections')[],
+      message: string,
+    ): Promise<void> =>
+      ipcRenderer.invoke(
+        'utils:saveFileNamed',
+        data,
+        name,
+        title,
+        buttonLabel,
+        filters,
+        properties,
+        message,
+      ),
     sha384: (str: string): Promise<string> => ipcRenderer.invoke('utils:sha384', str),
     x509BytesFromPem: (
       pem: string | Uint8Array,

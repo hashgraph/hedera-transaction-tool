@@ -26,6 +26,7 @@ import {
   uploadSignatureMap,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
+import { saveFileNamed } from '@renderer/services/electronUtilsService';
 
 import {
   getPrivateKey,
@@ -392,6 +393,25 @@ const handleNext = () => {
   redirectToDetails(router, props.nextId.toString(), true, true);
 };
 
+const handleExport = async () => {
+  if (!props.sdkTransaction) {
+    throw new Error('(BUG) Transaction is not available');
+  }
+
+  const bytes = props.sdkTransaction.toBytes();
+
+  const transactionId = props.sdkTransaction.transactionId?.toString();
+  await saveFileNamed(
+    bytes,
+    `${transactionId || 'transaction'}.tx`,
+    'Export transaction',
+    'Export',
+    [],
+    ['openDirectory'],
+    'Export transaction',
+  );
+};
+
 const handleAction = async (value: ActionButton) => {
   if (value === reject) {
     await handleApprove(false, true);
@@ -408,7 +428,7 @@ const handleAction = async (value: ActionButton) => {
   } else if (value === markAsSignOnly) {
     await handleMarkSignOnly(true);
   } else if (value === exportName) {
-    console.log('Export');
+    await handleExport();
   }
 };
 const handleSubmit = async (e: Event) => {
