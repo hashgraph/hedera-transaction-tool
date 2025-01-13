@@ -62,14 +62,20 @@ const approve: ActionButton = 'Approve';
 const sign: ActionButton = 'Sign';
 const next: ActionButton = 'Next';
 const cancel: ActionButton = 'Cancel';
-const exportName: ActionButton = 'Export';
 const markAsSignOnly: ActionButton = 'Mark sign-only';
 const archive: ActionButton = 'Archive';
+const exportName: ActionButton = 'Export';
 
 const primaryButtons: ActionButton[] = [reject, approve, sign, next];
 const buttonsDataTestIds: { [key: string]: string } = {
+  [reject]: 'button-reject-org-transaction',
+  [approve]: 'button-approve-org-transaction',
   [sign]: 'button-sign-org-transaction',
   [next]: 'button-next-org-transaction',
+  [cancel]: 'button-cancel-org-transaction',
+  [markAsSignOnly]: 'button-mark-sign-only-org-transaction',
+  [archive]: 'button-archive-org-transaction',
+  [exportName]: 'button-export-transaction',
 };
 
 /* Props */

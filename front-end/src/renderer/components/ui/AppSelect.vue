@@ -87,7 +87,7 @@ watch(
           class="dropdown-item cursor-pointer text-body"
           :class="{ active: item.value === value }"
           @click="handleSelect(item.value)"
-          :data-testid="`dropdown-item-${item.value}${item.label}`"
+          :data-testid="`select-item-${item.value}`"
           :selected="item.value === value ? true : undefined"
         >
           <span class="text-small">{{ item.label }}</span>
