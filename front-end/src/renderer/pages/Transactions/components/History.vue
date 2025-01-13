@@ -457,16 +457,18 @@ watch(
                     <span
                       class="badge bg-success text-break"
                       :class="{
-                        'bg-danger': ![0, 22, 104].includes(
-                          transactionData.transactionRaw.statusCode || -1,
-                        ),
+                        'bg-danger':
+                          ![0, 22, 104].includes(transactionData.transactionRaw.statusCode || -1) &&
+                          transactionData.transactionRaw.status !== TransactionStatus.ARCHIVED,
                       }"
                       >{{
                         getStatusFromCode(transactionData.transactionRaw.statusCode)
                           ? getStatusFromCode(transactionData.transactionRaw.statusCode)
                           : transactionData.transactionRaw.status === TransactionStatus.EXPIRED
                             ? 'EXPIRED'
-                            : 'CANCELED'
+                            : transactionData.transactionRaw.status === TransactionStatus.ARCHIVED
+                              ? 'ARCHIVED'
+                              : 'CANCELED'
                       }}</span
                     >
                   </td>
