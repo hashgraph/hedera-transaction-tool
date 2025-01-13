@@ -68,6 +68,16 @@ export const archiveTransaction = async (serverUrl: string, id: number): Promise
     return data;
   }, `Failed to archive transaction with id ${id}`);
 
+/* Mark sign-only a transaction  */
+export const markAsSignOnlyTransaction = async (serverUrl: string, id: number): Promise<boolean> =>
+  commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.patch(
+      `${serverUrl}/${controller}/mark-sign-only/${id}`,
+    );
+
+    return data;
+  }, `Failed to mark transaction with id ${id} as sign-only`);
+
 /* Decrypt, sign, upload signatures to the backend */
 export const uploadSignatureMap = async (
   userId: string,

@@ -21,6 +21,7 @@ import {
   archiveTransaction,
   cancelTransaction,
   getUserShouldApprove,
+  markAsSignOnlyTransaction,
   sendApproverChoice,
   uploadSignatureMap,
 } from '@renderer/services/organization';
@@ -366,6 +367,40 @@ const handleArchive = async (showModal?: boolean) => {
   }
 };
 
+const handleMarkSignOnly = async (showModal?: boolean) => {
+  assertIsLoggedInOrganization(user.selectedOrganization);
+  if (!props.organizationTransaction) {
+    throw new Error('Transaction is not available');
+  }
+
+  if (showModal) {
+    confirmModalTitle.value = 'Mark transaction as sign-only?';
+    confirmModalText.value =
+      'Are you sure you want to mark the transaction as sign-only? It will not be executed, only signed.';
+    confirmModalButtonText.value = 'Confirm';
+    confirmCallback.value = () => handleMarkSignOnly();
+    isConfirmModalShown.value = true;
+    return;
+  }
+
+  try {
+    confirmModalLoadingText.value = 'Updating...';
+    isConfirmModalLoadingState.value = true;
+    await markAsSignOnlyTransaction(
+      user.selectedOrganization.serverUrl,
+      props.organizationTransaction.id,
+    );
+    toast.success(`Transaction marked as sign-only successfully`);
+  } catch (error) {
+    isConfirmModalShown.value = false;
+    throw error;
+  } finally {
+    isConfirmModalShown.value = false;
+    isConfirmModalLoadingState.value = false;
+    confirmModalLoadingText.value = '';
+  }
+};
+
 const handleNext = () => {
   if (!props.nextId) return;
 
@@ -394,6 +429,10 @@ const handleAction = async (value: ActionButton) => {
     await handleCancel(true);
   } else if (value === archive) {
     await handleArchive(true);
+  } else if (value === markAsSignOnly) {
+    await handleMarkSignOnly(true);
+  } else if (value === exportName) {
+    console.log('Export');
   }
 };
 const handleSubmit = async (e: Event) => {
