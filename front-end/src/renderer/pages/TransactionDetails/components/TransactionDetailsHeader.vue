@@ -305,92 +305,59 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
   await callback();
 };
 
-const handleCancel = async (showModal?: boolean) => {
+const handleTransactionAction = async (
+  action: 'cancel' | 'archive' | 'markAsSignOnly',
+  showModal?: boolean,
+) => {
   assertIsLoggedInOrganization(user.selectedOrganization);
   if (!props.organizationTransaction) {
     throw new Error('Transaction is not available');
   }
 
+  const actionDetails = {
+    cancel: {
+      title: 'Cancel Transaction?',
+      text: 'Are you sure you want to cancel the transaction?',
+      buttonText: 'Confirm',
+      loadingText: 'Canceling...',
+      successMessage: 'Transaction canceled successfully',
+      actionFunction: cancelTransaction,
+    },
+    archive: {
+      title: 'Archive Transaction?',
+      text: 'Are you sure you want to archive the transaction? The required signers will not be able to sign it anymore.',
+      buttonText: 'Confirm',
+      loadingText: 'Archiving...',
+      successMessage: 'Transaction archived successfully',
+      actionFunction: archiveTransaction,
+    },
+    markAsSignOnly: {
+      title: 'Mark transaction as sign-only?',
+      text: 'Are you sure you want to mark the transaction as sign-only? It will not be executed, only signed.',
+      buttonText: 'Confirm',
+      loadingText: 'Updating...',
+      successMessage: 'Transaction marked as sign-only successfully',
+      actionFunction: markAsSignOnlyTransaction,
+    },
+  };
+
+  const { title, text, buttonText, loadingText, successMessage, actionFunction } =
+    actionDetails[action];
+
   if (showModal) {
-    confirmModalTitle.value = 'Cancel Transaction?';
-    confirmModalText.value = 'Are you sure you want to cancel the transaction?';
-    confirmModalButtonText.value = 'Confirm';
-    confirmCallback.value = () => handleCancel();
+    confirmModalTitle.value = title;
+    confirmModalText.value = text;
+    confirmModalButtonText.value = buttonText;
+    confirmCallback.value = () => handleTransactionAction(action);
     isConfirmModalShown.value = true;
     return;
   }
 
   try {
-    confirmModalLoadingText.value = 'Canceling...';
+    confirmModalLoadingText.value = loadingText;
     isConfirmModalLoadingState.value = true;
-    await cancelTransaction(user.selectedOrganization.serverUrl, props.organizationTransaction.id);
-    toast.success(`Transaction canceled successfully`);
-  } catch (error) {
-    isConfirmModalShown.value = false;
-    throw error;
-  } finally {
-    isConfirmModalLoadingState.value = false;
-    confirmModalLoadingText.value = '';
-  }
-
-  router.back();
-};
-
-const handleArchive = async (showModal?: boolean) => {
-  assertIsLoggedInOrganization(user.selectedOrganization);
-  if (!props.organizationTransaction) {
-    throw new Error('Transaction is not available');
-  }
-
-  if (showModal) {
-    confirmModalTitle.value = 'Archive Transaction?';
-    confirmModalText.value =
-      'Are you sure you want to archive the transaction? The required signers will not be able to sign it anymore.';
-    confirmModalButtonText.value = 'Confirm';
-    confirmCallback.value = () => handleArchive();
-    isConfirmModalShown.value = true;
-    return;
-  }
-
-  try {
-    confirmModalLoadingText.value = 'Archiving...';
-    isConfirmModalLoadingState.value = true;
-    await archiveTransaction(user.selectedOrganization.serverUrl, props.organizationTransaction.id);
-    toast.success(`Transaction archived successfully`);
-  } catch (error) {
-    isConfirmModalShown.value = false;
-    throw error;
-  } finally {
-    isConfirmModalShown.value = false;
-    isConfirmModalLoadingState.value = false;
-    confirmModalLoadingText.value = '';
-  }
-};
-
-const handleMarkSignOnly = async (showModal?: boolean) => {
-  assertIsLoggedInOrganization(user.selectedOrganization);
-  if (!props.organizationTransaction) {
-    throw new Error('Transaction is not available');
-  }
-
-  if (showModal) {
-    confirmModalTitle.value = 'Mark transaction as sign-only?';
-    confirmModalText.value =
-      'Are you sure you want to mark the transaction as sign-only? It will not be executed, only signed.';
-    confirmModalButtonText.value = 'Confirm';
-    confirmCallback.value = () => handleMarkSignOnly();
-    isConfirmModalShown.value = true;
-    return;
-  }
-
-  try {
-    confirmModalLoadingText.value = 'Updating...';
-    isConfirmModalLoadingState.value = true;
-    await markAsSignOnlyTransaction(
-      user.selectedOrganization.serverUrl,
-      props.organizationTransaction.id,
-    );
-    toast.success(`Transaction marked as sign-only successfully`);
+    await actionFunction(user.selectedOrganization.serverUrl, props.organizationTransaction.id);
+    toast.success(successMessage);
   } catch (error) {
     isConfirmModalShown.value = false;
     throw error;
@@ -399,7 +366,16 @@ const handleMarkSignOnly = async (showModal?: boolean) => {
     isConfirmModalLoadingState.value = false;
     confirmModalLoadingText.value = '';
   }
+
+  if (action === 'cancel') {
+    router.back();
+  }
 };
+
+const handleCancel = (showModal?: boolean) => handleTransactionAction('cancel', showModal);
+const handleArchive = (showModal?: boolean) => handleTransactionAction('archive', showModal);
+const handleMarkSignOnly = (showModal?: boolean) =>
+  handleTransactionAction('markAsSignOnly', showModal);
 
 const handleNext = () => {
   if (!props.nextId) return;
