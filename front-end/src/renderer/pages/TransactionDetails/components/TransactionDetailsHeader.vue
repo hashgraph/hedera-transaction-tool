@@ -360,11 +360,10 @@ const handleArchive = async (showModal?: boolean) => {
     isConfirmModalShown.value = false;
     throw error;
   } finally {
+    isConfirmModalShown.value = false;
     isConfirmModalLoadingState.value = false;
     confirmModalLoadingText.value = '';
   }
-
-  router.back();
 };
 
 const handleNext = () => {

@@ -26,6 +26,17 @@ const stepperItems = computed(() => {
     { title: 'Awaiting Execution', name: 'Awaiting Execution' },
   ];
 
+  if (
+    [
+      TransactionStatus.EXPIRED,
+      TransactionStatus.CANCELED,
+      TransactionStatus.ARCHIVED,
+      TransactionStatus.SIGN_ONLY,
+    ].includes(props.transaction.status)
+  ) {
+    items.splice(2, 1);
+  }
+
   if ([TransactionStatus.EXPIRED, TransactionStatus.CANCELED].includes(props.transaction.status)) {
     items.push({
       title: props.transaction.status === TransactionStatus.EXPIRED ? 'Expired' : 'Canceled',
@@ -35,8 +46,15 @@ const stepperItems = computed(() => {
     });
     items[0].bubbleIcon = 'check-lg';
     items[1].bubbleIcon = 'check-lg';
-    items.splice(2, 1);
-  } else items.push({ title: 'Executed', name: 'Executed' });
+  } else if (
+    [TransactionStatus.EXECUTED, TransactionStatus.FAILED].includes(props.transaction.status)
+  ) {
+    items.push({ title: 'Executed', name: 'Executed' });
+  } else {
+    items.push({ title: 'Archived', name: 'Archived' });
+    items[0].bubbleIcon = 'check-lg';
+    items[1].bubbleIcon = 'check-lg';
+  }
 
   return items;
 });
@@ -46,11 +64,13 @@ const stepperActiveIndex = computed(() => {
     case TransactionStatus.NEW:
       return 0;
     case TransactionStatus.WAITING_FOR_SIGNATURES:
+    case TransactionStatus.SIGN_ONLY:
       return 1;
     case TransactionStatus.WAITING_FOR_EXECUTION:
       return 2;
     case TransactionStatus.EXECUTED:
     case TransactionStatus.FAILED:
+    case TransactionStatus.ARCHIVED:
       return 3;
     default:
       return -1;
