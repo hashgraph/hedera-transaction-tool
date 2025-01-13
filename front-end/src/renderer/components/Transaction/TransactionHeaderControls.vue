@@ -3,6 +3,8 @@ import type { Transaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
+
 import { isLoggedInOrganization } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -30,6 +32,9 @@ defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+
+/* Composables */
+useCreateTooltips();
 </script>
 <template>
   <div>
@@ -47,12 +52,20 @@ const user = useUserStore();
             !($route.query.group === 'true') && isLoggedInOrganization(user.selectedOrganization)
           "
         >
-          <AppCheckBox
-            :checked="isSignOnly"
-            @update:checked="$emit('update:is-sign-only', $event)"
-            label="Is sign-only"
-            name="is-sign-only"
-          />
+          <div
+            data-bs-toggle="tooltip"
+            data-bs-trigger="hover"
+            data-bs-placement="bottom"
+            data-bs-custom-class="wide-xl-tooltip"
+            data-bs-title="Transaction won't be executed, it will be only signed."
+          >
+            <AppCheckBox
+              :checked="isSignOnly"
+              @update:checked="$emit('update:is-sign-only', $event)"
+              label="Is sign-only"
+              name="is-sign-only"
+            />
+          </div>
         </template>
       </div>
       <template v-if="!($route.query.group === 'true')">
