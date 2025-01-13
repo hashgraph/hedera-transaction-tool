@@ -18,6 +18,7 @@ import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import {
+  archiveTransaction,
   cancelTransaction,
   getUserShouldApprove,
   sendApproverChoice,
@@ -304,6 +305,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
 };
 
 const handleCancel = async (showModal?: boolean) => {
+  assertIsLoggedInOrganization(user.selectedOrganization);
   if (!props.organizationTransaction) {
     throw new Error('Transaction is not available');
   }
@@ -317,13 +319,43 @@ const handleCancel = async (showModal?: boolean) => {
     return;
   }
 
-  assertIsLoggedInOrganization(user.selectedOrganization);
-
   try {
     confirmModalLoadingText.value = 'Canceling...';
     isConfirmModalLoadingState.value = true;
     await cancelTransaction(user.selectedOrganization.serverUrl, props.organizationTransaction.id);
     toast.success(`Transaction canceled successfully`);
+  } catch (error) {
+    isConfirmModalShown.value = false;
+    throw error;
+  } finally {
+    isConfirmModalLoadingState.value = false;
+    confirmModalLoadingText.value = '';
+  }
+
+  router.back();
+};
+
+const handleArchive = async (showModal?: boolean) => {
+  assertIsLoggedInOrganization(user.selectedOrganization);
+  if (!props.organizationTransaction) {
+    throw new Error('Transaction is not available');
+  }
+
+  if (showModal) {
+    confirmModalTitle.value = 'Archive Transaction?';
+    confirmModalText.value =
+      'Are you sure you want to archive the transaction? The required signers will not be able to sign it anymore.';
+    confirmModalButtonText.value = 'Confirm';
+    confirmCallback.value = () => handleArchive();
+    isConfirmModalShown.value = true;
+    return;
+  }
+
+  try {
+    confirmModalLoadingText.value = 'Archiving...';
+    isConfirmModalLoadingState.value = true;
+    await archiveTransaction(user.selectedOrganization.serverUrl, props.organizationTransaction.id);
+    toast.success(`Transaction archived successfully`);
   } catch (error) {
     isConfirmModalShown.value = false;
     throw error;
@@ -350,30 +382,27 @@ const handleNext = () => {
   redirectToDetails(router, props.nextId.toString(), true, true);
 };
 
+const handleAction = async (value: ActionButton) => {
+  if (value === reject) {
+    await handleApprove(false, true);
+  } else if (value === approve) {
+    await handleApprove(true, true);
+  } else if (value === sign) {
+    await handleSign();
+  } else if (value === next) {
+    await handleNext();
+  } else if (value === cancel) {
+    await handleCancel(true);
+  } else if (value === archive) {
+    await handleArchive(true);
+  }
+};
 const handleSubmit = async (e: Event) => {
   const buttonContent = (e as SubmitEvent).submitter?.textContent || '';
-
-  const approvalButtons: string[] = [reject, approve];
-  if (approvalButtons.includes(buttonContent)) {
-    await handleApprove(buttonContent === approve, true);
-  } else if (buttonContent === sign) {
-    await handleSign();
-  } else if (buttonContent === next) {
-    await handleNext();
-  } else if (buttonContent === cancel) {
-    await handleCancel(true);
-  }
+  await handleAction(buttonContent as ActionButton);
 };
 
-const handleDropDownItem = async (value: ActionButton) => {
-  if (value === 'Export') {
-    console.log('Export');
-  } else if (value === 'Mark sign-only') {
-    console.log('Mark as sign-only');
-  } else if (value === 'Cancel') {
-    await handleCancel(true);
-  }
-};
+const handleDropDownItem = async (value: ActionButton) => handleAction(value);
 
 /* Hooks */
 onMounted(() => {

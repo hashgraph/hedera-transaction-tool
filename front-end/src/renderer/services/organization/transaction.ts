@@ -58,7 +58,15 @@ export const cancelTransaction = async (serverUrl: string, id: number): Promise<
     const { data } = await axiosWithCredentials.patch(`${serverUrl}/${controller}/cancel/${id}`);
 
     return data;
-  }, `Failed cancel transaction with id ${id}`);
+  }, `Failed to cancel transaction with id ${id}`);
+
+/* Archive a transaction  */
+export const archiveTransaction = async (serverUrl: string, id: number): Promise<boolean> =>
+  commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.patch(`${serverUrl}/${controller}/archive/${id}`);
+
+    return data;
+  }, `Failed to archive transaction with id ${id}`);
 
 /* Decrypt, sign, upload signatures to the backend */
 export const uploadSignatureMap = async (
