@@ -64,8 +64,6 @@ export default function useAfterOrganizationSelection() {
 
     if (previousPath && currentRoute.path !== previousPath) {
       await router.push(previousPath);
-    } else if (currentRoute.name !== 'transactions') {
-      await router.push({ name: 'transactions' });
     }
   };
 

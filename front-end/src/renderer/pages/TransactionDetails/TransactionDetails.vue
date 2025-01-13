@@ -2,7 +2,7 @@
 import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@main/shared/interfaces';
 
-import { computed, onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
@@ -168,6 +168,8 @@ wsStore.$onAction(ctx => {
   if (ctx.name !== 'setup') return;
   ctx.after(() => subscribeToTransactionAction());
 });
+
+watch(() => user.selectedOrganization, router.back);
 
 /* Misc */
 const sectionHeadingClass = 'd-flex justify-content-between align-items-center';
