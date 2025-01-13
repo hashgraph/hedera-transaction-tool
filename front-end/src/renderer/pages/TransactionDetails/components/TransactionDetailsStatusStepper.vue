@@ -24,6 +24,7 @@ const stepperItems = computed(() => {
     { title: 'Transaction Created', name: 'Transaction Created' },
     { title: 'Collecting Signatures', name: 'Collecting Signatures' },
     { title: 'Awaiting Execution', name: 'Awaiting Execution' },
+    { title: 'Executed', name: 'Executed' },
   ];
 
   if (
@@ -34,26 +35,20 @@ const stepperItems = computed(() => {
       TransactionStatus.SIGN_ONLY,
     ].includes(props.transaction.status)
   ) {
-    items.splice(2, 1);
+    items.splice(2, 2);
   }
 
   if ([TransactionStatus.EXPIRED, TransactionStatus.CANCELED].includes(props.transaction.status)) {
-    items.push({
+    items[items.length] = {
       title: props.transaction.status === TransactionStatus.EXPIRED ? 'Expired' : 'Canceled',
       name: props.transaction.status === TransactionStatus.EXPIRED ? 'Expired' : 'Canceled',
       bubbleClass: 'bg-danger text-white',
       bubbleIcon: 'x-lg',
-    });
-    items[0].bubbleIcon = 'check-lg';
-    items[1].bubbleIcon = 'check-lg';
+    };
   } else if (
-    [TransactionStatus.EXECUTED, TransactionStatus.FAILED].includes(props.transaction.status)
+    [TransactionStatus.ARCHIVED, TransactionStatus.SIGN_ONLY].includes(props.transaction.status)
   ) {
-    items.push({ title: 'Executed', name: 'Executed' });
-  } else {
     items.push({ title: 'Archived', name: 'Archived' });
-    items[0].bubbleIcon = 'check-lg';
-    items[1].bubbleIcon = 'check-lg';
   }
 
   return items;
