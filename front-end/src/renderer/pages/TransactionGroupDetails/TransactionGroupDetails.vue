@@ -66,8 +66,6 @@ const isApproving = ref(false);
 
 /* Handlers */
 async function handleFetchGroup(id: string | number) {
-  console.log('id: ', id);
-  console.log(typeof id);
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
     try {
       group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
