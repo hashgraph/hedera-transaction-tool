@@ -43,6 +43,7 @@ import {
   isLoggedInOrganization,
   isUserLoggedIn,
   getErrorMessage,
+  assertIsLoggedInOrganization,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -120,12 +121,7 @@ async function signAfterConfirm() {
   }
 
   assertUserLoggedIn(user.personal);
-
-  if (!user.selectedOrganization) {
-    throw new Error(
-      "User is in personal mode, shouldn't be able to sign before submitting to organization",
-    );
-  }
+  assertIsLoggedInOrganization(user.selectedOrganization);
 
   /* Verifies the user has entered his password */
   const personalPassword = getPassword(signAfterConfirm, {
@@ -288,7 +284,7 @@ async function sendSignedTransactionsToOrganization() {
 
   /* Verifies the user has entered his password */
   assertUserLoggedIn(user.personal);
-  const personalPassword = getPassword(signAfterConfirm, {
+  const personalPassword = getPassword(sendSignedTransactionsToOrganization, {
     subHeading: 'Enter your application password to sign as a creator',
   });
   if (passwordModalOpened(personalPassword)) return;
