@@ -1,4 +1,4 @@
-import { IsDate, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsDate, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 import { TransformBuffer } from '@app/common';
@@ -31,4 +31,8 @@ export class CreateTransactionDto {
   @IsDate()
   @IsOptional()
   cutoffAt?: Date;
+
+  @IsOptional()
+  @IsBoolean()
+  isSignOnly?: boolean;
 }

@@ -427,6 +427,51 @@ describe('TransactionsService', () => {
       client.close();
     });
 
+    it('should create a sign-only transaction', async () => {
+      const sdkTransaction = new AccountCreateTransaction().setTransactionId(
+        new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
+      );
+
+      const dto: CreateTransactionDto = {
+        name: 'Transaction 1',
+        description: 'Description',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+        isSignOnly: true,
+      };
+
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
+      });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+      transactionsRepo.count.mockResolvedValueOnce(0);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      transactionsRepo.create.mockImplementationOnce(
+        (input: DeepPartial<Transaction>) => ({ ...input }) as Transaction,
+      );
+      transactionsRepo.save.mockImplementationOnce(async (t: Transaction) => {
+        t.id = 1;
+        return t;
+      });
+
+      await service.createTransaction(dto, user as User);
+
+      expect(transactionsRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: TransactionStatus.SIGN_ONLY }),
+      );
+      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, 1);
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+
+      client.close();
+    });
+
     it.skip('should throw on transaction create if transaction creator not same', async () => {
       const dto: CreateTransactionDto = {
         name: 'Transaction 1',
@@ -618,6 +663,100 @@ describe('TransactionsService', () => {
         notificationsService,
         transaction.id,
         TransactionStatus.CANCELED,
+      );
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+    });
+  });
+
+  describe('markAsSignOnlyTransaction', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('should throw if transaction status is not in progress', async () => {
+      const transaction = {
+        creatorKey: { userId: 1 },
+        status: TransactionStatus.EXECUTED,
+      };
+
+      jest
+        .spyOn(service, 'getTransactionForCreator')
+        .mockResolvedValueOnce(transaction as Transaction);
+
+      await expect(service.markAsSignOnlyTransaction(123, { id: 1 } as User)).rejects.toThrow(
+        ErrorCodes.OTIP,
+      );
+    });
+
+    it('should update transaction status to SIGN_ONLY and return true', async () => {
+      const transaction = {
+        id: 123,
+        creatorKey: { userId: 1 },
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      };
+
+      jest
+        .spyOn(service, 'getTransactionForCreator')
+        .mockResolvedValueOnce(transaction as Transaction);
+
+      const result = await service.markAsSignOnlyTransaction(123, { id: 1 } as User);
+
+      expect(transactionsRepo.update).toHaveBeenCalledWith(
+        { id: 123 },
+        { status: TransactionStatus.SIGN_ONLY },
+      );
+      expect(result).toBe(true);
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transaction.id,
+        TransactionStatus.SIGN_ONLY,
+      );
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+    });
+  });
+
+  describe('archiveTransaction', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('should throw if transaction status is not archiveable', async () => {
+      const transaction = {
+        creatorKey: { userId: 1 },
+        status: TransactionStatus.WAITING_FOR_SIGNATURES, //Only SIGN_ONLY transactions can be archived
+      };
+
+      jest
+        .spyOn(service, 'getTransactionForCreator')
+        .mockResolvedValueOnce(transaction as Transaction);
+
+      await expect(service.archiveTransaction(123, { id: 1 } as User)).rejects.toThrow(
+        ErrorCodes.OSONT,
+      );
+    });
+
+    it('should update transaction status to ARCHIVED and return true', async () => {
+      const transaction = {
+        id: 123,
+        creatorKey: { userId: 1 },
+        status: TransactionStatus.SIGN_ONLY,
+      };
+
+      jest
+        .spyOn(service, 'getTransactionForCreator')
+        .mockResolvedValueOnce(transaction as Transaction);
+
+      const result = await service.archiveTransaction(123, { id: 1 } as User);
+
+      expect(transactionsRepo.update).toHaveBeenCalledWith(
+        { id: 123 },
+        { status: TransactionStatus.ARCHIVED },
+      );
+      expect(result).toBe(true);
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transaction.id,
+        TransactionStatus.ARCHIVED,
       );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
@@ -850,6 +989,7 @@ describe('TransactionsService', () => {
       TransactionStatus.FAILED,
       TransactionStatus.EXPIRED,
       TransactionStatus.CANCELED,
+      TransactionStatus.ARCHIVED,
     ];
     const forbiddenStatuses = Object.values(TransactionStatus).filter(
       s => !allowedStatuses.includes(s),

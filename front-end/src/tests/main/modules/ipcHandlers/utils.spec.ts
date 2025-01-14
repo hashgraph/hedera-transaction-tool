@@ -7,13 +7,15 @@ import registerUtilsListeners from '@main/modules/ipcHandlers/utils';
 import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
 import { getNumberArrayFromString } from '@main/utils';
 import { hash, dualCompareHash } from '@main/utils/crypto';
-import fs from 'fs/promises';
+import fs from 'fs';
+import path from 'path';
 import { createHash, X509Certificate } from 'crypto';
 
 vi.mock('bcrypt', () => mockDeep());
 vi.mock('crypto', () => mockDeep());
 vi.mock('electron', () => mockDeep());
-vi.mock('fs/promises', () => mockDeep());
+vi.mock('fs', () => mockDeep());
+vi.mock('path', () => mockDeep());
 vi.mock('path', () => mockDeep());
 vi.mock('@hashgraph/proto', () => mockDeep());
 vi.mock('@main/utils/crypto', () => mockDeep());
@@ -41,6 +43,7 @@ describe('registerUtilsListeners', () => {
       'compareDataToHashes',
       'saveFile',
       'showOpenDialog',
+      'saveFileNamed',
       'sha384',
       'x509BytesFromPem',
       'quit',
@@ -69,7 +72,7 @@ describe('registerUtilsListeners', () => {
     vi.mocked(getNumberArrayFromString).mockReturnValue(numberArray);
     vi.mocked(app.getPath).mockReturnValue('documents');
     vi.mocked(dialog.showSaveDialog).mockResolvedValue({ filePath, canceled });
-    vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+    vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
 
     await invokeIPCHandler('utils:saveFile', uint8ArrayString);
 
@@ -77,7 +80,7 @@ describe('registerUtilsListeners', () => {
     expect(getNumberArrayFromString).toHaveBeenCalledWith(uint8ArrayString);
     expect(app.getPath).toHaveBeenCalledWith('documents');
     expect(dialog.showSaveDialog).toHaveBeenCalledWith(windows[0], { defaultPath: 'documents' });
-    expect(fs.writeFile).toHaveBeenCalledWith(filePath, content);
+    expect(fs.promises.writeFile).toHaveBeenCalledWith(filePath, content);
   });
 
   test('Should do nothing if no windows in util:saveFile', async () => {
@@ -91,7 +94,7 @@ describe('registerUtilsListeners', () => {
     expect(getNumberArrayFromString).not.toHaveBeenCalled();
     expect(app.getPath).not.toHaveBeenCalled();
     expect(dialog.showSaveDialog).not.toHaveBeenCalled();
-    expect(fs.writeFile).not.toHaveBeenCalled();
+    expect(fs.promises.writeFile).not.toHaveBeenCalled();
   });
 
   test('Should not write if no file path or canceled dialog in util:saveFile', async () => {
@@ -108,9 +111,9 @@ describe('registerUtilsListeners', () => {
     });
 
     await invokeIPCHandler('utils:saveFile', uint8ArrayString);
-    expect(fs.writeFile).not.toHaveBeenCalled();
+    expect(fs.promises.writeFile).not.toHaveBeenCalled();
     await invokeIPCHandler('utils:saveFile', uint8ArrayString);
-    expect(fs.writeFile).not.toHaveBeenCalled();
+    expect(fs.promises.writeFile).not.toHaveBeenCalled();
   });
 
   test('Should show error in dialog if fail to write in util:saveFile', async () => {
@@ -124,8 +127,8 @@ describe('registerUtilsListeners', () => {
     vi.mocked(getNumberArrayFromString).mockReturnValue(numberArray);
     vi.mocked(app.getPath).mockReturnValue('documents');
     vi.mocked(dialog.showSaveDialog).mockResolvedValue({ filePath, canceled });
-    vi.mocked(fs.writeFile).mockRejectedValueOnce(new Error('An error'));
-    vi.mocked(fs.writeFile).mockRejectedValueOnce(undefined);
+    vi.mocked(fs.promises.writeFile).mockRejectedValueOnce(new Error('An error'));
+    vi.mocked(fs.promises.writeFile).mockRejectedValueOnce(undefined);
 
     await invokeIPCHandler('utils:saveFile', uint8ArrayString);
     expect(dialog.showErrorBox).toHaveBeenCalledWith('Failed to save file', 'An error');
@@ -276,6 +279,122 @@ describe('registerUtilsListeners', () => {
     expect(result).toBe(dialogReturnValue);
   });
 
+  test('Should save file to a path in util:saveFileNamed', async () => {
+    const windows = [{}];
+    const data = new Uint8Array([1, 2, 3, 4]);
+    const name = 'test.txt';
+    const title = 'Save File';
+    const buttonLabel = 'Save';
+    const filters = [{ name: 'Text Files', extensions: ['txt'] }];
+    const properties = ['openFile'];
+    const message = 'Select a file to save';
+    const dialogReturnValue = { filePaths: ['/path/to'], canceled: false };
+
+    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+    vi.mocked(dialog.showOpenDialog).mockResolvedValue(dialogReturnValue);
+    vi.mocked(path.resolve).mockReturnValue('/path/to/test.txt');
+
+    await invokeIPCHandler(
+      'utils:saveFileNamed',
+      data,
+      name,
+      title,
+      buttonLabel,
+      filters,
+      properties,
+      message,
+    );
+
+    expect(BrowserWindow.getAllWindows).toHaveBeenCalled();
+    expect(dialog.showOpenDialog).toHaveBeenCalledWith(windows[0], {
+      title,
+      buttonLabel,
+      filters,
+      properties,
+      message,
+    });
+    expect(fs.promises.writeFile).toHaveBeenCalledWith('/path/to/test.txt', data);
+  });
+
+  test('Should not write if no file path or canceled dialog in util:saveFileNamed', async () => {
+    const windows = [{}];
+    const data = new Uint8Array([1, 2, 3, 4]);
+    const name = 'test.txt';
+    const title = 'Save File';
+    const buttonLabel = 'Save';
+    const filters = [{ name: 'Text Files', extensions: ['txt'] }];
+    const properties = ['openFile'];
+    const message = 'Select a file to save';
+
+    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+    vi.mocked(dialog.showOpenDialog).mockResolvedValueOnce({ filePaths: [], canceled: true });
+    vi.mocked(dialog.showOpenDialog).mockResolvedValueOnce({
+      filePaths: ['/path/to'],
+      canceled: false,
+    });
+
+    await invokeIPCHandler(
+      'utils:saveFileNamed',
+      data,
+      name,
+      title,
+      buttonLabel,
+      filters,
+      properties,
+      message,
+    );
+
+    expect(fs.promises.writeFile).not.toHaveBeenCalled();
+  });
+
+  test('Should do nothing if no windows in util:saveFileNamed', async () => {
+    const windows = [];
+
+    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows);
+
+    await invokeIPCHandler('utils:saveFileNamed');
+
+    expect(BrowserWindow.getAllWindows).toHaveBeenCalled();
+    expect(dialog.showOpenDialog).not.toHaveBeenCalled();
+    expect(fs.promises.writeFile).not.toHaveBeenCalled();
+  });
+
+  test('Should rename the file if it already exists in util:saveFileNamed', async () => {
+    const windows = [{}];
+    const data = new Uint8Array([1, 2, 3, 4]);
+    const name = 'test.txt';
+    const title = 'Save File';
+    const buttonLabel = 'Save';
+    const filters = [{ name: 'Text Files', extensions: ['txt'] }];
+    const properties = ['openFile'];
+    const message = 'Select a file to save';
+    const dialogReturnValue = { filePaths: ['/path/to/test.txt'], canceled: false };
+
+    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+    vi.mocked(dialog.showOpenDialog).mockResolvedValue(dialogReturnValue);
+    vi.mocked(fs.existsSync).mockReturnValueOnce(true);
+    vi.mocked(path.parse).mockReturnValue({
+      dir: '/path/to',
+      name: 'test',
+      ext: '.txt',
+    } as path.ParsedPath);
+    vi.mocked(path.resolve).mockReturnValueOnce('/path/to/test.txt');
+    vi.mocked(path.resolve).mockReturnValueOnce('/path/to/test(1).txt');
+
+    await invokeIPCHandler(
+      'utils:saveFileNamed',
+      data,
+      name,
+      title,
+      buttonLabel,
+      filters,
+      properties,
+      message,
+    );
+
+    expect(fs.promises.writeFile).toHaveBeenCalledWith('/path/to/test(1).txt', data);
+  });
+
   test('Should invoke app.quit in util:quit', async () => {
     await invokeIPCHandler('utils:quit');
     expect(app.quit).toHaveBeenCalled();
@@ -389,6 +508,13 @@ describe('registerUtilsListeners', () => {
       const pem = 'invalid-pem';
 
       await expect(invokeIPCHandler('utils:x509BytesFromPem', pem)).rejects.toThrow('Invalid PEM');
+    });
+
+    test('Should return undefined if no PEM in x509BytesFromPem', async () => {
+      const pem = '';
+
+      const result = await invokeIPCHandler('utils:x509BytesFromPem', pem);
+      expect(result).toBeUndefined();
     });
   });
 });

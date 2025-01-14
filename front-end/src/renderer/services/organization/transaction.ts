@@ -36,6 +36,7 @@ export const submitTransaction = async (
   network: Network,
   signature: string,
   creatorKeyId: number,
+  isSignOnly?: boolean,
 ): Promise<{ id: number; transactionBytes: string }> =>
   commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.post(`${serverUrl}/${controller}`, {
@@ -45,6 +46,7 @@ export const submitTransaction = async (
       mirrorNetwork: network,
       signature,
       creatorKeyId,
+      isSignOnly,
     });
 
     return { id: data.id, transactionBytes: data.transactionBytes };
@@ -56,7 +58,25 @@ export const cancelTransaction = async (serverUrl: string, id: number): Promise<
     const { data } = await axiosWithCredentials.patch(`${serverUrl}/${controller}/cancel/${id}`);
 
     return data;
-  }, `Failed cancel transaction with id ${id}`);
+  }, `Failed to cancel transaction with id ${id}`);
+
+/* Archive a transaction  */
+export const archiveTransaction = async (serverUrl: string, id: number): Promise<boolean> =>
+  commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.patch(`${serverUrl}/${controller}/archive/${id}`);
+
+    return data;
+  }, `Failed to archive transaction with id ${id}`);
+
+/* Mark sign-only a transaction  */
+export const markAsSignOnlyTransaction = async (serverUrl: string, id: number): Promise<boolean> =>
+  commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.patch(
+      `${serverUrl}/${controller}/mark-sign-only/${id}`,
+    );
+
+    return data;
+  }, `Failed to mark transaction with id ${id} as sign-only`);
 
 /* Decrypt, sign, upload signatures to the backend */
 export const uploadSignatureMap = async (
@@ -177,14 +197,7 @@ export const getTransactionsForUser = async (
   sort?: { property: string; direction: 'asc' | 'desc' }[],
 ): Promise<PaginatedResourceDto<ITransaction>> =>
   commonRequestHandler(async () => {
-    const withValidStart =
-      !status.includes(TransactionStatus.EXECUTED) &&
-      !status.includes(TransactionStatus.FAILED) &&
-      !status.includes(TransactionStatus.EXPIRED) &&
-      !status.includes(TransactionStatus.CANCELED);
-    const validStartTimestamp = new Date(Date.now() - 180 * 1_000).getTime();
-
-    const filtering = `&filter=status:in:${status.join(',')}${withValidStart ? `&filter=validStart:gte:${validStartTimestamp}` : ''}&filter=mirrorNetwork:eq:${network}`;
+    const filtering = `&filter=status:in:${status.join(',')}&filter=mirrorNetwork:eq:${network}`;
     const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
 
     const { data } = await axiosWithCredentials.get(

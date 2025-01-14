@@ -78,6 +78,7 @@ const getIndicatorNotifications = (notificationsKey: string) =>
       NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
       NotificationType.TRANSACTION_INDICATOR_EXECUTED,
       NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+      NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
     ].includes(nr.notification.type),
   ) || [];
 

@@ -3,7 +3,6 @@ import { EntityManager } from 'typeorm';
 import { KeyList, AccountCreateTransaction, PrivateKey, AccountId } from '@hashgraph/sdk';
 
 import {
-  isExpired,
   getSignatureEntities,
   isPublicKeyInKeyList,
   MirrorNodeService,
@@ -13,7 +12,6 @@ import {
   NodeInfoParsed,
   transactionIs,
 } from '@app/common';
-import { UserKey } from '@entities';
 
 import { keysRequiredToSign, userKeysRequiredToSign } from '.';
 
@@ -33,17 +31,6 @@ describe('keysRequiredToSign', () => {
 
   it('should return an empty array if transaction is not provided', async () => {
     const result = await keysRequiredToSign(null, mirrorNodeService, entityManager);
-    expect(result).toEqual([]);
-  });
-
-  it('should return an empty array if the transaction is expired', async () => {
-    entityManager.find
-      .calledWith(UserKey, expect.anything())
-      .mockResolvedValueOnce([{ id: 1, publicKey: 'publicKey1' }]);
-
-    jest.mocked(isExpired).mockReturnValueOnce(true);
-
-    const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
     expect(result).toEqual([]);
   });
 

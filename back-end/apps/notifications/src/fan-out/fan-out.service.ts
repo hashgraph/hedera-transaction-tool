@@ -23,6 +23,7 @@ export class FanOutService {
     NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
     NotificationType.TRANSACTION_INDICATOR_EXECUTED,
     NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+    NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
     NotificationType.TRANSACTION_EXPIRED,
   ];
 

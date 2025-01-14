@@ -204,6 +204,7 @@ export class TransactionsService {
           TransactionStatus.FAILED,
           TransactionStatus.EXPIRED,
           TransactionStatus.CANCELED,
+          TransactionStatus.ARCHIVED,
         ]),
       ),
     };
@@ -266,6 +267,7 @@ export class TransactionsService {
           TransactionStatus.FAILED,
           TransactionStatus.EXPIRED,
           TransactionStatus.CANCELED,
+          TransactionStatus.ARCHIVED,
         ]),
       ),
     };
@@ -328,7 +330,7 @@ export class TransactionsService {
 
     /* Check if the transaction is expired */
     const sdkTransaction = SDKTransaction.fromBytes(dto.transactionBytes);
-    if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
+    if (isExpired(sdkTransaction) && !dto.isSignOnly) throw new BadRequestException(ErrorCodes.TE);
 
     /* Check if the transaction body is over the max size */
     if (isTransactionBodyOverMaxSize(sdkTransaction)) {
@@ -340,7 +342,13 @@ export class TransactionsService {
       where: [
         {
           transactionId: sdkTransaction.transactionId.toString(),
-          status: Not(In([TransactionStatus.CANCELED, TransactionStatus.REJECTED])),
+          status: Not(
+            In([
+              TransactionStatus.CANCELED,
+              TransactionStatus.REJECTED,
+              TransactionStatus.ARCHIVED,
+            ]),
+          ),
         },
       ],
     });
@@ -368,6 +376,10 @@ export class TransactionsService {
       cutoffAt: dto.cutoffAt,
     });
     client.close();
+
+    if (dto.isSignOnly) {
+      transaction.status = TransactionStatus.SIGN_ONLY;
+    }
 
     try {
       await this.repo.save(transaction);
@@ -403,9 +415,10 @@ export class TransactionsService {
 
     if (
       ![
+        TransactionStatus.NEW,
         TransactionStatus.WAITING_FOR_SIGNATURES,
         TransactionStatus.WAITING_FOR_EXECUTION,
-        TransactionStatus.NEW,
+        TransactionStatus.SIGN_ONLY,
       ].includes(transaction.status)
     ) {
       throw new BadRequestException(ErrorCodes.OTIP);
@@ -414,6 +427,45 @@ export class TransactionsService {
     await this.repo.update({ id }, { status: TransactionStatus.CANCELED });
 
     notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.CANCELED);
+    notifyTransactionAction(this.notificationsService);
+
+    return true;
+  }
+
+  /* Mark the transaction as sign only. */
+  async markAsSignOnlyTransaction(id: number, user: User): Promise<boolean> {
+    const transaction = await this.getTransactionForCreator(id, user);
+
+    if (
+      ![
+        TransactionStatus.NEW,
+        TransactionStatus.WAITING_FOR_SIGNATURES,
+        TransactionStatus.WAITING_FOR_EXECUTION,
+        TransactionStatus.SIGN_ONLY,
+      ].includes(transaction.status)
+    ) {
+      throw new BadRequestException(ErrorCodes.OTIP);
+    }
+
+    await this.repo.update({ id }, { status: TransactionStatus.SIGN_ONLY });
+
+    notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.SIGN_ONLY);
+    notifyTransactionAction(this.notificationsService);
+
+    return true;
+  }
+
+  /* Archive the transaction if the transaction is sign only. */
+  async archiveTransaction(id: number, user: User): Promise<boolean> {
+    const transaction = await this.getTransactionForCreator(id, user);
+
+    if (![TransactionStatus.SIGN_ONLY].includes(transaction.status)) {
+      throw new BadRequestException(ErrorCodes.OSONT);
+    }
+
+    await this.repo.update({ id }, { status: TransactionStatus.ARCHIVED });
+
+    notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.ARCHIVED);
     notifyTransactionAction(this.notificationsService);
 
     return true;
@@ -461,6 +513,7 @@ export class TransactionsService {
         TransactionStatus.EXPIRED,
         TransactionStatus.FAILED,
         TransactionStatus.CANCELED,
+        TransactionStatus.ARCHIVED,
       ].includes(transaction.status)
     )
       return true;
@@ -519,6 +572,7 @@ export class TransactionsService {
       TransactionStatus.FAILED,
       TransactionStatus.EXPIRED,
       TransactionStatus.CANCELED,
+      TransactionStatus.ARCHIVED,
     ];
     const forbiddenStatuses = Object.values(TransactionStatus).filter(
       s => !allowedStatuses.includes(s),

@@ -130,6 +130,7 @@ export class ApproversService {
         TransactionStatus.EXPIRED,
         TransactionStatus.FAILED,
         TransactionStatus.CANCELED,
+        TransactionStatus.ARCHIVED,
       ].includes(transaction.status)
     )
       return approvers;
@@ -577,14 +578,11 @@ export class ApproversService {
 
     /* Checks if the transaction is executed */
     if (
-      transaction.status === TransactionStatus.EXECUTED ||
-      transaction.status === TransactionStatus.FAILED
+      transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES &&
+      transaction.status !== TransactionStatus.SIGN_ONLY &&
+      transaction.status !== TransactionStatus.WAITING_FOR_EXECUTION
     )
-      throw new BadRequestException(ErrorCodes.TAX);
-
-    /* Checks if the transaction is canceled */
-    if (transaction.status === TransactionStatus.CANCELED)
-      throw new BadRequestException(ErrorCodes.TC);
+      throw new BadRequestException(ErrorCodes.TNRA);
 
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 

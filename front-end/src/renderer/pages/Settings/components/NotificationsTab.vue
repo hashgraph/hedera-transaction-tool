@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { NotificationType } from '@main/shared/interfaces';
+
 import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import useRedirectOnOnlyOrganization from '@renderer/composables/useRedirectOnOnlyOrganization';
 
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
-import { NotificationType } from '@main/shared/interfaces';
 
 /* Stores */
 const notifications = useNotificationsStore();

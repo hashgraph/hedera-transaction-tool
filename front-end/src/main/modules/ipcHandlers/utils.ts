@@ -1,4 +1,5 @@
-import fs from 'fs/promises';
+import fs from 'fs';
+import path from 'path';
 
 import { BrowserWindow, app, dialog, ipcMain, shell, FileFilter } from 'electron';
 
@@ -45,19 +46,59 @@ export default () => {
     const windows = BrowserWindow.getAllWindows();
     if (windows.length === 0) return;
 
-    const content = Buffer.from(getNumberArrayFromString(uint8ArrayString));
-
     try {
       const { filePath, canceled } = await dialog.showSaveDialog(windows[0], {
         defaultPath: app.getPath('documents'),
       });
       if (!filePath.trim() || canceled) return;
 
-      await fs.writeFile(filePath, Uint8Array.from(content));
+      const content = Buffer.from(getNumberArrayFromString(uint8ArrayString));
+      await fs.promises.writeFile(filePath, Uint8Array.from(content));
     } catch (error: any) {
       dialog.showErrorBox('Failed to save file', error?.message || 'Unknown error');
     }
   });
+
+  ipcMain.handle(
+    createChannelName('saveFileNamed'),
+    async (
+      _e,
+      data: Uint8Array,
+      name: string,
+      title: string,
+      buttonLabel: string,
+      filters: FileFilter[],
+      properties: ('openFile' | 'openDirectory' | 'multiSelections')[],
+      message: string,
+    ) => {
+      const windows = BrowserWindow.getAllWindows();
+      if (windows.length === 0) return;
+
+      const { filePaths, canceled } = await dialog.showOpenDialog(windows[0], {
+        title,
+        buttonLabel,
+        filters,
+        properties,
+        message,
+      });
+
+      if (canceled) return;
+
+      let filePath = path.resolve(filePaths[0], name);
+      let counter = 1;
+
+      while (fs.existsSync(filePath)) {
+        const parsedPath = path.parse(filePath);
+        filePath = path.resolve(
+          parsedPath.dir,
+          `${parsedPath.name.replace(/\(\d+\)$/, '')}(${counter})${parsedPath.ext}`,
+        );
+        counter++;
+      }
+
+      await fs.promises.writeFile(filePath, data);
+    },
+  );
 
   ipcMain.handle(
     createChannelName('showOpenDialog'),

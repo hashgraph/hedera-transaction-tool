@@ -86,7 +86,8 @@ const activeTabs = computed(() => {
     notifications.notifications[notificationsKey]?.filter(
       nr =>
         nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXECUTED ||
-        nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+        nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXPIRED ||
+        nr.notification.type === NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
     ) || [];
 
   rawTabItems.forEach(tab => {

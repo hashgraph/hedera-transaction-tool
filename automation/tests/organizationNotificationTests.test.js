@@ -113,6 +113,7 @@ test.describe('Organization Notification tests', () => {
   test('Verify notification element is shown next to the transaction', async () => {
     await organizationPage.ensureNotificationStateForUser(firstUser, secondUser, globalCredentials);
 
+    await transactionPage.clickOnTransactionsMenuButton();
     expect(await organizationPage.getNotificationElementFromFirstTransaction()).toBe(true);
   });
 });

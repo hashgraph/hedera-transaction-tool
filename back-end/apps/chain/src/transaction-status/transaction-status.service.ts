@@ -204,7 +204,7 @@ export class TransactionStatusService {
     transaction: Transaction,
   ): Promise<TransactionStatus | undefined> {
     /* Returns if the transaction is null */
-    if (!transaction) return;
+    if (!transaction || transaction.status === TransactionStatus.SIGN_ONLY) return;
 
     /* Gets the SDK transaction from the transaction body */
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
@@ -230,18 +230,10 @@ export class TransactionStatusService {
     }
 
     /* In case the status wasn't already WAITING_FOR_SIGNATURES */
-    if (transaction.status === newStatus) return;
-
-    await this.transactionRepo.update(
-      {
-        id: transaction.id,
-      },
-      {
-        status: newStatus,
-      },
-    );
-
-    return newStatus;
+    if (transaction.status !== newStatus) {
+      await this.transactionRepo.update({ id: transaction.id }, { status: newStatus });
+      return newStatus;
+    }
   }
 
   private emitNotificationEvents(transaction: Transaction, newStatus: TransactionStatus) {

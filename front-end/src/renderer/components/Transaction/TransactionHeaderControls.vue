@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import type { Transaction } from '@hashgraph/sdk';
 
+import useUserStore from '@renderer/stores/storeUser';
+
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
+
+import { isLoggedInOrganization } from '@renderer/utils';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 
 /* Props */
 defineProps<{
+  isSignOnly: boolean;
   createButtonLabel: string;
   headingText?: string;
   loading?: boolean;
@@ -17,9 +25,16 @@ defineProps<{
 
 /* Emits */
 defineEmits<{
+  (event: 'update:is-sign-only', value: boolean): void;
   (event: 'add-to-group'): void;
   (event: 'edit-group-item'): void;
 }>();
+
+/* Stores */
+const user = useUserStore();
+
+/* Composables */
+useCreateTooltips();
 </script>
 <template>
   <div>
@@ -30,27 +45,47 @@ defineEmits<{
 
       <h2 class="text-title text-bold" data-testid="h2-transaction-type">{{ headingText }}</h2>
     </div>
-    <div class="flex-centered justify-content-end flex-wrap gap-3 mt-3">
-      <template v-if="!($route.query.group === 'true')">
-        <div class="flex-centered justify-content-end flex-wrap gap-3 mt-3">
-          <div class="flex-centered justify-content-end flex-wrap gap-3 mt-3">
-            <SaveDraftButton
-              v-if="createTransaction && typeof isProcessed === 'boolean'"
-              :get-transaction="createTransaction"
-              :description="description || ''"
-              :is-executed="isProcessed"
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mt-3">
+      <div>
+        <template
+          v-if="
+            !($route.query.group === 'true') && isLoggedInOrganization(user.selectedOrganization)
+          "
+        >
+          <div
+            data-bs-toggle="tooltip"
+            data-bs-trigger="hover"
+            data-bs-placement="bottom"
+            data-bs-custom-class="wide-xl-tooltip"
+            data-bs-title="Transaction won't be executed, it will be only signed."
+          >
+            <AppCheckBox
+              :checked="isSignOnly"
+              @update:checked="$emit('update:is-sign-only', $event)"
+              label="Is sign-only"
+              name="is-sign-only"
             />
-            <AppButton
-              color="primary"
-              type="submit"
-              :loading="loading"
-              :disabled="createButtonDisabled"
-              data-testid="button-header-create"
-            >
-              <span class="bi bi-send"></span>
-              {{ createButtonLabel }}</AppButton
-            >
           </div>
+        </template>
+      </div>
+      <template v-if="!($route.query.group === 'true')">
+        <div class="flex-centered justify-content-end flex-wrap gap-3">
+          <SaveDraftButton
+            v-if="createTransaction && typeof isProcessed === 'boolean'"
+            :get-transaction="createTransaction"
+            :description="description || ''"
+            :is-executed="isProcessed"
+          />
+          <AppButton
+            color="primary"
+            type="submit"
+            :loading="loading"
+            :disabled="createButtonDisabled"
+            data-testid="button-header-create"
+          >
+            <span class="bi bi-send"></span>
+            {{ createButtonLabel }}</AppButton
+          >
         </div>
       </template>
       <template v-else>

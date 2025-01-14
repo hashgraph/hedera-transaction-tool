@@ -4,7 +4,7 @@ import { Key, KeyList, NodeUpdateTransaction, Transaction } from '@hashgraph/sdk
 
 import { getAccountInfo, getNodeInfo } from '@renderer/services/mirrorNodeDataService';
 
-import { isExpired, isPublicKeyInKeyList, transactionIs } from '../sdk';
+import { isPublicKeyInKeyList, transactionIs } from '../sdk';
 
 import TransactionFactory from './transaction-factory';
 
@@ -55,9 +55,6 @@ export const publicRequiredToSign = async (
 
   /* Ensures the user keys are passed */
   if (userKeys.length === 0) return [];
-
-  /* Ignore if expired */
-  if (isExpired(transaction)) return [];
 
   /* Transaction signers' public keys */
   const signerPublicKeys = [...transaction._signerPublicKeys];

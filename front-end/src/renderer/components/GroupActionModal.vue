@@ -3,6 +3,8 @@ import { ref } from 'vue';
 
 import { onBeforeRouteLeave, useRouter, useRoute } from 'vue-router';
 
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
+
 import { redirectToPrevious } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -12,6 +14,9 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 const props = defineProps<{
   skip?: boolean;
 }>();
+
+/* Stores */
+const transactionGroup = useTransactionGroupStore();
 
 /* Composables */
 const router = useRouter();
@@ -30,6 +35,11 @@ function handleAddToGroup() {
 
 function handleEditItem() {
   emit('editItem');
+}
+
+function handleDiscard() {
+  transactionGroup.clearGroup();
+  redirectToPrevious(router, '/transactions');
 }
 
 function handleGroupAction() {
@@ -71,7 +81,7 @@ onBeforeRouteLeave(async to => {
           color="borderless"
           data-testid="button-discard-draft-for-group-modal"
           type="button"
-          @click="redirectToPrevious(router, '/transactions')"
+          @click="handleDiscard"
           >Discard</AppButton
         >
         <AppButton

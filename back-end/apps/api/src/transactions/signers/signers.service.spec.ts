@@ -310,7 +310,7 @@ describe('SignaturesService', () => {
 
       await expect(
         service.uploadSignatureMap(transactionId, { signatureMap }, user),
-      ).rejects.toThrow(ErrorCodes.TC);
+      ).rejects.toThrow(ErrorCodes.TNRS);
       expectNotifyNotCalled();
     });
 

@@ -56,6 +56,31 @@ export const showOpenDialog = async (
   }
 };
 
+/* Save a prename file */
+export const saveFileNamed = async (
+  data: Uint8Array,
+  name: string,
+  title: string,
+  buttonLabel: string,
+  filters: FileFilter[],
+  properties: ('openFile' | 'openDirectory' | 'multiSelections')[],
+  message: string,
+): Promise<void> => {
+  try {
+    return await window.electronAPI.local.utils.saveFileNamed(
+      data,
+      name,
+      title,
+      buttonLabel,
+      filters,
+      properties,
+      message,
+    );
+  } catch {
+    throw new Error('Failed to open the dialog');
+  }
+};
+
 export async function sha384(str: string): Promise<string> {
   return commonIPCHandler(async () => {
     return await window.electronAPI.local.utils.sha384(str);

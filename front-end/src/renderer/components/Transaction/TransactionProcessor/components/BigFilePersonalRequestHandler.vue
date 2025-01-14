@@ -188,6 +188,7 @@ async function processOriginal() {
   transaction.setContents(content.value.slice(0, FIRST_CHUNK_SIZE_BYTES));
 
   await startChain({
+    isSignOnly: false,
     transactionBytes: transaction.toBytes(),
     transactionKey: request.value.transactionKey,
     name: request.value.name,
@@ -201,6 +202,7 @@ async function processAppend() {
   const transaction = createAppendTransaction();
 
   await startChain({
+    isSignOnly: false,
     transactionBytes: transaction.toBytes(),
     transactionKey: request.value.transactionKey,
     name: request.value.name,

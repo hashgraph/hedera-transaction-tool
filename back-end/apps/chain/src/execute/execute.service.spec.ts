@@ -408,6 +408,20 @@ describe('ExecuteService', () => {
       await expect(service.executeTransaction(transaction)).rejects.toThrow(
         'Transaction has been canceled.',
       );
+
+      transaction.status = TransactionStatus.SIGN_ONLY;
+      transactionRepo.findOne.mockResolvedValueOnce(transaction);
+
+      await expect(service.executeTransaction(transaction)).rejects.toThrow(
+        'Transaction is sign-only.',
+      );
+
+      transaction.status = TransactionStatus.ARCHIVED;
+      transactionRepo.findOne.mockResolvedValueOnce(transaction);
+
+      await expect(service.executeTransaction(transaction)).rejects.toThrow(
+        'Transaction is archived.',
+      );
     });
 
     it('should throw if transaction is null or undefined', async () => {

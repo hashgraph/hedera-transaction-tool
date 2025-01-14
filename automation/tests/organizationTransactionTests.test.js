@@ -382,9 +382,8 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify next button is visible when user has multiple txs in history', async () => {
-    test.slow();
-    const { txId } = await organizationPage.createAccount(5, 0, true);
-    const { validStart } = await organizationPage.createAccount(10, 0, true);
+    const { txId } = await organizationPage.createAccount(1, 0, true);
+    const { validStart } = await organizationPage.createAccount(3, 0, true);
     await waitForValidStart(validStart);
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnHistoryTab();

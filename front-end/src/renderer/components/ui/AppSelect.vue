@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 
 /* Props */
 const props = defineProps<{
-  toggleText?: string;
+  toggleText: string;
+  value: string;
   items: { label: string; value: string }[];
   color?: 'primary' | 'secondary' | 'borderless' | 'danger';
   active?: boolean;
@@ -13,20 +13,22 @@ const props = defineProps<{
   togglerIcon?: boolean;
   colorOnActive?: boolean;
   buttonClass?: string;
-  compact?: boolean;
 }>();
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'select', value: string): void;
+  (event: 'update:value', value: string): void;
 }>();
 
 /* State */
 const dropdownRef = ref<HTMLDivElement | null>(null);
 
+/* Computed */
+const selected = computed(() => props.items.find(i => i.value === props.value));
+
 /* Handlers */
 const handleSelect = (value: string) => {
-  emit('select', value);
+  emit('update:value', value);
   forceHideContent();
 };
 
@@ -70,26 +72,23 @@ watch(
       data-bs-auto-close="true"
       data-bs-popper-config='{"strategy":"fixed"}'
       :data-testid="dataTestid"
-      :class="[active ? null : 'text-body', compact ? 'min-w-unset px-4' : '', buttonClass]"
+      :class="[buttonClass, active ? null : 'text-body']"
     >
-      <template v-if="compact">
-        <i class="bi bi-three-dots-vertical"></i>
-      </template>
-      <template v-else>
-        <div class="col-11 text-start overflow-hidden">
-          <span>{{ toggleText }}</span>
-        </div>
-        <div class="col-1 ms-3">
-          <i v-if="togglerIcon" class="bi bi-chevron-down flex-1"></i>
-        </div>
-      </template>
+      <div class="col-11 text-start overflow-hidden">
+        <span>{{ selected?.label || toggleText }}</span>
+      </div>
+      <div class="col-1 ms-3">
+        <i v-if="togglerIcon" class="bi bi-chevron-down flex-1"></i>
+      </div>
     </AppButton>
     <ul class="dropdown-menu mt-3">
       <template v-for="item of items" :key="item.value">
         <li
           class="dropdown-item cursor-pointer text-body"
+          :class="{ active: item.value === value }"
           @click="handleSelect(item.value)"
-          :data-testid="`dropdown-item-${item.value}`"
+          :data-testid="`select-item-${item.value}`"
+          :selected="item.value === value ? true : undefined"
         >
           <span class="text-small">{{ item.label }}</span>
         </li>

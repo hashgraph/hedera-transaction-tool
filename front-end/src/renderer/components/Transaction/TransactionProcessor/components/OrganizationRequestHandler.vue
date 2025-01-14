@@ -125,6 +125,7 @@ async function submit(publicKey: string, signature: string) {
       network.network,
       signature,
       user.selectedOrganization.userKeys.find(k => k.publicKey === publicKey)?.id || -1,
+      request.value.isSignOnly,
     );
   } catch (error) {
     emit('transaction:submit:fail', error);
