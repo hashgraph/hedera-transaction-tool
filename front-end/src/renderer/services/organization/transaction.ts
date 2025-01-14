@@ -36,7 +36,7 @@ export const submitTransaction = async (
   network: Network,
   signature: string,
   creatorKeyId: number,
-  submitManually?: boolean,
+  isManual?: boolean,
 ): Promise<{ id: number; transactionBytes: string }> =>
   commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.post(`${serverUrl}/${controller}`, {
@@ -46,7 +46,7 @@ export const submitTransaction = async (
       mirrorNetwork: network,
       signature,
       creatorKeyId,
-      submitManually,
+      isManual,
     });
 
     return { id: data.id, transactionBytes: data.transactionBytes };
@@ -68,15 +68,13 @@ export const archiveTransaction = async (serverUrl: string, id: number): Promise
     return data;
   }, `Failed to archive transaction with id ${id}`);
 
-/* Mark sign-only a transaction  */
-export const markAsSignOnlyTransaction = async (serverUrl: string, id: number): Promise<boolean> =>
+/* Executes the manual transaction  */
+export const executeTransaction = async (serverUrl: string, id: number): Promise<boolean> =>
   commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.patch(
-      `${serverUrl}/${controller}/mark-sign-only/${id}`,
-    );
+    const { data } = await axiosWithCredentials.patch(`${serverUrl}/${controller}/execute/${id}`);
 
     return data;
-  }, `Failed to mark transaction with id ${id} as sign-only`);
+  }, `Failed to execute transaction with id ${id}`);
 
 /* Decrypt, sign, upload signatures to the backend */
 export const uploadSignatureMap = async (

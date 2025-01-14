@@ -41,6 +41,9 @@ export class TransactionDto {
   validStart: Date;
 
   @Expose()
+  isManual: boolean;
+
+  @Expose()
   cutoffAt?: Date;
 
   @Expose()
