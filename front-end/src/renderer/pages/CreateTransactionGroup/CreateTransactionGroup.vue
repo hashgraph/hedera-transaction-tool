@@ -50,7 +50,6 @@ const transactionGroupProcessor = ref<typeof TransactionGroupProcessor | null>(n
 const file = ref<HTMLInputElement | null>(null);
 const wantToDeleteModalShown = ref(false);
 const showAreYouSure = ref(false);
-const groupValidStart = ref(new Date());
 
 const groupEmpty = computed(() => transactionGroup.groupItems.length == 0);
 
@@ -157,7 +156,7 @@ async function handleSignSubmit() {
   }
 
   try {
-    transactionGroup.updateTransactionValidStarts(groupValidStart.value);
+    transactionGroup.updateTransactionValidStarts(transactionGroup.groupValidStart);
     const ownerKeys = new Array<PublicKey>();
     for (const key of user.keyPairs) {
       ownerKeys.push(PublicKey.fromString(key.public_key));
@@ -296,7 +295,7 @@ async function handleOnFileChanged(e: Event) {
 }
 
 function updateGroupValidStart(newDate: Date) {
-  groupValidStart.value = newDate;
+  transactionGroup.groupValidStart = newDate;
 }
 
 /* Functions */
@@ -438,9 +437,9 @@ onBeforeRouteLeave(async to => {
                 >Group Valid Start <span class="text-muted text-italic">- Local time</span></label
               >
               <RunningClockDatePicker
-                v-model="groupValidStart"
-                :nowButtonVisible="true"
+                :model-value="transactionGroup.groupValidStart"
                 @update:modelValue="updateGroupValidStart"
+                :nowButtonVisible="true"
               />
             </div>
             <div>

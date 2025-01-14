@@ -32,6 +32,7 @@ export interface GroupItem {
 const useTransactionGroupStore = defineStore('transactionGroup', () => {
   /* State */
   const groupItems = ref<GroupItem[]>([]);
+  const groupValidStart = ref(new Date());
   const description = ref('');
   const sequential = ref(false);
   const modified = ref(false);
@@ -73,6 +74,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
 
   function clearGroup() {
     groupItems.value = [];
+    groupValidStart.value = new Date();
     description.value = '';
     sequential.value = false;
     modified.value = false;
@@ -265,6 +267,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     clearGroup,
     groupItems,
     description,
+    groupValidStart,
     sequential,
     getRequiredKeys,
     editGroupItem,
