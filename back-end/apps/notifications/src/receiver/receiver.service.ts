@@ -119,6 +119,8 @@ export class ReceiverService {
     /* Determine new indicator type */
     switch (transactionStatus) {
       case TransactionStatus.WAITING_FOR_SIGNATURES:
+        newIndicatorType = NotificationType.TRANSACTION_INDICATOR_SIGN;
+        break;
       case TransactionStatus.WAITING_FOR_EXECUTION:
         newIndicatorType = NotificationType.TRANSACTION_INDICATOR_EXECUTABLE;
         break;
