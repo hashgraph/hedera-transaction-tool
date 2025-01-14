@@ -359,7 +359,9 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
         </table>
       </template>
       <template v-else>
-        <EmptyTransactions class="absolute-centered w-100" />
+        <div class="flex-column-100 flex-centered">
+          <EmptyTransactions />
+        </div>
       </template>
     </template>
   </div>

@@ -410,7 +410,7 @@ onBeforeRouteLeave(async to => {
         <div class="d-flex justify-content-between">
           <div v-if="user.selectedOrganization">
             <input type="file" accept=".csv" ref="file" @change="handleOnFileChanged" />
-            <AppButton type="button" class="text-main text-primary" @click="handleOnImportClick"
+            <AppButton type="button" data-testid="button-import-csv" class="text-main text-primary" @click="handleOnImportClick"
               >Import CSV</AppButton
             >
           </div>
@@ -484,10 +484,13 @@ onBeforeRouteLeave(async to => {
             </div>
           </div>
         </div>
+        <template v-if="groupEmpty">
+          <div class="fill-remaining flex-centered">
+            <EmptyTransactions group />
+          </div>
+        </template>
       </form>
-      <div v-if="groupEmpty">
-        <EmptyTransactions class="absolute-centered w-100" group />
-      </div>
+
       <TransactionSelectionModal
         v-if="isTransactionSelectionModalShown"
         v-model:show="isTransactionSelectionModalShown"

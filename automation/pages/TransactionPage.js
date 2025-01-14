@@ -1,3 +1,4 @@
+const path = require('path');
 const BasePage = require('./BasePage');
 const { getAccountDetails, getTransactionDetails } = require('../utils/mirrorNodeAPI');
 const {
@@ -6,7 +7,6 @@ const {
   verifyFileExists,
 } = require('../utils/databaseQueries');
 const { decodeAndFlattenKeys } = require('../utils/keyUtil');
-const path = require('path');
 
 class TransactionPage extends BasePage {
   constructor(window) {
@@ -774,12 +774,8 @@ class TransactionPage extends BasePage {
     );
   }
 
-  async fillInSpenderAccountId(accountId) {
-    await this.fillInAccountId(
-      accountId,
-      this.allowanceSpenderAccountSelector,
-      this.signAndSubmitButtonSelector,
-    );
+  async fillInSpenderAccountId(accountId, buttonSelector = this.signAndSubmitButtonSelector) {
+    await this.fillInAccountId(accountId, this.allowanceSpenderAccountSelector, buttonSelector);
   }
 
   async fillInSpenderAccountIdNormally(accountId) {

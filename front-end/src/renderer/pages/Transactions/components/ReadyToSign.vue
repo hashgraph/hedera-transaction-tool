@@ -323,7 +323,10 @@ watch(
                     }}
                   </td>
                   <td class="text-center">
-                    <AppButton @click="redirectToGroupDetails($router, group[0])" color="secondary"
+                    <AppButton
+                      @click="redirectToGroupDetails($router, group[0])"
+                      color="secondary"
+                      data-testid="button-group-details"
                       >Details</AppButton
                     >
                   </td>
@@ -412,7 +415,9 @@ watch(
         </table>
       </template>
       <template v-else>
-        <EmptyTransactions class="absolute-centered w-100" />
+        <div class="flex-column-100 flex-centered">
+          <EmptyTransactions />
+        </div>
       </template>
     </template>
   </div>

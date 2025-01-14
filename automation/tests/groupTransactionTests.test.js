@@ -2,7 +2,6 @@ const { test } = require('@playwright/test');
 const { expect } = require('playwright/test');
 const RegistrationPage = require('../pages/RegistrationPage.js');
 const LoginPage = require('../pages/LoginPage');
-const SettingsPage = require('../pages/SettingsPage');
 const TransactionPage = require('../pages/TransactionPage');
 const GroupPage = require('../pages/GroupPage');
 const { resetDbState } = require('../utils/databaseUtil');
@@ -16,7 +15,7 @@ const {
 
 let app, window;
 let globalCredentials = { email: '', password: '' };
-let registrationPage, loginPage, settingsPage, transactionPage, groupPage;
+let registrationPage, loginPage, transactionPage, groupPage;
 
 test.describe('Group transaction tests', () => {
   test.beforeAll(async () => {
@@ -24,7 +23,6 @@ test.describe('Group transaction tests', () => {
     ({ app, window } = await setupApp());
     loginPage = new LoginPage(window);
     registrationPage = new RegistrationPage(window);
-    settingsPage = new SettingsPage(window);
     transactionPage = new TransactionPage(window);
     groupPage = new GroupPage(window);
 
