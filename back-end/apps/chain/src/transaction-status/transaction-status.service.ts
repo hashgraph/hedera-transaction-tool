@@ -423,6 +423,8 @@ export class TransactionStatusService {
 
     if (this.schedulerRegistry.doesExist('timeout', name)) return;
 
+    if (transaction.isManual) return;
+
     const timeToValidStart = transaction.validStart.getTime() - Date.now();
 
     const callback = async () => {
