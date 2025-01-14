@@ -63,7 +63,7 @@ useCreateTooltips();
               :checked="submitManually"
               @update:checked="$emit('update:submit-manually', $event)"
               label="Submit manually"
-              name="is-sign-only"
+              name="submit-manually"
             />
           </div>
         </template>
