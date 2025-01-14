@@ -29,7 +29,7 @@ brew install python-setuptools
 
 ```bash
 git clone https://github.com/hashgraph/hedera-transaction-tool.git
-cd back-end
+cd front-end
 ```
 
 ## 2. Install dependencies
@@ -41,7 +41,7 @@ pnpm install
 ## 3. Generate Prisma client library
 
 ```bash
-npx prisma generate
+pnpm generate:database
 ```
 
 ## 4. Start developing
