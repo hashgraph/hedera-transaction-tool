@@ -11,16 +11,16 @@
 # NOTE: Must be placed last to ensure enforcement over all other rules
 
 # Protection Rules for Github Configuration Files and Actions Workflows
-/.github/                                       @hashgraph/devops-ci @hashgraph/devops-ci-committers @hashgraph/release-engineering-managers @hashgraph/transaction-tool
-/.github/workflows/                             @hashgraph/devops-ci @hashgraph/devops-ci-committers @hashgraph/transaction-tool
+/.github/                                       @hashgraph/platform-ci @hashgraph/platform-ci-committers @hashgraph/release-engineering-managers @hashgraph/transaction-tool
+/.github/workflows/                             @hashgraph/platform-ci @hashgraph/platform-ci-committers @hashgraph/release-engineering-managers
 
 # Self-protection for root CODEOWNERS files (this file should not exist and should definitely require approval)
 /CODEOWNERS                                     @hashgraph/release-engineering-managers
 
 # Protect the repository root files
-/README.md                                      @hashgraph/devops-ci @hashgraph/devops-ci-committers @hashgraph/release-engineering-managers @hashgraph/transaction-tool
+/README.md                                      @hashgraph/platform-ci @hashgraph/platform-ci-committers @hashgraph/release-engineering-managers @hashgraph/transaction-tool
 **/LICENSE                                      @hashgraph/release-engineering-managers @hashgraph/transaction-tool
 
 # Git Ignore definitions
-**/.gitignore                                   @hashgraph/devops-ci @hashgraph/devops-ci-committers @hashgraph/release-engineering-managers @hashgraph/transaction-tool
-**/.gitignore.*                                 @hashgraph/devops-ci @hashgraph/devops-ci-committers @hashgraph/release-engineering-managers @hashgraph/transaction-tool
+**/.gitignore                                   @hashgraph/platform-ci @hashgraph/platform-ci-committers @hashgraph/release-engineering-managers @hashgraph/transaction-tool
+**/.gitignore.*                                 @hashgraph/platform-ci @hashgraph/platform-ci-committers @hashgraph/release-engineering-managers @hashgraph/transaction-tool
