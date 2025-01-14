@@ -34,15 +34,24 @@ const isTransactionSelectionModalShown = ref(false);
       </p>
     </div>
     <div class="mt-3" v-if="route.path == '/create-transaction-group'">
-      <AppButton class="text-main text-pink" @click="isTransactionSelectionModalShown = true"
+      <AppButton
+        type="button"
+        class="text-main text-pink"
+        @click="isTransactionSelectionModalShown = true"
         >Create New</AppButton
       >
     </div>
     <div class="mt-3 d-flex flex-column" v-if="route.path == '/transactions'">
-      <AppButton class="text-main text-pink" @click="isTransactionSelectionModalShown = true"
+      <AppButton
+        type="button"
+        class="text-main text-pink"
+        @click="isTransactionSelectionModalShown = true"
         >Create New Transaction</AppButton
       >
-      <AppButton class="text-main text-pink" @click="router.push('/create-transaction-group')"
+      <AppButton
+        type="button"
+        class="text-main text-pink"
+        @click="router.push('/create-transaction-group')"
         >Create New Transaction Group</AppButton
       >
     </div>
