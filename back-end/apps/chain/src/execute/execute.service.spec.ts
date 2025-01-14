@@ -409,19 +409,21 @@ describe('ExecuteService', () => {
         'Transaction has been canceled.',
       );
 
-      transaction.status = TransactionStatus.SIGN_ONLY;
-      transactionRepo.findOne.mockResolvedValueOnce(transaction);
-
-      await expect(service.executeTransaction(transaction)).rejects.toThrow(
-        'Transaction is sign-only.',
-      );
-
       transaction.status = TransactionStatus.ARCHIVED;
       transactionRepo.findOne.mockResolvedValueOnce(transaction);
 
       await expect(service.executeTransaction(transaction)).rejects.toThrow(
         'Transaction is archived.',
       );
+
+      transaction.isManual = true;
+      transactionRepo.findOne.mockResolvedValueOnce(transaction);
+
+      await expect(service.executeTransaction(transaction)).rejects.toThrow(
+        'Transaction is manual and cannot be executed.',
+      );
+
+      transaction.isManual = false;
     });
 
     it('should throw if transaction is null or undefined', async () => {

@@ -110,15 +110,13 @@ export class SignersService {
     /* Checks if the transaction is canceled */
     if (
       transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES &&
-      transaction.status !== TransactionStatus.SIGN_ONLY &&
       transaction.status !== TransactionStatus.WAITING_FOR_EXECUTION
     )
       throw new BadRequestException(ErrorCodes.TNRS);
 
     /* Checks if the transaction is expired */
     let sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
-    if (isExpired(sdkTransaction) && transaction.status !== TransactionStatus.SIGN_ONLY)
-      throw new BadRequestException(ErrorCodes.TE);
+    if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
 
     /* Validates the signatures */
     const { data: publicKeys, error } = safe<PublicKey[]>(

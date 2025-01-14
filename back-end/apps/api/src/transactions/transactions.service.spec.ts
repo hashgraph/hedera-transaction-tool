@@ -427,7 +427,7 @@ describe('TransactionsService', () => {
       client.close();
     });
 
-    it('should create a sign-only transaction', async () => {
+    it('should create a manual transaction', async () => {
       const sdkTransaction = new AccountCreateTransaction().setTransactionId(
         new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
       );
@@ -439,7 +439,7 @@ describe('TransactionsService', () => {
         creatorKeyId: 1,
         signature: Buffer.from('0xabc02'),
         mirrorNetwork: 'testnet',
-        isSignOnly: true,
+        isManual: true,
       };
 
       const client = Client.forTestnet();
@@ -464,7 +464,7 @@ describe('TransactionsService', () => {
       await service.createTransaction(dto, user as User);
 
       expect(transactionsRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ status: TransactionStatus.SIGN_ONLY }),
+        expect.objectContaining({ isManual: true }),
       );
       expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, 1);
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
@@ -663,53 +663,6 @@ describe('TransactionsService', () => {
         notificationsService,
         transaction.id,
         TransactionStatus.CANCELED,
-      );
-      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
-    });
-  });
-
-  describe('markAsSignOnlyTransaction', () => {
-    beforeEach(() => {
-      jest.resetAllMocks();
-    });
-
-    it('should throw if transaction status is not in progress', async () => {
-      const transaction = {
-        creatorKey: { userId: 1 },
-        status: TransactionStatus.EXECUTED,
-      };
-
-      jest
-        .spyOn(service, 'getTransactionForCreator')
-        .mockResolvedValueOnce(transaction as Transaction);
-
-      await expect(service.markAsSignOnlyTransaction(123, { id: 1 } as User)).rejects.toThrow(
-        ErrorCodes.OTIP,
-      );
-    });
-
-    it('should update transaction status to SIGN_ONLY and return true', async () => {
-      const transaction = {
-        id: 123,
-        creatorKey: { userId: 1 },
-        status: TransactionStatus.WAITING_FOR_SIGNATURES,
-      };
-
-      jest
-        .spyOn(service, 'getTransactionForCreator')
-        .mockResolvedValueOnce(transaction as Transaction);
-
-      const result = await service.markAsSignOnlyTransaction(123, { id: 1 } as User);
-
-      expect(transactionsRepo.update).toHaveBeenCalledWith(
-        { id: 123 },
-        { status: TransactionStatus.SIGN_ONLY },
-      );
-      expect(result).toBe(true);
-      expect(notifySyncIndicators).toHaveBeenCalledWith(
-        notificationsService,
-        transaction.id,
-        TransactionStatus.SIGN_ONLY,
       );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });

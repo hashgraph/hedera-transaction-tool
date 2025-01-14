@@ -83,6 +83,7 @@ describe('TransactionsController', () => {
       ),
       status: TransactionStatus.NEW,
       mirrorNetwork: 'testnet',
+      isManual: false,
       cutoffAt: new Date(),
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -293,25 +294,6 @@ describe('TransactionsController', () => {
 
       await expect(controller.cancelTransaction(user, 1)).rejects.toThrow(
         'Transaction cannot be canceled',
-      );
-    });
-  });
-
-  describe('markAsSignOnlyTransaction', () => {
-    it('should return a boolean indicating if the transaction has been marked as sign only', async () => {
-      const result = true;
-      transactionService.markAsSignOnlyTransaction.mockResolvedValue(result);
-
-      expect(await controller.markAsSignOnlyTransaction(user, 1)).toBe(result);
-    });
-
-    it('should return a boolean indicating if the transaction has not been marked as sign only', async () => {
-      jest
-        .spyOn(controller, 'markAsSignOnlyTransaction')
-        .mockRejectedValue(new BadRequestException('Transaction cannot be marked as sign only'));
-
-      await expect(controller.markAsSignOnlyTransaction(user, 1)).rejects.toThrow(
-        'Transaction cannot be marked as sign only',
       );
     });
   });

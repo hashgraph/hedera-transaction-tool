@@ -204,7 +204,7 @@ export class TransactionStatusService {
     transaction: Transaction,
   ): Promise<TransactionStatus | undefined> {
     /* Returns if the transaction is null */
-    if (!transaction || transaction.status === TransactionStatus.SIGN_ONLY) return;
+    if (!transaction) return;
 
     /* Gets the SDK transaction from the transaction body */
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);

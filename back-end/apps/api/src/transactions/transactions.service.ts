@@ -330,7 +330,7 @@ export class TransactionsService {
 
     /* Check if the transaction is expired */
     const sdkTransaction = SDKTransaction.fromBytes(dto.transactionBytes);
-    if (isExpired(sdkTransaction) && !dto.isSignOnly) throw new BadRequestException(ErrorCodes.TE);
+    if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
 
     /* Check if the transaction body is over the max size */
     if (isTransactionBodyOverMaxSize(sdkTransaction)) {
@@ -373,13 +373,10 @@ export class TransactionsService {
       signature: dto.signature,
       mirrorNetwork: dto.mirrorNetwork,
       validStart: sdkTransaction.transactionId.validStart.toDate(),
+      isManual: dto.isManual,
       cutoffAt: dto.cutoffAt,
     });
     client.close();
-
-    if (dto.isSignOnly) {
-      transaction.status = TransactionStatus.SIGN_ONLY;
-    }
 
     try {
       await this.repo.save(transaction);
@@ -418,7 +415,6 @@ export class TransactionsService {
         TransactionStatus.NEW,
         TransactionStatus.WAITING_FOR_SIGNATURES,
         TransactionStatus.WAITING_FOR_EXECUTION,
-        TransactionStatus.SIGN_ONLY,
       ].includes(transaction.status)
     ) {
       throw new BadRequestException(ErrorCodes.OTIP);
@@ -432,35 +428,17 @@ export class TransactionsService {
     return true;
   }
 
-  /* Mark the transaction as sign only. */
-  async markAsSignOnlyTransaction(id: number, user: User): Promise<boolean> {
-    const transaction = await this.getTransactionForCreator(id, user);
-
-    if (
-      ![
-        TransactionStatus.NEW,
-        TransactionStatus.WAITING_FOR_SIGNATURES,
-        TransactionStatus.WAITING_FOR_EXECUTION,
-        TransactionStatus.SIGN_ONLY,
-      ].includes(transaction.status)
-    ) {
-      throw new BadRequestException(ErrorCodes.OTIP);
-    }
-
-    await this.repo.update({ id }, { status: TransactionStatus.SIGN_ONLY });
-
-    notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.SIGN_ONLY);
-    notifyTransactionAction(this.notificationsService);
-
-    return true;
-  }
-
   /* Archive the transaction if the transaction is sign only. */
   async archiveTransaction(id: number, user: User): Promise<boolean> {
     const transaction = await this.getTransactionForCreator(id, user);
 
-    if (![TransactionStatus.SIGN_ONLY].includes(transaction.status)) {
-      throw new BadRequestException(ErrorCodes.OSONT);
+    if (
+      ![TransactionStatus.WAITING_FOR_SIGNATURES, TransactionStatus.WAITING_FOR_EXECUTION].includes(
+        transaction.status,
+      ) &&
+      !transaction.isManual
+    ) {
+      throw new BadRequestException(ErrorCodes.OMTIP);
     }
 
     await this.repo.update({ id }, { status: TransactionStatus.ARCHIVED });
