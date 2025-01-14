@@ -73,7 +73,7 @@ const buttonsDataTestIds: { [key: string]: string } = {
   [sign]: 'button-sign-org-transaction',
   [next]: 'button-next-org-transaction',
   [cancel]: 'button-cancel-org-transaction',
-  [execute]: 'button-mark-execute-org-transaction',
+  [execute]: 'button-execute-org-transaction',
   [archive]: 'button-archive-org-transaction',
   [exportName]: 'button-export-transaction',
 };
@@ -347,7 +347,7 @@ const handleTransactionAction = async (
       text: 'Are you sure you want to send the transaction for execution?',
       buttonText: 'Confirm',
       loadingText: 'Executing...',
-      successMessage: 'Transaction marked sent for execution successfully',
+      successMessage: 'Transaction sent for execution successfully',
       actionFunction: executeTransaction,
     },
   };
