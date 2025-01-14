@@ -10,7 +10,7 @@ export class ExecuteController {
   constructor(private readonly executeService: ExecuteService) {}
 
   @EventPattern(EXECUTE_TRANSACTION)
-  async updateExecute(@Payload() payload: ExecuteTransactionDto) {
+  async executeTransaction(@Payload() payload: ExecuteTransactionDto) {
     if (typeof payload.transactionBytes === 'string') {
       payload.transactionBytes = decode(payload.transactionBytes);
     }

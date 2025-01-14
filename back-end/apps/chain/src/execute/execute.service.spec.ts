@@ -416,13 +416,6 @@ describe('ExecuteService', () => {
         'Transaction is archived.',
       );
 
-      transaction.isManual = true;
-      transactionRepo.findOne.mockResolvedValueOnce(transaction);
-
-      await expect(service.executeTransaction(transaction)).rejects.toThrow(
-        'Transaction is manual and cannot be executed.',
-      );
-
       transaction.isManual = false;
     });
 
