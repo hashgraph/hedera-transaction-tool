@@ -107,6 +107,9 @@ export class Transaction {
   @Column()
   mirrorNetwork: string;
 
+  @Column({ default: false })
+  isManual: boolean;
+
   @Column({ nullable: true })
   cutoffAt?: Date;
 
