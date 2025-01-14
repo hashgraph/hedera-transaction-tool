@@ -53,7 +53,7 @@ type ActionButton =
   | 'Next'
   | 'Cancel'
   | 'Export'
-  | 'Execute'
+  | 'Submit'
   | 'Archive';
 
 /* Misc */
@@ -62,7 +62,7 @@ const approve: ActionButton = 'Approve';
 const sign: ActionButton = 'Sign';
 const next: ActionButton = 'Next';
 const cancel: ActionButton = 'Cancel';
-const execute: ActionButton = 'Execute';
+const execute: ActionButton = 'Submit';
 const archive: ActionButton = 'Archive';
 const exportName: ActionButton = 'Export';
 
@@ -159,16 +159,16 @@ const visibleButtons = computed(() => {
   const status = props.organizationTransaction?.status;
   const isManual = props.organizationTransaction?.isManual;
 
-  /* The order is important */
+  /* The order is important REJECT, APPROVE, SIGN, SUBMIT, NEXT, CANCEL, ARCHIVE, EXPORT */
   shouldApprove.value && buttons.push(reject, approve);
   canSign.value && !shouldApprove.value && buttons.push(sign);
   status === TransactionStatus.WAITING_FOR_EXECUTION &&
     isManual &&
-    canCancel &&
+    canCancel.value &&
     buttons.push(execute);
   props.nextId && !shouldApprove.value && !canSign.value && buttons.push(next);
   canCancel.value && buttons.push(cancel);
-  canSign.value && isManual && buttons.push(archive);
+  canCancel.value && isManual && buttons.push(archive);
   buttons.push(exportName);
 
   return buttons;
@@ -343,7 +343,7 @@ const handleTransactionAction = async (
       actionFunction: archiveTransaction,
     },
     execute: {
-      title: 'Execute Transaction?',
+      title: 'Submit Transaction?',
       text: 'Are you sure you want to send the transaction for execution?',
       buttonText: 'Confirm',
       loadingText: 'Executing...',
@@ -377,15 +377,11 @@ const handleTransactionAction = async (
     isConfirmModalLoadingState.value = false;
     confirmModalLoadingText.value = '';
   }
-
-  if (action === 'cancel') {
-    router.back();
-  }
 };
 
 const handleCancel = (showModal?: boolean) => handleTransactionAction('cancel', showModal);
 const handleArchive = (showModal?: boolean) => handleTransactionAction('archive', showModal);
-const handleMarkExecute = (showModal?: boolean) => handleTransactionAction('execute', showModal);
+const handleExecute = (showModal?: boolean) => handleTransactionAction('execute', showModal);
 
 const handleNext = () => {
   if (!props.nextId) return;
@@ -435,7 +431,7 @@ const handleAction = async (value: ActionButton) => {
   } else if (value === archive) {
     await handleArchive(true);
   } else if (value === execute) {
-    await handleMarkExecute(true);
+    await handleExecute(true);
   } else if (value === exportName) {
     await handleExport();
   }
