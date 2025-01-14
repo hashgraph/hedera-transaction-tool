@@ -226,6 +226,22 @@ export class TransactionsController {
   }
 
   @ApiOperation({
+    summary: 'Send a transaction for execution',
+    description: 'Send a manual transaction to the chain service that will execute it',
+  })
+  @ApiResponse({
+    status: 200,
+    type: Boolean,
+  })
+  @Patch('/execute/:id')
+  async executeTransaction(
+    @GetUser() user,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<boolean> {
+    return this.transactionsService.executeTransaction(id, user);
+  }
+
+  @ApiOperation({
     summary: 'Get a transaction',
     description: 'Get the transaction for the given transaction id.',
   })

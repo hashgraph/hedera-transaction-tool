@@ -34,6 +34,7 @@ export enum ErrorCodes {
   NNF = 'NNF',
   IB = 'IB',
   TOS = 'TOS',
+  IO = 'IO',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -73,4 +74,5 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.NNF]: 'Notification not found',
   [ErrorCodes.IB]: 'Invalid body',
   [ErrorCodes.TOS]: 'Transaction is over the size limit and cannot be executed',
+  [ErrorCodes.IO]: 'Invalid operation',
 };

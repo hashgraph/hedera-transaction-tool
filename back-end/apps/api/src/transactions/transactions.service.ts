@@ -18,6 +18,7 @@ import {
 import { Transaction, TransactionSigner, TransactionStatus, User } from '@entities';
 
 import {
+  CHAIN_SERVICE,
   NOTIFICATIONS_SERVICE,
   MirrorNodeService,
   encodeUint8Array,
@@ -37,6 +38,7 @@ import {
   notifySyncIndicators,
   ErrorCodes,
   isTransactionBodyOverMaxSize,
+  emitExecuteTranasction,
 } from '@app/common';
 
 import { CreateTransactionDto } from './dto';
@@ -48,6 +50,7 @@ export class TransactionsService {
   constructor(
     @InjectRepository(Transaction) private repo: Repository<Transaction>,
     @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
+    @Inject(CHAIN_SERVICE) private readonly chainService: ClientProxy,
     private readonly approversService: ApproversService,
     private readonly mirrorNodeService: MirrorNodeService,
     @InjectEntityManager() private entityManager: EntityManager,
@@ -445,6 +448,26 @@ export class TransactionsService {
 
     notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.ARCHIVED);
     notifyTransactionAction(this.notificationsService);
+
+    return true;
+  }
+
+  /* Sends the transaction for execution if the transaction is manual. */
+  async executeTransaction(id: number, user: User): Promise<boolean> {
+    const transaction = await this.getTransactionForCreator(id, user);
+
+    if (!transaction.isManual) {
+      throw new BadRequestException(ErrorCodes.IO);
+    }
+
+    emitExecuteTranasction(this.chainService, {
+      id: transaction.id,
+      status: transaction.status,
+      //@ts-expect-error - cannot send Buffer instance over the network
+      transactionBytes: transaction.transactionBytes.toString('hex'),
+      mirrorNetwork: transaction.mirrorNetwork,
+      validStart: transaction.validStart,
+    });
 
     return true;
   }
