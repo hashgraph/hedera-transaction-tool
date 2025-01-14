@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsDate,
   ValidateNested,
 } from 'class-validator';
 import { CreateTransactionGroupItemDto } from './create-transaction-group-item.dto';
@@ -20,6 +21,10 @@ export class CreateTransactionGroupDto {
   @IsOptional()
   @IsBoolean()
   sequential: boolean;
+
+  @IsDate()
+  @Type(() => Date)
+  groupValidStart: Date;
 
   @IsArray()
   @IsNotEmpty()

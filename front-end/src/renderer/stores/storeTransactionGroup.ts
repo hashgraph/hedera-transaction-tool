@@ -46,6 +46,13 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     groupItems.value = [];
     const group = await getGroup(id);
     description.value = group.description;
+    if (group.groupValidStart) {
+      if (group.groupValidStart > groupValidStart.value) {
+        groupValidStart.value = group.groupValidStart;
+      } else {
+        groupValidStart.value = new Date();
+      }
+    }
     const items = await getGroupItems(id);
     const drafts = await getDrafts(findArgs);
     const groupItemsToAdd: GroupItem[] = [];
@@ -163,10 +170,16 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     return new Date(validStartMillis);
   }
 
-  async function saveGroup(userId: string, description: string) {
+  async function saveGroup(userId: string, description: string, groupValidStart: Date) {
     // Alter this when we know what 'atomic' does
     if (groupItems.value[0].groupId === undefined) {
-      const newGroupId = await addGroupWithDrafts(userId, description, false, groupItems.value);
+      const newGroupId = await addGroupWithDrafts(
+        userId,
+        description,
+        false,
+        groupItems.value,
+        groupValidStart,
+      );
       const items = await getGroupItems(newGroupId!);
       for (const [index, groupItem] of groupItems.value.entries()) {
         groupItem.groupId = newGroupId;

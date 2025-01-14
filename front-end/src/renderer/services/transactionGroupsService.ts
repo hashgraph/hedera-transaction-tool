@@ -51,9 +51,10 @@ export const addGroupWithDrafts = async (
   description: string,
   atomic: boolean,
   groupItems: StoreGroupItem[],
+  groupValidStart: Date,
   details?: string,
 ) => {
-  const group = await addGroup(description, atomic);
+  const group = await addGroup(description, atomic, groupValidStart);
   try {
     for (const [index, item] of groupItems.entries()) {
       const transactionDraft: Prisma.TransactionDraftUncheckedCreateInput = {
@@ -96,12 +97,13 @@ export async function addGroupItem(
   }
 }
 
-export async function addGroup(description: string, atomic: boolean) {
+export async function addGroup(description: string, atomic: boolean, groupValidStart: Date) {
   const transactionGroup: Prisma.TransactionGroupUncheckedCreateInput = {
     description,
     // Not sure how this should be entered or what it's for
     atomic: atomic,
     created_at: new Date(),
+    groupValidStart: groupValidStart,
   };
   try {
     return await window.electronAPI.local.transactionGroups.addGroup(transactionGroup);

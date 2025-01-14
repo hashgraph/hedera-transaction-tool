@@ -162,6 +162,7 @@ model TransactionGroup {
   description String
   atomic      Boolean
   created_at  DateTime @default(now())
+  groupValidStart DateTime  @default(now())
 
   GroupItem GroupItem[]
 }

@@ -69,7 +69,11 @@ async function saveTransactionGroup() {
     throw new Error('Please add at least one transaction to the group');
   }
 
-  await transactionGroup.saveGroup(user.personal.id, groupDescription.value);
+  await transactionGroup.saveGroup(
+    user.personal.id,
+    groupDescription.value,
+    transactionGroup.groupValidStart,
+  );
   transactionGroup.clearGroup();
 }
 async function handleSaveGroup() {

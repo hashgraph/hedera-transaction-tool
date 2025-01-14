@@ -265,7 +265,7 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
     await deleteDraft(savedGroupItem.transaction_draft_id!);
   } else if (groupItem) {
     if (newGroupId.value === '') {
-      const newGroup = await addGroup('', false);
+      const newGroup = await addGroup('', false, transactionGroup.groupValidStart);
       newGroupId.value = newGroup.id;
     }
     await addGroupItem(groupItem, newGroupId.value, storedTransaction.id);
@@ -332,6 +332,7 @@ async function sendSignedTransactionsToOrganization() {
     transactionGroup.description,
     false,
     transactionGroup.sequential,
+    transactionGroup.groupValidStart,
     apiGroupItems,
   );
 

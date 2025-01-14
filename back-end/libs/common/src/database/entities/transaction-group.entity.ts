@@ -18,6 +18,9 @@ export class TransactionGroup {
   @CreateDateColumn()
   createdAt: Date;
 
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  groupValidStart: Date;
+
   @OneToMany(() => TransactionGroupItem, groupItem => groupItem.group)
   groupItems: TransactionGroupItem[];
 }
