@@ -36,7 +36,7 @@ export const submitTransaction = async (
   network: Network,
   signature: string,
   creatorKeyId: number,
-  isSignOnly?: boolean,
+  submitManually?: boolean,
 ): Promise<{ id: number; transactionBytes: string }> =>
   commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.post(`${serverUrl}/${controller}`, {
@@ -46,7 +46,7 @@ export const submitTransaction = async (
       mirrorNetwork: network,
       signature,
       creatorKeyId,
-      isSignOnly,
+      submitManually,
     });
 
     return { id: data.id, transactionBytes: data.transactionBytes };
