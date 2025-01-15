@@ -362,7 +362,7 @@ watch(
 
               <template v-else>
                 <div class="fill-remaining flex-centered">
-                  <EmptyTransactions group />
+                  <EmptyTransactions :mode="'group-details'" />
                 </div>
               </template>
             </Transition>
