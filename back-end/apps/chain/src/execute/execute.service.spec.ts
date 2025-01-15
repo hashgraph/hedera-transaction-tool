@@ -449,7 +449,6 @@ describe('ExecuteService', () => {
         sequential: false,
         createdAt: new Date(),
         groupItems: [],
-        groupValidStart: new Date(),
       };
 
       for (let i = 0; i < 3; i++) {

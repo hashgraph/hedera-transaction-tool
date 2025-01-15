@@ -61,7 +61,6 @@ describe('TransactionGroupsController', () => {
       sequential: false,
       groupItems: [],
       createdAt: new Date(),
-      groupValidStart: new Date(),
     };
   });
 
@@ -73,7 +72,6 @@ describe('TransactionGroupsController', () => {
         atomic: false,
         sequential: false,
         groupItems: [],
-        groupValidStart: new Date(),
       };
 
       transactionGroupsService.createTransactionGroup.mockResolvedValue(result);
