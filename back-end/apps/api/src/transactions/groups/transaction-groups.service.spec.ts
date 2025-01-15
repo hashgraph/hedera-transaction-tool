@@ -111,6 +111,7 @@ describe('TransactionGroupsService', () => {
             },
           },
         ],
+        groupValidStart: new Date(),
       };
 
       dataSource.manager.create.mockImplementation((entity, data) => ({ ...data }));

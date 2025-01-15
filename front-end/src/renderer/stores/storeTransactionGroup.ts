@@ -43,6 +43,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     if (modified.value) {
       return;
     }
+
     groupItems.value = [];
     const group = await getGroup(id);
     description.value = group.description;
@@ -53,6 +54,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
         groupValidStart.value = new Date();
       }
     }
+
     const items = await getGroupItems(id);
     const drafts = await getDrafts(findArgs);
     const groupItemsToAdd: GroupItem[] = [];
@@ -189,7 +191,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       await updateGroup(
         groupItems.value[0].groupId,
         userId,
-        { description, atomic: false },
+        { description, atomic: false, groupValidStart: groupValidStart },
         groupItems.value,
       );
     }
@@ -238,7 +240,8 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
 
   function updateTransactionValidStarts(newGroupValidStart: Date) {
     groupItems.value = groupItems.value.map((item, index) => {
-      if (item.validStart < newGroupValidStart) {
+      const now = new Date();
+      if (item.validStart < now) {
         const updatedValidStart = findUniqueValidStart(
           item.payerAccountId,
           newGroupValidStart.getTime() + index,
