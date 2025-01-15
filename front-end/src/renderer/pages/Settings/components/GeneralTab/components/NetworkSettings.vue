@@ -119,17 +119,19 @@ onBeforeMount(() => {
           <AppButton
             class="rounded-3 text-nowrap"
             :class="{
-              active: networkStore.network === network,
-              'text-body': networkStore.network !== network,
+              active: networkStore.network === network && !isCustomSettingsVisible,
+              'text-body': networkStore.network !== network && !isCustomSettingsVisible,
             }"
-            :color="networkStore.network === network ? 'primary' : undefined"
+            :color="
+              networkStore.network === network && !isCustomSettingsVisible ? 'primary' : undefined
+            "
             @click="handleCommonNetwork(network)"
             :data-testid="`tab-network-${network}`"
             >{{ CommonNetworkNames[network] }}</AppButton
           >
         </template>
         <AppButton
-          :color="isCustomActive ? 'primary' : undefined"
+          :color="isCustomActive || isCustomSettingsVisible ? 'primary' : undefined"
           data-testid="tab-network-custom"
           class="rounded-3 text-nowrap"
           :class="{
