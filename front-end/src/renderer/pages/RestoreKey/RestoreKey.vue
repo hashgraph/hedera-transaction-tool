@@ -4,6 +4,7 @@ import { PrivateKey } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useContactsStore from '@renderer/stores/storeContacts';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -30,6 +31,7 @@ import RecoveryPhraseNicknameInput from '@renderer/components/RecoveryPhrase/Rec
 
 /* Stores */
 const user = useUserStore();
+const contacts = useContactsStore();
 
 /* Composables */
 const toast = useToast();
@@ -164,6 +166,7 @@ const handleSaveKey = async () => {
 
     toast.success('Key pair saved');
     router.push({ name: 'settingsKeys' });
+    await safeAwait(contacts.fetch());
   } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to store private key'));
   } finally {

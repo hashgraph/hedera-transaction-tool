@@ -4,6 +4,7 @@ import { reactive, watch } from 'vue';
 import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useContactsStore from '@renderer/stores/storeContacts';
 
 import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
@@ -14,6 +15,7 @@ import {
   assertUserLoggedIn,
   getErrorMessage,
   isLoggedInOrganization,
+  safeAwait,
   safeDuplicateUploadKey,
 } from '@renderer/utils';
 
@@ -32,6 +34,7 @@ const emit = defineEmits(['update:show']);
 
 /* Stores */
 const user = useUserStore();
+const contacts = useContactsStore();
 
 /* Composables */
 const toast = useToast();
@@ -78,6 +81,7 @@ const handleImportExternalKey = async () => {
 
     await user.storeKey(keyPair, null, personalPassword, false);
     await user.refetchUserState();
+    await safeAwait(contacts.fetch());
 
     emit('update:show', false);
 

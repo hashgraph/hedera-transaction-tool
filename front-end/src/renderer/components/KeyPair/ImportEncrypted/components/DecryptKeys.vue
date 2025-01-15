@@ -2,13 +2,14 @@
 import { computed, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useContactsStore from '@renderer/stores/storeContacts';
 
 import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { hashData } from '@renderer/services/electronUtilsService';
 
-import { getKeysFromSecretHash, getRecoveryPhraseHashValue } from '@renderer/utils';
+import { getKeysFromSecretHash, getRecoveryPhraseHashValue, safeAwait } from '@renderer/utils';
 
 import DecryptKeyModal from '@renderer/components/KeyPair/ImportEncrypted/components/DecryptKeyModal.vue';
 
@@ -25,6 +26,7 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+const contacts = useContactsStore();
 
 /* Composables */
 const toast = useToast();
@@ -101,6 +103,7 @@ async function end() {
   await user.refetchKeys();
   user.refetchAccounts();
   await user.refetchUserState();
+  safeAwait(contacts.fetch());
 }
 
 function reset() {
