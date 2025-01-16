@@ -43,6 +43,7 @@ import {
   isLoggedInOrganization,
   isUserLoggedIn,
   getErrorMessage,
+  assertIsLoggedInOrganization,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -120,12 +121,7 @@ async function signAfterConfirm() {
   }
 
   assertUserLoggedIn(user.personal);
-
-  if (user.selectedOrganization) {
-    throw new Error(
-      "User is in organization mode, shouldn't be able to sign before submitting to organization",
-    );
-  }
+  assertIsLoggedInOrganization(user.selectedOrganization);
 
   /* Verifies the user has entered his password */
   const personalPassword = getPassword(signAfterConfirm, {
@@ -269,7 +265,7 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
     await deleteDraft(savedGroupItem.transaction_draft_id!);
   } else if (groupItem) {
     if (newGroupId.value === '') {
-      const newGroup = await addGroup('', false);
+      const newGroup = await addGroup('', false, transactionGroup.groupValidStart);
       newGroupId.value = newGroup.id;
     }
     await addGroupItem(groupItem, newGroupId.value, storedTransaction.id);
@@ -288,7 +284,7 @@ async function sendSignedTransactionsToOrganization() {
 
   /* Verifies the user has entered his password */
   assertUserLoggedIn(user.personal);
-  const personalPassword = getPassword(signAfterConfirm, {
+  const personalPassword = getPassword(sendSignedTransactionsToOrganization, {
     subHeading: 'Enter your application password to sign as a creator',
   });
   if (passwordModalOpened(personalPassword)) return;
@@ -336,6 +332,7 @@ async function sendSignedTransactionsToOrganization() {
     transactionGroup.description,
     false,
     transactionGroup.sequential,
+    transactionGroup.groupValidStart,
     apiGroupItems,
   );
 

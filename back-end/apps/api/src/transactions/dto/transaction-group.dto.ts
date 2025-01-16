@@ -18,6 +18,9 @@ export class TransactionGroupDto {
   createdAt: Date;
 
   @Expose()
+  groupValidTime: Date;
+
+  @Expose()
   @Type(() => TransactionGroupItemDto)
   groupItems: TransactionGroupItemDto[];
 }

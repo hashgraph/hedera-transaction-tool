@@ -30,6 +30,7 @@ import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import TransactionSelectionModal from '@renderer/components/TransactionSelectionModal.vue';
 import TransactionGroupProcessor from '@renderer/components/Transaction/TransactionGroupProcessor.vue';
 import SaveTransactionGroupModal from '@renderer/components/modals/SaveTransactionGroupModal.vue';
+import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
@@ -68,7 +69,11 @@ async function saveTransactionGroup() {
     throw new Error('Please add at least one transaction to the group');
   }
 
-  await transactionGroup.saveGroup(user.personal.id, groupDescription.value);
+  await transactionGroup.saveGroup(
+    user.personal.id,
+    groupDescription.value,
+    transactionGroup.groupValidStart,
+  );
   transactionGroup.clearGroup();
 }
 async function handleSaveGroup() {
@@ -155,6 +160,7 @@ async function handleSignSubmit() {
   }
 
   try {
+    transactionGroup.updateTransactionValidStarts(transactionGroup.groupValidStart);
     const ownerKeys = new Array<PublicKey>();
     for (const key of user.keyPairs) {
       ownerKeys.push(PublicKey.fromString(key.public_key));
@@ -290,6 +296,10 @@ async function handleOnFileChanged(e: Event) {
   if (file.value != null) {
     file.value.value = '';
   }
+}
+
+function updateGroupValidStart(newDate: Date) {
+  transactionGroup.groupValidStart = newDate;
 }
 
 /* Functions */
@@ -429,12 +439,24 @@ onBeforeRouteLeave(async to => {
         </div>
         <hr class="separator my-5 w-100" />
         <div v-if="!groupEmpty" class="fill-remaining pb-10">
-          <div class="text-end mb-5">
-            {{
-              transactionGroup.groupItems.length < 2
-                ? `1 Transaction`
-                : `${transactionGroup.groupItems.length} Transactions`
-            }}
+          <div class="d-flex justify-content-between align-items-center mb-5">
+            <div>
+              <label class="form-label"
+                >Group Valid Start <span class="text-muted text-italic">- Local time</span></label
+              >
+              <RunningClockDatePicker
+                :model-value="transactionGroup.groupValidStart"
+                @update:modelValue="updateGroupValidStart"
+                :nowButtonVisible="true"
+              />
+            </div>
+            <div>
+              {{
+                transactionGroup.groupItems.length < 2
+                  ? `1 Transaction`
+                  : `${transactionGroup.groupItems.length} Transactions`
+              }}
+            </div>
           </div>
           <div
             v-for="(groupItem, index) in transactionGroup.groupItems"

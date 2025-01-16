@@ -67,6 +67,7 @@ describe('Transaction Groups Service', () => {
         description: 'description',
         atomic: false,
         created_at: new Date(),
+        groupValidStart: new Date(),
       };
 
       prisma.transactionGroup.findUnique.mockResolvedValue(group);
@@ -166,6 +167,7 @@ describe('Transaction Groups Service', () => {
       const updateData = {
         description: 'new description',
         atomic: true,
+        groupValidDate: new Date(),
       };
 
       await updateGroup(id, updateData);

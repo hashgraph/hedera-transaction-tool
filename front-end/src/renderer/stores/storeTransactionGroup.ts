@@ -32,6 +32,7 @@ export interface GroupItem {
 const useTransactionGroupStore = defineStore('transactionGroup', () => {
   /* State */
   const groupItems = ref<GroupItem[]>([]);
+  const groupValidStart = ref(new Date());
   const description = ref('');
   const sequential = ref(false);
   const modified = ref(false);
@@ -42,9 +43,18 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     if (modified.value) {
       return;
     }
+
     groupItems.value = [];
     const group = await getGroup(id);
     description.value = group.description;
+    if (group.groupValidStart) {
+      if (group.groupValidStart > groupValidStart.value) {
+        groupValidStart.value = group.groupValidStart;
+      } else {
+        groupValidStart.value = new Date();
+      }
+    }
+
     const items = await getGroupItems(id);
     const drafts = await getDrafts(findArgs);
     const groupItemsToAdd: GroupItem[] = [];
@@ -73,6 +83,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
 
   function clearGroup() {
     groupItems.value = [];
+    groupValidStart.value = new Date();
     description.value = '';
     sequential.value = false;
     modified.value = false;
@@ -161,10 +172,16 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     return new Date(validStartMillis);
   }
 
-  async function saveGroup(userId: string, description: string) {
+  async function saveGroup(userId: string, description: string, groupValidStart: Date) {
     // Alter this when we know what 'atomic' does
     if (groupItems.value[0].groupId === undefined) {
-      const newGroupId = await addGroupWithDrafts(userId, description, false, groupItems.value);
+      const newGroupId = await addGroupWithDrafts(
+        userId,
+        description,
+        false,
+        groupItems.value,
+        groupValidStart,
+      );
       const items = await getGroupItems(newGroupId!);
       for (const [index, groupItem] of groupItems.value.entries()) {
         groupItem.groupId = newGroupId;
@@ -174,7 +191,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       await updateGroup(
         groupItems.value[0].groupId,
         userId,
-        { description, atomic: false },
+        { description, atomic: false, groupValidStart: groupValidStart },
         groupItems.value,
       );
     }
@@ -221,6 +238,28 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     return modified.value;
   }
 
+  function updateTransactionValidStarts(newGroupValidStart: Date) {
+    groupItems.value = groupItems.value.map((item, index) => {
+      const now = new Date();
+      if (item.validStart < now) {
+        const updatedValidStart = findUniqueValidStart(
+          item.payerAccountId,
+          newGroupValidStart.getTime() + index,
+        );
+        const transaction = Transaction.fromBytes(item.transactionBytes);
+        transaction.setTransactionId(createTransactionId(item.payerAccountId, updatedValidStart));
+
+        return {
+          ...item,
+          transactionBytes: transaction.toBytes(),
+          validStart: updatedValidStart,
+        };
+      }
+      return item;
+    });
+    setModified();
+  }
+
   // function getObservers() {
   //   const observers = new Array<number>();
   //   for (const groupItem of groupItems.value) {
@@ -244,6 +283,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     clearGroup,
     groupItems,
     description,
+    groupValidStart,
     sequential,
     getRequiredKeys,
     editGroupItem,
@@ -251,6 +291,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     hasApprovers,
     setModified,
     isModified,
+    updateTransactionValidStarts,
   };
 });
 

@@ -18,6 +18,7 @@ export interface IGroup {
   atomic: boolean;
   sequential: boolean;
   createdAt: string;
+  groupValidStart: Date;
   groupItems: IGroupItem[];
 }
 
@@ -26,6 +27,7 @@ export const submitTransactionGroup = async (
   description: string,
   atomic: boolean,
   sequential: boolean,
+  groupValidStart: Date,
   groupItems: ApiGroupItem[],
 ): Promise<{ id: number; transactionBytes: string }> => {
   return commonRequestHandler(async () => {
@@ -35,6 +37,7 @@ export const submitTransactionGroup = async (
         description,
         atomic,
         sequential,
+        groupValidStart,
         groupItems,
       },
       {
