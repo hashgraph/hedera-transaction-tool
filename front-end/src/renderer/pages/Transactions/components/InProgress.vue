@@ -360,7 +360,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
       </template>
       <template v-else>
         <div class="flex-column-100 flex-centered">
-          <EmptyTransactions />
+          <EmptyTransactions :mode="'transactions-tab'" />
         </div>
       </template>
     </template>

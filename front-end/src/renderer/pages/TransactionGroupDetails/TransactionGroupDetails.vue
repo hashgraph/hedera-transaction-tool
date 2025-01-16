@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { IGroup } from '@renderer/services/organization';
 
-import { computed, onBeforeMount, ref, watch } from 'vue';
+import { onBeforeMount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { Transaction } from '@hashgraph/sdk';
 
@@ -38,8 +38,10 @@ import {
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppLoader from '@renderer/components/ui/AppLoader.vue';
+import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -55,8 +57,7 @@ useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
-const group = ref<IGroup>();
-const groupEmpty = computed(() => group.value?.groupItems.length == 0);
+const group = ref<IGroup | null>(null);
 const shouldApprove = ref(false);
 const isConfirmModalShown = ref(false);
 const publicKeysRequiredToSign = ref<string[] | null>([]);
@@ -69,6 +70,7 @@ async function handleFetchGroup(id: string | number) {
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
     try {
       group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
+
       if (group.value?.groupItems != undefined) {
         for (const item of group.value.groupItems) {
           shouldApprove.value =
@@ -268,139 +270,195 @@ watch(
 </script>
 <template>
   <div class="p-5">
-    <div class="d-flex align-items-center">
-      <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
-        <i class="bi bi-arrow-left"></i>
-      </AppButton>
+    <div class="flex-column-100">
+      <div class="d-flex align-items-center">
+        <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
+          <i class="bi bi-arrow-left"></i>
+        </AppButton>
 
-      <h2 class="text-title text-bold">Transaction Group Details</h2>
-    </div>
-    <div class="d-flex mt-4">
-      <div class="form-group col-6">
-        <label class="form-label">Transaction Group Description</label>
-        <div>{{ group?.description }}</div>
+        <h2 class="text-title text-bold">Transaction Group Details</h2>
       </div>
-      <div v-if="isLoggedInOrganization(user.selectedOrganization)" class="form-group col-6">
-        <label class="form-label">Sequential Execution</label>
-        <div>{{ group?.sequential ? 'Yes' : 'No' }}</div>
-      </div>
-    </div>
 
-    <hr class="separator my-5 w-100" />
-    <div v-if="!groupEmpty">
-      <table class="table-custom">
-        <thead>
-          <tr>
-            <th>
-              <div>
-                <span>Transaction ID</span>
+      <Transition name="fade" mode="out-in">
+        <template v-if="group">
+          <div class="fill-remaining flex-column-100 mt-4">
+            <div class="d-flex">
+              <div class="col-6 flex-1">
+                <label class="form-label">Transaction Group Description</label>
+                <div>{{ group?.description }}</div>
               </div>
-            </th>
-            <th>
-              <div>
-                <span>Transaction Type</span>
+
+              <template v-if="isLoggedInOrganization(user.selectedOrganization)">
+                <div class="col-6">
+                  <label class="form-label">Sequential Execution</label>
+                  <div>{{ group?.sequential ? 'Yes' : 'No' }}</div>
+                </div>
+              </template>
+            </div>
+
+            <hr class="separator my-5 w-100" />
+
+            <Transition name="fade" mode="out-in">
+              <template v-if="group.groupItems.length > 0">
+                <div class="fill-remaining overflow-x-auto">
+                  <table class="table-custom">
+                    <thead>
+                      <tr>
+                        <th>
+                          <div>
+                            <span>Transaction ID</span>
+                          </div>
+                        </th>
+                        <th>
+                          <div>
+                            <span>Transaction Type</span>
+                          </div>
+                        </th>
+                        <th>
+                          <div>
+                            <span>Valid Start</span>
+                          </div>
+                        </th>
+                        <th class="text-center">
+                          <span>Actions</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <template v-for="(groupItem, index) in group.groupItems" :key="groupItem.seq">
+                        <Transition name="fade" mode="out-in">
+                          <template v-if="groupItem">
+                            <tr>
+                              <td data-testid="td-group-transaction-id">
+                                {{ groupItem.transaction.transactionId }}
+                              </td>
+                              <td>
+                                <span class="text-bold">{{
+                                  TransactionTypeName[groupItem.transaction.type]
+                                }}</span>
+                              </td>
+                              <td data-testid="td-group-valid-start-time">
+                                {{
+                                  getDateStringExtended(new Date(groupItem.transaction.validStart))
+                                }}
+                              </td>
+                              <td class="text-center">
+                                <AppButton
+                                  type="button"
+                                  color="secondary"
+                                  @click.prevent="handleSign(groupItem.transaction.id)"
+                                  :data-testid="`button-group-transaction-${index}`"
+                                  >Details</AppButton
+                                >
+                              </td>
+                            </tr>
+                          </template>
+                        </Transition>
+                      </template>
+                    </tbody>
+                  </table>
+                </div>
+              </template>
+
+              <template v-else>
+                <div class="fill-remaining flex-centered">
+                  <EmptyTransactions :mode="'group-details'" />
+                </div>
+              </template>
+            </Transition>
+
+            <Transition name="fade" mode="out-in">
+              <template
+                v-if="
+                  shouldApprove ||
+                  (isLoggedInOrganization(user.selectedOrganization) &&
+                    publicKeysRequiredToSign &&
+                    publicKeysRequiredToSign.length > 0 &&
+                    !disableSignAll)
+                "
+              >
+                <div class="d-flex gap-4 mt-5">
+                  <!-- Approval Actions -->
+                  <template v-if="shouldApprove">
+                    <AppButton
+                      color="secondary"
+                      type="button"
+                      :loading="isApproving"
+                      loading-text="Rejecting..."
+                      @click="handleApproveAll(false, true)"
+                    >
+                      Reject All
+                    </AppButton>
+                    <AppButton
+                      color="primary"
+                      type="button"
+                      :loading="isApproving"
+                      loading-text="Approving..."
+                      @click="handleApproveAll(true, true)"
+                    >
+                      Approve All
+                    </AppButton>
+                  </template>
+
+                  <!-- Sign All Button -->
+                  <template
+                    v-if="
+                      isLoggedInOrganization(user.selectedOrganization) &&
+                      publicKeysRequiredToSign &&
+                      publicKeysRequiredToSign.length > 0 &&
+                      !disableSignAll
+                    "
+                  >
+                    <AppButton
+                      color="primary"
+                      type="button"
+                      :loading="isSigning"
+                      loading-text="Signing..."
+                      data-testid="button-sign-all-tx"
+                      @click="handleSignGroup"
+                    >
+                      Sign All
+                    </AppButton>
+                  </template>
+                </div>
+              </template>
+            </Transition>
+
+            <AppModal v-model:show="isConfirmModalShown" class="common-modal">
+              <div class="p-4">
+                <i
+                  class="bi bi-x-lg d-inline-block cursor-pointer"
+                  @click="isConfirmModalShown = false"
+                ></i>
+                <div class="text-center">
+                  <AppCustomIcon :name="'questionMark'" style="height: 160px" />
+                </div>
+                <h3 class="text-center text-title text-bold mt-4">Reject Transaction?</h3>
+                <p class="text-center text-small text-secondary mt-4">
+                  Are you sure you want to reject the transaction
+                </p>
+                <hr class="separator my-5" />
+                <div class="flex-between-centered gap-4">
+                  <AppButton color="borderless" @click="isConfirmModalShown = false"
+                    >Cancel</AppButton
+                  >
+                  <AppButton
+                    color="primary"
+                    data-testid="button-confirm-change-password"
+                    @click="handleApproveAll(false)"
+                    >Reject</AppButton
+                  >
+                </div>
               </div>
-            </th>
-            <th>
-              <div>
-                <span>Valid Start</span>
-              </div>
-            </th>
-            <th class="text-center">
-              <span>Actions</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <template v-for="(groupItem, index) in group?.groupItems" :key="groupItem.seq">
-            <tr>
-              <td data-testid="td-group-transaction-id">
-                {{ groupItem.transaction.transactionId }}
-              </td>
-              <td>
-                <span class="text-bold">{{ TransactionTypeName[groupItem.transaction.type] }}</span>
-              </td>
-              <td data-testid="td-group-valid-start-time">
-                {{ getDateStringExtended(new Date(groupItem.transaction.validStart)) }}
-              </td>
-              <td class="text-center">
-                <AppButton
-                  type="button"
-                  color="secondary"
-                  @click.prevent="handleSign(groupItem.transaction.id)"
-                  :data-testid="`button-group-transaction-${index}`"
-                  >Details</AppButton
-                >
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
-      <div class="mt-5">
-        <AppButton
-          v-if="shouldApprove"
-          color="secondary"
-          type="button"
-          class="me-3"
-          :loading="isApproving"
-          loading-text="Rejecting..."
-          @click="handleApproveAll(false, true)"
-        >
-          Reject All
-        </AppButton>
-        <AppButton
-          v-if="shouldApprove"
-          color="primary"
-          type="button"
-          class="me-3"
-          :loading="isApproving"
-          loading-text="Approving..."
-          @click="handleApproveAll(true, true)"
-        >
-          Approve All
-        </AppButton>
-        <AppButton
-          v-if="
-            isLoggedInOrganization(user.selectedOrganization) &&
-            publicKeysRequiredToSign &&
-            publicKeysRequiredToSign.length > 0 &&
-            !disableSignAll
-          "
-          color="primary"
-          type="button"
-          :loading="isSigning"
-          loading-text="Signing..."
-          data-testid="button-sign-all-tx"
-          @click="handleSignGroup"
-        >
-          Sign All
-        </AppButton>
-      </div>
+            </AppModal>
+          </div>
+        </template>
+        <template v-else>
+          <div class="flex-column-100 justify-content-center">
+            <AppLoader class="mb-7" />
+          </div>
+        </template>
+      </Transition>
     </div>
-    <AppModal v-model:show="isConfirmModalShown" class="common-modal">
-      <div class="p-4">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          @click="isConfirmModalShown = false"
-        ></i>
-        <div class="text-center">
-          <AppCustomIcon :name="'questionMark'" style="height: 160px" />
-        </div>
-        <h3 class="text-center text-title text-bold mt-4">Reject Transaction?</h3>
-        <p class="text-center text-small text-secondary mt-4">
-          Are you sure you want to reject the transaction
-        </p>
-        <hr class="separator my-5" />
-        <div class="flex-between-centered gap-4">
-          <AppButton color="borderless" @click="isConfirmModalShown = false">Cancel</AppButton>
-          <AppButton
-            color="primary"
-            data-testid="button-confirm-change-password"
-            @click="handleApproveAll(false)"
-            >Reject</AppButton
-          >
-        </div>
-      </div>
-    </AppModal>
   </div>
 </template>
