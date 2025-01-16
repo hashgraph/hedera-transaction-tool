@@ -97,14 +97,12 @@ onUpdated(createTooltips);
         <i class="text-icon-main bi bi-three-dots-vertical"></i>
       </span> -->
       <div class="me-5">
-        <span
-          class="text-bold text-small"
+        <RouterLink
+          class="text-bold text-small text-decoration-none"
+          to="/settings/general"
           :class="networkMapping[networkStore.network]?.className || 'text-info'"
-          >{{ networkMapping[networkStore.network]?.label || 'CUSTOM' }}</span
-        >
-        <RouterLink class="container-icon link-white" to="/settings/general"
-          ><i class="text-icon-main bi bi-toggles"></i
-        ></RouterLink>
+          >{{ networkMapping[networkStore.network]?.label || 'CUSTOM' }}
+        </RouterLink>
       </div>
       <div>
         <UserModeSelect />
