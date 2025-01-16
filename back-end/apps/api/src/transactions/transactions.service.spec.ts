@@ -20,7 +20,7 @@ import {
   Client,
 } from '@hashgraph/sdk';
 
-import { NOTIFICATIONS_SERVICE, MirrorNodeService, ErrorCodes } from '@app/common';
+import { NOTIFICATIONS_SERVICE, MirrorNodeService, ErrorCodes, CHAIN_SERVICE } from '@app/common';
 import {
   attachKeys,
   getClientFromNetwork,
@@ -31,6 +31,7 @@ import {
   notifySyncIndicators,
   MirrorNetworkGRPC,
   isTransactionBodyOverMaxSize,
+  emitExecuteTranasction,
 } from '@app/common/utils';
 import {
   Transaction,
@@ -52,6 +53,7 @@ describe('TransactionsService', () => {
   let service: TransactionsService;
 
   const transactionsRepo = mockDeep<Repository<Transaction>>();
+  const chainService = mock<ClientProxy>();
   const notificationsService = mock<ClientProxy>();
   const approversService = mock<ApproversService>();
   const mirrorNodeService = mock<MirrorNodeService>();
@@ -88,6 +90,10 @@ describe('TransactionsService', () => {
         {
           provide: NOTIFICATIONS_SERVICE,
           useValue: notificationsService,
+        },
+        {
+          provide: CHAIN_SERVICE,
+          useValue: chainService,
         },
         {
           provide: ApproversService,
@@ -427,7 +433,7 @@ describe('TransactionsService', () => {
       client.close();
     });
 
-    it('should create a sign-only transaction', async () => {
+    it('should create a manual transaction', async () => {
       const sdkTransaction = new AccountCreateTransaction().setTransactionId(
         new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
       );
@@ -439,7 +445,7 @@ describe('TransactionsService', () => {
         creatorKeyId: 1,
         signature: Buffer.from('0xabc02'),
         mirrorNetwork: 'testnet',
-        isSignOnly: true,
+        isManual: true,
       };
 
       const client = Client.forTestnet();
@@ -464,7 +470,7 @@ describe('TransactionsService', () => {
       await service.createTransaction(dto, user as User);
 
       expect(transactionsRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ status: TransactionStatus.SIGN_ONLY }),
+        expect.objectContaining({ isManual: true }),
       );
       expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, 1);
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
@@ -668,53 +674,6 @@ describe('TransactionsService', () => {
     });
   });
 
-  describe('markAsSignOnlyTransaction', () => {
-    beforeEach(() => {
-      jest.resetAllMocks();
-    });
-
-    it('should throw if transaction status is not in progress', async () => {
-      const transaction = {
-        creatorKey: { userId: 1 },
-        status: TransactionStatus.EXECUTED,
-      };
-
-      jest
-        .spyOn(service, 'getTransactionForCreator')
-        .mockResolvedValueOnce(transaction as Transaction);
-
-      await expect(service.markAsSignOnlyTransaction(123, { id: 1 } as User)).rejects.toThrow(
-        ErrorCodes.OTIP,
-      );
-    });
-
-    it('should update transaction status to SIGN_ONLY and return true', async () => {
-      const transaction = {
-        id: 123,
-        creatorKey: { userId: 1 },
-        status: TransactionStatus.WAITING_FOR_SIGNATURES,
-      };
-
-      jest
-        .spyOn(service, 'getTransactionForCreator')
-        .mockResolvedValueOnce(transaction as Transaction);
-
-      const result = await service.markAsSignOnlyTransaction(123, { id: 1 } as User);
-
-      expect(transactionsRepo.update).toHaveBeenCalledWith(
-        { id: 123 },
-        { status: TransactionStatus.SIGN_ONLY },
-      );
-      expect(result).toBe(true);
-      expect(notifySyncIndicators).toHaveBeenCalledWith(
-        notificationsService,
-        transaction.id,
-        TransactionStatus.SIGN_ONLY,
-      );
-      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
-    });
-  });
-
   describe('archiveTransaction', () => {
     beforeEach(() => {
       jest.resetAllMocks();
@@ -723,7 +682,7 @@ describe('TransactionsService', () => {
     it('should throw if transaction status is not archiveable', async () => {
       const transaction = {
         creatorKey: { userId: 1 },
-        status: TransactionStatus.WAITING_FOR_SIGNATURES, //Only SIGN_ONLY transactions can be archived
+        status: TransactionStatus.CANCELED,
       };
 
       jest
@@ -731,7 +690,7 @@ describe('TransactionsService', () => {
         .mockResolvedValueOnce(transaction as Transaction);
 
       await expect(service.archiveTransaction(123, { id: 1 } as User)).rejects.toThrow(
-        ErrorCodes.OSONT,
+        ErrorCodes.OMTIP,
       );
     });
 
@@ -739,7 +698,8 @@ describe('TransactionsService', () => {
       const transaction = {
         id: 123,
         creatorKey: { userId: 1 },
-        status: TransactionStatus.SIGN_ONLY,
+        isManual: true,
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
       };
 
       jest
@@ -759,6 +719,53 @@ describe('TransactionsService', () => {
         TransactionStatus.ARCHIVED,
       );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+    });
+  });
+
+  describe('executeTransaction', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('should throw if transaction is not manual', async () => {
+      const transaction = {
+        id: 123,
+        creatorKey: { userId: user.id },
+        isManual: false,
+      };
+
+      jest
+        .spyOn(service, 'getTransactionForCreator')
+        .mockResolvedValueOnce(transaction as Transaction);
+
+      await expect(service.executeTransaction(123, user as User)).rejects.toThrow(ErrorCodes.IO);
+    });
+
+    it('should emit execute transaction event and return true if transaction is manual', async () => {
+      const transaction = {
+        id: 123,
+        creatorKey: { userId: user.id },
+        isManual: true,
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+        transactionBytes: Buffer.from('transactionBytes'),
+        mirrorNetwork: 'testnet',
+        validStart: new Date(),
+      };
+
+      jest
+        .spyOn(service, 'getTransactionForCreator')
+        .mockResolvedValueOnce(transaction as Transaction);
+
+      const result = await service.executeTransaction(123, user as User);
+
+      expect(result).toBe(true);
+      expect(emitExecuteTranasction).toHaveBeenCalledWith(chainService, {
+        id: transaction.id,
+        status: transaction.status,
+        transactionBytes: transaction.transactionBytes.toString('hex'),
+        mirrorNetwork: transaction.mirrorNetwork,
+        validStart: transaction.validStart,
+      });
     });
   });
 
@@ -936,6 +943,7 @@ describe('TransactionsService', () => {
       );
     });
   });
+
   describe('shouldApproveTransaction', () => {
     beforeEach(() => {
       jest.resetAllMocks();

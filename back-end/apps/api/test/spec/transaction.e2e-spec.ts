@@ -137,11 +137,11 @@ describe('Transactions (e2e)', () => {
       );
     });
 
-    it("(POST) should create a transaction marked as 'sign only'", async () => {
+    it('(POST) should create a manual transaction', async () => {
       const transaction = await createTransaction();
 
       const { status, body } = await endpoint.post(
-        { ...transaction, isSignOnly: true },
+        { ...transaction, isManual: true },
         null,
         userAuthToken,
       );
@@ -153,8 +153,9 @@ describe('Transactions (e2e)', () => {
         expect.objectContaining({
           name: transaction.name,
           description: transaction.description,
-          status: TransactionStatus.SIGN_ONLY,
+          status: TransactionStatus.WAITING_FOR_SIGNATURES,
           creatorKeyId: transaction.creatorKeyId,
+          isManual: true,
         }),
       );
     });
@@ -172,45 +173,6 @@ describe('Transactions (e2e)', () => {
         userAuthToken,
       );
       expect(cancelRes.status).toEqual(200);
-
-      const { status, body } = await endpoint.post(transaction, null, userAuthToken);
-      testsAddedTransactionsCountUser++;
-
-      expect(status).toEqual(201);
-      expect(body.transactionBytes).not.toEqual(transaction.transactionBytes);
-      expect(body).toMatchObject(
-        expect.objectContaining({
-          name: transaction.name,
-          description: transaction.description,
-          status: TransactionStatus.WAITING_FOR_SIGNATURES,
-          creatorKeyId: transaction.creatorKeyId,
-        }),
-      );
-    });
-
-    it('(POST) should create a transaction with an ID of an archived transaction', async () => {
-      const transaction = await createTransaction();
-
-      const { body: newTransaction } = await endpoint.post(transaction, null, userAuthToken);
-      testsAddedTransactionsCountUser++;
-
-      const markAsSignOnlyEndpoint = new Endpoint(server, '/transactions/mark-sign-only');
-      const markAsSignOnlyRes = await markAsSignOnlyEndpoint.patch(
-        null,
-        newTransaction.id.toString(),
-        userAuthToken,
-      );
-      expect(markAsSignOnlyRes.status).toEqual(200);
-
-      const archiveEndpoint = new Endpoint(server, '/transactions/archive');
-      const archiveRes = await archiveEndpoint.patch(
-        null,
-        newTransaction.id.toString(),
-        userAuthToken,
-      );
-      console.log(archiveRes.body);
-
-      expect(archiveRes.status).toEqual(200);
 
       const { status, body } = await endpoint.post(transaction, null, userAuthToken);
       testsAddedTransactionsCountUser++;
@@ -887,27 +849,11 @@ describe('Transactions (e2e)', () => {
       endpoint = new Endpoint(server, '/transactions/archive');
     });
 
-    afterAll(async () => {
-      await resetDatabase();
-      await addHederaLocalnetAccounts();
-      testsAddedTransactionsCountUser = 0;
-      testsAddedTransactionsCountAdmin = 0;
-      addedTransactions = await addTransactions();
-    });
-
     it('(PATCH) should archive a transaction if creator', async () => {
       const transaction = await createTransaction(user, localnet1003);
       const { body: newTransaction } = await new Endpoint(server, '/transactions')
-        .post(transaction, null, userAuthToken)
+        .post({ ...transaction, isManual: true }, null, userAuthToken)
         .expect(201);
-
-      const markAsSignOnlyEndpoint = new Endpoint(server, '/transactions/mark-sign-only');
-      const markAsSignOnlyRes = await markAsSignOnlyEndpoint.patch(
-        null,
-        newTransaction.id.toString(),
-        userAuthToken,
-      );
-      expect(markAsSignOnlyRes.status).toEqual(200);
 
       const { status } = await endpoint.patch(null, newTransaction.id.toString(), userAuthToken);
 
@@ -932,33 +878,86 @@ describe('Transactions (e2e)', () => {
     });
 
     it('(PATCH) should not archive a transaction if not verified', async () => {
-      const transaction = await createTransaction(user, localnet1003);
-      const { body: newTransaction } = await new Endpoint(server, '/transactions')
-        .post(transaction, null, userAuthToken)
-        .expect(201);
-
-      const { status } = await endpoint.patch(null, newTransaction.id.toString(), userNewAuthToken);
-
-      const transactionFromDb = await repo.findOne({ where: { id: newTransaction.id } });
-
-      expect(status).toEqual(403);
-      expect(transactionFromDb?.status).not.toEqual(TransactionStatus.ARCHIVED);
+      await endpoint.patch(null, '2', userNewAuthToken).expect(403);
     });
 
     it("(PATCH) should not archive a transaction if it's already executed", async () => {
-      const transaction = await createTransaction(user, localnet1003);
-      const { body: newTransaction } = await new Endpoint(server, '/transactions')
-        .post(transaction, null, userAuthToken)
-        .expect(201);
+      const transaction = addedTransactions.userTransactions[0];
+      const oldStatus = transaction.status;
+      await repo.update({ id: transaction.id }, { status: TransactionStatus.EXECUTED });
 
-      await repo.update({ id: newTransaction.id }, { status: TransactionStatus.EXECUTED });
+      const { status } = await endpoint.patch(null, transaction.id.toString(), userAuthToken);
 
-      const { status } = await endpoint.patch(null, newTransaction.id.toString(), userAuthToken);
-
-      const transactionFromDb = await repo.findOne({ where: { id: newTransaction.id } });
+      const transactionFromDb = await repo.findOne({ where: { id: transaction.id } });
 
       expect(status).toEqual(400);
       expect(transactionFromDb?.status).not.toEqual(TransactionStatus.ARCHIVED);
+
+      await repo.update({ id: transaction.id }, { status: oldStatus });
+    });
+  });
+
+  describe('/transactions/execute/:transactionId', () => {
+    let endpoint: Endpoint;
+
+    beforeAll(() => {
+      endpoint = new Endpoint(server, '/transactions/execute');
+    });
+
+    it('(PATCH) should emit execute event to chain if creator', async () => {
+      const transactionsEndpoint = new Endpoint(server, '/transactions');
+      const transaction = await createTransaction(user, localnet1003);
+      const { body: newTransaction } = await transactionsEndpoint
+        .post({ ...transaction, isManual: true }, null, userAuthToken)
+        .expect(201);
+
+      const sdkTransaction = AccountCreateTransaction.fromBytes(
+        Buffer.from(newTransaction.transactionBytes, 'hex'),
+      );
+      await sdkTransaction.sign(localnet1003.privateKey);
+      const signatureMap = getSignatureMapForPublicKeys(
+        [localnet1003.publicKeyRaw],
+        sdkTransaction,
+      );
+
+      console.log();
+
+      await transactionsEndpoint
+        .post(
+          { signatureMap: formatSignatureMap(signatureMap) },
+          `/${newTransaction.id}/signers`,
+          userAuthToken,
+        )
+        .expect(201);
+
+      await endpoint.patch(null, newTransaction.id.toString(), userAuthToken).expect(200);
+    });
+
+    it('(PATCH) should fail if not creator', async () => {
+      const transactionsEndpoint = new Endpoint(server, '/transactions');
+      const transaction = await createTransaction(user, localnet1003);
+      const { body: newTransaction } = await transactionsEndpoint
+        .post({ ...transaction, isManual: true }, null, userAuthToken)
+        .expect(201);
+
+      await endpoint.patch(null, newTransaction.id.toString(), adminAuthToken).expect(401);
+    });
+
+    it('(PATCH) should fail if not a manual transaction', async () => {
+      const transactionsEndpoint = new Endpoint(server, '/transactions');
+      const transaction = await createTransaction(user, localnet1003);
+      const { body: newTransaction } = await transactionsEndpoint
+        .post(transaction, null, userAuthToken)
+        .expect(201);
+
+      const { body } = await endpoint
+        .patch(null, newTransaction.id.toString(), userAuthToken)
+        .expect(400);
+      expect(body).toMatchObject(
+        expect.objectContaining({
+          code: ErrorCodes.IO,
+        }),
+      );
     });
   });
 

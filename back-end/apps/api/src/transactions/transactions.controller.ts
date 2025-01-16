@@ -210,23 +210,6 @@ export class TransactionsController {
   }
 
   @ApiOperation({
-    summary: 'Marks the transaction as sign-only',
-    description:
-      'Marks a transaction as sign-only, meaning it would not be executed. Only signatures will be gathered.',
-  })
-  @ApiResponse({
-    status: 200,
-    type: Boolean,
-  })
-  @Patch('/mark-sign-only/:id')
-  async markAsSignOnlyTransaction(
-    @GetUser() user,
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<boolean> {
-    return this.transactionsService.markAsSignOnlyTransaction(id, user);
-  }
-
-  @ApiOperation({
     summary: 'Archives a transaction',
     description: 'Archive a transaction that is marked as sign only',
   })
@@ -240,6 +223,22 @@ export class TransactionsController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<boolean> {
     return this.transactionsService.archiveTransaction(id, user);
+  }
+
+  @ApiOperation({
+    summary: 'Send a transaction for execution',
+    description: 'Send a manual transaction to the chain service that will execute it',
+  })
+  @ApiResponse({
+    status: 200,
+    type: Boolean,
+  })
+  @Patch('/execute/:id')
+  async executeTransaction(
+    @GetUser() user,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<boolean> {
+    return this.transactionsService.executeTransaction(id, user);
   }
 
   @ApiOperation({

@@ -7,7 +7,7 @@ export enum ErrorCodes {
   TEX = 'TEX',
   FST = 'FST',
   OTIP = 'OTIP',
-  OSONT = 'OSONT',
+  OMTIP = 'OMTIP',
   TNF = 'TNF',
   TAP = 'TAP',
   TAX = 'TAX',
@@ -34,6 +34,7 @@ export enum ErrorCodes {
   NNF = 'NNF',
   IB = 'IB',
   TOS = 'TOS',
+  IO = 'IO',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -45,7 +46,7 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.TEX]: 'Transaction already exists',
   [ErrorCodes.FST]: 'Failed to save transaction',
   [ErrorCodes.OTIP]: 'Only transactions in progress can be canceled',
-  [ErrorCodes.OSONT]: 'Only sign-only transactions can be archived',
+  [ErrorCodes.OMTIP]: 'Only manual transaction in progress can be archived',
   [ErrorCodes.TNF]: 'Transaction not found',
   [ErrorCodes.TAP]: 'Transaction already approved',
   [ErrorCodes.TAX]: 'Transaction already executed',
@@ -73,4 +74,5 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.NNF]: 'Notification not found',
   [ErrorCodes.IB]: 'Invalid body',
   [ErrorCodes.TOS]: 'Transaction is over the size limit and cannot be executed',
+  [ErrorCodes.IO]: 'Invalid operation',
 };

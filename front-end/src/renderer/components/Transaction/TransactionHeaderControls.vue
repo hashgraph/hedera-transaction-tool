@@ -13,7 +13,7 @@ import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 
 /* Props */
 defineProps<{
-  isSignOnly: boolean;
+  submitManually: boolean;
   createButtonLabel: string;
   headingText?: string;
   loading?: boolean;
@@ -25,7 +25,7 @@ defineProps<{
 
 /* Emits */
 defineEmits<{
-  (event: 'update:is-sign-only', value: boolean): void;
+  (event: 'update:submit-manually', value: boolean): void;
   (event: 'add-to-group'): void;
   (event: 'edit-group-item'): void;
 }>();
@@ -56,14 +56,14 @@ useCreateTooltips();
             data-bs-toggle="tooltip"
             data-bs-trigger="hover"
             data-bs-placement="bottom"
-            data-bs-custom-class="wide-xl-tooltip"
-            data-bs-title="Transaction won't be executed, it will be only signed."
+            data-bs-custom-class="wide-xxl-tooltip"
+            data-bs-title="Transaction will have to be submitted to the network manually."
           >
             <AppCheckBox
-              :checked="isSignOnly"
-              @update:checked="$emit('update:is-sign-only', $event)"
-              label="Is sign-only"
-              name="is-sign-only"
+              :checked="submitManually"
+              @update:checked="$emit('update:submit-manually', $event)"
+              label="Submit manually"
+              name="submit-manually"
             />
           </div>
         </template>

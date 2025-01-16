@@ -576,10 +576,9 @@ export class ApproversService {
     /* Check if the transaction exists */
     if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
-    /* Checks if the transaction is executed */
+    /* Checks if the transaction is requires approval */
     if (
       transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES &&
-      transaction.status !== TransactionStatus.SIGN_ONLY &&
       transaction.status !== TransactionStatus.WAITING_FOR_EXECUTION
     )
       throw new BadRequestException(ErrorCodes.TNRA);

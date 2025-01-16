@@ -21,7 +21,7 @@ import {
   archiveTransaction,
   cancelTransaction,
   getUserShouldApprove,
-  markAsSignOnlyTransaction,
+  executeTransaction,
   sendApproverChoice,
   uploadSignatureMap,
 } from '@renderer/services/organization';
@@ -53,7 +53,7 @@ type ActionButton =
   | 'Next'
   | 'Cancel'
   | 'Export'
-  | 'Mark sign-only'
+  | 'Submit'
   | 'Archive';
 
 /* Misc */
@@ -62,7 +62,7 @@ const approve: ActionButton = 'Approve';
 const sign: ActionButton = 'Sign';
 const next: ActionButton = 'Next';
 const cancel: ActionButton = 'Cancel';
-const markAsSignOnly: ActionButton = 'Mark sign-only';
+const execute: ActionButton = 'Submit';
 const archive: ActionButton = 'Archive';
 const exportName: ActionButton = 'Export';
 
@@ -73,7 +73,7 @@ const buttonsDataTestIds: { [key: string]: string } = {
   [sign]: 'button-sign-org-transaction',
   [next]: 'button-next-org-transaction',
   [cancel]: 'button-cancel-org-transaction',
-  [markAsSignOnly]: 'button-mark-sign-only-org-transaction',
+  [execute]: 'button-execute-org-transaction',
   [archive]: 'button-archive-org-transaction',
   [exportName]: 'button-export-transaction',
 };
@@ -132,7 +132,6 @@ const transactionIsInProgress = computed(
       TransactionStatus.NEW,
       TransactionStatus.WAITING_FOR_EXECUTION,
       TransactionStatus.WAITING_FOR_SIGNATURES,
-      TransactionStatus.SIGN_ONLY,
     ].includes(props.organizationTransaction.status),
 );
 
@@ -158,13 +157,18 @@ const visibleButtons = computed(() => {
 
   if (!fullyLoaded.value) return buttons;
   const status = props.organizationTransaction?.status;
+  const isManual = props.organizationTransaction?.isManual;
 
-  /* The order is important */
+  /* The order is important REJECT, APPROVE, SIGN, SUBMIT, NEXT, CANCEL, ARCHIVE, EXPORT */
   shouldApprove.value && buttons.push(reject, approve);
   canSign.value && !shouldApprove.value && buttons.push(sign);
+  status === TransactionStatus.WAITING_FOR_EXECUTION &&
+    isManual &&
+    canCancel.value &&
+    buttons.push(execute);
   props.nextId && !shouldApprove.value && !canSign.value && buttons.push(next);
-  canCancel.value && status !== TransactionStatus.SIGN_ONLY && buttons.push(cancel, markAsSignOnly);
-  status === TransactionStatus.SIGN_ONLY && buttons.push(archive);
+  canCancel.value && buttons.push(cancel);
+  canCancel.value && isManual && buttons.push(archive);
   buttons.push(exportName);
 
   return buttons;
@@ -313,7 +317,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
 };
 
 const handleTransactionAction = async (
-  action: 'cancel' | 'archive' | 'markAsSignOnly',
+  action: 'cancel' | 'archive' | 'execute',
   showModal?: boolean,
 ) => {
   assertIsLoggedInOrganization(user.selectedOrganization);
@@ -338,13 +342,13 @@ const handleTransactionAction = async (
       successMessage: 'Transaction archived successfully',
       actionFunction: archiveTransaction,
     },
-    markAsSignOnly: {
-      title: 'Mark transaction as sign-only?',
-      text: 'Are you sure you want to mark the transaction as sign-only? It will not be executed, only signed.',
+    execute: {
+      title: 'Submit Transaction?',
+      text: 'Are you sure you want to send the transaction for execution?',
       buttonText: 'Confirm',
-      loadingText: 'Updating...',
-      successMessage: 'Transaction marked as sign-only successfully',
-      actionFunction: markAsSignOnlyTransaction,
+      loadingText: 'Executing...',
+      successMessage: 'Transaction sent for execution successfully',
+      actionFunction: executeTransaction,
     },
   };
 
@@ -373,16 +377,11 @@ const handleTransactionAction = async (
     isConfirmModalLoadingState.value = false;
     confirmModalLoadingText.value = '';
   }
-
-  if (action === 'cancel') {
-    router.back();
-  }
 };
 
 const handleCancel = (showModal?: boolean) => handleTransactionAction('cancel', showModal);
 const handleArchive = (showModal?: boolean) => handleTransactionAction('archive', showModal);
-const handleMarkSignOnly = (showModal?: boolean) =>
-  handleTransactionAction('markAsSignOnly', showModal);
+const handleExecute = (showModal?: boolean) => handleTransactionAction('execute', showModal);
 
 const handleNext = () => {
   if (!props.nextId) return;
@@ -431,8 +430,8 @@ const handleAction = async (value: ActionButton) => {
     await handleCancel(true);
   } else if (value === archive) {
     await handleArchive(true);
-  } else if (value === markAsSignOnly) {
-    await handleMarkSignOnly(true);
+  } else if (value === execute) {
+    await handleExecute(true);
   } else if (value === exportName) {
     await handleExport();
   }
