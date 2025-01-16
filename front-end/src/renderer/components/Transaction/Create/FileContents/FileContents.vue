@@ -191,7 +191,7 @@ const columnClass = 'col-4 col-xxxl-3';
       <TransactionHeaderControls
         heading-text="Read File Query"
         create-button-label="Sign & Read"
-        :is-sign-only="false"
+        :submit-manually="false"
         :loading="isLoading"
         :create-button-disabled="!fileId || !payerData.isValid.value || isLoading"
       >

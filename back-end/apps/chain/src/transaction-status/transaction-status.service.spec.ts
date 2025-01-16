@@ -1167,6 +1167,16 @@ describe('TransactionStatusService', () => {
       );
     });
 
+    it('should not a timeout if the transaction is manual', () => {
+      transaction.isManual = true;
+
+      service.addExecutionTimeout(transaction);
+
+      expect(setTimeout).not.toHaveBeenCalled();
+
+      transaction.isManual = false;
+    });
+
     it('should add the timeout to the scheduler registry', () => {
       service.addExecutionTimeout(transaction);
 

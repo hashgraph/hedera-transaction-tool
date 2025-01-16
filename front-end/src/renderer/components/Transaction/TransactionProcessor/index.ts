@@ -7,7 +7,7 @@ export interface TransactionRequest {
   transactionBytes: Uint8Array;
   name: string;
   description: string;
-  isSignOnly: boolean;
+  submitManually: boolean;
 }
 
 export interface Handler {

@@ -13,3 +13,4 @@ export const SYNC_INDICATORS = 'sync_indicators';
 
 /* Chain patterns */
 export const UPDATE_TRANSACTION_STATUS = 'update_transaction_status';
+export const EXECUTE_TRANSACTION = 'execute_transaction';

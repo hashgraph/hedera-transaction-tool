@@ -18,6 +18,7 @@ import {
 import { Transaction, TransactionSigner, TransactionStatus, User } from '@entities';
 
 import {
+  CHAIN_SERVICE,
   NOTIFICATIONS_SERVICE,
   MirrorNodeService,
   encodeUint8Array,
@@ -37,6 +38,7 @@ import {
   notifySyncIndicators,
   ErrorCodes,
   isTransactionBodyOverMaxSize,
+  emitExecuteTranasction,
 } from '@app/common';
 
 import { CreateTransactionDto } from './dto';
@@ -48,6 +50,7 @@ export class TransactionsService {
   constructor(
     @InjectRepository(Transaction) private repo: Repository<Transaction>,
     @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
+    @Inject(CHAIN_SERVICE) private readonly chainService: ClientProxy,
     private readonly approversService: ApproversService,
     private readonly mirrorNodeService: MirrorNodeService,
     @InjectEntityManager() private entityManager: EntityManager,
@@ -330,7 +333,7 @@ export class TransactionsService {
 
     /* Check if the transaction is expired */
     const sdkTransaction = SDKTransaction.fromBytes(dto.transactionBytes);
-    if (isExpired(sdkTransaction) && !dto.isSignOnly) throw new BadRequestException(ErrorCodes.TE);
+    if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
 
     /* Check if the transaction body is over the max size */
     if (isTransactionBodyOverMaxSize(sdkTransaction)) {
@@ -373,13 +376,10 @@ export class TransactionsService {
       signature: dto.signature,
       mirrorNetwork: dto.mirrorNetwork,
       validStart: sdkTransaction.transactionId.validStart.toDate(),
+      isManual: dto.isManual,
       cutoffAt: dto.cutoffAt,
     });
     client.close();
-
-    if (dto.isSignOnly) {
-      transaction.status = TransactionStatus.SIGN_ONLY;
-    }
 
     try {
       await this.repo.save(transaction);
@@ -418,7 +418,6 @@ export class TransactionsService {
         TransactionStatus.NEW,
         TransactionStatus.WAITING_FOR_SIGNATURES,
         TransactionStatus.WAITING_FOR_EXECUTION,
-        TransactionStatus.SIGN_ONLY,
       ].includes(transaction.status)
     ) {
       throw new BadRequestException(ErrorCodes.OTIP);
@@ -432,41 +431,43 @@ export class TransactionsService {
     return true;
   }
 
-  /* Mark the transaction as sign only. */
-  async markAsSignOnlyTransaction(id: number, user: User): Promise<boolean> {
-    const transaction = await this.getTransactionForCreator(id, user);
-
-    if (
-      ![
-        TransactionStatus.NEW,
-        TransactionStatus.WAITING_FOR_SIGNATURES,
-        TransactionStatus.WAITING_FOR_EXECUTION,
-        TransactionStatus.SIGN_ONLY,
-      ].includes(transaction.status)
-    ) {
-      throw new BadRequestException(ErrorCodes.OTIP);
-    }
-
-    await this.repo.update({ id }, { status: TransactionStatus.SIGN_ONLY });
-
-    notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.SIGN_ONLY);
-    notifyTransactionAction(this.notificationsService);
-
-    return true;
-  }
-
   /* Archive the transaction if the transaction is sign only. */
   async archiveTransaction(id: number, user: User): Promise<boolean> {
     const transaction = await this.getTransactionForCreator(id, user);
 
-    if (![TransactionStatus.SIGN_ONLY].includes(transaction.status)) {
-      throw new BadRequestException(ErrorCodes.OSONT);
+    if (
+      ![TransactionStatus.WAITING_FOR_SIGNATURES, TransactionStatus.WAITING_FOR_EXECUTION].includes(
+        transaction.status,
+      ) &&
+      !transaction.isManual
+    ) {
+      throw new BadRequestException(ErrorCodes.OMTIP);
     }
 
     await this.repo.update({ id }, { status: TransactionStatus.ARCHIVED });
 
     notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.ARCHIVED);
     notifyTransactionAction(this.notificationsService);
+
+    return true;
+  }
+
+  /* Sends the transaction for execution if the transaction is manual. */
+  async executeTransaction(id: number, user: User): Promise<boolean> {
+    const transaction = await this.getTransactionForCreator(id, user);
+
+    if (!transaction.isManual) {
+      throw new BadRequestException(ErrorCodes.IO);
+    }
+
+    emitExecuteTranasction(this.chainService, {
+      id: transaction.id,
+      status: transaction.status,
+      //@ts-expect-error - cannot send Buffer instance over the network
+      transactionBytes: transaction.transactionBytes.toString('hex'),
+      mirrorNetwork: transaction.mirrorNetwork,
+      validStart: transaction.validStart,
+    });
 
     return true;
   }

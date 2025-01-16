@@ -18,6 +18,7 @@ import {
 
 import { MirrorNodeModule, RedisMurlockModule } from '@app/common';
 
+import { ExecuteController } from './execute.controller';
 import { ExecuteService } from './execute.service';
 
 @Module({
@@ -39,7 +40,7 @@ import { ExecuteService } from './execute.service';
     MirrorNodeModule,
     RedisMurlockModule,
   ],
-  controllers: [],
+  controllers: [ExecuteController],
   providers: [ExecuteService],
   exports: [ExecuteService],
 })

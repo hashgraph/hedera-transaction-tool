@@ -204,7 +204,7 @@ export class TransactionStatusService {
     transaction: Transaction,
   ): Promise<TransactionStatus | undefined> {
     /* Returns if the transaction is null */
-    if (!transaction || transaction.status === TransactionStatus.SIGN_ONLY) return;
+    if (!transaction) return;
 
     /* Gets the SDK transaction from the transaction body */
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
@@ -422,6 +422,8 @@ export class TransactionStatusService {
     const name = `execution_timeout_${transaction.id}`;
 
     if (this.schedulerRegistry.doesExist('timeout', name)) return;
+
+    if (transaction.isManual) return;
 
     const timeToValidStart = transaction.validStart.getTime() - Date.now();
 

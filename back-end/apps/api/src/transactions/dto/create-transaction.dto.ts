@@ -34,5 +34,5 @@ export class CreateTransactionDto {
 
   @IsOptional()
   @IsBoolean()
-  isSignOnly?: boolean;
+  isManual?: boolean;
 }
