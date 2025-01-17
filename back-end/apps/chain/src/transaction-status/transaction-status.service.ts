@@ -238,13 +238,17 @@ export class TransactionStatusService {
 
   private emitNotificationEvents(transaction: Transaction, newStatus: TransactionStatus) {
     notifySyncIndicators(this.notificationsService, transaction.id, newStatus);
-
+    const network = transaction.mirrorNetwork;
+    const isCustom = network.includes('.');
+    const networkString = isCustom
+      ? network
+      : network.charAt(0).toUpperCase() + network.slice(1).toLowerCase();
     if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
       this.notificationsService.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
         entityId: transaction.id,
         type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
         actorId: null,
-        content: `Transaction ${transaction.transactionId} is ready for execution`,
+        content: `Transaction ${transaction.transactionId} on ${networkString} network is ready for execution!`,
         userIds: [transaction.creatorKey?.userId],
       });
     }
