@@ -3,6 +3,7 @@ import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, In } from 'typeorm';
 
 import {
+  getNetwork,
   keysRequiredToSign,
   MirrorNodeService,
   NotifyForTransactionDto,
@@ -92,6 +93,7 @@ export class ReceiverService {
     });
 
     if (!transaction) throw new Error('Transaction not found');
+    const networkString = getNetwork(transaction);
 
     /* Get users required to sign */
     const userIds = await this.getUsersIdsRequiredToSign(this.entityManager, transaction);
@@ -99,7 +101,7 @@ export class ReceiverService {
     /* Notify */
     await this.notifyGeneral({
       type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
-      content: `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction using the following ID: ${transaction.transactionId}.`,
+      content: `A new transaction submitted on ${networkString} network requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction using the following ID: ${transaction.transactionId}.`,
       entityId: transaction.id,
       actorId: null,
       userIds: userIds.filter(id => id !== transaction.creatorKey?.userId),
