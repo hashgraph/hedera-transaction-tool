@@ -78,7 +78,7 @@ const handleRestoreKey = async () => {
     toast.error(getErrorMessage(error, 'Failed to restore private key'));
   } finally {
     loadingText.value = null;
-    emit('next', restoredKey.value, index.value);
+    emit('next', restoredKey.value, Number(index.value));
   }
 };
 
