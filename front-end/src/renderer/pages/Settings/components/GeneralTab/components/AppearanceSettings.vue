@@ -3,7 +3,7 @@ import type { Theme } from '@main/shared/interfaces';
 
 import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
 
-import AppButton from '@renderer/components/ui/AppButton.vue';
+import ButtonGroup from '@renderer/components/ui/ButtonGroup.vue';
 
 /* State */
 const theme = ref<Theme>('light');
@@ -42,19 +42,13 @@ const themeNames: Record<Theme, string> = {
   <!-- Appearance -->
   <div class="p-4 border border-2 rounded-3 mt-5">
     <p>Appearance</p>
-    <div class="btn-group-container d-inline-flex mw-100 mt-4" role="group">
-      <div class="btn-group gap-3 overflow-x-auto">
-        <template v-for="themeItem of themes" :key="themeItem">
-          <AppButton
-            class="rounded-3"
-            :class="{ active: theme === themeItem, 'text-body': theme !== themeItem }"
-            :color="theme === themeItem ? 'primary' : undefined"
-            @click="handleThemeChange(themeItem)"
-            :data-testid="`tab-appearance-${themeItem}`"
-            >{{ themeNames[themeItem] }}</AppButton
-          >
-        </template>
-      </div>
+    <div class="d-inline-flex mw-100 mt-4">
+      <ButtonGroup
+        :items="themes.map(themeItem => ({ label: themeNames[themeItem], value: themeItem }))"
+        :activeValue="theme"
+        color="primary"
+        @change="handleThemeChange"
+      />
     </div>
   </div>
 </template>
