@@ -150,7 +150,8 @@ export const userKeysRequiredToSign = async (
 
 export const getNetwork = (transaction: Transaction) => {
   const network = transaction.mirrorNetwork;
-  const isCustom = network.includes('.');
+  const defaultNetworks = ['mainnet', 'testnet', 'previewnet', 'local-node'];
+  const isCustom = !defaultNetworks.includes(network);
   const networkString = isCustom
     ? network
     : network.charAt(0).toUpperCase() + network.slice(1).toLowerCase();
