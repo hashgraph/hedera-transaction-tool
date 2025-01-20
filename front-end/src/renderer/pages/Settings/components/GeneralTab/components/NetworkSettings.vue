@@ -15,8 +15,9 @@ import { add, getStoredClaim, update } from '@renderer/services/claimService';
 
 import { isUserLoggedIn } from '@renderer/utils';
 
-import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import ButtonGroup from '@renderer/components/ui/ButtonGroup.vue';
+import { useToast } from 'vue-toast-notification';
 
 /* Stores */
 const user = useUserStore();
@@ -24,6 +25,7 @@ const networkStore = useNetworkStore();
 
 /* Composables */
 const withLoader = useLoader();
+const toast = useToast();
 
 /* State */
 const mirrorNodeInputRef = ref<InstanceType<typeof AppInput> | null>(null);
@@ -49,8 +51,12 @@ const handleNetworkChange = async (network: Network) => {
 };
 
 const handleCommonNetwork = async (network: Network) => {
-  isCustomSettingsVisible.value = false;
-  await handleNetworkChange(network);
+  try {
+    isCustomSettingsVisible.value = false;
+    await handleNetworkChange(network);
+  } catch (error: any) {
+    toast.error(error.message);
+  }
 };
 
 const handleToggleCustomNetwork = async () => {
@@ -113,35 +119,27 @@ onBeforeMount(() => {
 <template>
   <div class="fill-remaining border border-2 rounded-3 p-4">
     <p>Network</p>
-    <div class="btn-group-container mt-4" role="group">
-      <div class="btn-group gap-3 overflow-x-auto w-100">
-        <template v-for="network in CommonNetwork" :key="network">
-          <AppButton
-            class="rounded-3 text-nowrap"
-            :class="{
-              active: networkStore.network === network && !isCustomSettingsVisible,
-              'text-body': networkStore.network !== network && !isCustomSettingsVisible,
-            }"
-            :color="
-              networkStore.network === network && !isCustomSettingsVisible ? 'primary' : undefined
-            "
-            @click="handleCommonNetwork(network)"
-            :data-testid="`tab-network-${network}`"
-            >{{ CommonNetworkNames[network] }}</AppButton
-          >
-        </template>
-        <AppButton
-          :color="isCustomActive || isCustomSettingsVisible ? 'primary' : undefined"
-          data-testid="tab-network-custom"
-          class="rounded-3 text-nowrap"
-          :class="{
-            active: isCustomActive,
-            'text-body': !isCustomActive,
-          }"
-          @click="handleToggleCustomNetwork"
-          >Custom</AppButton
-        >
-      </div>
+    <div class="mt-4">
+      <ButtonGroup
+        :items="[
+          ...Object.values(CommonNetwork).map(network => ({
+            label: CommonNetworkNames[network],
+            value: network,
+          })),
+          { label: 'Custom', value: 'custom' },
+        ]"
+        :activeValue="isCustomSettingsVisible ? 'custom' : networkStore.network"
+        color="primary"
+        @change="
+          value => {
+            if (value === 'custom') {
+              handleToggleCustomNetwork();
+            } else {
+              handleCommonNetwork(value);
+            }
+          }
+        "
+      />
     </div>
     <Transition name="fade" mode="out-in">
       <div v-show="isCustomSettingsVisible" class="mt-4">
