@@ -14,6 +14,7 @@ export const DISPLAY_FILE_SIZE_LIMIT = 512 * 1024;
 /* Claim */
 export const DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY = 'default_max_transaction_fee';
 export const SELECTED_NETWORK = 'selected_network';
+export const SELECTED_ORGANIZATION = 'selected_organization';
 export const USE_KEYCHAIN = 'use_keychain';
 export const UPDATE_LOCATION = 'update_location';
 export const MIGRATION_STARTED = 'migration_started';
