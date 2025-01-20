@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Theme } from '@main/shared/interfaces';
 
-import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue';
 
 import ButtonGroup from '@renderer/components/ui/ButtonGroup.vue';
 
@@ -12,6 +12,15 @@ const onUpdateUnsubscribe = ref<() => void>();
 const handleThemeChange = (newTheme: Theme) => {
   window.electronAPI.local.theme.toggle(newTheme);
 };
+
+/* Computed */
+const themeButtons = computed(() =>
+  themes.map(themeItem => ({
+    label: themeNames[themeItem],
+    value: themeItem,
+    id: `tab-appearance-${themeItem}`,
+  })),
+);
 
 /* Hooks */
 onBeforeMount(async () => {
@@ -44,16 +53,14 @@ const themeNames: Record<Theme, string> = {
     <p>Appearance</p>
     <div class="d-inline-flex mw-100 mt-4">
       <ButtonGroup
-        :items="
-          themes.map(themeItem => ({
-            label: themeNames[themeItem],
-            value: themeItem,
-            id: `tab-appearance-${themeItem}`,
-          }))
-        "
+        :items="themeButtons"
         :activeValue="theme"
         color="primary"
-        @change="handleThemeChange"
+        @change="
+          value => {
+            handleThemeChange(value as Theme);
+          }
+        "
       />
     </div>
   </div>

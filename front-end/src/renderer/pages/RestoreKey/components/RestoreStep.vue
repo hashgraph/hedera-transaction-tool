@@ -18,7 +18,13 @@ import {
 import { useToast } from 'vue-toast-notification';
 
 /* Emits */
-const emit = defineEmits(['next']);
+const emit = defineEmits<{
+  (
+    event: 'next',
+    key: { privateKey: string; publicKey: string; mnemonicHash: string } | null,
+    enteredIndex: number,
+  ): void;
+}>();
 
 /* Stores */
 const user = useUserStore();

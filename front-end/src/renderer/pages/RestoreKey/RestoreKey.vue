@@ -26,11 +26,11 @@ const restoredKey = ref<{ privateKey: string; publicKey: string; mnemonicHash: s
 
 /* Handlers */
 
-const handleNickname = (nickname: string) => {
+const handleMnemonicHashNickname = (nickname: string) => {
   mnemonicHashNickname.value = nickname;
 };
 
-const handleStepValue = () => step.value++;
+const handleNextStep = () => step.value++;
 
 const handleClearWords = () => (user.recoveryPhrase = null);
 
@@ -49,11 +49,10 @@ onBeforeUnmount(() => {
         <!-- Step 1 -->
         <ImportStep
           v-if="step === 0"
-          :user="user"
           @next="
-            (nicknameValue: string) => {
-              handleNickname(nicknameValue);
-              handleStepValue();
+            (mnemonicHashNickname: string) => {
+              handleMnemonicHashNickname(mnemonicHashNickname);
+              handleNextStep();
             }
           "
           @clear="handleClearWords"
@@ -66,7 +65,7 @@ onBeforeUnmount(() => {
             (key: typeof restoredKey, enteredIndex: number) => {
               restoredKey = key;
               index = enteredIndex;
-              handleStepValue();
+              handleNextStep();
             }
           "
         />

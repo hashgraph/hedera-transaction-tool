@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+
+import useUserStore from '@renderer/stores/storeUser';
+
 import Import from '@renderer/components/RecoveryPhrase/Import.vue';
 import RecoveryPhraseNicknameInput from '@renderer/components/RecoveryPhrase/RecoveryPhraseNicknameInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import useUserStore from '@renderer/stores/storeUser';
 
-const { user } = defineProps<{
-  user: ReturnType<typeof useUserStore>;
-}>();
+const user = useUserStore();
 
 /* Emits */
-const emit = defineEmits(['next', 'clear']);
+const emit = defineEmits<{
+  (event: 'next', nickname: string): void;
+  (event: 'clear'): void;
+}>();
 
 /* State */
 const mnemonicHashNickname = ref('');
@@ -19,6 +22,7 @@ const mnemonicHashNickname = ref('');
 const handleImportRecoveryPhrase = () => {
   emit('next', mnemonicHashNickname.value);
 };
+
 const handleClearWords = () => {
   emit('clear');
 };
