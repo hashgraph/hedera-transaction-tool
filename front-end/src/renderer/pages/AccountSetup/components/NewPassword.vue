@@ -54,9 +54,7 @@ const isPrimaryButtonDisabled = computed(() => {
 });
 
 /* Handlers */
-const handleFormSubmit = async (event: Event) => {
-  event.preventDefault();
-
+const handleFormSubmit = async () => {
   await handleChangePassword();
 };
 
@@ -135,7 +133,7 @@ watch(newPassword, pass => {
   <div class="fill-remaining flex-start flex-column mt-4">
     <h1 class="text-display text-bold text-center">New Password</h1>
     <p class="text-main text-center mt-5">Please enter new password</p>
-    <form @submit="handleFormSubmit" class="row justify-content-center w-100 mt-5">
+    <form @submit.prevent="handleFormSubmit" class="row justify-content-center w-100 mt-5">
       <div class="col-12 col-md-8 col-lg-6">
         <AppPasswordInput
           v-model="currentPassword"

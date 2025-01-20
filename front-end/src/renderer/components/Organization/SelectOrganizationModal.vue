@@ -29,9 +29,7 @@ const organizations = ref<Organization[]>([]);
 /* Handlers */
 const handleShowUpdate = (show: boolean) => emit('update:show', show);
 
-const handleSelect = (e: Event) => {
-  e.preventDefault();
-
+const handleSelect = () => {
   if (selectedOrganization.value) {
     emit('onSelected', selectedOrganization.value);
     handleShowUpdate(false);
@@ -46,7 +44,7 @@ onBeforeMount(async () => {
 <template>
   <AppModal :show="show" @update:show="handleShowUpdate" class="medium-modal">
     <div class="p-4">
-      <form @submit="handleSelect">
+      <form @submit.prevent="handleSelect">
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
         </div>

@@ -29,9 +29,7 @@ const inputRecoveryPhrasePassword = ref('');
 const inputRecoveryPhrasePasswordError = ref<string | null>(null);
 
 /* Handlers */
-const handleOnFormSubmit = async (e: Event) => {
-  e.preventDefault();
-
+const handleOnFormSubmit = async () => {
   const recoveryPhrasePassword = inputRecoveryPhrasePassword.value.trim();
 
   if (recoveryPhrasePassword.length === 0) return;
@@ -44,7 +42,7 @@ const handleOnFormSubmit = async (e: Event) => {
 watch(inputRecoveryPhrasePassword, () => (inputRecoveryPhrasePasswordError.value = null));
 </script>
 <template>
-  <form @submit="handleOnFormSubmit" class="flex-column-100">
+  <form @submit.prevent="handleOnFormSubmit" class="flex-column-100">
     <div class="fill-remaining">
       <p class="text-secondary text-small lh-base text-center">
         Enter your recovery phrase password from the old tool

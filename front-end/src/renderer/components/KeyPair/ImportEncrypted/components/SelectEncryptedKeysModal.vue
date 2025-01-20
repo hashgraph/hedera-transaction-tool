@@ -36,8 +36,7 @@ const fileNames = computed(() => {
 });
 
 /* Handlers */
-const handleSubmit = (event: Event) => {
-  event.preventDefault();
+const handleSubmit = () => {
   emit('update:keyPaths', selectedKeyPaths.value);
   emit('continue');
 };
@@ -111,7 +110,7 @@ watch(
       <div class="text-center mt-4">
         <i class="bi bi-key large-icon"></i>
       </div>
-      <form @submit="handleSubmit">
+      <form @submit.prevent="handleSubmit">
         <h3 class="text-center text-title text-bold mt-3">Import encrypted keys</h3>
 
         <p class="text-center mt-4">

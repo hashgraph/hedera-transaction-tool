@@ -119,7 +119,7 @@ const setupPersonal = async ({
 <template>
   <SetupPersonalForm
     :loading="loading"
-    @submit="handleFormSubmit"
+    @submit.prevent="handleFormSubmit"
     @migration:cancel="handleCancel"
   />
 </template>

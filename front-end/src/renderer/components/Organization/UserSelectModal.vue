@@ -45,9 +45,7 @@ const listedContacts = computed(() =>
 /* Handlers */
 const handleShowUpdate = (show: boolean) => emit('update:show', show);
 
-const handleInsert = (e: Event) => {
-  e.preventDefault();
-
+const handleInsert = () => {
   if (userIds.value.length === 0) return;
 
   emit('users-selected', userIds.value);
@@ -58,7 +56,7 @@ const handleInsert = (e: Event) => {
 <template>
   <AppModal :show="show" @update:show="handleShowUpdate" class="medium-modal">
     <div class="p-4">
-      <form @submit="handleInsert">
+      <form @submit.prevent="handleInsert">
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
         </div>

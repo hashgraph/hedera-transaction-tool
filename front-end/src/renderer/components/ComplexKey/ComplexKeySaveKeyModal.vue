@@ -39,8 +39,7 @@ const nickname = ref('');
 /* Handlers */
 const handleShowUpdate = (show: boolean) => emit('update:show', show);
 
-const handleSaveKeyList = async (e: Event) => {
-  e.preventDefault();
+const handleSaveKeyList = async () => {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
@@ -65,7 +64,7 @@ const handleSaveKeyList = async (e: Event) => {
       <div>
         <i class="bi bi-x-lg cursor-pointer" @click="handleShowUpdate(false)"></i>
       </div>
-      <form class="mt-3" @submit="handleSaveKeyList">
+      <form class="mt-3" @submit.prevent="handleSaveKeyList">
         <h3 class="text-center text-title text-bold">Enter the nickname</h3>
         <div class="form-group mt-5 mb-4">
           <label class="form-label">Nickname</label>

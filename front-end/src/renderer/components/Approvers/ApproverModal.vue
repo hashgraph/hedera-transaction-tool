@@ -58,9 +58,7 @@ const handleApproverUpdate = (newApprover: TransactionApproverDto) =>
 const handleSingleApproverUpdate = (newApprover: TransactionApproverDto[]) =>
   (currentSingleApprover.value = newApprover);
 
-const handleDoneClick = async (e: Event) => {
-  e.preventDefault();
-
+const handleDoneClick = async () => {
   if (currentApproverInvalid.value) {
     errorModalShow.value = true;
     return;
@@ -172,7 +170,7 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
 <template>
   <AppModal :show="show" @update:show="emit('update:show', $event)" class="full-screen-modal">
     <div class="p-5 h-100">
-      <form @submit="handleDoneClick" class="flex-column-100 fill-remaining">
+      <form @submit.prevent="handleDoneClick" class="flex-column-100 fill-remaining">
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
         </div>
