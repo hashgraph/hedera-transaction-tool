@@ -9,6 +9,7 @@ import useAutoLogin from '@renderer/composables/useAutoLogin';
 import useLoader from '@renderer/composables/useLoader';
 import useSetupStores from '@renderer/composables/user/useSetupStores';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
+import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 
 import { getUseKeychain } from '@renderer/services/safeStorageService';
 import { getUsersCount, resetDataLocal } from '@renderer/services/userService';
@@ -26,6 +27,7 @@ const user = useUserStore();
 const withLoader = useLoader();
 const tryAutoLogin = useAutoLogin();
 const setupStores = useSetupStores();
+const { select: selectDefaultOrganization } = useDefaultOrganization();
 const { redirectIfRequiredKeysToMigrate } = useRecoveryPhraseHashMigrate();
 
 /* State */
@@ -44,10 +46,14 @@ const handleImportantModalReady = async () => {
 
 const handleBeginMigrationReadyState = async () => {
   await withLoader(tryAutoLogin);
+
+  const redirect = await redirectIfRequiredKeysToMigrate();
+  if (!redirect) {
+    await withLoader(selectDefaultOrganization);
+  }
+
   await user.refetchOrganizations();
   await setupStores();
-
-  await redirectIfRequiredKeysToMigrate();
 };
 
 /* Hooks */
