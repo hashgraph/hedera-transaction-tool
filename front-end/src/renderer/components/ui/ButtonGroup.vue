@@ -3,7 +3,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 
 /* Props */
 const props = defineProps<{
-  items: { label: string; value: string | number; active?: boolean }[];
+  items: { label: string; value: string | number; active?: boolean; id: string }[];
   activeValue: string | number;
   color?: 'primary' | 'secondary' | 'borderless' | 'danger';
 }>();
@@ -31,6 +31,7 @@ const handleButtonClick = (value: string | number) => {
           }"
           :color="activeValue === item.value ? color : undefined"
           @click="handleButtonClick(item.value)"
+          :data-testid="item.id"
         >
           {{ item.label }}
         </AppButton>

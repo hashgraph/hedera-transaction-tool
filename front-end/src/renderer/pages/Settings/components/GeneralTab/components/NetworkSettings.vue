@@ -125,8 +125,9 @@ onBeforeMount(() => {
           ...Object.values(CommonNetwork).map(network => ({
             label: CommonNetworkNames[network],
             value: network,
+            id: `tab-network-${network}`,
           })),
-          { label: 'Custom', value: 'custom' },
+          { label: 'Custom', value: 'custom', id: `tab-network-custom` },
         ]"
         :activeValue="isCustomSettingsVisible ? 'custom' : networkStore.network"
         color="primary"

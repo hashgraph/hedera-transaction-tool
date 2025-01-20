@@ -44,7 +44,13 @@ const themeNames: Record<Theme, string> = {
     <p>Appearance</p>
     <div class="d-inline-flex mw-100 mt-4">
       <ButtonGroup
-        :items="themes.map(themeItem => ({ label: themeNames[themeItem], value: themeItem }))"
+        :items="
+          themes.map(themeItem => ({
+            label: themeNames[themeItem],
+            value: themeItem,
+            id: `tab-appearance-${themeItem}`,
+          }))
+        "
         :activeValue="theme"
         color="primary"
         @change="handleThemeChange"
