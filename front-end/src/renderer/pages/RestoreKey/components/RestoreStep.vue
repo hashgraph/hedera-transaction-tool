@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, onMounted, ref, watch } from 'vue';
+import { onBeforeMount, ref, watch } from 'vue';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -42,7 +42,6 @@ const handleRestoreKey = async () => {
 
   try {
     loadingText.value = 'Restoring key pair...';
-    //await handleFindEmptyIndex();
 
     const privateKey = await restorePrivateKey(
       user.recoveryPhrase.words,
@@ -114,9 +113,11 @@ const keyExists = (privateKey: PrivateKey) => {
   return user.keyPairs.some(kp => kp.public_key === privateKey.publicKey.toStringRaw());
 };
 
-onMounted(async () => {
+/* Lifecycle */
+onBeforeMount(async () => {
   await handleFindEmptyIndex();
 });
+
 /* Watchers */
 watch(index, () => (inputIndexInvalid.value = false));
 </script>
