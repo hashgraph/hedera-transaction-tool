@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { onBeforeMount, onMounted, ref, watch } from 'vue';
+
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import { ref, watch } from 'vue';
+
 import useUserStore from '@renderer/stores/storeUser';
+
 import { restorePrivateKey } from '@renderer/services/keyPairService';
 import { PrivateKey } from '@hashgraph/sdk';
+
 import {
   getErrorMessage,
   getSecretHashFromLocalKeys,
@@ -13,11 +17,11 @@ import {
 } from '@renderer/utils';
 import { useToast } from 'vue-toast-notification';
 
-/* Stores */
-const user = useUserStore();
-
 /* Emits */
 const emit = defineEmits(['next']);
+
+/* Stores */
+const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
@@ -38,6 +42,7 @@ const handleRestoreKey = async () => {
 
   try {
     loadingText.value = 'Restoring key pair...';
+    //await handleFindEmptyIndex();
 
     const privateKey = await restorePrivateKey(
       user.recoveryPhrase.words,
@@ -74,12 +79,34 @@ const handleRestoreKey = async () => {
         restoredKey.value.mnemonicHash = alreadyStoredHash;
       }
     }
+
+    emit('next', restoredKey.value, Number(index.value));
   } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to restore private key'));
   } finally {
     loadingText.value = null;
-    emit('next', restoredKey.value, Number(index.value));
   }
+};
+
+const handleFindEmptyIndex = async () => {
+  if (!user.recoveryPhrase) return;
+
+  let exists = false;
+  do {
+    const privateKey = await restorePrivateKey(
+      user.recoveryPhrase.words,
+      '',
+      Number(index.value),
+      'ED25519',
+    );
+
+    if (keyExists(privateKey)) {
+      index.value++;
+      exists = true;
+    } else {
+      exists = false;
+    }
+  } while (exists);
 };
 
 /* Functions */
@@ -87,6 +114,9 @@ const keyExists = (privateKey: PrivateKey) => {
   return user.keyPairs.some(kp => kp.public_key === privateKey.publicKey.toStringRaw());
 };
 
+onMounted(async () => {
+  await handleFindEmptyIndex();
+});
 /* Watchers */
 watch(index, () => (inputIndexInvalid.value = false));
 </script>

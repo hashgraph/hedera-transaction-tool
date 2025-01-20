@@ -17,7 +17,6 @@ import { isUserLoggedIn } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import ButtonGroup from '@renderer/components/ui/ButtonGroup.vue';
-import { useToast } from 'vue-toast-notification';
 
 /* Stores */
 const user = useUserStore();
@@ -25,7 +24,6 @@ const networkStore = useNetworkStore();
 
 /* Composables */
 const withLoader = useLoader();
-const toast = useToast();
 
 /* State */
 const mirrorNodeInputRef = ref<InstanceType<typeof AppInput> | null>(null);
@@ -44,6 +42,15 @@ const isCustomActive = computed(
     ].includes(networkStore.network),
 );
 
+const networkButtons = computed(() => [
+  ...Object.values(CommonNetwork).map(network => ({
+    label: CommonNetworkNames[network],
+    value: network,
+    id: `tab-network-${network}`,
+  })),
+  { label: 'Custom', value: 'custom', id: `tab-network-custom` },
+]);
+
 /* Handlers */
 const handleNetworkChange = async (network: Network) => {
   await networkStore.setNetwork(network);
@@ -51,12 +58,8 @@ const handleNetworkChange = async (network: Network) => {
 };
 
 const handleCommonNetwork = async (network: Network) => {
-  try {
-    isCustomSettingsVisible.value = false;
-    await handleNetworkChange(network);
-  } catch (error: any) {
-    toast.error(error.message);
-  }
+  isCustomSettingsVisible.value = false;
+  await handleNetworkChange(network);
 };
 
 const handleToggleCustomNetwork = async () => {
@@ -87,6 +90,14 @@ const updateSelectedNetwork = async (network: Network) => {
   const selectedNetwork = await getStoredClaim(user.personal.id, SELECTED_NETWORK);
   const addOrUpdate = selectedNetwork !== undefined ? update : add;
   await addOrUpdate(user.personal.id, SELECTED_NETWORK, network);
+};
+
+const handleChange = (network: Network) => {
+  if (network === 'custom') {
+    handleToggleCustomNetwork();
+  } else {
+    handleCommonNetwork(network);
+  }
 };
 
 /* Functions */
@@ -121,23 +132,12 @@ onBeforeMount(() => {
     <p>Network</p>
     <div class="mt-4">
       <ButtonGroup
-        :items="[
-          ...Object.values(CommonNetwork).map(network => ({
-            label: CommonNetworkNames[network],
-            value: network,
-            id: `tab-network-${network}`,
-          })),
-          { label: 'Custom', value: 'custom', id: `tab-network-custom` },
-        ]"
+        :items="networkButtons"
         :activeValue="isCustomSettingsVisible ? 'custom' : networkStore.network"
         color="primary"
         @change="
           value => {
-            if (value === 'custom') {
-              handleToggleCustomNetwork();
-            } else {
-              handleCommonNetwork(value);
-            }
+            handleChange(value as string);
           }
         "
       />

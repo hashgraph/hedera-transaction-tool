@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue';
-import { PrivateKey } from '@hashgraph/sdk';
+import { onBeforeUnmount, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
-
-import { restorePrivateKey } from '@renderer/services/keyPairService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 
@@ -37,41 +34,9 @@ const handleStepValue = () => step.value++;
 
 const handleClearWords = () => (user.recoveryPhrase = null);
 
-const handleFindEmptyIndex = async () => {
-  if (!user.recoveryPhrase) return;
-
-  let exists = false;
-  do {
-    const privateKey = await restorePrivateKey(
-      user.recoveryPhrase.words,
-      '',
-      Number(index.value),
-      'ED25519',
-    );
-
-    if (keyExists(privateKey)) {
-      index.value++;
-      exists = true;
-    } else {
-      exists = false;
-    }
-  } while (exists);
-};
-
-/* Functions */
-const keyExists = (privateKey: PrivateKey) => {
-  return user.keyPairs.some(kp => kp.public_key === privateKey.publicKey.toStringRaw());
-};
-
 /* Hooks */
 onBeforeUnmount(() => {
   user.recoveryPhrase = null;
-});
-
-watch(step, async newStep => {
-  if (newStep === 2) {
-    await handleFindEmptyIndex();
-  }
 });
 </script>
 <template>

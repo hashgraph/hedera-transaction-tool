@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import AppInput from '@renderer/components/ui/AppInput.vue';
-import AppButton from '@renderer/components/ui/AppButton.vue';
 import { ref } from 'vue';
+import { Prisma } from '@prisma/client';
+
 import useUserStore from '@renderer/stores/storeUser';
+
 import {
   assertUserLoggedIn,
   getErrorMessage,
@@ -10,12 +11,16 @@ import {
   safeAwait,
   safeDuplicateUploadKey,
 } from '@renderer/utils';
-import usePersonalPassword from '@renderer/composables/usePersonalPassword';
-import { Prisma } from '@prisma/client';
+
 import { useToast } from 'vue-toast-notification';
 import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNickname';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import { useRouter } from 'vue-router';
 
+import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+
+/* Props */
 const { restoredKey, mnemonicHashNickname, index } = defineProps<{
   restoredKey: { privateKey: string; publicKey: string; mnemonicHash: string } | null;
   mnemonicHashNickname: string;

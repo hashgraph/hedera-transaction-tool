@@ -9,7 +9,9 @@ const props = defineProps<{
 }>();
 
 /* Emits */
-const emit = defineEmits(['change']);
+const emit = defineEmits<{
+  (event: 'change', value: string | number): void;
+}>();
 
 /* Handlers */
 const handleButtonClick = (value: string | number) => {
