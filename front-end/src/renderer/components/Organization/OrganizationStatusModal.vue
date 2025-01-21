@@ -62,31 +62,11 @@ watch(
           class="text-center text-small text-secondary mt-4"
           data-testid="p-organization-error-message"
         >
-          Organization server is not reachable
+          {{ organizationNickname }} <span class="text-nobreak">is not reachable</span>
         </p>
 
-        <template v-if="organizationNickname || organizationUrl">
-          <div class="mt-3">
-            <template v-if="organizationNickname">
-              <p
-                class="text-center text-nowrap text-small text-secondary"
-                data-testid="p-organization-nickname-error-message"
-              >
-                Nickname: {{ organizationNickname }}
-              </p>
-            </template>
-            <template v-if="organizationUrl && !organizationNickname">
-              <p
-                class="text-center text-nowrap text-small text-secondary mt-2"
-                data-testid="p-organization-url-error-message"
-              >
-                URL: {{ organizationUrl }}
-              </p>
-            </template>
-          </div>
-        </template>
-
         <hr class="separator my-5" />
+
         <div class="d-grid">
           <AppButton color="primary" data-testid="button-close-modal" type="submit"
             >Close</AppButton
