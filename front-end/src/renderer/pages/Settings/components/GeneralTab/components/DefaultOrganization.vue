@@ -13,7 +13,7 @@ import AppSelect from '@renderer/components/ui/AppSelect.vue';
 const user = useUserStore();
 
 /* Composables */
-const { get, set } = useDefaultOrganization();
+const { getDefault, setDefault, setLast } = useDefaultOrganization();
 
 /* State */
 const defaultOrganizationId = ref<string>('');
@@ -27,7 +27,12 @@ const listedItems = computed(() => {
 const handleUpdateDefaultOrganization = async (id: string) => {
   if (!isUserLoggedIn(user.personal)) return;
 
-  await set(id || null);
+  await setDefault(id || null);
+
+  if(!id) {
+   await setLast(user.selectedOrganization?.id || null);
+  }
+
 
   defaultOrganizationId.value = id;
 };
@@ -35,7 +40,7 @@ const handleUpdateDefaultOrganization = async (id: string) => {
 /* Hooks */
 onBeforeMount(async () => {
   if (isUserLoggedIn(user.personal)) {
-    defaultOrganizationId.value = (await get()) || '';
+    defaultOrganizationId.value = (await getDefault()) || '';
   }
 });
 </script>

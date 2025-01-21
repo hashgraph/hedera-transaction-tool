@@ -1,7 +1,6 @@
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
-import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 
 import useSetupStores from '@renderer/composables/user/useSetupStores';
 
@@ -23,7 +22,6 @@ export default function useAfterOrganizationSelection() {
   /* Composables */
   const router = useRouter();
   const setupStores = useSetupStores();
-  const { set } = useDefaultOrganization();
 
   /* Functions */
   const handleStates = async () => {
@@ -70,17 +68,9 @@ export default function useAfterOrganizationSelection() {
     }
   };
 
-  const handleDefaultOrganization = async () => {
-    if (isOrganizationActive(user.selectedOrganization)) {
-      await set(user.selectedOrganization.id);
-    }
-  };
-
   const afterOrganizationSelection = async () => {
     await handleStates();
     await handleNavigation();
-
-    handleDefaultOrganization();
 
     setupStores();
     user.refetchAccounts();
