@@ -15,7 +15,13 @@ import {
   FindOperator,
 } from 'typeorm';
 
-import { Transaction, TransactionSigner, TransactionStatus, User } from '@entities';
+import {
+  NotificationType,
+  Transaction,
+  TransactionSigner,
+  TransactionStatus,
+  User,
+} from '@entities';
 
 import {
   CHAIN_SERVICE,
@@ -39,6 +45,7 @@ import {
   ErrorCodes,
   isTransactionBodyOverMaxSize,
   emitExecuteTranasction,
+  notifyGeneral,
 } from '@app/common';
 
 import { CreateTransactionDto } from './dto';
@@ -427,6 +434,21 @@ export class TransactionsService {
 
     notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.CANCELED);
     notifyTransactionAction(this.notificationsService);
+
+    /* Send email notification to all the participants */
+    await this.attachTransactionApprovers(transaction);
+    const userIds = new Set<number>();
+    transaction.approvers?.forEach(a => userIds.add(a.userId));
+    transaction.signers?.forEach(s => userIds.add(s.userId));
+    transaction.observers?.forEach(o => userIds.add(o.userId));
+
+    notifyGeneral(
+      this.notificationsService,
+      NotificationType.TRANSACTION_CANCELLED,
+      [...userIds],
+      `The transaction ${transaction.name} with transaction id ${transaction.transactionId} has been cancelled. \n Netowrk: ${transaction.mirrorNetwork}`,
+      transaction.id,
+    );
 
     return true;
   }

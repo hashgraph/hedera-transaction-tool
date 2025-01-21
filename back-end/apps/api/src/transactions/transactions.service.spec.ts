@@ -32,8 +32,10 @@ import {
   MirrorNetworkGRPC,
   isTransactionBodyOverMaxSize,
   emitExecuteTranasction,
+  notifyGeneral,
 } from '@app/common/utils';
 import {
+  NotificationType,
   Transaction,
   TransactionApprover,
   TransactionSigner,
@@ -671,6 +673,30 @@ describe('TransactionsService', () => {
         TransactionStatus.CANCELED,
       );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+    });
+
+    it('should emit notification to the notifiaction service', async () => {
+      const transaction = {
+        id: 123,
+        creatorKey: { userId: 1 },
+        observers: [{ userId: 2 }],
+        signers: [{ userId: 3 }],
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      };
+
+      jest
+        .spyOn(service, 'getTransactionForCreator')
+        .mockResolvedValueOnce(transaction as Transaction);
+
+      await service.cancelTransaction(123, { id: 1 } as User);
+
+      expect(notifyGeneral).toHaveBeenCalledWith(
+        notificationsService,
+        NotificationType.TRANSACTION_CANCELLED,
+        expect.arrayContaining([2, 3]),
+        expect.any(String),
+        123,
+      );
     });
   });
 

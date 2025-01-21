@@ -9,11 +9,13 @@ import {
   SYNC_INDICATORS,
   NotifyClientDto,
   NotifyForTransactionDto,
+  NotifyGeneralDto,
   UpdateTransactionStatusDto,
   SyncIndicatorsDto,
   ExecuteTransactionDto,
+  NOTIFY_GENERAL,
 } from '@app/common';
-import { TransactionStatus } from '@entities';
+import { NotificationType, TransactionStatus } from '@entities';
 
 /* Chain */
 export const emitUpdateTransactionStatus = (client: ClientProxy, id: number) => {
@@ -48,5 +50,20 @@ export const notifySyncIndicators = (
   client.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
     transactionId,
     transactionStatus,
+  });
+};
+
+export const notifyGeneral = (
+  client: ClientProxy,
+  type: NotificationType,
+  userIds: number[],
+  content: string,
+  entityId?: number,
+) => {
+  client.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
+    type,
+    userIds,
+    content,
+    entityId,
   });
 };
