@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref } from 'vue';
 
-import { SELECTED_ORGANIZATION } from '@main/shared/constants';
-
 import useUserStore from '@renderer/stores/storeUser';
 
-import { add, getStoredClaim, update, remove } from '@renderer/services/claimService';
+import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 
-import { isUserLoggedIn, safeAwait } from '@renderer/utils';
+import { isUserLoggedIn } from '@renderer/utils';
 
 import AppSelect from '@renderer/components/ui/AppSelect.vue';
 
 /* Stores */
 const user = useUserStore();
+
+/* Composables */
+const { get, set } = useDefaultOrganization();
 
 /* State */
 const defaultOrganizationId = ref<string>('');
@@ -26,13 +27,7 @@ const listedItems = computed(() => {
 const handleUpdateDefaultOrganization = async (id: string) => {
   if (!isUserLoggedIn(user.personal)) return;
 
-  if (id) {
-    const storedClaim = await getStoredClaim(user.personal.id, SELECTED_ORGANIZATION);
-    const addOrUpdate = storedClaim !== undefined ? update : add;
-    await addOrUpdate(user.personal.id, SELECTED_ORGANIZATION, id);
-  } else {
-    await remove(user.personal.id, [SELECTED_ORGANIZATION]);
-  }
+  await set(id || null);
 
   defaultOrganizationId.value = id;
 };
@@ -40,11 +35,7 @@ const handleUpdateDefaultOrganization = async (id: string) => {
 /* Hooks */
 onBeforeMount(async () => {
   if (isUserLoggedIn(user.personal)) {
-    const { data } = await safeAwait(getStoredClaim(user.personal.id, SELECTED_ORGANIZATION));
-
-    if (data) {
-      defaultOrganizationId.value = data;
-    }
+    defaultOrganizationId.value = (await get()) || '';
   }
 });
 </script>
