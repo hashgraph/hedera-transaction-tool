@@ -101,7 +101,7 @@ export class ReceiverService {
     /* Notify */
     await this.notifyGeneral({
       type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
-      content: `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction.\n Transaction ID: ${transaction.transactionId}\n Network: ${networkString}`,
+      content: `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction.\nTransaction ID: ${transaction.transactionId}\nNetwork: ${networkString}`,
       entityId: transaction.id,
       actorId: null,
       userIds: userIds.filter(id => id !== transaction.creatorKey?.userId),
