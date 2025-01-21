@@ -446,7 +446,7 @@ export class TransactionsService {
       this.notificationsService,
       NotificationType.TRANSACTION_CANCELLED,
       [...userIds],
-      `The transaction ${transaction.name} with transaction id ${transaction.transactionId} has been cancelled. \n Netowrk: ${transaction.mirrorNetwork}`,
+      `A transaction ${transaction.name} has been cancelled.\nTransaction ID: ${transaction.transactionId}\n Netowork: ${transaction.mirrorNetwork}`,
       transaction.id,
     );
 
