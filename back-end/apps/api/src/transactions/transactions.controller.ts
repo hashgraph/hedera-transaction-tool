@@ -134,6 +134,18 @@ export class TransactionsController {
     return this.transactionsService.getTransactionsToSign(user, paginationParams, sort, filter);
   }
 
+  @ApiOperation({
+    summary: 'Get networks of transactions',
+    description: 'Get transactions with network they are submitted on.',
+  })
+  @ApiResponse({
+    status: 200,
+  })
+  @Get('/network-notifications')
+  async getNetwork(@GetUser() user: User) {
+    return this.transactionsService.getNetworkOfTransactionsToSign(user);
+  }
+
   /* Returns whether a user should sign a transaction with id */
   @ApiOperation({
     summary: 'Check if the current user should sign the transaction with the provided id',

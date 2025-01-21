@@ -259,6 +259,51 @@ export class TransactionsService {
     };
   }
 
+  async getNetworkOfTransactionsToSign(user: User, filter?: Filtering[]) {
+    const where = getWhere<Transaction>(filter);
+    const whereForUser: FindOptionsWhere<Transaction> = {
+      ...where,
+      status: Not(
+        In([
+          TransactionStatus.EXECUTED,
+          TransactionStatus.FAILED,
+          TransactionStatus.EXPIRED,
+          TransactionStatus.CANCELED,
+          TransactionStatus.ARCHIVED,
+        ]),
+      ),
+    };
+
+    await attachKeys(user, this.entityManager);
+    if (user.keys.length === 0) {
+      return {
+        totalItems: 0,
+        items: [],
+      };
+    }
+    const transactions = await this.repo.find({
+      where: whereForUser,
+      relations: ['groupItem'],
+    });
+
+    const networkNotifications = {
+      mainnet: 0,
+      testnet: 0,
+      previewnet: 0,
+      'local-node': 0,
+      custom: 0,
+    };
+    for (const transaction of transactions) {
+      if (networkNotifications[transaction.mirrorNetwork]) {
+        networkNotifications['custom'] += 1;
+      } else {
+        networkNotifications['custom'] += 1;
+      }
+    }
+
+    return networkNotifications;
+  }
+
   /* Get the transactions that need to be approved by the user. */
   async getTransactionsToApprove(
     user: User,
