@@ -22,9 +22,7 @@ const newOrganizationServerPublicKey = ref('');
 const organizations = ref<Organization[]>();
 
 /* Handlers */
-const handleAddOrganization = async (e: Event) => {
-  e.preventDefault();
-
+const handleAddOrganization = async () => {
   if (newOrganizationName.value !== '' && newOrganizationServerUrl.value !== '') {
     try {
       await addOrganization({
@@ -47,7 +45,7 @@ onBeforeMount(async () => {
 </script>
 <template>
   <div class="flex-column-100">
-    <form class="p-4 border border-2 rounded-3" @submit="handleAddOrganization">
+    <form class="p-4 border border-2 rounded-3" @submit.prevent="handleAddOrganization">
       <div class="d-flex align-items-center">
         <p class="me-4">Organization name:</p>
         <AppInput :filled="true" class="w-25 py-3" v-model="newOrganizationName" />

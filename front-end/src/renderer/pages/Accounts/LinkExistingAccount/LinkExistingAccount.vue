@@ -31,9 +31,7 @@ useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const accountData = useAccountId();
 const nickname = ref('');
 
-const handleLinkAccount = async (e: Event) => {
-  e.preventDefault();
-
+const handleLinkAccount = async () => {
   if (accountData.isValid.value) {
     try {
       if (!isUserLoggedIn(user.personal)) {
@@ -64,7 +62,7 @@ const handleLinkAccount = async (e: Event) => {
 
       <h2 class="text-title text-bold">Link existing account</h2>
     </div>
-    <form class="mt-5 col-12 col-md-8 col-lg-6 col-xxl-4" @submit="handleLinkAccount">
+    <form class="mt-5 col-12 col-md-8 col-lg-6 col-xxl-4" @submit.prevent="handleLinkAccount">
       <div class="form-group">
         <label class="form-label">Hedera Account ID <span class="text-danger">*</span></label>
 

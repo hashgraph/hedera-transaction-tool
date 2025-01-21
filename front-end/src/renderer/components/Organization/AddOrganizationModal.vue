@@ -38,9 +38,7 @@ const nickname = ref('');
 const serverUrl = ref('');
 
 /* Handlers */
-const handleAdd = async (e: Event) => {
-  e.preventDefault();
-
+const handleAdd = async () => {
   try {
     const url = new URL(serverUrl.value);
     serverUrl.value = url.origin;
@@ -77,7 +75,7 @@ watch(
     :close-on-escape="false"
     class="common-modal"
   >
-    <form class="p-4" @submit="handleAdd">
+    <form class="p-4" @submit.prevent="handleAdd">
       <div class="text-start">
         <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
       </div>

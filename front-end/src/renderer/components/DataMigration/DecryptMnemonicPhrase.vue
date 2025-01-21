@@ -21,8 +21,7 @@ const password = ref<string>('');
 const error = ref<string | null>(null);
 
 /* Handlers */
-const handleSubmit = (event: Event) => {
-  event.preventDefault();
+const handleSubmit = () => {
   if (password.value.trim().length === 0) {
     error.value = 'Password cannot be empty';
     return;
@@ -50,7 +49,7 @@ const handleClose = () => {
       <div class="text-center mt-4">
         <i class="bi bi-key large-icon" style="line-height: 16px"></i>
       </div>
-      <form @submit="handleSubmit">
+      <form @submit.prevent="handleSubmit">
         <h3 class="text-center text-title text-bold mt-3">Enter Password</h3>
 
         <div class="form-group mt-4">

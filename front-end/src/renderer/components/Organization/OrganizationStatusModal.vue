@@ -16,9 +16,7 @@ const inactiveSelectedOrganizationModalShown = ref(false);
 
 /* Handlers */
 
-const handleSelectedOrganizationNotActiveSubmit = async (e: Event) => {
-  e.preventDefault();
-
+const handleSelectedOrganizationNotActiveSubmit = async () => {
   inactiveSelectedOrganizationModalShown.value = false;
 };
 
@@ -49,7 +47,7 @@ watch(
           @click="inactiveSelectedOrganizationModalShown = false"
         ></i>
       </div>
-      <form class="mt-3" @submit="handleSelectedOrganizationNotActiveSubmit">
+      <form class="mt-3" @submit.prevent="handleSelectedOrganizationNotActiveSubmit">
         <h3 class="text-center text-title text-bold">Organization status error</h3>
         <p
           class="text-center text-small text-secondary mt-4"

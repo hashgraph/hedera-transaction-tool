@@ -50,9 +50,7 @@ const handleTrashClick = (e: Event, id: string) => {
   deleteSavedKeyModalShown.value = true;
 };
 
-const handleDeleteSavedKey = async (e: Event) => {
-  e.preventDefault();
-
+const handleDeleteSavedKey = async () => {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
@@ -65,9 +63,7 @@ const handleDeleteSavedKey = async (e: Event) => {
   complexKeyId.value = null;
 };
 
-const handleDone = (e: Event) => {
-  e.preventDefault();
-
+const handleDone = () => {
   if (complexKey.value) {
     props.onKeyListSelect(complexKey.value);
     handleShowUpdate(false);
@@ -86,7 +82,7 @@ onBeforeMount(async () => {
 <template>
   <AppModal :show="show" @update:show="handleShowUpdate" class="medium-modal">
     <div class="p-4">
-      <form @submit="handleDone">
+      <form @submit.prevent="handleDone">
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
         </div>
@@ -173,7 +169,7 @@ onBeforeMount(async () => {
           <div class="text-center">
             <AppCustomIcon :name="'bin'" style="height: 160px" />
           </div>
-          <form @submit="handleDeleteSavedKey">
+          <form @submit.prevent="handleDeleteSavedKey">
             <h3 class="text-center text-title text-bold mt-3">Remove Key List</h3>
             <p class="text-center text-small text-secondary mt-4">
               Are you sure you want to remove this Key List from your Complex Keys List

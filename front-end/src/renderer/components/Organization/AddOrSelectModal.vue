@@ -18,8 +18,6 @@ const emit = defineEmits<{
 
 /* Handlers */
 const handleChoose = (e: Event) => {
-  e.preventDefault();
-
   if (
     e instanceof SubmitEvent &&
     e.submitter instanceof HTMLButtonElement &&
@@ -43,7 +41,7 @@ function isChoice(value: string): value is Choice {
     :close-on-escape="false"
     class="common-modal"
   >
-    <form class="p-4" @submit="handleChoose">
+    <form class="p-4" @submit.prevent="handleChoose">
       <div class="text-start">
         <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
       </div>
