@@ -295,6 +295,7 @@ describe('TransactionStatusService', () => {
           creatorKey: {
             userId: 23,
           },
+          mirrorNetwork: 'testnet',
         },
         {
           id: 2,
@@ -314,6 +315,8 @@ describe('TransactionStatusService', () => {
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
 
       await service.updateTransactions(new Date(), new Date());
+
+      const networkString = getNetwork(transactions[0] as Transaction);
 
       expect(transactionRepo.update).toHaveBeenNthCalledWith(
         1,
@@ -343,7 +346,7 @@ describe('TransactionStatusService', () => {
         entityId: transactions[0].id,
         type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
         actorId: null,
-        content: `Transaction ${transactions[0].transactionId} is ready for execution`,
+        content: `Transaction ${transactions[0].transactionId} on ${networkString} network is ready for execution!`,
         userIds: [transactions[0].creatorKey?.userId],
       });
       expect(notifySyncIndicators).toHaveBeenCalledWith(
