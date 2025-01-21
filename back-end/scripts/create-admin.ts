@@ -59,9 +59,9 @@ async function main() {
 
   /* Getting user's password */
   const password = rl.questionNewPassword(`\nEnter ${pc.red('password')}: `, {
-    min: 8,
+    min: 10,
     max: 1000,
-    limitMessage: 'Password must be at least 8 characters long',
+    limitMessage: 'Password must be at least 10 characters long',
   });
   const salt = await bcrypt.genSalt();
   const hash = await bcrypt.hash(password, salt);
