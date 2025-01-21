@@ -245,7 +245,7 @@ export class TransactionStatusService {
         entityId: transaction.id,
         type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
         actorId: null,
-        content: `Transaction ${transaction.transactionId} on ${networkString} network is ready for execution!`,
+        content: `Transaction is ready for execution!\n Transaction ID ${transaction.transactionId}\n Network: ${networkString}`,
         userIds: [transaction.creatorKey?.userId],
       });
     }

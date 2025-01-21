@@ -678,7 +678,7 @@ describe('ReceiverService', () => {
       expect(notifyGeneral).toHaveBeenCalledWith({
         userIds: usersIdsRequiredToSign.filter(id => id !== creatorId),
         type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
-        content: `A new transaction submitted on ${networkString} network requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction using the following ID: ${transaction.transactionId}.`,
+        content: `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction.\n Transaction ID: ${transaction.transactionId}\n Network: ${networkString}`,
         entityId: 1,
         actorId: null,
       });

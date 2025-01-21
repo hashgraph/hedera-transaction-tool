@@ -346,7 +346,7 @@ describe('TransactionStatusService', () => {
         entityId: transactions[0].id,
         type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
         actorId: null,
-        content: `Transaction ${transactions[0].transactionId} on ${networkString} network is ready for execution!`,
+        content: `Transaction is ready for execution!\n Transaction ID ${transactions[0].transactionId}\n Network: ${networkString}`,
         userIds: [transactions[0].creatorKey?.userId],
       });
       expect(notifySyncIndicators).toHaveBeenCalledWith(
@@ -438,7 +438,7 @@ describe('TransactionStatusService', () => {
         entityId: transaction.id,
         type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
         actorId: null,
-        content: `Transaction ${transaction.transactionId} on ${networkString} network is ready for execution!`,
+        content: `Transaction is ready for execution!\n Transaction ID ${transaction.transactionId}\n Network: ${networkString}`,
         userIds: [transaction.creatorKey?.userId],
       });
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
