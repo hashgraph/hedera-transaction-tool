@@ -118,7 +118,11 @@ watch(
       <hr class="separator my-5" />
 
       <div class="flex-between-centered gap-4">
-        <AppButton color="borderless" type="button" @click="$emit('update:show', false)"
+        <AppButton
+          data-testid="button-cancel-adding-org"
+          color="borderless"
+          type="button"
+          @click="$emit('update:show', false)"
           >Cancel</AppButton
         >
         <AppButton color="primary" data-testid="button-add-organization-in-modal" type="submit"

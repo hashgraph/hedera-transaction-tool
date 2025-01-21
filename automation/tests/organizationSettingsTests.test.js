@@ -86,24 +86,11 @@ test.describe('Organization Settings tests', () => {
   });
 
   test('Verify error message when user adds non-existing organization', async () => {
-    await organizationPage.setupWrongOrganization();
-    const errorMessage = (await organizationPage.getOrganizationErrorMessage()).trim();
-    expect(errorMessage).toBe('Organization server is not reachable');
-    await organizationPage.clickOnCloseErrorModalButton();
-  });
-
-  test('Verify user can delete an organization', async () => {
-    await organizationPage.ensureBadOrganizationExists();
-    await settingsPage.clickOnSettingsButton();
-    await settingsPage.clickOnOrganisationsTab();
     await loginPage.waitForToastToDisappear();
-    await organizationPage.clickOnDeleteSecondOrganization();
-
+    await organizationPage.setupWrongOrganization();
     const toastMessage = await registrationPage.getToastMessage();
-    expect(toastMessage).toBe('Connection deleted successfully');
-
-    const isDeletedFromDb = await organizationPage.verifyOrganizationExists('Bad Organization');
-    expect(isDeletedFromDb).toBe(false);
+    expect(toastMessage).toBe('Organization does not exist. Please check the server URL');
+    await organizationPage.clickOnCancelAddingOrganizationButton();
   });
 
   test('Verify user is prompted for mnemonic phrase and can recover account when resetting organization', async () => {
@@ -211,5 +198,20 @@ test.describe('Organization Settings tests', () => {
   test('Verify that tabs on Transaction page are visible', async () => {
     await transactionPage.clickOnTransactionsMenuButton();
     expect(await organizationPage.returnAllTabsVisible()).toBe(true);
+  });
+
+  test('Verify user can delete an organization', async () => {
+    await organizationPage.selectPersonalMode();
+    await settingsPage.clickOnSettingsButton();
+    await settingsPage.clickOnOrganisationsTab();
+    await loginPage.waitForToastToDisappear();
+    await organizationPage.clickOnDeleteFirstOrganization();
+
+    const toastMessage = await registrationPage.getToastMessage();
+    expect(toastMessage).toBe('Connection deleted successfully');
+
+    const orgName = await organizationPage.getOrganizationNicknameText();
+    const isDeletedFromDb = await organizationPage.verifyOrganizationExists(orgName);
+    expect(isDeletedFromDb).toBe(false);
   });
 });
