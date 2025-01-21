@@ -15,6 +15,7 @@ import {
   notifySyncIndicators,
   notifyTransactionAction,
   notifyWaitingForSignatures,
+  getNetwork,
 } from '@app/common';
 import {
   NotificationType,
@@ -405,6 +406,7 @@ describe('TransactionStatusService', () => {
         creatorKey: {
           userId: 23,
         },
+        mirrorNetwork: 'testnet',
       };
       transactionRepo.findOne.mockResolvedValue(transaction as Transaction);
 
@@ -412,6 +414,8 @@ describe('TransactionStatusService', () => {
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
 
       await service.updateTransactionStatus({ id: transaction.id });
+
+      const networkString = getNetwork(transaction as Transaction);
 
       expect(transactionRepo.update).toHaveBeenNthCalledWith(
         1,
@@ -431,7 +435,7 @@ describe('TransactionStatusService', () => {
         entityId: transaction.id,
         type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
         actorId: null,
-        content: `Transaction ${transaction.transactionId} is ready for execution`,
+        content: `Transaction ${transaction.transactionId} on ${networkString} network is ready for execution!`,
         userIds: [transaction.creatorKey?.userId],
       });
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
