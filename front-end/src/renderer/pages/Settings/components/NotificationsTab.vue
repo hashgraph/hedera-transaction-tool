@@ -53,8 +53,20 @@ const handlePreferenceChange = (type: NotificationType, email: boolean) => {
           label="Required Signature"
         />
         <p class="text-small text-secondary mt-2">
-          You will be notified whenever a transaction, which requires your signature has been
+          You will be notified whenever a transaction, which requires your signature, has been
           created.
+        </p>
+      </div>
+      <div class="mt-6">
+        <AppSwitch
+          :checked="notifications.notificationsPreferences[NotificationType.TRANSACTION_CANCELLED]"
+          @update:checked="handlePreferenceChange(NotificationType.TRANSACTION_CANCELLED, $event)"
+          name="transaction-cancelled"
+          label="Transaction Cancelled"
+        />
+        <p class="text-small text-secondary mt-2">
+          You will be notified whenever a transaction, which you have signed, approved or observe,
+          has been cancelled.
         </p>
       </div>
     </div>
