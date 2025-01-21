@@ -28,12 +28,9 @@ const stepperItems = computed(() => {
   ];
 
   if (
-    [
-      TransactionStatus.EXPIRED,
-      TransactionStatus.CANCELED,
-      TransactionStatus.ARCHIVED,
-      TransactionStatus.SIGN_ONLY,
-    ].includes(props.transaction.status)
+    [TransactionStatus.EXPIRED, TransactionStatus.CANCELED, TransactionStatus.ARCHIVED].includes(
+      props.transaction.status,
+    )
   ) {
     items.splice(2, 2);
   }
@@ -45,9 +42,7 @@ const stepperItems = computed(() => {
       bubbleClass: 'bg-danger text-white',
       bubbleIcon: 'x-lg',
     };
-  } else if (
-    [TransactionStatus.ARCHIVED, TransactionStatus.SIGN_ONLY].includes(props.transaction.status)
-  ) {
+  } else if ([TransactionStatus.ARCHIVED].includes(props.transaction.status)) {
     items.push({ title: 'Archived', name: 'Archived' });
   }
 
@@ -59,7 +54,6 @@ const stepperActiveIndex = computed(() => {
     case TransactionStatus.NEW:
       return 0;
     case TransactionStatus.WAITING_FOR_SIGNATURES:
-    case TransactionStatus.SIGN_ONLY:
       return 1;
     case TransactionStatus.WAITING_FOR_EXECUTION:
       return 2;
