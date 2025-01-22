@@ -46,10 +46,9 @@ const useContactsStore = defineStore('contacts', () => {
 
       const orgContacts = await getOrganizationContacts(
         user.personal.id,
-        user.selectedOrganization.id,
-        user.selectedOrganization.userId,
+        user.selectedOrganization?.id,
+        user.selectedOrganization?.userId,
       );
-
       const newContacts: Contact[] = [];
 
       const result = await Promise.allSettled(users.map(u => getUserKeys(serverUrl, u.id)));

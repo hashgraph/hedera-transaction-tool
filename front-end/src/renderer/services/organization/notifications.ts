@@ -38,8 +38,8 @@ export const getAllInAppNotifications = async (
         final = notifications.length >= totalItems;
         page++;
       }
-    } catch (error) {
-      console.log(error);
+    } catch {
+      return notifications;
     }
 
     return notifications;

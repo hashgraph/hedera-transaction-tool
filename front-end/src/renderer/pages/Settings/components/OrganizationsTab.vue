@@ -66,10 +66,11 @@ const handleChangeNickname = async (e: Event) => {
 
   if (nickname.length === 0) {
     toast.error('Nickname cannot be empty');
+  } else if (user.organizations.some(org => org.nickname === nickname)) {
+    toast.error('Nickname already exists');
   } else {
     await updateOrganization(user.organizations[index].id, { nickname });
     user.organizations[index].nickname = nickname;
-    await user.refetchOrganizations();
   }
 };
 

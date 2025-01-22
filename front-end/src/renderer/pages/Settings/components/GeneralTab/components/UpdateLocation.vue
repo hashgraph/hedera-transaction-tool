@@ -61,8 +61,8 @@ onBeforeMount(async () => {
 <template>
   <div class="mt-4">
     <div>
-      <label class="form-label me-3">Update Location</label>
-      <div class="d-flex align-items-center gap-3 mt-4">
+      <label class="form-label">Update Location</label>
+      <div class="d-flex align-items-center gap-3">
         <div>
           <AppButton type="button" color="primary" @click="handleSelectLocation">Select</AppButton>
         </div>

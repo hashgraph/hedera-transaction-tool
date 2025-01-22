@@ -6,8 +6,7 @@ export const healthCheck = async (serverUrl: string): Promise<boolean> => {
   try {
     const { data } = await axios.get(`${serverUrl}${healtController}`);
     return data || false;
-  } catch (error) {
-    console.log(error);
+  } catch {
     return false;
   }
 };

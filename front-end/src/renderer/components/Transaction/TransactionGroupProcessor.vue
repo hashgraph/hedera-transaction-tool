@@ -332,7 +332,6 @@ async function sendSignedTransactionsToOrganization() {
     transactionGroup.description,
     false,
     transactionGroup.sequential,
-    transactionGroup.groupValidStart,
     apiGroupItems,
   );
 

@@ -108,7 +108,7 @@ async function fetchTransactions() {
   try {
     const { totalItems: totalItemsCount, items: rawTransactions } = await getTransactionsForUser(
       user.selectedOrganization.serverUrl,
-      [TransactionStatus.WAITING_FOR_SIGNATURES, TransactionStatus.SIGN_ONLY],
+      [TransactionStatus.WAITING_FOR_SIGNATURES],
       network.network,
       currentPage.value,
       pageSize.value,

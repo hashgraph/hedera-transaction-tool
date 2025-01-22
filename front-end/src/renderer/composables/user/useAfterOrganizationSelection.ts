@@ -1,6 +1,7 @@
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
+
 import useSetupStores from '@renderer/composables/user/useSetupStores';
 
 import { get as getStoredMnemonics } from '@renderer/services/mnemonicService';
@@ -64,6 +65,8 @@ export default function useAfterOrganizationSelection() {
 
     if (previousPath && currentRoute.path !== previousPath) {
       await router.push(previousPath);
+    } else if (currentRoute.name === 'login') {
+      await router.push({ name: 'transactions' });
     }
   };
 
