@@ -87,6 +87,7 @@ const useNotificationsStore = defineStore('notifications', () => {
     for (let i = 0; i < results.length; i++) {
       const result = results[i];
       result.status === 'fulfilled' && (notifications.value[severUrls[i]] = result.value);
+      console.log('RESTULTS: ', result);
     }
 
     notifications.value = { ...notifications.value };

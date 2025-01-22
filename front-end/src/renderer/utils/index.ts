@@ -108,11 +108,3 @@ export const throwError = (errorMessage: string) => {
 
 export const getErrorMessage = (error: unknown, defaultErrorMessage: string) =>
   error instanceof Error ? error.message : defaultErrorMessage;
-
-export const getNetworkNotificationsCount = async (serverUrl: string) =>
-  commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.get(
-      `${serverUrl}/transactions/network-notifications`,
-    );
-    return data;
-  }, 'Failed to get network notifications');

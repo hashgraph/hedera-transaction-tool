@@ -11,10 +11,11 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 
-import { getNetworkNotificationsCount, isOrganizationActive } from '@renderer/utils';
+import { isOrganizationActive } from '@renderer/utils';
 
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import type { INotificationReceiver } from '@main/shared/interfaces';
 
 /* Misc */
 const personalModeText = 'Personal';
@@ -35,7 +36,7 @@ const addOrganizationModalShown = ref(false);
 const dropDownValue = ref<string>(personalModeText);
 
 /* Computed */
-const indicatorNotifications = computed(() => {
+const indicatorNotifications = computed<{ [key: string]: INotificationReceiver[] }>(() => {
   const allNotifications = { ...notifications.notifications };
   for (const serverUrl of Object.keys(allNotifications)) {
     allNotifications[serverUrl] = allNotifications[serverUrl].filter(n =>

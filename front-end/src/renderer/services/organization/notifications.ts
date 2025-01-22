@@ -41,7 +41,6 @@ export const getAllInAppNotifications = async (
     } catch {
       return notifications;
     }
-
     return notifications;
   }, 'Failed to get user notifications');
 

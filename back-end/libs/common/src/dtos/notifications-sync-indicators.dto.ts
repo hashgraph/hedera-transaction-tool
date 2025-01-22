@@ -8,6 +8,9 @@ export class SyncIndicatorsDto {
   transactionId: number;
 
   @IsNotEmpty()
+  network: string;
+
+  @IsNotEmpty()
   @IsEnum(TransactionStatus)
   transactionStatus: TransactionStatus;
 }

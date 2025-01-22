@@ -168,7 +168,12 @@ export class SignersService {
 
     emitUpdateTransactionStatus(this.chainService, transactionId);
     notifyTransactionAction(this.notificationService);
-    notifySyncIndicators(this.notificationService, transactionId, transaction.status);
+    notifySyncIndicators(
+      this.notificationService,
+      transactionId,
+      transaction.status,
+      transaction.mirrorNetwork,
+    );
 
     return signers;
   }

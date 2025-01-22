@@ -130,7 +130,12 @@ export class ExecuteService {
 
       client.close();
 
-      notifySyncIndicators(this.notificationsService, transaction.id, transaction.status);
+      notifySyncIndicators(
+        this.notificationsService,
+        transaction.id,
+        transaction.status,
+        transaction.mirrorNetwork,
+      );
       notifyTransactionAction(this.notificationsService);
 
       this.sideEffect(sdkTransaction, transaction.mirrorNetwork);

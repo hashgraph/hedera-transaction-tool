@@ -36,9 +36,14 @@ export const notifyTransactionAction = (client: ClientProxy) => {
   });
 };
 
-export const notifyWaitingForSignatures = (client: ClientProxy, transactionId: number) => {
+export const notifyWaitingForSignatures = (
+  client: ClientProxy,
+  transactionId: number,
+  network: string,
+) => {
   client.emit<undefined, NotifyForTransactionDto>(NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES, {
     transactionId,
+    network,
   });
 };
 
@@ -46,10 +51,12 @@ export const notifySyncIndicators = (
   client: ClientProxy,
   transactionId: number,
   transactionStatus: TransactionStatus,
+  network: string,
 ) => {
   client.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
     transactionId,
     transactionStatus,
+    network,
   });
 };
 

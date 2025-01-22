@@ -23,12 +23,17 @@ export interface INotificationReceiver extends INotificationReceiverCore {
   notification: INotification;
 }
 
+export interface NotificationAdditionalData {
+  network: string;
+}
+
 export interface INotification {
   id: number;
   type: NotificationType;
   content: string;
   entityId?: number;
   actorId?: number;
+  additionalData?: NotificationAdditionalData;
   isEmailSent?: boolean;
   createdAt: Date;
 }

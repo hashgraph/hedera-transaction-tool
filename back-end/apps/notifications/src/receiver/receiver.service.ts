@@ -31,7 +31,7 @@ export class ReceiverService {
   ) {}
 
   @MurLock(5000, 'entityId')
-  async notifyGeneral({ type, content, entityId, actorId, userIds }: NotifyGeneralDto) {
+  async notifyGeneral({ type, content, entityId, actorId, userIds, network }: NotifyGeneralDto) {
     if (!userIds || userIds.length === 0) return;
 
     const { notification, notificationReceivers } = await this.entityManager.transaction(
@@ -57,6 +57,7 @@ export class ReceiverService {
             content,
             entityId,
             actorId,
+            network,
           );
         }
 
@@ -81,7 +82,7 @@ export class ReceiverService {
   }
 
   @MurLock(5000, 'transactionId')
-  async notifyTransactionRequiredSigners({ transactionId }: NotifyForTransactionDto) {
+  async notifyTransactionRequiredSigners({ transactionId, network }: NotifyForTransactionDto) {
     /* Get transaction */
     const transaction = await this.entityManager.findOne(Transaction, {
       where: {
@@ -105,17 +106,19 @@ export class ReceiverService {
       entityId: transaction.id,
       actorId: null,
       userIds: userIds.filter(id => id !== transaction.creatorKey?.userId),
+      network: network,
     });
 
     /* Sync indicators */
     await this.syncIndicators({
       transactionId,
       transactionStatus: transaction.status,
+      network,
     });
   }
 
   @MurLock(5000, 'transactionId')
-  async syncIndicators({ transactionId, transactionStatus }: SyncIndicatorsDto) {
+  async syncIndicators({ transactionId, transactionStatus, network }: SyncIndicatorsDto) {
     let newIndicatorType: NotificationType | null = null;
 
     /* Determine new indicator type */
@@ -198,6 +201,7 @@ export class ReceiverService {
         indicatorNotification,
         transactionId,
         requiredUserIds,
+        network,
       );
     } else {
       // await this.notifyGeneral({
@@ -220,6 +224,7 @@ export class ReceiverService {
       indicatorApproveNotification,
       transactionId,
       approversShouldChooseUserIds,
+      network,
     );
   }
 
@@ -229,10 +234,18 @@ export class ReceiverService {
     notification: Notification,
     transactionId: number,
     userIds: number[],
+    network: string,
   ) {
     /* Create new if not exists */
     if (!notification) {
-      notification = await this.createNotification(entityManager, type, '', transactionId, null);
+      notification = await this.createNotification(
+        entityManager,
+        type,
+        '',
+        transactionId,
+        null,
+        network,
+      );
     }
 
     /* Remove indicator notification for users that should not take action */
@@ -292,6 +305,7 @@ export class ReceiverService {
     content: string,
     entityId: number,
     actorId: number,
+    network: string,
   ) {
     /* Create notification */
     const notification = entityManager.create(Notification, {
@@ -300,9 +314,9 @@ export class ReceiverService {
       entityId: entityId,
       actorId: actorId,
       notificationReceivers: [],
+      additionalData: { network: network },
     });
     await entityManager.save(Notification, notification);
-
     return notification;
   }
 
