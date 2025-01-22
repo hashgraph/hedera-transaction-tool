@@ -10,6 +10,7 @@ import { useRouter } from 'vue-router';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 import useSetupStores from '@renderer/composables/user/useSetupStores';
+import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 
 import { loginLocal, registerLocal } from '@renderer/services/userService';
 import { initializeUseKeychain } from '@renderer/services/safeStorageService';
@@ -49,6 +50,7 @@ const router = useRouter();
 const createTooltips = useCreateTooltips();
 const setupStores = useSetupStores();
 const { redirectIfRequiredKeysToMigrate } = useRecoveryPhraseHashMigrate();
+const { select: selectDefaultOrganization } = useDefaultOrganization();
 
 /* Injected */
 const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
@@ -147,13 +149,15 @@ const handleOnFormSubmit = async () => {
 
         if (user.secretHashes.length === 0) {
           await router.push({ name: 'accountSetup' });
-        } else {
-          if (await redirectIfRequiredKeysToMigrate()) {
-            return;
-          }
-
-          await redirectToPrevious(router, { name: 'transactions' });
+          return;
         }
+
+        if (await redirectIfRequiredKeysToMigrate()) {
+          return;
+        }
+
+        await redirectToPrevious(router, { name: 'transactions' });
+        await selectDefaultOrganization();
       } finally {
         buttonLoading.value = false;
         globalModalLoaderRef?.value?.close();

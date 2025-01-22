@@ -9,6 +9,7 @@ import useNotificationsStore from '@renderer/stores/storeNotifications';
 import useLoader from '@renderer/composables/useLoader';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
+import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 
 import { isOrganizationActive } from '@renderer/utils';
 
@@ -26,6 +27,7 @@ const notifications = useNotificationsStore();
 const withLoader = useLoader();
 const createTooltips = useCreateTooltips();
 const { redirectIfRequiredKeysToMigrate } = useRecoveryPhraseHashMigrate();
+const { setLast } = useDefaultOrganization();
 
 /* State */
 const selectedMode = ref<string>('personal');
@@ -54,6 +56,7 @@ const handleUserModeChange = async (e: Event) => {
     dropDownValue.value = personalModeText;
     await user.selectOrganization(null);
     await redirectIfRequiredKeysToMigrate();
+    await setLast(null);
   } else {
     selectedMode.value = org ? org.id : 'personal';
     const organizationNickname =
@@ -72,6 +75,7 @@ const handleUserModeChange = async (e: Event) => {
 
     if (isOrganizationActive(user.selectedOrganization)) {
       dropDownValue.value = organizationNickname;
+      await setLast(user.selectedOrganization?.id || null);
     }
 
     await redirectIfRequiredKeysToMigrate();

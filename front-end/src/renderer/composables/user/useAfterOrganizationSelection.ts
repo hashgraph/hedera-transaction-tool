@@ -1,6 +1,7 @@
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
+
 import useSetupStores from '@renderer/composables/user/useSetupStores';
 
 import { get as getStoredMnemonics } from '@renderer/services/mnemonicService';

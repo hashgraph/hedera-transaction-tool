@@ -6,6 +6,7 @@ import * as constants from '@renderer/router/constants';
 
 import Transactions from '@renderer/pages/Transactions';
 import UserLogin from '@renderer/pages/UserLogin';
+import KeysTab from '@renderer/pages/Settings/components/KeysTab';
 import CreateTransactionGroup from '@renderer/pages/CreateTransactionGroup/CreateTransactionGroup.vue';
 import TransactionGroupDetails from '@renderer/pages/TransactionGroupDetails/TransactionGroupDetails.vue';
 
@@ -20,7 +21,6 @@ const SignUpUser = () => import('@renderer/pages/ContactList/SignUpUser');
 const AccountSetup = () => import('@renderer/pages/AccountSetup');
 const GeneralTab = () => import('@renderer/pages/Settings/components/GeneralTab');
 const WorkGroupsTab = () => import('@renderer/pages/Settings/components/WorkGroupsTab.vue');
-const KeysTab = () => import('@renderer/pages/Settings/components/KeysTab');
 const NotificationsTab = () => import('@renderer/pages/Settings/components/NotificationsTab.vue');
 const RestoreKey = () => import('@renderer/pages/RestoreKey');
 const CreateTransaction = () => import('@renderer/pages/CreateTransaction');
