@@ -59,6 +59,11 @@ const props = defineProps<{
   watchExecutedModalShown?: (shown: boolean) => void;
 }>();
 
+/* Emits */
+defineEmits<{
+  (event: 'abort'): void;
+}>();
+
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
@@ -434,7 +439,10 @@ defineExpose({
       <template #header>
         <div class="d-flex flex-column w-100">
           <div>
-            <i class="bi bi-x-lg cursor-pointer" @click="isConfirmShown = false"></i>
+            <i
+              class="bi bi-x-lg cursor-pointer"
+              @click="((isConfirmShown = false), $emit('abort'))"
+            ></i>
           </div>
           <div class="text-center">
             <i class="bi bi-arrow-left-right large-icon"></i>
@@ -468,7 +476,10 @@ defineExpose({
         <hr class="separator m-5" />
 
         <div class="flex-between-centered gap-4 w-100 px-5 pb-5">
-          <AppButton type="button" color="borderless" @click="isConfirmShown = false"
+          <AppButton
+            type="button"
+            color="borderless"
+            @click="((isConfirmShown = false), $emit('abort'))"
             >Cancel</AppButton
           >
           <AppButton
