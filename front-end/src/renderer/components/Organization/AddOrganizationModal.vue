@@ -15,6 +15,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import { healthCheck } from '@renderer/services/organization';
 
 /* Props */
 const props = defineProps<{
@@ -46,6 +47,12 @@ const handleAdd = async () => {
     throw new Error('Invalid Server URL');
   }
   try {
+    const active = await healthCheck(serverUrl.value);
+
+    if (!active) {
+      throw new Error('Organization does not exist. Please check the server URL');
+    }
+
     const organization = await addOrganization({
       nickname: nickname.value.trim() || `Organization ${user.organizations.length + 1}`,
       serverUrl: serverUrl.value,
@@ -111,7 +118,11 @@ watch(
       <hr class="separator my-5" />
 
       <div class="flex-between-centered gap-4">
-        <AppButton color="borderless" type="button" @click="$emit('update:show', false)"
+        <AppButton
+          data-testid="button-cancel-adding-org"
+          color="borderless"
+          type="button"
+          @click="$emit('update:show', false)"
           >Cancel</AppButton
         >
         <AppButton color="primary" data-testid="button-add-organization-in-modal" type="submit"

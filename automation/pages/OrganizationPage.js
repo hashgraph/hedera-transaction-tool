@@ -47,7 +47,6 @@ class OrganizationPage extends BasePage {
     this.users = []; // List to store user credentials
     this.transactions = []; // List to store transactions
     this.organizationRecoveryWords = []; // List to store recovery phrase words for organization
-    this.badOrganizationList = []; // List to store bad organizations
     this.complexAccountId = []; // List to store complex account ids
     this.complexFileId = []; // List to store complex file ids
     this.registrationPage = new RegistrationPage(window);
@@ -72,7 +71,6 @@ class OrganizationPage extends BasePage {
   dropdownSelectModeSelector = 'dropdown-select-mode';
   dropdownSelectedModeSelector = 'dropdown-selected-mode';
   editNicknameOrganizationButtonSelector = 'button-edit-nickname';
-  closeErrorModalButtonSelector = 'button-close-modal';
   logoutButtonSelector = 'button-logout';
   contactListButton = 'button-contact-list';
   deleteNextButtonSelector = 'button-delete-next';
@@ -88,6 +86,7 @@ class OrganizationPage extends BasePage {
   signTransactionButtonSelector = 'button-sign-org-transaction';
   nextTransactionButtonSelector = 'button-next-org-transaction';
   signAllTransactionsButtonSelector = 'button-sign-all-tx';
+  cancelAddingOrganizationButtonSelector = 'button-cancel-adding-org';
 
   // Inputs
   organizationNicknameInputSelector = 'input-organization-nickname';
@@ -98,7 +97,6 @@ class OrganizationPage extends BasePage {
   editOrganizationNicknameInputSelector = 'input-edit-nickname';
 
   // Texts
-  organizationErrorMessageSelector = 'p-organization-error-message';
   organizationNicknameTextSelector = 'span-organization-nickname';
   transactionDetailsIdSelector = 'p-transaction-details-id';
   transactionValidStartSelector = 'p-transaction-details-valid-start';
@@ -177,7 +175,6 @@ class OrganizationPage extends BasePage {
     const serverUrl = process.env.ORGANIZATION_URL + Math.floor(Math.random() * 10);
     await this.clickOnAddNewOrganizationButton();
     await this.fillOrganizationDetailsAndContinue(organizationNickname, serverUrl);
-    this.badOrganizationList.push(organizationNickname);
   }
 
   /**
@@ -319,29 +316,8 @@ class OrganizationPage extends BasePage {
     return checks.every(isTrue => isTrue);
   }
 
-  async getOrganizationErrorMessage() {
-    return await this.getText(this.organizationErrorMessageSelector);
-  }
-
-  async clickOnCloseErrorModalButton() {
-    await this.click(this.closeErrorModalButtonSelector);
-  }
-
-  async clickOnDeleteSecondOrganization() {
-    await this.click(this.deleteOrganizationButtonSelector, 1);
-  }
-
   async clickOnDeleteFirstOrganization() {
     await this.click(this.deleteOrganizationButtonSelector, 0);
-  }
-
-  async ensureBadOrganizationExists() {
-    if (this.badOrganizationList.length === 0) {
-      await this.settingsPage.clickOnSettingsButton();
-      await this.settingsPage.clickOnOrganisationsTab();
-      await this.setupWrongOrganization();
-      await this.clickOnCloseErrorModalButton();
-    }
   }
 
   async clickOnSelectModeDropdown() {
@@ -1466,10 +1442,6 @@ class OrganizationPage extends BasePage {
     return await this.getText(this.observerIndexSelector + index);
   }
 
-  async getNotificationNumberText() {
-    return await this.getText(this.spanNotificationNumberSelector);
-  }
-
   async isNotificationNumberVisible() {
     return await this.isElementVisible(this.spanNotificationNumberSelector);
   }
@@ -1504,6 +1476,10 @@ class OrganizationPage extends BasePage {
 
   async isNextTransactionButtonVisible() {
     return await this.isElementVisible(this.nextTransactionButtonSelector);
+  }
+
+  async clickOnCancelAddingOrganizationButton() {
+    await this.click(this.cancelAddingOrganizationButtonSelector);
   }
 }
 
