@@ -23,8 +23,7 @@ const password = ref('');
 const callback = ref<((password: string) => void) | null>(null);
 
 /* Handlers */
-const handlePasswordEntered = async (e: Event) => {
-  e.preventDefault();
+const handlePasswordEntered = async () => {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
@@ -89,7 +88,7 @@ defineExpose({
       <div class="text-center">
         <AppCustomIcon :name="'lock'" style="height: 160px" />
       </div>
-      <form class="mt-3" @submit="handlePasswordEntered">
+      <form class="mt-3" @submit.prevent="handlePasswordEntered">
         <h3 class="text-center text-title text-bold">{{ heading || 'Enter your password' }}</h3>
         <p class="text-center text-small text-secondary mt-4" v-if="subHeading">
           {{ subHeading }}

@@ -35,9 +35,7 @@ const isUpdating = ref(false);
 /* Handlers */
 const handleShow = (show: boolean) => emit('update:show', show);
 
-const handleUpdate = async (e: Event) => {
-  e.preventDefault();
-
+const handleUpdate = async () => {
   const oldNickname = getNicknameById(props.keyPairId, user.keyPairs);
 
   if (nickname.value.trim() === (oldNickname || '')) {
@@ -95,7 +93,7 @@ watch(
       <div class="text-center mt-5">
         <i class="bi bi-pencil-fill large-icon" style="line-height: 16px"></i>
       </div>
-      <form @submit="handleUpdate">
+      <form @submit.prevent="handleUpdate">
         <h3 class="text-center text-title text-bold mt-5">Update key pair nickname</h3>
         <div class="form-group mt-4">
           <label class="form-label">Enter Nickname</label>

@@ -37,9 +37,7 @@ const fileId = ref('');
 const nickname = ref('');
 const description = ref('');
 
-const handleLinkFile = async (e: Event) => {
-  e.preventDefault();
-
+const handleLinkFile = async () => {
   if (isAccountId(fileId.value)) {
     try {
       if (!isUserLoggedIn(user.personal)) {
@@ -76,7 +74,7 @@ const handleLinkFile = async (e: Event) => {
       @click="$router.back()"
       ><i class="bi bi-arrow-left text-subheader me-2"></i> Back</AppButton
     >
-    <form class="mt-5 col-12 col-md-8 col-lg-6 col-xxl-4" @submit="handleLinkFile">
+    <form class="mt-5 col-12 col-md-8 col-lg-6 col-xxl-4" @submit.prevent="handleLinkFile">
       <div class="form-group">
         <label class="form-label">Hedera File ID <span class="text-danger">*</span></label>
         <AppInput

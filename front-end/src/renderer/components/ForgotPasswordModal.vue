@@ -79,9 +79,7 @@ const isPrimaryButtonDisabled = computed(() => {
 });
 
 /* Handlers */
-const handleSubmit = async (e: Event) => {
-  e.preventDefault();
-
+const handleSubmit = async () => {
   if (!shouldEnterToken.value && !shouldSetNewPassword.value) {
     handleEmailEnter();
   } else if (!shouldSetNewPassword.value) {
@@ -228,7 +226,7 @@ watch(newPassword, pass => {
       <div class="text-center">
         <AppCustomIcon :name="'contact'" style="height: 160px" />
       </div>
-      <form class="mt-3" @submit="handleSubmit">
+      <form class="mt-3" @submit.prevent="handleSubmit">
         <h3 class="text-center text-title text-bold">
           {{ shouldSetNewPassword ? 'Set new password' : 'Forgot password' }}
         </h3>

@@ -51,9 +51,7 @@ const handleSaveComplexKeyButtonClick = () => {
   }
 };
 
-const handleSaveButtonClick = async (e: Event) => {
-  e.preventDefault();
-
+const handleSaveButtonClick = async () => {
   if (currentKeyInvalid.value) {
     errorModalShow.value = true;
     return;
@@ -77,7 +75,7 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
 <template>
   <AppModal :show="show" @update:show="handleShowUpdate" class="full-screen-modal">
     <div class="p-5 h-100">
-      <form @submit="handleSaveButtonClick" class="h-100">
+      <form @submit.prevent="handleSaveButtonClick" class="h-100">
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
         </div>

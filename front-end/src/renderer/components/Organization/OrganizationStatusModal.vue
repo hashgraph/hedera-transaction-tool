@@ -13,12 +13,11 @@ const user = useUserStore();
 
 /* State */
 const inactiveSelectedOrganizationModalShown = ref(false);
+const organizationNickname = ref<string | null>(null);
+const organizationUrl = ref<string | null>(null);
 
 /* Handlers */
-
-const handleSelectedOrganizationNotActiveSubmit = async (e: Event) => {
-  e.preventDefault();
-
+const handleSelectedOrganizationNotActiveSubmit = async () => {
   inactiveSelectedOrganizationModalShown.value = false;
 };
 
@@ -30,7 +29,12 @@ watch(
 
     if (!isOrganizationActive(selectedOrganization)) {
       inactiveSelectedOrganizationModalShown.value = true;
-      throw new Error('Organization server is not reachable');
+
+      const nickname = user.organizations.find(
+        organization => organization.serverUrl === selectedOrganization.serverUrl,
+      )?.nickname;
+      organizationNickname.value = nickname || null;
+      organizationUrl.value = selectedOrganization.serverUrl;
     }
   },
 );
@@ -49,15 +53,20 @@ watch(
           @click="inactiveSelectedOrganizationModalShown = false"
         ></i>
       </div>
-      <form class="mt-3" @submit="handleSelectedOrganizationNotActiveSubmit">
+      <form
+        class="overflow-hidden mt-3"
+        @submit.prevent="handleSelectedOrganizationNotActiveSubmit"
+      >
         <h3 class="text-center text-title text-bold">Organization status error</h3>
         <p
           class="text-center text-small text-secondary mt-4"
           data-testid="p-organization-error-message"
         >
-          Organization server is not reachable
+          {{ organizationNickname }} <span class="text-nobreak">is not reachable</span>
         </p>
+
         <hr class="separator my-5" />
+
         <div class="d-grid">
           <AppButton color="primary" data-testid="button-close-modal" type="submit"
             >Close</AppButton

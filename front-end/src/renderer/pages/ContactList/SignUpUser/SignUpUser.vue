@@ -27,9 +27,7 @@ useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const email = ref('');
 const nickname = ref('');
 
-const handleLinkAccount = async (e: Event) => {
-  e.preventDefault();
-
+const handleLinkAccount = async () => {
   if (!isEmail(email.value)) throw new Error('Invalid email');
   if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
   if (!isLoggedInOrganization(user.selectedOrganization))
@@ -72,7 +70,7 @@ watch(
 
       <h2 class="text-title text-bold">Create New Organization User</h2>
     </div>
-    <form class="mt-5 col-12 col-md-8 col-lg-6 col-xxl-4" @submit="handleLinkAccount">
+    <form class="mt-5 col-12 col-md-8 col-lg-6 col-xxl-4" @submit.prevent="handleLinkAccount">
       <div class="form-group">
         <label class="form-label">Email <span class="text-danger">*</span></label>
         <AppInput

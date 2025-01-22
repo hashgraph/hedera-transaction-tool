@@ -56,9 +56,7 @@ const accountIdsList = computed(() => {
 /* Handlers */
 const handleShowUpdate = (show: boolean) => emit('update:show', show);
 
-const handleInsert = async (e: Event) => {
-  e.preventDefault();
-
+const handleInsert = async () => {
   if (!isAccountId(selectedAccountData.accountId.value)) {
     throw new Error('Invalid Account ID');
   }
@@ -87,7 +85,7 @@ onMounted(async () => {
 <template>
   <AppModal :show="show" @update:show="handleShowUpdate" class="medium-modal">
     <div class="p-4">
-      <form @submit="handleInsert">
+      <form @submit.prevent="handleInsert">
         <div>
           <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
         </div>

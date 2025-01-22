@@ -65,8 +65,7 @@ const hashCode = computed(() =>
 /* Handlers */
 const handleSkipAll = () => emit('skip:all');
 const handleSkip = () => emit('skip:one');
-const handleSubmit = async (event: Event) => {
-  event.preventDefault();
+const handleSubmit = async () => {
   await decrypt();
 };
 
@@ -220,7 +219,7 @@ watch(
       <div class="text-center mt-4">
         <i class="bi bi-key large-icon" style="line-height: 16px"></i>
       </div>
-      <form @submit="handleSubmit">
+      <form @submit.prevent="handleSubmit">
         <h3 class="text-center text-title text-bold mt-3">Decrypt key</h3>
 
         <div class="form-group mt-4">
