@@ -161,6 +161,7 @@ async function handleSignSubmit() {
   }
 
   try {
+    updateValidStarts.value = false;
     transactionGroup.updateTransactionValidStarts(transactionGroup.groupValidStart);
     const ownerKeys = new Array<PublicKey>();
     for (const key of user.keyPairs) {
@@ -168,7 +169,6 @@ async function handleSignSubmit() {
     }
     const requiredKey = new KeyList(ownerKeys);
 
-    updateValidStarts.value = false;
     await transactionGroupProcessor.value?.process(requiredKey);
   } catch (error) {
     updateValidStarts.value = true;

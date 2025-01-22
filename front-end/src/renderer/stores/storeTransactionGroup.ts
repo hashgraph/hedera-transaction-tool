@@ -239,24 +239,27 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   }
 
   function updateTransactionValidStarts(newGroupValidStart: Date) {
-    groupItems.value = groupItems.value.map((item, index) => {
+    groupItems.value.forEach((groupItem, index) => {
       const now = new Date();
-      if (item.validStart < now) {
+      if (groupItem.validStart < now) {
         const updatedValidStart = findUniqueValidStart(
-          item.payerAccountId,
+          groupItem.payerAccountId,
           newGroupValidStart.getTime() + index,
         );
-        const transaction = Transaction.fromBytes(item.transactionBytes);
-        transaction.setTransactionId(createTransactionId(item.payerAccountId, updatedValidStart));
+        const transaction = Transaction.fromBytes(groupItem.transactionBytes);
+        transaction.setTransactionId(
+          createTransactionId(groupItem.payerAccountId, updatedValidStart),
+        );
 
-        return {
-          ...item,
+        groupItems.value[index] = {
+          ...groupItem,
           transactionBytes: transaction.toBytes(),
           validStart: updatedValidStart,
         };
       }
-      return item;
     });
+    groupItems.value = [...groupItems.value];
+
     setModified();
   }
 
