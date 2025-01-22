@@ -1,5 +1,3 @@
-import { axiosWithCredentials, commonRequestHandler } from './axios';
-
 export * from './dom';
 export * from './sdk';
 export * from './transactions';

@@ -43,6 +43,7 @@ const indicatorNotifications = computed<{ [key: string]: INotificationReceiver[]
       n.notification.type.toLocaleLowerCase().includes('indicator'),
     );
   }
+  console.log(allNotifications);
   return allNotifications;
 });
 
