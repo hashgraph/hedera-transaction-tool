@@ -453,13 +453,13 @@ defineExpose({
       </template>
       <template #default>
         <div
-          v-for="groupItem in transactionGroup.groupItems"
+          v-for="(groupItem, index) in transactionGroup.groupItems"
           :key="groupItem.transactionBytes.toString()"
           class="px-5"
         >
           <div class="d-flex p-4 transaction-group-row justify-content-between">
             <div>{{ getTransactionType(groupItem.transactionBytes) }}</div>
-            <div>
+            <div :data-testid="'div-transaction-id-' + index">
               {{
                 groupItem.description != ''
                   ? groupItem.description

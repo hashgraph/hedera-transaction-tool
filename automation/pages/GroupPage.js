@@ -41,7 +41,7 @@ class GroupPage extends BasePage {
 
   //Indexes
   transactionTypeIndexSelector = 'span-transaction-type-';
-  transactionTimestampIndexSelector = 'span-transaction-timestamp-';
+  transactionTimestampIndexSelector = 'div-transaction-id-';
   transactionDeleteButtonIndexSelector = 'button-transaction-delete-';
   transactionDuplicateButtonIndexSelector = 'button-transaction-duplicate-';
   transactionEditButtonIndexSelector = 'button-transaction-edit-';
