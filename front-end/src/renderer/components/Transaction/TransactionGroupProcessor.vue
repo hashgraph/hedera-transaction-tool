@@ -43,7 +43,6 @@ import {
   isLoggedInOrganization,
   isUserLoggedIn,
   getErrorMessage,
-  assertIsLoggedInOrganization,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -121,7 +120,6 @@ async function signAfterConfirm() {
   }
 
   assertUserLoggedIn(user.personal);
-  assertIsLoggedInOrganization(user.selectedOrganization);
 
   /* Verifies the user has entered his password */
   const personalPassword = getPassword(signAfterConfirm, {
