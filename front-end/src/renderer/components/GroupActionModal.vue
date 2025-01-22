@@ -38,7 +38,9 @@ function handleEditItem() {
 }
 
 function handleDiscard() {
-  transactionGroup.clearGroup();
+  if (router.previousPath !== '/create-transaction-group') {
+    transactionGroup.clearGroup();
+  }
   redirectToPrevious(router, '/transactions');
 }
 
