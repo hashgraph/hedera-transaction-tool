@@ -300,6 +300,7 @@ async function handleOnFileChanged(e: Event) {
 
 function updateGroupValidStart(newDate: Date) {
   transactionGroup.groupValidStart = newDate;
+  transactionGroup.updateTransactionValidStarts(transactionGroup.groupValidStart);
 }
 
 /* Functions */
