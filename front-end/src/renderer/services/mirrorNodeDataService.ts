@@ -252,15 +252,6 @@ export const getTransactionInfo = async (
   return data;
 };
 
-export const getNetworkNotificationsCount = async (
-  mirrorNodeLink: string,
-  controller?: AbortController,
-) => {
-  const { data } = await axios.get(
-    `${withAPIPrefix(mirrorNodeLink)}/transactions/network-notifications`,
-  );
-};
-
 /* Gets the network nodes information */
 export const getNetworkNodes = async (mirrorNodeURL: string) => {
   let networkNodes: NetworkNode[] = [];

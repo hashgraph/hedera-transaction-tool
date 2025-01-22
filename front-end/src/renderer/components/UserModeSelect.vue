@@ -11,7 +11,7 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 
-import { isOrganizationActive } from '@renderer/utils';
+import { getNetworkNotificationsCount, isOrganizationActive } from '@renderer/utils';
 
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';

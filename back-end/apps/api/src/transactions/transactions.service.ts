@@ -294,8 +294,8 @@ export class TransactionsService {
       custom: 0,
     };
     for (const transaction of transactions) {
-      if (networkNotifications[transaction.mirrorNetwork]) {
-        networkNotifications['custom'] += 1;
+      if (transaction.mirrorNetwork in networkNotifications) {
+        networkNotifications[transaction.mirrorNetwork] += 1;
       } else {
         networkNotifications['custom'] += 1;
       }
