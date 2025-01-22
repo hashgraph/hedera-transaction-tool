@@ -22,6 +22,7 @@ import {
 import { NotificationType, Transaction, TransactionGroup, TransactionStatus } from '@entities';
 
 import { ExecuteService } from '../execute/execute.service';
+import { getNetwork } from '@app/common';
 
 @Injectable()
 export class TransactionStatusService {
@@ -238,13 +239,13 @@ export class TransactionStatusService {
 
   private emitNotificationEvents(transaction: Transaction, newStatus: TransactionStatus) {
     notifySyncIndicators(this.notificationsService, transaction.id, newStatus);
-
+    const networkString = getNetwork(transaction);
     if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
       this.notificationsService.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
         entityId: transaction.id,
         type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
         actorId: null,
-        content: `Transaction ${transaction.transactionId} is ready for execution`,
+        content: `Transaction is ready for execution!\nTransaction ID: ${transaction.transactionId}\nNetwork: ${networkString}`,
         userIds: [transaction.creatorKey?.userId],
       });
     }

@@ -147,3 +147,13 @@ export const userKeysRequiredToSign = async (
 
   return userKeysRequiredToSign.map(k => k.id);
 };
+
+export const getNetwork = (transaction: Transaction) => {
+  const network = transaction.mirrorNetwork;
+  const defaultNetworks = ['mainnet', 'testnet', 'previewnet', 'local-node'];
+  const isCustom = !defaultNetworks.includes(network);
+  const networkString = isCustom
+    ? network
+    : network.charAt(0).toUpperCase() + network.slice(1).toLowerCase();
+  return networkString;
+};

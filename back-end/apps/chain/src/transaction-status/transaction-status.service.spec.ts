@@ -15,6 +15,7 @@ import {
   notifySyncIndicators,
   notifyTransactionAction,
   notifyWaitingForSignatures,
+  getNetwork,
 } from '@app/common';
 import {
   NotificationType,
@@ -294,6 +295,7 @@ describe('TransactionStatusService', () => {
           creatorKey: {
             userId: 23,
           },
+          mirrorNetwork: 'testnet',
         },
         {
           id: 2,
@@ -313,6 +315,8 @@ describe('TransactionStatusService', () => {
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
 
       await service.updateTransactions(new Date(), new Date());
+
+      const networkString = getNetwork(transactions[0] as Transaction);
 
       expect(transactionRepo.update).toHaveBeenNthCalledWith(
         1,
@@ -342,7 +346,7 @@ describe('TransactionStatusService', () => {
         entityId: transactions[0].id,
         type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
         actorId: null,
-        content: `Transaction ${transactions[0].transactionId} is ready for execution`,
+        content: `Transaction is ready for execution!\nTransaction ID: ${transactions[0].transactionId}\nNetwork: ${networkString}`,
         userIds: [transactions[0].creatorKey?.userId],
       });
       expect(notifySyncIndicators).toHaveBeenCalledWith(
@@ -405,6 +409,7 @@ describe('TransactionStatusService', () => {
         creatorKey: {
           userId: 23,
         },
+        mirrorNetwork: 'testnet',
       };
       transactionRepo.findOne.mockResolvedValue(transaction as Transaction);
 
@@ -412,6 +417,8 @@ describe('TransactionStatusService', () => {
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
 
       await service.updateTransactionStatus({ id: transaction.id });
+
+      const networkString = getNetwork(transaction as Transaction);
 
       expect(transactionRepo.update).toHaveBeenNthCalledWith(
         1,
@@ -431,7 +438,7 @@ describe('TransactionStatusService', () => {
         entityId: transaction.id,
         type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
         actorId: null,
-        content: `Transaction ${transaction.transactionId} is ready for execution`,
+        content: `Transaction is ready for execution!\nTransaction ID: ${transaction.transactionId}\nNetwork: ${networkString}`,
         userIds: [transaction.creatorKey?.userId],
       });
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);

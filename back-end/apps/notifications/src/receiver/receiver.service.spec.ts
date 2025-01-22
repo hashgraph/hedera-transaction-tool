@@ -7,6 +7,7 @@ import {
   MirrorNodeService,
   NotifyForTransactionDto,
   NotifyGeneralDto,
+  getNetwork,
 } from '@app/common';
 import {
   Notification,
@@ -648,6 +649,7 @@ describe('ReceiverService', () => {
           signedTransactions: [],
           createdTransactions: [],
         },
+        mirrorNetwork: 'testnet',
       };
       entityManager.findOne
         .calledWith(Transaction, expect.anything())
@@ -666,6 +668,8 @@ describe('ReceiverService', () => {
 
       await service.notifyTransactionRequiredSigners(dto);
 
+      const networkString = getNetwork(transaction as Transaction);
+
       expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
         where: { id: dto.transactionId },
         relations: { creatorKey: true },
@@ -674,7 +678,7 @@ describe('ReceiverService', () => {
       expect(notifyGeneral).toHaveBeenCalledWith({
         userIds: usersIdsRequiredToSign.filter(id => id !== creatorId),
         type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
-        content: `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction using the following ID: ${transaction.transactionId}.`,
+        content: `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction.\nTransaction ID: ${transaction.transactionId}\nNetwork: ${networkString}`,
         entityId: 1,
         actorId: null,
       });
