@@ -43,7 +43,6 @@ import {
   isLoggedInOrganization,
   isUserLoggedIn,
   getErrorMessage,
-  assertIsLoggedInOrganization,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -58,6 +57,11 @@ const props = defineProps<{
   onSubmitted?: (id: number, transactionBytes: string) => void;
   onCloseSuccessModalClick?: () => void;
   watchExecutedModalShown?: (shown: boolean) => void;
+}>();
+
+/* Emits */
+defineEmits<{
+  (event: 'abort'): void;
 }>();
 
 /* Stores */
@@ -121,7 +125,6 @@ async function signAfterConfirm() {
   }
 
   assertUserLoggedIn(user.personal);
-  assertIsLoggedInOrganization(user.selectedOrganization);
 
   /* Verifies the user has entered his password */
   const personalPassword = getPassword(signAfterConfirm, {
@@ -436,7 +439,10 @@ defineExpose({
       <template #header>
         <div class="d-flex flex-column w-100">
           <div>
-            <i class="bi bi-x-lg cursor-pointer" @click="isConfirmShown = false"></i>
+            <i
+              class="bi bi-x-lg cursor-pointer"
+              @click="((isConfirmShown = false), $emit('abort'))"
+            ></i>
           </div>
           <div class="text-center">
             <i class="bi bi-arrow-left-right large-icon"></i>
@@ -447,13 +453,13 @@ defineExpose({
       </template>
       <template #default>
         <div
-          v-for="groupItem in transactionGroup.groupItems"
+          v-for="(groupItem, index) in transactionGroup.groupItems"
           :key="groupItem.transactionBytes.toString()"
           class="px-5"
         >
           <div class="d-flex p-4 transaction-group-row justify-content-between">
             <div>{{ getTransactionType(groupItem.transactionBytes) }}</div>
-            <div>
+            <div :data-testid="'div-transaction-id-' + index">
               {{
                 groupItem.description != ''
                   ? groupItem.description
@@ -470,7 +476,10 @@ defineExpose({
         <hr class="separator m-5" />
 
         <div class="flex-between-centered gap-4 w-100 px-5 pb-5">
-          <AppButton type="button" color="borderless" @click="isConfirmShown = false"
+          <AppButton
+            type="button"
+            color="borderless"
+            @click="((isConfirmShown = false), $emit('abort'))"
             >Cancel</AppButton
           >
           <AppButton

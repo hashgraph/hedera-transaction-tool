@@ -50,6 +50,7 @@ const transactionGroupProcessor = ref<typeof TransactionGroupProcessor | null>(n
 const file = ref<HTMLInputElement | null>(null);
 const wantToDeleteModalShown = ref(false);
 const showAreYouSure = ref(false);
+const updateValidStarts = ref(true);
 
 const groupEmpty = computed(() => transactionGroup.groupItems.length == 0);
 
@@ -160,6 +161,7 @@ async function handleSignSubmit() {
   }
 
   try {
+    updateValidStarts.value = false;
     transactionGroup.updateTransactionValidStarts(transactionGroup.groupValidStart);
     const ownerKeys = new Array<PublicKey>();
     for (const key of user.keyPairs) {
@@ -169,6 +171,7 @@ async function handleSignSubmit() {
 
     await transactionGroupProcessor.value?.process(requiredKey);
   } catch (error) {
+    updateValidStarts.value = true;
     toast.error(getErrorMessage(error, 'Failed to create transaction'));
   }
 }
@@ -300,6 +303,9 @@ async function handleOnFileChanged(e: Event) {
 
 function updateGroupValidStart(newDate: Date) {
   transactionGroup.groupValidStart = newDate;
+  if (updateValidStarts.value) {
+    transactionGroup.updateTransactionValidStarts(transactionGroup.groupValidStart);
+  }
 }
 
 /* Functions */
@@ -527,6 +533,7 @@ onBeforeRouteLeave(async to => {
         :on-close-success-modal-click="handleClose"
         :on-executed="handleExecuted"
         :on-submitted="handleSubmit"
+        @abort="updateValidStarts = true"
       >
         <template #successHeading>Transaction Group Executed Successfully</template>
       </TransactionGroupProcessor>

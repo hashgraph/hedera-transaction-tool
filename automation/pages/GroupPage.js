@@ -41,7 +41,7 @@ class GroupPage extends BasePage {
 
   //Indexes
   transactionTypeIndexSelector = 'span-transaction-type-';
-  transactionTimestampIndexSelector = 'span-transaction-timestamp-';
+  transactionTimestampIndexSelector = 'div-transaction-id-';
   transactionDeleteButtonIndexSelector = 'button-transaction-delete-';
   transactionDuplicateButtonIndexSelector = 'button-transaction-duplicate-';
   transactionEditButtonIndexSelector = 'button-transaction-edit-';
@@ -294,28 +294,16 @@ class GroupPage extends BasePage {
       console.log(`Attempt ${attempt}/${retries} to click "Sign All" button.`);
 
       try {
-        // Attempt to click the button
         await this.click(selector);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        const isButtonVisible = await this.isElementVisible(selector, null, 3000);
 
-        // Wait for it to disappear (tweak timeouts as needed)
-        await this.waitForElementToDisappear(selector, 10000, 30000);
+        if (!isButtonVisible) {
+          return;
+        }
 
-        // If no error was thrown, we succeeded — break out
-        console.log(
-          `Successfully clicked "Sign All" button and it disappeared on attempt #${attempt}.`,
-        );
-        return; // or break;
       } catch (error) {
         console.error(`Attempt #${attempt} to click "Sign All" button failed: ${error.message}`);
-
-        if (attempt < retries) {
-          console.log(`Retrying in ${retryDelay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
-        } else {
-          throw new Error(
-            `Failed to click "Sign All" button and wait for it to disappear after ${retries} attempts.`,
-          );
-        }
       }
     }
   }

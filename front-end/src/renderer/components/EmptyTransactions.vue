@@ -53,6 +53,7 @@ const isTransactionSelectionModalShown = ref(false);
     <template v-if="['create-group', 'transactions-tab'].includes(mode)">
       <div class="mt-3">
         <AppButton
+          type="button"
           class="text-main text-pink"
           :size="'small'"
           @click="isTransactionSelectionModalShown = true"
@@ -63,6 +64,7 @@ const isTransactionSelectionModalShown = ref(false);
     <template v-if="['transactions-tab'].includes(mode)">
       <div class="mt-2">
         <AppButton
+          type="button"
           class="text-main text-pink"
           :size="'small'"
           @click="router.push('/create-transaction-group')"

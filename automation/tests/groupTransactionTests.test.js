@@ -210,9 +210,9 @@ test.describe('Group transaction tests', () => {
 
   test('Verify user can execute group transaction', async () => {
     await groupPage.addSingleTransactionToGroup();
-    const txId = await groupPage.getTransactionTimestamp(0);
 
     await groupPage.clickOnSignAndExecuteButton();
+    const txId = await groupPage.getTransactionTimestamp(0);
     await groupPage.clickOnConfirmGroupTransactionButton();
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
@@ -231,11 +231,10 @@ test.describe('Group transaction tests', () => {
     await groupPage.clickTransactionDuplicateButton(0);
     await groupPage.clickTransactionDuplicateButton(0);
 
+    await groupPage.clickOnSignAndExecuteButton();
     const txId = await groupPage.getTransactionTimestamp(0);
     const secondTxId = await groupPage.getTransactionTimestamp(1);
     const thirdTxId = await groupPage.getTransactionTimestamp(2);
-
-    await groupPage.clickOnSignAndExecuteButton();
     await groupPage.clickOnConfirmGroupTransactionButton();
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
@@ -267,10 +266,9 @@ test.describe('Group transaction tests', () => {
     await groupPage.addSingleTransactionToGroup();
     await groupPage.addSingleTransactionToGroup(1, true);
 
+    await groupPage.clickOnSignAndExecuteButton();
     const txId = await groupPage.getTransactionTimestamp(0);
     const secondTxId = await groupPage.getTransactionTimestamp(1);
-
-    await groupPage.clickOnSignAndExecuteButton();
     await groupPage.clickOnConfirmGroupTransactionButton();
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
@@ -292,8 +290,8 @@ test.describe('Group transaction tests', () => {
 
   test('Verify transaction and linked group items and transaction group exists in db', async () => {
     await groupPage.addSingleTransactionToGroup();
-    const txId = await groupPage.getTransactionTimestamp(0);
     await groupPage.clickOnSignAndExecuteButton();
+    const txId = await groupPage.getTransactionTimestamp(0);
     await groupPage.clickOnConfirmGroupTransactionButton();
     expect(await groupPage.doTransactionGroupsExist(txId)).toBe(true);
   });
