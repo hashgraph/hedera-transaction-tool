@@ -33,7 +33,7 @@ export interface INotification {
   content: string;
   entityId?: number;
   actorId?: number;
-  additionalData?: NotificationAdditionalData;
+  additionalData: NotificationAdditionalData;
   isEmailSent?: boolean;
   createdAt: Date;
 }

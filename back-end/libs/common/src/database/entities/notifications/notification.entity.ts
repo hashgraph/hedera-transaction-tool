@@ -43,7 +43,7 @@ export class Notification {
   @Column({ nullable: true })
   entityId?: number;
 
-  @Column({ type: 'json', nullable: true })
+  @Column({ type: 'json', nullable: true, default: {} })
   additionalData?: NotificationAdditionalData;
 
   @ManyToOne(() => User, user => user.issuedNotifications)

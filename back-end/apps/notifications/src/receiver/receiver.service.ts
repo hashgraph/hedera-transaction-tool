@@ -308,7 +308,6 @@ export class ReceiverService {
     network: string,
   ) {
     /* Create notification */
-    console.log('NETWORKKKKKKKK: ', network);
     const notification = entityManager.create(Notification, {
       type: type,
       content: content,
@@ -318,7 +317,6 @@ export class ReceiverService {
       additionalData: { network: network },
     });
     await entityManager.save(Notification, notification);
-    console.log('NOTIFICATIONNNNNN: ', notification);
     return notification;
   }
 

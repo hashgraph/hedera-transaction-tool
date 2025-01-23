@@ -4,7 +4,7 @@ import type {
   IUpdateNotificationReceiver,
 } from '@main/shared/interfaces';
 
-import { ref } from 'vue';
+import { ref, watchEffect } from 'vue';
 import { defineStore } from 'pinia';
 
 import { NotificationType } from '@main/shared/interfaces';
@@ -33,6 +33,48 @@ const useNotificationsStore = defineStore('notifications', () => {
     [NotificationType.TRANSACTION_CANCELLED]: true,
   });
   const notifications = ref<{ [serverUrl: string]: INotificationReceiver[] }>({});
+  const networkNotifications = ref<{
+    mainnet: number;
+    testnet: number;
+    previewnet: number;
+    'local-node': number;
+    custom: number;
+  }>({
+    mainnet: 0,
+    testnet: 0,
+    previewnet: 0,
+    'local-node': 0,
+    custom: 0,
+  });
+
+  const handleNetworkNotifications = () => {
+    const counts = { mainnet: 0, testnet: 0, previewnet: 0, 'local-node': 0, custom: 0 };
+
+    if (notifications.value) {
+      const allNotifications = { ...notifications.value };
+      for (const serverUrl of Object.keys(allNotifications)) {
+        allNotifications[serverUrl] = allNotifications[serverUrl].filter(n =>
+          n.notification.type.toLocaleLowerCase().includes('indicator'),
+        );
+      }
+      for (const serverUrl of Object.keys(allNotifications)) {
+        for (const n of allNotifications[serverUrl]) {
+          const network = n.notification.additionalData?.network;
+
+          if (!network) {
+            continue;
+          }
+
+          if (network in counts) {
+            counts[network as keyof typeof counts]++;
+          } else {
+            counts['custom']++;
+          }
+        }
+      }
+    }
+    networkNotifications.value = counts;
+  };
 
   /* Actions */
   async function setup() {
@@ -87,10 +129,9 @@ const useNotificationsStore = defineStore('notifications', () => {
     for (let i = 0; i < results.length; i++) {
       const result = results[i];
       result.status === 'fulfilled' && (notifications.value[severUrls[i]] = result.value);
-      console.log('RESTULTS: ', result);
     }
-
     notifications.value = { ...notifications.value };
+    handleNetworkNotifications();
   }
 
   function listenForUpdates() {
@@ -136,6 +177,11 @@ const useNotificationsStore = defineStore('notifications', () => {
     notifications.value = { ...notifications.value };
   }
 
+  watchEffect(() => {
+    console.log('STORE DATA:', networkNotifications.value);
+    handleNetworkNotifications();
+  });
+
   ws.$onAction(ctx => {
     if (ctx.name === 'setup') {
       ctx.after(() => listenForUpdates());
@@ -150,6 +196,7 @@ const useNotificationsStore = defineStore('notifications', () => {
     fetchNotifications,
     updatePreferences,
     markAsRead,
+    networkNotifications,
   };
 });
 

@@ -19,7 +19,7 @@ export class NotificationDto {
   actorId?: number;
 
   @Expose()
-  additionalData?: NotificationAdditionalData;
+  additionalData: NotificationAdditionalData;
 
   @Expose()
   createdAt: Date;

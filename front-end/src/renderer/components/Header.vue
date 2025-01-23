@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Network } from '@main/shared/interfaces';
 
-import { onUpdated } from 'vue';
+import { computed, onUpdated, watch } from 'vue';
 
 import { CommonNetwork } from '@main/shared/enums';
 
@@ -18,12 +18,14 @@ import { updateOrganizationCredentials } from '@renderer/services/organizationCr
 import {
   isLoggedInOrganization,
   isUserLoggedIn,
+  normalizeNetworkName,
   toggleAuthTokenInSessionStorage,
 } from '@renderer/utils';
 
 import Logo from '@renderer/components/Logo.vue';
 import LogoText from '@renderer/components/LogoText.vue';
 import UserModeSelect from './UserModeSelect.vue';
+import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 /* Mappings */
 const networkMapping: {
@@ -50,11 +52,20 @@ const networkMapping: {
 /* Stores */
 const user = useUserStore();
 const networkStore = useNetworkStore();
+const { networkNotifications } = useNotificationsStore();
 
 /* Composables */
 const router = useRouter();
 const createTooltips = useCreateTooltips();
 const withLoader = useLoader();
+
+/* State */
+const hasIndicator = computed(() => {
+  const currentNetwork = normalizeNetworkName(networkStore.network);
+  return Object.entries(networkNotifications)
+    .filter(([key]) => key !== currentNetwork)
+    .some(([, value]) => Boolean(value));
+});
 
 /* Handlers */
 const handleLogout = async () => {
@@ -73,6 +84,12 @@ const handleLogout = async () => {
   }
 };
 
+watch(
+  () => networkStore.network,
+  () => {
+    console.log(networkNotifications);
+  },
+);
 /* Hooks */
 onUpdated(createTooltips);
 </script>
@@ -96,7 +113,10 @@ onUpdated(createTooltips);
       <span class="container-icon">
         <i class="text-icon-main bi bi-three-dots-vertical"></i>
       </span> -->
-      <div class="me-5">
+      <div
+        class="me-5 position-relative"
+        :class="{ 'indicator-circle-before': hasIndicator && user.selectedOrganization }"
+      >
         <RouterLink
           class="text-bold text-small text-decoration-none"
           to="/settings/general"
