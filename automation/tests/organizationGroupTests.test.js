@@ -109,10 +109,10 @@ test.describe('Organization Group Tx tests', () => {
   test('Verify user can execute group transaction in organization', async () => {
     test.slow();
     await groupPage.addOrgAllowanceTransactionToGroup(2, complexKeyAccountId, '10');
-    const txId = await groupPage.getTransactionTimestamp(0);
-    const secondTxId = await groupPage.getTransactionTimestamp(1);
 
     await groupPage.clickOnSignAndExecuteButton();
+    const txId = await groupPage.getTransactionTimestamp(0);
+    const secondTxId = await groupPage.getTransactionTimestamp(1);
     await groupPage.clickOnConfirmGroupTransactionButton();
     await groupPage.clickOnSignAllButton();
     await loginPage.waitForToastToDisappear();
