@@ -13,17 +13,35 @@ import useLoader from '@renderer/composables/useLoader';
 
 import { add, getStoredClaim, update } from '@renderer/services/claimService';
 
-import { isUserLoggedIn } from '@renderer/utils';
+import { isUserLoggedIn, normalizeNetworkName } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import ButtonGroup from '@renderer/components/ui/ButtonGroup.vue';
+import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 /* Stores */
 const user = useUserStore();
 const networkStore = useNetworkStore();
+const notificationsStore = useNotificationsStore();
 
 /* Composables */
 const withLoader = useLoader();
+
+/* Computed */
+const networkNotifications = computed(() => {
+  const network = normalizeNetworkName(networkStore.network);
+  return Object.entries(notificationsStore.networkNotifications).reduce(
+    (acc, [key, value]) => {
+      if (value && key !== network) {
+        acc[key] = value;
+      }
+      return acc;
+    },
+    {} as Record<string, unknown>,
+  );
+});
+
+console.log(networkNotifications.value);
 
 /* State */
 const mirrorNodeInputRef = ref<InstanceType<typeof AppInput> | null>(null);
