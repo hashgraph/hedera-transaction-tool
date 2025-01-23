@@ -25,9 +25,7 @@ export enum NotificationType {
   TRANSACTION_INDICATOR_ARCHIVED = 'TRANSACTION_INDICATOR_ARCHIVED',
 }
 
-export type NotificationAdditionalData = {
-  network: string;
-};
+export type NotificationAdditionalData = Record<string, any>;
 
 @Entity()
 export class Notification {

@@ -33,6 +33,7 @@ const useNotificationsStore = defineStore('notifications', () => {
     [NotificationType.TRANSACTION_CANCELLED]: true,
   });
   const notifications = ref<{ [serverUrl: string]: INotificationReceiver[] }>({});
+
   /* Computed */
   const networkNotifications = computed(() => {
     const counts = { mainnet: 0, testnet: 0, previewnet: 0, 'local-node': 0, custom: 0 };
