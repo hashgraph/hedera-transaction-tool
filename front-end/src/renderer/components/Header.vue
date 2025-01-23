@@ -52,17 +52,17 @@ const networkMapping: {
 /* Stores */
 const user = useUserStore();
 const networkStore = useNetworkStore();
-const { networkNotifications } = useNotificationsStore();
+const notificationsStore = useNotificationsStore();
 
 /* Composables */
 const router = useRouter();
 const createTooltips = useCreateTooltips();
 const withLoader = useLoader();
 
-/* State */
+/* Computed */
 const hasIndicator = computed(() => {
   const currentNetwork = normalizeNetworkName(networkStore.network);
-  return Object.entries(networkNotifications)
+  return Object.entries(notificationsStore.networkNotifications)
     .filter(([key]) => key !== currentNetwork)
     .some(([, value]) => Boolean(value));
 });
@@ -84,12 +84,6 @@ const handleLogout = async () => {
   }
 };
 
-watch(
-  () => networkStore.network,
-  () => {
-    console.log(networkNotifications);
-  },
-);
 /* Hooks */
 onUpdated(createTooltips);
 </script>

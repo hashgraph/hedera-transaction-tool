@@ -4,7 +4,7 @@ import type {
   IUpdateNotificationReceiver,
 } from '@main/shared/interfaces';
 
-import { ref, watchEffect } from 'vue';
+import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
 import { NotificationType } from '@main/shared/interfaces';
@@ -33,21 +33,8 @@ const useNotificationsStore = defineStore('notifications', () => {
     [NotificationType.TRANSACTION_CANCELLED]: true,
   });
   const notifications = ref<{ [serverUrl: string]: INotificationReceiver[] }>({});
-  const networkNotifications = ref<{
-    mainnet: number;
-    testnet: number;
-    previewnet: number;
-    'local-node': number;
-    custom: number;
-  }>({
-    mainnet: 0,
-    testnet: 0,
-    previewnet: 0,
-    'local-node': 0,
-    custom: 0,
-  });
-
-  const handleNetworkNotifications = () => {
+  /* Computed */
+  const networkNotifications = computed(() => {
     const counts = { mainnet: 0, testnet: 0, previewnet: 0, 'local-node': 0, custom: 0 };
 
     if (notifications.value) {
@@ -73,8 +60,8 @@ const useNotificationsStore = defineStore('notifications', () => {
         }
       }
     }
-    networkNotifications.value = counts;
-  };
+    return counts;
+  });
 
   /* Actions */
   async function setup() {
@@ -131,7 +118,6 @@ const useNotificationsStore = defineStore('notifications', () => {
       result.status === 'fulfilled' && (notifications.value[severUrls[i]] = result.value);
     }
     notifications.value = { ...notifications.value };
-    handleNetworkNotifications();
   }
 
   function listenForUpdates() {
@@ -176,11 +162,6 @@ const useNotificationsStore = defineStore('notifications', () => {
     );
     notifications.value = { ...notifications.value };
   }
-
-  watchEffect(() => {
-    console.log('STORE DATA:', networkNotifications.value);
-    handleNetworkNotifications();
-  });
 
   ws.$onAction(ctx => {
     if (ctx.name === 'setup') {
