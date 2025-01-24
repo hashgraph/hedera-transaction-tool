@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Network } from '@main/shared/interfaces';
 
-import { computed, onBeforeMount, ref, watchEffect } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 
 import { SELECTED_NETWORK } from '@main/shared/constants';
 import { CommonNetwork, CommonNetworkNames } from '@main/shared/enums';
