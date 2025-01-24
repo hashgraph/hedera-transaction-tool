@@ -158,6 +158,26 @@
   text-align: center;
 }
 
+.network-notification::after {
+  content: attr(data-notification);
+  position: absolute;
+  top: 50%;
+  right: -1rem;
+  transform: translate(50%, -50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: $danger;
+  color: $white;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 /* Loader */
 .container-loader {
   width: 80px;

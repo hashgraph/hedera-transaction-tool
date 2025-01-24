@@ -6,6 +6,7 @@ const props = defineProps<{
   items: { label: string; value: string | number; active?: boolean; id: string }[];
   activeValue: string | number;
   color?: 'primary' | 'secondary' | 'borderless' | 'danger';
+  notifications?: Record<string, number>;
 }>();
 
 /* Emits */
@@ -35,7 +36,14 @@ const handleButtonClick = (value: string | number) => {
           @click="handleButtonClick(item.value)"
           :data-testid="item.id"
         >
-          {{ item.label }}
+          <span
+            :class="{
+              'network-notification position-relative':
+                notifications && notifications[item.label.toLowerCase()],
+            }"
+            :data-notification="notifications?.[item.label.toLowerCase()] || null"
+            >{{ item.label }}</span
+          >
         </AppButton>
       </template>
     </div>

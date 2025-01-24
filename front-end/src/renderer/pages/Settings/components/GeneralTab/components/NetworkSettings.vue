@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Network } from '@main/shared/interfaces';
 
-import { computed, onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, ref, watchEffect } from 'vue';
 
 import { SELECTED_NETWORK } from '@main/shared/constants';
 import { CommonNetwork, CommonNetworkNames } from '@main/shared/enums';
@@ -37,11 +37,9 @@ const networkNotifications = computed(() => {
       }
       return acc;
     },
-    {} as Record<string, unknown>,
+    {} as Record<string, number>,
   );
 });
-
-console.log(networkNotifications.value);
 
 /* State */
 const mirrorNodeInputRef = ref<InstanceType<typeof AppInput> | null>(null);
@@ -158,6 +156,7 @@ onBeforeMount(() => {
             handleChange(value as string);
           }
         "
+        :notifications="user.selectedOrganization ? networkNotifications : undefined"
       />
     </div>
     <Transition name="fade" mode="out-in">
