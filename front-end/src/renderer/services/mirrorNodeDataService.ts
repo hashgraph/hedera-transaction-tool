@@ -134,12 +134,19 @@ export const getAccountsByPublicKeysParallel = async (
   }
 };
 
+const cache: Map<string, IAccountInfoParsed> = new Map();
+
 /* Gets the account information by account id */
 export const getAccountInfo = async (
   accountId: string,
   mirrorNodeLink: string,
   controller?: AbortController,
-) => {
+): Promise<IAccountInfoParsed> => {
+  const cached = cache.get(accountId);
+  if (cached) {
+    return cached;
+  }
+
   const { data } = await axios.get(`${withAPIPrefix(mirrorNodeLink)}/accounts/${accountId}`, {
     signal: controller?.signal,
   });
@@ -178,6 +185,8 @@ export const getAccountInfo = async (
       rawAccountInfo.staked_node_id !== null ? Number(rawAccountInfo.staked_node_id) : null,
     autoRenewPeriod: rawAccountInfo.auto_renew_period,
   };
+
+  cache.set(accountId, accountInfo);
 
   return accountInfo;
 };
