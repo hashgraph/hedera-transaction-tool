@@ -351,6 +351,7 @@ describe('TransactionStatusService', () => {
         actorId: null,
         content: `Transaction is ready for execution!\nTransaction ID: ${transactions[0].transactionId}\nNetwork: ${networkString}`,
         userIds: [transactions[0].creatorKey?.userId],
+        additionalData: { network: transactions[0].mirrorNetwork },
       });
       expect(notifySyncIndicators).toHaveBeenCalledWith(
         notificationsService,
@@ -445,6 +446,7 @@ describe('TransactionStatusService', () => {
         actorId: null,
         content: `Transaction is ready for execution!\nTransaction ID: ${transaction.transactionId}\nNetwork: ${networkString}`,
         userIds: [transaction.creatorKey?.userId],
+        additionalData: { network: transaction.mirrorNetwork },
       });
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
