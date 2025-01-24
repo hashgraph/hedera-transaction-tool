@@ -95,20 +95,50 @@ class SettingsPage extends BasePage {
   }
 
   // Function to verify keys exist for a given index and user's email
-  async verifyKeysExistByIndexAndEmail(email, index) {
-    const query = `
-      SELECT public_key, private_key
-      FROM KeyPair kp
-      JOIN User u ON u.id = kp.user_id
-      WHERE u.email = ? AND kp."index" = ?`;
+  async verifyKeysExistByIndexAndEmail(
+    email,
+    index,
+    maxRetries = 3,
+    retryDelay = 1000
+  ) {
+    const sql = `
+    SELECT public_key, private_key
+    FROM KeyPair kp
+    JOIN User u ON u.id = kp.user_id
+    WHERE u.email = ? AND kp."index" = ?
+  `;
 
-    try {
-      const row = await queryDatabase(query, [email, index]);
-      return row !== undefined && row.public_key !== undefined && row.private_key !== undefined;
-    } catch (error) {
-      console.error('Error verifying keys for index:', error);
-      return false;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Attempt ${attempt} to verify keys for index ${index}`);
+
+        const row = await queryDatabase(sql, [email, index]);
+
+        // If row is valid, we can exit early
+        if (row && row.public_key && row.private_key) {
+          console.log(`Keys found on attempt ${attempt}`);
+          return true;
+        }
+
+        // If we're not on the last attempt, wait a bit before retrying
+        if (attempt < maxRetries) {
+          console.log(`Keys not found yet. Waiting ${retryDelay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+
+      } catch (error) {
+        console.error('Error verifying keys for index:', error);
+
+        if (attempt < maxRetries) {
+          console.log(`Retrying in ${retryDelay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
     }
+
+    // If we've reached maxRetries, assume failure
+    console.log('Max retries reached. Could not verify keys in database.');
+    return false;
   }
 
   async getKeyRowCount() {
