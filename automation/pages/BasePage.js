@@ -601,19 +601,49 @@ class BasePage {
   // --------------------------
 
   /**
-   * Counts the number of elements that match a selector prefix.
+   * Counts the number of elements that match a selector prefix
+   *
    * @param {string} selectorPrefix - The prefix of the selector.
+   * @param {number} [timeout=this.LONG_TIMEOUT] - The maximum time (in ms) to keep retrying.
    * @returns {Promise<number>} - The count of matching elements.
    */
-  async countElements(selectorPrefix) {
+  async countElements(selectorPrefix, timeout = this.LONG_TIMEOUT) {
     console.log(`Looking for elements with prefix: ${selectorPrefix}`);
-    const selector = this.isCssSelector(selectorPrefix)
-      ? `${selectorPrefix}`
-      : `[data-testid^="${selectorPrefix}"]`;
-    const elements = this.window.locator(selector);
-    const count = await elements.count();
-    console.log(`Found ${count} elements with prefix: ${selectorPrefix}`);
-    return count;
+
+    // Determine how often (in ms) to check for elements.
+    const interval = 1000;
+
+    // Calculate how many times we'll attempt based on the timeout and interval.
+    const maxAttempts = Math.floor(timeout / interval);
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      attempts++;
+
+      const selector = this.isCssSelector(selectorPrefix)
+        ? selectorPrefix
+        : `[data-testid^="${selectorPrefix}"]`;
+
+      const elements = this.window.locator(selector);
+
+      const count = await elements.count();
+
+      if (count > 0) {
+        console.log(
+          `Found ${count} elements with prefix: "${selectorPrefix}" on attempt ${attempts}.`
+        );
+        return count;
+      }
+
+      console.log(
+        `No elements found with prefix: "${selectorPrefix}" on attempt ${attempts}. Retrying in ${interval}ms...`
+      );
+      await new Promise(resolve => setTimeout(resolve, interval));
+    }
+
+    // If we've reached here, no elements were found within the timeout.
+    console.log(`Found 0 elements with prefix: "${selectorPrefix}" after ${timeout} ms.`);
+    return 0;
   }
 }
 
