@@ -686,6 +686,7 @@ describe('ReceiverService', () => {
       expect(syncIndicators).toHaveBeenCalledWith({
         transactionId: 1,
         transactionStatus: transaction.status,
+        network: transaction.mirrorNetwork,
       });
     });
   });

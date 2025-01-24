@@ -362,6 +362,7 @@ describe('TransactionStatusService', () => {
       expect(notifyWaitingForSignatures).toHaveBeenCalledWith(
         notificationsService,
         transactions[1].id,
+        transactions[1].mirrorNetwork,
       );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
       expect(notifyTransactionAction).toHaveBeenCalledTimes(1);
