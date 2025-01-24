@@ -258,7 +258,7 @@ export class TransactionStatusService {
         actorId: null,
         content: `Transaction is ready for execution!\nTransaction ID: ${transaction.transactionId}\nNetwork: ${networkString}`,
         userIds: [transaction.creatorKey?.userId],
-        network: transaction.mirrorNetwork,
+        additionalData: { network: transaction.mirrorNetwork },
       });
     }
 

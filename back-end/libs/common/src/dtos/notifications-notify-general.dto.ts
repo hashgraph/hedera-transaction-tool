@@ -20,6 +20,6 @@ export class NotifyGeneralDto {
   @IsOptional()
   actorId?: number;
 
-  @IsNotEmpty()
-  network: string;
+  @IsOptional()
+  additionalData?: Record<string, any>;
 }

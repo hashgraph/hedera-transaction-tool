@@ -31,7 +31,14 @@ export class ReceiverService {
   ) {}
 
   @MurLock(5000, 'entityId')
-  async notifyGeneral({ type, content, entityId, actorId, userIds, network }: NotifyGeneralDto) {
+  async notifyGeneral({
+    type,
+    content,
+    entityId,
+    actorId,
+    userIds,
+    additionalData,
+  }: NotifyGeneralDto) {
     if (!userIds || userIds.length === 0) return;
 
     const { notification, notificationReceivers } = await this.entityManager.transaction(
@@ -57,7 +64,7 @@ export class ReceiverService {
             content,
             entityId,
             actorId,
-            network,
+            additionalData.network,
           );
         }
 
@@ -106,7 +113,7 @@ export class ReceiverService {
       entityId: transaction.id,
       actorId: null,
       userIds: userIds.filter(id => id !== transaction.creatorKey?.userId),
-      network: network,
+      additionalData: { network: network },
     });
 
     /* Sync indicators */
