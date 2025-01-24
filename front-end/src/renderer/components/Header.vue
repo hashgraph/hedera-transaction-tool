@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Network } from '@main/shared/interfaces';
 
-import { computed, onUpdated, watch } from 'vue';
+import { computed, onUpdated } from 'vue';
 
 import { CommonNetwork } from '@main/shared/enums';
 

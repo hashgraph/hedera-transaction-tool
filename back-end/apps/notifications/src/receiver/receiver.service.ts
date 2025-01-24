@@ -64,7 +64,7 @@ export class ReceiverService {
             content,
             entityId,
             actorId,
-            additionalData.network,
+            additionalData?.network,
           );
         }
 
@@ -312,7 +312,7 @@ export class ReceiverService {
     content: string,
     entityId: number,
     actorId: number,
-    network: string,
+    network?: string,
   ) {
     /* Create notification */
     const notification = entityManager.create(Notification, {
@@ -321,7 +321,7 @@ export class ReceiverService {
       entityId: entityId,
       actorId: actorId,
       notificationReceivers: [],
-      additionalData: { network: network },
+      ...(network && { additionalData: { network: network } }),
     });
     await entityManager.save(Notification, notification);
     return notification;
