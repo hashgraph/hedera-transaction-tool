@@ -257,9 +257,9 @@ describe('TransactionStatusService', () => {
     mockTransaction();
 
     const expiredTransactions = [
-      { id: 1, status: TransactionStatus.NEW },
-      { id: 2, status: TransactionStatus.REJECTED },
-      { id: 3, status: TransactionStatus.WAITING_FOR_EXECUTION },
+      { id: 1, status: TransactionStatus.NEW, mirrorNetwork: 'testnet' },
+      { id: 2, status: TransactionStatus.REJECTED, mirrorNetwork: 'testnet' },
+      { id: 3, status: TransactionStatus.WAITING_FOR_EXECUTION, mirrorNetwork: 'testnet' },
     ];
 
     transactionRepo.manager.find.mockResolvedValue(expiredTransactions as Transaction[]);
@@ -274,6 +274,7 @@ describe('TransactionStatusService', () => {
         notificationsService,
         transaction.id,
         TransactionStatus.EXPIRED,
+        transaction.mirrorNetwork,
       );
     }
     expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
@@ -305,6 +306,7 @@ describe('TransactionStatusService', () => {
           creatorKey: {
             userId: 24,
           },
+          mirrorNetwork: 'testnet',
         },
       ];
 
@@ -341,6 +343,7 @@ describe('TransactionStatusService', () => {
         notificationsService,
         transactions[0].id,
         TransactionStatus.WAITING_FOR_EXECUTION,
+        transactions[0].mirrorNetwork,
       );
       expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_GENERAL, {
         entityId: transactions[0].id,
@@ -353,6 +356,7 @@ describe('TransactionStatusService', () => {
         notificationsService,
         transactions[1].id,
         TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactions[1].mirrorNetwork,
       );
       expect(notifyWaitingForSignatures).toHaveBeenCalledWith(
         notificationsService,
@@ -433,6 +437,7 @@ describe('TransactionStatusService', () => {
         notificationsService,
         transaction.id,
         TransactionStatus.WAITING_FOR_EXECUTION,
+        transaction.mirrorNetwork,
       );
       expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_GENERAL, {
         entityId: transaction.id,

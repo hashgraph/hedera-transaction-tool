@@ -337,6 +337,7 @@ describe('ApproversService', () => {
       id: 1,
       creatorKey: { userId: user.id },
       status: TransactionStatus.EXPIRED,
+      mirrorNetwork: 'testnet',
     };
 
     beforeEach(() => {
@@ -375,6 +376,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         expect.anything(),
+        transaction.mirrorNetwork,
       );
     });
 
@@ -482,6 +484,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         expect.anything(),
+        transaction.mirrorNetwork,
       );
     });
 
@@ -713,6 +716,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         expect.anything(),
+        transaction.mirrorNetwork,
       );
     });
   });
@@ -722,6 +726,7 @@ describe('ApproversService', () => {
       id: 1,
       creatorKey: { userId: user.id },
       status: TransactionStatus.WAITING_FOR_EXECUTION,
+      mirrorNetwork: 'testnet',
     };
 
     const basicApprover: TransactionApprover = {
@@ -832,6 +837,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         expect.anything(),
+        transaction.mirrorNetwork,
       );
     });
 
@@ -974,6 +980,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         expect.anything(),
+        transaction.mirrorNetwork,
       );
     });
 
@@ -1144,6 +1151,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         expect.anything(),
+        transaction.mirrorNetwork,
       );
     });
 
@@ -1181,6 +1189,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         expect.anything(),
+        transaction.mirrorNetwork,
       );
     });
 
@@ -1209,6 +1218,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         expect.anything(),
+        transaction.mirrorNetwork,
       );
     });
 
@@ -1285,6 +1295,7 @@ describe('ApproversService', () => {
         id: 1,
         status: TransactionStatus.WAITING_FOR_EXECUTION,
         transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
       };
 
       mockTransaction();
@@ -1318,6 +1329,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         transaction.status,
+        transaction.mirrorNetwork,
       );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
@@ -1661,6 +1673,7 @@ describe('ApproversService', () => {
       const transaction = {
         id: 1,
         status: TransactionStatus.WAITING_FOR_EXECUTION,
+        mirrorNetwork: 'testnet',
       };
 
       dataSource.manager.findOne.mockResolvedValueOnce(transaction);
@@ -1671,6 +1684,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         transaction.status,
+        transaction.mirrorNetwork,
       );
     });
 

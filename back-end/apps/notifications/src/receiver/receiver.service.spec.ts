@@ -681,6 +681,7 @@ describe('ReceiverService', () => {
         content: `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction.\nTransaction ID: ${transaction.transactionId}\nNetwork: ${networkString}`,
         entityId: 1,
         actorId: null,
+        additionalData: transaction.mirrorNetwork,
       });
       expect(syncIndicators).toHaveBeenCalledWith({
         transactionId: 1,
@@ -861,6 +862,7 @@ describe('ReceiverService', () => {
           undefined,
           transactionId,
           [],
+          network,
         );
       };
 
@@ -980,6 +982,7 @@ describe('ReceiverService', () => {
         oldIndicatorNotifications[0],
         transactionId,
         [32],
+        network,
       );
       expect(syncActionIndicators).toHaveBeenCalledWith(
         entityManager,
@@ -987,6 +990,7 @@ describe('ReceiverService', () => {
         undefined,
         transactionId,
         [],
+        network,
       );
     });
   });
