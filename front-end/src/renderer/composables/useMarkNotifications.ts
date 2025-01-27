@@ -1,11 +1,12 @@
 import type { INotificationReceiver } from '@main/shared/interfaces';
 
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import { NotificationType } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { isLoggedInOrganization } from '@renderer/utils';
 
@@ -13,21 +14,36 @@ export default function useMarkNotifications(notificationTypes: NotificationType
   /* Stores */
   const user = useUserStore();
   const notifications = useNotificationsStore();
+  const network = useNetworkStore();
 
   /* State */
   const oldNotifications = ref<INotificationReceiver[]>([]);
+  const notificationsKey = ref(user.selectedOrganization?.serverUrl || '');
+
+  /* Computed */
+  const networkFilteredNotifications = computed(() => {
+    return (
+      notifications.notifications[notificationsKey.value]?.filter(
+        n => n.notification.additionalData?.network === network.network,
+      ) || []
+    );
+  });
 
   /* Functions */
   async function markAsRead() {
     if (isLoggedInOrganization(user.selectedOrganization)) {
-      await Promise.allSettled(notificationTypes.map(type => notifications.markAsRead(type)));
+      const notificationsToMark = networkFilteredNotifications.value.filter(nr =>
+        notificationTypes.includes(nr.notification.type),
+      );
+      await Promise.allSettled(
+        notificationsToMark.map(nr => notifications.markAsRead(nr.notification.type)),
+      );
     }
   }
 
   function setOldNotifications(addPrevious = false) {
-    const notificationsKey = user.selectedOrganization?.serverUrl || '';
     const data =
-      notifications.notifications[notificationsKey]?.filter(nr =>
+      networkFilteredNotifications.value?.filter(nr =>
         notificationTypes.includes(nr.notification.type),
       ) || [];
 
