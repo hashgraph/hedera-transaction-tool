@@ -47,7 +47,7 @@ describe('Receiver Controller', () => {
   it('should invoke notifyTransactionSigners with correct params', async () => {
     const dto: NotifyForTransactionDto = {
       transactionId: 1,
-      network: 'testnet',
+      additionalData: { network: 'testnet' },
     };
 
     await controller.notifyTransactionSigners(dto);
@@ -59,7 +59,7 @@ describe('Receiver Controller', () => {
     const dto: SyncIndicatorsDto = {
       transactionId: 1,
       transactionStatus: TransactionStatus.WAITING_FOR_EXECUTION,
-      network: 'testnet',
+      additionalData: { network: 'testnet' },
     };
 
     await controller.syncIndicators(dto);

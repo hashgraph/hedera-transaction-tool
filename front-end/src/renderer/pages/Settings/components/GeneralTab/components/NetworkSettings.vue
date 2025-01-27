@@ -8,6 +8,7 @@ import { CommonNetwork, CommonNetworkNames } from '@main/shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import useLoader from '@renderer/composables/useLoader';
 
@@ -17,7 +18,6 @@ import { isUserLoggedIn, normalizeNetworkName } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import ButtonGroup from '@renderer/components/ui/ButtonGroup.vue';
-import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 /* Stores */
 const user = useUserStore();

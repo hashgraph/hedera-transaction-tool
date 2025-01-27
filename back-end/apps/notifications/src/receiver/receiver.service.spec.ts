@@ -621,7 +621,10 @@ describe('ReceiverService', () => {
     it('should throw an error if transaction not found', async () => {
       entityManager.findOne.calledWith(Transaction, expect.anything()).mockResolvedValueOnce(null);
 
-      const dto: NotifyForTransactionDto = { transactionId: 1, network: 'testnet' };
+      const dto: NotifyForTransactionDto = {
+        transactionId: 1,
+        additionalData: { network: 'testnet' },
+      };
 
       await expect(service.notifyTransactionRequiredSigners(dto)).rejects.toThrow(
         'Transaction not found',
@@ -629,7 +632,10 @@ describe('ReceiverService', () => {
     });
 
     it('should notify required signers without creator for a transaction', async () => {
-      const dto: NotifyForTransactionDto = { transactionId: 1, network: 'testnet' };
+      const dto: NotifyForTransactionDto = {
+        transactionId: 1,
+        additionalData: { network: 'testnet' },
+      };
 
       const creatorId = 1;
       const usersIdsRequiredToSign = [creatorId, 2, 3];
@@ -686,7 +692,7 @@ describe('ReceiverService', () => {
       expect(syncIndicators).toHaveBeenCalledWith({
         transactionId: 1,
         transactionStatus: transaction.status,
-        network: transaction.mirrorNetwork,
+        additionalData: { network: transaction.mirrorNetwork },
       });
     });
   });
@@ -820,7 +826,7 @@ describe('ReceiverService', () => {
     it('should determine the correct new indicator type based on transaction status', async () => {
       const transactionId = 1;
       const participants = [3];
-      const network = 'testnet';
+      const additionalData = { network: 'testnet' };
 
       const actAssert = async (
         transactionStatus: TransactionStatus,
@@ -845,7 +851,7 @@ describe('ReceiverService', () => {
         //@ts-expect-error syncActionIndicators is private
         jest.spyOn(service, 'syncActionIndicators').mockResolvedValueOnce([]);
 
-        await service.syncIndicators({ transactionId, transactionStatus, network });
+        await service.syncIndicators({ transactionId, transactionStatus, additionalData });
 
         expect(entityManager.delete).not.toHaveBeenCalled();
         expect(fanOutService.fanOutIndicatorsDelete).not.toHaveBeenCalled();
@@ -863,7 +869,7 @@ describe('ReceiverService', () => {
           undefined,
           transactionId,
           [],
-          network,
+          additionalData,
         );
       };
 
@@ -877,7 +883,7 @@ describe('ReceiverService', () => {
     it('should delete previuos notifications and do nothing more if there is not new indicator type', async () => {
       const transactionId = 1;
       const transactionStatus = TransactionStatus.CANCELED;
-      const network = 'testnet';
+      const additionalData = { network: 'testnet' };
 
       const existingIndicatorNotifications = [
         {
@@ -900,7 +906,7 @@ describe('ReceiverService', () => {
             },
           ],
           createdAt: new Date(),
-          additionalData: { network: network },
+          additionalData,
         },
       ];
       const getTransactionParticipants: jest.SpyInstance = jest
@@ -915,7 +921,7 @@ describe('ReceiverService', () => {
         .spyOn(service, 'getIndicatorNotifications');
       getIndicatorNotifications.mockResolvedValueOnce(existingIndicatorNotifications);
 
-      await service.syncIndicators({ transactionId, transactionStatus, network });
+      await service.syncIndicators({ transactionId, transactionStatus, additionalData });
 
       expect(entityManager.transaction).toHaveBeenCalled();
       expect(entityManager.delete).toHaveBeenCalledWith(Notification, {
@@ -932,7 +938,7 @@ describe('ReceiverService', () => {
     it('should sync sign indicators if the new indicator type is sign', async () => {
       const transactionId = 1;
       const transactionStatus = TransactionStatus.WAITING_FOR_SIGNATURES;
-      const network = 'testnet';
+      const additionalData = { network: 'testnet' };
 
       const participants = [3];
       const oldIndicatorNotifications = [
@@ -944,7 +950,7 @@ describe('ReceiverService', () => {
           actorId: null,
           notificationReceivers: [],
           createdAt: new Date(),
-          additionalData: { network: network },
+          additionalData,
         },
       ];
 
@@ -971,7 +977,7 @@ describe('ReceiverService', () => {
       syncActionIndicators.mockImplementationOnce(jest.fn());
       syncActionIndicators.mockImplementationOnce(jest.fn());
 
-      await service.syncIndicators({ transactionId, transactionStatus, network });
+      await service.syncIndicators({ transactionId, transactionStatus, additionalData });
 
       expect(entityManager.delete).not.toHaveBeenCalled();
       expect(fanOutService.fanOutIndicatorsDelete).not.toHaveBeenCalled();
@@ -983,7 +989,7 @@ describe('ReceiverService', () => {
         oldIndicatorNotifications[0],
         transactionId,
         [32],
-        network,
+        additionalData,
       );
       expect(syncActionIndicators).toHaveBeenCalledWith(
         entityManager,
@@ -991,7 +997,7 @@ describe('ReceiverService', () => {
         undefined,
         transactionId,
         [],
-        network,
+        additionalData,
       );
     });
   });

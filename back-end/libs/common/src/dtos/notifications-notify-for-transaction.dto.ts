@@ -1,10 +1,11 @@
-import { IsNotEmpty, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { NotificationAdditionalData } from '../database/entities';
 
 export class NotifyForTransactionDto {
   @IsNumber()
   @IsNotEmpty()
   transactionId: number;
 
-  @IsNotEmpty()
-  network: string;
+  @IsOptional()
+  additionalData?: NotificationAdditionalData;
 }

@@ -429,11 +429,9 @@ describe('TransactionsService', () => {
       await service.createTransaction(dto, user as User);
 
       expect(transactionsRepo.save).toHaveBeenCalled();
-      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(
-        notificationsService,
-        1,
-        dto.mirrorNetwork,
-      );
+      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, 1, {
+        network: dto.mirrorNetwork,
+      });
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
 
       client.close();
@@ -478,11 +476,9 @@ describe('TransactionsService', () => {
       expect(transactionsRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({ isManual: true }),
       );
-      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(
-        notificationsService,
-        1,
-        dto.mirrorNetwork,
-      );
+      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, 1, {
+        network: dto.mirrorNetwork,
+      });
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
 
       client.close();
@@ -622,7 +618,7 @@ describe('TransactionsService', () => {
         notificationsService,
         transaction.id,
         TransactionStatus.CANCELED,
-        transaction.mirrorNetwork,
+        { network: transaction.mirrorNetwork },
       );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
@@ -681,7 +677,7 @@ describe('TransactionsService', () => {
         notificationsService,
         transaction.id,
         TransactionStatus.CANCELED,
-        transaction.mirrorNetwork,
+        { network: transaction.mirrorNetwork },
       );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
@@ -755,7 +751,7 @@ describe('TransactionsService', () => {
         notificationsService,
         transaction.id,
         TransactionStatus.ARCHIVED,
-        transaction.mirrorNetwork,
+        { network: transaction.mirrorNetwork },
       );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });

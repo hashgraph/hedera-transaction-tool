@@ -1,14 +1,14 @@
-import { IsEnum, IsNotEmpty, IsNumber } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
 
-import { TransactionStatus } from '../database/entities';
+import { NotificationAdditionalData, TransactionStatus } from '../database/entities';
 
 export class SyncIndicatorsDto {
   @IsNumber()
   @IsNotEmpty()
   transactionId: number;
 
-  @IsNotEmpty()
-  network: string;
+  @IsOptional()
+  additionalData?: NotificationAdditionalData;
 
   @IsNotEmpty()
   @IsEnum(TransactionStatus)

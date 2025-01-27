@@ -133,12 +133,9 @@ export class TransactionStatusService {
           },
         );
 
-        notifySyncIndicators(
-          this.notificationsService,
-          transaction.id,
-          TransactionStatus.EXPIRED,
-          transaction.mirrorNetwork,
-        );
+        notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.EXPIRED, {
+          network: transaction.mirrorNetwork,
+        });
       }
 
       if (transactions.length > 0) {
@@ -243,12 +240,9 @@ export class TransactionStatusService {
   }
 
   private emitNotificationEvents(transaction: Transaction, newStatus: TransactionStatus) {
-    notifySyncIndicators(
-      this.notificationsService,
-      transaction.id,
-      newStatus,
-      transaction.mirrorNetwork,
-    );
+    notifySyncIndicators(this.notificationsService, transaction.id, newStatus, {
+      network: transaction.mirrorNetwork,
+    });
     const networkString = getNetwork(transaction);
 
     if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
@@ -263,11 +257,9 @@ export class TransactionStatusService {
     }
 
     if (newStatus === TransactionStatus.WAITING_FOR_SIGNATURES) {
-      notifyWaitingForSignatures(
-        this.notificationsService,
-        transaction.id,
-        transaction.mirrorNetwork,
-      );
+      notifyWaitingForSignatures(this.notificationsService, transaction.id, {
+        network: transaction.mirrorNetwork,
+      });
     }
   }
 

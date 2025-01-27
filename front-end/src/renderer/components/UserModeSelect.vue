@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Organization } from '@prisma/client';
+import type { INotificationReceiver } from '@main/shared/interfaces';
 
 import { computed, onMounted, onUpdated, ref, watch } from 'vue';
 
@@ -15,7 +16,6 @@ import { isOrganizationActive } from '@renderer/utils';
 
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import type { INotificationReceiver } from '@main/shared/interfaces';
 
 /* Misc */
 const personalModeText = 'Personal';

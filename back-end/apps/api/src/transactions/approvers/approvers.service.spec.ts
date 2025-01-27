@@ -376,7 +376,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         expect.anything(),
-        transaction.mirrorNetwork,
+        { network: transaction.mirrorNetwork },
       );
     });
 
@@ -484,7 +484,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         expect.anything(),
-        transaction.mirrorNetwork,
+        { network: transaction.mirrorNetwork },
       );
     });
 
@@ -716,7 +716,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         expect.anything(),
-        transaction.mirrorNetwork,
+        { network: transaction.mirrorNetwork },
       );
     });
   });
@@ -837,7 +837,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         expect.anything(),
-        transaction.mirrorNetwork,
+        { network: transaction.mirrorNetwork },
       );
     });
 
@@ -980,7 +980,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         expect.anything(),
-        transaction.mirrorNetwork,
+        { network: transaction.mirrorNetwork },
       );
     });
 
@@ -1151,7 +1151,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         expect.anything(),
-        transaction.mirrorNetwork,
+        { network: transaction.mirrorNetwork },
       );
     });
 
@@ -1189,7 +1189,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         expect.anything(),
-        transaction.mirrorNetwork,
+        { network: transaction.mirrorNetwork },
       );
     });
 
@@ -1218,7 +1218,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         expect.anything(),
-        transaction.mirrorNetwork,
+        { network: transaction.mirrorNetwork },
       );
     });
 
@@ -1329,7 +1329,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         transaction.status,
-        transaction.mirrorNetwork,
+        { network: transaction.mirrorNetwork },
       );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
@@ -1684,7 +1684,7 @@ describe('ApproversService', () => {
         notificationsService,
         transaction.id,
         transaction.status,
-        transaction.mirrorNetwork,
+        { network: transaction.mirrorNetwork },
       );
     });
 

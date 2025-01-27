@@ -12,6 +12,7 @@ import {
 } from '@app/common';
 import {
   Notification,
+  NotificationAdditionalData,
   NotificationReceiver,
   NotificationType,
   Transaction,
@@ -89,7 +90,10 @@ export class ReceiverService {
   }
 
   @MurLock(5000, 'transactionId')
-  async notifyTransactionRequiredSigners({ transactionId, network }: NotifyForTransactionDto) {
+  async notifyTransactionRequiredSigners({
+    transactionId,
+    additionalData,
+  }: NotifyForTransactionDto) {
     /* Get transaction */
     const transaction = await this.entityManager.findOne(Transaction, {
       where: {
@@ -113,19 +117,19 @@ export class ReceiverService {
       entityId: transaction.id,
       actorId: null,
       userIds: userIds.filter(id => id !== transaction.creatorKey?.userId),
-      additionalData: { network: network },
+      additionalData,
     });
 
     /* Sync indicators */
     await this.syncIndicators({
       transactionId,
       transactionStatus: transaction.status,
-      network,
+      additionalData,
     });
   }
 
   @MurLock(5000, 'transactionId')
-  async syncIndicators({ transactionId, transactionStatus, network }: SyncIndicatorsDto) {
+  async syncIndicators({ transactionId, transactionStatus, additionalData }: SyncIndicatorsDto) {
     let newIndicatorType: NotificationType | null = null;
 
     /* Determine new indicator type */
@@ -208,7 +212,7 @@ export class ReceiverService {
         indicatorNotification,
         transactionId,
         requiredUserIds,
-        network,
+        additionalData,
       );
     } else {
       // await this.notifyGeneral({
@@ -231,7 +235,7 @@ export class ReceiverService {
       indicatorApproveNotification,
       transactionId,
       approversShouldChooseUserIds,
-      network,
+      additionalData,
     );
   }
 
@@ -241,7 +245,7 @@ export class ReceiverService {
     notification: Notification,
     transactionId: number,
     userIds: number[],
-    network: string,
+    additionalData?: NotificationAdditionalData,
   ) {
     /* Create new if not exists */
     if (!notification) {
@@ -251,7 +255,7 @@ export class ReceiverService {
         '',
         transactionId,
         null,
-        network,
+        additionalData,
       );
     }
 
@@ -312,7 +316,7 @@ export class ReceiverService {
     content: string,
     entityId: number,
     actorId: number,
-    network?: string,
+    additionalData?: NotificationAdditionalData,
   ) {
     /* Create notification */
     const notification = entityManager.create(Notification, {
@@ -321,7 +325,7 @@ export class ReceiverService {
       entityId: entityId,
       actorId: actorId,
       notificationReceivers: [],
-      ...(network && { additionalData: { network: network } }),
+      additionalData: additionalData,
     });
     await entityManager.save(Notification, notification);
     return notification;

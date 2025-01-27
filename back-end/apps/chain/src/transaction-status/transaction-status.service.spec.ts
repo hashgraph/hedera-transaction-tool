@@ -274,7 +274,7 @@ describe('TransactionStatusService', () => {
         notificationsService,
         transaction.id,
         TransactionStatus.EXPIRED,
-        transaction.mirrorNetwork,
+        { network: transaction.mirrorNetwork },
       );
     }
     expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
@@ -343,7 +343,7 @@ describe('TransactionStatusService', () => {
         notificationsService,
         transactions[0].id,
         TransactionStatus.WAITING_FOR_EXECUTION,
-        transactions[0].mirrorNetwork,
+        { network: transactions[0].mirrorNetwork },
       );
       expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_GENERAL, {
         entityId: transactions[0].id,
@@ -357,12 +357,12 @@ describe('TransactionStatusService', () => {
         notificationsService,
         transactions[1].id,
         TransactionStatus.WAITING_FOR_SIGNATURES,
-        transactions[1].mirrorNetwork,
+        { network: transactions[1].mirrorNetwork },
       );
       expect(notifyWaitingForSignatures).toHaveBeenCalledWith(
         notificationsService,
         transactions[1].id,
-        transactions[1].mirrorNetwork,
+        { network: transactions[1].mirrorNetwork },
       );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
       expect(notifyTransactionAction).toHaveBeenCalledTimes(1);
@@ -439,7 +439,7 @@ describe('TransactionStatusService', () => {
         notificationsService,
         transaction.id,
         TransactionStatus.WAITING_FOR_EXECUTION,
-        transaction.mirrorNetwork,
+        { network: transaction.mirrorNetwork },
       );
       expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_GENERAL, {
         entityId: transaction.id,

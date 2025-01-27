@@ -7,6 +7,7 @@ import { CommonNetwork } from '@main/shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import { useRouter } from 'vue-router';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
@@ -25,7 +26,6 @@ import {
 import Logo from '@renderer/components/Logo.vue';
 import LogoText from '@renderer/components/LogoText.vue';
 import UserModeSelect from './UserModeSelect.vue';
-import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 /* Mappings */
 const networkMapping: {
@@ -60,7 +60,7 @@ const createTooltips = useCreateTooltips();
 const withLoader = useLoader();
 
 /* Computed */
-const hasIndicator = computed(() => {
+const hasNetworkIndicator = computed(() => {
   const currentNetwork = normalizeNetworkName(networkStore.network);
   return Object.entries(notificationsStore.networkNotifications)
     .filter(([key]) => key !== currentNetwork)
@@ -109,7 +109,7 @@ onUpdated(createTooltips);
       </span> -->
       <div
         class="me-5 position-relative"
-        :class="{ 'indicator-circle-before': hasIndicator && user.selectedOrganization }"
+        :class="{ 'indicator-circle-before': hasNetworkIndicator && user.selectedOrganization }"
       >
         <RouterLink
           class="text-bold text-small text-decoration-none"

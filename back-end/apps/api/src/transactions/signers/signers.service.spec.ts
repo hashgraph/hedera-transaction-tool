@@ -236,7 +236,7 @@ describe('SignaturesService', () => {
         notificationService,
         transactionId,
         transaction.status,
-        transaction.mirrorNetwork,
+        { network: transaction.mirrorNetwork },
       );
 
       user.keys[0].publicKey = originalPublicKey;
