@@ -21,7 +21,6 @@ export const setWindowBounds = async (window: BrowserWindow): Promise<void> => {
         },
       },
     });
-    console.log('alreadyAdded', alreadyAdded);
 
     if (alreadyAdded) {
       await prisma.claim.update({
