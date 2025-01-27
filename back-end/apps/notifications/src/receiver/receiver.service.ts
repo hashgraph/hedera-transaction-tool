@@ -65,7 +65,7 @@ export class ReceiverService {
             content,
             entityId,
             actorId,
-            additionalData?.network,
+            additionalData,
           );
         }
 
