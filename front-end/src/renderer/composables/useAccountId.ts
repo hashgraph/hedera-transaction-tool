@@ -130,6 +130,14 @@ export default function useAccountId() {
             https://hashscan.io/${networkStore.network}/account/${accountIdFormatted.value}`);
   }
 
+  const getAccountIdWithChecksum = (accountId: string): string => {
+    try {
+      return AccountId.fromString(accountId).toStringWithChecksum(networkStore.client as Client);
+    } catch {
+      return accountId;
+    }
+  };
+
   return {
     accountId,
     accountInfo,
@@ -144,5 +152,6 @@ export default function useAccountId() {
     getStakedToString,
     getFormattedPendingRewards,
     openAccountInHashscan,
+    getAccountIdWithChecksum,
   };
 }

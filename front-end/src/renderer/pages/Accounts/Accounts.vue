@@ -352,7 +352,7 @@ onMounted(async () => {
                       class="text-micro text-secondary mt-2"
                       :data-testid="'p-account-id-' + index"
                     >
-                      {{ account.account_id }}
+                      {{ accountData.getAccountIdWithChecksum(account.account_id) }}
                     </p>
                   </div>
                 </div>
