@@ -1,13 +1,11 @@
 import { ipcMain, safeStorage } from 'electron';
 
-import { USE_KEYCHAIN } from '@main/shared/constants';
+import { STATIC_USER, USE_KEYCHAIN } from '@main/shared/constants';
 
 import { addClaim, getClaims } from '@main/services/localUser/claim';
 import { login, register } from '@main/services/localUser/auth';
 
 const createChannelName = (...props) => ['safeStorage', ...props].join(':');
-
-export const STATIC_USER = 'keychain@mode';
 
 export default () => {
   /* Safe Storage */

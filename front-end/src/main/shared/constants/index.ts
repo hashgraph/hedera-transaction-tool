@@ -5,6 +5,9 @@ export const TRANSACTION_MAX_SIZE = 6144; // in bytes
 export const TRANSACTION_SIGNATURE_ESTIMATED_MAX_SIZE = 100; // in bytes
 export const MEMO_MAX_LENGTH = 100;
 
+/* Keychain */
+export const STATIC_USER = 'keychain@mode';
+
 /* Encrypted keys */
 export const ENCRYPTED_KEY_ALREADY_IMPORTED = 'This key is already imported';
 
@@ -20,6 +23,7 @@ export const USE_KEYCHAIN = 'use_keychain';
 export const UPDATE_LOCATION = 'update_location';
 export const MIGRATION_STARTED = 'migration_started';
 export const RECOVERY_PHRASE_HASH_UPDATED = 'recovery_phrase_hash_updated';
+export const WINDOW_STATE = 'window_state';
 
 /* Transaction tabs */
 export const draftsTitle = 'Drafts';
