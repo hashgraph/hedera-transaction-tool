@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import type { HederaAccount } from '@prisma/client';
 
-import { onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getAll } from '@renderer/services/accountsService';
 
-import { formatAccountId, isUserLoggedIn } from '@renderer/utils';
+import { formatAccountId, isUserLoggedIn, getAccountIdWithChecksum } from '@renderer/utils';
 
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 
 /* Props */
-defineProps<{
+const props = defineProps<{
   modelValue: string;
   items?: string[];
   dataTestid?: string;
@@ -31,9 +31,18 @@ const network = useNetworkStore();
 /* State */
 const accoundIds = ref<HederaAccount[]>([]);
 
+/* Computed */
+const formattedAccountIds = computed(() =>
+  (
+    props.items ||
+    accoundIds.value.map(a => a.account_id).concat(user.publicKeysToAccountsFlattened)
+  ).map(id => getAccountIdWithChecksum(id)),
+);
+
 /* Handlers */
 const handleUpdate = (value: string) => {
-  emit('update:modelValue', formatAccountId(value));
+  const idWithoutChecksum = value.split('-')[0];
+  emit('update:modelValue', formatAccountId(idWithoutChecksum));
 };
 
 /* Hooks */
@@ -50,9 +59,9 @@ onBeforeMount(async () => {
 </script>
 <template>
   <AppAutoComplete
-    :model-value="modelValue"
+    :model-value="getAccountIdWithChecksum(modelValue)"
     @update:model-value="handleUpdate"
-    :items="items || accoundIds.map(a => a.account_id).concat(user.publicKeysToAccountsFlattened)"
+    :items="formattedAccountIds"
     :data-testid="dataTestid"
     disable-spaces
     v-bind="$attrs"
