@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppInput from './AppInput.vue';
-import { onMounted, onUpdated, ref } from 'vue';
+import { nextTick, onMounted, onUpdated, ref } from 'vue';
 
 /* Props */
 const props = withDefaults(
@@ -61,7 +61,8 @@ onMounted(() => {
   handlePaddingUpdate();
 });
 
-onUpdated(() => {
+onUpdated(async () => {
+  await nextTick();
   handlePaddingUpdate();
 });
 
