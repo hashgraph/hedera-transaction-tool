@@ -43,7 +43,11 @@ async function createWindow() {
     mainWindow?.show();
   });
 
-  mainWindow.on('close', async () => {
+  mainWindow.on('resized', async () => {
+    await setWindowBounds(mainWindow);
+  });
+
+  mainWindow.on('moved', async () => {
     await setWindowBounds(mainWindow);
   });
 

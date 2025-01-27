@@ -38,7 +38,10 @@ vi.mock('electron', () => {
     callbacks.close && callbacks.close();
     callbacks.closed && callbacks.closed();
   });
-  bw.prototype.emit = vi.fn();
+  bw.prototype.emit = vi.fn((e: string, ...args: any): boolean => {
+    callbacks[e] && callbacks[e](args);
+    return false;
+  });
   bw.prototype.show = vi.fn();
   bw.prototype.restore = vi.fn(() => {
     callbacks['ready-to-show'] && callbacks['ready-to-show']();
@@ -235,13 +238,15 @@ test('Should create a window with default bounds if no stored bounds', async () 
   );
 });
 
-test('Should set window bounds on close', async () => {
+test('Should update window state on resize, moved', async () => {
   const { mock } = vi.mocked(BrowserWindow);
 
   await restoreOrCreateWindow();
   expect(mock.instances).toHaveLength(1);
   const instance = mock.instances[0] as MockedObject<BrowserWindow>;
 
-  instance.close();
-  expect(setWindowBounds).toHaveBeenCalledWith(instance);
+  // Simulate first close event
+  instance.emit('resized');
+  instance.emit('moved');
+  expect(setWindowBounds).toHaveBeenCalledTimes(2);
 });
