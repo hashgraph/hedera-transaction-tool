@@ -27,7 +27,9 @@ export default function useAccountId() {
   const isValid = computed(() => Boolean(accountInfo.value));
 
   const accountIdFormatted = computed(() =>
-    isValid.value ? AccountId.fromString(accountId.value).toString() : accountId.value,
+    isValid.value
+      ? AccountId.fromString(accountId.value.split('-')[0]).toString()
+      : accountId.value.split('-')[0],
   );
 
   const accoundIdWithChecksum = computed(() => {
@@ -61,19 +63,22 @@ export default function useAccountId() {
 
     if (!newAccountId) return resetData();
 
+    console.log(newAccountId);
+
     try {
-      AccountId.fromString(newAccountId);
+      const baseId = newAccountId.split('-')[0];
+      AccountId.fromString(baseId);
 
       accountInfoController.value = new AbortController();
       const accountInfoRes = await getAccountInfo(
-        newAccountId,
+        baseId,
         networkStore.mirrorNodeBaseURL,
         accountInfoController.value,
       );
 
       allowancesController.value = new AbortController();
       const accountAllowancesRes = await getAccountAllowances(
-        newAccountId,
+        baseId,
         networkStore.mirrorNodeBaseURL,
         allowancesController.value,
       );
@@ -130,6 +135,37 @@ export default function useAccountId() {
             https://hashscan.io/${networkStore.network}/account/${accountIdFormatted.value}`);
   }
 
+  function validateAccountIdChecksum(accountId: string): boolean {
+    try {
+      const [baseId, checksum] = accountId.split('-');
+
+      const parsedAccountId = AccountId.fromString(baseId);
+      const calculatedChecksum = parsedAccountId
+        .toStringWithChecksum(networkStore.client as Client)
+        .split('-')[1];
+
+      return checksum === calculatedChecksum;
+    } catch {
+      return false;
+    }
+  }
+
+  function normalizeAccountId(accountId: string): string {
+    const baseId = accountId.split('-')[0];
+
+    const fullAccountId = baseId.includes('.') ? baseId : `0.0.${baseId}`;
+
+    return AccountId.fromString(fullAccountId).toString();
+  }
+
+  const getAccountIdWithChecksum = (accountId: string): string => {
+    try {
+      return AccountId.fromString(accountId).toStringWithChecksum(networkStore.client as Client);
+    } catch {
+      return accountId;
+    }
+  };
+
   return {
     accountId,
     accountInfo,
@@ -144,5 +180,7 @@ export default function useAccountId() {
     getStakedToString,
     getFormattedPendingRewards,
     openAccountInHashscan,
+    validateAccountIdChecksum,
+    getAccountIdWithChecksum,
   };
 }

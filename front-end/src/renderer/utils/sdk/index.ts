@@ -30,7 +30,6 @@ import { getNodeAddressBook } from '@renderer/services/sdkService';
 export * from './createTransactions';
 export * from './getData';
 export * from './validation';
-export * from './getChecksum';
 
 export const createFileInfo = (props: {
   fileId: FileId | string;

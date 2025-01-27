@@ -16,12 +16,7 @@ import { getAll, remove, changeNickname } from '@renderer/services/accountsServi
 import { getKeyListLevels } from '@renderer/services/keyPairService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
-import {
-  getFormattedDateFromTimestamp,
-  isUserLoggedIn,
-  stringifyHbar,
-  getAccountIdWithChecksum,
-} from '@renderer/utils';
+import { getFormattedDateFromTimestamp, isUserLoggedIn, stringifyHbar } from '@renderer/utils';
 
 import { transactionTypeKeys } from '@renderer/components/Transaction/Create/txTypeComponentMapping';
 
@@ -357,7 +352,7 @@ onMounted(async () => {
                       class="text-micro text-secondary mt-2"
                       :data-testid="'p-account-id-' + index"
                     >
-                      {{ getAccountIdWithChecksum(account.account_id) }}
+                      {{ accountData.getAccountIdWithChecksum(account.account_id) }}
                     </p>
                   </div>
                 </div>

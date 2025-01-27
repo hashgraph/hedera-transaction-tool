@@ -32,6 +32,13 @@ const accountData = useAccountId();
 const nickname = ref('');
 
 const handleLinkAccount = async () => {
+  if (
+    accountData.accountId.value.includes('-') &&
+    !accountData.validateAccountIdChecksum(accountData.accountId.value)
+  ) {
+    toast.error('Invalid checksum for the entered Account ID.');
+    return;
+  }
   if (accountData.isValid.value) {
     try {
       if (!isUserLoggedIn(user.personal)) {
