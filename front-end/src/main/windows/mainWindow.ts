@@ -3,6 +3,7 @@ import { join } from 'path';
 import { BrowserWindow, screen, session as ses } from 'electron';
 
 import { removeListeners, sendUpdateThemeEventTo } from '@main/modules/ipcHandlers/theme';
+import { getWindowBounds, setWindowBounds } from '@main/services/windowState';
 
 async function createWindow() {
   process.env.DIST_ELECTRON = join(__dirname, '..');
@@ -11,15 +12,17 @@ async function createWindow() {
     ? join(process.env.DIST_ELECTRON, '../public')
     : process.env.DIST;
 
-  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-
   const preload = join(__dirname, '../preload/index.js');
-
   const session = ses.fromPartition('persist:main');
 
+  const storedBounds = await getWindowBounds();
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+
   const mainWindow = new BrowserWindow({
-    width: Math.round(width * 0.9),
-    height: Math.round(height * 0.9),
+    width: storedBounds ? storedBounds.width : Math.round(width * 0.9),
+    height: storedBounds ? storedBounds.height : Math.round(height * 0.9),
+    x: storedBounds ? storedBounds.x : undefined,
+    y: storedBounds ? storedBounds.y : undefined,
     minWidth: 960,
     minHeight: 750,
     webPreferences: {
@@ -38,6 +41,10 @@ async function createWindow() {
     }
 
     mainWindow?.show();
+  });
+
+  mainWindow.on('close', async () => {
+    await setWindowBounds(mainWindow);
   });
 
   mainWindow.on('closed', () => {

@@ -2,11 +2,9 @@ import { mockDeep } from 'vitest-mock-extended';
 
 import { getIPCHandler, invokeIPCHandler } from '../../../_utils_';
 
-import { USE_KEYCHAIN } from '@main/shared/constants';
+import { STATIC_USER, USE_KEYCHAIN } from '@main/shared/constants';
 
-import registerSafeStorageHandlers, {
-  STATIC_USER,
-} from '@main/modules/ipcHandlers/localUser/safeStorage';
+import registerSafeStorageHandlers from '@main/modules/ipcHandlers/localUser/safeStorage';
 
 import { Claim } from '@prisma/client';
 import { safeStorage } from 'electron';

@@ -3,8 +3,11 @@ import type { MockedClass, MockedObject } from 'vitest';
 import { vi } from 'vitest';
 
 import { restoreOrCreateWindow } from '@main/windows/mainWindow';
-
 import { BrowserWindow } from 'electron';
+import { getWindowBounds, setWindowBounds } from '@main/services/windowState';
+
+vi.mock('@main/db/prisma');
+vi.mock('@main/services/windowState');
 
 /**
  * Mock real electron BrowserWindow API
@@ -19,6 +22,7 @@ vi.mock('electron', () => {
 
   const callbacks = {
     'ready-to-show': vi.fn(),
+    close: vi.fn(),
     closed: vi.fn(),
   };
 
@@ -31,6 +35,7 @@ vi.mock('electron', () => {
   bw.prototype.focus = vi.fn();
   bw.prototype.restore = vi.fn();
   bw.prototype.close = vi.fn(() => {
+    callbacks.close && callbacks.close();
     callbacks.closed && callbacks.closed();
   });
   bw.prototype.emit = vi.fn();
@@ -168,7 +173,7 @@ test('Should create a new window if the previous one was destroyed', async () =>
   expect(mock.instances).toHaveLength(2);
 });
 
-test('Should set differnet VITE_PUBLIC', async () => {
+test('Should set different VITE_PUBLIC', async () => {
   const prevVITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 
   //@ts-expect-error read-only property
@@ -188,9 +193,55 @@ test('Should set differnet VITE_PUBLIC', async () => {
   process.env.VITE_DEV_SERVER_URL = prevVITE_DEV_SERVER_URL;
 });
 
-test('Should send theme event after ready-to-show emitted with already shown event ', async () => {
+test('Should send theme event after ready-to-show emitted with already shown event', async () => {
   const window = await restoreOrCreateWindow();
 
   window.close();
   window.restore();
+});
+
+test('Should create a window with correct bounds', async () => {
+  const { mock } = vi.mocked(BrowserWindow);
+  const bounds = { x: 0, y: 0, width: 800, height: 600 };
+  vi.mocked(getWindowBounds).mockResolvedValueOnce(bounds);
+
+  await restoreOrCreateWindow();
+
+  expect(mock.instances).toHaveLength(1);
+  const instance = mock.instances[0] as MockedObject<BrowserWindow>;
+  expect(instance.constructor).toHaveBeenCalledWith(
+    expect.objectContaining({
+      width: bounds.width,
+      height: bounds.height,
+      x: bounds.x,
+      y: bounds.y,
+    }),
+  );
+});
+
+test('Should create a window with default bounds if no stored bounds', async () => {
+  const { mock } = vi.mocked(BrowserWindow);
+  vi.mocked(getWindowBounds).mockResolvedValueOnce(null);
+
+  await restoreOrCreateWindow();
+
+  expect(mock.instances).toHaveLength(1);
+  const instance = mock.instances[0] as MockedObject<BrowserWindow>;
+  expect(instance.constructor).toHaveBeenCalledWith(
+    expect.objectContaining({
+      width: expect.any(Number),
+      height: expect.any(Number),
+    }),
+  );
+});
+
+test('Should set window bounds on close', async () => {
+  const { mock } = vi.mocked(BrowserWindow);
+
+  await restoreOrCreateWindow();
+  expect(mock.instances).toHaveLength(1);
+  const instance = mock.instances[0] as MockedObject<BrowserWindow>;
+
+  instance.close();
+  expect(setWindowBounds).toHaveBeenCalledWith(instance);
 });
