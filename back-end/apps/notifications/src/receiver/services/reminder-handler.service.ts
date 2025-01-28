@@ -75,7 +75,7 @@ export class ReminderHandlerService implements OnModuleInit {
 
     await this.receiverService.notifyGeneral({
       type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER,
-      content: `A transaction is about to expire and it has not collected the required signaturre.
+      content: `A transaction is about to expire and it has not collected the required signatures.
 Please visit the Hedera Transaction Tool and locate the transaction.
 Valid start: ${transaction.validStart.toUTCString()}
 Transaction ID: ${transaction.transactionId}
