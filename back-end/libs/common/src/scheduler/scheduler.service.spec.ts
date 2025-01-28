@@ -52,7 +52,12 @@ describe('SchedulerService', () => {
 
       await service.addReminder(key, date);
 
-      expect(pubClient.set).toHaveBeenCalledWith(`schedule:${key}`, key, 'PXAT', date.getTime());
+      expect(pubClient.set).toHaveBeenCalledWith(
+        `schedule:${key}`,
+        `schedule:${key}`,
+        'EXAT',
+        Math.floor(date.getTime() / 1000),
+      );
     });
   });
 });

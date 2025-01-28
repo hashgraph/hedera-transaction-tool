@@ -40,7 +40,9 @@ export class ReminderHandlerService implements OnModuleInit {
       relations: { creatorKey: true },
     });
 
-    if (!transaction) throw new Error('Transaction not found');
+    if (!transaction) {
+      return;
+    }
 
     /* Check if transaction is still waiting for signatures */
     if (transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES) {

@@ -20,7 +20,13 @@ import {
   Client,
 } from '@hashgraph/sdk';
 
-import { NOTIFICATIONS_SERVICE, MirrorNodeService, ErrorCodes, CHAIN_SERVICE } from '@app/common';
+import {
+  NOTIFICATIONS_SERVICE,
+  MirrorNodeService,
+  ErrorCodes,
+  CHAIN_SERVICE,
+  SchedulerService,
+} from '@app/common';
 import {
   attachKeys,
   getClientFromNetwork,
@@ -33,6 +39,7 @@ import {
   isTransactionBodyOverMaxSize,
   emitExecuteTranasction,
   notifyGeneral,
+  getTransactionSignReminderKey,
 } from '@app/common/utils';
 import {
   NotificationType,
@@ -59,6 +66,7 @@ describe('TransactionsService', () => {
   const notificationsService = mock<ClientProxy>();
   const approversService = mock<ApproversService>();
   const mirrorNodeService = mock<MirrorNodeService>();
+  const schedulerService = mock<SchedulerService>();
   const entityManager = mockDeep<EntityManager>();
 
   const user: Partial<User> = {
@@ -108,6 +116,10 @@ describe('TransactionsService', () => {
         {
           provide: EntityManager,
           useValue: entityManager,
+        },
+        {
+          provide: SchedulerService,
+          useValue: schedulerService,
         },
       ],
     }).compile();
@@ -405,6 +417,7 @@ describe('TransactionsService', () => {
         creatorKeyId: 1,
         signature: Buffer.from('0xabc02'),
         mirrorNetwork: 'testnet',
+        reminderSeconds: 60,
       };
 
       const client = Client.forTestnet();
@@ -425,6 +438,7 @@ describe('TransactionsService', () => {
         t.id = 1;
         return t;
       });
+      jest.mocked(getTransactionSignReminderKey).mockReturnValueOnce('transaction:sign:1');
 
       await service.createTransaction(dto, user as User);
 
@@ -432,6 +446,10 @@ describe('TransactionsService', () => {
       expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, 1, {
         network: dto.mirrorNetwork,
       });
+      expect(schedulerService.addReminder).toHaveBeenCalledWith(
+        `transaction:sign:1`,
+        expect.any(Date),
+      );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
 
       client.close();
