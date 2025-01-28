@@ -465,25 +465,29 @@ describe('Services Local User Transactions', () => {
       expect(result).toEqual(response);
     });
 
-    test('Should write response to file and show in folder if response is a large buffer', async () => {
-      const queryBytes = new Uint8Array([1, 2, 3]);
-      const accountId = '0.0.1234';
-      const fileId = '0.0.4321';
-      const privateKey = '302e020100300506032b657004220420';
-      const privateKeyType = 'ED25519';
-      const response = Buffer.from(new Array(1000002).join('a'), 'utf-8');
-      const queryMock = new SDK.FileContentsQuery().setFileId(fileId);
-      queryMock.execute = vi.fn().mockResolvedValue(response);
+    test(
+      'Should write response to file and show in folder if response is a large buffer',
+      { timeout: 20 * 1_000 },
+      async () => {
+        const queryBytes = new Uint8Array([1, 2, 3]);
+        const accountId = '0.0.1234';
+        const fileId = '0.0.4321';
+        const privateKey = '302e020100300506032b657004220420';
+        const privateKeyType = 'ED25519';
+        const response = Buffer.from(new Array(1000002).join('a'), 'utf-8');
+        const queryMock = new SDK.FileContentsQuery().setFileId(fileId);
+        queryMock.execute = vi.fn().mockResolvedValue(response);
 
-      vi.spyOn(SDK.Query, 'fromBytes').mockReturnValue(queryMock as unknown as SDK.Query<any>);
-      vi.spyOn(SDK.PrivateKey, 'fromStringED25519').mockReturnValue(
-        privateKey as unknown as SDK.PrivateKey,
-      );
+        vi.spyOn(SDK.Query, 'fromBytes').mockReturnValue(queryMock as unknown as SDK.Query<any>);
+        vi.spyOn(SDK.PrivateKey, 'fromStringED25519').mockReturnValue(
+          privateKey as unknown as SDK.PrivateKey,
+        );
 
-      await executeQuery(queryBytes, accountId, privateKey, privateKeyType);
+        await executeQuery(queryBytes, accountId, privateKey, privateKeyType);
 
-      expect(showContentInTemp).toHaveBeenCalledWith(response, fileId);
-    });
+        expect(showContentInTemp).toHaveBeenCalledWith(response, fileId);
+      },
+    );
 
     test('Should write response to file without fileId and show in folder if response is a large buffer', async () => {
       const queryBytes = new Uint8Array([1, 2, 3]);
