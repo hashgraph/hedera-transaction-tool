@@ -136,8 +136,8 @@ The Initial Developer of @babel/types@7.26.7,
 is The Babel Team (https://github.com/babel/babel).
 Copyright The Babel Team. All Rights Reserved.
 
-The Initial Developer of @bcoe/v8-coverage@0.2.3,
-is Charles Samborski (https://github.com/demurgos/v8-coverage).
+The Initial Developer of @bcoe/v8-coverage@1.0.2,
+is Charles Samborski (https://github.com/bcoe/v8-coverage).
 Copyright Charles Samborski. All Rights Reserved.
 
 The Initial Developer of @develar/schema-utils@2.6.5,
@@ -738,29 +738,29 @@ The Initial Developer of @vitejs/plugin-vue@5.2.1,
 is Evan You (https://github.com/vitejs/vite-plugin-vue).
 Copyright Evan You. All Rights Reserved.
 
-The Initial Developer of @vitest/coverage-v8@2.1.8,
+The Initial Developer of @vitest/coverage-v8@3.0.4,
 is Anthony Fu (https://github.com/vitest-dev/vitest).
 Copyright Anthony Fu. All Rights Reserved.
 
-This product includes software (@vitest/expect@2.1.8) developed at
+This product includes software (@vitest/expect@3.0.4) developed at
 (https://github.com/vitest-dev/vitest).
 
-This product includes software (@vitest/mocker@2.1.8) developed at
+This product includes software (@vitest/mocker@3.0.4) developed at
 (https://github.com/vitest-dev/vitest).
 
-This product includes software (@vitest/pretty-format@2.1.8) developed at
+This product includes software (@vitest/pretty-format@3.0.4) developed at
 (https://github.com/vitest-dev/vitest).
 
-This product includes software (@vitest/runner@2.1.8) developed at
+This product includes software (@vitest/runner@3.0.4) developed at
 (https://github.com/vitest-dev/vitest).
 
-This product includes software (@vitest/snapshot@2.1.8) developed at
+This product includes software (@vitest/snapshot@3.0.4) developed at
 (https://github.com/vitest-dev/vitest).
 
-This product includes software (@vitest/spy@2.1.8) developed at
+This product includes software (@vitest/spy@3.0.4) developed at
 (https://github.com/vitest-dev/vitest).
 
-This product includes software (@vitest/utils@2.1.8) developed at
+This product includes software (@vitest/utils@3.0.4) developed at
 (https://github.com/vitest-dev/vitest).
 
 This product includes software (@volar/language-core@2.4.11) developed at
@@ -2392,7 +2392,7 @@ The Initial Developer of path-scurry@1.11.1,
 is Isaac Z. Schlueter (https://github.com/isaacs/path-scurry).
 Copyright Isaac Z. Schlueter. All Rights Reserved.
 
-This product includes software (pathe@1.1.2) developed at
+This product includes software (pathe@2.0.2) developed at
 (https://github.com/unjs/pathe).
 
 The Initial Developer of pathval@2.0.0,
@@ -2875,7 +2875,7 @@ Copyright James Garbutt. All Rights Reserved.
 This product includes software (tinypool@1.0.2) developed at
 (https://github.com/tinylibs/tinypool).
 
-This product includes software (tinyrainbow@1.2.0) developed at
+This product includes software (tinyrainbow@2.0.0) developed at
 (https://github.com/tinylibs/tinyrainbow).
 
 This product includes software (tinyspy@3.0.2) developed at
@@ -3017,7 +3017,7 @@ The Initial Developer of vite-hot-client@0.2.4,
 is Anthony Fu (https://github.com/antfu/vite-hot-client).
 Copyright Anthony Fu. All Rights Reserved.
 
-The Initial Developer of vite-node@2.1.8,
+The Initial Developer of vite-node@3.0.4,
 is Anthony Fu (https://github.com/vitest-dev/vitest).
 Copyright Anthony Fu. All Rights Reserved.
 
@@ -3049,7 +3049,7 @@ The Initial Developer of vitest-mock-extended@2.0.2,
 is Eike Lurz (https://github.com/eratio08/vitest-mock-extended).
 Copyright Eike Lurz. All Rights Reserved.
 
-The Initial Developer of vitest@2.1.8,
+The Initial Developer of vitest@3.0.4,
 is Anthony Fu (https://github.com/vitest-dev/vitest).
 Copyright Anthony Fu. All Rights Reserved.
 
