@@ -678,49 +678,25 @@ This product includes software (@types/verror@1.10.10) developed at
 This product includes software (@types/yauzl@2.10.3) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
-This product includes software (@typescript-eslint/eslint-plugin@8.19.1) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
 This product includes software (@typescript-eslint/eslint-plugin@8.22.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/parser@8.19.1) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
 This product includes software (@typescript-eslint/parser@8.22.0) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
-This product includes software (@typescript-eslint/scope-manager@8.19.1) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
 This product includes software (@typescript-eslint/scope-manager@8.22.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/type-utils@8.19.1) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
 This product includes software (@typescript-eslint/type-utils@8.22.0) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
-This product includes software (@typescript-eslint/types@8.19.1) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
 This product includes software (@typescript-eslint/types@8.22.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/typescript-estree@8.19.1) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
 This product includes software (@typescript-eslint/typescript-estree@8.22.0) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
-This product includes software (@typescript-eslint/utils@8.19.1) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
 This product includes software (@typescript-eslint/utils@8.22.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/visitor-keys@8.19.1) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
 This product includes software (@typescript-eslint/visitor-keys@8.22.0) developed at
@@ -1473,14 +1449,6 @@ Copyright Sindre Sorhus. All Rights Reserved.
 The Initial Developer of eslint-config-prettier@10.0.1,
 is Simon Lydell (https://github.com/prettier/eslint-config-prettier).
 Copyright Simon Lydell. All Rights Reserved.
-
-The Initial Developer of eslint-config-prettier@9.1.0,
-is Simon Lydell (https://github.com/prettier/eslint-config-prettier).
-Copyright Simon Lydell. All Rights Reserved.
-
-The Initial Developer of eslint-plugin-prettier@5.2.1,
-is Teddy Katz (https://github.com/prettier/eslint-plugin-prettier).
-Copyright Teddy Katz. All Rights Reserved.
 
 The Initial Developer of eslint-plugin-prettier@5.2.3,
 is Teddy Katz (https://github.com/prettier/eslint-plugin-prettier).
