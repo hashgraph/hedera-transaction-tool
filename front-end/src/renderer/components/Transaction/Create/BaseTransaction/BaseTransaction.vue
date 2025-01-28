@@ -113,6 +113,7 @@ const handleCreate = async () => {
       name: name.value.trim(),
       description: description.value.trim(),
       submitManually: submitManually.value,
+      reminderSeconds: reminder.value,
     },
     observers.value,
     approvers.value,

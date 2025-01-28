@@ -8,6 +8,7 @@ export interface TransactionRequest {
   name: string;
   description: string;
   submitManually: boolean;
+  reminderSeconds: number | null;
 }
 
 export interface Handler {
