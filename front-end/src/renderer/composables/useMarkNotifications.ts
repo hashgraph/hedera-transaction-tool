@@ -35,9 +35,12 @@ export default function useMarkNotifications(notificationTypes: NotificationType
       const notificationsToMark = networkFilteredNotifications.value.filter(nr =>
         notificationTypes.includes(nr.notification.type),
       );
-      await Promise.allSettled(
-        notificationsToMark.map(nr => notifications.markAsRead(nr.notification.type)),
-      );
+
+      if (notificationsToMark.length > 0) {
+        await Promise.allSettled(
+          notificationsToMark.map(nr => notifications.markAsRead(nr.notification.type)),
+        );
+      }
     }
   }
 

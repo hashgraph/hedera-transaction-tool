@@ -21,8 +21,11 @@ import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 
 import useUserStore from './storeUser';
 import useWebsocketConnection from './storeWebsocketConnection';
+import useNetworkStore from './storeNetwork';
 
 const useNotificationsStore = defineStore('notifications', () => {
+  /* Stores */
+  const network = useNetworkStore();
   const user = useUserStore();
   const ws = useWebsocketConnection();
 
@@ -151,16 +154,23 @@ const useNotificationsStore = defineStore('notifications', () => {
 
     if (!notificationsKey) return;
 
-    const notificationIds = notifications.value[notificationsKey]
-      .filter(nr => nr.notification.type === type)
-      .map(nr => nr.id);
-    const dtos = notificationIds.map((): IUpdateNotificationReceiver => ({ isRead: true }));
+    const networkFilteredNotifications =
+      notifications.value[notificationsKey].filter(
+        n => n.notification.additionalData?.network === network.network,
+      ) || [];
 
-    await updateNotifications(notificationsKey, notificationIds, dtos);
+    if (networkFilteredNotifications.length > 0) {
+      const notificationIds = networkFilteredNotifications
+        .filter(nr => nr.notification.type === type)
+        .map(nr => nr.id);
+      const dtos = notificationIds.map((): IUpdateNotificationReceiver => ({ isRead: true }));
 
-    notifications.value[notificationsKey] = notifications.value[notificationsKey].filter(
-      nr => !notificationIds.includes(nr.id),
-    );
+      await updateNotifications(notificationsKey, notificationIds, dtos);
+
+      notifications.value[notificationsKey] = notifications.value[notificationsKey].filter(
+        nr => !notificationIds.includes(nr.id),
+      );
+    }
     notifications.value = { ...notifications.value };
   }
 
