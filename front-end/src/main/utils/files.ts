@@ -89,7 +89,7 @@ export const copyFile = (filePath: string, fileDist: string, state?: AbortableSt
 
     readStream.on('error', reject);
     writeStream.on('error', reject);
-    writeStream.on('finish', resolve);
+    writeStream.on('finish', () => resolve(fileDist));
   });
 };
 
