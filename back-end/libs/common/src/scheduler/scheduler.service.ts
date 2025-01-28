@@ -13,6 +13,8 @@ import { Redis } from 'ioredis';
  */
 @Injectable()
 export class SchedulerService {
+  SCHEDULE_PREFIX = 'schedule:';
+
   pubClient: Redis;
   subClient: Redis;
 
@@ -26,11 +28,17 @@ export class SchedulerService {
 
   addListener(handler: (key: string) => void) {
     this.subClient.on('message', async (_channel, message) => {
-      await handler(message);
+      if (!message.startsWith(this.SCHEDULE_PREFIX)) {
+        return;
+      }
+      const key = message.replace(this.SCHEDULE_PREFIX, '');
+
+      await handler(key);
     });
   }
 
   async addReminder(key: string, date: Date) {
+    key = `${this.SCHEDULE_PREFIX}${key}`;
     const unix = Math.floor(date.getTime() / 1000);
     await this.pubClient.set(key, key, 'EXAT', unix);
   }

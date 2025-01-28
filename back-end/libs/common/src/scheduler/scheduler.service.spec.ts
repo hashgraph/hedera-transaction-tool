@@ -39,9 +39,7 @@ describe('SchedulerService', () => {
 
   describe('addListener', () => {
     it('should add a listener for expiration events', async () => {
-      const handler = jest.fn();
-
-      await service.addListener(handler);
+      await service.addListener(jest.fn());
 
       expect(subClient.on).toHaveBeenCalledWith('message', expect.any(Function));
     });
@@ -54,7 +52,7 @@ describe('SchedulerService', () => {
 
       await service.addReminder(key, date);
 
-      expect(pubClient.set).toHaveBeenCalledWith(key, key, 'PXAT', date.getTime());
+      expect(pubClient.set).toHaveBeenCalledWith(`schedule:${key}`, key, 'PXAT', date.getTime());
     });
   });
 });
