@@ -38,7 +38,7 @@ import BaseGroupHandler from '@renderer/components/Transaction/Create/BaseTransa
 import BaseApproversObserverData from '@renderer/components/Transaction/Create/BaseTransaction/BaseApproversObserverData.vue';
 
 /* Props */
-const props = defineProps<{
+const { createTransaction, preCreateAssert, transactionBaseKey } = defineProps<{
   createTransaction: CreateTransactionFunc;
   preCreateAssert?: () => boolean | void;
   createDisabled?: boolean;
@@ -69,6 +69,7 @@ const baseGroupHandlerRef = ref<InstanceType<typeof BaseGroupHandler> | null>(nu
 const name = ref('');
 const description = ref('');
 const submitManually = ref(false);
+const reminder = ref<number | null>(null);
 
 const data = reactive<TransactionCommonData>({
   payerId: '',
@@ -85,10 +86,10 @@ const groupActionTaken = ref(false);
 const memoError = ref(false);
 
 /* Computed */
-const transaction = computed(() => props.createTransaction({ ...data } as TransactionCommonData));
+const transaction = computed(() => createTransaction({ ...data } as TransactionCommonData));
 
 const transactionKey = computed(() => {
-  const keys = props.transactionBaseKey?.toArray() || [];
+  const keys = transactionBaseKey?.toArray() || [];
   payerData.key.value && keys.push(payerData.key.value);
   return new KeyList(keys);
 });
@@ -103,12 +104,12 @@ const handleDraftLoaded = async (transaction: Transaction) => {
 
 const handleCreate = async () => {
   basePreCreateAssert();
-  if ((await props.preCreateAssert?.()) === false) return;
+  if ((await preCreateAssert?.()) === false) return;
 
   await transactionProcessor.value?.process(
     {
       transactionKey: transactionKey.value,
-      transactionBytes: props.createTransaction({ ...data } as TransactionCommonData).toBytes(),
+      transactionBytes: createTransaction({ ...data } as TransactionCommonData).toBytes(),
       name: name.value.trim(),
       description: description.value.trim(),
       submitManually: submitManually.value,
@@ -203,8 +204,10 @@ defineExpose({
     <form @submit.prevent="handleCreate" class="flex-column-100">
       <TransactionHeaderControls
         v-model:submit-manually="submitManually"
+        v-model:reminder="reminder"
+        :valid-start="data.validStart"
         :is-processed="isProcessed"
-        :create-transaction="() => props.createTransaction({ ...data } as TransactionCommonData)"
+        :create-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
         :description="description"
         :heading-text="getTransactionType(transaction)"
         :create-button-label="
@@ -272,7 +275,7 @@ defineExpose({
     <BaseDraftLoad @draft-loaded="handleDraftLoaded" />
     <BaseGroupHandler
       ref="baseGroupHandlerRef"
-      :create-transaction="() => props.createTransaction({ ...data } as TransactionCommonData)"
+      :create-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
       :transaction-key="transactionKey"
       @fetched-description="handleFetchedDescription"
       @fetched-payer-account-id="handleFetchedPayerAccountId"
