@@ -79,9 +79,14 @@ watch(
       </div>
     </AppButton>
     <ul class="dropdown-menu mt-3">
+      <template v-if="items.length === 0">
+        <li class="px-4 py-3 text-body user-select-none">
+          <span class="text-small">No options available</span>
+        </li>
+      </template>
       <template v-for="item of items" :key="item.value">
         <li
-          class="dropdown-item cursor-pointer text-body"
+          class="dropdown-item text-body"
           :class="{
             active: item.value === value,
           }"
