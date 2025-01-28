@@ -2905,7 +2905,7 @@ The Initial Developer of ts-jest@29.2.5,
 is Kulshekhar Kabra (https://github.com/kulshekhar/ts-jest).
 Copyright Kulshekhar Kabra. All Rights Reserved.
 
-The Initial Developer of ts-loader@9.5.1,
+The Initial Developer of ts-loader@9.5.2,
 is John Reilly (https://github.com/TypeStrong/ts-loader).
 Copyright John Reilly. All Rights Reserved.
 
@@ -2943,10 +2943,6 @@ Copyright Umed Khudoiberdiev. All Rights Reserved.
 
 This product includes software (typescript-eslint@8.22.0) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
-
-The Initial Developer of typescript@5.7.2,
-is Microsoft Corp. (https://github.com/microsoft/TypeScript).
-Copyright Microsoft Corp.. All Rights Reserved.
 
 The Initial Developer of typescript@5.7.3,
 is Microsoft Corp. (https://github.com/microsoft/TypeScript).
