@@ -46,6 +46,8 @@ import {
   isTransactionBodyOverMaxSize,
   emitExecuteTranasction,
   notifyGeneral,
+  SchedulerService,
+  getTransactionSignReminderKey,
 } from '@app/common';
 
 import { CreateTransactionDto } from './dto';
@@ -58,9 +60,10 @@ export class TransactionsService {
     @InjectRepository(Transaction) private repo: Repository<Transaction>,
     @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
     @Inject(CHAIN_SERVICE) private readonly chainService: ClientProxy,
+    @InjectEntityManager() private entityManager: EntityManager,
     private readonly approversService: ApproversService,
     private readonly mirrorNodeService: MirrorNodeService,
-    @InjectEntityManager() private entityManager: EntityManager,
+    private readonly schedulerService: SchedulerService,
   ) {}
 
   /* Get the transaction for the provided id in the DATABASE */
@@ -394,6 +397,10 @@ export class TransactionsService {
       throw new BadRequestException(ErrorCodes.FST);
     }
 
+    if (dto.reminderMillisecondsBefore) {
+      const remindAt = new Date(transaction.validStart.getTime() - dto.reminderMillisecondsBefore);
+      this.schedulerService.addReminder(getTransactionSignReminderKey(transaction.id), remindAt);
+    }
     notifyWaitingForSignatures(this.notificationsService, transaction.id, {
       network: transaction.mirrorNetwork,
     });

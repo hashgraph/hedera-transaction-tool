@@ -35,4 +35,8 @@ export class CreateTransactionDto {
   @IsOptional()
   @IsBoolean()
   isManual?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  reminderMillisecondsBefore?: number;
 }

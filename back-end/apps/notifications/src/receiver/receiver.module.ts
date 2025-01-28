@@ -17,9 +17,12 @@ import {
   UserKey,
 } from '@entities';
 
+import { FanOutModule } from '../fan-out/fan-out.module';
+
 import { ReceiverController } from './receiver.controller';
 import { ReceiverService } from './receiver.service';
-import { FanOutModule } from '../fan-out/fan-out.module';
+
+import { ReminderHandlerService } from './services';
 
 @Module({
   imports: [
@@ -43,6 +46,6 @@ import { FanOutModule } from '../fan-out/fan-out.module';
     RedisMurlockModule,
   ],
   controllers: [ReceiverController],
-  providers: [ReceiverService],
+  providers: [ReceiverService, ReminderHandlerService],
 })
 export class ReceiverModule {}

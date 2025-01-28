@@ -188,11 +188,12 @@ async function processOriginal() {
   transaction.setContents(content.value.slice(0, FIRST_CHUNK_SIZE_BYTES));
 
   await startChain({
-    submitManually: false,
     transactionBytes: transaction.toBytes(),
     transactionKey: request.value.transactionKey,
     name: request.value.name,
     description: request.value.description,
+    submitManually: false,
+    reminderMillisecondsBefore: null,
   });
 }
 
@@ -202,11 +203,12 @@ async function processAppend() {
   const transaction = createAppendTransaction();
 
   await startChain({
-    submitManually: false,
     transactionBytes: transaction.toBytes(),
     transactionKey: request.value.transactionKey,
     name: request.value.name,
     description: request.value.description,
+    submitManually: false,
+    reminderMillisecondsBefore: null,
   });
 }
 

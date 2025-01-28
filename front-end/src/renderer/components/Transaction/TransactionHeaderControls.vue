@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Transaction } from '@hashgraph/sdk';
 
+import { ref, watch } from 'vue';
+
 import useUserStore from '@renderer/stores/storeUser';
 
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
@@ -10,11 +12,12 @@ import { isLoggedInOrganization } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
+import AppReminderSelect from '@renderer/components/selects/AppReminderSelect.vue';
 
 /* Props */
 defineProps<{
-  submitManually: boolean;
   createButtonLabel: string;
+  validStart: Date;
   headingText?: string;
   loading?: boolean;
   isProcessed?: boolean;
@@ -25,16 +28,29 @@ defineProps<{
 
 /* Emits */
 defineEmits<{
-  (event: 'update:submit-manually', value: boolean): void;
   (event: 'add-to-group'): void;
   (event: 'edit-group-item'): void;
 }>();
+
+/* Models */
+const submitManually = defineModel<boolean>('submitManually', { required: true });
+const reminder = defineModel<number | null>('reminder', { required: true });
 
 /* Stores */
 const user = useUserStore();
 
 /* Composables */
 useCreateTooltips();
+
+/* State */
+const showAddReminder = ref(false);
+
+/* Watchers */
+watch(showAddReminder, show => {
+  if (!show) {
+    reminder.value = null;
+  }
+});
 </script>
 <template>
   <div>
@@ -45,8 +61,9 @@ useCreateTooltips();
 
       <h2 class="text-title text-bold" data-testid="h2-transaction-type">{{ headingText }}</h2>
     </div>
+
     <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mt-3">
-      <div>
+      <div class="d-flex gap-4">
         <template
           v-if="
             !($route.query.group === 'true') && isLoggedInOrganization(user.selectedOrganization)
@@ -60,10 +77,17 @@ useCreateTooltips();
             data-bs-title="Transaction will have to be submitted to the network manually."
           >
             <AppCheckBox
-              :checked="submitManually"
-              @update:checked="$emit('update:submit-manually', $event)"
+              v-model:checked="submitManually"
               label="Submit manually"
               name="submit-manually"
+            />
+          </div>
+
+          <div>
+            <AppCheckBox
+              v-model:checked="showAddReminder"
+              label="Add reminder"
+              name="add-reminder"
             />
           </div>
         </template>
@@ -103,5 +127,13 @@ useCreateTooltips();
         </div>
       </template>
     </div>
+
+    <Transition name="fade" mode="out-in">
+      <template v-if="showAddReminder">
+        <div class="mt-3">
+          <AppReminderSelect v-model="reminder" :event-date="validStart" />
+        </div>
+      </template>
+    </Transition>
   </div>
 </template>

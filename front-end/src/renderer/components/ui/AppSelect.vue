@@ -1,34 +1,31 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 
 /* Props */
 const props = defineProps<{
   toggleText: string;
-  value: string;
-  items: { label: string; value: string }[];
+  items: { label: string; value: T }[];
   color?: 'primary' | 'secondary' | 'borderless' | 'danger';
   active?: boolean;
   dataTestid?: string;
   togglerIcon?: boolean;
   colorOnActive?: boolean;
-  buttonClass?: string;
+  buttonClass?: string | string[];
 }>();
 
-/* Emits */
-const emit = defineEmits<{
-  (event: 'update:value', value: string): void;
-}>();
+/* Model */
+const model = defineModel<T>('value');
 
 /* State */
 const dropdownRef = ref<HTMLDivElement | null>(null);
 
 /* Computed */
-const selected = computed(() => props.items.find(i => i.value === props.value));
+const selected = computed(() => props.items.find(i => i.value === model.value));
 
 /* Handlers */
-const handleSelect = (value: string) => {
-  emit('update:value', value);
+const handleSelect = (value: T) => {
+  model.value = value;
   forceHideContent();
 };
 
@@ -72,7 +69,7 @@ watch(
       data-bs-auto-close="true"
       data-bs-popper-config='{"strategy":"fixed"}'
       :data-testid="dataTestid"
-      :class="[buttonClass, active ? null : 'text-body']"
+      :class="[buttonClass]"
     >
       <div class="col-11 text-start overflow-hidden">
         <span>{{ selected?.label || toggleText }}</span>
@@ -82,10 +79,17 @@ watch(
       </div>
     </AppButton>
     <ul class="dropdown-menu mt-3">
+      <template v-if="items.length === 0">
+        <li class="px-4 py-3 text-body user-select-none">
+          <span class="text-small">No options available</span>
+        </li>
+      </template>
       <template v-for="item of items" :key="item.value">
         <li
-          class="dropdown-item cursor-pointer text-body"
-          :class="{ active: item.value === value }"
+          class="dropdown-item text-body"
+          :class="{
+            active: item.value === value,
+          }"
           @click="handleSelect(item.value)"
           :data-testid="`select-item-${item.value}`"
           :selected="item.value === value ? true : undefined"

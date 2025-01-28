@@ -73,7 +73,7 @@ services:
     depends_on:
       - database
   redis:
-    image: redis
+    build: ./redis
     container_name: cache
     ports:
       - 6380:6379

@@ -139,7 +139,7 @@ watch(
         :toggle-text="Tabs.RECOVERY_PHRASE"
         :active="selectedTab === Tabs.RECOVERY_PHRASE"
         :color="'primary'"
-        button-class="rounded-3"
+        :button-class="['rounded-3', selectedTab !== Tabs.RECOVERY_PHRASE ? 'text-body' : '']"
         class="text-nowrap"
         :style="{ maxWidth: '300px' }"
         toggler-icon

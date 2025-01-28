@@ -29,10 +29,9 @@ const handleUpdateDefaultOrganization = async (id: string) => {
 
   await setDefault(id || null);
 
-  if(!id) {
-   await setLast(user.selectedOrganization?.id || null);
+  if (!id) {
+    await setLast(user.selectedOrganization?.id || null);
   }
-
 
   defaultOrganizationId.value = id;
 };
