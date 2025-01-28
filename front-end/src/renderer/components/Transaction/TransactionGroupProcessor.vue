@@ -43,6 +43,7 @@ import {
   isLoggedInOrganization,
   isUserLoggedIn,
   getErrorMessage,
+  safeAwait,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -342,15 +343,16 @@ async function sendSignedTransactionsToOrganization() {
 
   toast.success('Transaction submitted successfully');
 
+  if (transactionGroup.groupItems[0]?.groupId) {
+    await safeAwait(deleteGroup(transactionGroup.groupItems[0].groupId));
+  }
+
   for (const groupItem of group.groupItems) {
     const results = await Promise.allSettled([
       // uploadSignatures(body, id),
       uploadObservers(groupItem.transaction.id, groupItem.seq),
       uploadApprovers(groupItem.transaction.id, groupItem.seq),
       deleteDraftsIfNotTemplate(),
-      transactionGroup.groupItems[0].groupId
-        ? deleteGroup(transactionGroup.groupItems[0].groupId)
-        : null,
     ]);
     results.forEach(result => {
       if (result.status === 'rejected') {
