@@ -55,8 +55,8 @@ describe('SchedulerService', () => {
       expect(pubClient.set).toHaveBeenCalledWith(
         `schedule:${key}`,
         `schedule:${key}`,
-        'EXAT',
-        Math.floor(date.getTime() / 1000),
+        'PXAT',
+        Math.floor(date.getTime()),
       );
     });
   });
