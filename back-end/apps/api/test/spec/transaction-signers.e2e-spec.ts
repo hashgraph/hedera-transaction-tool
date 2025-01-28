@@ -16,7 +16,6 @@ import { closeApp, createNestApp, login } from '../utils';
 import {
   addHederaLocalnetAccounts,
   addTransactions,
-  getExpiredTransaction,
   getRepository,
   getUser,
   getUserKey,
