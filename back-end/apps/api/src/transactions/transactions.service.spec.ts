@@ -417,7 +417,7 @@ describe('TransactionsService', () => {
         creatorKeyId: 1,
         signature: Buffer.from('0xabc02'),
         mirrorNetwork: 'testnet',
-        reminderSeconds: 60,
+        reminderMillisecondsBefore: 60 * 1_000,
       };
 
       const client = Client.forTestnet();

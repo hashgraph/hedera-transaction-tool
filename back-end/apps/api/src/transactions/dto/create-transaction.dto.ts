@@ -38,5 +38,5 @@ export class CreateTransactionDto {
 
   @IsOptional()
   @IsNumber()
-  reminderSeconds?: number;
+  reminderMillisecondsBefore?: number;
 }

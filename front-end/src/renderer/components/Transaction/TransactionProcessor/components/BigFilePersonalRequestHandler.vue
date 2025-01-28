@@ -193,7 +193,7 @@ async function processOriginal() {
     name: request.value.name,
     description: request.value.description,
     submitManually: false,
-    reminderSeconds: null,
+    reminderMillisecondsBefore: null,
   });
 }
 
@@ -208,7 +208,7 @@ async function processAppend() {
     name: request.value.name,
     description: request.value.description,
     submitManually: false,
-    reminderSeconds: null,
+    reminderMillisecondsBefore: null,
   });
 }
 

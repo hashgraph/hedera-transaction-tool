@@ -37,7 +37,7 @@ export const submitTransaction = async (
   signature: string,
   creatorKeyId: number,
   isManual?: boolean,
-  reminderSeconds?: number | null,
+  reminderMillisecondsBefore?: number | null,
 ): Promise<{ id: number; transactionBytes: string }> =>
   commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.post(`${serverUrl}/${controller}`, {
@@ -48,7 +48,7 @@ export const submitTransaction = async (
       signature,
       creatorKeyId,
       isManual,
-      reminderSeconds: reminderSeconds || undefined,
+      reminderMillisecondsBefore: reminderMillisecondsBefore || undefined,
     });
 
     return { id: data.id, transactionBytes: data.transactionBytes };

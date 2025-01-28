@@ -39,7 +39,6 @@ export class SchedulerService {
 
   async addReminder(key: string, date: Date) {
     key = `${this.SCHEDULE_PREFIX}${key}`;
-    const unix = Math.floor(date.getTime() / 1000);
-    await this.pubClient.set(key, key, 'EXAT', unix);
+    await this.pubClient.set(key, key, 'PXAT', date.getTime());
   }
 }

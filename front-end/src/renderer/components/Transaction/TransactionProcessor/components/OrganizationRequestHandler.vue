@@ -126,7 +126,7 @@ async function submit(publicKey: string, signature: string) {
       signature,
       user.selectedOrganization.userKeys.find(k => k.publicKey === publicKey)?.id || -1,
       request.value.submitManually,
-      request.value.reminderSeconds,
+      request.value.reminderMillisecondsBefore,
     );
   } catch (error) {
     emit('transaction:submit:fail', error);

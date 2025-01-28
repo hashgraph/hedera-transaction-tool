@@ -397,8 +397,8 @@ export class TransactionsService {
       throw new BadRequestException(ErrorCodes.FST);
     }
 
-    if (dto.reminderSeconds) {
-      const remindAt = new Date(transaction.validStart.getTime() - dto.reminderSeconds * 1000);
+    if (dto.reminderMillisecondsBefore) {
+      const remindAt = new Date(transaction.validStart.getTime() - dto.reminderMillisecondsBefore);
       this.schedulerService.addReminder(getTransactionSignReminderKey(transaction.id), remindAt);
     }
     notifyWaitingForSignatures(this.notificationsService, transaction.id, {
