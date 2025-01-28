@@ -8,6 +8,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
+import useAccountId from '@renderer/composables/useAccountId';
 
 import { add, getAll } from '@renderer/services/accountsService';
 
@@ -32,6 +33,7 @@ const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
+const accountData = useAccountId();
 
 /* State */
 const isCollapsed = ref(false);
@@ -96,8 +98,9 @@ const handleLinkAccount = async (accountId: string) => {
                 <p
                   class="text-small text-secondary"
                   :data-testid="'p-associated-account-id-' + index + '-' + accountIndex"
+                  v-if="account.account"
                 >
-                  {{ account.account }}
+                  {{ accountData.getAccountIdWithChecksum(account.account) }}
                   <span
                     v-if="
                       (
