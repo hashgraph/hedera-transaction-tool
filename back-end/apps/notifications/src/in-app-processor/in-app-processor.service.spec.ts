@@ -36,7 +36,7 @@ describe('In App Processor Service', () => {
       jest.resetAllMocks();
     });
 
-    it('should process in-app notification', async () => {
+    it('should process in-app notification with network as additional data', async () => {
       const now = new Date();
 
       const notification: Notification = {
@@ -47,6 +47,7 @@ describe('In App Processor Service', () => {
         actorId: null,
         createdAt: now,
         notificationReceivers: [],
+        additionalData: { network: 'testnet' },
       };
 
       const user: User = {
@@ -105,6 +106,7 @@ describe('In App Processor Service', () => {
           entityId: 2,
           actorId: null,
           createdAt: now,
+          additionalData: { network: 'testnet' },
         },
         notificationId: notification.id,
       });
@@ -117,6 +119,7 @@ describe('In App Processor Service', () => {
           entityId: 2,
           actorId: null,
           createdAt: now,
+          additionalData: { network: 'testnet' },
         },
         notificationId: notification.id,
       });

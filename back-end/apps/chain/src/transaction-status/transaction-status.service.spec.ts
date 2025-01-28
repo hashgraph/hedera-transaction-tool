@@ -257,9 +257,9 @@ describe('TransactionStatusService', () => {
     mockTransaction();
 
     const expiredTransactions = [
-      { id: 1, status: TransactionStatus.NEW },
-      { id: 2, status: TransactionStatus.REJECTED },
-      { id: 3, status: TransactionStatus.WAITING_FOR_EXECUTION },
+      { id: 1, status: TransactionStatus.NEW, mirrorNetwork: 'testnet' },
+      { id: 2, status: TransactionStatus.REJECTED, mirrorNetwork: 'testnet' },
+      { id: 3, status: TransactionStatus.WAITING_FOR_EXECUTION, mirrorNetwork: 'testnet' },
     ];
 
     transactionRepo.manager.find.mockResolvedValue(expiredTransactions as Transaction[]);
@@ -274,6 +274,7 @@ describe('TransactionStatusService', () => {
         notificationsService,
         transaction.id,
         TransactionStatus.EXPIRED,
+        { network: transaction.mirrorNetwork },
       );
     }
     expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
@@ -305,6 +306,7 @@ describe('TransactionStatusService', () => {
           creatorKey: {
             userId: 24,
           },
+          mirrorNetwork: 'testnet',
         },
       ];
 
@@ -341,6 +343,7 @@ describe('TransactionStatusService', () => {
         notificationsService,
         transactions[0].id,
         TransactionStatus.WAITING_FOR_EXECUTION,
+        { network: transactions[0].mirrorNetwork },
       );
       expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_GENERAL, {
         entityId: transactions[0].id,
@@ -348,15 +351,18 @@ describe('TransactionStatusService', () => {
         actorId: null,
         content: `Transaction is ready for execution!\nTransaction ID: ${transactions[0].transactionId}\nNetwork: ${networkString}`,
         userIds: [transactions[0].creatorKey?.userId],
+        additionalData: { network: transactions[0].mirrorNetwork },
       });
       expect(notifySyncIndicators).toHaveBeenCalledWith(
         notificationsService,
         transactions[1].id,
         TransactionStatus.WAITING_FOR_SIGNATURES,
+        { network: transactions[1].mirrorNetwork },
       );
       expect(notifyWaitingForSignatures).toHaveBeenCalledWith(
         notificationsService,
         transactions[1].id,
+        { network: transactions[1].mirrorNetwork },
       );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
       expect(notifyTransactionAction).toHaveBeenCalledTimes(1);
@@ -433,6 +439,7 @@ describe('TransactionStatusService', () => {
         notificationsService,
         transaction.id,
         TransactionStatus.WAITING_FOR_EXECUTION,
+        { network: transaction.mirrorNetwork },
       );
       expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_GENERAL, {
         entityId: transaction.id,
@@ -440,6 +447,7 @@ describe('TransactionStatusService', () => {
         actorId: null,
         content: `Transaction is ready for execution!\nTransaction ID: ${transaction.transactionId}\nNetwork: ${networkString}`,
         userIds: [transaction.creatorKey?.userId],
+        additionalData: { network: transaction.mirrorNetwork },
       });
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });

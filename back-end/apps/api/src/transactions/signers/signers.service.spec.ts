@@ -201,6 +201,7 @@ describe('SignaturesService', () => {
         id: transactionId,
         transactionBytes: sdkTransaction.toBytes(),
         status: TransactionStatus.WAITING_FOR_EXECUTION,
+        mirrorNetwork: 'testnet',
       };
 
       await sdkTransaction.sign(privateKey);
@@ -235,6 +236,7 @@ describe('SignaturesService', () => {
         notificationService,
         transactionId,
         transaction.status,
+        { network: transaction.mirrorNetwork },
       );
 
       user.keys[0].publicKey = originalPublicKey;

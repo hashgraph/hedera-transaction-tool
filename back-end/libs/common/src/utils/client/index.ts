@@ -15,7 +15,7 @@ import {
   ExecuteTransactionDto,
   NOTIFY_GENERAL,
 } from '@app/common';
-import { NotificationType, TransactionStatus } from '@entities';
+import { NotificationAdditionalData, NotificationType, TransactionStatus } from '@entities';
 
 /* Chain */
 export const emitUpdateTransactionStatus = (client: ClientProxy, id: number) => {
@@ -36,9 +36,14 @@ export const notifyTransactionAction = (client: ClientProxy) => {
   });
 };
 
-export const notifyWaitingForSignatures = (client: ClientProxy, transactionId: number) => {
+export const notifyWaitingForSignatures = (
+  client: ClientProxy,
+  transactionId: number,
+  additionalData?: NotificationAdditionalData,
+) => {
   client.emit<undefined, NotifyForTransactionDto>(NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES, {
     transactionId,
+    additionalData,
   });
 };
 
@@ -46,10 +51,12 @@ export const notifySyncIndicators = (
   client: ClientProxy,
   transactionId: number,
   transactionStatus: TransactionStatus,
+  additionalData?: NotificationAdditionalData,
 ) => {
   client.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
     transactionId,
     transactionStatus,
+    additionalData,
   });
 };
 

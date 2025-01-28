@@ -36,6 +36,7 @@ describe('Receiver Controller', () => {
       content: 'General notification content',
       entityId: 1,
       actorId: 1,
+      additionalData: { network: 'testnet' },
     };
 
     await controller.notifyGeneral(dto);
@@ -46,6 +47,7 @@ describe('Receiver Controller', () => {
   it('should invoke notifyTransactionSigners with correct params', async () => {
     const dto: NotifyForTransactionDto = {
       transactionId: 1,
+      additionalData: { network: 'testnet' },
     };
 
     await controller.notifyTransactionSigners(dto);
@@ -57,6 +59,7 @@ describe('Receiver Controller', () => {
     const dto: SyncIndicatorsDto = {
       transactionId: 1,
       transactionStatus: TransactionStatus.WAITING_FOR_EXECUTION,
+      additionalData: { network: 'testnet' },
     };
 
     await controller.syncIndicators(dto);

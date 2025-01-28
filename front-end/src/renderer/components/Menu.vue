@@ -7,6 +7,7 @@ import { RouterLink } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { isLoggedInOrganization } from '@renderer/utils';
 
@@ -22,6 +23,7 @@ type MenuItem = {
 /* Store */
 const user = useUserStore();
 const notifications = useNotificationsStore();
+const networkStore = useNetworkStore();
 
 /* Computed */
 const menuItems = computed<MenuItem[]>(() => {
@@ -71,15 +73,17 @@ const getMenuItems = (): MenuItem[] => [
 ];
 
 const getIndicatorNotifications = (notificationsKey: string) =>
-  notifications.notifications[notificationsKey]?.filter(nr =>
-    [
-      NotificationType.TRANSACTION_INDICATOR_APPROVE,
-      NotificationType.TRANSACTION_INDICATOR_SIGN,
-      NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
-      NotificationType.TRANSACTION_INDICATOR_EXECUTED,
-      NotificationType.TRANSACTION_INDICATOR_EXPIRED,
-      NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
-    ].includes(nr.notification.type),
+  notifications.notifications[notificationsKey]?.filter(
+    nr =>
+      [
+        NotificationType.TRANSACTION_INDICATOR_APPROVE,
+        NotificationType.TRANSACTION_INDICATOR_SIGN,
+        NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
+        NotificationType.TRANSACTION_INDICATOR_EXECUTED,
+        NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+        NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
+      ].includes(nr.notification.type) &&
+      nr.notification.additionalData?.network === networkStore.network,
   ) || [];
 
 /* Misc */

@@ -394,7 +394,9 @@ export class TransactionsService {
       throw new BadRequestException(ErrorCodes.FST);
     }
 
-    notifyWaitingForSignatures(this.notificationsService, transaction.id);
+    notifyWaitingForSignatures(this.notificationsService, transaction.id, {
+      network: transaction.mirrorNetwork,
+    });
     notifyTransactionAction(this.notificationsService);
 
     return transaction;
@@ -410,7 +412,9 @@ export class TransactionsService {
       await this.repo.remove(transaction);
     }
 
-    notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.CANCELED);
+    notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.CANCELED, {
+      network: transaction.mirrorNetwork,
+    });
     notifyTransactionAction(this.notificationsService);
 
     return true;
@@ -432,7 +436,9 @@ export class TransactionsService {
 
     await this.repo.update({ id }, { status: TransactionStatus.CANCELED });
 
-    notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.CANCELED);
+    notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.CANCELED, {
+      network: transaction.mirrorNetwork,
+    });
     notifyTransactionAction(this.notificationsService);
 
     /* Send email notification to all the participants */
@@ -468,7 +474,9 @@ export class TransactionsService {
 
     await this.repo.update({ id }, { status: TransactionStatus.ARCHIVED });
 
-    notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.ARCHIVED);
+    notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.ARCHIVED, {
+      network: transaction.mirrorNetwork,
+    });
     notifyTransactionAction(this.notificationsService);
 
     return true;

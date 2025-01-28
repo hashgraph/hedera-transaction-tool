@@ -429,7 +429,9 @@ describe('TransactionsService', () => {
       await service.createTransaction(dto, user as User);
 
       expect(transactionsRepo.save).toHaveBeenCalled();
-      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, 1);
+      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, 1, {
+        network: dto.mirrorNetwork,
+      });
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
 
       client.close();
@@ -474,7 +476,9 @@ describe('TransactionsService', () => {
       expect(transactionsRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({ isManual: true }),
       );
-      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, 1);
+      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, 1, {
+        network: dto.mirrorNetwork,
+      });
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
 
       client.close();
@@ -600,7 +604,7 @@ describe('TransactionsService', () => {
   });
 
   describe('removeTransaction', () => {
-    const transaction = { id: 123, creatorKey: { userId: user.id } };
+    const transaction = { id: 123, creatorKey: { userId: user.id }, mirrorNetwork: 'testnet' };
 
     beforeEach(() => {
       jest.resetAllMocks();
@@ -614,6 +618,7 @@ describe('TransactionsService', () => {
         notificationsService,
         transaction.id,
         TransactionStatus.CANCELED,
+        { network: transaction.mirrorNetwork },
       );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
@@ -654,6 +659,7 @@ describe('TransactionsService', () => {
         id: 123,
         creatorKey: { userId: 1 },
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        mirrorNetwork: 'testnet',
       };
 
       jest
@@ -671,6 +677,7 @@ describe('TransactionsService', () => {
         notificationsService,
         transaction.id,
         TransactionStatus.CANCELED,
+        { network: transaction.mirrorNetwork },
       );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
@@ -726,6 +733,7 @@ describe('TransactionsService', () => {
         creatorKey: { userId: 1 },
         isManual: true,
         status: TransactionStatus.WAITING_FOR_EXECUTION,
+        mirrorNetwork: 'testnet',
       };
 
       jest
@@ -743,6 +751,7 @@ describe('TransactionsService', () => {
         notificationsService,
         transaction.id,
         TransactionStatus.ARCHIVED,
+        { network: transaction.mirrorNetwork },
       );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });

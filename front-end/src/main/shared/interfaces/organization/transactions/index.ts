@@ -93,3 +93,5 @@ export interface IGroup {
   createdAt: Date;
   groupItems: IGroupItem[];
 }
+
+export type IDefaultNetworks = 'mainnet' | 'testnet' | 'previewnet' | 'local-node';

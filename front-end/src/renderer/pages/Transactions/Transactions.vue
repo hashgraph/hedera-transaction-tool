@@ -56,34 +56,41 @@ const organizationTabs: TabItem[] = [
   { title: historyTitle },
 ];
 const sharedTabs: TabItem[] = [{ title: draftsTitle }, { title: historyTitle }];
+const notificationsKey = ref(user.selectedOrganization?.serverUrl || '');
 
 const activeTabIndex = ref(1);
 const tabItems = ref<TabItem[]>(sharedTabs);
 const isTransactionSelectionModalShown = ref(false);
 
 /* Computed */
-const activeTabs = computed(() => {
-  const notificationsKey = user.selectedOrganization?.serverUrl || '';
+const networkFilteredNotifications = computed(() => {
+  return (
+    notifications.notifications[notificationsKey.value]?.filter(
+      n => n.notification.additionalData?.network === network.network,
+    ) || []
+  );
+});
 
+const activeTabs = computed(() => {
   const rawTabItems = tabItems.value;
 
   const readyToApproveNotifications =
-    notifications.notifications[notificationsKey]?.filter(
+    networkFilteredNotifications.value?.filter(
       nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_APPROVE,
     ) || [];
 
   const readyToSignNotifications =
-    notifications.notifications[notificationsKey]?.filter(
+    networkFilteredNotifications.value?.filter(
       nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN,
     ) || [];
 
   const readyForExecutionNotifications =
-    notifications.notifications[notificationsKey]?.filter(
+    networkFilteredNotifications.value?.filter(
       nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
     ) || [];
 
   const historyNotifications =
-    notifications.notifications[notificationsKey]?.filter(
+    networkFilteredNotifications.value?.filter(
       nr =>
         nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXECUTED ||
         nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXPIRED ||

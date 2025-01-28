@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import type { Network } from '@main/shared/interfaces';
 
-import { onUpdated } from 'vue';
+import { computed, onUpdated } from 'vue';
 
 import { CommonNetwork } from '@main/shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import { useRouter } from 'vue-router';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
@@ -18,6 +19,7 @@ import { updateOrganizationCredentials } from '@renderer/services/organizationCr
 import {
   isLoggedInOrganization,
   isUserLoggedIn,
+  normalizeNetworkName,
   toggleAuthTokenInSessionStorage,
 } from '@renderer/utils';
 
@@ -50,11 +52,20 @@ const networkMapping: {
 /* Stores */
 const user = useUserStore();
 const networkStore = useNetworkStore();
+const notificationsStore = useNotificationsStore();
 
 /* Composables */
 const router = useRouter();
 const createTooltips = useCreateTooltips();
 const withLoader = useLoader();
+
+/* Computed */
+const hasNetworkIndicator = computed(() => {
+  const currentNetwork = normalizeNetworkName(networkStore.network);
+  return Object.entries(notificationsStore.networkNotifications)
+    .filter(([key]) => key !== currentNetwork)
+    .some(([, value]) => Boolean(value));
+});
 
 /* Handlers */
 const handleLogout = async () => {
@@ -96,7 +107,10 @@ onUpdated(createTooltips);
       <span class="container-icon">
         <i class="text-icon-main bi bi-three-dots-vertical"></i>
       </span> -->
-      <div class="me-5">
+      <div
+        class="me-5 position-relative"
+        :class="{ 'indicator-circle-before': hasNetworkIndicator && user.selectedOrganization }"
+      >
         <RouterLink
           class="text-bold text-small text-decoration-none"
           to="/settings/general"

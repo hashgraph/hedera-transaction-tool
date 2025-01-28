@@ -606,7 +606,9 @@ export class ApproversService {
     });
 
     notifyTransactionAction(this.notificationsService);
-    notifySyncIndicators(this.notificationsService, transaction.id, transaction.status);
+    notifySyncIndicators(this.notificationsService, transaction.id, transaction.status, {
+      network: transaction.mirrorNetwork,
+    });
 
     return true;
   }
@@ -664,7 +666,9 @@ export class ApproversService {
 
     if (!transaction) return;
 
-    notifySyncIndicators(this.notificationsService, transactionId, transaction.status);
+    notifySyncIndicators(this.notificationsService, transactionId, transaction.status, {
+      network: transaction.mirrorNetwork,
+    });
   }
 
   /* Get the tree structure of the approvers */

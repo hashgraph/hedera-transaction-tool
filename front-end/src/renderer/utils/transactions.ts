@@ -1,4 +1,4 @@
-import type { Network } from '@main/shared/interfaces';
+import type { IDefaultNetworks, Network } from '@main/shared/interfaces';
 import type { KeyPair, Transaction } from '@prisma/client';
 
 import {
@@ -125,5 +125,14 @@ export const getPropagationButtonLabel = (
     return userKeyRequired ? 'Create' : 'Create and Share';
   } else {
     return 'Sign & Execute';
+  }
+};
+
+export const normalizeNetworkName = (network: string): IDefaultNetworks | 'custom' => {
+  const defaultNetworks = ['mainnet', 'testnet', 'previewnet', 'local-node'];
+  if (defaultNetworks.includes(network)) {
+    return network as IDefaultNetworks;
+  } else {
+    return 'custom';
   }
 };

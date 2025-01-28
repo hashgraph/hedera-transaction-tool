@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Organization } from '@prisma/client';
+import type { INotificationReceiver } from '@main/shared/interfaces';
 
 import { computed, onMounted, onUpdated, ref, watch } from 'vue';
 
@@ -35,7 +36,7 @@ const addOrganizationModalShown = ref(false);
 const dropDownValue = ref<string>(personalModeText);
 
 /* Computed */
-const indicatorNotifications = computed(() => {
+const indicatorNotifications = computed<{ [key: string]: INotificationReceiver[] }>(() => {
   const allNotifications = { ...notifications.notifications };
   for (const serverUrl of Object.keys(allNotifications)) {
     allNotifications[serverUrl] = allNotifications[serverUrl].filter(n =>

@@ -25,6 +25,8 @@ export enum NotificationType {
   TRANSACTION_INDICATOR_ARCHIVED = 'TRANSACTION_INDICATOR_ARCHIVED',
 }
 
+export type NotificationAdditionalData = Record<string, any>;
+
 @Entity()
 export class Notification {
   @PrimaryGeneratedColumn()
@@ -38,6 +40,9 @@ export class Notification {
 
   @Column({ nullable: true })
   entityId?: number;
+
+  @Column({ type: 'json', nullable: true, default: {} })
+  additionalData?: NotificationAdditionalData;
 
   @ManyToOne(() => User, user => user.issuedNotifications)
   @JoinColumn({ name: 'actorId' })
