@@ -38,8 +38,7 @@ const handleButtonClick = (value: string | number) => {
         >
           <span
             :class="{
-              'network-notification position-relative':
-                notifications && notifications[item.label.toLowerCase()],
+              'network-notification position-relative': notifications && notifications[item.value],
             }"
             :data-notification="notifications?.[item.label.toLowerCase()] || null"
             >{{ item.label }}</span
