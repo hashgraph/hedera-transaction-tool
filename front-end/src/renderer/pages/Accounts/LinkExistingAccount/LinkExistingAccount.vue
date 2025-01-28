@@ -59,6 +59,20 @@ const handleLinkAccount = async () => {
     }
   }
 };
+
+const handleBlur = (e: Event) => {
+  const value = (e.target as HTMLInputElement).value;
+  if (!value.includes('-')) {
+    try {
+      const idWithChecksum = accountData.getAccountIdWithChecksum(value);
+      if (idWithChecksum) {
+        accountData.accountId.value = idWithChecksum;
+      }
+    } catch {
+      return;
+    }
+  }
+};
 </script>
 <template>
   <div class="p-5" v-focus-first-input>
@@ -87,6 +101,7 @@ const handleLinkAccount = async () => {
           data-bs-custom-class="wide-tooltip"
           data-bs-title="The Account ID of the account you would like to link on the Hedera network."
           placeholder="0.0.4124"
+          @blur="handleBlur"
         />
       </div>
       <div class="form-group mt-5">
