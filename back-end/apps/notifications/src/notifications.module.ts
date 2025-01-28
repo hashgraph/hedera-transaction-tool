@@ -10,6 +10,7 @@ import {
   LoggerMiddleware,
   HealthModule,
   DatabaseModule,
+  SchedulerModule,
 } from '@app/common';
 
 import getEnvFilePaths from './config/envFilePaths';
@@ -50,6 +51,7 @@ export const config = ConfigModule.forRoot({
     ApiProxyModule,
     AuthProxyModule,
     HealthModule,
+    SchedulerModule.register({ isGlobal: true }),
   ],
   providers: [LoggerMiddleware],
 })
