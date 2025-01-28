@@ -9,6 +9,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
+import useAccountId from '@renderer/composables/useAccountId';
 
 import { CommonNetwork } from '@main/shared/enums';
 
@@ -29,6 +30,7 @@ const network = useNetworkStore();
 /* Composables */
 const toast = useToast();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
+const accountData = useAccountId();
 
 /* State */
 const decryptedKeys = ref<{ decrypted: string | null; publicKey: string }[]>([]);
@@ -178,6 +180,18 @@ const handleMissingKeyDeleteModal = (id: number) => {
 
 const handleDeleteSelectedClick = () => (isDeleteModalShown.value = true);
 
+const handleAccountString = (returnedData: 'id' | 'checksum', publicKey: string) => {
+  const account = user.publicKeyToAccounts.find(acc => acc.publicKey === publicKey)?.accounts[0]
+    ?.account;
+  if (account) {
+    const idWithChecksum = accountData.getAccountIdWithChecksum(account).split('-');
+    if (returnedData !== 'id') {
+      return idWithChecksum[1];
+    }
+    return idWithChecksum[0];
+  }
+};
+
 /* Watchers */
 watch([selectedTab, selectedRecoveryPhrase], () => {
   selectedKeyPairIdsToDelete.value = [];
@@ -264,21 +278,22 @@ watch([selectedTab, selectedRecoveryPhrase], () => {
                     user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.public_key)
                       ?.accounts[0]?.account
                   "
-                  :class="{
-                    'text-mainnet': network.network === CommonNetwork.MAINNET,
-                    'text-testnet': network.network === CommonNetwork.TESTNET,
-                    'text-previewnet': network.network === CommonNetwork.PREVIEWNET,
-                    'text-info': ![
-                      CommonNetwork.MAINNET,
-                      CommonNetwork.TESTNET,
-                      CommonNetwork.PREVIEWNET,
-                    ].includes(network.network),
-                  }"
                 >
-                  {{
-                    user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.public_key)
-                      ?.accounts[0]?.account
-                  }}
+                  <span
+                    :class="{
+                      'text-mainnet': network.network === CommonNetwork.MAINNET,
+                      'text-testnet': network.network === CommonNetwork.TESTNET,
+                      'text-previewnet': network.network === CommonNetwork.PREVIEWNET,
+                      'text-info': ![
+                        CommonNetwork.MAINNET,
+                        CommonNetwork.TESTNET,
+                        CommonNetwork.PREVIEWNET,
+                      ].includes(network.network),
+                    }"
+                  >
+                    {{ handleAccountString('id', keyPair.public_key) }}</span
+                  >
+                  <span>-{{ handleAccountString('checksum', keyPair.public_key) }}</span>
                 </span>
                 <span v-else>N/A</span>
               </td>
@@ -382,17 +397,22 @@ watch([selectedTab, selectedRecoveryPhrase], () => {
                       user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.publicKey)
                         ?.accounts[0]?.account
                     "
-                    :class="{
-                      'text-mainnet': network.network === 'mainnet',
-                      'text-testnet': network.network === 'testnet',
-                      'text-previewnet': network.network === 'previewnet',
-                      'text-info': network.network === 'local-node',
-                    }"
                   >
-                    {{
-                      user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.publicKey)
-                        ?.accounts[0]?.account
-                    }}
+                    <span
+                      :class="{
+                        'text-mainnet': network.network === CommonNetwork.MAINNET,
+                        'text-testnet': network.network === CommonNetwork.TESTNET,
+                        'text-previewnet': network.network === CommonNetwork.PREVIEWNET,
+                        'text-info': ![
+                          CommonNetwork.MAINNET,
+                          CommonNetwork.TESTNET,
+                          CommonNetwork.PREVIEWNET,
+                        ].includes(network.network),
+                      }"
+                    >
+                      {{ handleAccountString('id', keyPair.publicKey) }}</span
+                    >
+                    <span>-{{ handleAccountString('checksum', keyPair.publicKey) }}</span>
                   </span>
                   <span v-else>N/A</span>
                 </td>
