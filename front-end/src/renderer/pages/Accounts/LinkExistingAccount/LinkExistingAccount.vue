@@ -47,7 +47,7 @@ const handleLinkAccount = async () => {
 
       await add(
         user.personal.id,
-        accountData.accountIdFormatted.value,
+        accountData.accountIdFormatted.value.split('-')[0],
         network.network,
         nickname.value,
       );

@@ -26,11 +26,19 @@ export default function useAccountId() {
   /* Computed */
   const isValid = computed(() => Boolean(accountInfo.value));
 
-  const accountIdFormatted = computed(() =>
-    isValid.value
-      ? AccountId.fromString(accountId.value.split('-')[0]).toString()
-      : accountId.value.split('-')[0],
-  );
+  const accountIdFormatted = computed(() => {
+    if (!isValid.value) {
+      return accountId.value;
+    }
+
+    try {
+      const parsedAccountId = AccountId.fromString(accountId.value);
+
+      return accountId.value.includes('-') ? accountId.value : parsedAccountId.toString();
+    } catch {
+      return accountId.value;
+    }
+  });
 
   const accoundIdWithChecksum = computed(() => {
     try {
@@ -62,8 +70,6 @@ export default function useAccountId() {
     cancelPreviousRequests();
 
     if (!newAccountId) return resetData();
-
-    console.log(newAccountId);
 
     try {
       const baseId = newAccountId.split('-')[0];
@@ -148,14 +154,6 @@ export default function useAccountId() {
     } catch {
       return false;
     }
-  }
-
-  function normalizeAccountId(accountId: string): string {
-    const baseId = accountId.split('-')[0];
-
-    const fullAccountId = baseId.includes('.') ? baseId : `0.0.${baseId}`;
-
-    return AccountId.fromString(fullAccountId).toString();
   }
 
   const getAccountIdWithChecksum = (accountId: string): string => {
