@@ -115,7 +115,7 @@ watch(() => user.recoveryPhrase, handleVerify);
         <h4 class="text-title text-semi-bold text-center">Recovery Phrase</h4>
         <p class="text-main text-center mt-3">
           All previously created private keys need to be rematched to a mnemonic. This process is
-          required before the application can be used. Enter your recovery phrase to rematch your
+          required before the application will be fully usable. Enter your recovery phrase to rematch your
           keys.
         </p>
         <div class="mt-4">
