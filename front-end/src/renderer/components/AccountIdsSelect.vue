@@ -9,6 +9,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { getAll } from '@renderer/services/accountsService';
 
 import { flattenAccountIds, isUserLoggedIn } from '@renderer/utils';
+import useAccountId from '@renderer/composables/useAccountId';
 
 /* Props */
 const props = defineProps<{
@@ -24,6 +25,7 @@ const emit = defineEmits<{
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const accountData = useAccountId();
 
 /* State */
 const linkedAccounts = ref<HederaAccount[]>([]);
@@ -78,7 +80,7 @@ watch(
   >
     <template v-for="accountId in accoundIds" :key="accountId">
       <option :value="accountId">
-        {{ accountId }}
+        {{ accountData.getAccountIdWithChecksum(accountId) }}
         {{
           (linkedAccounts.find(la => la.account_id === accountId)?.nickname?.trim() || '').length >
           0
