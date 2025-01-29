@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { HederaAccount } from '@prisma/client';
 
-import { computed, onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -43,6 +43,10 @@ const formattedAccountIds = computed(() =>
   ).map(id => accountData.getAccountIdWithChecksum(id)),
 );
 
+const allChecksums = computed(() => {
+  return formattedAccountIds.value.map(id => id.split('-')[1]);
+});
+
 /* Handlers */
 const handleUpdate = (value: string) => {
   const idWithoutChecksum = value.split('-')[0];
@@ -63,11 +67,12 @@ onBeforeMount(async () => {
 </script>
 <template>
   <AppAutoComplete
-    :model-value="accountData.getAccountIdWithChecksum(modelValue)"
+    :model-value="modelValue"
     @update:model-value="handleUpdate"
     :items="formattedAccountIds"
     :data-testid="dataTestid"
     disable-spaces
     v-bind="$attrs"
+    :is-account-id="true"
   />
 </template>
