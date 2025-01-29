@@ -7,9 +7,9 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getAll } from '@renderer/services/accountsService';
+import useAccountId from '@renderer/composables/useAccountId';
 
 import { flattenAccountIds, isUserLoggedIn } from '@renderer/utils';
-import useAccountId from '@renderer/composables/useAccountId';
 
 /* Props */
 const props = defineProps<{
