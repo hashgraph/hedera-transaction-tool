@@ -43,7 +43,7 @@ const formattedAccountIds = computed(() =>
   ).map(id => accountData.getAccountIdWithChecksum(id)),
 );
 
-const handleValue = computed(() => {
+const accountValue = computed(() => {
   const allIds = formattedAccountIds.value.map(id => id.split('-')[0]);
   return allIds.includes(props.modelValue)
     ? accountData.getAccountIdWithChecksum(props.modelValue)
@@ -70,7 +70,7 @@ onBeforeMount(async () => {
 </script>
 <template>
   <AppAutoComplete
-    :model-value="handleValue"
+    :model-value="accountValue"
     @update:model-value="handleUpdate"
     :items="formattedAccountIds"
     :data-testid="dataTestid"
