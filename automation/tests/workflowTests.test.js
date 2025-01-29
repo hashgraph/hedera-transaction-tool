@@ -162,7 +162,7 @@ test.describe('Workflow tests', () => {
     expect(isSignAndSubmitButtonVisible).toBe(true);
 
     const isAccountIdPrefilled = await transactionPage.getPrefilledAccountIdInUpdatePage();
-    expect(isAccountIdPrefilled).toBe(accountFromList);
+    expect(isAccountIdPrefilled).toContain(accountFromList);
   });
 
   test('Verify clicking on "Edit" and "Delete" navigates the user on update account tx page with prefilled account', async () => {
@@ -178,7 +178,7 @@ test.describe('Workflow tests', () => {
     expect(isTransferAccountIdVisible).toBe(true);
 
     const isAccountIdPrefilled = await transactionPage.getPrefilledAccountIdInDeletePage();
-    expect(isAccountIdPrefilled).toBe(accountFromList);
+    expect(isAccountIdPrefilled).toContain(accountFromList);
   });
 
   test.skip('Verify user can unlink accounts', async () => {
@@ -474,7 +474,7 @@ test.describe('Workflow tests', () => {
       'Account Delete Transaction',
       async () => {
         const getDeletedAccountId = await detailsPage.getDeletedAccountId();
-        expect(getDeletedAccountId).toBe(accountFromList);
+        expect(getDeletedAccountId).toContain(accountFromList);
 
         const getTransferAccountId = await detailsPage.getAccountDeleteDetailsTransferId();
         expect(getTransferAccountId).toBeTruthy();
@@ -515,7 +515,7 @@ test.describe('Workflow tests', () => {
         expect(transferDetailsFromAmount).toContain('-' + amountToBeTransferred + ' ℏ');
 
         const transferDetailsToAccount = await detailsPage.getTransferDetailsToAccount();
-        expect(transferDetailsToAccount).toBe(accountFromList);
+        expect(transferDetailsToAccount).toContain(accountFromList);
 
         const transferDetailsToAmount = await detailsPage.getTransferDetailsToAmount();
         expect(transferDetailsToAmount).toContain(amountToBeTransferred + ' ℏ');

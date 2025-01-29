@@ -578,7 +578,7 @@ test.describe('Transaction tests', () => {
     expect(deletedIdFromField).toBe(accountIdToBeDeleted);
 
     const transferIdFromField = await transactionPage.getPrefilledTransferIdAccountInDeletePage();
-    expect(transferIdFromField).toBe(transferAccountId);
+    expect(transferIdFromField).toContain(transferAccountId);
 
     await transactionPage.navigateToDrafts();
     await transactionPage.deleteFirstDraft();

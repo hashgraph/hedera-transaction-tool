@@ -352,7 +352,7 @@ class TransactionPage extends BasePage {
       return 0;
     } else {
       for (let i = 0; i < count; i++) {
-        const idText = await this.getText(this.accountIdPrefixSelector + i);
+        const idText = (await this.getText(this.accountIdPrefixSelector + i)).split("-")[0];
         if (idText === accountId) {
           return i;
         }

@@ -32,6 +32,13 @@ const accountData = useAccountId();
 const nickname = ref('');
 
 const handleLinkAccount = async () => {
+  if (
+    accountData.accountId.value.includes('-') &&
+    !accountData.validateAccountIdChecksum(accountData.accountId.value)
+  ) {
+    toast.error('Invalid checksum for the entered Account ID.');
+    return;
+  }
   if (accountData.isValid.value) {
     try {
       if (!isUserLoggedIn(user.personal)) {
@@ -40,7 +47,7 @@ const handleLinkAccount = async () => {
 
       await add(
         user.personal.id,
-        accountData.accountIdFormatted.value,
+        accountData.accountIdFormatted.value.split('-')[0],
         network.network,
         nickname.value,
       );
@@ -49,6 +56,20 @@ const handleLinkAccount = async () => {
       toast.success('Account linked successfully!');
     } catch (error) {
       toast.error(getErrorMessage(error, 'Account link failed'));
+    }
+  }
+};
+
+const handleBlur = (e: Event) => {
+  const value = (e.target as HTMLInputElement).value;
+  if (!value.includes('-')) {
+    try {
+      const idWithChecksum = accountData.getAccountIdWithChecksum(value);
+      if (idWithChecksum) {
+        accountData.accountId.value = idWithChecksum;
+      }
+    } catch {
+      return;
     }
   }
 };
@@ -80,6 +101,7 @@ const handleLinkAccount = async () => {
           data-bs-custom-class="wide-tooltip"
           data-bs-title="The Account ID of the account you would like to link on the Hedera network."
           placeholder="0.0.4124"
+          @blur="handleBlur"
         />
       </div>
       <div class="form-group mt-5">

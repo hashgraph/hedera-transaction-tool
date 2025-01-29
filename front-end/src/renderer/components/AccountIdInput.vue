@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { HederaAccount } from '@prisma/client';
 
-import { onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useAccountId from '@renderer/composables/useAccountId';
 
 import { getAll } from '@renderer/services/accountsService';
 
@@ -13,7 +14,7 @@ import { formatAccountId, isUserLoggedIn } from '@renderer/utils';
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 
 /* Props */
-defineProps<{
+const props = defineProps<{
   modelValue: string;
   items?: string[];
   dataTestid?: string;
@@ -28,12 +29,31 @@ const emit = defineEmits<{
 const user = useUserStore();
 const network = useNetworkStore();
 
+/* Composables */
+const accountData = useAccountId();
+
 /* State */
 const accoundIds = ref<HederaAccount[]>([]);
 
+/* Computed */
+const formattedAccountIds = computed(() =>
+  (
+    props.items ||
+    accoundIds.value.map(a => a.account_id).concat(user.publicKeysToAccountsFlattened)
+  ).map(id => accountData.getAccountIdWithChecksum(id)),
+);
+
+const accountValue = computed(() => {
+  const allIds = formattedAccountIds.value.map(id => id.split('-')[0]);
+  return allIds.includes(props.modelValue)
+    ? accountData.getAccountIdWithChecksum(props.modelValue)
+    : props.modelValue;
+});
+
 /* Handlers */
 const handleUpdate = (value: string) => {
-  emit('update:modelValue', formatAccountId(value));
+  const idWithoutChecksum = value.split('-')[0];
+  emit('update:modelValue', formatAccountId(idWithoutChecksum));
 };
 
 /* Hooks */
@@ -50,9 +70,9 @@ onBeforeMount(async () => {
 </script>
 <template>
   <AppAutoComplete
-    :model-value="modelValue"
+    :model-value="accountValue"
     @update:model-value="handleUpdate"
-    :items="items || accoundIds.map(a => a.account_id).concat(user.publicKeysToAccountsFlattened)"
+    :items="formattedAccountIds"
     :data-testid="dataTestid"
     disable-spaces
     v-bind="$attrs"

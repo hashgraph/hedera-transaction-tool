@@ -12,6 +12,7 @@ import { getAll } from '@renderer/services/accountsService';
 import { ableToSign, isUserLoggedIn } from '@renderer/utils';
 
 import SignatureStatusKeyStructure from '@renderer/components/SignatureStatusKeyStructure.vue';
+import useAccountId from '@renderer/composables/useAccountId';
 
 /* Props */
 const props = defineProps<{
@@ -30,6 +31,9 @@ const network = useNetworkStore();
 
 /* State */
 const linkedAccounts = ref<HederaAccount[]>([]);
+
+/* Composables */
+const accountData = useAccountId();
 
 /* Computed */
 const labelParts = computed(() => props.label.split('$entityId'));
@@ -81,7 +85,7 @@ onBeforeMount(async () => {
                       <span>
                         <span class="text-small">
                           ({{ linkedAccounts.find(la => la.account_id === entityId)?.nickname }})
-                          {{ entityId }}
+                          {{ accountData.getAccountIdWithChecksum(entityId) }}
                         </span>
                       </span>
                     </template>

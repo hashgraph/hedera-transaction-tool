@@ -34,7 +34,8 @@ const accoundIds = computed(() => flattenAccountIds(user.publicKeyToAccounts));
 /* Handlers */
 const handleAccountIdChange = (e: Event) => {
   const selectEl = e.target as HTMLSelectElement;
-  emit('update:accountId', selectEl.value || '');
+  const idWithoutChecksum = selectEl.value.split('-')[0];
+  emit('update:accountId', idWithoutChecksum || '');
 };
 
 /* Hooks */

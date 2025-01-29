@@ -19,6 +19,7 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
+import useAccountId from '@renderer/composables/useAccountId';
 
 import { getTransactionById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
@@ -60,6 +61,7 @@ const nextTransaction = useNextTransactionStore();
 const router = useRouter();
 const ws = useDisposableWs();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
+const accountData = useAccountId();
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);
@@ -67,6 +69,7 @@ const localTransaction = ref<Transaction | null>(null);
 const sdkTransaction = ref<SDKTransaction | null>(null);
 const signatureKeyObject = ref<Awaited<ReturnType<typeof computeSignatureKey>> | null>(null);
 const nextId = ref<string | number | null>(null);
+const feePayer = ref<string | null>(null);
 
 /* Computed */
 const transactionSpecificLabel = computed(() => {
@@ -125,6 +128,8 @@ async function fetchTransaction(id: string | number) {
       network.mirrorNodeBaseURL,
     );
   }
+
+  feePayer.value = getTransactionPayerId(sdkTransaction.value);
 }
 
 const subscribeToTransactionAction = () => {
@@ -346,7 +351,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Fee Payer</h4>
                   <p :class="detailItemValueClass" data-testid="p-transaction-details-fee-payer">
-                    {{ getTransactionPayerId(sdkTransaction) }}
+                    {{ feePayer && accountData.getAccountIdWithChecksum(feePayer) }}
                   </p>
                 </div>
               </div>
