@@ -2,7 +2,6 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import useAccountId from '@renderer/composables/useAccountId';
 
 /* Props */
 const props = withDefaults(

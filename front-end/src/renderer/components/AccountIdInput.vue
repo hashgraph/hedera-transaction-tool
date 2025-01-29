@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { HederaAccount } from '@prisma/client';
 
-import { computed, onBeforeMount, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -76,6 +76,5 @@ onBeforeMount(async () => {
     :data-testid="dataTestid"
     disable-spaces
     v-bind="$attrs"
-    :is-account-id="true"
   />
 </template>
