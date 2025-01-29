@@ -10,7 +10,7 @@ const props = defineProps<{
 }>();
 
 /* Emits */
-const emit = defineEmits(['update:modelKey']);
+const emit = defineEmits(['update:modelKey', 'update:nickname', 'listLoaded']);
 
 /* State */
 const keyList = ref<KeyList>(new KeyList());
@@ -25,6 +25,14 @@ const handleKeyListRemove = () => {
   emit('update:modelKey', keyList.value);
 };
 
+function handleNicknameChange(nickname: string) {
+  emit('update:nickname', nickname);
+}
+
+function handleListLoaded(listId: string) {
+  emit('listLoaded', listId);
+}
+
 /* Hooks */
 onMounted(() => {
   if (props.modelKey instanceof KeyList) {
@@ -36,6 +44,8 @@ onMounted(() => {
   <ComplexKeyThreshold
     v-model:key-list="keyList"
     @update:key-list="handleKeyListChange"
+    @update:nickname="handleNicknameChange"
+    @list-loaded="handleListLoaded"
     :on-remove-key-list="handleKeyListRemove"
     :depth="'0'"
   />

@@ -12,7 +12,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { getComplexKey, updateComplexKey } from '@renderer/services/complexKeysService';
 
-import { isPublicKey, decodeKeyList, encodeKey } from '@renderer/utils';
+import { isPublicKey, decodeKeyList, encodeKey, isUserLoggedIn } from '@renderer/utils';
 import * as ush from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -105,12 +105,21 @@ const handleEditComplexKey = () => {
   complexKeyModalShown.value = true;
 };
 
-const handleComplexKeyUpdate = async (keyList: KeyList) => {
+const handleComplexKeyUpdate = async (keyList: KeyList, updatedName: boolean) => {
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
   emit('update:modelKey', keyList);
 
   if (selectedComplexKey.value) {
     const keyListBytes = encodeKey(keyList);
-    const updatedKey = await updateComplexKey(selectedComplexKey.value.id, keyListBytes);
+    let updatedKey;
+    if (updatedName) {
+      updatedKey = await getComplexKey(user.personal.id, keyList);
+    } else {
+      updatedKey = await updateComplexKey(selectedComplexKey.value.id, keyListBytes);
+    }
     selectedComplexKey.value = updatedKey;
     toast.success('Key list updated successfully');
   }
