@@ -85,17 +85,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
     e.preventDefault();
     toggleDropdown(false);
     setValue((modelValue.value + autocompleteSuggestion.value).trim());
-    const focusableElements = Array.from(
-      document.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      ),
-    );
-
-    const currentIndex = focusableElements.indexOf(document.activeElement as HTMLElement);
-
-    if (currentIndex !== -1 && focusableElements[currentIndex + 1]) {
-      focusableElements[currentIndex + 1].focus();
-    }
+    focusNextElement();
   } else if (e.key === 'Escape') {
     toggleDropdown(false);
   } else if (e.code === 'Space' && props.disableSpaces) {
@@ -211,8 +201,26 @@ function handleGlobalEvents(add: boolean) {
 }
 
 function completeNextCharacter() {
-  if (!autocompleteSuggestion.value || autocompleteSuggestion.value.length === 0) return;
+  if (!autocompleteSuggestion.value || autocompleteSuggestion.value.length === 0) {
+    toggleDropdown(false);
+    focusNextElement();
+    return;
+  }
   modelValue.value += autocompleteSuggestion.value[0];
+}
+
+function focusNextElement() {
+  const focusableElements = Array.from(
+    document.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    ),
+  );
+
+  const currentIndex = focusableElements.indexOf(document.activeElement as HTMLElement);
+
+  if (currentIndex !== -1 && focusableElements[currentIndex + 1]) {
+    focusableElements[currentIndex + 1].focus();
+  }
 }
 
 /* Hooks */
