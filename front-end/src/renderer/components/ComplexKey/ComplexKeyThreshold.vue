@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onBeforeMount, ref, toRaw } from 'vue';
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -7,13 +7,15 @@ import useContactsStore from '@renderer/stores/storeContacts';
 
 import { useToast } from 'vue-toast-notification';
 
-import { isPublicKeyInKeyList } from '@renderer/utils';
+import { decodeKeyList, isPublicKeyInKeyList } from '@renderer/utils';
 import * as ush from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
 import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/ComplexKeyAddPublicKeyModal.vue';
 import ComplexKeySelectAccountModal from '@renderer/components/ComplexKey/ComplexKeySelectAccountModal.vue';
+import { getComplexKeys } from '@renderer/services/complexKeysService';
 
 /* Props */
 const props = defineProps<{
@@ -23,7 +25,7 @@ const props = defineProps<{
 }>();
 
 /* Emits */
-const emit = defineEmits(['update:keyList']);
+const emit = defineEmits(['update:keyList', 'update:nickname', 'listLoaded']);
 
 /* Stores */
 const user = useUserStore();
@@ -36,6 +38,7 @@ const toast = useToast();
 const areChildrenShown = ref(true);
 const addPublicKeyModalShown = ref(false);
 const selectAccountModalShown = ref(false);
+const nickname = ref('');
 
 /* Handlers */
 const handleThresholdChange = (e: Event) => {
@@ -100,11 +103,34 @@ const handleKeyListUpdate = (index: number, newKeyList: KeyList) => {
   emit('update:keyList', newParentKeyList);
 };
 
+function handleNicknameChange() {
+  emit('update:nickname', nickname.value);
+}
+
 /* Funtions */
 function emitNewKeyList(keys: Key[], threshold: number | null) {
   const newKeyList = new KeyList(keys, threshold);
   emit('update:keyList', newKeyList);
 }
+
+/* Hooks */
+onBeforeMount(async () => {
+  if (!ush.isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
+  const keyLists = await getComplexKeys(user.personal.id);
+
+  for (const keyList of keyLists) {
+    const list = decodeKeyList(keyList.protobufEncoded).toArray();
+    const propList = toRaw(props.keyList).toArray();
+
+    if (JSON.stringify(list) === JSON.stringify(propList)) {
+      nickname.value = keyList.nickname;
+      emit('listLoaded', keyList.id);
+    }
+  }
+});
 </script>
 <template>
   <div
@@ -124,7 +150,15 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
           @click="areChildrenShown = !areChildrenShown"
         ></span>
       </Transition>
-      <p class="text-small text-semi-bold ms-3">Threshold</p>
+      <!-- <p class="text-small text-semi-bold ms-3">Threshold</p> -->
+      <AppInput
+        v-model="nickname"
+        size="small"
+        class="ms-5"
+        style="width: 250px"
+        placeholder="Threshold"
+        @change="handleNicknameChange"
+      />
       <div class="ms-3">
         <select
           class="form-select is-fill"
