@@ -148,10 +148,8 @@ function setValue(value: string) {
 }
 
 function scrollToItem(index: number) {
-  const correctId = filteredItems.value[index];
-  const correctIndex = itemRefs.value.findIndex(item => item.innerText.startsWith(correctId));
   nextTick(() => {
-    itemRefs.value[correctIndex]?.scrollIntoView({
+    itemRefs.value[index]?.scrollIntoView({
       block: 'nearest',
     });
     handleResize();
@@ -223,6 +221,12 @@ function focusNextElement() {
   }
 }
 
+function setItemRef(el: HTMLElement | null, index: number) {
+  if (el) {
+    itemRefs.value[index] = el;
+  }
+}
+
 /* Hooks */
 onMounted(() => {
   setTimeout(() => {
@@ -271,7 +275,7 @@ watchEffect(() => {
               selected: i === selectedIndex,
             }"
             @click="handleSelectItem($event, item)"
-            ref="itemRefs"
+            :ref="el => setItemRef(el as HTMLElement, i)"
           >
             {{ item }}
           </div>
