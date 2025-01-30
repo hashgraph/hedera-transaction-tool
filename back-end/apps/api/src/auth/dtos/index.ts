@@ -7,3 +7,4 @@ export * from './login.dto';
 export * from './otp-local.dto';
 export * from './authenticate-websocket-token.dto';
 export * from './login-response.dto';
+export * from './elevate-admin.dto';

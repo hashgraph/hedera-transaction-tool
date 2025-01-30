@@ -290,6 +290,30 @@ describe('Auth (e2e)', () => {
     });
   });
 
+  describe('/auth/elevate-admin', () => {
+    let endpoint: Endpoint;
+
+    beforeAll(() => {
+      endpoint = new Endpoint(server, '/auth/elevate-admin');
+    });
+
+    it('(PATCH) should register new user if sender is admin', async () => {
+      const user = await getUser('userNew');
+
+      return endpoint.patch({ id: user.id }, null, adminAuthToken).expect(200);
+    });
+
+    it('(PATCH) should not register new user if sender is NOT admin', async () => {
+      const user = await getUser('userNew');
+
+      return endpoint.patch({ id: user.id }, null, userAuthToken).expect(403);
+    });
+
+    it('(PATCH) should throw on invalid user id', async () => {
+      await endpoint.patch({ id: 333333 }, null, adminAuthToken).expect(400);
+    });
+  });
+
   describe('/auth/logout', () => {
     let endpoint: Endpoint;
 
