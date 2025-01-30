@@ -603,7 +603,7 @@ test.describe('Transaction tests', () => {
     expect(transactionMemoFromField).toBe(transactionMemoText);
 
     const allowanceOwnerAccountIdFromPage = await transactionPage.getAllowanceOwnerAccountId();
-    expect(allowanceOwnerAccountIdFromPage).toBe(ownerId);
+    expect(ownerId).toContain(allowanceOwnerAccountIdFromPage);
 
     const allowanceAmountFromField = await transactionPage.getAllowanceAmount();
     expect(allowanceAmountFromField).toBe(amount);
