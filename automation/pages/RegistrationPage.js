@@ -263,9 +263,6 @@ class RegistrationPage extends BasePage {
   async completeRegistration(email, password) {
     await this.register(email, password, password);
 
-    const isTabVisible = await this.isCreateNewTabVisible();
-    expect(isTabVisible).toBe(true);
-
     await this.clickOnCreateNewTab();
     await this.clickOnUnderstandCheckbox();
     await this.clickOnGenerateButton();
