@@ -180,15 +180,12 @@ const handleMissingKeyDeleteModal = (id: number) => {
 
 const handleDeleteSelectedClick = () => (isDeleteModalShown.value = true);
 
-const handleAccountString = (returnedData: 'id' | 'checksum', publicKey: string) => {
+const handleAccountString = (publicKey: string) => {
   const account = user.publicKeyToAccounts.find(acc => acc.publicKey === publicKey)?.accounts[0]
     ?.account;
   if (account) {
-    const idWithChecksum = accountData.getAccountIdWithChecksum(account).split('-');
-    if (returnedData !== 'id') {
-      return idWithChecksum[1];
-    }
-    return idWithChecksum[0];
+    const idWithChecksum = accountData.getAccountIdWithChecksum(account);
+    return idWithChecksum;
   }
 };
 
@@ -278,22 +275,18 @@ watch([selectedTab, selectedRecoveryPhrase], () => {
                     user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.public_key)
                       ?.accounts[0]?.account
                   "
+                  :class="{
+                    'text-mainnet': network.network === CommonNetwork.MAINNET,
+                    'text-testnet': network.network === CommonNetwork.TESTNET,
+                    'text-previewnet': network.network === CommonNetwork.PREVIEWNET,
+                    'text-info': ![
+                      CommonNetwork.MAINNET,
+                      CommonNetwork.TESTNET,
+                      CommonNetwork.PREVIEWNET,
+                    ].includes(network.network),
+                  }"
                 >
-                  <span
-                    :class="{
-                      'text-mainnet': network.network === CommonNetwork.MAINNET,
-                      'text-testnet': network.network === CommonNetwork.TESTNET,
-                      'text-previewnet': network.network === CommonNetwork.PREVIEWNET,
-                      'text-info': ![
-                        CommonNetwork.MAINNET,
-                        CommonNetwork.TESTNET,
-                        CommonNetwork.PREVIEWNET,
-                      ].includes(network.network),
-                    }"
-                  >
-                    {{ handleAccountString('id', keyPair.public_key) }}</span
-                  >
-                  <span>-{{ handleAccountString('checksum', keyPair.public_key) }}</span>
+                  {{ handleAccountString(keyPair.public_key) }}
                 </span>
                 <span v-else>N/A</span>
               </td>
@@ -397,23 +390,19 @@ watch([selectedTab, selectedRecoveryPhrase], () => {
                       user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.publicKey)
                         ?.accounts[0]?.account
                     "
+                    :class="{
+                      'text-mainnet': network.network === CommonNetwork.MAINNET,
+                      'text-testnet': network.network === CommonNetwork.TESTNET,
+                      'text-previewnet': network.network === CommonNetwork.PREVIEWNET,
+                      'text-info': ![
+                        CommonNetwork.MAINNET,
+                        CommonNetwork.TESTNET,
+                        CommonNetwork.PREVIEWNET,
+                      ].includes(network.network),
+                    }"
                   >
-                    <span
-                      :class="{
-                        'text-mainnet': network.network === CommonNetwork.MAINNET,
-                        'text-testnet': network.network === CommonNetwork.TESTNET,
-                        'text-previewnet': network.network === CommonNetwork.PREVIEWNET,
-                        'text-info': ![
-                          CommonNetwork.MAINNET,
-                          CommonNetwork.TESTNET,
-                          CommonNetwork.PREVIEWNET,
-                        ].includes(network.network),
-                      }"
-                    >
-                      {{ handleAccountString('id', keyPair.publicKey) }}</span
-                    >
-                    <span>-{{ handleAccountString('checksum', keyPair.publicKey) }}</span>
-                  </span>
+                    {{ handleAccountString(keyPair.publicKey) }}</span
+                  >
                   <span v-else>N/A</span>
                 </td>
                 <td :data-testid="`cell-key-type-missing-${index}`">
