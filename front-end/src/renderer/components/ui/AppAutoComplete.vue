@@ -73,6 +73,20 @@ const handleKeyDown = (e: KeyboardEvent) => {
       setValue(filteredItems.value[selectedIndex.value]);
     }
     toggleDropdown(false);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    toggleDropdown(false);
+    const focusableElements = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+
+    const currentIndex = focusableElements.indexOf(document.activeElement as HTMLElement);
+
+    if (currentIndex !== -1 && focusableElements[currentIndex + 1]) {
+      focusableElements[currentIndex + 1].focus();
+    }
   } else if (e.key === 'Escape') {
     toggleDropdown(false);
   } else if (e.code === 'Space' && props.disableSpaces) {
