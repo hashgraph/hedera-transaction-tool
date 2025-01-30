@@ -121,3 +121,11 @@ export const signUp = (
     );
     return response.data;
   }, 'Failed to sign up the user');
+
+/* ADMIN ONLY: elevate a user to admin */
+export const elevateUserToAdmin = (organizationServerUrl: string, id: number) =>
+  commonRequestHandler(async () => {
+    await axiosWithCredentials.patch(`${organizationServerUrl}/${authController}/elevate-admin`, {
+      id,
+    });
+  }, 'Failed to elevate user to admin');
