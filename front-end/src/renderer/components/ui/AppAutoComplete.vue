@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
@@ -26,7 +26,6 @@ const inputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const suggestionRef = ref<HTMLSpanElement | null>(null);
 const dropdownRef = ref<HTMLDivElement | null>(null);
 const itemRefs = ref<HTMLElement[]>([]);
-const selectedIndex = ref(-1);
 
 /* Computed */
 const modelValue = computed({
@@ -37,6 +36,9 @@ const modelValue = computed({
 });
 
 const filteredItems = computed(() => [...new Set<string>(props.items)]);
+const selectedIndex = computed(() => {
+  return filteredItems.value.findIndex(item => item.startsWith(modelValue.value));
+});
 
 const autocompleteSuggestion = computed(() => {
   if (!modelValue.value) return '';
@@ -194,12 +196,6 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => handleGlobalEvents(false));
-
-watchEffect(() => {
-  if (filteredItems.value && modelValue.value && inputRef.value) {
-    selectedIndex.value = filteredItems.value.findIndex(item => item.startsWith(modelValue.value));
-  }
-});
 </script>
 
 <template>
