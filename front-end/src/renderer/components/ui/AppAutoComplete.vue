@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
@@ -40,11 +40,7 @@ const selectedIndex = computed(() => {
   return filteredItems.value.findIndex(item => item.startsWith(modelValue.value));
 });
 
-const autocompleteSuggestion = computed(() => {
-  if (!modelValue.value) return '';
-  const match = filteredItems.value[selectedIndex.value];
-  return match?.slice(modelValue.value.length) || '';
-});
+const autocompleteSuggestion = ref('');
 
 /* Handlers */
 const handleKeyDown = (e: KeyboardEvent) => {
@@ -68,6 +64,18 @@ const handleKeyDown = (e: KeyboardEvent) => {
       setValue(filteredItems.value[0]);
       scrollToItem(0);
     }
+  } else if (e.key === 'ArrowRight') {
+    const inputElement = inputRef.value?.inputRef as HTMLInputElement;
+    if (!inputElement) return;
+    const cursorPosition = inputElement.selectionStart;
+    if (cursorPosition === modelValue.value.length) {
+      e.preventDefault();
+      completeNextCharacter();
+      nextTick(() => {
+        inputElement.setSelectionRange(modelValue.value.length, modelValue.value.length);
+        positionSuggestion();
+      });
+    }
   } else if (e.key === 'Tab' && props.modelValue.toString().length > 0) {
     if (filteredItems.value[selectedIndex.value]) {
       setValue(filteredItems.value[selectedIndex.value]);
@@ -76,6 +84,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
   } else if (e.key === 'Enter') {
     e.preventDefault();
     toggleDropdown(false);
+    setValue((modelValue.value + autocompleteSuggestion.value).trim());
     const focusableElements = Array.from(
       document.querySelectorAll<HTMLElement>(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
@@ -201,6 +210,11 @@ function handleGlobalEvents(add: boolean) {
   document[func]('scroll', handleMove, true);
 }
 
+function completeNextCharacter() {
+  if (!autocompleteSuggestion.value || autocompleteSuggestion.value.length === 0) return;
+  modelValue.value += autocompleteSuggestion.value[0];
+}
+
 /* Hooks */
 onMounted(() => {
   setTimeout(() => {
@@ -210,6 +224,16 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => handleGlobalEvents(false));
+
+watchEffect(() => {
+  if (!modelValue.value || !filteredItems.value) {
+    autocompleteSuggestion.value = '';
+    return;
+  }
+
+  const match = filteredItems.value.find(item => item.startsWith(modelValue.value));
+  autocompleteSuggestion.value = match?.slice(modelValue.value.length) || '';
+});
 </script>
 
 <template>
