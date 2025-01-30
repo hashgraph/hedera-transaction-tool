@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
@@ -26,6 +26,7 @@ const inputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const suggestionRef = ref<HTMLSpanElement | null>(null);
 const dropdownRef = ref<HTMLDivElement | null>(null);
 const itemRefs = ref<HTMLElement[]>([]);
+const selectedIndex = ref(-1);
 
 /* Computed */
 const modelValue = computed({
@@ -36,9 +37,6 @@ const modelValue = computed({
 });
 
 const filteredItems = computed(() => [...new Set<string>(props.items)]);
-const selectedIndex = computed(() => {
-  return filteredItems.value.findIndex(item => item.startsWith(modelValue.value));
-});
 
 const autocompleteSuggestion = computed(() => {
   if (!modelValue.value) return '';
@@ -50,21 +48,23 @@ const autocompleteSuggestion = computed(() => {
 const handleKeyDown = (e: KeyboardEvent) => {
   toggleDropdown(true);
 
-  handleResize();
-
   if (e.key === 'ArrowUp') {
-    if (e.metaKey || e.ctrlKey) {
-      setValue(filteredItems.value[0]);
+    e.preventDefault();
+    if (selectedIndex.value > 0) {
+      setValue(filteredItems.value[selectedIndex.value - 1]);
+      scrollToItem(selectedIndex.value - 1);
     } else {
-      setValue(filteredItems.value[Math.max(selectedIndex.value - 1, 0)]);
+      setValue(filteredItems.value[filteredItems.value.length - 1]);
+      scrollToItem(filteredItems.value.length - 1);
     }
   } else if (e.key === 'ArrowDown') {
-    if (e.metaKey || e.ctrlKey) {
-      setValue(filteredItems.value[filteredItems.value.length - 1]);
+    e.preventDefault();
+    if (selectedIndex.value < filteredItems.value.length - 1) {
+      setValue(filteredItems.value[selectedIndex.value + 1]);
+      scrollToItem(selectedIndex.value + 1);
     } else {
-      setValue(
-        filteredItems.value[Math.min(selectedIndex.value + 1, filteredItems.value.length - 1)],
-      );
+      setValue(filteredItems.value[0]);
+      scrollToItem(0);
     }
   } else if (e.key === 'Tab' && props.modelValue.toString().length > 0) {
     if (filteredItems.value[selectedIndex.value]) {
@@ -77,9 +77,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
     e.preventDefault();
   }
 
-  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-    scrollToItem(selectedIndex.value);
-  }
+  handleResize();
 };
 
 const handleUpdate = (value: string) => {
@@ -135,8 +133,10 @@ function setValue(value: string) {
 }
 
 function scrollToItem(index: number) {
+  const correctId = filteredItems.value[index];
+  const correctIndex = itemRefs.value.findIndex(item => item.innerText.startsWith(correctId));
   nextTick(() => {
-    itemRefs.value[index]?.scrollIntoView({
+    itemRefs.value[correctIndex]?.scrollIntoView({
       block: 'nearest',
     });
     handleResize();
@@ -194,6 +194,12 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => handleGlobalEvents(false));
+
+watchEffect(() => {
+  if (filteredItems.value && modelValue.value && inputRef.value) {
+    selectedIndex.value = filteredItems.value.findIndex(item => item.startsWith(modelValue.value));
+  }
+});
 </script>
 
 <template>
