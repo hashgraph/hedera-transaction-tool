@@ -5,7 +5,7 @@ import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 
 import { Transaction } from '@hashgraph/sdk';
 
-import { NotificationType } from '@main/shared/interfaces';
+import { NotificationType, TransactionStatus } from '@main/shared/interfaces';
 import { TRANSACTION_ACTION } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -79,6 +79,16 @@ const sort = reactive<{
 /* Computed */
 const generatedClass = computed(() => {
   return sort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
+});
+
+const waitingForSignaturesCount = computed(() => {
+  const groupTransactions = Array.from(transactions.value)
+    .filter(group => group[0] !== -1)
+    .flatMap(group => group[1].map(tx => tx.transactionRaw));
+
+  return groupTransactions.reduce((count, tx) => {
+    return tx.status === TransactionStatus.WAITING_FOR_SIGNATURES ? count + 1 : count;
+  }, 0);
 });
 
 /* Handlers */
@@ -312,7 +322,14 @@ watch(
                   }"
                 >
                   <td>
-                    <i class="bi bi-stack" />
+                    <span
+                      :class="
+                        waitingForSignaturesCount && 'signature-notification position-relative'
+                      "
+                      :data-notification="waitingForSignaturesCount"
+                    >
+                      <i class="bi bi-stack" />
+                    </span>
                   </td>
                   <td>{{ groups[group[0] - 1]?.description }}</td>
                   <td>
