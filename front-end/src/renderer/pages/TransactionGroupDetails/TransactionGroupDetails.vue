@@ -6,7 +6,7 @@ import { useRouter } from 'vue-router';
 import { Transaction } from '@hashgraph/sdk';
 
 import { historyTitle, TRANSACTION_ACTION } from '@main/shared/constants';
-import { TransactionTypeName } from '@main/shared/interfaces';
+import { TransactionStatus, TransactionTypeName } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
@@ -242,6 +242,11 @@ function setGetTransactionsFunction() {
     };
   }, false);
 }
+
+const isWaitingForSignatures = (status: TransactionStatus) => {
+  return status === TransactionStatus.WAITING_FOR_SIGNATURES ? true : false;
+};
+
 /* Hooks */
 onBeforeMount(async () => {
   const id = router.currentRoute.value.params.id;
@@ -348,8 +353,15 @@ watch(
                                   color="secondary"
                                   @click.prevent="handleSign(groupItem.transaction.id)"
                                   :data-testid="`button-group-transaction-${index}`"
-                                  >Details</AppButton
-                                >
+                                  ><span
+                                    :class="
+                                      isWaitingForSignatures(groupItem.transaction.status) &&
+                                      'signature-notification position-relative'
+                                    "
+                                    :data-notification="'!'"
+                                    >Details</span
+                                  >
+                                </AppButton>
                               </td>
                             </tr>
                           </template>
