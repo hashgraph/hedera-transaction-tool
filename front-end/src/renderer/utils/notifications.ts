@@ -1,4 +1,3 @@
-import type { Transaction } from '@hashgraph/sdk';
 import type { INotificationReceiver, ITransaction } from '@main/shared/interfaces';
 import { NotificationType, TransactionStatus } from '@main/shared/interfaces';
 
