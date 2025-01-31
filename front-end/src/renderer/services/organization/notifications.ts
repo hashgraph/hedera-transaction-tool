@@ -78,3 +78,13 @@ export const updateNotifications = async (
       }
     }
   }, 'Failed to update notifications');
+
+/* Sends email to the required signers  */
+export const remindSigners = async (serverUrl: string, transactionId: number): Promise<boolean> =>
+  commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.post(
+      `${serverUrl}/${controller}/remind-signers?transactionId=${transactionId}`,
+    );
+
+    return data;
+  }, `Failed to remind signers for transaction transaction with id ${transactionId}`);
