@@ -42,6 +42,7 @@ import { NotificationReceiverService } from './notification-receiver.service';
 
 import { NotificationReceiverDto } from './dtos/notification-receiver.dto';
 import { UpdateNotificationReceiverDto } from './dtos';
+import { seconds, Throttle } from '@nestjs/throttler';
 
 @ApiTags('Notification')
 @Controller('notifications')
@@ -158,6 +159,12 @@ export class NotificationsController {
   @ApiResponse({
     status: 200,
     type: Boolean,
+  })
+  @Throttle({
+    'global-minute': {
+      limit: 1,
+      ttl: seconds(60),
+    },
   })
   @Post('/remind-signers')
   @HttpCode(200)
