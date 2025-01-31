@@ -12,16 +12,22 @@ import { useToast } from 'vue-toast-notification';
 import useRedirectOnOnlyOrganization from '@renderer/composables/useRedirectOnOnlyOrganization';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
-import { deleteUser } from '@renderer/services/organization';
+import { deleteUser, elevateUserToAdmin } from '@renderer/services/organization';
 import { removeContact } from '@renderer/services/contactsService';
 import { getAll } from '@renderer/services/accountsService';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import {
+  assertIsLoggedInOrganization,
+  assertUserLoggedIn,
+  isLoggedInOrganization,
+  isUserLoggedIn,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import ContactDetails from '@renderer/components/Contacts/ContactDetails.vue';
 import DeleteContactModal from '@renderer/components/Contacts/DeleteContactModal.vue';
-import AppLoader from '@renderer/components/ui/AppLoader.vue';
+import ElevateContactModal from '@renderer/components/Contacts/ElevateContactModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -37,6 +43,7 @@ useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const fetching = ref(false);
 const selectedId = ref<number | null>(null);
 const isDeleteContactModalShown = ref(false);
+const isElevateToAdminModalShown = ref(false);
 const linkedAccounts = ref<HederaAccount[]>([]);
 
 /* Computed */
@@ -72,7 +79,7 @@ const handleFetchContacts = async () => {
 };
 
 async function handleRemove() {
-  if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
+  assertUserLoggedIn(user.personal);
   if (!contact.value) throw new Error('Contact is not selected');
 
   if (isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin) {
@@ -81,9 +88,22 @@ async function handleRemove() {
   }
 
   toast.success('User removed successfully');
-
   selectedId.value = null;
+  await handleFetchContacts();
+}
 
+async function handleElevate() {
+  assertUserLoggedIn(user.personal);
+  assertIsLoggedInOrganization(user.selectedOrganization);
+  if (!contact.value) throw new Error('Contact is not selected');
+  if (!user.selectedOrganization.admin) {
+    throw new Error('User is not an admin');
+  }
+
+  await elevateUserToAdmin(user.selectedOrganization.serverUrl, contact.value.user.id);
+
+  toast.success('User elevate to admin successfully');
+  selectedId.value = null;
   await handleFetchContacts();
 }
 
@@ -184,7 +204,8 @@ onBeforeMount(async () => {
               <ContactDetails
                 :contact="contact"
                 v-model:linked-accounts="linkedAccounts"
-                @update:remove="isDeleteContactModalShown = true"
+                @remove="isDeleteContactModalShown = true"
+                @elevate-to-admin="isElevateToAdminModalShown = true"
               />
             </div>
           </Transition>
@@ -195,6 +216,8 @@ onBeforeMount(async () => {
           @update:delete="handleRemove"
           :contact="contact"
         />
+
+        <ElevateContactModal v-model:show="isElevateToAdminModalShown" @elevate="handleElevate" />
       </div>
     </div>
   </div>

@@ -297,4 +297,12 @@ describe('AuthService', () => {
 
     expect(userService.getUser).toHaveBeenCalledWith({ id: '2' });
   });
+
+  it('should elevate user to admin', async () => {
+    const dto = { id: 1 };
+
+    await service.elevateAdmin(dto.id);
+
+    expect(userService.updateUserById).toHaveBeenCalledWith(dto.id, { admin: true });
+  });
 });

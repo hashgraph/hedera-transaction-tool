@@ -30,6 +30,7 @@ import {
   AuthDto,
   AuthenticateWebsocketTokenDto,
   ChangePasswordDto,
+  ElevateAdminDto,
   LoginDto,
   LoginResponseDto,
   NewPasswordDto,
@@ -170,6 +171,21 @@ export class AuthController {
   async setPassword(@GetUser() user: User, @Body() dto: NewPasswordDto, @Req() req): Promise<void> {
     await this.authService.setPassword(user, dto.password);
     await this.blacklistService.blacklistToken(extractJwtOtp(req));
+  }
+
+  /* Elevate other uses to admins */
+  @ApiOperation({
+    summary: 'Elevates users to admins',
+    description:
+      "Admins can elevate other users to admins. The user's id is provided and the user is elevated to admin.",
+  })
+  @ApiResponse({
+    status: 200,
+  })
+  @Patch('/elevate-admin')
+  @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, AdminGuard)
+  async elevateUser(@Body() dto: ElevateAdminDto): Promise<void> {
+    return this.authService.elevateAdmin(dto.id);
   }
 
   @SkipThrottle()
