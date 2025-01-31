@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
@@ -40,46 +40,59 @@ const selectedIndex = computed(() => {
   return filteredItems.value.findIndex(item => item.startsWith(modelValue.value));
 });
 
-const autocompleteSuggestion = computed(() => {
-  if (!modelValue.value) return '';
-  const match = filteredItems.value[selectedIndex.value];
-  return match?.slice(modelValue.value.length) || '';
-});
+const autocompleteSuggestion = ref('');
 
 /* Handlers */
 const handleKeyDown = (e: KeyboardEvent) => {
   toggleDropdown(true);
 
-  handleResize();
-
   if (e.key === 'ArrowUp') {
-    if (e.metaKey || e.ctrlKey) {
-      setValue(filteredItems.value[0]);
+    e.preventDefault();
+    if (selectedIndex.value > 0) {
+      setValue(filteredItems.value[selectedIndex.value - 1]);
+      scrollToItem(selectedIndex.value - 1);
     } else {
-      setValue(filteredItems.value[Math.max(selectedIndex.value - 1, 0)]);
+      setValue(filteredItems.value[filteredItems.value.length - 1]);
+      scrollToItem(filteredItems.value.length - 1);
     }
   } else if (e.key === 'ArrowDown') {
-    if (e.metaKey || e.ctrlKey) {
-      setValue(filteredItems.value[filteredItems.value.length - 1]);
+    e.preventDefault();
+    if (selectedIndex.value < filteredItems.value.length - 1) {
+      setValue(filteredItems.value[selectedIndex.value + 1]);
+      scrollToItem(selectedIndex.value + 1);
     } else {
-      setValue(
-        filteredItems.value[Math.min(selectedIndex.value + 1, filteredItems.value.length - 1)],
-      );
+      setValue(filteredItems.value[0]);
+      scrollToItem(0);
+    }
+  } else if (e.key === 'ArrowRight') {
+    const inputElement = inputRef.value?.inputRef as HTMLInputElement;
+    if (!inputElement) return;
+    const cursorPosition = inputElement.selectionStart;
+    if (cursorPosition === modelValue.value.length) {
+      e.preventDefault();
+      completeNextCharacter();
+      nextTick(() => {
+        inputElement.setSelectionRange(modelValue.value.length, modelValue.value.length);
+        positionSuggestion();
+      });
     }
   } else if (e.key === 'Tab' && props.modelValue.toString().length > 0) {
     if (filteredItems.value[selectedIndex.value]) {
       setValue(filteredItems.value[selectedIndex.value]);
     }
     toggleDropdown(false);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    toggleDropdown(false);
+    setValue((modelValue.value + autocompleteSuggestion.value).trim());
+    focusNextElement();
   } else if (e.key === 'Escape') {
     toggleDropdown(false);
   } else if (e.code === 'Space' && props.disableSpaces) {
     e.preventDefault();
   }
 
-  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-    scrollToItem(selectedIndex.value);
-  }
+  handleResize();
 };
 
 const handleUpdate = (value: string) => {
@@ -185,6 +198,35 @@ function handleGlobalEvents(add: boolean) {
   document[func]('scroll', handleMove, true);
 }
 
+function completeNextCharacter() {
+  if (!autocompleteSuggestion.value || autocompleteSuggestion.value.length === 0) {
+    toggleDropdown(false);
+    focusNextElement();
+    return;
+  }
+  modelValue.value += autocompleteSuggestion.value[0];
+}
+
+function focusNextElement() {
+  const focusableElements = Array.from(
+    document.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    ),
+  );
+
+  const currentIndex = focusableElements.indexOf(document.activeElement as HTMLElement);
+
+  if (currentIndex !== -1 && focusableElements[currentIndex + 1]) {
+    focusableElements[currentIndex + 1].focus();
+  }
+}
+
+function setItemRef(el: HTMLElement | null, index: number) {
+  if (el) {
+    itemRefs.value[index] = el;
+  }
+}
+
 /* Hooks */
 onMounted(() => {
   setTimeout(() => {
@@ -194,6 +236,16 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => handleGlobalEvents(false));
+
+watchEffect(() => {
+  if (!modelValue.value || !filteredItems.value) {
+    autocompleteSuggestion.value = '';
+    return;
+  }
+
+  const match = filteredItems.value.find(item => item.startsWith(modelValue.value));
+  autocompleteSuggestion.value = match?.slice(modelValue.value.length) || '';
+});
 </script>
 
 <template>
@@ -223,7 +275,7 @@ onBeforeUnmount(() => handleGlobalEvents(false));
               selected: i === selectedIndex,
             }"
             @click="handleSelectItem($event, item)"
-            ref="itemRefs"
+            :ref="el => setItemRef(el as HTMLElement, i)"
           >
             {{ item }}
           </div>
