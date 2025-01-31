@@ -14,6 +14,7 @@ import {
   Sorting,
 } from '@app/common';
 import { notifyGeneral } from '@app/common/utils/client';
+import { keysRequiredToSign } from '@app/common/utils/transaction';
 import {
   NotificationReceiver,
   User,
@@ -21,6 +22,7 @@ import {
   NotificationType,
   TransactionStatus,
   Transaction,
+  UserKey,
 } from '@entities';
 
 import { NotificationReceiverService } from './notification-receiver.service';
@@ -30,6 +32,7 @@ import { TransactionsService } from '../transactions/transactions.service';
 import { AccountCreateTransaction } from '@hashgraph/sdk';
 
 jest.mock('@app/common/utils/client');
+jest.mock('@app/common/utils/transaction');
 
 describe('NotificationReceiverService', () => {
   let service: NotificationReceiverService;
@@ -304,9 +307,10 @@ describe('NotificationReceiverService', () => {
         transactionBytes: accountCreate.toBytes(),
         validStart: new Date(),
       } as Partial<Transaction>;
+      const keys = [{ userId: 2 }, { userId: 2 }] as Partial<UserKey[]>;
 
       transactionsService.getTransactionForCreator.mockResolvedValue(transaction as Transaction);
-      repo.manager.find.mockResolvedValue([]);
+      jest.mocked(keysRequiredToSign).mockResolvedValueOnce(keys);
 
       await service.remindSigners(user, 1);
 
