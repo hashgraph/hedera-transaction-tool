@@ -7,6 +7,8 @@ import {
   Param,
   ParseIntPipe,
   Patch,
+  Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -147,5 +149,22 @@ export class NotificationsController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<boolean> {
     return this.notificationsService.deleteReceivedNotification(user, id);
+  }
+
+  @ApiOperation({
+    summary: 'Reminders signers to sign a transaction',
+    description: 'Sends email reminders to signers to sign a transaction',
+  })
+  @ApiResponse({
+    status: 200,
+    type: Boolean,
+  })
+  @Post('/remind-signers')
+  @HttpCode(200)
+  async remindSigners(
+    @GetUser() user: User,
+    @Query('transactionId', ParseIntPipe) id: number,
+  ): Promise<void> {
+    return this.notificationsService.remindSigners(user, id);
   }
 }

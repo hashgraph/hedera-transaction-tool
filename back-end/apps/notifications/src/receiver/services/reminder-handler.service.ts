@@ -73,6 +73,6 @@ export class ReminderHandlerService implements OnModuleInit {
       .filter((v, i, a) => a.indexOf(v) === i)
       .filter(Boolean);
 
-    await this.receiverService.notifyGeneral(getRemindSignersDTO(transaction, userIds));
+    await this.receiverService.notifyGeneral(getRemindSignersDTO(transaction, userIds, false));
   }
 }
