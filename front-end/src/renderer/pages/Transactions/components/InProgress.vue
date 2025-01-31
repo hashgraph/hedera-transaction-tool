@@ -28,6 +28,7 @@ import {
   redirectToGroupDetails,
   isLoggedInOrganization,
   hexToUint8Array,
+  countWaitingForSignatures,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -73,6 +74,10 @@ const sort = reactive<{
 const generatedClass = computed(() => {
   return sort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
 });
+
+const waitingForSignaturesCount = computed(() =>
+  countWaitingForSignatures(new Map(transactions.value)),
+);
 
 /* Handlers */
 const handleDetails = async (id: number) => {
@@ -259,7 +264,14 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
               <template v-if="group[0] != -1">
                 <tr>
                   <td>
-                    <i class="bi bi-stack" />
+                    <span
+                      :class="
+                        waitingForSignaturesCount && 'signature-notification position-relative'
+                      "
+                      :data-notification="waitingForSignaturesCount"
+                    >
+                      <i class="bi bi-stack" />
+                    </span>
                   </td>
                   <td>{{ groups[group[0] - 1]?.description }}</td>
                   <td>

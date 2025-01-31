@@ -1,5 +1,6 @@
+import type { Transaction } from '@hashgraph/sdk';
 import type { INotificationReceiver, ITransaction } from '@main/shared/interfaces';
-import { NotificationType } from '@main/shared/interfaces';
+import { NotificationType, TransactionStatus } from '@main/shared/interfaces';
 
 export const getNotifiedTransactions = (
   notifications: INotificationReceiver[],
@@ -20,3 +21,20 @@ export const getNotifiedTransactions = (
 
   return [];
 };
+
+export function countWaitingForSignatures(
+  transactions: Map<
+    number,
+    {
+      transactionRaw: ITransaction;
+    }[]
+  >,
+): number {
+  return Array.from(transactions)
+    .filter(group => group[0] !== -1)
+    .flatMap(group => group[1].map(tx => tx.transactionRaw))
+    .reduce(
+      (count, tx) => (tx.status === TransactionStatus.WAITING_FOR_SIGNATURES ? count + 1 : count),
+      0,
+    );
+}
