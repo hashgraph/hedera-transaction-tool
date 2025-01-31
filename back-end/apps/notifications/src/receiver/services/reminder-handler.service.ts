@@ -4,11 +4,11 @@ import { EntityManager } from 'typeorm';
 import { MurLock } from 'murlock';
 
 import {
-  getNetwork,
   parseTransactionSignKey,
   keysRequiredToSign,
   MirrorNodeService,
   SchedulerService,
+  getRemindSignersDTO,
 } from '@app/common';
 import { Notification, NotificationType, Transaction, TransactionStatus } from '@entities';
 
@@ -73,16 +73,6 @@ export class ReminderHandlerService implements OnModuleInit {
       .filter((v, i, a) => a.indexOf(v) === i)
       .filter(Boolean);
 
-    await this.receiverService.notifyGeneral({
-      type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER,
-      content: `A transaction is about to expire and it has not collected the required signatures.
-Please visit the Hedera Transaction Tool and locate the transaction.
-Valid start: ${transaction.validStart.toUTCString()}
-Transaction ID: ${transaction.transactionId}
-Network: ${getNetwork(transaction)}`,
-      entityId: transaction.id,
-      actorId: null,
-      userIds,
-    });
+    await this.receiverService.notifyGeneral(getRemindSignersDTO(transaction, userIds));
   }
 }
