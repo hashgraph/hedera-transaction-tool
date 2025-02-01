@@ -21,22 +21,10 @@ export const getNotifiedTransactions = (
   return [];
 };
 
-export function countWaitingForSignatures(
-  transactions: Map<
-    number,
-    {
-      transactionRaw: ITransaction;
-    }[]
-  >,
-  groupId: number,
-): number {
-  return (
-    transactions
-      .get(groupId)
-      ?.reduce(
-        (count, tx) =>
-          tx.transactionRaw.status === TransactionStatus.WAITING_FOR_SIGNATURES ? count + 1 : count,
-        0,
-      ) || 0
+export function countWaitingForSignatures(txList: { transactionRaw: ITransaction }[]): number {
+  return txList.reduce(
+    (count, tx) =>
+      tx.transactionRaw.status === TransactionStatus.WAITING_FOR_SIGNATURES ? count + 1 : count,
+    0,
   );
 }

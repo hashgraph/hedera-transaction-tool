@@ -83,11 +83,13 @@ const generatedClass = computed(() => {
 });
 
 const waitingForSignaturesCounts = computed(() => {
-  const counts: Record<number, number> = {};
-  transactions.value.forEach((txList, groupId) => {
-    counts[groupId] = countWaitingForSignatures(transactions.value, groupId);
+  const groupCounts: Record<number, number> = {};
+  new Map(transactions.value).forEach((txList, groupId) => {
+    if (groupId !== -1) {
+      groupCounts[groupId] = countWaitingForSignatures(txList);
+    }
   });
-  return counts;
+  return groupCounts;
 });
 
 /* Handlers */
