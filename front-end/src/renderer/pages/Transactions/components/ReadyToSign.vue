@@ -26,6 +26,7 @@ import {
   redirectToDetails,
   redirectToGroupDetails,
   isLoggedInOrganization,
+  countWaitingForSignatures,
 } from '@renderer/utils';
 import {
   getTransactionDateExtended,
@@ -79,6 +80,16 @@ const sort = reactive<{
 /* Computed */
 const generatedClass = computed(() => {
   return sort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
+});
+
+const waitingForSignaturesCounts = computed(() => {
+  const groupCounts: Record<number, number> = {};
+  new Map(transactions.value).forEach((txList, groupId) => {
+    if (groupId !== -1) {
+      groupCounts[groupId] = countWaitingForSignatures(txList);
+    }
+  });
+  return groupCounts;
 });
 
 /* Handlers */
@@ -327,7 +338,15 @@ watch(
                       @click="redirectToGroupDetails($router, group[0])"
                       color="secondary"
                       data-testid="button-group-details"
-                      >Details</AppButton
+                      ><span
+                        :class="
+                          waitingForSignaturesCounts[group[0]] &&
+                          'signature-notification position-relative'
+                        "
+                        :data-notification="waitingForSignaturesCounts[group[0]]"
+                      >
+                        Details
+                      </span></AppButton
                     >
                   </td>
                 </tr>

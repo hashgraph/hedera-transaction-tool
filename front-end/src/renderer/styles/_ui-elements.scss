@@ -158,7 +158,8 @@
   text-align: center;
 }
 
-.network-notification::after {
+.network-notification::after,
+.signature-notification::after {
   content: attr(data-notification);
   position: absolute;
   top: 50%;
