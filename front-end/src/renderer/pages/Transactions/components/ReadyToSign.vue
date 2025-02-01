@@ -82,9 +82,13 @@ const generatedClass = computed(() => {
   return sort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
 });
 
-const waitingForSignaturesCount = computed(() =>
-  countWaitingForSignatures(new Map(transactions.value)),
-);
+const waitingForSignaturesCounts = computed(() => {
+  const counts: Record<number, number> = {};
+  transactions.value.forEach((txList, groupId) => {
+    counts[groupId] = countWaitingForSignatures(transactions.value, groupId);
+  });
+  return counts;
+});
 
 /* Handlers */
 const handleSign = async (id: number) => {
@@ -317,14 +321,7 @@ watch(
                   }"
                 >
                   <td>
-                    <span
-                      :class="
-                        waitingForSignaturesCount && 'signature-notification position-relative'
-                      "
-                      :data-notification="waitingForSignaturesCount"
-                    >
-                      <i class="bi bi-stack" />
-                    </span>
+                    <i class="bi bi-stack" />
                   </td>
                   <td>{{ groups[group[0] - 1]?.description }}</td>
                   <td>
@@ -339,7 +336,15 @@ watch(
                       @click="redirectToGroupDetails($router, group[0])"
                       color="secondary"
                       data-testid="button-group-details"
-                      >Details</AppButton
+                      ><span
+                        :class="
+                          waitingForSignaturesCounts[group[0]] &&
+                          'signature-notification position-relative'
+                        "
+                        :data-notification="waitingForSignaturesCounts[group[0]]"
+                      >
+                        Details
+                      </span></AppButton
                     >
                   </td>
                 </tr>

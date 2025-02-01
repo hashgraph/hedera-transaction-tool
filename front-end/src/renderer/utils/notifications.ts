@@ -28,12 +28,15 @@ export function countWaitingForSignatures(
       transactionRaw: ITransaction;
     }[]
   >,
+  groupId: number,
 ): number {
-  return Array.from(transactions)
-    .filter(group => group[0] !== -1)
-    .flatMap(group => group[1].map(tx => tx.transactionRaw))
-    .reduce(
-      (count, tx) => (tx.status === TransactionStatus.WAITING_FOR_SIGNATURES ? count + 1 : count),
-      0,
-    );
+  return (
+    transactions
+      .get(groupId)
+      ?.reduce(
+        (count, tx) =>
+          tx.transactionRaw.status === TransactionStatus.WAITING_FOR_SIGNATURES ? count + 1 : count,
+        0,
+      ) || 0
+  );
 }

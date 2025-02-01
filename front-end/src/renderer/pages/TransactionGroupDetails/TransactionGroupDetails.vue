@@ -350,17 +350,14 @@ watch(
                               <td class="text-center">
                                 <AppButton
                                   type="button"
-                                  color="secondary"
+                                  :color="
+                                    isWaitingForSignatures(groupItem.transaction.status)
+                                      ? 'danger'
+                                      : 'secondary'
+                                  "
                                   @click.prevent="handleSign(groupItem.transaction.id)"
                                   :data-testid="`button-group-transaction-${index}`"
-                                  ><span
-                                    :class="
-                                      isWaitingForSignatures(groupItem.transaction.status) &&
-                                      'signature-notification position-relative'
-                                    "
-                                    :data-notification="'!'"
-                                    >Details</span
-                                  >
+                                  ><span>Details</span>
                                 </AppButton>
                               </td>
                             </tr>
