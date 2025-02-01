@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ITransaction } from '@main/shared/interfaces';
 
-import { computed, onBeforeMount, reactive, ref, watch, watchEffect } from 'vue';
+import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 
 import { Transaction } from '@hashgraph/sdk';
 
@@ -198,10 +198,6 @@ wsStore.$onAction(ctx => {
 watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
   setGetTransactionsFunction();
   await fetchTransactions();
-});
-
-watchEffect(() => {
-  console.log(waitingForSignaturesCounts.value);
 });
 </script>
 
