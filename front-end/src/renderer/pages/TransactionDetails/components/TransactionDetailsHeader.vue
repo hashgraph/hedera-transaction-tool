@@ -24,6 +24,7 @@ import {
   executeTransaction,
   sendApproverChoice,
   uploadSignatureMap,
+  remindSigners,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { saveFileNamed } from '@renderer/services/electronUtilsService';
@@ -54,6 +55,7 @@ type ActionButton =
   | 'Cancel'
   | 'Export'
   | 'Submit'
+  | 'Remind Signers'
   | 'Archive';
 
 /* Misc */
@@ -63,6 +65,7 @@ const sign: ActionButton = 'Sign';
 const next: ActionButton = 'Next';
 const cancel: ActionButton = 'Cancel';
 const execute: ActionButton = 'Submit';
+const remindSignersLabel: ActionButton = 'Remind Signers';
 const archive: ActionButton = 'Archive';
 const exportName: ActionButton = 'Export';
 
@@ -74,6 +77,7 @@ const buttonsDataTestIds: { [key: string]: string } = {
   [next]: 'button-next-org-transaction',
   [cancel]: 'button-cancel-org-transaction',
   [execute]: 'button-execute-org-transaction',
+  [remindSignersLabel]: 'button-remind-signers-org-transaction',
   [archive]: 'button-archive-org-transaction',
   [exportName]: 'button-export-transaction',
 };
@@ -168,6 +172,9 @@ const visibleButtons = computed(() => {
     buttons.push(execute);
   props.nextId && !shouldApprove.value && !canSign.value && buttons.push(next);
   canCancel.value && buttons.push(cancel);
+  canCancel.value &&
+    status === TransactionStatus.WAITING_FOR_SIGNATURES &&
+    buttons.push(remindSignersLabel);
   canCancel.value && isManual && buttons.push(archive);
   buttons.push(exportName);
 
@@ -317,7 +324,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
 };
 
 const handleTransactionAction = async (
-  action: 'cancel' | 'archive' | 'execute',
+  action: 'cancel' | 'archive' | 'execute' | 'remindSigners',
   showModal?: boolean,
 ) => {
   assertIsLoggedInOrganization(user.selectedOrganization);
@@ -349,6 +356,14 @@ const handleTransactionAction = async (
       loadingText: 'Executing...',
       successMessage: 'Transaction sent for execution successfully',
       actionFunction: executeTransaction,
+    },
+    remindSigners: {
+      title: 'Remind Signers?',
+      text: 'Are you sure you want to send email to the required signers of the transaction?',
+      buttonText: 'Confirm',
+      loadingText: 'Sending...',
+      successMessage: 'Signers reminded successfully',
+      actionFunction: remindSigners,
     },
   };
 
@@ -382,6 +397,8 @@ const handleTransactionAction = async (
 const handleCancel = (showModal?: boolean) => handleTransactionAction('cancel', showModal);
 const handleArchive = (showModal?: boolean) => handleTransactionAction('archive', showModal);
 const handleExecute = (showModal?: boolean) => handleTransactionAction('execute', showModal);
+const handleRemindSigners = (showModal?: boolean) =>
+  handleTransactionAction('remindSigners', showModal);
 
 const handleNext = () => {
   if (!props.nextId) return;
@@ -434,6 +451,8 @@ const handleAction = async (value: ActionButton) => {
     await handleExecute(true);
   } else if (value === exportName) {
     await handleExport();
+  } else if (value === remindSignersLabel) {
+    await handleRemindSigners(true);
   }
 };
 const handleSubmit = async (e: Event) => {

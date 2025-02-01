@@ -7,6 +7,8 @@ import {
   Param,
   ParseIntPipe,
   Patch,
+  Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -40,6 +42,7 @@ import { NotificationReceiverService } from './notification-receiver.service';
 
 import { NotificationReceiverDto } from './dtos/notification-receiver.dto';
 import { UpdateNotificationReceiverDto } from './dtos';
+import { seconds, Throttle } from '@nestjs/throttler';
 
 @ApiTags('Notification')
 @Controller('notifications')
@@ -147,5 +150,28 @@ export class NotificationsController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<boolean> {
     return this.notificationsService.deleteReceivedNotification(user, id);
+  }
+
+  @ApiOperation({
+    summary: 'Reminders signers to sign a transaction',
+    description: 'Sends email reminders to signers to sign a transaction',
+  })
+  @ApiResponse({
+    status: 200,
+    type: Boolean,
+  })
+  @Throttle({
+    'global-minute': {
+      limit: 1,
+      ttl: seconds(60),
+    },
+  })
+  @Post('/remind-signers')
+  @HttpCode(200)
+  async remindSigners(
+    @GetUser() user: User,
+    @Query('transactionId', ParseIntPipe) id: number,
+  ): Promise<void> {
+    return this.notificationsService.remindSigners(user, id);
   }
 }

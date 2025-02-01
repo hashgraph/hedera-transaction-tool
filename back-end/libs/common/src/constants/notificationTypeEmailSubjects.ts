@@ -5,4 +5,5 @@ export enum NotificationTypeEmailSubjects {
   TRANSACTION_EXECUTED = 'Transaction has been executed',
   TRANSACTION_CANCELLED = 'Transaction has been cancelled',
   TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER = 'Approaching Transaction valid start',
+  TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER_MANUAL = 'Action Required | Approaching Transaction valid start',
 }

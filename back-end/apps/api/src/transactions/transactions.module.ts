@@ -56,5 +56,6 @@ import { ApproversController, ApproversService } from './approvers';
     ApproversService,
     TransactionGroupsService,
   ],
+  exports: [TransactionsService],
 })
 export class TransactionsModule {}

@@ -31,26 +31,19 @@ export class ReceiverService {
     private readonly fanOutService: FanOutService,
   ) {}
 
-  @MurLock(5000, 'entityId')
-  async notifyGeneral({
-    type,
-    content,
-    entityId,
-    actorId,
-    userIds,
-    additionalData,
-  }: NotifyGeneralDto) {
-    if (!userIds || userIds.length === 0) return;
+  @MurLock(5000, 'dto.entityId')
+  async notifyGeneral(dto: NotifyGeneralDto) {
+    if (!dto.userIds || dto.userIds.length === 0) return;
 
     const { notification, notificationReceivers } = await this.entityManager.transaction(
       async transactionalEntityManager => {
         /* Get notification if exists */
         let notification = await transactionalEntityManager.findOne(Notification, {
           where: {
-            entityId,
-            type,
-            content,
-            actorId,
+            entityId: dto.entityId,
+            type: dto.type,
+            content: dto.content,
+            actorId: dto.actorId,
           },
           relations: {
             notificationReceivers: true,
@@ -61,22 +54,25 @@ export class ReceiverService {
         if (!notification) {
           notification = await this.createNotification(
             transactionalEntityManager,
-            type,
-            content,
-            entityId,
-            actorId,
-            additionalData,
+            dto.type,
+            dto.content,
+            dto.entityId,
+            dto.actorId,
+            dto.additionalData,
           );
         }
 
         /* Create receivers */
-        userIds = userIds.filter(
-          userId => !notification.notificationReceivers.some(nr => nr.userId === userId),
-        );
+        if (!dto.recreateReceivers) {
+          dto.userIds = dto.userIds.filter(
+            userId => !notification.notificationReceivers.some(nr => nr.userId === userId),
+          );
+        }
+
         const notificationReceivers = await this.createReceivers(
           transactionalEntityManager,
           notification.id,
-          userIds,
+          dto.userIds,
         );
 
         return { notification, notificationReceivers };

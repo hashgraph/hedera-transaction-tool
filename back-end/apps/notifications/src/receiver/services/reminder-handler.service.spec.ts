@@ -7,6 +7,7 @@ import {
   MirrorNodeService,
   SchedulerService,
   parseTransactionSignKey,
+  getRemindSignersDTO,
 } from '@app/common';
 import { Notification, NotificationType, Transaction, TransactionStatus, UserKey } from '@entities';
 
@@ -156,6 +157,7 @@ describe('ReminderHandlerService', () => {
       jest
         .mocked(keysRequiredToSign)
         .mockResolvedValueOnce([{ userId: 1 } as UserKey, { userId: 2 } as UserKey]);
+      jest.mocked(getRemindSignersDTO).mockReturnValueOnce('remind-signers-dto' as any);
 
       await service.handleTransactionReminder(key);
 
@@ -169,13 +171,7 @@ describe('ReminderHandlerService', () => {
           type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER,
         },
       });
-      expect(receiverService.notifyGeneral).toHaveBeenCalledWith({
-        type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER,
-        content: expect.any(String),
-        entityId: transaction.id,
-        actorId: null,
-        userIds: [1, 2, 3],
-      });
+      expect(receiverService.notifyGeneral).toHaveBeenCalledWith('remind-signers-dto');
     });
   });
 });
