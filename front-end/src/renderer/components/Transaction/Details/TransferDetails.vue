@@ -73,7 +73,7 @@ onBeforeMount(async () => {
                         }}
                       </p>
                       <p class="text-secondary text-micro overflow-hidden">
-                        {{ accountData.getAccountIdWithChecksum(debit.accountId.toString()) }}
+                        ({{ accountData.getAccountIdWithChecksum(debit.accountId.toString()) }})
                       </p>
                     </div>
                   </template>
@@ -128,7 +128,7 @@ onBeforeMount(async () => {
                         class="text-secondary text-micro overflow-hidden"
                         data-testid="p-transfer-to-account-details"
                       >
-                        {{ accountData.getAccountIdWithChecksum(credit.accountId.toString()) }}
+                        ({{ accountData.getAccountIdWithChecksum(credit.accountId.toString()) }})
                       </p>
                     </div>
                   </template>
