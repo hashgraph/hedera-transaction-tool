@@ -82,12 +82,17 @@ watch(
   >
     <template v-for="accountId in accoundIds" :key="accountId">
       <option :value="accountId">
-        {{ accountData.getAccountIdWithChecksum(accountId) }}
         {{
           (linkedAccounts.find(la => la.account_id === accountId)?.nickname?.trim() || '').length >
           0
-            ? `(${linkedAccounts.find(la => la.account_id === accountId)?.nickname})`
+            ? `${linkedAccounts.find(la => la.account_id === accountId)?.nickname}`
             : ''
+        }}
+        {{
+          (linkedAccounts.find(la => la.account_id === accountId)?.nickname?.trim() || '').length >
+          0
+            ? `(${accountData.getAccountIdWithChecksum(accountId)})`
+            : `${accountData.getAccountIdWithChecksum(accountId)}`
         }}
       </option>
     </template>

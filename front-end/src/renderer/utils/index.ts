@@ -1,3 +1,11 @@
+import type { AccountInfo } from '@main/shared/interfaces';
+import type { HederaAccount } from '@prisma/client';
+import useAccountId from '@renderer/composables/useAccountId';
+import { isUserLoggedIn } from './userStoreHelpers';
+import { getAll } from '@renderer/services/accountsService';
+import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
+
 export * from './dom';
 export * from './sdk';
 export * from './transactions';
@@ -106,3 +114,41 @@ export const throwError = (errorMessage: string) => {
 
 export const getErrorMessage = (error: unknown, defaultErrorMessage: string) =>
   error instanceof Error ? error.message : defaultErrorMessage;
+
+export function handleFormatAccount(
+  allAccounts: HederaAccount[] | undefined,
+  accountToCheck: AccountInfo | HederaAccount,
+): string {
+  const accountData = useAccountId();
+
+  if (!allAccounts || !accountToCheck) {
+    return '';
+  }
+
+  const accountId =
+    'account' in accountToCheck ? accountToCheck.account : accountToCheck.account_id;
+
+  if (!accountId) return '';
+
+  const nickname = allAccounts.find(a => a.account_id === accountId)?.nickname || '';
+
+  return nickname
+    ? `${nickname} (${accountData.getAccountIdWithChecksum(accountId)})`
+    : accountData.getAccountIdWithChecksum(accountId);
+}
+
+export const getAccountNicknameFromId = async (id: string): Promise<string> => {
+  const user = useUserStore();
+  const network = useNetworkStore();
+  if (isUserLoggedIn(user.personal)) {
+    const accounts = await getAll({
+      where: {
+        user_id: user.personal.id,
+        network: network.network,
+      },
+    });
+    const account = accounts.find(acc => acc.account_id === id);
+    return account?.nickname ?? '';
+  }
+  return '';
+};

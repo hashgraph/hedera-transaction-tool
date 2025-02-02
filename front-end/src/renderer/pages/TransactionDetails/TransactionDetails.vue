@@ -2,7 +2,7 @@
 import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@main/shared/interfaces';
 
-import { computed, onBeforeMount, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, watch, watchEffect } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
@@ -38,6 +38,7 @@ import {
   hexToUint8Array,
   isLoggedInOrganization,
   computeSignatureKey,
+  getAccountNicknameFromId,
 } from '@renderer/utils';
 
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -70,6 +71,7 @@ const sdkTransaction = ref<SDKTransaction | null>(null);
 const signatureKeyObject = ref<Awaited<ReturnType<typeof computeSignatureKey>> | null>(null);
 const nextId = ref<string | number | null>(null);
 const feePayer = ref<string | null>(null);
+const feePayerNickname = ref('');
 
 /* Computed */
 const transactionSpecificLabel = computed(() => {
@@ -176,6 +178,12 @@ wsStore.$onAction(ctx => {
 
 watch(() => user.selectedOrganization, router.back);
 
+watchEffect(async () => {
+  if (feePayer.value) {
+    feePayerNickname.value = await getAccountNicknameFromId(feePayer.value.toString());
+  }
+});
+
 /* Misc */
 const sectionHeadingClass = 'd-flex justify-content-between align-items-center';
 const detailItemLabelClass = 'text-micro text-semi-bold text-dark-blue';
@@ -252,10 +260,11 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                   <div :class="commonColClass">
                     <h4 :class="detailItemLabelClass">Creator</h4>
                     <p :class="detailItemValueClass">
-                      {{ creator?.user?.email }}
-                      <span v-if="creator?.nickname?.trim().length > 0" class="text-pink"
-                        >({{ creator?.nickname?.trim() }})</span
-                      >
+                      <span v-if="creator?.nickname?.trim().length > 0">
+                        <span class="text-pink">{{ creator?.nickname?.trim() }}</span>
+                        <span> ({{ creator?.user?.email }})</span>
+                      </span>
+                      <span v-else>{{ creator?.user?.email }}</span>
                     </p>
                   </div>
                 </template>
@@ -350,8 +359,15 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 <!-- Transaction Fee Payer -->
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Fee Payer</h4>
-                  <p :class="detailItemValueClass" data-testid="p-transaction-details-fee-payer">
-                    {{ feePayer && accountData.getAccountIdWithChecksum(feePayer) }}
+                  <p
+                    :class="detailItemValueClass"
+                    data-testid="p-transaction-details-fee-payer"
+                    v-if="feePayer"
+                  >
+                    <span v-if="feePayerNickname">{{
+                      `${feePayerNickname} (${accountData.getAccountIdWithChecksum(feePayer)})`
+                    }}</span>
+                    <span v-else>{{ accountData.getAccountIdWithChecksum(feePayer) }}</span>
                   </p>
                 </div>
               </div>

@@ -27,6 +27,7 @@ defineEmits<{
 /* State */
 const isKeyStructureModalShown = ref(false);
 const keyStructureComponentKey = ref<Key | null>(null);
+const value = ref(props.data.ownerAccountId);
 
 /* Computed */
 const spenderAllowance = computed(() => {
@@ -35,6 +36,10 @@ const spenderAllowance = computed(() => {
       ?.amount || 0,
   );
 });
+
+/* Handlers */
+const handleBlur = () => {};
+
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
 </script>
