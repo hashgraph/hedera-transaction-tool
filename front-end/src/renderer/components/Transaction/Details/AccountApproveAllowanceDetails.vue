@@ -28,7 +28,7 @@ async function fetchNicknames() {
   if (tx.hbarApprovals) {
     const newNicknames: { ownerNickname: string; spenderNickname: string }[] = [];
     for (const approval of tx.hbarApprovals) {
-      let nick = {
+      const nick = {
         ownerNickname: '',
         spenderNickname: '',
       };
