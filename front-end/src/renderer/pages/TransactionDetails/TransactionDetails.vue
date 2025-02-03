@@ -104,6 +104,7 @@ const shouldPassAllLinkedAccounts = computed(() =>
     transactionTypeKeys.approveAllowance,
     transactionTypeKeys.updateAccount,
     transactionTypeKeys.deleteAccount,
+    transactionTypeKeys.createAccount,
   ].includes(getTransactionType(sdkTransaction.value as SDKTransaction, true)),
 );
 
