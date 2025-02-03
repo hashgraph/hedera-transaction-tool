@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { ITransactionFull } from '@main/shared/interfaces';
+import type { ITransactionFull, IUserLinkedAccounts } from '@main/shared/interfaces';
 
-import { onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
+import { onBeforeMount, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
 import { Transaction, AccountDeleteTransaction, Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import { TransactionStatus } from '@main/shared/interfaces';
@@ -17,6 +17,7 @@ import { getAccountNicknameFromId, safeAwait, stringifyHbar } from '@renderer/ut
 const props = defineProps<{
   transaction: Transaction;
   organizationTransaction: ITransactionFull | null;
+  allLinkedAccounts?: IUserLinkedAccounts[];
 }>();
 
 /* Stores */
@@ -82,20 +83,6 @@ async function checkAndFetchTransactionInfo() {
   }
 }
 
-async function fetchNicknames() {
-  if (!props.transaction) return;
-
-  const tx = props.transaction as AccountDeleteTransaction;
-  if (tx.accountId && tx.transferAccountId) {
-    const [deletedNick, transferedToNick] = await Promise.all([
-      getAccountNicknameFromId(tx.accountId.toString()),
-      getAccountNicknameFromId(tx.transferAccountId.toString()),
-    ]);
-
-    nicknames.value = { deletedNickname: deletedNick, transferedToNickname: transferedToNick };
-  }
-}
-
 /* Hooks */
 onBeforeMount(async () => {
   if (!(props.transaction instanceof AccountDeleteTransaction)) {
@@ -103,7 +90,6 @@ onBeforeMount(async () => {
   }
 
   await checkAndFetchTransactionInfo();
-  await fetchNicknames();
 });
 
 onBeforeUnmount(() => {
@@ -113,6 +99,20 @@ onBeforeUnmount(() => {
 /* Watchers */
 watch([() => props.transaction, () => props.organizationTransaction], async () => {
   setTimeout(async () => await checkAndFetchTransactionInfo(), 3000);
+});
+
+watchEffect(() => {
+  if (props.transaction && props.allLinkedAccounts && props.allLinkedAccounts.length > 0) {
+    const tx = props.transaction as AccountDeleteTransaction;
+    if (tx.accountId && tx.transferAccountId) {
+      const [deletedNick, transferedToNick] = [
+        getAccountNicknameFromId(tx.accountId.toString(), props.allLinkedAccounts),
+        getAccountNicknameFromId(tx.transferAccountId.toString(), props.allLinkedAccounts),
+      ];
+
+      nicknames.value = { deletedNickname: deletedNick, transferedToNickname: transferedToNick };
+    }
+  }
 });
 
 /* Misc */

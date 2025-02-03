@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { HederaAccount } from '@prisma/client';
-import type { ITransactionFull } from '@main/shared/interfaces';
+import type { ITransactionFull, IUserLinkedAccounts } from '@main/shared/interfaces';
 
-import { onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
+import { onBeforeMount, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
 
 import {
   AccountCreateTransaction,
@@ -37,6 +37,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 const props = defineProps<{
   transaction: Transaction;
   organizationTransaction: ITransactionFull | null;
+  allLinkedAccounts?: IUserLinkedAccounts[];
 }>();
 
 /* Stores */
@@ -123,16 +124,6 @@ async function checkAndFetchTransactionInfo() {
   }
 }
 
-async function fetchNickname() {
-  if (!props.transaction) return;
-
-  const tx = props.transaction as AccountUpdateTransaction;
-  if (tx.accountId) {
-    const txNick = await getAccountNicknameFromId(tx.accountId.toString());
-    txNickname.value = txNick;
-  }
-}
-
 /* Hooks */
 onBeforeMount(async () => {
   if (
@@ -145,7 +136,6 @@ onBeforeMount(async () => {
   }
 
   await checkAndFetchTransactionInfo();
-  await fetchNickname();
 });
 
 onBeforeUnmount(() => {
@@ -157,9 +147,19 @@ watch([() => props.transaction, () => props.organizationTransaction], async () =
   setTimeout(async () => await checkAndFetchTransactionInfo(), 3000);
 });
 
-watch(entityId, async newId => {
-  if (newId) {
-    newAccNickname.value = await getAccountNicknameFromId(newId);
+watchEffect(() => {
+  if (entityId.value && props.allLinkedAccounts && props.allLinkedAccounts.length > 0) {
+    newAccNickname.value = getAccountNicknameFromId(entityId.value, props.allLinkedAccounts);
+  }
+});
+
+watchEffect(() => {
+  if (props.transaction && props.allLinkedAccounts && props.allLinkedAccounts.length > 0) {
+    const tx = props.transaction as AccountUpdateTransaction;
+    if (tx.accountId) {
+      const txNick = getAccountNicknameFromId(tx.accountId.toString(), props.allLinkedAccounts);
+      txNickname.value = txNick;
+    }
   }
 });
 
