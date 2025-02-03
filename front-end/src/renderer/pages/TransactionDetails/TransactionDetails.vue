@@ -2,7 +2,7 @@
 import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@main/shared/interfaces';
 
-import { computed, onBeforeMount, ref, watch, watchEffect } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
@@ -178,11 +178,14 @@ wsStore.$onAction(ctx => {
 
 watch(() => user.selectedOrganization, router.back);
 
-watchEffect(async () => {
-  if (feePayer.value) {
-    feePayerNickname.value = await getAccountNicknameFromId(feePayer.value.toString());
-  }
-});
+watch(
+  () => feePayer.value,
+  async newFeePayer => {
+    if (newFeePayer) {
+      feePayerNickname.value = await getAccountNicknameFromId(newFeePayer.toString());
+    }
+  },
+);
 
 /* Misc */
 const sectionHeadingClass = 'd-flex justify-content-between align-items-center';
