@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { onBeforeMount, ref } from 'vue';
+import type { IUserLinkedAccounts } from '@main/shared/interfaces';
+
+import { onBeforeMount, ref, watchEffect } from 'vue';
 
 import { Transaction, AccountAllowanceApproveTransaction, Hbar } from '@hashgraph/sdk';
 
@@ -10,6 +12,7 @@ import { getAccountNicknameFromId, stringifyHbar } from '@renderer/utils';
 /* Props */
 const props = defineProps<{
   transaction: Transaction;
+  allLinkedAccounts?: IUserLinkedAccounts[];
 }>();
 
 /* Composables */
@@ -30,17 +33,13 @@ onBeforeMount(async () => {
       spenderNickname: '',
     }),
   );
-
-  await fetchNicknames();
 });
 
 /* Functions */
-async function fetchNicknames() {
-  if (!props.transaction) return;
-
+function fetchNicknames() {
   const tx = props.transaction as AccountAllowanceApproveTransaction;
   if (tx.hbarApprovals) {
-    const nicknamePromises = tx.hbarApprovals.map(async (approval, index) => {
+    const nicknameValues = tx.hbarApprovals.map((approval, index) => {
       const nick = {
         ownerNickname: '',
         spenderNickname: '',
@@ -48,23 +47,32 @@ async function fetchNicknames() {
 
       if (approval.ownerAccountId) {
         nick.ownerNickname =
-          (await getAccountNicknameFromId(approval.ownerAccountId.toString())) || '';
+          getAccountNicknameFromId(approval.ownerAccountId.toString(), props.allLinkedAccounts!) ||
+          '';
       }
       if (approval.spenderAccountId) {
         nick.spenderNickname =
-          (await getAccountNicknameFromId(approval.spenderAccountId.toString())) || '';
+          getAccountNicknameFromId(
+            approval.spenderAccountId.toString(),
+            props.allLinkedAccounts!,
+          ) || '';
       }
 
       return { index, nick };
     });
 
-    const results = await Promise.all(nicknamePromises);
-
-    results.forEach(({ index, nick }) => {
+    nicknameValues.forEach(({ index, nick }) => {
       nicknames.value[index] = nick;
     });
   }
 }
+
+/* Watchers */
+watchEffect(() => {
+  if (props.transaction && props.allLinkedAccounts && props.allLinkedAccounts.length > 0) {
+    fetchNicknames();
+  }
+});
 
 /* Misc */
 const approvalHeadingClass = 'text-subheader text-dark-blue mt-5';
