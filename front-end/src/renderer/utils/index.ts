@@ -138,17 +138,25 @@ export function handleFormatAccount(
 }
 
 export const getAccountNicknameFromId = async (id: string): Promise<string> => {
-  const user = useUserStore();
-  const network = useNetworkStore();
-  if (isUserLoggedIn(user.personal)) {
+  try {
+    const user = useUserStore();
+    const network = useNetworkStore();
+
+    if (!isUserLoggedIn(user.personal)) {
+      throw new Error('User is not logged in');
+    }
+
     const accounts = await getAll({
       where: {
         user_id: user.personal.id,
         network: network.network,
       },
     });
+
     const account = accounts.find(acc => acc.account_id === id);
     return account?.nickname ?? '';
+  } catch (error) {
+    console.error(`Error fetching nickname for account ${id}:`, error);
+    return '';
   }
-  return '';
 };
