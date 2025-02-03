@@ -3,12 +3,17 @@ import { onBeforeMount, ref } from 'vue';
 
 import { Transaction, AccountAllowanceApproveTransaction, Hbar } from '@hashgraph/sdk';
 
+import useAccountId from '@renderer/composables/useAccountId';
+
 import { getAccountNicknameFromId, stringifyHbar } from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{
   transaction: Transaction;
 }>();
+
+/* Composables */
+const accountData = useAccountId();
 
 /* State */
 const nicknames = ref<{ ownerNickname: string; spenderNickname: string }[]>([]);
@@ -81,18 +86,26 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           <h4 :class="detailItemLabelClass">Owner ID</h4>
           <p :class="detailItemValueClass" data-testid="p-account-approve-details-owner-id">
             <span v-if="nicknames[i].ownerNickname">
-              {{ `${nicknames[i].ownerNickname} (${approval.ownerAccountId?.toString()})` }}
+              {{
+                `${nicknames[i].ownerNickname} (${accountData.getAccountIdWithChecksum(approval.ownerAccountId?.toString())})`
+              }}
             </span>
-            <span v-else>{{ approval.ownerAccountId?.toString() }}</span>
+            <span v-else>{{
+              accountData.getAccountIdWithChecksum(approval.ownerAccountId?.toString())
+            }}</span>
           </p>
         </div>
         <div v-if="approval.spenderAccountId" :class="commonColClass">
           <h4 :class="detailItemLabelClass">Spender ID</h4>
           <p :class="detailItemValueClass" data-testid="p-account-approve-details-spender-id">
             <span v-if="nicknames[i].spenderNickname">
-              {{ `${nicknames[i].spenderNickname} (${approval.spenderAccountId?.toString()})` }}
+              {{
+                `${nicknames[i].spenderNickname} (${accountData.getAccountIdWithChecksum(approval.spenderAccountId?.toString())})`
+              }}
             </span>
-            <span v-else>{{ approval.spenderAccountId?.toString() }}</span>
+            <span v-else>{{
+              accountData.getAccountIdWithChecksum(approval.spenderAccountId?.toString())
+            }}</span>
           </p>
         </div>
         <div :class="commonColClass">
