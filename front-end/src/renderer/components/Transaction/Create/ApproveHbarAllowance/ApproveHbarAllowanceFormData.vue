@@ -6,6 +6,7 @@ import { computed, ref } from 'vue';
 import { Hbar, HbarUnit, Key } from '@hashgraph/sdk';
 
 import { stringifyHbar, formatAccountId } from '@renderer/utils';
+import useAccountId from '@renderer/composables/useAccountId';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -24,10 +25,14 @@ defineEmits<{
   (event: 'update:data', data: ApproveHbarAllowanceData): void;
 }>();
 
+/* Composables */
+const accountData = useAccountId();
+
 /* State */
 const isKeyStructureModalShown = ref(false);
 const keyStructureComponentKey = ref<Key | null>(null);
-const value = ref(props.data.ownerAccountId);
+const ownerValue = ref(accountData.getAccountIdWithChecksum(props.data.ownerAccountId) || '');
+const spenderValue = ref(accountData.getAccountIdWithChecksum(props.data.spenderAccountId) || '');
 
 /* Computed */
 const spenderAllowance = computed(() => {
@@ -38,7 +43,19 @@ const spenderAllowance = computed(() => {
 });
 
 /* Handlers */
-const handleBlur = () => {};
+const handleBlur = (e: Event, accType: 'spender' | 'owner') => {
+  const value = (e.target as HTMLInputElement).value;
+  const formattedValue = accountData.getAccountIdWithChecksum(value);
+  if (accType === 'owner') {
+    if (formattedValue !== ownerValue.value) {
+      ownerValue.value = formattedValue;
+    }
+  } else if (accType === 'spender') {
+    if (formattedValue !== spenderValue.value) {
+      spenderValue.value = formattedValue;
+    }
+  }
+};
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
@@ -52,16 +69,17 @@ const columnClass = 'col-4 col-xxxl-3';
       >
 
       <AppInput
-        :model-value="data.ownerAccountId"
+        v-model="ownerValue"
         @update:model-value="
           $emit('update:data', {
             ...data,
-            ownerAccountId: formatAccountId($event),
+            ownerAccountId: formatAccountId($event.split('-')[0]),
           })
         "
         :filled="true"
         data-testid="input-owner-account"
         placeholder="Enter Owner ID"
+        @blur="handleBlur($event, 'owner')"
       />
     </div>
 
@@ -85,16 +103,17 @@ const columnClass = 'col-4 col-xxxl-3';
         >Allowance: {{ stringifyHbar(spenderAllowance) }}</label
       >
       <AppInput
-        :model-value="data.spenderAccountId"
+        v-model="spenderValue"
         @update:model-value="
           $emit('update:data', {
             ...data,
-            spenderAccountId: formatAccountId($event),
+            spenderAccountId: formatAccountId($event.split('-')[0]),
           })
         "
         :filled="true"
         data-testid="input-spender-account"
         placeholder="Enter Spender ID"
+        @blur="handleBlur($event, 'spender')"
       />
     </div>
     <div class="form-group" :class="[columnClass]" v-if="spenderInfo?.key">
