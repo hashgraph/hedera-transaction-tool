@@ -26,20 +26,23 @@ async function fetchNicknames() {
 
   const tx = props.transaction as AccountAllowanceApproveTransaction;
   if (tx.hbarApprovals) {
+    const newNicknames: { ownerNickname: string; spenderNickname: string }[] = [];
     for (const approval of tx.hbarApprovals) {
-      let ownerNick = '';
-      let spenderNick = '';
+      let nick = {
+        ownerNickname: '',
+        spenderNickname: '',
+      };
       if (approval.ownerAccountId) {
-        ownerNick = await getAccountNicknameFromId(approval.ownerAccountId?.toString());
+        nick.ownerNickname =
+          (await getAccountNicknameFromId(approval.ownerAccountId?.toString())) || '';
       }
       if (approval.spenderAccountId) {
-        spenderNick = await getAccountNicknameFromId(approval.spenderAccountId?.toString());
+        nick.spenderNickname =
+          (await getAccountNicknameFromId(approval.spenderAccountId?.toString())) || '';
       }
-      nicknames.value.push({
-        ownerNickname: ownerNick,
-        spenderNickname: spenderNick,
-      });
+      newNicknames.push(nick);
     }
+    nicknames.value = [...nicknames.value, ...newNicknames];
   }
 }
 
