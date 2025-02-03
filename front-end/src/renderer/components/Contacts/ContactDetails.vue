@@ -15,7 +15,12 @@ import { addContact, updateContact } from '@renderer/services/contactsService';
 import { getAccountsByPublicKeysParallel } from '@renderer/services/mirrorNodeDataService';
 import { signUp } from '@renderer/services/organization';
 
-import { getErrorMessage, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import {
+  getErrorMessage,
+  getNickname,
+  isLoggedInOrganization,
+  isUserLoggedIn,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -202,10 +207,21 @@ watch(() => props.contact, handleContactChange);
           </div>
           <div class="col-7">
             <p
-              class="text-secondary text-small overflow-hidden"
+              class="text-secondary text-small overflow-x-auto"
               :data-testid="'p-contact-public-key-' + index"
             >
-              {{ PublicKey.fromString(key.publicKey).toStringRaw() }}
+              <span
+                class="d-flex gap-2"
+                v-if="getNickname(PublicKey.fromString(key.publicKey).toStringRaw(), user.keyPairs)"
+              >
+                <span>
+                  {{
+                    `${getNickname(PublicKey.fromString(key.publicKey).toStringRaw(), user.keyPairs)} `
+                  }}</span
+                >
+                <span>{{ `(${PublicKey.fromString(key.publicKey).toStringRaw()})` }}</span>
+              </span>
+              <span v-else>{{ PublicKey.fromString(key.publicKey).toStringRaw() }}</span>
             </p>
             <p
               class="text-small text-semi-bold text-pink mt-3"
