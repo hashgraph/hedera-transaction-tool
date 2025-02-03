@@ -14,10 +14,19 @@ const props = defineProps<{
 const nicknames = ref<{ ownerNickname: string; spenderNickname: string }[]>([]);
 
 /* Hooks */
-onBeforeMount(() => {
+onBeforeMount(async () => {
   if (!(props.transaction instanceof AccountAllowanceApproveTransaction)) {
     throw new Error('Transaction is not Account Delete Transaction');
   }
+
+  nicknames.value = (props.transaction as AccountAllowanceApproveTransaction).hbarApprovals.map(
+    () => ({
+      ownerNickname: '',
+      spenderNickname: '',
+    }),
+  );
+
+  await fetchNicknames();
 });
 
 /* Functions */
@@ -26,30 +35,31 @@ async function fetchNicknames() {
 
   const tx = props.transaction as AccountAllowanceApproveTransaction;
   if (tx.hbarApprovals) {
-    const newNicknames: { ownerNickname: string; spenderNickname: string }[] = [];
-    for (const approval of tx.hbarApprovals) {
+    const nicknamePromises = tx.hbarApprovals.map(async (approval, index) => {
       const nick = {
         ownerNickname: '',
         spenderNickname: '',
       };
+
       if (approval.ownerAccountId) {
         nick.ownerNickname =
-          (await getAccountNicknameFromId(approval.ownerAccountId?.toString())) || '';
+          (await getAccountNicknameFromId(approval.ownerAccountId.toString())) || '';
       }
       if (approval.spenderAccountId) {
         nick.spenderNickname =
-          (await getAccountNicknameFromId(approval.spenderAccountId?.toString())) || '';
+          (await getAccountNicknameFromId(approval.spenderAccountId.toString())) || '';
       }
-      newNicknames.push(nick);
-    }
-    nicknames.value = [...nicknames.value, ...newNicknames];
+
+      return { index, nick };
+    });
+
+    const results = await Promise.all(nicknamePromises);
+
+    results.forEach(({ index, nick }) => {
+      nicknames.value[index] = nick;
+    });
   }
 }
-
-/* Hooks */
-onBeforeMount(async () => {
-  await fetchNicknames();
-});
 
 /* Misc */
 const approvalHeadingClass = 'text-subheader text-dark-blue mt-5';
