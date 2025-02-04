@@ -3,7 +3,7 @@ import type { HederaAccount } from '@prisma/client';
 import type { AccountInfo } from '@main/shared/interfaces';
 
 import { computed, ref } from 'vue';
-import useAccountId from '@renderer/composables/useAccountId';
+import { handleFormatAccount } from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{
@@ -14,9 +14,6 @@ const props = defineProps<{
 
 /* State */
 const isCollapsed = ref(false);
-
-/* Composables */
-const accountData = useAccountId();
 
 /* Computed */
 const linkedAccounts = computed(
@@ -51,10 +48,7 @@ const linkedAccounts = computed(
             <template v-for="account in linkedAccounts" :key="`${publicKey}${account.account}`">
               <li class="flex-centered text-center badge-bg rounded py-2 px-3">
                 <p class="text-small text-secondary">
-                  {{ accountData.getAccountIdWithChecksum(account.account_id) }}
-                  <span v-if="(account.nickname?.trim() || '').length > 0"
-                    >({{ account?.nickname }})</span
-                  >
+                  {{ handleFormatAccount(linkedAccounts, account) }}
                 </p>
               </li>
             </template>

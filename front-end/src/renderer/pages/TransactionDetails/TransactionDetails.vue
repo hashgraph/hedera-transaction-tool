@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Transaction } from '@prisma/client';
-import type { ITransactionFull } from '@main/shared/interfaces';
+import type { ITransactionFull, IUserLinkedAccounts } from '@main/shared/interfaces';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -23,6 +23,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import { getTransactionById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
+import { getAll } from '@renderer/services/accountsService';
 
 import {
   getTransactionDateExtended,
@@ -38,6 +39,8 @@ import {
   hexToUint8Array,
   isLoggedInOrganization,
   computeSignatureKey,
+  getAccountNicknameFromId,
+  isUserLoggedIn,
 } from '@renderer/utils';
 
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -45,7 +48,9 @@ import SignatureStatus from '@renderer/components/SignatureStatus.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ReadOnlyApproversList from '@renderer/components/Approvers/ReadOnlyApproversList.vue';
 
-import txTypeComponentMapping from '@renderer/components/Transaction/Details/txTypeComponentMapping';
+import txTypeComponentMapping, {
+  transactionTypeKeys,
+} from '@renderer/components/Transaction/Details/txTypeComponentMapping';
 
 import TransactionDetailsHeader from './components/TransactionDetailsHeader.vue';
 import TransactionDetailsStatusStepper from './components/TransactionDetailsStatusStepper.vue';
@@ -70,6 +75,8 @@ const sdkTransaction = ref<SDKTransaction | null>(null);
 const signatureKeyObject = ref<Awaited<ReturnType<typeof computeSignatureKey>> | null>(null);
 const nextId = ref<string | number | null>(null);
 const feePayer = ref<string | null>(null);
+const feePayerNickname = ref('');
+const allLinkedAccounts = ref<IUserLinkedAccounts[]>([]);
 
 /* Computed */
 const transactionSpecificLabel = computed(() => {
@@ -91,6 +98,15 @@ const creator = computed(() => {
       )
     : null;
 });
+
+const shouldPassAllLinkedAccounts = computed(() =>
+  [
+    transactionTypeKeys.approveAllowance,
+    transactionTypeKeys.updateAccount,
+    transactionTypeKeys.deleteAccount,
+    transactionTypeKeys.createAccount,
+  ].includes(getTransactionType(sdkTransaction.value as SDKTransaction, true)),
+);
 
 /* Functions */
 async function fetchTransaction(id: string | number) {
@@ -166,6 +182,15 @@ onBeforeMount(async () => {
     ),
   ]);
   nextId.value = result[1];
+
+  if (isUserLoggedIn(user.personal)) {
+    allLinkedAccounts.value = await getAll({
+      where: {
+        user_id: user.personal.id,
+        network: network.network,
+      },
+    });
+  }
 });
 
 /* Watchers */
@@ -175,6 +200,14 @@ wsStore.$onAction(ctx => {
 });
 
 watch(() => user.selectedOrganization, router.back);
+
+watch([feePayer, allLinkedAccounts], ([newFeePayer, accounts]) => {
+  if (newFeePayer && accounts && accounts.length > 0) {
+    feePayerNickname.value = getAccountNicknameFromId(newFeePayer.toString(), accounts);
+  } else {
+    feePayerNickname.value = '';
+  }
+});
 
 /* Misc */
 const sectionHeadingClass = 'd-flex justify-content-between align-items-center';
@@ -252,10 +285,11 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                   <div :class="commonColClass">
                     <h4 :class="detailItemLabelClass">Creator</h4>
                     <p :class="detailItemValueClass">
-                      {{ creator?.user?.email }}
-                      <span v-if="creator?.nickname?.trim().length > 0" class="text-pink"
-                        >({{ creator?.nickname?.trim() }})</span
-                      >
+                      <span v-if="creator?.nickname?.trim().length > 0">
+                        <span class="text-pink">{{ creator?.nickname?.trim() }}</span>
+                        <span> ({{ creator?.user?.email }})</span>
+                      </span>
+                      <span v-else>{{ creator?.user?.email }}</span>
                     </p>
                   </div>
                 </template>
@@ -350,8 +384,15 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 <!-- Transaction Fee Payer -->
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Fee Payer</h4>
-                  <p :class="detailItemValueClass" data-testid="p-transaction-details-fee-payer">
-                    {{ feePayer && accountData.getAccountIdWithChecksum(feePayer) }}
+                  <p
+                    :class="detailItemValueClass"
+                    data-testid="p-transaction-details-fee-payer"
+                    v-if="feePayer"
+                  >
+                    <span v-if="feePayerNickname">{{
+                      `${feePayerNickname} (${accountData.getAccountIdWithChecksum(feePayer)})`
+                    }}</span>
+                    <span v-else>{{ accountData.getAccountIdWithChecksum(feePayer) }}</span>
                   </p>
                 </div>
               </div>
@@ -371,9 +412,11 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 
               <!-- Transaction Specific Component -->
               <Component
+                v-if="allLinkedAccounts && allLinkedAccounts.length > 0"
                 :is="txTypeComponentMapping[getTransactionType(sdkTransaction, true)]"
                 :transaction="sdkTransaction"
                 :organization-transaction="orgTransaction"
+                v-bind="shouldPassAllLinkedAccounts ? { allLinkedAccounts } : {}"
               />
 
               <hr class="separator my-5" />

@@ -1,3 +1,9 @@
+import type { AccountInfo, IUserLinkedAccounts } from '@main/shared/interfaces';
+import type { HederaAccount } from '@prisma/client';
+import useAccountId from '@renderer/composables/useAccountId';
+import { isUserLoggedIn } from './userStoreHelpers';
+import useUserStore from '@renderer/stores/storeUser';
+
 export * from './dom';
 export * from './sdk';
 export * from './transactions';
@@ -106,3 +112,36 @@ export const throwError = (errorMessage: string) => {
 
 export const getErrorMessage = (error: unknown, defaultErrorMessage: string) =>
   error instanceof Error ? error.message : defaultErrorMessage;
+
+export function handleFormatAccount(
+  allAccounts: HederaAccount[] | undefined,
+  accountToCheck: AccountInfo | HederaAccount,
+): string {
+  const accountData = useAccountId();
+
+  if (!allAccounts || !accountToCheck) {
+    return '';
+  }
+
+  const accountId =
+    'account' in accountToCheck ? accountToCheck.account : accountToCheck.account_id;
+
+  if (!accountId) return '';
+
+  const nickname = allAccounts.find(a => a.account_id === accountId)?.nickname || '';
+
+  return nickname
+    ? `${nickname} (${accountData.getAccountIdWithChecksum(accountId)})`
+    : accountData.getAccountIdWithChecksum(accountId);
+}
+
+export const getAccountNicknameFromId = (id: string, accounts: IUserLinkedAccounts[]) => {
+  const user = useUserStore();
+
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
+  const account = accounts.find(acc => acc.account_id === id);
+  return account?.nickname ?? '';
+};

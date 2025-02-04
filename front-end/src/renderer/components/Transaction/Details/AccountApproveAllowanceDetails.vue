@@ -1,19 +1,76 @@
 <script setup lang="ts">
-import { onBeforeMount } from 'vue';
+import type { IUserLinkedAccounts } from '@main/shared/interfaces';
+
+import { onBeforeMount, ref, watchEffect } from 'vue';
 
 import { Transaction, AccountAllowanceApproveTransaction, Hbar } from '@hashgraph/sdk';
 
-import { stringifyHbar } from '@renderer/utils';
+import useAccountId from '@renderer/composables/useAccountId';
+
+import { getAccountNicknameFromId, stringifyHbar } from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{
   transaction: Transaction;
+  allLinkedAccounts?: IUserLinkedAccounts[];
 }>();
 
+/* Composables */
+const accountData = useAccountId();
+
+/* State */
+const nicknames = ref<{ ownerNickname: string; spenderNickname: string }[]>([]);
+
 /* Hooks */
-onBeforeMount(() => {
+onBeforeMount(async () => {
   if (!(props.transaction instanceof AccountAllowanceApproveTransaction)) {
     throw new Error('Transaction is not Account Delete Transaction');
+  }
+
+  nicknames.value = (props.transaction as AccountAllowanceApproveTransaction).hbarApprovals.map(
+    () => ({
+      ownerNickname: '',
+      spenderNickname: '',
+    }),
+  );
+});
+
+/* Functions */
+function getNicknames() {
+  const tx = props.transaction as AccountAllowanceApproveTransaction;
+  if (tx.hbarApprovals) {
+    const nicknameValues = tx.hbarApprovals.map((approval, index) => {
+      const nick = {
+        ownerNickname: '',
+        spenderNickname: '',
+      };
+
+      if (approval.ownerAccountId) {
+        nick.ownerNickname =
+          getAccountNicknameFromId(approval.ownerAccountId.toString(), props.allLinkedAccounts!) ||
+          '';
+      }
+      if (approval.spenderAccountId) {
+        nick.spenderNickname =
+          getAccountNicknameFromId(
+            approval.spenderAccountId.toString(),
+            props.allLinkedAccounts!,
+          ) || '';
+      }
+
+      return { index, nick };
+    });
+
+    nicknameValues.forEach(({ index, nick }) => {
+      nicknames.value[index] = nick;
+    });
+  }
+}
+
+/* Watchers */
+watchEffect(() => {
+  if (props.transaction && props.allLinkedAccounts && props.allLinkedAccounts.length > 0) {
+    getNicknames();
   }
 });
 
@@ -36,13 +93,27 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
         <div v-if="approval.ownerAccountId" :class="commonColClass">
           <h4 :class="detailItemLabelClass">Owner ID</h4>
           <p :class="detailItemValueClass" data-testid="p-account-approve-details-owner-id">
-            {{ approval.ownerAccountId?.toString() }}
+            <span v-if="nicknames[i].ownerNickname">
+              {{
+                `${nicknames[i].ownerNickname} (${accountData.getAccountIdWithChecksum(approval.ownerAccountId?.toString())})`
+              }}
+            </span>
+            <span v-else>{{
+              accountData.getAccountIdWithChecksum(approval.ownerAccountId?.toString())
+            }}</span>
           </p>
         </div>
         <div v-if="approval.spenderAccountId" :class="commonColClass">
           <h4 :class="detailItemLabelClass">Spender ID</h4>
           <p :class="detailItemValueClass" data-testid="p-account-approve-details-spender-id">
-            {{ approval.spenderAccountId?.toString() }}
+            <span v-if="nicknames[i].spenderNickname">
+              {{
+                `${nicknames[i].spenderNickname} (${accountData.getAccountIdWithChecksum(approval.spenderAccountId?.toString())})`
+              }}
+            </span>
+            <span v-else>{{
+              accountData.getAccountIdWithChecksum(approval.spenderAccountId?.toString())
+            }}</span>
           </p>
         </div>
         <div :class="commonColClass">

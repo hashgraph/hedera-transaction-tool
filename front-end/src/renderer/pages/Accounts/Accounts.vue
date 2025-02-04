@@ -488,7 +488,7 @@ onMounted(async () => {
                   </div>
                   <div class="col-7">
                     <p
-                      class="text-small text-secondary overflow-hidden"
+                      class="text-small text-secondary overflow-x-auto"
                       data-testid="p-account-data-evm-address"
                     >
                       0x{{ accountData.accountInfo.value?.evmAddress || 'None' }}
@@ -523,7 +523,7 @@ onMounted(async () => {
                     </template>
                     <template v-else-if="accountData.key.value instanceof PublicKey && true">
                       <p
-                        class="text-secondary text-small overflow-hidden"
+                        class="text-secondary text-small overflow-x-auto"
                         data-testid="p-account-data-key"
                       >
                         {{ accountData.key.value.toStringRaw() }}

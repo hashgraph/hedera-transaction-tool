@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { HederaAccount } from '@prisma/client';
-import type { ITransactionFull } from '@main/shared/interfaces';
+import type { ITransactionFull, IUserLinkedAccounts } from '@main/shared/interfaces';
 
-import { onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
+import { onBeforeMount, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
 
 import {
   AccountCreateTransaction,
@@ -22,7 +22,13 @@ import { useToast } from 'vue-toast-notification';
 import { getTransactionInfo } from '@renderer/services/mirrorNodeDataService';
 import { add, getAll } from '@renderer/services/accountsService';
 
-import { isUserLoggedIn, isAccountId, stringifyHbar, safeAwait } from '@renderer/utils';
+import {
+  isUserLoggedIn,
+  isAccountId,
+  stringifyHbar,
+  safeAwait,
+  getAccountNicknameFromId,
+} from '@renderer/utils';
 
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -31,6 +37,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 const props = defineProps<{
   transaction: Transaction;
   organizationTransaction: ITransactionFull | null;
+  allLinkedAccounts?: IUserLinkedAccounts[];
 }>();
 
 /* Stores */
@@ -45,6 +52,8 @@ const isKeyStructureModalShown = ref(false);
 const controller = ref<AbortController | null>(null);
 const entityId = ref<string | null>(null);
 const accounts = ref<HederaAccount[]>([]);
+const newAccNickname = ref<string | undefined>(undefined);
+const txNickname = ref<string | undefined>(undefined);
 
 /* Handlers */
 const handleLinkEntity = async () => {
@@ -138,6 +147,22 @@ watch([() => props.transaction, () => props.organizationTransaction], async () =
   setTimeout(async () => await checkAndFetchTransactionInfo(), 3000);
 });
 
+watchEffect(() => {
+  if (entityId.value && props.allLinkedAccounts && props.allLinkedAccounts.length > 0) {
+    newAccNickname.value = getAccountNicknameFromId(entityId.value, props.allLinkedAccounts);
+  }
+});
+
+watchEffect(() => {
+  if (props.transaction && props.allLinkedAccounts && props.allLinkedAccounts.length > 0) {
+    const tx = props.transaction as AccountUpdateTransaction;
+    if (tx.accountId) {
+      const txNick = getAccountNicknameFromId(tx.accountId.toString(), props.allLinkedAccounts);
+      txNickname.value = txNick;
+    }
+  }
+});
+
 /* Misc */
 const detailItemLabelClass = 'text-micro text-semi-bold text-dark-blue';
 const detailItemValueClass = 'text-small overflow-hidden mt-1';
@@ -158,7 +183,10 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     >
       <h4 :class="detailItemLabelClass">Account ID</h4>
       <p :class="detailItemValueClass" data-testid="p-account-details-id">
-        {{ transaction.accountId.toString() }}
+        <span v-if="txNickname">
+          {{ `${txNickname} (${transaction.accountId.toString()})` }}
+        </span>
+        <span v-else>{{ transaction.accountId.toString() }}</span>
       </p>
     </div>
     <div v-if="transaction instanceof AccountCreateTransaction && entityId" class="col-12 mb-3">
@@ -166,7 +194,10 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
         <div>
           <h4 :class="detailItemLabelClass">New Account ID</h4>
           <p :class="detailItemValueClass" data-testid="p-new-account-id">
-            {{ entityId }}
+            <span v-if="newAccNickname">
+              {{ `${newAccNickname} (${entityId})` }}
+            </span>
+            <span v-else>{{ entityId }}</span>
           </p>
         </div>
         <div>

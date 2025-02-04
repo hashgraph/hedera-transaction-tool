@@ -84,14 +84,14 @@ onBeforeMount(async () => {
                     >
                       <span>
                         <span class="text-small">
-                          ({{ linkedAccounts.find(la => la.account_id === entityId)?.nickname }})
-                          {{ accountData.getAccountIdWithChecksum(entityId) }}
+                          {{ linkedAccounts.find(la => la.account_id === entityId)?.nickname }}
+                          ({{ accountData.getAccountIdWithChecksum(entityId) }})
                         </span>
                       </span>
                     </template>
                     <template v-else>
                       <span class="text-small overflow-hidden">
-                        {{ entityId }}
+                        {{ accountData.getAccountIdWithChecksum(entityId) || entityId }}
                       </span>
                     </template>
                   </span>
