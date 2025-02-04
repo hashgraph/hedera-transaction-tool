@@ -99,7 +99,7 @@ export async function decryptLegacyMnemonic(
   /* Read the encrypted data from the file */
   const data = await fs.promises.readFile(inputPath, { flag: 'r' });
 
-  const iterationCount = 1_000_000;
+  const iterationCount = 65536;
   const keyLength = 32; // 256 bits
   const salt = Buffer.from([1, 2, 3, 4, 5, 6, 7, 8]);
 
