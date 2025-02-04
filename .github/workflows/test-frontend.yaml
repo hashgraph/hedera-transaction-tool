@@ -45,9 +45,18 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm@9.15.3
 
+      - name: Install build dependencies and SQLite dev libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential python3 make gcc g++ libsqlite3-dev
+
       - name: Install front-end dependencies
         run: pnpm install --frozen-lockfile
         working-directory: front-end
+
+      - name: Rebuild native modules
+        run: pnpm rebuild
+        working-directory: automation
 
       - name: Build Linux executable
         run: pnpm run build:linux
