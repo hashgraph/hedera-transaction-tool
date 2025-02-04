@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { VueDatePickerProps } from '@vuepic/vue-datepicker';
 
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 
 import AppDatePicker from '@renderer/components/ui/AppDatePicker.vue';
 
@@ -35,6 +35,22 @@ function stopInterval() {
   intervalId.value && clearInterval(intervalId.value);
 }
 
+function resetTime(date: Date) {
+  const newDate = new Date(date);
+  newDate.setHours(0, 0, 0, 0);
+  return newDate;
+}
+
+function handleUpdateValidStart(date: Date) {
+  const isNewDate = date.toDateString() !== props.modelValue.toDateString();
+
+  if (isNewDate) {
+    emit('update:modelValue', resetTime(date));
+  } else {
+    emit('update:modelValue', date);
+  }
+}
+
 /* Hooks */
 onMounted(async () => {
   startInterval();
@@ -43,11 +59,21 @@ onMounted(async () => {
 onUnmounted(() => {
   stopInterval();
 });
+
+/* Watchers */
+watch(
+  () => props.modelValue,
+  (newVal, oldVal) => {
+    if (newVal.toDateString() !== oldVal.toDateString()) {
+      emit('update:modelValue', resetTime(newVal));
+    }
+  },
+);
 </script>
 <template>
   <AppDatePicker
     :model-value="modelValue"
-    @update:model-value="$emit('update:modelValue', $event)"
+    @update:model-value="handleUpdateValidStart"
     :minDate="minDate"
     :maxDate="maxDate"
     :clearable="false"
