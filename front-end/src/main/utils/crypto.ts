@@ -3,7 +3,7 @@ import * as argon2 from 'argon2';
 import * as bcrypt from 'bcrypt';
 
 export function deriveKey(password: string, salt: Buffer) {
-  const iterations = 2560;
+  const iterations = 1_000_000;
   const keyLength = 32;
 
   return crypto.pbkdf2Sync(password, salt, iterations, keyLength, 'sha512');
@@ -49,6 +49,10 @@ export async function hash(data: string, usePseudoSalt = false): Promise<string>
     pseudoSalt = Buffer.from(paddedData.slice(0, 16));
   }
   return await argon2.hash(data, {
+    type: argon2.argon2id,
+    memoryCost: 2 ** 16,
+    timeCost: 3,
+    parallelism: 1,
     salt: pseudoSalt,
   });
 }
