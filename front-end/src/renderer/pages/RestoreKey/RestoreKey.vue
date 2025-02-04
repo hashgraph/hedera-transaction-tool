@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from 'vue';
+import { nextTick, onBeforeUnmount, ref } from 'vue';
+
+import type { RecoveryPhrase } from '@renderer/types';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
@@ -32,7 +34,12 @@ const handleMnemonicHashNickname = (nickname: string) => {
 
 const handleNextStep = () => step.value++;
 
-const handleClearWords = () => (user.recoveryPhrase = null);
+const handleClearWords = () => {
+  user.recoveryPhrase = {} as RecoveryPhrase;
+  nextTick(() => {
+    user.recoveryPhrase = null;
+  });
+};
 
 /* Hooks */
 onBeforeUnmount(() => {
