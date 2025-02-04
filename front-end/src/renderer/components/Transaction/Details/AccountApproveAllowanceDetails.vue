@@ -36,7 +36,7 @@ onBeforeMount(async () => {
 });
 
 /* Functions */
-function fetchNicknames() {
+function getNicknames() {
   const tx = props.transaction as AccountAllowanceApproveTransaction;
   if (tx.hbarApprovals) {
     const nicknameValues = tx.hbarApprovals.map((approval, index) => {
@@ -70,7 +70,7 @@ function fetchNicknames() {
 /* Watchers */
 watchEffect(() => {
   if (props.transaction && props.allLinkedAccounts && props.allLinkedAccounts.length > 0) {
-    fetchNicknames();
+    getNicknames();
   }
 });
 
