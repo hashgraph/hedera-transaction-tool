@@ -112,7 +112,8 @@ export class UsersService {
   // For the given password, create a salt and hash it with the password.
   // Return the result.
   async getSaltedHash(password: string): Promise<string> {
-    const salt = await bcrypt.genSalt();
+    const saltRounds = 12;
+    const salt = await bcrypt.genSalt(saltRounds);
     return await bcrypt.hash(password, salt);
   }
 }
