@@ -46,26 +46,7 @@ import type {
 import { getMaximumExpirationTime, getMinimumExpirationTime } from '.';
 import { uint8ToHex } from '..';
 
-export type ExtendedTransactionData = Transaction &
-  TransactionCommonData &
-  (
-    | AccountCreateData
-    | AccountUpdateData
-    | AccountDeleteData
-    | ApproveHbarAllowanceData
-    | FileCreateData
-    | FileUpdateData
-    | FileAppendData
-    | FreezeData
-    | TransferHbarData
-    | NodeData
-    | NodeUpdateData
-    | NodeDeleteData
-    | SystemDeleteData
-    | SystemUndeleteData
-  );
-
-export type Test = TransactionCommonData &
+export type ExtendedTransactionData = TransactionCommonData &
   (
     | AccountCreateData
     | AccountUpdateData
@@ -440,7 +421,7 @@ const transactionHandlers = new Map<
 
 export function getAllData(transaction: Transaction) {
   const handler = transactionHandlers.get(
-    transaction.constructor as new (...args: any[]) => ExtendedTransactionData,
+    transaction.constructor as new (...args: any[]) => ExtendedTransactionData & Transaction,
   );
   if (!handler) {
     throw new Error('Unsupported transaction type');
