@@ -7,7 +7,7 @@ import type {
 } from '@renderer/components/Transaction/TransactionProcessor';
 import type { CreateTransactionFunc } from '.';
 
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, toRaw, watchEffect } from 'vue';
 import { Hbar, Transaction, KeyList } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -23,7 +23,8 @@ import {
   redirectToDetails,
   redirectToGroupDetails,
 } from '@renderer/utils';
-import { getTransactionCommonData, validate100CharInput } from '@renderer/utils/sdk';
+import { getAllData, validate100CharInput } from '@renderer/utils/sdk';
+import type { ExtendedTransactionData, Test } from '@renderer/utils/sdk/getData';
 import { getPropagationButtonLabel } from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -84,6 +85,7 @@ const approvers = ref<TransactionApproverDto[]>([]);
 const isProcessed = ref(false);
 const groupActionTaken = ref(false);
 const memoError = ref(false);
+const initialTransactionData = ref<ExtendedTransactionData | null>(null);
 
 /* Computed */
 const transaction = computed(() => createTransaction({ ...data } as TransactionCommonData));
@@ -94,11 +96,23 @@ const transactionKey = computed(() => {
   return new KeyList(keys);
 });
 
+const hasTransactionChanged = computed(() => {
+  if (!initialTransactionData.value) return false;
+
+  const currentTransactionData = getAllData(
+    createTransaction(toRaw(data) as ExtendedTransactionData),
+  );
+
+  return JSON.stringify(currentTransactionData) !== JSON.stringify(initialTransactionData.value);
+});
+
 /* Handlers */
 const handleDraftLoaded = async (transaction: Transaction) => {
-  const commonData = getTransactionCommonData(transaction);
-  payerData.accountId.value = commonData.payerId;
-  Object.assign(data, commonData);
+  const allTxData = getAllData(transaction) as ExtendedTransactionData;
+  payerData.accountId.value = allTxData.payerId;
+  Object.assign(data, allTxData);
+
+  initialTransactionData.value = JSON.parse(JSON.stringify(allTxData));
   emit('draft-loaded', transaction);
 };
 
@@ -194,6 +208,10 @@ function basePreCreateAssert() {
   }
 }
 
+watchEffect(() => {
+  //console.log(data);
+});
+
 /* Exposes */
 defineExpose({
   payerData,
@@ -283,7 +301,7 @@ defineExpose({
     />
 
     <GroupActionModal
-      :skip="groupActionTaken"
+      :skip="groupActionTaken || !hasTransactionChanged"
       @addToGroup="handleGroupAction('add')"
       @editItem="handleGroupAction('edit')"
     />
