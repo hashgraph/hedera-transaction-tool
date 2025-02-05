@@ -28,7 +28,6 @@ import {
   redirectToGroupDetails,
   isLoggedInOrganization,
   hexToUint8Array,
-  countWaitingForSignatures,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -73,16 +72,6 @@ const sort = reactive<{
 /* Computed */
 const generatedClass = computed(() => {
   return sort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
-});
-
-const waitingForSignaturesCounts = computed(() => {
-  const groupCounts: Record<number, number> = {};
-  new Map(transactions.value).forEach((txList, groupId) => {
-    if (groupId !== -1) {
-      groupCounts[groupId] = countWaitingForSignatures(txList);
-    }
-  });
-  return groupCounts;
 });
 
 /* Handlers */
@@ -281,17 +270,9 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                     }}
                   </td>
                   <td class="text-center">
-                    <AppButton @click="redirectToGroupDetails($router, group[0])" color="secondary"
-                      ><span
-                        :class="
-                          waitingForSignaturesCounts[group[0]] &&
-                          'signature-notification position-relative'
-                        "
-                        :data-notification="waitingForSignaturesCounts[group[0]]"
-                      >
-                        Details
-                      </span></AppButton
-                    >
+                    <AppButton @click="redirectToGroupDetails($router, group[0])" color="secondary">
+                      Details
+                    </AppButton>
                   </td>
                 </tr>
               </template>

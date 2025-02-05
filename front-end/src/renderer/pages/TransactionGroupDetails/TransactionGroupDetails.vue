@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { IGroup } from '@renderer/services/organization';
 
-import { onBeforeMount, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { Transaction } from '@hashgraph/sdk';
 
@@ -42,6 +42,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
+import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -64,6 +65,7 @@ const publicKeysRequiredToSign = ref<string[] | null>([]);
 const disableSignAll = ref(false);
 const isSigning = ref(false);
 const isApproving = ref(false);
+const isFiltered = ref(false);
 
 /* Handlers */
 async function handleFetchGroup(id: string | number) {
@@ -96,6 +98,24 @@ async function handleFetchGroup(id: string | number) {
     console.log('not logged into org');
   }
 }
+
+/* Computed */
+const unsignedTransactions = computed(() => {
+  if (group.value?.groupItems) {
+    return group.value.groupItems.filter(
+      transaction => transaction.transaction.status === TransactionStatus.WAITING_FOR_SIGNATURES,
+    );
+  }
+  return undefined;
+});
+
+const transactionsLoaded = computed(() => {
+  if (isFiltered.value) {
+    return unsignedTransactions.value;
+  }
+
+  return group.value?.groupItems;
+});
 
 /* Handlers */
 const handleBack = () => {
@@ -243,10 +263,6 @@ function setGetTransactionsFunction() {
   }, false);
 }
 
-const isWaitingForSignatures = (status: TransactionStatus) => {
-  return status === TransactionStatus.WAITING_FOR_SIGNATURES ? true : false;
-};
-
 /* Hooks */
 onBeforeMount(async () => {
   const id = router.currentRoute.value.params.id;
@@ -303,6 +319,18 @@ watch(
 
             <hr class="separator my-5 w-100" />
 
+            <div class="d-flex justify-content-end">
+              <AppCheckBox
+                class="cursor-pointer"
+                :checked="false"
+                :name="'unsigned'"
+                :disabled="!unsignedTransactions || unsignedTransactions.length <= 0"
+                label="Unsigned"
+                :data-testid="'unsigned-transactions-checkbox'"
+                v-on:update:checked="isFiltered = !isFiltered"
+              />
+            </div>
+
             <Transition name="fade" mode="out-in">
               <template v-if="group.groupItems.length > 0">
                 <div class="fill-remaining overflow-x-auto">
@@ -330,7 +358,10 @@ watch(
                       </tr>
                     </thead>
                     <tbody>
-                      <template v-for="(groupItem, index) in group.groupItems" :key="groupItem.seq">
+                      <template
+                        v-for="(groupItem, index) in transactionsLoaded"
+                        :key="groupItem.seq"
+                      >
                         <Transition name="fade" mode="out-in">
                           <template v-if="groupItem">
                             <tr>
@@ -350,11 +381,7 @@ watch(
                               <td class="text-center">
                                 <AppButton
                                   type="button"
-                                  :color="
-                                    isWaitingForSignatures(groupItem.transaction.status)
-                                      ? 'danger'
-                                      : 'secondary'
-                                  "
+                                  color="secondary"
                                   @click.prevent="handleSign(groupItem.transaction.id)"
                                   :data-testid="`button-group-transaction-${index}`"
                                   ><span>Details</span>
