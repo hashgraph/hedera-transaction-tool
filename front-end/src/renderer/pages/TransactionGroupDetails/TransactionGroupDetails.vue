@@ -117,6 +117,18 @@ const transactionsLoaded = computed(() => {
   return group.value?.groupItems;
 });
 
+const allTransactionsAreUnsigned = computed(() => {
+  if (group.value?.groupItems) {
+    const allUnsigned = !group.value.groupItems.some(
+      tx => tx.transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES,
+    );
+
+    return allUnsigned;
+  }
+
+  return true;
+});
+
 /* Handlers */
 const handleBack = () => {
   if (!history.state?.back?.startsWith('/transactions')) {
@@ -320,7 +332,12 @@ watch(
             <hr class="separator my-5 w-100" />
 
             <div class="d-flex justify-content-end">
+              <span v-if="allTransactionsAreUnsigned"
+                ><i class="bi bi-exclamation-circle"></i> All transactions are unsigned</span
+              >
+
               <AppCheckBox
+                v-else
                 class="cursor-pointer"
                 :checked="false"
                 :name="'unsigned'"
