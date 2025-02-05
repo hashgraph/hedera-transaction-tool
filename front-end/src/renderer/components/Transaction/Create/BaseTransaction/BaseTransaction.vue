@@ -6,8 +6,9 @@ import type {
   ExecutedSuccessData,
 } from '@renderer/components/Transaction/TransactionProcessor';
 import type { CreateTransactionFunc } from '.';
+import type { ExtendedTransactionData } from '@renderer/utils/sdk/getData';
 
-import { computed, reactive, ref, toRaw, watchEffect } from 'vue';
+import { computed, reactive, ref, toRaw } from 'vue';
 import { Hbar, Transaction, KeyList } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -24,7 +25,6 @@ import {
   redirectToGroupDetails,
 } from '@renderer/utils';
 import { getAllData, validate100CharInput } from '@renderer/utils/sdk';
-import type { ExtendedTransactionData, Test } from '@renderer/utils/sdk/getData';
 import { getPropagationButtonLabel } from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -72,7 +72,7 @@ const description = ref('');
 const submitManually = ref(false);
 const reminder = ref<number | null>(null);
 
-const data = reactive<TransactionCommonData>({
+const data = reactive<TransactionCommonData | ExtendedTransactionData>({
   payerId: '',
   validStart: new Date(),
   maxTransactionFee: new Hbar(2),
@@ -86,6 +86,7 @@ const isProcessed = ref(false);
 const groupActionTaken = ref(false);
 const memoError = ref(false);
 const initialTransactionData = ref<ExtendedTransactionData | null>(null);
+const initialDescription = ref('');
 
 /* Computed */
 const transaction = computed(() => createTransaction({ ...data } as TransactionCommonData));
@@ -103,7 +104,13 @@ const hasTransactionChanged = computed(() => {
     createTransaction(toRaw(data) as ExtendedTransactionData),
   );
 
-  return JSON.stringify(currentTransactionData) !== JSON.stringify(initialTransactionData.value);
+  const mergedCurrentData = { ...data, ...currentTransactionData };
+
+  return JSON.stringify(mergedCurrentData) !== JSON.stringify(initialTransactionData.value);
+});
+
+const hasDescriptionChanged = computed(() => {
+  return description.value !== toRaw(initialDescription.value);
 });
 
 /* Handlers */
@@ -176,6 +183,7 @@ const handleGroupAction = (action: 'add' | 'edit') => {
 
 function handleFetchedDescription(fetchedDescription: string) {
   description.value = fetchedDescription;
+  initialDescription.value = fetchedDescription;
 }
 
 function handleFetchedPayerAccountId(fetchedPayerAccountId: string) {
@@ -207,11 +215,6 @@ function basePreCreateAssert() {
     throw new Error('Max Transaction Fee is required');
   }
 }
-
-watchEffect(() => {
-  //console.log(data);
-});
-
 /* Exposes */
 defineExpose({
   payerData,
@@ -301,7 +304,7 @@ defineExpose({
     />
 
     <GroupActionModal
-      :skip="groupActionTaken || !hasTransactionChanged"
+      :skip="groupActionTaken || (!hasTransactionChanged && !hasDescriptionChanged)"
       @addToGroup="handleGroupAction('add')"
       @editItem="handleGroupAction('edit')"
     />
