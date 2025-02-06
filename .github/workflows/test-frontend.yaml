@@ -43,7 +43,7 @@ jobs:
             front-end/pnpm-lock.yaml
 
       - name: Install pnpm
-        run: npm install -g pnpm
+        run: npm install -g pnpm@9.15.3
 
       - name: Install front-end dependencies
         run: pnpm install --frozen-lockfile
@@ -95,7 +95,7 @@ jobs:
             automation/pnpm-lock.yaml
 
       - name: Install pnpm
-        run: npm install -g pnpm
+        run: npm install -g pnpm@9.15.3
 
       - name: Install Docker Compose Plugin
         run: |
@@ -161,7 +161,7 @@ jobs:
             front-end/pnpm-lock.yaml
 
       - name: Install pnpm
-        run: npm install -g pnpm
+        run: npm install -g pnpm@9.15.3
 
       - name: Install front-end dependencies
         run: pnpm install --frozen-lockfile
