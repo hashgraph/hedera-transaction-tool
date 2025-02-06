@@ -1,19 +1,45 @@
+import { mockDeep } from 'jest-mock-extended';
+
 import { BadRequestException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ClientProxy } from '@nestjs/microservices';
 import { Repository } from 'typeorm';
-import { mockDeep } from 'jest-mock-extended';
 
-import { Filtering, Pagination, Sorting } from '@app/common';
-import { NotificationReceiver, User, Notification, NotificationType } from '@entities';
+import {
+  Filtering,
+  MirrorNodeService,
+  NOTIFICATIONS_SERVICE,
+  Pagination,
+  Sorting,
+} from '@app/common';
+import { notifyGeneral } from '@app/common/utils/client';
+import { keysRequiredToSign } from '@app/common/utils/transaction';
+import {
+  NotificationReceiver,
+  User,
+  Notification,
+  NotificationType,
+  TransactionStatus,
+  Transaction,
+  UserKey,
+} from '@entities';
 
 import { NotificationReceiverService } from './notification-receiver.service';
 
 import { UpdateNotificationReceiverDto } from './dtos';
+import { TransactionsService } from '../transactions/transactions.service';
+import { AccountCreateTransaction } from '@hashgraph/sdk';
+
+jest.mock('@app/common/utils/client');
+jest.mock('@app/common/utils/transaction');
 
 describe('NotificationReceiverService', () => {
   let service: NotificationReceiverService;
   const repo = mockDeep<Repository<NotificationReceiver>>();
+  const notificationsService = mockDeep<ClientProxy>();
+  const mirrorNodeService = mockDeep<MirrorNodeService>();
+  const transactionsService = mockDeep<TransactionsService>();
 
   const user: User = { id: 1 } as User;
   const notificationReceiver: NotificationReceiver = {
@@ -32,6 +58,18 @@ describe('NotificationReceiverService', () => {
         {
           provide: getRepositoryToken(NotificationReceiver),
           useValue: repo,
+        },
+        {
+          provide: NOTIFICATIONS_SERVICE,
+          useValue: notificationsService,
+        },
+        {
+          provide: MirrorNodeService,
+          useValue: mirrorNodeService,
+        },
+        {
+          provide: TransactionsService,
+          useValue: transactionsService,
         },
       ],
     }).compile();
@@ -240,6 +278,44 @@ describe('NotificationReceiverService', () => {
           notification: true,
         },
       });
+    });
+  });
+
+  describe('remindSigners', () => {
+    it('should throw BadRequestException if transaction not found', async () => {
+      transactionsService.getTransactionForCreator.mockResolvedValue(null);
+
+      await expect(service.remindSigners(user, 1)).rejects.toThrow(BadRequestException);
+      expect(transactionsService.getTransactionForCreator).toHaveBeenCalledWith(1, user);
+    });
+
+    it('should return if transaction is not waiting for signatures', async () => {
+      const transaction = { status: TransactionStatus.EXECUTED } as any;
+      transactionsService.getTransactionForCreator.mockResolvedValue(transaction);
+
+      const result = await service.remindSigners(user, 1);
+
+      expect(transactionsService.getTransactionForCreator).toHaveBeenCalledWith(1, user);
+      expect(result).toBeUndefined();
+    });
+
+    it('should notify signers if transaction is waiting for signatures', async () => {
+      const accountCreate = new AccountCreateTransaction();
+      const transaction = {
+        id: 1,
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: accountCreate.toBytes(),
+        validStart: new Date(),
+      } as Partial<Transaction>;
+      const keys = [{ userId: 2 }, { userId: 2 }] as Partial<UserKey[]>;
+
+      transactionsService.getTransactionForCreator.mockResolvedValue(transaction as Transaction);
+      jest.mocked(keysRequiredToSign).mockResolvedValueOnce(keys);
+
+      await service.remindSigners(user, 1);
+
+      expect(transactionsService.getTransactionForCreator).toHaveBeenCalledWith(1, user);
+      expect(notifyGeneral).toHaveBeenCalled();
     });
   });
 });

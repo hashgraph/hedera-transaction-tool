@@ -33,6 +33,10 @@ export const commonRequestHandler = async <T>(
         const code: keyof typeof ErrorMessages = error.response.data?.code || ErrorCodes.UNKWN;
         message = ErrorMessages[code] || ErrorMessages[ErrorCodes.UNKWN];
       }
+
+      if (error.response.status === 429) {
+        message = 'Too many requests. Please try again later.';
+      }
     }
     throw new Error(message);
   }

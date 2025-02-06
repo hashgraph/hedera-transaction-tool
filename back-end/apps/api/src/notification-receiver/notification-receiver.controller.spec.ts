@@ -156,4 +156,14 @@ describe('NotificationsController', () => {
       );
     });
   });
+
+  describe('remindSigners', () => {
+    it('should remind signers', async () => {
+      const transactionId = 1;
+
+      await controller.remindSigners(user, transactionId);
+
+      expect(service.remindSigners).toHaveBeenCalledWith(user, transactionId);
+    });
+  });
 });

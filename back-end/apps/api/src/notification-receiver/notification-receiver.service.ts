@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ClientProxy } from '@nestjs/microservices';
 import { FindManyOptions, FindOptionsOrder, FindOptionsWhere, Repository } from 'typeorm';
 
 import {
@@ -7,6 +8,7 @@ import {
   notificationProperties,
   NotificationReceiver,
   notificationReceiverProperties,
+  TransactionStatus,
   User,
 } from '@entities';
 
@@ -14,18 +16,29 @@ import {
   ErrorCodes,
   Filtering,
   getOrder,
+  getRemindSignersDTO,
   getWhere,
+  keysRequiredToSign,
+  MirrorNodeService,
+  NOTIFICATIONS_SERVICE,
+  notifyGeneral,
   PaginatedResourceDto,
   Pagination,
   Sorting,
 } from '@app/common';
 import { UpdateNotificationReceiverDto } from './dtos';
 
+import { TransactionsService } from '../transactions/transactions.service';
+
 @Injectable()
 export class NotificationReceiverService {
   constructor(
     @InjectRepository(NotificationReceiver)
     private repo: Repository<NotificationReceiver>,
+    @Inject(NOTIFICATIONS_SERVICE)
+    private readonly notificationsService: ClientProxy,
+    private readonly transactionService: TransactionsService,
+    private readonly mirrorNodeService: MirrorNodeService,
   ) {}
 
   async getReceivedNotifications(
@@ -91,6 +104,40 @@ export class NotificationReceiverService {
     });
 
     return true;
+  }
+
+  async remindSigners(user: User, transactionId: number) {
+    const transaction = await this.transactionService.getTransactionForCreator(transactionId, user);
+
+    if (!transaction) {
+      throw new BadRequestException(ErrorCodes.TNF);
+    }
+
+    /* Check if transaction is still waiting for signatures */
+    if (transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES) {
+      return;
+    }
+
+    /* Get users required to sign */
+    const allKeys = await keysRequiredToSign(
+      transaction,
+      this.mirrorNodeService,
+      this.repo.manager,
+    );
+    const userIds = allKeys
+      .map(k => k.userId)
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .filter(Boolean);
+
+    const dto = getRemindSignersDTO(transaction, userIds, true, true);
+    await notifyGeneral(
+      this.notificationsService,
+      dto.type,
+      userIds,
+      dto.content,
+      dto.entityId,
+      dto.recreateReceivers,
+    );
   }
 
   getFindOptionsForNotifications(

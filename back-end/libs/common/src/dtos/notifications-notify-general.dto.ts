@@ -22,4 +22,7 @@ export class NotifyGeneralDto {
 
   @IsOptional()
   additionalData?: Record<string, any>;
+
+  @IsOptional()
+  recreateReceivers?: boolean;
 }

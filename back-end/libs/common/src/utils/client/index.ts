@@ -66,11 +66,13 @@ export const notifyGeneral = (
   userIds: number[],
   content: string,
   entityId?: number,
+  recreateReceivers?: boolean,
 ) => {
   client.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
     type,
     userIds,
     content,
     entityId,
+    recreateReceivers,
   });
 };
