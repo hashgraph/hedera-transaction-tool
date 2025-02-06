@@ -946,7 +946,11 @@ class TransactionPage extends BasePage {
 
   async fillInAllowanceOwnerAccount() {
     const allAccountIdsText = await this.getText(this.payerDropdownSelector);
-    const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
+    console.log('All Account IDs:', allAccountIdsText);
+    const firstAccountId = getCleanAccountId(
+      await this.getFirstAccountIdFromText(allAccountIdsText),
+    );
+    console.log('First Account ID:', firstAccountId);
     await this.fill(this.allowanceOwnerAccountSelector, firstAccountId);
     return firstAccountId;
   }

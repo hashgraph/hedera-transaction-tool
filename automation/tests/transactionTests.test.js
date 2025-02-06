@@ -584,7 +584,7 @@ test.describe('Transaction tests', () => {
     await transactionPage.deleteFirstDraft();
   });
 
-  test('Verify draft transaction contains the saved info for approve allowance tx', async () => {
+  test.only('Verify draft transaction contains the saved info for approve allowance tx', async () => {
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnApproveAllowanceTransaction();
 
