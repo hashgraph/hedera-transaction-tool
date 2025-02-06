@@ -37,6 +37,7 @@ const toast = useToast();
 
 /* State */
 const isGroupActionModalShown = ref(false);
+const isDiscardFromScratch = ref(false);
 
 /* Emits */
 const emit = defineEmits(['addToGroup', 'editGroupItem']);
@@ -102,10 +103,10 @@ async function sendAddDraft(userId: string, transactionBytes: Uint8Array) {
 }
 
 async function handleDiscard() {
-  const previousPath = router.previousPath;
-  if (isFromSingleTransaction.value || props.isFromScratch) {
-    await router.push(previousPath);
+  if (props.isFromScratch) {
+    isDiscardFromScratch.value = true;
   }
+  const previousPath = router.previousPath;
   await router.push(previousPath);
 }
 
@@ -130,6 +131,7 @@ async function handleSubmit() {
 
 /* Hooks */
 onBeforeRouteLeave(async () => {
+  if (isDiscardFromScratch.value) return true;
   const transactionBytes = getTransactionBytes();
   if (!transactionBytes) return true;
   if ((await draftExists(transactionBytes)) && props.isFromScratch) {
