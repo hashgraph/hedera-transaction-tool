@@ -13,7 +13,7 @@ export const getRemindSignersDTO = (
     type: manual
       ? NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER_MANUAL
       : NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER,
-    content: `A transaction is about to expire and it has not collected the required signatures.
+    content: `A transaction has not collected the required signatures and requires attention.
   Please visit the Hedera Transaction Tool and locate the transaction.
   Valid start: ${transaction.validStart.toUTCString()}
   Transaction ID: ${transaction.transactionId}

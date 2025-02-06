@@ -359,7 +359,7 @@ const handleTransactionAction = async (
     },
     remindSigners: {
       title: 'Remind Signers?',
-      text: 'Are you sure you want to send email to the required signers of the transaction?',
+      text: 'All signers that have not yet signed will be sent a notification.',
       buttonText: 'Confirm',
       loadingText: 'Sending...',
       successMessage: 'Signers reminded successfully',
