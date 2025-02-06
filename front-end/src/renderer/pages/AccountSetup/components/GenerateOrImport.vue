@@ -50,7 +50,7 @@ const mnemonicHashNickname = ref('');
 const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title);
 
 /* Handlers */
-const handleClearWords = () => (user.recoveryPhrase = null);
+const handleClearWords = () => user.setRecoveryPhrase(null);
 
 const handleImport = async () => {
   if (user.recoveryPhrase === null) return;

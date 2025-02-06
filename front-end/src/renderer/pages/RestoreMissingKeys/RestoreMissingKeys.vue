@@ -59,7 +59,7 @@ const handleImportRecoveryPhrase = async () => {
   }
 };
 
-const handleClearWords = () => (user.recoveryPhrase = null);
+const handleClearWords = () => user.setRecoveryPhrase(null);
 
 const storeKeys = async (
   keys: {

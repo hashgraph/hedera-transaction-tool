@@ -109,6 +109,8 @@ const useUserStore = defineStore('user', () => {
   /** Keys */
   const setRecoveryPhrase = async (words: string[] | null) => {
     if (words === null) {
+      recoveryPhrase.value = { words: [], hash: '' } as unknown as RecoveryPhrase;
+      await nextTick();
       recoveryPhrase.value = null;
     } else {
       recoveryPhrase.value = await ush.createRecoveryPhrase(words);

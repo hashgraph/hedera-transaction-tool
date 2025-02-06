@@ -35,10 +35,7 @@ const handleMnemonicHashNickname = (nickname: string) => {
 const handleNextStep = () => step.value++;
 
 const handleClearWords = () => {
-  user.recoveryPhrase = {} as RecoveryPhrase;
-  nextTick(() => {
-    user.recoveryPhrase = null;
-  });
+  user.setRecoveryPhrase(null);
 };
 
 /* Hooks */
