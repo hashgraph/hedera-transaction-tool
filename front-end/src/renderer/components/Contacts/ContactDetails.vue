@@ -3,7 +3,7 @@ import type { HederaAccount } from '@prisma/client';
 import type { AccountInfo, Contact } from '@main/shared/interfaces';
 import { useToast } from 'vue-toast-notification';
 
-import { onBeforeMount, ref, watch } from 'vue';
+import { defineModel, onBeforeMount, ref, watch } from 'vue';
 
 import { PublicKey } from '@hashgraph/sdk';
 
@@ -22,10 +22,12 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import ContactDetailsAssociatedAccounts from '@renderer/components/Contacts/ContactDetailsAssociatedAccounts.vue';
 import ContactDetailsLinkedAccounts from '@renderer/components/Contacts/ContactDetailsLinkedAccounts.vue';
 
+/* Modals */
+const linkedAccounts = defineModel<HederaAccount[]>('linkedAccounts');
+
 /* Props */
 const props = defineProps<{
   contact: Contact;
-  linkedAccounts: HederaAccount[];
 }>();
 
 /* Composables */
@@ -42,7 +44,10 @@ const nicknameInputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const publicKeyToAccounts = ref<{ [key: string]: AccountInfo[] }>({});
 
 /* Emits */
-const emit = defineEmits(['update:linkedAccounts', 'update:remove']);
+defineEmits<{
+  (event: 'remove'): void;
+  (event: 'elevate-to-admin'): void;
+}>();
 
 /* Handlers */
 const handleStartNicknameEdit = () => {
@@ -151,19 +156,29 @@ watch(
       "
       class="d-flex gap-3"
     >
-      <AppButton
-        v-if="contact.user.status === 'NEW'"
-        data-testid="button-resend-email-from-contact-list"
-        class="min-w-unset"
-        color="secondary"
-        @click="handleResend"
-        >Resend email</AppButton
-      >
+      <template v-if="contact.user.status === 'NEW'">
+        <AppButton
+          data-testid="button-resend-email-from-contact-list"
+          class="min-w-unset"
+          color="secondary"
+          @click="handleResend"
+          >Resend email</AppButton
+        >
+      </template>
+      <template v-if="!contact.user.admin">
+        <AppButton
+          data-testid="button-elevate-to-admin-from-contact-list"
+          class="min-w-unset"
+          color="secondary"
+          @click="$emit('elevate-to-admin')"
+          >Assign Admin</AppButton
+        >
+      </template>
       <AppButton
         data-testid="button-remove-account-from-contact-list"
         class="min-w-unset"
         color="danger"
-        @click="$emit('update:remove')"
+        @click="$emit('remove')"
         ><span class="bi bi-trash"></span> Remove</AppButton
       >
     </div>
@@ -204,11 +219,10 @@ watch(
         </div>
 
         <ContactDetailsAssociatedAccounts
+          v-model:linked-accounts="linkedAccounts"
           :publicKey="key.publicKey"
           :accounts="publicKeyToAccounts[key.publicKey]"
-          :linkedAccounts="linkedAccounts"
           :index="index"
-          @update:linkedAccounts="emit('update:linkedAccounts', $event)"
           class="mt-4"
         />
 

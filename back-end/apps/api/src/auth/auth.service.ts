@@ -161,4 +161,9 @@ export class AuthService {
     const { userId } = await this.jwtService.verifyAsync(accessToken);
     return this.usersService.getUser({ id: userId });
   }
+
+  /* Elevate user to admin */
+  async elevateAdmin(userId: number): Promise<void> {
+    await this.usersService.updateUserById(userId, { admin: true });
+  }
 }

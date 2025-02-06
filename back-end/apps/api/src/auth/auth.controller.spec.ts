@@ -185,4 +185,12 @@ describe('AuthController', () => {
       expect(blacklistService.blacklistToken).toHaveBeenCalledWith('token');
     });
   });
+
+  describe('elevate-admin', () => {
+    it('should have no return value', async () => {
+      authService.elevateAdmin.mockResolvedValue(undefined);
+
+      expect(await controller.elevateUser({ id: 1 })).toBeUndefined();
+    });
+  });
 });
