@@ -270,7 +270,10 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                     }}
                   </td>
                   <td class="text-center">
-                    <AppButton @click="redirectToGroupDetails($router, group[0])" color="secondary">
+                    <AppButton
+                      @click="redirectToGroupDetails($router, group[0], false)"
+                      color="secondary"
+                    >
                       Details
                     </AppButton>
                   </td>

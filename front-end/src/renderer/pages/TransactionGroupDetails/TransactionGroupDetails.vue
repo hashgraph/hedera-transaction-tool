@@ -65,7 +65,7 @@ const publicKeysRequiredToSign = ref<string[] | null>([]);
 const disableSignAll = ref(false);
 const isSigning = ref(false);
 const isApproving = ref(false);
-const isFiltered = ref(false);
+const allShown = ref(false);
 
 /* Handlers */
 async function handleFetchGroup(id: string | number) {
@@ -110,11 +110,11 @@ const unsignedTransactions = computed(() => {
 });
 
 const transactionsLoaded = computed(() => {
-  if (isFiltered.value) {
-    return unsignedTransactions.value;
+  if (allShown.value) {
+    return group.value?.groupItems;
   }
 
-  return group.value?.groupItems;
+  return unsignedTransactions.value;
 });
 
 const allTransactionsAreUnsigned = computed(() => {
@@ -331,20 +331,18 @@ watch(
 
             <hr class="separator my-5 w-100" />
 
-            <div class="d-flex justify-content-end">
-              <span v-if="allTransactionsAreUnsigned"
-                ><i class="bi bi-exclamation-circle"></i> All transactions are unsigned</span
-              >
-
+            <div
+              v-if="unsignedTransactions && unsignedTransactions.length > 0"
+              class="d-flex justify-content-end"
+            >
               <AppCheckBox
-                v-else
                 class="cursor-pointer"
-                :checked="false"
-                :name="'unsigned'"
-                :disabled="!unsignedTransactions || unsignedTransactions.length <= 0"
-                label="Unsigned"
-                :data-testid="'unsigned-transactions-checkbox'"
-                v-on:update:checked="isFiltered = !isFiltered"
+                :checked="allTransactionsAreUnsigned"
+                :name="'show-all'"
+                label="Show all"
+                :disabled="allTransactionsAreUnsigned"
+                :data-testid="'all-transactions-checkbox'"
+                v-on:update:checked="allShown = !allShown"
               />
             </div>
 
