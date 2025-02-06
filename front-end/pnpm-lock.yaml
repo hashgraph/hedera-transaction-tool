@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@electron-toolkit/utils':
         specifier: 3.0.0
-        version: 3.0.0(electron@34.1.0)
+        version: 3.0.0(electron@34.0.0)
       '@hashgraph/proto':
         specifier: 2.16.0-beta.4
         version: 2.16.0-beta.4
@@ -115,8 +115,8 @@ importers:
         specifier: 0.7.0
         version: 0.7.0(typescript@5.7.3)(vue@3.5.13(typescript@5.7.3))
       electron:
-        specifier: 34.1.0
-        version: 34.1.0
+        specifier: 34.0.0
+        version: 34.0.0
       electron-builder:
         specifier: 25.1.8
         version: 25.1.8(electron-builder-squirrel-windows@25.1.8)
@@ -1721,8 +1721,8 @@ packages:
   electron-updater@6.3.9:
     resolution: {integrity: sha512-2PJNONi+iBidkoC5D1nzT9XqsE8Q1X28Fn6xRQhO3YX8qRRyJ3mkV4F1aQsuRnYPqq6Hw+E51y27W75WgDoofw==}
 
-  electron@34.1.0:
-    resolution: {integrity: sha512-ZUid8XrGPA0dfes97PPADc8ecWOUX/qYRNp1glze9coZLEYc+PsMvgjVDCHSvjfHfiI+V3unwngSVpBouX71YQ==}
+  electron@34.0.0:
+    resolution: {integrity: sha512-fpaPb0lifoUJ6UJa4Lk8/0B2Ku/xDZWdc1Gkj67jbygTCrvSon0qquju6Ltx1Kz23GRqqlIHXiy9EvrjpY7/Wg==}
     engines: {node: '>= 12.20.55'}
     hasBin: true
 
@@ -3831,9 +3831,9 @@ snapshots:
     dependencies:
       '@types/node': 22.12.0
 
-  '@electron-toolkit/utils@3.0.0(electron@34.1.0)':
+  '@electron-toolkit/utils@3.0.0(electron@34.0.0)':
     dependencies:
-      electron: 34.1.0
+      electron: 34.0.0
 
   '@electron/asar@3.2.18':
     dependencies:
@@ -5480,7 +5480,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  electron@34.1.0:
+  electron@34.0.0:
     dependencies:
       '@electron/get': 2.0.3
       '@types/node': 20.17.16
