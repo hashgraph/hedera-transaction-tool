@@ -790,6 +790,7 @@ class TransactionPage extends BasePage {
   async fillInTransferAccountId() {
     const allAccountIdsText = await this.getTextWithRetry(this.payerDropdownSelector);
     const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
+    console.log('First Account ID:', firstAccountId);
     const cleanAccountId = getCleanAccountId(firstAccountId);
     await this.fillAndVerify(this.transferAccountInputSelector, cleanAccountId);
     return firstAccountId;

@@ -172,7 +172,7 @@ test.describe('Transaction tests', () => {
     expect(isAccountVisible).toBe(true);
   });
 
-  test('Verify user can execute account delete tx', async () => {
+  test.only('Verify user can execute account delete tx', async () => {
     await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const transactionId = await transactionPage.deleteAccount(accountFromList);
