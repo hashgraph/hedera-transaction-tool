@@ -128,4 +128,4 @@ export const elevateUserToAdmin = (organizationServerUrl: string, id: number) =>
     await axiosWithCredentials.patch(`${organizationServerUrl}/${authController}/elevate-admin`, {
       id,
     });
-  }, 'Failed to elevate user to admin');
+  }, 'Failed to assign user as admin');

@@ -21,9 +21,9 @@ function handleElevate() {
       <div class="text-center">
         <AppCustomIcon :name="'bin'" style="height: 160px" />
       </div>
-      <h3 class="text-center text-title text-bold mt-3">Elevate Contact to Admin</h3>
+      <h3 class="text-center text-title text-bold mt-3">Assign as Admin</h3>
       <p class="text-center text-small text-secondary mt-4">
-        Are you sure you want to elevate this Contact from to an admin?
+        Are you sure you want to assign this Contact as an admin? This action cannot be undone.
       </p>
       <hr class="separator my-5" />
       <div class="row mt-4">
@@ -35,7 +35,7 @@ function handleElevate() {
             color="primary"
             data-testid="button-confirm-removing-contact"
             @click="handleElevate"
-            >Elevate</AppButton
+            >Assign</AppButton
           >
         </div>
       </div>

@@ -171,7 +171,7 @@ watch(
           class="min-w-unset"
           color="secondary"
           @click="$emit('elevate-to-admin')"
-          >Elevate to Admin</AppButton
+          >Assign Admin</AppButton
         >
       </template>
       <AppButton
