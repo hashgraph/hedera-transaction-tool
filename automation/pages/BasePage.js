@@ -86,9 +86,10 @@ class BasePage {
   }
 
   /**
-   * Fills an input field and verifies the value, retries if necessary.
+   * Fills an input field and verifies that the value is correctly filled (ignoring any appended checksum).
+   * Retries if necessary.
    * @param {string} selector - The selector of the input element.
-   * @param {string} value - The value to fill in.
+   * @param {string} value - The expected account id (without checksum).
    * @param {number} [retries=5] - Number of retries.
    * @param {number|null} [index=null] - Optional index to select a specific element when multiple are present.
    * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be visible.
@@ -99,8 +100,11 @@ class BasePage {
     let attempt = 0;
     let currentValue = '';
 
+    // Helper to check if the current value is valid.
+    // It trims the value and checks if it starts with the expected account id.
+    const isValueValid = text => text.trim().startsWith(value);
+
     while (attempt < retries) {
-      // Fill the input field with the provided value
       console.log(
         `Attempt ${attempt + 1}: Filling element with selector: ${selector} with value: ${value}`,
       );
@@ -109,29 +113,25 @@ class BasePage {
       // Verify the value in the input field
       currentValue = await this.getTextFromInputField(selector, index, timeout);
       console.log(
-        `Attempt ${attempt + 1}: Verifying element with selector: ${selector}, expected value: ${value}, current value: ${currentValue}`,
+        `Attempt ${attempt + 1}: Verifying element with selector: ${selector}, expected prefix: ${value}, current value: ${currentValue}`,
       );
 
-      if (currentValue === value) {
-        // Value is correct, break out of the loop
+      if (isValueValid(currentValue)) {
         console.log(
-          `Successfully filled element with selector: ${selector} with value: ${value} on attempt ${
-            attempt + 1
-          }`,
+          `Successfully filled element with selector: ${selector} with value (ignoring checksum): ${value} on attempt ${attempt + 1}`,
         );
-        break;
+        return;
       }
 
-      // Increment the attempt counter
       attempt++;
-      await new Promise(resolve => setTimeout(resolve, 500)); // Wait for 500 milliseconds before retrying
+      // Wait for 500 milliseconds before retrying
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    if (currentValue !== value) {
-      throw new Error(
-        `Failed to correctly fill element with selector: ${selector} after ${retries} attempts. Expected: ${value}, Found: ${currentValue}`,
-      );
-    }
+    // If after all retries the value doesn't start with the expected account id, throw an error.
+    throw new Error(
+      `Failed to correctly fill element with selector: ${selector} after ${retries} attempts. Expected prefix: ${value}, Found: ${currentValue}`,
+    );
   }
 
   /**
