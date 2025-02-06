@@ -23,7 +23,6 @@ const props = defineProps<{
   skip?: boolean;
   getTransaction?: () => Transaction;
   description: string;
-  isExecuted: boolean;
   isFromScratch: boolean;
   hasDataChanged: boolean;
 }>();
@@ -146,7 +145,7 @@ onBeforeRouteLeave(async () => {
   if (!props.skip && isGroupActionModalShown.value === false && props.hasDataChanged) {
     if (route.query.group === 'true') {
       router.previousPath = '/create-transaction-group';
-    } else if (route.query.group !== 'true' && !props.isExecuted) {
+    } else if (route.query.group !== 'true') {
       if (isFromSingleTransaction.value) {
         router.previousPath = '/transactions?tab=Drafts';
       } else if (props.isFromScratch) {
