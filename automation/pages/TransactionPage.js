@@ -801,7 +801,7 @@ class TransactionPage extends BasePage {
   }
 
   async getFirstAccountIdFromText(allAccountIds) {
-    const accountIdsArray = allAccountIds.split(' ');
+    const accountIdsArray = allAccountIds.trim().split(' ');
     return accountIdsArray[0];
   }
 
