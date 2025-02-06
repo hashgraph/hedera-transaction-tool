@@ -125,10 +125,6 @@ async function handleSubmit() {
   return handleGroupAction();
 }
 
-/* else if (props.isFromScratch && !(await draftExists(transactionBytes))) {
-      router.previousPath = '/transactions';
-    } */
-
 /* Hooks */
 onBeforeRouteLeave(async () => {
   if (isDiscardFromScratch.value) return true;
