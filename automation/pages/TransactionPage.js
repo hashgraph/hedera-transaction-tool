@@ -7,6 +7,7 @@ const {
   verifyFileExists,
 } = require('../utils/databaseQueries');
 const { decodeAndFlattenKeys } = require('../utils/keyUtil');
+const { getCleanAccountId } = require('../utils/util');
 
 class TransactionPage extends BasePage {
   constructor(window) {
@@ -352,7 +353,7 @@ class TransactionPage extends BasePage {
       return 0;
     } else {
       for (let i = 0; i < count; i++) {
-        const idText = (await this.getText(this.accountIdPrefixSelector + i)).split("-")[0];
+        const idText = getCleanAccountId(await this.getText(this.accountIdPrefixSelector + i));
         if (idText === accountId) {
           return i;
         }
@@ -789,7 +790,8 @@ class TransactionPage extends BasePage {
   async fillInTransferAccountId() {
     const allAccountIdsText = await this.getTextWithRetry(this.payerDropdownSelector);
     const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
-    await this.fillAndVerify(this.transferAccountInputSelector, firstAccountId);
+    const cleanAccountId = getCleanAccountId(firstAccountId);
+    await this.fillAndVerify(this.transferAccountInputSelector, cleanAccountId);
     return firstAccountId;
   }
 
