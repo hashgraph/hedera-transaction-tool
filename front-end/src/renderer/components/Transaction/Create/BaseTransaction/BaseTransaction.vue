@@ -13,7 +13,7 @@ import { Hbar, Transaction, KeyList } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
@@ -29,7 +29,7 @@ import { getPropagationButtonLabel } from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
-import GroupActionModal from '@renderer/components/GroupActionModal.vue';
+import BaseTransactionModal from '@renderer/components/Transaction/Create/BaseTransaction/BaseTransactionModal.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionInfoControls from '@renderer/components/Transaction/TransactionInfoControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
@@ -61,6 +61,7 @@ const user = useUserStore();
 /* Composables */
 const toast = useToast();
 const router = useRouter();
+const route = useRoute();
 const payerData = useAccountId();
 
 /* State */
@@ -71,6 +72,7 @@ const name = ref('');
 const description = ref('');
 const submitManually = ref(false);
 const reminder = ref<number | null>(null);
+const isDraftSaved = ref(false);
 
 const data = reactive<TransactionCommonData | ExtendedTransactionData>({
   payerId: '',
@@ -90,6 +92,8 @@ const initialDescription = ref('');
 
 /* Computed */
 const transaction = computed(() => createTransaction({ ...data } as TransactionCommonData));
+
+const isFromScratch = computed(() => Boolean(!route.query.draftId && route.query.group !== 'true'));
 
 const transactionKey = computed(() => {
   const keys = transactionBaseKey?.toArray() || [];
@@ -112,6 +116,8 @@ const hasTransactionChanged = computed(() => {
 const hasDescriptionChanged = computed(() => {
   return description.value !== toRaw(initialDescription.value);
 });
+
+const hasDataChanged = computed(() => hasTransactionChanged.value || hasDescriptionChanged.value);
 
 /* Handlers */
 const handleDraftLoaded = async (transaction: Transaction) => {
@@ -215,6 +221,12 @@ function basePreCreateAssert() {
     throw new Error('Max Transaction Fee is required');
   }
 }
+
+/*   if (!(await draftExists(transactionBytes)) && !isSaveDraftModalShown.value && !props.isExecuted) {
+    isSaveDraftModalShown.value = true;
+    routeTo.value = to;
+    return false; */
+
 /* Exposes */
 defineExpose({
   payerData,
@@ -229,6 +241,7 @@ defineExpose({
         v-model:reminder="reminder"
         :valid-start="data.validStart"
         :is-processed="isProcessed"
+        v-on:draft-saved="isDraftSaved = true"
         :create-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
         :description="description"
         :heading-text="getTransactionType(transaction)"
@@ -303,10 +316,15 @@ defineExpose({
       @fetched-payer-account-id="handleFetchedPayerAccountId"
     />
 
-    <GroupActionModal
-      :skip="groupActionTaken || (!hasTransactionChanged && !hasDescriptionChanged)"
+    <BaseTransactionModal
+      :skip="groupActionTaken || isDraftSaved"
       @addToGroup="handleGroupAction('add')"
-      @editItem="handleGroupAction('edit')"
+      @editGroupItem="handleGroupAction('edit')"
+      :get-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
+      :description="description || ''"
+      :is-executed="isProcessed"
+      :is-from-scratch="isFromScratch"
+      :has-data-changed="hasDataChanged"
     />
   </div>
 </template>

@@ -30,6 +30,7 @@ defineProps<{
 defineEmits<{
   (event: 'add-to-group'): void;
   (event: 'edit-group-item'): void;
+  (event: 'draft-saved'): void;
 }>();
 
 /* Models */
@@ -99,6 +100,7 @@ watch(showAddReminder, show => {
             :get-transaction="createTransaction"
             :description="description || ''"
             :is-executed="isProcessed"
+            v-on:draft-saved="$emit('draft-saved')"
           />
           <AppButton
             color="primary"
