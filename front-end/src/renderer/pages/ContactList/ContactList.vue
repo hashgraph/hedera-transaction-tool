@@ -65,7 +65,7 @@ const contactList = computed(() =>
 );
 
 /* Handlers */
-function handleSelectContact(id: number) {
+async function handleSelectContact(id: number) {
   selectedId.value = id;
 }
 

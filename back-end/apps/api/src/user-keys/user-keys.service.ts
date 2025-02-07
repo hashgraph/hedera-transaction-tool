@@ -2,7 +2,13 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsRelations, FindOptionsWhere, Repository } from 'typeorm';
 
-import { attachKeys, ErrorCodes, MAX_USER_KEYS } from '@app/common';
+import {
+  attachKeys,
+  ErrorCodes,
+  MAX_USER_KEYS,
+  PaginatedResourceDto,
+  Pagination,
+} from '@app/common';
 import { User, UserKey } from '@entities';
 
 import { UpdateUserKeyMnemonicHashDto, UploadUserKeyDto } from './dtos';
@@ -128,5 +134,24 @@ export class UserKeysService {
     userKey.index = dto.index || userKey.index;
 
     return userKey;
+  }
+
+  async getUserKeys({
+    page,
+    limit,
+    size,
+    offset,
+  }: Pagination): Promise<PaginatedResourceDto<UserKey>> {
+    const [items, total] = await this.repo.findAndCount({
+      take: limit,
+      skip: offset,
+    });
+
+    return {
+      totalItems: total,
+      items,
+      page,
+      size,
+    };
   }
 }

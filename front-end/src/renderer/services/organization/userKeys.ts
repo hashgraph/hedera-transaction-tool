@@ -1,6 +1,6 @@
-import type { IUserKey } from '@main/shared/interfaces';
+import type { IUserKey, PaginatedResourceDto } from '@main/shared/interfaces';
 
-import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
+import { axiosWithCredentials, commonRequestHandler, safeAwait } from '@renderer/utils';
 
 /* User keys service for organization */
 
@@ -61,3 +61,41 @@ export const updateKey = async (
       },
     );
   }, 'Failed to update user key');
+
+/* Get all users keys from organization */
+export const getUserKeysPaginated = async (
+  organizationServerUrl: string,
+  page: number,
+  size: number,
+): Promise<PaginatedResourceDto<IUserKey>> =>
+  commonRequestHandler(async () => {
+    const response = await axiosWithCredentials.get(
+      `${organizationServerUrl}/user-keys?page=${page}&size=${size}`,
+    );
+
+    return response.data;
+  }, 'Failed to get user keys');
+
+export const getAllUserKeys = async (organizationServerUrl: string): Promise<IUserKey[]> => {
+  let page = 1;
+  const size = 100;
+  let totalItems = 0;
+  const allUserKeys: IUserKey[] = [];
+
+  do {
+    const { data, error } = await safeAwait(
+      getUserKeysPaginated(organizationServerUrl, page, size),
+    );
+    if (data) {
+      totalItems = data.totalItems;
+      allUserKeys.push(...data.items);
+      page++;
+    }
+
+    if (error) {
+      break;
+    }
+  } while (allUserKeys.length < totalItems);
+
+  return allUserKeys;
+};
