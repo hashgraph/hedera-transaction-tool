@@ -23,7 +23,6 @@ const props = defineProps<{
   skip?: boolean;
   getTransaction?: () => Transaction;
   description: string;
-  isFromScratch: boolean;
   hasDataChanged: boolean;
 }>();
 
@@ -46,6 +45,8 @@ const emit = defineEmits(['addToGroup', 'editGroupItem']);
 const isFromSingleTransaction = computed(() =>
   Boolean(route.query.draftId && route.query.group != 'true'),
 );
+
+const isFromScratch = computed(() => Boolean(!route.query.draftId && route.query.group !== 'true'));
 
 /* Handlers */
 function handleAddToGroup() {
@@ -103,7 +104,7 @@ async function sendAddDraft(userId: string, transactionBytes: Uint8Array) {
 }
 
 async function handleDiscard() {
-  if (props.isFromScratch) {
+  if (isFromScratch.value) {
     isDiscardFromScratch.value = true;
   }
   const previousPath = router.previousPath;
@@ -119,7 +120,7 @@ function handleGroupAction() {
 }
 
 async function handleSubmit() {
-  if (isFromSingleTransaction.value || props.isFromScratch) {
+  if (isFromSingleTransaction.value || isFromScratch.value) {
     return await handleSingleTransaction();
   }
   return handleGroupAction();
@@ -130,11 +131,11 @@ onBeforeRouteLeave(async () => {
   if (isDiscardFromScratch.value) return true;
   const transactionBytes = getTransactionBytes();
   if (!transactionBytes) return true;
-  if ((await draftExists(transactionBytes)) && props.isFromScratch) {
+  if ((await draftExists(transactionBytes)) && isFromScratch.value) {
     return true;
   }
 
-  if (!props.skip && props.isFromScratch && !(await draftExists(transactionBytes))) {
+  if (!props.skip && isFromScratch.value && !(await draftExists(transactionBytes))) {
     router.previousPath = '/transactions';
     isGroupActionModalShown.value = true;
     return false;
@@ -146,7 +147,7 @@ onBeforeRouteLeave(async () => {
     } else if (route.query.group !== 'true') {
       if (isFromSingleTransaction.value) {
         router.previousPath = '/transactions?tab=Drafts';
-      } else if (props.isFromScratch) {
+      } else if (isFromScratch.value) {
         router.previousPath = '/transactions';
       }
     }

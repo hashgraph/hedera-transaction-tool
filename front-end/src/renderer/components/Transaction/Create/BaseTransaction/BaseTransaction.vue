@@ -6,14 +6,13 @@ import type {
   ExecutedSuccessData,
 } from '@renderer/components/Transaction/TransactionProcessor';
 import type { CreateTransactionFunc } from '.';
-import type { ExtendedTransactionData } from '@renderer/utils/sdk/getData';
 
 import { computed, reactive, ref, toRaw } from 'vue';
 import { Hbar, Transaction, KeyList } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 
@@ -24,7 +23,7 @@ import {
   redirectToDetails,
   redirectToGroupDetails,
 } from '@renderer/utils';
-import { getAllData, validate100CharInput } from '@renderer/utils/sdk';
+import { getTransactionCommonData, validate100CharInput } from '@renderer/utils/sdk';
 import { getPropagationButtonLabel } from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -61,7 +60,6 @@ const user = useUserStore();
 /* Composables */
 const toast = useToast();
 const router = useRouter();
-const route = useRoute();
 const payerData = useAccountId();
 
 /* State */
@@ -74,7 +72,7 @@ const submitManually = ref(false);
 const reminder = ref<number | null>(null);
 const isDraftSaved = ref(false);
 
-const data = reactive<TransactionCommonData | ExtendedTransactionData>({
+const data = reactive<TransactionCommonData>({
   payerId: '',
   validStart: new Date(),
   maxTransactionFee: new Hbar(2),
@@ -87,13 +85,11 @@ const approvers = ref<TransactionApproverDto[]>([]);
 const isProcessed = ref(false);
 const groupActionTaken = ref(false);
 const memoError = ref(false);
-const initialTransactionData = ref<ExtendedTransactionData | null>(null);
+const initialTransactionData = ref('');
 const initialDescription = ref('');
 
 /* Computed */
 const transaction = computed(() => createTransaction({ ...data } as TransactionCommonData));
-
-const isFromScratch = computed(() => Boolean(!route.query.draftId && route.query.group !== 'true'));
 
 const transactionKey = computed(() => {
   const keys = transactionBaseKey?.toArray() || [];
@@ -104,13 +100,9 @@ const transactionKey = computed(() => {
 const hasTransactionChanged = computed(() => {
   if (!initialTransactionData.value) return false;
 
-  const currentTransactionData = getAllData(
-    createTransaction(toRaw(data) as ExtendedTransactionData),
-  );
+  const currentTransactionData = transaction.value.toBytes().join(',');
 
-  const mergedCurrentData = { ...data, ...currentTransactionData };
-
-  return JSON.stringify(mergedCurrentData) !== JSON.stringify(initialTransactionData.value);
+  return currentTransactionData !== initialTransactionData.value;
 });
 
 const hasDescriptionChanged = computed(() => {
@@ -121,11 +113,13 @@ const hasDataChanged = computed(() => hasTransactionChanged.value || hasDescript
 
 /* Handlers */
 const handleDraftLoaded = async (transaction: Transaction) => {
-  const allTxData = getAllData(transaction) as ExtendedTransactionData;
-  payerData.accountId.value = allTxData.payerId;
-  Object.assign(data, allTxData);
+  const txBytes = transaction.toBytes().join(',');
 
-  initialTransactionData.value = JSON.parse(JSON.stringify(allTxData));
+  const txData = getTransactionCommonData(transaction) as TransactionCommonData;
+  payerData.accountId.value = txData.payerId;
+  Object.assign(data, txData);
+
+  initialTransactionData.value = txBytes;
   emit('draft-loaded', transaction);
 };
 
@@ -322,7 +316,6 @@ defineExpose({
       @editGroupItem="handleGroupAction('edit')"
       :get-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
       :description="description || ''"
-      :is-from-scratch="isFromScratch"
       :has-data-changed="hasDataChanged"
     />
   </div>
