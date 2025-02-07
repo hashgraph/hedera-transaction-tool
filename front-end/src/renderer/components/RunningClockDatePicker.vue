@@ -42,7 +42,12 @@ function resetTime(date: Date) {
 }
 
 function handleUpdateValidStart(date: Date) {
-  const isNewDate = date.toDateString() !== props.modelValue.toDateString();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const selectedDate = new Date(date);
+  selectedDate.setHours(0, 0, 0, 0);
+
+  const isNewDate = selectedDate.getTime() !== today.getTime();
 
   if (isNewDate) {
     emit('update:modelValue', resetTime(date));
