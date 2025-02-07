@@ -2,7 +2,7 @@
 import type { CryptoAllowance, IAccountInfoParsed } from '@main/shared/interfaces';
 import type { ApproveHbarAllowanceData } from '@renderer/utils/sdk';
 
-import { computed, ref } from 'vue';
+import { computed, onBeforeMount, ref, watch, watchEffect } from 'vue';
 import { Hbar, HbarUnit, Key } from '@hashgraph/sdk';
 
 import { stringifyHbar, formatAccountId } from '@renderer/utils';
@@ -31,8 +31,9 @@ const accountData = useAccountId();
 /* State */
 const isKeyStructureModalShown = ref(false);
 const keyStructureComponentKey = ref<Key | null>(null);
-const ownerValue = ref(accountData.getAccountIdWithChecksum(props.data.ownerAccountId) || '');
-const spenderValue = ref(accountData.getAccountIdWithChecksum(props.data.spenderAccountId) || '');
+const ownerValue = ref('');
+const spenderValue = ref('');
+const isDataLoaded = ref(false);
 
 /* Computed */
 const spenderAllowance = computed(() => {
@@ -56,6 +57,26 @@ const handleBlur = (e: Event, accType: 'spender' | 'owner') => {
     }
   }
 };
+
+onBeforeMount(() => {
+  if (props.data.ownerAccountId && props.data.spenderAccountId) {
+    ownerValue.value = accountData.getAccountIdWithChecksum(props.data.ownerAccountId) || '';
+    spenderValue.value = accountData.getAccountIdWithChecksum(props.data.spenderAccountId) || '';
+    isDataLoaded.value = true;
+  }
+});
+
+watch(
+  () => [props.data.ownerAccountId, props.data.spenderAccountId],
+  ([newOwner, newSpender]) => {
+    if (!isDataLoaded.value && newOwner && newSpender) {
+      ownerValue.value = accountData.getAccountIdWithChecksum(newOwner) || '';
+      spenderValue.value = accountData.getAccountIdWithChecksum(newSpender) || '';
+      isDataLoaded.value = true;
+    }
+  },
+  { immediate: true },
+);
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
