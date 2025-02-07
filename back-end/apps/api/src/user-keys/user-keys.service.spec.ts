@@ -335,7 +335,6 @@ describe('UserKeysService', () => {
       expect(repo.findAndCount).toHaveBeenCalledWith({
         take: pagination.limit,
         skip: pagination.offset,
-        order: { id: 'ASC' },
       });
       expect(result).toEqual({
         totalItems,
@@ -355,7 +354,6 @@ describe('UserKeysService', () => {
       expect(repo.findAndCount).toHaveBeenCalledWith({
         take: pagination.limit,
         skip: pagination.offset,
-        order: { id: 'ASC' },
       });
       expect(result).toEqual({
         totalItems: 0,
@@ -380,7 +378,6 @@ describe('UserKeysService', () => {
       expect(repo.findAndCount).toHaveBeenCalledWith({
         take: pagination.limit,
         skip: pagination.offset,
-        order: { id: 'ASC' },
       });
       expect(result).toEqual({
         totalItems,

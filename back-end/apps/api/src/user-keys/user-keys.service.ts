@@ -145,7 +145,6 @@ export class UserKeysService {
     const [items, total] = await this.repo.findAndCount({
       take: limit,
       skip: offset,
-      order: { id: 'ASC' },
     });
 
     return {

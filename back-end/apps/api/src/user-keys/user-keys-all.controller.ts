@@ -16,9 +16,8 @@ import { UserKeyDto } from './dtos';
 import { UserKeysService } from './user-keys.service';
 
 @ApiTags('User Keys All')
-@Controller('users/keys')
+@Controller('user-keys')
 @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
-@Serialize(UserKeyDto)
 export class UserKeysAllController {
   constructor(private userKeysService: UserKeysService) {}
 
@@ -28,13 +27,15 @@ export class UserKeysAllController {
   })
   @ApiResponse({
     status: 200,
-    type: [UserKeyDto],
+    type: PaginatedResourceDto<UserKeyDto>,
   })
   @Get()
   @Serialize(withPaginatedResponse(UserKeyDto))
   getUserKeys(
     @PaginationParams() paginationParams: Pagination,
   ): Promise<PaginatedResourceDto<UserKey>> {
+    console.log('hereeee2');
+
     return this.userKeysService.getUserKeys(paginationParams);
   }
 }
