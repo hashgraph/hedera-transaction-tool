@@ -7,7 +7,7 @@ import { PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from './storeUser';
 
-import { getAllUserKeys, getUsers } from '@renderer/services/organization';
+import { getAllUserKeys, getUserKeys, getUsers } from '@renderer/services/organization';
 import { getOrganizationContacts } from '@renderer/services/contactsService';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
@@ -74,6 +74,18 @@ const useContactsStore = defineStore('contacts', () => {
     }
   }
 
+  async function fetchUserKeys(userId: number) {
+    if (isLoggedInOrganization(user.selectedOrganization)) {
+      const keys = await getUserKeys(user.selectedOrganization.serverUrl, userId);
+
+      const contactIndex = contacts.value.findIndex(c => c.user.id === userId);
+      if (contactIndex === -1) return;
+
+      contacts.value[contactIndex].userKeys = keys;
+      contacts.value = [...contacts.value];
+    }
+  }
+
   function getContact(userId: number) {
     return contacts.value.find(c => c.user.id === userId);
   }
@@ -91,6 +103,7 @@ const useContactsStore = defineStore('contacts', () => {
     contacts,
     publicKeys,
     fetch,
+    fetchUserKeys,
     getContact,
     getContactByPublicKey,
     getNickname,
