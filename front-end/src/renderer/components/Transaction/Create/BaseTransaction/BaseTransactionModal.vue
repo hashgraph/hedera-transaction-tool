@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { FileAppendTransaction, FileUpdateTransaction, type Transaction } from '@hashgraph/sdk';
+import {
+  FileAppendTransaction,
+  FileCreateTransaction,
+  FileUpdateTransaction,
+  type Transaction,
+} from '@hashgraph/sdk';
 
 import { computed, ref } from 'vue';
 
@@ -61,6 +66,7 @@ function getTransactionBytes() {
   if (!props.getTransaction) return;
   const transaction = props.getTransaction();
   if (
+    transaction instanceof FileCreateTransaction ||
     transaction instanceof FileUpdateTransaction ||
     transaction instanceof FileAppendTransaction
   ) {

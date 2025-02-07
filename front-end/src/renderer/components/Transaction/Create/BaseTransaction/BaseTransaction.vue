@@ -216,11 +216,6 @@ function basePreCreateAssert() {
   }
 }
 
-/*   if (!(await draftExists(transactionBytes)) && !isSaveDraftModalShown.value && !props.isExecuted) {
-    isSaveDraftModalShown.value = true;
-    routeTo.value = to;
-    return false; */
-
 /* Exposes */
 defineExpose({
   payerData,
