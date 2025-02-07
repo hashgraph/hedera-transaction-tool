@@ -51,6 +51,7 @@ type ActionButton =
   | 'Reject'
   | 'Approve'
   | 'Sign'
+  | 'Previous'
   | 'Next'
   | 'Cancel'
   | 'Export'
@@ -62,6 +63,7 @@ type ActionButton =
 const reject: ActionButton = 'Reject';
 const approve: ActionButton = 'Approve';
 const sign: ActionButton = 'Sign';
+const previous: ActionButton = 'Previous';
 const next: ActionButton = 'Next';
 const cancel: ActionButton = 'Cancel';
 const execute: ActionButton = 'Submit';
@@ -74,6 +76,7 @@ const buttonsDataTestIds: { [key: string]: string } = {
   [reject]: 'button-reject-org-transaction',
   [approve]: 'button-approve-org-transaction',
   [sign]: 'button-sign-org-transaction',
+  [previous]: 'button-previous-org-transaction',
   [next]: 'button-next-org-transaction',
   [cancel]: 'button-cancel-org-transaction',
   [execute]: 'button-execute-org-transaction',
@@ -88,6 +91,7 @@ const props = defineProps<{
   localTransaction: Transaction | null;
   sdkTransaction: SDKTransaction | null;
   nextId: number | string | null;
+  previousId: number | string | null;
 }>();
 
 /* Stores */
@@ -163,14 +167,15 @@ const visibleButtons = computed(() => {
   const status = props.organizationTransaction?.status;
   const isManual = props.organizationTransaction?.isManual;
 
-  /* The order is important REJECT, APPROVE, SIGN, SUBMIT, NEXT, CANCEL, ARCHIVE, EXPORT */
+  /* The order is important REJECT, APPROVE, SIGN, SUBMIT, PREVIOUS, NEXT, CANCEL, ARCHIVE, EXPORT */
   shouldApprove.value && buttons.push(reject, approve);
   canSign.value && !shouldApprove.value && buttons.push(sign);
   status === TransactionStatus.WAITING_FOR_EXECUTION &&
     isManual &&
     canCancel.value &&
     buttons.push(execute);
-  props.nextId && !shouldApprove.value && !canSign.value && buttons.push(next);
+  props.nextId && buttons.push(next);
+  props.previousId && buttons.push(previous);
   canCancel.value && buttons.push(cancel);
   canCancel.value &&
     status === TransactionStatus.WAITING_FOR_SIGNATURES &&
@@ -400,6 +405,21 @@ const handleExecute = (showModal?: boolean) => handleTransactionAction('execute'
 const handleRemindSigners = (showModal?: boolean) =>
   handleTransactionAction('remindSigners', showModal);
 
+const handlePrevious = () => {
+  if (!props.previousId) return;
+
+  const newPreviousTransactionsIds = [...(nextTransaction.previousTransactionsIds || [])];
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    props.organizationTransaction &&
+      newPreviousTransactionsIds.push(props.organizationTransaction.id);
+  } else {
+    props.localTransaction && newPreviousTransactionsIds.push(props.localTransaction.id);
+  }
+  nextTransaction.setPreviousTransactionsIds(newPreviousTransactionsIds);
+
+  redirectToDetails(router, props.previousId.toString(), true, true);
+};
+
 const handleNext = () => {
   if (!props.nextId) return;
 
@@ -443,6 +463,8 @@ const handleAction = async (value: ActionButton) => {
     await handleSign();
   } else if (value === next) {
     await handleNext();
+  } else if (value === previous) {
+    await handlePrevious();
   } else if (value === cancel) {
     await handleCancel(true);
   } else if (value === archive) {
