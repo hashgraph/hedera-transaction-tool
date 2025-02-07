@@ -58,14 +58,6 @@ const handleBlur = (e: Event, accType: 'spender' | 'owner') => {
   }
 };
 
-onBeforeMount(() => {
-  if (props.data.ownerAccountId && props.data.spenderAccountId) {
-    ownerValue.value = accountData.getAccountIdWithChecksum(props.data.ownerAccountId) || '';
-    spenderValue.value = accountData.getAccountIdWithChecksum(props.data.spenderAccountId) || '';
-    isDataLoaded.value = true;
-  }
-});
-
 watch(
   () => [props.data.ownerAccountId, props.data.spenderAccountId],
   ([newOwner, newSpender]) => {
