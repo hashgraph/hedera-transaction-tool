@@ -32,6 +32,7 @@
     "@hashgraph/sdk": "2.56.0",
     "@prisma/client": "6.2.1",
     "@vuepic/vue-datepicker": "10.0.0",
+    "@vueuse/core": "12.5.0",
     "argon2": "0.41.1",
     "axios": "1.7.9",
     "bcrypt": "5.1.1",

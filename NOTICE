@@ -686,6 +686,9 @@ This product includes software (@types/unzipper@0.10.10) developed at
 This product includes software (@types/verror@1.10.10) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
+This product includes software (@types/web-bluetooth@0.0.20) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
 This product includes software (@types/yauzl@2.10.3) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
@@ -861,6 +864,18 @@ Copyright Haoqun Jiang. All Rights Reserved.
 The Initial Developer of @vuepic/vue-datepicker@10.0.0,
 is Vuepic (https://github.com/Vuepic/vue-datepicker).
 Copyright Vuepic. All Rights Reserved.
+
+The Initial Developer of @vueuse/core@12.5.0,
+is Anthony Fu (https://github.com/vueuse/vueuse).
+Copyright Anthony Fu. All Rights Reserved.
+
+The Initial Developer of @vueuse/metadata@12.5.0,
+is Anthony Fu (https://github.com/vueuse/vueuse).
+Copyright Anthony Fu. All Rights Reserved.
+
+The Initial Developer of @vueuse/shared@12.5.0,
+is Anthony Fu (https://github.com/vueuse/vueuse).
+Copyright Anthony Fu. All Rights Reserved.
 
 This product includes software (@xmldom/xmldom@0.8.10) developed at
 (https://github.com/xmldom/xmldom).
