@@ -1,4 +1,4 @@
-import type { Contact } from '@main/shared/interfaces';
+import type { Contact, IUserKey } from '@main/shared/interfaces';
 
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
@@ -7,7 +7,7 @@ import { PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from './storeUser';
 
-import { getUserKeys, getUsers } from '@renderer/services/organization';
+import { getAllUserKeys, getUsers } from '@renderer/services/organization';
 import { getOrganizationContacts } from '@renderer/services/contactsService';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
@@ -51,14 +51,20 @@ const useContactsStore = defineStore('contacts', () => {
       );
       const newContacts: Contact[] = [];
 
-      const result = await Promise.allSettled(users.map(u => getUserKeys(serverUrl, u.id)));
+      const allKeys = await getAllUserKeys(serverUrl);
+      const userToKeys = new Map<number, IUserKey[]>();
+      allKeys.forEach(k => {
+        if (!userToKeys.has(k.userId)) userToKeys.set(k.userId, []);
+        userToKeys.get(k.userId)?.push(k);
+      });
 
-      result.forEach((r, i) => {
+      users.forEach(u => {
+        const keys = userToKeys.get(u.id) || [];
         newContacts.push({
-          user: users[i],
-          userKeys: r.status === 'fulfilled' ? r.value : [],
-          nickname: orgContacts.find(c => c.organization_user_id === users[i].id)?.nickname || '',
-          nicknameId: orgContacts.find(c => c.organization_user_id === users[i].id)?.id || null,
+          user: u,
+          userKeys: keys,
+          nickname: orgContacts.find(c => c.organization_user_id === u.id)?.nickname || '',
+          nicknameId: orgContacts.find(c => c.organization_user_id === u.id)?.id || null,
         });
       });
 

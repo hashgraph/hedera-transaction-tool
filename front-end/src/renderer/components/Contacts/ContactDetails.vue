@@ -3,7 +3,7 @@ import type { HederaAccount } from '@prisma/client';
 import type { AccountInfo, Contact } from '@main/shared/interfaces';
 import { useToast } from 'vue-toast-notification';
 
-import { defineModel, onBeforeMount, ref, watch } from 'vue';
+import { onBeforeMount, ref, watch } from 'vue';
 
 import { PublicKey } from '@hashgraph/sdk';
 
