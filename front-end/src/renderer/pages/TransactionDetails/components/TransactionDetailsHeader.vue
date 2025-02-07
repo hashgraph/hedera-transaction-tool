@@ -3,7 +3,6 @@ import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@main/shared/interfaces';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
@@ -14,6 +13,8 @@ import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
+import { useMediaQuery } from '@vueuse/core';
+import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
@@ -103,6 +104,7 @@ const nextTransaction = useNextTransactionStore();
 /* Composables */
 const router = useRouter();
 const toast = useToast();
+const isLargeScreen = useMediaQuery('(min-width: 992px)');
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
@@ -174,8 +176,14 @@ const visibleButtons = computed(() => {
     isManual &&
     canCancel.value &&
     buttons.push(execute);
-  props.nextId && buttons.push(next);
-  props.previousId && buttons.push(previous);
+
+  if (isLargeScreen.value) {
+    props.previousId && buttons.push(previous);
+    props.nextId && buttons.push(next);
+  } else {
+    props.nextId && buttons.push(next);
+    props.previousId && buttons.push(previous);
+  }
   canCancel.value && buttons.push(cancel);
   canCancel.value &&
     status === TransactionStatus.WAITING_FOR_SIGNATURES &&
