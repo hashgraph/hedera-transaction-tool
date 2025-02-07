@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, ref } from 'vue';
-
-import type { RecoveryPhrase } from '@renderer/types';
+import { onBeforeUnmount, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';

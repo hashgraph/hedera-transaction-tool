@@ -1,11 +1,19 @@
 <script setup lang="ts">
-import { onBeforeMount, ref, watch } from 'vue';
+import { onBeforeMount, ref, watch, watchEffect } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 import { validateMnemonic } from '@renderer/services/keyPairService';
 
 import AppRecoveryPhraseWord from '@renderer/components/ui/AppRecoveryPhraseWord.vue';
+
+/* Props */
+const props = defineProps<{
+  shouldClear?: boolean;
+}>();
+
+/* Emits */
+const emit = defineEmits(['reset-cleared']);
 
 /* Constants */
 const WORD_COUNT = 24;
@@ -100,6 +108,13 @@ watch(
     }
   },
 );
+
+watchEffect(() => {
+  if (props.shouldClear && inputRefs.value && inputRefs.value.length > 0) {
+    handleClearWords();
+    emit('reset-cleared', false);
+  }
+});
 </script>
 <template>
   <div>
