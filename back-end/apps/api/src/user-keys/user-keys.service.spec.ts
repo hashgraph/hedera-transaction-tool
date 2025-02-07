@@ -4,7 +4,7 @@ import { BadRequestException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { ErrorCodes, MAX_USER_KEYS } from '@app/common';
+import { ErrorCodes, MAX_USER_KEYS, Pagination } from '@app/common';
 import { attachKeys } from '@app/common/utils';
 import { User, UserKey } from '@entities';
 
@@ -316,6 +316,78 @@ describe('UserKeysService', () => {
       await service.updateMnemonicHash(user, 1, { mnemonicHash: 'new-hash' });
 
       expect(repo.update).toHaveBeenCalledWith({ id: 1 }, { mnemonicHash: 'new-hash' });
+    });
+  });
+
+  describe('getUserKeys', () => {
+    it('should return paginated user keys', async () => {
+      const pagination: Pagination = { page: 1, limit: 10, size: 10, offset: 0 };
+      const mockUserKeys = [
+        { id: 1, publicKey: 'key1', userId: 1 },
+        { id: 2, publicKey: 'key2', userId: 1 },
+      ] as UserKey[];
+      const totalItems = 2;
+
+      repo.findAndCount.mockResolvedValue([mockUserKeys, totalItems]);
+
+      const result = await service.getUserKeys(pagination);
+
+      expect(repo.findAndCount).toHaveBeenCalledWith({
+        take: pagination.limit,
+        skip: pagination.offset,
+        order: { id: 'ASC' },
+      });
+      expect(result).toEqual({
+        totalItems,
+        items: mockUserKeys,
+        page: pagination.page,
+        size: pagination.size,
+      });
+    });
+
+    it('should return empty items and total 0 if no user keys found', async () => {
+      const pagination: Pagination = { page: 1, limit: 10, size: 10, offset: 0 };
+
+      repo.findAndCount.mockResolvedValue([[], 0]);
+
+      const result = await service.getUserKeys(pagination);
+
+      expect(repo.findAndCount).toHaveBeenCalledWith({
+        take: pagination.limit,
+        skip: pagination.offset,
+        order: { id: 'ASC' },
+      });
+      expect(result).toEqual({
+        totalItems: 0,
+        items: [],
+        page: pagination.page,
+        size: pagination.size,
+      });
+    });
+
+    it('should handle pagination correctly', async () => {
+      const pagination: Pagination = { page: 2, limit: 5, size: 5, offset: 5 };
+      const mockUserKeys = [
+        { id: 6, publicKey: 'key6', userId: 1 },
+        { id: 7, publicKey: 'key7', userId: 1 },
+      ] as UserKey[];
+      const totalItems = 7;
+
+      repo.findAndCount.mockResolvedValue([mockUserKeys, totalItems]);
+
+      const result = await service.getUserKeys(pagination);
+
+      expect(repo.findAndCount).toHaveBeenCalledWith({
+        take: pagination.limit,
+        skip: pagination.offset,
+        order: { id: 'ASC' },
+      });
+      expect(result).toEqual({
+        totalItems,
+        items: mockUserKeys,
+        page: pagination.page,
+        size: pagination.size,
+      });
     });
   });
 });

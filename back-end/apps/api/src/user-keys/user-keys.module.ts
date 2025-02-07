@@ -1,12 +1,15 @@
 import { Module } from '@nestjs/common';
-import { UserKeysController } from './user-keys.controller';
-import { UserKeysService } from './user-keys.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
 import { UserKey } from '@entities';
+
+import { UserKeysController } from './user-keys.controller';
+import { UserKeysAllController } from './user-keys-all.controller';
+import { UserKeysService } from './user-keys.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([UserKey])],
-  controllers: [UserKeysController],
+  controllers: [UserKeysController, UserKeysAllController],
   providers: [UserKeysService],
   exports: [UserKeysService],
 })
