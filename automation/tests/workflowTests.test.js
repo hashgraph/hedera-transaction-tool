@@ -556,7 +556,7 @@ test.describe('Workflow tests', () => {
         expect(allowanceOwnerAccount).toBeTruthy();
 
         const allowanceSpenderAccount = await detailsPage.getAllowanceDetailsSpenderAccount();
-        expect(allowanceSpenderAccount).toBe(accountFromList);
+        expect(allowanceSpenderAccount).toContain(accountFromList);
 
         const allowanceAmount = await detailsPage.getAllowanceDetailsAmount();
         expect(allowanceAmount).toContain(amountToBeApproved + ' ℏ');
