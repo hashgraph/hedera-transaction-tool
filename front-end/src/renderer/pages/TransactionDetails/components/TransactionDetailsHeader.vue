@@ -562,17 +562,44 @@ watch(
           </div>
         </template>
       </Transition>
+
+      <Transition name="fade" mode="out-in">
+        <template v-if="visibleButtons.length > 1">
+          <div class="d-none d-lg-block">
+            <AppButton
+              :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
+              :loading="Boolean(loadingStates[visibleButtons[1]])"
+              :loading-text="loadingStates[visibleButtons[1]] || ''"
+              :data-testid="buttonsDataTestIds[visibleButtons[1]]"
+              type="submit"
+              class="me-3"
+              >{{ visibleButtons[1] }}
+            </AppButton>
+          </div>
+        </template>
+      </Transition>
+
       <Transition name="fade" mode="out-in">
         <template v-if="visibleButtons.length > 2">
-          <AppDropDown
-            :color="'secondary'"
-            :items="dropDownItems"
-            compact
-            @select="handleDropDownItem($event as ActionButton)"
-          />
+          <div>
+            <AppDropDown
+              class="d-lg-none"
+              :color="'secondary'"
+              :items="dropDownItems"
+              compact
+              @select="handleDropDownItem($event as ActionButton)"
+            />
+            <AppDropDown
+              class="d-none d-lg-block"
+              :color="'secondary'"
+              :items="dropDownItems.slice(1)"
+              compact
+              @select="handleDropDownItem($event as ActionButton)"
+            />
+          </div>
         </template>
         <template v-else-if="visibleButtons.length === 2">
-          <div>
+          <div class="d-lg-none">
             <AppButton
               :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
               :loading="Boolean(loadingStates[visibleButtons[1]])"
