@@ -111,18 +111,16 @@ const handleResend = async () => {
   }
 };
 
-/* Hooks */
-onBeforeMount(async () => {
+const handleContactChange = async () => {
+  await contacts.fetchUserKeys(props.contact.user.id);
   await handleAccountsLookup();
-});
+};
+
+/* Hooks */
+onBeforeMount(handleContactChange);
 
 /* Watchers */
-watch(
-  () => props.contact,
-  async () => {
-    await handleAccountsLookup();
-  },
-);
+watch(() => props.contact, handleContactChange);
 </script>
 <template>
   <div class="flex-between-centered flex-wrap gap-3">

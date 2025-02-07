@@ -67,7 +67,6 @@ const contactList = computed(() =>
 /* Handlers */
 async function handleSelectContact(id: number) {
   selectedId.value = id;
-  await contacts.fetchUserKeys(id);
 }
 
 const handleFetchContacts = async () => {
