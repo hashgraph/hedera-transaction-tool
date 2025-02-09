@@ -96,6 +96,20 @@ describe('Services Local User Accounts', () => {
         where: { user_id: userId, account_id: accountId },
       });
     });
+
+    test('Should return null and log an error if an exception occurs', async () => {
+      const userId = '123';
+      const accountId = '0.0.99';
+
+      prisma.hederaAccount.findFirst.mockRejectedValueOnce(new Error('Database Error'));
+
+      console.error = vi.fn();
+
+      const result = await getAccountById(userId, accountId);
+
+      expect(result).toBeNull();
+      expect(console.error).toHaveBeenCalledWith('Error fetching account:', expect.any(Error));
+    });
   });
 
   describe('addAccount', () => {
