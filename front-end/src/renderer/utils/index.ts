@@ -150,7 +150,7 @@ export const getAccountNicknameFromId = async (idToCheck: string) => {
     }
 
     return existingAcc?.nickname;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
