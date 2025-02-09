@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Transaction } from '@prisma/client';
-import type { ITransactionFull, IUserLinkedAccounts } from '@main/shared/interfaces';
+import type { ITransactionFull } from '@main/shared/interfaces';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -19,11 +19,9 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
-import useAccountId from '@renderer/composables/useAccountId';
 
 import { getTransactionById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
-import { getAll } from '@renderer/services/accountsService';
 
 import {
   getTransactionDateExtended,
@@ -41,6 +39,7 @@ import {
   computeSignatureKey,
   getAccountNicknameFromId,
   isUserLoggedIn,
+  getAccountIdWithChecksum,
 } from '@renderer/utils';
 
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -66,7 +65,6 @@ const nextTransaction = useNextTransactionStore();
 const router = useRouter();
 const ws = useDisposableWs();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
-const accountData = useAccountId();
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);
@@ -75,8 +73,7 @@ const sdkTransaction = ref<SDKTransaction | null>(null);
 const signatureKeyObject = ref<Awaited<ReturnType<typeof computeSignatureKey>> | null>(null);
 const nextId = ref<string | number | null>(null);
 const feePayer = ref<string | null>(null);
-const feePayerNickname = ref('');
-const allLinkedAccounts = ref<IUserLinkedAccounts[]>([]);
+const feePayerNickname = ref<string | null>(null);
 
 /* Computed */
 const transactionSpecificLabel = computed(() => {
@@ -98,15 +95,6 @@ const creator = computed(() => {
       )
     : null;
 });
-
-const shouldPassAllLinkedAccounts = computed(() =>
-  [
-    transactionTypeKeys.approveAllowance,
-    transactionTypeKeys.updateAccount,
-    transactionTypeKeys.deleteAccount,
-    transactionTypeKeys.createAccount,
-  ].includes(getTransactionType(sdkTransaction.value as SDKTransaction, true)),
-);
 
 /* Functions */
 async function fetchTransaction(id: string | number) {
@@ -182,15 +170,6 @@ onBeforeMount(async () => {
     ),
   ]);
   nextId.value = result[1];
-
-  if (isUserLoggedIn(user.personal)) {
-    allLinkedAccounts.value = await getAll({
-      where: {
-        user_id: user.personal.id,
-        network: network.network,
-      },
-    });
-  }
 });
 
 /* Watchers */
@@ -201,11 +180,11 @@ wsStore.$onAction(ctx => {
 
 watch(() => user.selectedOrganization, router.back);
 
-watch([feePayer, allLinkedAccounts], ([newFeePayer, accounts]) => {
-  if (newFeePayer && accounts && accounts.length > 0) {
-    feePayerNickname.value = getAccountNicknameFromId(newFeePayer.toString(), accounts);
+watch(feePayer, async newFeePayer => {
+  if (newFeePayer) {
+    feePayerNickname.value = await getAccountNicknameFromId(newFeePayer.toString());
   } else {
-    feePayerNickname.value = '';
+    feePayerNickname.value = null;
   }
 });
 
@@ -390,9 +369,9 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                     v-if="feePayer"
                   >
                     <span v-if="feePayerNickname">{{
-                      `${feePayerNickname} (${accountData.getAccountIdWithChecksum(feePayer)})`
+                      `${feePayerNickname} (${getAccountIdWithChecksum(feePayer)})`
                     }}</span>
-                    <span v-else>{{ accountData.getAccountIdWithChecksum(feePayer) }}</span>
+                    <span v-else>{{ getAccountIdWithChecksum(feePayer) }}</span>
                   </p>
                 </div>
               </div>
@@ -412,11 +391,9 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 
               <!-- Transaction Specific Component -->
               <Component
-                v-if="allLinkedAccounts && allLinkedAccounts.length > 0"
                 :is="txTypeComponentMapping[getTransactionType(sdkTransaction, true)]"
                 :transaction="sdkTransaction"
                 :organization-transaction="orgTransaction"
-                v-bind="shouldPassAllLinkedAccounts ? { allLinkedAccounts } : {}"
               />
 
               <hr class="separator my-5" />

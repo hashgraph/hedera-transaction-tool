@@ -9,9 +9,8 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getAll } from '@renderer/services/accountsService';
-import useAccountId from '@renderer/composables/useAccountId';
 
-import { isUserLoggedIn, stringifyHbar } from '@renderer/utils';
+import { getAccountIdWithChecksum, isUserLoggedIn, stringifyHbar } from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{
@@ -24,9 +23,6 @@ const network = useNetworkStore();
 
 /* State */
 const linkedAccounts = ref<HederaAccount[]>([]);
-
-/* Composables */
-const accountData = useAccountId();
 
 /* Hooks */
 onBeforeMount(async () => {
@@ -73,7 +69,7 @@ onBeforeMount(async () => {
                         }}
                       </p>
                       <p class="text-secondary text-micro overflow-hidden">
-                        ({{ accountData.getAccountIdWithChecksum(debit.accountId.toString()) }})
+                        ({{ getAccountIdWithChecksum(debit.accountId.toString()) }})
                       </p>
                     </div>
                   </template>
@@ -83,7 +79,7 @@ onBeforeMount(async () => {
                       class="text-secondary text-small overflow-hidden"
                       data-testid="p-transfer-from-account-details"
                     >
-                      {{ accountData.getAccountIdWithChecksum(debit.accountId.toString()) }}
+                      {{ getAccountIdWithChecksum(debit.accountId.toString()) }}
                     </p>
                   </template>
                 </div>
@@ -128,7 +124,7 @@ onBeforeMount(async () => {
                         class="text-secondary text-micro overflow-hidden"
                         data-testid="p-transfer-to-account-details"
                       >
-                        ({{ accountData.getAccountIdWithChecksum(credit.accountId.toString()) }})
+                        ({{ getAccountIdWithChecksum(credit.accountId.toString()) }})
                       </p>
                     </div>
                   </template>
@@ -137,7 +133,7 @@ onBeforeMount(async () => {
                       class="text-secondary text-small overflow-hidden"
                       data-testid="p-transfer-to-account-details"
                     >
-                      {{ accountData.getAccountIdWithChecksum(credit.accountId.toString()) }}
+                      {{ getAccountIdWithChecksum(credit.accountId.toString()) }}
                     </p>
                   </template>
                 </div>

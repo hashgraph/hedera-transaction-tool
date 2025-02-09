@@ -2,11 +2,10 @@
 import type { CryptoAllowance, IAccountInfoParsed } from '@main/shared/interfaces';
 import type { ApproveHbarAllowanceData } from '@renderer/utils/sdk';
 
-import { computed, onBeforeMount, ref, watch, watchEffect } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Hbar, HbarUnit, Key } from '@hashgraph/sdk';
 
-import { stringifyHbar, formatAccountId } from '@renderer/utils';
-import useAccountId from '@renderer/composables/useAccountId';
+import { stringifyHbar, formatAccountId, getAccountIdWithChecksum } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -24,9 +23,6 @@ const props = defineProps<{
 defineEmits<{
   (event: 'update:data', data: ApproveHbarAllowanceData): void;
 }>();
-
-/* Composables */
-const accountData = useAccountId();
 
 /* State */
 const isKeyStructureModalShown = ref(false);
@@ -46,7 +42,7 @@ const spenderAllowance = computed(() => {
 /* Handlers */
 const handleBlur = (e: Event, accType: 'spender' | 'owner') => {
   const value = (e.target as HTMLInputElement).value;
-  const formattedValue = accountData.getAccountIdWithChecksum(value);
+  const formattedValue = getAccountIdWithChecksum(value);
   if (accType === 'owner') {
     if (formattedValue !== ownerValue.value) {
       ownerValue.value = formattedValue;
@@ -62,8 +58,8 @@ watch(
   () => [props.data.ownerAccountId, props.data.spenderAccountId],
   ([newOwner, newSpender]) => {
     if (!isDataLoaded.value && newOwner && newSpender) {
-      ownerValue.value = accountData.getAccountIdWithChecksum(newOwner) || '';
-      spenderValue.value = accountData.getAccountIdWithChecksum(newSpender) || '';
+      ownerValue.value = getAccountIdWithChecksum(newOwner) || '';
+      spenderValue.value = getAccountIdWithChecksum(newSpender) || '';
       isDataLoaded.value = true;
     }
   },

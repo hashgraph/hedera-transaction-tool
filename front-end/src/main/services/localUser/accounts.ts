@@ -15,6 +15,24 @@ export const getAccounts = (findArgs: Prisma.HederaAccountFindManyArgs) => {
   }
 };
 
+export const getAccountById = async (userId: string, accountId: string) => {
+  const prisma = getPrismaClient();
+
+  try {
+    const account = await prisma.hederaAccount.findFirst({
+      where: {
+        user_id: userId,
+        account_id: accountId,
+      },
+    });
+
+    return account || null;
+  } catch (error) {
+    console.error('Error fetching account:', error);
+    return null;
+  }
+};
+
 export const addAccount = async (
   userId: string,
   accountId: string,

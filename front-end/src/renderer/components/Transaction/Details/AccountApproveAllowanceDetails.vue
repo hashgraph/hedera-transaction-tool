@@ -1,76 +1,51 @@
 <script setup lang="ts">
-import type { IUserLinkedAccounts } from '@main/shared/interfaces';
-
-import { onBeforeMount, ref, watchEffect } from 'vue';
+import { ref, watchEffect } from 'vue';
 
 import { Transaction, AccountAllowanceApproveTransaction, Hbar } from '@hashgraph/sdk';
 
-import useAccountId from '@renderer/composables/useAccountId';
-
-import { getAccountNicknameFromId, stringifyHbar } from '@renderer/utils';
+import { getAccountIdWithChecksum, getAccountNicknameFromId, stringifyHbar } from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{
   transaction: Transaction;
-  allLinkedAccounts?: IUserLinkedAccounts[];
 }>();
 
-/* Composables */
-const accountData = useAccountId();
-
 /* State */
-const nicknames = ref<{ ownerNickname: string; spenderNickname: string }[]>([]);
-
-/* Hooks */
-onBeforeMount(async () => {
-  if (!(props.transaction instanceof AccountAllowanceApproveTransaction)) {
-    throw new Error('Transaction is not Account Delete Transaction');
-  }
-
-  nicknames.value = (props.transaction as AccountAllowanceApproveTransaction).hbarApprovals.map(
-    () => ({
-      ownerNickname: '',
-      spenderNickname: '',
-    }),
-  );
-});
+const nicknames = ref<{ ownerNickname: string | null; spenderNickname: string | null }[]>([]);
 
 /* Functions */
-function getNicknames() {
+async function getNicknames() {
   const tx = props.transaction as AccountAllowanceApproveTransaction;
-  if (tx.hbarApprovals) {
-    const nicknameValues = tx.hbarApprovals.map((approval, index) => {
-      const nick = {
-        ownerNickname: '',
-        spenderNickname: '',
+  if (!tx.hbarApprovals) return;
+
+  nicknames.value = tx.hbarApprovals.map(() => ({
+    ownerNickname: null,
+    spenderNickname: null,
+  }));
+
+  const nicknameValues = await Promise.all(
+    tx.hbarApprovals.map(async approval => {
+      return {
+        ownerNickname: approval.ownerAccountId
+          ? await getAccountNicknameFromId(approval.ownerAccountId.toString())
+          : null,
+        spenderNickname: approval.spenderAccountId
+          ? await getAccountNicknameFromId(approval.spenderAccountId.toString())
+          : null,
       };
+    }),
+  );
 
-      if (approval.ownerAccountId) {
-        nick.ownerNickname =
-          getAccountNicknameFromId(approval.ownerAccountId.toString(), props.allLinkedAccounts!) ||
-          '';
-      }
-      if (approval.spenderAccountId) {
-        nick.spenderNickname =
-          getAccountNicknameFromId(
-            approval.spenderAccountId.toString(),
-            props.allLinkedAccounts!,
-          ) || '';
-      }
-
-      return { index, nick };
-    });
-
-    nicknameValues.forEach(({ index, nick }) => {
-      nicknames.value[index] = nick;
-    });
-  }
+  nicknames.value = nicknameValues;
 }
 
 /* Watchers */
-watchEffect(() => {
-  if (props.transaction && props.allLinkedAccounts && props.allLinkedAccounts.length > 0) {
-    getNicknames();
+watchEffect(async () => {
+  if (
+    props.transaction instanceof AccountAllowanceApproveTransaction &&
+    props.transaction.hbarApprovals
+  ) {
+    await getNicknames();
   }
 });
 
@@ -95,12 +70,10 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           <p :class="detailItemValueClass" data-testid="p-account-approve-details-owner-id">
             <span v-if="nicknames[i].ownerNickname">
               {{
-                `${nicknames[i].ownerNickname} (${accountData.getAccountIdWithChecksum(approval.ownerAccountId?.toString())})`
+                `${nicknames[i].ownerNickname} (${getAccountIdWithChecksum(approval.ownerAccountId?.toString())})`
               }}
             </span>
-            <span v-else>{{
-              accountData.getAccountIdWithChecksum(approval.ownerAccountId?.toString())
-            }}</span>
+            <span v-else>{{ getAccountIdWithChecksum(approval.ownerAccountId?.toString()) }}</span>
           </p>
         </div>
         <div v-if="approval.spenderAccountId" :class="commonColClass">
@@ -108,11 +81,11 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           <p :class="detailItemValueClass" data-testid="p-account-approve-details-spender-id">
             <span v-if="nicknames[i].spenderNickname">
               {{
-                `${nicknames[i].spenderNickname} (${accountData.getAccountIdWithChecksum(approval.spenderAccountId?.toString())})`
+                `${nicknames[i].spenderNickname} (${getAccountIdWithChecksum(approval.spenderAccountId?.toString())})`
               }}
             </span>
             <span v-else>{{
-              accountData.getAccountIdWithChecksum(approval.spenderAccountId?.toString())
+              getAccountIdWithChecksum(approval.spenderAccountId?.toString())
             }}</span>
           </p>
         </div>

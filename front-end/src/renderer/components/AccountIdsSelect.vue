@@ -7,9 +7,8 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getAll } from '@renderer/services/accountsService';
-import useAccountId from '@renderer/composables/useAccountId';
 
-import { flattenAccountIds, isUserLoggedIn } from '@renderer/utils';
+import { flattenAccountIds, getAccountIdWithChecksum, isUserLoggedIn } from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{
@@ -28,9 +27,6 @@ const network = useNetworkStore();
 
 /* State */
 const linkedAccounts = ref<HederaAccount[]>([]);
-
-/* Composables */
-const accountData = useAccountId();
 
 /* Computed */
 const accoundIds = computed(() => flattenAccountIds(user.publicKeyToAccounts));
@@ -91,8 +87,8 @@ watch(
         {{
           (linkedAccounts.find(la => la.account_id === accountId)?.nickname?.trim() || '').length >
           0
-            ? `(${accountData.getAccountIdWithChecksum(accountId)})`
-            : `${accountData.getAccountIdWithChecksum(accountId)}`
+            ? `(${getAccountIdWithChecksum(accountId)})`
+            : `${getAccountIdWithChecksum(accountId)}`
         }}
       </option>
     </template>

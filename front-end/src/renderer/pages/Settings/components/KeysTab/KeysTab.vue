@@ -9,13 +9,16 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
-import useAccountId from '@renderer/composables/useAccountId';
 
 import { CommonNetwork } from '@main/shared/enums';
 
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 
-import { assertUserLoggedIn, isLoggedInOrganization } from '@renderer/utils';
+import {
+  assertUserLoggedIn,
+  getAccountIdWithChecksum,
+  isLoggedInOrganization,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
@@ -30,7 +33,6 @@ const network = useNetworkStore();
 /* Composables */
 const toast = useToast();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
-const accountData = useAccountId();
 
 /* State */
 const decryptedKeys = ref<{ decrypted: string | null; publicKey: string }[]>([]);
@@ -184,7 +186,7 @@ const handleAccountString = (publicKey: string) => {
   const account = user.publicKeyToAccounts.find(acc => acc.publicKey === publicKey)?.accounts[0]
     ?.account;
   if (account) {
-    const idWithChecksum = accountData.getAccountIdWithChecksum(account);
+    const idWithChecksum = getAccountIdWithChecksum(account);
     return idWithChecksum;
   }
 };

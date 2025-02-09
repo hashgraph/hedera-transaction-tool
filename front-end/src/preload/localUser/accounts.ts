@@ -9,6 +9,8 @@ export default {
   accounts: {
     getAll: (findArgs: Prisma.HederaAccountFindManyArgs): Promise<HederaAccount[]> =>
       ipcRenderer.invoke('accounts:getAll', findArgs),
+    getOne: (userId: string, accountId: string): Promise<HederaAccount | null> =>
+      ipcRenderer.invoke('accounts:getOne', userId, accountId),
     add: (
       userId: string,
       accountId: string,
