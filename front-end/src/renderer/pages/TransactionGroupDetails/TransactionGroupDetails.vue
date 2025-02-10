@@ -6,7 +6,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { Transaction } from '@hashgraph/sdk';
 
 import { historyTitle, TRANSACTION_ACTION } from '@main/shared/constants';
-import { TransactionStatus, TransactionTypeName } from '@main/shared/interfaces';
+import { TransactionTypeName } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
@@ -45,6 +45,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 /* Stores */
 const user = useUserStore();
@@ -59,6 +60,7 @@ const toast = useToast();
 const ws = useDisposableWs();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
+const createTooltips = useCreateTooltips();
 
 /* State */
 const group = ref<IGroup | null>(null);
@@ -70,6 +72,7 @@ const isSigning = ref(false);
 const isApproving = ref(false);
 const userUnsignedSigners = ref<Record<string, string[]>>({});
 const allUnsignedSigners = ref<Record<string, string[]>>({});
+const tooltipRef = ref<HTMLElement[]>([]);
 
 /* Computed */
 const shouldCheckAllSigners = computed(() => {
@@ -82,6 +85,18 @@ const shouldCheckAllSigners = computed(() => {
     }
   }
   return undefined;
+});
+
+const getTooltipForTx = computed(() => (txId: number) => {
+  if (shouldCheckAllSigners.value) {
+    return allUnsignedSigners.value[txId]?.length === 0
+      ? 'Transaction is signed by all required signers!'
+      : 'Transaction needs to be signed by all required signers!';
+  } else {
+    return userUnsignedSigners.value[txId]?.length === 0
+      ? 'Transaction successfully signed by user!'
+      : 'You need to sign the transaction!';
+  }
 });
 
 /* Handlers */
@@ -284,8 +299,6 @@ function setGetTransactionsFunction() {
   }, false);
 }
 
-//const isTransactionFullySigned = (tx: Transaction) => {};
-
 /* Hooks */
 onBeforeMount(async () => {
   const id = router.currentRoute.value.params.id;
@@ -313,7 +326,9 @@ watch(
 );
 
 watchEffect(() => {
-  console.log(allUnsignedSigners.value);
+  if (tooltipRef.value && tooltipRef.value.length > 0) {
+    createTooltips();
+  }
 });
 </script>
 <template>
@@ -385,18 +400,30 @@ watchEffect(() => {
                               <td data-testid="td-group-transaction-id">
                                 <span
                                   v-if="shouldCheckAllSigners === false"
+                                  data-bs-toggle="tooltip"
+                                  data-bs-custom-class="wide-tooltip"
+                                  data-bs-trigger="hover"
+                                  data-bs-placement="top"
+                                  :title="getTooltipForTx(groupItem.transaction.id)"
+                                  ref="tooltipRef"
                                   :class="
                                     userUnsignedSigners[groupItem.transaction.id]?.length === 0
                                       ? 'bi bi-check-lg text-success'
-                                      : 'bi bi-exclamation-triangle'
+                                      : 'bi bi-exclamation-circle'
                                   "
                                 ></span>
                                 <span
+                                  data-bs-toggle="tooltip"
+                                  data-bs-custom-class="wide-tooltip"
+                                  data-bs-trigger="hover"
+                                  data-bs-placement="top"
+                                  :title="getTooltipForTx(groupItem.transaction.id)"
+                                  ref="tooltipRef"
                                   v-if="shouldCheckAllSigners"
                                   :class="
                                     allUnsignedSigners[groupItem.transaction.id]?.length === 0
                                       ? 'bi bi-check-lg text-success'
-                                      : 'bi bi-exclamation-triangle'
+                                      : 'bi bi-exclamation-circle'
                                   "
                                 >
                                 </span>
