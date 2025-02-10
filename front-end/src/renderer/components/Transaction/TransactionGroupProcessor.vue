@@ -18,11 +18,7 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import { execute, signTransaction, storeTransaction } from '@renderer/services/transactionService';
 import { decryptPrivateKey, flattenKeyList } from '@renderer/services/keyPairService';
 import { deleteDraft } from '@renderer/services/transactionDraftsService';
-import {
-  addGroupItem,
-  deleteGroup,
-  editGroupItem,
-} from '@renderer/services/transactionGroupsService';
+import { addGroupItem, editGroupItem } from '@renderer/services/transactionGroupsService';
 import { addGroup, getGroupItem } from '@renderer/services/transactionGroupsService';
 import {
   addApprovers,
@@ -43,7 +39,6 @@ import {
   isLoggedInOrganization,
   isUserLoggedIn,
   getErrorMessage,
-  safeAwait,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -239,6 +234,15 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
 
   if (!type || !executedTransaction.transactionId) throw new Error('Cannot save transaction');
 
+  if (!newGroupId.value) {
+    const newGroup = await addGroup(
+      transactionGroup.description,
+      false,
+      transactionGroup.groupValidStart,
+    );
+    newGroupId.value = newGroup.id;
+  }
+
   const tx: Prisma.TransactionUncheckedCreateInput = {
     name: `${type} (${executedTransaction.transactionId.toString()})`,
     type: type,
@@ -254,7 +258,7 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
     valid_start: executedTransaction.transactionId.validStart?.toString() || '',
     executed_at: new Date().getTime() / 1000,
     network: network.network,
-    group_id: groupItem?.groupId,
+    group_id: !groupItem?.groupId ? newGroupId.value : groupItem.groupId,
   };
 
   const storedTransaction = await storeTransaction(tx);
@@ -269,10 +273,6 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
     });
     await deleteDraft(savedGroupItem.transaction_draft_id!);
   } else if (groupItem) {
-    if (!newGroupId.value) {
-      const newGroup = await addGroup('', false, transactionGroup.groupValidStart);
-      newGroupId.value = newGroup.id;
-    }
     await addGroupItem(groupItem, newGroupId.value, storedTransaction.id);
   }
 
@@ -343,10 +343,6 @@ async function sendSignedTransactionsToOrganization() {
   const group: IGroup = await getApiGroupById(user.selectedOrganization.serverUrl, id);
 
   toast.success('Transaction submitted successfully');
-
-  /*if (transactionGroup.groupItems[0]?.groupId) {
-    await safeAwait(deleteGroup(transactionGroup.groupItems[0].groupId));
-  } */
 
   for (const groupItem of group.groupItems) {
     const results = await Promise.allSettled([

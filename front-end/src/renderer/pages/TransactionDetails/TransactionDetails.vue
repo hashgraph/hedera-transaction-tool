@@ -51,7 +51,6 @@ import txTypeComponentMapping from '@renderer/components/Transaction/Details/txT
 import TransactionDetailsHeader from './components/TransactionDetailsHeader.vue';
 import TransactionDetailsStatusStepper from './components/TransactionDetailsStatusStepper.vue';
 import { getGroup } from '@renderer/services/transactionGroupsService';
-import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 /* Stores */
 const user = useUserStore();
@@ -122,7 +121,6 @@ async function fetchTransaction(id: string | number) {
     } else {
       localTransaction.value = await getTransaction(id.toString());
       transactionBytes = getUInt8ArrayFromBytesString(localTransaction.value.body);
-
       if (localTransaction.value?.group_id) {
         const localGroup = await getGroup(localTransaction.value.group_id.toString());
         groupDescription.value = localGroup.description;

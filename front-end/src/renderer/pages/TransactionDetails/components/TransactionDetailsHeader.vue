@@ -575,21 +575,18 @@ watch(
         <i class="bi bi-arrow-left"></i>
       </AppButton>
 
-      <h2 class="text-title text-bold">
+      <h2
+        class="text-title text-bold"
+        v-if="props.localGroupDescription || props.orgGroupDescription"
+      >
         Transaction Details
-        <span
-          v-if="props.localGroupDescription && props.localGroupDescription.length > 0"
-          class="text-secondary"
-        >
-          {{ `(${localGroupDescription})` }}
-        </span>
-        <span
-          v-if="props.orgGroupDescription && props.orgGroupDescription.length > 0"
-          class="text-secondary"
-        >
-          {{ `(${orgGroupDescription})` }}
+        <span class="text-secondary">
+          {{
+            props.localGroupDescription ? `(${localGroupDescription})` : `(${orgGroupDescription})`
+          }}
         </span>
       </h2>
+      <h2 v-else class="text-title text-bold">Transaction Details</h2>
     </div>
 
     <div class="flex-centered gap-4">
