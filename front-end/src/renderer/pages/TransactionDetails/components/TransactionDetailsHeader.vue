@@ -91,6 +91,8 @@ const props = defineProps<{
   sdkTransaction: SDKTransaction | null;
   nextId: number | string | null;
   previousId: number | string | null;
+  orgGroupDescription?: string | undefined;
+  localGroupDescription?: string | undefined;
 }>();
 
 /* Stores */
@@ -573,7 +575,21 @@ watch(
         <i class="bi bi-arrow-left"></i>
       </AppButton>
 
-      <h2 class="text-title text-bold">Transaction Details</h2>
+      <h2 class="text-title text-bold">
+        Transaction Details
+        <span
+          v-if="props.localGroupDescription && props.localGroupDescription.length > 0"
+          class="text-secondary"
+        >
+          {{ `(${localGroupDescription})` }}
+        </span>
+        <span
+          v-if="props.orgGroupDescription && props.orgGroupDescription.length > 0"
+          class="text-secondary"
+        >
+          {{ `(${orgGroupDescription})` }}
+        </span>
+      </h2>
     </div>
 
     <div class="flex-centered gap-4">

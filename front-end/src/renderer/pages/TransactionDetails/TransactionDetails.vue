@@ -20,7 +20,7 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
-import { getTransactionById } from '@renderer/services/organization';
+import { getApiGroupById, getTransactionById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
 
 import {
@@ -74,6 +74,7 @@ const nextId = ref<string | number | null>(null);
 const prevId = ref<string | number | null>(null);
 const feePayer = ref<string | null>(null);
 const feePayerNickname = ref<string | null>(null);
+const groupDescription = ref<string | undefined>(undefined);
 
 /* Computed */
 const transactionSpecificLabel = computed(() => {
@@ -106,9 +107,27 @@ async function fetchTransaction(id: string | number) {
         Number(id),
       );
       transactionBytes = hexToUint8Array(orgTransaction.value.transactionBytes);
+
+      if (orgTransaction.value?.groupItem.groupId) {
+        if (user.selectedOrganization?.serverUrl) {
+          const orgGroup = await getApiGroupById(
+            user.selectedOrganization?.serverUrl,
+            orgTransaction.value.groupItem.groupId,
+          );
+          groupDescription.value = orgGroup.description;
+
+          console.log(orgGroup.description);
+        }
+      }
     } else {
       localTransaction.value = await getTransaction(id.toString());
       transactionBytes = getUInt8ArrayFromBytesString(localTransaction.value.body);
+
+      if (localTransaction.value?.group_id) {
+        const localGroup = await getGroup(localTransaction.value.group_id.toString());
+        groupDescription.value = localGroup.description;
+        console.log(localGroup.description);
+      }
     }
   } catch (error) {
     router.back();
@@ -211,6 +230,8 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           :local-transaction="localTransaction"
           :next-id="nextId"
           :previous-id="prevId"
+          :local-group-description="groupDescription"
+          :org-group-description="groupDescription"
         />
 
         <Transition name="fade" mode="out-in">

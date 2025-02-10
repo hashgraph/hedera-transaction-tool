@@ -254,6 +254,7 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
     valid_start: executedTransaction.transactionId.validStart?.toString() || '',
     executed_at: new Date().getTime() / 1000,
     network: network.network,
+    group_id: groupItem?.groupId,
   };
 
   const storedTransaction = await storeTransaction(tx);
@@ -268,7 +269,7 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
     });
     await deleteDraft(savedGroupItem.transaction_draft_id!);
   } else if (groupItem) {
-    if (newGroupId.value === '') {
+    if (!newGroupId.value) {
       const newGroup = await addGroup('', false, transactionGroup.groupValidStart);
       newGroupId.value = newGroup.id;
     }
@@ -343,9 +344,9 @@ async function sendSignedTransactionsToOrganization() {
 
   toast.success('Transaction submitted successfully');
 
-  if (transactionGroup.groupItems[0]?.groupId) {
+  /*if (transactionGroup.groupItems[0]?.groupId) {
     await safeAwait(deleteGroup(transactionGroup.groupItems[0].groupId));
-  }
+  } */
 
   for (const groupItem of group.groupItems) {
     const results = await Promise.allSettled([
