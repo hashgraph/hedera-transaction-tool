@@ -1,3 +1,11 @@
+import type { AccountInfo } from '@main/shared/interfaces';
+import type { HederaAccount } from '@prisma/client';
+import { AccountId, Client } from '@hashgraph/sdk';
+import { isUserLoggedIn } from './userStoreHelpers';
+import useUserStore from '@renderer/stores/storeUser';
+import { getOne } from '@renderer/services/accountsService';
+import useNetworkStore from '@renderer/stores/storeNetwork';
+
 export * from './dom';
 export * from './sdk';
 export * from './transactions';
@@ -106,3 +114,67 @@ export const throwError = (errorMessage: string) => {
 
 export const getErrorMessage = (error: unknown, defaultErrorMessage: string) =>
   error instanceof Error ? error.message : defaultErrorMessage;
+
+export function handleFormatAccount(
+  allAccounts: HederaAccount[] | undefined,
+  accountToCheck: AccountInfo | HederaAccount,
+): string {
+  if (!allAccounts || !accountToCheck) {
+    return '';
+  }
+
+  const accountId =
+    'account' in accountToCheck ? accountToCheck.account : accountToCheck.account_id;
+
+  if (!accountId) return '';
+
+  const nickname = allAccounts.find(a => a.account_id === accountId)?.nickname || '';
+
+  return nickname
+    ? `${nickname} (${getAccountIdWithChecksum(accountId)})`
+    : getAccountIdWithChecksum(accountId);
+}
+
+export const getAccountNicknameFromId = async (idToCheck: string) => {
+  try {
+    const user = useUserStore();
+
+    if (!isUserLoggedIn(user.personal)) {
+      throw new Error('User is not logged in');
+    }
+
+    const existingAcc = await getOne(user.personal.id, idToCheck);
+
+    if (!existingAcc || !existingAcc?.nickname) {
+      return null;
+    }
+
+    return existingAcc?.nickname;
+  } catch {
+    return null;
+  }
+};
+
+export function validateAccountIdChecksum(accountId: string): boolean {
+  try {
+    const [baseId, checksum] = accountId.split('-');
+    const networkStore = useNetworkStore();
+    const parsedAccountId = AccountId.fromString(baseId);
+    const calculatedChecksum = parsedAccountId
+      .toStringWithChecksum(networkStore.client as Client)
+      .split('-')[1];
+
+    return checksum === calculatedChecksum;
+  } catch {
+    return false;
+  }
+}
+
+export const getAccountIdWithChecksum = (accountId: string): string => {
+  try {
+    const networkStore = useNetworkStore();
+    return AccountId.fromString(accountId).toStringWithChecksum(networkStore.client as Client);
+  } catch {
+    return accountId;
+  }
+};

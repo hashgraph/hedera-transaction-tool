@@ -16,7 +16,12 @@ import { getAll, remove, changeNickname } from '@renderer/services/accountsServi
 import { getKeyListLevels } from '@renderer/services/keyPairService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
-import { getFormattedDateFromTimestamp, isUserLoggedIn, stringifyHbar } from '@renderer/utils';
+import {
+  getAccountIdWithChecksum,
+  getFormattedDateFromTimestamp,
+  isUserLoggedIn,
+  stringifyHbar,
+} from '@renderer/utils';
 
 import { transactionTypeKeys } from '@renderer/components/Transaction/Create/txTypeComponentMapping';
 
@@ -352,7 +357,7 @@ onMounted(async () => {
                       class="text-micro text-secondary mt-2"
                       :data-testid="'p-account-id-' + index"
                     >
-                      {{ accountData.getAccountIdWithChecksum(account.account_id) }}
+                      {{ getAccountIdWithChecksum(account.account_id) }}
                     </p>
                   </div>
                 </div>
@@ -488,7 +493,7 @@ onMounted(async () => {
                   </div>
                   <div class="col-7">
                     <p
-                      class="text-small text-secondary overflow-hidden"
+                      class="text-small text-secondary overflow-x-auto"
                       data-testid="p-account-data-evm-address"
                     >
                       0x{{ accountData.accountInfo.value?.evmAddress || 'None' }}
@@ -523,7 +528,7 @@ onMounted(async () => {
                     </template>
                     <template v-else-if="accountData.key.value instanceof PublicKey && true">
                       <p
-                        class="text-secondary text-small overflow-hidden"
+                        class="text-secondary text-small overflow-x-auto"
                         data-testid="p-account-data-key"
                       >
                         {{ accountData.key.value.toStringRaw() }}

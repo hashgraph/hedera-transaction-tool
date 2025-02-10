@@ -7,6 +7,7 @@ const {
   verifyFileExists,
 } = require('../utils/databaseQueries');
 const { decodeAndFlattenKeys } = require('../utils/keyUtil');
+const { getCleanAccountId } = require('../utils/util');
 
 class TransactionPage extends BasePage {
   constructor(window) {
@@ -352,7 +353,7 @@ class TransactionPage extends BasePage {
       return 0;
     } else {
       for (let i = 0; i < count; i++) {
-        const idText = (await this.getText(this.accountIdPrefixSelector + i)).split("-")[0];
+        const idText = getCleanAccountId(await this.getText(this.accountIdPrefixSelector + i));
         if (idText === accountId) {
           return i;
         }
@@ -427,7 +428,10 @@ class TransactionPage extends BasePage {
     const newAccountId = transactionDetails.transactions[0].entity_id;
 
     await this.clickOnTransactionsMenuButton();
-    await this.addAccountsToList(newAccountId);
+
+    if (!isComplex) {
+      await this.addAccountsToList(newAccountId);
+    }
 
     return { newAccountId, newTransactionId };
   }
@@ -789,7 +793,9 @@ class TransactionPage extends BasePage {
   async fillInTransferAccountId() {
     const allAccountIdsText = await this.getTextWithRetry(this.payerDropdownSelector);
     const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
-    await this.fillAndVerify(this.transferAccountInputSelector, firstAccountId);
+    console.log('First Account ID:', firstAccountId);
+    const cleanAccountId = getCleanAccountId(firstAccountId);
+    await this.fillAndVerify(this.transferAccountInputSelector, cleanAccountId);
     return firstAccountId;
   }
 
@@ -798,7 +804,7 @@ class TransactionPage extends BasePage {
   }
 
   async getFirstAccountIdFromText(allAccountIds) {
-    const accountIdsArray = allAccountIds.split(' ');
+    const accountIdsArray = allAccountIds.trim().split(' ');
     return accountIdsArray[0];
   }
 
@@ -943,7 +949,11 @@ class TransactionPage extends BasePage {
 
   async fillInAllowanceOwnerAccount() {
     const allAccountIdsText = await this.getText(this.payerDropdownSelector);
-    const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
+    console.log('All Account IDs:', allAccountIdsText);
+    const firstAccountId = getCleanAccountId(
+      await this.getFirstAccountIdFromText(allAccountIdsText),
+    );
+    console.log('First Account ID:', firstAccountId);
     await this.fill(this.allowanceOwnerAccountSelector, firstAccountId);
     return firstAccountId;
   }

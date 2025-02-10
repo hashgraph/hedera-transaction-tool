@@ -11,6 +11,7 @@ import {
   changeAccountNickname,
   getAccounts,
   removeAccounts,
+  getAccountById,
 } from '@main/services/localUser/accounts';
 
 vi.mock('@main/db/prisma');
@@ -51,6 +52,63 @@ describe('Services Local User Accounts', () => {
       const result = await getAccounts({});
 
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('getAccountById', () => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+    });
+
+    test('Should return account if found', async () => {
+      const userId = '123';
+      const accountId = '0.0.2';
+
+      const mockAccount: HederaAccount = {
+        id: '321',
+        user_id: userId,
+        account_id: accountId,
+        nickname: 'Test Nickname',
+        network: 'TESTNET',
+        created_at: new Date(),
+      };
+
+      prisma.hederaAccount.findFirst.mockResolvedValueOnce(mockAccount);
+
+      const result = await getAccountById(userId, accountId);
+
+      expect(result).toEqual(mockAccount);
+      expect(prisma.hederaAccount.findFirst).toHaveBeenCalledWith({
+        where: { user_id: userId, account_id: accountId },
+      });
+    });
+
+    test('Should return null if account is not found', async () => {
+      const userId = '123';
+      const accountId = '0.0.99';
+
+      prisma.hederaAccount.findFirst.mockResolvedValueOnce(null);
+
+      const result = await getAccountById(userId, accountId);
+
+      expect(result).toBeNull();
+      expect(prisma.hederaAccount.findFirst).toHaveBeenCalledWith({
+        where: { user_id: userId, account_id: accountId },
+      });
+    });
+
+    test('Should return null and log an error if an exception occurs', async () => {
+      const userId = '123';
+      const accountId = '0.0.99';
+
+      prisma.hederaAccount.findFirst.mockRejectedValueOnce(new Error('Database Error'));
+
+      console.error = vi.fn();
+
+      const result = await getAccountById(userId, accountId);
+
+      expect(result).toBeNull();
+      expect(console.error).toHaveBeenCalledWith('Error fetching account:', expect.any(Error));
     });
   });
 

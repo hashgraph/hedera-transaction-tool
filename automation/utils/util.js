@@ -227,6 +227,21 @@ function parsePropertiesContent(content) {
   return obj;
 }
 
+/**
+ * Extracts the clean account ID from a string containing a checksum.
+ * For example, "0.0.1030-bmczp" returns "0.0.1030".
+ *
+ * @param {string} accountIdWithChecksum - The account ID string including the checksum.
+ * @returns {string} The clean account ID.
+ * @throws {Error} If the provided input is not a valid non-empty string.
+ */
+function getCleanAccountId(accountIdWithChecksum) {
+  if (!accountIdWithChecksum || typeof accountIdWithChecksum !== 'string') {
+    throw new Error('Invalid accountIdWithChecksum provided');
+  }
+  return accountIdWithChecksum.split('-')[0];
+}
+
 const asciiArt =
   '\n' +
   ' ________ __    __        ________ ______   ______  __               ______  __    __ ________ ______  __       __  ______  ________ ______  ______  __    __ \n' +
@@ -252,4 +267,5 @@ module.exports = {
   cleanupBinFiles,
   compareJsonFiles,
   parsePropertiesContent,
+  getCleanAccountId,
 };

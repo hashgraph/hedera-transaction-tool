@@ -141,29 +141,6 @@ export default function useAccountId() {
             https://hashscan.io/${networkStore.network}/account/${accountIdFormatted.value}`);
   }
 
-  function validateAccountIdChecksum(accountId: string): boolean {
-    try {
-      const [baseId, checksum] = accountId.split('-');
-
-      const parsedAccountId = AccountId.fromString(baseId);
-      const calculatedChecksum = parsedAccountId
-        .toStringWithChecksum(networkStore.client as Client)
-        .split('-')[1];
-
-      return checksum === calculatedChecksum;
-    } catch {
-      return false;
-    }
-  }
-
-  const getAccountIdWithChecksum = (accountId: string): string => {
-    try {
-      return AccountId.fromString(accountId).toStringWithChecksum(networkStore.client as Client);
-    } catch {
-      return accountId;
-    }
-  };
-
   return {
     accountId,
     accountInfo,
@@ -178,7 +155,5 @@ export default function useAccountId() {
     getStakedToString,
     getFormattedPendingRewards,
     openAccountInHashscan,
-    validateAccountIdChecksum,
-    getAccountIdWithChecksum,
   };
 }

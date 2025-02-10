@@ -8,11 +8,10 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
-import useAccountId from '@renderer/composables/useAccountId';
 
 import { add, getAll } from '@renderer/services/accountsService';
 
-import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import { handleFormatAccount, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{
@@ -33,7 +32,6 @@ const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
-const accountData = useAccountId();
 
 /* State */
 const isCollapsed = ref(false);
@@ -100,19 +98,7 @@ const handleLinkAccount = async (accountId: string) => {
                   :data-testid="'p-associated-account-id-' + index + '-' + accountIndex"
                   v-if="account.account"
                 >
-                  {{ accountData.getAccountIdWithChecksum(account.account) }}
-                  <span
-                    v-if="
-                      (
-                        linkedAccounts
-                          ?.find(a => a.account_id === account.account)
-                          ?.nickname?.trim() || ''
-                      ).length > 0
-                    "
-                    >({{
-                      linkedAccounts?.find(a => a.account_id === account.account)?.nickname
-                    }})</span
-                  >
+                  <span>{{ handleFormatAccount(linkedAccounts, account) }}</span>
                 </p>
                 <span
                   v-if="!linkedAccounts?.some(a => a.account_id === account.account)"

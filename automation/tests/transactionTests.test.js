@@ -60,6 +60,32 @@ test.describe('Transaction tests', () => {
     await transactionPage.closeDraftModal();
   });
 
+  test('Verify user can execute Account Create tx with complex key', async () => {
+    const { newAccountId } = await transactionPage.createNewAccount({ isComplex: true });
+    const allGeneratedKeys = transactionPage.getAllGeneratedPublicKeys();
+
+    const accountDetails = await transactionPage.mirrorGetAccountResponse(newAccountId);
+    const protoBufEncodedBytes = accountDetails.accounts[0]?.key?.key;
+    const decodedKeys = await transactionPage.decodeByteCode(protoBufEncodedBytes);
+    const keysMatch = await transactionPage.keysMatch(decodedKeys, allGeneratedKeys);
+    expect(keysMatch).toBe(true);
+  });
+
+  test('Verify user can execute account delete tx', async () => {
+    await transactionPage.ensureAccountExists();
+    const accountFromList = await transactionPage.getFirstAccountFromList();
+    const transactionId = await transactionPage.deleteAccount(accountFromList);
+
+    const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
+    const transactionType = transactionDetails.transactions[0]?.name;
+    const deletedAccount = transactionDetails.transactions[0]?.entity_id;
+    const result = transactionDetails.transactions[0]?.result;
+
+    expect(transactionType).toBe('CRYPTODELETE');
+    expect(deletedAccount).toBe(accountFromList);
+    expect(result).toBe('SUCCESS');
+  });
+
   test('Verify that all elements on account create page are correct', async () => {
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnCreateAccountTransaction();
@@ -151,17 +177,6 @@ test.describe('Transaction tests', () => {
     expect(isTxExistingInDb).toBe(true);
   });
 
-  test('Verify user can execute Account Create tx with complex key', async () => {
-    const { newAccountId } = await transactionPage.createNewAccount({ isComplex: true });
-    const allGeneratedKeys = transactionPage.getAllGeneratedPublicKeys();
-
-    const accountDetails = await transactionPage.mirrorGetAccountResponse(newAccountId);
-    const protoBufEncodedBytes = accountDetails.accounts[0]?.key?.key;
-    const decodedKeys = await transactionPage.decodeByteCode(protoBufEncodedBytes);
-    const keysMatch = await transactionPage.keysMatch(decodedKeys, allGeneratedKeys);
-    expect(keysMatch).toBe(true);
-  });
-
   test('Verify account is displayed in the account card section', async () => {
     await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
@@ -170,21 +185,6 @@ test.describe('Transaction tests', () => {
     const isAccountVisible = await transactionPage.isAccountCardVisible(accountFromList);
 
     expect(isAccountVisible).toBe(true);
-  });
-
-  test('Verify user can execute account delete tx', async () => {
-    await transactionPage.ensureAccountExists();
-    const accountFromList = await transactionPage.getFirstAccountFromList();
-    const transactionId = await transactionPage.deleteAccount(accountFromList);
-
-    const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const deletedAccount = transactionDetails.transactions[0]?.entity_id;
-    const result = transactionDetails.transactions[0]?.result;
-
-    expect(transactionType).toBe('CRYPTODELETE');
-    expect(deletedAccount).toBe(accountFromList);
-    expect(result).toBe('SUCCESS');
   });
 
   test('Verify account is deleted from the db after account delete tx', async () => {
@@ -603,13 +603,13 @@ test.describe('Transaction tests', () => {
     expect(transactionMemoFromField).toBe(transactionMemoText);
 
     const allowanceOwnerAccountIdFromPage = await transactionPage.getAllowanceOwnerAccountId();
-    expect(ownerId).toContain(allowanceOwnerAccountIdFromPage);
+    expect(allowanceOwnerAccountIdFromPage).toContain(ownerId);
 
     const allowanceAmountFromField = await transactionPage.getAllowanceAmount();
     expect(allowanceAmountFromField).toBe(amount);
 
     const spenderAccountIdFromField = await transactionPage.getSpenderAccountId();
-    expect(spenderAccountIdFromField).toBe(spenderAccountId);
+    expect(spenderAccountIdFromField).toContain(spenderAccountId);
 
     await transactionPage.navigateToDrafts();
     await transactionPage.deleteFirstDraft();

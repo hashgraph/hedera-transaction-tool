@@ -5,11 +5,10 @@ import { computed, onBeforeMount, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
-import useAccountId from '@renderer/composables/useAccountId';
 
 import { getAll } from '@renderer/services/accountsService';
 
-import { formatAccountId, isUserLoggedIn } from '@renderer/utils';
+import { formatAccountId, getAccountIdWithChecksum, isUserLoggedIn } from '@renderer/utils';
 
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 
@@ -29,9 +28,6 @@ const emit = defineEmits<{
 const user = useUserStore();
 const network = useNetworkStore();
 
-/* Composables */
-const accountData = useAccountId();
-
 /* State */
 const accoundIds = ref<HederaAccount[]>([]);
 
@@ -40,13 +36,13 @@ const formattedAccountIds = computed(() =>
   (
     props.items ||
     accoundIds.value.map(a => a.account_id).concat(user.publicKeysToAccountsFlattened)
-  ).map(id => accountData.getAccountIdWithChecksum(id)),
+  ).map(id => getAccountIdWithChecksum(id)),
 );
 
 const accountValue = computed(() => {
   const allIds = formattedAccountIds.value.map(id => id.split('-')[0]);
   return allIds.includes(props.modelValue)
-    ? accountData.getAccountIdWithChecksum(props.modelValue)
+    ? getAccountIdWithChecksum(props.modelValue)
     : props.modelValue;
 });
 

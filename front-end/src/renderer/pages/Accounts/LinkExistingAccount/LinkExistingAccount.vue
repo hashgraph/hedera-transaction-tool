@@ -12,7 +12,13 @@ import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/use
 
 import { add } from '@renderer/services/accountsService';
 
-import { isUserLoggedIn, formatAccountId, getErrorMessage } from '@renderer/utils';
+import {
+  isUserLoggedIn,
+  formatAccountId,
+  getErrorMessage,
+  validateAccountIdChecksum,
+  getAccountIdWithChecksum,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -34,7 +40,7 @@ const nickname = ref('');
 const handleLinkAccount = async () => {
   if (
     accountData.accountId.value.includes('-') &&
-    !accountData.validateAccountIdChecksum(accountData.accountId.value)
+    !validateAccountIdChecksum(accountData.accountId.value)
   ) {
     toast.error('Invalid checksum for the entered Account ID.');
     return;
@@ -64,7 +70,7 @@ const handleBlur = (e: Event) => {
   const value = (e.target as HTMLInputElement).value;
   if (!value.includes('-')) {
     try {
-      const idWithChecksum = accountData.getAccountIdWithChecksum(value);
+      const idWithChecksum = getAccountIdWithChecksum(value);
       if (idWithChecksum) {
         accountData.accountId.value = idWithChecksum;
       }
