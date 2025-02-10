@@ -47,7 +47,7 @@ onUnmounted(() => {
 <template>
   <AppDatePicker
     :model-value="modelValue"
-    @update:model-value="$emit('update:modelValue', $event)"
+    @update:model-value="emit('update:modelValue', $event)"
     :minDate="minDate"
     :maxDate="maxDate"
     :clearable="false"

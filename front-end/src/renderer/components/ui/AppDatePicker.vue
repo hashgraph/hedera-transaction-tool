@@ -15,7 +15,7 @@ defineProps<
 >();
 
 /* Emits */
-defineEmits<{
+const emit = defineEmits<{
   (event: 'update:modelValue', value: Date): void;
   (event: 'open'): void;
   (event: 'close'): void;
@@ -23,6 +23,12 @@ defineEmits<{
 
 /* State */
 const datePicker = ref<DatePickerInstance>(null);
+
+/* Handlers */
+function handleNow() {
+  emit('update:modelValue', new Date());
+  datePicker.value?.closeMenu();
+}
 </script>
 <template>
   <DatePicker
@@ -30,11 +36,13 @@ const datePicker = ref<DatePickerInstance>(null);
     :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', $event)"
     :clearable="clearable"
-    :auto-apply="true"
+    auto-apply
+    partial-flow
+    :flow="['date', 'time']"
+    text-input
     :config="{
       keepActionRow: true,
     }"
-    :teleport="true"
     :ui="{
       calendar: 'is-fill',
       calendarCell: 'is-fill',
@@ -56,7 +64,7 @@ const datePicker = ref<DatePickerInstance>(null);
           class="text-body min-w-unset"
           size="small"
           type="button"
-          @click="$emit('update:modelValue', new Date())"
+          @click="handleNow"
         >
           Now
         </AppButton>
@@ -66,8 +74,9 @@ const datePicker = ref<DatePickerInstance>(null);
           size="small"
           type="button"
           @click="datePicker?.closeMenu()"
-          >Close</AppButton
         >
+          Close
+        </AppButton>
       </div>
     </template>
   </DatePicker>
