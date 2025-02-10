@@ -38,7 +38,6 @@ import {
   isLoggedInOrganization,
   computeSignatureKey,
   getAccountNicknameFromId,
-  isUserLoggedIn,
   getAccountIdWithChecksum,
 } from '@renderer/utils';
 
@@ -47,9 +46,7 @@ import SignatureStatus from '@renderer/components/SignatureStatus.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 import ReadOnlyApproversList from '@renderer/components/Approvers/ReadOnlyApproversList.vue';
 
-import txTypeComponentMapping, {
-  transactionTypeKeys,
-} from '@renderer/components/Transaction/Details/txTypeComponentMapping';
+import txTypeComponentMapping from '@renderer/components/Transaction/Details/txTypeComponentMapping';
 
 import TransactionDetailsHeader from './components/TransactionDetailsHeader.vue';
 import TransactionDetailsStatusStepper from './components/TransactionDetailsStatusStepper.vue';
