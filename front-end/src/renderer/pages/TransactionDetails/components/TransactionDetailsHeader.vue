@@ -247,7 +247,7 @@ const handleSign = async () => {
   try {
     loadingStates[sign] = 'Signing...';
 
-    const publicKeysRequired = await publicRequiredToSign(
+    const { usersPublicKeys } = await publicRequiredToSign(
       props.sdkTransaction,
       user.selectedOrganization.userKeys,
       network.mirrorNodeBaseURL,
@@ -256,7 +256,7 @@ const handleSign = async () => {
     const restoredRequiredKeys = [];
     const requiredNonRestoredKeys = [];
 
-    for (const requiredKey of publicKeysRequired) {
+    for (const requiredKey of usersPublicKeys) {
       if (user.keyPairs.some(k => k.public_key === requiredKey)) {
         restoredRequiredKeys.push(requiredKey);
       } else {
@@ -543,7 +543,8 @@ watch(
       getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id),
     ]);
 
-    results[0].status === 'fulfilled' && (publicKeysRequiredToSign.value = results[0].value);
+    results[0].status === 'fulfilled' &&
+      (publicKeysRequiredToSign.value = results[0].value.usersPublicKeys);
     results[1].status === 'fulfilled' && (shouldApprove.value = results[1].value);
 
     fullyLoaded.value = true;

@@ -22,10 +22,16 @@ export const redirectToDetails = (
   });
 };
 
-export const redirectToGroupDetails = (router: Router, id: string | number, replace = false) => {
+export const redirectToGroupDetails = (
+  router: Router,
+  id: string | number,
+  replace = false,
+  previousTab?: string,
+) => {
   router.push({
     name: 'transactionGroupDetails',
     params: { id },
+    query: previousTab ? { previousTab } : undefined,
     replace,
   });
 };

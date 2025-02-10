@@ -324,7 +324,7 @@ watch(
                   </td>
                   <td class="text-center">
                     <AppButton
-                      @click="redirectToGroupDetails($router, group[0])"
+                      @click="redirectToGroupDetails($router, group[0], false, 'readyToSign')"
                       color="secondary"
                       data-testid="button-group-details"
                     >

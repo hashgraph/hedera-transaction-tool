@@ -1,6 +1,6 @@
 import type { IUserKey } from '@main/shared/interfaces';
 
-import { Key, KeyList, NodeUpdateTransaction, Transaction } from '@hashgraph/sdk';
+import { Key, KeyList, NodeUpdateTransaction, PublicKey, Transaction } from '@hashgraph/sdk';
 
 import { getAccountInfo, getNodeInfo } from '@renderer/services/mirrorNodeDataService';
 
@@ -45,66 +45,115 @@ export const getSignatureEntities = (transaction: Transaction) => {
   }
 };
 
+const extractRawPublicKey = (key: Key | null): string => {
+  if (!key) return '';
+  if (typeof (key as PublicKey).toStringRaw === 'function') {
+    return (key as PublicKey).toStringRaw();
+  }
+  return key.toString();
+};
+
+export const isTransactionFullySigned = async (
+  transaction: Transaction,
+  mirrorNodeLink: string,
+): Promise<boolean> => {
+
+  const { newKeys, accounts, receiverAccounts, nodeId } = getSignatureEntities(transaction);
+  const allRequiredSigners = new Set<string>();
+
+  newKeys.forEach(key => {
+    if (key instanceof KeyList) {
+      key._keys.forEach(subKey => allRequiredSigners.add(subKey.toString()));
+    } else {
+      allRequiredSigners.add(key.toString());
+    }
+  });
+
+  for (const accountId of accounts) {
+    const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
+    if (accountInfo.key) {
+      allRequiredSigners.add(extractRawPublicKey(accountInfo.key));
+    }
+  }
+
+  for (const accountId of receiverAccounts) {
+    const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
+    if (accountInfo.receiverSignatureRequired && accountInfo.key) {
+      allRequiredSigners.add(accountInfo.key.toString());
+    }
+  }
+
+  const result = await getNodeKeys(nodeId, transaction, mirrorNodeLink);
+  if (result.nodeAccountKey) allRequiredSigners.add(result.nodeAccountKey.toString());
+  if (result.adminKey) allRequiredSigners.add(result.adminKey.toString());
+
+  const signedSigners = new Set(Object.keys(transaction.getSignatures()));
+
+  const isFullySigned = [...allRequiredSigners].every(pk => signedSigners.has(pk));
+
+  return isFullySigned;
+};
+
 /* Returns whether a user should sign the transaction */
 export const publicRequiredToSign = async (
   transaction: Transaction,
   userKeys: IUserKey[],
   mirrorNodeLink: string,
-): Promise<string[]> => {
-  const publicKeysRequired: Set<string> = new Set<string>();
+): Promise<{ usersPublicKeys: string[]; nonUserPublicKeys: string[] }> => {
+  const usersPublicKeys: Set<string> = new Set();
+  const nonUserPublicKeys: Set<string> = new Set();
 
   /* Ensures the user keys are passed */
-  if (userKeys.length === 0) return [];
-
-  /* Transaction signers' public keys */
-  const signerPublicKeys = [...transaction._signerPublicKeys];
+  if (userKeys.length === 0) {
+    return { usersPublicKeys: [], nonUserPublicKeys: [] };
+  }
 
   /* Get signature entities */
   const { newKeys, accounts, receiverAccounts, nodeId } = getSignatureEntities(transaction);
 
-  /* Check if the user has a key that is required to sign */
-  const userKeysIncludedInTransaction = userKeys.filter(userKey =>
-    newKeys.some(
-      key =>
-        isPublicKeyInKeyList(
-          userKey.publicKey,
-          key instanceof KeyList ? key : new KeyList([key]),
-        ) && !signerPublicKeys.includes(userKey.publicKey),
-    ),
-  );
-  userKeysIncludedInTransaction.forEach(userKey => publicKeysRequired.add(userKey.publicKey));
-
-  const addUserPublicKeyIfRequired = (key: Key) => {
-    const userKeysRequired = userKeys.filter(
-      userKey =>
-        isPublicKeyInKeyList(userKey.publicKey, key) &&
-        !signerPublicKeys.includes(userKey.publicKey),
-    );
-    userKeysRequired.forEach(userKey => publicKeysRequired.add(userKey.publicKey));
+  /* Helper function to classify a key */
+  const classifyKey = (key: Key) => {
+    if (userKeys.some(userKey => isPublicKeyInKeyList(userKey.publicKey, key))) {
+      usersPublicKeys.add(extractRawPublicKey(key));
+    } else {
+      nonUserPublicKeys.add(extractRawPublicKey(key));
+    }
   };
 
-  /* Check if a key of the user is inside the key of some account required to sign */
+  /* Add all public keys from the transaction itself */
+  newKeys.forEach(key => {
+    if (key instanceof KeyList) {
+      key._keys.forEach(subKey => classifyKey(subKey));
+    } else {
+      classifyKey(key);
+    }
+  });
+
+  /* Add required keys from account signers */
   for (const accountId of accounts) {
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
-    if (!accountInfo.key) continue;
-    addUserPublicKeyIfRequired(accountInfo.key);
+    if (accountInfo.key) {
+      classifyKey(accountInfo.key);
+    }
   }
 
-  /* Check if user has a key included in a receiver account that required signature */
+  /* Add required keys from receiver accounts that require signatures */
   for (const accountId of receiverAccounts) {
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
-    if (!accountInfo.receiverSignatureRequired || !accountInfo.key) continue;
-    addUserPublicKeyIfRequired(accountInfo.key);
+    if (accountInfo.receiverSignatureRequired && accountInfo.key) {
+      classifyKey(accountInfo.key);
+    }
   }
 
-  /* Check if user has a key included in the node ids */
+  /* Add required keys from node accounts */
   const result = await getNodeKeys(nodeId, transaction, mirrorNodeLink);
-  if (result.nodeAccountKey && result.adminKey) {
-    addUserPublicKeyIfRequired(result.adminKey);
-    addUserPublicKeyIfRequired(result.nodeAccountKey);
-  }
+  if (result.nodeAccountKey) classifyKey(result.nodeAccountKey);
+  if (result.adminKey) classifyKey(result.adminKey);
 
-  return [...publicKeysRequired];
+  return {
+    usersPublicKeys: [...usersPublicKeys],
+    nonUserPublicKeys: [...nonUserPublicKeys],
+  };
 };
 
 /* Computes the signature key for the transaction */

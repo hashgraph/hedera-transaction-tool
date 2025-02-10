@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { IGroup } from '@renderer/services/organization';
 
-import { computed, onBeforeMount, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onBeforeMount, ref, watch, watchEffect } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { Transaction } from '@hashgraph/sdk';
 
 import { historyTitle, TRANSACTION_ACTION } from '@main/shared/constants';
@@ -35,6 +35,8 @@ import {
   isLoggedInOrganization,
   isUserLoggedIn,
   publicRequiredToSign,
+  getSignatureEntities,
+  isTransactionFullySigned,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -42,7 +44,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
-import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
+import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 
 /* Stores */
 const user = useUserStore();
@@ -52,6 +54,7 @@ const nextTransaction = useNextTransactionStore();
 
 /* Composables */
 const router = useRouter();
+const route = useRoute();
 const toast = useToast();
 const ws = useDisposableWs();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
@@ -65,7 +68,21 @@ const publicKeysRequiredToSign = ref<string[] | null>([]);
 const disableSignAll = ref(false);
 const isSigning = ref(false);
 const isApproving = ref(false);
-const allShown = ref(false);
+const userUnsignedSigners = ref<Record<string, string[]>>({});
+const allUnsignedSigners = ref<Record<string, string[]>>({});
+
+/* Computed */
+const shouldCheckAllSigners = computed(() => {
+  if (route.query.previousTab) {
+    const previousTab = route.query.previousTab;
+    if (previousTab === 'readyToSign') {
+      return false;
+    } else if (previousTab === 'inProgress') {
+      return true;
+    }
+  }
+  return undefined;
+});
 
 /* Handlers */
 async function handleFetchGroup(id: string | number) {
@@ -80,14 +97,36 @@ async function handleFetchGroup(id: string | number) {
             (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id));
 
           const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
+          const tx = Transaction.fromBytes(transactionBytes);
+          const txId = item.transaction.id;
 
-          const newKeys = await publicRequiredToSign(
-            Transaction.fromBytes(transactionBytes),
+          const { usersPublicKeys, nonUserPublicKeys } = await publicRequiredToSign(
+            tx,
             user.selectedOrganization.userKeys,
             network.mirrorNodeBaseURL,
           );
 
-          publicKeysRequiredToSign.value = publicKeysRequiredToSign.value!.concat(newKeys);
+          const signedSigners = new Set([...tx._signerPublicKeys]);
+
+          const usersUnsigned = usersPublicKeys.length
+            ? usersPublicKeys.filter(pk => !signedSigners.has(pk))
+            : [];
+
+          const nonUsersUnsigned = nonUserPublicKeys.length
+            ? nonUserPublicKeys.filter(pk => !signedSigners.has(pk))
+            : [];
+
+          allUnsignedSigners.value = {
+            ...allUnsignedSigners.value,
+            [txId]: [...usersUnsigned, ...nonUsersUnsigned],
+          };
+
+          userUnsignedSigners.value = {
+            ...userUnsignedSigners.value,
+            [txId]: usersUnsigned,
+          };
+
+          publicKeysRequiredToSign.value = publicKeysRequiredToSign.value!.concat(usersPublicKeys);
         }
       }
     } catch (error) {
@@ -98,36 +137,6 @@ async function handleFetchGroup(id: string | number) {
     console.log('not logged into org');
   }
 }
-
-/* Computed */
-const unsignedTransactions = computed(() => {
-  if (group.value?.groupItems) {
-    return group.value.groupItems.filter(
-      transaction => transaction.transaction.status === TransactionStatus.WAITING_FOR_SIGNATURES,
-    );
-  }
-  return undefined;
-});
-
-const transactionsLoaded = computed(() => {
-  if (allShown.value) {
-    return group.value?.groupItems;
-  }
-
-  return unsignedTransactions.value;
-});
-
-const allTransactionsAreUnsigned = computed(() => {
-  if (group.value?.groupItems) {
-    const allUnsigned = !group.value.groupItems.some(
-      tx => tx.transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES,
-    );
-
-    return allUnsigned;
-  }
-
-  return true;
-});
 
 /* Handlers */
 const handleBack = () => {
@@ -165,7 +174,7 @@ const handleSignGroup = async () => {
       for (const groupItem of group.value.groupItems) {
         const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
         const transaction = Transaction.fromBytes(transactionBytes);
-        const publicKeysRequired = await publicRequiredToSign(
+        const { usersPublicKeys } = await publicRequiredToSign(
           transaction,
           user.selectedOrganization.userKeys,
           network.mirrorNodeBaseURL,
@@ -174,7 +183,7 @@ const handleSignGroup = async () => {
           user.personal.id,
           personalPassword,
           user.selectedOrganization,
-          publicKeysRequired,
+          usersPublicKeys,
           Transaction.fromBytes(transaction.toBytes()),
           groupItem.transaction.id,
         );
@@ -275,6 +284,8 @@ function setGetTransactionsFunction() {
   }, false);
 }
 
+//const isTransactionFullySigned = (tx: Transaction) => {};
+
 /* Hooks */
 onBeforeMount(async () => {
   const id = router.currentRoute.value.params.id;
@@ -300,6 +311,10 @@ watch(
     router.back();
   },
 );
+
+watchEffect(() => {
+  console.log(allUnsignedSigners.value);
+});
 </script>
 <template>
   <div class="p-5">
@@ -331,21 +346,6 @@ watch(
 
             <hr class="separator my-5 w-100" />
 
-            <div
-              v-if="unsignedTransactions && unsignedTransactions.length > 0"
-              class="d-flex justify-content-end"
-            >
-              <AppCheckBox
-                class="cursor-pointer"
-                :checked="allTransactionsAreUnsigned"
-                :name="'show-all'"
-                label="Show all"
-                :disabled="allTransactionsAreUnsigned"
-                :data-testid="'all-transactions-checkbox'"
-                v-on:update:checked="allShown = !allShown"
-              />
-            </div>
-
             <Transition name="fade" mode="out-in">
               <template v-if="group.groupItems.length > 0">
                 <div class="fill-remaining overflow-x-auto">
@@ -373,14 +373,33 @@ watch(
                       </tr>
                     </thead>
                     <tbody>
-                      <template
-                        v-for="(groupItem, index) in transactionsLoaded"
-                        :key="groupItem.seq"
-                      >
+                      <template v-for="(groupItem, index) in group.groupItems" :key="groupItem.seq">
                         <Transition name="fade" mode="out-in">
-                          <template v-if="groupItem">
+                          <template
+                            v-if="
+                              groupItem &&
+                              userUnsignedSigners[groupItem.transaction.id] !== undefined
+                            "
+                          >
                             <tr>
                               <td data-testid="td-group-transaction-id">
+                                <span
+                                  v-if="shouldCheckAllSigners === false"
+                                  :class="
+                                    userUnsignedSigners[groupItem.transaction.id]?.length === 0
+                                      ? 'bi bi-check-lg text-success'
+                                      : 'bi bi-exclamation-triangle'
+                                  "
+                                ></span>
+                                <span
+                                  v-if="shouldCheckAllSigners"
+                                  :class="
+                                    allUnsignedSigners[groupItem.transaction.id]?.length === 0
+                                      ? 'bi bi-check-lg text-success'
+                                      : 'bi bi-exclamation-triangle'
+                                  "
+                                >
+                                </span>
                                 {{ groupItem.transaction.transactionId }}
                               </td>
                               <td>

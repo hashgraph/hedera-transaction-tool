@@ -271,7 +271,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                   </td>
                   <td class="text-center">
                     <AppButton
-                      @click="redirectToGroupDetails($router, group[0], false)"
+                      @click="redirectToGroupDetails($router, group[0], false, 'inProgress')"
                       color="secondary"
                     >
                       Details
