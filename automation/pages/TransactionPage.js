@@ -428,7 +428,10 @@ class TransactionPage extends BasePage {
     const newAccountId = transactionDetails.transactions[0].entity_id;
 
     await this.clickOnTransactionsMenuButton();
-    await this.addAccountsToList(newAccountId);
+
+    if (!isComplex) {
+      await this.addAccountsToList(newAccountId);
+    }
 
     return { newAccountId, newTransactionId };
   }
