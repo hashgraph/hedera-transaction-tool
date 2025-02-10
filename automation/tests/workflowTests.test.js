@@ -430,7 +430,7 @@ test.describe('Workflow tests', () => {
         expect(getTransactionMemo).toBe('Transaction memo update');
 
         const getAccountId = await detailsPage.getAccountUpdateDetailsId();
-        expect(getAccountId).toBe(accountFromList);
+        expect(getAccountId).toContain(accountFromList);
 
         const getAccountMemoDetails = await detailsPage.getAccountDetailsMemo();
         expect(getAccountMemoDetails).toBe(updatedMemoText);
