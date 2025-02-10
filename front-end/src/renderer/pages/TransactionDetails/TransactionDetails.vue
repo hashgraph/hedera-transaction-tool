@@ -50,6 +50,8 @@ import txTypeComponentMapping from '@renderer/components/Transaction/Details/txT
 
 import TransactionDetailsHeader from './components/TransactionDetailsHeader.vue';
 import TransactionDetailsStatusStepper from './components/TransactionDetailsStatusStepper.vue';
+import { getGroup } from '@renderer/services/transactionGroupsService';
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 /* Stores */
 const user = useUserStore();
