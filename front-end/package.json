@@ -4,6 +4,7 @@
   "description": "Transaction tool application",
   "author": {
     "name": "Hedera",
+    "email": "support@hedera.com",
     "url": "https://github.com/hashgraph"
   },
   "repository": "https://github.com/hashgraph/hedera-transaction-tool",
@@ -17,10 +18,11 @@
     "start": "vite preview",
     "dev": "vite",
     "build": "npm run generate:database && vue-tsc --noEmit && vite build",
-    "postinstall": "electron-builder install-app-deps && prisma generate && node ../notice-gen/index.js",
+    "postinstall": "electron-builder install-app-deps && node ../notice-gen/index.js",
     "build:win": "npm run build && electron-builder --win --config",
     "build:mac": "npm run build && electron-builder --mac",
     "build:linux": "npm run build && electron-builder --linux --config",
+    "build:docker": "npm run build && electron-builder --linux appimage",
     "publish": "npm run build && electron-builder -m -p 'onTagOrDraft'",
     "test:main": "vitest --config src/tests/vitest.config.main.ts --passWithNoTests",
     "test:main:coverage": "vitest --config src/tests/vitest.config.main.ts --coverage.enabled --coverage.include=src/main",

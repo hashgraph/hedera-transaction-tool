@@ -129,6 +129,10 @@ class SettingsPage extends BasePage {
     await this.click(this.settingsButtonSelector);
   }
 
+  async clickOnGeneralTab() {
+    await this.click(this.generalTabButtonSelector);
+  }
+
   async clickOnKeysTab() {
     await this.click(this.keysTabButtonSelector);
   }
@@ -181,6 +185,10 @@ class SettingsPage extends BasePage {
 
   async clickOnLocalNodeTab() {
     await this.click(this.localNodeTabButtonSelector);
+  }
+
+  async clickOnTestnetTab() {
+    await this.click(this.testnetTabButtonSelector);
   }
 
   async clickOnImportButton() {

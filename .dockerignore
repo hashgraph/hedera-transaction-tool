@@ -1,0 +1,8 @@
+automation/node_modules
+dist
+test-results
+front-end/node_modules
+back-end/node_modules
+front-end/release
+automation/.env
+.env
