@@ -36,6 +36,7 @@ import {
   isLoggedInOrganization,
   isUserLoggedIn,
   publicRequiredToSign,
+  usersPublicRequiredToSign,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -72,19 +73,19 @@ const allUnsignedSigners = ref<Record<string, string[]>>({});
 const tooltipRef = ref<HTMLElement[]>([]);
 
 /* Computed */
-const shouldCheckAllSigners = computed(() => {
+const signersToCheck = computed(() => {
   if (route.query.previousTab) {
     const previousTab = route.query.previousTab;
-    if (previousTab === 'readyToSign') {
-      return false;
-    } else if (previousTab === 'inProgress') {
-      return true;
+    if (previousTab === 'readyToSign' && userUnsignedSigners.value) {
+      return userUnsignedSigners.value;
+    } else if (previousTab === 'inProgress' && allUnsignedSigners.value) {
+      return allUnsignedSigners.value;
     }
   }
-  return undefined;
+  return {};
 });
 
-const shouldShowNewColumn = computed(() => {
+const shouldShowCheckmark = computed(() => {
   const previousTab = route.query.previousTab;
   if (previousTab === 'readyToSign' || previousTab === 'inProgress') {
     return true;
@@ -92,16 +93,16 @@ const shouldShowNewColumn = computed(() => {
   return false;
 });
 
-const getTooltipForTx = computed(() => (txId: number) => {
-  if (shouldCheckAllSigners.value) {
-    return allUnsignedSigners.value[txId]?.length === 0
-      ? 'Transaction is signed by all required signers!'
-      : 'Transaction needs to be signed by all required signers!';
-  } else {
-    return userUnsignedSigners.value[txId]?.length === 0
-      ? 'Transaction successfully signed by user!'
-      : 'You need to sign the transaction!';
+const tooltipText = computed(() => {
+  if (route.query.previousTab) {
+    const previousTab = route.query.previousTab;
+    if (previousTab === 'readyToSign') {
+      return 'Transaction successfully signed by user and/or awaiting signature from others!';
+    } else if (previousTab === 'inProgress') {
+      return 'Transaction is signed by all required signers!';
+    }
   }
+  return '';
 });
 
 /* Handlers */
@@ -136,15 +137,19 @@ async function handleFetchGroup(id: string | number) {
             ? nonUserPublicKeys.filter(pk => !signedSigners.has(pk))
             : [];
 
-          allUnsignedSigners.value = {
-            ...allUnsignedSigners.value,
-            [txId]: [...usersUnsigned, ...nonUsersUnsigned],
-          };
+          if (usersPublicKeys.length > 0) {
+            userUnsignedSigners.value = {
+              ...userUnsignedSigners.value,
+              [txId]: usersUnsigned,
+            };
+          }
 
-          userUnsignedSigners.value = {
-            ...userUnsignedSigners.value,
-            [txId]: usersUnsigned,
-          };
+          if (usersPublicKeys.length > 0 || nonUserPublicKeys.length > 0) {
+            allUnsignedSigners.value = {
+              ...allUnsignedSigners.value,
+              [txId]: [...usersUnsigned, ...nonUsersUnsigned],
+            };
+          }
 
           publicKeysRequiredToSign.value = publicKeysRequiredToSign.value!.concat(usersPublicKeys);
         }
@@ -194,7 +199,7 @@ const handleSignGroup = async () => {
       for (const groupItem of group.value.groupItems) {
         const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
         const transaction = Transaction.fromBytes(transactionBytes);
-        const { usersPublicKeys } = await publicRequiredToSign(
+        const publicKeysRequired = await usersPublicRequiredToSign(
           transaction,
           user.selectedOrganization.userKeys,
           network.mirrorNodeBaseURL,
@@ -203,7 +208,7 @@ const handleSignGroup = async () => {
           user.personal.id,
           personalPassword,
           user.selectedOrganization,
-          usersPublicKeys,
+          publicKeysRequired,
           Transaction.fromBytes(transaction.toBytes()),
           groupItem.transaction.id,
         );
@@ -372,10 +377,8 @@ watchEffect(() => {
                   <table class="table-custom">
                     <thead>
                       <tr>
-                        <th v-if="shouldShowNewColumn">
-                          <span>Status</span>
-                        </th>
-                        <th>
+                        <th v-if="shouldShowCheckmark" class="ps-3 pe-1"></th>
+                        <th :class="shouldShowCheckmark ? 'ps-1' : ''">
                           <div>
                             <span>Transaction ID</span>
                           </div>
@@ -398,47 +401,27 @@ watchEffect(() => {
                     <tbody>
                       <template v-for="(groupItem, index) in group.groupItems" :key="groupItem.seq">
                         <Transition name="fade" mode="out-in">
-                          <template
-                            v-if="
-                              groupItem &&
-                              userUnsignedSigners[groupItem.transaction.id] !== undefined
-                            "
-                          >
+                          <template v-if="groupItem">
                             <tr>
-                              <td v-if="shouldShowNewColumn">
+                              <td v-if="shouldShowCheckmark && signersToCheck" class="pe-0 ps-3">
                                 <span
-                                  v-if="shouldCheckAllSigners === false"
+                                  v-if="
+                                    signersToCheck[groupItem.transaction.id] &&
+                                    signersToCheck[groupItem.transaction.id].length === 0
+                                  "
                                   data-bs-toggle="tooltip"
                                   data-bs-custom-class="wide-tooltip"
                                   data-bs-trigger="hover"
                                   data-bs-placement="top"
-                                  :title="getTooltipForTx(groupItem.transaction.id)"
+                                  :title="tooltipText"
                                   ref="tooltipRef"
-                                  :class="
-                                    userUnsignedSigners[groupItem.transaction.id]?.length === 0
-                                      ? 'bi bi-check-lg text-success'
-                                      : 'bi bi-exclamation-circle'
-                                  "
-                                  class="d-flex justify-content-center"
+                                  class="bi bi-check-lg text-success"
                                 ></span>
-                                <span
-                                  data-bs-toggle="tooltip"
-                                  data-bs-custom-class="wide-tooltip"
-                                  data-bs-trigger="hover"
-                                  data-bs-placement="top"
-                                  :title="getTooltipForTx(groupItem.transaction.id)"
-                                  ref="tooltipRef"
-                                  v-if="shouldCheckAllSigners"
-                                  :class="
-                                    allUnsignedSigners[groupItem.transaction.id]?.length === 0
-                                      ? 'bi bi-check-lg text-success'
-                                      : 'bi bi-exclamation-circle'
-                                  "
-                                  class="d-flex justify-content-center"
-                                >
-                                </span>
                               </td>
-                              <td data-testid="td-group-transaction-id">
+                              <td
+                                data-testid="td-group-transaction-id"
+                                :class="shouldShowCheckmark ? 'ps-2 pe-0' : ''"
+                              >
                                 {{ groupItem.transaction.transactionId }}
                               </td>
                               <td>
