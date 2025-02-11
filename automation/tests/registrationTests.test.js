@@ -244,9 +244,7 @@ test.describe('Registration tests', () => {
     await registrationPage.clearLastRecoveryPhraseWord();
     await registrationPage.fillLastRecoveryPhraseWord();
 
-    const isNextButtonDisabled = await registrationPage.isNextButtonClickable();
-
-    expect(isNextButtonDisabled).toBe(true);
+    expect(await registrationPage.isNextButtonEnabled()).toBe(true);
   });
 
   test('Verify final step of account setup has all correct elements', async () => {

@@ -375,7 +375,7 @@ class RegistrationPage extends BasePage {
     await this.click(this.nextButtonSelector);
   }
 
-  async isNextButtonClickable() {
+  async isNextButtonEnabled() {
     return await this.isButtonEnabled(this.nextButtonImportSelector);
   }
 
