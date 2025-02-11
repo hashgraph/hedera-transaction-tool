@@ -84,6 +84,14 @@ const shouldCheckAllSigners = computed(() => {
   return undefined;
 });
 
+const shouldShowNewColumn = computed(() => {
+  const previousTab = route.query.previousTab;
+  if (previousTab === 'readyToSign' || previousTab === 'inProgress') {
+    return true;
+  }
+  return false;
+});
+
 const getTooltipForTx = computed(() => (txId: number) => {
   if (shouldCheckAllSigners.value) {
     return allUnsignedSigners.value[txId]?.length === 0
@@ -364,6 +372,9 @@ watchEffect(() => {
                   <table class="table-custom">
                     <thead>
                       <tr>
+                        <th v-if="shouldShowNewColumn">
+                          <span>Status</span>
+                        </th>
                         <th>
                           <div>
                             <span>Transaction ID</span>
@@ -394,7 +405,7 @@ watchEffect(() => {
                             "
                           >
                             <tr>
-                              <td data-testid="td-group-transaction-id">
+                              <td v-if="shouldShowNewColumn">
                                 <span
                                   v-if="shouldCheckAllSigners === false"
                                   data-bs-toggle="tooltip"
@@ -408,6 +419,7 @@ watchEffect(() => {
                                       ? 'bi bi-check-lg text-success'
                                       : 'bi bi-exclamation-circle'
                                   "
+                                  class="d-flex justify-content-center"
                                 ></span>
                                 <span
                                   data-bs-toggle="tooltip"
@@ -422,8 +434,11 @@ watchEffect(() => {
                                       ? 'bi bi-check-lg text-success'
                                       : 'bi bi-exclamation-circle'
                                   "
+                                  class="d-flex justify-content-center"
                                 >
                                 </span>
+                              </td>
+                              <td data-testid="td-group-transaction-id">
                                 {{ groupItem.transaction.transactionId }}
                               </td>
                               <td>
