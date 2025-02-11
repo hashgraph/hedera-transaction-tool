@@ -64,6 +64,22 @@ class RegistrationPage extends BasePage {
     return this.inputRecoveryWordBase + index;
   }
 
+  async clearLastRecoveryPhraseWord() {
+    const lastWordIndex = 24;
+    const selector = this.getRecoveryWordSelector(lastWordIndex);
+    await this.click(selector);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await this.window.keyboard.press('Meta+A');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await this.window.keyboard.press('Backspace');
+  }
+
+  async fillLastRecoveryPhraseWord() {
+    const lastWordIndex = 24;
+    const selector = this.getRecoveryWordSelector(lastWordIndex);
+    await this.fill(selector, this.recoveryPhraseWords[lastWordIndex]);
+  }
+
   // Method to capture all the recovery phrase words and their indexes
   async captureRecoveryPhraseWords() {
     this.recoveryPhraseWords = {}; // Reset the recoveryPhraseWords object
@@ -359,6 +375,10 @@ class RegistrationPage extends BasePage {
     await this.click(this.nextButtonSelector);
   }
 
+  async isNextButtonClickable() {
+    return await this.isButtonEnabled(this.nextButtonImportSelector);
+  }
+
   async clickOnNextImportButton() {
     await this.click(this.nextButtonImportSelector);
   }
@@ -417,10 +437,6 @@ class RegistrationPage extends BasePage {
 
   async getPublicKey() {
     return await this.getText(this.publicKeySpanSelector);
-  }
-
-  async getPrivateKey() {
-    return await this.getText(this.privateKeySpanSelector);
   }
 }
 

@@ -218,6 +218,37 @@ test.describe('Registration tests', () => {
     expect(isMnemonicCleared).toBe(true);
   });
 
+  test('Verify words are persisted after deleting a single word', async () => {
+    globalCredentials.email = generateRandomEmail();
+    globalCredentials.password = generateRandomPassword();
+
+    await registrationPage.register(
+      globalCredentials.email,
+      globalCredentials.password,
+      globalCredentials.password,
+    );
+
+    const isTabVisible = await registrationPage.isCreateNewTabVisible();
+    expect(isTabVisible).toBe(true);
+
+    await registrationPage.clickOnCreateNewTab();
+
+    await registrationPage.clickOnUnderstandCheckbox();
+    await registrationPage.clickOnGenerateButton();
+    await registrationPage.captureRecoveryPhraseWords();
+
+    await registrationPage.clickOnImportTab();
+
+    await registrationPage.fillAllMissingRecoveryPhraseWords();
+
+    await registrationPage.clearLastRecoveryPhraseWord();
+    await registrationPage.fillLastRecoveryPhraseWord();
+
+    const isNextButtonDisabled = await registrationPage.isNextButtonClickable();
+
+    expect(isNextButtonDisabled).toBe(true);
+  });
+
   test('Verify final step of account setup has all correct elements', async () => {
     globalCredentials.email = generateRandomEmail();
     globalCredentials.password = generateRandomPassword();
