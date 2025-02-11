@@ -110,7 +110,7 @@ watch(
 );
 
 watchEffect(() => {
-  if (props.shouldClear && inputRefs.value && inputRefs.value.length > 0) {
+  if (props.shouldClear) {
     handleClearWords();
     emit('reset-cleared', false);
   }
