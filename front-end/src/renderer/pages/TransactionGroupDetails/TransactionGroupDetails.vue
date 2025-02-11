@@ -97,7 +97,7 @@ const tooltipText = computed(() => {
   if (route.query.previousTab) {
     const previousTab = route.query.previousTab;
     if (previousTab === 'readyToSign') {
-      return 'Transaction successfully signed by user and/or awaiting signature from others!';
+      return 'Transaction successfully signed!';
     } else if (previousTab === 'inProgress') {
       return 'Transaction is signed by all required signers!';
     }
