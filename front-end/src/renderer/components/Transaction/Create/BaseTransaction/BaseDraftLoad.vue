@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
-import type { Transaction } from '@hashgraph/sdk';
+import {
+  FileAppendTransaction,
+  FileCreateTransaction,
+  FileUpdateTransaction,
+  type Transaction,
+} from '@hashgraph/sdk';
 
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
@@ -42,6 +47,14 @@ const handleLoadFromDraft = async () => {
 
   if (transactionBytes) {
     const transaction = getTransactionFromBytes(transactionBytes);
+    if (
+      transaction instanceof FileCreateTransaction ||
+      transaction instanceof FileUpdateTransaction ||
+      (transaction instanceof FileAppendTransaction && transaction.contents?.length === 0)
+    ) {
+      //@ts-expect-error - contents should be null
+      transaction.setContents(null);
+    }
     emit('draft-loaded', transaction);
   }
 };

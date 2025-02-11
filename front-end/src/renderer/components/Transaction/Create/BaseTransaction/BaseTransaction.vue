@@ -7,7 +7,7 @@ import type {
 } from '@renderer/components/Transaction/TransactionProcessor';
 import type { CreateTransactionFunc } from '.';
 
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, toRaw } from 'vue';
 import { Hbar, Transaction, KeyList } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -28,7 +28,7 @@ import { getPropagationButtonLabel } from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
-import GroupActionModal from '@renderer/components/GroupActionModal.vue';
+import BaseTransactionModal from '@renderer/components/Transaction/Create/BaseTransaction/BaseTransactionModal.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionInfoControls from '@renderer/components/Transaction/TransactionInfoControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
@@ -70,6 +70,7 @@ const name = ref('');
 const description = ref('');
 const submitManually = ref(false);
 const reminder = ref<number | null>(null);
+const isDraftSaved = ref(false);
 
 const data = reactive<TransactionCommonData>({
   payerId: '',
@@ -84,6 +85,8 @@ const approvers = ref<TransactionApproverDto[]>([]);
 const isProcessed = ref(false);
 const groupActionTaken = ref(false);
 const memoError = ref(false);
+const initialTransactionData = ref('');
+const initialDescription = ref('');
 
 /* Computed */
 const transaction = computed(() => createTransaction({ ...data } as TransactionCommonData));
@@ -94,11 +97,29 @@ const transactionKey = computed(() => {
   return new KeyList(keys);
 });
 
+const hasTransactionChanged = computed(() => {
+  if (!initialTransactionData.value) return false;
+
+  const currentTransactionData = transaction.value.toBytes().join(',');
+
+  return currentTransactionData !== initialTransactionData.value;
+});
+
+const hasDescriptionChanged = computed(() => {
+  return description.value !== toRaw(initialDescription.value);
+});
+
+const hasDataChanged = computed(() => hasTransactionChanged.value || hasDescriptionChanged.value);
+
 /* Handlers */
 const handleDraftLoaded = async (transaction: Transaction) => {
-  const commonData = getTransactionCommonData(transaction);
-  payerData.accountId.value = commonData.payerId;
-  Object.assign(data, commonData);
+  const txBytes = transaction.toBytes().join(',');
+
+  const txData = getTransactionCommonData(transaction) as TransactionCommonData;
+  payerData.accountId.value = txData.payerId;
+  Object.assign(data, txData);
+
+  initialTransactionData.value = txBytes;
   emit('draft-loaded', transaction);
 };
 
@@ -162,6 +183,7 @@ const handleGroupAction = (action: 'add' | 'edit') => {
 
 function handleFetchedDescription(fetchedDescription: string) {
   description.value = fetchedDescription;
+  initialDescription.value = fetchedDescription;
 }
 
 function handleFetchedPayerAccountId(fetchedPayerAccountId: string) {
@@ -208,6 +230,7 @@ defineExpose({
         v-model:reminder="reminder"
         :valid-start="data.validStart"
         :is-processed="isProcessed"
+        v-on:draft-saved="isDraftSaved = true"
         :create-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
         :description="description"
         :heading-text="getTransactionType(transaction)"
@@ -282,10 +305,13 @@ defineExpose({
       @fetched-payer-account-id="handleFetchedPayerAccountId"
     />
 
-    <GroupActionModal
-      :skip="groupActionTaken"
+    <BaseTransactionModal
+      :skip="groupActionTaken || isDraftSaved || isProcessed"
       @addToGroup="handleGroupAction('add')"
-      @editItem="handleGroupAction('edit')"
+      @editGroupItem="handleGroupAction('edit')"
+      :get-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
+      :description="description || ''"
+      :has-data-changed="hasDataChanged"
     />
   </div>
 </template>

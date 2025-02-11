@@ -46,6 +46,24 @@ import type {
 import { getMaximumExpirationTime, getMinimumExpirationTime } from '.';
 import { uint8ToHex } from '..';
 
+export type ExtendedTransactionData = TransactionCommonData &
+  (
+    | AccountCreateData
+    | AccountUpdateData
+    | AccountDeleteData
+    | ApproveHbarAllowanceData
+    | FileCreateData
+    | FileUpdateData
+    | FileAppendData
+    | FreezeData
+    | TransferHbarData
+    | NodeData
+    | NodeUpdateData
+    | NodeDeleteData
+    | SystemDeleteData
+    | SystemUndeleteData
+  );
+
 export const getTransactionCommonData = (transaction: Transaction): TransactionCommonData => {
   const transactionId = transaction.transactionId;
   const payerId = transactionId?.accountId?.toString()?.trim();
@@ -278,4 +296,135 @@ export function getSystemDeleteData(transaction: Transaction): SystemDeleteData 
 export function getSystemUndeleteData(transaction: Transaction): SystemUndeleteData {
   assertTransactionType(transaction, SystemUndeleteTransaction);
   return getSystemData(transaction);
+}
+
+const transactionHandlers = new Map<
+  new (...args: any[]) => Transaction,
+  (transaction: Transaction) => Record<string, any>
+>([
+  [
+    AccountCreateTransaction,
+    tx => ({
+      ...getTransactionCommonData(tx),
+      ...getAccountData(tx),
+      ...getAccountCreateData(tx),
+    }),
+  ],
+
+  [
+    AccountUpdateTransaction,
+    tx => ({
+      ...getTransactionCommonData(tx),
+      ...getAccountUpdateData(tx),
+    }),
+  ],
+
+  [
+    AccountAllowanceApproveTransaction,
+    tx => ({
+      ...getTransactionCommonData(tx),
+      ...getApproveHbarAllowanceTransactionData(tx),
+    }),
+  ],
+
+  [
+    AccountDeleteTransaction,
+    tx => ({
+      ...getTransactionCommonData(tx),
+      ...getAccountDeleteData(tx),
+    }),
+  ],
+
+  [
+    FileCreateTransaction,
+    tx => ({
+      ...getTransactionCommonData(tx),
+      ...getFileInfoTransactionData(tx),
+      ...getFileCreateTransactionData(tx),
+    }),
+  ],
+
+  [
+    FileUpdateTransaction,
+    tx => ({
+      ...getTransactionCommonData(tx),
+      ...getFileInfoTransactionData(tx),
+      ...getFileUpdateTransactionData(tx),
+    }),
+  ],
+
+  [
+    FileAppendTransaction,
+    tx => ({
+      ...getTransactionCommonData(tx),
+      ...getFileAppendTransactionData(tx),
+    }),
+  ],
+
+  [
+    FreezeTransaction,
+    tx => ({
+      ...getTransactionCommonData(tx),
+      ...getFreezeData(tx),
+    }),
+  ],
+
+  [
+    TransferTransaction,
+    tx => ({
+      ...getTransactionCommonData(tx),
+      ...getTransferHbarData(tx),
+    }),
+  ],
+
+  [
+    NodeCreateTransaction,
+    tx => ({
+      ...getTransactionCommonData(tx),
+      ...getNodeData(tx),
+    }),
+  ],
+
+  [
+    NodeUpdateTransaction,
+    tx => ({
+      ...getTransactionCommonData(tx),
+      ...getNodeData(tx),
+      ...getNodeUpdateData(tx),
+    }),
+  ],
+
+  [
+    NodeDeleteTransaction,
+    tx => ({
+      ...getTransactionCommonData(tx),
+      ...getNodeDeleteData(tx),
+    }),
+  ],
+
+  [
+    SystemDeleteTransaction,
+    tx => ({
+      ...getTransactionCommonData(tx),
+      ...getSystemDeleteData(tx),
+    }),
+  ],
+
+  [
+    SystemUndeleteTransaction,
+    tx => ({
+      ...getTransactionCommonData(tx),
+      ...getSystemUndeleteData(tx),
+    }),
+  ],
+]);
+
+export function getAllData(transaction: Transaction) {
+  const handler = transactionHandlers.get(
+    transaction.constructor as new (...args: any[]) => ExtendedTransactionData & Transaction,
+  );
+  if (!handler) {
+    throw new Error('Unsupported transaction type');
+  }
+  return handler(transaction);
 }
