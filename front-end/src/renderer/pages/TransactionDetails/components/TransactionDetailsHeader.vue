@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Transaction } from '@prisma/client';
-import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
+import { TransactionStatus } from '@main/shared/interfaces';
+import type { ITransactionFull } from '@main/shared/interfaces';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 
@@ -36,8 +37,8 @@ import {
   getTransactionBodySignatureWithoutNodeAccountId,
   hexToUint8Array,
   isLoggedInOrganization,
-  publicRequiredToSign,
   redirectToDetails,
+  usersPublicRequiredToSign,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -249,7 +250,7 @@ const handleSign = async () => {
   try {
     loadingStates[sign] = 'Signing...';
 
-    const { usersPublicKeys } = await publicRequiredToSign(
+    const publicKeysRequired = await usersPublicRequiredToSign(
       props.sdkTransaction,
       user.selectedOrganization.userKeys,
       network.mirrorNodeBaseURL,
@@ -258,7 +259,7 @@ const handleSign = async () => {
     const restoredRequiredKeys = [];
     const requiredNonRestoredKeys = [];
 
-    for (const requiredKey of usersPublicKeys) {
+    for (const requiredKey of publicKeysRequired) {
       if (user.keyPairs.some(k => k.public_key === requiredKey)) {
         restoredRequiredKeys.push(requiredKey);
       } else {
@@ -537,7 +538,7 @@ watch(
     }
 
     const results = await Promise.allSettled([
-      publicRequiredToSign(
+      usersPublicRequiredToSign(
         SDKTransaction.fromBytes(hexToUint8Array(transaction.transactionBytes)),
         user.selectedOrganization.userKeys,
         network.mirrorNodeBaseURL,
@@ -545,8 +546,7 @@ watch(
       getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id),
     ]);
 
-    results[0].status === 'fulfilled' &&
-      (publicKeysRequiredToSign.value = results[0].value.usersPublicKeys);
+    results[0].status === 'fulfilled' && (publicKeysRequiredToSign.value = results[0].value);
     results[1].status === 'fulfilled' && (shouldApprove.value = results[1].value);
 
     fullyLoaded.value = true;
