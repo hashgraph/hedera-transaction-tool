@@ -169,6 +169,7 @@ watch(() => user.selectedOrganization, initialize);
         <i class="bi bi-chevron-down ms-3"></i>
       </AppButton>
       <ul class="dropdown-menu w-100 mt-3">
+        <li class="dropdown-header text-muted">Organizations</li>
         <li
           data-testid="dropdown-item-0"
           data-value="personal"
