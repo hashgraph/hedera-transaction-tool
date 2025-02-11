@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { KeyPair } from '@prisma/client';
 
-import { onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -43,6 +43,11 @@ const stepperItems = ref<{ title: string; name: StepName }[]>([
 ]);
 const selectedPersonalKeyPair = ref<KeyPair | null>(null);
 const nextLoadingText = ref<string | null>(null);
+
+/* Computed */
+const disableNext = computed(() => {
+  return !user.recoveryPhrase && step.value.current === 'recoveryPhrase' ? true : false;
+});
 
 /* Handlers */
 const handleBack = () => {
@@ -203,7 +208,7 @@ onBeforeRouteLeave(async () => {
           @click="handleNext"
           class="ms-3 mt-6"
           data-testid="button-next"
-          :disabled="Boolean(nextLoadingText)"
+          :disabled="Boolean(nextLoadingText) || disableNext"
           :loading="Boolean(nextLoadingText)"
           :loading-text="nextLoadingText || ''"
           >Next</AppButton
