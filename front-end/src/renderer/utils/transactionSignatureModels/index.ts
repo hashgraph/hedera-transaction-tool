@@ -53,47 +53,6 @@ const extractRawPublicKey = (key: Key | null): string => {
   return key.toString();
 };
 
-export const isTransactionFullySigned = async (
-  transaction: Transaction,
-  mirrorNodeLink: string,
-): Promise<boolean> => {
-
-  const { newKeys, accounts, receiverAccounts, nodeId } = getSignatureEntities(transaction);
-  const allRequiredSigners = new Set<string>();
-
-  newKeys.forEach(key => {
-    if (key instanceof KeyList) {
-      key._keys.forEach(subKey => allRequiredSigners.add(subKey.toString()));
-    } else {
-      allRequiredSigners.add(key.toString());
-    }
-  });
-
-  for (const accountId of accounts) {
-    const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
-    if (accountInfo.key) {
-      allRequiredSigners.add(extractRawPublicKey(accountInfo.key));
-    }
-  }
-
-  for (const accountId of receiverAccounts) {
-    const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
-    if (accountInfo.receiverSignatureRequired && accountInfo.key) {
-      allRequiredSigners.add(accountInfo.key.toString());
-    }
-  }
-
-  const result = await getNodeKeys(nodeId, transaction, mirrorNodeLink);
-  if (result.nodeAccountKey) allRequiredSigners.add(result.nodeAccountKey.toString());
-  if (result.adminKey) allRequiredSigners.add(result.adminKey.toString());
-
-  const signedSigners = new Set(Object.keys(transaction.getSignatures()));
-
-  const isFullySigned = [...allRequiredSigners].every(pk => signedSigners.has(pk));
-
-  return isFullySigned;
-};
-
 /* Returns whether a user should sign the transaction */
 export const publicRequiredToSign = async (
   transaction: Transaction,

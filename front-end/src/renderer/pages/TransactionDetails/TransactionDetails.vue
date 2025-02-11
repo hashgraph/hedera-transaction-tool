@@ -107,15 +107,13 @@ async function fetchTransaction(id: string | number) {
       );
       transactionBytes = hexToUint8Array(orgTransaction.value.transactionBytes);
 
-      if (orgTransaction.value?.groupItem.groupId) {
+      if (orgTransaction.value?.groupItem?.groupId) {
         if (user.selectedOrganization?.serverUrl) {
           const orgGroup = await getApiGroupById(
             user.selectedOrganization?.serverUrl,
             orgTransaction.value.groupItem.groupId,
           );
           groupDescription.value = orgGroup.description;
-
-          console.log(orgGroup.description);
         }
       }
     } else {
@@ -124,7 +122,6 @@ async function fetchTransaction(id: string | number) {
       if (localTransaction.value?.group_id) {
         const localGroup = await getGroup(localTransaction.value.group_id.toString());
         groupDescription.value = localGroup.description;
-        console.log(localGroup.description);
       }
     }
   } catch (error) {
