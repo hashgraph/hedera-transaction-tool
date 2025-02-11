@@ -68,10 +68,14 @@ class RegistrationPage extends BasePage {
     const lastWordIndex = 24;
     const selector = this.getRecoveryWordSelector(lastWordIndex);
     await this.click(selector);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    await this.window.keyboard.press('Meta+A');
-    await new Promise(resolve => setTimeout(resolve, 500));
+    for (let i = 0; i < this.recoveryPhraseWords[lastWordIndex].length; i++) {
+      await this.window.keyboard.press('Backspace');
+    }
     await this.window.keyboard.press('Backspace');
+  }
+
+  async isFinalNextButtonVisible() {
+    return await this.isElementVisible(this.finalNextButtonSelector);
   }
 
   async fillLastRecoveryPhraseWord() {
@@ -373,10 +377,6 @@ class RegistrationPage extends BasePage {
 
   async clickOnNextButton() {
     await this.click(this.nextButtonSelector);
-  }
-
-  async isNextButtonEnabled() {
-    return await this.isButtonEnabled(this.nextButtonImportSelector);
   }
 
   async clickOnNextImportButton() {

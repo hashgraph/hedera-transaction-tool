@@ -243,8 +243,9 @@ test.describe('Registration tests', () => {
 
     await registrationPage.clearLastRecoveryPhraseWord();
     await registrationPage.fillLastRecoveryPhraseWord();
+    await registrationPage.clickOnNextImportButton();
 
-    expect(await registrationPage.isNextButtonEnabled()).toBe(true);
+    expect(await registrationPage.isFinalNextButtonVisible()).toBe(true);
   });
 
   test('Verify final step of account setup has all correct elements', async () => {
