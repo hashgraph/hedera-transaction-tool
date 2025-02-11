@@ -100,15 +100,6 @@ watch(words, async newWords => {
   }
 });
 
-watch(
-  () => user.recoveryPhrase,
-  async newRecoveryPhrase => {
-    if (!newRecoveryPhrase) {
-      handleClearWords();
-    }
-  },
-);
-
 watchEffect(() => {
   if (props.shouldClear) {
     handleClearWords();
