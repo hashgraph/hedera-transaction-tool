@@ -30,6 +30,7 @@ const { getPassword, passwordModalOpened } = usePersonalPassword();
 /* State */
 const step = ref(0);
 const loadingText = ref<string | null>(null);
+const shouldClearInputs = ref(false);
 
 /* Handlers */
 const handleImportRecoveryPhrase = async () => {
@@ -59,7 +60,10 @@ const handleImportRecoveryPhrase = async () => {
   }
 };
 
-const handleClearWords = () => (user.recoveryPhrase = null);
+const handleClearWords = (value: boolean) => {
+  shouldClearInputs.value = value;
+  user.setRecoveryPhrase(null);
+};
 
 const storeKeys = async (
   keys: {
@@ -163,10 +167,10 @@ onMounted(() => {
         >
           <h1 class="text-display text-bold text-center">Enter your Recovery Phrase</h1>
           <div class="mt-8">
-            <Import />
+            <Import :should-clear="shouldClearInputs" @reset-cleared="handleClearWords($event)" />
             <div class="row justify-content-between mt-6">
               <div class="col-4 d-grid">
-                <AppButton type="button" color="secondary" @click="handleClearWords"
+                <AppButton type="button" color="secondary" @click="handleClearWords(true)"
                   >Clear</AppButton
                 >
               </div>

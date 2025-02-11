@@ -32,7 +32,9 @@ const handleMnemonicHashNickname = (nickname: string) => {
 
 const handleNextStep = () => step.value++;
 
-const handleClearWords = () => (user.recoveryPhrase = null);
+const handleClearWords = () => {
+  user.setRecoveryPhrase(null);
+};
 
 /* Hooks */
 onBeforeUnmount(() => {

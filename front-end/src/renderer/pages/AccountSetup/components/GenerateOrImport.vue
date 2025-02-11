@@ -45,12 +45,16 @@ const tabItems = ref<TabItem[]>([
 ]);
 const activeTabIndex = ref(1);
 const mnemonicHashNickname = ref('');
+const shouldClearInputs = ref(false);
 
 /* Getters */
 const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title);
 
 /* Handlers */
-const handleClearWords = () => (user.recoveryPhrase = null);
+const handleClearWords = (value: boolean) => {
+  shouldClearInputs.value = value;
+  user.setRecoveryPhrase(null);
+};
 
 const handleImport = async () => {
   if (user.recoveryPhrase === null) return;
@@ -92,7 +96,7 @@ watch(activeTabTitle, newTitle => {
         <Generate :handle-next="handleNext" />
       </template>
       <template v-else-if="activeTabTitle === importExistingTitle">
-        <Import />
+        <Import :should-clear="shouldClearInputs" @reset-cleared="handleClearWords($event)" />
 
         <div class="form-group mt-4">
           <label class="form-label">Enter Recovery Phrase Nickname</label>
@@ -105,7 +109,7 @@ watch(activeTabTitle, newTitle => {
         </div>
 
         <div class="flex-between-centered mt-6">
-          <AppButton data-testid="button-clear" color="borderless" @click="handleClearWords"
+          <AppButton data-testid="button-clear" color="borderless" @click="handleClearWords(true)"
             >Clear</AppButton
           >
           <AppButton

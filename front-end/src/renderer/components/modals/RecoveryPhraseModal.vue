@@ -4,6 +4,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import Import from '@renderer/components/RecoveryPhrase/Import.vue';
+import { ref } from 'vue';
 
 /* Props */
 defineProps<{
@@ -18,6 +19,9 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+
+/* State */
+const shouldClearInputs = ref(false);
 
 /* Handlers */
 const handleSubmit = () => {
@@ -37,7 +41,8 @@ const handleClose = (show: boolean) => {
 };
 
 /* Handlers */
-const handleClearWords = () => {
+const handleClearWords = (value: boolean) => {
+  shouldClearInputs.value = value;
   user.setRecoveryPhrase(null);
 };
 </script>
@@ -63,12 +68,20 @@ const handleClearWords = () => {
 
         <p class="text-center">You may skip this step and all keys will be marked as external</p>
 
-        <Import class="mt-4" />
+        <Import
+          :should-clear="shouldClearInputs"
+          @reset-cleared="handleClearWords($event)"
+          class="mt-4"
+        />
 
         <hr class="separator my-5" />
 
         <div class="flex-between-centered gap-4 overflow-hidden">
-          <AppButton color="borderless" type="button" class="min-w-unset" @click="handleClearWords"
+          <AppButton
+            color="borderless"
+            type="button"
+            class="min-w-unset"
+            @click="handleClearWords(true)"
             >Clear</AppButton
           >
           <div class="flex-between-centered gap-4">

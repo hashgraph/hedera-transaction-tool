@@ -17,22 +17,23 @@ const emit = defineEmits<{
 
 /* State */
 const mnemonicHashNickname = ref('');
+const shouldClearInputs = ref(false);
 
 /* Handlers */
 const handleImportRecoveryPhrase = () => {
   emit('next', mnemonicHashNickname.value);
 };
 
-const handleClearWords = () => {
+const handleClearWords = (value: boolean) => {
+  shouldClearInputs.value = value;
   emit('clear');
 };
 </script>
-
 <template>
   <form @submit.prevent="handleImportRecoveryPhrase" class="fill-remaining">
     <h1 class="text-display text-bold text-center">Enter your Recovery Phrase</h1>
     <div class="mt-8">
-      <Import />
+      <Import :should-clear="shouldClearInputs" @reset-cleared="handleClearWords($event)" />
       <div class="form-group mt-4">
         <label class="form-label">Enter Recovery Phrase Nickname</label>
         <RecoveryPhraseNicknameInput
@@ -44,7 +45,9 @@ const handleClearWords = () => {
       </div>
       <div class="row justify-content-between mt-6">
         <div class="col-4 d-grid">
-          <AppButton type="button" color="secondary" @click="handleClearWords">Clear</AppButton>
+          <AppButton type="button" color="secondary" @click="handleClearWords(true)"
+            >Clear</AppButton
+          >
         </div>
         <div class="col-4 d-grid">
           <AppButton
