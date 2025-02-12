@@ -62,46 +62,54 @@ export const publicRequiredToSign = async (
   const usersPublicKeys: Set<string> = new Set();
   const nonUserPublicKeys: Set<string> = new Set();
 
-  /* Ensures the user keys are passed */
   if (userKeys.length === 0) {
     return { usersPublicKeys: [], nonUserPublicKeys: [] };
   }
 
-  /* Get signature entities */
   const { newKeys, accounts, receiverAccounts, nodeId } = getSignatureEntities(transaction);
 
-  /* Helper function to classify a key */
-  const classifyKey = (key: Key) => {
-    if (userKeys.some(userKey => isPublicKeyInKeyList(userKey.publicKey, key))) {
-      usersPublicKeys.add(extractRawPublicKey(key));
+  const classifyKey = (key: Key, parentThreshold?: number) => {
+    if (key instanceof KeyList) {
+      let signedCount = 0;
+      const requiredThreshold = key.threshold || parentThreshold || key._keys.length;
+
+      key._keys.forEach(subKey => {
+        if (userKeys.some(userKey => isPublicKeyInKeyList(userKey.publicKey, subKey))) {
+          usersPublicKeys.add(extractRawPublicKey(subKey));
+          signedCount++;
+        } else {
+          nonUserPublicKeys.add(extractRawPublicKey(subKey));
+        }
+      });
+
+      // If threshold is met, remove all remaining required keys
+      if (signedCount >= requiredThreshold) {
+        key._keys.forEach(subKey => {
+          usersPublicKeys.delete(extractRawPublicKey(subKey));
+          nonUserPublicKeys.delete(extractRawPublicKey(subKey));
+        });
+      }
     } else {
-      nonUserPublicKeys.add(extractRawPublicKey(key));
+      if (userKeys.some(userKey => isPublicKeyInKeyList(userKey.publicKey, key))) {
+        usersPublicKeys.add(extractRawPublicKey(key));
+      } else {
+        nonUserPublicKeys.add(extractRawPublicKey(key));
+      }
     }
   };
 
-  /* Add all public keys from the transaction itself */
-  newKeys.forEach(key => {
-    if (key instanceof KeyList) {
-      key._keys.forEach(subKey => classifyKey(subKey));
-    } else {
-      classifyKey(key);
-    }
-  });
+  newKeys.forEach(key => classifyKey(key));
 
   /* Add required keys from account signers */
   for (const accountId of accounts) {
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
-    if (accountInfo.key) {
-      classifyKey(accountInfo.key);
-    }
+    if (accountInfo.key) classifyKey(accountInfo.key);
   }
 
   /* Add required keys from receiver accounts that require signatures */
   for (const accountId of receiverAccounts) {
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
-    if (accountInfo.receiverSignatureRequired && accountInfo.key) {
-      classifyKey(accountInfo.key);
-    }
+    if (accountInfo.receiverSignatureRequired && accountInfo.key) classifyKey(accountInfo.key);
   }
 
   /* Add required keys from node accounts */
