@@ -69,6 +69,7 @@ const localTransaction = ref<Transaction | null>(null);
 const sdkTransaction = ref<SDKTransaction | null>(null);
 const signatureKeyObject = ref<Awaited<ReturnType<typeof computeSignatureKey>> | null>(null);
 const nextId = ref<string | number | null>(null);
+const prevId = ref<string | number | null>(null);
 const feePayer = ref<string | null>(null);
 const feePayerNickname = ref<string | null>(null);
 
@@ -142,6 +143,9 @@ const subscribeToTransactionAction = () => {
     nextId.value = await nextTransaction.getNext(
       isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
     );
+    prevId.value = await nextTransaction.getPrevious(
+      isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
+    );
   });
 };
 
@@ -165,8 +169,12 @@ onBeforeMount(async () => {
     nextTransaction.getNext(
       isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
     ),
+    nextTransaction.getPrevious(
+      isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
+    ),
   ]);
   nextId.value = result[1];
+  prevId.value = result[2];
 });
 
 /* Watchers */
@@ -200,6 +208,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           :sdk-transaction="sdkTransaction as SDKTransaction"
           :local-transaction="localTransaction"
           :next-id="nextId"
+          :previous-id="prevId"
         />
 
         <Transition name="fade" mode="out-in">

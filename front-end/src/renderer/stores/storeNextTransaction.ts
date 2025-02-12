@@ -34,7 +34,13 @@ const useNextTransactionStore = defineStore('nextTransaction', () => {
     getTransactionsHasPage.value = hasPage;
   };
 
-  const getNext = async (currentId: string | number) => {
+  const findItem = async (
+    currentId: string | number,
+    findFunc: (id: string | number) => Promise<{
+      currentFound: boolean;
+      itemId: string | number | null;
+    }>,
+  ) => {
     if (!getTransactions.value) return null;
     if (!previousTransactionsIds.value) return null;
 
@@ -45,26 +51,23 @@ const useNextTransactionStore = defineStore('nextTransaction', () => {
     cachedItems.value = null;
 
     for (let i = 0; i < reversedPreviousIds.length; i++) {
-      const { currentFound, nextId } = await findNextTransactionId(reversedPreviousIds[i]);
-      id = nextId;
+      const { currentFound, itemId } = await findFunc(reversedPreviousIds[i]);
+      id = itemId;
       if (isId(id) || currentFound) break;
-    }
-
-    if (!isId(id)) {
-      const items = Object.values<(string | number)[]>(cachedItems.value || {})
-        .flat()
-        .filter(i => !reversedPreviousIds.includes(i));
-      cachedItems.value = null;
-
-      return isId(items[0]) ? items[0] : null;
     }
 
     return id;
   };
 
-  const findNextTransactionId = async (
-    id: string | number,
-  ): Promise<{ currentFound: boolean; nextId: string | number | null }> => {
+  const getNext = async (currentId: string | number) => {
+    return findItem(currentId, findNextTransactionId);
+  };
+
+  const getPrevious = async (currentId: string | number) => {
+    return findItem(currentId, findPreviousTransactionId);
+  };
+
+  const findTransactionId = async (id: string | number, action: 'next' | 'prev') => {
     if (!getTransactions.value) throw new Error('No transaction fetching function set');
 
     const withPage = getTransactionsHasPage.value;
@@ -91,31 +94,38 @@ const useNextTransactionStore = defineStore('nextTransaction', () => {
       /* Get the items from the cache */
       const items = cachedItems.value[withPage ? page : -1];
 
-      /* The current id is found, the items are paginated and the next is in the next page */
-      if (foundGetFirst) return { currentFound: true, nextId: items[0] };
+      /* The current id is found, the items are paginated and the next is in the next page or prev is in prev page */
+      if (foundGetFirst) {
+        return {
+          currentFound: true,
+          itemId: action === 'next' ? items[0] : items[items.length - 1],
+        };
+      }
 
       /* The index of the current id */
       const idIndex = items.findIndex(item => item === id);
 
       /* The current id is found */
+      const pageCondition = action === 'next' ? totalItems > page * PAGE_SIZE : page > 1;
+
       if (idIndex >= 0) {
-        const nextItem = items[idIndex + 1];
+        const item = action === 'next' ? items[idIndex + 1] : items[idIndex - 1];
 
         /* The next item is found in the same page */
-        if (isId(nextItem)) {
-          return { currentFound: true, nextId: nextItem };
-        } else if (withPage && totalItems > page * PAGE_SIZE) {
+        if (isId(item)) {
+          return { currentFound: true, itemId: item };
+        } else if (withPage && pageCondition) {
           /* The next item is not found in the same page but has more pages*/
-          page++;
+          action === 'next' ? page++ : page--;
           foundGetFirst = true;
         } else {
           /* The next item is not found in the same page and there are no more pages */
-          return { currentFound: true, nextId: null };
+          return { currentFound: true, itemId: null };
         }
       } else {
-        if (withPage && totalItems > page * PAGE_SIZE) {
+        if (withPage && pageCondition) {
           /* The current id is not found but has more pages */
-          page++;
+          action === 'next' ? page++ : page--;
         } else {
           /* The current id is not found and there are no more pages */
           notExists = true;
@@ -123,7 +133,19 @@ const useNextTransactionStore = defineStore('nextTransaction', () => {
       }
     }
 
-    return { currentFound: false, nextId: null };
+    return { currentFound: false, itemId: null };
+  };
+
+  const findNextTransactionId = async (
+    id: string | number,
+  ): Promise<{ currentFound: boolean; itemId: string | number | null }> => {
+    return findTransactionId(id, 'next');
+  };
+
+  const findPreviousTransactionId = async (
+    id: string | number,
+  ): Promise<{ currentFound: boolean; itemId: string | number | null }> => {
+    return findTransactionId(id, 'prev');
   };
 
   const reset = () => {
@@ -140,6 +162,7 @@ const useNextTransactionStore = defineStore('nextTransaction', () => {
     setPreviousTransactionsIds,
     setGetTransactionsFunction,
     getNext,
+    getPrevious,
     reset,
   };
 });

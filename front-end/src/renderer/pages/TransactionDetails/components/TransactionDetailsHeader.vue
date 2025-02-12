@@ -3,7 +3,6 @@ import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@main/shared/interfaces';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
@@ -14,6 +13,8 @@ import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
+import { useMediaQuery } from '@vueuse/core';
+import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
@@ -51,6 +52,7 @@ type ActionButton =
   | 'Reject'
   | 'Approve'
   | 'Sign'
+  | 'Previous'
   | 'Next'
   | 'Cancel'
   | 'Export'
@@ -62,6 +64,7 @@ type ActionButton =
 const reject: ActionButton = 'Reject';
 const approve: ActionButton = 'Approve';
 const sign: ActionButton = 'Sign';
+const previous: ActionButton = 'Previous';
 const next: ActionButton = 'Next';
 const cancel: ActionButton = 'Cancel';
 const execute: ActionButton = 'Submit';
@@ -74,6 +77,7 @@ const buttonsDataTestIds: { [key: string]: string } = {
   [reject]: 'button-reject-org-transaction',
   [approve]: 'button-approve-org-transaction',
   [sign]: 'button-sign-org-transaction',
+  [previous]: 'button-previous-org-transaction',
   [next]: 'button-next-org-transaction',
   [cancel]: 'button-cancel-org-transaction',
   [execute]: 'button-execute-org-transaction',
@@ -88,6 +92,7 @@ const props = defineProps<{
   localTransaction: Transaction | null;
   sdkTransaction: SDKTransaction | null;
   nextId: number | string | null;
+  previousId: number | string | null;
 }>();
 
 /* Stores */
@@ -99,6 +104,7 @@ const nextTransaction = useNextTransactionStore();
 /* Composables */
 const router = useRouter();
 const toast = useToast();
+const isLargeScreen = useMediaQuery('(min-width: 992px)');
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
@@ -163,14 +169,21 @@ const visibleButtons = computed(() => {
   const status = props.organizationTransaction?.status;
   const isManual = props.organizationTransaction?.isManual;
 
-  /* The order is important REJECT, APPROVE, SIGN, SUBMIT, NEXT, CANCEL, ARCHIVE, EXPORT */
+  /* The order is important REJECT, APPROVE, SIGN, SUBMIT, PREVIOUS, NEXT, CANCEL, ARCHIVE, EXPORT */
   shouldApprove.value && buttons.push(reject, approve);
   canSign.value && !shouldApprove.value && buttons.push(sign);
   status === TransactionStatus.WAITING_FOR_EXECUTION &&
     isManual &&
     canCancel.value &&
     buttons.push(execute);
-  props.nextId && !shouldApprove.value && !canSign.value && buttons.push(next);
+
+  if (isLargeScreen.value) {
+    props.previousId && buttons.push(previous);
+    props.nextId && buttons.push(next);
+  } else {
+    props.nextId && buttons.push(next);
+    props.previousId && buttons.push(previous);
+  }
   canCancel.value && buttons.push(cancel);
   canCancel.value &&
     status === TransactionStatus.WAITING_FOR_SIGNATURES &&
@@ -400,6 +413,21 @@ const handleExecute = (showModal?: boolean) => handleTransactionAction('execute'
 const handleRemindSigners = (showModal?: boolean) =>
   handleTransactionAction('remindSigners', showModal);
 
+const handlePrevious = () => {
+  if (!props.previousId) return;
+
+  const newPreviousTransactionsIds = [...(nextTransaction.previousTransactionsIds || [])];
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    props.organizationTransaction &&
+      newPreviousTransactionsIds.push(props.organizationTransaction.id);
+  } else {
+    props.localTransaction && newPreviousTransactionsIds.push(props.localTransaction.id);
+  }
+  nextTransaction.setPreviousTransactionsIds(newPreviousTransactionsIds);
+
+  redirectToDetails(router, props.previousId.toString(), true, true);
+};
+
 const handleNext = () => {
   if (!props.nextId) return;
 
@@ -443,6 +471,8 @@ const handleAction = async (value: ActionButton) => {
     await handleSign();
   } else if (value === next) {
     await handleNext();
+  } else if (value === previous) {
+    await handlePrevious();
   } else if (value === cancel) {
     await handleCancel(true);
   } else if (value === archive) {
@@ -540,17 +570,44 @@ watch(
           </div>
         </template>
       </Transition>
+
+      <Transition name="fade" mode="out-in">
+        <template v-if="visibleButtons.length > 1">
+          <div class="d-none d-lg-block">
+            <AppButton
+              :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
+              :loading="Boolean(loadingStates[visibleButtons[1]])"
+              :loading-text="loadingStates[visibleButtons[1]] || ''"
+              :data-testid="buttonsDataTestIds[visibleButtons[1]]"
+              type="submit"
+              class="me-3"
+              >{{ visibleButtons[1] }}
+            </AppButton>
+          </div>
+        </template>
+      </Transition>
+
       <Transition name="fade" mode="out-in">
         <template v-if="visibleButtons.length > 2">
-          <AppDropDown
-            :color="'secondary'"
-            :items="dropDownItems"
-            compact
-            @select="handleDropDownItem($event as ActionButton)"
-          />
+          <div>
+            <AppDropDown
+              class="d-lg-none"
+              :color="'secondary'"
+              :items="dropDownItems"
+              compact
+              @select="handleDropDownItem($event as ActionButton)"
+            />
+            <AppDropDown
+              class="d-none d-lg-block"
+              :color="'secondary'"
+              :items="dropDownItems.slice(1)"
+              compact
+              @select="handleDropDownItem($event as ActionButton)"
+            />
+          </div>
         </template>
         <template v-else-if="visibleButtons.length === 2">
-          <div>
+          <div class="d-lg-none">
             <AppButton
               :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
               :loading="Boolean(loadingStates[visibleButtons[1]])"
