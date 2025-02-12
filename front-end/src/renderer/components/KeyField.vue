@@ -10,9 +10,19 @@ import useContactsStore from '@renderer/stores/storeContacts';
 
 import { useToast } from 'vue-toast-notification';
 
-import { getComplexKey, updateComplexKey } from '@renderer/services/complexKeysService';
+import {
+  addComplexKey,
+  getComplexKey,
+  updateComplexKey,
+} from '@renderer/services/complexKeysService';
 
-import { isPublicKey, decodeKeyList, encodeKey, isUserLoggedIn } from '@renderer/utils';
+import {
+  isPublicKey,
+  decodeKeyList,
+  encodeKey,
+  isUserLoggedIn,
+  isKeyListValid,
+} from '@renderer/utils';
 import * as ush from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -105,11 +115,12 @@ const handleEditComplexKey = () => {
   complexKeyModalShown.value = true;
 };
 
-const handleComplexKeyUpdate = async (keyList: KeyList, updatedName: boolean) => {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
-
+const handleComplexKeyUpdate = async (
+  keyList: KeyList,
+  updatedNicknames: Map<string, { nickname: string; keyList: KeyList }>,
+  silent: boolean,
+) => {
+  console.log(updatedNicknames);
   emit('update:modelKey', keyList);
 
   if (selectedComplexKey.value) {
@@ -121,7 +132,30 @@ const handleComplexKeyUpdate = async (keyList: KeyList, updatedName: boolean) =>
       updatedKey = await updateComplexKey(selectedComplexKey.value.id, keyListBytes);
     }
     selectedComplexKey.value = updatedKey;
-    toast.success('Key list updated successfully');
+    if (!silent) toast.success('Key list updated successfully');
+  }
+
+  if (updatedNicknames) {
+    if (!isUserLoggedIn(user.personal)) {
+      throw new Error('User is not logged in');
+    }
+
+    console.log(updatedNicknames);
+
+    for (const [id, nicknameKeyList] of updatedNicknames) {
+      const keyListBytes = encodeKey(nicknameKeyList.keyList);
+      if (isKeyListValid(nicknameKeyList.keyList)) {
+        if (id == 'new' && keyListBytes) {
+          await addComplexKey(user.personal.id, keyListBytes, nicknameKeyList.nickname);
+        } else {
+          await updateComplexKey(id, keyListBytes, nicknameKeyList.nickname);
+        }
+      }
+    }
+
+    if (props.modelKey instanceof KeyList) {
+      selectedComplexKey.value = (await getComplexKey(user.personal.id, props.modelKey)) || null;
+    }
   }
 };
 
