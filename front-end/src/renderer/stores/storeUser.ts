@@ -41,6 +41,7 @@ const useUserStore = defineStore('user', () => {
   const selectedOrganization = ref<ConnectedOrganization | null>(null);
   const organizations = ref<ConnectedOrganization[]>([]);
   const organizationTokens = ref<OrganizationTokens>({});
+  const skippedSetup = ref<boolean>(false);
 
   /** Migration */
   const migrating = ref<boolean>(false);
@@ -197,6 +198,7 @@ const useUserStore = defineStore('user', () => {
     shouldSetupAccount,
     migrating,
     mnemonics,
+    skippedSetup,
     deleteOrganization,
     getJwtToken,
     getPassword,

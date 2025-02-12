@@ -37,6 +37,7 @@ export function addGuards(router: Router) {
       userIsLoggedIn &&
       (user.selectedOrganization ? userIsLoggedInOrganization : true) &&
       user.shouldSetupAccount &&
+      !user.skippedSetup &&
       to.name !== 'accountSetup'
     ) {
       return { name: 'accountSetup' };

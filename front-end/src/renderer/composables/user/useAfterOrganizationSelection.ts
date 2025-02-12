@@ -2,9 +2,12 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 
+import { SKIPPED_ORGAIZATION_SETUP } from '@main/shared/constants';
+
 import useSetupStores from '@renderer/composables/user/useSetupStores';
 
 import { get as getStoredMnemonics } from '@renderer/services/mnemonicService';
+import { getStoredClaim } from '@renderer/services/claimService';
 
 import {
   accountSetupRequired,
@@ -12,6 +15,7 @@ import {
   getLocalKeyPairs,
   isLoggedOutOrganization,
   isOrganizationActive,
+  isUserLoggedIn,
   safeAwait,
 } from '@renderer/utils';
 
@@ -39,12 +43,15 @@ export default function useAfterOrganizationSelection() {
     user.keyPairs = keyPairs;
     user.mnemonics = mnemonics;
 
+    const claimKey = `${organization?.id}${SKIPPED_ORGAIZATION_SETUP}`;
+    const { data } = await safeAwait(getStoredClaim(user.personal.id, claimKey));
+    user.skippedSetup = !!data;
+
     return { keyPairs, mnemonics };
   };
 
   const handleNavigation = async () => {
     const organization = user.selectedOrganization;
-
     if (organization !== null && !isOrganizationActive(organization)) {
       await user.selectOrganization(null);
       return;
@@ -55,7 +62,15 @@ export default function useAfterOrganizationSelection() {
       return;
     }
 
-    if (accountSetupRequired(organization, user.keyPairs)) {
+    if (!isUserLoggedIn(user.personal)) {
+      return;
+    }
+
+    const { data: skipped } = await safeAwait(
+      getStoredClaim(user.personal.id, `${organization?.id}${SKIPPED_ORGAIZATION_SETUP}`),
+    );
+
+    if (accountSetupRequired(organization, user.keyPairs) && !skipped) {
       await router.push({ name: 'accountSetup' });
       return;
     }
