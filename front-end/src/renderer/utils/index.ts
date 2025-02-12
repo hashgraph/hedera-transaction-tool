@@ -20,6 +20,7 @@ export * from './userStoreHelpers';
 export * from './sdk';
 export * from './transactionSignatureModels';
 export * from './autoFocus';
+export * from './localServices';
 
 export const getDateTimeLocalInputValue = (date: Date) => {
   const tzo = -date.getTimezoneOffset();

@@ -4,8 +4,6 @@ import type { TabItem } from '@renderer/components/ui/AppTabs.vue';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
 
-import { SKIPPED_ORGAIZATION_SETUP } from '@main/shared/constants';
-
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
@@ -13,7 +11,12 @@ import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNi
 
 import { getStoredClaim, update, add } from '@renderer/services/claimService';
 
-import { assertUserLoggedIn, isLoggedInOrganization, safeAwait } from '@renderer/utils';
+import {
+  assertUserLoggedIn,
+  buildSkipClaimKey,
+  isLoggedInOrganization,
+  safeAwait,
+} from '@renderer/utils';
 
 import AppTabs from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -72,7 +75,10 @@ const handleSkip = async () => {
   assertUserLoggedIn(user.personal);
 
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    const claimKey = `${user.selectedOrganization.id}${SKIPPED_ORGAIZATION_SETUP}`;
+    const claimKey = buildSkipClaimKey(
+      user.selectedOrganization.serverUrl,
+      user.selectedOrganization.userId,
+    );
     const { data } = await safeAwait(getStoredClaim(user.personal.id, claimKey));
     const addOrUpdate = data !== undefined ? update : add;
     await addOrUpdate(user.personal.id, claimKey, 'true');

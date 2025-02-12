@@ -2,8 +2,6 @@
 import { ref, watch } from 'vue';
 import { Mnemonic } from '@hashgraph/sdk';
 
-import { SKIPPED_ORGAIZATION_SETUP } from '@main/shared/constants';
-
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
@@ -13,7 +11,12 @@ import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNi
 import { validateMnemonic } from '@renderer/services/keyPairService';
 import { add, getStoredClaim, update } from '@renderer/services/claimService';
 
-import { assertUserLoggedIn, isLoggedInOrganization, safeAwait } from '@renderer/utils';
+import {
+  assertUserLoggedIn,
+  buildSkipClaimKey,
+  isLoggedInOrganization,
+  safeAwait,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
@@ -104,7 +107,10 @@ const handleSkip = async () => {
   assertUserLoggedIn(user.personal);
 
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    const claimKey = `${user.selectedOrganization.id}${SKIPPED_ORGAIZATION_SETUP}`;
+    const claimKey = buildSkipClaimKey(
+      user.selectedOrganization.serverUrl,
+      user.selectedOrganization.userId,
+    );
     const { data } = await safeAwait(getStoredClaim(user.personal.id, claimKey));
     const addOrUpdate = data !== undefined ? update : add;
     await addOrUpdate(user.personal.id, claimKey, 'true');
