@@ -489,7 +489,7 @@ export class TransactionsService {
     return true;
   }
 
-  /* Sends the transaction for execution if the transaction is manual. */
+  /* Sends, or prepares, the transaction for execution if the transaction is manual. */
   async executeTransaction(id: number, user: User): Promise<boolean> {
     const transaction = await this.getTransactionForCreator(id, user);
 
@@ -497,14 +497,18 @@ export class TransactionsService {
       throw new BadRequestException(ErrorCodes.IO);
     }
 
-    emitExecuteTranasction(this.chainService, {
-      id: transaction.id,
-      status: transaction.status,
-      //@ts-expect-error - cannot send Buffer instance over the network
-      transactionBytes: transaction.transactionBytes.toString('hex'),
-      mirrorNetwork: transaction.mirrorNetwork,
-      validStart: transaction.validStart,
-    });
+    if (transaction.validStart.getTime() > Date.now()) {
+      await this.repo.update({ id }, { isManual: false });
+    } else {
+      emitExecuteTranasction(this.chainService, {
+        id: transaction.id,
+        status: transaction.status,
+        //@ts-expect-error - cannot send Buffer instance over the network
+        transactionBytes: transaction.transactionBytes.toString('hex'),
+        mirrorNetwork: transaction.mirrorNetwork,
+        validStart: transaction.validStart,
+      });
+    }
 
     return true;
   }

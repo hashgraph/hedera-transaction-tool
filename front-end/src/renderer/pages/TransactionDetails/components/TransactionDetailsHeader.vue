@@ -125,6 +125,17 @@ const creator = computed(() => {
     : null;
 });
 
+const isCreator = computed(() => {
+  if (!creator.value) return false;
+  if (!isLoggedInOrganization(user.selectedOrganization)) return false;
+
+  return creator.value.user.id === user.selectedOrganization.userId;
+});
+
+const isAdmin = computed(() => {
+  return user.selectedOrganization.role === 'admin';
+});
+
 const transactionIsInProgress = computed(
   () =>
     props.organizationTransaction &&
@@ -136,11 +147,7 @@ const transactionIsInProgress = computed(
 );
 
 const canCancel = computed(() => {
-  if (!props.organizationTransaction || !creator.value) return false;
-  if (!isLoggedInOrganization(user.selectedOrganization)) return false;
-
-  const userIsCreator = creator.value.user.id === user.selectedOrganization.userId;
-  return userIsCreator && transactionIsInProgress.value;
+  return isCreator.value && transactionIsInProgress.value;
 });
 
 const canSign = computed(() => {
@@ -152,23 +159,40 @@ const canSign = computed(() => {
   return userShouldSign && transactionIsInProgress.value;
 });
 
+const canExecute = computed(() => {
+  const status = props.organizationTransaction?.status;
+  const isManual = props.organizationTransaction?.isManual;
+
+  return (
+    status === TransactionStatus.WAITING_FOR_EXECUTION &&
+    isManual &&
+    (isCreator.value || isAdmin.value) &&
+    transactionIsInProgress.value
+  );
+});
+
+const canArchive = computed(() => {
+  const isManual = props.organizationTransaction?.isManual;
+
+  return (
+    isManual &&
+    (isCreator.value || isAdmin.value) &&
+    transactionIsInProgress.value
+  );
+});
+
 const visibleButtons = computed(() => {
   const buttons: ActionButton[] = [];
 
   if (!fullyLoaded.value) return buttons;
-  const status = props.organizationTransaction?.status;
-  const isManual = props.organizationTransaction?.isManual;
 
   /* The order is important REJECT, APPROVE, SIGN, SUBMIT, NEXT, CANCEL, ARCHIVE, EXPORT */
   shouldApprove.value && buttons.push(reject, approve);
   canSign.value && !shouldApprove.value && buttons.push(sign);
-  status === TransactionStatus.WAITING_FOR_EXECUTION &&
-    isManual &&
-    canCancel.value &&
-    buttons.push(execute);
+  canExecute.value && buttons.push(execute);
   props.nextId && !shouldApprove.value && !canSign.value && buttons.push(next);
   canCancel.value && buttons.push(cancel);
-  canCancel.value && isManual && buttons.push(archive);
+  canArchive.value && buttons.push(archive);
   buttons.push(exportName);
 
   return buttons;
