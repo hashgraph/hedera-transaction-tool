@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import type { Transaction } from '@prisma/client';
-import type { ITransactionFull } from '@main/shared/interfaces';
+import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
-
-import { TransactionStatus } from '@main/shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
@@ -21,25 +19,25 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import {
   archiveTransaction,
   cancelTransaction,
-  getUserShouldApprove,
   executeTransaction,
+  getUserShouldApprove,
+  remindSigners,
   sendApproverChoice,
   uploadSignatureMap,
-  remindSigners,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { saveFileNamed } from '@renderer/services/electronUtilsService';
 
 import {
-  getPrivateKey,
-  getTransactionBodySignatureWithoutNodeAccountId,
-  redirectToDetails,
-  isLoggedInOrganization,
-  publicRequiredToSign,
-  getErrorMessage,
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
+  getErrorMessage,
+  getPrivateKey,
+  getTransactionBodySignatureWithoutNodeAccountId,
   hexToUint8Array,
+  isLoggedInOrganization,
+  publicRequiredToSign,
+  redirectToDetails,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -135,6 +133,17 @@ const creator = computed(() => {
     : null;
 });
 
+const isCreator = computed(() => {
+  if (!creator.value) return false;
+  if (!isLoggedInOrganization(user.selectedOrganization)) return false;
+
+  return creator.value.user.id === user.selectedOrganization.userId;
+});
+
+const isAdmin = computed(() => {
+  return user.selectedOrganization.role === 'admin';
+});
+
 const transactionIsInProgress = computed(
   () =>
     props.organizationTransaction &&
@@ -146,11 +155,7 @@ const transactionIsInProgress = computed(
 );
 
 const canCancel = computed(() => {
-  if (!props.organizationTransaction || !creator.value) return false;
-  if (!isLoggedInOrganization(user.selectedOrganization)) return false;
-
-  const userIsCreator = creator.value.user.id === user.selectedOrganization.userId;
-  return userIsCreator && transactionIsInProgress.value;
+  return isCreator.value && transactionIsInProgress.value;
 });
 
 const canSign = computed(() => {
@@ -162,21 +167,47 @@ const canSign = computed(() => {
   return userShouldSign && transactionIsInProgress.value;
 });
 
+const canExecute = computed(() => {
+  const status = props.organizationTransaction?.status;
+  const isManual = props.organizationTransaction?.isManual;
+
+  return (
+    status === TransactionStatus.WAITING_FOR_EXECUTION &&
+    isManual &&
+    isCreator.value &&
+    transactionIsInProgress.value
+  );
+});
+
+const canRemind = computed(() => {
+  const status = props.organizationTransaction?.status;
+
+  return (
+    status === TransactionStatus.WAITING_FOR_SIGNATURES &&
+    isCreator.value &&
+    transactionIsInProgress.value
+  );
+})
+
+const canArchive = computed(() => {
+  const isManual = props.organizationTransaction?.isManual;
+
+  return (
+    isManual &&
+    isCreator.value &&
+    transactionIsInProgress.value
+  );
+});
+
 const visibleButtons = computed(() => {
   const buttons: ActionButton[] = [];
 
   if (!fullyLoaded.value) return buttons;
-  const status = props.organizationTransaction?.status;
-  const isManual = props.organizationTransaction?.isManual;
 
   /* The order is important REJECT, APPROVE, SIGN, SUBMIT, PREVIOUS, NEXT, CANCEL, ARCHIVE, EXPORT */
   shouldApprove.value && buttons.push(reject, approve);
   canSign.value && !shouldApprove.value && buttons.push(sign);
-  status === TransactionStatus.WAITING_FOR_EXECUTION &&
-    isManual &&
-    canCancel.value &&
-    buttons.push(execute);
-
+  canExecute.value && buttons.push(execute);
   if (isLargeScreen.value) {
     props.previousId && buttons.push(previous);
     props.nextId && buttons.push(next);
@@ -185,10 +216,8 @@ const visibleButtons = computed(() => {
     props.previousId && buttons.push(previous);
   }
   canCancel.value && buttons.push(cancel);
-  canCancel.value &&
-    status === TransactionStatus.WAITING_FOR_SIGNATURES &&
-    buttons.push(remindSignersLabel);
-  canCancel.value && isManual && buttons.push(archive);
+  canRemind.value && buttons.push(remindSignersLabel);
+  canArchive.value && buttons.push(archive);
   buttons.push(exportName);
 
   return buttons;

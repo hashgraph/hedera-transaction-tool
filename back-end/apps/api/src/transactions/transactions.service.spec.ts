@@ -794,7 +794,7 @@ describe('TransactionsService', () => {
       await expect(service.executeTransaction(123, user as User)).rejects.toThrow(ErrorCodes.IO);
     });
 
-    it('should emit execute transaction event and return true if transaction is manual', async () => {
+    it('should emit execute transaction event and return true if transaction.validStart is valid and transaction is manual', async () => {
       const transaction = {
         id: 123,
         creatorKey: { userId: user.id },
@@ -802,7 +802,7 @@ describe('TransactionsService', () => {
         status: TransactionStatus.WAITING_FOR_EXECUTION,
         transactionBytes: Buffer.from('transactionBytes'),
         mirrorNetwork: 'testnet',
-        validStart: new Date(),
+        validStart: new Date(Date.now() - 1000),
       };
 
       jest
@@ -819,6 +819,30 @@ describe('TransactionsService', () => {
         mirrorNetwork: transaction.mirrorNetwork,
         validStart: transaction.validStart,
       });
+    });
+
+    it('should update transaction.isManual to false if transaction is manual and transaction.validStart is not yet valid', async () => {
+      const transaction = {
+        id: 123,
+        creatorKey: { userId: user.id },
+        isManual: true,
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+        transactionBytes: Buffer.from('transactionBytes'),
+        mirrorNetwork: 'testnet',
+        validStart: new Date(Date.now() + 1000), // future date
+      };
+
+      jest
+        .spyOn(service, 'getTransactionForCreator')
+        .mockResolvedValueOnce(transaction as Transaction);
+
+      const result = await service.executeTransaction(123, user as User);
+
+      expect(result).toBe(true);
+      expect(transactionsRepo.update).toHaveBeenCalledWith(
+        { id: 123 },
+        { isManual: false }
+      );
     });
   });
 
