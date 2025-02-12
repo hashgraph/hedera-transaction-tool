@@ -4,6 +4,8 @@ import type { KeyPair } from '@prisma/client';
 import { onBeforeMount, ref } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
 
+import { SKIPPED_ORGAIZATION_SETUP } from '@main/shared/constants';
+
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
@@ -11,10 +13,16 @@ import useSetDynamicLayout, {
   ACCOUNT_SETUP_LAYOUT,
 } from '@renderer/composables/useSetDynamicLayout';
 
+import { getStoredClaim } from '@renderer/services/claimService';
+import {
+  accountSetupRequiredParts,
+  isLoggedInOrganization,
+  isUserLoggedIn,
+  safeAwait,
+} from '@renderer/utils';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
-
-import { accountSetupRequiredParts, isLoggedInOrganization } from '@renderer/utils';
 
 import GenerateOrImport from './components/GenerateOrImport.vue';
 import KeyPairs from './components/KeyPairs.vue';
@@ -113,6 +121,18 @@ onBeforeRouteLeave(async () => {
     await user.refetchUserState();
   } catch {
     user.selectOrganization(null);
+  }
+
+  if (isLoggedInOrganization(user.selectedOrganization) && isUserLoggedIn(user.personal)) {
+    const { data: skipped } = await safeAwait(
+      getStoredClaim(
+        user.personal.id,
+        `${user.selectedOrganization?.id}${SKIPPED_ORGAIZATION_SETUP}`,
+      ),
+    );
+    if (skipped) {
+      return true;
+    }
   }
 
   if (user.personal?.isLoggedIn && user.shouldSetupAccount) {
