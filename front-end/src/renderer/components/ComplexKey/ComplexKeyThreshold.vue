@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { onBeforeMount, ref, toRaw } from 'vue';
+import { onBeforeMount, ref } from 'vue';
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useContactsStore from '@renderer/stores/storeContacts';
+import useNicknamesStore from '@renderer/stores/storeNicknames';
 
 import { useToast } from 'vue-toast-notification';
 
-import { decodeKeyList, isPublicKeyInKeyList, isUserLoggedIn } from '@renderer/utils';
+import { isPublicKeyInKeyList, isUserLoggedIn } from '@renderer/utils';
 import * as ush from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -15,7 +16,6 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
 import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/ComplexKeyAddPublicKeyModal.vue';
 import ComplexKeySelectAccountModal from '@renderer/components/ComplexKey/ComplexKeySelectAccountModal.vue';
-import { getComplexKeys } from '@renderer/services/complexKeysService';
 
 /* Props */
 const props = defineProps<{
@@ -25,11 +25,12 @@ const props = defineProps<{
 }>();
 
 /* Emits */
-const emit = defineEmits(['update:keyList', 'update:nickname']);
+const emit = defineEmits(['update:keyList']);
 
 /* Stores */
 const user = useUserStore();
 const contacts = useContactsStore();
+const nicknames = useNicknamesStore();
 
 /* Composables */
 const toast = useToast();
@@ -39,7 +40,7 @@ const areChildrenShown = ref(true);
 const addPublicKeyModalShown = ref(false);
 const selectAccountModalShown = ref(false);
 const nickname = ref('');
-const complexKeyId = ref('');
+const keyId = ref('');
 
 /* Handlers */
 const handleThresholdChange = (e: Event) => {
@@ -54,7 +55,6 @@ const handleSelectAccount = (key: Key) => {
     toast.error('Public key already exists in the key list');
   } else {
     let keys = props.keyList.toArray();
-    // keys.push(key);
     keys = [...keys, key];
     emitNewKeyList(keys, props.keyList.threshold);
     selectAccountModalShown.value = false;
@@ -69,7 +69,6 @@ const handleAddPublicKey = (publicKeys: PublicKey[]) => {
 
   for (const publicKey of publicKeys) {
     if (!isPublicKeyInKeyList(publicKey, publicKeysInKeyList)) {
-      // keys.push(publicKey);
       keys = [...keys, publicKey];
     } else {
       toast.error(`${publicKey.toStringRaw()} already exists in the key list`);
@@ -88,7 +87,6 @@ const handleRemovePublicKey = (publicKey: PublicKey) => {
 
 const handleAddThreshold = () => {
   let keys = props.keyList.toArray();
-  // keys.push(new KeyList([]));
   keys = [...keys, new KeyList([])];
   emitNewKeyList(keys, props.keyList.threshold);
 };
@@ -105,47 +103,28 @@ const handleKeyListUpdate = (index: number, newKeyList: KeyList) => {
   newParentKeyList.splice(index, 1, newKeyList);
 
   emit('update:keyList', newParentKeyList);
-  emit('update:nickname', nickname.value, complexKeyId.value, props.keyList);
+  nicknames.updateKey(nickname.value, newParentKeyList, keyId.value);
 };
 
-function handleUpdateNickname(value: string, keyId?: string, keyList?: KeyList) {
-  emit(
-    'update:nickname',
-    value,
-    keyId ? keyId : complexKeyId.value,
-    keyList ? keyList : props.keyList,
-  );
+function handleUpdateNickname(value: string) {
+  nicknames.updateNickname(value, nickname.value, props.keyList);
+  nickname.value = value;
 }
 
 /* Funtions */
 function emitNewKeyList(keys: Key[], threshold: number | null) {
   const newKeyList = new KeyList(keys, threshold);
-  console.log(nickname.value);
-  handleUpdateNickname(nickname.value, complexKeyId.value, KeyList.from(keys));
   emit('update:keyList', newKeyList);
+  nicknames.updateKey(nickname.value, newKeyList, keyId.value);
 }
 
 /* Hooks */
 onBeforeMount(async () => {
-  console.log('onBeforeMount');
-
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 
-  complexKeyId.value = 'new';
-
-  const keyLists = await getComplexKeys(user.personal.id);
-
-  for (const keyList of keyLists) {
-    const list = decodeKeyList(keyList.protobufEncoded).toArray();
-    const propList = toRaw(props.keyList).toArray();
-
-    if (JSON.stringify(list) === JSON.stringify(propList) && !nickname.value) {
-      nickname.value = keyList.nickname;
-      complexKeyId.value = keyList.id;
-    }
-  }
+  [nickname.value, keyId.value] = await nicknames.getNickName(props.keyList);
 });
 </script>
 <template>
@@ -269,7 +248,6 @@ onBeforeMount(async () => {
             <ComplexKeyThreshold
               :key-list="key"
               @update:key-list="newKeyList => handleKeyListUpdate(i, newKeyList)"
-              @update:nickname="handleUpdateNickname"
               :on-remove-key-list="() => handleRemoveThreshold(i)"
               :depth="`${depth || 0}-${i}`"
             />

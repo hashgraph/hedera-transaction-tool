@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onBeforeMount, ref } from 'vue';
 import { Key, KeyList } from '@hashgraph/sdk';
 
 import ComplexKeyThreshold from '@renderer/components/ComplexKey/ComplexKeyThreshold.vue';
@@ -10,7 +10,7 @@ const props = defineProps<{
 }>();
 
 /* Emits */
-const emit = defineEmits(['update:modelKey', 'update:nickname']);
+const emit = defineEmits(['update:modelKey']);
 
 /* State */
 const keyList = ref<KeyList>(new KeyList());
@@ -25,12 +25,8 @@ const handleKeyListRemove = () => {
   emit('update:modelKey', keyList.value);
 };
 
-function handleUpdateNickname(nickname: string, keyId: string, keyList: KeyList) {
-  emit('update:nickname', nickname, keyId, keyList);
-}
-
 /* Hooks */
-onMounted(() => {
+onBeforeMount(() => {
   if (props.modelKey instanceof KeyList) {
     keyList.value = props.modelKey;
   }
@@ -40,7 +36,6 @@ onMounted(() => {
   <ComplexKeyThreshold
     v-model:key-list="keyList"
     @update:key-list="handleKeyListChange"
-    @update:nickname="handleUpdateNickname"
     :on-remove-key-list="handleKeyListRemove"
     :depth="'0'"
   />
