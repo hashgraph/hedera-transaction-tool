@@ -25,6 +25,7 @@ const emit = defineEmits(['update:show', 'update:modelKey']);
 const currentKey = ref<Key | null>(props.modelKey);
 const errorModalShow = ref(false);
 const summaryMode = ref(false);
+const updatedNicknames = ref<Map<string, { nickname: string; keyList: KeyList }>>(new Map());
 
 /* Computed */
 const currentKeyInvalid = computed(
@@ -37,6 +38,12 @@ const currentKeyInvalid = computed(
 const handleShowUpdate = (show: boolean) => emit('update:show', show);
 
 const handleComplexKeyUpdate = (key: KeyList) => (currentKey.value = key);
+
+function handleUpdateNickname(nickname: string, keyId: string, keyList: KeyList) {
+  updatedNicknames.value.set(keyId, { nickname, keyList });
+  console.log(updatedNicknames.value);
+  console.log(updatedNicknames.value.get('new')?.nickname);
+}
 
 const handleSaveComplexKeyButtonClick = () => {
   if (currentKeyInvalid.value) {
@@ -51,15 +58,34 @@ const handleSaveComplexKeyButtonClick = () => {
   }
 };
 
-const handleSaveButtonClick = async () => {
+const handleDoneButtonClick = async () => {
   if (currentKeyInvalid.value) {
     errorModalShow.value = true;
     return;
   }
 
-  emit('update:modelKey', currentKey.value);
+  emit('update:modelKey', currentKey.value, updatedNicknames.value);
   emit('update:show', false);
+  updatedNicknames.value = new Map();
 };
+
+function handleExit() {
+  emit('update:show', false);
+}
+
+function handleSummaryEdit() {
+  summaryMode.value = !summaryMode.value;
+
+  if (summaryMode.value) {
+    if (currentKeyInvalid.value) {
+      errorModalShow.value = true;
+      return;
+    }
+
+    emit('update:modelKey', currentKey.value, updatedNicknames.value, true);
+    updatedNicknames.value = new Map();
+  }
+}
 
 /* Watchers */
 watch(
@@ -75,9 +101,9 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
 <template>
   <AppModal :show="show" @update:show="handleShowUpdate" class="full-screen-modal">
     <div class="p-5 h-100">
-      <form @submit.prevent="handleSaveButtonClick" class="h-100">
+      <form @submit.prevent="handleDoneButtonClick" class="h-100">
         <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
+          <i class="bi bi-x-lg cursor-pointer" @click="handleExit"></i>
         </div>
         <h1 class="text-title text-semi-bold text-center">Complex Key</h1>
         <div :style="modalContentContainerStyle">
@@ -86,7 +112,7 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
               color="borderless"
               type="button"
               class="text-body"
-              @click="summaryMode = !summaryMode"
+              @click="handleSummaryEdit"
               >{{ summaryMode ? 'Edit Mode' : 'View Summary' }}</AppButton
             >
             <AppButton
@@ -109,7 +135,11 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
           <div v-if="show" class="mt-5 h-100 overflow-auto">
             <Transition name="fade" :mode="'out-in'">
               <div v-if="!summaryMode">
-                <ComplexKey :model-key="currentKey" @update:model-key="handleComplexKeyUpdate" />
+                <ComplexKey
+                  :model-key="currentKey"
+                  @update:model-key="handleComplexKeyUpdate"
+                  @update:nickname="handleUpdateNickname"
+                />
               </div>
               <div v-else>
                 <KeyStructure
