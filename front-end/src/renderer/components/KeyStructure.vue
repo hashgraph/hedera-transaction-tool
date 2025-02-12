@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { KeyList, PublicKey } from '@hashgraph/sdk';
 
-import { decodeKeyList, isUserLoggedIn, encodeKey } from '@renderer/utils';
+import { decodeKeyList, encodeKey, isUserLoggedIn, normalizePublicKey } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppPublicKeyNickname from '@renderer/components/ui/AppPublicKeyNickname.vue';
-import {
-  getComplexKeys,
-  getComplexKey,
-  addComplexKey,
-  updateComplexKey,
-} from '@renderer/services/complexKeysService';
-import { onBeforeMount, ref, toRaw } from 'vue';
-import useUserStore from '@renderer/stores/storeUser';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppPublicKeyNickname from '@renderer/components/ui/AppPublicKeyNickname.vue';
+import { onBeforeMount, ref, toRaw } from 'vue';
+import {
+  getComplexKey,
+  updateComplexKey,
+  addComplexKey,
+  getComplexKeys,
+} from '@renderer/services/complexKeysService';
+import useUserStore from '@renderer/stores/storeUser';
 
 /* Props */
 const props = defineProps<{
