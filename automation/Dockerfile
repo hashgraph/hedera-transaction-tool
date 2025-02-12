@@ -71,4 +71,4 @@ WORKDIR /app
 COPY --from=builder /app/front-end /app/front-end
 COPY --from=builder /app/automation /app/automation
 COPY --from=builder /app/notice-gen /app/notice-gen
-ENTRYPOINT ["/bin/bash", "-c", "Xvfb :99 -screen 0 1920x1080x24 & cd /app/automation && npx playwright test tests/TransactionTests"]
+ENTRYPOINT ["/bin/bash", "-c", "Xvfb :99 -screen 0 1920x1080x24 & cd /app/automation && npx playwright test tests/WorkflowTests"]

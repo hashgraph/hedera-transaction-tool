@@ -4,4 +4,4 @@ services:
       context: ..
       dockerfile: automation/Dockerfile
     env_file:
-        - ./.env-docker
+        - ./.env
