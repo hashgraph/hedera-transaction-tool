@@ -4,10 +4,19 @@ import { Mnemonic } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
+import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNickname';
 
 import { validateMnemonic } from '@renderer/services/keyPairService';
+import { add, getStoredClaim, update } from '@renderer/services/claimService';
+
+import {
+  assertUserLoggedIn,
+  buildSkipClaimKey,
+  isLoggedInOrganization,
+  safeAwait,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
@@ -23,6 +32,7 @@ const props = defineProps<{
 const user = useUserStore();
 
 /* Composables */
+const router = useRouter();
 const toast = useToast();
 const recoveryPhraseNickname = useRecoveryPhraseNickname();
 
@@ -93,6 +103,22 @@ const handleGenerate = async () => {
   await props.handleNext();
 };
 
+const handleSkip = async () => {
+  assertUserLoggedIn(user.personal);
+
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    const claimKey = buildSkipClaimKey(
+      user.selectedOrganization.serverUrl,
+      user.selectedOrganization.userId,
+    );
+    const { data } = await safeAwait(getStoredClaim(user.personal.id, claimKey));
+    const addOrUpdate = data !== undefined ? update : add;
+    await addOrUpdate(user.personal.id, claimKey, 'true');
+    user.skippedSetup = true;
+    await router.push({ name: 'transactions' });
+  }
+};
+
 /* Watchers */
 watch(words, newWords => {
   if (newWords.toString() === correctWords.value.toString()) {
@@ -134,6 +160,15 @@ watch(words, newWords => {
     v-if="!wordsConfirmed && !toVerify && words.filter(w => w).length === 0"
   >
     <div class="col-6">
+      <AppButton
+        v-if="isLoggedInOrganization(user.selectedOrganization)"
+        color="secondary"
+        class="w-100 mb-4"
+        @click="handleSkip"
+        data-testid="button-skip-genereate"
+      >
+        <span>Skip</span>
+      </AppButton>
       <AppButton
         :disabled="!checkboxChecked && words.filter(w => w).length === 0"
         color="primary"

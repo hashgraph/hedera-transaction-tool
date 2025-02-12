@@ -6,9 +6,17 @@ import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
+import { useRouter } from 'vue-router';
 import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNickname';
 
-import { isLoggedInOrganization } from '@renderer/utils';
+import { getStoredClaim, update, add } from '@renderer/services/claimService';
+
+import {
+  assertUserLoggedIn,
+  buildSkipClaimKey,
+  isLoggedInOrganization,
+  safeAwait,
+} from '@renderer/utils';
 
 import AppTabs from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -30,6 +38,7 @@ const emit = defineEmits(['update:selectedPersonalKeyPair']);
 const user = useUserStore();
 
 /* Composables */
+const router = useRouter();
 const recoveryPhraseNickname = useRecoveryPhraseNickname();
 
 /* Constants */
@@ -60,6 +69,22 @@ const handleImport = async () => {
   if (user.recoveryPhrase === null) return;
   await recoveryPhraseNickname.set(user.recoveryPhrase.hash, mnemonicHashNickname.value);
   await props.handleNext();
+};
+
+const handleSkip = async () => {
+  assertUserLoggedIn(user.personal);
+
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    const claimKey = buildSkipClaimKey(
+      user.selectedOrganization.serverUrl,
+      user.selectedOrganization.userId,
+    );
+    const { data } = await safeAwait(getStoredClaim(user.personal.id, claimKey));
+    const addOrUpdate = data !== undefined ? update : add;
+    await addOrUpdate(user.personal.id, claimKey, 'true');
+    user.skippedSetup = true;
+    await router.push({ name: 'transactions' });
+  }
 };
 
 /* Hooks */
@@ -112,13 +137,22 @@ watch(activeTabTitle, newTitle => {
           <AppButton data-testid="button-clear" color="borderless" @click="handleClearWords(true)"
             >Clear</AppButton
           >
-          <AppButton
-            :disabled="user.recoveryPhrase === null"
-            color="primary"
-            @click="handleImport"
-            data-testid="button-next-import"
-            >Next</AppButton
-          >
+          <div class="d-flex gap-4">
+            <AppButton
+              v-if="isLoggedInOrganization(user.selectedOrganization)"
+              color="secondary"
+              @click="handleSkip"
+              data-testid="button-skip-import"
+              >Skip</AppButton
+            >
+            <AppButton
+              :disabled="user.recoveryPhrase === null"
+              color="primary"
+              @click="handleImport"
+              data-testid="button-next-import"
+              >Next</AppButton
+            >
+          </div>
         </div>
       </template>
       <template v-else-if="activeTabTitle === useExistingKeyTitle">

@@ -24,6 +24,7 @@ export const UPDATE_LOCATION = 'update_location';
 export const MIGRATION_STARTED = 'migration_started';
 export const RECOVERY_PHRASE_HASH_UPDATED = 'recovery_phrase_hash_updated';
 export const WINDOW_STATE = 'window_state';
+export const SKIPPED_ORGAIZATION_SETUP = 'skipped_organization_setup';
 
 /* Transaction tabs */
 export const draftsTitle = 'Drafts';

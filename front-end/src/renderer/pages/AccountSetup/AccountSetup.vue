@@ -11,10 +11,10 @@ import useSetDynamicLayout, {
   ACCOUNT_SETUP_LAYOUT,
 } from '@renderer/composables/useSetDynamicLayout';
 
+import { accountSetupRequiredParts, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
-
-import { accountSetupRequiredParts, isLoggedInOrganization } from '@renderer/utils';
 
 import GenerateOrImport from './components/GenerateOrImport.vue';
 import KeyPairs from './components/KeyPairs.vue';
@@ -113,6 +113,12 @@ onBeforeRouteLeave(async () => {
     await user.refetchUserState();
   } catch {
     user.selectOrganization(null);
+  }
+
+  if (isLoggedInOrganization(user.selectedOrganization) && isUserLoggedIn(user.personal)) {
+    if (user.skippedSetup) {
+      return true;
+    }
   }
 
   if (user.personal?.isLoggedIn && user.shouldSetupAccount) {
