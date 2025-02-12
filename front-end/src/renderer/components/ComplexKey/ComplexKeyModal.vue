@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import { Key, KeyList } from '@hashgraph/sdk';
 
@@ -10,6 +10,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import ComplexKey from '@renderer/components/ComplexKey/ComplexKey.vue';
 import KeyStructure from '@renderer/components/KeyStructure.vue';
+import useNicknamesStore from '@renderer/stores/storeNicknames';
 
 /* Props */
 const props = defineProps<{
@@ -18,6 +19,8 @@ const props = defineProps<{
   onSaveComplexKey?: () => void;
 }>();
 
+const nicknames = useNicknamesStore();
+
 /* Emits */
 const emit = defineEmits(['update:show', 'update:modelKey']);
 
@@ -25,7 +28,6 @@ const emit = defineEmits(['update:show', 'update:modelKey']);
 const currentKey = ref<Key | null>(props.modelKey);
 const errorModalShow = ref(false);
 const summaryMode = ref(false);
-const updatedNicknames = ref<Map<string, { nickname: string; keyList: KeyList }>>(new Map());
 
 /* Computed */
 const currentKeyInvalid = computed(
@@ -38,12 +40,6 @@ const currentKeyInvalid = computed(
 const handleShowUpdate = (show: boolean) => emit('update:show', show);
 
 const handleComplexKeyUpdate = (key: KeyList) => (currentKey.value = key);
-
-function handleUpdateNickname(nickname: string, keyId: string, keyList: KeyList) {
-  updatedNicknames.value.set(keyId, { nickname, keyList });
-  console.log(updatedNicknames.value);
-  console.log(updatedNicknames.value.get('new')?.nickname);
-}
 
 const handleSaveComplexKeyButtonClick = () => {
   if (currentKeyInvalid.value) {
@@ -64,12 +60,12 @@ const handleDoneButtonClick = async () => {
     return;
   }
 
-  emit('update:modelKey', currentKey.value, updatedNicknames.value);
+  emit('update:modelKey', currentKey.value);
   emit('update:show', false);
-  updatedNicknames.value = new Map();
 };
 
-function handleExit() {
+async function handleExit() {
+  await nicknames.clearNicknames();
   emit('update:show', false);
 }
 
@@ -82,8 +78,7 @@ function handleSummaryEdit() {
       return;
     }
 
-    emit('update:modelKey', currentKey.value, updatedNicknames.value, true);
-    updatedNicknames.value = new Map();
+    emit('update:modelKey', currentKey.value);
   }
 }
 
@@ -135,11 +130,7 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
           <div v-if="show" class="mt-5 h-100 overflow-auto">
             <Transition name="fade" :mode="'out-in'">
               <div v-if="!summaryMode">
-                <ComplexKey
-                  :model-key="currentKey"
-                  @update:model-key="handleComplexKeyUpdate"
-                  @update:nickname="handleUpdateNickname"
-                />
+                <ComplexKey :model-key="currentKey" @update:model-key="handleComplexKeyUpdate" />
               </div>
               <div v-else>
                 <KeyStructure

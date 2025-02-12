@@ -10,19 +10,9 @@ import useContactsStore from '@renderer/stores/storeContacts';
 
 import { useToast } from 'vue-toast-notification';
 
-import {
-  addComplexKey,
-  getComplexKey,
-  updateComplexKey,
-} from '@renderer/services/complexKeysService';
+import { getComplexKey, updateComplexKey } from '@renderer/services/complexKeysService';
 
-import {
-  isPublicKey,
-  decodeKeyList,
-  encodeKey,
-  isUserLoggedIn,
-  isKeyListValid,
-} from '@renderer/utils';
+import { isPublicKey, decodeKeyList, encodeKey, isUserLoggedIn } from '@renderer/utils';
 import * as ush from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -32,6 +22,7 @@ import ComplexKeyModal from '@renderer/components/ComplexKey/ComplexKeyModal.vue
 import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/ComplexKeyAddPublicKeyModal.vue';
 import ComplexKeySelectSavedKey from '@renderer/components/ComplexKey/ComplexKeySelectSavedKey.vue';
 import ComplexKeySaveKeyModal from '@renderer/components/ComplexKey/ComplexKeySaveKeyModal.vue';
+import useNicknamesStore from '@renderer/stores/storeNicknames';
 
 /* Props */
 const props = withDefaults(
@@ -57,6 +48,7 @@ enum Tabs {
 /* Stores */
 const user = useUserStore();
 const contacts = useContactsStore();
+const nicknames = useNicknamesStore();
 
 /* Composables */
 const toast = useToast();
@@ -115,42 +107,18 @@ const handleEditComplexKey = () => {
   complexKeyModalShown.value = true;
 };
 
-const handleComplexKeyUpdate = async (
-  keyList: KeyList,
-  updatedNicknames: Map<string, { nickname: string; keyList: KeyList }>,
-  silent: boolean,
-) => {
-  console.log(updatedNicknames);
+const handleComplexKeyUpdate = async (keyList: KeyList) => {
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+
   emit('update:modelKey', keyList);
 
   if (selectedComplexKey.value) {
     const keyListBytes = encodeKey(keyList);
+    await nicknames.saveNicknames();
     const updatedKey = await updateComplexKey(selectedComplexKey.value.id, keyListBytes);
     selectedComplexKey.value = updatedKey;
-    if (!silent) toast.success('Key list updated successfully');
-  }
-
-  if (updatedNicknames) {
-    if (!isUserLoggedIn(user.personal)) {
-      throw new Error('User is not logged in');
-    }
-
-    console.log(updatedNicknames);
-
-    for (const [id, nicknameKeyList] of updatedNicknames) {
-      const keyListBytes = encodeKey(nicknameKeyList.keyList);
-      if (isKeyListValid(nicknameKeyList.keyList)) {
-        if (id == 'new' && keyListBytes) {
-          await addComplexKey(user.personal.id, keyListBytes, nicknameKeyList.nickname);
-        } else {
-          await updateComplexKey(id, keyListBytes, nicknameKeyList.nickname);
-        }
-      }
-    }
-
-    if (props.modelKey instanceof KeyList) {
-      selectedComplexKey.value = (await getComplexKey(user.personal.id, props.modelKey)) || null;
-    }
   }
 };
 
