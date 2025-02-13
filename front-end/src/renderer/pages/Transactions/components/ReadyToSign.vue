@@ -177,7 +177,6 @@ async function fetchTransactions() {
     setNotifiedTransactions();
 
     groups.value = await getApiGroups(user.selectedOrganization.serverUrl);
-    console.log(groups.value);
   } finally {
     isLoading.value = false;
   }

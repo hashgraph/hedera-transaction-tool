@@ -261,8 +261,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                   <td>
                     <i class="bi bi-stack" />
                   </td>
-                  <td>                    {{ groups[group[0] - 1]?.description || groups.find((g: Record<any, any>) => g.id === group[0])?.description }}
-</td>
+                  <td>{{ groups[group[0] - 1]?.description || groups.find((g: Record<any, any>) => g.id === group[0])?.description }}</td>
                   <td>
                     {{
                       group[1][0].transaction instanceof Transaction
