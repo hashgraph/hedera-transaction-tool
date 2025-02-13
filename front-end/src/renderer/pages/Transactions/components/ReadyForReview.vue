@@ -18,7 +18,7 @@ import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
-import { getApiGroups, getTransactionsToApprove } from '@renderer/services/organization';
+import { getApiGroupById, getTransactionsToApprove } from '@renderer/services/organization';
 
 import {
   getNotifiedTransactions,
@@ -60,7 +60,7 @@ const transactions = ref<
     }[]
   >
 >(new Map());
-const groups = ref();
+const groups = ref<any[]>([]);
 const notifiedTransactionIds = ref<number[]>([]);
 const totalItems = ref(0);
 const currentPage = ref(1);
@@ -156,6 +156,9 @@ async function fetchTransactions() {
     totalItems.value = totalItemsCount;
 
     const transactionsBytes = rawTransactions.map(t => hexToUint8Array(t.transactionBytes));
+
+    const groupIds: number[] = [];
+
     for (const [i, transaction] of rawTransactions.entries()) {
       const currentGroup =
         transaction.groupItem?.groupId != null ? transaction.groupItem.groupId : -1;
@@ -170,11 +173,24 @@ async function fetchTransactions() {
       } else {
         transactions.value.set(currentGroup, new Array(newVal));
       }
+
+      if (transaction.groupItem?.groupId && !groupIds.includes(transaction.groupItem?.groupId)) {
+      groupIds.push(transaction.groupItem.groupId);
+      }
     }
 
     setNotifiedTransactions();
 
-    groups.value = await getApiGroups(user.selectedOrganization.serverUrl);
+    if (groupIds.length > 0) {
+      const fetchedGroups = [];
+      for (const id of groupIds) {
+        if (user.selectedOrganization?.serverUrl) {
+          const group = await getApiGroupById(user.selectedOrganization.serverUrl, id);
+          fetchedGroups.push(group);
+        }
+      }
+      groups.value = fetchedGroups;
+    }
   } finally {
     isLoading.value = false;
   }
