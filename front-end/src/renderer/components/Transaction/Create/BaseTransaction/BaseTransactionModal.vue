@@ -22,6 +22,7 @@ import { getTransactionFromBytes, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Props */
 const props = defineProps<{
@@ -133,7 +134,8 @@ async function handleSubmit() {
 }
 
 /* Hooks */
-onBeforeRouteLeave(async () => {
+onBeforeRouteLeave(async to => {
+  if (to.name?.toString().toLocaleLowerCase().includes('login')) return true;
   if (isDiscardFromScratch.value) return true;
   const transactionBytes = getTransactionBytes();
   if (!transactionBytes) return true;
@@ -175,6 +177,9 @@ onBeforeRouteLeave(async () => {
       <div class="text-start">
         <i class="bi bi-x-lg cursor-pointer" @click="isGroupActionModalShown = false"></i>
       </div>
+      <div>
+        <AppCustomIcon :name="'lock'" style="height: 160px" />
+      </div>
       <h2
         v-if="!route.params.seq && !route.query.draftId && !isFromScratch"
         class="text-title text-semi-bold mt-3"
@@ -182,6 +187,9 @@ onBeforeRouteLeave(async () => {
         Add To Group?
       </h2>
       <h2 v-else class="text-title text-semi-bold mt-3">Save Edits?</h2>
+      <p class="text-small text-secondary mt-3">
+        Pick up exactly where you left off, without compromising your flow or losing valuable time.
+      </p>
 
       <hr class="separator my-5" />
 
