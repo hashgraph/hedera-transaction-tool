@@ -27,6 +27,8 @@ RUN npm install -g pnpm@9.15.3
 # --- Build Front-End ---
 # Copy only the package files to cache dependency installation
 COPY front-end/package.json front-end/pnpm-lock.yaml ./front-end/
+COPY front-end/prisma/schema.prisma ./front-end/prisma/
+
 # Notice gen copy is needed for postinstall script
 COPY notice-gen ./notice-gen
 # Install dependencies and build front-end
@@ -38,7 +40,6 @@ RUN cd front-end && pnpm install --frozen-lockfile \
 # Copy over the full front-end source and build
 COPY front-end ./front-end
 RUN cd front-end && \
-    pnpm run generate:database && \
     pnpm run build:docker
 # --- Build Automation ---
 # Copy automation package files for caching
