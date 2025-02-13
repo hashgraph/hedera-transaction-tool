@@ -23,7 +23,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 # Install pnpm globally
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9.15.3
 # --- Build Front-End ---
 # Copy only the package files to cache dependency installation
 COPY front-end/package.json front-end/pnpm-lock.yaml ./front-end/
