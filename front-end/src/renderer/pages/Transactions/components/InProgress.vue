@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ITransaction } from '@main/shared/interfaces';
+import type { IGroup, ITransaction } from '@main/shared/interfaces';
 
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 
@@ -55,7 +55,7 @@ const transactions = ref<
     }[]
   >
 >(new Map());
-const groups = ref<any[]>([]);
+const groups = ref<IGroup[]>([]);
 const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
@@ -140,7 +140,7 @@ async function fetchTransactions() {
     }
 
     if (groupIds.length > 0) {
-      const fetchedGroups = [];
+      const fetchedGroups: IGroup[] = [];
       for (const id of groupIds) {
         if (user.selectedOrganization?.serverUrl) {
           const group = await getApiGroupById(user.selectedOrganization.serverUrl, id);
