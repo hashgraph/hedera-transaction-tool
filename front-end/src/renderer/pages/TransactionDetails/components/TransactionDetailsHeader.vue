@@ -368,9 +368,9 @@ const handleTransactionAction = async (
     },
     execute: {
       title: 'Submit Transaction?',
-      text: 'Are you sure you want to send the transaction for execution?',
+      text: 'The transaction will be scheduled to execute at the specified time and processed automatically.',
       buttonText: 'Confirm',
-      loadingText: 'Executing...',
+      loadingText: 'Submitting...',
       successMessage: 'Transaction sent for execution successfully',
       actionFunction: executeTransaction,
     },

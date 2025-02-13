@@ -499,6 +499,7 @@ export class TransactionsService {
 
     if (transaction.validStart.getTime() > Date.now()) {
       await this.repo.update({ id }, { isManual: false });
+      notifyTransactionAction(this.notificationsService);
     } else {
       emitExecuteTranasction(this.chainService, {
         id: transaction.id,
