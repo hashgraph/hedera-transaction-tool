@@ -209,7 +209,7 @@ onBeforeRouteLeave(async to => {
           >Add To Group</AppButton
         >
         <AppButton v-else color="primary" data-testid="button-save-draft-modal" type="submit"
-          >Save Edits</AppButton
+          >Save</AppButton
         >
       </div>
     </form>
