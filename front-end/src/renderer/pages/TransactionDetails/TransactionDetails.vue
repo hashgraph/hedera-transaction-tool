@@ -3,7 +3,7 @@ import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@main/shared/interfaces';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { onBeforeRouteLeave, useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
@@ -191,6 +191,12 @@ onBeforeMount(async () => {
   ]);
   nextId.value = result[1];
   prevId.value = result[2];
+});
+
+onBeforeRouteLeave(to => {
+  if (to.name === 'transactionGroupDetails') {
+    to.query = { ...to.query, previousTab: 'transactionDetails' };
+  }
 });
 
 /* Watchers */

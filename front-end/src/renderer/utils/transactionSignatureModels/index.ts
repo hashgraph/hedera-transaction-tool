@@ -58,12 +58,13 @@ export const publicRequiredToSign = async (
   transaction: Transaction,
   userKeys: IUserKey[],
   mirrorNodeLink: string,
-): Promise<{ usersPublicKeys: string[]; nonUserPublicKeys: string[] }> => {
+): Promise<{ usersPublicKeys: string[]; nonUserPublicKeys: string[]; thresholdMet: boolean }> => {
   const usersPublicKeys: Set<string> = new Set();
   const nonUserPublicKeys: Set<string> = new Set();
+  let thresholdMet = false;
 
   if (userKeys.length === 0) {
-    return { usersPublicKeys: [], nonUserPublicKeys: [] };
+    return { usersPublicKeys: [], nonUserPublicKeys: [], thresholdMet: thresholdMet };
   }
 
   const { newKeys, accounts, receiverAccounts, nodeId } = getSignatureEntities(transaction);
@@ -82,12 +83,8 @@ export const publicRequiredToSign = async (
         }
       });
 
-      // If threshold is met, remove all remaining required keys
       if (signedCount >= requiredThreshold) {
-        key._keys.forEach(subKey => {
-          usersPublicKeys.delete(extractRawPublicKey(subKey));
-          nonUserPublicKeys.delete(extractRawPublicKey(subKey));
-        });
+        thresholdMet = true;
       }
     } else {
       if (userKeys.some(userKey => isPublicKeyInKeyList(userKey.publicKey, key))) {
@@ -120,6 +117,7 @@ export const publicRequiredToSign = async (
   return {
     usersPublicKeys: [...usersPublicKeys],
     nonUserPublicKeys: [...nonUserPublicKeys],
+    thresholdMet: thresholdMet,
   };
 };
 

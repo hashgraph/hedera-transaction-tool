@@ -68,35 +68,19 @@ const publicKeysRequiredToSign = ref<string[] | null>([]);
 const disableSignAll = ref(false);
 const isSigning = ref(false);
 const isApproving = ref(false);
-const userUnsignedSigners = ref<Record<string, string[]>>({});
-const allUnsignedSigners = ref<Record<string, string[]>>({});
+const unsignedSignersToCheck = ref<Record<string, string[]>>({});
 const tooltipRef = ref<HTMLElement[]>([]);
+const thresholdMetTransactions = ref<Record<string, boolean>>({});
 
 /* Computed */
-const signersToCheck = computed(() => {
-  if (route.query.previousTab) {
-    const previousTab = route.query.previousTab;
-    if (previousTab === 'readyToSign' && userUnsignedSigners.value) {
-      return userUnsignedSigners.value;
-    } else if (previousTab === 'inProgress' && allUnsignedSigners.value) {
-      return allUnsignedSigners.value;
-    }
-  }
-  return {};
-});
-
-const shouldShowCheckmark = computed(() => {
-  const previousTab = route.query.previousTab;
-  if (previousTab === 'readyToSign' || previousTab === 'inProgress') {
-    return true;
-  }
-  return false;
-});
-
 const tooltipText = computed(() => {
   if (route.query.previousTab) {
     const previousTab = route.query.previousTab;
-    if (previousTab === 'readyToSign') {
+    if (
+      previousTab === 'readyToSign' ||
+      previousTab === 'transactionDetails' ||
+      previousTab === 'createGroup'
+    ) {
       return 'Transaction successfully signed!';
     } else if (previousTab === 'inProgress') {
       return 'Transaction is signed by all required signers!';
@@ -121,11 +105,13 @@ async function handleFetchGroup(id: string | number) {
           const tx = Transaction.fromBytes(transactionBytes);
           const txId = item.transaction.id;
 
-          const { usersPublicKeys, nonUserPublicKeys } = await publicRequiredToSign(
+          const { usersPublicKeys, nonUserPublicKeys, thresholdMet } = await publicRequiredToSign(
             tx,
             user.selectedOrganization.userKeys,
             network.mirrorNodeBaseURL,
           );
+
+          thresholdMetTransactions.value[txId] = thresholdMet;
 
           const signedSigners = new Set([...tx._signerPublicKeys]);
 
@@ -137,21 +123,30 @@ async function handleFetchGroup(id: string | number) {
             ? nonUserPublicKeys.filter(pk => !signedSigners.has(pk))
             : [];
 
-          if (usersPublicKeys.length > 0) {
-            userUnsignedSigners.value = {
-              ...userUnsignedSigners.value,
-              [txId]: usersUnsigned,
-            };
+          if (route.query.previousTab) {
+            const previousTab = route.query.previousTab;
+            if (
+              (previousTab === 'readyToSign' ||
+                previousTab === 'transactionDetails' ||
+                previousTab === 'createGroup') &&
+              usersPublicKeys.length > 0
+            ) {
+              unsignedSignersToCheck.value = {
+                ...unsignedSignersToCheck.value,
+                [txId]: usersUnsigned,
+              };
+            } else if (
+              previousTab === 'inProgress' &&
+              (usersPublicKeys.length > 0 || nonUserPublicKeys.length > 0)
+            ) {
+              unsignedSignersToCheck.value = {
+                ...unsignedSignersToCheck.value,
+                [txId]: [...usersUnsigned, ...nonUsersUnsigned],
+              };
+            }
           }
 
-          if (usersPublicKeys.length > 0 || nonUserPublicKeys.length > 0) {
-            allUnsignedSigners.value = {
-              ...allUnsignedSigners.value,
-              [txId]: [...usersUnsigned, ...nonUsersUnsigned],
-            };
-          }
-
-          publicKeysRequiredToSign.value = publicKeysRequiredToSign.value!.concat(usersPublicKeys);
+          publicKeysRequiredToSign.value = publicKeysRequiredToSign.value!.concat(usersUnsigned);
         }
       }
     } catch (error) {
@@ -340,6 +335,12 @@ watchEffect(() => {
     createTooltips();
   }
 });
+
+watchEffect(() => {
+  if (route.query) {
+    console.log(route.query.previousTab);
+  }
+});
 </script>
 <template>
   <div class="p-5">
@@ -377,8 +378,11 @@ watchEffect(() => {
                   <table class="table-custom">
                     <thead>
                       <tr>
-                        <th v-if="shouldShowCheckmark" class="ps-3 pe-1"></th>
-                        <th :class="shouldShowCheckmark ? 'ps-1' : ''">
+                        <th
+                          v-if="Object.keys(unsignedSignersToCheck).length > 0"
+                          class="ps-3 pe-1"
+                        ></th>
+                        <th :class="Object.keys(unsignedSignersToCheck).length > 0 ? 'ps-1' : ''">
                           <div>
                             <span>Transaction ID</span>
                           </div>
@@ -403,11 +407,17 @@ watchEffect(() => {
                         <Transition name="fade" mode="out-in">
                           <template v-if="groupItem">
                             <tr>
-                              <td v-if="shouldShowCheckmark && signersToCheck" class="pe-0 ps-3">
+                              <td
+                                v-if="Object.keys(unsignedSignersToCheck).length > 0"
+                                class="pe-0 ps-3"
+                              >
                                 <span
                                   v-if="
-                                    signersToCheck[groupItem.transaction.id] &&
-                                    signersToCheck[groupItem.transaction.id].length === 0
+                                    (unsignedSignersToCheck[groupItem.transaction.id] &&
+                                      unsignedSignersToCheck[groupItem.transaction.id].length ===
+                                        0) ||
+                                    (thresholdMetTransactions[groupItem.transaction.id] &&
+                                      unsignedSignersToCheck[groupItem.transaction.id].length === 0)
                                   "
                                   data-bs-toggle="tooltip"
                                   data-bs-custom-class="wide-tooltip"
@@ -420,7 +430,9 @@ watchEffect(() => {
                               </td>
                               <td
                                 data-testid="td-group-transaction-id"
-                                :class="shouldShowCheckmark ? 'ps-2 pe-0' : ''"
+                                :class="
+                                  Object.keys(unsignedSignersToCheck).length > 0 ? 'ps-2 pe-0' : ''
+                                "
                               >
                                 {{ groupItem.transaction.transactionId }}
                               </td>
