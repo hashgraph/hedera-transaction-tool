@@ -166,7 +166,7 @@ const handleLocalStored = (id: string) => {
   redirectToDetails(router, id);
 };
 
-const handleGroupAction = (action: 'add' | 'edit') => {
+const handleGroupAction = (action: 'add' | 'edit', path?: string) => {
   groupActionTaken.value = true;
   const handle =
     action === 'add'
@@ -178,6 +178,7 @@ const handleGroupAction = (action: 'add' | 'edit') => {
     data.validStart,
     observers.value,
     approvers.value,
+    path,
   );
 };
 
@@ -307,8 +308,8 @@ defineExpose({
 
     <BaseTransactionModal
       :skip="groupActionTaken || isDraftSaved || isProcessed"
-      @addToGroup="handleGroupAction('add')"
-      @editGroupItem="handleGroupAction('edit')"
+      @addToGroup="handleGroupAction('add', $event)"
+      @editGroupItem="handleGroupAction('edit', $event)"
       :get-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
       :description="description || ''"
       :has-data-changed="hasDataChanged"
