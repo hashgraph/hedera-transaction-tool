@@ -76,6 +76,7 @@ const thresholdMetTransactions = ref<Record<string, boolean>>({});
 const tooltipText = computed(() => {
   if (route.query.previousTab) {
     const previousTab = route.query.previousTab;
+    //const fromTable = route.query.fromTable
     if (
       previousTab === 'readyToSign' ||
       previousTab === 'transactionDetails' ||
@@ -175,7 +176,11 @@ const handleSign = async (id: number) => {
     .map(t => t.transaction.id);
   nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
 
-  redirectToDetails(router, id, true);
+  if (route.query.previousTab && route.query.previousTab === 'inProgress') {
+    redirectToDetails(router, id, true, false, true);
+  } else {
+    redirectToDetails(router, id, true);
+  }
 };
 
 const handleSignGroup = async () => {
@@ -333,12 +338,6 @@ watch(
 watchEffect(() => {
   if (tooltipRef.value && tooltipRef.value.length > 0) {
     createTooltips();
-  }
-});
-
-watchEffect(() => {
-  if (route.query) {
-    console.log(route.query.previousTab);
   }
 });
 </script>

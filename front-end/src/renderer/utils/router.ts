@@ -7,11 +7,16 @@ export const redirectToDetails = (
   id: string | number,
   keepNextQueryKey = false,
   replace = false,
+  fromInProgressTab?: boolean,
 ) => {
   const query: any = {};
 
   if (keepNextQueryKey) {
     query[KEEP_NEXT_QUERY_KEY] = 'true';
+  }
+
+  if (fromInProgressTab) {
+    query['fromInProgress'] = 'true';
   }
 
   router.push({

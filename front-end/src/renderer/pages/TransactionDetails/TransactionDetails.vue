@@ -3,7 +3,7 @@ import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@main/shared/interfaces';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
-import { onBeforeRouteLeave, useRouter } from 'vue-router';
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
@@ -63,6 +63,7 @@ const nextTransaction = useNextTransactionStore();
 const router = useRouter();
 const ws = useDisposableWs();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
+const route = useRoute();
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);
@@ -195,7 +196,11 @@ onBeforeMount(async () => {
 
 onBeforeRouteLeave(to => {
   if (to.name === 'transactionGroupDetails') {
-    to.query = { ...to.query, previousTab: 'transactionDetails' };
+    if (route.query.fromInProgress) {
+      to.query = { ...to.query, previousTab: 'inProgress' };
+    } else {
+      to.query = { ...to.query, previousTab: 'transactionDetails' };
+    }
   }
 });
 
