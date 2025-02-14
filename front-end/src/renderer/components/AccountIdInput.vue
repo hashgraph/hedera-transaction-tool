@@ -49,7 +49,7 @@ const accountValue = computed(() => {
 /* Handlers */
 const handleUpdate = (value: string) => {
   const idWithoutChecksum = value.split('-')[0];
-  emit('update:modelValue', formatAccountId(idWithoutChecksum));
+  emit('update:modelValue', idWithoutChecksum);
 };
 
 /* Hooks */
