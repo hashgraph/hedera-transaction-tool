@@ -11,6 +11,8 @@ import { computed, ref } from 'vue';
 import { onBeforeRouteLeave, useRouter, useRoute } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
+
 import { useToast } from 'vue-toast-notification';
 import {
   addDraft,
@@ -34,6 +36,7 @@ const props = defineProps<{
 
 /* Stores */
 const user = useUserStore();
+const transactionGroup = useTransactionGroupStore();
 
 /* Composables */
 const router = useRouter();
@@ -42,8 +45,9 @@ const toast = useToast();
 
 /* State */
 const isActionModalShown = ref(false);
-const isDiscardFromScratch = ref(false);
+const shoulContinueOnDiscard = ref(false);
 const redirectPath = ref('');
+const wantToDeleteModalShown = ref(false);
 
 /* Emits */
 const emit = defineEmits<{
@@ -60,6 +64,12 @@ const isFromScratch = computed(() => Boolean(!route.query.draftId && route.query
 const isFromScratchGroup = computed(() =>
   Boolean(!route.query.groupIndex && !props.skip && route.query.group === 'true'),
 );
+const shouldWarnForUnsaved = computed(
+  () =>
+    !redirectPath.value.startsWith('/create-transaction-group') &&
+    route.query.group === 'true' &&
+    route.path.startsWith('/create-transaction'),
+);
 
 /* Handlers */
 function handleAddToGroup() {
@@ -69,7 +79,6 @@ function handleAddToGroup() {
 function handleEditGroupItem() {
   emit('editGroupItem', redirectPath.value);
 }
-
 function getTransactionBytes() {
   if (!props.getTransaction) return;
   const transaction = props.getTransaction();
@@ -118,8 +127,12 @@ async function sendAddDraft(userId: string, transactionBytes: Uint8Array) {
 }
 
 async function handleDiscard() {
+  if (shouldWarnForUnsaved.value) {
+    shoulContinueOnDiscard.value = true;
+    transactionGroup.clearGroup();
+  }
   if (isFromScratch.value || isFromScratchGroup.value) {
-    isDiscardFromScratch.value = true;
+    shoulContinueOnDiscard.value = true;
   }
   await router.push(redirectPath.value);
 }
@@ -143,7 +156,11 @@ async function handleSubmit() {
 onBeforeRouteLeave(async to => {
   redirectPath.value = to.path;
   if (to.name?.toString().toLocaleLowerCase().includes('login')) return true;
-  if (isDiscardFromScratch.value) return true;
+  if (shouldWarnForUnsaved.value && wantToDeleteModalShown.value === false) {
+    wantToDeleteModalShown.value = true;
+    return false;
+  }
+  if (shoulContinueOnDiscard.value) return true;
   const transactionBytes = getTransactionBytes();
   if (!transactionBytes) return true;
   if ((await draftExists(transactionBytes)) && isFromScratch.value) {
@@ -170,6 +187,46 @@ onBeforeRouteLeave(async to => {
 </script>
 <template>
   <AppModal
+    v-if="shouldWarnForUnsaved"
+    :show="wantToDeleteModalShown"
+    :close-on-click-outside="false"
+    :close-on-escape="false"
+    class="small-modal"
+  >
+    <form class="text-center p-4" @submit.prevent="wantToDeleteModalShown = false">
+      <div class="text-start">
+        <i class="bi bi-x-lg cursor-pointer" @click="wantToDeleteModalShown = false"></i>
+      </div>
+      <div>
+        <AppCustomIcon :name="'lock'" style="height: 160px" />
+      </div>
+      <h2 class="text-title text-semi-bold mt-3">
+        You are about to leave without saving the group!
+      </h2>
+      <p class="text-small text-secondary mt-3">
+        Any unsaved transactions will be lost from the group, would you like to proceed?
+      </p>
+
+      <hr class="separator my-5" />
+
+      <div class="flex-between-centered gap-4">
+        <AppButton
+          color="borderless"
+          data-testid="button-delete-group-modal"
+          type="button"
+          @click="handleDiscard"
+        >
+          Discard Changes
+        </AppButton>
+        <AppButton color="primary" data-testid="button-continue-editing" type="submit">
+          Continue Editing
+        </AppButton>
+      </div>
+    </form>
+  </AppModal>
+
+  <AppModal
+    v-else
     :show="isActionModalShown"
     :close-on-click-outside="false"
     :close-on-escape="false"
@@ -186,9 +243,11 @@ onBeforeRouteLeave(async to => {
         v-if="!route.params.seq && !route.query.draftId && !isFromScratch"
         class="text-title text-semi-bold mt-3"
       >
-        Add To Group?
+        Add To Group
       </h2>
-      <h2 v-else class="text-title text-semi-bold mt-3">Save Edits?</h2>
+      <h2 v-else class="text-title text-semi-bold mt-3">
+        {{ isFromScratch ? 'Save Draft?' : 'Save Edits?' }}
+      </h2>
       <p class="text-small text-secondary mt-3">
         Pick up exactly where you left off, without compromising your flow or losing valuable time.
       </p>
@@ -208,8 +267,9 @@ onBeforeRouteLeave(async to => {
           color="primary"
           data-testid="button-save-draft-modal"
           type="submit"
-          >Add To Group</AppButton
         >
+          Add To Group
+        </AppButton>
         <AppButton v-else color="primary" data-testid="button-save-draft-modal" type="submit"
           >Save</AppButton
         >
