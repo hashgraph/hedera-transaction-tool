@@ -26,6 +26,7 @@ const inputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const suggestionRef = ref<HTMLSpanElement | null>(null);
 const dropdownRef = ref<HTMLDivElement | null>(null);
 const itemRefs = ref<HTMLElement[]>([]);
+const lastKeyPressed = ref<string | null>(null);
 
 /* Computed */
 const modelValue = computed({
@@ -73,14 +74,16 @@ const handleKeyDown = (e: KeyboardEvent) => {
       });
     }
   } else if (e.key === 'Tab' && props.modelValue.toString().length > 0) {
-    if (filteredItems.value[selectedIndex.value]) {
+    if (filteredItems.value[selectedIndex.value] && lastKeyPressed.value !== 'Escape') {
       setValue(filteredItems.value[selectedIndex.value]);
     }
     toggleDropdown(false);
   } else if (e.key === 'Enter') {
     e.preventDefault();
+    if (lastKeyPressed.value !== 'Escape') {
+      setValue((modelValue.value + autocompleteSuggestion.value).trim());
+    }
     toggleDropdown(false);
-    setValue((modelValue.value + autocompleteSuggestion.value).trim());
     focusNextElement();
   } else if (e.key === 'Escape') {
     toggleDropdown(false);
@@ -88,6 +91,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
     e.preventDefault();
   }
 
+  lastKeyPressed.value = e.key;
   handleResize();
 };
 
@@ -224,6 +228,7 @@ function setItemRef(el: HTMLElement | null, index: number) {
   }
 }
 
+/* Watchers */
 watch(
   () => selectedIndex.value,
   newValue => {
