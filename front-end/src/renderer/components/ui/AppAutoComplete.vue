@@ -148,9 +148,9 @@ function setValue(value: string) {
 }
 
 function scrollToItem(index: number) {
-  if (index < 0) return;
+  const indexToScrollTo = index >= 0 ? index : 0;
   nextTick(() => {
-    itemRefs.value[index]?.scrollIntoView({
+    itemRefs.value[indexToScrollTo]?.scrollIntoView({
       block: 'nearest',
     });
     handleResize();
