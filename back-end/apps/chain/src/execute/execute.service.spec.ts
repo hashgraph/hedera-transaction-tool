@@ -576,5 +576,62 @@ describe('ExecuteService', () => {
         `Transaction Group cannot be submitted. Error validating transaction 0: ${errorMessage}`,
       );
     });
+
+    it('should execute all transactions except the canceled', async () => {
+      const { receipt, response } = mockSDKTransactionExecution();
+
+      transactionGroup.groupItems[0].transaction.status = TransactionStatus.CANCELED;
+
+      transactionGroupRepo.findOne.mockResolvedValueOnce(transactionGroup);
+      transactionRepo.findOne.mockResolvedValue({
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      } as Transaction);
+
+      await service.executeTransactionGroup(transactionGroup);
+
+      expect(response.getReceipt).toHaveBeenCalled();
+
+      transactionGroup.groupItems.forEach(groupItem => {
+        if (groupItem.transaction.status === TransactionStatus.CANCELED) {
+          expect(transactionRepo.update).not.toHaveBeenCalledWith(
+            { id: groupItem.transaction.id },
+            expect.anything(),
+          );
+        } else {
+          expect(transactionRepo.update).toHaveBeenCalledWith(
+            { id: groupItem.transaction.id },
+            {
+              executedAt: expect.any(Date),
+              status: TransactionStatus.EXECUTED,
+              statusCode: receipt.status._code,
+            },
+          );
+        }
+      });
+
+      expect(client.close).toHaveBeenCalled();
+    });
+
+    it('should not execute any transactions if all transactions are canceled', async () => {
+      transactionGroup.groupItems.forEach(groupItem => {
+        groupItem.transaction.status = TransactionStatus.CANCELED;
+      });
+
+      transactionGroupRepo.findOne.mockResolvedValueOnce(transactionGroup);
+      transactionRepo.findOne.mockResolvedValue({
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      } as Transaction);
+
+      const result = await service.executeTransactionGroup(transactionGroup);
+
+      expect(result.transactions).toEqual([]);
+
+      transactionGroup.groupItems.forEach(groupItem => {
+        expect(transactionRepo.update).not.toHaveBeenCalledWith(
+          { id: groupItem.transaction.id },
+          expect.anything(),
+        );
+      });
+    });
   });
 });
