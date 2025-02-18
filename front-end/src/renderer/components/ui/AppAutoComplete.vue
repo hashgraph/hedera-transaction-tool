@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
@@ -26,6 +26,7 @@ const inputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const suggestionRef = ref<HTMLSpanElement | null>(null);
 const dropdownRef = ref<HTMLDivElement | null>(null);
 const itemRefs = ref<HTMLElement[]>([]);
+const lastKeyPressed = ref<string | null>(null);
 
 /* Computed */
 const modelValue = computed({
@@ -50,19 +51,15 @@ const handleKeyDown = (e: KeyboardEvent) => {
     e.preventDefault();
     if (selectedIndex.value > 0) {
       setValue(filteredItems.value[selectedIndex.value - 1]);
-      scrollToItem(selectedIndex.value - 1);
     } else {
       setValue(filteredItems.value[filteredItems.value.length - 1]);
-      scrollToItem(filteredItems.value.length - 1);
     }
   } else if (e.key === 'ArrowDown') {
     e.preventDefault();
     if (selectedIndex.value < filteredItems.value.length - 1) {
       setValue(filteredItems.value[selectedIndex.value + 1]);
-      scrollToItem(selectedIndex.value + 1);
     } else {
       setValue(filteredItems.value[0]);
-      scrollToItem(0);
     }
   } else if (e.key === 'ArrowRight') {
     const inputElement = inputRef.value?.inputRef as HTMLInputElement;
@@ -77,14 +74,16 @@ const handleKeyDown = (e: KeyboardEvent) => {
       });
     }
   } else if (e.key === 'Tab' && props.modelValue.toString().length > 0) {
-    if (filteredItems.value[selectedIndex.value]) {
+    if (filteredItems.value[selectedIndex.value] && lastKeyPressed.value !== 'Escape') {
       setValue(filteredItems.value[selectedIndex.value]);
     }
     toggleDropdown(false);
   } else if (e.key === 'Enter') {
     e.preventDefault();
+    if (lastKeyPressed.value !== 'Escape') {
+      setValue((modelValue.value + autocompleteSuggestion.value).trim());
+    }
     toggleDropdown(false);
-    setValue((modelValue.value + autocompleteSuggestion.value).trim());
     focusNextElement();
   } else if (e.key === 'Escape') {
     toggleDropdown(false);
@@ -92,6 +91,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
     e.preventDefault();
   }
 
+  lastKeyPressed.value = e.key;
   handleResize();
 };
 
@@ -148,8 +148,9 @@ function setValue(value: string) {
 }
 
 function scrollToItem(index: number) {
+  const indexToScrollTo = index >= 0 ? index : 0;
   nextTick(() => {
-    itemRefs.value[index]?.scrollIntoView({
+    itemRefs.value[indexToScrollTo]?.scrollIntoView({
       block: 'nearest',
     });
     handleResize();
@@ -226,6 +227,14 @@ function setItemRef(el: HTMLElement | null, index: number) {
     itemRefs.value[index] = el;
   }
 }
+
+/* Watchers */
+watch(
+  () => selectedIndex.value,
+  newValue => {
+    scrollToItem(newValue);
+  },
+);
 
 /* Hooks */
 onMounted(() => {
