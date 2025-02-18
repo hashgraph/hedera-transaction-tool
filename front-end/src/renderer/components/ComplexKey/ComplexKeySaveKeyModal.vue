@@ -16,6 +16,7 @@ import { encodeKey, isUserLoggedIn } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import useNicknamesStore from '@renderer/stores/storeNicknames';
 
 /* Props */
 const props = defineProps<{
@@ -29,6 +30,7 @@ const emit = defineEmits(['update:show']);
 
 /* Stores */
 const user = useUserStore();
+const nicknames = useNicknamesStore();
 
 /* Composables */
 const toast = useToast();
@@ -44,8 +46,7 @@ const handleSaveKeyList = async () => {
     throw new Error('User is not logged in');
   }
 
-  const keyListBytes = encodeKey(props.keyList);
-  const newKey = await addComplexKey(user.personal.id, keyListBytes, nickname.value);
+  const newKey = await nicknames.saveTopLevelNickname(props.keyList, nickname.value);
 
   toast.success('Key list saved successfully');
 
