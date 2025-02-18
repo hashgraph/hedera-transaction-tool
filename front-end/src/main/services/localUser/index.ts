@@ -13,6 +13,7 @@ export * from './encryptedKeys';
 export * from './dataMigration';
 export * from './sdk';
 export * from './mnemonic';
+export * from './publicKeyMapping';
 
 import { session } from 'electron';
 
