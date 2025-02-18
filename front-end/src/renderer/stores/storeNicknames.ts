@@ -31,11 +31,13 @@ const useNicknamesStore = defineStore('nicknames', {
     updateNickname(newNickname: string, oldNickname: string, key: KeyList) {
       const oldKey = this.nickNamesKeys.get(oldNickname);
 
-      if (oldKey) {
+      if (!newNickname) {
+        this.nickNamesKeys.delete(oldNickname);
+      } else if (oldKey) {
         this.nickNamesKeys.set(newNickname, oldKey);
         this.nickNamesKeys.delete(oldNickname);
       }
-      else if (newNickname) {
+      else {
         this.nickNamesKeys.set(newNickname, { key, keyId: '' });
       }
     },
@@ -59,6 +61,8 @@ const useNicknamesStore = defineStore('nicknames', {
           await addComplexKey(user.personal.id, keyListBytes, nickNameKey[0])
         }
       }
+
+      this.clearNicknames();
     },
     clearNicknames() {
       this.nickNamesKeys = new Map();
@@ -72,6 +76,13 @@ const useNicknamesStore = defineStore('nicknames', {
       const keyList = await getComplexKey(user.personal.id, selectedKeyList);
 
       return keyList;
+    },
+    async saveTopLevelNickname(selectedKeyList: KeyList, nickname: string) {
+      const keyList = await this.getKeyListStructure(selectedKeyList);
+      this.nickNamesKeys.set(nickname, { key: selectedKeyList, keyId: keyList ? keyList.id : '' });
+      await this.saveNicknames();
+      return await this.getKeyListStructure(selectedKeyList);
+
     }
   },
 });
