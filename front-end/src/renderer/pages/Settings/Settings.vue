@@ -29,11 +29,13 @@ const keysTitle = 'Keys';
 const organizationsTitle = 'Organizations';
 const profileTitle = 'Profile';
 const notificationsTitle = 'Notifications';
+const publicKeysTitle = 'Public Keys';
 
 const tabItems: TabItem[] = [
   { title: generalTitle },
   { title: organizationsTitle },
   { title: keysTitle },
+  { title: publicKeysTitle },
   { title: profileTitle },
   { title: notificationsTitle },
 ];
