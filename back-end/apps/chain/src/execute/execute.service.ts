@@ -51,7 +51,9 @@ export class ExecuteService {
     const filteredTransactionGroup: ExecuteTransactionGroupDto = {
       ...transactionGroup,
       groupItems: transactionGroup.groupItems.filter(
-        tx => tx.transaction.status !== TransactionStatus.CANCELED,
+        tx =>
+          tx.transaction.status !== TransactionStatus.CANCELED &&
+          tx.transaction.status !== TransactionStatus.EXPIRED,
       ),
     };
     const transactions: { sdkTransaction: SDKTransaction; transaction: ExecuteTransactionDto }[] =
