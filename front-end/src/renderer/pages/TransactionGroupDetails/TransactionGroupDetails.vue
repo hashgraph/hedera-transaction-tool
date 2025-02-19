@@ -70,7 +70,7 @@ const isSigning = ref(false);
 const isApproving = ref(false);
 const unsignedSignersToCheck = ref<Record<string, string[]>>({});
 const tooltipRef = ref<HTMLElement[]>([]);
-const thresholdMetTransactions = ref<Record<string, boolean>>({});
+const thresholdMetTransactions = ref<Record<string, boolean | undefined>>({});
 
 /* Computed */
 const tooltipText = computed(() => {
@@ -82,7 +82,7 @@ const tooltipText = computed(() => {
       previousTab === 'transactionDetails' ||
       previousTab === 'createGroup'
     ) {
-      return 'Transaction successfully signed!';
+      return 'You have successfully signed the transaction!';
     } else if (previousTab === 'inProgress') {
       return 'Transaction is signed by all required signers!';
     }
@@ -112,7 +112,11 @@ async function handleFetchGroup(id: string | number) {
             network.mirrorNodeBaseURL,
           );
 
-          thresholdMetTransactions.value[txId] = thresholdMet;
+          if (route.query.previousTab && route.query.previousTab === 'inProgress') {
+            thresholdMetTransactions.value[txId] = thresholdMet;
+          } else {
+            thresholdMetTransactions.value[txId] = undefined;
+          }
 
           const signedSigners = new Set([...tx._signerPublicKeys]);
 
@@ -415,8 +419,7 @@ watchEffect(() => {
                                     (unsignedSignersToCheck[groupItem.transaction.id] &&
                                       unsignedSignersToCheck[groupItem.transaction.id].length ===
                                         0) ||
-                                    (thresholdMetTransactions[groupItem.transaction.id] &&
-                                      unsignedSignersToCheck[groupItem.transaction.id].length === 0)
+                                    thresholdMetTransactions[groupItem.transaction.id]
                                   "
                                   data-bs-toggle="tooltip"
                                   data-bs-custom-class="wide-tooltip"

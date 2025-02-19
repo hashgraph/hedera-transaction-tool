@@ -75,11 +75,18 @@ export const publicRequiredToSign = async (
       const requiredThreshold = key.threshold || parentThreshold || key._keys.length;
 
       key._keys.forEach(subKey => {
-        if (userKeys.some(userKey => isPublicKeyInKeyList(userKey.publicKey, subKey))) {
-          usersPublicKeys.add(extractRawPublicKey(subKey));
+        const rawPublicKey = extractRawPublicKey(subKey);
+        const isUserKey = userKeys.some(userKey => isPublicKeyInKeyList(userKey.publicKey, subKey));
+        const hasSigned = transaction._signerPublicKeys.has(rawPublicKey);
+
+        if (hasSigned) {
           signedCount++;
+        }
+
+        if (isUserKey) {
+          usersPublicKeys.add(rawPublicKey);
         } else {
-          nonUserPublicKeys.add(extractRawPublicKey(subKey));
+          nonUserPublicKeys.add(rawPublicKey);
         }
       });
 
