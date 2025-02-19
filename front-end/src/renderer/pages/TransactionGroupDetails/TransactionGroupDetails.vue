@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { IGroup } from '@renderer/services/organization';
+import { TransactionStatus } from '@main/shared/interfaces';
 
 import { computed, onBeforeMount, ref, watch, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -70,13 +71,11 @@ const isSigning = ref(false);
 const isApproving = ref(false);
 const unsignedSignersToCheck = ref<Record<string, string[]>>({});
 const tooltipRef = ref<HTMLElement[]>([]);
-const thresholdMetTransactions = ref<Record<string, boolean | undefined>>({});
 
 /* Computed */
 const tooltipText = computed(() => {
   if (route.query.previousTab) {
     const previousTab = route.query.previousTab;
-    //const fromTable = route.query.fromTable
     if (
       previousTab === 'readyToSign' ||
       previousTab === 'transactionDetails' ||
@@ -106,26 +105,16 @@ async function handleFetchGroup(id: string | number) {
           const tx = Transaction.fromBytes(transactionBytes);
           const txId = item.transaction.id;
 
-          const { usersPublicKeys, nonUserPublicKeys, thresholdMet } = await publicRequiredToSign(
+          const { usersPublicKeys } = await publicRequiredToSign(
             tx,
             user.selectedOrganization.userKeys,
             network.mirrorNodeBaseURL,
           );
 
-          if (route.query.previousTab && route.query.previousTab === 'inProgress') {
-            thresholdMetTransactions.value[txId] = thresholdMet;
-          } else {
-            thresholdMetTransactions.value[txId] = undefined;
-          }
-
           const signedSigners = new Set([...tx._signerPublicKeys]);
 
           const usersUnsigned = usersPublicKeys.length
             ? usersPublicKeys.filter(pk => !signedSigners.has(pk))
-            : [];
-
-          const nonUsersUnsigned = nonUserPublicKeys.length
-            ? nonUserPublicKeys.filter(pk => !signedSigners.has(pk))
             : [];
 
           if (route.query.previousTab) {
@@ -139,14 +128,6 @@ async function handleFetchGroup(id: string | number) {
               unsignedSignersToCheck.value = {
                 ...unsignedSignersToCheck.value,
                 [txId]: usersUnsigned,
-              };
-            } else if (
-              previousTab === 'inProgress' &&
-              (usersPublicKeys.length > 0 || nonUserPublicKeys.length > 0)
-            ) {
-              unsignedSignersToCheck.value = {
-                ...unsignedSignersToCheck.value,
-                [txId]: [...usersUnsigned, ...nonUsersUnsigned],
               };
             }
           }
@@ -381,11 +362,8 @@ watchEffect(() => {
                   <table class="table-custom">
                     <thead>
                       <tr>
-                        <th
-                          v-if="Object.keys(unsignedSignersToCheck).length > 0"
-                          class="ps-3 pe-1"
-                        ></th>
-                        <th :class="Object.keys(unsignedSignersToCheck).length > 0 ? 'ps-1' : ''">
+                        <th v-if="route.query.previousTab" class="ps-3 pe-1"></th>
+                        <th :class="route.query.previousTab ? 'ps-1' : ''">
                           <div>
                             <span>Transaction ID</span>
                           </div>
@@ -410,16 +388,16 @@ watchEffect(() => {
                         <Transition name="fade" mode="out-in">
                           <template v-if="groupItem">
                             <tr>
-                              <td
-                                v-if="Object.keys(unsignedSignersToCheck).length > 0"
-                                class="pe-0 ps-3"
-                              >
+                              <td v-if="route.query && route.query.previousTab" class="pe-0 ps-3">
                                 <span
                                   v-if="
-                                    (unsignedSignersToCheck[groupItem.transaction.id] &&
+                                    (route.query.previousTab !== 'inProgress' &&
+                                      unsignedSignersToCheck[groupItem.transaction.id] &&
                                       unsignedSignersToCheck[groupItem.transaction.id].length ===
                                         0) ||
-                                    thresholdMetTransactions[groupItem.transaction.id]
+                                    (route.query.previousTab === 'inProgress' &&
+                                      groupItem.transaction.status ===
+                                        TransactionStatus.WAITING_FOR_EXECUTION)
                                   "
                                   data-bs-toggle="tooltip"
                                   data-bs-custom-class="wide-tooltip"
