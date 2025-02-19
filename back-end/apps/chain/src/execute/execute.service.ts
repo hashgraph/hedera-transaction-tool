@@ -53,7 +53,8 @@ export class ExecuteService {
       groupItems: transactionGroup.groupItems.filter(
         tx =>
           tx.transaction.status !== TransactionStatus.CANCELED &&
-          tx.transaction.status !== TransactionStatus.EXPIRED,
+          tx.transaction.status !== TransactionStatus.EXPIRED &&
+          tx.transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES,
       ),
     };
     const transactions: { sdkTransaction: SDKTransaction; transaction: ExecuteTransactionDto }[] =
