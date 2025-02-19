@@ -8,7 +8,6 @@ import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
 import { getNumberArrayFromString } from '@main/utils';
 import { hash, dualCompareHash } from '@main/utils/crypto';
 import fs from 'fs';
-import path from 'path';
 import { createHash, X509Certificate } from 'crypto';
 
 vi.mock('bcrypt', () => mockDeep());
@@ -286,13 +285,11 @@ describe('registerUtilsListeners', () => {
     const title = 'Save File';
     const buttonLabel = 'Save';
     const filters = [{ name: 'Text Files', extensions: ['txt'] }];
-    const properties = ['openFile'];
     const message = 'Select a file to save';
-    const dialogReturnValue = { filePaths: ['/path/to'], canceled: false };
+    const dialogReturnValue = { filePath: '/path/to/test.txt', canceled: false };
 
     vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
-    vi.mocked(dialog.showOpenDialog).mockResolvedValue(dialogReturnValue);
-    vi.mocked(path.resolve).mockReturnValue('/path/to/test.txt');
+    vi.mocked(dialog.showSaveDialog).mockResolvedValue(dialogReturnValue);
 
     await invokeIPCHandler(
       'utils:saveFileNamed',
@@ -301,16 +298,15 @@ describe('registerUtilsListeners', () => {
       title,
       buttonLabel,
       filters,
-      properties,
       message,
     );
 
     expect(BrowserWindow.getAllWindows).toHaveBeenCalled();
-    expect(dialog.showOpenDialog).toHaveBeenCalledWith(windows[0], {
+    expect(dialog.showSaveDialog).toHaveBeenCalledWith(windows[0], {
       title,
+      defaultPath: name,
       buttonLabel,
       filters,
-      properties,
       message,
     });
     expect(fs.promises.writeFile).toHaveBeenCalledWith('/path/to/test.txt', data);
@@ -323,15 +319,10 @@ describe('registerUtilsListeners', () => {
     const title = 'Save File';
     const buttonLabel = 'Save';
     const filters = [{ name: 'Text Files', extensions: ['txt'] }];
-    const properties = ['openFile'];
     const message = 'Select a file to save';
 
     vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
-    vi.mocked(dialog.showOpenDialog).mockResolvedValueOnce({ filePaths: [], canceled: true });
-    vi.mocked(dialog.showOpenDialog).mockResolvedValueOnce({
-      filePaths: ['/path/to'],
-      canceled: false,
-    });
+    vi.mocked(dialog.showSaveDialog).mockResolvedValueOnce({ filePath: '', canceled: true });
 
     await invokeIPCHandler(
       'utils:saveFileNamed',
@@ -340,7 +331,6 @@ describe('registerUtilsListeners', () => {
       title,
       buttonLabel,
       filters,
-      properties,
       message,
     );
 
@@ -355,44 +345,8 @@ describe('registerUtilsListeners', () => {
     await invokeIPCHandler('utils:saveFileNamed');
 
     expect(BrowserWindow.getAllWindows).toHaveBeenCalled();
-    expect(dialog.showOpenDialog).not.toHaveBeenCalled();
+    expect(dialog.showSaveDialog).not.toHaveBeenCalled();
     expect(fs.promises.writeFile).not.toHaveBeenCalled();
-  });
-
-  test('Should rename the file if it already exists in util:saveFileNamed', async () => {
-    const windows = [{}];
-    const data = new Uint8Array([1, 2, 3, 4]);
-    const name = 'test.txt';
-    const title = 'Save File';
-    const buttonLabel = 'Save';
-    const filters = [{ name: 'Text Files', extensions: ['txt'] }];
-    const properties = ['openFile'];
-    const message = 'Select a file to save';
-    const dialogReturnValue = { filePaths: ['/path/to/test.txt'], canceled: false };
-
-    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
-    vi.mocked(dialog.showOpenDialog).mockResolvedValue(dialogReturnValue);
-    vi.mocked(fs.existsSync).mockReturnValueOnce(true);
-    vi.mocked(path.parse).mockReturnValue({
-      dir: '/path/to',
-      name: 'test',
-      ext: '.txt',
-    } as path.ParsedPath);
-    vi.mocked(path.resolve).mockReturnValueOnce('/path/to/test.txt');
-    vi.mocked(path.resolve).mockReturnValueOnce('/path/to/test(1).txt');
-
-    await invokeIPCHandler(
-      'utils:saveFileNamed',
-      data,
-      name,
-      title,
-      buttonLabel,
-      filters,
-      properties,
-      message,
-    );
-
-    expect(fs.promises.writeFile).toHaveBeenCalledWith('/path/to/test(1).txt', data);
   });
 
   test('Should invoke app.quit in util:quit', async () => {

@@ -63,7 +63,6 @@ export const saveFileNamed = async (
   title: string,
   buttonLabel: string,
   filters: FileFilter[],
-  properties: ('openFile' | 'openDirectory' | 'multiSelections')[],
   message: string,
 ): Promise<void> => {
   try {
@@ -73,7 +72,6 @@ export const saveFileNamed = async (
       title,
       buttonLabel,
       filters,
-      properties,
       message,
     );
   } catch {
@@ -97,7 +95,7 @@ export async function x509BytesFromPem(pem: string | Uint8Array) {
 }
 
 /* Quits the application */
-export const quit = async () =>
-  commonIPCHandler(async () => {
-    return await window.electronAPI.local.utils.quit();
+export const quit = () =>
+  commonIPCHandler(() => {
+    return window.electronAPI.local.utils.quit();
   }, 'Failed quit the application');
