@@ -19,7 +19,7 @@ class ContactListPage extends BasePage {
   addNewContactButtonSelector = 'button-add-new-contact';
   changeContactNicknameButtonSelector = 'span-change-nickname';
   registerNewUserButtonSelector = 'button-register-user';
-  confirmRemovingContactButtonSelector = 'button-confirm-removing-contact';
+  confirmRemovingContactButtonSelector = 'button-confirm-remove-contact';
 
   // Inputs
   inputChangeNicknameSelector = 'input-change-nickname';
