@@ -388,7 +388,14 @@ watchEffect(() => {
                         <Transition name="fade" mode="out-in">
                           <template v-if="groupItem">
                             <tr>
-                              <td v-if="route.query && route.query.previousTab" class="pe-0 ps-3">
+                              <td
+                                v-if="
+                                  route.query &&
+                                  route.query.previousTab &&
+                                  groupItem.transaction.status
+                                "
+                                class="pe-0 ps-3"
+                              >
                                 <span
                                   v-if="
                                     (route.query.previousTab !== 'inProgress' &&
