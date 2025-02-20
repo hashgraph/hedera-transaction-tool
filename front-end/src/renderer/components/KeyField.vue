@@ -116,6 +116,10 @@ const handleComplexKeyUpdate = async (keyList: KeyList) => {
   }
 
   await nicknames.saveNicknames();
+
+  if (!selectedComplexKey.value) {
+    selectedComplexKey.value = await nicknames.getKeyListStructure(keyList);
+  }
 };
 
 const handleSaveComplexKeyButtonClick = () => {
