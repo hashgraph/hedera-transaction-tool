@@ -8,22 +8,17 @@ import {
 } from '@renderer/services/keyPairService';
 import { updateKey as updateOrganizationKey } from '@renderer/services/organization';
 
-import { isLoggedInOrganization, isUserLoggedIn, safeAwait } from '@renderer/utils';
-import type { Ref } from 'vue';
+import { isLoggedInOrganization, safeAwait } from '@renderer/utils';
+import { computed, type Ref } from 'vue';
 
 export default function useMatchRecoveryPrase() {
   /* Stores */
   const user = useUserStore();
 
+  /* Computed */
+  const externalKeys = computed(() => user.keyPairs.filter(k => !k.secret_hash));
+
   /* Functions */
-  const getExternalKeys = async (): Promise<KeyPair[]> => {
-    if (!isUserLoggedIn(user.personal)) {
-      return [];
-    }
-
-    return user.keyPairs.filter(k => !k.secret_hash);
-  };
-
   const startMatching = async (
     startIndex: number,
     endIndex: number,
@@ -34,21 +29,22 @@ export default function useMatchRecoveryPrase() {
       throw new Error('Recovery phrase is not set');
     }
 
-    const externalKeys = await getExternalKeys();
     let count = 0;
 
     for (let i = startIndex; i <= endIndex; i++) {
-      if (abortController.signal.aborted) {
+      if (abortController.signal.aborted || externalKeys.value.length === count) {
         break;
       }
 
       const pkED25519 = await restorePrivateKey(user.recoveryPhrase.words, '', i, 'ED25519');
       const pkECDSA = await restorePrivateKey(user.recoveryPhrase.words, '', i, 'ECDSA');
 
-      const keyPairED25519 = externalKeys.find(
+      const keyPairED25519 = externalKeys.value.find(
         k => k.public_key === pkED25519.publicKey.toStringRaw(),
       );
-      const keyPairECDSA = externalKeys.find(k => k.public_key === pkECDSA.publicKey.toStringRaw());
+      const keyPairECDSA = externalKeys.value.find(
+        k => k.public_key === pkECDSA.publicKey.toStringRaw(),
+      );
 
       if (keyPairED25519) {
         await safeAwait(updateKeyPairsHash(keyPairED25519));
@@ -90,7 +86,7 @@ export default function useMatchRecoveryPrase() {
   };
 
   return {
-    getExternalKeys,
+    externalKeys,
     startMatching,
     updateKeyPairsHash,
   };

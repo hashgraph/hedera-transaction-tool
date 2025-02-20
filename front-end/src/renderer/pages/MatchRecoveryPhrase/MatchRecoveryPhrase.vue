@@ -14,7 +14,7 @@ const SEARCHING_TEXT = 'Abort Search';
 /* Composables */
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const toast = useToast();
-const { startMatching } = useMatchRecoveryPrase();
+const { startMatching, externalKeys } = useMatchRecoveryPrase();
 
 /* State */
 const loadingText = ref<string | null>(null);
@@ -23,6 +23,7 @@ const startIndex = ref<number>(0);
 const endIndex = ref<number>(100);
 const abortController = ref<AbortController | null>(null);
 const totalRecovered = ref<number>(0);
+const cachedExternalKeys = ref([...externalKeys.value]);
 
 const handleSearch = async () => {
   if (loadingText.value === SEARCHING_TEXT) {
@@ -35,8 +36,8 @@ const handleSearch = async () => {
     abortController.value = new AbortController();
 
     const currentSearchCount = await startMatching(
-      startIndex.value,
-      endIndex.value,
+      Number(startIndex.value),
+      Number(endIndex.value),
       abortController.value,
       totalRecovered,
     );
@@ -58,7 +59,7 @@ const handleAbort = async () => {
 };
 
 watch([startIndex, endIndex], async ([start, end]) => {
-  if (start > end) {
+  if (Number(start) > Number(end)) {
     errorMessage.value = 'Start index must be less than end index';
   } else {
     errorMessage.value = null;
@@ -87,6 +88,7 @@ watch([startIndex, endIndex], async ([start, end]) => {
           <AppInput
             v-model="startIndex"
             :filled="true"
+            :disabled="Boolean(loadingText)"
             data-testid="input-start-index"
             type="number"
             placeholder="Enter start index"
@@ -100,6 +102,7 @@ watch([startIndex, endIndex], async ([start, end]) => {
           <AppInput
             v-model="endIndex"
             :filled="true"
+            :disabled="Boolean(loadingText)"
             data-testid="input-end-index"
             type="number"
             placeholder="Enter end index"
@@ -108,12 +111,17 @@ watch([startIndex, endIndex], async ([start, end]) => {
       </div>
       <div class="form-group">
         <p class="form-label text-nowrap" :class="{ 'text-danger': errorMessage }">
-          {{ errorMessage ? errorMessage : `Total keys recovered: ${totalRecovered}` }}
+          {{
+            errorMessage
+              ? errorMessage
+              : `Total keys recovered: ${totalRecovered}/${cachedExternalKeys.length}`
+          }}
         </p>
         <AppButton
           data-testid="button-search-abort"
           @click="handleSearch"
           :color="loadingText === SEARCHING_TEXT ? 'danger' : 'primary'"
+          :disabled="externalKeys.length === 0 || isNaN(startIndex) || isNaN(endIndex)"
           :disable-on-loading="false"
           :loading="Boolean(loadingText)"
           :loading-text="loadingText || ''"
