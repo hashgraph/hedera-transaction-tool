@@ -349,6 +349,47 @@ describe('registerUtilsListeners', () => {
     expect(fs.promises.writeFile).not.toHaveBeenCalled();
   });
 
+  test('Should show error in dialog if fail to write in util:saveFileNamed', async () => {
+    const windows = [{}];
+    const data = new Uint8Array([1, 2, 3, 4]);
+    const name = 'test.txt';
+    const title = 'Save File';
+    const buttonLabel = 'Save';
+    const filters = [{ name: 'Text Files', extensions: ['txt'] }];
+    const message = 'Select a file to save';
+    const filePath = 'testPath';
+    const canceled = false;
+
+    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+    vi.mocked(dialog.showSaveDialog).mockResolvedValue({ filePath, canceled });
+    vi.mocked(fs.promises.writeFile).mockRejectedValueOnce(new Error('An error'));
+    vi.mocked(fs.promises.writeFile).mockRejectedValueOnce(undefined);
+
+    await invokeIPCHandler('utils:saveFileNamed', data, name, title, buttonLabel, filters, message);
+    expect(dialog.showErrorBox).toHaveBeenCalledWith('Failed to save file', 'An error');
+    await invokeIPCHandler('utils:saveFileNamed', data, name, title, buttonLabel, filters, message);
+    expect(dialog.showErrorBox).toHaveBeenCalledWith('Failed to save file', 'Unknown error');
+  });
+
+  test('Should show error in dialog if error in util:saveFileNamed', async () => {
+    const windows = [{}];
+    const data = new Uint8Array([1, 2, 3, 4]);
+    const name = 'test.txt';
+    const title = 'Save File';
+    const buttonLabel = 'Save';
+    const filters = [{ name: 'Text Files', extensions: ['txt'] }];
+    const message = 'Select a file to save';
+
+    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+    vi.mocked(dialog.showSaveDialog).mockRejectedValueOnce(new Error('An error'));
+    vi.mocked(dialog.showSaveDialog).mockRejectedValueOnce(undefined);
+
+    await invokeIPCHandler('utils:saveFileNamed', data, name, title, buttonLabel, filters, message);
+    expect(dialog.showErrorBox).toHaveBeenCalledWith('Failed to save file', 'An error');
+    await invokeIPCHandler('utils:saveFileNamed', data, name, title, buttonLabel, filters, message);
+    expect(dialog.showErrorBox).toHaveBeenCalledWith('Failed to save file', 'Unknown error');
+  });
+
   test('Should invoke app.quit in util:quit', async () => {
     await invokeIPCHandler('utils:quit');
     expect(app.quit).toHaveBeenCalled();
