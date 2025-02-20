@@ -197,12 +197,8 @@ export const updateNickname = async (keyPairId: string, nickname: string) => {
   const prisma = getPrismaClient();
 
   await prisma.keyPair.update({
-    where: {
-      id: keyPairId,
-    },
-    data: {
-      nickname,
-    },
+    where: { id: keyPairId },
+    data: { nickname },
   });
 };
 
@@ -211,12 +207,18 @@ export const updateMnemonicHash = async (keyPairId: string, secret_hash: string)
   const prisma = getPrismaClient();
 
   await prisma.keyPair.update({
-    where: {
-      id: keyPairId,
-    },
-    data: {
-      secret_hash,
-    },
+    where: { id: keyPairId },
+    data: { secret_hash },
+  });
+};
+
+// Update key pair index
+export const updateIndex = async (keyPairId: string, index: number) => {
+  const prisma = getPrismaClient();
+
+  await prisma.keyPair.update({
+    where: { id: keyPairId },
+    data: { index },
   });
 };
 

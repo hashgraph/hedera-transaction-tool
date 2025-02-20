@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
+import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useMatchRecoveryPrase from '@renderer/composables/useMatchRecoveryPhrase';
@@ -14,6 +15,7 @@ const SEARCHING_TEXT = 'Abort Search';
 /* Composables */
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const toast = useToast();
+const router = useRouter();
 const { startMatching, externalKeys } = useMatchRecoveryPrase();
 
 /* State */
@@ -45,10 +47,16 @@ const handleSearch = async () => {
     const message =
       currentSearchCount === 0
         ? 'No keys matched'
-        : `Matched ${currentSearchCount} keys to recovery phrase`;
+        : totalRecovered.value === cachedExternalKeys.value.length
+          ? 'All keys matched to recovery phrase'
+          : `Matched ${currentSearchCount} keys to recovery phrase`;
     toast.success(message);
   } finally {
     loadingText.value = null;
+
+    if (totalRecovered.value === cachedExternalKeys.value.length) {
+      await router.back();
+    }
   }
 };
 

@@ -86,6 +86,11 @@ export const updateMnemonicHash = async (keyPairId: string, mnemonicHash: string
     return await window.electronAPI.local.keyPairs.updateMnemonicHash(keyPairId, mnemonicHash);
   }, 'Failed to update recovery phrase hash');
 
+export const updateIndex = async (keyPairId: string, index: number) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.keyPairs.updateIndex(keyPairId, index);
+  }, 'Failed to update index');
+
 /* Validates if the provided recovery phrase is valid according to BIP-39 */
 export const validateMnemonic = async (words: string[]) => {
   try {

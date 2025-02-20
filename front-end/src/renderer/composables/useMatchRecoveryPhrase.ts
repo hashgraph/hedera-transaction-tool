@@ -4,6 +4,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import {
   restorePrivateKey,
+  updateIndex,
   updateMnemonicHash as updateLocalMnemonicHash,
 } from '@renderer/services/keyPairService';
 import { updateKey as updateOrganizationKey } from '@renderer/services/organization';
@@ -47,12 +48,12 @@ export default function useMatchRecoveryPrase() {
       );
 
       if (keyPairED25519) {
-        await safeAwait(updateKeyPairsHash(keyPairED25519));
+        await safeAwait(updateKeyPairsHash(keyPairED25519, i));
         totalRef.value++;
         count++;
       }
       if (keyPairECDSA) {
-        await safeAwait(updateKeyPairsHash(keyPairECDSA));
+        await safeAwait(updateKeyPairsHash(keyPairECDSA, i));
         totalRef.value++;
         count++;
       }
@@ -64,7 +65,7 @@ export default function useMatchRecoveryPrase() {
     return count;
   };
 
-  const updateKeyPairsHash = async (localKeyPair: KeyPair): Promise<void> => {
+  const updateKeyPairsHash = async (localKeyPair: KeyPair, index: number): Promise<void> => {
     if (!user.recoveryPhrase) {
       return;
     }
@@ -79,10 +80,12 @@ export default function useMatchRecoveryPrase() {
           user.selectedOrganization.userId,
           organizationKeyPair.id,
           user.recoveryPhrase.hash,
+          index,
         );
       }
     }
     await updateLocalMnemonicHash(localKeyPair.id, user.recoveryPhrase.hash);
+    await updateIndex(localKeyPair.id, index);
   };
 
   return {
