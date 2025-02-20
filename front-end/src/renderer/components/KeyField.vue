@@ -10,19 +10,12 @@ import useUserStore from '@renderer/stores/storeUser';
 import { getComplexKey, updateComplexKey } from '@renderer/services/complexKeysService';
 
 import {
-  addComplexKey,
-  getComplexKey,
-  updateComplexKey,
-} from '@renderer/services/complexKeysService';
-
-import {
   isPublicKey,
   decodeKeyList,
   encodeKey,
   isUserLoggedIn,
   formatPublickey,
   extractIdentifier,
-  isKeyListValid,
 } from '@renderer/utils';
 import * as ush from '@renderer/utils/userStoreHelpers';
 
@@ -34,6 +27,8 @@ import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/Complex
 import ComplexKeySelectSavedKey from '@renderer/components/ComplexKey/ComplexKeySelectSavedKey.vue';
 import ComplexKeySaveKeyModal from '@renderer/components/ComplexKey/ComplexKeySaveKeyModal.vue';
 import useNicknamesStore from '@renderer/stores/storeNicknames';
+import useContactsStore from '@renderer/stores/storeContacts';
+import { useToast } from 'vue-toast-notification';
 
 /* Props */
 const props = withDefaults(
@@ -58,11 +53,7 @@ enum Tabs {
 
 /* Stores */
 const user = useUserStore();
-const contacts = useContactsStore();
 const nicknames = useNicknamesStore();
-
-/* Composables */
-const toast = useToast();
 
 /* State */
 const currentTab = ref(Tabs.SIGNLE);
@@ -120,7 +111,7 @@ const handleEditComplexKey = () => {
   complexKeyModalShown.value = true;
 };
 
-const handleComplexKeyUpdate = async (keyList: KeyList) => {
+const handleComplexKeyUpdate = async (keyList: KeyList, saveButton?: boolean) => {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
@@ -133,7 +124,9 @@ const handleComplexKeyUpdate = async (keyList: KeyList) => {
     selectedComplexKey.value = updatedKey;
   }
 
-  await nicknames.saveNicknames();
+  if (!saveButton) {
+    await nicknames.saveNicknames();
+  }
 
   if (!selectedComplexKey.value) {
     selectedComplexKey.value = await nicknames.getKeyListStructure(keyList);

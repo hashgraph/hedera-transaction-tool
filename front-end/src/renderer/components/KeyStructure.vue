@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { KeyList, PublicKey } from '@hashgraph/sdk';
 
-import { decodeKeyList, encodeKey, isUserLoggedIn, normalizePublicKey } from '@renderer/utils';
+import { decodeKeyList, encodeKey, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
