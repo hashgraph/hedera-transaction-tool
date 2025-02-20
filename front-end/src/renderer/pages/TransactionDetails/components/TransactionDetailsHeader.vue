@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Transaction } from '@prisma/client';
-import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
+import { TransactionStatus } from '@main/shared/interfaces';
+import type { ITransactionFull } from '@main/shared/interfaces';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 
@@ -36,8 +37,8 @@ import {
   getTransactionBodySignatureWithoutNodeAccountId,
   hexToUint8Array,
   isLoggedInOrganization,
-  publicRequiredToSign,
   redirectToDetails,
+  usersPublicRequiredToSign,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -91,6 +92,8 @@ const props = defineProps<{
   sdkTransaction: SDKTransaction | null;
   nextId: number | string | null;
   previousId: number | string | null;
+  orgGroupDescription?: string | undefined;
+  localGroupDescription?: string | undefined;
 }>();
 
 /* Stores */
@@ -247,7 +250,7 @@ const handleSign = async () => {
   try {
     loadingStates[sign] = 'Signing...';
 
-    const publicKeysRequired = await publicRequiredToSign(
+    const publicKeysRequired = await usersPublicRequiredToSign(
       props.sdkTransaction,
       user.selectedOrganization.userKeys,
       network.mirrorNodeBaseURL,
@@ -535,7 +538,7 @@ watch(
     }
 
     const results = await Promise.allSettled([
-      publicRequiredToSign(
+      usersPublicRequiredToSign(
         SDKTransaction.fromBytes(hexToUint8Array(transaction.transactionBytes)),
         user.selectedOrganization.userKeys,
         network.mirrorNodeBaseURL,
@@ -572,7 +575,18 @@ watch(
         <i class="bi bi-arrow-left"></i>
       </AppButton>
 
-      <h2 class="text-title text-bold">Transaction Details</h2>
+      <h2
+        class="text-title text-bold"
+        v-if="props.localGroupDescription || props.orgGroupDescription"
+      >
+        Transaction Details
+        <span class="text-secondary">
+          {{
+            props.localGroupDescription ? `(${localGroupDescription})` : `(${orgGroupDescription})`
+          }}
+        </span>
+      </h2>
+      <h2 v-else class="text-title text-bold">Transaction Details</h2>
     </div>
 
     <div class="flex-centered gap-4">

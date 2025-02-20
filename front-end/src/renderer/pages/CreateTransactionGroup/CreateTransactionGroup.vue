@@ -330,6 +330,10 @@ onMounted(async () => {
 });
 
 onBeforeRouteLeave(async to => {
+  if (to.name === 'transactionGroupDetails') {
+    to.query = { ...to.query, previousTab: 'createGroup' };
+  }
+
   if (
     transactionGroup.isModified() &&
     transactionGroup.groupItems.length == 0 &&
