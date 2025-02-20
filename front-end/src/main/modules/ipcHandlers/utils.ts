@@ -53,8 +53,12 @@ export default () => {
 
       const content = Buffer.from(getNumberArrayFromString(uint8ArrayString));
       await fs.promises.writeFile(filePath, Uint8Array.from(content));
-    } catch (error: any) {
-      dialog.showErrorBox('Failed to save file', error?.message || 'Unknown error');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        dialog.showErrorBox('Failed to save file', error.message);
+      } else {
+        dialog.showErrorBox('Failed to save file', 'Unknown error');
+      }
     }
   });
 
@@ -85,8 +89,12 @@ export default () => {
         if (!filePath) throw new Error('File path is undefined');
 
         await fs.promises.writeFile(filePath, data);
-      } catch (error: any) {
-        dialog.showErrorBox('Failed to save file', error?.message || 'Unknown error');
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          dialog.showErrorBox('Failed to save file', error.message);
+        } else {
+          dialog.showErrorBox('Failed to save file', 'Unknown error');
+        }
       }
     },
   );
@@ -114,11 +122,11 @@ export default () => {
     },
   );
 
-  ipcMain.handle(createChannelName('sha384'), (_e, str: string): Promise<string> => {
-    return createHash('sha384').update(str).digest('hex');
+  ipcMain.handle(createChannelName('sha384'), async (_e, str: string): Promise<string> => {
+    return await createHash('sha384').update(str).digest('hex');
   });
 
-  ipcMain.handle(createChannelName('x509BytesFromPem'), (_e, pem: string | Uint8Array) => {
+  ipcMain.handle(createChannelName('x509BytesFromPem'), async (_e, pem: string | Uint8Array) => {
     const PEM_HEADER = '-----BEGIN CERTIFICATE-----';
 
     if (
@@ -157,7 +165,7 @@ export default () => {
     };
   });
 
-  ipcMain.handle(createChannelName('quit'), () => {
+  ipcMain.handle(createChannelName('quit'), async () => {
     app.quit();
   });
 };
