@@ -77,6 +77,12 @@ export type AccountUpdateData = AccountData & {
   accountId: string;
 };
 
+export type AccountUpdateDataMultiple = {
+  accountIds: string[];
+  accountIsPayer: boolean;
+  key: Key | null;
+};
+
 export type ApproveHbarAllowanceData = {
   ownerAccountId: string;
   spenderAccountId: string;

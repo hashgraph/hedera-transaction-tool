@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { IAccountInfoParsed } from '@main/shared/interfaces';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { AccountUpdateData } from '@renderer/utils/sdk';
+import type { AccountUpdateData, AccountUpdateDataMultiple } from '@renderer/utils/sdk';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { AccountId, Key, KeyList, Transaction } from '@hashgraph/sdk';
@@ -32,7 +32,7 @@ const data = reactive<AccountUpdateData>({
   accountMemo: '',
   ownerKey: null,
 });
-const multipleAccounts = ref(false);
+const multipleAccountsData = ref<AccountUpdateDataMultiple | null>(null);
 
 /* Computed */
 const createTransaction = computed<CreateTransactionFunc>(() => {
@@ -47,9 +47,14 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
 });
 
 const createDisabled = computed(() => {
+  const noSingleAccount = !accountData.accountId.value || !accountData.isValid.value;
+  const noMultipleAccounts =
+    !multipleAccountsData.value ||
+    multipleAccountsData.value?.accountIds.length === 0 ||
+    multipleAccountsData.value?.key === null;
+
   return (
-    !accountData.accountId.value ||
-    !accountData.isValid.value ||
+    (noSingleAccount && noMultipleAccounts) ||
     (data.stakeType === 'Account' && !isAccountId(data.stakedAccountId)) ||
     (data.stakeType === 'Node' && data.stakedNodeId === null)
   );
@@ -134,9 +139,9 @@ watch(accountData.accountInfo, accountInfo => {
     @draft-loaded="handleDraftLoaded"
   >
     <AccountUpdateFormData
+      v-model:multiple-accounts-data="multipleAccountsData"
       :data="data as AccountUpdateData"
       :account-info="accountData.accountInfo.value as IAccountInfoParsed"
-      v-model:multiple-accounts="multipleAccounts"
       @update:data="handleUpdateData"
     />
   </BaseTransaction>
