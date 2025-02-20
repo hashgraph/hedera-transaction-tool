@@ -11,6 +11,7 @@ import {
   deleteKeyPair,
   updateNickname,
   updateMnemonicHash,
+  updateIndex,
 } from '@main/services/localUser';
 import { createIPCChannel, renameFunc } from '@main/utils/electronInfra';
 
@@ -25,6 +26,7 @@ export default () => {
     renameFunc(changeDecryptionPassword, 'changeDecryptionPassword'),
     renameFunc(updateNickname, 'updateNickname'),
     renameFunc(updateMnemonicHash, 'updateMnemonicHash'),
+    renameFunc(updateIndex, 'updateIndex'),
     renameFunc(deleteEncryptedPrivateKeys, 'deleteEncryptedPrivateKeys'),
     renameFunc(deleteKeyPair, 'deleteKeyPair'),
     renameFunc(decryptPrivateKey, 'decryptPrivateKey'),

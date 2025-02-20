@@ -37,5 +37,7 @@ export default {
       ipcRenderer.invoke('keyPairs:updateNickname', keyPairId, nickname),
     updateMnemonicHash: (keyPairId: string, mnemonicHash: string): Promise<void> =>
       ipcRenderer.invoke('keyPairs:updateMnemonicHash', keyPairId, mnemonicHash),
+    updateIndex: (keyPairId: string, index: number): Promise<void> =>
+      ipcRenderer.invoke('keyPairs:updateIndex', keyPairId, index),
   },
 };
