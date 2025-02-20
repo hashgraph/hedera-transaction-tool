@@ -12,6 +12,8 @@ import useAccountId from '@renderer/composables/useAccountId';
 import { isAccountId } from '@renderer/utils';
 import { createAccountUpdateTransaction, getAccountUpdateData } from '@renderer/utils/sdk';
 
+import { MultipleAccountUpdateRequest } from '../../TransactionProcessor';
+
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import AccountUpdateFormData from '@renderer/components/Transaction/Create/AccountUpdate/AccountUpdateFormData.vue';
 
@@ -62,6 +64,13 @@ const transactionKey = computed(() => {
   accountData.key.value && keys.push(accountData.key.value);
   data.ownerKey && keys.push(data.ownerKey);
   return new KeyList(keys);
+});
+
+const customRequest = computed(() => {
+  if (!multipleAccountsData.value || !multipleAccountsData.value.key) {
+    return;
+  }
+  return MultipleAccountUpdateRequest.fromAccountUpdateData(multipleAccountsData.value);
 });
 
 /* Handlers */
@@ -139,6 +148,7 @@ watch(accountData.accountInfo, accountInfo => {
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
+    :custom-request="customRequest"
     @draft-loaded="handleDraftLoaded"
   >
     <AccountUpdateFormData
