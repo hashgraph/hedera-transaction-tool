@@ -103,11 +103,11 @@ const handleKeyListUpdate = (index: number, newKeyList: KeyList) => {
   newParentKeyList.splice(index, 1, newKeyList);
 
   emit('update:keyList', newParentKeyList);
-  nicknames.updateKey(nickname.value, newParentKeyList, keyId.value);
+  nicknames.updateKey(nickname.value, newParentKeyList, keyId.value, props.depth || '0');
 };
 
 function handleUpdateNickname(value: string) {
-  nicknames.updateNickname(value, nickname.value, props.keyList);
+  nicknames.updateNickname(value, nickname.value, props.keyList, props.depth || '0');
   nickname.value = value;
 }
 
@@ -115,7 +115,7 @@ function handleUpdateNickname(value: string) {
 function emitNewKeyList(keys: Key[], threshold: number | null) {
   const newKeyList = new KeyList(keys, threshold);
   emit('update:keyList', newKeyList);
-  nicknames.updateKey(nickname.value, newKeyList, keyId.value);
+  nicknames.updateKey(nickname.value, newKeyList, keyId.value, props.depth || '0');
 }
 
 /* Hooks */
@@ -124,7 +124,7 @@ onBeforeMount(async () => {
     throw new Error('User is not logged in');
   }
 
-  [nickname.value, keyId.value] = await nicknames.getNickName(props.keyList);
+  [nickname.value, keyId.value] = await nicknames.getNickName(props.keyList, props.depth || '0');
 });
 </script>
 <template>
