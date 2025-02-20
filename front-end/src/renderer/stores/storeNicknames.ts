@@ -18,32 +18,32 @@ const useNicknamesStore = defineStore('nicknames', {
     nickNamesKeys: new Map(),
   }),
   actions: {
-    async getNickName(selectedKeyList: KeyList) {
+    async getNickName(selectedKeyList: KeyList, depth: string) {
       const keyList = await this.getKeyListStructure(selectedKeyList);
 
       if (keyList) {
-        this.nickNamesKeys.set(keyList.nickname, { key: selectedKeyList, keyId: keyList.id })
+        this.nickNamesKeys.set(`${keyList.nickname}*${depth}`, { key: selectedKeyList, keyId: keyList.id })
         return [keyList.nickname, keyList.id];
       } else {
         return ['', ''];
       }
     },
-    updateNickname(newNickname: string, oldNickname: string, key: KeyList) {
-      const oldKey = this.nickNamesKeys.get(oldNickname);
+    updateNickname(newNickname: string, oldNickname: string, key: KeyList, depth: string) {
+      const oldKey = this.nickNamesKeys.get(`${oldNickname}*${depth}`);
 
       if (!newNickname) {
-        this.nickNamesKeys.delete(oldNickname);
+        this.nickNamesKeys.delete(`${oldNickname}*${depth}`);
       } else if (oldKey) {
-        this.nickNamesKeys.set(newNickname, oldKey);
-        this.nickNamesKeys.delete(oldNickname);
+        this.nickNamesKeys.set(`${newNickname}*${depth}`, oldKey);
+        this.nickNamesKeys.delete(`${oldNickname}*${depth}`);
       }
       else {
-        this.nickNamesKeys.set(newNickname, { key, keyId: '' });
+        this.nickNamesKeys.set(`${newNickname}*${depth}`, { key, keyId: '' });
       }
     },
-    updateKey(nickname: string, key: KeyList, keyId: string) {
+    updateKey(nickname: string, key: KeyList, keyId: string, depth: string) {
       if (nickname) {
-        this.nickNamesKeys.set(nickname, { key, keyId });
+        this.nickNamesKeys.set(`${nickname}*${depth}`, { key, keyId });
       }
     },
     async saveNicknames() {
@@ -55,10 +55,11 @@ const useNicknamesStore = defineStore('nicknames', {
 
       for (const nickNameKey of this.nickNamesKeys) {
         const keyListBytes = encodeKey(nickNameKey[1].key);
+        const nickname = nickNameKey[0].split('*')[0];
         if (nickNameKey[1].keyId) {
-          await updateComplexKey(nickNameKey[1].keyId, keyListBytes, nickNameKey[0]);
+          await updateComplexKey(nickNameKey[1].keyId, keyListBytes, nickname);
         } else {
-          await addComplexKey(user.personal.id, keyListBytes, nickNameKey[0])
+          await addComplexKey(user.personal.id, keyListBytes, nickname)
         }
       }
 
@@ -79,7 +80,7 @@ const useNicknamesStore = defineStore('nicknames', {
     },
     async saveTopLevelNickname(selectedKeyList: KeyList, nickname: string) {
       const keyList = await this.getKeyListStructure(selectedKeyList);
-      this.nickNamesKeys.set(nickname, { key: selectedKeyList, keyId: keyList ? keyList.id : '' });
+      this.nickNamesKeys.set(`${nickname}*0`, { key: selectedKeyList, keyId: keyList ? keyList.id : '' });
       await this.saveNicknames();
       return await this.getKeyListStructure(selectedKeyList);
 
