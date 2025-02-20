@@ -85,7 +85,10 @@ const handleDraftLoaded = async (transaction: Transaction) => {
   handleUpdateData(getTransferHbarData(transaction));
   for (const accountId of data.transfers.map(t => t.accountId.toString())) {
     if (!accountInfos.value[accountId]) {
-      accountInfos.value[accountId] = await getAccountInfo(accountId, network.mirrorNodeBaseURL);
+      const info = await getAccountInfo(accountId, network.mirrorNodeBaseURL);
+      if (info) {
+        accountInfos.value[accountId] = info;
+      }
     }
   }
 };

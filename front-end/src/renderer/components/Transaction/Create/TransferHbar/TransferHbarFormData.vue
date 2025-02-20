@@ -103,10 +103,13 @@ const refreshTransfers = (transfers?: Transfer[]) => {
 
 const ensureAccountInfoExists = async (accountId: string) => {
   if (!props.accountInfos[accountId]) {
-    emit('update:accountInfos', {
-      ...props.accountInfos,
-      [accountId]: await getAccountInfo(accountId, network.mirrorNodeBaseURL),
-    });
+    const info = await getAccountInfo(accountId, network.mirrorNodeBaseURL);
+    if (info) {
+      emit('update:accountInfos', {
+        ...props.accountInfos,
+        [accountId]: info,
+      });
+    }
   }
 };
 
