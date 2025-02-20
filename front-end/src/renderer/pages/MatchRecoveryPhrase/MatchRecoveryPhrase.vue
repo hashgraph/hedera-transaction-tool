@@ -1,185 +1,128 @@
 <script setup lang="ts">
-import type { KeyPair } from '@prisma/client';
-
-import { onMounted, ref, watch } from 'vue';
-
-import useUserStore from '@renderer/stores/storeUser';
+import { ref, watch } from 'vue';
 
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
 import useSetDynamicLayout, {
   ACCOUNT_SETUP_LAYOUT,
 } from '@renderer/composables/useSetDynamicLayout';
-import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
-
-import { safeAwait } from '@renderer/utils';
+import useMatchRecoveryPrase from '@renderer/composables/useMatchRecoveryPhrase';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
 import Import from '@renderer/components/RecoveryPhrase/Import.vue';
-import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
-import DeleteAllKeysRequiringHashMigrationModal from '@renderer/components/modals/DeleteAllKeysRequiringHashMigrationModal.vue';
-
-/* Stores */
-const user = useUserStore();
 
 /* Composables */
 useSetDynamicLayout(ACCOUNT_SETUP_LAYOUT);
 const toast = useToast();
 const router = useRouter();
-const { getKeysToUpdateForRecoveryPhrase, updateKeyPairsHash } = useRecoveryPhraseHashMigrate();
+const { startMatching } = useMatchRecoveryPrase();
 
 /* State */
-const keysToUpdate = ref<KeyPair[]>([]);
 const loadingText = ref<string | null>(null);
-const isRecoveryPhraseValid = ref<boolean>(false);
 const errorMessage = ref<string | null>(null);
-const isResetDataModalShown = ref<boolean>(false);
-const isDeleteAllModalShown = ref<boolean>(false);
+const startIndex = ref<number>(0);
+const endIndex = ref<number>(100);
+const abortController = ref<AbortController | null>(null);
+const totalRecovered = ref<number>(0);
 
 /* Handlers */
-const handleSkip = async () => {
-  await user.setRecoveryPhrase(null);
-  await router.push({ name: 'transactions' });
-};
-
-const handleVerify = async () => {
-  if (!user.recoveryPhrase) {
-    errorMessage.value = null;
-    return;
-  }
-
-  keysToUpdate.value = [];
-  loadingText.value = 'Verifying recovery phrase...';
-
-  const { data, error } = await safeAwait(
-    getKeysToUpdateForRecoveryPhrase(user.recoveryPhrase.words),
-  );
-
-  if (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'An unknown error occurred';
-    isRecoveryPhraseValid.value = false;
-  } else if (data && data.length > 0) {
-    keysToUpdate.value = data;
-    errorMessage.value = null;
-    isRecoveryPhraseValid.value = true;
-  } else {
-    errorMessage.value = "Recovery phrase doesn't match your keys";
-    isRecoveryPhraseValid.value = false;
-  }
-
-  loadingText.value = null;
-};
-
 const handleContinue = async () => {
-  if (!user.recoveryPhrase) {
-    return;
-  }
-
-  loadingText.value = 'Updating recovery phrase hash...';
-  const { error } = await safeAwait(
-    updateKeyPairsHash(keysToUpdate.value, user.recoveryPhrase.hash),
-  );
-  if (!error) {
-    toast.success('Recovery phrase hash updated successfully');
-    await router.push({ name: 'transactions' });
-  }
-  loadingText.value = null;
+  await router.back();
 };
 
-const handleOpenResetModal = () => (isResetDataModalShown.value = true);
-const handleDataReset = () => router.push({ name: 'login' });
+const handleSearch = async () => {
+  loadingText.value = 'Matching keys...';
+  try {
+    abortController.value = new AbortController();
 
-const handleOpenDeleteAllKeysModal = () => (isDeleteAllModalShown.value = true);
-const handleKeysDeleted = async () => {
-  await user.refetchUserState();
-  await user.refetchKeys();
-  user.refetchAccounts();
+    const count = await startMatching(startIndex.value, endIndex.value, abortController.value);
+    totalRecovered.value = count;
 
-  if (user.shouldSetupAccount) {
-    router.push({ name: 'accountSetup' });
+    const message = count === 0 ? 'No keys matched' : `Matched ${count} keys to recovery phrase`;
+    toast.success(message);
+  } finally {
+    loadingText.value = null;
   }
 };
 
-/* Hooks */
-onMounted(async () => {
-  await user.setRecoveryPhrase(null);
+const handleAbort = async () => {
+  loadingText.value = 'Aborting the search...';
+  abortController.value?.abort();
+};
+
+watch([startIndex, endIndex], async ([start, end]) => {
+  if (start > end) {
+    errorMessage.value = 'Start index must be less than end index';
+  } else {
+    errorMessage.value = null;
+  }
 });
-
-/* Watchers */
-watch(() => user.recoveryPhrase, handleVerify);
 </script>
 <template>
   <div class="flex-column-100 flex-centered">
     <div class="fill-remaining d-flex align-items-center p-6">
       <div class="container-dark-border bg-modal-surface glow-dark-bg p-5">
-        <h4 class="text-title text-semi-bold text-center">Recovery Phrase</h4>
+        <h4 class="text-title text-semi-bold text-center">
+          Match External Keys to Recovery Phrase
+        </h4>
         <p class="text-main text-center mt-3">
-          All previously created private keys need to be rematched to a mnemonic. This process is
-          required before the application will be fully usable. Enter your recovery phrase to rematch your
-          keys.
+          Enter a recovery phrase to automatically match your external keys to it.
         </p>
         <div class="mt-4">
           <Import />
         </div>
 
+        <hr class="separator my-4 mx-3" />
+
+        <div class="mt-4 col-12 col-lg-6 d-flex gap-4 ms-3">
+          <AppInput
+            v-model="startIndex"
+            :filled="true"
+            data-testid="input-start-index"
+            type="number"
+            placeholder="Enter start index"
+          />
+          <AppInput
+            v-model="endIndex"
+            :filled="true"
+            data-testid="input-end-index"
+            type="number"
+            placeholder="Enter end index"
+          />
+        </div>
+
         <div class="mt-5 ms-3">
-          <p class="text-danger">
-            {{ errorMessage }}
+          <p :class="{ 'text-danger': errorMessage }">
+            {{ errorMessage ? errorMessage : `Total keys recovered: ${totalRecovered}` }}
           </p>
         </div>
 
-        <div class="flex-centered justify-content-between mt-5 ms-3">
-          <div>
-            <AppButton color="secondary" @click="handleSkip" data-testid="button-skip"
-              >Skip</AppButton
+        <div class="flex-centered justify-content-between mt-5 mx-3">
+          <div class="d-flex gap-4">
+            <AppButton color="secondary" @click="handleAbort" data-testid="button-abort"
+              >Abort</AppButton
             >
           </div>
 
-          <div class="d-flex gap-3">
-            <template v-if="user.selectedOrganization">
-              <div>
-                <AppButton
-                  color="secondary"
-                  @click="handleOpenDeleteAllKeysModal"
-                  data-testid="button-open-delete-all-keys-modal"
-                  >Delete All Keys</AppButton
-                >
-                <DeleteAllKeysRequiringHashMigrationModal
-                  v-model:show="isDeleteAllModalShown"
-                  @keys:deleted="handleKeysDeleted"
-                />
-              </div>
-            </template>
-            <template
-              v-else-if="
-                user.personal &&
-                user.personal.isLoggedIn &&
-                user.personal.useKeychain &&
-                !user.selectedOrganization
-              "
-            >
-              <div>
-                <AppButton
-                  color="secondary"
-                  @click="handleOpenResetModal"
-                  data-testid="button-open-reset-modal"
-                  >Reset data</AppButton
-                >
-                <ResetDataModal
-                  v-model:show="isResetDataModalShown"
-                  @data:reset="handleDataReset"
-                />
-              </div>
-            </template>
-
+          <div class="d-flex gap-4">
             <div>
               <AppButton
                 color="primary"
-                @click="handleContinue"
-                data-testid="button-next"
-                :disabled="Boolean(loadingText) || !user.recoveryPhrase || !isRecoveryPhraseValid"
+                @click="handleSearch"
+                data-testid="button-abort"
+                :disabled="Boolean(loadingText)"
                 :loading="Boolean(loadingText)"
                 :loading-text="loadingText || ''"
+                >Search</AppButton
+              >
+            </div>
+            <div>
+              <AppButton
+                color="secondary"
+                @click="handleContinue"
+                data-testid="button-next"
+                :disabled="Boolean(loadingText)"
                 >Continue</AppButton
               >
             </div>
