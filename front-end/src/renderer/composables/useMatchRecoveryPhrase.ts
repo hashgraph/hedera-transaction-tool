@@ -9,6 +9,7 @@ import {
 import { updateKey as updateOrganizationKey } from '@renderer/services/organization';
 
 import { isLoggedInOrganization, isUserLoggedIn, safeAwait } from '@renderer/utils';
+import type { Ref } from 'vue';
 
 export default function useMatchRecoveryPrase() {
   /* Stores */
@@ -27,6 +28,7 @@ export default function useMatchRecoveryPrase() {
     startIndex: number,
     endIndex: number,
     abortController: AbortController,
+    totalRef: Ref<number>,
   ) => {
     if (!user.recoveryPhrase) {
       throw new Error('Recovery phrase is not set');
@@ -50,10 +52,12 @@ export default function useMatchRecoveryPrase() {
 
       if (keyPairED25519) {
         await safeAwait(updateKeyPairsHash(keyPairED25519));
+        totalRef.value++;
         count++;
       }
       if (keyPairECDSA) {
         await safeAwait(updateKeyPairsHash(keyPairECDSA));
+        totalRef.value++;
         count++;
       }
     }
