@@ -34,7 +34,10 @@ const handleClearWords = (value: boolean) => {
     <h1 class="text-display text-bold text-center">Enter your Recovery Phrase</h1>
     <div class="mt-8">
       <Import :should-clear="shouldClearInputs" @reset-cleared="handleClearWords($event)" />
-      <div class="form-group mt-4">
+
+      <hr class="separator my-4 mx-3" />
+
+      <div class="form-group mx-3">
         <label class="form-label">Enter Recovery Phrase Nickname</label>
         <RecoveryPhraseNicknameInput
           v-model="mnemonicHashNickname"
@@ -43,13 +46,14 @@ const handleClearWords = (value: boolean) => {
           data-testid="input-recovery-phrase-nickname"
         />
       </div>
-      <div class="row justify-content-between mt-6">
-        <div class="col-4 d-grid">
+
+      <div class="d-flex justify-content-between mt-4 mx-3">
+        <div class="">
           <AppButton type="button" color="secondary" @click="handleClearWords(true)"
             >Clear</AppButton
           >
         </div>
-        <div class="col-4 d-grid">
+        <div class="">
           <AppButton
             color="primary"
             data-testid="button-continue-phrase"

@@ -33,6 +33,7 @@ const TransactionDetails = () => import('@renderer/pages/TransactionDetails');
 const Migrate = () => import('@renderer/pages/Migrate');
 const RestoreMissingKeys = () => import('@renderer/pages/RestoreMissingKeys');
 const MigrateRecoveryPhraseHash = () => import('@renderer/pages/MigrateRecoveryPhraseHash');
+const MatchRecoveryPhrase = () => import('@renderer/pages/MatchRecoveryPhrase');
 
 const routes: RouteRecordRaw[] = [
   { path: '/', name: 'index', redirect: '/transactions' },
@@ -53,6 +54,11 @@ const routes: RouteRecordRaw[] = [
     path: '/migrate-recovery-phrase-hash',
     name: constants.MIGRATE_RECOVERY_PHRASE_HASH,
     component: MigrateRecoveryPhraseHash,
+  },
+  {
+    path: '/match-recovery-phrase',
+    name: constants.MATCH_RECOVERY_PHRASE,
+    component: MatchRecoveryPhrase,
   },
   {
     path: '/restore-missing-keys',

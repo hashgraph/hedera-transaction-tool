@@ -301,7 +301,15 @@ The Initial Developer of @hashgraph/hedera-local@2.32.6,
 is hashgraph (github.com:hashgraph/hedera-local-node).
 Copyright hashgraph. All Rights Reserved.
 
+The Initial Developer of @hashgraph/proto@2.15.0,
+is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
+Copyright Launchbadge. All Rights Reserved.
+
 The Initial Developer of @hashgraph/proto@2.16.0-beta.4,
+is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
+Copyright Launchbadge. All Rights Reserved.
+
+The Initial Developer of @hashgraph/sdk@2.53.0,
 is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
@@ -971,6 +979,10 @@ The Initial Developer of atomic-sleep@1.0.0,
 is David Mark Clements (https://github.com/davidmarkclements/atomic-sleep).
 Copyright David Mark Clements. All Rights Reserved.
 
+The Initial Developer of axios@1.7.8,
+is Matt Zabriskie (https://github.com/axios/axios).
+Copyright Matt Zabriskie. All Rights Reserved.
+
 The Initial Developer of axios@1.7.9,
 is Matt Zabriskie (https://github.com/axios/axios).
 Copyright Matt Zabriskie. All Rights Reserved.
@@ -1353,6 +1365,9 @@ Copyright argvminusone. All Rights Reserved.
 The Initial Developer of dotenv-expand@11.0.7,
 is motdotla (https://github.com/motdotla/dotenv-expand).
 Copyright motdotla. All Rights Reserved.
+
+This product includes software (dotenv@16.4.5) developed at
+(https://github.com/motdotla/dotenv).
 
 This product includes software (dotenv@16.4.7) developed at
 (https://github.com/motdotla/dotenv).
@@ -2442,6 +2457,10 @@ Copyright George Zahariev. All Rights Reserved.
 
 This product includes software (prettier-linter-helpers@1.0.0) developed at
 (https://github.com/prettier/prettier-linter-helpers).
+
+The Initial Developer of prettier@3.3.3,
+is James Long (https://github.com/prettier/prettier).
+Copyright James Long. All Rights Reserved.
 
 The Initial Developer of prettier@3.4.2,
 is James Long (https://github.com/prettier/prettier).

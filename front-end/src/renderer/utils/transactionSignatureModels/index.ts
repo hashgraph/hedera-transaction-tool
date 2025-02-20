@@ -1,6 +1,6 @@
 import type { IUserKey } from '@main/shared/interfaces';
 
-import { Key, KeyList, NodeUpdateTransaction, Transaction } from '@hashgraph/sdk';
+import { Key, KeyList, NodeUpdateTransaction, PublicKey, Transaction } from '@hashgraph/sdk';
 
 import { getAccountInfo, getNodeInfo } from '@renderer/services/mirrorNodeDataService';
 
@@ -45,8 +45,91 @@ export const getSignatureEntities = (transaction: Transaction) => {
   }
 };
 
+const extractRawPublicKey = (key: Key | null): string => {
+  if (!key) return '';
+  if (typeof (key as PublicKey).toStringRaw === 'function') {
+    return (key as PublicKey).toStringRaw();
+  }
+  return key.toString();
+};
+
 /* Returns whether a user should sign the transaction */
 export const publicRequiredToSign = async (
+  transaction: Transaction,
+  userKeys: IUserKey[],
+  mirrorNodeLink: string,
+): Promise<{ usersPublicKeys: string[]; nonUserPublicKeys: string[]; thresholdMet: boolean }> => {
+  const usersPublicKeys: Set<string> = new Set();
+  const nonUserPublicKeys: Set<string> = new Set();
+  let thresholdMet = false;
+
+  if (userKeys.length === 0) {
+    return { usersPublicKeys: [], nonUserPublicKeys: [], thresholdMet: thresholdMet };
+  }
+
+  const { newKeys, accounts, receiverAccounts, nodeId } = getSignatureEntities(transaction);
+
+  const classifyKey = (key: Key, parentThreshold?: number) => {
+    if (key instanceof KeyList) {
+      let signedCount = 0;
+      const requiredThreshold = key.threshold || parentThreshold || key._keys.length;
+
+      key._keys.forEach(subKey => {
+        const rawPublicKey = extractRawPublicKey(subKey);
+        const isUserKey = userKeys.some(userKey => isPublicKeyInKeyList(userKey.publicKey, subKey));
+        const hasSigned = transaction._signerPublicKeys.has(rawPublicKey);
+
+        if (hasSigned) {
+          signedCount++;
+        }
+
+        if (isUserKey) {
+          usersPublicKeys.add(rawPublicKey);
+        } else {
+          nonUserPublicKeys.add(rawPublicKey);
+        }
+      });
+
+      if (signedCount >= requiredThreshold) {
+        thresholdMet = true;
+      }
+    } else {
+      if (userKeys.some(userKey => isPublicKeyInKeyList(userKey.publicKey, key))) {
+        usersPublicKeys.add(extractRawPublicKey(key));
+      } else {
+        nonUserPublicKeys.add(extractRawPublicKey(key));
+      }
+    }
+  };
+
+  newKeys.forEach(key => classifyKey(key));
+
+  /* Add required keys from account signers */
+  for (const accountId of accounts) {
+    const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
+    if (accountInfo.key) classifyKey(accountInfo.key);
+  }
+
+  /* Add required keys from receiver accounts that require signatures */
+  for (const accountId of receiverAccounts) {
+    const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
+    if (accountInfo.receiverSignatureRequired && accountInfo.key) classifyKey(accountInfo.key);
+  }
+
+  /* Add required keys from node accounts */
+  const result = await getNodeKeys(nodeId, transaction, mirrorNodeLink);
+  if (result.nodeAccountKey) classifyKey(result.nodeAccountKey);
+  if (result.adminKey) classifyKey(result.adminKey);
+
+  return {
+    usersPublicKeys: [...usersPublicKeys],
+    nonUserPublicKeys: [...nonUserPublicKeys],
+    thresholdMet: thresholdMet,
+  };
+};
+
+/* Returns only users PK required to sign */
+export const usersPublicRequiredToSign = async (
   transaction: Transaction,
   userKeys: IUserKey[],
   mirrorNodeLink: string,
