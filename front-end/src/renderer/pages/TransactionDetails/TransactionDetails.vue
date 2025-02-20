@@ -3,7 +3,7 @@ import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@main/shared/interfaces';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
@@ -20,7 +20,7 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
-import { getTransactionById } from '@renderer/services/organization';
+import { getApiGroupById, getTransactionById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
 
 import {
@@ -50,6 +50,7 @@ import txTypeComponentMapping from '@renderer/components/Transaction/Details/txT
 
 import TransactionDetailsHeader from './components/TransactionDetailsHeader.vue';
 import TransactionDetailsStatusStepper from './components/TransactionDetailsStatusStepper.vue';
+import { getGroup } from '@renderer/services/transactionGroupsService';
 
 /* Stores */
 const user = useUserStore();
@@ -62,6 +63,7 @@ const nextTransaction = useNextTransactionStore();
 const router = useRouter();
 const ws = useDisposableWs();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
+const route = useRoute();
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);
@@ -72,6 +74,7 @@ const nextId = ref<string | number | null>(null);
 const prevId = ref<string | number | null>(null);
 const feePayer = ref<string | null>(null);
 const feePayerNickname = ref<string | null>(null);
+const groupDescription = ref<string | undefined>(undefined);
 
 /* Computed */
 const transactionSpecificLabel = computed(() => {
@@ -104,9 +107,23 @@ async function fetchTransaction(id: string | number) {
         Number(id),
       );
       transactionBytes = hexToUint8Array(orgTransaction.value.transactionBytes);
+
+      if (orgTransaction.value?.groupItem?.groupId) {
+        if (user.selectedOrganization?.serverUrl) {
+          const orgGroup = await getApiGroupById(
+            user.selectedOrganization?.serverUrl,
+            orgTransaction.value.groupItem.groupId,
+          );
+          groupDescription.value = orgGroup.description;
+        }
+      }
     } else {
       localTransaction.value = await getTransaction(id.toString());
       transactionBytes = getUInt8ArrayFromBytesString(localTransaction.value.body);
+      if (localTransaction.value?.group_id) {
+        const localGroup = await getGroup(localTransaction.value.group_id.toString());
+        groupDescription.value = localGroup.description;
+      }
     }
   } catch (error) {
     router.back();
@@ -177,6 +194,16 @@ onBeforeMount(async () => {
   prevId.value = result[2];
 });
 
+onBeforeRouteLeave(to => {
+  if (to.name === 'transactionGroupDetails') {
+    if (route.query.fromInProgress) {
+      to.query = { ...to.query, previousTab: 'inProgress' };
+    } else {
+      to.query = { ...to.query, previousTab: 'transactionDetails' };
+    }
+  }
+});
+
 /* Watchers */
 wsStore.$onAction(ctx => {
   if (ctx.name !== 'setup') return;
@@ -209,6 +236,8 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           :local-transaction="localTransaction"
           :next-id="nextId"
           :previous-id="prevId"
+          :local-group-description="groupDescription"
+          :org-group-description="groupDescription"
         />
 
         <Transition name="fade" mode="out-in">

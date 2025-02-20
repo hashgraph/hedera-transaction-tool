@@ -38,7 +38,6 @@ function handleNow() {
     :clearable="clearable"
     auto-apply
     partial-flow
-    :flow="['date', 'time']"
     text-input
     :config="{
       keepActionRow: true,
@@ -52,6 +51,7 @@ function handleNow() {
     :placeholder="placeholder"
     :min-date="minDate"
     :max-date="maxDate"
+    teleport="body"
     class="is-fill"
     enable-seconds
     @open="$emit('open')"

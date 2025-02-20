@@ -16,6 +16,7 @@ import {
   deleteKeyPair,
   updateNickname,
   updateMnemonicHash,
+  updateIndex,
 } from '@main/services/localUser';
 
 vi.mock('@main/services/localUser', () => mockDeep());
@@ -34,6 +35,7 @@ describe('IPC handlers Key Pairs', () => {
   const keyPairId = 'keyPairId';
   const nickname = 'nickname';
   const mnemonicHash = 'mnemonicHash';
+  const index = 1;
 
   test('Should register handlers for each event', () => {
     const events = [
@@ -43,6 +45,7 @@ describe('IPC handlers Key Pairs', () => {
       'changeDecryptionPassword',
       'updateNickname',
       'updateMnemonicHash',
+      'updateIndex',
       'deleteEncryptedPrivateKeys',
       'deleteKeyPair',
       'decryptPrivateKey',
@@ -114,5 +117,10 @@ describe('IPC handlers Key Pairs', () => {
   test('Should set up updateMnemonicHash handler', async () => {
     await invokeIPCHandler('keyPairs:updateMnemonicHash', keyPairId, mnemonicHash);
     expect(updateMnemonicHash).toHaveBeenCalledWith(keyPairId, mnemonicHash);
+  });
+
+  test('Should set up updateIndex handler', async () => {
+    await invokeIPCHandler('keyPairs:updateIndex', keyPairId, index);
+    expect(updateIndex).toHaveBeenCalledWith(keyPairId, index);
   });
 });

@@ -17,6 +17,7 @@ import {
   storeKeyPair,
   updateMnemonicHash,
   updateNickname,
+  updateIndex,
 } from '@main/services/localUser/keyPairs';
 import { getOrganization } from '@main/services/localUser/organizations';
 import { getCurrentUser } from '@main/services/localUser/organizationCredentials';
@@ -396,6 +397,23 @@ describe('Services Local User Key Pairs', () => {
       expect(prisma.keyPair.update).toHaveBeenCalledWith({
         where: { id: keyPair.id },
         data: { secret_hash: mnemonicHash },
+      });
+    });
+  });
+
+  describe('updateIndex', () => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+    });
+
+    test('Should update the index of the key pair', async () => {
+      const index = 1;
+
+      await updateIndex(keyPair.id, index);
+
+      expect(prisma.keyPair.update).toHaveBeenCalledWith({
+        where: { id: keyPair.id },
+        data: { index },
       });
     });
   });

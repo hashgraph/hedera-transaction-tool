@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { IGroup } from '@renderer/services/organization';
+import { TransactionStatus } from '@main/shared/interfaces';
 
-import { onBeforeMount, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onBeforeMount, ref, watch, watchEffect } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { Transaction } from '@hashgraph/sdk';
 
 import { historyTitle, TRANSACTION_ACTION } from '@main/shared/constants';
@@ -17,6 +18,7 @@ import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import {
   getApiGroupById,
@@ -35,6 +37,7 @@ import {
   isLoggedInOrganization,
   isUserLoggedIn,
   publicRequiredToSign,
+  usersPublicRequiredToSign,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -51,10 +54,12 @@ const nextTransaction = useNextTransactionStore();
 
 /* Composables */
 const router = useRouter();
+const route = useRoute();
 const toast = useToast();
 const ws = useDisposableWs();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
+const createTooltips = useCreateTooltips();
 
 /* State */
 const group = ref<IGroup | null>(null);
@@ -64,6 +69,25 @@ const publicKeysRequiredToSign = ref<string[] | null>([]);
 const disableSignAll = ref(false);
 const isSigning = ref(false);
 const isApproving = ref(false);
+const unsignedSignersToCheck = ref<Record<string, string[]>>({});
+const tooltipRef = ref<HTMLElement[]>([]);
+
+/* Computed */
+const tooltipText = computed(() => {
+  if (route.query.previousTab) {
+    const previousTab = route.query.previousTab;
+    if (
+      previousTab === 'readyToSign' ||
+      previousTab === 'transactionDetails' ||
+      previousTab === 'createGroup'
+    ) {
+      return 'You have successfully signed the transaction!';
+    } else if (previousTab === 'inProgress') {
+      return 'Transaction is signed by all required signers!';
+    }
+  }
+  return '';
+});
 
 /* Handlers */
 async function handleFetchGroup(id: string | number) {
@@ -78,14 +102,37 @@ async function handleFetchGroup(id: string | number) {
             (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id));
 
           const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
+          const tx = Transaction.fromBytes(transactionBytes);
+          const txId = item.transaction.id;
 
-          const newKeys = await publicRequiredToSign(
-            Transaction.fromBytes(transactionBytes),
+          const { usersPublicKeys } = await publicRequiredToSign(
+            tx,
             user.selectedOrganization.userKeys,
             network.mirrorNodeBaseURL,
           );
 
-          publicKeysRequiredToSign.value = publicKeysRequiredToSign.value!.concat(newKeys);
+          const signedSigners = new Set([...tx._signerPublicKeys]);
+
+          const usersUnsigned = usersPublicKeys.length
+            ? usersPublicKeys.filter(pk => !signedSigners.has(pk))
+            : [];
+
+          if (route.query.previousTab) {
+            const previousTab = route.query.previousTab;
+            if (
+              (previousTab === 'readyToSign' ||
+                previousTab === 'transactionDetails' ||
+                previousTab === 'createGroup') &&
+              usersPublicKeys.length > 0
+            ) {
+              unsignedSignersToCheck.value = {
+                ...unsignedSignersToCheck.value,
+                [txId]: usersUnsigned,
+              };
+            }
+          }
+
+          publicKeysRequiredToSign.value = publicKeysRequiredToSign.value!.concat(usersUnsigned);
         }
       }
     } catch (error) {
@@ -114,7 +161,11 @@ const handleSign = async (id: number) => {
     .map(t => t.transaction.id);
   nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
 
-  redirectToDetails(router, id, true);
+  if (route.query.previousTab && route.query.previousTab === 'inProgress') {
+    redirectToDetails(router, id, true, false, true);
+  } else {
+    redirectToDetails(router, id, true);
+  }
 };
 
 const handleSignGroup = async () => {
@@ -133,7 +184,7 @@ const handleSignGroup = async () => {
       for (const groupItem of group.value.groupItems) {
         const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
         const transaction = Transaction.fromBytes(transactionBytes);
-        const publicKeysRequired = await publicRequiredToSign(
+        const publicKeysRequired = await usersPublicRequiredToSign(
           transaction,
           user.selectedOrganization.userKeys,
           network.mirrorNodeBaseURL,
@@ -242,6 +293,7 @@ function setGetTransactionsFunction() {
     };
   }, false);
 }
+
 /* Hooks */
 onBeforeMount(async () => {
   const id = router.currentRoute.value.params.id;
@@ -267,6 +319,12 @@ watch(
     router.back();
   },
 );
+
+watchEffect(() => {
+  if (tooltipRef.value && tooltipRef.value.length > 0) {
+    createTooltips();
+  }
+});
 </script>
 <template>
   <div class="p-5">
@@ -304,7 +362,8 @@ watch(
                   <table class="table-custom">
                     <thead>
                       <tr>
-                        <th>
+                        <th v-if="route.query.previousTab" class="ps-3 pe-1"></th>
+                        <th :class="route.query.previousTab ? 'ps-1' : ''">
                           <div>
                             <span>Transaction ID</span>
                           </div>
@@ -329,7 +388,39 @@ watch(
                         <Transition name="fade" mode="out-in">
                           <template v-if="groupItem">
                             <tr>
-                              <td data-testid="td-group-transaction-id">
+                              <td
+                                v-if="
+                                  route.query &&
+                                  route.query.previousTab &&
+                                  groupItem.transaction.status
+                                "
+                                class="pe-0 ps-3"
+                              >
+                                <span
+                                  v-if="
+                                    (route.query.previousTab !== 'inProgress' &&
+                                      unsignedSignersToCheck[groupItem.transaction.id] &&
+                                      unsignedSignersToCheck[groupItem.transaction.id].length ===
+                                        0) ||
+                                    (route.query.previousTab === 'inProgress' &&
+                                      groupItem.transaction.status ===
+                                        TransactionStatus.WAITING_FOR_EXECUTION)
+                                  "
+                                  data-bs-toggle="tooltip"
+                                  data-bs-custom-class="wide-tooltip"
+                                  data-bs-trigger="hover"
+                                  data-bs-placement="top"
+                                  :title="tooltipText"
+                                  ref="tooltipRef"
+                                  class="bi bi-check-lg text-success"
+                                ></span>
+                              </td>
+                              <td
+                                data-testid="td-group-transaction-id"
+                                :class="
+                                  Object.keys(unsignedSignersToCheck).length > 0 ? 'ps-2 pe-0' : ''
+                                "
+                              >
                                 {{ groupItem.transaction.transactionId }}
                               </td>
                               <td>
@@ -348,8 +439,8 @@ watch(
                                   color="secondary"
                                   @click.prevent="handleSign(groupItem.transaction.id)"
                                   :data-testid="`button-group-transaction-${index}`"
-                                  >Details</AppButton
-                                >
+                                  ><span>Details</span>
+                                </AppButton>
                               </td>
                             </tr>
                           </template>

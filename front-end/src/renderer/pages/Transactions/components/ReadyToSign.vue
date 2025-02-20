@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ITransaction } from '@main/shared/interfaces';
+import type { IGroup, ITransaction } from '@main/shared/interfaces';
 
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 
@@ -18,7 +18,7 @@ import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
-import { getApiGroups, getTransactionsToSign } from '@renderer/services/organization';
+import { getApiGroupById, getTransactionsToSign } from '@renderer/services/organization';
 
 import {
   getNotifiedTransactions,
@@ -61,7 +61,7 @@ const transactions = ref<
     }[]
   >
 >(new Map());
-const groups = ref();
+const groups = ref<IGroup[]>([]);
 const notifiedTransactionIds = ref<number[]>([]);
 const totalItems = ref(0);
 const currentPage = ref(1);
@@ -149,6 +149,8 @@ async function fetchTransactions() {
       hexToUint8Array(t.transaction.transactionBytes),
     );
 
+    const groupIds: number[] = [];
+
     for (const [i, item] of rawTransactions.entries()) {
       const currentGroup =
         item.transaction.groupItem?.groupId != null ? item.transaction.groupItem.groupId : -1;
@@ -165,6 +167,11 @@ async function fetchTransactions() {
       } else {
         transactions.value.set(currentGroup, new Array(newVal));
       }
+
+      if (item.transaction.groupItem?.groupId && !groupIds.includes(item.transaction.groupItem.groupId)) {
+      groupIds.push(item.transaction.groupItem.groupId);
+      }
+
     }
 
     const notificationsKey = user.selectedOrganization?.serverUrl || '';
@@ -176,7 +183,16 @@ async function fetchTransactions() {
 
     setNotifiedTransactions();
 
-    groups.value = await getApiGroups(user.selectedOrganization.serverUrl);
+    if (groupIds.length > 0) {
+      const fetchedGroups: IGroup[] = [];
+      for (const id of groupIds) {
+        if (user.selectedOrganization?.serverUrl) {
+          const group = await getApiGroupById(user.selectedOrganization.serverUrl, id);
+          fetchedGroups.push(group);
+        }
+      }
+      groups.value = fetchedGroups;
+    }
   } finally {
     isLoading.value = false;
   }
@@ -314,7 +330,9 @@ watch(
                   <td>
                     <i class="bi bi-stack" />
                   </td>
-                  <td>{{ groups[group[0] - 1]?.description }}</td>
+                  <td>
+                    {{ groups[group[0] - 1]?.description || groups.find((g: Record<any, any>) => g.id === group[0])?.description }}
+                  </td>
                   <td>
                     {{
                       group[1][0].transaction instanceof Transaction
@@ -324,11 +342,12 @@ watch(
                   </td>
                   <td class="text-center">
                     <AppButton
-                      @click="redirectToGroupDetails($router, group[0])"
+                      @click="redirectToGroupDetails($router, group[0], false, 'readyToSign')"
                       color="secondary"
                       data-testid="button-group-details"
-                      >Details</AppButton
                     >
+                      Details
+                    </AppButton>
                   </td>
                 </tr>
               </template>

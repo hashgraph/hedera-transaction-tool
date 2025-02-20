@@ -1,5 +1,5 @@
 import type { INotificationReceiver, ITransaction } from '@main/shared/interfaces';
-import { NotificationType } from '@main/shared/interfaces';
+import { NotificationType, TransactionStatus } from '@main/shared/interfaces';
 
 export const getNotifiedTransactions = (
   notifications: INotificationReceiver[],
@@ -20,3 +20,11 @@ export const getNotifiedTransactions = (
 
   return [];
 };
+
+export function countWaitingForSignatures(txList: { transactionRaw: ITransaction }[]): number {
+  return txList.reduce(
+    (count, tx) =>
+      tx.transactionRaw.status === TransactionStatus.WAITING_FOR_SIGNATURES ? count + 1 : count,
+    0,
+  );
+}

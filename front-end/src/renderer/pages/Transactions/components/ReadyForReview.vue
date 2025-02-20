@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ITransaction } from '@main/shared/interfaces';
+import type { IGroup, ITransaction } from '@main/shared/interfaces';
 
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 
@@ -18,7 +18,7 @@ import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
-import { getApiGroups, getTransactionsToApprove } from '@renderer/services/organization';
+import { getApiGroupById, getTransactionsToApprove } from '@renderer/services/organization';
 
 import {
   getNotifiedTransactions,
@@ -60,7 +60,7 @@ const transactions = ref<
     }[]
   >
 >(new Map());
-const groups = ref();
+const groups = ref<IGroup[]>([]);
 const notifiedTransactionIds = ref<number[]>([]);
 const totalItems = ref(0);
 const currentPage = ref(1);
@@ -156,6 +156,9 @@ async function fetchTransactions() {
     totalItems.value = totalItemsCount;
 
     const transactionsBytes = rawTransactions.map(t => hexToUint8Array(t.transactionBytes));
+
+    const groupIds: number[] = [];
+
     for (const [i, transaction] of rawTransactions.entries()) {
       const currentGroup =
         transaction.groupItem?.groupId != null ? transaction.groupItem.groupId : -1;
@@ -170,11 +173,24 @@ async function fetchTransactions() {
       } else {
         transactions.value.set(currentGroup, new Array(newVal));
       }
+
+      if (transaction.groupItem?.groupId && !groupIds.includes(transaction.groupItem?.groupId)) {
+      groupIds.push(transaction.groupItem.groupId);
+      }
     }
 
     setNotifiedTransactions();
 
-    groups.value = await getApiGroups(user.selectedOrganization.serverUrl);
+    if (groupIds.length > 0) {
+      const fetchedGroups: IGroup[] = [];
+      for (const id of groupIds) {
+        if (user.selectedOrganization?.serverUrl) {
+          const group = await getApiGroupById(user.selectedOrganization.serverUrl, id);
+          fetchedGroups.push(group);
+        }
+      }
+      groups.value = fetchedGroups;
+    }
   } finally {
     isLoading.value = false;
   }
@@ -308,7 +324,7 @@ watch(
                   <td>
                     <i class="bi bi-stack" />
                   </td>
-                  <td>{{ groups[group[0] - 1]?.description }}</td>
+                  <td>{{ groups[group[0] - 1]?.description || groups.find((g: Record<any, any>) => g.id === group[0])?.description }}</td>
                   <td>
                     {{
                       group[1][0].transaction instanceof Transaction
