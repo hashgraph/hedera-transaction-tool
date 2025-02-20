@@ -59,7 +59,12 @@ const useNicknamesStore = defineStore('nicknames', {
         if (nickNameKey[1].keyId) {
           await updateComplexKey(nickNameKey[1].keyId, keyListBytes, nickname);
         } else {
-          await addComplexKey(user.personal.id, keyListBytes, nickname)
+          try {
+            await addComplexKey(user.personal.id, keyListBytes, nickname);
+          } catch {
+            const existingNickname = await getComplexKey(user.personal.id, nickNameKey[1].key as KeyList);
+            throw Error(`${existingNickname.nickname} and ${nickname} have the same key structure.  Nicknames must have unique key structures.`)
+          }
         }
       }
 

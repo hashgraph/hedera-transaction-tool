@@ -47,7 +47,7 @@ const handleSaveComplexKeyButtonClick = () => {
     return;
   }
 
-  emit('update:modelKey', currentKey.value);
+  emit('update:modelKey', currentKey.value, true);
 
   if (props.onSaveComplexKey) {
     props.onSaveComplexKey();

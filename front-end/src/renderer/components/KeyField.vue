@@ -102,7 +102,7 @@ const handleEditComplexKey = () => {
   complexKeyModalShown.value = true;
 };
 
-const handleComplexKeyUpdate = async (keyList: KeyList) => {
+const handleComplexKeyUpdate = async (keyList: KeyList, saveButton?: boolean) => {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
@@ -115,7 +115,9 @@ const handleComplexKeyUpdate = async (keyList: KeyList) => {
     selectedComplexKey.value = updatedKey;
   }
 
-  await nicknames.saveNicknames();
+  if (!saveButton) {
+    await nicknames.saveNicknames();
+  }
 
   if (!selectedComplexKey.value) {
     selectedComplexKey.value = await nicknames.getKeyListStructure(keyList);
