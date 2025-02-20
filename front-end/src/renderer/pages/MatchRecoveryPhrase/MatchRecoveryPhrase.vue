@@ -49,6 +49,7 @@ const handleSearch = async () => {
 const handleAbort = async () => {
   loadingText.value = 'Aborting the search...';
   abortController.value?.abort();
+  loadingText.value = null;
 };
 
 watch([startIndex, endIndex], async ([start, end]) => {
