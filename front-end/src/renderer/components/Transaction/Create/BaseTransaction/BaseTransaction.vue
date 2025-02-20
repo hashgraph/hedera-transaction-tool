@@ -32,7 +32,9 @@ import BaseTransactionModal from '@renderer/components/Transaction/Create/BaseTr
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionInfoControls from '@renderer/components/Transaction/TransactionInfoControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
+import TransactionProcessor, {
+  TransactionRequest,
+} from '@renderer/components/Transaction/TransactionProcessor';
 import BaseDraftLoad from '@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.vue';
 import BaseGroupHandler from '@renderer/components/Transaction/Create/BaseTransaction/BaseGroupHandler.vue';
 import BaseApproversObserverData from '@renderer/components/Transaction/Create/BaseTransaction/BaseApproversObserverData.vue';
@@ -128,14 +130,14 @@ const handleCreate = async () => {
   if ((await preCreateAssert?.()) === false) return;
 
   await transactionProcessor.value?.process(
-    {
+    TransactionRequest.fromData({
       transactionKey: transactionKey.value,
       transactionBytes: createTransaction({ ...data } as TransactionCommonData).toBytes(),
       name: name.value.trim(),
       description: description.value.trim(),
       submitManually: submitManually.value,
       reminderMillisecondsBefore: reminder.value,
-    },
+    }),
     observers.value,
     approvers.value,
   );

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Handler, TransactionRequest } from '..';
+import { TransactionRequest, type Handler, type Processable } from '..';
 
 import { computed, ref } from 'vue';
 import { Transaction } from '@hashgraph/sdk';
@@ -42,7 +42,12 @@ function setNext(next: Handler) {
   nextHandler.value = next;
 }
 
-async function handle(req: TransactionRequest) {
+async function handle(req: Processable) {
+  if (!(req instanceof TransactionRequest)) {
+    await nextHandler.value?.handle(req);
+    return;
+  }
+
   request.value = req;
 
   if (localPublicKeys.value.length === 0)
@@ -73,10 +78,8 @@ async function sign() {
 
     emit('transaction:sign:success');
 
-    await nextHandler.value?.handle({
-      ...request.value,
-      transactionBytes: signed,
-    });
+    request.value.transactionBytes = signed;
+    await nextHandler.value?.handle(request.value);
   } catch (error) {
     emit('transaction:sign:fail');
     throw error;

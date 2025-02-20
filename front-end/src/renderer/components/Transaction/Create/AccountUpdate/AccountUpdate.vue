@@ -38,10 +38,7 @@ const multipleAccountsData = ref<AccountUpdateDataMultiple | null>(null);
 const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
     createAccountUpdateTransaction(
-      {
-        ...common,
-        ...(data as AccountUpdateData),
-      },
+      { ...common, ...data },
       accountData.accountInfo.value as IAccountInfoParsed,
     );
 });
@@ -79,8 +76,14 @@ const handleUpdateData = (newData: AccountUpdateData) => {
 
 /* Functions */
 const preCreateAssert = () => {
-  if (!isAccountId(accountData.accountId.value) || !accountData.key.value) {
-    throw Error('Invalid Account ID');
+  if (multipleAccountsData.value) {
+    if (multipleAccountsData.value.accountIds.length === 0 || !multipleAccountsData.value.key) {
+      throw Error('Invalid Account IDs');
+    }
+  } else {
+    if (!isAccountId(accountData.accountId.value) || !accountData.key.value) {
+      throw Error('Invalid Account ID');
+    }
   }
 };
 
