@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  CustomRequest,
   MultipleAccountUpdateRequest,
   TransactionRequest,
   type Handler,
@@ -12,6 +13,7 @@ import { FileCreateTransaction, Transaction } from '@hashgraph/sdk';
 import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import {
   assertUserLoggedIn,
@@ -25,6 +27,7 @@ const SIZE_BUFFER_BYTES = 200;
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* State */
 const nextHandler = ref<Handler | null>(null);
@@ -43,13 +46,14 @@ async function handle(request: Processable) {
 
     validate(request, transaction);
 
-    if (nextHandler.value) {
-      request.name = request.name || '';
-      request.description = request.description || '';
-      await nextHandler.value.handle(request);
-    }
-  } else if (request instanceof MultipleAccountUpdateRequest) {
-    // TODO
+    request.name = request.name || '';
+    request.description = request.description || '';
+  } else if (request instanceof CustomRequest) {
+    await validateCustomRequest(request);
+  }
+
+  if (nextHandler.value) {
+    await nextHandler.value.handle(request);
   }
 }
 
@@ -97,6 +101,8 @@ function validateBigFile(transaction: FileCreateTransaction) {
     );
   }
 }
+
+async function validateCustomRequest(request: CustomRequest) {}
 
 /* Expose */
 defineExpose({
