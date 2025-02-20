@@ -27,7 +27,6 @@ export default {
       title: string,
       buttonLabel: string,
       filters: FileFilter[],
-      properties: ('openFile' | 'openDirectory' | 'multiSelections')[],
       message: string,
     ): Promise<void> =>
       ipcRenderer.invoke(
@@ -37,7 +36,6 @@ export default {
         title,
         buttonLabel,
         filters,
-        properties,
         message,
       ),
     sha384: (str: string): Promise<string> => ipcRenderer.invoke('utils:sha384', str),
