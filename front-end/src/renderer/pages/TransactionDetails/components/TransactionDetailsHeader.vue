@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Transaction } from '@prisma/client';
-import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
+import type { ITransactionFull } from '@main/shared/interfaces';
+import { TransactionStatus } from '@main/shared/interfaces';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 
@@ -140,10 +141,6 @@ const isCreator = computed(() => {
   return creator.value.user.id === user.selectedOrganization.userId;
 });
 
-const isAdmin = computed(() => {
-  return user.selectedOrganization.role === 'admin';
-});
-
 const transactionIsInProgress = computed(
   () =>
     props.organizationTransaction &&
@@ -187,16 +184,12 @@ const canRemind = computed(() => {
     isCreator.value &&
     transactionIsInProgress.value
   );
-})
+});
 
 const canArchive = computed(() => {
   const isManual = props.organizationTransaction?.isManual;
 
-  return (
-    isManual &&
-    isCreator.value &&
-    transactionIsInProgress.value
-  );
+  return isManual && isCreator.value && transactionIsInProgress.value;
 });
 
 const visibleButtons = computed(() => {
