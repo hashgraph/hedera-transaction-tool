@@ -136,6 +136,7 @@ onBeforeMount(async () => {
         <tbody
           v-if="
             (user.selectedOrganization &&
+              listedPublicKeys.length > 0 &&
               listedPublicKeys.length === Object.keys(ownersMapping).length) ||
             (!user.selectedOrganization && listedPublicKeys.length)
           "
