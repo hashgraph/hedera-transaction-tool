@@ -67,6 +67,7 @@ const handleLinkAccount = async () => {
 };
 
 const handleBlur = (e: Event) => {
+  console.log('handle blur');
   const value = (e.target as HTMLInputElement).value;
   if (!value.includes('-')) {
     try {
@@ -98,8 +99,7 @@ const handleBlur = (e: Event) => {
           {{ accountData.isValid.value ? accountData.accountInfo.value?.balance || 0 : '-' }}</label
         >
         <AppInput
-          :model-value="accountData.accountIdFormatted.value"
-          @update:model-value="v => (accountData.accountId.value = formatAccountId(v))"
+          v-model="accountData.accountId.value"
           :filled="true"
           data-testid="input-existing-account-id"
           data-bs-toggle="tooltip"

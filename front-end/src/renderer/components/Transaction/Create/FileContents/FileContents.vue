@@ -175,13 +175,6 @@ onMounted(async () => {
   });
 });
 
-/* Watchers */
-watch(fileId, id => {
-  if (isFileId(id) && id !== '0') {
-    fileId.value = FileId.fromString(id).toString();
-  }
-});
-
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
 </script>
@@ -231,7 +224,7 @@ const columnClass = 'col-4 col-xxxl-3';
             <label class="form-label">File ID <span class="text-danger">*</span></label>
             <AppInput
               :model-value="fileId"
-              @update:model-value="v => (fileId = formatAccountId(v))"
+              @update:model-value="v => (fileId = v)"
               :filled="true"
               placeholder="Enter File ID"
               data-testid="input-file-id-for-read"
