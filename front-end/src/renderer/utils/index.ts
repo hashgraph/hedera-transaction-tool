@@ -1,6 +1,6 @@
 import type { AccountInfo } from '@main/shared/interfaces';
 import type { HederaAccount } from '@prisma/client';
-import { AccountId, Client } from '@hashgraph/sdk';
+import { AccountId, Client, Hbar, HbarUnit } from '@hashgraph/sdk';
 import { isUserLoggedIn } from './userStoreHelpers';
 import useUserStore from '@renderer/stores/storeUser';
 import { getOne } from '@renderer/services/accountsService';
@@ -9,6 +9,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 export * from './dom';
 export * from './sdk';
 export * from './transactions';
+export * from './transferTransactions';
 export * from './validator';
 export * from './axios';
 export * from './ipc';
@@ -179,3 +180,12 @@ export const getAccountIdWithChecksum = (accountId: string): string => {
     return accountId;
   }
 };
+
+export function stringifyHbarWithFont(hbar: Hbar, fontClass: string): string {
+  const tinybars = Math.abs(hbar.toTinybars());
+  const isHbar = tinybars >= Hbar.fromTinybars(1_000_000).toTinybars();
+  const symbol = isHbar ? HbarUnit.Hbar._symbol : HbarUnit.Tinybar._symbol;
+  const amountString = isHbar ? hbar.to(HbarUnit.Hbar).toString() : hbar.to(HbarUnit.Tinybar).toString();
+
+  return `${amountString} <span class="${fontClass}">${symbol}</span>`;
+}

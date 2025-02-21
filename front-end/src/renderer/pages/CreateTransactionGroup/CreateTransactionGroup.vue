@@ -15,6 +15,7 @@ import { deleteGroup } from '@renderer/services/transactionGroupsService';
 
 import {
   assertUserLoggedIn,
+  formatHbarTransfers,
   getErrorMessage,
   getPropagationButtonLabel,
   isLoggedInOrganization,
@@ -327,43 +328,7 @@ function makeTransfer(index: number) {
     ) as TransferTransaction
   ).hbarTransfersList;
 
-  if (transfers.length === 0) {
-    return 'No transfers';
-  }
-
-  if (transfers.length === 1) {
-    const amount = transfers[0].amount;
-    if (amount.isNegative()) {
-      return 'Missing receiver';
-    } else {
-      return 'Missing sender';
-    }
-  }
-
-  if (transfers.length === 2) {
-    // if the amount is at least 1 hbar, show the amount as hbar, otherwise show it as tinybar
-    const formatAmount = (amount: Hbar) => {
-      const tinybars = Math.abs(amount.toTinybars());
-      const isHbar = tinybars >= Hbar.from(1).toTinybars();
-      const symbol = isHbar ? HbarUnit.Hbar._symbol : HbarUnit.Tinybar._symbol;
-      const amountString = isHbar ? amount.to(HbarUnit.Hbar).toString() : amount.to(HbarUnit.Tinybar).toString();
-
-      return `${amountString} <span class="text-semi-bold text-pink">${symbol}</span>`;
-    };
-
-    // the JS SDK sorts the order of the transfers by account ID. We don't want this. We want the sender to be on the
-    // left and the receiver to be on the right. So we need to check if the amount is negative or positive and then
-    // arrange the transfers accordingly
-    let sender = transfers[0];
-    let receiver = transfers[1];
-    if (receiver.amount.isNegative()) {
-      sender = transfers[1];
-      receiver = transfers[0];
-    }
-    return `${sender.accountId} --> ${formatAmount(receiver.amount)} --> ${receiver.accountId}`;
-  }
-
-  return 'Multiple transfers';
+  return formatHbarTransfers(transfers);
 }
 
 /* Hooks */
