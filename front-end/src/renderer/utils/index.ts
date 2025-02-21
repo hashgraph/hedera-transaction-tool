@@ -183,7 +183,7 @@ export const getAccountIdWithChecksum = (accountId: string): string => {
 
 export const formatPublickey = async (publicKey: string) => {
   const mapping = await getPublicKeyMapping(publicKey);
-  if (mapping) {
+  if (mapping && mapping.nickname) {
     return `${mapping.nickname} (${mapping.public_key})`;
   }
   const user = useUserStore();
@@ -202,4 +202,12 @@ export const formatPublickeyContactList = async (publicKey: string) => {
     return `${mapping.nickname} (${mapping.public_key})`;
   }
   return publicKey;
+};
+
+export const extractIdentifier = (formattedString: string) => {
+  const match = formattedString.match(/^(.*?)\s\(([\w]+)\)$/);
+  if (match) {
+    return { identifier: match[1], pk: match[2] };
+  }
+  return null;
 };
