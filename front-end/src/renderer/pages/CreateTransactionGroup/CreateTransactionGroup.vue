@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 
-import { Hbar, KeyList, PublicKey, TransferTransaction, Transaction } from '@hashgraph/sdk';
+import { Hbar, KeyList, PublicKey, TransferTransaction, Transaction, HbarUnit } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
@@ -218,27 +218,31 @@ async function handleOnFileChanged(e: Event) {
     let memo = '';
     let validStart: Date | null = null;
     for (const row of rows) {
-      const title = row.split(',')[0].toLowerCase();
+      const rowInfo = row.split(',');
+      const title = rowInfo[0].toLowerCase();
       switch (title) {
+        case 'transaction description':
+          transactionGroup.description = rowInfo[1];
+          break;
         case 'sender account':
-          senderAccount = row.split(',')[1];
+          senderAccount = rowInfo[1];
           break;
         case 'fee payer account':
-          feePayer = row.split(',')[1];
+          feePayer = rowInfo[1];
           break;
         case 'sending time':
-          sendingTime = row.split(',')[1];
+          sendingTime = rowInfo[1];
           break;
         case 'node ids':
           break;
         case 'transaction fee':
-          transactionFee = row.split(',')[1];
+          transactionFee = rowInfo[1];
           break;
         case 'transaction valid duration':
-          txValidDuration = row.split(',')[1];
+          txValidDuration = rowInfo[1];
           break;
         case 'memo':
-          memo = row.split(',')[1];
+          memo = rowInfo[1];
           break;
         case 'accountid':
         case 'account id':
@@ -249,7 +253,7 @@ async function handleOnFileChanged(e: Event) {
           } else {
             // Create the new validStart value, or add 1 millisecond to the existing one for subsequent transactions
             if (!validStart) {
-              const startDate = row.split(',')[2];
+              const startDate = rowInfo[2];
               validStart = new Date(`${startDate} ${sendingTime}`);
               if (validStart < new Date()) {
                 validStart = new Date();
@@ -261,16 +265,23 @@ async function handleOnFileChanged(e: Event) {
               .setTransactionValidDuration(txValidDuration ? Number.parseInt(txValidDuration) : 180)
               .setMaxTransactionFee(
                 transactionFee
-                  ? new Hbar(transactionFee)
-                  : Hbar.fromString(maxTransactionFee.value.toString()),
+                  ? new Hbar(transactionFee, HbarUnit.Tinybar)
+                  : maxTransactionFee.value
               );
 
             transaction.setTransactionId(
               createTransactionId(feePayer ? feePayer : senderAccount, validStart),
             );
-            transaction.addHbarTransfer(row.split(',')[0], row.split(',')[1]);
-            transaction.addHbarTransfer(senderAccount, Number.parseFloat(row.split(',')[1]) * -1);
-            transaction.setTransactionMemo(memo);
+            const transferAmount = rowInfo[1];
+            transaction.addHbarTransfer(rowInfo[0], new Hbar(transferAmount, HbarUnit.Tinybar));
+            transaction.addHbarTransfer(senderAccount, new Hbar(-transferAmount, HbarUnit.Tinybar));
+            // If memo is not provided for the row, use the memo from the header portion
+            // otherwise check if the memo is not 'n/a' and set it
+            if (rowInfo.length < 4 || !(rowInfo[3]?.trim())) {
+              transaction.setTransactionMemo(memo);
+            } else if (!/^(n\/a)$/i.test(rowInfo[3])) {
+              transaction.setTransactionMemo(rowInfo[3]);
+            }
 
             const transactionBytes = transaction.toBytes();
             const keys = new Array<string>();
@@ -315,12 +326,44 @@ function makeTransfer(index: number) {
       transactionGroup.groupItems[index].transactionBytes,
     ) as TransferTransaction
   ).hbarTransfersList;
-  const transfer =
-    transfers.length == 2
-      ? `${transfers[0].accountId} --> ${transfers[1].amount} --> ${transfers[1].accountId}`
-      : 'Multiple Transfers';
 
-  return transfer;
+  if (transfers.length === 0) {
+    return 'No transfers';
+  }
+
+  if (transfers.length === 1) {
+    const amount = transfers[0].amount;
+    if (amount.isNegative()) {
+      return 'Missing receiver';
+    } else {
+      return 'Missing sender';
+    }
+  }
+
+  if (transfers.length === 2) {
+    // if the amount is at least 1 hbar, show the amount as hbar, otherwise show it as tinybar
+    const formatAmount = (amount: Hbar) => {
+      const tinybars = Math.abs(amount.toTinybars());
+      const isHbar = tinybars >= Hbar.from(1).toTinybars();
+      const symbol = isHbar ? HbarUnit.Hbar._symbol : HbarUnit.Tinybar._symbol;
+      const amountString = isHbar ? amount.to(HbarUnit.Hbar).toString() : amount.to(HbarUnit.Tinybar).toString();
+
+      return `${amountString} <span class="text-semi-bold text-pink">${symbol}</span>`;
+    };
+
+    // the JS SDK sorts the order of the transfers by account ID. We don't want this. We want the sender to be on the
+    // left and the receiver to be on the right. So we need to check if the amount is negative or positive and then
+    // arrange the transfers accordingly
+    let sender = transfers[0];
+    let receiver = transfers[1];
+    if (receiver.amount.isNegative()) {
+      sender = transfers[1];
+      receiver = transfers[0];
+    }
+    return `${sender.accountId} --> ${formatAmount(receiver.amount)} --> ${receiver.accountId}`;
+  }
+
+  return 'Multiple transfers';
 }
 
 /* Hooks */
@@ -476,17 +519,14 @@ onBeforeRouteLeave(async to => {
               <div
                 class="align-self-center text-truncate col text-center mx-5"
                 :data-testid="'span-transaction-timestamp-' + index"
-              >
-                {{
-                  groupItem.type == 'Transfer Transaction'
-                    ? makeTransfer(index)
-                    : groupItem.description != ''
-                      ? groupItem.description
-                      : Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
-                        ? Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
-                        : createTransactionId(groupItem.payerAccountId, groupItem.validStart)
-                }}
-              </div>
+                v-html="groupItem.type == 'Transfer Transaction'
+                  ? makeTransfer(index)
+                  : groupItem.description != ''
+                    ? groupItem.description
+                    : Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
+                      ? Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
+                      : createTransactionId(groupItem.payerAccountId, groupItem.validStart)"
+              ></div>
               <div class="d-flex col justify-content-end">
                 <AppButton
                   type="button"
