@@ -68,7 +68,7 @@ const handleDeleteModal = (keyId: string) => {
 
 const handleDeleteSelectedClick = () => (isDeleteModalShown.value = true);
 
-/* Helep Functions */
+/* Helper Functions */
 const getOwnersFromOrganization = async () => {
   const publicKeys = user.publicKeyMappings.map(mapping => mapping.public_key);
 
@@ -89,6 +89,25 @@ watch(
       return;
     }
     await getOwnersFromOrganization();
+  },
+);
+
+watch(
+  () => user.publicKeyMappings,
+  async (newMappings, oldMappings) => {
+    if (newMappings.length <= oldMappings.length || !user.selectedOrganization) {
+      return;
+    }
+    const newItems = newMappings.filter(
+      newItem => !oldMappings.some(oldItem => oldItem.public_key === newItem.public_key),
+    );
+    const newPublicKeys = newItems.map(mapping => mapping.public_key);
+
+    const ownerPromises = newPublicKeys.map(async key => {
+      return { [key]: await getPublicKeyOwner(user.selectedOrganization!.serverUrl, key) };
+    });
+    const results: Record<string, string | null>[] = await Promise.all(ownerPromises);
+    Object.assign(ownersMapping.value, ...results);
   },
 );
 
@@ -133,15 +152,7 @@ onBeforeMount(async () => {
             </th>
           </tr>
         </thead>
-        <tbody
-          v-if="
-            (user.selectedOrganization &&
-              listedPublicKeys.length > 0 &&
-              listedPublicKeys.length === Object.keys(ownersMapping).length) ||
-            (!user.selectedOrganization && listedPublicKeys.length)
-          "
-          class="text-secondary"
-        >
+        <tbody class="text-secondary">
           <template v-for="(mapping, index) in listedPublicKeys" :key="mapping.public_key">
             <tr>
               <td>
