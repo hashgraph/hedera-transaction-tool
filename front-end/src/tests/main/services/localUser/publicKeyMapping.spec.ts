@@ -1,6 +1,8 @@
 import { expect, vi } from 'vitest';
 import * as fsp from 'fs/promises';
 import * as path from 'path';
+import { Dirent, Stats } from 'fs';
+import { app } from 'electron';
 
 import {
   searchPublicKeysAbort,
@@ -14,7 +16,6 @@ import {
 } from '@main/services/localUser/publicKeyMapping';
 import { getPrismaClient } from '@main/db/prisma';
 import { unzip } from '@main/utils/files';
-import { Dirent } from 'fs';
 
 vi.mock('fs/promises');
 vi.mock('path');
@@ -22,6 +23,9 @@ vi.mock('electron', () => ({ app: { getPath: vi.fn() } }));
 vi.mock('@main/utils/files');
 vi.mock('@main/db/prisma', () => ({
   getPrismaClient: vi.fn(),
+}));
+vi.mock('electron', () => ({
+  app: { getPath: vi.fn() },
 }));
 
 describe('PublicKeyMapping Service', () => {
@@ -141,6 +145,20 @@ describe('PublicKey Search and Abortable', () => {
       expect(result).toEqual([]);
     });
 
+    test('Should mark state as aborted when abort is called', async () => {
+      const abortable = new PublicAbortable(searchPublicKeysAbort);
+      expect(abortable.state.aborted).toBe(false);
+      abortable.abort();
+      expect(abortable.state.aborted).toBe(true);
+    });
+
+    test('Should return empty when search is aborted in _searchFromDir', async () => {
+      vi.mocked(fsp.readdir).mockResolvedValue(['key1.pub'] as unknown as Dirent[]);
+      abortable.abort();
+      const result = await searcher['_searchFromDir']('/path/to/dir');
+      expect(result).toEqual([]);
+    });
+
     test('Should log an error if directory deletion fails', async () => {
       const error = new Error('Failed to delete directory');
       vi.mocked(fsp.rm).mockRejectedValue(error);
@@ -209,6 +227,37 @@ describe('PublicKey Search and Abortable', () => {
       expect(consoleSpy).toHaveBeenCalledWith(error);
       expect(result.length).toBe(1);
       expect(result[0]).toEqual({ publicKey: 'VALID_KEY', nickname: 'key1' });
+    });
+
+    test('Should extract and search public keys inside a zip file', async () => {
+      vi.mocked(fsp.stat).mockResolvedValue({
+        isFile: () => true,
+        isDirectory: () => false,
+      } as any);
+      vi.mocked(path.extname).mockReturnValue('.zip');
+      vi.mocked(unzip).mockResolvedValue('');
+
+      const result = await searcher['_searchFromPath']('/path/to/archive.zip');
+
+      expect(result).toEqual([]);
+    });
+
+    test('Should search public keys in given zip path', async () => {
+      const filePaths = ['/path/to/file.zip'];
+      const tempDir = '/temp';
+
+      vi.mocked(app.getPath).mockReturnValue(tempDir);
+      vi.mocked(fsp.stat).mockResolvedValue({
+        isFile: () => true,
+        isDirectory: () => false,
+      } as Stats);
+
+      vi.mocked(path.extname).mockReturnValue('.zip');
+      vi.spyOn(searcher, '_searchFromZip' as any).mockImplementation(vi.fn());
+
+      await searcher.search(filePaths);
+
+      expect(searcher['_searchFromZip']).toHaveBeenCalledWith(filePaths[0]);
     });
 
     test('Should handle errors during ZIP extraction', async () => {
