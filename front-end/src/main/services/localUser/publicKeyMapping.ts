@@ -107,7 +107,7 @@ export class PublicKeySearcher {
 
     for (const filePath of filePaths) {
       if (this._abortable.state.aborted) break;
-      foundKeys.push(...(await this._searchFromPath(filePath)));
+      foundKeys.push(...((await this._searchFromPath(filePath)) || []));
     }
 
     if (this._abortable.state.aborted) {
@@ -143,9 +143,9 @@ export class PublicKeySearcher {
 
     try {
       if (isDirectory) {
-        foundKeys.push(...(await this._searchFromDir(filePath)));
+        foundKeys.push(...((await this._searchFromDir(filePath)) || []));
       } else if (isZip) {
-        foundKeys.push(...(await this._searchFromZip(filePath)));
+        foundKeys.push(...((await this._searchFromZip(filePath)) || []));
       } else if (isPublicKeyFile) {
         const fileDist = path.join(this.searchDir, path.basename(filePath));
         await fsp.copyFile(filePath, fileDist);
@@ -167,7 +167,7 @@ export class PublicKeySearcher {
     for (const fileName of dirFileNames) {
       if (this._abortable.state.aborted) return foundKeys;
       try {
-        foundKeys.push(...(await this._searchFromPath(path.join(dir, fileName))));
+        foundKeys.push(...((await this._searchFromPath(path.join(dir, fileName))) || []));
       } catch (error) {
         console.log(error);
       }
@@ -176,12 +176,19 @@ export class PublicKeySearcher {
     return foundKeys;
   }
 
-  private async _searchFromZip(zipPath: string) {
+  private async _searchFromZip(
+    zipPath: string,
+  ): Promise<{ publicKey: string; nickname: string }[]> {
     const dist = path.join(app.getPath('temp'), `unzipped_${Date.now()}`);
     this.unzipDirs.push(dist);
 
-    await unzip(zipPath, dist, this.extensions, this._abortable.state);
-    return await this._searchFromDir(dist);
+    try {
+      await unzip(zipPath, dist, this.extensions, this._abortable.state);
+      return (await this._searchFromDir(dist)) || [];
+    } catch (error) {
+      console.error('Error extracting zip:', zipPath, error);
+      return [];
+    }
   }
 
   private async _createSearchDir() {
