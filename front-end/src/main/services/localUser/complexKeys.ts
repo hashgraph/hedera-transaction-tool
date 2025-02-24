@@ -90,10 +90,13 @@ export const deleteComplexKey = async (id: string) => {
   });
 };
 
-export const updateComplexKey = async (id: string, newKeyListBytes: Uint8Array, nickname?: string) => {
+export const updateComplexKey = async (id: string, newKeyListBytes?: Uint8Array, nickname?: string) => {
   const prisma = getPrismaClient();
+  let newProtobufEncoded;
 
-  const newProtobufEncoded = Buffer.from(newKeyListBytes).toString('hex');
+  if (newKeyListBytes) {
+    newProtobufEncoded = Buffer.from(newKeyListBytes).toString('hex');
+  }
 
   await prisma.complexKey.updateMany({
     where: {
