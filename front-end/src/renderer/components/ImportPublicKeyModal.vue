@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { reactive, watch } from 'vue';
 
+import { PublicKey } from '@hashgraph/sdk';
 import useUserStore from '@renderer/stores/storeUser';
-
 import { useToast } from 'vue-toast-notification';
-
-import { assertUserLoggedIn, getErrorMessage } from '@renderer/utils';
+import { getErrorMessage } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -31,8 +30,13 @@ const publicKeyMapping = reactive<{ publicKey: string; nickname: string }>({
   nickname: '',
 });
 
+/* Handlers */
 const handleImportPublicKey = async () => {
   try {
+    const isValid = checkPublicKey(publicKeyMapping.publicKey);
+    if (!isValid) {
+      throw new Error('Invalid public key! Please enter a valid Hedera public key.');
+    }
     await user.storePublicKeyMapping(publicKeyMapping.publicKey, publicKeyMapping.nickname);
 
     emit('update:show', false);
@@ -40,6 +44,16 @@ const handleImportPublicKey = async () => {
     toast.success(`Public key and nickname imported successfully`);
   } catch (error) {
     toast.error(getErrorMessage(error, `Failed to import public key key`));
+  }
+};
+
+/* Helper functions */
+const checkPublicKey = (key: string) => {
+  try {
+    PublicKey.fromString(key);
+    return true;
+  } catch {
+    return false;
   }
 };
 

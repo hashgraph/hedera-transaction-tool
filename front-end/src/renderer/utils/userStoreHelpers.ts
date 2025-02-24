@@ -752,14 +752,18 @@ export const addPublicKeyMapping = async (publicKey: string, nickname: string) =
   return await pks.addPublicKey(publicKey, nickname);
 };
 
-export const updatePublicKeyNickname = async (publicKey: string, newNickname: string) => {
+export const updatePublicKeyNickname = async (
+  id: string,
+  publicKey: string,
+  newNickname: string,
+) => {
   const existingKey = await getPublicKeyMapping(publicKey);
   if (existingKey?.nickname === newNickname) {
     throw new Error('You need to set a different nickname than the previous one!');
   }
-  return await pks.editPublicKeyNickname(publicKey, newNickname);
+  return await pks.editPublicKeyNickname(id, newNickname);
 };
 
-export const deletePublicKeyMapping = async (publicKey: string) => {
-  return await pks.deletePublicKey(publicKey);
+export const deletePublicKeyMapping = async (id: string) => {
+  return await pks.deletePublicKey(id);
 };
