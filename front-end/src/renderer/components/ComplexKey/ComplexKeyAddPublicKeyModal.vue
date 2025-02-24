@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import { PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useContactsStore from '@renderer/stores/storeContacts';
 
-import { isPublicKey, isLoggedInOrganization } from '@renderer/utils';
+import { isPublicKey, isLoggedInOrganization, findIdentifier } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppListItem from '@renderer/components/ui/AppListItem.vue';
@@ -41,6 +41,8 @@ const contacts = useContactsStore();
 const publicKey = ref('');
 const selectedPublicKeys = ref<string[]>([]);
 const currentTab = ref(KeyTab.MY);
+const identifiers = ref<string[]>([]);
+const isLoadingIdentifiers = ref(false);
 
 /* Computed */
 const myKeys = computed(() => {
@@ -130,6 +132,40 @@ function filterKeyList(keyList: { publicKey: string; nickname: string | null }[]
     );
   });
 }
+
+/* Watchers */
+watch(
+  listedKeyList,
+  async newList => {
+    if (newList.length === 0) {
+      identifiers.value = [];
+      return;
+    }
+
+    isLoadingIdentifiers.value = true;
+
+    try {
+      const tempIdentifiers = await Promise.all(
+        newList.map(async key => {
+          try {
+            const identifier = await findIdentifier(key.publicKey);
+            return identifier || 'Public Key';
+          } catch (error) {
+            console.error(`Failed to find owner/nickname for key: ${key.publicKey}`, error);
+            return 'Public Key';
+          }
+        }),
+      );
+
+      identifiers.value = tempIdentifiers;
+    } catch (error) {
+      console.error('Error processing identifiers:', error);
+    } finally {
+      isLoadingIdentifiers.value = false;
+    }
+  },
+  { immediate: true },
+);
 </script>
 <template>
   <AppModal :show="show" @update:show="$emit('update:show', $event)" class="large-modal">
@@ -171,9 +207,9 @@ function filterKeyList(keyList: { publicKey: string; nickname: string | null }[]
           </div>
         </template>
         <div>
-          <template v-if="listedKeyList.length > 0">
+          <template v-if="listedKeyList.length > 0 && !isLoadingIdentifiers">
             <div class="overflow-auto mt-4" :style="{ height: '35vh' }">
-              <template v-for="kp in listedKeyList" :key="kp.public_key">
+              <template v-for="(kp, index) in listedKeyList" :key="kp.publicKey">
                 <AppListItem
                   class="mt-3"
                   :selected="
@@ -193,12 +229,7 @@ function filterKeyList(keyList: { publicKey: string; nickname: string | null }[]
                   <div class="d-flex overflow-hidden">
                     <p class="text-nowrap">
                       <span class="bi bi-key m-2"></span>
-                      <span class="ms-2 text-nowrap">{{
-                        kp.nickname ||
-                        contacts.getContactByPublicKey(kp.publicKey)?.nickname.trim() ||
-                        contacts.getContactByPublicKey(kp.publicKey)?.user.email ||
-                        'Public Key'
-                      }}</span>
+                      <span class="ms-2 text-nowrap">{{ identifiers[index] }}</span>
                     </p>
                     <div class="border-start px-4 mx-4">
                       <span>{{ kp.publicKey }}</span>
