@@ -6,7 +6,6 @@ import { ref, watch } from 'vue';
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useContactsStore from '@renderer/stores/storeContacts';
 
 import { useToast } from 'vue-toast-notification';
 
