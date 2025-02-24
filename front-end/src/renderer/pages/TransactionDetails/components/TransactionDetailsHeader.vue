@@ -477,11 +477,10 @@ const handleExport = async () => {
   const transactionId = props.sdkTransaction.transactionId?.toString();
   await saveFileNamed(
     bytes,
-    `${transactionId || 'transaction'}.tx`,
+    `${transactionId || 'transaction'}.txsig`,
     'Export transaction',
     'Export',
-    [],
-    ['openDirectory'],
+    [{ name: 'Transaction Files', extensions: ['txsig'] }],
     'Export transaction',
   );
 };
