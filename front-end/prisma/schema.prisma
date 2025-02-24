@@ -198,3 +198,10 @@ model Mnemonic {
   updated_at   DateTime @updatedAt
   user         User     @relation(fields: [user_id], references: [id])
 }
+
+model PublicKeyMapping {
+  id         String @id @default(uuid())
+  public_key String @unique
+  nickname   String
+}
+
