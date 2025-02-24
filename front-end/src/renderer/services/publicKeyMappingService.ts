@@ -31,3 +31,14 @@ export const deletePublicKey = async (id: string) =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.publicKeyMapping.deletePublicKey(id);
   }, 'Failed to delete public key');
+
+/* Searches for public keys in the provided files */
+export const searchPublicKeys = async (filePaths: string[]) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.publicKeyMapping.searchPublicKeys(filePaths);
+  }, 'Search for public keys failed');
+
+/* Aborts the file search */
+export const abortFileSearch = () => {
+  window.electronAPI.local.publicKeyMapping.searchPublicKeysAbort();
+};

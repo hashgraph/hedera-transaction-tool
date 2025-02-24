@@ -43,7 +43,7 @@ const handleImportPublicKey = async () => {
 
     toast.success(`Public key and nickname imported successfully`);
   } catch (error) {
-    toast.error(getErrorMessage(error, `Failed to import public key key`));
+    toast.error(getErrorMessage(error, `Failed to import public key`));
   }
 };
 
