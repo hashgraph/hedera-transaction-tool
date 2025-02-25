@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
-import type { Handler, TransactionRequest } from '..';
+import { TransactionRequest, type Handler, type Processable } from '..';
 
 import { computed, ref } from 'vue';
 import { Transaction } from '@hashgraph/sdk';
@@ -57,7 +57,12 @@ function setNext(next: Handler) {
   nextHandler.value = next;
 }
 
-async function handle(req: TransactionRequest) {
+async function handle(req: Processable) {
+  if (!(req instanceof TransactionRequest)) {
+    await nextHandler.value?.handle(req);
+    return;
+  }
+
   if (!user.selectedOrganization) {
     await nextHandler.value?.handle(req);
     return;

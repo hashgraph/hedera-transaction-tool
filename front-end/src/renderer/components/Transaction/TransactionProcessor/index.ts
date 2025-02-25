@@ -1,19 +1,15 @@
-import { Key, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
+import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 
 import TransactionProcessor from './TransactionProcessor.vue';
+import type { CustomRequest, TransactionRequest } from './requests';
 
-export interface TransactionRequest {
-  transactionKey: Key;
-  transactionBytes: Uint8Array;
-  name: string;
-  description: string;
-  submitManually: boolean;
-  reminderMillisecondsBefore: number | null;
-}
+export * from './requests';
+
+export type Processable = TransactionRequest | CustomRequest;
 
 export interface Handler {
   setNext: (handler: Handler) => void;
-  handle: (transactionRequest: TransactionRequest) => void;
+  handle: (transactionRequest: Processable) => void;
 }
 
 export function assertHandlerExists<T extends abstract new (...args: any) => any>(

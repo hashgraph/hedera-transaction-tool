@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import type { Handler, TransactionRequest } from '..';
+import {
+  MultipleAccountUpdateRequest,
+  TransactionRequest,
+  type Handler,
+  type Processable,
+} from '..';
 
 import { computed, ref } from 'vue';
 import { Transaction } from '@hashgraph/sdk';
@@ -47,10 +52,15 @@ function setNext(next: Handler) {
   nextHandler.value = next;
 }
 
-function handle(req: TransactionRequest) {
+function handle(req: Processable) {
   reset();
-  request.value = req;
-  show.value = true;
+
+  if (req instanceof TransactionRequest) {
+    request.value = req;
+    show.value = true;
+  } else if (req instanceof MultipleAccountUpdateRequest) {
+    //TODO
+  }
 }
 
 function setShow(value: boolean) {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
-import type { ExecutedData, TransactionRequest } from '.';
+import type { ExecutedData, Processable } from '.';
 
 import { ref } from 'vue';
 
@@ -93,7 +93,7 @@ const handleTransactionStore = (id: string) => {
 
 /* Functions */
 async function process(
-  request: TransactionRequest,
+  request: Processable,
   observerUserIds?: number[],
   approverDtos?: TransactionApproverDto[],
 ) {

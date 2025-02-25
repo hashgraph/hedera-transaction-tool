@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import type { Handler, TransactionRequest } from '..';
+import {
+  MultipleAccountUpdateRequest,
+  TransactionRequest,
+  type Handler,
+  type Processable,
+} from '..';
 
 import { ref } from 'vue';
 import { FileCreateTransaction, Transaction } from '@hashgraph/sdk';
@@ -29,20 +34,22 @@ function setNext(next: Handler) {
   nextHandler.value = next;
 }
 
-async function handle(request: TransactionRequest) {
-  const transaction = Transaction.fromBytes(request.transactionBytes);
-  if (!transaction) throw new Error('Transaction not provided');
+async function handle(request: Processable) {
+  if (request instanceof TransactionRequest) {
+    const transaction = Transaction.fromBytes(request.transactionBytes);
+    if (!transaction) throw new Error('Transaction not provided');
 
-  assertUserLoggedIn(user.personal);
+    assertUserLoggedIn(user.personal);
 
-  validate(request, transaction);
+    validate(request, transaction);
 
-  if (nextHandler.value) {
-    await nextHandler.value.handle({
-      ...request,
-      name: request.name || '',
-      description: request.description || '',
-    });
+    if (nextHandler.value) {
+      request.name = request.name || '';
+      request.description = request.description || '';
+      await nextHandler.value.handle(request);
+    }
+  } else if (request instanceof MultipleAccountUpdateRequest) {
+    // TODO
   }
 }
 

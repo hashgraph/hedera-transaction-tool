@@ -2,7 +2,7 @@
 import type { IGroup, TransactionApproverDto } from '@main/shared/interfaces';
 import type { GroupItem } from '@renderer/stores/storeTransactionGroup';
 import { addApprovers, addObservers, type ApiGroupItem } from '@renderer/services/organization';
-import type { Handler, TransactionRequest } from '..';
+import { TransactionRequest, type Handler, type Processable } from '..';
 
 import { ref } from 'vue';
 import { Transaction, FileUpdateTransaction, Hbar, Key } from '@hashgraph/sdk';
@@ -67,7 +67,12 @@ function setNext(next: Handler) {
   nextHandler.value = next;
 }
 
-async function handle(req: TransactionRequest) {
+async function handle(req: Processable) {
+  if (!(req instanceof TransactionRequest)) {
+    await nextHandler.value?.handle(req);
+    return;
+  }
+
   const transaction = Transaction.fromBytes(req.transactionBytes);
   const size = transaction.toBytes().length;
   const sizeBufferBytes = 200;
