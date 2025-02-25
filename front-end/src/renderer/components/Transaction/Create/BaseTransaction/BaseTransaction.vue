@@ -16,6 +16,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
+import useLoader from '@renderer/composables/useLoader';
 
 import {
   getErrorMessage,
@@ -65,6 +66,7 @@ const user = useUserStore();
 const toast = useToast();
 const router = useRouter();
 const payerData = useAccountId();
+const withLoader = useLoader();
 
 /* State */
 const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
@@ -150,7 +152,12 @@ const handleCreate = async () => {
     processable.maxTransactionFee = data.maxTransactionFee as Hbar;
   }
 
-  await transactionProcessor.value?.process(processable, observers.value, approvers.value);
+  await withLoader(
+    () => transactionProcessor.value?.process(processable, observers.value, approvers.value),
+    'Failed to process transaction',
+    60 * 1000,
+    false,
+  );
 };
 
 const handleExecuted = async ({ success, response, receipt }: ExecutedData) => {
