@@ -223,7 +223,7 @@ async function handleOnFileChanged(e: Event) {
       const title = rowInfo[0].toLowerCase();
       switch (title) {
         case 'transaction description':
-          transactionGroup.description = rowInfo[1];
+          groupDescription.value = rowInfo[1];
           break;
         case 'sender account':
           senderAccount = rowInfo[1];
