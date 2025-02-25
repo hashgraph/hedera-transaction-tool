@@ -132,7 +132,12 @@ async function handleFetchGroup(id: string | number) {
             }
           }
 
-          publicKeysRequiredToSign.value = publicKeysRequiredToSign.value!.concat(usersUnsigned);
+          if (
+            item.transaction.status !== TransactionStatus.CANCELED &&
+            item.transaction.status !== TransactionStatus.EXPIRED
+          ) {
+            publicKeysRequiredToSign.value = publicKeysRequiredToSign.value!.concat(usersUnsigned);
+          }
         }
       }
     } catch (error) {
