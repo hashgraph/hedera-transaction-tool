@@ -21,7 +21,6 @@ const accountData = useAccountId();
 
 /* State */
 const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
-
 const data = reactive<AccountUpdateData>({
   accountId: '',
   receiverSignatureRequired: false,
@@ -33,6 +32,7 @@ const data = reactive<AccountUpdateData>({
   accountMemo: '',
   ownerKey: null,
 });
+const multipleAccounts = ref(false);
 
 /* Computed */
 const createTransaction = computed<CreateTransactionFunc>(() => {
@@ -136,6 +136,7 @@ watch(accountData.accountInfo, accountInfo => {
     <AccountUpdateFormData
       :data="data as AccountUpdateData"
       :account-info="accountData.accountInfo.value as IAccountInfoParsed"
+      v-model:multiple-accounts="multipleAccounts"
       @update:data="handleUpdateData"
     />
   </BaseTransaction>
