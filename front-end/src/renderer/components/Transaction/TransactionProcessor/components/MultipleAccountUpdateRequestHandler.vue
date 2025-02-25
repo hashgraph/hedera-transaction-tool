@@ -196,8 +196,9 @@ function createGroupItem(accountId: string, seq: number): GroupItem {
   };
 
   const transaction = new AccountUpdateTransaction();
-  if (isAccountId(commonData.payerId)) {
-    transaction.setTransactionId(createTransactionId(commonData.payerId, commonData.validStart));
+  const payer = request.value.accountIsPayer ? accountId : commonData.payerId;
+  if (isAccountId(payer)) {
+    transaction.setTransactionId(createTransactionId(payer, commonData.validStart));
   }
 
   if (isAccountId(accountId)) {
