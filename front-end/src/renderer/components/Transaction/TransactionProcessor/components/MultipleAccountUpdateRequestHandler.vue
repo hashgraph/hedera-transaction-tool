@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { MultipleAccountUpdateRequest, type Handler, type Processable } from '..';
+import {
+  MultipleAccountUpdateRequest,
+  TransactionRequest,
+  type Handler,
+  type Processable,
+} from '..';
 import type { IGroup, TransactionApproverDto } from '@main/shared/interfaces';
 import type { GroupItem } from '@renderer/stores/storeTransactionGroup';
 import type { ApiGroupItem } from '@renderer/services/organization';
@@ -13,6 +18,7 @@ import {
   AccountId,
   Transaction,
 } from '@hashgraph/sdk';
+import { useRouter } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -41,6 +47,11 @@ import {
   getPrivateKey,
   type TransactionCommonData,
 } from '@renderer/utils/sdk';
+
+import SignPersonalRequestHandler from './SignPersonalRequestHandler.vue';
+import ExecutePersonalRequestHandler from './ExecutePersonalRequestHandler.vue';
+
+import { assertHandlerExists } from '..';
 
 /* Props */
 const props = defineProps<{
@@ -72,9 +83,14 @@ const network = useNetworkStore();
 
 /* Composables */
 const { getPassword, passwordModalOpened } = usePersonalPassword();
+const router = useRouter();
 
 /* State */
+const signPersonalHandler = ref<InstanceType<typeof SignPersonalRequestHandler> | null>(null);
+const executePersonalHandler = ref<InstanceType<typeof ExecutePersonalRequestHandler> | null>(null);
 const nextHandler = ref<Handler | null>(null);
+const personalItemsIndex = ref<number>(0);
+const groupItems = ref<GroupItem[]>([]);
 
 const request = ref<MultipleAccountUpdateRequest | null>(null);
 
@@ -89,17 +105,17 @@ async function handle(req: Processable) {
     return;
   }
 
-  console.log('hereeeee');
-
   reset();
   request.value = req;
 
-  const items = createGroupItems();
+  buildChain();
+
+  groupItems.value = createGroupItems();
 
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    await processOrganization(items);
+    await processOrganization(groupItems.value);
   } else {
-    await processPersonal(items);
+    await processPersonal();
   }
 }
 
@@ -108,7 +124,42 @@ const handleSignBegin = async () => emit('transaction:sign:begin');
 const handleSignSuccess = async () => emit('transaction:sign:success');
 const handleSignFail = async () => emit('transaction:sign:fail');
 
+const handleTransactionExecuted = async (
+  success: boolean,
+  response: TransactionResponse | null,
+  receipt: TransactionReceipt | null,
+) => {
+  if (!success) {
+    emit('transaction:executed', success, response, receipt);
+    return;
+  }
+
+  if (!receipt) throw new Error('Receipt is missing');
+
+  personalItemsIndex.value++;
+
+  if (personalItemsIndex.value >= groupItems.value.length) {
+    await router.push('/transactions?tab=History');
+    return;
+  }
+
+  await processPersonal();
+};
+
 /* Functions */
+function buildChain() {
+  assertHandlerExists<typeof SignPersonalRequestHandler>(
+    signPersonalHandler.value,
+    'Sign Personal',
+  );
+  assertHandlerExists<typeof ExecutePersonalRequestHandler>(
+    executePersonalHandler.value,
+    'Execute Personal',
+  );
+
+  signPersonalHandler.value.setNext(executePersonalHandler.value);
+}
+
 function createGroupItems() {
   if (!request.value) {
     throw new Error('Request is missing');
@@ -181,7 +232,29 @@ async function processOrganization(items: GroupItem[]) {
   }
 }
 
-async function processPersonal(items: GroupItem[]) {}
+async function processPersonal() {
+  if (!request.value) {
+    throw new Error('Request is missing');
+  }
+
+  if (personalItemsIndex.value >= groupItems.value.length) {
+    return;
+  }
+
+  const currentItem = groupItems.value[personalItemsIndex.value];
+  const accountId = request.value.accountIds[personalItemsIndex.value];
+
+  const transactionRequest = TransactionRequest.fromData({
+    transactionBytes: currentItem.transactionBytes,
+    transactionKey: request.value?.getAccountIdTransactionKey(accountId),
+    name: currentItem.type,
+    description: currentItem.description,
+    submitManually: false,
+    reminderMillisecondsBefore: null,
+  });
+
+  await startChain(transactionRequest);
+}
 
 async function signGroupItems(groupItems: GroupItem[]) {
   assertUserLoggedIn(user.personal);
@@ -259,6 +332,14 @@ async function submitApproversObservers(group: IGroup) {
   await Promise.allSettled(promises);
 }
 
+async function startChain(req: TransactionRequest) {
+  assertHandlerExists<typeof SignPersonalRequestHandler>(
+    signPersonalHandler.value,
+    'Sign Personal',
+  );
+  await signPersonalHandler.value.handle(req);
+}
+
 function reset() {
   request.value = null;
 }
@@ -270,5 +351,17 @@ defineExpose({
 });
 </script>
 <template>
-  <div></div>
+  <!-- Handler #2: Sign in Personal -->
+  <SignPersonalRequestHandler
+    ref="signPersonalHandler"
+    @transaction:sign:begin="handleSignBegin"
+    @transaction:sign:success="handleSignSuccess"
+    @transaction:sign:fail="handleSignFail"
+  />
+
+  <!-- Handler #3: Execute Personal -->
+  <ExecutePersonalRequestHandler
+    ref="executePersonalHandler"
+    @transaction:executed="handleTransactionExecuted"
+  />
 </template>

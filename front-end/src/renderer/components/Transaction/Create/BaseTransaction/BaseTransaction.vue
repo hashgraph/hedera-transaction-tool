@@ -319,7 +319,7 @@ defineExpose({
     />
 
     <BaseTransactionModal
-      :skip="groupActionTaken || isDraftSaved || isProcessed"
+      :skip="groupActionTaken || isDraftSaved || isProcessed || Boolean(customRequest)"
       @addToGroup="handleGroupAction('add', $event)"
       @editGroupItem="handleGroupAction('edit', $event)"
       :get-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
