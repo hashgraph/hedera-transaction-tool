@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 import type { TransactionCommonData } from '@renderer/utils/sdk';
-import type {
-  ExecutedData,
-  ExecutedSuccessData,
+import {
+  CustomRequest,
+  type ExecutedData,
+  type ExecutedSuccessData,
 } from '@renderer/components/Transaction/TransactionProcessor';
 import type { CreateTransactionFunc } from '.';
 
@@ -40,11 +41,12 @@ import BaseGroupHandler from '@renderer/components/Transaction/Create/BaseTransa
 import BaseApproversObserverData from '@renderer/components/Transaction/Create/BaseTransaction/BaseApproversObserverData.vue';
 
 /* Props */
-const { createTransaction, preCreateAssert, transactionBaseKey } = defineProps<{
+const { createTransaction, preCreateAssert, transactionBaseKey, customRequest } = defineProps<{
   createTransaction: CreateTransactionFunc;
   preCreateAssert?: () => boolean | void;
   createDisabled?: boolean;
   transactionBaseKey?: KeyList;
+  customRequest?: CustomRequest;
 }>();
 
 /* Emits */
@@ -129,7 +131,8 @@ const handleCreate = async () => {
   basePreCreateAssert();
   if ((await preCreateAssert?.()) === false) return;
 
-  await transactionProcessor.value?.process(
+  const processable =
+    customRequest ||
     TransactionRequest.fromData({
       transactionKey: transactionKey.value,
       transactionBytes: createTransaction({ ...data } as TransactionCommonData).toBytes(),
@@ -137,10 +140,14 @@ const handleCreate = async () => {
       description: description.value.trim(),
       submitManually: submitManually.value,
       reminderMillisecondsBefore: reminder.value,
-    }),
-    observers.value,
-    approvers.value,
-  );
+    });
+
+  if (processable instanceof CustomRequest) {
+    processable.submitManually = submitManually.value;
+    processable.reminderMillisecondsBefore = reminder.value;
+  }
+
+  await transactionProcessor.value?.process(processable, observers.value, approvers.value);
 };
 
 const handleExecuted = async ({ success, response, receipt }: ExecutedData) => {

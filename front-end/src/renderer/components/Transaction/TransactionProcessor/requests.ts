@@ -2,13 +2,21 @@ import type { Key } from '@hashgraph/sdk';
 import type { AccountUpdateDataMultiple } from '@renderer/utils';
 
 /* Default Request */
-export class TransactionRequest {
+export class BaseRequest {
+  submitManually: boolean;
+  reminderMillisecondsBefore: number | null;
+
+  constructor(submitManually: boolean, reminderMillisecondsBefore: number | null) {
+    this.submitManually = submitManually;
+    this.reminderMillisecondsBefore = reminderMillisecondsBefore;
+  }
+}
+
+export class TransactionRequest extends BaseRequest {
   transactionKey: Key;
   transactionBytes: Uint8Array;
   name: string;
   description: string;
-  submitManually: boolean;
-  reminderMillisecondsBefore: number | null;
 
   constructor(opts: {
     transactionKey: Key;
@@ -18,12 +26,11 @@ export class TransactionRequest {
     submitManually: boolean;
     reminderMillisecondsBefore: number | null;
   }) {
+    super(opts.submitManually, opts.reminderMillisecondsBefore);
     this.transactionKey = opts.transactionKey;
     this.transactionBytes = opts.transactionBytes;
     this.name = opts.name;
     this.description = opts.description;
-    this.submitManually = opts.submitManually;
-    this.reminderMillisecondsBefore = opts.reminderMillisecondsBefore;
   }
 
   static fromData(data: {
@@ -39,15 +46,27 @@ export class TransactionRequest {
 }
 
 /* Custom processor requests */
-export type CustomRequest = MultipleAccountUpdateRequest;
+export class CustomRequest extends BaseRequest {
+  constructor(submitManually: boolean, reminderMillisecondsBefore: number | null) {
+    super(false, reminderMillisecondsBefore);
+  }
+}
 
 /** Multiple Accounts Update Request */
-export class MultipleAccountUpdateRequest {
+export class MultipleAccountUpdateRequest extends CustomRequest {
   accountIds: string[];
   key: Key;
   accountIsPayer: boolean;
 
-  constructor(opts: { accountIds: string[]; key: Key; accountIsPayer: boolean }) {
+  constructor(opts: {
+    accountIds: string[];
+    key: Key;
+    accountIsPayer: boolean;
+    submitManually: boolean;
+    reminderMillisecondsBefore: number | null;
+  }) {
+    super(opts.submitManually, opts.reminderMillisecondsBefore);
+
     this.accountIds = opts.accountIds;
     this.key = opts.key;
     this.accountIsPayer = opts.accountIsPayer;
@@ -62,6 +81,8 @@ export class MultipleAccountUpdateRequest {
       accountIds: data.accountIds,
       key: data.key,
       accountIsPayer: data.accountIsPayer,
+      submitManually: false,
+      reminderMillisecondsBefore: null,
     });
   }
 }
