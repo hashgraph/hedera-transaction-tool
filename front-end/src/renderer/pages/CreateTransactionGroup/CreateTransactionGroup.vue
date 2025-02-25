@@ -209,7 +209,7 @@ async function handleOnFileChanged(e: Event) {
   const target = e.target as HTMLInputElement;
   reader.readAsText(target.files![0]);
   reader.onload = () => {
-    const result = (reader.result as string).replace(/['"]+/g, '');
+    const result = reader.result as string;
     const rows = result.split(/\r?\n|\r|\n/g);
     let senderAccount = '';
     let feePayer = '';
@@ -219,8 +219,11 @@ async function handleOnFileChanged(e: Event) {
     let memo = '';
     let validStart: Date | null = null;
     for (const row of rows) {
-      const rowInfo = row.split(',');
-      const title = rowInfo[0].toLowerCase();
+      const rowInfo = row.match(/(?:"(?:\\"|[^"])*"|[^,]+)(?=,|$)/g)
+        ?.map(s => s.trim()
+          .replace(/^"|"$/g, '')
+          .replace(/\\"/g, '"')) || [];
+      const title = rowInfo[0]?.toLowerCase();
       switch (title) {
         case 'transaction description':
           groupDescription.value = rowInfo[1];
@@ -273,7 +276,7 @@ async function handleOnFileChanged(e: Event) {
             transaction.setTransactionId(
               createTransactionId(feePayer ? feePayer : senderAccount, validStart),
             );
-            const transferAmount = rowInfo[1];
+            const transferAmount = rowInfo[1].replace(/,/g, '');
             transaction.addHbarTransfer(rowInfo[0], new Hbar(transferAmount, HbarUnit.Tinybar));
             transaction.addHbarTransfer(senderAccount, new Hbar(-transferAmount, HbarUnit.Tinybar));
             // If memo is not provided for the row, use the memo from the header portion
