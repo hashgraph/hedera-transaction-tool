@@ -11,6 +11,8 @@ import { computed, ref, watch } from 'vue';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
+import useAccountId from '@renderer/composables/useAccountId';
+
 import { splitMultipleAccounts } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -31,13 +33,16 @@ const emit = defineEmits<{
   (event: 'update:data', data: AccountUpdateData): void;
 }>();
 
-/* Stores */
-const network = useNetworkStore();
-
 /* Models */
 const multipleAccountsData = defineModel<AccountUpdateDataMultiple | null>('multipleAccountsData', {
   required: true,
 });
+
+/* Stores */
+const network = useNetworkStore();
+
+/* Composables */
+const firstAccount = useAccountId();
 
 /* State */
 const isKeyStructureModalShown = ref(false);
@@ -72,7 +77,9 @@ watch(multipleAccounts, multiple => {
     accountId: '',
   });
 
+  firstAccount.accountId.value = '';
   accountIsPayer.value = false;
+  multipleAccountInput.value = '';
 
   if (!multiple) {
     multipleAccountsData.value = null;
@@ -91,7 +98,22 @@ watch([selectedMultipleAccounts, accountIsPayer], ([accountIds, isPayer]) => {
     accountIsPayer: isPayer,
     key: multipleAccountsData.value?.key || null,
   };
+
+  firstAccount.accountId.value = accountIds[0]?.split('-')[0] || '';
 });
+
+watch(
+  () => firstAccount.accountInfo.value,
+  info => {
+    if (info?.key && multipleAccountsData.value) {
+      multipleAccountsData.value = {
+        ...multipleAccountsData.value,
+        key: info.key,
+      };
+    }
+  },
+);
+
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
 </script>
@@ -142,7 +164,7 @@ const columnClass = 'col-4 col-xxxl-3';
 
     <div class="form-group mt-6" :class="[columnClass]">
       <AppButton
-        v-if="accountInfo?.key"
+        v-if="firstAccount.key.value || accountInfo?.key"
         class="text-nowrap"
         color="secondary"
         type="button"
@@ -173,8 +195,8 @@ const columnClass = 'col-4 col-xxxl-3';
   />
 
   <KeyStructureModal
-    v-if="accountInfo"
+    v-if="firstAccount.key.value || accountInfo"
     v-model:show="isKeyStructureModalShown"
-    :account-key="accountInfo.key"
+    :account-key="firstAccount.key.value || accountInfo?.key"
   />
 </template>
