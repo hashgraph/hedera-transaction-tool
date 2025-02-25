@@ -107,13 +107,13 @@ export const publicRequiredToSign = async (
   /* Add required keys from account signers */
   for (const accountId of accounts) {
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
-    if (accountInfo.key) classifyKey(accountInfo.key);
+    if (accountInfo?.key) classifyKey(accountInfo.key);
   }
 
   /* Add required keys from receiver accounts that require signatures */
   for (const accountId of receiverAccounts) {
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
-    if (accountInfo.receiverSignatureRequired && accountInfo.key) classifyKey(accountInfo.key);
+    if (accountInfo?.receiverSignatureRequired && accountInfo.key) classifyKey(accountInfo.key);
   }
 
   /* Add required keys from node accounts */
