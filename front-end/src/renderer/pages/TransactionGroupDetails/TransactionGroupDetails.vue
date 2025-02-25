@@ -189,6 +189,12 @@ const handleSignGroup = async () => {
       for (const groupItem of group.value.groupItems) {
         const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
         const transaction = Transaction.fromBytes(transactionBytes);
+        if (
+          groupItem.transaction.status === TransactionStatus.CANCELED ||
+          groupItem.transaction.status === TransactionStatus.EXPIRED
+        ) {
+          continue;
+        }
         const publicKeysRequired = await usersPublicRequiredToSign(
           transaction,
           user.selectedOrganization.userKeys,
