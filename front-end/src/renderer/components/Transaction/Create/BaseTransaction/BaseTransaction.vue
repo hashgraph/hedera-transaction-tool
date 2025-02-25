@@ -145,6 +145,9 @@ const handleCreate = async () => {
   if (processable instanceof CustomRequest) {
     processable.submitManually = submitManually.value;
     processable.reminderMillisecondsBefore = reminder.value;
+    processable.payerId = payerData.accountId.value;
+    processable.baseValidStart = data.validStart;
+    processable.maxTransactionFee = data.maxTransactionFee as Hbar;
   }
 
   await transactionProcessor.value?.process(processable, observers.value, approvers.value);

@@ -1,4 +1,4 @@
-import type { Key } from '@hashgraph/sdk';
+import type { Hbar, Key } from '@hashgraph/sdk';
 import type { IAccountInfoParsed } from '@main/shared/interfaces';
 import type { AccountUpdateDataMultiple } from '@renderer/utils';
 
@@ -56,11 +56,26 @@ export class TransactionRequest extends BaseRequest {
 /* Custom processor requests */
 export class CustomRequest extends BaseRequest {
   requestKey: Key | null;
+  displayName: string;
+  payerId?: string;
+  baseValidStart?: Date;
+  maxTransactionFee?: Hbar;
 
-  constructor(submitManually: boolean, reminderMillisecondsBefore: number | null) {
-    super(submitManually, reminderMillisecondsBefore);
+  constructor(opts: {
+    submitManually: boolean;
+    reminderMillisecondsBefore: number | null;
+    displayName: string;
+    payerId?: string;
+    baseValidStart?: Date;
+    maxTransactionFee?: Hbar;
+  }) {
+    super(opts.submitManually, opts.reminderMillisecondsBefore);
 
     this.requestKey = null;
+    this.displayName = opts.displayName;
+    this.payerId = opts.payerId;
+    this.baseValidStart = opts.baseValidStart;
+    this.maxTransactionFee = opts.maxTransactionFee;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -71,31 +86,25 @@ export class CustomRequest extends BaseRequest {
 
 /** Multiple Accounts Update Request */
 export class MultipleAccountUpdateRequest extends CustomRequest {
-  payerAccountId: string | null;
   accountIds: string[];
   key: Key;
   accountIsPayer: boolean;
 
   constructor(opts: {
-    payerAccountId: string;
+    payerId?: string;
+    baseValidStart?: Date;
+    maxTransactionFee?: Hbar;
     accountIds: string[];
     key: Key;
     accountIsPayer: boolean;
     submitManually: boolean;
     reminderMillisecondsBefore: number | null;
   }) {
-    super(opts.submitManually, opts.reminderMillisecondsBefore);
+    super({ ...opts, displayName: 'Multiple Accounts Update' });
 
     this.accountIds = opts.accountIds;
     this.key = opts.key;
     this.accountIsPayer = opts.accountIsPayer;
-
-    if (!this.accountIsPayer) {
-      this.payerAccountId = opts.payerAccountId;
-    } else {
-      this.payerAccountId = null;
-    }
-
     this.requestKey = new KeyList([this.key]);
   }
 
@@ -105,7 +114,6 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
     }
 
     return new MultipleAccountUpdateRequest({
-      payerAccountId: data.payerId,
       accountIds: data.accountIds,
       key: data.key,
       accountIsPayer: data.accountIsPayer,
@@ -139,8 +147,8 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
       }
     }
 
-    if (this.payerAccountId) {
-      const payerWithoutChecksum = AccountId.fromString(this.payerAccountId).toString();
+    if (this.payerId && !this.accountIsPayer) {
+      const payerWithoutChecksum = AccountId.fromString(this.payerId).toString();
       if (!accountInfoMap.has(payerWithoutChecksum)) {
         const payerInfo = await getAccountInfo(payerWithoutChecksum, mirrorNodeBaseURL);
         if (payerInfo) {
