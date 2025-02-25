@@ -1,4 +1,5 @@
-import type { Key } from '@hashgraph/sdk';
+import { KeyList, type Key } from '@hashgraph/sdk';
+import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 import type { AccountUpdateDataMultiple } from '@renderer/utils';
 
 /* Default Request */
@@ -47,8 +48,12 @@ export class TransactionRequest extends BaseRequest {
 
 /* Custom processor requests */
 export class CustomRequest extends BaseRequest {
+  requestKey: Key | null;
+
   constructor(submitManually: boolean, reminderMillisecondsBefore: number | null) {
-    super(false, reminderMillisecondsBefore);
+    super(submitManually, reminderMillisecondsBefore);
+
+    this.requestKey = null;
   }
 }
 
@@ -70,6 +75,8 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
     this.accountIds = opts.accountIds;
     this.key = opts.key;
     this.accountIsPayer = opts.accountIsPayer;
+
+    this.requestKey = new KeyList([this.key]);
   }
 
   static fromAccountUpdateData(data: AccountUpdateDataMultiple) {
@@ -84,5 +91,17 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
       submitManually: false,
       reminderMillisecondsBefore: null,
     });
+  }
+
+  async deriveRequestKey(mirrorNodeBaseURL: string) {
+    const accountInfoMap = new Map<string, any>();
+    for (const account of this.accountIds) {
+      if (!accountInfoMap.has(account)) {
+        const data = await getAccountInfo(account, mirrorNodeBaseURL);
+        if (data) {
+          accountInfoMap.set(account, data);
+        }
+      }
+    }
   }
 }
