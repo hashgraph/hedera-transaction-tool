@@ -1,11 +1,5 @@
 <script setup lang="ts">
-import {
-  CustomRequest,
-  MultipleAccountUpdateRequest,
-  TransactionRequest,
-  type Handler,
-  type Processable,
-} from '..';
+import { BaseRequest, CustomRequest, TransactionRequest, type Handler, type Processable } from '..';
 
 import { ref } from 'vue';
 import { FileCreateTransaction, Transaction } from '@hashgraph/sdk';
@@ -76,10 +70,10 @@ function validate(request: TransactionRequest, transaction: Transaction) {
   }
 }
 
-function validateSignableInPersonal(request: TransactionRequest) {
+function validateSignableInPersonal(request: BaseRequest) {
   if (
-    request.transactionKey &&
-    !ableToSign(user.publicKeys, request.transactionKey) &&
+    request.requestKey &&
+    !ableToSign(user.publicKeys, request.requestKey) &&
     !user.selectedOrganization
   ) {
     throw new Error(
@@ -102,7 +96,11 @@ function validateBigFile(transaction: FileCreateTransaction) {
   }
 }
 
-async function validateCustomRequest(request: CustomRequest) {}
+async function validateCustomRequest(request: CustomRequest) {
+  await request.deriveRequestKey(network.mirrorNodeBaseURL);
+
+  await validateSignableInPersonal(request);
+}
 
 /* Expose */
 defineExpose({

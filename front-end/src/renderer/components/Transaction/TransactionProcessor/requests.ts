@@ -1,15 +1,21 @@
-import { KeyList, type Key } from '@hashgraph/sdk';
-import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
+import type { Key } from '@hashgraph/sdk';
+import type { IAccountInfoParsed } from '@main/shared/interfaces';
 import type { AccountUpdateDataMultiple } from '@renderer/utils';
+
+import { AccountId, KeyList } from '@hashgraph/sdk';
+
+import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 
 /* Default Request */
 export class BaseRequest {
+  requestKey: Key | null;
   submitManually: boolean;
   reminderMillisecondsBefore: number | null;
 
   constructor(submitManually: boolean, reminderMillisecondsBefore: number | null) {
     this.submitManually = submitManually;
     this.reminderMillisecondsBefore = reminderMillisecondsBefore;
+    this.requestKey = null;
   }
 }
 
@@ -29,6 +35,7 @@ export class TransactionRequest extends BaseRequest {
   }) {
     super(opts.submitManually, opts.reminderMillisecondsBefore);
     this.transactionKey = opts.transactionKey;
+    this.requestKey = opts.transactionKey;
     this.transactionBytes = opts.transactionBytes;
     this.name = opts.name;
     this.description = opts.description;
@@ -55,15 +62,22 @@ export class CustomRequest extends BaseRequest {
 
     this.requestKey = null;
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async deriveRequestKey(mirrorNodeBaseURL: string) {
+    throw new Error('Not implemented');
+  }
 }
 
 /** Multiple Accounts Update Request */
 export class MultipleAccountUpdateRequest extends CustomRequest {
+  payerAccountId: string | null;
   accountIds: string[];
   key: Key;
   accountIsPayer: boolean;
 
   constructor(opts: {
+    payerAccountId: string;
     accountIds: string[];
     key: Key;
     accountIsPayer: boolean;
@@ -76,6 +90,12 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
     this.key = opts.key;
     this.accountIsPayer = opts.accountIsPayer;
 
+    if (!this.accountIsPayer) {
+      this.payerAccountId = opts.payerAccountId;
+    } else {
+      this.payerAccountId = null;
+    }
+
     this.requestKey = new KeyList([this.key]);
   }
 
@@ -85,6 +105,7 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
     }
 
     return new MultipleAccountUpdateRequest({
+      payerAccountId: data.payerId,
       accountIds: data.accountIds,
       key: data.key,
       accountIsPayer: data.accountIsPayer,
@@ -94,14 +115,44 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
   }
 
   async deriveRequestKey(mirrorNodeBaseURL: string) {
-    const accountInfoMap = new Map<string, any>();
-    for (const account of this.accountIds) {
+    const keyList = new KeyList();
+    const accountInfoMap = new Map<string, IAccountInfoParsed>();
+
+    const withoutChecksum = this.accountIds.map(acc => AccountId.fromString(acc).toString());
+    for (const account of withoutChecksum) {
       if (!accountInfoMap.has(account)) {
         const data = await getAccountInfo(account, mirrorNodeBaseURL);
         if (data) {
           accountInfoMap.set(account, data);
         }
       }
+      const data = accountInfoMap.get(account);
+      if (data?.key) {
+        keyList.push(data.key);
+      }
     }
+
+    for (const account of this.accountIds) {
+      const accountInfo = accountInfoMap.get(account);
+      if (accountInfo?.key) {
+        keyList.push(accountInfo.key);
+      }
+    }
+
+    if (this.payerAccountId) {
+      const payerWithoutChecksum = AccountId.fromString(this.payerAccountId).toString();
+      if (!accountInfoMap.has(payerWithoutChecksum)) {
+        const payerInfo = await getAccountInfo(payerWithoutChecksum, mirrorNodeBaseURL);
+        if (payerInfo) {
+          accountInfoMap.set(payerWithoutChecksum, payerInfo);
+        }
+      }
+      const payerInfo = accountInfoMap.get(payerWithoutChecksum);
+      if (payerInfo?.key) {
+        keyList.push(payerInfo.key);
+      }
+    }
+
+    this.requestKey = keyList;
   }
 }

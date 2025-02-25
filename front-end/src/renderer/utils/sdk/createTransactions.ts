@@ -78,6 +78,7 @@ export type AccountUpdateData = AccountData & {
 };
 
 export type AccountUpdateDataMultiple = {
+  payerId: string;
   accountIds: string[];
   accountIsPayer: boolean;
   key: Key | null;
