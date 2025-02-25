@@ -89,6 +89,7 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
   accountIds: string[];
   key: Key;
   accountIsPayer: boolean;
+  accountInfoMap: Map<string, IAccountInfoParsed>;
 
   constructor(opts: {
     payerId?: string;
@@ -106,6 +107,7 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
     this.key = opts.key;
     this.accountIsPayer = opts.accountIsPayer;
     this.requestKey = new KeyList([this.key]);
+    this.accountInfoMap = new Map<string, IAccountInfoParsed>();
   }
 
   static fromAccountUpdateData(data: AccountUpdateDataMultiple) {
@@ -124,24 +126,23 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
 
   async deriveRequestKey(mirrorNodeBaseURL: string) {
     const keyList = new KeyList();
-    const accountInfoMap = new Map<string, IAccountInfoParsed>();
 
     const withoutChecksum = this.accountIds.map(acc => AccountId.fromString(acc).toString());
     for (const account of withoutChecksum) {
-      if (!accountInfoMap.has(account)) {
+      if (!this.accountInfoMap.has(account)) {
         const data = await getAccountInfo(account, mirrorNodeBaseURL);
         if (data) {
-          accountInfoMap.set(account, data);
+          this.accountInfoMap.set(account, data);
         }
       }
-      const data = accountInfoMap.get(account);
+      const data = this.accountInfoMap.get(account);
       if (data?.key) {
         keyList.push(data.key);
       }
     }
 
     for (const account of this.accountIds) {
-      const accountInfo = accountInfoMap.get(account);
+      const accountInfo = this.accountInfoMap.get(account);
       if (accountInfo?.key) {
         keyList.push(accountInfo.key);
       }
@@ -149,18 +150,34 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
 
     if (this.payerId && !this.accountIsPayer) {
       const payerWithoutChecksum = AccountId.fromString(this.payerId).toString();
-      if (!accountInfoMap.has(payerWithoutChecksum)) {
+      if (!this.accountInfoMap.has(payerWithoutChecksum)) {
         const payerInfo = await getAccountInfo(payerWithoutChecksum, mirrorNodeBaseURL);
         if (payerInfo) {
-          accountInfoMap.set(payerWithoutChecksum, payerInfo);
+          this.accountInfoMap.set(payerWithoutChecksum, payerInfo);
         }
       }
-      const payerInfo = accountInfoMap.get(payerWithoutChecksum);
+      const payerInfo = this.accountInfoMap.get(payerWithoutChecksum);
       if (payerInfo?.key) {
         keyList.push(payerInfo.key);
       }
     }
 
     this.requestKey = keyList;
+  }
+
+  getAccountIdTransactionKey(accountId: string) {
+    const keyList = new KeyList([this.key]);
+    const accountInfo = this.accountInfoMap.get(accountId);
+
+    if (accountInfo) {
+      accountInfo.key && keyList.push(accountInfo.key);
+
+      if (!this.accountIsPayer && this.payerId) {
+        const payerInfo = this.accountInfoMap.get(this.payerId);
+        payerInfo?.key && keyList.push(payerInfo.key);
+      }
+    }
+
+    return keyList;
   }
 }

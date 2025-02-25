@@ -15,6 +15,7 @@ import BigFilePersonalRequestHandler from './components/BigFilePersonalRequestHa
 import OrganizationRequestHandler from './components/OrganizationRequestHandler.vue';
 import SignPersonalRequestHandler from './components/SignPersonalRequestHandler.vue';
 import ExecutePersonalRequestHandler from './components/ExecutePersonalRequestHandler.vue';
+import MultipleAccountUpdateRequestHandler from './components/MultipleAccountUpdateRequestHandler.vue';
 
 import { assertHandlerExists } from '.';
 
@@ -35,6 +36,9 @@ const toast = useToast();
 /** Handlers */
 const validateHandler = ref<InstanceType<typeof ValidateRequestHandler> | null>(null);
 const confirmHandler = ref<InstanceType<typeof ConfirmTransactionHandler> | null>(null);
+const multipleAccountUpdateHandler = ref<InstanceType<
+  typeof MultipleAccountUpdateRequestHandler
+> | null>(null);
 const bigFileOrganizationHandler = ref<InstanceType<
   typeof BigFileOrganizationRequestHandler
 > | null>(null);
@@ -111,6 +115,10 @@ async function process(
 function buildChain() {
   assertHandlerExists<typeof ValidateRequestHandler>(validateHandler.value, 'Validate');
   assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Confirm');
+  assertHandlerExists<typeof MultipleAccountUpdateRequestHandler>(
+    multipleAccountUpdateHandler.value,
+    'Multiple Accounts Update',
+  );
   assertHandlerExists<typeof BigFileOrganizationRequestHandler>(
     bigFileOrganizationHandler.value,
     'Large File Create/Update',
@@ -130,7 +138,8 @@ function buildChain() {
   );
 
   validateHandler.value.setNext(confirmHandler.value);
-  confirmHandler.value.setNext(bigFileOrganizationHandler.value);
+  confirmHandler.value.setNext(multipleAccountUpdateHandler.value);
+  multipleAccountUpdateHandler.value.setNext(bigFileOrganizationHandler.value);
   bigFileOrganizationHandler.value.setNext(bigFilePersonalHandler.value);
   bigFilePersonalHandler.value.setNext(organizationHandler.value);
   organizationHandler.value.setNext(signPersonalHandler.value);
@@ -161,7 +170,23 @@ defineExpose({
     <!-- Handler #2: Confirm modal -->
     <ConfirmTransactionHandler ref="confirmHandler" :loading="isLoading" />
 
-    <!-- Handler #3: Big File Update For Organization -->
+    <!-- Handler #3: Multiple Accounts Update (has sub-chain) -->
+    <MultipleAccountUpdateRequestHandler
+      ref="multipleAccountUpdateHandler"
+      :observers="observers"
+      :approvers="approvers"
+      @transaction:sign:begin="handleSignBegin"
+      @transaction:sign:success="handleSignSuccess"
+      @transaction:sign:fail="handleLoading(false)"
+      @transaction:executed="handleTransactionExecuted"
+      @transaction:stored="handleTransactionStore"
+      @transaction:group:submit:success="handleGroupSubmitSuccess"
+      @transaction:group:submit:fail="handleSubmitFail"
+      @loading:begin="handleLoading(true)"
+      @loading:end="handleLoading(false)"
+    />
+
+    <!-- Handler #4: Big File Update For Organization -->
     <BigFileOrganizationRequestHandler
       ref="bigFileOrganizationHandler"
       :observers="observers"
@@ -172,7 +197,7 @@ defineExpose({
       @loading:end="handleLoading(false)"
     />
 
-    <!-- Handler #4: Big File Create/Update in Personal (has sub-chain) -->
+    <!-- Handler #5: Big File Create/Update in Personal (has sub-chain) -->
     <BigFilePersonalRequestHandler
       ref="bigFilePersonalHandler"
       @transaction:sign:begin="handleSignBegin"
@@ -182,7 +207,7 @@ defineExpose({
       @transaction:stored="handleTransactionStore"
     />
 
-    <!-- Handler #5: Organization  -->
+    <!-- Handler #6: Organization  -->
     <OrganizationRequestHandler
       ref="organizationHandler"
       :observers="observers"
@@ -193,7 +218,7 @@ defineExpose({
       @loading:end="handleLoading(false)"
     />
 
-    <!-- Handler #6: Sign in Personal -->
+    <!-- Handler #7: Sign in Personal -->
     <SignPersonalRequestHandler
       ref="signPersonalHandler"
       @transaction:sign:begin="handleSignBegin"
@@ -201,7 +226,7 @@ defineExpose({
       @transaction:sign:fail="handleLoading(false)"
     />
 
-    <!-- Handler #7: Execute Personal -->
+    <!-- Handler #8: Execute Personal -->
     <ExecutePersonalRequestHandler
       ref="executePersonalHandler"
       @transaction:executed="handleTransactionExecuted"
