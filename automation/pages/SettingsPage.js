@@ -27,7 +27,7 @@ class SettingsPage extends BasePage {
   generalTabButtonSelector = 'tab-0';
   organisationsTabButtonSelector = 'tab-1';
   keysTabButtonSelector = 'tab-2';
-  profileTabButtonSelector = 'tab-3';
+  profileTabButtonSelector = 'tab-4';
   mainnetTabButtonSelector = 'tab-network-mainnet';
   testnetTabButtonSelector = 'tab-network-testnet';
   previewnetTabButtonSelector = 'tab-network-previewnet';

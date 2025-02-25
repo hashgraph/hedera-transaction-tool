@@ -1,7 +1,6 @@
 const { test } = require('@playwright/test');
 const {
   setupApp,
-  resetAppState,
   closeApp,
   generateRandomEmail,
   generateRandomPassword,
