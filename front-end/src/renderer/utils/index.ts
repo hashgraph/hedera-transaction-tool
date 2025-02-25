@@ -5,6 +5,7 @@ import { isUserLoggedIn } from './userStoreHelpers';
 import useUserStore from '@renderer/stores/storeUser';
 import { getOne } from '@renderer/services/accountsService';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import { isAccountId } from './validator';
 
 export * from './dom';
 export * from './sdk';
@@ -178,4 +179,57 @@ export const getAccountIdWithChecksum = (accountId: string): string => {
   } catch {
     return accountId;
   }
+};
+
+export const splitMultipleAccounts = (input: string, client: Client): string[] => {
+  input = input.trim();
+
+  const result: string[] = [];
+  if (!input) {
+    return result;
+  }
+
+  try {
+    const accountParts = input.split(',');
+
+    for (const account of accountParts) {
+      const accountRange = account.split(/-(?=\s*\d)/);
+
+      if (accountRange.length === 2) {
+        const [start, end] = accountRange.map(a => a.trim());
+
+        if (isAccountId(start) && isAccountId(end)) {
+          const parsedStart = AccountId.fromString(start);
+          const parsedEnd = AccountId.fromString(end);
+
+          const startShard = parsedStart.shard.toNumber();
+          const endShard = parsedEnd.shard.toNumber();
+          const startRealm = parsedStart.realm.toNumber();
+          const endRealm = parsedEnd.realm.toNumber();
+          const startNum = parsedStart.num.toNumber();
+          const endNum = parsedEnd.num.toNumber();
+
+          if (startShard === endShard && startRealm == endRealm && startNum <= endNum) {
+            for (let i = startNum; i <= endNum; i++) {
+              result.push(
+                AccountId.fromString(`${startShard}.${startRealm}.${i}`).toStringWithChecksum(
+                  client,
+                ),
+              );
+            }
+          }
+        }
+      } else if (accountRange.length === 1) {
+        const account = accountRange[0].trim();
+        if (isAccountId(account)) {
+          result.push(AccountId.fromString(account).toStringWithChecksum(client));
+        }
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    throwError('Invalid multiple account input');
+  }
+
+  return result;
 };

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Handler, TransactionRequest } from '..';
+import { BaseRequest, CustomRequest, TransactionRequest, type Handler, type Processable } from '..';
 
 import { ref } from 'vue';
 import { FileCreateTransaction, Transaction } from '@hashgraph/sdk';
@@ -7,6 +7,7 @@ import { FileCreateTransaction, Transaction } from '@hashgraph/sdk';
 import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import {
   assertUserLoggedIn,
@@ -20,6 +21,7 @@ const SIZE_BUFFER_BYTES = 200;
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* State */
 const nextHandler = ref<Handler | null>(null);
@@ -29,20 +31,23 @@ function setNext(next: Handler) {
   nextHandler.value = next;
 }
 
-async function handle(request: TransactionRequest) {
-  const transaction = Transaction.fromBytes(request.transactionBytes);
-  if (!transaction) throw new Error('Transaction not provided');
+async function handle(request: Processable) {
+  if (request instanceof TransactionRequest) {
+    const transaction = Transaction.fromBytes(request.transactionBytes);
+    if (!transaction) throw new Error('Transaction not provided');
 
-  assertUserLoggedIn(user.personal);
+    assertUserLoggedIn(user.personal);
 
-  validate(request, transaction);
+    validate(request, transaction);
+
+    request.name = request.name || '';
+    request.description = request.description || '';
+  } else if (request instanceof CustomRequest) {
+    await validateCustomRequest(request);
+  }
 
   if (nextHandler.value) {
-    await nextHandler.value.handle({
-      ...request,
-      name: request.name || '',
-      description: request.description || '',
-    });
+    await nextHandler.value.handle(request);
   }
 }
 
@@ -65,10 +70,10 @@ function validate(request: TransactionRequest, transaction: Transaction) {
   }
 }
 
-function validateSignableInPersonal(request: TransactionRequest) {
+function validateSignableInPersonal(request: BaseRequest) {
   if (
-    request.transactionKey &&
-    !ableToSign(user.publicKeys, request.transactionKey) &&
+    request.requestKey &&
+    !ableToSign(user.publicKeys, request.requestKey) &&
     !user.selectedOrganization
   ) {
     throw new Error(
@@ -89,6 +94,12 @@ function validateBigFile(transaction: FileCreateTransaction) {
       `${getTransactionType(transaction)} size exceeds max transaction size. It has to be split.`,
     );
   }
+}
+
+async function validateCustomRequest(request: CustomRequest) {
+  await request.deriveRequestKey(network.mirrorNodeBaseURL);
+
+  await validateSignableInPersonal(request);
 }
 
 /* Expose */
