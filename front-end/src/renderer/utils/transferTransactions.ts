@@ -25,7 +25,7 @@ export function formatHbarTransfers(transfers): string {
       receiver = transfers[0];
     }
     return `${sender.accountId} --> ${stringifyHbarWithFont(
-      receiver.amount, "text-semi-bold text-pink"
+      receiver.amount, "text-bold text-secondary"
     )} --> ${receiver.accountId}`;
   }
 
