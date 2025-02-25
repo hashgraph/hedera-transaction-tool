@@ -19,6 +19,7 @@ import safeStorage from './safeStorage';
 import dataMigration from './dataMigration';
 import sdk from './sdk';
 import mnemonic from './mnemonic';
+import publicKeyMapping from './publicKeyMapping';
 
 export default {
   ...updateAPI,
@@ -42,4 +43,5 @@ export default {
   ...dataMigration,
   ...sdk,
   ...mnemonic,
+  ...publicKeyMapping,
 };

@@ -34,6 +34,8 @@ const Migrate = () => import('@renderer/pages/Migrate');
 const RestoreMissingKeys = () => import('@renderer/pages/RestoreMissingKeys');
 const MigrateRecoveryPhraseHash = () => import('@renderer/pages/MigrateRecoveryPhraseHash');
 const MatchRecoveryPhrase = () => import('@renderer/pages/MatchRecoveryPhrase');
+const PublicKeysTab = () =>
+  import('@renderer/pages/Settings/components/PublicKeysTab/PublicKeysTab.vue');
 
 const routes: RouteRecordRaw[] = [
   { path: '/', name: 'index', redirect: '/transactions' },
@@ -104,6 +106,11 @@ const routes: RouteRecordRaw[] = [
         path: 'keys',
         name: 'settingsKeys',
         component: KeysTab,
+      },
+      {
+        path: 'public-keys',
+        name: 'settingsPublicKeys',
+        component: PublicKeysTab,
       },
       {
         path: 'profile',
