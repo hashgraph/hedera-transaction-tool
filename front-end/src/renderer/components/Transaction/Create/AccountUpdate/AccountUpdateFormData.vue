@@ -85,10 +85,10 @@ watch(multipleAccounts, multiple => {
   }
 });
 
-watch(selectedMultipleAccounts, accountIds => {
+watch([selectedMultipleAccounts, accountIsPayer], ([accountIds, isPayer]) => {
   multipleAccountsData.value = {
     accountIds,
-    accountIsPayer: accountIsPayer.value,
+    accountIsPayer: isPayer,
     key: multipleAccountsData.value?.key || null,
   };
 });
