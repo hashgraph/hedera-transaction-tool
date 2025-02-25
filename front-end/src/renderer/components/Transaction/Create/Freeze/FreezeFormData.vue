@@ -75,11 +75,11 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
     <div class="form-group" :class="[columnClass]">
       <label class="form-label">File ID</label>
       <AppInput
-        :model-value="formatAccountId(data.fileId)"
+        :model-value="data.fileId"
         @update:model-value="
           $emit('update:data', {
             ...data,
-            fileId: formatAccountId($event),
+            fileId: $event,
           })
         "
         :filled="true"

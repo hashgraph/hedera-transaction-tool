@@ -37,7 +37,7 @@ const columnClass = 'col-4 col-xxxl-3';
         @update:model-value="
           $emit('update:data', {
             ...data,
-            fileId: formatAccountId($event),
+            fileId: $event,
           })
         "
         :filled="true"

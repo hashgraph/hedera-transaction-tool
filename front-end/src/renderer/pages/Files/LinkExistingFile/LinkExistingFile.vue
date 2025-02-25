@@ -79,7 +79,7 @@ const handleLinkFile = async () => {
         <label class="form-label">Hedera File ID <span class="text-danger">*</span></label>
         <AppInput
           :model-value="fileId"
-          @update:model-value="fileId = formatAccountId($event)"
+          @update:model-value="fileId = $event"
           :filled="true"
           data-bs-toggle="tooltip"
           data-bs-placement="right"
