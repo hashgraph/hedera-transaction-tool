@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import type { Client } from '@hashgraph/sdk';
 import type { IAccountInfoParsed } from '@main/shared/interfaces';
-import type { AccountData, AccountUpdateData } from '@renderer/utils/sdk';
+import type {
+  AccountData,
+  AccountUpdateData,
+  AccountUpdateDataMultiple,
+} from '@renderer/utils/sdk';
 
 import { computed, ref, watch } from 'vue';
 
@@ -30,15 +34,16 @@ const emit = defineEmits<{
 /* Stores */
 const network = useNetworkStore();
 
+/* Models */
+const multipleAccountsData = defineModel<AccountUpdateDataMultiple | null>('multipleAccountsData', {
+  required: true,
+});
+
 /* State */
 const isKeyStructureModalShown = ref(false);
 const multipleAccountInput = ref('');
-
-/* Models */
-const multipleAccounts = defineModel('multipleAccounts', {
-  type: Boolean,
-  default: false,
-});
+const multipleAccounts = ref(false);
+const accountIsPayer = ref(false);
 
 /* Computed */
 const selectedMultipleAccounts = computed(() =>
@@ -47,20 +52,46 @@ const selectedMultipleAccounts = computed(() =>
 
 /* Handlers */
 const handleAccountDataUpdate = (data: AccountData) => {
-  emit('update:data', {
-    ...props.data,
-    ...data,
-  });
+  if (!multipleAccounts.value) {
+    emit('update:data', {
+      ...props.data,
+      ...data,
+    });
+  } else if (multipleAccountsData.value) {
+    multipleAccountsData.value = {
+      ...multipleAccountsData.value,
+      key: data.ownerKey,
+    };
+  }
 };
 
 /* Watchers */
-watch(multipleAccounts, () => {
+watch(multipleAccounts, multiple => {
   emit('update:data', {
     ...props.data,
     accountId: '',
   });
+
+  accountIsPayer.value = false;
+
+  if (!multiple) {
+    multipleAccountsData.value = null;
+  } else {
+    multipleAccountsData.value = {
+      accountIds: [],
+      accountIsPayer: false,
+      key: null,
+    };
+  }
 });
 
+watch(selectedMultipleAccounts, accountIds => {
+  multipleAccountsData.value = {
+    accountIds,
+    accountIsPayer: accountIsPayer.value,
+    key: multipleAccountsData.value?.key || null,
+  };
+});
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
 </script>
@@ -68,14 +99,25 @@ const columnClass = 'col-4 col-xxxl-3';
   <div class="row">
     <div class="form-group" :class="[columnClass]">
       <div class="d-flex align-items-center gap-3">
-        <label class="form-label">Account ID <span class="text-danger">*</span></label>
+        <label class="form-label text-nowrap">Account ID <span class="text-danger">*</span></label>
         <div class="mb-2">
           <AppCheckBox
             v-model:checked="multipleAccounts"
             label="Multiple accounts"
             name="multiple-accounts"
+            class="text-nowrap"
           />
         </div>
+        <template v-if="multipleAccounts">
+          <div class="mb-2">
+            <AppCheckBox
+              v-model:checked="accountIsPayer"
+              label="Account is Payer"
+              name="account-is-payer"
+              class="text-nowrap"
+            />
+          </div>
+        </template>
       </div>
       <template v-if="!multipleAccounts">
         <AccountIdInput
@@ -125,8 +167,9 @@ const columnClass = 'col-4 col-xxxl-3';
   </template>
   <AccountDataFormData
     :data="data"
-    :multiple-accounts="multipleAccounts"
+    :multiple-accounts-data="multipleAccountsData"
     @update:data="handleAccountDataUpdate"
+    @update:multiple-accounts-data="multipleAccountsData = $event"
   />
 
   <KeyStructureModal
