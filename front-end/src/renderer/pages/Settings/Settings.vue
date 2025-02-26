@@ -15,6 +15,7 @@ import { isLoggedInOrganization } from '@renderer/utils';
 import AppTabs from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import ImportDropDown from './components/ImportDropDown.vue';
+import ImportPublicKey from './components/ImportPublicKey.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -115,6 +116,12 @@ watch(router.currentRoute, newRoute => {
             Generate
           </AppButton>
           <ImportDropDown />
+        </div>
+        <div
+          class="me-3"
+          v-if="activeTabIndex === tabItems.findIndex(t => t.title === publicKeysTitle)"
+        >
+          <ImportPublicKey />
         </div>
       </div>
       <div class="flex-column-100 overflow-hidden mt-7">

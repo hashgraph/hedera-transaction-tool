@@ -4,18 +4,17 @@ import { ipcRenderer } from 'electron';
 
 export default {
   publicKeyMapping: {
-    getPublicKeys: (): Promise<PublicKeyMapping[]> =>
-      ipcRenderer.invoke('publicKeyMapping:getPublicKeys'),
+    getPublicKeys: (): Promise<PublicKeyMapping[]> => ipcRenderer.invoke('publicKeyMapping:getAll'),
     addPublicKey: (publicKey: string, nickname: string): Promise<PublicKeyMapping> =>
-      ipcRenderer.invoke('publicKeyMapping:addPublickey', publicKey, nickname),
+      ipcRenderer.invoke('publicKeyMapping:add', publicKey, nickname),
     getPublicKey: (publicKey: string): Promise<PublicKeyMapping | null> =>
-      ipcRenderer.invoke('publicKeyMapping:getPublicKey', publicKey),
+      ipcRenderer.invoke('publicKeyMapping:get', publicKey),
     updatePublicKeyNickname: (
       publicKey: string,
       newNickname: string,
     ): Promise<PublicKeyMapping | null> =>
-      ipcRenderer.invoke('publicKeyMapping:updatePublicKeyNickname', publicKey, newNickname),
+      ipcRenderer.invoke('publicKeyMapping:updateNickname', publicKey, newNickname),
     deletePublicKey: (publicKey: string): Promise<PublicKeyMapping | null> =>
-      ipcRenderer.invoke('publicKeyMapping:deletePublicKey', publicKey),
+      ipcRenderer.invoke('publicKeyMapping:delete', publicKey),
   },
 };
