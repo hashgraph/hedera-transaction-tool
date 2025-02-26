@@ -13,6 +13,7 @@ import {
   getPublicKey,
   updatePublicKeyNickname,
   deletePublicKey,
+  getFileStreamEventEmitterPublic,
 } from '@main/services/localUser/publicKeyMapping';
 import { getPrismaClient } from '@main/db/prisma';
 import { unzip } from '@main/utils/files';
@@ -274,6 +275,30 @@ describe('PublicKey Search and Abortable', () => {
         error,
       );
       expect(result).toEqual([]);
+    });
+
+    test('Should call _searchFromDir when given a directory', async () => {
+      vi.mocked(fsp.stat).mockResolvedValue({
+        isFile: () => false,
+        isDirectory: () => true,
+      } as Stats);
+
+      const mockKey = { publicKey: 'EXTRACTED_PUBLIC_KEY', nickname: 'extractedKey' };
+      vi.spyOn(searcher, '_searchFromDir' as any).mockResolvedValue([mockKey]);
+
+      const result = await searcher['_searchFromPath']('/mock/directory');
+
+      expect(searcher['_searchFromDir']).toHaveBeenCalledWith('/mock/directory');
+      expect(result).toEqual([mockKey]);
+    });
+
+    test('Should trigger abort when abort event is emitted', () => {
+      const abortable = new PublicAbortable(searchPublicKeysAbort);
+      expect(abortable.state.aborted).toBe(false);
+
+      getFileStreamEventEmitterPublic().emit(searchPublicKeysAbort);
+
+      expect(abortable.state.aborted).toBe(true);
     });
   });
 });
