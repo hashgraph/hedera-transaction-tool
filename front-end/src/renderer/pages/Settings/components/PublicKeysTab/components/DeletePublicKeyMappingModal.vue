@@ -91,8 +91,8 @@ function resetSelection() {
       </div>
       <form @submit.prevent="handleDelete">
         <h3 class="text-center text-title text-bold mt-3">
-          Delete key
-          {{ selectedIds.length > 1 ? 'pairs' : 'pair' }}
+          Delete public
+          {{ selectedIds.length > 1 ? 'keys' : 'key' }}
         </h3>
         <p class="text-center mt-4">
           {{ modalMessage }}

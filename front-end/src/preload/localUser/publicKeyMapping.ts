@@ -13,5 +13,8 @@ export default {
       ipcRenderer.invoke('publicKeyMapping:updateNickname', id, newNickname),
     deletePublicKey: (id: string): Promise<PublicKeyMapping | null> =>
       ipcRenderer.invoke('publicKeyMapping:delete', id),
+    searchPublicKeys: (filePaths: string[]): Promise<{ publicKey: string; nickname: string }[]> =>
+      ipcRenderer.invoke('publicKeyMapping:searchPublicKeys', filePaths),
+    searchPublicKeysAbort: () => ipcRenderer.send('publicKeyMapping:searchPublicKeys:abort'),
   },
 };
