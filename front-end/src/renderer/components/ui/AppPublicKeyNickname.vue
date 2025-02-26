@@ -31,6 +31,6 @@ watchEffect(async () => {
       <span class="text-pink me-2">{{ extractIdentifier(formattedPublicKey)?.identifier }}</span>
       <span>{{ `(${extractIdentifier(formattedPublicKey)?.pk})` }}</span>
     </span>
-    <span v-else>formattedPublicKey</span>
+    <span v-else>{{ formattedPublicKey }}</span>
   </span>
 </template>
