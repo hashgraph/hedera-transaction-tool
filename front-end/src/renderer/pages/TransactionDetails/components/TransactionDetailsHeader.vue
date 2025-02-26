@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Transaction } from '@prisma/client';
-import { TransactionStatus } from '@main/shared/interfaces';
 import type { ITransactionFull } from '@main/shared/interfaces';
+import { TransactionStatus } from '@main/shared/interfaces';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 
