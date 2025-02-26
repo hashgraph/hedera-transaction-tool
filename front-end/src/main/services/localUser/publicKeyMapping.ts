@@ -34,22 +34,22 @@ export const getPublicKey = async (publicKey: string): Promise<PublicKeyMapping 
 
 //Edit nickname
 export const updatePublicKeyNickname = async (
-  publicKey: string,
+  id: string,
   newNickname: string,
 ): Promise<PublicKeyMapping | null> => {
   const prisma = getPrismaClient();
 
   return prisma.publicKeyMapping.update({
-    where: { public_key: publicKey },
+    where: { id: id },
     data: { nickname: newNickname },
   });
 };
 
 //Delete stored public key mapping
-export const deletePublicKey = async (publicKey: string): Promise<PublicKeyMapping | null> => {
+export const deletePublicKey = async (id: string): Promise<PublicKeyMapping | null> => {
   const prisma = getPrismaClient();
 
   return prisma.publicKeyMapping.delete({
-    where: { public_key: publicKey },
+    where: { id: id },
   });
 };

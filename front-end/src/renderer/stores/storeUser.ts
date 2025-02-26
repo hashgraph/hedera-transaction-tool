@@ -32,7 +32,7 @@ const useUserStore = defineStore('user', () => {
   const recoveryPhrase = ref<RecoveryPhrase | null>(null);
   const keyPairs = ref<KeyPair[]>([]);
   const mnemonics = ref<Mnemonic[]>([]);
-  const publicKeysNicknames = ref<PublicKeyMapping[]>([]);
+  const publicKeyMappings = ref<PublicKeyMapping[]>([]);
 
   /** Personal */
   const personal = ref<PersonalUser | null>(null);
@@ -131,7 +131,7 @@ const useUserStore = defineStore('user', () => {
   };
 
   const refetchPublicKeys = async () => {
-    publicKeysNicknames.value = await ush.getAllPublicKeyMappings();
+    publicKeyMappings.value = await ush.getAllPublicKeyMappings();
   };
 
   const refetchMnemonics = async () => {
@@ -151,6 +151,20 @@ const useUserStore = defineStore('user', () => {
 
   const storePublicKeyMapping = async (publicKey: string, nickname: string) => {
     await ush.addPublicKeyMapping(publicKey, nickname);
+    await refetchPublicKeys();
+  };
+
+  const updatePublicKeyMappingNickname = async (
+    id: string,
+    publicKey: string,
+    newNickname: string,
+  ) => {
+    await ush.updatePublicKeyNickname(id, publicKey, newNickname);
+    await refetchPublicKeys();
+  };
+
+  const deletePublicKeyMapping = async (id: string) => {
+    await ush.deletePublicKeyMapping(id);
     await refetchPublicKeys();
   };
 
@@ -227,7 +241,10 @@ const useUserStore = defineStore('user', () => {
     setRecoveryPhrase,
     storeKey,
     storePublicKeyMapping,
-    publicKeysNicknames,
+    publicKeyMappings,
+    refetchPublicKeys,
+    updatePublicKeyMappingNickname,
+    deletePublicKeyMapping,
   };
 
   return exports;

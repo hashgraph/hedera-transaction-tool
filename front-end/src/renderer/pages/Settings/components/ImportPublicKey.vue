@@ -12,7 +12,6 @@ const isModalShown = ref(false);
     color="primary"
     data-testid="button-restore-dropdown"
     class="min-w-unset d-flex align-items-center justify-content-center"
-    data-bs-toggle="dropdown"
     @click="isModalShown = !isModalShown"
     ><i class="bi bi-plus text-main me-2"></i> Import</AppButton
   >

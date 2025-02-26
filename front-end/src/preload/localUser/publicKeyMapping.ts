@@ -9,12 +9,9 @@ export default {
       ipcRenderer.invoke('publicKeyMapping:add', publicKey, nickname),
     getPublicKey: (publicKey: string): Promise<PublicKeyMapping | null> =>
       ipcRenderer.invoke('publicKeyMapping:get', publicKey),
-    updatePublicKeyNickname: (
-      publicKey: string,
-      newNickname: string,
-    ): Promise<PublicKeyMapping | null> =>
-      ipcRenderer.invoke('publicKeyMapping:updateNickname', publicKey, newNickname),
-    deletePublicKey: (publicKey: string): Promise<PublicKeyMapping | null> =>
-      ipcRenderer.invoke('publicKeyMapping:delete', publicKey),
+    updatePublicKeyNickname: (id: string, newNickname: string): Promise<PublicKeyMapping | null> =>
+      ipcRenderer.invoke('publicKeyMapping:updateNickname', id, newNickname),
+    deletePublicKey: (id: string): Promise<PublicKeyMapping | null> =>
+      ipcRenderer.invoke('publicKeyMapping:delete', id),
   },
 };
