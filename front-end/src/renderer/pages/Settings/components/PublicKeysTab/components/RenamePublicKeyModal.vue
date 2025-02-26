@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { PublicKeyMapping } from '@prisma/client';
 import { ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -9,8 +10,6 @@ import { getErrorMessage } from '@renderer/utils';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import type { PublicKeyMapping } from '@prisma/client';
-
 /* Store */
 const user = useUserStore();
 

@@ -6,7 +6,6 @@ import { extractIdentifier, formatPublickey } from '@renderer/utils';
 /* Props */
 const props = defineProps<{
   publicKey: PublicKey | string;
-  brackets?: boolean;
   signed?: boolean;
 }>();
 
