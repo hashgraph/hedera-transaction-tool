@@ -187,6 +187,15 @@ export const getAccountIdWithChecksum = (accountId: string): string => {
   }
 };
 
+export function stringifyHbarWithFont(hbar: Hbar, fontClass: string): string {
+  const tinybars = Math.abs(hbar.toTinybars());
+  const isHbar = tinybars >= Hbar.fromTinybars(1_000_000).toTinybars();
+  const symbol = isHbar ? HbarUnit.Hbar._symbol : HbarUnit.Tinybar._symbol;
+  const amountString = isHbar ? hbar.to(HbarUnit.Hbar).toString() : hbar.to(HbarUnit.Tinybar).toString();
+
+  return `${amountString} <span class="${fontClass}">${symbol}</span>`;
+}
+
 export const splitMultipleAccounts = (input: string, client: Client): string[] => {
   input = input.trim();
 
@@ -285,12 +294,3 @@ export const extractIdentifier = (formattedString: string) => {
   }
   return null;
 };
-
-export function stringifyHbarWithFont(hbar: Hbar, fontClass: string): string {
-  const tinybars = Math.abs(hbar.toTinybars());
-  const isHbar = tinybars >= Hbar.fromTinybars(1_000_000).toTinybars();
-  const symbol = isHbar ? HbarUnit.Hbar._symbol : HbarUnit.Tinybar._symbol;
-  const amountString = isHbar ? hbar.to(HbarUnit.Hbar).toString() : hbar.to(HbarUnit.Tinybar).toString();
-
-  return `${amountString} <span class="${fontClass}">${symbol}</span>`;
-}

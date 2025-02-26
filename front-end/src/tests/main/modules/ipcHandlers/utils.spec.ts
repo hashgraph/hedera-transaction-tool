@@ -8,7 +8,6 @@ import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
 import { getNumberArrayFromString } from '@main/utils';
 import { hash, dualCompareHash } from '@main/utils/crypto';
 import fs from 'fs';
-import path from 'path';
 import { createHash, X509Certificate } from 'crypto';
 
 vi.mock('bcrypt', () => mockDeep());
@@ -286,7 +285,6 @@ describe('registerUtilsListeners', () => {
     const title = 'Save File';
     const buttonLabel = 'Save';
     const filters = [{ name: 'Text Files', extensions: ['txt'] }];
-    const properties = ['openFile'];
     const message = 'Select a file to save';
     const dialogReturnValue = { filePath: '/path/to/test.txt', canceled: false };
 
