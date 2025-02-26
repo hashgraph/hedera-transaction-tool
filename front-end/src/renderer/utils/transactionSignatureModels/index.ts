@@ -107,13 +107,13 @@ export const publicRequiredToSign = async (
   /* Add required keys from account signers */
   for (const accountId of accounts) {
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
-    if (accountInfo.key) classifyKey(accountInfo.key);
+    if (accountInfo?.key) classifyKey(accountInfo.key);
   }
 
   /* Add required keys from receiver accounts that require signatures */
   for (const accountId of receiverAccounts) {
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
-    if (accountInfo.receiverSignatureRequired && accountInfo.key) classifyKey(accountInfo.key);
+    if (accountInfo?.receiverSignatureRequired && accountInfo.key) classifyKey(accountInfo.key);
   }
 
   /* Add required keys from node accounts */
@@ -169,14 +169,14 @@ export const usersPublicRequiredToSign = async (
   /* Check if a key of the user is inside the key of some account required to sign */
   for (const accountId of accounts) {
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
-    if (!accountInfo.key) continue;
+    if (!accountInfo?.key) continue;
     addUserPublicKeyIfRequired(accountInfo.key);
   }
 
   /* Check if user has a key included in a receiver account that required signature */
   for (const accountId of receiverAccounts) {
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
-    if (!accountInfo.receiverSignatureRequired || !accountInfo.key) continue;
+    if (!accountInfo?.receiverSignatureRequired || !accountInfo.key) continue;
     addUserPublicKeyIfRequired(accountInfo.key);
   }
 
@@ -226,7 +226,7 @@ export const computeSignatureKey = async (transaction: Transaction, mirrorNodeLi
   /* Add the keys of the account ids to the signature key list */
   for (const accountId of accounts) {
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
-    if (!accountInfo.key) continue;
+    if (!accountInfo?.key) continue;
 
     resultObject.signatureKey.push(accountInfo.key);
 
@@ -240,7 +240,7 @@ export const computeSignatureKey = async (transaction: Transaction, mirrorNodeLi
   /* Check if there is a receiver account that required signature, if so add it to the key list */
   for (const accountId of receiverAccounts) {
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
-    if (!accountInfo.receiverSignatureRequired || !accountInfo.key) continue;
+    if (!accountInfo?.receiverSignatureRequired || !accountInfo.key) continue;
 
     resultObject.signatureKey.push(accountInfo.key);
     resultObject.receiverAccountsKeys[accountId] = accountInfo.key;

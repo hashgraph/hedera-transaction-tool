@@ -146,6 +146,10 @@ export const getAccountInfo = async (
 
   const rawAccountInfo: AccountInfo = data;
 
+  if (!data.account) {
+    return null;
+  }
+
   const accountInfo: IAccountInfoParsed = {
     accountId: AccountId.fromString(rawAccountInfo.account || ''),
     alias: rawAccountInfo.alias as string,

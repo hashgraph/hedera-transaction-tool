@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 import type { TransactionCommonData } from '@renderer/utils/sdk';
-import type {
-  ExecutedData,
-  ExecutedSuccessData,
+import {
+  CustomRequest,
+  type ExecutedData,
+  type ExecutedSuccessData,
 } from '@renderer/components/Transaction/TransactionProcessor';
 import type { CreateTransactionFunc } from '.';
 
@@ -15,6 +16,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
+import useLoader from '@renderer/composables/useLoader';
 
 import {
   getErrorMessage,
@@ -32,17 +34,20 @@ import BaseTransactionModal from '@renderer/components/Transaction/Create/BaseTr
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionInfoControls from '@renderer/components/Transaction/TransactionInfoControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
-import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor';
+import TransactionProcessor, {
+  TransactionRequest,
+} from '@renderer/components/Transaction/TransactionProcessor';
 import BaseDraftLoad from '@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.vue';
 import BaseGroupHandler from '@renderer/components/Transaction/Create/BaseTransaction/BaseGroupHandler.vue';
 import BaseApproversObserverData from '@renderer/components/Transaction/Create/BaseTransaction/BaseApproversObserverData.vue';
 
 /* Props */
-const { createTransaction, preCreateAssert, transactionBaseKey } = defineProps<{
+const { createTransaction, preCreateAssert, transactionBaseKey, customRequest } = defineProps<{
   createTransaction: CreateTransactionFunc;
   preCreateAssert?: () => boolean | void;
   createDisabled?: boolean;
   transactionBaseKey?: KeyList;
+  customRequest?: CustomRequest;
 }>();
 
 /* Emits */
@@ -61,6 +66,7 @@ const user = useUserStore();
 const toast = useToast();
 const router = useRouter();
 const payerData = useAccountId();
+const withLoader = useLoader();
 
 /* State */
 const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
@@ -127,17 +133,30 @@ const handleCreate = async () => {
   basePreCreateAssert();
   if ((await preCreateAssert?.()) === false) return;
 
-  await transactionProcessor.value?.process(
-    {
+  const processable =
+    customRequest ||
+    TransactionRequest.fromData({
       transactionKey: transactionKey.value,
       transactionBytes: createTransaction({ ...data } as TransactionCommonData).toBytes(),
       name: name.value.trim(),
       description: description.value.trim(),
       submitManually: submitManually.value,
       reminderMillisecondsBefore: reminder.value,
-    },
-    observers.value,
-    approvers.value,
+    });
+
+  if (processable instanceof CustomRequest) {
+    processable.submitManually = submitManually.value;
+    processable.reminderMillisecondsBefore = reminder.value;
+    processable.payerId = payerData.accountId.value;
+    processable.baseValidStart = data.validStart;
+    processable.maxTransactionFee = data.maxTransactionFee as Hbar;
+  }
+
+  await withLoader(
+    () => transactionProcessor.value?.process(processable, observers.value, approvers.value),
+    'Failed to process transaction',
+    60 * 1000,
+    false,
   );
 };
 
@@ -307,7 +326,7 @@ defineExpose({
     />
 
     <BaseTransactionModal
-      :skip="groupActionTaken || isDraftSaved || isProcessed"
+      :skip="groupActionTaken || isDraftSaved || isProcessed || Boolean(customRequest)"
       @addToGroup="handleGroupAction('add', $event)"
       @editGroupItem="handleGroupAction('edit', $event)"
       :get-transaction="() => createTransaction({ ...data } as TransactionCommonData)"

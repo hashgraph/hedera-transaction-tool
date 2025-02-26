@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Handler, TransactionRequest } from '..';
+import { TransactionRequest, type Handler, type Processable } from '..';
 
 import { computed, ref } from 'vue';
 import {
@@ -71,7 +71,12 @@ function setNext(next: Handler) {
   nextHandler.value = next;
 }
 
-async function handle(req: TransactionRequest) {
+async function handle(req: Processable) {
+  if (!(req instanceof TransactionRequest)) {
+    await nextHandler.value?.handle(req);
+    return;
+  }
+
   const transaction = Transaction.fromBytes(req.transactionBytes);
   const size = transaction.toBytes().length;
 
@@ -187,14 +192,16 @@ async function processOriginal() {
 
   transaction.setContents(content.value.slice(0, FIRST_CHUNK_SIZE_BYTES));
 
-  await startChain({
-    transactionBytes: transaction.toBytes(),
-    transactionKey: request.value.transactionKey,
-    name: request.value.name,
-    description: request.value.description,
-    submitManually: false,
-    reminderMillisecondsBefore: null,
-  });
+  await startChain(
+    TransactionRequest.fromData({
+      transactionBytes: transaction.toBytes(),
+      transactionKey: request.value.transactionKey,
+      name: request.value.name,
+      description: request.value.description,
+      submitManually: false,
+      reminderMillisecondsBefore: null,
+    }),
+  );
 }
 
 async function processAppend() {
@@ -202,14 +209,16 @@ async function processAppend() {
 
   const transaction = createAppendTransaction();
 
-  await startChain({
-    transactionBytes: transaction.toBytes(),
-    transactionKey: request.value.transactionKey,
-    name: request.value.name,
-    description: request.value.description,
-    submitManually: false,
-    reminderMillisecondsBefore: null,
-  });
+  await startChain(
+    TransactionRequest.fromData({
+      transactionBytes: transaction.toBytes(),
+      transactionKey: request.value.transactionKey,
+      name: request.value.name,
+      description: request.value.description,
+      submitManually: false,
+      reminderMillisecondsBefore: null,
+    }),
+  );
 }
 
 function createAppendTransaction() {
