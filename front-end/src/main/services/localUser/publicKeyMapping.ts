@@ -132,16 +132,16 @@ export class PublicKeySearcher {
   private async _searchFromPath(
     filePath: string,
   ): Promise<{ publicKey: string; nickname: string }[]> {
-    const pathStat = await fsp.stat(filePath);
-    const extension = path.extname(filePath);
-
-    const isDirectory = pathStat.isDirectory();
-    const isFile = pathStat.isFile();
-    const isZip = isFile && extension === '.zip';
-    const isPublicKeyFile = isFile && this.extensions.includes(extension);
-    const foundKeys: { publicKey: string; nickname: string }[] = [];
-
     try {
+      const pathStat = await fsp.stat(filePath);
+      const extension = path.extname(filePath);
+
+      const isDirectory = pathStat.isDirectory();
+      const isFile = pathStat.isFile();
+      const isZip = isFile && extension === '.zip';
+      const isPublicKeyFile = isFile && this.extensions.includes(extension);
+      const foundKeys: { publicKey: string; nickname: string }[] = [];
+
       if (isDirectory) {
         foundKeys.push(...((await this._searchFromDir(filePath)) || []));
       } else if (isZip) {
@@ -153,11 +153,11 @@ export class PublicKeySearcher {
         const nickname = path.basename(filePath, '.pub');
         foundKeys.push({ publicKey: publicKeyContent.trim(), nickname });
       }
+      return foundKeys;
     } catch (error) {
       console.log(error);
+      return [];
     }
-
-    return foundKeys;
   }
 
   private async _searchFromDir(dir: string) {

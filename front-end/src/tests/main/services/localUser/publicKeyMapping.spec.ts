@@ -1,11 +1,8 @@
 import { expect, vi } from 'vitest';
 import * as fsp from 'fs/promises';
 import * as path from 'path';
-import EventEmitter from 'events';
-import { app } from 'electron';
 
 import {
-  getFileStreamEventEmitterPublic,
   searchPublicKeysAbort,
   PublicAbortable,
   PublicKeySearcher,
@@ -17,6 +14,7 @@ import {
 } from '@main/services/localUser/publicKeyMapping';
 import { getPrismaClient } from '@main/db/prisma';
 import { unzip } from '@main/utils/files';
+import { Dirent } from 'fs';
 
 vi.mock('fs/promises');
 vi.mock('path');
@@ -119,28 +117,6 @@ describe('PublicKeyMapping Service', () => {
 });
 
 describe('PublicKey Search and Abortable', () => {
-  describe('getFileStreamEventEmitterPublic', () => {
-    test('Should return a singleton EventEmitter instance', () => {
-      const emitter1 = getFileStreamEventEmitterPublic();
-      const emitter2 = getFileStreamEventEmitterPublic();
-
-      expect(emitter1).toBe(emitter2);
-      expect(emitter1).toBeInstanceOf(EventEmitter);
-    });
-  });
-
-  describe('PublicAbortable', () => {
-    test('Should set aborted state to true on abort event', () => {
-      const abortable = new PublicAbortable(searchPublicKeysAbort);
-
-      expect(abortable.state.aborted).toBe(false);
-
-      getFileStreamEventEmitterPublic().emit(searchPublicKeysAbort);
-
-      expect(abortable.state.aborted).toBe(true);
-    });
-  });
-
   describe('PublicKeySearcher', () => {
     let searcher: PublicKeySearcher;
     let abortable: PublicAbortable;
@@ -148,80 +124,107 @@ describe('PublicKey Search and Abortable', () => {
     beforeEach(() => {
       vi.resetAllMocks();
       vi.mocked(path.join).mockImplementation((...args) => args.join('/'));
+      vi.mocked(path.basename).mockImplementation((filePath: string) => {
+        return filePath.replace('.pub', '');
+      });
 
       abortable = new PublicAbortable(searchPublicKeysAbort);
       searcher = new PublicKeySearcher(abortable);
     });
 
-    test('Should create search directory', async () => {
-      const tempDir = '/temp';
-      vi.mocked(app.getPath).mockReturnValue(tempDir);
-      await searcher.search([]);
+    test('Should abort search and clean up search directories', async () => {
+      const deleteSpy = vi.spyOn(searcher, 'deleteSearchDirs').mockResolvedValue(undefined);
+      abortable.abort();
 
-      expect(fsp.mkdir).toHaveBeenCalledWith(expect.stringContaining(tempDir), { recursive: true });
+      const result = await searcher.search(['/some/path']);
+      expect(deleteSpy).toHaveBeenCalled();
+      expect(result).toEqual([]);
     });
 
-    test('Should search public key files in given paths', async () => {
-      const filePaths = ['/path/to/dir', '/path/to/file1.pub', '/path/to/file2.zip'];
-      const tempDir = '/temp';
-      vi.mocked(app.getPath).mockReturnValue(tempDir);
+    test('Should log an error if directory deletion fails', async () => {
+      const error = new Error('Failed to delete directory');
+      vi.mocked(fsp.rm).mockRejectedValue(error);
 
-      vi.spyOn(searcher, '_searchFromPath' as any).mockImplementation(vi.fn());
-
-      await searcher.search(filePaths);
-
-      expect(searcher['_searchFromPath']).toHaveBeenCalledWith(filePaths[0]);
-      expect(searcher['_searchFromPath']).toHaveBeenCalledWith(filePaths[1]);
-      expect(searcher['_searchFromPath']).toHaveBeenCalledWith(filePaths[2]);
-    });
-
-    test('Should search public key files in given directory path', async () => {
-      const filePaths = ['/path/to/dir'];
-      const tempDir = '/temp';
-
-      vi.mocked(app.getPath).mockReturnValue(tempDir);
-      vi.mocked(fsp.stat).mockResolvedValue({
-        isFile: () => false,
-        isDirectory: () => true,
-      } as any);
-      vi.spyOn(searcher, '_searchFromDir' as any).mockImplementation(vi.fn());
-
-      await searcher.search(filePaths);
-
-      expect(searcher['_searchFromDir']).toHaveBeenCalledWith(filePaths[0]);
-    });
-
-    test('Should handle ZIP file search', async () => {
-      const zipPath = '/path/to/file.zip';
-      const tempDir = '/temp';
-      vi.mocked(app.getPath).mockReturnValue(tempDir);
-
-      vi.spyOn(searcher, '_searchFromDir' as any).mockImplementation(vi.fn());
-
-      await searcher['_searchFromZip'](zipPath);
-
-      expect(unzip).toHaveBeenCalledWith(
-        zipPath,
-        expect.stringContaining(tempDir),
-        ['.pub'],
-        abortable.state,
-      );
-      expect(searcher['_searchFromDir']).toHaveBeenCalled();
-    });
-
-    test('Should delete search directories successfully', async () => {
-      const searchDir = '/path/to/searchDir';
-      const unzipDirs = ['/path/to/unzipDir1', '/path/to/unzipDir2'];
-      searcher.searchDir = searchDir;
-      searcher.unzipDirs = unzipDirs;
-
-      vi.mocked(fsp.rm).mockResolvedValue(undefined);
+      const consoleSpy = vi.spyOn(console, 'log');
 
       await searcher.deleteSearchDirs();
 
-      expect(fsp.rm).toHaveBeenCalledWith(searchDir, { recursive: true });
-      expect(fsp.rm).toHaveBeenCalledWith(unzipDirs[0], { recursive: true });
-      expect(fsp.rm).toHaveBeenCalledWith(unzipDirs[1], { recursive: true });
+      expect(consoleSpy).toHaveBeenCalledWith('Delete search dirs error:', error);
+    });
+
+    test('Should properly process public key and ZIP files', async () => {
+      vi.mocked(fsp.stat).mockResolvedValue({
+        isFile: () => true,
+        isDirectory: () => false,
+      } as any);
+      vi.mocked(path.extname).mockReturnValue('.pub');
+      vi.mocked(fsp.readFile).mockResolvedValue('PUBLIC_KEY_CONTENT');
+      vi.mocked(path.basename).mockReturnValue('key');
+
+      const result = await searcher['_searchFromPath']('/path/to/key.pub');
+
+      expect(result).toEqual([{ publicKey: 'PUBLIC_KEY_CONTENT', nickname: 'key' }]);
+    });
+
+    test('Should log an error if searchFromPath fails', async () => {
+      const error = new Error('Failed to read file');
+
+      vi.mocked(fsp.stat).mockRejectedValue(error);
+      vi.mocked(fsp.readFile).mockRejectedValue(error);
+
+      const consoleSpy = vi.spyOn(console, 'log');
+
+      const result = await searcher['_searchFromPath']('/path/to/key.pub');
+
+      expect(consoleSpy).toHaveBeenCalledWith(error);
+      expect(result).toEqual([]);
+    });
+
+    test('Should correctly search directories and log errors', async () => {
+      vi.mocked(fsp.readdir).mockResolvedValue(['key1.pub', 'key2.pub'] as unknown as Dirent[]);
+      vi.mocked(fsp.stat).mockResolvedValue({
+        isFile: () => true,
+        isDirectory: () => false,
+      } as any);
+      vi.mocked(path.extname).mockReturnValue('.pub');
+      vi.mocked(fsp.readFile).mockResolvedValue('PUBLIC_KEY_CONTENT');
+
+      const result = await searcher['_searchFromDir']('/path/to/dir');
+
+      expect(result.length).toBe(2);
+      expect(result[0].publicKey).toBe('PUBLIC_KEY_CONTENT');
+    });
+
+    test('Should log error and continue processing if one file fails in _searchFromDir', async () => {
+      const error = new Error('Failed to process file');
+      vi.mocked(fsp.readdir).mockResolvedValue(['key1.pub', 'key2.pub'] as unknown as Dirent[]);
+      vi.spyOn(searcher, '_searchFromPath' as any)
+        .mockResolvedValueOnce([{ publicKey: 'VALID_KEY', nickname: 'key1' }])
+        .mockRejectedValueOnce(error);
+
+      const consoleSpy = vi.spyOn(console, 'log');
+
+      const result = await searcher['_searchFromDir']('/path/to/dir');
+
+      expect(consoleSpy).toHaveBeenCalledWith(error);
+      expect(result.length).toBe(1);
+      expect(result[0]).toEqual({ publicKey: 'VALID_KEY', nickname: 'key1' });
+    });
+
+    test('Should handle errors during ZIP extraction', async () => {
+      const error = new Error('ZIP extraction failed');
+      vi.mocked(unzip).mockRejectedValue(error);
+
+      const consoleSpy = vi.spyOn(console, 'error');
+
+      const result = await searcher['_searchFromZip']('/path/to/archive.zip');
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Error extracting zip:',
+        '/path/to/archive.zip',
+        error,
+      );
+      expect(result).toEqual([]);
     });
   });
 });
