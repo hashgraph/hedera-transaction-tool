@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { KeyList, PublicKey } from '@hashgraph/sdk';
 
-import { decodeKeyList, isUserLoggedIn, normalizePublicKey, encodeKey } from '@renderer/utils';
+import { decodeKeyList, isUserLoggedIn, encodeKey } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppPublicKeyNickname from '@renderer/components/ui/AppPublicKeyNickname.vue';
@@ -126,10 +126,7 @@ onBeforeMount(async () => {
       </template>
       <template v-else-if="item instanceof PublicKey && true">
         <p class="text-nowrap ms-5 my-3">
-          <span class="me-2">
-            {{ normalizePublicKey(item) }}
-          </span>
-          <AppPublicKeyNickname :public-key="item" :brackets="true" class="text-pink" />
+          <AppPublicKeyNickname :public-key="item" />
         </p>
       </template>
     </template>

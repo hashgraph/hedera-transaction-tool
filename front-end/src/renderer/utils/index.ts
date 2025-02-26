@@ -254,6 +254,21 @@ export const formatPublickey = async (publicKey: string) => {
   return publicKey;
 };
 
+export const findIdentifier = async (publicKey: string) => {
+  const mapping = await getPublicKeyMapping(publicKey);
+  if (mapping && mapping.nickname) {
+    return mapping.nickname as string;
+  }
+  const user = useUserStore();
+  if (user.selectedOrganization) {
+    const owner = await getPublicKeyOwner(user.selectedOrganization!.serverUrl, publicKey);
+    if (owner) {
+      return owner as string;
+    }
+  }
+  return null;
+};
+
 export const formatPublickeyContactList = async (publicKey: string) => {
   const mapping = await getPublicKeyMapping(publicKey);
   if (mapping) {
