@@ -16,8 +16,8 @@ import { getAccountsByPublicKeysParallel } from '@renderer/services/mirrorNodeDa
 import { signUp } from '@renderer/services/organization';
 
 import {
+  formatPublickeyContactList,
   getErrorMessage,
-  getNickname,
   isLoggedInOrganization,
   isUserLoggedIn,
 } from '@renderer/utils';
@@ -47,6 +47,7 @@ const contacts = useContactsStore();
 const isNicknameInputShown = ref(false);
 const nicknameInputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const publicKeyToAccounts = ref<{ [key: string]: AccountInfo[] }>({});
+const publicKeysMapping = ref<Record<string, string>>({});
 
 /* Emits */
 defineEmits<{
@@ -119,11 +120,17 @@ const handleResend = async () => {
 const handleContactChange = async () => {
   await contacts.fetchUserKeys(props.contact.user.id);
   await handleAccountsLookup();
+  const contactPublicKeys = props.contact.userKeys.map(key => key.publicKey);
+  const formatPromises = contactPublicKeys.map(async key => {
+    return { [key]: await formatPublickeyContactList(key) };
+  });
+
+  const results: Record<string, string>[] = await Promise.all(formatPromises);
+  publicKeysMapping.value = Object.assign({}, ...results);
 };
 
 /* Hooks */
 onBeforeMount(handleContactChange);
-
 /* Watchers */
 watch(() => props.contact, handleContactChange);
 </script>
@@ -197,7 +204,10 @@ watch(() => props.contact, handleContactChange);
     </div>
   </div>
   <hr class="separator my-4" />
-  <div class="fill-remaining overflow-x-hidden pe-3">
+  <div
+    v-if="contact.userKeys.length === Object.keys(publicKeysMapping).length"
+    class="fill-remaining overflow-x-hidden pe-3"
+  >
     <template v-for="(key, index) in contact.userKeys" :key="key.publicKey">
       <div class="p-4">
         <hr v-if="index != 0" class="separator mb-4" />
@@ -210,18 +220,11 @@ watch(() => props.contact, handleContactChange);
               class="text-secondary text-small overflow-x-auto"
               :data-testid="'p-contact-public-key-' + index"
             >
-              <span
-                class="d-flex gap-2"
-                v-if="getNickname(PublicKey.fromString(key.publicKey).toStringRaw(), user.keyPairs)"
-              >
+              <span class="d-flex gap-2">
                 <span>
-                  {{
-                    `${getNickname(PublicKey.fromString(key.publicKey).toStringRaw(), user.keyPairs)} `
-                  }}</span
+                  {{ publicKeysMapping[PublicKey.fromString(key.publicKey).toStringRaw()] }}</span
                 >
-                <span>{{ `(${PublicKey.fromString(key.publicKey).toStringRaw()})` }}</span>
               </span>
-              <span v-else>{{ PublicKey.fromString(key.publicKey).toStringRaw() }}</span>
             </p>
             <p
               class="text-small text-semi-bold text-pink mt-3"
