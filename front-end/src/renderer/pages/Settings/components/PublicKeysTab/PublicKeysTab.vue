@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, watchEffect } from 'vue';
+import type { PublicKeyMapping } from '@prisma/client';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
+import { getPublicKeyOwner } from '@renderer/services/organization';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
+import DeletePublicKeyMappingModal from './components/DeletePublicKeyMappingModal.vue';
+import RenamePublicKeyModal from './components/RenamePublicKeyModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -19,7 +23,8 @@ const isDeleteModalShown = ref(false);
 const selectedPublicKeysToDelete = ref<string[]>([]);
 const deleteSingle = ref<string | null>(null);
 const isUpdateNicknameModalShown = ref(false);
-const publicKeyIdToEdit = ref<string | null>(null);
+const publicKeyMappingToEdit = ref<PublicKeyMapping | null>(null);
+const ownersMapping = ref<Record<string, string | null>>({});
 
 /* Computed */
 const listedPublicKeys = computed(() => user.publicKeyMappings);
@@ -29,8 +34,8 @@ const allKeysSelected = computed(
 const isSelectAllDisabled = computed(() => listedPublicKeys.value.length === 0);
 
 /* Handlers */
-const handleStartNicknameEdit = (id: string) => {
-  publicKeyIdToEdit.value = id;
+const handleStartNicknameEdit = (publicKeyMapping: PublicKeyMapping) => {
+  publicKeyMappingToEdit.value = publicKeyMapping;
   isUpdateNicknameModalShown.value = true;
 };
 
@@ -48,10 +53,12 @@ const handleSelectAll = () => {
   }
 };
 
-const handleCheckBox = (id: string) => {
-  selectedPublicKeysToDelete.value.includes(id)
-    ? selectedPublicKeysToDelete.value.filter(id => id !== id)
-    : (selectedPublicKeysToDelete.value = [...selectedPublicKeysToDelete.value, id]);
+const handleCheckBox = (selectedId: string) => {
+  selectedPublicKeysToDelete.value.includes(selectedId)
+    ? (selectedPublicKeysToDelete.value = selectedPublicKeysToDelete.value.filter(
+        id => id !== selectedId,
+      ))
+    : (selectedPublicKeysToDelete.value = [...selectedPublicKeysToDelete.value, selectedId]);
 };
 
 const handleDeleteModal = (keyId: string) => {
@@ -61,12 +68,37 @@ const handleDeleteModal = (keyId: string) => {
 
 const handleDeleteSelectedClick = () => (isDeleteModalShown.value = true);
 
-watchEffect(() => {
-  console.log(user.publicKeyMappings);
-});
+/* Helep Functions */
+const getOwnersFromOrganization = async () => {
+  const publicKeys = user.publicKeyMappings.map(mapping => mapping.public_key);
 
+  const ownerPromises = publicKeys.map(async key => {
+    return { [key]: await getPublicKeyOwner(user.selectedOrganization!.serverUrl, key) };
+  });
+  const results: Record<string, string | null>[] = await Promise.all(ownerPromises);
+
+  ownersMapping.value = Object.assign({}, ...results);
+};
+
+/* Watchers */
+watch(
+  () => user.selectedOrganization,
+  async newOrg => {
+    if (!newOrg) {
+      ownersMapping.value = {};
+      return;
+    }
+    await getOwnersFromOrganization();
+  },
+);
+
+/* Lifecycle hooks */
 onBeforeMount(async () => {
   await user.refetchPublicKeys();
+
+  if (user.selectedOrganization) {
+    await getOwnersFromOrganization();
+  }
 });
 </script>
 <template>
@@ -101,7 +133,14 @@ onBeforeMount(async () => {
             </th>
           </tr>
         </thead>
-        <tbody class="text-secondary">
+        <tbody
+          v-if="
+            (user.selectedOrganization &&
+              listedPublicKeys.length === Object.keys(ownersMapping).length) ||
+            (!user.selectedOrganization && listedPublicKeys.length)
+          "
+          class="text-secondary"
+        >
           <template v-for="(mapping, index) in listedPublicKeys" :key="mapping.public_key">
             <tr>
               <td>
@@ -118,12 +157,14 @@ onBeforeMount(async () => {
                 <span
                   class="bi bi-pencil-square text-main text-primary me-3 cursor-pointer"
                   data-testid="button-change-key-nickname"
-                  @click="handleStartNicknameEdit(mapping.id)"
+                  @click="handleStartNicknameEdit(mapping)"
                 ></span>
                 {{ mapping.nickname || 'N/A' }}
               </td>
               <td :data-testid="`cell-owner-account-${index}`">
-                <span> Owner </span>
+                <span>
+                  {{ ownersMapping[mapping.public_key] || 'N/A' }}
+                </span>
               </td>
               <td>
                 <p class="d-flex text-nowrap">
@@ -155,6 +196,18 @@ onBeforeMount(async () => {
           </template>
         </tbody>
       </table>
+
+      <DeletePublicKeyMappingModal
+        v-model:show="isDeleteModalShown"
+        :all-selected="allKeysSelected"
+        v-model:selected-ids="selectedPublicKeysToDelete"
+        v-model:selected-single-id="deleteSingle"
+      />
     </div>
+
+    <RenamePublicKeyModal
+      v-model:show="isUpdateNicknameModalShown"
+      :public-key-mapping="publicKeyMappingToEdit"
+    />
   </div>
 </template>
