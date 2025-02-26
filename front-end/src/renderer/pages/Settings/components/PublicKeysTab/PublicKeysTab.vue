@@ -80,6 +80,29 @@ const getOwnersFromOrganization = async () => {
   ownersMapping.value = Object.assign({}, ...results);
 };
 
+const addOwners = async (newMappings: PublicKeyMapping[], oldMappings: PublicKeyMapping[]) => {
+  const newItems = newMappings.filter(
+    newItem => !oldMappings.some(oldItem => oldItem.public_key === newItem.public_key),
+  );
+  const newPublicKeys = newItems.map(mapping => mapping.public_key);
+  const ownerPromises = newPublicKeys.map(async key => {
+    return { [key]: await getPublicKeyOwner(user.selectedOrganization!.serverUrl, key) };
+  });
+  const results: Record<string, string | null>[] = await Promise.all(ownerPromises);
+  Object.assign(ownersMapping.value, ...results);
+};
+
+const deleteOwners = (newMappings: PublicKeyMapping[], oldMappings: PublicKeyMapping[]) => {
+  const deletedItems = oldMappings.filter(
+    oldItem => !newMappings.some(newItem => newItem.public_key === oldItem.public_key),
+  );
+  const deletedPublicKeys = deletedItems.map(mapping => mapping.public_key);
+
+  deletedPublicKeys.forEach(key => {
+    delete ownersMapping.value[key];
+  });
+};
+
 /* Watchers */
 watch(
   () => user.selectedOrganization,
@@ -95,19 +118,17 @@ watch(
 watch(
   () => user.publicKeyMappings,
   async (newMappings, oldMappings) => {
-    if (newMappings.length <= oldMappings.length || !user.selectedOrganization) {
+    if (newMappings.length === oldMappings.length || !user.selectedOrganization) {
       return;
     }
-    const newItems = newMappings.filter(
-      newItem => !oldMappings.some(oldItem => oldItem.public_key === newItem.public_key),
-    );
-    const newPublicKeys = newItems.map(mapping => mapping.public_key);
 
-    const ownerPromises = newPublicKeys.map(async key => {
-      return { [key]: await getPublicKeyOwner(user.selectedOrganization!.serverUrl, key) };
-    });
-    const results: Record<string, string | null>[] = await Promise.all(ownerPromises);
-    Object.assign(ownersMapping.value, ...results);
+    if (newMappings.length > oldMappings.length) {
+      await addOwners(newMappings, oldMappings);
+    }
+
+    if (newMappings.length < oldMappings.length) {
+      deleteOwners(newMappings, oldMappings);
+    }
   },
 );
 
@@ -121,7 +142,14 @@ onBeforeMount(async () => {
 });
 </script>
 <template>
-  <div class="flex-column-100">
+  <div
+    v-if="
+      (user.selectedOrganization &&
+        listedPublicKeys.length === Object.keys(ownersMapping).length) ||
+      !user.selectedOrganization
+    "
+    class="flex-column-100"
+  >
     <div class="fill-remaining overflow-x-auto pe-4 pb-2 mt-4">
       <table class="table-custom">
         <thead>
