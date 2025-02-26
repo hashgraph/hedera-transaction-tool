@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { HederaAccount } from '@prisma/client';
 
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
@@ -17,6 +17,7 @@ import { getKeyListLevels } from '@renderer/services/keyPairService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
 import {
+  formatPublickey,
   getAccountIdWithChecksum,
   getFormattedDateFromTimestamp,
   isUserLoggedIn,
@@ -54,6 +55,7 @@ const sorting = ref<{
   created_at: 'desc',
 });
 const selectMany = ref(false);
+const formattedPublicKey = ref('');
 
 /* Computed */
 const hbarDollarAmount = computed(() => {
@@ -192,6 +194,15 @@ function resetSelectedAccount() {
   accountData.accountId.value = accounts.value[0]?.account_id || '';
   selectedAccountIds.value = [accountData.accountId.value];
 }
+
+watch(
+  () => accountData.key.value,
+  async newKey => {
+    if (newKey instanceof PublicKey && true) {
+      formattedPublicKey.value = await formatPublickey(newKey.toStringRaw());
+    }
+  },
+);
 
 /* Hooks */
 onMounted(async () => {
@@ -526,12 +537,12 @@ onMounted(async () => {
                         >See details</span
                       >
                     </template>
-                    <template v-else-if="accountData.key.value instanceof PublicKey && true">
+                    <template v-else-if="formattedPublicKey">
                       <p
                         class="text-secondary text-small overflow-x-auto"
                         data-testid="p-account-data-key"
                       >
-                        {{ accountData.key.value.toStringRaw() }}
+                        {{ formattedPublicKey }}
                       </p>
                       <p
                         class="text-small text-semi-bold text-pink mt-3"
