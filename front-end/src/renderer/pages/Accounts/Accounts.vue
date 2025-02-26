@@ -17,6 +17,7 @@ import { getKeyListLevels } from '@renderer/services/keyPairService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
 import {
+  extractIdentifier,
   formatPublickey,
   getAccountIdWithChecksum,
   getFormattedDateFromTimestamp,
@@ -538,11 +539,18 @@ onMounted(async () => {
                       >
                     </template>
                     <template v-else-if="formattedPublicKey">
-                      <p
-                        class="text-secondary text-small overflow-x-auto"
-                        data-testid="p-account-data-key"
-                      >
-                        {{ formattedPublicKey }}
+                      <p class="overflow-x-auto" data-testid="p-account-data-key">
+                        <span v-if="extractIdentifier(formattedPublicKey)">
+                          <span class="text-semi-bold text-small me-2">{{
+                            extractIdentifier(formattedPublicKey)?.identifier
+                          }}</span>
+                          <span class="text-secondary text-small">{{
+                            `(${extractIdentifier(formattedPublicKey)?.pk})`
+                          }}</span>
+                        </span>
+                        <span v-else class="text-secondary text-small">{{
+                          formattedPublicKey
+                        }}</span>
                       </p>
                       <p
                         class="text-small text-semi-bold text-pink mt-3"

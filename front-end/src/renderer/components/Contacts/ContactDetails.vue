@@ -16,6 +16,7 @@ import { getAccountsByPublicKeysParallel } from '@renderer/services/mirrorNodeDa
 import { signUp } from '@renderer/services/organization';
 
 import {
+  extractIdentifier,
   formatPublickeyContactList,
   getErrorMessage,
   isLoggedInOrganization,
@@ -216,14 +217,31 @@ watch(() => props.contact, handleContactChange);
             <p class="text-small text-semi-bold">Public Key</p>
           </div>
           <div class="col-7">
-            <p
-              class="text-secondary text-small overflow-x-auto"
-              :data-testid="'p-contact-public-key-' + index"
-            >
+            <p class="overflow-x-auto" :data-testid="'p-contact-public-key-' + index">
               <span class="d-flex gap-2">
-                <span>
-                  {{ publicKeysMapping[PublicKey.fromString(key.publicKey).toStringRaw()] }}</span
+                <span
+                  v-if="
+                    extractIdentifier(
+                      publicKeysMapping[PublicKey.fromString(key.publicKey).toStringRaw()],
+                    )
+                  "
                 >
+                  <span class="text-semi-bold text-small me-2">{{
+                    extractIdentifier(
+                      publicKeysMapping[PublicKey.fromString(key.publicKey).toStringRaw()],
+                    )?.identifier
+                  }}</span>
+                  <span class="text-secondary text-small">{{
+                    `(${
+                      extractIdentifier(
+                        publicKeysMapping[PublicKey.fromString(key.publicKey).toStringRaw()],
+                      )?.pk
+                    })`
+                  }}</span>
+                </span>
+                <span v-else class="text-secondary text-small">{{
+                  publicKeysMapping[PublicKey.fromString(key.publicKey).toStringRaw()]
+                }}</span>
               </span>
             </p>
             <p
