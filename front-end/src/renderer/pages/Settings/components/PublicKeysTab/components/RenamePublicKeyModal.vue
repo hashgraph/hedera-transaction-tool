@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import type { PublicKeyMapping } from '@prisma/client';
 import { ref, watch } from 'vue';
+
+import type { PublicKeyMapping } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 
