@@ -70,6 +70,20 @@ export class UsersController {
   }
 
   @ApiOperation({
+    summary: 'Get owner of a public key',
+    description: 'Fetch a user email based on a public key.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: String,
+  })
+  @AllowNonVerifiedUser()
+  @Get('/public-owner/:publicKey')
+  getUserByPublicKey(@Param('publicKey') publicKey: string): Promise<string | null> {
+    return this.usersService.getOwnerOfPublicKey(publicKey);
+  }
+
+  @ApiOperation({
     summary: 'Update user information',
     description: 'Update the admin state of a user.',
   })

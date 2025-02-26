@@ -15,6 +15,7 @@ import listenForSafeStorageEvents from './safeStorage';
 import listenForDataMigrationEvents from './dataMigration';
 import listenForSDKEvents from './sdk';
 import listenForMnemonicEvents from './mnemonic';
+import listenForPublicKeyMappingsEvents from './publicKeyMappings';
 
 export default () => {
   listenForKeyPairEvents();
@@ -34,4 +35,5 @@ export default () => {
   listenForDataMigrationEvents();
   listenForSDKEvents();
   listenForMnemonicEvents();
+  listenForPublicKeyMappingsEvents();
 };

@@ -68,6 +68,14 @@ export class UsersService {
     return this.repo.find();
   }
 
+  async getOwnerOfPublicKey(publicKey: string): Promise<string | null> {
+    const existingUser = await this.repo.findOne({
+      where: { keys: { publicKey } },
+      relations: ['keys'],
+    });
+    return existingUser ? existingUser.email : null;
+  }
+
   async updateUserById(id: number, attrs: Partial<User>): Promise<User> {
     const user = await this.getUser({ id });
 

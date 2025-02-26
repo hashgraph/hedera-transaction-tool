@@ -194,4 +194,33 @@ describe('UsersService', () => {
 
     await expect(service.removeUser(1)).rejects.toThrow(ErrorCodes.UNF);
   });
+
+  it('should return the email of the user who owns the public key', async () => {
+    const publicKey = '0bac491a279bc49db8ac4fb57a9a47ae1247ea91ab315a49247e042d60cc8765';
+    const userWithKey = { email, keys: [{ publicKey }] } as User;
+
+    userRepository.findOne.mockResolvedValue(userWithKey);
+
+    const result = await service.getOwnerOfPublicKey(publicKey);
+
+    expect(userRepository.findOne).toHaveBeenCalledWith({
+      where: { keys: { publicKey } },
+      relations: ['keys'],
+    });
+    expect(result).toEqual(email);
+  });
+
+  it('should return null if no user is found for the given public key', async () => {
+    const publicKey = '';
+
+    userRepository.findOne.mockResolvedValue(null);
+
+    const result = await service.getOwnerOfPublicKey(publicKey);
+
+    expect(userRepository.findOne).toHaveBeenCalledWith({
+      where: { keys: { publicKey } },
+      relations: ['keys'],
+    });
+    expect(result).toBeNull();
+  });
 });

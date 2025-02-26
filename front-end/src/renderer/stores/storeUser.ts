@@ -1,4 +1,4 @@
-import type { KeyPair, Mnemonic, Organization } from '@prisma/client';
+import type { KeyPair, Mnemonic, Organization, PublicKeyMapping } from '@prisma/client';
 
 import type {
   PersonalUser,
@@ -32,6 +32,7 @@ const useUserStore = defineStore('user', () => {
   const recoveryPhrase = ref<RecoveryPhrase | null>(null);
   const keyPairs = ref<KeyPair[]>([]);
   const mnemonics = ref<Mnemonic[]>([]);
+  const publicKeyMappings = ref<PublicKeyMapping[]>([]);
 
   /** Personal */
   const personal = ref<PersonalUser | null>(null);
@@ -129,6 +130,10 @@ const useUserStore = defineStore('user', () => {
     keyPairs.value = await ush.getLocalKeyPairs(personal.value, selectedOrganization.value);
   };
 
+  const refetchPublicKeys = async () => {
+    publicKeyMappings.value = await ush.getAllPublicKeyMappings();
+  };
+
   const refetchMnemonics = async () => {
     mnemonics.value = await ush.getMnemonics(personal.value);
   };
@@ -142,6 +147,25 @@ const useUserStore = defineStore('user', () => {
     await ush.storeKeyPair(keyPair, mnemonic, password, encrypted);
     await refetchKeys();
     refetchAccounts();
+  };
+
+  const storePublicKeyMapping = async (publicKey: string, nickname: string) => {
+    await ush.addPublicKeyMapping(publicKey, nickname);
+    await refetchPublicKeys();
+  };
+
+  const updatePublicKeyMappingNickname = async (
+    id: string,
+    publicKey: string,
+    newNickname: string,
+  ) => {
+    await ush.updatePublicKeyNickname(id, publicKey, newNickname);
+    await refetchPublicKeys();
+  };
+
+  const deletePublicKeyMapping = async (id: string) => {
+    await ush.deletePublicKeyMapping(id);
+    await refetchPublicKeys();
   };
 
   /* Organization */
@@ -216,6 +240,11 @@ const useUserStore = defineStore('user', () => {
     setPasswordStoreDuration,
     setRecoveryPhrase,
     storeKey,
+    storePublicKeyMapping,
+    publicKeyMappings,
+    refetchPublicKeys,
+    updatePublicKeyMappingNickname,
+    deletePublicKeyMapping,
   };
 
   return exports;

@@ -175,4 +175,42 @@ describe('Users (e2e)', () => {
       await endpoint.delete(admin.id.toString(), adminAuthToken).expect(400);
     });
   });
+
+  describe('/users/public-owner/:publicKey', () => {
+    let endpoint: Endpoint;
+    let testPublicKey: string;
+    let testUserEmail: string;
+
+    beforeAll(async () => {
+      endpoint = new Endpoint(server, '/users/public-owner');
+
+      // Fetch an existing test user with a public key
+      const testUser = await getUser('user');
+
+      if (!testUser || !testUser.keys.length) {
+        throw new Error(
+          'No test user with public keys found. Ensure test data is seeded properly.',
+        );
+      }
+
+      testPublicKey = testUser.keys[0].publicKey;
+      testUserEmail = testUser.email;
+    });
+
+    it('(GET) should return the owner of the public key', async () => {
+      const res = await endpoint.get(testPublicKey, userAuthToken).expect(200);
+
+      expect(res.body).toBe(testUserEmail);
+    });
+
+    it('(GET) should return null if the public key does not exist', async () => {
+      const res = await endpoint.get('non-existing-public-key', userAuthToken).expect(200);
+
+      expect(res.body).toBeNull();
+    });
+
+    it('(GET) should return 401 if not authenticated', async () => {
+      await endpoint.get(testPublicKey).expect(401);
+    });
+  });
 });

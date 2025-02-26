@@ -48,6 +48,7 @@ import { get as getStoredMnemonics } from '@renderer/services/mnemonicService';
 
 import { safeAwait } from './safeAwait';
 import { getErrorMessage, throwError } from '.';
+import * as pks from '@renderer/services/publicKeyMappingService';
 
 /* Flags */
 export function assertUserLoggedIn(user: PersonalUser | null): asserts user is LoggedInUser {
@@ -733,4 +734,36 @@ export const updateOrganizationKeysHash = async (
       recoveryPhrase.hash,
     );
   }
+};
+
+export const getAllPublicKeyMappings = async () => {
+  return await pks.getPublicKeys();
+};
+
+export const getPublicKeyMapping = async (publicKey: string) => {
+  return await pks.getPublicKey(publicKey);
+};
+
+export const addPublicKeyMapping = async (publicKey: string, nickname: string) => {
+  const existingKey = await getPublicKeyMapping(publicKey);
+  if (existingKey) {
+    throw new Error('This public key has already been added!');
+  }
+  return await pks.addPublicKey(publicKey, nickname);
+};
+
+export const updatePublicKeyNickname = async (
+  id: string,
+  publicKey: string,
+  newNickname: string,
+) => {
+  const existingKey = await getPublicKeyMapping(publicKey);
+  if (existingKey?.nickname === newNickname) {
+    throw new Error('You need to set a different nickname than the previous one!');
+  }
+  return await pks.editPublicKeyNickname(id, newNickname);
+};
+
+export const deletePublicKeyMapping = async (id: string) => {
+  return await pks.deletePublicKey(id);
 };

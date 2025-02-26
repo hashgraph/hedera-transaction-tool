@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { HederaAccount } from '@prisma/client';
 
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
@@ -17,6 +17,8 @@ import { getKeyListLevels } from '@renderer/services/keyPairService';
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
 import {
+  extractIdentifier,
+  formatPublickey,
   getAccountIdWithChecksum,
   getFormattedDateFromTimestamp,
   isUserLoggedIn,
@@ -54,6 +56,7 @@ const sorting = ref<{
   created_at: 'desc',
 });
 const selectMany = ref(false);
+const formattedPublicKey = ref('');
 
 /* Computed */
 const hbarDollarAmount = computed(() => {
@@ -192,6 +195,15 @@ function resetSelectedAccount() {
   accountData.accountId.value = accounts.value[0]?.account_id || '';
   selectedAccountIds.value = [accountData.accountId.value];
 }
+
+watch(
+  () => accountData.key.value,
+  async newKey => {
+    if (newKey instanceof PublicKey && true) {
+      formattedPublicKey.value = await formatPublickey(newKey.toStringRaw());
+    }
+  },
+);
 
 /* Hooks */
 onMounted(async () => {
@@ -526,12 +538,19 @@ onMounted(async () => {
                         >See details</span
                       >
                     </template>
-                    <template v-else-if="accountData.key.value instanceof PublicKey && true">
-                      <p
-                        class="text-secondary text-small overflow-x-auto"
-                        data-testid="p-account-data-key"
-                      >
-                        {{ accountData.key.value.toStringRaw() }}
+                    <template v-else-if="formattedPublicKey">
+                      <p class="overflow-x-auto" data-testid="p-account-data-key">
+                        <span v-if="extractIdentifier(formattedPublicKey)">
+                          <span class="text-semi-bold text-small me-2">{{
+                            extractIdentifier(formattedPublicKey)?.identifier
+                          }}</span>
+                          <span class="text-secondary text-small">{{
+                            `(${extractIdentifier(formattedPublicKey)?.pk})`
+                          }}</span>
+                        </span>
+                        <span v-else class="text-secondary text-small">{{
+                          formattedPublicKey
+                        }}</span>
                       </p>
                       <p
                         class="text-small text-semi-bold text-pink mt-3"

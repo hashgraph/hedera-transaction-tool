@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 
 import { KeyList, PublicKey } from '@hashgraph/sdk';
 
@@ -16,19 +16,11 @@ const props = defineProps<{
   depth: number;
 }>();
 
-/* State */
-const hasNickname = ref<boolean | undefined>(undefined);
-
 /* Computed */
 const publicKeysInKeyList = computed(() => flattenKeyList(props.keyList));
 const publicKeysInKeyListRaw = computed(() =>
   flattenKeyList(props.keyList).map(k => k.toStringRaw()),
 );
-
-/* Handlers */
-const handleNicknameStatus = (status: boolean) => {
-  hasNickname.value = status;
-};
 
 /* Emits */
 defineEmits(['update:keyList']);
@@ -44,12 +36,9 @@ defineEmits(['update:keyList']);
       ></span>
       <AppPublicKeyNickname
         :public-key="publicKeysInKeyListRaw[0]"
-        class="text-pink me-2"
-        @nickname-status="handleNicknameStatus"
+        class="me-2"
+        :signed="ableToSign(publicKeysSigned, keyList)"
       />
-      <span v-if="hasNickname !== undefined" data-testid="span-payer-key">
-        {{ hasNickname ? `(${publicKeysInKeyListRaw[0]})` : publicKeysInKeyListRaw[0] }}
-      </span>
     </div>
   </template>
   <template v-else>
@@ -89,8 +78,10 @@ defineEmits(['update:keyList']);
               :data-testid="`span-checkmark-public-key-${depth}-${_index}`"
             ></span>
             <p class="text-nowrap me-2" :data-testid="`span-public-key-${depth}-${_index}`">
-              <AppPublicKeyNickname :public-key="item" :brackets="true" class="text-pink" />
-              ({{ item.toStringRaw() }})
+              <AppPublicKeyNickname
+                :signed="publicKeysSigned.includes(item.toStringRaw())"
+                :public-key="item"
+              />
             </p>
           </div>
         </template>

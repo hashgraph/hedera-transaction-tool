@@ -1,10 +1,15 @@
 import type { AccountInfo } from '@main/shared/interfaces';
 import type { HederaAccount } from '@prisma/client';
+
 import { AccountId, Client } from '@hashgraph/sdk';
-import { isUserLoggedIn } from './userStoreHelpers';
+
 import useUserStore from '@renderer/stores/storeUser';
-import { getOne } from '@renderer/services/accountsService';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+
+import { getOne } from '@renderer/services/accountsService';
+import { getPublicKeyOwner } from '@renderer/services/organization';
+
+import { getPublicKeyMapping, isUserLoggedIn } from './userStoreHelpers';
 import { isAccountId } from './validator';
 
 export * from './dom';
@@ -232,4 +237,50 @@ export const splitMultipleAccounts = (input: string, client: Client): string[] =
   }
 
   return result;
+};
+
+export const formatPublickey = async (publicKey: string) => {
+  const mapping = await getPublicKeyMapping(publicKey);
+  if (mapping && mapping.nickname) {
+    return `${mapping.nickname} (${mapping.public_key})`;
+  }
+  const user = useUserStore();
+  if (user.selectedOrganization) {
+    const owner = await getPublicKeyOwner(user.selectedOrganization!.serverUrl, publicKey);
+    if (owner) {
+      return `${owner} (${publicKey})`;
+    }
+  }
+  return publicKey;
+};
+
+export const findIdentifier = async (publicKey: string) => {
+  const mapping = await getPublicKeyMapping(publicKey);
+  if (mapping && mapping.nickname) {
+    return mapping.nickname as string;
+  }
+  const user = useUserStore();
+  if (user.selectedOrganization) {
+    const owner = await getPublicKeyOwner(user.selectedOrganization!.serverUrl, publicKey);
+    if (owner) {
+      return owner as string;
+    }
+  }
+  return null;
+};
+
+export const formatPublickeyContactList = async (publicKey: string) => {
+  const mapping = await getPublicKeyMapping(publicKey);
+  if (mapping) {
+    return `${mapping.nickname} (${mapping.public_key})`;
+  }
+  return publicKey;
+};
+
+export const extractIdentifier = (formattedString: string) => {
+  const match = formattedString.match(/^(.*?)\s\(([\w]+)\)$/);
+  if (match) {
+    return { identifier: match[1], pk: match[2] };
+  }
+  return null;
 };
