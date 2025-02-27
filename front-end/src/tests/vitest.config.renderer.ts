@@ -1,3 +1,6 @@
+/**
+ * @vitest-environment jsdom
+ */
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
 
@@ -11,7 +14,7 @@ export default defineConfig({
     },
   },
   test: {
-    environment: 'happy-dom',
+    environment: 'jsdom',
     globals: true,
     include: ['src/tests/renderer/**/*.{test,spec}.{ts,js}'],
   },
