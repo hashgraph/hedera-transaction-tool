@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { HederaFile } from '@prisma/client';
 
-import { onMounted, ref, watch } from 'vue';
-import { FileContentsQuery, FileId, FileInfoQuery, Hbar, HbarUnit } from '@hashgraph/sdk';
+import { onMounted, ref } from 'vue';
+import { FileContentsQuery, FileInfoQuery, Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import { DISPLAY_FILE_SIZE_LIMIT } from '@main/shared/constants';
 
@@ -20,7 +20,6 @@ import { add, getAll, update } from '@renderer/services/filesService';
 
 import {
   assertUserLoggedIn,
-  isFileId,
   isHederaSpecialFileId,
   formatAccountId,
   encodeString,
@@ -159,6 +158,11 @@ const handleSubmit = async () => {
   await readFile();
 };
 
+/* Handlers */
+function handleOnBlur() {
+  fileId.value = formatAccountId(fileId.value);
+}
+
 /* Hooks */
 onMounted(async () => {
   if (route.query.fileId) {
@@ -225,6 +229,7 @@ const columnClass = 'col-4 col-xxxl-3';
             <AppInput
               :model-value="fileId"
               @update:model-value="v => (fileId = v)"
+              @blur="handleOnBlur"
               :filled="true"
               placeholder="Enter File ID"
               data-testid="input-file-id-for-read"

@@ -66,12 +66,11 @@ const handleLinkAccount = async () => {
   }
 };
 
-const handleBlur = (e: Event) => {
-  console.log('handle blur');
-  const value = (e.target as HTMLInputElement).value;
-  if (!value.includes('-')) {
+const handleBlur = () => {
+  accountData.accountId.value = formatAccountId(accountData.accountId.value);
+  if (!accountData.accountId.value.includes('-')) {
     try {
-      const idWithChecksum = getAccountIdWithChecksum(value);
+      const idWithChecksum = getAccountIdWithChecksum(accountData.accountId.value);
       if (idWithChecksum) {
         accountData.accountId.value = idWithChecksum;
       }

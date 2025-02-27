@@ -11,19 +11,24 @@ import KeyField from '@renderer/components/KeyField.vue';
 import FileDataFormData from '@renderer/components/Transaction/Create/FileData/FileDataFormData.vue';
 
 /* Props */
-defineProps<{
+const props = defineProps<{
   data: FileUpdateData;
   signatureKey: Key | null;
 }>();
 
 /* Emits */
-defineEmits<{
+const emit = defineEmits<{
   (event: 'update:data', data: FileUpdateData): void;
   (event: 'update:signatureKey', key: Key | null): void;
 }>();
 
 /* Stores */
 const user = useUserStore();
+
+/* Handlers */
+function handleOnBlur() {
+  emit('update:data', { ...props.data, fileId: formatAccountId(props.data.fileId) });
+}
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
@@ -40,6 +45,7 @@ const columnClass = 'col-4 col-xxxl-3';
             fileId: $event,
           })
         "
+        @blur="handleOnBlur"
         :filled="true"
         placeholder="Enter File ID"
         data-testid="input-file-id-for-update"

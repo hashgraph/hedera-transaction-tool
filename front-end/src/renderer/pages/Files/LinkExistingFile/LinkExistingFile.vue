@@ -65,6 +65,10 @@ const handleLinkFile = async () => {
     }
   }
 };
+
+function handleOnBlur() {
+  fileId.value = formatAccountId(fileId.value);
+}
 </script>
 <template>
   <div class="p-5" v-focus-first-input>
@@ -80,6 +84,7 @@ const handleLinkFile = async () => {
         <AppInput
           :model-value="fileId"
           @update:model-value="fileId = $event"
+          @blur="handleOnBlur"
           :filled="true"
           data-bs-toggle="tooltip"
           data-bs-placement="right"

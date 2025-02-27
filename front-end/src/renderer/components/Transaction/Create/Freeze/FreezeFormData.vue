@@ -7,14 +7,19 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
 
 /* Props */
-defineProps<{
+const props = defineProps<{
   data: FreezeData;
 }>();
 
 /* Emits */
-defineEmits<{
+const emit = defineEmits<{
   (event: 'update:data', data: FreezeData): void;
 }>();
+
+/* Handlers */
+function handleOnBlur() {
+  emit('update:data', { ...props.data, fileId: formatAccountId(props.data.fileId) });
+}
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
@@ -82,6 +87,7 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
             fileId: $event,
           })
         "
+        @blur="handleOnBlur"
         :filled="true"
         placeholder="Enter File ID"
       />
