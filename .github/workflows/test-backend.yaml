@@ -44,7 +44,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Install pnpm
-        uses: step-security/action-setup@303e8a1dabc4295b9b4ca0f4198fd42f7861406e # v4.0.0
+        uses: step-security/action-setup@1beb3ebc4de86b0e37560725eeef1b11332702a3 # v4.0.1
         with:
           version: 9
 
