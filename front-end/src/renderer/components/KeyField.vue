@@ -7,8 +7,6 @@ import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
-
 import { getComplexKey, updateComplexKey } from '@renderer/services/complexKeysService';
 
 import {
@@ -28,6 +26,9 @@ import ComplexKeyModal from '@renderer/components/ComplexKey/ComplexKeyModal.vue
 import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/ComplexKeyAddPublicKeyModal.vue';
 import ComplexKeySelectSavedKey from '@renderer/components/ComplexKey/ComplexKeySelectSavedKey.vue';
 import ComplexKeySaveKeyModal from '@renderer/components/ComplexKey/ComplexKeySaveKeyModal.vue';
+import useNicknamesStore from '@renderer/stores/storeNicknames';
+import useContactsStore from '@renderer/stores/storeContacts';
+import { useToast } from 'vue-toast-notification';
 
 /* Props */
 const props = withDefaults(
@@ -52,9 +53,7 @@ enum Tabs {
 
 /* Stores */
 const user = useUserStore();
-
-/* Composables */
-const toast = useToast();
+const nicknames = useNicknamesStore();
 
 /* State */
 const currentTab = ref(Tabs.SIGNLE);
@@ -112,7 +111,7 @@ const handleEditComplexKey = () => {
   complexKeyModalShown.value = true;
 };
 
-const handleComplexKeyUpdate = async (keyList: KeyList, updatedName: boolean) => {
+const handleComplexKeyUpdate = async (keyList: KeyList, saveButton?: boolean) => {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
@@ -121,14 +120,16 @@ const handleComplexKeyUpdate = async (keyList: KeyList, updatedName: boolean) =>
 
   if (selectedComplexKey.value) {
     const keyListBytes = encodeKey(keyList);
-    let updatedKey;
-    if (updatedName) {
-      updatedKey = await getComplexKey(user.personal.id, keyList);
-    } else {
-      updatedKey = await updateComplexKey(selectedComplexKey.value.id, keyListBytes);
-    }
+    const updatedKey = await updateComplexKey(selectedComplexKey.value.id, keyListBytes);
     selectedComplexKey.value = updatedKey;
-    toast.success('Key list updated successfully');
+  }
+
+  if (!saveButton) {
+    await nicknames.saveNicknames();
+  }
+
+  if (!selectedComplexKey.value) {
+    selectedComplexKey.value = await nicknames.getKeyListStructure(keyList);
   }
 };
 

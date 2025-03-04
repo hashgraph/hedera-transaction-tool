@@ -3,19 +3,14 @@ import { computed, ref, watch } from 'vue';
 
 import { Key, KeyList } from '@hashgraph/sdk';
 
-import { encodeKey, isKeyListValid, isUserLoggedIn } from '@renderer/utils';
+import { isKeyListValid } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import ComplexKey from '@renderer/components/ComplexKey/ComplexKey.vue';
 import KeyStructure from '@renderer/components/KeyStructure.vue';
-import {
-  addComplexKey,
-  getComplexKey,
-  updateComplexKey,
-} from '@renderer/services/complexKeysService';
-import useUserStore from '@renderer/stores/storeUser';
+import useNicknamesStore from '@renderer/stores/storeNicknames';
 
 /* Props */
 const props = defineProps<{
@@ -24,18 +19,15 @@ const props = defineProps<{
   onSaveComplexKey?: () => void;
 }>();
 
+const nicknames = useNicknamesStore();
+
 /* Emits */
 const emit = defineEmits(['update:show', 'update:modelKey']);
-
-/* Stores */
-const user = useUserStore();
 
 /* State */
 const currentKey = ref<Key | null>(props.modelKey);
 const errorModalShow = ref(false);
 const summaryMode = ref(false);
-const nickname = ref('');
-const listId = ref('');
 
 /* Computed */
 const currentKeyInvalid = computed(
@@ -55,46 +47,39 @@ const handleSaveComplexKeyButtonClick = () => {
     return;
   }
 
-  emit('update:modelKey', currentKey.value);
+  emit('update:modelKey', currentKey.value, true);
 
   if (props.onSaveComplexKey) {
     props.onSaveComplexKey();
   }
 };
 
-const handleSaveButtonClick = async () => {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
-
+const handleDoneButtonClick = async () => {
   if (currentKeyInvalid.value) {
     errorModalShow.value = true;
     return;
   }
 
-  if (nickname.value && currentKey.value instanceof KeyList) {
-    const list = await getComplexKey(user.personal.id, currentKey.value);
-    const keyListBytes = encodeKey(currentKey.value);
-    if (list && !listId.value) {
-      await updateComplexKey(list.id, keyListBytes, nickname.value);
-    } else if (listId.value) {
-      await updateComplexKey(listId.value, keyListBytes, nickname.value);
-      listId.value = '';
-    } else {
-      await addComplexKey(user.personal.id, keyListBytes, nickname.value);
-    }
-  }
-
-  emit('update:modelKey', currentKey.value, nickname.value ? true : false);
+  emit('update:modelKey', currentKey.value);
   emit('update:show', false);
 };
 
-function handleNicknameUpdate(newNickname: string) {
-  nickname.value = newNickname;
+async function handleExit() {
+  await nicknames.clearNicknames();
+  emit('update:show', false);
 }
 
-function handleListLoaded(id: string) {
-  listId.value = id;
+function handleSummaryEdit() {
+  summaryMode.value = !summaryMode.value;
+
+  if (summaryMode.value) {
+    if (currentKeyInvalid.value) {
+      errorModalShow.value = true;
+      return;
+    }
+
+    emit('update:modelKey', currentKey.value);
+  }
 }
 
 /* Watchers */
@@ -111,9 +96,9 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
 <template>
   <AppModal :show="show" @update:show="handleShowUpdate" class="full-screen-modal">
     <div class="p-5 h-100">
-      <form @submit.prevent="handleSaveButtonClick" class="h-100">
+      <form @submit.prevent="handleDoneButtonClick" class="h-100">
         <div>
-          <i class="bi bi-x-lg cursor-pointer" @click="$emit('update:show', false)"></i>
+          <i class="bi bi-x-lg cursor-pointer" @click="handleExit"></i>
         </div>
         <h1 class="text-title text-semi-bold text-center">Complex Key</h1>
         <div :style="modalContentContainerStyle">
@@ -122,7 +107,7 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
               color="borderless"
               type="button"
               class="text-body"
-              @click="summaryMode = !summaryMode"
+              @click="handleSummaryEdit"
               >{{ summaryMode ? 'Edit Mode' : 'View Summary' }}</AppButton
             >
             <AppButton
@@ -145,12 +130,7 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
           <div v-if="show" class="mt-5 h-100 overflow-auto">
             <Transition name="fade" :mode="'out-in'">
               <div v-if="!summaryMode">
-                <ComplexKey
-                  :model-key="currentKey"
-                  @update:model-key="handleComplexKeyUpdate"
-                  @update:nickname="handleNicknameUpdate"
-                  @list-loaded="handleListLoaded"
-                />
+                <ComplexKey :model-key="currentKey" @update:model-key="handleComplexKeyUpdate" />
               </div>
               <div v-else>
                 <KeyStructure
