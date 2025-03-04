@@ -49,8 +49,13 @@ const accountValue = computed(() => {
 /* Handlers */
 const handleUpdate = (value: string) => {
   const idWithoutChecksum = value.split('-')[0];
-  emit('update:modelValue', formatAccountId(idWithoutChecksum));
+  emit('update:modelValue', idWithoutChecksum);
 };
+
+function handleOnBlur() {
+  const idWithoutChecksum = props.modelValue.split('-')[0];
+  emit('update:modelValue', formatAccountId(idWithoutChecksum));
+}
 
 /* Hooks */
 onBeforeMount(async () => {
@@ -68,6 +73,7 @@ onBeforeMount(async () => {
   <AppAutoComplete
     :model-value="accountValue"
     @update:model-value="handleUpdate"
+    @blur="handleOnBlur"
     :items="formattedAccountIds"
     :data-testid="dataTestid"
     disable-spaces
