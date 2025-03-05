@@ -9,7 +9,6 @@ import { AuthService } from './auth.service';
 
 import { ErrorCodes, NOTIFICATIONS_SERVICE } from '@app/common';
 import { User, UserStatus } from '@entities';
-import * as bcrypt from 'bcryptjs';
 import { totp } from 'otplib';
 import { UsersService } from '../users/users.service';
 import { SignUpUserDto } from './dtos';
@@ -181,7 +180,7 @@ describe('AuthService', () => {
     const user = { id: 1, email: '', password: 'old' };
     const dto = { oldPassword: 'old', newPassword: 'new' };
 
-    jest.spyOn(bcrypt, 'compare').mockImplementationOnce(async () => true);
+    jest.spyOn(service, 'dualCompareHash').mockResolvedValueOnce({ correct: true, isBcrypt: true });
 
     await service.changePassword(user as User, dto);
 
@@ -199,7 +198,9 @@ describe('AuthService', () => {
     const user = { id: 1, email: '', password: 'old' };
     const dto = { oldPassword: 'old', newPassword: 'new' };
 
-    jest.spyOn(bcrypt, 'compare').mockImplementationOnce(async () => false);
+    jest
+      .spyOn(service, 'dualCompareHash')
+      .mockResolvedValueOnce({ correct: false, isBcrypt: false });
 
     await expect(service.changePassword(user as User, dto)).rejects.toThrow(ErrorCodes.INOP);
   });
