@@ -1,5 +1,4 @@
 import * as pc from 'picocolors';
-import * as bcrypt from 'bcryptjs';
 
 import { DataSource, DeepPartial, EntityTarget, ObjectLiteral } from 'typeorm';
 import {
@@ -49,6 +48,7 @@ import {
   dummyNewPassword,
   dummyPassword,
 } from './constants';
+import { hash } from './crypto';
 
 let _dataSource: DataSource;
 
@@ -87,8 +87,8 @@ export async function createUser(
     password,
   });
 
-  const hash = bcrypt.hashSync(user.password);
-  user.password = hash;
+  const hashed = await hash(password);
+  user.password = hashed;
 
   try {
     return await userRepo.save(user);
@@ -191,9 +191,9 @@ export async function resetUsersState() {
     await userRepo.recover(user);
     await userRepo.recover(userNew);
 
-    const hashAdmin = bcrypt.hashSync(adminPassword);
-    const hashUser = bcrypt.hashSync(dummyPassword);
-    const hashUserNew = bcrypt.hashSync(dummyNewPassword);
+    const hashAdmin = await hash(adminPassword);
+    const hashUser = await hash(dummyPassword);
+    const hashUserNew = await hash(dummyNewPassword);
 
     admin.password = hashAdmin;
     user.password = hashUser;

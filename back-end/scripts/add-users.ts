@@ -4,7 +4,7 @@ import * as path from 'path';
 
 import * as dotenv from 'dotenv';
 import * as pc from 'picocolors';
-import * as bcrypt from 'bcryptjs';
+import * as argon2 from 'argon2';
 
 import { DataSource } from 'typeorm';
 
@@ -55,10 +55,9 @@ async function main() {
     /* Create user */
     let user = userRepo.create(data[i]);
 
-    const salt = await bcrypt.genSalt();
-    const hash = await bcrypt.hash(user.password, salt);
-    user.password = hash;
-    console.log(`Password set: ${pc.blue(hash)}\n`);
+    const hashed = await hash(user.password);
+    user.password = hashed;
+    console.log(`Password set: ${pc.blue(hashed)}\n`);
 
     /* Create user in database */
     try {
@@ -124,4 +123,15 @@ async function connectDatabase() {
   console.log(pc.underline(pc.cyan('Connected to database \n')));
 
   return dataSource;
+}
+
+async function hash(data: string, usePseudoSalt = false): Promise<string> {
+  let pseudoSalt: Buffer | undefined;
+  if (usePseudoSalt) {
+    const paddedData = data.padEnd(16, 'x');
+    pseudoSalt = Buffer.from(paddedData.slice(0, 16));
+  }
+  return await argon2.hash(data, {
+    salt: pseudoSalt,
+  });
 }
