@@ -7,8 +7,12 @@ import { ErrorCodes } from '@app/common';
 import { User } from '@entities';
 
 import * as bcrypt from 'bcryptjs';
+import * as argon2 from 'argon2';
 
 import { UsersService } from './users.service';
+
+jest.mock('bcryptjs');
+jest.mock('argon2');
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -113,7 +117,9 @@ describe('UsersService', () => {
 
   it('should return user that verifies the email and password', async () => {
     userRepository.findOne.mockResolvedValue(user as User);
-    jest.spyOn(service, 'dualCompareHash').mockResolvedValueOnce({ correct: true, isBcrypt: true });
+    //@ts-expect-error - incorrect overload expected
+    jest.mocked(bcrypt.compare).mockResolvedValue(true);
+    jest.mocked(argon2.verify).mockResolvedValue(false);
 
     const result = await service.getVerifiedUser(email, password);
 
@@ -138,9 +144,9 @@ describe('UsersService', () => {
 
   it('should throw if the password is incorrect', async () => {
     userRepository.findOne.mockResolvedValue(user as User);
-    jest
-      .spyOn(service, 'dualCompareHash')
-      .mockResolvedValueOnce({ correct: false, isBcrypt: false });
+    //@ts-expect-error - incorrect overload expected
+    jest.mocked(bcrypt.compare).mockResolvedValue(false);
+    jest.mocked(argon2.verify).mockResolvedValue(false);
 
     await expect(service.getVerifiedUser(email, password)).rejects.toThrow(
       'Please check your login credentials',

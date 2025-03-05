@@ -7,11 +7,16 @@ import { mock } from 'jest-mock-extended';
 
 import { AuthService } from './auth.service';
 
+import * as bcrypt from 'bcryptjs';
+import * as argon2 from 'argon2';
 import { ErrorCodes, NOTIFICATIONS_SERVICE } from '@app/common';
 import { User, UserStatus } from '@entities';
 import { totp } from 'otplib';
 import { UsersService } from '../users/users.service';
 import { SignUpUserDto } from './dtos';
+
+jest.mock('bcryptjs');
+jest.mock('argon2');
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -180,6 +185,9 @@ describe('AuthService', () => {
     const user = { id: 1, email: '', password: 'old' };
     const dto = { oldPassword: 'old', newPassword: 'new' };
 
+    //@ts-expect-error - incorrect overload expected
+    jest.mocked(bcrypt.compare).mockResolvedValue(true);
+    jest.mocked(argon2.verify).mockResolvedValue(false);
     jest.spyOn(service, 'dualCompareHash').mockResolvedValueOnce({ correct: true, isBcrypt: true });
 
     await service.changePassword(user as User, dto);
@@ -198,9 +206,9 @@ describe('AuthService', () => {
     const user = { id: 1, email: '', password: 'old' };
     const dto = { oldPassword: 'old', newPassword: 'new' };
 
-    jest
-      .spyOn(service, 'dualCompareHash')
-      .mockResolvedValueOnce({ correct: false, isBcrypt: false });
+    //@ts-expect-error - incorrect overload expected
+    jest.mocked(bcrypt.compare).mockResolvedValue(false);
+    jest.mocked(argon2.verify).mockResolvedValue(false);
 
     await expect(service.changePassword(user as User, dto)).rejects.toThrow(ErrorCodes.INOP);
   });
