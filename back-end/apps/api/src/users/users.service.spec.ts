@@ -83,7 +83,7 @@ describe('UsersService', () => {
   it('should call the repo to create a user', async () => {
     userRepository.findOne.mockResolvedValue(null);
     userRepository.create.mockReturnValue(user as User);
-    jest.spyOn(bcrypt, 'hash').mockImplementation(async () => hashedPassword);
+    jest.spyOn(service, 'hash').mockImplementation(async () => hashedPassword);
 
     await service.createUser(email, password);
 
@@ -94,7 +94,7 @@ describe('UsersService', () => {
   it('should call the repo to restore a user', async () => {
     const userCopy = { ...user, id: 1, deletedAt: new Date() };
     userRepository.findOne.mockResolvedValue(userCopy as User);
-    jest.spyOn(bcrypt, 'hash').mockImplementation(async () => hashedPassword);
+    jest.spyOn(service, 'hash').mockImplementation(async () => hashedPassword);
 
     await service.createUser(email, password);
 
@@ -113,7 +113,7 @@ describe('UsersService', () => {
 
   it('should return user that verifies the email and password', async () => {
     userRepository.findOne.mockResolvedValue(user as User);
-    jest.spyOn(bcrypt, 'compare').mockImplementationOnce(() => true);
+    jest.spyOn(service, 'dualCompareHash').mockResolvedValueOnce({ correct: true, isBcrypt: true });
 
     const result = await service.getVerifiedUser(email, password);
 
@@ -138,7 +138,9 @@ describe('UsersService', () => {
 
   it('should throw if the password is incorrect', async () => {
     userRepository.findOne.mockResolvedValue(user as User);
-    jest.spyOn(bcrypt, 'compare').mockImplementationOnce(() => false);
+    jest
+      .spyOn(service, 'dualCompareHash')
+      .mockResolvedValueOnce({ correct: false, isBcrypt: false });
 
     await expect(service.getVerifiedUser(email, password)).rejects.toThrow(
       'Please check your login credentials',
@@ -170,7 +172,7 @@ describe('UsersService', () => {
 
   it('should set new password the user', async () => {
     userRepository.findOne.mockResolvedValue(user as User);
-    jest.spyOn(bcrypt, 'hash').mockImplementation(async () => hashedPassword);
+    jest.spyOn(service, 'hash').mockImplementation(async () => hashedPassword);
 
     await service.setPassword({ ...user } as User, password);
 
