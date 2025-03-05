@@ -210,13 +210,13 @@ export const computeSignatureKey = async (
       }
 
       if (transactionIs(NodeDeleteTransaction, transaction)) {
-        const COUNCIL_ACCOUNT = '0.0.2'; // To be updated probably
-        const res = await safeAwait(
-          mirrorNodeService.getAccountInfo(COUNCIL_ACCOUNT, mirrorNetwork),
-        );
-        if (res.data) {
-          const councilAccountInfo = parseAccountInfo(res.data);
-          nodeSignatureKey.push(councilAccountInfo.key);
+        const COUNCIL_ACCOUNTS = ['0.0.2', '0.0.50', '0.0.55'];
+        for (const acc of COUNCIL_ACCOUNTS) {
+          const res = await safeAwait(mirrorNodeService.getAccountInfo(acc, mirrorNetwork));
+          if (res.data) {
+            const councilAccountInfo = parseAccountInfo(res.data);
+            nodeSignatureKey.push(councilAccountInfo.key);
+          }
         }
         nodeSignatureKey.setThreshold(1);
       }

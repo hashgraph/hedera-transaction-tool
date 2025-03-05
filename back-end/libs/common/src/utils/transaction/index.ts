@@ -129,13 +129,15 @@ export const keysRequiredToSign = async (
       }
 
       if (transactionIs(NodeDeleteTransaction, sdkTransaction)) {
-        const COUNCIL_ACCOUNT = '0.0.2'; // To be updated probably
-        const res = await safeAwait(
-          mirrorNodeService.getAccountInfo(COUNCIL_ACCOUNT, transaction.mirrorNetwork),
-        );
-        if (res.data) {
-          const councilAccountInfo = parseAccountInfo(res.data);
-          addUserPublicKeyIfRequired(councilAccountInfo.key);
+        const COUNCIL_ACCOUNTS = ['0.0.2', '0.0.50', '0.0.55'];
+        for (const acc of COUNCIL_ACCOUNTS) {
+          const res = await safeAwait(
+            mirrorNodeService.getAccountInfo(acc, transaction.mirrorNetwork),
+          );
+          if (res.data) {
+            const councilAccountInfo = parseAccountInfo(res.data);
+            addUserPublicKeyIfRequired(councilAccountInfo.key);
+          }
         }
       }
     }

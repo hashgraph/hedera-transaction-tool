@@ -308,10 +308,12 @@ const getNodeKeys = async (
     }
 
     if (transactionIs(NodeDeleteTransaction, transaction)) {
-      const COUNCIL_ACCOUNT = '0.0.2'; // To be updated probably
-      const accountInfo = await getAccountInfo(COUNCIL_ACCOUNT, mirrorNodeLink);
-      if (accountInfo?.key) {
-        signatureKey.push(accountInfo.key);
+      const COUNCIL_ACCOUNTS = ['0.0.2', '0.0.50', '0.0.55'];
+      for (const acc of COUNCIL_ACCOUNTS) {
+        const accountInfo = await getAccountInfo(acc, mirrorNodeLink);
+        if (accountInfo?.key) {
+          signatureKey.push(accountInfo.key);
+        }
       }
       signatureKey.setThreshold(1);
       adminKey = signatureKey;
