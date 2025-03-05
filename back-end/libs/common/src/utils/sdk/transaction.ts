@@ -1,5 +1,6 @@
 import {
   KeyList,
+  NodeDeleteTransaction,
   NodeUpdateTransaction,
   PublicKey,
   Transaction as SDKTransaction,
@@ -16,6 +17,7 @@ import {
   computeShortenedPublicKeyList,
   parseAccountInfo,
   parseNodeInfo,
+  safeAwait,
 } from '@app/common';
 
 export const isExpired = (transaction: SDKTransaction) => {
@@ -189,8 +191,10 @@ export const computeSignatureKey = async (
   try {
     if (!isNaN(nodeId)) {
       const nodeInfo = parseNodeInfo(await mirrorNodeService.getNodeInfo(nodeId, mirrorNetwork));
+      const nodeSignatureKey = new KeyList();
+
       if (nodeInfo.admin_key) {
-        signatureKey.push(nodeInfo.admin_key);
+        nodeSignatureKey.push(nodeInfo.admin_key);
       }
 
       if (transactionIs(NodeUpdateTransaction, transaction)) {
@@ -200,10 +204,24 @@ export const computeSignatureKey = async (
             await mirrorNodeService.getAccountInfo(nodeAccountId, mirrorNetwork),
           );
           if (accountInfo?.key) {
-            signatureKey.push(accountInfo.key);
+            nodeSignatureKey.push(accountInfo.key);
           }
         }
       }
+
+      if (transactionIs(NodeDeleteTransaction, transaction)) {
+        const COUNCIL_ACCOUNT = '0.0.2'; // To be updated probably
+        const res = await safeAwait(
+          mirrorNodeService.getAccountInfo(COUNCIL_ACCOUNT, mirrorNetwork),
+        );
+        if (res.data) {
+          const councilAccountInfo = parseAccountInfo(res.data);
+          nodeSignatureKey.push(councilAccountInfo.key);
+        }
+        nodeSignatureKey.setThreshold(1);
+      }
+
+      signatureKey.push(nodeSignatureKey);
     }
   } catch (error) {
     console.log(error);

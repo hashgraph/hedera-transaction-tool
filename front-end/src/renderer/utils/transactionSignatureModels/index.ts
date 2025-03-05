@@ -1,6 +1,13 @@
 import type { IUserKey } from '@main/shared/interfaces';
 
-import { Key, KeyList, NodeUpdateTransaction, PublicKey, Transaction } from '@hashgraph/sdk';
+import {
+  Key,
+  KeyList,
+  NodeDeleteTransaction,
+  NodeUpdateTransaction,
+  PublicKey,
+  Transaction,
+} from '@hashgraph/sdk';
 
 import { getAccountInfo, getNodeInfo } from '@renderer/services/mirrorNodeDataService';
 
@@ -224,7 +231,7 @@ export const computeSignatureKey = async (transaction: Transaction, mirrorNodeLi
   newKeys.forEach(key => resultObject.signatureKey.push(key));
 
   /* Check if user has a key included in the node ids */
-  const { adminKey, nodeAccountId, nodeAccountKey } = await getNodeKeys(
+  const { adminKey, nodeAccountId, nodeAccountKey, signatureKey } = await getNodeKeys(
     nodeId,
     transaction,
     mirrorNodeLink,
@@ -240,6 +247,7 @@ export const computeSignatureKey = async (transaction: Transaction, mirrorNodeLi
   if (nodeAccountId) {
     accounts.push(nodeAccountId);
   }
+  resultObject.signatureKey.push(signatureKey);
 
   /* Add the keys of the account ids to the signature key list */
   for (const accountId of accounts) {
@@ -279,11 +287,13 @@ const getNodeKeys = async (
   let adminKey: Key | null = null;
   let nodeAccountKey: Key | null = null;
   let nodeAccountId: string | null = null;
+  const signatureKey = new KeyList();
 
   if (nodeId !== null) {
     const nodeInfo = await getNodeInfo(nodeId, mirrorNodeLink);
     if (nodeInfo?.admin_key) {
       adminKey = nodeInfo.admin_key;
+      signatureKey.push(adminKey);
     }
 
     if (transactionIs(NodeUpdateTransaction, transaction)) {
@@ -292,10 +302,21 @@ const getNodeKeys = async (
         const accountInfo = await getAccountInfo(nodeAccountId, mirrorNodeLink);
         if (accountInfo?.key) {
           nodeAccountKey = accountInfo.key;
+          signatureKey.push(accountInfo.key);
         }
       }
     }
+
+    if (transactionIs(NodeDeleteTransaction, transaction)) {
+      const COUNCIL_ACCOUNT = '0.0.2'; // To be updated probably
+      const accountInfo = await getAccountInfo(COUNCIL_ACCOUNT, mirrorNodeLink);
+      if (accountInfo?.key) {
+        signatureKey.push(accountInfo.key);
+      }
+      signatureKey.setThreshold(1);
+      adminKey = signatureKey;
+    }
   }
 
-  return { adminKey, nodeAccountKey, nodeAccountId };
+  return { adminKey, nodeAccountKey, nodeAccountId, signatureKey };
 };

@@ -264,7 +264,7 @@ export function getNodeData(transaction: Transaction): NodeData {
 export function getNodeUpdateData(transaction: Transaction): NodeUpdateData {
   assertTransactionType(transaction, NodeUpdateTransaction);
   return {
-    nodeId: transaction.nodeId.toString() || '',
+    nodeId: transaction.nodeId?.toString() || '',
     ...getNodeData(transaction),
   };
 }
@@ -272,7 +272,7 @@ export function getNodeUpdateData(transaction: Transaction): NodeUpdateData {
 export function getNodeDeleteData(transaction: Transaction): NodeDeleteData {
   assertTransactionType(transaction, NodeDeleteTransaction);
   return {
-    nodeId: transaction.nodeId.toString() || '',
+    nodeId: transaction.nodeId?.toString() || '',
   };
 }
 

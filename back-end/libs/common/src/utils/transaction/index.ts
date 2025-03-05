@@ -1,4 +1,9 @@
-import { Key, NodeUpdateTransaction, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import {
+  Key,
+  NodeDeleteTransaction,
+  NodeUpdateTransaction,
+  Transaction as SDKTransaction,
+} from '@hashgraph/sdk';
 
 import { EntityManager, In, Not } from 'typeorm';
 
@@ -10,6 +15,7 @@ import {
   parseAccountInfo,
   parseNodeInfo,
   transactionIs,
+  safeAwait,
 } from '@app/common';
 import { User, Transaction, UserKey, TransactionSigner } from '@entities';
 
@@ -119,6 +125,17 @@ export const keysRequiredToSign = async (
           if (accountInfo?.key) {
             addUserPublicKeyIfRequired(accountInfo.key);
           }
+        }
+      }
+
+      if (transactionIs(NodeDeleteTransaction, sdkTransaction)) {
+        const COUNCIL_ACCOUNT = '0.0.2'; // To be updated probably
+        const res = await safeAwait(
+          mirrorNodeService.getAccountInfo(COUNCIL_ACCOUNT, transaction.mirrorNetwork),
+        );
+        if (res.data) {
+          const councilAccountInfo = parseAccountInfo(res.data);
+          addUserPublicKeyIfRequired(councilAccountInfo.key);
         }
       }
     }
