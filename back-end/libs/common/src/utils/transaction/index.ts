@@ -102,7 +102,7 @@ export const keysRequiredToSign = async (
 
   /* Check if user has a key included in the node admin key */
   try {
-    if (nodeId) {
+    if (!isNaN(nodeId)) {
       const nodeInfo = parseNodeInfo(
         await mirrorNodeService.getNodeInfo(nodeId, transaction.mirrorNetwork),
       );

@@ -187,7 +187,7 @@ export const computeSignatureKey = async (
 
   /* Check if user has a key included in the node admin key */
   try {
-    if (nodeId) {
+    if (!isNaN(nodeId)) {
       const nodeInfo = parseNodeInfo(await mirrorNodeService.getNodeInfo(nodeId, mirrorNetwork));
       if (nodeInfo.admin_key) {
         signatureKey.push(nodeInfo.admin_key);

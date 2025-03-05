@@ -223,6 +223,24 @@ export const computeSignatureKey = async (transaction: Transaction, mirrorNodeLi
   /* Add keys to the signature key list */
   newKeys.forEach(key => resultObject.signatureKey.push(key));
 
+  /* Check if user has a key included in the node ids */
+  const { adminKey, nodeAccountId, nodeAccountKey } = await getNodeKeys(
+    nodeId,
+    transaction,
+    mirrorNodeLink,
+  );
+  adminKey && resultObject.signatureKey.push(adminKey);
+  nodeAccountKey && resultObject.signatureKey.push(nodeAccountKey);
+  if (nodeId !== null) {
+    if (adminKey) {
+      resultObject.nodeAdminKeys[nodeId] = adminKey;
+    }
+  }
+
+  if (nodeAccountId) {
+    accounts.push(nodeAccountId);
+  }
+
   /* Add the keys of the account ids to the signature key list */
   for (const accountId of accounts) {
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
@@ -246,15 +264,6 @@ export const computeSignatureKey = async (transaction: Transaction, mirrorNodeLi
     resultObject.receiverAccountsKeys[accountId] = accountInfo.key;
   }
 
-  /* Check if user has a key included in the node ids */
-  const result = await getNodeKeys(nodeId, transaction, mirrorNodeLink);
-  if (nodeId && result.nodeAccountId && result.nodeAccountKey && result.adminKey) {
-    resultObject.signatureKey.push(result.adminKey);
-    resultObject.nodeAdminKeys[nodeId] = result.adminKey;
-    resultObject.signatureKey.push(result.nodeAccountKey);
-    resultObject.accountsKeys[result.nodeAccountId] = result.nodeAccountKey;
-  }
-
   return resultObject;
 };
 
@@ -271,7 +280,7 @@ const getNodeKeys = async (
   let nodeAccountKey: Key | null = null;
   let nodeAccountId: string | null = null;
 
-  if (nodeId) {
+  if (nodeId !== null) {
     const nodeInfo = await getNodeInfo(nodeId, mirrorNodeLink);
     if (nodeInfo?.admin_key) {
       adminKey = nodeInfo.admin_key;
