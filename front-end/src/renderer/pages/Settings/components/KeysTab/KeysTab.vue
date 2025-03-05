@@ -445,8 +445,8 @@ watch([selectedTab, selectedRecoveryPhrase], () => {
                         ? null
                         : 'invisible'
                     "
-                    >Delete missing key</AppButton
-                  >
+                    ><span class="bi bi-trash"></span
+                  ></AppButton>
                 </td>
               </tr>
             </template>
