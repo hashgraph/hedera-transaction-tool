@@ -231,4 +231,25 @@ describe('UsersService', () => {
     });
     expect(result).toBeNull();
   });
+
+  it('should hash data without pseudo salt', async () => {
+    const data = 'password';
+    jest.mocked(argon2.hash).mockResolvedValue(hashedPassword);
+
+    const result = await service.hash(data);
+
+    expect(argon2.hash).toHaveBeenCalledWith(data, { salt: undefined });
+    expect(result).toBe(hashedPassword);
+  });
+
+  it('should hash data with pseudo salt', async () => {
+    const data = 'password';
+    const pseudoSalt = Buffer.from('passwordxxxxxxxx'.slice(0, 16));
+    jest.mocked(argon2.hash).mockResolvedValue(hashedPassword);
+
+    const result = await service.hash(data, true);
+
+    expect(argon2.hash).toHaveBeenCalledWith(data, { salt: pseudoSalt });
+    expect(result).toBe(hashedPassword);
+  });
 });
