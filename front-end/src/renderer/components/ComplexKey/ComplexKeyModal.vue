@@ -3,19 +3,13 @@ import { computed, ref, watch } from 'vue';
 
 import { Key, KeyList } from '@hashgraph/sdk';
 
-import { encodeKey, isKeyListValid, isUserLoggedIn } from '@renderer/utils';
+import { isKeyListValid } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import ComplexKey from '@renderer/components/ComplexKey/ComplexKey.vue';
 import KeyStructure from '@renderer/components/KeyStructure.vue';
-import {
-  addComplexKey,
-  getComplexKey,
-  updateComplexKey,
-} from '@renderer/services/complexKeysService';
-import useUserStore from '@renderer/stores/storeUser';
 
 /* Props */
 const props = defineProps<{
@@ -27,15 +21,10 @@ const props = defineProps<{
 /* Emits */
 const emit = defineEmits(['update:show', 'update:modelKey']);
 
-/* Stores */
-const user = useUserStore();
-
 /* State */
 const currentKey = ref<Key | null>(props.modelKey);
 const errorModalShow = ref(false);
 const summaryMode = ref(false);
-const nickname = ref('');
-const listId = ref('');
 
 /* Computed */
 const currentKeyInvalid = computed(
@@ -63,39 +52,14 @@ const handleSaveComplexKeyButtonClick = () => {
 };
 
 const handleSaveButtonClick = async () => {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
-
   if (currentKeyInvalid.value) {
     errorModalShow.value = true;
     return;
   }
 
-  if (nickname.value && currentKey.value instanceof KeyList) {
-    const list = await getComplexKey(user.personal.id, currentKey.value);
-    const keyListBytes = encodeKey(currentKey.value);
-    if (list && !listId.value) {
-      await updateComplexKey(list.id, keyListBytes, nickname.value);
-    } else if (listId.value) {
-      await updateComplexKey(listId.value, keyListBytes, nickname.value);
-      listId.value = '';
-    } else {
-      await addComplexKey(user.personal.id, keyListBytes, nickname.value);
-    }
-  }
-
-  emit('update:modelKey', currentKey.value, nickname.value ? true : false);
+  emit('update:modelKey', currentKey.value);
   emit('update:show', false);
 };
-
-function handleNicknameUpdate(newNickname: string) {
-  nickname.value = newNickname;
-}
-
-function handleListLoaded(id: string) {
-  listId.value = id;
-}
 
 /* Watchers */
 watch(
@@ -145,17 +109,11 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
           <div v-if="show" class="mt-5 h-100 overflow-auto">
             <Transition name="fade" :mode="'out-in'">
               <div v-if="!summaryMode">
-                <ComplexKey
-                  :model-key="currentKey"
-                  @update:model-key="handleComplexKeyUpdate"
-                  @update:nickname="handleNicknameUpdate"
-                  @list-loaded="handleListLoaded"
-                />
+                <ComplexKey :model-key="currentKey" @update:model-key="handleComplexKeyUpdate" />
               </div>
               <div v-else>
                 <KeyStructure
                   :key-list="currentKey instanceof KeyList ? currentKey : new KeyList([])"
-                  @update:key-list="emit('update:modelKey', currentKey)"
                 />
               </div>
             </Transition>
