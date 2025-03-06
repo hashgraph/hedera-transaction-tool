@@ -11,6 +11,7 @@ import { ClientProxy } from '@nestjs/microservices';
 
 import { totp } from 'otplib';
 import * as bcrypt from 'bcryptjs';
+import * as argon2 from 'argon2';
 
 import {
   ELECTRON_APP_PROTOCOL_PREFIX,
@@ -81,8 +82,8 @@ export class AuthService {
   async changePassword(user: User, { oldPassword, newPassword }: ChangePasswordDto): Promise<void> {
     if (oldPassword === newPassword) throw new BadRequestException(ErrorCodes.NPMOP);
 
-    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
-    if (!isOldPasswordValid) throw new BadRequestException(ErrorCodes.INOP);
+    const { correct } = await this.dualCompareHash(oldPassword, user.password);
+    if (!correct) throw new BadRequestException(ErrorCodes.INOP);
 
     await this.usersService.setPassword(user, newPassword);
   }
@@ -165,5 +166,12 @@ export class AuthService {
   /* Elevate user to admin */
   async elevateAdmin(userId: number): Promise<void> {
     await this.usersService.updateUserById(userId, { admin: true });
+  }
+
+  /* Compare the given data with the hash */
+  async dualCompareHash(data: string, hash: string) {
+    const matchBcrypt = await bcrypt.compare(data, hash);
+    const matchArgon2 = await argon2.verify(hash, data);
+    return { correct: matchBcrypt || matchArgon2, isBcrypt: matchBcrypt };
   }
 }

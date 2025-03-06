@@ -11,6 +11,7 @@ import { Repository } from 'typeorm';
 import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
 
 import * as bcrypt from 'bcryptjs';
+import * as argon2 from 'argon2';
 
 import { ErrorCodes } from '@app/common';
 import { User, UserStatus } from '@entities';
@@ -47,8 +48,18 @@ export class UsersService {
       throw new InternalServerErrorException('Failed to retrieve user.');
     }
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user) {
       throw new UnauthorizedException('Please check your login credentials');
+    }
+
+    const { correct, isBcrypt } = await this.dualCompareHash(password, user.password);
+
+    if (!correct) {
+      throw new UnauthorizedException('Please check your login credentials');
+    }
+
+    if (isBcrypt) {
+      await this.setPassword(user, password);
     }
 
     return user;
@@ -120,7 +131,24 @@ export class UsersService {
   // For the given password, create a salt and hash it with the password.
   // Return the result.
   async getSaltedHash(password: string): Promise<string> {
-    const salt = await bcrypt.genSalt();
-    return await bcrypt.hash(password, salt);
+    return await this.hash(password);
+  }
+
+  /* Compare the given data with the hash */
+  async dualCompareHash(data: string, hash: string) {
+    const matchBcrypt = await bcrypt.compare(data, hash);
+    const matchArgon2 = await argon2.verify(hash, data);
+    return { correct: matchBcrypt || matchArgon2, isBcrypt: matchBcrypt };
+  }
+
+  async hash(data: string, usePseudoSalt = false): Promise<string> {
+    let pseudoSalt: Buffer | undefined;
+    if (usePseudoSalt) {
+      const paddedData = data.padEnd(16, 'x');
+      pseudoSalt = Buffer.from(paddedData.slice(0, 16));
+    }
+    return await argon2.hash(data, {
+      salt: pseudoSalt,
+    });
   }
 }

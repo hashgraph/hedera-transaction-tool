@@ -3,13 +3,13 @@ import { ClientProxy } from '@nestjs/microservices';
 import * as request from 'supertest';
 
 import { totp } from 'otplib';
-import * as bcrypt from 'bcryptjs';
 
 import { API_SERVICE } from '@app/common';
 import { User, UserStatus } from '@entities';
 
 import { closeApp, createNestApp } from '../utils';
 import { Endpoint } from '../utils/httpUtils';
+import { hash } from '../utils/crypto';
 import { getRepository, getUser, resetDatabase, resetUsersState } from '../utils/databaseUtil';
 
 import { admin, dummy, dummyNew, invalidEmail, validEmail } from '../utils/constants';
@@ -152,9 +152,8 @@ describe('Auth (e2e)', () => {
           });
         });
 
-      const salt = await bcrypt.genSalt();
-      const hash = await bcrypt.hash(dummyNew.password, salt);
-      await userRepo.update({ id: user.id }, { password: hash });
+      const hashed = await hash(dummyNew.password);
+      await userRepo.update({ id: user.id }, { password: hashed });
 
       await loginEndpoint.post({ email: user.email, password: dummyNew.password }).expect(200);
     });
