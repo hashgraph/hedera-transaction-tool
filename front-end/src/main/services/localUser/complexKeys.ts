@@ -90,7 +90,7 @@ export const deleteComplexKey = async (id: string) => {
   });
 };
 
-export const updateComplexKey = async (id: string, newKeyListBytes: Uint8Array, nickname?: string) => {
+export const updateComplexKey = async (id: string, newKeyListBytes: Uint8Array) => {
   const prisma = getPrismaClient();
 
   const newProtobufEncoded = Buffer.from(newKeyListBytes).toString('hex');
@@ -101,7 +101,6 @@ export const updateComplexKey = async (id: string, newKeyListBytes: Uint8Array, 
     },
     data: {
       protobufEncoded: newProtobufEncoded,
-      nickname: nickname
     },
   });
 
