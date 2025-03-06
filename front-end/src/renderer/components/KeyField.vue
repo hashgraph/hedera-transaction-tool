@@ -15,7 +15,6 @@ import {
   isPublicKey,
   decodeKeyList,
   encodeKey,
-  isUserLoggedIn,
   formatPublickey,
   extractIdentifier,
 } from '@renderer/utils';
@@ -112,22 +111,12 @@ const handleEditComplexKey = () => {
   complexKeyModalShown.value = true;
 };
 
-const handleComplexKeyUpdate = async (keyList: KeyList, updatedName: boolean) => {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
-
+const handleComplexKeyUpdate = async (keyList: KeyList) => {
   emit('update:modelKey', keyList);
 
   if (selectedComplexKey.value) {
     const keyListBytes = encodeKey(keyList);
-    let updatedKey;
-    if (updatedName) {
-      updatedKey = await getComplexKey(user.personal.id, keyList);
-    } else {
-      updatedKey = await updateComplexKey(selectedComplexKey.value.id, keyListBytes);
-    }
-    selectedComplexKey.value = updatedKey;
+    selectedComplexKey.value = await updateComplexKey(selectedComplexKey.value.id, keyListBytes);
     toast.success('Key list updated successfully');
   }
 };
