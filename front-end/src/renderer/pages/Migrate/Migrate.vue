@@ -87,13 +87,12 @@ const handleSetRecoveryPhrase = async (value: {
 
   const keysPath = await getDataMigrationKeysPath();
   const encryptedKeyPaths = await searchEncryptedKeys([keysPath]);
-  const keyNames = encryptedKeyPaths.map(path => {
+  allUserKeysToRecover.value = encryptedKeyPaths.map(path => {
     return new KeyPathWithName(
       path.split('/').pop()?.split('.').slice(0, -1).join('.') || '',
       path,
     );
   });
-  allUserKeysToRecover.value = keyNames;
 
   step.value = 'personal';
 };
@@ -159,7 +158,10 @@ onMounted(async () => {
   <div class="flex-column flex-centered flex-1 overflow-hidden p-6">
     <div
       class="container-dark-border bg-modal-surface glow-dark-bg p-5"
-      :class="step === 'selectKeys' ? 'custom-key-modal' : null"
+      :class="{
+        'custom-key-modal': stepIs('selectKeys'),
+        'col-12 col-md-10 col-lg-8': stepIs('summary')
+      }"
     >
       <h4 class="text-title text-semi-bold text-center">{{ heading }}</h4>
 
