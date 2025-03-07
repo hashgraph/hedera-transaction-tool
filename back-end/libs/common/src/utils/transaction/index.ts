@@ -1,4 +1,9 @@
-import { Key, NodeUpdateTransaction, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import {
+  Key,
+  NodeDeleteTransaction,
+  NodeUpdateTransaction,
+  Transaction as SDKTransaction,
+} from '@hashgraph/sdk';
 
 import { EntityManager, In, Not } from 'typeorm';
 
@@ -10,6 +15,7 @@ import {
   parseAccountInfo,
   parseNodeInfo,
   transactionIs,
+  safeAwait,
 } from '@app/common';
 import { User, Transaction, UserKey, TransactionSigner } from '@entities';
 
@@ -102,7 +108,7 @@ export const keysRequiredToSign = async (
 
   /* Check if user has a key included in the node admin key */
   try {
-    if (nodeId) {
+    if (!isNaN(nodeId)) {
       const nodeInfo = parseNodeInfo(
         await mirrorNodeService.getNodeInfo(nodeId, transaction.mirrorNetwork),
       );
@@ -118,6 +124,19 @@ export const keysRequiredToSign = async (
           );
           if (accountInfo?.key) {
             addUserPublicKeyIfRequired(accountInfo.key);
+          }
+        }
+      }
+
+      if (transactionIs(NodeDeleteTransaction, sdkTransaction)) {
+        const COUNCIL_ACCOUNTS = ['0.0.2', '0.0.50', '0.0.55'];
+        for (const acc of COUNCIL_ACCOUNTS) {
+          const res = await safeAwait(
+            mirrorNodeService.getAccountInfo(acc, transaction.mirrorNetwork),
+          );
+          if (res.data) {
+            const councilAccountInfo = parseAccountInfo(res.data);
+            addUserPublicKeyIfRequired(councilAccountInfo.key);
           }
         }
       }
