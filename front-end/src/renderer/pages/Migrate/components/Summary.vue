@@ -6,11 +6,13 @@ import { Hbar } from '@hashgraph/sdk';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toast-notification';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import SummaryItem from './SummaryItem.vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 /* Props */
 defineProps<{
@@ -21,14 +23,57 @@ defineProps<{
 /* Stores */
 const user = useUserStore();
 
-/* Composablse */
+/* Composables */
 const router = useRouter();
+const toast = useToast();
+
+/* State */
+const recoveryPhraseItemRef = ref<HTMLElement | null>(null);
 
 /* Handlers */
 const handleFinishMigration = () => {
   user.setMigrating(false);
   router.push({ name: 'settingsKeys' });
 };
+
+const handleCopy = (event: ClipboardEvent) => {
+  const selection = window.getSelection();
+  if (!selection) return;
+
+  const selectedText = selection.toString();
+
+  //This is the label that is the lead anchor. so the first item in the list for example. this still isnt' working
+  //also, what if hte user selects the whole page? maybe we just also filter out the numbers?
+  console.log('selection.node', selection.anchorNode);
+
+  if (recoveryPhraseItemRef.value instanceof HTMLElement && selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
+    console.log('range', range);
+    if (recoveryPhraseItemRef.value.contains(range.commonAncestorContainer)) {
+      const strippedText = selectedText.replace(/\d+\.\s*/g, ', ');
+      event.clipboardData?.setData('text/plain', strippedText);
+      event.preventDefault();
+      toast.success('Selected text copied to clipboard');
+    }
+  }
+};
+
+/* Functions */
+const copyRecoveryPhrase = () => {
+  const recoveryPhrase = user.recoveryPhrase?.words.join(', ') || '';
+  navigator.clipboard.writeText(recoveryPhrase).then(() => {
+    toast.success('Recovery phrase copied to clipboard');
+  });
+};
+
+/* Hooks */
+onMounted(() => {
+  document.addEventListener('copy', handleCopy);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('copy', handleCopy);
+});
 </script>
 <template>
   <div class="flex-column-100">
@@ -95,12 +140,26 @@ const handleFinishMigration = () => {
         data-testid="p-migration-summary-network"
       />
 
-      <SummaryItem class="mt-4" label="Recovery Phrase" value="">
-        <ul class="d-flex flex-wrap gap-2">
-          <template v-for="word in user.recoveryPhrase?.words || []" :key="word">
-            <li class="text-small text-body rounded badge-bg px-2 py-1">{{ word }}</li>
-          </template>
-        </ul>
+      <SummaryItem class="mt-4" label="Recovery Phrase" value="" ref="recoveryPhraseItemRef">
+        <div class="position-relative">
+          <AppButton
+            color="primary"
+            class="min-w-unset position-absolute top-0 end-0 m-2 py-1 px-3"
+            @click="copyRecoveryPhrase"
+          >
+            <i class="bi bi-files"></i>
+          </AppButton>
+          <div class="container p-4 border rounded">
+            <div class="row row-cols-4 g-2">
+              <template v-for="(word, index) in user.recoveryPhrase?.words || []" :key="word">
+                <div class="col p-1 user-select-none">
+                  <span class="me-2">{{ index + 1 }}.</span>
+                  <span>{{ word }}</span>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
       </SummaryItem>
     </div>
 
