@@ -294,3 +294,43 @@ export const extractIdentifier = (formattedString: string) => {
   }
   return null;
 };
+
+/**
+ * Sanitizes and formats an account ID string.
+ * This function ensures that the input string adheres to the proper format of an account ID by:
+ * - Removing any invalid characters.
+ * - Ensuring that every '.' has a number in front of it and limiting to two '.' characters.
+ * - Removing leading zeros from each part and validating each part.
+ * - Allowing '-' followed by up to 5 letters (case-insensitive) if the 0.0.0 pattern already exists.
+ *
+ * @param {string} value - The input account ID string to be sanitized.
+ * @returns {string} - The sanitized and formatted account ID string.
+ */
+export function sanitizeAccountId(value: string): string {
+  // Ensure that every '.' has a number in front of it and limit to two '.' characters
+  value = value
+    .replace(/(^|[^0-9])\./g, '$1')
+    .split('.')
+    .slice(0, 3)
+    .join('.');
+
+  // Remove leading zeros from each part and validate each part
+  const max8ByteNumber = BigInt('18446744073709551615'); // 2^64 - 1
+  value = value
+    .replace(/(^|\.)(0+)(\d+)/g, '$1$3')
+    .replace(/(\d+)/g, (match) => {
+      const num = BigInt(match);
+      return num > max8ByteNumber ? match.slice(0, -1) : match;
+    });
+
+  // Allow '-' followed by up to 5 letters (case-insensitive) if the 0.0.0 pattern already exists
+  const pattern = /^(\d+\.\d+\.\d+)(-[a-zA-Z]{0,5})?$/;
+  if (!pattern.test(value)) {
+    value = value.toLowerCase().replace(/[^0-9.\-a-z]/g, ''); // Convert to lowercase and remove invalid characters
+    const [mainPart, suffix] = value.split('-');
+    value = mainPart.replace(/[^0-9.]/g, ''); // Ensure no non-digits before '-'
+    if (suffix) value += `-${suffix.slice(0, 5).replace(/[^a-z]/g, '')}`; // Allow up to 5 lowercase letters
+  }
+
+  return value;
+}

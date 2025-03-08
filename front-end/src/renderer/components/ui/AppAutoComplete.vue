@@ -3,6 +3,8 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
+import { sanitizeAccountId } from '@renderer/utils';
+
 /* Props */
 const props = withDefaults(
   defineProps<{
@@ -23,10 +25,13 @@ const emit = defineEmits<{
 
 /* State */
 const inputRef = ref<InstanceType<typeof AppInput> | null>(null);
-const suggestionRef = ref<HTMLSpanElement | null>(null);
+const prefixSuggestionRef = ref<HTMLSpanElement | null>(null);
+const postfixSuggestionRef = ref<HTMLSpanElement | null>(null);
 const dropdownRef = ref<HTMLDivElement | null>(null);
 const itemRefs = ref<HTMLElement[]>([]);
 const lastKeyPressed = ref<string | null>(null);
+const autocompletePrefixSuggestion = ref('');
+const autocompletePostfixSuggestion = ref('');
 
 /* Computed */
 const modelValue = computed({
@@ -38,10 +43,22 @@ const modelValue = computed({
 
 const filteredItems = computed(() => [...new Set<string>(props.items)]);
 const selectedIndex = computed(() => {
-  return filteredItems.value.findIndex(item => item.startsWith(modelValue.value));
-});
+  const input = modelValue.value;
 
-const autocompleteSuggestion = ref('');
+  if (!input) return -1;
+
+  // Exact match
+  const exactMatchIndex = props.items.findIndex(item => item.startsWith(input));
+  if (exactMatchIndex !== -1) return exactMatchIndex;
+
+  // Partial match
+  const partialMatchIndex = props.items.findIndex(item =>
+    item.split('.').some(part => part.startsWith(input))
+  );
+  if (partialMatchIndex !== -1) return partialMatchIndex;
+
+  return -1;
+});
 
 /* Handlers */
 const handleKeyDown = (e: KeyboardEvent) => {
@@ -70,7 +87,6 @@ const handleKeyDown = (e: KeyboardEvent) => {
       completeNextCharacter();
       nextTick(() => {
         inputElement.setSelectionRange(modelValue.value.length, modelValue.value.length);
-        positionSuggestion();
       });
     }
   } else if (e.key === 'Tab' && props.modelValue.toString().length > 0) {
@@ -81,11 +97,12 @@ const handleKeyDown = (e: KeyboardEvent) => {
   } else if (e.key === 'Enter') {
     e.preventDefault();
     if (lastKeyPressed.value !== 'Escape') {
-      setValue((modelValue.value + autocompleteSuggestion.value).trim());
+      setValue((autocompletePrefixSuggestion.value + modelValue.value + autocompletePostfixSuggestion.value).trim());
     }
     toggleDropdown(false);
     focusNextElement();
   } else if (e.key === 'Escape') {
+    setValue(autocompletePrefixSuggestion.value + modelValue.value);
     toggleDropdown(false);
   } else if (e.code === 'Space' && props.disableSpaces) {
     e.preventDefault();
@@ -96,7 +113,15 @@ const handleKeyDown = (e: KeyboardEvent) => {
 };
 
 const handleUpdate = (value: string) => {
-  modelValue.value = value;
+  value = sanitizeAccountId(value);
+
+  setValue(value)
+
+  // Update the input field value
+  if (inputRef.value?.inputRef) {
+    inputRef.value.inputRef.value = value;
+  }
+
   if (value.length === 0) {
     toggleDropdown(false);
   } else {
@@ -118,7 +143,6 @@ const handleResize = () => {
 
   if (!inputRef.value?.inputRef || !dropdownRef.value) return;
   dropdownRef.value.style.width = `${inputRef.value.inputRef.offsetWidth}px`;
-  positionSuggestion();
 };
 
 const handleWindowClick = (e: Event) => {
@@ -168,28 +192,51 @@ function toggleDropdown(show: boolean) {
 
   dropdownRef.value.style.visibility = newVisibility;
   dropdownRef.value.style.opacity = newOpacity;
-  suggestionRef.value?.classList.toggle('d-none', !show);
+  prefixSuggestionRef.value?.classList.toggle('d-none', !show);
+  postfixSuggestionRef.value?.classList.toggle('d-none', !show);
 }
 
-function positionSuggestion() {
-  if (!inputRef.value?.inputRef || !suggestionRef.value) return;
-
-  const input = inputRef.value.inputRef;
-  const suggestion = suggestionRef.value;
-
+function measureTextWidth(text: string, input: HTMLInputElement): number {
   const tempSpan = document.createElement('span');
   tempSpan.style.visibility = 'hidden';
   tempSpan.style.position = 'absolute';
   tempSpan.style.whiteSpace = 'pre';
   tempSpan.style.fontFamily = getComputedStyle(input).fontFamily;
   tempSpan.style.fontSize = getComputedStyle(input).fontSize;
-  tempSpan.textContent = input.value;
+  tempSpan.textContent = text;
 
   document.body.appendChild(tempSpan);
-  const inputWidth = tempSpan.getBoundingClientRect().width;
+  const width = tempSpan.getBoundingClientRect().width;
   document.body.removeChild(tempSpan);
 
-  suggestion.style.left = `${inputWidth + 15}px`;
+  return width;
+}
+
+async function positionSuggestion() {
+  if (!inputRef.value?.inputRef || !prefixSuggestionRef.value || !postfixSuggestionRef.value) return;
+
+  const input = inputRef.value.inputRef;
+  const prefixSuggestion = prefixSuggestionRef.value;
+  const postfixSuggestion = postfixSuggestionRef.value;
+
+  // Reset paddingLeft first
+  input.style.paddingLeft = '';
+  await nextTick();
+
+  const prefixWidth = measureTextWidth(prefixSuggestion.textContent || '', input);
+  const computedStyle = getComputedStyle(input) || '0px';
+  const paddingLeft = computedStyle.paddingLeft;
+  const leftValue = parseFloat(paddingLeft);
+
+  if (autocompletePrefixSuggestion.value) {
+    prefixSuggestion.style.left = `${leftValue}px`;
+    input.style.paddingLeft = `${prefixWidth + leftValue}px`;
+  }
+
+  if (autocompletePostfixSuggestion.value) {
+    const inputWidth = measureTextWidth(input.value, input);
+    postfixSuggestion.style.left = `${prefixWidth + inputWidth + leftValue + 2}px`;
+  }
 }
 
 function handleGlobalEvents(add: boolean) {
@@ -200,12 +247,12 @@ function handleGlobalEvents(add: boolean) {
 }
 
 function completeNextCharacter() {
-  if (!autocompleteSuggestion.value || autocompleteSuggestion.value.length === 0) {
+  if (!autocompletePostfixSuggestion.value || autocompletePostfixSuggestion.value.length === 0) {
     toggleDropdown(false);
     focusNextElement();
     return;
   }
-  modelValue.value += autocompleteSuggestion.value[0];
+  setValue(modelValue.value + autocompletePostfixSuggestion.value[0]);
 }
 
 function focusNextElement() {
@@ -228,14 +275,6 @@ function setItemRef(el: HTMLElement | null, index: number) {
   }
 }
 
-/* Watchers */
-watch(
-  () => selectedIndex.value,
-  newValue => {
-    scrollToItem(newValue);
-  },
-);
-
 /* Hooks */
 onMounted(() => {
   setTimeout(() => {
@@ -246,29 +285,52 @@ onMounted(() => {
 
 onBeforeUnmount(() => handleGlobalEvents(false));
 
+/* Watchers */
+watch(
+  () => selectedIndex.value,
+  newValue => {
+    scrollToItem(newValue);
+  },
+);
+
 watchEffect(() => {
-  if (!modelValue.value || !filteredItems.value) {
-    autocompleteSuggestion.value = '';
+  if (!modelValue.value || !filteredItems.value || selectedIndex.value === -1) {
+    autocompletePrefixSuggestion.value = '';
+    autocompletePostfixSuggestion.value = '';
+    positionSuggestion();
     return;
   }
 
-  const match = filteredItems.value.find(item => item.startsWith(modelValue.value));
-  autocompleteSuggestion.value = match?.slice(modelValue.value.length) || '';
+  const match = filteredItems.value[selectedIndex.value];
+  if (match) {
+    const input = modelValue.value;
+    const matchIndex = match.indexOf(input);
+    if (matchIndex !== -1) {
+      autocompletePrefixSuggestion.value = match.slice(0, matchIndex);
+      autocompletePostfixSuggestion.value = match.slice(matchIndex + input.length);
+    }
+  } else {
+    autocompletePrefixSuggestion.value = '';
+    autocompletePostfixSuggestion.value = '';
+  }
+
+  positionSuggestion();
 });
 </script>
 
 <template>
   <div @blur="toggleDropdown(false)" class="w-100 autocomplete-container">
     <div @click="toggleDropdown(true)" class="input-wrapper">
+      <span ref="prefixSuggestionRef" class="autocomplete-suggestion">{{ autocompletePrefixSuggestion }}</span>
       <AppInput
         ref="inputRef"
         :model-value="modelValue"
-        @update:model-value="handleUpdate($event)"
+        @update:model-value="handleUpdate"
         @keydown="handleKeyDown"
         :data-testid="dataTestid"
         v-bind="$attrs"
       />
-      <span ref="suggestionRef" class="autocomplete-suggestion">{{ autocompleteSuggestion }}</span>
+      <span ref="postfixSuggestionRef" class="autocomplete-suggestion">{{ autocompletePostfixSuggestion }}</span>
     </div>
 
     <div
