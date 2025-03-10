@@ -16,6 +16,7 @@ import {
   parseNodeInfo,
   transactionIs,
   safeAwait,
+  COUNCIL_ACCOUNTS,
 } from '@app/common';
 import { User, Transaction, UserKey, TransactionSigner } from '@entities';
 
@@ -129,7 +130,6 @@ export const keysRequiredToSign = async (
       }
 
       if (transactionIs(NodeDeleteTransaction, sdkTransaction)) {
-        const COUNCIL_ACCOUNTS = ['0.0.2', '0.0.50', '0.0.55'];
         for (const acc of COUNCIL_ACCOUNTS) {
           const res = await safeAwait(
             mirrorNodeService.getAccountInfo(acc, transaction.mirrorNetwork),

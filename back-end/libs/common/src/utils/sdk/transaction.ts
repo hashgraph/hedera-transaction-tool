@@ -18,6 +18,7 @@ import {
   parseAccountInfo,
   parseNodeInfo,
   safeAwait,
+  COUNCIL_ACCOUNTS,
 } from '@app/common';
 
 export const isExpired = (transaction: SDKTransaction) => {
@@ -210,7 +211,6 @@ export const computeSignatureKey = async (
       }
 
       if (transactionIs(NodeDeleteTransaction, transaction)) {
-        const COUNCIL_ACCOUNTS = ['0.0.2', '0.0.50', '0.0.55'];
         for (const acc of COUNCIL_ACCOUNTS) {
           const res = await safeAwait(mirrorNodeService.getAccountInfo(acc, mirrorNetwork));
           if (res.data) {
