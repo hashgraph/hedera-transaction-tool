@@ -9,7 +9,7 @@ import useContactsStore from '@renderer/stores/storeContacts';
 import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
-import { generateExternalKeyPairFromString } from '@renderer/services/keyPairService';
+import { generateExternalKeyPairFromString, verifyKeyPair } from '@renderer/services/keyPairService';
 
 import {
   assertUserLoggedIn,
@@ -27,6 +27,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 const props = defineProps<{
   keyType: 'ED25519' | 'ECDSA';
   show: boolean;
+  publicKey?: string;
 }>();
 
 /* Emits */
@@ -45,6 +46,7 @@ const key = reactive<{ privateKey: string; nickname?: string }>({
   privateKey: '',
 });
 
+/* Handlers */
 const handleImportExternalKey = async () => {
   assertUserLoggedIn(user.personal);
   const personalPassword = getPassword(handleImportExternalKey, {
@@ -53,6 +55,10 @@ const handleImportExternalKey = async () => {
   if (passwordModalOpened(personalPassword)) return;
 
   try {
+    if (props.publicKey && !verifyKeyPair(props.publicKey, key.privateKey)) {
+      throw new Error('The private key does not match the public key');
+    }
+
     const keyPair: Prisma.KeyPairUncheckedCreateInput = {
       user_id: user.personal.id,
       ...generateExternalKeyPairFromString(key.privateKey, props.keyType, key.nickname || ''),
@@ -100,6 +106,7 @@ watch(
   },
 );
 </script>
+
 <template>
   <AppModal
     v-if="show"
@@ -115,6 +122,14 @@ watch(
         <i class="bi bi-key large-icon" style="line-height: 16px"></i>
       </div>
       <form @submit.prevent="handleImportExternalKey">
+        <div v-if="props.publicKey" class="form-group mt-4">
+          <label class="form-label">Public Key</label>
+          <p
+            :data-testid="`label-${keyType.toLocaleLowerCase()}-public-key`"
+            class="d-inline-block text-truncate w-100"
+            >{{ props.publicKey }}</p
+          >
+        </div>
         <div class="form-group mt-4">
           <label class="form-label">Enter {{ keyType }} Private key</label>
           <AppInput
