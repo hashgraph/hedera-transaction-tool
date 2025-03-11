@@ -8,15 +8,24 @@ import { useToast } from 'vue-toast-notification';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
+import { restorePrivateKey } from '@renderer/services/keyPairService';
+
 import {
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
   getErrorMessage,
+  getPublicKeyAndType,
   restoreOrganizationKeys,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import Import from '@renderer/components/RecoveryPhrase/Import.vue';
+
+/* Props */
+const props = defineProps<{
+  index?: string;
+  publicKey?: string;
+}>();
 
 /* Stores */
 const user = useUserStore();
@@ -28,7 +37,6 @@ useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
-const step = ref(0);
 const loadingText = ref<string | null>(null);
 const shouldClearInputs = ref(false);
 
@@ -37,6 +45,24 @@ const handleImportRecoveryPhrase = async () => {
   try {
     loadingText.value = 'Restoring keys...';
     assertIsLoggedInOrganization(user.selectedOrganization);
+
+    const index = props.index;
+    const publicKey = props.publicKey;
+
+    if (index !== undefined && publicKey) {
+      const { keyType } = getPublicKeyAndType(publicKey);
+      const derivedKey = await restorePrivateKey(
+        user.recoveryPhrase.words,
+        '',
+        Number(index),
+        keyType,
+      );
+
+      if (derivedKey.publicKey.toStringRaw() !== publicKey) {
+        throw new Error('The Recovery Phrase does not match the Public Key');
+      }
+    }
+
     const restoredKeys = await restoreOrganizationKeys(
       user.selectedOrganization,
       user.recoveryPhrase,
@@ -129,66 +155,33 @@ onMounted(() => {
       <AppButton color="secondary" @click="$router.back()">Back</AppButton>
     </div>
     <div class="flex-centered flex-column-100">
-      <Transition name="fade" mode="out-in">
-        <!-- Step 1 -->
-        <div v-if="step === 0" class="w-100">
-          <h1 class="text-display text-bold text-center">
-            Restore missing keys from Recovery Phrase
-          </h1>
-          <div
-            class="mt-5 w-100 d-flex flex-column justify-content-center align-items-center gap-4"
-          >
-            <div class="col-12 col-md-8 col-lg-6 col-xxl-4">
-              <AppButton
-                size="large"
-                data-testid="button-continue"
-                color="primary"
-                class="d-block w-100"
-                @click="step++"
-                >Continue</AppButton
+      <form
+        @submit.prevent="handleImportRecoveryPhrase"
+        class="fill-remaining"
+      >
+        <h1 class="text-display text-bold text-center">Enter your Recovery Phrase</h1>
+        <div class="mt-8">
+          <Import :should-clear="shouldClearInputs" @reset-cleared="handleClearWords($event)" />
+          <div class="d-flex justify-content-between mt-4 mx-3">
+            <div class="">
+              <AppButton type="button" color="secondary" @click="handleClearWords(true)"
+                >Clear</AppButton
               >
+            </div>
+            <div class="">
               <AppButton
-                size="large"
-                data-testid="button-cancel"
-                color="secondary"
-                class="mt-4 d-block w-100"
-                @click="$router.back()"
-                >Cancel</AppButton
+                color="primary"
+                data-testid="button-continue-phrase"
+                :disabled="!user.recoveryPhrase"
+                :loading="Boolean(loadingText)"
+                :loading-text="loadingText || ''"
+                type="submit"
+                >Continue</AppButton
               >
             </div>
           </div>
         </div>
-
-        <!-- Step 2 -->
-        <form
-          v-else-if="step === 1"
-          @submit.prevent="handleImportRecoveryPhrase"
-          class="fill-remaining"
-        >
-          <h1 class="text-display text-bold text-center">Enter your Recovery Phrase</h1>
-          <div class="mt-8">
-            <Import :should-clear="shouldClearInputs" @reset-cleared="handleClearWords($event)" />
-            <div class="row justify-content-between mt-6">
-              <div class="col-4 d-grid">
-                <AppButton type="button" color="secondary" @click="handleClearWords(true)"
-                  >Clear</AppButton
-                >
-              </div>
-              <div class="col-4 d-grid">
-                <AppButton
-                  color="primary"
-                  data-testid="button-continue-phrase"
-                  :disabled="!user.recoveryPhrase"
-                  :loading="Boolean(loadingText)"
-                  :loading-text="loadingText || ''"
-                  type="submit"
-                  >Continue</AppButton
-                >
-              </div>
-            </div>
-          </div>
-        </form>
-      </Transition>
+      </form>
     </div>
   </div>
 </template>

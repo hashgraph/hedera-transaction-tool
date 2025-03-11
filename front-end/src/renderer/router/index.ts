@@ -63,9 +63,10 @@ const routes: RouteRecordRaw[] = [
     component: MatchRecoveryPhrase,
   },
   {
-    path: '/restore-missing-keys',
+    path: '/restore-missing-keys/:index?/:publicKey?',
     name: constants.RESTORE_MISSING_KEYS,
     component: RestoreMissingKeys,
+    props: true,
   },
   {
     path: '/create-transaction/:type/:seq?',
