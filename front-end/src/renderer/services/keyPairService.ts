@@ -4,6 +4,7 @@ import { proto } from '@hashgraph/proto';
 import { Prisma } from '@prisma/client';
 
 import { commonIPCHandler } from '@renderer/utils';
+import { getPublicKeyAndType } from '../utils';
 
 /* Key Pairs Service */
 
@@ -236,3 +237,38 @@ function flattenComplexKey(
     flattenComplexKey(childKey, nextLevel, result);
   }
 }
+
+/**
+ * Verifies that the provided private key matches the provided public key.
+ * @param publicKey - The public key to verify against (string or PublicKey).
+ * @param privateKey - The private key to verify (string or PrivateKey).
+ * @returns {boolean} - True if the keys match, false otherwise.
+ */
+export const verifyKeyPair = (
+  publicKey: string | PublicKey,
+  privateKey: string | PrivateKey,
+): boolean => {
+  try {
+    const { publicKey: resolvedPublicKey, keyType } = getPublicKeyAndType(publicKey);
+
+    if (typeof privateKey === 'string') {
+      switch (keyType) {
+        case KeyType.ECDSA:
+          privateKey = PrivateKey.fromStringECDSA(privateKey);
+          break;
+        case KeyType.ED25519:
+          privateKey = PrivateKey.fromStringED25519(privateKey);
+          break;
+        default:
+          throw new Error('Invalid key type');
+      }
+    }
+
+    return privateKey.publicKey.toString() === resolvedPublicKey.toString();
+  } catch (error) {
+    console.error('Failed to verify key pair:', error);
+    return false;
+  }
+};
+
+
