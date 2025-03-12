@@ -14,7 +14,7 @@ import { isLoggedInOrganization, isUserLoggedIn, isEmail } from '@renderer/utils
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import AppTextarea from '@renderer/components/ui/AppTextarea.vue';
+import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -147,7 +147,7 @@ watch(
         <AppInput v-model="nickname" :filled="true" placeholder="Enter nickname" />
       </div>
       <div v-if="isMultipleMode" class="form-group">
-        <AppTextarea
+        <AppTextArea
           v-model="multipleEmails"
           data-testid="textarea-multiple-emails"
           :filled="true"
