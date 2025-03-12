@@ -367,7 +367,7 @@ watch(files, newFiles => {
               class="w-100"
               data-testid="button-add-new-file"
               data-bs-toggle="dropdown"
-              >Add new</AppButton
+              >Add New</AppButton
             >
             <ul class="dropdown-menu w-100 mt-3">
               <li

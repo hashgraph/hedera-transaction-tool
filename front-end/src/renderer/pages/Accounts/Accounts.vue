@@ -228,7 +228,7 @@ onMounted(async () => {
               data-testid="button-add-new-account"
               class="w-100 d-flex align-items-center justify-content-center"
               data-bs-toggle="dropdown"
-              >Add new</AppButton
+              >Add New</AppButton
             >
             <ul class="dropdown-menu">
               <li
