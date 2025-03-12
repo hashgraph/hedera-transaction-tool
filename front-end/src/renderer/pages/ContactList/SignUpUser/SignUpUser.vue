@@ -120,16 +120,18 @@ watch(
     <form class="mt-5 col-12 col-md-8 col-lg-6 col-xxl-4" @submit.prevent="handleLinkAccount">
       <div class="d-flex justify-content-between align-items-start">
         <label class="form-label">Email <span class="text-danger">*</span></label>
-        <div class="text-end">
+        <div class="d-flex align-items-center justify-content-end">
           <label class="form-check-label me-3" for="multipleModeSwitch">
             {{ isMultipleMode ? 'Multiple Emails' : 'Single Email' }}
           </label>
-          <input
-            class="form-check-input"
-            type="checkbox"
-            id="multipleModeSwitch"
-            v-model="isMultipleMode"
-          />
+          <div class="form-check form-switch mb-n3">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="multipleModeSwitch"
+              v-model="isMultipleMode"
+            />
+          </div>
         </div>
       </div>
       <div v-if="!isMultipleMode" class="form-group">
