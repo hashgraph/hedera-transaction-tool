@@ -5,6 +5,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
+
 import { getPublicKeyOwner } from '@renderer/services/organization';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -70,10 +71,10 @@ const handleDeleteSelectedClick = () => (isDeleteModalShown.value = true);
 
 /* Helper Functions */
 const getOwnersFromOrganization = async () => {
-  const publicKeys = user.publicKeyMappings.map(mapping => mapping.public_key);
+  const publicKeys = user.publicKeyMappings;
 
   const ownerPromises = publicKeys.map(async key => {
-    return { [key]: await getPublicKeyOwner(user.selectedOrganization!.serverUrl, key) };
+    return { [key]: await getPublicKeyOwner(user.selectedOrganization!.serverUrl, key.publicKey) };
   });
   const results: Record<string, string | null>[] = await Promise.all(ownerPromises);
 
@@ -82,9 +83,9 @@ const getOwnersFromOrganization = async () => {
 
 const addOwners = async (newMappings: PublicKeyMapping[], oldMappings: PublicKeyMapping[]) => {
   const newItems = newMappings.filter(
-    newItem => !oldMappings.some(oldItem => oldItem.public_key === newItem.public_key),
+    newItem => !oldMappings.some(oldItem => oldItem.publicKey === newItem.publicKey),
   );
-  const newPublicKeys = newItems.map(mapping => mapping.public_key);
+  const newPublicKeys = newItems.map(mapping => mapping.publicKey);
   const ownerPromises = newPublicKeys.map(async key => {
     return { [key]: await getPublicKeyOwner(user.selectedOrganization!.serverUrl, key) };
   });
@@ -94,9 +95,9 @@ const addOwners = async (newMappings: PublicKeyMapping[], oldMappings: PublicKey
 
 const deleteOwners = (newMappings: PublicKeyMapping[], oldMappings: PublicKeyMapping[]) => {
   const deletedItems = oldMappings.filter(
-    oldItem => !newMappings.some(newItem => newItem.public_key === oldItem.public_key),
+    oldItem => !newMappings.some(newItem => newItem.publicKey === oldItem.publicKey),
   );
-  const deletedPublicKeys = deletedItems.map(mapping => mapping.public_key);
+  const deletedPublicKeys = deletedItems.map(mapping => mapping.publicKey);
 
   deletedPublicKeys.forEach(key => {
     delete ownersMapping.value[key];
@@ -142,14 +143,7 @@ onBeforeMount(async () => {
 });
 </script>
 <template>
-  <div
-    v-if="
-      (user.selectedOrganization &&
-        listedPublicKeys.length === Object.keys(ownersMapping).length) ||
-      !user.selectedOrganization
-    "
-    class="flex-column-100"
-  >
+  <div class="flex-column-100">
     <div class="fill-remaining overflow-x-auto pe-4 pb-2 mt-4">
       <table class="table-custom">
         <thead>
@@ -181,7 +175,7 @@ onBeforeMount(async () => {
           </tr>
         </thead>
         <tbody class="text-secondary">
-          <template v-for="(mapping, index) in listedPublicKeys" :key="mapping.public_key">
+          <template v-for="(mapping, index) in listedPublicKeys" :key="mapping.publicKey">
             <tr>
               <td>
                 <AppCheckBox
@@ -203,7 +197,7 @@ onBeforeMount(async () => {
               </td>
               <td :data-testid="`cell-owner-account-${index}`">
                 <span>
-                  {{ ownersMapping[mapping.public_key] || 'N/A' }}
+                  {{ ownersMapping[mapping.publicKey] || 'N/A' }}
                 </span>
               </td>
               <td>
@@ -212,12 +206,12 @@ onBeforeMount(async () => {
                     :data-testid="`span-public-key-${index}`"
                     class="d-inline-block text-truncate"
                     style="width: 12vw"
-                    >{{ mapping.public_key }}</span
+                    >{{ mapping.publicKey }}</span
                   >
                   <span
                     :data-testid="`span-copy-public-key-${index}`"
                     class="bi bi-copy cursor-pointer ms-3"
-                    @click="handleCopy(mapping.public_key, 'Public Key copied successfully')"
+                    @click="handleCopy(mapping.publicKey, 'Public Key copied successfully')"
                   ></span>
                 </p>
               </td>
@@ -236,6 +230,16 @@ onBeforeMount(async () => {
           </template>
         </tbody>
       </table>
+      <template v-if="listedPublicKeys.length === 0">
+        <div class="flex-centered flex-column text-center" v-bind="$attrs">
+          <div>
+            <span class="bi bi-key text-huge text-secondary"></span>
+          </div>
+          <div class="mt-3">
+            <p class="text-title text-semi-bold">There are no public keys.</p>
+          </div>
+        </div>
+      </template>
 
       <DeletePublicKeyMappingModal
         v-model:show="isDeleteModalShown"

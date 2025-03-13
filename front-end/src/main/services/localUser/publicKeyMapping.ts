@@ -10,7 +10,14 @@ import { getPrismaClient } from '@main/db/prisma';
 //Get stored public keys
 export const getPublicKeys = async (): Promise<PublicKeyMapping[]> => {
   const prisma = getPrismaClient();
-  return prisma.publicKeyMapping.findMany();
+  const publicKeys = await prisma.publicKeyMapping.findMany();
+  return publicKeys.map(mapping => {
+    const { public_key, ...rest } = mapping;
+    return {
+      ...rest,
+      publicKey: public_key,
+    };
+  });
 };
 
 //add new public key
