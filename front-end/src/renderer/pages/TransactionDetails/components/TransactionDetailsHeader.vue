@@ -34,6 +34,7 @@ import {
   assertUserLoggedIn,
   getErrorMessage,
   getPrivateKey,
+  getStatusFromCode,
   getTransactionBodySignatureWithoutNodeAccountId,
   hexToUint8Array,
   isLoggedInOrganization,
@@ -92,8 +93,6 @@ const props = defineProps<{
   sdkTransaction: SDKTransaction | null;
   nextId: number | string | null;
   previousId: number | string | null;
-  orgGroupDescription?: string | undefined;
-  localGroupDescription?: string | undefined;
 }>();
 
 /* Stores */
@@ -221,6 +220,10 @@ const visibleButtons = computed(() => {
 const dropDownItems = computed(() =>
   visibleButtons.value.slice(1).map(item => ({ label: item, value: item })),
 );
+
+const isTransactionFailed = computed(() => {
+  return props.organizationTransaction?.status === TransactionStatus.FAILED;
+});
 
 /* Handlers */
 const handleBack = () => {
@@ -574,18 +577,16 @@ watch(
         <i class="bi bi-arrow-left"></i>
       </AppButton>
 
-      <h2
-        class="text-title text-bold"
-        v-if="props.localGroupDescription || props.orgGroupDescription"
-      >
+      <h2 class="text-title text-bold">
         Transaction Details
-        <span class="text-secondary">
+        <span v-if="isTransactionFailed" class="badge bg-danger text-break ms-2">
           {{
-            props.localGroupDescription ? `(${localGroupDescription})` : `(${orgGroupDescription})`
+            getStatusFromCode(props.organizationTransaction?.statusCode)
+              ? getStatusFromCode(props.organizationTransaction?.statusCode)
+              : 'FAILED'
           }}
         </span>
       </h2>
-      <h2 v-else class="text-title text-bold">Transaction Details</h2>
     </div>
 
     <div class="flex-centered gap-4">
