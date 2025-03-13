@@ -236,8 +236,6 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           :local-transaction="localTransaction"
           :next-id="nextId"
           :previous-id="prevId"
-          :local-group-description="groupDescription"
-          :org-group-description="groupDescription"
         />
 
         <Transition name="fade" mode="out-in">
@@ -289,6 +287,21 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
               </div>
 
               <hr v-if="isLoggedInOrganization(user.selectedOrganization)" class="separator my-8" />
+
+              <!-- TRANSACTION GROUP DETAILS -->
+              <div v-if="groupDescription">
+                <h2 class="text-title text-bold mt-5">Transaction Group</h2>
+
+                <div class="row flex-wrap mt-5">
+                  <!-- Description -->
+                  <div class="col-18 col-lg-15 col-xl-12 col-xxl-9 overflow-hidden py-3">
+                    <h4 :class="detailItemLabelClass">Description</h4>
+                    <p :class="detailItemValueClass">{{ groupDescription }}</p>
+                  </div>
+                </div>
+
+                <hr class="separator my-5" />
+              </div>
 
               <!-- CREATION DETAILS -->
               <h2 class="text-title text-bold mt-5">Creation Details</h2>
