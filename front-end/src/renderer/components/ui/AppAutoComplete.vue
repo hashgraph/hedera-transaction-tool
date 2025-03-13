@@ -115,7 +115,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
 const handleUpdate = (value: string) => {
   value = sanitizeAccountId(value);
 
-  setValue(value)
+  setValue(value);
 
   // Update the input field value
   if (inputRef.value?.inputRef) {
