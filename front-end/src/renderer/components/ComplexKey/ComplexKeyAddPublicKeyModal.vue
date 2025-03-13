@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import { PublicKey } from '@hashgraph/sdk';
 
@@ -17,6 +17,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 enum KeyTab {
   MY = 'My keys',
   CONTACTS = 'My contacts',
+  PUBLIC = 'Public keys',
 }
 
 /* Props */
@@ -40,6 +41,7 @@ const contacts = useContactsStore();
 /* State */
 const publicKey = ref('');
 const selectedPublicKeys = ref<string[]>([]);
+const searchInput = ref('');
 const currentTab = ref(KeyTab.MY);
 const identifiers = ref<string[]>([]);
 const isLoadingIdentifiers = ref(false);
@@ -58,6 +60,12 @@ const myContactListKeys = computed(() => {
   return contacts.publicKeys.filter(pk => !myKeySet.has(pk.publicKey));
 });
 
+const publicKeysList = computed(() => {
+  const myKeySet = new Set(myKeys.value.map(k => k.publicKey));
+  // While the public keys shouldn't have the user's own keys, we filter them out just in case
+  return user.publicKeyMappings.filter(pk => !myKeySet.has(pk.publicKey));
+});
+
 const listedKeyList = computed(() => {
   let result: { publicKey: string; nickname: string | null }[] = [];
 
@@ -68,9 +76,12 @@ const listedKeyList = computed(() => {
     case KeyTab.CONTACTS:
       result = myContactListKeys.value;
       break;
+    case KeyTab.PUBLIC:
+      result = publicKeysList.value;
+      break;
   }
 
-  result = filterKeyList(result, publicKey.value);
+  result = filterKeyList(result, searchInput.value);
 
   if (props.alreadyAdded && props.alreadyAdded.length > 0) {
     return result.filter(k => !props.alreadyAdded?.includes(k.publicKey));
@@ -133,6 +144,11 @@ function filterKeyList(keyList: { publicKey: string; nickname: string | null }[]
   });
 }
 
+/* Hooks */
+onBeforeMount(async () => {
+  await user.refetchPublicKeys();
+});
+
 /* Watchers */
 watch(
   listedKeyList,
@@ -179,7 +195,7 @@ watch(
         <p class="text-micro text-bold mt-5">Search by or paste public key</p>
         <div class="mt-3">
           <AppInput
-            v-model:model-value="publicKey"
+            v-model:model-value="searchInput"
             data-testid="input-complex-public-key"
             filled
             type="text"
