@@ -11,6 +11,7 @@ import {
 } from '@hashgraph/sdk';
 
 import { CommonNetwork } from '@main/shared/enums';
+import { TransactionStatus } from '@main/shared/interfaces';
 
 import { openExternal } from '@renderer/services/electronUtilsService';
 import { flattenKeyList } from '@renderer/services/keyPairService';
@@ -116,10 +117,7 @@ export const getPropagationButtonLabel = (
     const publicKeysDer = publicKeys.map(pk => pk.toStringRaw());
 
     const userKeyRequired = userPublicKeys.some(userKey => {
-      if (publicKeysRaw.includes(userKey) || publicKeysDer.includes(userKey)) {
-        return true;
-      }
-      return false;
+      return publicKeysRaw.includes(userKey) || publicKeysDer.includes(userKey);
     });
 
     return userKeyRequired ? 'Create' : 'Create and Share';
@@ -135,4 +133,21 @@ export const normalizeNetworkName = (network: string): IDefaultNetworks | 'custo
   } else {
     return 'custom';
   }
+};
+
+const TransactionStatusName = {
+  [TransactionStatus.NEW]: 'New',
+  [TransactionStatus.CANCELED]: 'Canceled',
+  [TransactionStatus.REJECTED]: 'Rejected',
+  [TransactionStatus.WAITING_FOR_SIGNATURES]: 'Waiting for Signatures',
+  [TransactionStatus.WAITING_FOR_EXECUTION]: 'Waiting for Execution',
+  [TransactionStatus.EXECUTED]: 'Executed',
+  [TransactionStatus.FAILED]: 'Failed',
+  [TransactionStatus.EXPIRED]: 'Expired',
+  [TransactionStatus.ARCHIVED]: 'Archived',
+};
+
+export const getTransactionStatusName = (status: TransactionStatus, uppercase: boolean = false): string => {
+  const statusName = TransactionStatusName[status];
+  return uppercase ? statusName.toUpperCase() : statusName;
 };
