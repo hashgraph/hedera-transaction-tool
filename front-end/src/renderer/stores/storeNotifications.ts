@@ -151,7 +151,6 @@ const useNotificationsStore = defineStore('notifications', () => {
     }
 
     const notificationsKey = user.selectedOrganization?.serverUrl || '';
-
     if (!notificationsKey) return;
 
     const networkFilteredNotifications =
@@ -176,6 +175,26 @@ const useNotificationsStore = defineStore('notifications', () => {
     notifications.value = { ...notifications.value };
   }
 
+  async function markAsReadIds(notificationIds: number[]) {
+    if (!isLoggedInOrganization(user.selectedOrganization)) {
+      throw new Error('No organization selected');
+    }
+
+    const notificationsKey = user.selectedOrganization?.serverUrl || '';
+    if (!notificationsKey) return;
+
+    await updateNotifications(
+      notificationsKey,
+      notificationIds,
+      notificationIds.map(() => ({ isRead: true })),
+    );
+
+    notifications.value[notificationsKey] = notifications.value[notificationsKey].filter(
+      nr => !notificationIds.includes(nr.id),
+    );
+    notifications.value = { ...notifications.value };
+  }
+
   ws.$onAction(ctx => {
     if (ctx.name === 'setup') {
       ctx.after(() => listenForUpdates());
@@ -190,6 +209,7 @@ const useNotificationsStore = defineStore('notifications', () => {
     fetchNotifications,
     updatePreferences,
     markAsRead,
+    markAsReadIds,
     networkNotifications,
   };
 });
