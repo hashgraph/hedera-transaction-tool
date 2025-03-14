@@ -213,6 +213,25 @@ describe('AuthService', () => {
     await expect(service.changePassword(user as User, dto)).rejects.toThrow(ErrorCodes.INOP);
   });
 
+  it('should emit user registered notification for admins', async () => {
+    const user = { id: 1, email: '', status: UserStatus.NEW, keys: [] };
+
+    //@ts-expect-error - incorrect overload expected
+    jest.mocked(bcrypt.compare).mockResolvedValue(true);
+    jest.mocked(argon2.verify).mockResolvedValue(true);
+
+    jest.spyOn(userService, 'getAdmins').mockResolvedValue([{ id: 2 }] as User[]);
+
+    await service.changePassword(user as User, { oldPassword: '', newPassword: 'new' });
+
+    expect(notificationsService.emit).toHaveBeenCalledWith('notify_general', {
+      type: 'USER_REGISTERED',
+      userIds: [2],
+      content: `User ${user.email} has completed the registration process.`,
+      entityId: user.id,
+    });
+  });
+
   it('should create otp in dev', async () => {
     const { user, otpSecret, totpRes } = await invokeCreateOtp(false);
 

@@ -127,9 +127,7 @@ export class ExecuteService {
       result.status = transactionStatus;
 
       await this.transactionsRepo.update(
-        {
-          id: transaction.id,
-        },
+        { id: transaction.id },
         {
           status: transactionStatus,
           executedAt,
@@ -139,7 +137,7 @@ export class ExecuteService {
 
       client.close();
 
-      notifySyncIndicators(this.notificationsService, transaction.id, transaction.status, {
+      notifySyncIndicators(this.notificationsService, transaction.id, transactionStatus, {
         network: transaction.mirrorNetwork,
       });
       notifyTransactionAction(this.notificationsService);

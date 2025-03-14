@@ -18,12 +18,19 @@ import {
   ErrorCodes,
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
+  notifyGeneral,
   notifySyncIndicators,
   notifyTransactionAction,
   userKeysRequiredToSign,
   verifyTransactionBodyWithoutNodeAccountIdSignature,
 } from '@app/common';
-import { Transaction, TransactionApprover, TransactionStatus, User } from '@entities';
+import {
+  NotificationType,
+  Transaction,
+  TransactionApprover,
+  TransactionStatus,
+  User,
+} from '@entities';
 
 import {
   ApproverChoiceDto,
@@ -571,6 +578,7 @@ export class ApproversService {
     /* Get the transaction body */
     const transaction = await this.dataSource.manager.findOne(Transaction, {
       where: { id: transactionId },
+      relations: { creatorKey: true, observers: true },
     });
 
     /* Check if the transaction exists */
@@ -605,7 +613,25 @@ export class ApproversService {
         .execute();
     });
 
+    const approvalChoiceReceivers = [
+      ...new Set([
+        ...userApprovers.map(a => a.userId),
+        transaction.creatorKey.userId,
+        ...transaction.observers.map(o => o.userId),
+      ]),
+    ];
     notifyTransactionAction(this.notificationsService);
+    notifyGeneral(
+      this.notificationsService,
+      dto.approved
+        ? NotificationType.TRANSACTION_APPROVED
+        : NotificationType.TRANSACTION_APPROVAL_REJECTION,
+      approvalChoiceReceivers,
+      '',
+      transaction.id,
+      false,
+      { network: transaction.mirrorNetwork },
+    );
     notifySyncIndicators(this.notificationsService, transaction.id, transaction.status, {
       network: transaction.mirrorNetwork,
     });

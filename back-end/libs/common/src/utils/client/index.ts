@@ -67,6 +67,7 @@ export const notifyGeneral = (
   content: string,
   entityId?: number,
   recreateReceivers?: boolean,
+  additionalData?: NotificationAdditionalData,
 ) => {
   client.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
     type,
@@ -74,5 +75,6 @@ export const notifyGeneral = (
     content,
     entityId,
     recreateReceivers,
+    additionalData,
   });
 };

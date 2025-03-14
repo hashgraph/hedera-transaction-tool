@@ -1,6 +1,8 @@
+import type { Transfer } from '@hashgraph/sdk';
+
 import { stringifyHbarWithFont } from './index';
 
-export function formatHbarTransfers(transfers): string {
+export function formatHbarTransfers(transfers: Transfer[]): string {
   if (transfers.length === 0) {
     return 'No transfers';
   }
@@ -25,7 +27,8 @@ export function formatHbarTransfers(transfers): string {
       receiver = transfers[0];
     }
     return `${sender.accountId} --> ${stringifyHbarWithFont(
-      receiver.amount, "text-bold text-secondary"
+      receiver.amount,
+      'text-bold text-secondary',
     )} --> ${receiver.accountId}`;
   }
 

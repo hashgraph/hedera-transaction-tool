@@ -252,4 +252,12 @@ describe('UsersService', () => {
     expect(argon2.hash).toHaveBeenCalledWith(data, { salt: pseudoSalt });
     expect(result).toBe(hashedPassword);
   });
+
+  it('should call get admins', async () => {
+    await service.getAdmins();
+
+    expect(userRepository.find).toHaveBeenCalledWith({
+      where: { admin: true },
+    });
+  });
 });
