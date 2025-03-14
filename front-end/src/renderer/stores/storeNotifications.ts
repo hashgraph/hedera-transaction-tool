@@ -122,6 +122,7 @@ const useNotificationsStore = defineStore('notifications', () => {
       result.status === 'fulfilled' && (notifications.value[severUrls[i]] = result.value);
     }
     notifications.value = { ...notifications.value };
+    console.log(notifications.value);
   }
 
   function listenForUpdates() {

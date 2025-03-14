@@ -9,19 +9,9 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
 
-import { useRouter } from 'vue-router';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
-import useLoader from '@renderer/composables/useLoader';
 
-import { logout } from '@renderer/services/organization';
-import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
-
-import {
-  isLoggedInOrganization,
-  isUserLoggedIn,
-  normalizeNetworkName,
-  toggleAuthTokenInSessionStorage,
-} from '@renderer/utils';
+import { normalizeNetworkName } from '@renderer/utils';
 
 import Logo from '@renderer/components/Logo.vue';
 import LogoText from '@renderer/components/LogoText.vue';
@@ -55,9 +45,7 @@ const networkStore = useNetworkStore();
 const notificationsStore = useNotificationsStore();
 
 /* Composables */
-const router = useRouter();
 const createTooltips = useCreateTooltips();
-const withLoader = useLoader();
 
 /* Computed */
 const hasNetworkIndicator = computed(() => {
@@ -66,23 +54,6 @@ const hasNetworkIndicator = computed(() => {
     .filter(([key]) => key !== currentNetwork)
     .some(([, value]) => Boolean(value));
 });
-
-/* Handlers */
-const handleLogout = async () => {
-  if (user.selectedOrganization) {
-    if (!isUserLoggedIn(user.personal)) return;
-
-    const { id, nickname, serverUrl, key } = user.selectedOrganization;
-    await logout(serverUrl);
-    await updateOrganizationCredentials(id, user.personal.id, undefined, undefined, null);
-    toggleAuthTokenInSessionStorage(serverUrl, '', true);
-    await user.selectOrganization({ id, nickname, serverUrl, key });
-  } else {
-    localStorage.removeItem('htx_user');
-    user.logout();
-    await router.push({ name: 'login' });
-  }
-};
 
 /* Hooks */
 onUpdated(createTooltips);
@@ -121,22 +92,7 @@ onUpdated(createTooltips);
       <div>
         <UserModeSelect />
       </div>
-      <span
-        v-if="
-          (isUserLoggedIn(user.personal) &&
-            !user.personal.useKeychain &&
-            !user.selectedOrganization) ||
-          isLoggedInOrganization(user.selectedOrganization)
-        "
-        class="container-icon"
-        data-testid="button-logout"
-        @click="withLoader(handleLogout)"
-        data-bs-toggle="tooltip"
-        data-bs-trigger="hover"
-        data-bs-placement="bottom"
-        data-bs-custom-class="wide-tooltip"
-        data-bs-title="Log out"
-      >
+      <span class="container-icon" data-testid="button-notifications">
         <i class="text-icon-main bi bi-box-arrow-up-right"></i>
       </span>
     </div>
