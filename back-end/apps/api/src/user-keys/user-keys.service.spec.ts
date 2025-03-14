@@ -311,7 +311,6 @@ describe('UserKeysService', () => {
     it('should update the mnemonic hash and keep the existing index if not provided', async () => {
       service.getUserKey = jest.fn().mockResolvedValue(userKey);
       repo.update.mockResolvedValue(undefined);
-      console.log('last cakk');
 
       await service.updateMnemonicHash(user, 1, { mnemonicHash: 'new-hash' });
 

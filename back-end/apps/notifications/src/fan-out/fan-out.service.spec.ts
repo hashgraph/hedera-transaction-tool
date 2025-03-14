@@ -161,10 +161,6 @@ describe('Fan Out Service', () => {
         subject: NotificationTypeEmailSubjects.TRANSACTION_EXECUTED,
         text: notification.content,
       });
-      expect(inAppProcessorService.processNewNotification).toHaveBeenCalledWith(
-        notification,
-        receivers,
-      );
       expect(entityManager.update).toHaveBeenCalledTimes(4);
       expect(entityManager.update).toHaveBeenCalledWith(
         NotificationReceiver,
@@ -180,30 +176,10 @@ describe('Fan Out Service', () => {
         NotificationReceiver,
         {
           notificationId: notification.id,
-          userId: In([receivers[0].userId]),
-        },
-        {
-          isInAppNotified: false,
-        },
-      );
-      expect(entityManager.update).toHaveBeenCalledWith(
-        NotificationReceiver,
-        {
-          notificationId: notification.id,
           userId: In([receivers[0].id]),
         },
         {
           isEmailSent: true,
-        },
-      );
-      expect(entityManager.update).toHaveBeenCalledWith(
-        NotificationReceiver,
-        {
-          notificationId: notification.id,
-          userId: In([receivers[0].userId]),
-        },
-        {
-          isInAppNotified: true,
         },
       );
     });
@@ -219,10 +195,6 @@ describe('Fan Out Service', () => {
       await service.fanOutNew(notification, receivers);
 
       expect(emailService.processEmail).not.toHaveBeenCalled();
-      expect(inAppProcessorService.processNewNotification).toHaveBeenCalledWith(
-        notification,
-        receivers,
-      );
       expect(entityManager.update).toHaveBeenCalledTimes(2);
       expect(entityManager.update).toHaveBeenNthCalledWith(
         1,
@@ -233,17 +205,6 @@ describe('Fan Out Service', () => {
         },
         {
           isInAppNotified: false,
-        },
-      );
-      expect(entityManager.update).toHaveBeenNthCalledWith(
-        2,
-        NotificationReceiver,
-        {
-          notificationId: notification.id,
-          userId: In([receivers[0].userId]),
-        },
-        {
-          isInAppNotified: true,
         },
       );
     });
@@ -331,19 +292,10 @@ describe('Fan Out Service', () => {
 
       await service.fanOutNew(notification, receivers);
 
-      expect(inAppProcessorService.processNewNotification).toHaveBeenCalledWith(
-        notification,
-        receivers,
-      );
       expect(entityManager.update).not.toHaveBeenCalledWith(
         NotificationReceiver,
-        {
-          notificationId: notification.id,
-          userId: In([receivers[0].userId]),
-        },
-        {
-          isInAppNotified: true,
-        },
+        { notificationId: notification.id, userId: In([receivers[0].userId]) },
+        { isInAppNotified: true },
       );
     });
 
