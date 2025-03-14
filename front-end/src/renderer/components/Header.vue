@@ -15,6 +15,7 @@ import { normalizeNetworkName } from '@renderer/utils';
 
 import Logo from '@renderer/components/Logo.vue';
 import LogoText from '@renderer/components/LogoText.vue';
+import NotificationsDropDown from '@renderer/components/Notifications/NotificationsDropDown.vue';
 import UserModeSelect from './UserModeSelect.vue';
 
 /* Mappings */
@@ -92,9 +93,9 @@ onUpdated(createTooltips);
       <div>
         <UserModeSelect />
       </div>
-      <span class="container-icon" data-testid="button-notifications">
-        <i class="text-icon-main bi bi-box-arrow-up-right"></i>
-      </span>
+      <div>
+        <NotificationsDropDown />
+      </div>
     </div>
   </div>
 </template>

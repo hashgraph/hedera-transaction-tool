@@ -49,6 +49,7 @@ const router = useRouter();
 const ws = useDisposableWs();
 const { oldNotifications } = useMarkNotifications([
   NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
+  NotificationType.TRANSACTION_READY_FOR_EXECUTION,
 ]);
 
 /* State */
@@ -102,7 +103,10 @@ function setNotifiedTransactions() {
   notifiedTransactionIds.value = getNotifiedTransactions(
     notifications.notifications[notificationsKey]?.concat(oldNotifications.value) || [],
     transactions.value.map(t => t.transactionRaw),
-    [NotificationType.TRANSACTION_INDICATOR_EXECUTABLE],
+    [
+      NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
+      NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+    ],
   );
 }
 
