@@ -44,6 +44,7 @@ export function useGroupedNotifications() {
         if (notification.isRead) continue;
 
         const serverGroup = grouped[nicknamedServerUrl];
+
         const network = notification.notification.additionalData?.network || 'Unknown';
         const type = notification.notification.type;
 
@@ -125,7 +126,7 @@ export function useGroupedNotifications() {
       case NotificationType.TRANSACTION_INDICATOR_ARCHIVED:
         return `Transaction${suffix} archived`;
       case NotificationType.USER_REGISTERED:
-        return `User${suffix} registered`;
+        return `User${suffix} has completed registration`;
       case NotificationType.TRANSACTION_INDICATOR_SIGN:
         return `Transaction${suffix} ready to sign`;
       default:
@@ -169,7 +170,10 @@ export function useGroupedNotifications() {
         };
       case NotificationType.TRANSACTION_APPROVED:
       case NotificationType.TRANSACTION_APPROVAL_REJECTION:
-        return () => {};
+        return async () => {
+          await selectOrganization();
+          notificationsStore.markAsRead(notification.type);
+        };
       case NotificationType.USER_REGISTERED:
         return async () => {
           await router.push({ name: 'contactList' });
