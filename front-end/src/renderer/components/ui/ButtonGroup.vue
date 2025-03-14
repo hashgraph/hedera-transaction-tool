@@ -36,13 +36,7 @@ const handleButtonClick = (value: string | number) => {
           @click="handleButtonClick(item.value)"
           :data-testid="item.id"
         >
-          <span
-            :class="{
-              'network-notification position-relative': notifications && notifications[item.value],
-            }"
-            :data-notification="notifications?.[item.value] || null"
-            >{{ item.label }}</span
-          >
+          <span>{{ item.label }}</span>
         </AppButton>
       </template>
     </div>
