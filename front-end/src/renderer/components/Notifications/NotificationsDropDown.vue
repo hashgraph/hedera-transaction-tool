@@ -42,7 +42,7 @@ const { groupedNotifications, totalCount } = useGroupedNotifications();
       </template>
     </div>
 
-    <ul class="dropdown-menu" :style="{ width: 'max-content' }">
+    <ul class="dropdown-menu" :style="{ width: '260px' }">
       <template
         v-for="[serverUrl, networkToNotifications] of Object.entries(groupedNotifications)"
         :key="serverUrl"
@@ -57,17 +57,19 @@ const { groupedNotifications, totalCount } = useGroupedNotifications();
           >
             <li class="dropdown-item text-small cursor-pointer" @click="notification.action()">
               <div class="row">
-                <div class="col-7">
+                <div class="col-7" :class="{ 'col-12': notification.network === 'Unknown' }">
                   <p class="text-truncate">
                     {{ serverUrl }}
                   </p>
                 </div>
-                <div
-                  class="col-5 text-end"
-                  :class="networkMapping[notification.network]?.className || 'text-info'"
-                >
-                  {{ networkMapping[notification.network]?.label || 'CUSTOM' }}
-                </div>
+                <template v-if="notification.network !== 'Unknown'">
+                  <div
+                    class="col-5 text-end"
+                    :class="networkMapping[notification.network]?.className || 'text-info'"
+                  >
+                    {{ networkMapping[notification.network]?.label || 'CUSTOM' }}
+                  </div>
+                </template>
               </div>
               <div>
                 <p>
