@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import type { ITransactionFull } from '@main/shared/interfaces';
+import { ITransactionFull } from '@main/shared/interfaces';
 
 import { computed } from 'vue';
 
 import { TransactionStatus } from '@main/shared/interfaces';
+
+import { getTransactionStatusName } from '@renderer/utils';
 
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
 
@@ -28,17 +30,28 @@ const stepperItems = computed(() => {
   ];
 
   if (
-    [TransactionStatus.EXPIRED, TransactionStatus.CANCELED, TransactionStatus.ARCHIVED].includes(
+    [
+      TransactionStatus.REJECTED,
+      TransactionStatus.EXPIRED,
+      TransactionStatus.FAILED,
+      TransactionStatus.CANCELED,
+      TransactionStatus.ARCHIVED
+    ].includes(
       props.transaction.status,
     )
   ) {
     items.splice(2, 2);
   }
 
-  if ([TransactionStatus.EXPIRED, TransactionStatus.CANCELED].includes(props.transaction.status)) {
+  if ([
+    TransactionStatus.REJECTED,
+    TransactionStatus.EXPIRED,
+    TransactionStatus.FAILED,
+    TransactionStatus.CANCELED
+  ].includes(props.transaction.status)) {
     items[items.length] = {
-      title: props.transaction.status === TransactionStatus.EXPIRED ? 'Expired' : 'Canceled',
-      name: props.transaction.status === TransactionStatus.EXPIRED ? 'Expired' : 'Canceled',
+      title: getTransactionStatusName(props.transaction.status),
+      name: getTransactionStatusName(props.transaction.status),
       bubbleClass: 'bg-danger text-white',
       bubbleIcon: 'x-lg',
     };
@@ -49,6 +62,9 @@ const stepperItems = computed(() => {
   return items;
 });
 
+// Active index is the index of the last step that has been completed. If the status is a
+// failed type status (ex. REJECTED, EXPIRED, FAILED, CANCELED), the active index is -1 in order
+// to show the last step as failed.
 const stepperActiveIndex = computed(() => {
   switch (props.transaction.status) {
     case TransactionStatus.NEW:
@@ -56,10 +72,9 @@ const stepperActiveIndex = computed(() => {
     case TransactionStatus.WAITING_FOR_SIGNATURES:
       return 1;
     case TransactionStatus.WAITING_FOR_EXECUTION:
+    case TransactionStatus.ARCHIVED:
       return 2;
     case TransactionStatus.EXECUTED:
-    case TransactionStatus.FAILED:
-    case TransactionStatus.ARCHIVED:
       return 3;
     default:
       return -1;
