@@ -122,7 +122,6 @@ const useNotificationsStore = defineStore('notifications', () => {
       result.status === 'fulfilled' && (notifications.value[severUrls[i]] = result.value);
     }
     notifications.value = { ...notifications.value };
-    console.log(notifications.value);
   }
 
   function listenForUpdates() {
@@ -157,7 +156,9 @@ const useNotificationsStore = defineStore('notifications', () => {
 
     const networkFilteredNotifications =
       notifications.value[notificationsKey].filter(
-        n => n.notification.additionalData?.network === network.network,
+        n =>
+          !n.notification.additionalData?.network ||
+          n.notification.additionalData.network === network.network,
       ) || [];
 
     if (networkFilteredNotifications.length > 0) {

@@ -151,4 +151,8 @@ export class UsersService {
       salt: pseudoSalt,
     });
   }
+
+  async getAdmins() {
+    return await this.repo.find({ where: { admin: true } });
+  }
 }

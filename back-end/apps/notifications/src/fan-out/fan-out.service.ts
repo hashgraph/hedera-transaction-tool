@@ -25,6 +25,7 @@ export class FanOutService {
     NotificationType.TRANSACTION_INDICATOR_EXPIRED,
     NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
     NotificationType.TRANSACTION_EXPIRED,
+    NotificationType.USER_REGISTERED,
   ];
 
   inAppBlacklistTypes = [
