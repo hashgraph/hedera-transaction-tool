@@ -8,14 +8,11 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
 
-import { getNetworkLabel } from '@renderer/utils';
-
 /* Types */
 interface GroupedNotificationInfo {
   content: string;
   type: NotificationType;
   network: string;
-  networkRaw: string;
   count: number;
 }
 
@@ -75,8 +72,7 @@ export function useGroupedNotifications() {
           const info: GroupedNotificationInfo = {
             content: getContentFromType(type, 1),
             type,
-            network: getNetworkLabel(network),
-            networkRaw: network,
+            network,
             count: 1,
           };
 
@@ -148,7 +144,7 @@ export function useGroupedNotifications() {
       }
 
       if (network.network !== notification.network) {
-        await network.setNetwork(notification.networkRaw);
+        await network.setNetwork(notification.network);
       }
     };
 

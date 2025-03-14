@@ -1,5 +1,29 @@
 <script setup lang="ts">
+import { CommonNetwork } from '@main/shared/enums';
+
 import { useGroupedNotifications } from './composables';
+
+/* Mappings */
+const networkMapping: {
+  [key in string]: { label: string; className: string };
+} = {
+  [CommonNetwork.TESTNET]: {
+    label: 'TESTNET',
+    className: 'text-testnet',
+  },
+  [CommonNetwork.MAINNET]: {
+    label: 'MAINNET',
+    className: 'text-mainnet',
+  },
+  [CommonNetwork.PREVIEWNET]: {
+    label: 'PREVIEWNET',
+    className: 'text-previewnet',
+  },
+  [CommonNetwork.LOCAL_NODE]: {
+    label: 'LOCAL NODE',
+    className: 'text-info',
+  },
+};
 
 /* Composables */
 const { groupedNotifications, totalCount } = useGroupedNotifications();
@@ -38,8 +62,11 @@ const { groupedNotifications, totalCount } = useGroupedNotifications();
                     {{ serverUrl }}
                   </p>
                 </div>
-                <div class="col-5 text-end">
-                  {{ notification.network }}
+                <div
+                  class="col-5 text-end"
+                  :class="networkMapping[notification.network]?.className || 'text-info'"
+                >
+                  {{ networkMapping[notification.network]?.label || 'CUSTOM' }}
                 </div>
               </div>
               <div>
