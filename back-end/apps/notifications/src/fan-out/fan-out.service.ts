@@ -18,13 +18,22 @@ import { InAppProcessorService } from '../in-app-processor/in-app-processor.serv
 @Injectable()
 export class FanOutService {
   emailBlacklistTypes = [
+    NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
     NotificationType.TRANSACTION_INDICATOR_APPROVE,
     NotificationType.TRANSACTION_INDICATOR_SIGN,
-    NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
     NotificationType.TRANSACTION_INDICATOR_EXECUTED,
     NotificationType.TRANSACTION_INDICATOR_EXPIRED,
     NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
     NotificationType.TRANSACTION_EXPIRED,
+  ];
+
+  inAppBlacklistTypes = [
+    NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+    NotificationType.TRANSACTION_EXECUTED,
+    NotificationType.TRANSACTION_CANCELLED,
+    NotificationType.TRANSACTION_EXPIRED,
+    NotificationType.TRANSACTION_CREATED,
+    NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
   ];
 
   constructor(
@@ -142,8 +151,13 @@ export class FanOutService {
   ) {
     if (receivers && receivers.length > 0) {
       const userIds = receivers.map(r => r.userId);
-      this.inAppProcessorService.processNewNotification(notification, receivers);
-      await this.updateIsInAppNotified(notification.id, userIds, true);
+      /* If notification type is in blacklist, do not send in-app notification */
+      if (this.inAppBlacklistTypes.includes(notification.type)) {
+        await this.updateIsInAppNotified(notification.id, userIds, null);
+      } else {
+        this.inAppProcessorService.processNewNotification(notification, receivers);
+        await this.updateIsInAppNotified(notification.id, userIds, true);
+      }
     }
   }
 

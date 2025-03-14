@@ -117,20 +117,14 @@ export class TransactionStatusService {
           ]),
           validStart: LessThanOrEqual(this.getValidStartExpired()),
         },
-        select: {
-          id: true,
-        },
+        select: { id: true, mirrorNetwork: true },
       });
 
       for (const transaction of transactions) {
         await transactionalEntityManager.update(
           Transaction,
-          {
-            id: transaction.id,
-          },
-          {
-            status: TransactionStatus.EXPIRED,
-          },
+          { id: transaction.id },
+          { status: TransactionStatus.EXPIRED },
         );
 
         notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.EXPIRED, {
