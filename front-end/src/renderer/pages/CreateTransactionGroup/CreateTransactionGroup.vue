@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 
-import { Hbar, KeyList, PublicKey, TransferTransaction, Transaction, HbarUnit } from '@hashgraph/sdk';
+import {
+  Hbar,
+  KeyList,
+  PublicKey,
+  TransferTransaction,
+  Transaction,
+  HbarUnit,
+} from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
@@ -219,10 +226,10 @@ async function handleOnFileChanged(e: Event) {
     let memo = '';
     let validStart: Date | null = null;
     for (const row of rows) {
-      const rowInfo = row.match(/(?:"(?:\\"|[^"])*"|[^,]+)(?=,|$)/g)
-        ?.map(s => s.trim()
-          .replace(/^"|"$/g, '')
-          .replace(/\\"/g, '"')) || [];
+      const rowInfo =
+        row
+          .match(/(?:"(?:\\"|[^"])*"|[^,]+)(?=,|$)/g)
+          ?.map(s => s.trim().replace(/^"|"$/g, '').replace(/\\"/g, '"')) || [];
       const title = rowInfo[0]?.toLowerCase();
       switch (title) {
         case 'transaction description':
@@ -268,9 +275,9 @@ async function handleOnFileChanged(e: Event) {
             const transaction = new TransferTransaction()
               .setTransactionValidDuration(txValidDuration ? Number.parseInt(txValidDuration) : 180)
               .setMaxTransactionFee(
-                transactionFee
+                (transactionFee
                   ? new Hbar(transactionFee, HbarUnit.Tinybar)
-                  : maxTransactionFee.value
+                  : maxTransactionFee.value) as Hbar,
               );
 
             transaction.setTransactionId(
@@ -281,7 +288,7 @@ async function handleOnFileChanged(e: Event) {
             transaction.addHbarTransfer(senderAccount, new Hbar(-transferAmount, HbarUnit.Tinybar));
             // If memo is not provided for the row, use the memo from the header portion
             // otherwise check if the memo is not 'n/a' and set it
-            if (rowInfo.length < 4 || !(rowInfo[3]?.trim())) {
+            if (rowInfo.length < 4 || !rowInfo[3]?.trim()) {
               transaction.setTransactionMemo(memo);
             } else if (!/^(n\/a)$/i.test(rowInfo[3])) {
               transaction.setTransactionMemo(rowInfo[3]);
@@ -491,13 +498,15 @@ onBeforeRouteLeave(async to => {
               <div
                 class="align-self-center text-truncate col text-center mx-5"
                 :data-testid="'span-transaction-timestamp-' + index"
-                v-html="groupItem.type == 'Transfer Transaction'
-                  ? makeTransfer(index)
-                  : groupItem.description != ''
-                    ? groupItem.description
-                    : Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
-                      ? Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
-                      : createTransactionId(groupItem.payerAccountId, groupItem.validStart)"
+                v-html="
+                  groupItem.type == 'Transfer Transaction'
+                    ? makeTransfer(index)
+                    : groupItem.description != ''
+                      ? groupItem.description
+                      : Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
+                        ? Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
+                        : createTransactionId(groupItem.payerAccountId, groupItem.validStart)
+                "
               ></div>
               <div class="d-flex col justify-content-end">
                 <AppButton

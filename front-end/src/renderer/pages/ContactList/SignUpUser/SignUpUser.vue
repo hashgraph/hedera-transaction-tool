@@ -10,7 +10,13 @@ import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/use
 import { signUp } from '@renderer/services/organization';
 import { addContact } from '@renderer/services/contactsService';
 
-import { isLoggedInOrganization, isUserLoggedIn, isEmail } from '@renderer/utils';
+import {
+  isLoggedInOrganization,
+  isUserLoggedIn,
+  isEmail,
+  assertUserLoggedIn,
+  assertIsLoggedInOrganization,
+} from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -33,13 +39,16 @@ const isMultipleMode = ref(false);
 /* Handlers */
 const handleLinkAccount = async () => {
   if (isMultipleMode.value) {
-    const [validEmails, invalidEmails] = multipleEmails.value.split(',').map(e => e.trim()).reduce(
-      ([valid, invalid], email) => {
-        isEmail(email) ? valid.push(email) : invalid.push(email);
-        return [valid, invalid];
-      },
-      [[], []] as [string[], string[]]
-    );
+    const [validEmails, invalidEmails] = multipleEmails.value
+      .split(',')
+      .map(e => e.trim())
+      .reduce(
+        ([valid, invalid], email) => {
+          isEmail(email) ? valid.push(email) : invalid.push(email);
+          return [valid, invalid];
+        },
+        [[], []] as [string[], string[]],
+      );
 
     if (invalidEmails.length > 0) throw new Error(`Invalid emails: ${invalidEmails.join(', ')}`);
 
@@ -62,7 +71,10 @@ const handleLinkAccount = async () => {
   } else {
     if (!isEmail(email.value)) throw new Error('Invalid email');
     try {
-      const id = await signUpUser(email.value, nickname.value);
+      assertUserLoggedIn(user.personal);
+      assertIsLoggedInOrganization(user.selectedOrganization);
+
+      const id = await signUpUser(email.value);
 
       toast.success('User signed up successfully');
 
@@ -72,7 +84,7 @@ const handleLinkAccount = async () => {
           organization_id: user.selectedOrganization.id,
           organization_user_id: id,
           organization_user_id_owner: user.selectedOrganization.userId,
-          nickname,
+          nickname: nickname.value,
         });
       }
     } catch (error) {

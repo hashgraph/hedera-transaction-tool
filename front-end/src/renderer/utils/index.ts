@@ -188,10 +188,12 @@ export const getAccountIdWithChecksum = (accountId: string): string => {
 };
 
 export function stringifyHbarWithFont(hbar: Hbar, fontClass: string): string {
-  const tinybars = Math.abs(hbar.toTinybars());
-  const isHbar = tinybars >= Hbar.fromTinybars(1_000_000).toTinybars();
+  const tinybars = Math.abs(hbar.toTinybars().toNumber());
+  const isHbar = tinybars >= Hbar.fromTinybars(1_000_000).toTinybars().toNumber();
   const symbol = isHbar ? HbarUnit.Hbar._symbol : HbarUnit.Tinybar._symbol;
-  const amountString = isHbar ? hbar.to(HbarUnit.Hbar).toString() : hbar.to(HbarUnit.Tinybar).toString();
+  const amountString = isHbar
+    ? hbar.to(HbarUnit.Hbar).toString()
+    : hbar.to(HbarUnit.Tinybar).toString();
 
   return `${amountString} <span class="${fontClass}">${symbol}</span>`;
 }
@@ -316,12 +318,10 @@ export function sanitizeAccountId(value: string): string {
 
   // Remove leading zeros from each part and validate each part
   const max8ByteNumber = BigInt('18446744073709551615'); // 2^64 - 1
-  value = value
-    .replace(/(^|\.)(0+)(\d+)/g, '$1$3')
-    .replace(/(\d+)/g, (match) => {
-      const num = BigInt(match);
-      return num > max8ByteNumber ? match.slice(0, -1) : match;
-    });
+  value = value.replace(/(^|\.)(0+)(\d+)/g, '$1$3').replace(/(\d+)/g, match => {
+    const num = BigInt(match);
+    return num > max8ByteNumber ? match.slice(0, -1) : match;
+  });
 
   // Allow '-' followed by up to 5 letters (case-insensitive) if the 0.0.0 pattern already exists
   const pattern = /^(\d+\.\d+\.\d+)(-[a-zA-Z]{0,5})?$/;
