@@ -2,7 +2,7 @@
 
 1. **Make sure that a Kubernetes Cluster is running**
 
-2. **(First time only)** Create `brevo-secret.yaml` from `brevo-secret.example.yaml` with your Brevo credentials
+2. **(First time only)** Create `email-api-secret.yaml` from `email-api-secret.example.yaml` with your Brevo (or other provider) credentials
 
 #### You can use either the `deploy.sh` script or manually deploy each resource
 
