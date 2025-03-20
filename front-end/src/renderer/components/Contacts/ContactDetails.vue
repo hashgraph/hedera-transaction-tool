@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { HederaAccount } from '@prisma/client';
+import type { HederaAccount, PublicKeyMapping } from '@prisma/client';
 import type { AccountInfo, Contact } from '@main/shared/interfaces';
 import { useToast } from 'vue-toast-notification';
 
@@ -19,6 +19,7 @@ import {
   extractIdentifier,
   formatPublickeyContactList,
   getErrorMessage,
+  getPublicKeyMapping,
   isLoggedInOrganization,
   isUserLoggedIn,
 } from '@renderer/utils';
@@ -27,6 +28,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import ContactDetailsAssociatedAccounts from '@renderer/components/Contacts/ContactDetailsAssociatedAccounts.vue';
 import ContactDetailsLinkedAccounts from '@renderer/components/Contacts/ContactDetailsLinkedAccounts.vue';
+import RenamePublicKeyModal from '@renderer/pages/Settings/components/PublicKeysTab/components/RenamePublicKeyModal.vue';
 
 /* Modals */
 const linkedAccounts = defineModel<HederaAccount[]>('linkedAccounts');
@@ -49,6 +51,9 @@ const isNicknameInputShown = ref(false);
 const nicknameInputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const publicKeyToAccounts = ref<{ [key: string]: AccountInfo[] }>({});
 const publicKeysMapping = ref<Record<string, string>>({});
+const isUpdateNicknameModalShown = ref(false);
+const publicKeyMappingToEdit = ref<PublicKeyMapping | null>(null);
+const publicKeyToEdit = ref<string | null>(null);
 
 /* Emits */
 defineEmits<{
@@ -68,6 +73,13 @@ const handleStartNicknameEdit = () => {
       nicknameInputRef.value?.inputRef?.focus();
     }
   }, 100);
+};
+
+const handleStartKeyNicknameEdit = async (publicKey: string) => {
+  const mapping = await getPublicKeyMapping(publicKey);
+  publicKeyMappingToEdit.value = mapping;
+  publicKeyToEdit.value = publicKey;
+  isUpdateNicknameModalShown.value = true;
 };
 
 const handleChangeNickname = async () => {
@@ -121,6 +133,10 @@ const handleResend = async () => {
 const handleContactChange = async () => {
   await contacts.fetchUserKeys(props.contact.user.id);
   await handleAccountsLookup();
+  await handleFetchMapping();
+};
+
+const handleFetchMapping = async () => {
   const contactPublicKeys = props.contact.userKeys.map(key => key.publicKey);
   const formatPromises = contactPublicKeys.map(async key => {
     return { [key]: await formatPublickeyContactList(key) };
@@ -209,39 +225,37 @@ watch(() => props.contact, handleContactChange);
     v-if="contact.userKeys.length === Object.keys(publicKeysMapping).length"
     class="fill-remaining overflow-x-hidden pe-3"
   >
-    <template v-for="(key, index) in contact.userKeys" :key="key.publicKey">
+    <template
+      v-for="(key, index) in contact.userKeys.map(uk => ({
+        ...uk,
+        publicKeyMapping: extractIdentifier(
+          publicKeysMapping[PublicKey.fromString(uk.publicKey).toStringRaw()],
+        ),
+      }))"
+      :key="key.publicKey"
+    >
       <div class="p-4">
         <hr v-if="index != 0" class="separator mb-4" />
         <div class="mt-4 row">
           <div class="col-5">
-            <p class="text-small text-semi-bold">Public Key</p>
+            <p class="text-small text-semi-bold">
+              <span
+                class="bi bi-pencil-square text-main text-primary me-3 cursor-pointer"
+                data-testid="button-change-key-nickname"
+                @click="handleStartKeyNicknameEdit(key.publicKey)"
+              ></span>
+              <template v-if="key.publicKeyMapping">
+                <span>
+                  {{ key.publicKeyMapping.identifier }}
+                </span>
+              </template>
+              <template v-else> Public Key </template>
+            </p>
           </div>
           <div class="col-7">
             <p class="overflow-x-auto" :data-testid="'p-contact-public-key-' + index">
-              <span class="d-flex gap-2">
-                <span
-                  v-if="
-                    extractIdentifier(
-                      publicKeysMapping[PublicKey.fromString(key.publicKey).toStringRaw()],
-                    )
-                  "
-                >
-                  <span class="text-semi-bold text-small me-2">{{
-                    extractIdentifier(
-                      publicKeysMapping[PublicKey.fromString(key.publicKey).toStringRaw()],
-                    )?.identifier
-                  }}</span>
-                  <span class="text-secondary text-small">{{
-                    `(${
-                      extractIdentifier(
-                        publicKeysMapping[PublicKey.fromString(key.publicKey).toStringRaw()],
-                      )?.pk
-                    })`
-                  }}</span>
-                </span>
-                <span v-else class="text-secondary text-small">{{
-                  publicKeysMapping[PublicKey.fromString(key.publicKey).toStringRaw()]
-                }}</span>
+              <span class="text-secondary text-small">
+                {{ key.publicKey }}
               </span>
             </p>
             <p
@@ -267,6 +281,13 @@ watch(() => props.contact, handleContactChange);
           :allLinkedAccounts="linkedAccounts"
           :index="index"
           class="mt-4"
+        />
+
+        <RenamePublicKeyModal
+          v-model:show="isUpdateNicknameModalShown"
+          :public-key-mapping="publicKeyMappingToEdit"
+          :public-key="publicKeyToEdit"
+          @change="handleFetchMapping"
         />
       </div>
     </template>
