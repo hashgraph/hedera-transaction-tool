@@ -282,14 +282,13 @@ watch(() => props.contact, handleContactChange);
           :index="index"
           class="mt-4"
         />
-
-        <RenamePublicKeyModal
-          v-model:show="isUpdateNicknameModalShown"
-          :public-key-mapping="publicKeyMappingToEdit"
-          :public-key="publicKeyToEdit"
-          @change="handleFetchMapping"
-        />
       </div>
     </template>
+    <RenamePublicKeyModal
+      v-model:show="isUpdateNicknameModalShown"
+      :public-key-mapping="publicKeyMappingToEdit"
+      :public-key="publicKeyToEdit"
+      @change="handleFetchMapping"
+    />
   </div>
 </template>
