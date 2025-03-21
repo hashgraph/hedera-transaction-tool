@@ -1,4 +1,17 @@
-import { FreezeType, Transaction } from '@hashgraph/sdk';
+import {
+  AccountCreateTransaction,
+  AccountDeleteTransaction,
+  AccountUpdateTransaction,
+  FileCreateTransaction,
+  FileDeleteTransaction,
+  FileUpdateTransaction,
+  FreezeTransaction,
+  FreezeType,
+  ScheduleCreateTransaction,
+  ScheduleSignTransaction,
+  Transaction,
+  TransferTransaction
+} from '@hashgraph/sdk';
 import { getDateStringExtended } from '..';
 
 export const getTransactionDate = (transaction: Transaction) =>
@@ -27,15 +40,49 @@ export const getTransactionValidStart = (transaction: Transaction) =>
   transaction.transactionId?.validStart?.toDate() || null;
 
 export const getTransactionType = (
-  transaction: Transaction,
+  transaction: Transaction | Uint8Array,
   short = false,
   removeTransaction = false,
-) => {
-  return transaction.constructor.name
-    .slice(transaction.constructor.name.startsWith('_') ? 1 : 0)
-    .split(/(?=[A-Z])/)
-    .join(short ? '' : ' ')
-    .replace(removeTransaction ? ' Transaction' : '', '');
+): string => {
+  if (transaction instanceof Uint8Array) {
+    transaction = Transaction.fromBytes(transaction);
+  }
+
+  let type = '';
+//_getLogId
+  if (transaction instanceof TransferTransaction) {
+    type = 'Transfer Transaction';
+  } else if (transaction instanceof AccountCreateTransaction) {
+    type = 'Account Create Transaction';
+  } else if (transaction instanceof AccountUpdateTransaction) {
+    type = 'Account Update Transaction';
+  } else if (transaction instanceof AccountDeleteTransaction) {
+    type = 'Account Delete Transaction';
+  } else if (transaction instanceof FileCreateTransaction) {
+    type = 'File Create Transaction';
+  } else if (transaction instanceof FileUpdateTransaction) {
+    type = 'File Update Transaction';
+  } else if (transaction instanceof FileDeleteTransaction) {
+    type = 'File Delete Transaction';
+  } else if (transaction instanceof ScheduleCreateTransaction) {
+    type = 'Schedule Create Transaction';
+  } else if (transaction instanceof ScheduleSignTransaction) {
+    type = 'Schedule Sign Transaction';
+  } else if (transaction instanceof FreezeTransaction) {
+    type = 'Freeze Transaction';
+  } else {
+    type = 'Unknown Transaction Type';
+  }
+
+  if (removeTransaction) {
+    type = type.replace(' Transaction', '');
+  }
+
+  if (short) {
+    type = type.replace(/\s+/g, '');
+  }
+
+  return type;
 };
 
 export const getFreezeTypeString = (freezeType: FreezeType) => {

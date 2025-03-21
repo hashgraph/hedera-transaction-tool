@@ -8,7 +8,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { flattenKeyList } from '@renderer/services/keyPairService';
 
-import { getTransactionType } from '@renderer/utils';
+import { getTransactionType } from '@renderer/utils/sdk/transactions';
 import { onMounted } from 'vue';
 
 /* Props */

@@ -34,12 +34,12 @@ import {
   ableToSign,
   getPrivateKey,
   getStatusFromCode,
-  getTransactionType,
   uint8ToHex,
   isLoggedInOrganization,
   isUserLoggedIn,
   getErrorMessage,
 } from '@renderer/utils';
+import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';

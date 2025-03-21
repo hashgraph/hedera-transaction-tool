@@ -85,17 +85,6 @@ export const getEntityIdFromTransactionReceipt = (
   return entity.toString();
 };
 
-export const getTransactionType = (transaction: Tx | Uint8Array) => {
-  if (transaction instanceof Uint8Array) {
-    transaction = Tx.fromBytes(transaction);
-  }
-
-  return transaction.constructor.name
-    .slice(transaction.constructor.name.startsWith('_') ? 1 : 0)
-    .split(/(?=[A-Z])/)
-    .join(' ');
-};
-
 /* Parses a transaction bytes string to a transaction */
 export const getTransactionFromBytes = <T extends Tx>(transactionBytes: string): T => {
   const bytesArray = transactionBytes.split(',').map(n => Number(n));

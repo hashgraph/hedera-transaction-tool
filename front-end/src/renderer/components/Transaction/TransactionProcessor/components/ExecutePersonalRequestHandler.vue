@@ -14,7 +14,8 @@ import useDraft from '@renderer/composables/useDraft';
 
 import { execute, storeTransaction } from '@renderer/services/transactionService';
 
-import { assertUserLoggedIn, getStatusFromCode, getTransactionType } from '@renderer/utils';
+import { assertUserLoggedIn, getStatusFromCode } from '@renderer/utils';
+import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';

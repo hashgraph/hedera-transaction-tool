@@ -20,12 +20,12 @@ import useLoader from '@renderer/composables/useLoader';
 
 import {
   getErrorMessage,
-  getTransactionType,
   isAccountId,
   redirectToDetails,
   redirectToGroupDetails,
 } from '@renderer/utils';
 import { getTransactionCommonData, validate100CharInput } from '@renderer/utils/sdk';
+import { getTransactionType } from '@renderer/utils/sdk/transactions';
 import { getPropagationButtonLabel } from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';

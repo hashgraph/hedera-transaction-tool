@@ -36,7 +36,6 @@ import {
 import {
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
-  getTransactionType,
   isAccountId,
   isLoggedInOrganization,
   safeAwait,
@@ -47,6 +46,7 @@ import {
   getPrivateKey,
   type TransactionCommonData,
 } from '@renderer/utils/sdk';
+import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 import SignPersonalRequestHandler from './SignPersonalRequestHandler.vue';
 import ExecutePersonalRequestHandler from './ExecutePersonalRequestHandler.vue';

@@ -10,7 +10,8 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
-import { getTransactionType, stringifyHbar } from '@renderer/utils';
+import { stringifyHbar } from '@renderer/utils';
+import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
