@@ -21,10 +21,11 @@ const toast = useToast();
 const props = defineProps<{
   show: boolean;
   publicKeyMapping: PublicKeyMapping | null;
+  publicKey?: string | null;
 }>();
 
 /* Emits */
-const emit = defineEmits(['update:show']);
+const emit = defineEmits(['update:show', 'change']);
 
 /* State */
 const newNickname = ref('');
@@ -35,21 +36,23 @@ const handleShow = (show: boolean) => emit('update:show', show);
 
 const handleUpdate = async () => {
   try {
+    isUpdating.value = true;
     if (props.publicKeyMapping) {
-      isUpdating.value = true;
-
       await user.updatePublicKeyMappingNickname(
         props.publicKeyMapping.id,
         props.publicKeyMapping.public_key,
         newNickname.value,
       );
       toast.success('Nickname updated successfully');
-
-      isUpdating.value = false;
-      handleShow(false);
+    } else if (props.publicKey) {
+      await user.storePublicKeyMapping(props.publicKey, newNickname.value);
+      toast.success('Nickname set successfully');
     }
+    emit('change');
+    handleShow(false);
   } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to rename public key mapping'));
+  } finally {
     isUpdating.value = false;
   }
 };
@@ -87,7 +90,9 @@ watch(
         <i class="bi bi-pencil-fill large-icon" style="line-height: 16px"></i>
       </div>
       <form @submit.prevent="handleUpdate">
-        <h3 class="text-center text-title text-bold mt-5">Update public key nickname</h3>
+        <h3 class="text-center text-title text-bold mt-5">
+          {{ publicKeyMapping ? 'Update' : 'Set' }} public key nickname
+        </h3>
         <div class="form-group mt-4">
           <label class="form-label">Enter Nickname</label>
           <AppInput
@@ -117,7 +122,7 @@ watch(
             :loading="isUpdating"
             loading-text="Updating..."
             data-testid="button-confirm-update-nickname"
-            >Update</AppButton
+            >{{ publicKeyMapping ? 'Update' : 'Set' }}</AppButton
           >
         </div>
       </form>
