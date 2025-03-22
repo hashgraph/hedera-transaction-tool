@@ -1,7 +1,7 @@
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { NotificationType } from '@main/shared/interfaces';
+import { type INotificationReceiver, NotificationType } from '@main/shared/interfaces';
 import { readyToSignTitle, historyTitle, readyForExecutionTitle } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
