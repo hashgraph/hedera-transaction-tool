@@ -538,7 +538,9 @@ onMounted(async () => {
                         >See details</span
                       >
                     </template>
-                    <template v-else-if="formattedPublicKey">
+                    <template
+                      v-else-if="formattedPublicKey && accountData.key.value instanceof PublicKey"
+                    >
                       <p class="overflow-x-auto" data-testid="p-account-data-key">
                         <span v-if="extractIdentifier(formattedPublicKey)">
                           <span class="text-semi-bold text-small me-2">{{

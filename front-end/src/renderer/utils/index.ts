@@ -188,7 +188,7 @@ export const getAccountIdWithChecksum = (accountId: string): string => {
 };
 
 export function stringifyHbarWithFont(hbar: Hbar, fontClass: string): string {
-  const tinybars = Math.abs(hbar.toTinybars());
+  const tinybars = hbar.toTinybars().isNegative() ? hbar.toTinybars().negate() : hbar.toTinybars();
   const isHbar = tinybars >= Hbar.fromTinybars(1_000_000).toTinybars();
   const symbol = isHbar ? HbarUnit.Hbar._symbol : HbarUnit.Tinybar._symbol;
   const amountString = isHbar

@@ -38,10 +38,10 @@ validate_kubectl
 validate_cluster
 validate_helm
 
-# Sorce the secrets script
+# Source the secrets script
 . "$SECRETS_SCRIPT"
 
-assert_brevo_secret
+assert_email_api_secret
 assert_tls_secret
 
 # Source the docker images script

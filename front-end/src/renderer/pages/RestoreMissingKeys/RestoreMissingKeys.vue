@@ -49,7 +49,7 @@ const handleImportRecoveryPhrase = async () => {
     const index = props.index;
     const publicKey = props.publicKey;
 
-    if (index !== undefined && publicKey) {
+    if (index !== undefined && publicKey && user.recoveryPhrase) {
       const { keyType } = getPublicKeyAndType(publicKey);
       const derivedKey = await restorePrivateKey(
         user.recoveryPhrase.words,
@@ -155,10 +155,7 @@ onMounted(() => {
       <AppButton color="secondary" @click="$router.back()">Back</AppButton>
     </div>
     <div class="flex-centered flex-column-100">
-      <form
-        @submit.prevent="handleImportRecoveryPhrase"
-        class="fill-remaining"
-      >
+      <form @submit.prevent="handleImportRecoveryPhrase" class="fill-remaining">
         <h1 class="text-display text-bold text-center">Enter your Recovery Phrase</h1>
         <div class="mt-8">
           <Import :should-clear="shouldClearInputs" @reset-cleared="handleClearWords($event)" />

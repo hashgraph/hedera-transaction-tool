@@ -47,9 +47,9 @@ There are `example.env` files in the following directories:
 
 1. Create a `.env` from the `example.env` files. The default values works for development
 
-## 4. Create Brevo Account
+## 4. Create Email API Account
 
-Brevo account enables you to set-up the notification system in the application. You will need to create a free tier Brevo account
+An email api account enables you to set-up the notification system in the application. You will need to create a free tier Brevo account, or another provider of your choosing.
 
 1. Create a free tier [Brevo account](https://onboarding.brevo.com/account/register)
 2. Login to your account
@@ -59,8 +59,12 @@ Brevo account enables you to set-up the notification system in the application. 
 6. Enter the SMTP key in the apps/api/notifications `.env`
 
 ```
-   BREVO_USERNAME=<your brevo username>
-   BREVO_PASSWORD=<your brevo password>
+   EMAIL_API_HOST=smtp-relay.brevo.com
+   EMAIL_API_PORT=587
+   EMAIL_API_SECURE=false
+   EMAIL_API_USERNAME=<your brevo username>
+   EMAIL_API_PASSWORD=<your brevo password>
+   SENDER_EMAIL=no-reply@<yourdomain.com>
 ```
 
 ## 5. Deploy
@@ -156,7 +160,7 @@ A helm chart is forthcoming. Until then, use the following commands once connect
     ```
     kubectl apply -f ./jwt-secret.yaml
     kubectl apply -f ./otp-secret.yaml
-    kubectl apply -f ./brevo-secret.yaml
+    kubectl apply -f ./email-api-secret.yaml
     ```
 6.  Deploy the services. Until migration is properly in place, the first time the api service is deployed, ensure that POSTGRES_SYNCHRONIZE is set to true in the yaml:
     ```

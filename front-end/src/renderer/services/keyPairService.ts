@@ -2,6 +2,7 @@ import { Key, KeyList, Mnemonic, PrivateKey, PublicKey } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
 import { Prisma } from '@prisma/client';
+import { KeyType } from '@renderer/types';
 
 import { commonIPCHandler } from '@renderer/utils';
 import { getPublicKeyAndType } from '../utils';
@@ -270,5 +271,3 @@ export const verifyKeyPair = (
     return false;
   }
 };
-
-
