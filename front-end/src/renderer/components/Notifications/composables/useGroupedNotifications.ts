@@ -1,4 +1,4 @@
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { NotificationType } from '@main/shared/interfaces';
@@ -29,9 +29,15 @@ export function useGroupedNotifications() {
   /* Composables */
   const router = useRouter();
 
+  /* State */
+  const previousNotifications = ref<Record<string, INotificationReceiver[]>>({});
+
   /* Computed */
   const groupedNotifications = computed(() => {
+    const currentNotifications: Record<string, INotificationReceiver[]> = {};
     const grouped: Record<string, Record<string, GroupedNotification[]>> = {};
+    let totalCount = 0;
+    let hasNew = false;
 
     for (const [serverUrl, notificationReceivers] of Object.entries(
       notificationsStore.notifications,
@@ -39,6 +45,9 @@ export function useGroupedNotifications() {
       const nicknamedServerUrl =
         user.organizations.find(o => o.serverUrl === serverUrl)?.nickname || serverUrl;
       grouped[nicknamedServerUrl] = {};
+
+      const previousReceivers = previousNotifications.value[serverUrl] || [];
+      currentNotifications[serverUrl] = notificationReceivers;
 
       for (const notification of notificationReceivers) {
         if (notification.isRead) continue;
@@ -82,24 +91,16 @@ export function useGroupedNotifications() {
             action: getActionFromGroupItem(info, serverUrl),
           });
         }
+        totalCount++;
+      }
+
+      // Compare new notificationReceivers with previousReceivers
+      if (!hasNew && notificationReceivers.some(nr => !previousReceivers.includes(nr))) {
+        hasNew = true;
       }
     }
 
-    return grouped;
-  });
-
-  const totalCount = computed(() => {
-    let total = 0;
-
-    for (const serverGroup of Object.values(groupedNotifications.value)) {
-      for (const networkGroup of Object.values(serverGroup)) {
-        for (const notification of networkGroup) {
-          total += notification.count;
-        }
-      }
-    }
-
-    return total;
+    return { grouped, totalCount, hasNew };
   });
 
   /* Functions */
@@ -183,8 +184,18 @@ export function useGroupedNotifications() {
     }
   };
 
+  /* Watch */
+  watch(
+    () => notificationsStore.notifications,
+    (newNotifications) => {
+      previousNotifications.value = { ...newNotifications };
+    },
+    { immediate: true }
+  );
+
   return {
-    groupedNotifications,
-    totalCount,
+    groupedNotifications: computed(() => groupedNotifications.value.grouped),
+    totalCount: computed(() => groupedNotifications.value.totalCount),
+    hasNew: computed(() => groupedNotifications.value.hasNew),
   };
 }
