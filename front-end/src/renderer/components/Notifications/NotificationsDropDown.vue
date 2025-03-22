@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue';
+
 import { CommonNetwork } from '@main/shared/enums';
 
 import { useGroupedNotifications } from './composables';
@@ -27,17 +29,41 @@ const networkMapping: {
 
 /* Composables */
 const { groupedNotifications, totalCount } = useGroupedNotifications();
+
+/* State */
+const isRinging = ref<boolean>(false);
+
+/* Functions */
+const triggerRingAnimation = () => {
+  isRinging.value = true;
+  setTimeout(() => {
+    isRinging.value = false;
+  }, 2000);
+};
+
+/* Watchers */
+let previousTotalCount = totalCount.value;
+watch(totalCount, (newCount) => {
+  if (newCount > previousTotalCount) {
+    triggerRingAnimation();
+  }
+  previousTotalCount = newCount;
+});
 </script>
 <template>
   <div class="dropdown">
     <div class="position-relative" data-bs-toggle="dropdown">
-      <span class="container-icon" data-testid="button-notifications">
-        <i class="bi bi-bell-fill text-secondary text-subheader"></i>
+      <span
+        class="container-icon p-0 m-3"
+        data-testid="button-notifications"
+        :class="{ ringing: isRinging }"
+      >
+        <i class="bi bi-bell-fill text-secondary text-subheader fs-4"></i>
       </span>
       <template v-if="totalCount > 0">
         <span
           class="indicator-circle position-absolute absolute-centered"
-          :style="{ left: 'unset', right: '20%', top: '40%', width: '8px', height: '8px' }"
+          :style="{ left: 'unset', right: '10%', top: '35%', width: '10px', height: '10px' }"
         ></span>
       </template>
     </div>
@@ -56,11 +82,11 @@ const { groupedNotifications, totalCount } = useGroupedNotifications();
               v-for="notification of notifications"
               :key="`${notification.content}${notification.network}`"
             >
-              <li class="dropdown-item text-small cursor-pointer" @click="notification.action()">
+              <li class="dropdown-item text-small cursor-pointer user-select-none" @click="notification.action()">
                 <div class="row">
                   <div class="col-8" :class="{ 'col-12': notification.network === 'Unknown' }">
                     <p class="text-truncate">
-                      {{ serverUrl }}
+                      <strong>{{ serverUrl }}</strong>
                     </p>
                   </div>
                   <template v-if="notification.network !== 'Unknown'">
@@ -74,8 +100,8 @@ const { groupedNotifications, totalCount } = useGroupedNotifications();
                 </div>
                 <div>
                   <p class="text-truncate">
-                    <span v-if="notification.count > 1">({{ notification.count }})</span>
                     {{ notification.content }}
+                    <span v-if="notification.count > 1">({{ notification.count }})</span>
                   </p>
                 </div>
               </li>
