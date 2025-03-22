@@ -250,9 +250,12 @@ describe('ReceiverService', () => {
       const transactionId = 1;
       const indicatorTypes = [
         NotificationType.TRANSACTION_INDICATOR_APPROVE,
+        NotificationType.TRANSACTION_INDICATOR_REJECTED,
         NotificationType.TRANSACTION_INDICATOR_SIGN,
         NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
         NotificationType.TRANSACTION_INDICATOR_EXECUTED,
+        NotificationType.TRANSACTION_INDICATOR_FAILED,
+        NotificationType.TRANSACTION_INDICATOR_CANCELLED,
         NotificationType.TRANSACTION_INDICATOR_EXPIRED,
         NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
       ];
@@ -402,8 +405,16 @@ describe('ReceiverService', () => {
         approversGaveChoiceUserIds: expect.arrayContaining([5]),
         approversShouldChooseUserIds: expect.arrayContaining([1]),
         participants: expect.arrayContaining([1, 2, 3, 5]),
+        creatorId: 1,
+        observerUserIds: expect.arrayContaining([2]),
+        signerUserIds: expect.arrayContaining([8]),
       });
       expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
+        relations: {
+          creatorKey: true,
+          observers: true,
+          signers: true,
+        },
         where: { id: transactionId },
       });
       expect(getApproversByTransactionId).toHaveBeenCalledWith(entityManager, transactionId);
@@ -448,13 +459,21 @@ describe('ReceiverService', () => {
       //   },
       // });
       expect(result).toEqual({
+        creatorId: 1,
+        observerUserIds: expect.arrayContaining([2]),
         approversUserIds: expect.arrayContaining([1, 5]),
         requiredUserIds: expect.arrayContaining([1, 2, 3]),
         approversGaveChoiceUserIds: expect.arrayContaining([5]),
         approversShouldChooseUserIds: [],
         participants: expect.arrayContaining([1, 2, 3, 5]),
+        signerUserIds: expect.arrayContaining([8]),
       });
       expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
+        relations: {
+          creatorKey: true,
+          observers: true,
+          signers: true,
+        },
         where: { id: transactionId },
       });
       expect(getApproversByTransactionId).toHaveBeenCalledWith(entityManager, transactionId);
@@ -836,8 +855,11 @@ describe('ReceiverService', () => {
           //@ts-expect-error getTransactionParticipants is private
           .spyOn(service, 'getTransactionParticipants');
         getTransactionParticipants.mockResolvedValueOnce({
-          participants,
+          approversUserIds: [],
           approversShouldChooseUserIds: [],
+          observerUserIds: [],
+          requiredUserIds: [],
+          participants,
         });
 
         //@ts-expect-error getIndicatorNotifications is private
@@ -855,17 +877,10 @@ describe('ReceiverService', () => {
 
         expect(entityManager.delete).not.toHaveBeenCalled();
         expect(fanOutService.fanOutIndicatorsDelete).not.toHaveBeenCalled();
-        // expect(service.notifyGeneral).toHaveBeenCalledWith({
-        //   type: notifyType,
-        //   content: '',
-        //   entityId: transactionId,
-        //   actorId: null,
-        //   userIds: participants,
-        // });
         //@ts-expect-error syncActionIndicators is private
         expect(service.syncActionIndicators).toHaveBeenCalledWith(
           entityManager,
-          NotificationType.TRANSACTION_INDICATOR_APPROVE,
+          NotificationType.TRANSACTION_INDICATOR_EXECUTED,
           undefined,
           transactionId,
           [],
@@ -913,13 +928,20 @@ describe('ReceiverService', () => {
         //@ts-expect-error getTransactionParticipants is private
         .spyOn(service, 'getTransactionParticipants');
       getTransactionParticipants.mockResolvedValueOnce({
-        participants: [],
+        approversUserIds: [],
+        approversShouldChooseUserIds: [],
+        observerUserIds: [],
+        requiredUserIds: [],
+        creatorId: [],
       });
 
       const getIndicatorNotifications: jest.SpyInstance = jest
         //@ts-expect-error getIndicatorNotifications is private
         .spyOn(service, 'getIndicatorNotifications');
-      getIndicatorNotifications.mockResolvedValueOnce(existingIndicatorNotifications);
+      getIndicatorNotifications.mockResolvedValue(existingIndicatorNotifications);
+
+      //@ts-expect-error getIndicatorNotifications is private
+      jest.spyOn(service, 'syncActionIndicators').mockImplementationOnce(jest.fn());
 
       await service.syncIndicators({ transactionId, transactionStatus, additionalData });
 
@@ -993,12 +1015,34 @@ describe('ReceiverService', () => {
       );
       expect(syncActionIndicators).toHaveBeenCalledWith(
         entityManager,
-        NotificationType.TRANSACTION_INDICATOR_APPROVE,
-        undefined,
+        NotificationType.TRANSACTION_INDICATOR_SIGN,
+        {
+          actorId: null,
+          additionalData: { network: 'testnet' },
+          content: 'Sign',
+          createdAt: expect.any(Date),
+          entityId: 1,
+          id: 1,
+          notificationReceivers: [],
+          type: 'TRANSACTION_INDICATOR_SIGN',
+        },
         transactionId,
-        [],
+        expect.arrayContaining([32]),
         additionalData,
       );
+    });
+
+    it('should stop if no new indicator', async () => {
+      const transactionId = 1;
+      const transactionStatus = TransactionStatus.REJECTED;
+      const additionalData = { network: 'testnet' };
+
+      entityManager.transaction.mockResolvedValueOnce([]);
+
+      await service.syncIndicators({ transactionId, transactionStatus, additionalData });
+
+      expect(entityManager.delete).not.toHaveBeenCalled();
+      expect(fanOutService.fanOutIndicatorsDelete).not.toHaveBeenCalled();
     });
   });
 });

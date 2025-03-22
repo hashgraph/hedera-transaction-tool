@@ -56,6 +56,8 @@ const { oldNotifications } = useMarkNotifications([
   NotificationType.TRANSACTION_INDICATOR_EXECUTED,
   NotificationType.TRANSACTION_INDICATOR_EXPIRED,
   NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
+  NotificationType.TRANSACTION_INDICATOR_CANCELLED,
+  NotificationType.TRANSACTION_INDICATOR_FAILED,
 ]);
 
 /* State */
@@ -151,6 +153,8 @@ function setNotifiedTransactions() {
       NotificationType.TRANSACTION_INDICATOR_EXECUTED,
       NotificationType.TRANSACTION_INDICATOR_EXPIRED,
       NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
+      NotificationType.TRANSACTION_INDICATOR_CANCELLED,
+      NotificationType.TRANSACTION_INDICATOR_FAILED,
     ],
   );
 }

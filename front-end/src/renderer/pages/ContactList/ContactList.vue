@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import type { HederaAccount } from '@prisma/client';
-import type { Contact } from '@main/shared/interfaces';
+import { NotificationType, type Contact } from '@main/shared/interfaces';
 
 import { computed, onBeforeMount, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
+import useNotifcationsStore from '@renderer/stores/storeNotifications';
 
 import { useToast } from 'vue-toast-notification';
 import useRedirectOnOnlyOrganization from '@renderer/composables/useRedirectOnOnlyOrganization';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
+import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
 import { deleteUser, elevateUserToAdmin } from '@renderer/services/organization';
 import { removeContact } from '@renderer/services/contactsService';
@@ -33,11 +35,13 @@ import ElevateContactModal from '@renderer/components/Contacts/ElevateContactMod
 const user = useUserStore();
 const network = useNetworkStore();
 const contacts = useContactsStore();
+const notifications = useNotifcationsStore();
 
 /* Composables */
 const toast = useToast();
 useRedirectOnOnlyOrganization();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
+const { oldNotifications } = useMarkNotifications([NotificationType.USER_REGISTERED]);
 
 /* State */
 const fetching = ref(false);
@@ -45,6 +49,7 @@ const selectedId = ref<number | null>(null);
 const isDeleteContactModalShown = ref(false);
 const isElevateToAdminModalShown = ref(false);
 const linkedAccounts = ref<HederaAccount[]>([]);
+const notifiedUserIds = ref<number[]>([]);
 
 /* Computed */
 const contact = computed<Contact | null>(
@@ -73,6 +78,7 @@ const handleFetchContacts = async () => {
   try {
     fetching.value = true;
     await contacts.fetch();
+    setNotifiedUsers();
   } finally {
     fetching.value = false;
   }
@@ -105,6 +111,22 @@ async function handleElevate() {
   toast.success('User elevate to admin successfully');
   selectedId.value = null;
   await handleFetchContacts();
+}
+
+function setNotifiedUsers() {
+  const notificationsKey = user.selectedOrganization?.serverUrl || '';
+  const newNotifiedUserIds = [];
+  for (const notification of notifications.notifications[notificationsKey]?.concat(
+    oldNotifications.value,
+  ) || []) {
+    if (
+      notification.notification.type === NotificationType.USER_REGISTERED &&
+      notification.notification.entityId
+    ) {
+      newNotifiedUserIds.push(notification.notification.entityId);
+    }
+  }
+  notifiedUserIds.value = newNotifiedUserIds;
 }
 
 /* Hooks */
@@ -164,12 +186,21 @@ onBeforeMount(async () => {
               <template v-for="c in contactList" :key="c.user.id">
                 <div
                   class="container-multiple-select overflow-hidden p-4 mt-3"
-                  :class="{
-                    'is-selected': c.user.id === selectedId,
-                  }"
+                  :class="{ 'is-selected': c.user.id === selectedId }"
                   @click="handleSelectContact(c.user.id)"
                 >
-                  <div>
+                  <div class="position-relative">
+                    <template v-if="notifiedUserIds.includes(c.user.id)">
+                      <span
+                        class="indicator-circle position-absolute absolute-centered"
+                        :style="{
+                          left: '-8px',
+                          top: '0px',
+                          width: '8px',
+                          height: '8px',
+                        }"
+                      ></span>
+                    </template>
                     <p
                       class="text-small text-semi-bold overflow-hidden"
                       :data-testid="`p-contact-nickname-${c.nickname}`"

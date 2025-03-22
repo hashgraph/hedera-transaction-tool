@@ -24,7 +24,9 @@ export default function useMarkNotifications(notificationTypes: NotificationType
   const networkFilteredNotifications = computed(() => {
     return (
       notifications.notifications[notificationsKey.value]?.filter(
-        n => n.notification.additionalData?.network === network.network,
+        n =>
+          !n.notification.additionalData?.network ||
+          n.notification.additionalData.network === network.network,
       ) || []
     );
   });

@@ -137,11 +137,16 @@ export class ReceiverService {
         newIndicatorType = NotificationType.TRANSACTION_INDICATOR_EXECUTABLE;
         break;
       case TransactionStatus.EXECUTED:
-      case TransactionStatus.FAILED:
         newIndicatorType = NotificationType.TRANSACTION_INDICATOR_EXECUTED;
+        break;
+      case TransactionStatus.FAILED:
+        newIndicatorType = NotificationType.TRANSACTION_INDICATOR_FAILED;
         break;
       case TransactionStatus.EXPIRED:
         newIndicatorType = NotificationType.TRANSACTION_INDICATOR_EXPIRED;
+        break;
+      case TransactionStatus.CANCELED:
+        newIndicatorType = NotificationType.TRANSACTION_INDICATOR_CANCELLED;
         break;
       case TransactionStatus.ARCHIVED:
         newIndicatorType = NotificationType.TRANSACTION_INDICATOR_ARCHIVED;
@@ -187,50 +192,17 @@ export class ReceiverService {
     /* Notify if new indicator */
     if (!newIndicatorType) return;
 
-    /* Get transaction participants */
-    const { approversShouldChooseUserIds, requiredUserIds } = await this.getTransactionParticipants(
-      this.entityManager,
-      transactionId,
-    );
-
     const indicatorNotifications = await this.getIndicatorNotifications(
       this.entityManager,
       transactionId,
     );
 
-    if (newIndicatorType === NotificationType.TRANSACTION_INDICATOR_SIGN) {
-      const indicatorNotification = indicatorNotifications.find(
-        n => n.type === NotificationType.TRANSACTION_INDICATOR_SIGN,
-      );
-      await this.syncActionIndicators(
-        this.entityManager,
-        NotificationType.TRANSACTION_INDICATOR_SIGN,
-        indicatorNotification,
-        transactionId,
-        requiredUserIds,
-        additionalData,
-      );
-    } else {
-      // await this.notifyGeneral({
-      //   type: newIndicatorType,
-      //   content: '',
-      //   entityId: transactionId,
-      //   actorId: null,
-      //   userIds: participants,
-      // });
-    }
-
-    /* Sync approve indicators */
-    const indicatorApproveNotification = indicatorNotifications.find(
-      n => n.type === NotificationType.TRANSACTION_INDICATOR_APPROVE,
-    );
-
     await this.syncActionIndicators(
       this.entityManager,
-      NotificationType.TRANSACTION_INDICATOR_APPROVE,
-      indicatorApproveNotification,
+      newIndicatorType,
+      indicatorNotifications.find(n => n.type === newIndicatorType),
       transactionId,
-      approversShouldChooseUserIds,
+      await this.getIndicatorReceiverIds(transactionId, newIndicatorType),
       additionalData,
     );
   }
@@ -366,9 +338,7 @@ export class ReceiverService {
         entityId: transactionId,
         type: In(indicatorTypes),
       },
-      relations: {
-        notificationReceivers: true,
-      },
+      relations: { notificationReceivers: true },
     });
   }
 
@@ -376,17 +346,17 @@ export class ReceiverService {
   private async getTransactionParticipants(entityManager: EntityManager, transactionId: number) {
     const transaction = await entityManager.findOne(Transaction, {
       where: { id: transactionId },
-      // relations: {
-      //   creatorKey: true,
-      //   observers: true,
-      //   signers: true,
-      // },
+      relations: {
+        creatorKey: true,
+        observers: true,
+        signers: true,
+      },
     });
     const approvers = await this.getApproversByTransactionId(entityManager, transactionId);
 
-    // const creatorId = transaction.creatorKey.userId;
-    // const signerUserIds = transaction.signers.map(s => s.userId);
-    // const observerUserIds = transaction.observers.map(o => o.userId);
+    const creatorId = transaction.creatorKey.userId;
+    const signerUserIds = transaction.signers.map(s => s.userId);
+    const observerUserIds = transaction.observers.map(o => o.userId);
     const requiredUserIds = await this.getUsersIdsRequiredToSign(entityManager, transaction);
     const approversUserIds = approvers.map(a => a.userId);
     const approversGaveChoiceUserIds = approvers
@@ -404,9 +374,9 @@ export class ReceiverService {
       : [];
 
     const participants = [
-      // creatorId,
-      // ...signerUserIds,
-      // ...observerUserIds,
+      creatorId,
+      ...signerUserIds,
+      ...observerUserIds,
       ...approversUserIds,
       ...requiredUserIds,
     ]
@@ -414,9 +384,9 @@ export class ReceiverService {
       .filter((v, i, a) => a.indexOf(v) === i);
 
     return {
-      // creatorId,
-      // signerUserIds,
-      // observerUserIds,
+      creatorId,
+      signerUserIds,
+      observerUserIds,
       approversUserIds,
       requiredUserIds,
       approversGaveChoiceUserIds,
@@ -460,5 +430,42 @@ export class ReceiverService {
       `,
       [transactionId],
     );
+  }
+
+  private async getIndicatorReceiverIds(
+    transactionId: number,
+    newIndicatorType: NotificationType,
+  ): Promise<number[]> {
+    /* Get transaction participants */
+    const {
+      approversUserIds,
+      approversShouldChooseUserIds,
+      observerUserIds,
+      requiredUserIds,
+      creatorId,
+    } = await this.getTransactionParticipants(this.entityManager, transactionId);
+
+    const result: number[] = [];
+
+    switch (newIndicatorType) {
+      case NotificationType.TRANSACTION_INDICATOR_EXECUTABLE:
+        result.push(creatorId, ...approversUserIds, ...observerUserIds, ...requiredUserIds);
+      case NotificationType.TRANSACTION_INDICATOR_APPROVE:
+        result.push(...approversShouldChooseUserIds);
+      case NotificationType.TRANSACTION_INDICATOR_EXECUTED:
+        result.push(creatorId, ...approversUserIds, ...observerUserIds, ...requiredUserIds);
+      case NotificationType.TRANSACTION_INDICATOR_FAILED:
+        result.push(creatorId, ...approversUserIds, ...observerUserIds, ...requiredUserIds);
+      case NotificationType.TRANSACTION_INDICATOR_EXPIRED:
+        result.push(creatorId, ...approversUserIds, ...observerUserIds, ...requiredUserIds);
+      case NotificationType.TRANSACTION_INDICATOR_REJECTED:
+        result.push(creatorId, ...approversUserIds, ...observerUserIds);
+      case NotificationType.TRANSACTION_INDICATOR_CANCELLED:
+        result.push(...approversUserIds, ...observerUserIds, ...requiredUserIds);
+      case NotificationType.TRANSACTION_INDICATOR_SIGN:
+        result.push(...requiredUserIds);
+    }
+
+    return [...new Set(result)];
   }
 }
