@@ -16,7 +16,6 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
-import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
 import { getApiGroupById, getTransactionsToSign } from '@renderer/services/organization';
 
@@ -48,7 +47,6 @@ const nextTransaction = useNextTransactionStore();
 /* Composables */
 const router = useRouter();
 const ws = useDisposableWs();
-const { oldNotifications } = useMarkNotifications([NotificationType.TRANSACTION_INDICATOR_SIGN]);
 
 /* State */
 const transactions = ref<
@@ -82,7 +80,29 @@ const generatedClass = computed(() => {
 });
 
 /* Handlers */
-const handleSign = async (id: number) => {
+const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') => {
+  sort.field = field;
+  sort.direction = direction;
+  setGetTransactionsFunction();
+  await fetchTransactions();
+};
+
+const handleGroupDetails = async (id: number) => {
+  const group = groups.value.find(g => g.id === id);
+  if(!group) return;
+
+  const transactionIds = group.groupItems.map(g => g.transactionId);
+  const serverKey = user.selectedOrganization?.serverUrl || '';
+  const notificationIds = notifications.notifications[serverKey]
+    ?.filter(n => n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN && transactionIds.includes(n.notification.entityId || -1))
+    .map(n => n.id);
+
+  await notifications.markAsReadIds(notificationIds);
+
+  redirectToGroupDetails(router, id, false, 'readyToSign')
+};
+
+const handleSingleDetails = async (id: number) => {
   const flatTransactions = Array.from(transactions.value)
     .map(e => e[1])
     .flat();
@@ -91,14 +111,17 @@ const handleSign = async (id: number) => {
     .slice(0, selectedTransactionIndex)
     .map(t => t.transactionRaw.id);
   nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
-  redirectToDetails(router, id, true);
-};
 
-const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') => {
-  sort.field = field;
-  sort.direction = direction;
-  setGetTransactionsFunction();
-  await fetchTransactions();
+  const serverKey = user.selectedOrganization?.serverUrl || '';
+  const notificationId = notifications.notifications[serverKey]
+    ?.find(n => n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN && n.notification.entityId === id)
+    ?.id;
+
+  if (notificationId) {
+    await notifications.markAsReadIds([notificationId]);
+  }
+
+  redirectToDetails(router, id, true);
 };
 
 /* Functions */
@@ -107,7 +130,7 @@ function setNotifiedTransactions() {
   const notificationsKey = user.selectedOrganization?.serverUrl || '';
 
   notifiedTransactionIds.value = getNotifiedTransactions(
-    notifications.notifications[notificationsKey]?.concat(oldNotifications.value) || [],
+    notifications.notifications[notificationsKey] || [],
     flatTransactions.map(t => t.transactionRaw),
     [NotificationType.TRANSACTION_INDICATOR_SIGN],
   );
@@ -176,7 +199,7 @@ async function fetchTransactions() {
 
     const notificationsKey = user.selectedOrganization?.serverUrl || '';
     notifiedTransactionIds.value = getNotifiedTransactions(
-      notifications.notifications[notificationsKey]?.concat(oldNotifications.value) || [],
+      notifications.notifications[notificationsKey] || [],
       rawTransactions.map(t => t.transaction),
       [NotificationType.TRANSACTION_INDICATOR_SIGN],
     );
@@ -342,7 +365,7 @@ watch(
                   </td>
                   <td class="text-center">
                     <AppButton
-                      @click="redirectToGroupDetails($router, group[0], false, 'readyToSign')"
+                      @click="handleGroupDetails(group[0])"
                       color="secondary"
                       data-testid="button-group-details"
                     >
@@ -378,7 +401,7 @@ watch(
                     </td>
                     <td class="text-center">
                       <AppButton
-                        @click="handleSign(tx.transactionRaw.id)"
+                        @click="handleSingleDetails(tx.transactionRaw.id)"
                         :data-testid="`button-transaction-sign-${index}`"
                         color="secondary"
                         >Details</AppButton

@@ -1,13 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-
-import { NotificationType } from '@main/shared/interfaces';
-
 import { RouterLink } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useNotificationsStore from '@renderer/stores/storeNotifications';
-import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { isLoggedInOrganization } from '@renderer/utils';
 
@@ -22,22 +16,6 @@ type MenuItem = {
 
 /* Store */
 const user = useUserStore();
-const notifications = useNotificationsStore();
-const networkStore = useNetworkStore();
-
-/* Computed */
-const menuItems = computed<MenuItem[]>(() => {
-  const items = getMenuItems();
-  const notificationsKey = user.selectedOrganization?.serverUrl || '';
-  const indicatorNotifications = getIndicatorNotifications(notificationsKey);
-
-  const transactions = items.find(i => i.link === '/transactions');
-  if (transactions) {
-    transactions.notifications = indicatorNotifications.length;
-  }
-
-  return items;
-});
 
 /* Functions */
 const getMenuItems = (): MenuItem[] => [
@@ -72,20 +50,6 @@ const getMenuItems = (): MenuItem[] => [
   // },
 ];
 
-const getIndicatorNotifications = (notificationsKey: string) =>
-  notifications.notifications[notificationsKey]?.filter(
-    nr =>
-      [
-        NotificationType.TRANSACTION_INDICATOR_APPROVE,
-        NotificationType.TRANSACTION_INDICATOR_SIGN,
-        NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
-        NotificationType.TRANSACTION_INDICATOR_EXECUTED,
-        NotificationType.TRANSACTION_INDICATOR_EXPIRED,
-        NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
-      ].includes(nr.notification.type) &&
-      nr.notification.additionalData?.network === networkStore.network,
-  ) || [];
-
 /* Misc */
 const organizationOnly = ['/contact-list'];
 </script>
@@ -94,7 +58,7 @@ const organizationOnly = ['/contact-list'];
   <div class="container-menu">
     <div>
       <template
-        v-for="(item, _index) in menuItems.filter(
+        v-for="(item, _index) in getMenuItems().filter(
           i =>
             !organizationOnly.includes(i.link) || isLoggedInOrganization(user.selectedOrganization),
         )"
@@ -107,12 +71,6 @@ const organizationOnly = ['/contact-list'];
           :data-testid="item.testid"
           ><i :class="item.icon"></i>
           <span>{{ item.title }}</span>
-          <span
-            v-if="item.notifications"
-            :data-testid="`span-menu-${item.title}-notification-number`"
-            class="notification rounded-circle bg-danger text-white ms-3"
-            >{{ item.notifications.toFixed(0) }}</span
-          >
         </RouterLink>
       </template>
     </div>

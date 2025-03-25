@@ -325,9 +325,14 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
         isConfirmModalLoadingState.value = true;
       }
 
-      const publicKey = user.selectedOrganization.userKeys[0].publicKey;
-      const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
-      const privateKey = getPrivateKey(publicKey, privateKeyRaw);
+      const orgKey = user.selectedOrganization.userKeys.filter(k => k.mnemonicHash)[0];
+      const privateKeyRaw = await decryptPrivateKey(
+        user.personal.id,
+        personalPassword,
+        orgKey.publicKey,
+      );
+
+      const privateKey = getPrivateKey(orgKey.publicKey, privateKeyRaw);
 
       const signature = getTransactionBodySignatureWithoutNodeAccountId(
         privateKey,
@@ -337,7 +342,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
       await sendApproverChoice(
         user.selectedOrganization.serverUrl,
         props.organizationTransaction.id,
-        user.selectedOrganization.userKeys[0].id,
+        orgKey.id,
         signature,
         approved,
       );

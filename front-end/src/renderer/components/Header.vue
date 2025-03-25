@@ -1,30 +1,18 @@
 <script setup lang="ts">
 import type { Network } from '@main/shared/interfaces';
 
-import { computed, onUpdated } from 'vue';
+import { onUpdated } from 'vue';
 
 import { CommonNetwork } from '@main/shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
-import useNotificationsStore from '@renderer/stores/storeNotifications';
 
-import { useRouter } from 'vue-router';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
-import useLoader from '@renderer/composables/useLoader';
-
-import { logout } from '@renderer/services/organization';
-import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
-
-import {
-  isLoggedInOrganization,
-  isUserLoggedIn,
-  normalizeNetworkName,
-  toggleAuthTokenInSessionStorage,
-} from '@renderer/utils';
 
 import Logo from '@renderer/components/Logo.vue';
 import LogoText from '@renderer/components/LogoText.vue';
+import NotificationsDropDown from '@renderer/components/Notifications/NotificationsDropDown.vue';
 import UserModeSelect from './UserModeSelect.vue';
 
 /* Mappings */
@@ -52,37 +40,9 @@ const networkMapping: {
 /* Stores */
 const user = useUserStore();
 const networkStore = useNetworkStore();
-const notificationsStore = useNotificationsStore();
 
 /* Composables */
-const router = useRouter();
 const createTooltips = useCreateTooltips();
-const withLoader = useLoader();
-
-/* Computed */
-const hasNetworkIndicator = computed(() => {
-  const currentNetwork = normalizeNetworkName(networkStore.network);
-  return Object.entries(notificationsStore.networkNotifications)
-    .filter(([key]) => key !== currentNetwork)
-    .some(([, value]) => Boolean(value));
-});
-
-/* Handlers */
-const handleLogout = async () => {
-  if (user.selectedOrganization) {
-    if (!isUserLoggedIn(user.personal)) return;
-
-    const { id, nickname, serverUrl, key } = user.selectedOrganization;
-    await logout(serverUrl);
-    await updateOrganizationCredentials(id, user.personal.id, undefined, undefined, null);
-    toggleAuthTokenInSessionStorage(serverUrl, '', true);
-    await user.selectOrganization({ id, nickname, serverUrl, key });
-  } else {
-    localStorage.removeItem('htx_user');
-    user.logout();
-    await router.push({ name: 'login' });
-  }
-};
 
 /* Hooks */
 onUpdated(createTooltips);
@@ -107,10 +67,7 @@ onUpdated(createTooltips);
       <span class="container-icon">
         <i class="text-icon-main bi bi-three-dots-vertical"></i>
       </span> -->
-      <div
-        class="me-5 position-relative"
-        :class="{ 'indicator-circle-before': hasNetworkIndicator && user.selectedOrganization }"
-      >
+      <div class="me-5 position-relative">
         <RouterLink
           class="text-bold text-small text-decoration-none"
           to="/settings/general"
@@ -121,24 +78,9 @@ onUpdated(createTooltips);
       <div>
         <UserModeSelect />
       </div>
-      <span
-        v-if="
-          (isUserLoggedIn(user.personal) &&
-            !user.personal.useKeychain &&
-            !user.selectedOrganization) ||
-          isLoggedInOrganization(user.selectedOrganization)
-        "
-        class="container-icon"
-        data-testid="button-logout"
-        @click="withLoader(handleLogout)"
-        data-bs-toggle="tooltip"
-        data-bs-trigger="hover"
-        data-bs-placement="bottom"
-        data-bs-custom-class="wide-tooltip"
-        data-bs-title="Log out"
-      >
-        <i class="text-icon-main bi bi-box-arrow-up-right"></i>
-      </span>
+      <div>
+        <NotificationsDropDown />
+      </div>
     </div>
   </div>
 </template>

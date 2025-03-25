@@ -8,13 +8,12 @@ import { CommonNetwork, CommonNetworkNames } from '@main/shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
-import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import useLoader from '@renderer/composables/useLoader';
 
 import { add, getStoredClaim, update } from '@renderer/services/claimService';
 
-import { isUserLoggedIn, normalizeNetworkName } from '@renderer/utils';
+import { isUserLoggedIn } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import ButtonGroup from '@renderer/components/ui/ButtonGroup.vue';
@@ -22,24 +21,9 @@ import ButtonGroup from '@renderer/components/ui/ButtonGroup.vue';
 /* Stores */
 const user = useUserStore();
 const networkStore = useNetworkStore();
-const notificationsStore = useNotificationsStore();
 
 /* Composables */
 const withLoader = useLoader();
-
-/* Computed */
-const networkNotifications = computed(() => {
-  const network = normalizeNetworkName(networkStore.network);
-  return Object.entries(notificationsStore.networkNotifications).reduce(
-    (acc, [key, value]) => {
-      if (value && key !== network) {
-        acc[key] = value;
-      }
-      return acc;
-    },
-    {} as Record<string, number>,
-  );
-});
 
 /* State */
 const mirrorNodeInputRef = ref<InstanceType<typeof AppInput> | null>(null);
@@ -156,7 +140,6 @@ onBeforeMount(() => {
             handleChange(value as string);
           }
         "
-        :notifications="user.selectedOrganization ? networkNotifications : undefined"
       />
     </div>
     <Transition name="fade" mode="out-in">

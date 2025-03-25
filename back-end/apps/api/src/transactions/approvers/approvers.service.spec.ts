@@ -1296,6 +1296,8 @@ describe('ApproversService', () => {
         status: TransactionStatus.WAITING_FOR_EXECUTION,
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
+        creatorKey: { userId: user.id },
+        observers: [{ userId: 1 }, { userId: 2 }],
       };
 
       mockTransaction();
@@ -1310,16 +1312,14 @@ describe('ApproversService', () => {
         queryBuilder as unknown as SelectQueryBuilder<TransactionApprover>,
       );
 
-      jest.spyOn(service, 'getVerifiedApproversByTransactionId').mockResolvedValueOnce([
-        {
-          userId: user.id,
-          transactionId: 1,
-        } as TransactionApprover,
-      ]);
-      dataSource.manager.findOne.mockResolvedValueOnce(transaction);
+      jest
+        .spyOn(service, 'getVerifiedApproversByTransactionId')
+        .mockResolvedValue([{ userId: user.id, transactionId: 1 } as TransactionApprover]);
+      dataSource.manager.findOne.mockResolvedValue(transaction);
       jest.mocked(verifyTransactionBodyWithoutNodeAccountIdSignature).mockReturnValue(true);
 
       await service.approveTransaction(dto, transaction.id, user);
+      await service.approveTransaction({ ...dto, approved: false }, transaction.id, user);
 
       expect(queryBuilder.update).toHaveBeenCalled();
       expect(queryBuilder.set).toHaveBeenCalled();
@@ -1384,23 +1384,17 @@ describe('ApproversService', () => {
       const dto: ApproverChoiceDto = {
         userKeyId: user.keys[0].id,
         signature: Buffer.from('0x123'),
-        approved: true,
+        approved: false,
       };
-      const transaction = {
-        id: 1,
-        status: TransactionStatus.WAITING_FOR_EXECUTION,
-      };
+      const transaction = { id: 1, status: TransactionStatus.WAITING_FOR_EXECUTION };
 
-      jest.spyOn(service, 'getVerifiedApproversByTransactionId').mockResolvedValueOnce([
-        {
-          userId: user.id,
-          transactionId: 1,
-        } as TransactionApprover,
-      ]);
-      jest.mocked(attachKeys).mockImplementationOnce(async (user: User) => {
+      jest
+        .spyOn(service, 'getVerifiedApproversByTransactionId')
+        .mockResolvedValue([{ userId: user.id, transactionId: 1 } as TransactionApprover]);
+      jest.mocked(attachKeys).mockImplementation(async (user: User) => {
         user.keys = [];
       });
-      dataSource.manager.findOne.mockResolvedValueOnce(transaction);
+      dataSource.manager.findOne.mockResolvedValue(transaction);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([]);
 
       expect(await service.approveTransaction(dto, transaction.id, { ...user, keys: [] })).toEqual(

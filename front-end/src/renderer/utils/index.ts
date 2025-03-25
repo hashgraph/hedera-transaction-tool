@@ -339,3 +339,19 @@ export function sanitizeAccountId(value: string): string {
 
   return value;
 }
+
+export const getNetworkLabel = (network: string) => {
+  network = network.toLocaleLowerCase();
+  switch (network) {
+    case 'mainnet':
+      return 'Mainnet';
+    case 'testnet':
+      return 'Testnet';
+    case 'previewnet':
+      return 'Previewnet';
+    case 'local-node':
+      return 'Local Node';
+    default:
+      return 'Custom';
+  }
+};

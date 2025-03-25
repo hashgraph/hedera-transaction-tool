@@ -555,10 +555,11 @@ onMounted(async () => {
                         }}</span>
                       </p>
                       <p
+                        v-if="accountData.key.value instanceof PublicKey"
                         class="text-small text-semi-bold text-pink mt-3"
                         data-testid="p-account-data-key-type"
                       >
-                        {{ accountData.key.value?._key._type }}
+                        {{ accountData.key.value?._key?._type }}
                       </p>
                     </template>
                     <template v-else>None</template>

@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import type { Organization } from '@prisma/client';
-import type { INotificationReceiver } from '@main/shared/interfaces';
 
-import { computed, onMounted, onUpdated, ref, watch } from 'vue';
+import { onMounted, onUpdated, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import useLoader from '@renderer/composables/useLoader';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
@@ -22,7 +20,6 @@ const personalModeText = 'Personal';
 
 /* Stores */
 const user = useUserStore();
-const notifications = useNotificationsStore();
 
 /* Composables */
 const withLoader = useLoader();
@@ -34,17 +31,6 @@ const { setLast } = useDefaultOrganization();
 const selectedMode = ref<string>('personal');
 const addOrganizationModalShown = ref(false);
 const dropDownValue = ref<string>(personalModeText);
-
-/* Computed */
-const indicatorNotifications = computed<{ [key: string]: INotificationReceiver[] }>(() => {
-  const allNotifications = { ...notifications.notifications };
-  for (const serverUrl of Object.keys(allNotifications)) {
-    allNotifications[serverUrl] = allNotifications[serverUrl].filter(n =>
-      n.notification.type.toLocaleLowerCase().includes('indicator'),
-    );
-  }
-  return allNotifications;
-});
 
 /* Handlers */
 const handleUserModeChange = async (e: Event) => {
@@ -157,13 +143,7 @@ watch(() => user.selectedOrganization, initialize);
         v-bind="$attrs"
         style="min-width: 200px"
       >
-        <div
-          class="flex-centered gap-3 position-relative"
-          data-testid="dropdown-selected-mode"
-          :class="{
-            'indicator-circle-before': Object.values(indicatorNotifications).flat().length > 0,
-          }"
-        >
+        <div class="flex-centered gap-3 position-relative" data-testid="dropdown-selected-mode">
           {{ dropDownValue }}
         </div>
         <i class="bi bi-chevron-down ms-3"></i>
@@ -187,13 +167,7 @@ watch(() => user.selectedOrganization, initialize);
             "
             :data-value="organization.id"
           >
-            <div
-              class="position-relative flex-1 col-10"
-              :class="{
-                'indicator-circle-before':
-                  (indicatorNotifications[organization.serverUrl] || []).length > 0,
-              }"
-            >
+            <div class="position-relative flex-1 col-10">
               <div class="text-small text-truncate">{{ organization.nickname }}</div>
             </div>
 

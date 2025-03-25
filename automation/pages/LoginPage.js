@@ -22,6 +22,7 @@ class LoginPage extends BasePage {
   keepLoggedInCheckboxSelector = 'checkbox-remember';
   logoutButtonSelector = 'button-logout';
   settingsButtonSelector = 'button-menu-settings';
+  profileTabButtonSelector = 'tab-4';
 
   // Labels
   emailLabelSelector = 'label-email';
@@ -73,6 +74,7 @@ class LoginPage extends BasePage {
 
   // specific logout method for the login tests
   async logout() {
+    await this.navigateToLogout();
     const isLogoutButtonVisible = await this.isElementVisible(this.logoutButtonSelector);
     if (isLogoutButtonVisible) {
       console.log('Logout button is visible, clicking to logout');
@@ -83,6 +85,24 @@ class LoginPage extends BasePage {
       console.log('Logout button is not visible, resetting the form');
       await this.resetForm();
     }
+  }
+
+  async navigateToLogout() {
+    const isSettingsButtonVisible = await this.isElementVisible(this.settingsButtonSelector);
+    if (!isSettingsButtonVisible) {
+      console.log('Settings button is not visible, resetting the form');
+      await this.resetForm();
+      return;
+    }
+    await this.click(this.settingsButtonSelector);
+
+    const isProfileTabButtonVisible = await this.isElementVisible(this.profileTabButtonSelector);
+    if (!isProfileTabButtonVisible) {
+      console.log('Profile tab button is not visible, resetting the form');
+      await this.resetForm();
+      return;
+    }
+    await this.click(this.profileTabButtonSelector);
   }
 
   async verifyLoginElements() {
