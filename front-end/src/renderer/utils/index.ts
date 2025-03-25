@@ -290,7 +290,12 @@ export const formatPublickeyContactList = async (publicKey: string) => {
 };
 
 export const extractIdentifier = (formattedString: string) => {
+  if (!formattedString) {
+    return null;
+  }
+
   const match = formattedString.match(/^(.*?)\s\(([\w]+)\)$/);
+
   if (match) {
     return { identifier: match[1], pk: match[2] };
   }
