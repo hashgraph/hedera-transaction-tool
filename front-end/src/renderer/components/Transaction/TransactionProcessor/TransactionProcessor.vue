@@ -16,6 +16,7 @@ import OrganizationRequestHandler from './components/OrganizationRequestHandler.
 import SignPersonalRequestHandler from './components/SignPersonalRequestHandler.vue';
 import ExecutePersonalRequestHandler from './components/ExecutePersonalRequestHandler.vue';
 import MultipleAccountUpdateRequestHandler from './components/MultipleAccountUpdateRequestHandler.vue';
+import ScheduleTransactionHandler from './components/ScheduleTransactionHandler.vue';
 
 import { assertHandlerExists } from '.';
 
@@ -46,6 +47,9 @@ const bigFilePersonalHandler = ref<InstanceType<typeof BigFilePersonalRequestHan
 const organizationHandler = ref<InstanceType<typeof OrganizationRequestHandler> | null>(null);
 const signPersonalHandler = ref<InstanceType<typeof SignPersonalRequestHandler> | null>(null);
 const executePersonalHandler = ref<InstanceType<typeof ExecutePersonalRequestHandler> | null>(null);
+const scheduleTransactionHandler = ref<InstanceType<typeof ScheduleTransactionHandler> | null>(
+  null,
+);
 
 const observers = ref<number[]>([]);
 const approvers = ref<TransactionApproverDto[]>([]);
@@ -136,9 +140,14 @@ function buildChain() {
     executePersonalHandler.value,
     'Execute Personal',
   );
+  assertHandlerExists<typeof ScheduleTransactionHandler>(
+    scheduleTransactionHandler.value,
+    'Schedule',
+  );
 
   validateHandler.value.setNext(confirmHandler.value);
-  confirmHandler.value.setNext(multipleAccountUpdateHandler.value);
+  confirmHandler.value.setNext(scheduleTransactionHandler.value);
+  scheduleTransactionHandler.value.setNext(multipleAccountUpdateHandler.value);
   multipleAccountUpdateHandler.value.setNext(bigFileOrganizationHandler.value);
   bigFileOrganizationHandler.value.setNext(bigFilePersonalHandler.value);
   bigFilePersonalHandler.value.setNext(organizationHandler.value);
@@ -170,7 +179,10 @@ defineExpose({
     <!-- Handler #2: Confirm modal -->
     <ConfirmTransactionHandler ref="confirmHandler" :loading="isLoading" />
 
-    <!-- Handler #3: Multiple Accounts Update (has sub-chain) -->
+    <!-- Handle #3: Scheduled Transaction -->
+    <ScheduleTransactionHandler ref="scheduleTransactionHandler" :loading="isLoading" />
+
+    <!-- Handler #4: Multiple Accounts Update (has sub-chain) -->
     <MultipleAccountUpdateRequestHandler
       ref="multipleAccountUpdateHandler"
       :observers="observers"
@@ -186,7 +198,7 @@ defineExpose({
       @loading:end="handleLoading(false)"
     />
 
-    <!-- Handler #4: Big File Update For Organization -->
+    <!-- Handler #5: Big File Update For Organization -->
     <BigFileOrganizationRequestHandler
       ref="bigFileOrganizationHandler"
       :observers="observers"
@@ -197,7 +209,7 @@ defineExpose({
       @loading:end="handleLoading(false)"
     />
 
-    <!-- Handler #5: Big File Create/Update in Personal (has sub-chain) -->
+    <!-- Handler #6: Big File Create/Update in Personal (has sub-chain) -->
     <BigFilePersonalRequestHandler
       ref="bigFilePersonalHandler"
       @transaction:sign:begin="handleSignBegin"
@@ -207,7 +219,7 @@ defineExpose({
       @transaction:stored="handleTransactionStore"
     />
 
-    <!-- Handler #6: Organization  -->
+    <!-- Handler #7: Organization  -->
     <OrganizationRequestHandler
       ref="organizationHandler"
       :observers="observers"
@@ -218,7 +230,7 @@ defineExpose({
       @loading:end="handleLoading(false)"
     />
 
-    <!-- Handler #7: Sign in Personal -->
+    <!-- Handler #8: Sign in Personal -->
     <SignPersonalRequestHandler
       ref="signPersonalHandler"
       @transaction:sign:begin="handleSignBegin"
@@ -226,7 +238,7 @@ defineExpose({
       @transaction:sign:fail="handleLoading(false)"
     />
 
-    <!-- Handler #8: Execute Personal -->
+    <!-- Handler #9: Execute Personal -->
     <ExecutePersonalRequestHandler
       ref="executePersonalHandler"
       @transaction:executed="handleTransactionExecuted"

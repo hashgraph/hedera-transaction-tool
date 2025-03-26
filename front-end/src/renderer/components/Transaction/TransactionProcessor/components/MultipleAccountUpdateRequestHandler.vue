@@ -252,6 +252,7 @@ async function processPersonal() {
     description: currentItem.description,
     submitManually: false,
     reminderMillisecondsBefore: null,
+    executionType: 'Regular',
   });
 
   await startChain(transactionRequest);

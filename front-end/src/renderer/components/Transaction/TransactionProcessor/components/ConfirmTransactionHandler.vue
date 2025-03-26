@@ -49,10 +49,15 @@ function setNext(next: Handler) {
   nextHandler.value = next;
 }
 
-function handle(req: Processable) {
+async function handle(req: Processable) {
   reset();
-
   request.value = req;
+
+  if (req.executionType === 'Scheduled') {
+    await next();
+    return;
+  }
+
   show.value = true;
 }
 

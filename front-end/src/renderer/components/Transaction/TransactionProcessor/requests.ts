@@ -1,5 +1,5 @@
 import type { Hbar, Key } from '@hashgraph/sdk';
-import type { IAccountInfoParsed } from '@main/shared/interfaces';
+import type { ExecutionType, IAccountInfoParsed } from '@main/shared/interfaces';
 import type { AccountUpdateDataMultiple } from '@renderer/utils';
 
 import { AccountId, KeyList } from '@hashgraph/sdk';
@@ -11,11 +11,17 @@ export class BaseRequest {
   requestKey: Key | null;
   submitManually: boolean;
   reminderMillisecondsBefore: number | null;
+  executionType: ExecutionType;
 
-  constructor(submitManually: boolean, reminderMillisecondsBefore: number | null) {
+  constructor(
+    submitManually: boolean,
+    reminderMillisecondsBefore: number | null,
+    executionType: ExecutionType,
+  ) {
     this.submitManually = submitManually;
     this.reminderMillisecondsBefore = reminderMillisecondsBefore;
     this.requestKey = null;
+    this.executionType = executionType;
   }
 }
 
@@ -32,8 +38,9 @@ export class TransactionRequest extends BaseRequest {
     description: string;
     submitManually: boolean;
     reminderMillisecondsBefore: number | null;
+    executionType: ExecutionType;
   }) {
-    super(opts.submitManually, opts.reminderMillisecondsBefore);
+    super(opts.submitManually, opts.reminderMillisecondsBefore, opts.executionType);
     this.transactionKey = opts.transactionKey;
     this.requestKey = opts.transactionKey;
     this.transactionBytes = opts.transactionBytes;
@@ -48,6 +55,7 @@ export class TransactionRequest extends BaseRequest {
     description: string;
     submitManually: boolean;
     reminderMillisecondsBefore: number | null;
+    executionType: ExecutionType;
   }) {
     return new TransactionRequest(data);
   }
@@ -68,8 +76,9 @@ export class CustomRequest extends BaseRequest {
     payerId?: string;
     baseValidStart?: Date;
     maxTransactionFee?: Hbar;
+    executionType: ExecutionType;
   }) {
-    super(opts.submitManually, opts.reminderMillisecondsBefore);
+    super(opts.submitManually, opts.reminderMillisecondsBefore, opts.executionType);
 
     this.requestKey = null;
     this.displayName = opts.displayName;
@@ -100,6 +109,7 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
     accountIsPayer: boolean;
     submitManually: boolean;
     reminderMillisecondsBefore: number | null;
+    executionType: ExecutionType;
   }) {
     super({ ...opts, displayName: 'Multiple Accounts Update' });
 
@@ -121,6 +131,7 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
       accountIsPayer: data.accountIsPayer,
       submitManually: false,
       reminderMillisecondsBefore: null,
+      executionType: 'Regular',
     });
   }
 

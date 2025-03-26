@@ -72,7 +72,7 @@ function setNext(next: Handler) {
 }
 
 async function handle(req: Processable) {
-  if (!(req instanceof TransactionRequest)) {
+  if (!(req instanceof TransactionRequest) || req.executionType === 'Scheduled') {
     await nextHandler.value?.handle(req);
     return;
   }
@@ -200,6 +200,7 @@ async function processOriginal() {
       description: request.value.description,
       submitManually: false,
       reminderMillisecondsBefore: null,
+      executionType: 'Regular',
     }),
   );
 }
@@ -217,6 +218,7 @@ async function processAppend() {
       description: request.value.description,
       submitManually: false,
       reminderMillisecondsBefore: null,
+      executionType: 'Regular',
     }),
   );
 }

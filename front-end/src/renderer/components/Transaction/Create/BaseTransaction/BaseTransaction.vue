@@ -144,6 +144,7 @@ const handleCreate = async () => {
       description: description.value.trim(),
       submitManually: submitManually.value,
       reminderMillisecondsBefore: reminder.value,
+      executionType: executionType.value,
     });
 
   if (processable instanceof CustomRequest) {

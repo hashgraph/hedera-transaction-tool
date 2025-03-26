@@ -2,7 +2,14 @@
 import { BaseRequest, CustomRequest, TransactionRequest, type Handler, type Processable } from '..';
 
 import { ref } from 'vue';
-import { FileCreateTransaction, Transaction } from '@hashgraph/sdk';
+import {
+  FileCreateTransaction,
+  FileUpdateTransaction,
+  NodeCreateTransaction,
+  NodeDeleteTransaction,
+  NodeUpdateTransaction,
+  Transaction,
+} from '@hashgraph/sdk';
 
 import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
 
@@ -14,6 +21,7 @@ import {
   ableToSign,
   getTransactionType,
   validateFileUpdateTransaction,
+  transactionIs,
 } from '@renderer/utils';
 
 /* Constants */
@@ -60,6 +68,7 @@ function validate(request: TransactionRequest, transaction: Transaction) {
   }
 
   validateFileUpdateTransaction(transaction);
+  validateScheduleTransaction(transaction);
 
   if (request.name && request.name?.length > 50) {
     throw new Error('Transaction name is too long');
@@ -100,6 +109,27 @@ async function validateCustomRequest(request: CustomRequest) {
   await request.deriveRequestKey(network.mirrorNodeBaseURL);
 
   await validateSignableInPersonal(request);
+}
+
+function validateScheduleTransaction(transaction: Transaction) {
+  const size = transaction.toBytes().length;
+  if (
+    (transactionIs(FileCreateTransaction, transaction) ||
+      transactionIs(FileUpdateTransaction, transaction)) &&
+    size <= TRANSACTION_MAX_SIZE - SIZE_BUFFER_BYTES
+  ) {
+    throw new Error(
+      `${getTransactionType(transaction)} size exceeds max transaction size. It has to be split.`,
+    );
+  }
+
+  if (
+    transactionIs(NodeCreateTransaction, transaction) ||
+    transactionIs(NodeUpdateTransaction, transaction) ||
+    transactionIs(NodeDeleteTransaction, transaction)
+  ) {
+    throw new Error('Node transactions are not supported as scheduled transactions');
+  }
 }
 
 /* Expose */

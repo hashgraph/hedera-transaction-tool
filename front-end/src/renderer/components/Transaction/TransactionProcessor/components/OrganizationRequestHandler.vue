@@ -58,6 +58,8 @@ function setNext(next: Handler) {
 }
 
 async function handle(req: Processable) {
+  console.log('OrganizationRequestHandler: handle');
+
   if (!(req instanceof TransactionRequest)) {
     await nextHandler.value?.handle(req);
     return;

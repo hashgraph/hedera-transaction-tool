@@ -68,7 +68,7 @@ function setNext(next: Handler) {
 }
 
 async function handle(req: Processable) {
-  if (!(req instanceof TransactionRequest)) {
+  if (!(req instanceof TransactionRequest) || req.executionType === 'Scheduled') {
     await nextHandler.value?.handle(req);
     return;
   }
