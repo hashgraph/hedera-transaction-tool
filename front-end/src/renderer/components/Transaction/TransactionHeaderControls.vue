@@ -126,10 +126,18 @@ watch(showAddReminder, show => {
               >
               </AppButton>
               <ul class="dropdown-menu">
-                <li class="dropdown-item cursor-pointer" @click="executionType = 'Regular'">
+                <li
+                  class="dropdown-item cursor-pointer"
+                  @click="executionType = 'Regular'"
+                  :selected="executionType === 'Regular' || undefined"
+                >
                   <span class="text-small text-bold">Regular Transaction</span>
                 </li>
-                <li class="dropdown-item cursor-pointer" @click="executionType = 'Scheduled'">
+                <li
+                  class="dropdown-item cursor-pointer"
+                  @click="executionType = 'Scheduled'"
+                  :selected="executionType === 'Scheduled' || undefined"
+                >
                   <span class="text-small text-bold">Schedule Transaction</span>
                 </li>
               </ul>
