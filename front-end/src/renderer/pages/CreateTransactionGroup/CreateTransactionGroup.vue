@@ -425,6 +425,7 @@ onBeforeRouteLeave(async to => {
                   transactionKey,
                   user.keyPairs,
                   Boolean(user.selectedOrganization),
+                  'Regular',
                 )
               }}</AppButton
             >

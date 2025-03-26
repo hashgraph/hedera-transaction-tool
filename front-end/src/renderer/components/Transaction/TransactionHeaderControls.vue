@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ExecutionType } from '@main/shared/interfaces';
 import type { Transaction } from '@hashgraph/sdk';
 
 import { ref, watch } from 'vue';
@@ -36,6 +37,7 @@ defineEmits<{
 /* Models */
 const submitManually = defineModel<boolean>('submitManually', { required: true });
 const reminder = defineModel<number | null>('reminder', { required: true });
+const executionType = defineModel<ExecutionType>('executionType');
 
 /* Stores */
 const user = useUserStore();
@@ -102,16 +104,37 @@ watch(showAddReminder, show => {
             :is-executed="isProcessed"
             v-on:draft-saved="$emit('draft-saved')"
           />
-          <AppButton
-            color="primary"
-            type="submit"
-            :loading="loading"
-            :disabled="createButtonDisabled"
-            data-testid="button-header-create"
-          >
-            <span class="bi bi-send"></span>
-            {{ createButtonLabel }}</AppButton
-          >
+          <div class="btn-group" role="group">
+            <AppButton
+              class="w-100 min-w-unset"
+              color="primary"
+              type="submit"
+              :loading="loading"
+              :disabled="createButtonDisabled"
+              data-testid="button-header-create"
+            >
+              <span class="bi bi-send"></span>
+              {{ createButtonLabel }}</AppButton
+            >
+            <div class="btn-group" role="group">
+              <AppButton
+                color="primary"
+                class="dropdown-toggle min-w-unset"
+                data-bs-toggle="dropdown"
+                :disabled="createButtonDisabled"
+                data-testid="button-header-toggle-dropdown"
+              >
+              </AppButton>
+              <ul class="dropdown-menu">
+                <li class="dropdown-item cursor-pointer" @click="executionType = 'Regular'">
+                  <span class="text-small text-bold">Regular Transaction</span>
+                </li>
+                <li class="dropdown-item cursor-pointer" @click="executionType = 'Scheduled'">
+                  <span class="text-small text-bold">Schedule Transaction</span>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
       </template>
       <template v-else>

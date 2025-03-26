@@ -6,3 +6,5 @@ export * from './organization';
 export * from './Contacts';
 
 export type Network = string;
+
+export type ExecutionType = 'Regular' | 'Scheduled';

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ExecutionType } from '@main/shared/interfaces';
 import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
 import type { TransactionCommonData } from '@renderer/utils/sdk';
 import {
@@ -77,6 +78,7 @@ const description = ref('');
 const submitManually = ref(false);
 const reminder = ref<number | null>(null);
 const isDraftSaved = ref(false);
+const executionType = ref<ExecutionType>('Regular');
 
 const data = reactive<TransactionCommonData>({
   payerId: '',
@@ -248,6 +250,7 @@ defineExpose({
       <TransactionHeaderControls
         v-model:submit-manually="submitManually"
         v-model:reminder="reminder"
+        v-model:execution-type="executionType"
         :valid-start="data.validStart"
         :is-processed="isProcessed"
         v-on:draft-saved="isDraftSaved = true"
@@ -259,6 +262,7 @@ defineExpose({
             transactionKey,
             user.keyPairs,
             Boolean(user.selectedOrganization),
+            executionType,
           )
         "
         :create-button-disabled="

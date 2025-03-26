@@ -1,4 +1,4 @@
-import type { IDefaultNetworks, Network } from '@main/shared/interfaces';
+import type { ExecutionType, IDefaultNetworks, Network } from '@main/shared/interfaces';
 import type { KeyPair, Transaction } from '@prisma/client';
 
 import {
@@ -107,6 +107,7 @@ export const getPropagationButtonLabel = (
   transactionKey: Key,
   userKeys: KeyPair[],
   aciveOrganization: boolean,
+  executionType: ExecutionType,
 ): string => {
   if (aciveOrganization) {
     const userPublicKeys = userKeys.map(key => key.public_key);
@@ -122,7 +123,8 @@ export const getPropagationButtonLabel = (
       return false;
     });
 
-    return userKeyRequired ? 'Create' : 'Create and Share';
+    const createOrSchedule = executionType === 'Regular' ? 'Create' : 'Schedule';
+    return userKeyRequired ? createOrSchedule : `${createOrSchedule} and Share`;
   } else {
     return 'Sign & Execute';
   }
