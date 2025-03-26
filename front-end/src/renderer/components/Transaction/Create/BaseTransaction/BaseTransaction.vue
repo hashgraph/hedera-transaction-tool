@@ -66,7 +66,7 @@ const user = useUserStore();
 /* Composables */
 const toast = useToast();
 const router = useRouter();
-const payerData = useAccountId();
+const payerData: ReturnType<typeof useAccountId> = useAccountId();
 const withLoader = useLoader();
 
 /* State */
