@@ -10,15 +10,23 @@ import useNetwork from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 import useDraft from '@renderer/composables/useDraft';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
-import { addApprovers, addObservers, submitTransaction } from '@renderer/services/organization';
+import {
+  addApprovers,
+  addObservers,
+  submitTransaction,
+  uploadSignatureMap,
+} from '@renderer/services/organization';
 
 import {
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
   getPrivateKey,
+  hexToUint8Array,
   uint8ToHex,
+  usersPublicRequiredToSign,
 } from '@renderer/utils';
 
 /* Props */
@@ -42,6 +50,7 @@ const network = useNetwork();
 /* Composables */
 const toast = useToast();
 const draft = useDraft();
+const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
 const request = ref<TransactionRequest | null>(null);
@@ -83,6 +92,7 @@ async function handle(req: Processable) {
       upload('observers', id),
       upload('approvers', id),
       draft.deleteIfNotTemplate(),
+      uploadSignatures(id, transactionBytes),
     ]);
 
     results.forEach(result => {
@@ -154,6 +164,52 @@ async function upload(type: 'observers' | 'approvers', id: number) {
     await addObservers(user.selectedOrganization.serverUrl, id, props.observers);
   } else {
     await addApprovers(user.selectedOrganization.serverUrl, id, props.approvers);
+  }
+}
+
+async function uploadSignatures(id: number, transactionBytes: string) {
+  if (request.value?.executionType !== 'Scheduled') {
+    return;
+  }
+
+  assertUserLoggedIn(user.personal);
+  assertIsLoggedInOrganization(user.selectedOrganization);
+
+  const personalPassword = getPassword(uploadSignatures.bind(null, id, transactionBytes), {
+    subHeading: 'Enter your application password to access your private key',
+  });
+  if (passwordModalOpened(personalPassword)) return;
+
+  const bytes = hexToUint8Array(transactionBytes);
+  const transaction = Transaction.fromBytes(bytes);
+
+  const publicKeysRequired = await usersPublicRequiredToSign(
+    transaction,
+    user.selectedOrganization.userKeys,
+    network.mirrorNodeBaseURL,
+  );
+
+  const restoredRequiredKeys = [];
+  const requiredNonRestoredKeys = [];
+
+  for (const requiredKey of publicKeysRequired) {
+    if (user.keyPairs.some(k => k.public_key === requiredKey)) {
+      restoredRequiredKeys.push(requiredKey);
+    } else {
+      requiredNonRestoredKeys.push(requiredKey);
+    }
+  }
+
+  if (restoredRequiredKeys.length > 0) {
+    await uploadSignatureMap(
+      user.personal.id,
+      personalPassword,
+      user.selectedOrganization,
+      restoredRequiredKeys,
+      transaction,
+      id,
+    );
+    toast.success('Transaction signed successfully');
   }
 }
 
