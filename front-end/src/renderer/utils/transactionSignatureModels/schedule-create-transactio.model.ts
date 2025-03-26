@@ -1,4 +1,4 @@
-import { ScheduleCreateTransaction, Transaction } from '@hashgraph/sdk';
+import { Key, ScheduleCreateTransaction, Transaction } from '@hashgraph/sdk';
 import { TransactionBaseModel } from './transaction.model';
 
 export default class ScheduleCreateTransactionModel extends TransactionBaseModel<ScheduleCreateTransaction> {
@@ -13,5 +13,15 @@ export default class ScheduleCreateTransactionModel extends TransactionBaseModel
     }
 
     return set;
+  }
+
+  getNewKeys(): Key[] {
+    const keys = super.getNewKeys();
+
+    if (this.transaction.adminKey) {
+      keys.push(this.transaction.adminKey);
+    }
+
+    return keys;
   }
 }

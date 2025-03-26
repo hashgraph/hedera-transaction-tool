@@ -2,7 +2,11 @@ import { BadRequestException, Inject, Injectable, UnauthorizedException } from '
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 
-import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import {
+  PublicKey,
+  ScheduleCreateTransaction,
+  Transaction as SDKTransaction,
+} from '@hashgraph/sdk';
 
 import {
   Repository,
@@ -48,6 +52,7 @@ import {
   notifyGeneral,
   SchedulerService,
   getTransactionSignReminderKey,
+  transactionIs,
 } from '@app/common';
 
 import { CreateTransactionDto } from './dto';
@@ -397,6 +402,8 @@ export class TransactionsService {
       throw new BadRequestException(ErrorCodes.FST);
     }
 
+    await this.handleScheduledTransaction(dto, transaction.id, sdkTransaction);
+
     if (dto.reminderMillisecondsBefore) {
       const remindAt = new Date(transaction.validStart.getTime() - dto.reminderMillisecondsBefore);
       this.schedulerService.addReminder(getTransactionSignReminderKey(transaction.id), remindAt);
@@ -604,6 +611,46 @@ export class TransactionsService {
     }
 
     return transaction;
+  }
+
+  /* Handles a schedule create transaction */
+  async handleScheduledTransaction(
+    dto: CreateTransactionDto,
+    id: number,
+    transaction: SDKTransaction,
+  ) {
+    if (!transactionIs(ScheduleCreateTransaction, transaction)) {
+      return;
+    }
+
+    //@ts-expect-error - underlyingTransaction is a private property
+    const underlyingTransaction = transaction._scheduledTransaction as SDKTransaction;
+
+    const dbTransaction = this.repo.create({
+      name: dto.name,
+      type: getTransactionTypeEnumValue(underlyingTransaction),
+      description: dto.description,
+      transactionId: transaction.transactionId.toString(),
+      transactionHash: encodeUint8Array(await underlyingTransaction.getTransactionHash()),
+      transactionBytes: underlyingTransaction.toBytes(),
+      unsignedTransactionBytes: underlyingTransaction.toBytes(),
+      status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      creatorKey: {
+        id: dto.creatorKeyId,
+      },
+      signature: dto.signature,
+      mirrorNetwork: dto.mirrorNetwork,
+      validStart: transaction.transactionId.validStart.toDate(),
+      isManual: true,
+      cutoffAt: dto.cutoffAt,
+      scheduleTransactionId: id,
+    });
+
+    try {
+      await this.repo.save(dbTransaction);
+    } catch {
+      throw new BadRequestException(ErrorCodes.FST);
+    }
   }
 
   /* Get the status where clause for the history transactions */

@@ -3,6 +3,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   OneToMany,
   OneToOne,
@@ -113,6 +114,13 @@ export class Transaction {
   @Column({ nullable: true })
   cutoffAt?: Date;
 
+  @ManyToOne(() => Transaction, transaction => transaction.scheduledTransactions)
+  @JoinColumn({ name: 'scheduleTransactionId' })
+  scheduleTransaction: Transaction;
+
+  @Column({ nullable: true })
+  scheduleTransactionId?: number;
+
   @CreateDateColumn()
   createdAt: Date;
 
@@ -140,6 +148,9 @@ export class Transaction {
 
   @OneToOne(() => TransactionGroupItem, groupItem => groupItem.transaction)
   groupItem?: TransactionGroupItem;
+
+  @OneToMany(() => Transaction, tx => tx.scheduleTransaction)
+  scheduledTransactions?: Transaction[];
 }
 
 export const transactionProperties: (keyof Transaction)[] = [
