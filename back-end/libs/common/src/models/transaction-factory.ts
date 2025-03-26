@@ -14,6 +14,7 @@ import FileCreateTransactionModel from './file-create-transaction.model';
 import NodeCreateTransactionModel from './node-create-transaction.model';
 import NodeUpdateTransactionModel from './node-update-transaction.model';
 import NodeDeleteTransactionModel from './node-delete-transaction.model';
+import ScheduleCreateTransactionModel from './schedule-create-transactio.model';
 
 export default class TransactionFactory {
   static fromBytes(bytes: Buffer) {
@@ -37,6 +38,7 @@ export default class TransactionFactory {
       NodeCreateTransaction: NodeCreateTransactionModel,
       NodeUpdateTransaction: NodeUpdateTransactionModel,
       NodeDeleteTransaction: NodeDeleteTransactionModel,
+      ScheduleCreateTransaction: ScheduleCreateTransactionModel,
     };
 
     const transactionType = transaction.constructor.name.slice(
