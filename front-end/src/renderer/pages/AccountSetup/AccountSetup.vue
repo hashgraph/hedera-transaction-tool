@@ -2,11 +2,10 @@
 import type { KeyPair } from '@prisma/client';
 
 import { onBeforeMount, ref } from 'vue';
-import { onBeforeRouteLeave } from 'vue-router';
+import { onBeforeRouteLeave, useRouter } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useRouter } from 'vue-router';
 import useSetDynamicLayout, {
   ACCOUNT_SETUP_LAYOUT,
 } from '@renderer/composables/useSetDynamicLayout';
@@ -65,6 +64,7 @@ const handleNext = async () => {
     try {
       nextLoadingText.value = 'Saving...';
       await keyPairsComponent.value?.handleSave();
+      await user.setAccountSetupStarted(false);
     } finally {
       nextLoadingText.value = null;
     }
@@ -121,11 +121,7 @@ onBeforeRouteLeave(async () => {
     }
   }
 
-  if (user.personal?.isLoggedIn && user.shouldSetupAccount) {
-    return false;
-  }
-
-  return true;
+  return !(user.personal?.isLoggedIn && user.shouldSetupAccount);
 });
 </script>
 <template>

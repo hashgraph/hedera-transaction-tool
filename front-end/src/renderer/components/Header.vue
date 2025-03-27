@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Network } from '@main/shared/interfaces';
 
-import { onUpdated } from 'vue';
+import { computed, onUpdated } from 'vue';
 
 import { CommonNetwork } from '@main/shared/enums';
 
@@ -44,6 +44,11 @@ const networkStore = useNetworkStore();
 /* Composables */
 const createTooltips = useCreateTooltips();
 
+/* Computed */
+const isAccountSetupComplete = computed(() => {
+  return user.personal && user.personal.isLoggedIn && !user.accountSetupStarted ;
+});
+
 /* Hooks */
 onUpdated(createTooltips);
 </script>
@@ -55,7 +60,7 @@ onUpdated(createTooltips);
       <LogoText />
     </div>
     <div
-      v-if="user.personal && user.personal.isLoggedIn && !user.migrating"
+      v-if="isAccountSetupComplete"
       class="flex-centered justify-content-end"
     >
       <!-- <span class="container-icon">

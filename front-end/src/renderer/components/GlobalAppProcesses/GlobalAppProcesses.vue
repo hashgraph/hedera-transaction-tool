@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
 
-import { MIGRATION_STARTED } from '@main/shared/constants';
+import { ACCOUNT_SETUP_STARTED } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -61,9 +61,11 @@ onMounted(async () => {
   try {
     const useKeyChain = await getUseKeychain();
     const usersCount = await getUsersCount();
-    const migrationStarted = await getStoredClaim(undefined, MIGRATION_STARTED);
+    //If multiple users, then this should get the last connected user
+    //then get the claim for that user and reset only that user's data
+    const accountSetupStarted = await getStoredClaim(undefined, ACCOUNT_SETUP_STARTED);
 
-    if ((!useKeyChain && usersCount === 1) || migrationStarted) {
+    if ((!useKeyChain && usersCount === 1) || accountSetupStarted) {
       await resetDataLocal();
     }
   } catch {

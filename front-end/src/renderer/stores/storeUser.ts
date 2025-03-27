@@ -8,13 +8,18 @@ import type {
   OrganizationTokens,
 } from '@renderer/types';
 
-import { computed, ref, watch, nextTick } from 'vue';
+import { computed, ref, watch, nextTick, watchEffect } from 'vue';
 import { defineStore } from 'pinia';
 
 import { Prisma } from '@prisma/client';
 
+import { ACCOUNT_SETUP_STARTED } from '@main/shared/constants';
+
+import { add, remove } from '@renderer/services/claimService';
+
 import useAfterOrganizationSelection from '@renderer/composables/user/useAfterOrganizationSelection';
 
+import { safeAwait } from '@renderer/utils';
 import * as ush from '@renderer/utils/userStoreHelpers';
 
 import useNetworkStore from './storeNetwork';
@@ -44,8 +49,8 @@ const useUserStore = defineStore('user', () => {
   const organizationTokens = ref<OrganizationTokens>({});
   const skippedSetup = ref<boolean>(false);
 
-  /** Migration */
-  const migrating = ref<boolean>(false);
+  /** AccountSetup */
+  const accountSetupStarted = ref<boolean | null>(null);
 
   /* Computed */
   /** Keys */
@@ -197,8 +202,10 @@ const useUserStore = defineStore('user', () => {
     return organizationTokens.value[organizationId || selectedOrganization.value?.id || ''] || null;
   };
 
-  /* Migration */
-  const setMigrating = (value: boolean) => (migrating.value = value);
+  /* AccountSetup */
+  const setAccountSetupStarted = (value: boolean) => {
+    accountSetupStarted.value = value;
+  };
 
   /* Watchers */
   watch(
@@ -207,6 +214,18 @@ const useUserStore = defineStore('user', () => {
       refetchAccounts();
     },
   );
+
+  watchEffect(async () => {
+    const userId = personal.value?.id;
+    const setupStarted = accountSetupStarted.value;
+    if (userId) {
+      if (setupStarted) {
+        await safeAwait(add(userId, ACCOUNT_SETUP_STARTED, 'true'));
+      } else {
+        await safeAwait(remove(userId, [ACCOUNT_SETUP_STARTED]));
+      }
+    }
+  });
 
   /* Exports */
   const exports = {
@@ -220,7 +239,7 @@ const useUserStore = defineStore('user', () => {
     secretHashes,
     publicKeys,
     shouldSetupAccount,
-    migrating,
+    accountSetupStarted,
     mnemonics,
     skippedSetup,
     deleteOrganization,
@@ -235,7 +254,7 @@ const useUserStore = defineStore('user', () => {
     refetchOrganizationTokens,
     refetchUserState,
     selectOrganization,
-    setMigrating,
+    setAccountSetupStarted,
     setPassword,
     setPasswordStoreDuration,
     setRecoveryPhrase,

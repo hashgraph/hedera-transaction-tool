@@ -2,10 +2,9 @@
 import type { MigrateUserDataResult } from '@main/shared/interfaces/migration';
 import type { RecoveryPhrase } from '@renderer/types';
 import type { PersonalUser } from './components/SetupPersonal.vue';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import { KeyPathWithName } from '@main/shared/interfaces';
-import { MIGRATION_STARTED } from '@main/shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -14,11 +13,8 @@ import { useRouter } from 'vue-router';
 
 import { resetDataLocal } from '@renderer/services/userService';
 import { getStaticUser } from '@renderer/services/safeStorageService';
-import { add, remove } from '@renderer/services/claimService';
 import { getDataMigrationKeysPath } from '@renderer/services/migrateDataService';
 import { searchEncryptedKeys } from '@renderer/services/encryptedKeys';
-
-import { safeAwait } from '@renderer/utils';
 
 import DecryptRecoveryPhrase from './components/DecryptRecoveryPhrase.vue';
 import SetupPersonal from './components/SetupPersonal.vue';
@@ -72,7 +68,7 @@ const heading = computed(() => {
 
 /* Handlers */
 const handleStopMigration = async () => {
-  user.setMigrating(false);
+  await user.setAccountSetupStarted(false);
   await resetDataLocal();
   user.logout();
   router.push({ name: 'login' });
@@ -99,7 +95,7 @@ const handleSetRecoveryPhrase = async (value: {
 
 const handleSetPersonalUser = async (value: PersonalUser) => {
   personalUser.value = value;
-  await toggleMigrationClaim(personalUser.value.personalId, true);
+  await user.setAccountSetupStarted(true);
   step.value = 'organization';
 };
 
@@ -112,7 +108,7 @@ const handleSetOrganizationId = async (value: string) => {
 
 const handleKeysImported = async (value: number) => {
   if (!personalUser.value) throw new Error('(BUG) Personal User not set');
-  await toggleMigrationClaim(personalUser.value.personalId, false);
+  await user.setAccountSetupStarted(false);
   keysImported.value = value;
   step.value = 'summary';
 };
@@ -140,19 +136,6 @@ const initializeUserStore = async () => {
   await user.setRecoveryPhrase(recoveryPhrase.value.words);
   personalUser.value.password && user.setPassword(personalUser.value.password);
 };
-
-const toggleMigrationClaim = async (userId: string, start = false) => {
-  if (start) {
-    await safeAwait(add(userId, MIGRATION_STARTED, 'true'));
-  } else {
-    await safeAwait(remove(userId, [MIGRATION_STARTED]));
-  }
-};
-
-/* Hooks */
-onMounted(async () => {
-  user.setMigrating(true);
-});
 </script>
 <template>
   <div class="flex-column flex-centered flex-1 overflow-hidden p-6">

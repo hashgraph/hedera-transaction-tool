@@ -19,7 +19,7 @@ export const addClaim = async (
     },
   });
 
-  if (alreadyAddedCount > 0) throw new Error('Claim already exists!');
+  if (alreadyAddedCount > 0) console.log('Claim already exists, claim will be overwritten');
 
   return await prisma.claim.create({
     data: {
@@ -94,5 +94,5 @@ export const getUseKeychainClaim = async () => {
   });
   if (flags.length === 0) throw new Error('Keychain mode not initialized');
 
-  return flags[0].claim_value === 'true' ? true : false;
+  return flags[0].claim_value === 'true';
 };
