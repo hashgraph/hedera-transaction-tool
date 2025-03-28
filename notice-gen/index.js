@@ -21,9 +21,22 @@ const paths = {
   ),
 };
 
+const dirs = [
+  paths.automation,
+  paths.frontEnd,
+  paths.backEndRoot,
+  paths.backEndApi,
+  paths.backEndChain,
+  paths.backEndNotifications,
+];
+
+const packageJsons = {};
+
 console.time('NOTICE generation time');
 (async function writeNoticeFile() {
   try {
+    await setPackageJsons();
+    await allDependenciesInstalled();
     const content = await getContent();
     await fs.writeFile(paths.noticeFile, content);
     console.log('NOTICE file written successfully.');
@@ -82,14 +95,6 @@ Copyright ${sanitizedPublisher}. All Rights Reserved.
 }
 
 async function getAllDependencies() {
-  const dirs = [
-    paths.automation,
-    paths.frontEnd,
-    paths.backEndRoot,
-    paths.backEndApi,
-    paths.backEndChain,
-    paths.backEndNotifications,
-  ];
   const allDeps = {};
 
   const deps = await Promise.all(dirs.map((dir) => getDependencies(dir)));
@@ -122,25 +127,11 @@ async function getDependencies(cwd) {
 }
 
 async function getProjectNames() {
-  const dirs = [
-    paths.automation,
-    paths.frontEnd,
-    paths.backEndRoot,
-    paths.backEndApi,
-    paths.backEndChain,
-    paths.backEndNotifications,
-  ];
   const projectNames = [];
 
   for (const dir of dirs) {
     try {
-      const packageJsonPath = path.join(dir, 'package.json');
-      const packageJson = JSON.parse(
-        await fs.readFile(packageJsonPath, {
-          encoding: 'utf-8',
-          flag: 'r',
-        })
-      );
+      const packageJson = packageJsons[dir];
       projectNames.push(`${packageJson.name}@${packageJson.version}`);
     } catch (error) {
       console.error(`Failed to read package.json in ${dir}: ${error.message}`);
@@ -148,6 +139,42 @@ async function getProjectNames() {
   }
 
   return projectNames;
+}
+
+async function allDependenciesInstalled() {
+  for (const dir of dirs) {
+    try {
+      const packageJson = packageJsons[dir];
+
+      if (packageJson.dependencies || packageJson.devDependencies) {
+        await fs.access(path.join(dir, 'node_modules'));
+      }
+    } catch (error) {
+      throw new Error(`node_modules not found in ${dir}`);
+    }
+  }
+}
+
+async function setPackageJsons() {
+  for (const dir of dirs) {
+    const packageJson = await getPackageData(dir);
+    packageJsons[dir] = packageJson;
+  }
+}
+
+async function getPackageData(dir) {
+  try {
+    const packageJsonPath = path.join(dir, 'package.json');
+    return JSON.parse(
+      await fs.readFile(packageJsonPath, {
+        encoding: 'utf-8',
+        flag: 'r',
+      })
+    );
+  } catch (error) {
+    console.error(error.message);
+    return null;
+  }
 }
 
 function execPromise(command, options) {
