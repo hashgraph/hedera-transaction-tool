@@ -71,6 +71,7 @@ export interface ITransaction {
   mirrorNetwork: string;
   creatorKeyId: number;
   groupItem: IGroupItem;
+  scheduledTransactions?: ITransaction[];
 }
 
 export interface ITransactionFull extends ITransaction {

@@ -177,6 +177,7 @@ export const usersPublicRequiredToSign = async (
   for (const accountId of accounts) {
     const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
     if (!accountInfo?.key) continue;
+
     addUserPublicKeyIfRequired(accountInfo.key);
   }
 

@@ -93,15 +93,6 @@ const handleSchedule = async () => {
 
   const underlyingTransaction = Transaction.fromBytes(request.value.transactionBytes);
 
-  const scheduleTx = new ScheduleCreateTransaction()
-    .setTransactionId(
-      TransactionId.withValidStart(
-        AccountId.fromString(payerData.accountId.value),
-        Timestamp.fromDate(validStart.value),
-      ),
-    )
-    .setScheduledTransaction(underlyingTransaction);
-
   const underlyingPayer = underlyingTransaction.transactionId?.accountId;
   if (!underlyingPayer) {
     throw new Error('Invalid Payer ID');
@@ -111,6 +102,16 @@ const handleSchedule = async () => {
     underlyingPayer.toString(),
     network.mirrorNodeBaseURL,
   );
+
+  const scheduleTx = new ScheduleCreateTransaction()
+    .setTransactionId(
+      TransactionId.withValidStart(
+        AccountId.fromString(payerData.accountId.value),
+        Timestamp.fromDate(validStart.value),
+      ),
+    )
+    .setScheduledTransaction(underlyingTransaction)
+    .setPayerAccountId(underlyingPayer);
 
   adminKey.value && scheduleTx.setAdminKey(adminKey.value);
   memo.value && scheduleTx.setTransactionMemo(memo.value);

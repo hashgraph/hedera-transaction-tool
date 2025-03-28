@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+import type { ITransaction } from '@main/shared/interfaces';
 import { TransactionRequest, type Handler, type Processable } from '..';
 
 import { computed, ref } from 'vue';
@@ -86,13 +87,13 @@ async function handle(req: Processable) {
   try {
     emit('loading:begin');
     const signature = await sign(publicKey);
-    const { id, transactionBytes } = await submit(publicKey, signature);
+    const transactionDTO = await submit(publicKey, signature);
 
     const results = await Promise.allSettled([
-      upload('observers', id),
-      upload('approvers', id),
+      upload('observers', transactionDTO.id),
+      upload('approvers', transactionDTO.id),
       draft.deleteIfNotTemplate(),
-      uploadSignatures(id, transactionBytes),
+      uploadSignatures(transactionDTO),
     ]);
 
     results.forEach(result => {
@@ -101,7 +102,7 @@ async function handle(req: Processable) {
       }
     });
 
-    emit('transaction:submit:success', id, transactionBytes);
+    emit('transaction:submit:success', transactionDTO.id, transactionDTO.transactionBytes);
   } finally {
     emit('loading:end');
   }
@@ -167,7 +168,7 @@ async function upload(type: 'observers' | 'approvers', id: number) {
   }
 }
 
-async function uploadSignatures(id: number, transactionBytes: string) {
+async function uploadSignatures(transactionDTO: ITransaction) {
   if (request.value?.executionType !== 'Scheduled') {
     return;
   }
@@ -175,12 +176,12 @@ async function uploadSignatures(id: number, transactionBytes: string) {
   assertUserLoggedIn(user.personal);
   assertIsLoggedInOrganization(user.selectedOrganization);
 
-  const personalPassword = getPassword(uploadSignatures.bind(null, id, transactionBytes), {
+  const personalPassword = getPassword(uploadSignatures.bind(null, transactionDTO), {
     subHeading: 'Enter your application password to access your private key',
   });
   if (passwordModalOpened(personalPassword)) return;
 
-  const bytes = hexToUint8Array(transactionBytes);
+  const bytes = hexToUint8Array(transactionDTO.transactionBytes);
   const transaction = Transaction.fromBytes(bytes);
 
   const publicKeysRequired = await usersPublicRequiredToSign(
@@ -207,7 +208,7 @@ async function uploadSignatures(id: number, transactionBytes: string) {
       user.selectedOrganization,
       restoredRequiredKeys,
       transaction,
-      id,
+      transactionDTO.id,
     );
     toast.success('Transaction signed successfully');
   }

@@ -6,6 +6,7 @@ import {
   PublicKey,
   ScheduleCreateTransaction,
   Transaction as SDKTransaction,
+  TransactionId,
 } from '@hashgraph/sdk';
 
 import {
@@ -373,6 +374,7 @@ export class TransactionsService {
 
     if (countExisting > 0) throw new BadRequestException(ErrorCodes.TEX);
 
+    const unfrozenSdkTransaction = SDKTransaction.fromBytes(dto.transactionBytes);
     const client = await getClientFromNetwork(dto.mirrorNetwork);
     sdkTransaction.freezeWith(client);
 
@@ -402,7 +404,7 @@ export class TransactionsService {
       throw new BadRequestException(ErrorCodes.FST);
     }
 
-    await this.handleScheduledTransaction(dto, transaction.id, sdkTransaction);
+    await this.handleScheduledTransaction(dto, transaction.id, unfrozenSdkTransaction);
 
     if (dto.reminderMillisecondsBefore) {
       const remindAt = new Date(transaction.validStart.getTime() - dto.reminderMillisecondsBefore);
@@ -412,6 +414,14 @@ export class TransactionsService {
       network: transaction.mirrorNetwork,
     });
     notifyTransactionAction(this.notificationsService);
+
+    const scheduledTransaction = await this.repo.findOne({
+      where: { scheduleTransactionId: transaction.id },
+    });
+
+    if (scheduledTransaction) {
+      transaction.scheduledTransactions = [scheduledTransaction];
+    }
 
     return transaction;
   }
@@ -617,30 +627,35 @@ export class TransactionsService {
   async handleScheduledTransaction(
     dto: CreateTransactionDto,
     id: number,
-    transaction: SDKTransaction,
+    unfrozenTransaction: SDKTransaction,
   ) {
-    if (!transactionIs(ScheduleCreateTransaction, transaction)) {
+    if (!transactionIs(ScheduleCreateTransaction, unfrozenTransaction)) {
       return;
     }
 
     //@ts-expect-error - underlyingTransaction is a private property
-    const underlyingTransaction = transaction._scheduledTransaction as SDKTransaction;
+    const underlyingTransaction = unfrozenTransaction._scheduledTransaction as SDKTransaction;
+    underlyingTransaction._signedTransactions.clear();
+
+    const transactionId = TransactionId.withValidStart(
+      unfrozenTransaction.payerAccountId || unfrozenTransaction.transactionId.accountId,
+      unfrozenTransaction.transactionId.validStart,
+    );
+    underlyingTransaction.setTransactionId(transactionId);
 
     const dbTransaction = this.repo.create({
       name: dto.name,
       type: getTransactionTypeEnumValue(underlyingTransaction),
       description: dto.description,
-      transactionId: transaction.transactionId.toString(),
-      transactionHash: encodeUint8Array(await underlyingTransaction.getTransactionHash()),
+      transactionId: transactionId.toString(),
+      transactionHash: '', // Not sure if should freeze to calculate (TO DO)
       transactionBytes: underlyingTransaction.toBytes(),
       unsignedTransactionBytes: underlyingTransaction.toBytes(),
       status: TransactionStatus.WAITING_FOR_SIGNATURES,
-      creatorKey: {
-        id: dto.creatorKeyId,
-      },
+      creatorKey: { id: dto.creatorKeyId },
       signature: dto.signature,
       mirrorNetwork: dto.mirrorNetwork,
-      validStart: transaction.transactionId.validStart.toDate(),
+      validStart: unfrozenTransaction.transactionId.validStart.toDate(),
       isManual: true,
       cutoffAt: dto.cutoffAt,
       scheduleTransactionId: id,
@@ -651,6 +666,17 @@ export class TransactionsService {
     } catch {
       throw new BadRequestException(ErrorCodes.FST);
     }
+
+    if (dto.reminderMillisecondsBefore) {
+      const remindAt = new Date(
+        dbTransaction.validStart.getTime() - dto.reminderMillisecondsBefore,
+      );
+      this.schedulerService.addReminder(getTransactionSignReminderKey(dbTransaction.id), remindAt);
+    }
+    notifyWaitingForSignatures(this.notificationsService, dbTransaction.id, {
+      network: dbTransaction.mirrorNetwork,
+    });
+    notifyTransactionAction(this.notificationsService);
   }
 
   /* Get the status where clause for the history transactions */

@@ -62,6 +62,10 @@ export class TransactionDto {
   @Expose()
   @Type(() => TransactionGroupItemDto)
   groupItem: TransactionGroupItemDto;
+
+  @Expose()
+  @Type(() => TransactionDto)
+  scheduledTransactions;
 }
 
 export class TransactionFullDto extends TransactionDto {
