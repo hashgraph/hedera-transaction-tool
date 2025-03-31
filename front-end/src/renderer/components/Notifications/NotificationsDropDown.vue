@@ -63,6 +63,7 @@ watch(totalCount, (newCount) => {
       <template v-if="totalCount > 0">
         <span
           class="indicator-circle position-absolute absolute-centered"
+          data-testid="notification-indicator"
           :style="{ left: 'unset', right: '10%', top: '35%', width: '10px', height: '10px' }"
         ></span>
       </template>

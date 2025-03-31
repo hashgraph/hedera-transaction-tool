@@ -67,6 +67,12 @@ onMounted(async () => {
 
     if ((!useKeyChain && usersCount === 1) || accountSetupStarted) {
       await resetDataLocal();
+      //This is a bit of a hack, if the user is NOT using keychain, then we need to
+      //reload the window as the UserLogin has now loaded and thinks there are two users
+      //and will display the wrong information.
+      if (usersCount > 1) {
+        window.location.reload();
+      }
     }
   } catch {
     /* Not initialized */
