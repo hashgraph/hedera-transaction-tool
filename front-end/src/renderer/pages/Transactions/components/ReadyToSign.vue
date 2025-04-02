@@ -343,7 +343,7 @@ watch(
             </tr>
           </thead>
           <tbody>
-            <template v-for="group of transactions" :key="group[0]">
+            <template v-for="(group, index) of transactions" :key="group[0]">
               <template v-if="group[0] != -1">
                 <tr
                   :class="{
@@ -367,7 +367,7 @@ watch(
                     <AppButton
                       @click="handleGroupDetails(group[0])"
                       color="secondary"
-                      data-testid="button-group-details"
+                      :data-testid="`button-group-details-${index}`"
                     >
                       Details
                     </AppButton>

@@ -132,7 +132,7 @@ watch(
 watch(() => user.selectedOrganization, initialize);
 </script>
 <template>
-  <div class="d-flex align-items-centert">
+  <div class="d-flex align-items-center">
     <div class="dropdown">
       <AppButton
         id="modeSelectorDropdown"
@@ -149,7 +149,7 @@ watch(() => user.selectedOrganization, initialize);
         <i class="bi bi-chevron-down ms-3"></i>
       </AppButton>
       <ul class="dropdown-menu w-100 mt-3">
-        <li class="dropdown-header text-muted pe-none">Organizations</li>
+        <li class="dropdown-header text-muted pe-none bg-light border-bottom">Organizations</li>
         <li
           data-testid="dropdown-item-0"
           data-value="personal"

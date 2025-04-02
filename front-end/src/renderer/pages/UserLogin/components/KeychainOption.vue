@@ -29,6 +29,7 @@ const handleUseKeychain = async () => {
 
   await encrypt('gain_access');
   const staticUser = await getStaticUser();
+  user.setAccountSetupStarted(true);
   await user.login(staticUser.id, staticUser.email, true);
   await user.refetchOrganizations();
   setupStores();

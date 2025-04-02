@@ -207,7 +207,7 @@ watch(inputPassword, pass => {
           @click="handleUseKeychain"
           loading-text="Migrating..."
           :loading="loading && keychainSelected"
-          data-testid="button-setup-personal"
+          data-testid="button-setup-personal-keychain"
           >Continue with Keychain</AppButton
         >
       </div>

@@ -53,7 +53,7 @@ pnpm dev
 ## 5. Build for distribution
 
 ```bash
-pnpm run build:mac # uses mac as build target
+pnpm build:mac # uses mac as build target
 ```
 
 ## 6. Run the unit tests

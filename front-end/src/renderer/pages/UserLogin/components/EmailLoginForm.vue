@@ -107,6 +107,7 @@ const handleOnFormSubmit = async () => {
       keepLoggedIn.value,
     );
 
+    user.setAccountSetupStarted(true);
     await user.login(id, email, false);
     await user.refetchOrganizations();
     setupStores();

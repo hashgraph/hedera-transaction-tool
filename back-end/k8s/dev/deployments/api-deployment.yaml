@@ -52,9 +52,9 @@ spec:
             - name: REDIS_URL
               value: 'redis://redis-service:6379'
             - name: ANONYMOUS_MINUTE_LIMIT
-              value: '3'
+              value: '3000'
             - name: ANONYMOUS_FIVE_SECOND_LIMIT
-              value: '1'
+              value: '1000'
             - name: GLOBAL_MINUTE_LIMIT
               value: '10000'
             - name: GLOBAL_SECOND_LIMIT
