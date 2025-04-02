@@ -28,7 +28,7 @@ class GroupPage extends BasePage {
   deleteAllButtonSelector = 'button-delete-all';
   confirmDeleteAllButtonSelector = 'button-confirm-delete-all';
   confirmGroupTransactionButtonSelector = 'button-confirm-group-transaction';
-  detailsGroupButtonSelector = 'button-group-details';
+  detailsGroupButtonSelector = 'button-group-details-';
   importCsvButtonSelector = 'button-import-csv';
 
   // Text
@@ -207,6 +207,7 @@ class GroupPage extends BasePage {
     for (let i = 0; i < numberOfTransactions; i++) {
       await this.clickOnAddTransactionButton();
       await this.transactionPage.clickOnApproveAllowanceTransaction();
+      await this.transactionPage.fillInMaxTransactionFee('5');
 
       await this.transactionPage.fillInAllowanceOwner(allowanceOwner);
       await this.transactionPage.fillInAllowanceAmount(amount);
@@ -245,8 +246,8 @@ class GroupPage extends BasePage {
     return !!(await getTransactionGroupsForTransactionId(transactionId));
   }
 
-  async clickOnDetailsGroupButton() {
-    await this.click(this.detailsGroupButtonSelector);
+  async clickOnDetailsGroupButton(index) {
+    await this.click(this.detailsGroupButtonSelector + index);
   }
 
   async clickOnTransactionDetailsButton(index) {
@@ -260,7 +261,7 @@ class GroupPage extends BasePage {
       await this.organizationPage.signInOrganization(user.email, user.password, encryptionPassword);
       await this.transactionPage.clickOnTransactionsMenuButton();
       await this.organizationPage.clickOnReadyToSignTab();
-      await this.clickOnDetailsGroupButton();
+      await this.clickOnDetailsGroupButton(0);
       await this.clickOnTransactionDetailsButton(0);
 
       // Initially sign the first transaction

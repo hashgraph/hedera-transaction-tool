@@ -1,7 +1,6 @@
 const { test } = require('@playwright/test');
 const {
   setupApp,
-  resetAppState,
   closeApp,
   generateRandomEmail,
   generateRandomPassword,
@@ -27,8 +26,12 @@ test.describe('Registration tests', () => {
   });
 
   test.beforeEach(async () => {
-    await registrationPage.logoutForReset();
-    await resetAppState(window, app);
+    if (app) {
+      await closeApp(app);
+    }
+    await resetDbState();
+    ({ app, window } = await setupApp());
+    registrationPage = new RegistrationPage(window);
   });
 
   test('Verify all elements are present on the registration page', async () => {

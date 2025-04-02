@@ -77,14 +77,7 @@ export default function useAfterOrganizationSelection() {
       return;
     }
 
-    const currentRoute = router.currentRoute.value;
-    const previousPath = router.previousPath;
-
-    if (previousPath && currentRoute.path !== previousPath) {
-      await router.push(previousPath);
-    } else if (currentRoute.name === 'login') {
-      await router.push({ name: 'transactions' });
-    }
+    await router.push({ name: 'transactions' });
   };
 
   const afterOrganizationSelection = async () => {

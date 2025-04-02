@@ -1158,6 +1158,10 @@ class TransactionPage extends BasePage {
     return await this.getTextFromInputField(this.maxTransactionFeeInputSelector);
   }
 
+  async fillInMaxTransactionFee(fee) {
+    await this.fill(this.maxTransactionFeeInputSelector, fee);
+  }
+
   async fillInDescription(description) {
     await this.fill(this.descriptionInputSelector, description);
   }

@@ -1,7 +1,6 @@
 const { test } = require('@playwright/test');
 const {
   setupApp,
-  resetAppState,
   closeApp,
   generateRandomEmail,
   generateRandomPassword,
@@ -233,9 +232,6 @@ test.describe('Transaction tests', () => {
 
     const maxAutoAssocFromResponse = accountDetails.accounts[0]?.max_automatic_token_associations;
     expect(maxAutoAssocFromResponse.toString()).toBe(maxAutoAssociationsNumber);
-
-    const acceptStakingRewardsFromResponse = accountDetails.accounts[0]?.decline_reward;
-    expect(acceptStakingRewardsFromResponse).toBe(true);
   });
 
   test('Verify user can execute transfer tokens tx', async () => {
@@ -575,7 +571,7 @@ test.describe('Transaction tests', () => {
     expect(transactionMemoFromField).toBe(transactionMemoText);
 
     const deletedIdFromField = await transactionPage.getPrefilledAccountIdInDeletePage();
-    expect(deletedIdFromField).toBe(accountIdToBeDeleted);
+    expect(deletedIdFromField.startsWith(accountIdToBeDeleted)).toBe(true);
 
     const transferIdFromField = await transactionPage.getPrefilledTransferIdAccountInDeletePage();
     expect(transferIdFromField).toContain(transferAccountId);

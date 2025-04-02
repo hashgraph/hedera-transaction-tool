@@ -83,7 +83,7 @@ test.describe('Organization Notification tests', () => {
   test('Verify notification is visible in the organization dropdown', async () => {
     await organizationPage.ensureNotificationStateForUser(firstUser, secondUser, globalCredentials);
 
-    expect(await organizationPage.getNotificationElementFromDropdown()).toBe(true);
+    expect(await organizationPage.isNotificationIndicatorElementVisible()).toBe(true);
   });
 
   test('Verify notification is saved in the db and marked correctly', async () => {
@@ -95,6 +95,7 @@ test.describe('Organization Notification tests', () => {
 
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnReadyToSignTab();
+    await organizationPage.clickOnSubmitSignButtonByIndex(0);
     await new Promise(resolve => setTimeout(resolve, 300));
     ({ isRead } = await getLatestNotificationStatusByEmail(secondUser.email));
     expect(isRead).toBe(true);
@@ -105,6 +106,7 @@ test.describe('Organization Notification tests', () => {
 
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnReadyToSignTab();
+    await organizationPage.clickOnSubmitSignButtonByIndex(0);
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     expect(await organizationPage.isNotificationNumberVisible()).toBe(false);

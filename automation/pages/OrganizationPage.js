@@ -69,7 +69,7 @@ class OrganizationPage extends BasePage {
   historyTabSelector = 'tab-5';
   deleteOrganizationButtonSelector = 'button-delete-connection';
   dropdownSelectModeSelector = 'dropdown-select-mode';
-  dropdownSelectedModeSelector = 'dropdown-selected-mode';
+  notificationsButtonSelector = 'button-notifications';
   editNicknameOrganizationButtonSelector = 'button-edit-nickname';
   logoutButtonSelector = 'button-logout';
   contactListButton = 'button-contact-list';
@@ -128,6 +128,9 @@ class OrganizationPage extends BasePage {
   stageBubbleIndexSelector = 'div-stepper-nav-item-bubble-';
   observerIndexSelector = 'span-group-email-';
   userListIndexSelector = 'span-email-';
+
+  // Elements
+  notificationsIndicatorElement = 'notification-indicator';
 
   async clickOnAddNewOrganizationButton() {
     await this.click(this.addNewOrganizationButtonSelector);
@@ -227,6 +230,7 @@ class OrganizationPage extends BasePage {
           await setupEnvironmentForTransactions(window, privateKey);
         }
 
+        await this.settingsPage.navigateToLogout();
         await this.click(this.logoutButtonSelector);
         await this.waitForElementToBeVisible(this.emailForOrganizationInputSelector);
       } else {
@@ -324,8 +328,8 @@ class OrganizationPage extends BasePage {
     await this.click(this.dropdownSelectModeSelector);
   }
 
-  async getNotificationElementFromDropdown() {
-    return await this.hasBeforePseudoElement(this.dropdownSelectedModeSelector);
+  async isNotificationIndicatorElementVisible() {
+    return this.isElementVisible(this.notificationsIndicatorElement);
   }
 
   async getNotificationElementFromFirstTransaction() {
@@ -349,6 +353,7 @@ class OrganizationPage extends BasePage {
   async logoutFromOrganization() {
     await this.selectOrganizationMode();
     await new Promise(resolve => setTimeout(resolve, 500));
+    await this.settingsPage.navigateToLogout();
     await this.click(this.logoutButtonSelector);
   }
 
@@ -845,6 +850,7 @@ class OrganizationPage extends BasePage {
       this.transactionPage.clickOnApproveAllowanceTransaction(false),
     );
     await this.setDateTimeAheadBy(timeForExecution);
+    await this.transactionPage.fillInMaxTransactionFee('5');
 
     await this.transactionPage.fillInAllowanceOwner(ownerAccountId);
     await this.transactionPage.fillInAllowanceAmount(amount);
