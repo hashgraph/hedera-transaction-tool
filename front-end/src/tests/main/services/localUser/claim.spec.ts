@@ -49,10 +49,14 @@ describe('Claim Service', () => {
       expect(result).toEqual(claim);
     });
 
-    test('should throw an error if the claim already exists', async () => {
+    test('should log a message if the claim already exists', async () => {
       prisma.claim.count.mockResolvedValue(1);
 
-      await expect(addClaim('user1', 'key1', 'value1')).rejects.toThrow('Claim already exists!');
+      const consoleSpy = vi.spyOn(console, 'log');
+
+      await addClaim('user1', 'key1', 'value1');
+
+      expect(consoleSpy).toHaveBeenCalledWith('Claim already exists, claim will be overwritten');
     });
   });
 
