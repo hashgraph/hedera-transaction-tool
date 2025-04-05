@@ -46,6 +46,10 @@ onMounted(async () => {
 </script>
 <template>
   <div v-if="show" class="d-grid">
-    <AppButton color="secondary" @click="handleUseKeychain">Sign in with Keychain</AppButton>
+    <AppButton
+      color="secondary"
+      data-testid="button-keychain-login"
+      @click="handleUseKeychain"
+    >Sign in with Keychain</AppButton>
   </div>
 </template>

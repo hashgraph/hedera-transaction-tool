@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /* Props */
-defineProps<{
+const props = defineProps<{
   items: {
     title: string;
     name: string;
@@ -12,6 +12,32 @@ defineProps<{
   itemClickable?: boolean;
   handleItemClick?: (item: { title: string; name: string }, index: number) => void;
 }>();
+
+/* Functions */
+const isActive = (index: number) => {
+  return index === props.activeIndex && index !== props.items.length - 1;
+};
+
+const isCompleted = (index: number) => {
+  return index < props.activeIndex ||
+    (props.activeIndex === index && index === props.items.length - 1);
+};
+
+const getBubbleContent = (index: number, item: { bubbleIcon?: string; bubbleLabel?: string }) => {
+  if (isActive(index) || props.activeIndex < index) {
+    return index + 1;
+  } else if (isCompleted(index)) {
+    if (item.bubbleIcon) {
+      return `<i class="bi bi-${item.bubbleIcon}"></i>`;
+    } else if (item.bubbleLabel) {
+      return item.bubbleLabel;
+    } else {
+      return '<i class="bi bi-check-lg"></i>';
+    }
+  } else {
+    return '<i class="bi bi-check-lg"></i>';
+  }
+};
 </script>
 <template>
   <div class="stepper">
@@ -21,29 +47,15 @@ defineProps<{
         <template v-for="(item, index) in items" :key="index">
           <div
             class="stepper-nav-item position-relative"
-            :class="{ 'stepper-active': activeIndex === index, 'cursor-pointer': itemClickable }"
+            :class="{ 'stepper-active': isActive(index), 'cursor-pointer': itemClickable }"
             @click="handleItemClick && handleItemClick(item, index)"
           >
             <div
               class="stepper-nav-item-bubble text-small rounded-circle border border-dark p-2"
-              :class="[item.bubbleClass && `${item.bubbleClass}`]"
+              :class="[isCompleted(index) ? item.bubbleClass : '']"
               :data-testid="`div-stepper-nav-item-bubble-${index}`"
-            >
-              <template v-if="activeIndex <= index">
-                <template v-if="item.bubbleIcon">
-                  <i class="bi" :class="[`bi-${item.bubbleIcon}`]"></i>
-                </template>
-                <template v-else-if="item.bubbleLabel">
-                  {{ item.bubbleLabel }}
-                </template>
-                <template v-else>
-                  {{ index + 1 }}
-                </template>
-              </template>
-              <template v-else>
-                <i class="bi bi-check-lg"></i>
-              </template>
-            </div>
+              v-html="getBubbleContent(index, item)"
+            ></div>
             <span
               :data-testid="`stepper-title-${index}`"
               class="stepper-nav-item-title text-micro position-absolute mt-3"
