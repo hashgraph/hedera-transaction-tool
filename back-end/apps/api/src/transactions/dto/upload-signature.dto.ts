@@ -1,9 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 import { IsSignatureMap } from '@app/common';
-import { IsNotEmptyObject } from 'class-validator';
+import { IsNotEmpty, IsNotEmptyObject, IsNumber } from 'class-validator';
 
 export class UploadSignatureMapDto {
+  @ApiProperty({
+    description: 'The ID of the transaction associated with the signature map.',
+    example: 12345,
+  })
+  @IsNotEmpty()
+  @IsNumber()
+  transactionId: number;
+
   @ApiProperty({
     type: 'object',
     example: {

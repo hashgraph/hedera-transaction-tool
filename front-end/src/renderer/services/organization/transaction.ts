@@ -1,5 +1,5 @@
 import type { Organization } from '@prisma/client';
-import type { LoggedInOrganization } from '@renderer/types';
+import type { LoggedInOrganization, SignatureItem } from '@renderer/types';
 import type {
   ITransaction,
   ITransactionFull,
@@ -79,28 +79,49 @@ export const executeTransaction = async (serverUrl: string, id: number): Promise
   }, `Failed to execute transaction with id ${id}`);
 
 /* Decrypt, sign, upload signatures to the backend */
-export const uploadSignatureMap = async (
+export const uploadSignatures = async (
   userId: string,
   userPassword: string | null,
   organization: LoggedInOrganization & Organization,
-  publicKeys: string[],
-  transaction: Transaction,
-  transactionId: number,
+  publicKeys?: string[],
+  transaction?: Transaction,
+  transactionId?: number,
+  items?: SignatureItem[],
 ) => {
-  for (const publicKey of publicKeys) {
-    const privateKeyRaw = await decryptPrivateKey(userId, userPassword, publicKey);
-    const privateKey = getPrivateKey(publicKey, privateKeyRaw);
-    await transaction.sign(privateKey);
+  const formattedMaps = [];
+
+  if (!items) {
+    if (!publicKeys || !transaction || !transactionId) {
+      throw new Error('Invalid parameters');
+    }
+
+    items = [
+      {
+        publicKeys,
+        transaction,
+        transactionId,
+      },
+    ];
   }
 
-  const signatureMap = getSignatureMapForPublicKeys(publicKeys, transaction);
+  for (const { publicKeys, transaction, transactionId } of items) {
+    for (const publicKey of publicKeys) {
+      const privateKeyRaw = await decryptPrivateKey(userId, userPassword, publicKey);
+      const privateKey = getPrivateKey(publicKey, privateKeyRaw);
+      await transaction.sign(privateKey);
+    }
+
+    const signatureMap = getSignatureMapForPublicKeys(publicKeys, transaction);
+    formattedMaps.push({
+      transactionId: transactionId,
+      signatureMap: formatSignatureMap(signatureMap),
+    });
+  }
 
   await commonRequestHandler(async () => {
     await axiosWithCredentials.post(
-      `${organization.serverUrl}/${controller}/${transactionId}/signers`,
-      {
-        signatureMap: formatSignatureMap(signatureMap),
-      },
+      `${organization.serverUrl}/${controller}/signers`,
+      formattedMaps,
     );
   }, 'Failed upload signatures');
 };
