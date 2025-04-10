@@ -78,22 +78,17 @@ export class NotificationReceiverService {
     return notificationReceiver;
   }
 
-  async updateReceivedNotification(user: User, id: number, dto: UpdateNotificationReceiverDto) {
-    const { isRead } = dto;
+  async updateReceivedNotifications(user: User, dtos: UpdateNotificationReceiverDto[]) {
+    return await Promise.all(
+      dtos.map(async ({id, isRead}) => {
+        const notificationReceiver = await this.getReceivedNotification(user, id);
+        notificationReceiver.isRead = isRead;
 
-    const notificationReceiver = await this.getReceivedNotification(user, id);
-    notificationReceiver.isRead = isRead;
+        await this.repo.update({id}, {isRead});
 
-    await this.repo.update(
-      {
-        id,
-      },
-      {
-        isRead,
-      },
+        return notificationReceiver;
+      }),
     );
-
-    return notificationReceiver;
   }
 
   async deleteReceivedNotification(user: User, id: number) {

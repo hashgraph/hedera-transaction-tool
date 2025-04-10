@@ -1,12 +1,8 @@
-import type {
-  INotificationReceiver,
-  IUpdateNotificationReceiver,
-} from '@main/shared/interfaces/organization';
+import type { INotificationReceiver, IUpdateNotificationReceiver } from '@main/shared/interfaces/organization';
 
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 
 /* Notification service for organization */
-
 const controller = 'notifications';
 
 /* Get keys for a user from organization */
@@ -47,13 +43,12 @@ export const getAllInAppNotifications = async (
 /* Update notification */
 export const updateNotification = async (
   organizationServerUrl: string,
-  notificationId: string,
   updateNotificationPreferencesDto: IUpdateNotificationReceiver,
 ): Promise<void> =>
   commonRequestHandler(async () => {
     try {
       await axiosWithCredentials.patch(
-        `${organizationServerUrl}/${controller}/${notificationId}`,
+        `${organizationServerUrl}/${controller}`,
         updateNotificationPreferencesDto,
       );
     } catch (error) {
@@ -63,21 +58,60 @@ export const updateNotification = async (
 
 export const updateNotifications = async (
   organizationServerUrl: string,
-  notificationIds: number[],
   updateNotificationPreferencesDtos: IUpdateNotificationReceiver[],
-): Promise<void> =>
-  commonRequestHandler(async () => {
-    for (let i = 0; i < notificationIds.length; i++) {
+): Promise<void> => {
+  const batchSize = 1000; // Number of items per batch
+  const rateLimitPerSecond = 1000; // Server rate limit
+
+  await processWithRateLimit(
+    updateNotificationPreferencesDtos,
+    batchSize,
+    rateLimitPerSecond,
+    async (batch) => {
+      const dtos = batch.map(id => ({
+        id,
+        isRead: true, // Example DTO structure
+      }));
+
       try {
         await axiosWithCredentials.patch(
-          `${organizationServerUrl}/${controller}/${notificationIds[i]}`,
-          updateNotificationPreferencesDtos[i],
+          `${organizationServerUrl}/${controller}`,
+          dtos,
         );
       } catch (error) {
-        console.log(error);
+        console.error('Failed to update batch:', error);
       }
+    },
+  );
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function processWithRateLimit<T>(
+  items: T[],
+  batchSize: number,
+  rateLimitPerSecond: number,
+  handler: (batch: T[]) => Promise<void>,
+): Promise<void> {
+  // Convert rate limit to milliseconds
+  const delayBetweenBatches = 1000 / rateLimitPerSecond;
+
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+
+    // Wrap the handler call in commonRequestHandler
+    await commonRequestHandler(async () => {
+      await handler(batch);
+    }, `Failed to process batch starting at index ${i}`);
+
+    // Delay before processing the next batch (if not the last batch)
+    if (i + batchSize < items.length) {
+      await delay(delayBetweenBatches);
     }
-  }, 'Failed to update notifications');
+  }
+}
 
 /* Sends email to the required signers  */
 export const remindSigners = async (serverUrl: string, transactionId: number): Promise<void> =>
