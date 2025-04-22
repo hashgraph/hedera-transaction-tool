@@ -7,6 +7,7 @@ import {
 } from '@app/common/templates/transaction-waiting-for-signatures';
 
 export * from './remind-signers';
+export * from './reset-password';
 export * from './transaction-ready-for-execution';
 export * from './transaction-waiting-for-signatures';
 export * from './user-registered';
