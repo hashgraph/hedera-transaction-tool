@@ -134,9 +134,9 @@ const useNotificationsStore = defineStore('notifications', () => {
     const severUrls = user.organizations.map(o => o.serverUrl);
     for (const severUrl of severUrls) {
       ws.on(severUrl, NOTIFICATIONS_NEW, e => {
-        const notification: INotificationReceiver = e.data;
+        const newNotifications: INotificationReceiver[] = e.data;
 
-        notifications.value[severUrl] = [...notifications.value[severUrl], notification];
+        notifications.value[severUrl] = [...notifications.value[severUrl], newNotifications];
         notifications.value = { ...notifications.value };
       });
 
