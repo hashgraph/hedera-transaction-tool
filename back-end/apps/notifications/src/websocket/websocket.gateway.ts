@@ -13,6 +13,7 @@ import { AUTH_SERVICE, BlacklistService, NotifyClientDto } from '@app/common';
 
 import { AuthWebsocket, AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
 import { roomKeys } from './helpers';
+import { DebouncedNotificationBatcher, NotificationMessage } from '@app/common/utils/notifications/debounced-notification-batcher';
 
 @WebSocketGateway({
   path: '/ws',
@@ -23,10 +24,19 @@ import { roomKeys } from './helpers';
 export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(WebsocketGateway.name);
 
+  private batcher: DebouncedNotificationBatcher;
+
   constructor(
     @Inject(AUTH_SERVICE) private readonly authService: ClientProxy,
     private readonly blacklistService: BlacklistService,
-  ) {}
+  ) {
+    this.batcher = new DebouncedNotificationBatcher(
+      (groupKey, messages) => processMessages(this.io, groupKey, messages),
+      1000,
+      200,
+      5000,
+    );
+  }
 
   @WebSocketServer()
   private io: Server;
@@ -58,10 +68,32 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   }
 
   notifyClient({ message, content }: NotifyClientDto) {
-    this.io.emit(message, { content });
+    const newMessage = new NotificationMessage(message, [content]);
+    this.batcher.add(newMessage);
   }
 
   notifyUser(userId: number, message: string, data) {
-    this.io.to(roomKeys.USER_KEY(userId)).emit(message, { data });
+    const newMessage = new NotificationMessage(message, [data]);
+    this.batcher.add(newMessage, userId.toString());
   }
 }
+
+const processMessages = async (io: Server, groupKey: string | null, messages: NotificationMessage[]) => {
+  const groupedMessages = messages.reduce((map, msg) => {
+    if (!map.has(msg.message)) {
+      map.set(msg.message, []);
+    }
+    map.get(msg.message)!.push(...msg.content);
+    return map;
+  }, new Map<string, string[]>());
+
+  for (const [message, content] of groupedMessages.entries()) {
+    if (groupKey) {
+      // console.log(`Emitting message ${message} to group ${groupKey}`);
+      io.to(groupKey).emit(message, content);
+    } else {
+      // console.log(`Emitting message ${message} to all clients`);
+      io.emit(message, content);
+    }
+  }
+};
