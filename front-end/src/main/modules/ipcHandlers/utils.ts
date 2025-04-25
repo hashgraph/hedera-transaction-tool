@@ -8,8 +8,25 @@ import { getNumberArrayFromString } from '@main/utils';
 import { dualCompareHash, hash } from '@main/utils/crypto';
 
 const createChannelName = (...props: string[]) => ['utils', ...props].join(':');
+let bounceId: number | null = null;
 
 export default () => {
+  ipcMain.on(createChannelName('setDockBounce'), (_e, bounce: boolean) => {
+    if (bounce) {
+      const windows = BrowserWindow.getAllWindows();
+      const isAppFocused = windows.some((win) => win.isFocused());
+
+      if (!isAppFocused && app.dock) {
+        bounceId = app.dock.bounce('critical');
+      }
+    } else {
+      if (bounceId !== null && app.dock) {
+        app.dock.cancelBounce(bounceId);
+        bounceId = null;
+      }
+    }
+  });
+
   ipcMain.on(createChannelName('openExternal'), (_e, url: string) => shell.openExternal(url));
 
   ipcMain.on(createChannelName('openPath'), (_e, path: string) => shell.openPath(path));
