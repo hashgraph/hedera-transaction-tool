@@ -115,23 +115,22 @@ export class NotificationsController {
   }
 
   @ApiOperation({
-    summary: "Updates user's received notification",
+    summary: "Updates user's received notifications",
     description:
-      'Updates notification with a given NOTIFICATION RECEIVER id that the user has received',
+      'Updates notifications with a given NOTIFICATION RECEIVER id that the user has received',
   })
   @ApiResponse({
     status: 200,
     type: NotificationReceiverDto,
   })
-  @Patch('/:id')
+  @Patch()
   @HttpCode(200)
   @Serialize(NotificationReceiverDto)
   async updateReceivedNotification(
     @GetUser() user: User,
-    @Param('id', ParseIntPipe) id: number,
-    @Body() body: UpdateNotificationReceiverDto,
-  ): Promise<NotificationReceiver> {
-    return this.notificationsService.updateReceivedNotification(user, id, body);
+    @Body() body: UpdateNotificationReceiverDto[],
+  ): Promise<NotificationReceiver[]> {
+    return this.notificationsService.updateReceivedNotifications(user, body);
   }
 
   @ApiOperation({

@@ -167,11 +167,18 @@ export const getUserShouldApprove = async (
   transactionId: number,
 ): Promise<boolean> =>
   commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.get(
-      `${serverUrl}/${controller}/approve/${transactionId}`,
-    );
+    //TODO Approve is not implemented yet, and doing it this way is not correct
+    // as it will request the backend for every transaction, in the case of TransactionGroupDetails.vue
+    // where the group is large, this is a problem. The approval status should be pulled initially for all
+    // transactions.
 
-    return data;
+    // const { data } = await axiosWithCredentials.get(
+    //   `${serverUrl}/${controller}/approve/${transactionId}`,
+    // );
+    //
+    // return data;
+
+    return false;
   }, 'Failed to get if user should approve the transaction');
 
 /* Get the count of the transactions to sign */
