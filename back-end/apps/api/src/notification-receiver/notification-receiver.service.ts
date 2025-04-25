@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
-import { FindManyOptions, FindOptionsOrder, FindOptionsWhere, Repository } from 'typeorm';
+import { FindManyOptions, FindOptionsOrder, FindOptionsWhere, In, Repository } from 'typeorm';
 
 import {
   Notification,
@@ -78,22 +78,40 @@ export class NotificationReceiverService {
     return notificationReceiver;
   }
 
-  async updateReceivedNotification(user: User, id: number, dto: UpdateNotificationReceiverDto) {
-    const { isRead } = dto;
-
-    const notificationReceiver = await this.getReceivedNotification(user, id);
-    notificationReceiver.isRead = isRead;
-
-    await this.repo.update(
-      {
-        id,
+  async updateReceivedNotifications(user: User, dtos: UpdateNotificationReceiverDto[]) {
+    // Separate DTOs into two groups in one pass
+    const { toRead, toUnread } = dtos.reduce(
+      (groups, dto) => {
+        if (dto.isRead) {
+          groups.toRead.push(dto.id);
+        } else {
+          groups.toUnread.push(dto.id);
+        }
+        return groups;
       },
-      {
-        isRead,
-      },
+      { toRead: [], toUnread: [] } as { toRead: number[]; toUnread: number[] },
     );
 
-    return notificationReceiver;
+    // Perform bulk updates
+    if (toRead.length > 0) {
+      await this.repo.update(
+        { id: In(toRead), userId: user.id },
+        { isRead: true },
+      );
+    }
+
+    if (toUnread.length > 0) {
+      await this.repo.update(
+        { id: In(toUnread), userId: user.id },
+        { isRead: false },
+      );
+    }
+
+    // Return updated notifications
+    return this.repo.findBy({
+      id: In([...toRead, ...toUnread]),
+      userId: user.id,
+    });
   }
 
   async deleteReceivedNotification(user: User, id: number) {

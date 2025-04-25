@@ -47,5 +47,6 @@ export interface INotification {
 }
 
 export interface IUpdateNotificationReceiver {
+  id: number;
   isRead: boolean;
 }
