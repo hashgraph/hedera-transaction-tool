@@ -51,7 +51,7 @@ onBeforeUnmount(() => {
     v-bind="$attrs"
     class="modal fade show"
     aria-labelledby="exampleModalLabel"
-    :aria-hidden="!show"
+    :inert="!show"
     data-testid="modal-confirm-transaction"
     :style="{ display: show ? 'block' : 'none' }"
   >
