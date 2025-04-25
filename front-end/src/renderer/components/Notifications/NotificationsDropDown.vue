@@ -4,6 +4,7 @@ import { ref, watch } from 'vue';
 import { networkMapping } from '@renderer/shared/constants';
 
 import { useGroupedNotifications } from './composables';
+import { setDockBounce } from '@renderer/services/electronUtilsService';
 
 /* Composables */
 const { groupedNotifications, totalCount } = useGroupedNotifications();
@@ -17,6 +18,8 @@ const triggerRingAnimation = () => {
   setTimeout(() => {
     isRinging.value = false;
   }, 2000);
+
+  setDockBounce();
 };
 
 /* Watchers */
