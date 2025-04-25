@@ -380,7 +380,7 @@ async function uploadObservers(transactionId: number, seqId: number) {
 async function uploadApprovers(transactionId: number, seqId: number) {
   const hasApprovers = transactionGroup.hasApprovers(seqId);
 
-  if (hasApprovers) {
+  if (!hasApprovers) {
     return;
   }
 
