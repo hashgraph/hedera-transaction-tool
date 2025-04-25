@@ -216,7 +216,7 @@ function setGetTransactionsFunction() {
   }, true);
 }
 
-function getOpositeDirection() {
+function getOppositeDirection() {
   return sort.direction === 'asc' ? 'desc' : 'asc';
 }
 
@@ -269,7 +269,7 @@ watch(
                   @click="
                     handleSort(
                       'transactionId',
-                      sort.field === 'transactionId' ? getOpositeDirection() : 'asc',
+                      sort.field === 'transactionId' ? getOppositeDirection() : 'asc',
                     )
                   "
                 >
@@ -284,7 +284,7 @@ watch(
               <th>
                 <div
                   class="table-sort-link"
-                  @click="handleSort('type', sort.field === 'type' ? getOpositeDirection() : 'asc')"
+                  @click="handleSort('type', sort.field === 'type' ? getOppositeDirection() : 'asc')"
                 >
                   <span>Transaction Type</span>
                   <i
@@ -300,7 +300,7 @@ watch(
                   @click="
                     handleSort(
                       'validStart',
-                      sort.field === 'validStart' ? getOpositeDirection() : 'asc',
+                      sort.field === 'validStart' ? getOppositeDirection() : 'asc',
                     )
                   "
                 >
