@@ -134,14 +134,17 @@ const useNotificationsStore = defineStore('notifications', () => {
     const severUrls = user.organizations.map(o => o.serverUrl);
     for (const severUrl of severUrls) {
       ws.on(severUrl, NOTIFICATIONS_NEW, e => {
-        const newNotifications: INotificationReceiver[] = e.data;
+        const newNotifications: INotificationReceiver[] = e;
 
-        notifications.value[severUrl] = [...notifications.value[severUrl], newNotifications];
+        notifications.value[severUrl] = [...notifications.value[severUrl], ...newNotifications];
         notifications.value = { ...notifications.value };
       });
 
       ws.on(severUrl, NOTIFICATIONS_INDICATORS_DELETE, e => {
-        const notificationReceiverIds: number[] = e.data.notificationReceiverIds;
+        if (!Array.isArray(e)) {
+          e = [e];
+        }
+        const notificationReceiverIds = e.flatMap(item => item.notificationReceiverIds || []);
 
         notifications.value[severUrl] = notifications.value[severUrl].filter(
           nr => !notificationReceiverIds.includes(nr.id),
