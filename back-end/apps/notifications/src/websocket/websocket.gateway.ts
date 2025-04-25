@@ -74,11 +74,11 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
   notifyUser(userId: number, message: string, data) {
     const newMessage = new NotificationMessage(message, [data]);
-    this.batcher.add(newMessage, userId.toString());
+    this.batcher.add(newMessage, userId);
   }
 }
 
-const processMessages = async (io: Server, groupKey: string | null, messages: NotificationMessage[]) => {
+const processMessages = async (io: Server, groupKey: number | null, messages: NotificationMessage[]) => {
   const groupedMessages = messages.reduce((map, msg) => {
     if (!map.has(msg.message)) {
       map.set(msg.message, []);
@@ -89,10 +89,8 @@ const processMessages = async (io: Server, groupKey: string | null, messages: No
 
   for (const [message, content] of groupedMessages.entries()) {
     if (groupKey) {
-      // console.log(`Emitting message ${message} to group ${groupKey}`);
-      io.to(groupKey).emit(message, content);
+      io.to(roomKeys.USER_KEY(groupKey)).emit(message, content);
     } else {
-      // console.log(`Emitting message ${message} to all clients`);
       io.emit(message, content);
     }
   }
