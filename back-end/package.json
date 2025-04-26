@@ -21,7 +21,9 @@
     "typeorm": "typeorm-ts-node-commonjs",
     "create-admin": "npx ts-node ./scripts/create-admin.ts",
     "create-users": "npx ts-node ./scripts/add-users.ts",
-    "deploy:dev": "sh ./k8s/dev/deploy.sh"
+    "deploy:dev": "sh ./k8s/dev/deploy.sh",
+    "test:all": "npm run test --workspace=apps/api && npm run test --workspace=apps/chain && npm run test --workspace=apps/notifications",
+    "test:cov:all": "npm run test:cov --workspace=apps/api && npm run test:cov --workspace=apps/chain && npm run test:cov --workspace=apps/notifications"
   },
   "dependencies": {
     "@hashgraph/proto": "2.18.5",
