@@ -126,7 +126,7 @@ export class NotificationsController {
   @Patch()
   @HttpCode(200)
   @Serialize(NotificationReceiverDto)
-  async updateReceivedNotification(
+  async updateReceivedNotifications(
     @GetUser() user: User,
     @Body() body: UpdateNotificationReceiverDto[],
   ): Promise<NotificationReceiver[]> {
