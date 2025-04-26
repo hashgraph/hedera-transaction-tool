@@ -112,27 +112,27 @@ describe('NotificationsController', () => {
     });
   });
 
-  describe('updateReceivedNotification', () => {
+  describe('updateReceivedNotifications', () => {
     it('should update the notification receiver', async () => {
-      const dto: UpdateNotificationReceiverDto = { isRead: true };
-      const updatedNotificationReceiver = { ...notificationReceiver, isRead: true };
+      const dto: UpdateNotificationReceiverDto = { id: 1, isRead: true };
+      const updatedNotificationReceivers = [{ ...notificationReceiver, isRead: true }];
 
       jest
-        .spyOn(service, 'updateReceivedNotification')
-        .mockResolvedValue(updatedNotificationReceiver);
+        .spyOn(service, 'updateReceivedNotifications')
+        .mockResolvedValue(updatedNotificationReceivers);
 
-      const result = await controller.updateReceivedNotification(user, 1, dto);
+      const result = await controller.updateReceivedNotifications(user, [dto]);
 
-      expect(service.updateReceivedNotification).toHaveBeenCalledWith(user, 1, dto);
-      expect(result).toEqual(updatedNotificationReceiver);
+      expect(service.updateReceivedNotifications).toHaveBeenCalledWith(user, [dto]);
+      expect(result).toEqual(updatedNotificationReceivers);
     });
 
     it('should throw NotFoundException if notification receiver not found', async () => {
-      const dto: UpdateNotificationReceiverDto = { isRead: true };
+      const dto: UpdateNotificationReceiverDto = { id: 1, isRead: true };
 
-      jest.spyOn(service, 'updateReceivedNotification').mockRejectedValue(new NotFoundException());
+      jest.spyOn(service, 'updateReceivedNotifications').mockRejectedValue(new NotFoundException());
 
-      await expect(controller.updateReceivedNotification(user, 1, dto)).rejects.toThrow(
+      await expect(controller.updateReceivedNotifications(user, [dto])).rejects.toThrow(
         NotFoundException,
       );
     });

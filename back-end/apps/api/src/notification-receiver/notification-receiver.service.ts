@@ -79,37 +79,45 @@ export class NotificationReceiverService {
   }
 
   async updateReceivedNotifications(user: User, dtos: UpdateNotificationReceiverDto[]) {
-    // Separate DTOs into two groups in one pass
-    const { toRead, toUnread } = dtos.reduce(
-      (groups, dto) => {
-        if (dto.isRead) {
-          groups.toRead.push(dto.id);
-        } else {
-          groups.toUnread.push(dto.id);
+    const dtoIds = dtos.map(dto => dto.id);
+
+    // get only the notifications that belong to the user
+    const notifications = await this.repo.findBy({
+      id: In(dtoIds),
+      userId: user.id,
+    });
+
+    if (notifications.length === 0) {
+      throw new BadRequestException(ErrorCodes.NNF);
+    }
+
+    // set up filter to ensure only to include dtos that are in the notifications
+    const notificationIds = new Set(notifications.map(notification => notification.id));
+
+    const updates = dtos.reduce((map, dto) => {
+      if (notificationIds.has(dto.id)) {
+        if (!map.has(dto.isRead)) {
+          map.set(dto.isRead, []);
         }
-        return groups;
-      },
-      { toRead: [], toUnread: [] } as { toRead: number[]; toUnread: number[] },
-    );
+        map.get(dto.isRead)!.push(dto.id);
+      }
+      return map;
+    }, new Map<boolean, number[]>());
 
-    // Perform bulk updates
-    if (toRead.length > 0) {
-      await this.repo.update(
-        { id: In(toRead), userId: user.id },
-        { isRead: true },
-      );
+    for (const [isRead, ids] of updates) {
+      if (ids.length > 0) {
+        await this.repo.update(
+          { id: In(ids) },
+          { isRead },
+        );
+      }
     }
 
-    if (toUnread.length > 0) {
-      await this.repo.update(
-        { id: In(toUnread), userId: user.id },
-        { isRead: false },
-      );
-    }
+    const allIds = [...updates.values()].flat();
 
-    // Return updated notifications
-    return this.repo.findBy({
-      id: In([...toRead, ...toUnread]),
+    // Get only the updated notifications fresh from the database
+    return await this.repo.findBy({
+      id: In(allIds),
       userId: user.id,
     });
   }
