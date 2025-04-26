@@ -9,11 +9,16 @@ import {
 } from '@nestjs/websockets';
 import { Server } from 'socket.io';
 
-import { AUTH_SERVICE, BlacklistService, NotifyClientDto } from '@app/common';
+import {
+  AUTH_SERVICE,
+  BlacklistService,
+  DebouncedNotificationBatcher,
+  NotificationMessage,
+  NotifyClientDto
+} from '@app/common';
 
 import { AuthWebsocket, AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
 import { roomKeys } from './helpers';
-import { DebouncedNotificationBatcher, NotificationMessage } from '@app/common/utils/notifications/debounced-notification-batcher';
 
 @WebSocketGateway({
   path: '/ws',
@@ -31,7 +36,7 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
     private readonly blacklistService: BlacklistService,
   ) {
     this.batcher = new DebouncedNotificationBatcher(
-      (groupKey, messages) => processMessages(this.io, groupKey, messages),
+      this.processMessages.bind(this),
       1000,
       200,
       5000,
@@ -76,22 +81,22 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
     const newMessage = new NotificationMessage(message, [data]);
     this.batcher.add(newMessage, userId);
   }
+
+  private async processMessages(groupKey: number | null, messages: NotificationMessage[]) {
+    const groupedMessages = messages.reduce((map, msg) => {
+      if (!map.has(msg.message)) {
+        map.set(msg.message, []);
+      }
+      map.get(msg.message)!.push(...msg.content);
+      return map;
+    }, new Map<string, string[]>());
+
+    for (const [message, content] of groupedMessages.entries()) {
+      if (groupKey) {
+        this.io.to(roomKeys.USER_KEY(groupKey)).emit(message, content);
+      } else {
+        this.io.emit(message, content);
+      }
+    }
+  };
 }
-
-const processMessages = async (io: Server, groupKey: number | null, messages: NotificationMessage[]) => {
-  const groupedMessages = messages.reduce((map, msg) => {
-    if (!map.has(msg.message)) {
-      map.set(msg.message, []);
-    }
-    map.get(msg.message)!.push(...msg.content);
-    return map;
-  }, new Map<string, string[]>());
-
-  for (const [message, content] of groupedMessages.entries()) {
-    if (groupKey) {
-      io.to(roomKeys.USER_KEY(groupKey)).emit(message, content);
-    } else {
-      io.emit(message, content);
-    }
-  }
-};
