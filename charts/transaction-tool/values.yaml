@@ -29,7 +29,7 @@ rabbitmq:
         storage: "1Gi"
       secretBackend:
         externalSecret:
-          # @param rabbitmqCluster.config.secretBackend.externalSecret.name must be set if you are self-hosting RabbitMQ in your cluster.
+          # @param rabbitmq.config.cluster.secretBackend.externalSecret.name must be set if you are self-hosting in your cluster i.e. @param rabbitmq.enabled is true.
           name: rabbitmq-development
       affinity:
         podAntiAffinity:
@@ -41,10 +41,20 @@ rabbitmq:
                   values:
                   - development-rmq
             topologyKey: kubernetes.io/hostname
-            whenUnsatisfiable: ScheduleAnyway
-            labelSelector:
-              matchLabels:
-                app.kubernetes.io/name: development-rmq
+      override:
+        statefulSet:
+          spec:
+            template:
+              spec:
+                containers: []
+                topologySpreadConstraints:
+                - maxSkew: 1
+                  topologyKey: "topology.kubernetes.io/zone"
+                  whenUnsatisfiable: ScheduleAnyway
+                  labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/name: development-rmq
+
 
 postgres:
   # @param postgres.enabled set to true if you want to self-host on your k8s cluster.
