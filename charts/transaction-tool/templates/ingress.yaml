@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: back-end
-  namespace: {{ .Values.namespace }}
+  namespace: {{ .Release.namespace }}
   annotations:
     kubernetes.io/ingress.class: {{ .Values.ingress.className }}
 spec:
@@ -17,11 +17,11 @@ spec:
               service:
                 name: notifications
                 port:
-                  number: {{ .Values.notifications.service.port }}
+                  number: {{ .Values.notifications.service.httpPort }}
           - path: /
             pathType: Prefix
             backend:
               service:
                 name: api
                 port:
-                  number: {{ .Values.api.service.port }}
+                  number: {{ .Values.api.service.httpPort }}
