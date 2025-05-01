@@ -20,10 +20,11 @@ rabbitmq:
         limits:
           cpu: '2'
           memory: 3Gi
-      additionalConfig: |
-        cluster_partition_handling = pause_minority
-        disk_free_limit.relative = 1.0
-        collect_statistics_interval = 10000
+      rabbitmq:
+        additionalConfig: |
+          cluster_partition_handling = pause_minority
+          disk_free_limit.relative = 1.0
+          collect_statistics_interval = 10000
       persistence:
         # storageClassName: rabbitmq
         storage: "1Gi"
