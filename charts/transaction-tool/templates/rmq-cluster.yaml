@@ -1,0 +1,9 @@
+{{- if hasKey .Values.rabbitmq.cluster "config" }}
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: {{ .Values.rabbitmq.cluster.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+{{- .Values.rabbitmq.cluster.config | toYaml | nindent 2 }}
+{{- end }}

@@ -1,0 +1,9 @@
+{{- if hasKey .Values.postgres.cluster "config" }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .Values.postgres.cluster.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+{{- .Values.postgres.cluster.config | toYaml | nindent 2 }}
+{{- end }}
