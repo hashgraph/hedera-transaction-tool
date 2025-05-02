@@ -1,8 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: auth
+  name: {{ include "transaction-tool.fullname" . }}-auth
   namespace: {{ .Release.namespace }}
+  annotations: {{ include "common.annotations" . | nindent 4 }}
 spec:
   selector:
     app: api

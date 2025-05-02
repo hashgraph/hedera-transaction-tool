@@ -1,8 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: api
+  name: {{ include "transaction-tool.fullname" . }}-api
   namespace: {{ .Release.namespace }}
+  labels: {{ include "common.labels" . | nindent 4 }}
+  annotations: {{ include "common.annotations" . | nindent 4 }}
 spec:
   replicas: {{ .Values.api.replicas }}
   selector:

@@ -1,8 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: chain
+  name: {{ include "transaction-tool.fullname" . }}-chain
   namespace: {{ .Release.Namespace }}
+  annotations: {{ include "common.annotations" . | nindent 4 }}
 spec:
   replicas: {{ .Values.chain.replicas }}
   selector:

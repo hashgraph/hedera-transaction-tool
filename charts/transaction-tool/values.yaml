@@ -1,3 +1,14 @@
+# @param nameOverride overrides the name of the chart.
+nameOverride: ""
+# @param fullnameOverride overrides the full name of the chart.
+fullnameOverride: ""
+
+global:
+  labels: {}
+  annotations:
+    app: my-custom-annoation
+
+
 rabbitmq:
   # @param rabbitmq.enabled set to true if you want to self-host on your k8s cluster.
   enabled: true
@@ -10,7 +21,6 @@ rabbitmq:
   endpoint: ""
   port: 5672
   cluster:
-    name: development-rmq
     # Official RabbitMQ configuration starts here: https://www.rabbitmq.com/kubernetes/operator/using-operator#configure
     config:
       replicas: 1
@@ -67,7 +77,6 @@ postgres:
   host: ""
   port: 5432
   cluster:
-    name: development-cnpg
     # Official ProstgreSQL configuration starts here: https://cloudnative-pg.io/documentation/1.24/
     config:
       instances: 1

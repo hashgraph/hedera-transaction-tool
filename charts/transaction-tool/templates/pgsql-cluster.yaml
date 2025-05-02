@@ -2,8 +2,9 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: {{ .Values.postgres.cluster.name }}
+  name: {{ include "transaction-tool.fullname" . }}-pg
   namespace: {{ .Release.Namespace }}
+  annotations: {{ include "common.annotations" . | nindent 4 }}
 spec:
 {{- .Values.postgres.cluster.config | toYaml | nindent 2 }}
 {{- end }}

@@ -1,10 +1,11 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: back-end
+  name: {{ include "transaction-tool.fullname" . }}-back-end
   namespace: {{ .Release.namespace }}
   annotations:
     kubernetes.io/ingress.class: {{ .Values.ingress.className }}
+    {{ include "common.annotations" . | nindent 4 }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
