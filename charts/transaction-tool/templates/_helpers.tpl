@@ -19,9 +19,9 @@ helm.sh/chart: {{ include "transactiontool.chart" . }}
 Common annotations
 */}}
 {{- define "common.annotations" -}}
-{{- if .Values.global.annotations }}
-{{ toYaml .Values.global.annotations }}
-{{- end }}
+{{- if .Values.global.annotations -}}
+{{- toYaml .Values.global.annotations -}}
+{{- end -}}
 {{- end -}}
 
 

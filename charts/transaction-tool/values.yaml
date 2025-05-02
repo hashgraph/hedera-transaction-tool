@@ -154,11 +154,7 @@ api:
     httpPort: 3000
     targetPort: 3000
     ingress:
-      annotations:
-        traefik.ingress.kubernetes.io/service.sticky.cookie: "true"
-        traefik.ingress.kubernetes.io/service.sticky.cookie.name: "transaction-tool-api-development"
-        traefik.ingress.kubernetes.io/service.sticky.cookie.secure: "true"
-        traefik.ingress.kubernetes.io/service.passhostheader: "true"
+      annotations: {}
 
 # Auth service configuration
 auth:
