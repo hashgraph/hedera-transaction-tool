@@ -5,6 +5,7 @@ metadata:
   name: {{ include "transaction-tool.fullname" . }}-rmq
   namespace: {{ .Release.Namespace }}
   annotations: {{ include "common.annotations" . | nindent 4 }}
+  labels: {{ include "common.labels" . | nindent 4 }}
 spec:
 {{- .Values.rabbitmq.cluster.config | toYaml | nindent 2 }}
 {{- end }}

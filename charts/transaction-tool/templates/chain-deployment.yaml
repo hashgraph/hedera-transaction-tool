@@ -4,6 +4,7 @@ metadata:
   name: {{ include "transaction-tool.fullname" . }}-chain
   namespace: {{ .Release.Namespace }}
   annotations: {{ include "common.annotations" . | nindent 4 }}
+  labels: {{ include "common.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.chain.replicas }}
   selector:
@@ -11,8 +12,10 @@ spec:
       app: chain
   template:
     metadata:
+      annotations: {{ include "common.annotations" . | nindent 8 }}
       labels:
         app: chain
+        {{ include "common.labels" . | nindent 8 }}
     spec:
       containers:
         - name: chain

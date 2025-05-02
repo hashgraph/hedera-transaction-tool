@@ -8,6 +8,7 @@ metadata:
     {{- toYaml .Values.api.service.ingress.annotations | nindent 4 }}
     {{ include "common.annotations" . | nindent 4 }}
   {{- end }}
+  labels: {{ include "common.labels" . | nindent 4 }}
 spec:
   selector:
     app: api

@@ -5,8 +5,7 @@ fullnameOverride: ""
 
 global:
   labels: {}
-  annotations:
-    app: my-custom-annoation
+  annotations: {}
 
 
 rabbitmq:

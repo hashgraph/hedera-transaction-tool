@@ -8,6 +8,7 @@ metadata:
     {{- toYaml .Values.notifications.service.ingress.annotations | nindent 4 }}
     {{ include "common.annotations" . | nindent 4 }}
   {{- end }}
+  labels: {{ include "common.labels" . | nindent 4 }}
 spec:
   ports:
     - name: 'http'
