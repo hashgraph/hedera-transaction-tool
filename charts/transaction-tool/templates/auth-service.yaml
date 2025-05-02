@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "transaction-tool.fullname" . }}-auth
+  name: {{ include "transactiontool.fullname" . }}-auth
   namespace: {{ .Release.namespace }}
   annotations: {{ include "common.annotations" . | nindent 4 }}
   labels: {{ include "common.labels" . | nindent 4 }}

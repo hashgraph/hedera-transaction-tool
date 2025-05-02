@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "transaction-tool.fullname" . }}-api
+  name: {{ include "transactiontool.fullname" . }}-api
   namespace: {{ .Release.namespace }}
   {{- if and (hasKey .Values.api.service "ingress") (hasKey .Values.api.service.ingress "annotations") (not (empty .Values.api.service.ingress.annotations)) }}
   annotations:

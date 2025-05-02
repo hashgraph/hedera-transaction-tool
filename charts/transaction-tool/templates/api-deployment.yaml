@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "transaction-tool.fullname" . }}-api
+  name: {{ include "transactiontool.fullname" . }}-api
   namespace: {{ .Release.namespace }}
   labels: {{ include "common.labels" . | nindent 4 }}
   annotations: {{ include "common.annotations" . | nindent 4 }}
@@ -55,10 +55,10 @@ spec:
               value: {{ if not (empty .Values.rabbitmq.endpoint) -}}
                 'amqp://$(RABBITMQ_USERNAME):$(RABBITMQ_PASSWORD)@{{ .Values.rabbitmq.endpoint }}:{{ .Values.rabbitmq.port }}'
               {{- else -}}
-                'amqp://$(RABBITMQ_USERNAME):$(RABBITMQ_PASSWORD)@{{ .Values.rabbitmq.cluster.name }}.{{ .Release.Namespace}}.svc:{{ .Values.rabbitmq.port }}'
+                'amqp://$(RABBITMQ_USERNAME):$(RABBITMQ_PASSWORD)@{{ template "transactiontool.fullname" . }}-rmq.{{ .Release.Namespace}}.svc:{{ .Values.rabbitmq.port }}'
               {{- end }}
             - name: POSTGRES_HOST
-              value: {{ coalesce .Values.postgres.host (printf "%s-rw.%s.svc" .Values.postgres.cluster.name .Release.Namespace) | squote }}
+              value: {{ include "transactiontool.sqlHost" . }}
             - name: POSTGRES_PORT
               value: {{ .Values.postgres.port | squote }}
             - name: POSTGRES_DATABASE
@@ -95,7 +95,7 @@ spec:
             - name: OTP_EXPIRATION
               value: {{ .Values.api.env.OTP_EXPIRATION | squote }}
             - name: REDIS_URL
-              value: {{ coalesce .Values.redis.url (printf "redis://%s-redis-ha.%s.svc" .Release.Name .Release.Namespace) | squote }}
+              value: {{ include "transactiontool.redisUrl" .  }}
             - name: ANONYMOUS_MINUTE_LIMIT
               value: {{ .Values.api.env.ANONYMOUS_MINUTE_LIMIT | squote }}
             - name: ANONYMOUS_FIVE_SECOND_LIMIT

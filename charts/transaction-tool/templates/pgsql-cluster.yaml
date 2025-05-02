@@ -2,7 +2,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: {{ include "transaction-tool.fullname" . }}-pg
+  name: {{ include "transactiontool.fullname" . }}-pg
   namespace: {{ .Release.Namespace }}
   annotations: {{ include "common.annotations" . | nindent 4 }}
   labels: {{ include "common.labels" . | nindent 4 }}

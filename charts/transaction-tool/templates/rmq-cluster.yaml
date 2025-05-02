@@ -2,7 +2,7 @@
 apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
 metadata:
-  name: {{ include "transaction-tool.fullname" . }}-rmq
+  name: {{ include "transactiontool.fullname" . }}-rmq
   namespace: {{ .Release.Namespace }}
   annotations: {{ include "common.annotations" . | nindent 4 }}
   labels: {{ include "common.labels" . | nindent 4 }}
