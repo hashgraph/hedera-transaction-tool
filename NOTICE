@@ -309,10 +309,6 @@ The Initial Developer of @hashgraph/sdk@2.59.0,
 is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
-The Initial Developer of @hashgraph/sdk@2.61.0,
-is Launchbadge (https://github.com/hiero-ledger/hiero-sdk-js).
-Copyright Launchbadge. All Rights Reserved.
-
 The Initial Developer of @humanfs/core@0.19.1,
 is Nicholas C. Zakas (https://github.com/humanwhocodes/humanfs).
 Copyright Nicholas C. Zakas. All Rights Reserved.
@@ -898,7 +894,7 @@ The Initial Developer of amqp-connection-manager@4.1.14,
 is Jason Walton (https://github.com/jwalton/node-amqp-connection-manager).
 Copyright Jason Walton. All Rights Reserved.
 
-The Initial Developer of amqplib@0.10.5,
+The Initial Developer of amqplib@0.10.7,
 is Michael Bridgen (https://github.com/amqp-node/amqplib).
 Copyright Michael Bridgen. All Rights Reserved.
 
@@ -982,10 +978,6 @@ Copyright Ryan Zimmerman. All Rights Reserved.
 The Initial Developer of atomic-sleep@1.0.0,
 is David Mark Clements (https://github.com/davidmarkclements/atomic-sleep).
 Copyright David Mark Clements. All Rights Reserved.
-
-The Initial Developer of axios@1.7.9,
-is Matt Zabriskie (https://github.com/axios/axios).
-Copyright Matt Zabriskie. All Rights Reserved.
 
 The Initial Developer of axios@1.8.3,
 is Matt Zabriskie (https://github.com/axios/axios).

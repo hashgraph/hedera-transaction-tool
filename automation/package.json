@@ -3,7 +3,8 @@
   "scripts": {
     "test": "playwright test",
     "test:list": "playwright test --list",
-    "postinstall": "node ../notice-gen/index.js"
+    "postinstall": "node ../notice-gen/index.js",
+    "init:all": "npx ts-node setup/setup.ts"
   },
   "main": "playwright.config.js",
   "directories": {
