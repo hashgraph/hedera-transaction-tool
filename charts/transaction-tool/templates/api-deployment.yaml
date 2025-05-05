@@ -2,9 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "transactiontool.fullname" . }}-api
-  namespace: {{ .Release.namespace }}
-  labels: {{ include "common.labels" . | nindent 4 }}
-  annotations: {{ include "common.annotations" . | nindent 4 }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "common.labels" . | nindent 4 }}
+{{- if .Values.global.annotations }}
+  annotations:  {{- toYaml .Values.global.annotations | nindent 4 }}
+{{- end }}
 spec:
   replicas: {{ .Values.api.replicas }}
   selector:
@@ -12,10 +14,12 @@ spec:
       app: api
   template:
     metadata:
-      annotations: {{ include "common.annotations" . | nindent 8 }}
+    {{- if .Values.global.annotations }}
+      annotations:  {{- toYaml .Values.global.annotations | nindent 8 }}
+    {{- end }}
       labels:
         app: api
-        {{ include "common.labels" . | nindent 8 }}
+        {{- include "common.labels" . | nindent 8 }}
     spec:
       containers:
         - name: api

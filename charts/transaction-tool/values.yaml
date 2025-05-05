@@ -7,7 +7,6 @@ global:
   labels: {}
   annotations: {}
 
-
 rabbitmq:
   # @param rabbitmq.enabled set to true if you want to self-host on your k8s cluster.
   enabled: true

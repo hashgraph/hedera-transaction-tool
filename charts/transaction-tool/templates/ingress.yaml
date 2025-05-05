@@ -2,11 +2,13 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ include "transactiontool.fullname" . }}-back-end
-  namespace: {{ .Release.namespace }}
+  namespace: {{ .Release.Namespace }}
   annotations:
-    kubernetes.io/ingress.class: {{ .Values.ingress.className }}
-    {{ include "common.annotations" . | nindent 4 }}
-  labels: {{ include "common.labels" . | nindent 4 }}
+    kubernetes.io/ingress.class: {{ .Values.ingress.className -}}
+{{- if .Values.global.annotations }}
+    {{- toYaml .Values.global.annotations | nindent 4 }}
+{{- end }}
+  labels: {{- include "common.labels" . | nindent 4 }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:

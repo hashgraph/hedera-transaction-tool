@@ -3,12 +3,18 @@ kind: Service
 metadata:
   name: {{ include "transactiontool.fullname" . }}-notifications
   namespace: {{ .Release.Namespace }}
-  {{- if and (hasKey .Values.notifications.service "ingress") (hasKey .Values.notifications.service.ingress "annotations") (not (empty .Values.notifications.service.ingress.annotations)) }}
+  {{- if and (hasKey .Values.notifications.service "ingress") (hasKey .Values.notifications.service.ingress "annotations") (not (empty .Values.api.service.ingress.annotations)) }}
   annotations:
     {{- toYaml .Values.notifications.service.ingress.annotations | nindent 4 }}
-    {{ include "common.annotations" . | nindent 4 }}
+{{- if .Values.global.annotations }}
+    {{- toYaml .Values.global.annotations | nindent 4 }}
+{{- end }}
+  {{- else }}
+  {{- if .Values.global.annotations }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+{{- end }}
   {{- end }}
-  labels: {{ include "common.labels" . | nindent 4 }}
+  labels: {{- include "common.labels" . | nindent 4 }}
 spec:
   ports:
     - name: 'http'

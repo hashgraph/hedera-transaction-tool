@@ -3,8 +3,10 @@ kind: Deployment
 metadata:
   name: {{ include "transactiontool.fullname" . }}-chain
   namespace: {{ .Release.Namespace }}
-  annotations: {{ include "common.annotations" . | nindent 4 }}
-  labels: {{ include "common.labels" . | nindent 4 }}
+{{- if .Values.global.annotations }}
+  annotations:  {{- toYaml .Values.global.annotations | nindent 4 }}
+{{- end }}
+  labels: {{- include "common.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.chain.replicas }}
   selector:
@@ -12,10 +14,12 @@ spec:
       app: chain
   template:
     metadata:
-      annotations: {{ include "common.annotations" . | nindent 8 }}
+    {{- if .Values.global.annotations }}
+      annotations:  {{- toYaml .Values.global.annotations | nindent 8 }}
+    {{- end }}
       labels:
         app: chain
-        {{ include "common.labels" . | nindent 8 }}
+        {{- include "common.labels" . | nindent 8 }}
     spec:
       containers:
         - name: chain

@@ -4,8 +4,10 @@ kind: RabbitmqCluster
 metadata:
   name: {{ include "transactiontool.fullname" . }}-rmq
   namespace: {{ .Release.Namespace }}
-  annotations: {{ include "common.annotations" . | nindent 4 }}
-  labels: {{ include "common.labels" . | nindent 4 }}
+{{- if .Values.global.annotations }}
+  annotations:  {{- toYaml .Values.global.annotations | nindent 4 }}
+{{- end }}
+  labels: {{- include "common.labels" . | nindent 4 }}
 spec:
 {{- .Values.rabbitmq.cluster.config | toYaml | nindent 2 }}
 {{- end }}
