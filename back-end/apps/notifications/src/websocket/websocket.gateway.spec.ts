@@ -11,7 +11,7 @@ import { WebsocketGateway } from './websocket.gateway';
 
 import { AuthWebsocket, AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
 import { roomKeys } from './helpers';
-import { NotificationMessage } from '@app/common/utils/notifications/debounced-notification-batcher';
+import { NotificationMessage } from './helpers';
 
 jest.mock('./middlewares/auth-websocket.middleware');
 
