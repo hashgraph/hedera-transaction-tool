@@ -12,13 +12,11 @@ import { Server } from 'socket.io';
 import {
   AUTH_SERVICE,
   BlacklistService,
-  DebouncedNotificationBatcher,
-  NotificationMessage,
   NotifyClientDto
 } from '@app/common';
 
 import { AuthWebsocket, AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
-import { roomKeys } from './helpers';
+import { roomKeys, DebouncedNotificationBatcher, NotificationMessage } from './helpers';
 
 @WebSocketGateway({
   path: '/ws',
