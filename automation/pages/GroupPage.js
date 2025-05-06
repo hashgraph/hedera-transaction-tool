@@ -264,25 +264,19 @@ class GroupPage extends BasePage {
       await this.clickOnDetailsGroupButton(0);
       await this.clickOnTransactionDetailsButton(0);
 
-      // Initially sign the first transaction
-      await this.organizationPage.clickOnSignTransactionButton();
-
-      // After signing, we check if there's a "Next" button to continue to the next transaction
-      let hasNext = await this.isElementVisible(
-        this.organizationPage.nextTransactionButtonSelector,
-      );
-
-      while (hasNext) {
-        // Click on the "Next" button to move to the next transaction
-        await this.click(this.organizationPage.nextTransactionButtonSelector);
-
-        // Now the button transforms into "Sign" for the next transaction
-        // Sign this transaction as well
+      // Sign the first transaction and continue while "Next" button is visible
+      do {
         await this.organizationPage.clickOnSignTransactionButton();
 
-        // Check again if there's another transaction after this one
-        hasNext = await this.isElementVisible(this.organizationPage.nextTransactionButtonSelector);
-      }
+        // Check if there's a "Next" button to move to the next transaction
+        const hasNext = await this.isElementVisible(this.organizationPage.nextTransactionButtonSelector);
+
+        if (hasNext) {
+          await this.click(this.organizationPage.nextTransactionButtonSelector);
+        } else {
+          break;
+        }
+      } while (true);
 
       await this.organizationPage.logoutFromOrganization();
     }
