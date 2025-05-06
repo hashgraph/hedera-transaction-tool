@@ -35,9 +35,9 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   ) {
     this.batcher = new DebouncedNotificationBatcher(
       this.processMessages.bind(this),
-      1000,
+      500,
       200,
-      5000,
+      2000,
     );
   }
 
