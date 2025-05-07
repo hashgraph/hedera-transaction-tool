@@ -37,7 +37,7 @@ import {
   notifySyncIndicators,
   MirrorNetworkGRPC,
   isTransactionBodyOverMaxSize,
-  emitExecuteTranasction,
+  emitExecuteTransaction,
   notifyGeneral,
   getTransactionSignReminderKey,
 } from '@app/common/utils';
@@ -812,7 +812,7 @@ describe('TransactionsService', () => {
       const result = await service.executeTransaction(123, user as User);
 
       expect(result).toBe(true);
-      expect(emitExecuteTranasction).toHaveBeenCalledWith(chainService, {
+      expect(emitExecuteTransaction).toHaveBeenCalledWith(chainService, {
         id: transaction.id,
         status: transaction.status,
         transactionBytes: transaction.transactionBytes.toString('hex'),
