@@ -24,7 +24,7 @@ export const emitUpdateTransactionStatus = (client: ClientProxy, id: number) => 
   });
 };
 
-export const emitExecuteTranasction = (client: ClientProxy, dto: ExecuteTransactionDto) => {
+export const emitExecuteTransaction = (client: ClientProxy, dto: ExecuteTransactionDto) => {
   client.emit<undefined, ExecuteTransactionDto>(EXECUTE_TRANSACTION, dto);
 };
 
