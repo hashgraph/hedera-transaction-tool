@@ -44,7 +44,7 @@ import {
   notifySyncIndicators,
   ErrorCodes,
   isTransactionBodyOverMaxSize,
-  emitExecuteTranasction,
+  emitExecuteTransaction,
   notifyGeneral,
   SchedulerService,
   getTransactionSignReminderKey,
@@ -501,7 +501,7 @@ export class TransactionsService {
       await this.repo.update({ id }, { isManual: false });
       notifyTransactionAction(this.notificationsService);
     } else {
-      emitExecuteTranasction(this.chainService, {
+      emitExecuteTransaction(this.chainService, {
         id: transaction.id,
         status: transaction.status,
         //@ts-expect-error - cannot send Buffer instance over the network
