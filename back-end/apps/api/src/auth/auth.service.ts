@@ -14,8 +14,9 @@ import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
 
 import {
-  ELECTRON_APP_PROTOCOL_PREFIX,
   ErrorCodes,
+  generateUserRegisteredMessage,
+  generateResetPasswordMessage,
   NOTIFICATIONS_SERVICE,
   NOTIFY_EMAIL,
   NOTIFY_GENERAL,
@@ -62,7 +63,7 @@ export class AuthService {
     this.notificationsService.emit<undefined, NotifyEmailDto>(NOTIFY_EMAIL, {
       subject: 'Hedera Transaction Tool Registration',
       email: user.email,
-      text: `You have been registered in Hedera Transaction Tool.\nThe Organization URL is: <b>${url}</b>\nYour temporary password is: <b>${tempPassword}</b>`,
+      text: generateUserRegisteredMessage(url, tempPassword),
     });
 
     return user;
@@ -92,7 +93,7 @@ export class AuthService {
       this.notificationsService.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
         type: NotificationType.USER_REGISTERED,
         userIds: admins.map(admin => admin.id),
-        content: `User ${user.email} has completed the registration process.`,
+        additionalData: { username: user.email },
         entityId: user.id,
       });
     }
@@ -112,13 +113,7 @@ export class AuthService {
     this.notificationsService.emit<undefined, NotifyEmailDto>(NOTIFY_EMAIL, {
       email: user.email,
       subject: 'Password Reset token',
-      text: `
-      <div>
-        <h1 style="margin: 0">Hedera Transaction Tool</h1>
-        <p style="margin: 0">Use the following token to reset your password: <b>${otp}</b></p>
-        <a href="${ELECTRON_APP_PROTOCOL_PREFIX}token=${otp}" style="text-decoration: none; color: white; background-color: #6600cc; padding: 8px 22px; border-radius: 6px;">Verify</a>
-      </div>
-      `,
+      text: generateResetPasswordMessage(otp),
     });
 
     const token = this.getOtpToken({ email: user.email, verified: false });
