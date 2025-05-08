@@ -24,6 +24,7 @@ export enum ErrorCodes {
   UNF = 'UNF',
   IFP = 'IFP',
   ISP = 'ISP',
+  IRP = 'IRP',
   IPP = 'IPP',
   INP = 'INP',
   ISNMP = 'ISNMP',
@@ -63,6 +64,7 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.UNF]: 'User not found',
   [ErrorCodes.IFP]: 'Invalid filter parameters',
   [ErrorCodes.ISP]: 'Invalid sorting parameters',
+  [ErrorCodes.IRP]: 'Invalid Request parameters',
   [ErrorCodes.IPP]:
     'Invalid pagination parameters. Page and size should be positive integers and size should be less than 100',
   [ErrorCodes.INP]: 'Invalid network parameter',
