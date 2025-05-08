@@ -1,17 +1,17 @@
-export class DebouncedNotificationBatcher {
-  private messagesByGroup: Map<number | null, NotificationMessage[]> = new Map();
-  private debounceTimers: Map<number | null, NodeJS.Timeout> = new Map();
-  private maxFlushTimers: Map<number | null, NodeJS.Timeout> = new Map();
-  private firstMessageTimes: Map<number | null, number> = new Map();
+export class DebouncedNotificationBatcher<T = never> {
+  private messagesByGroup: Map<string | number | null, T[]> = new Map();
+  private debounceTimers: Map<string | number | null, NodeJS.Timeout> = new Map();
+  private maxFlushTimers: Map<string | number | null, NodeJS.Timeout> = new Map();
+  private firstMessageTimes: Map<string | number | null, number> = new Map();
 
   constructor(
-    private readonly flushCallback: (groupKey: number | null, messages: NotificationMessage[]) => Promise<void>,
+    private readonly flushCallback: (groupKey: string | number | null, messages: T[]) => Promise<void>,
     private readonly delayMs: number,
     private readonly maxBatchSize: number,
     private readonly maxFlushMS: number,
   ) {}
 
-  add(message: NotificationMessage, groupKey: number | null = null): void {
+  add(message: T, groupKey: string | number | null = null): void {
     if (!this.messagesByGroup.has(groupKey)) {
       this.messagesByGroup.set(groupKey, []);
     }
@@ -33,7 +33,7 @@ export class DebouncedNotificationBatcher {
     this.resetDebounceTimer(groupKey);
   }
 
-  private resetDebounceTimer(groupKey: number | null): void {
+  private resetDebounceTimer(groupKey: string | number | null): void {
     if (this.debounceTimers.has(groupKey)) {
       clearTimeout(this.debounceTimers.get(groupKey)!);
     }
@@ -46,7 +46,7 @@ export class DebouncedNotificationBatcher {
     );
   }
 
-  private startMaxFlushTimer(groupKey: number | null): void {
+  private startMaxFlushTimer(groupKey: string | number | null): void {
     clearTimeout(this.maxFlushTimers.get(groupKey));
 
     this.maxFlushTimers.set(
@@ -57,7 +57,7 @@ export class DebouncedNotificationBatcher {
     );
   }
 
-  flush(groupKey: number | null): void {
+  flush(groupKey: string | number | null): void {
     const messages = this.messagesByGroup.get(groupKey);
     if (!messages || messages.length === 0) {
       return;
@@ -103,11 +103,4 @@ export class DebouncedNotificationBatcher {
     this.maxFlushTimers.clear();
     this.firstMessageTimes.clear();
   }
-}
-
-export class NotificationMessage {
-  constructor(
-    public readonly message: string,
-    public readonly content: string[],
-  ) {}
 }
