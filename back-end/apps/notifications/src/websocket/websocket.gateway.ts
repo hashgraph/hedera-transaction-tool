@@ -16,7 +16,8 @@ import {
 } from '@app/common';
 
 import { AuthWebsocket, AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
-import { roomKeys, DebouncedNotificationBatcher, NotificationMessage } from './helpers';
+import { roomKeys } from './helpers';
+import { DebouncedNotificationBatcher } from '../utils';
 
 @WebSocketGateway({
   path: '/ws',
@@ -97,4 +98,11 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
       }
     }
   };
+}
+
+class NotificationMessage {
+  constructor(
+    public readonly message: string,
+    public readonly content: string[],
+  ) {}
 }
