@@ -8,20 +8,49 @@ CONSTANTS_SCRIPT=$(realpath "$BASEDIR/shell/constants.sh")
 . "$UTILS_SCRIPT"
 . "$CONSTANTS_SCRIPT"
 
-# Check if the email api secret exists
-email_api_secret_exists() {
-    if [ $(KUBECTL get secrets | tail -n +2 | grep -ic "email-api-secret") -gt 0 ]; then
-        return 1
-    else
-        return 0
+# Check if the email api secret exists and matches the values in the YAML file
+email_api_secret_exists_and_matches() {
+    # Check if the secret exists in the cluster
+    local existing_secret=$($KUBECTL get secret email-api-secret -o yaml 2>/dev/null)
+    if [ -z "$existing_secret" ]; then
+        return 0 # Secret does not exist
     fi
+
+    # Extract the current secret values from the cluster
+    local cluster_host=$(echo "$existing_secret" | grep 'host:' | awk '{print $2}')
+    local cluster_port=$(echo "$existing_secret" | grep 'port:' | awk '{print $2}')
+    local cluster_secure=$(echo "$existing_secret" | grep 'secure:' | awk '{print $2}')
+    local cluster_username=$(echo "$existing_secret" | grep 'username:' | awk '{print $2}')
+    local cluster_password=$(echo "$existing_secret" | grep 'password:' | awk '{print $2}')
+    local cluster_sender_email=$(echo "$existing_secret" | grep 'sender-email:' | awk '{print $2}')
+
+    # Extract the desired secret values from the YAML file
+    local email_api_secret_path=$(realpath "$BASEDIR/deployments/email-api-secret.yaml")
+    local file_host=$(grep 'host: ' "$email_api_secret_path" | awk '{print $2}')
+    local file_port=$(grep 'port: ' "$email_api_secret_path" | awk '{print $2}')
+    local file_secure=$(grep 'secure: ' "$email_api_secret_path" | awk '{print $2}')
+    local file_username=$(grep 'username: ' "$email_api_secret_path" | awk '{print $2}')
+    local file_password=$(grep 'password: ' "$email_api_secret_path" | awk '{print $2}')
+    local file_sender_email=$(grep 'sender-email: ' "$email_api_secret_path" | awk '{print $2}')
+
+    # Compare the values
+    if [ "$cluster_host" != "$file_host" ] || \
+       [ "$cluster_port" != "$file_port" ] || \
+       [ "$cluster_secure" != "$file_secure" ] || \
+       [ "$cluster_username" != "$file_username" ] || \
+       [ "$cluster_password" != "$file_password" ] || \
+       [ "$cluster_sender_email" != "$file_sender_email" ]; then
+        return 0 # Secrets do not match
+    fi
+
+    return 1 # Secrets match
 }
 
 # Create the email api secret if not exists
 assert_email_api_secret() {
     echo "\nChecking if email api secret exists..."
 
-    email_api_secret_exists
+    email_api_secret_exists_and_matches
     if [ $? -gt 0 ]; then
         return 1
     fi

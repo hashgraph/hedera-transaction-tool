@@ -15,3 +15,4 @@ export * from './dtos';
 export * from './health';
 export * from './blacklist';
 export * from './scheduler';
+export * from './templates';
