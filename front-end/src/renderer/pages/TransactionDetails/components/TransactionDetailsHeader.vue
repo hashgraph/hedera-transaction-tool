@@ -24,7 +24,7 @@ import {
   getUserShouldApprove,
   remindSigners,
   sendApproverChoice,
-  uploadSignatureMap,
+  uploadSignatures,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { saveFileNamed } from '@renderer/services/electronUtilsService';
@@ -279,7 +279,7 @@ const handleSign = async () => {
     }
 
     if (restoredRequiredKeys.length > 0) {
-      await uploadSignatureMap(
+      await uploadSignatures(
         user.personal.id,
         personalPassword,
         user.selectedOrganization,
