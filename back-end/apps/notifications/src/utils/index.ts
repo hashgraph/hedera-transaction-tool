@@ -1,1 +1,1 @@
-export * from './debounced-notification-batcher';
+export * from './DebouncedNotificationBatcher';

@@ -1,4 +1,4 @@
-import { DebouncedNotificationBatcher, NotificationMessage } from './debounced-notification-batcher';
+import { DebouncedNotificationBatcher, NotificationMessage } from './DebouncedNotificationBatcher';
 
 describe('DebouncedNotificationBatcher', () => {
   let batcher: DebouncedNotificationBatcher;
