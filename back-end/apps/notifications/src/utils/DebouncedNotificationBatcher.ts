@@ -1,4 +1,4 @@
-export class DebouncedNotificationBatcher<T = never> {
+export class DebouncedNotificationBatcher<T = unknown> {
   private messagesByGroup: Map<string | number | null, T[]> = new Map();
   private debounceTimers: Map<string | number | null, NodeJS.Timeout> = new Map();
   private maxFlushTimers: Map<string | number | null, NodeJS.Timeout> = new Map();
