@@ -156,13 +156,13 @@ export class NotificationReceiverService {
       .filter(Boolean);
 
     const dto = getRemindSignersDTO(transaction, userIds, true, true);
-    await notifyGeneral(
+    notifyGeneral(
       this.notificationsService,
       dto.type,
       userIds,
-      dto.content,
       dto.entityId,
       dto.recreateReceivers,
+      { transactionId: transaction.transactionId, network: transaction.mirrorNetwork },
     );
   }
 
