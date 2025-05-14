@@ -1,11 +1,11 @@
-import { Notification } from '@entities';
 import { getNetworkString } from '@app/common';
+import { Notification } from '@entities';
 
-export const generateTransactionWaitingForSignaturesContent = (...notifications: Notification[]) => {
+export const generateTransactionCancelledContent = (...notifications: Notification[]) => {
   const header =
     notifications.length === 1
-      ? `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction.`
-      : `Multiple transactions requires your review and signature. Please visit the Hedera Transaction Tool and locate the transactions.`;
+      ? `A transaction has been cancelled.`
+      : `Multiple transactions have been cancelled.`;
 
   const details = notifications.map(notification => {
     const transactionId = notification.additionalData?.transactionId;

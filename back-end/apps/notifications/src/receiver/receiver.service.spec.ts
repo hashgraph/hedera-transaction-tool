@@ -80,7 +80,6 @@ describe('ReceiverService', () => {
   const getNotification = (): Notification => ({
     id: 1,
     type: NotificationType.TRANSACTION_CREATED,
-    content: 'General notification content',
     entityId: 1,
     actorId: null,
     notificationReceivers: [],
@@ -530,7 +529,6 @@ describe('ReceiverService', () => {
       const dto: NotifyGeneralDto = {
         userIds: [1, 2],
         type: NotificationType.TRANSACTION_CREATED,
-        content: 'General notification content',
         entityId: 1,
         actorId: null,
       };
@@ -554,7 +552,6 @@ describe('ReceiverService', () => {
       const dto: NotifyGeneralDto = {
         userIds: [1, 2],
         type: notification.type,
-        content: notification.content,
         entityId: notification.entityId,
         actorId: notification.actorId,
       };
@@ -593,7 +590,6 @@ describe('ReceiverService', () => {
       const dto: NotifyGeneralDto = {
         userIds,
         type: notification.type,
-        content: notification.content,
         entityId: notification.entityId,
         actorId: notification.actorId,
       };
@@ -619,7 +615,6 @@ describe('ReceiverService', () => {
       const dto: NotifyGeneralDto = {
         userIds: [],
         type: NotificationType.TRANSACTION_CREATED,
-        content: 'General notification content',
         entityId: 1,
         actorId: null,
       };

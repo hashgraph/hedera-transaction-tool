@@ -3,7 +3,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
 import { DataSource, Repository } from 'typeorm';
-import { PublicKey, Transaction as SDKTransaction, SignatureMap } from '@hashgraph/sdk';
+import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
   CHAIN_SERVICE,
@@ -95,83 +95,82 @@ export class SignersService {
     });
   }
 
-  /* Upload a signature for the given transaction id */
-  async uploadSignatureMap(
-    transactionId: number,
-    { signatureMap }: UploadSignatureMapDto,
+  /* Upload signatures for the given transaction ids */
+  async uploadSignatureMaps(
+    dto: UploadSignatureMapDto[],
     user: User,
   ): Promise<TransactionSigner[]> {
-    const map: SignatureMap = signatureMap;
+    const signers = new Set<TransactionSigner>();
+    for (const { transactionId, signatureMap: map } of dto) {
+      /* Verify that the transaction exists */
+      const transaction = await this.dataSource.manager.findOneBy(Transaction, {id: transactionId});
+      if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
-    /* Verify that the transaction exists */
-    const transaction = await this.dataSource.manager.findOneBy(Transaction, { id: transactionId });
-    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
+      /* Checks if the transaction is canceled */
+      if (
+        transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES &&
+        transaction.status !== TransactionStatus.WAITING_FOR_EXECUTION
+      )
+        throw new BadRequestException(ErrorCodes.TNRS);
 
-    /* Checks if the transaction is canceled */
-    if (
-      transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES &&
-      transaction.status !== TransactionStatus.WAITING_FOR_EXECUTION
-    )
-      throw new BadRequestException(ErrorCodes.TNRS);
+      /* Checks if the transaction is expired */
+      let sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
+      if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
 
-    /* Checks if the transaction is expired */
-    let sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
-    if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
-
-    /* Validates the signatures */
-    const { data: publicKeys, error } = safe<PublicKey[]>(
-      validateSignature.bind(this, sdkTransaction, map),
-    );
-    if (error) throw new BadRequestException(ErrorCodes.ISNMPN);
-
-    const userKeys: UserKey[] = [];
-    for (const publicKey of publicKeys) {
-      const userKey = user.keys.find(key => key.publicKey === publicKey.toStringRaw());
-      if (!userKey) throw new BadRequestException(ErrorCodes.PNY);
-
-      sdkTransaction = sdkTransaction.addSignature(publicKey, map);
-      userKeys.push(userKey);
-    }
-
-    /* Start a database transaction */
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    const signers: TransactionSigner[] = [];
-    try {
-      await this.dataSource.manager.update(
-        Transaction,
-        { id: transactionId },
-        {
-          transactionBytes: sdkTransaction.toBytes(),
-        },
+      /* Validates the signatures */
+      const {data: publicKeys, error} = safe<PublicKey[]>(
+        validateSignature.bind(this, sdkTransaction, map),
       );
+      if (error) throw new BadRequestException(ErrorCodes.ISNMPN);
 
-      for (const userKey of userKeys) {
-        const signer = this.repo.create({
-          user,
-          transaction,
-          userKey,
-        });
-        await queryRunner.manager.insert(TransactionSigner, signer);
-        signers.push(signer);
+      const userKeys: UserKey[] = [];
+      for (const publicKey of publicKeys) {
+        const userKey = user.keys.find(key => key.publicKey === publicKey.toStringRaw());
+        if (!userKey) throw new BadRequestException(ErrorCodes.PNY);
+
+        sdkTransaction = sdkTransaction.addSignature(publicKey, map);
+        userKeys.push(userKey);
       }
-      /* Commit the database transaction */
-      await queryRunner.commitTransaction();
-      await queryRunner.release();
-    } catch {
-      await queryRunner.rollbackTransaction();
-      await queryRunner.release();
-      throw new BadRequestException(ErrorCodes.FST);
+
+      /* Start a database transaction */
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      try {
+        await this.dataSource.manager.update(
+          Transaction,
+          {id: transactionId},
+          {
+            transactionBytes: sdkTransaction.toBytes(),
+          },
+        );
+
+        for (const userKey of userKeys) {
+          const signer = this.repo.create({
+            user,
+            transaction,
+            userKey,
+          });
+          await queryRunner.manager.insert(TransactionSigner, signer);
+          signers.add(signer);
+        }
+        /* Commit the database transaction */
+        await queryRunner.commitTransaction();
+        await queryRunner.release();
+      } catch {
+        await queryRunner.rollbackTransaction();
+        await queryRunner.release();
+        throw new BadRequestException(ErrorCodes.FST);
+      }
+
+      emitUpdateTransactionStatus(this.chainService, transactionId);
+      notifyTransactionAction(this.notificationService);
+      notifySyncIndicators(this.notificationService, transactionId, transaction.status, {
+        transactionId: transaction.transactionId,
+        network: transaction.mirrorNetwork,
+      });
     }
-
-    emitUpdateTransactionStatus(this.chainService, transactionId);
-    notifyTransactionAction(this.notificationService);
-    notifySyncIndicators(this.notificationService, transactionId, transaction.status, {
-      network: transaction.mirrorNetwork,
-    });
-
-    return signers;
+    return [...signers];
   }
 }

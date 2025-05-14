@@ -18,6 +18,7 @@ import {
 import { AuthWebsocket, AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
 import { roomKeys } from './helpers';
 import { DebouncedNotificationBatcher } from '../utils';
+import { ConfigService } from '@nestjs/config';
 
 @WebSocketGateway({
   path: '/ws',
@@ -33,12 +34,15 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   constructor(
     @Inject(AUTH_SERVICE) private readonly authService: ClientProxy,
     private readonly blacklistService: BlacklistService,
+    private readonly configService: ConfigService,
   ) {
     this.batcher = new DebouncedNotificationBatcher(
       this.processMessages.bind(this),
       500,
       200,
       2000,
+      this.configService.get('REDIS_URL'),
+      'inapp-notifications',
     );
   }
 
@@ -57,11 +61,6 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
       this.logger.error('Socket client connected without user');
       return socket.disconnect();
     }
-    // console.log('Socket client connected with initial transport', socket.conn.transport.name);
-    // socket.conn.once('upgrade', () => {
-    //   /* called when the transport is upgraded (i.e. from HTTP long-polling to WebSocket) */
-    //   console.log('upgraded transport', socket.conn.transport.name);
-    // });
 
     /* Join user room */
     socket.join(roomKeys.USER_KEY(socket.user?.id));
@@ -71,14 +70,14 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
     this.logger.log(`Socket socket disconnected for User ID: ${socket.user?.id}`);
   }
 
-  notifyClient({ message, content }: NotifyClientDto) {
+  async notifyClient({ message, content }: NotifyClientDto) {
     const newMessage = new NotificationMessage(message, [content]);
-    this.batcher.add(newMessage);
+    await this.batcher.add(newMessage);
   }
 
-  notifyUser(userId: number, message: string, data) {
+  async notifyUser(userId: number, message: string, data) {
     const newMessage = new NotificationMessage(message, [data]);
-    this.batcher.add(newMessage, userId);
+    await this.batcher.add(newMessage, userId);
   }
 
   private async processMessages(groupKey: number | null, messages: NotificationMessage[]) {

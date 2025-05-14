@@ -5,6 +5,7 @@ import { generateRemindSignersContent } from '@app/common/templates/remind-signe
 import {
   generateTransactionWaitingForSignaturesContent
 } from '@app/common/templates/transaction-waiting-for-signatures';
+import { generateTransactionCancelledContent } from '@app/common/templates/transaction-cancelled';
 
 export * from './remind-signers';
 export * from './reset-password';
@@ -24,6 +25,20 @@ export const generateNotificationContent = (notification: Notification) => {
       return generateNotifyUserRegisteredContent(notification);
     default:
       throw new Error(`Unknown notification type: ${notification.type}`);
+  }
+}
+
+export const generateEmailContent = (type: string | NotificationType, ...notifications: Notification[]) => {
+  console.log(`generateEmailContent: ${type}`);
+  switch (type) {
+    case NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES:
+      return generateTransactionWaitingForSignaturesContent(...notifications);
+    case NotificationType.TRANSACTION_READY_FOR_EXECUTION:
+      return generateTransactionReadyForExecutionContent(...notifications);
+    case NotificationType.TRANSACTION_CANCELLED:
+      return generateTransactionCancelledContent(...notifications);
+    default:
+      throw new Error(`Unknown email notification type: ${type}`);
   }
 }
 

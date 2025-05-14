@@ -213,6 +213,9 @@ const handleSignGroup = async () => {
       user.personal.id,
       personalPassword,
       user.selectedOrganization,
+      null,
+      null,
+      null,
       items,
     );
     toast.success('Transactions signed successfully');

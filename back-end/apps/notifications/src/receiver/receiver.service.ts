@@ -3,7 +3,6 @@ import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, In } from 'typeorm';
 
 import {
-  getNetwork,
   keysRequiredToSign,
   MirrorNodeService,
   NotifyForTransactionDto,
@@ -42,7 +41,6 @@ export class ReceiverService {
           where: {
             entityId: dto.entityId,
             type: dto.type,
-            content: dto.content,
             actorId: dto.actorId,
           },
           relations: {
@@ -55,7 +53,6 @@ export class ReceiverService {
           notification = await this.createNotification(
             transactionalEntityManager,
             dto.type,
-            dto.content,
             dto.entityId,
             dto.actorId,
             dto.additionalData,
@@ -101,7 +98,6 @@ export class ReceiverService {
     });
 
     if (!transaction) throw new Error('Transaction not found');
-    const networkString = getNetwork(transaction);
 
     /* Get users required to sign */
     const userIds = await this.getUsersIdsRequiredToSign(this.entityManager, transaction);
@@ -109,7 +105,6 @@ export class ReceiverService {
     /* Notify */
     await this.notifyGeneral({
       type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
-      content: `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction.\nTransaction ID: ${transaction.transactionId}\nNetwork: ${networkString}`,
       entityId: transaction.id,
       actorId: null,
       userIds: userIds.filter(id => id !== transaction.creatorKey?.userId),
@@ -220,7 +215,6 @@ export class ReceiverService {
       notification = await this.createNotification(
         entityManager,
         type,
-        '',
         transactionId,
         null,
         additionalData,
@@ -281,7 +275,6 @@ export class ReceiverService {
   private async createNotification(
     entityManager: EntityManager,
     type: NotificationType,
-    content: string,
     entityId: number,
     actorId: number,
     additionalData?: NotificationAdditionalData,
@@ -289,7 +282,6 @@ export class ReceiverService {
     /* Create notification */
     const notification = entityManager.create(Notification, {
       type: type,
-      content: content,
       entityId: entityId,
       actorId: actorId,
       notificationReceivers: [],
@@ -449,19 +441,20 @@ export class ReceiverService {
 
     switch (newIndicatorType) {
       case NotificationType.TRANSACTION_INDICATOR_EXECUTABLE:
-        result.push(creatorId, ...approversUserIds, ...observerUserIds, ...requiredUserIds);
-      case NotificationType.TRANSACTION_INDICATOR_APPROVE:
-        result.push(...approversShouldChooseUserIds);
       case NotificationType.TRANSACTION_INDICATOR_EXECUTED:
-        result.push(creatorId, ...approversUserIds, ...observerUserIds, ...requiredUserIds);
       case NotificationType.TRANSACTION_INDICATOR_FAILED:
-        result.push(creatorId, ...approversUserIds, ...observerUserIds, ...requiredUserIds);
       case NotificationType.TRANSACTION_INDICATOR_EXPIRED:
         result.push(creatorId, ...approversUserIds, ...observerUserIds, ...requiredUserIds);
+        break;
+      case NotificationType.TRANSACTION_INDICATOR_APPROVE:
+        result.push(...approversShouldChooseUserIds);
+        break;
       case NotificationType.TRANSACTION_INDICATOR_REJECTED:
         result.push(creatorId, ...approversUserIds, ...observerUserIds);
+        break;
       case NotificationType.TRANSACTION_INDICATOR_CANCELLED:
         result.push(...approversUserIds, ...observerUserIds, ...requiredUserIds);
+        break;
       case NotificationType.TRANSACTION_INDICATOR_SIGN:
         result.push(...requiredUserIds);
     }
