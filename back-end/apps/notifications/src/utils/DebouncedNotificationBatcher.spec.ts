@@ -1,11 +1,11 @@
-import { DebouncedNotificationBatcher, NotificationMessage } from './DebouncedNotificationBatcher';
+import { DebouncedNotificationBatcher } from './DebouncedNotificationBatcher';
 
 describe('DebouncedNotificationBatcher', () => {
   let batcher: DebouncedNotificationBatcher;
   const flushCallback = jest.fn();
 
   beforeEach(() => {
-    batcher = new DebouncedNotificationBatcher(flushCallback, 1000, 3, 5000);
+    batcher = new DebouncedNotificationBatcher(flushCallback, 1000, 3, 5000, 'redis://localhost:6379');
     flushCallback.mockClear();
   });
 
