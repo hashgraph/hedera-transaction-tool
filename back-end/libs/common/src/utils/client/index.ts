@@ -64,7 +64,6 @@ export const notifyGeneral = (
   client: ClientProxy,
   type: NotificationType,
   userIds: number[],
-  content: string,
   entityId?: number,
   recreateReceivers?: boolean,
   additionalData?: NotificationAdditionalData,
@@ -72,7 +71,6 @@ export const notifyGeneral = (
   client.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
     type,
     userIds,
-    content,
     entityId,
     recreateReceivers,
     additionalData,

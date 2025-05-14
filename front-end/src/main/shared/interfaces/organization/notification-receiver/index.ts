@@ -38,7 +38,6 @@ export interface NotificationAdditionalData {
 export interface INotification {
   id: number;
   type: NotificationType;
-  content: string;
   entityId?: number;
   actorId?: number;
   additionalData: NotificationAdditionalData;

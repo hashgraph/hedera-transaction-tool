@@ -402,6 +402,7 @@ export class TransactionsService {
       this.schedulerService.addReminder(getTransactionSignReminderKey(transaction.id), remindAt);
     }
     notifyWaitingForSignatures(this.notificationsService, transaction.id, {
+      transactionId: transaction.transactionId,
       network: transaction.mirrorNetwork,
     });
     notifyTransactionAction(this.notificationsService);
@@ -420,6 +421,7 @@ export class TransactionsService {
     }
 
     notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.CANCELED, {
+      transactionId: transaction.transactionId,
       network: transaction.mirrorNetwork,
     });
     notifyTransactionAction(this.notificationsService);
@@ -444,6 +446,7 @@ export class TransactionsService {
     await this.repo.update({ id }, { status: TransactionStatus.CANCELED });
 
     notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.CANCELED, {
+      transactionId: transaction.transactionId,
       network: transaction.mirrorNetwork,
     });
     notifyTransactionAction(this.notificationsService);
@@ -459,8 +462,9 @@ export class TransactionsService {
       this.notificationsService,
       NotificationType.TRANSACTION_CANCELLED,
       [...userIds],
-      `A transaction ${transaction.name} has been cancelled.\nTransaction ID: ${transaction.transactionId}\n Netowork: ${transaction.mirrorNetwork}`,
       transaction.id,
+      false,
+      { transactionId: transaction.transactionId, network: transaction.mirrorNetwork },
     );
 
     return true;
@@ -482,6 +486,7 @@ export class TransactionsService {
     await this.repo.update({ id }, { status: TransactionStatus.ARCHIVED });
 
     notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.ARCHIVED, {
+      transactionId: transaction.transactionId,
       network: transaction.mirrorNetwork,
     });
     notifyTransactionAction(this.notificationsService);

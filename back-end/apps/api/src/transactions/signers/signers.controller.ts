@@ -20,7 +20,7 @@ import {
 import { TransactionSigner, User } from '@entities';
 
 import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../../guards';
-import { GetUser } from '../../decorators/get-user.decorator';
+import { GetUser } from '../../decorators';
 
 import {
   UploadSignatureMapDto,
@@ -30,6 +30,8 @@ import {
 } from '../dto';
 
 import { SignersService } from './signers.service';
+import { validateOrReject } from 'class-validator';
+import { plainToInstance } from 'class-transformer';
 
 @ApiTags('Transaction Signers')
 @Controller('transactions/:transactionId?/signers')
@@ -74,14 +76,14 @@ export class SignersController {
     return this.signaturesService.getSignaturesByUser(user, pagination, true);
   }
 
-  /* Uploads a signature map for a transaction */
+  /* Upload one or more signature maps for one or more transactions */
   @ApiOperation({
-    summary: 'Upload a signature map for a transaction',
+    summary: 'Upload one or more signature maps for one or more transactions',
     description:
-      'Upload a siganture map for the transaction. The signature map must be an object containing with the following structure: node account ID -> transaction ID -> DER public key -> signature.',
+      'Upload one or more signature maps for one or more transaction. Each signature map must have the following structure: node account ID -> transaction ID -> DER public key -> signature.',
   })
   @ApiBody({
-    type: UploadSignatureMapDto,
+    type: [UploadSignatureMapDto],
   })
   @ApiResponse({
     status: 201,
@@ -90,11 +92,21 @@ export class SignersController {
   @Post()
   @HttpCode(201)
   @Serialize(TransactionSignerFullDto)
-  uploadSignatureMap(
-    @Param('transactionId', ParseIntPipe) transactionId: number,
-    @Body() body: UploadSignatureMapDto,
+  async uploadSignatureMap(
+    @Body() body: UploadSignatureMapDto | UploadSignatureMapDto[],
     @GetUser() user: User,
   ): Promise<TransactionSigner[]> {
-    return this.signaturesService.uploadSignatureMap(transactionId, body, user);
+    const signatureMaps = Array.isArray(body) ? body : [body];
+
+    // Transform and validate each item in the array
+    const transformedSignatureMaps = signatureMaps.map((map) =>
+      plainToInstance(UploadSignatureMapDto, map)
+    );
+
+    await Promise.all(
+      transformedSignatureMaps.map((map) => validateOrReject(map))
+    );
+
+    return this.signaturesService.uploadSignatureMaps(transformedSignatureMaps, user);
   }
 }

@@ -1,5 +1,5 @@
 import { ArrayMinSize, IsArray, IsEnum, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
-import { NotificationType } from '../database/entities';
+import { NotificationType } from '@entities';
 
 export class NotifyGeneralDto {
   @IsNotEmpty()
@@ -10,9 +10,6 @@ export class NotifyGeneralDto {
   @IsNumber({}, { each: true })
   @ArrayMinSize(1)
   userIds: number[];
-
-  @IsNotEmpty()
-  content: string;
 
   @IsOptional()
   entityId?: number;
