@@ -3,7 +3,7 @@ name: Create and publish Transaction Tool Docker images
 on:
     push:
         tags:
-        - 'v*'
+          - 'v*'
     workflow_dispatch:
 
 env:
