@@ -6,17 +6,18 @@ on:
           - 'v*'
     workflow_dispatch:
 
+permissions:
+    contents: read
+    packages: write
+    attestations: write
+    id-token: write
+
 env:
   REGISTRY: ghcr.io
 
 jobs:
   build-and-push-image:
     runs-on: transaction-tools-linux-medium
-    permissions:
-      contents: read
-      packages: write
-      attestations: write
-      id-token: write
     strategy:
       fail-fast: false
       matrix:
