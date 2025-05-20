@@ -31,7 +31,8 @@ export class EmailService {
       from: `"Transaction Tool" ${this.sender}`,
       to: email, // list of receivers
       subject: subject, // Subject line
-      text: text, // plain text body
+      text: text.replace(/<\/?[^>]+(>|$)/g, ''), // plain text fallback
+      html: text, // plain text body
     });
 
     console.log(`Message sent: ${info.messageId}`);
