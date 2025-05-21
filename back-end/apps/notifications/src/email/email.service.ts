@@ -12,14 +12,17 @@ export class EmailService {
     host: this.configService.getOrThrow<string>('EMAIL_API_HOST'),
     port: this.configService.getOrThrow<number>('EMAIL_API_PORT'),
     secure: this.configService.getOrThrow<boolean>('EMAIL_API_SECURE'),
-    auth: {
-      user: this.configService.getOrThrow<string>('EMAIL_API_USERNAME'),
-      pass: this.configService.getOrThrow<string>('EMAIL_API_PASSWORD'),
-    },
+    ...this.getAuthConfig()
   });
 
   constructor(private readonly configService: ConfigService) {
     this.sender = configService.getOrThrow('SENDER_EMAIL');
+  }
+
+  private getAuthConfig() {
+    const user = this.configService.get<string>('EMAIL_API_USERNAME');
+    const pass = this.configService.get<string>('EMAIL_API_PASSWORD');
+    return user && pass ? { auth: { user, pass } } : {};
   }
 
   async notifyEmail({ email, subject, text }: NotifyEmailDto) {
@@ -28,7 +31,8 @@ export class EmailService {
       from: `"Transaction Tool" ${this.sender}`,
       to: email, // list of receivers
       subject: subject, // Subject line
-      text: text, // plain text body
+      text: text.replace(/<\/?[^>]+(>|$)/g, ''), // plain text fallback
+      html: text, // plain text body
     });
 
     console.log(`Message sent: ${info.messageId}`);
