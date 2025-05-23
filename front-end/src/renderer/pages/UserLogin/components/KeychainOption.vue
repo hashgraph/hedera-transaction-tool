@@ -29,6 +29,7 @@ const handleUseKeychain = async () => {
 
   await encrypt('gain_access');
   const staticUser = await getStaticUser();
+  user.setAccountSetupStarted(true);
   await user.login(staticUser.id, staticUser.email, true);
   await user.refetchOrganizations();
   setupStores();
@@ -45,6 +46,10 @@ onMounted(async () => {
 </script>
 <template>
   <div v-if="show" class="d-grid">
-    <AppButton color="secondary" @click="handleUseKeychain">Sign in with Keychain</AppButton>
+    <AppButton
+      color="secondary"
+      data-testid="button-keychain-login"
+      @click="handleUseKeychain"
+    >Sign in with Keychain</AppButton>
   </div>
 </template>

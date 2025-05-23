@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { IAccountInfoParsed } from '@main/shared/interfaces';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { AccountUpdateData } from '@renderer/utils/sdk';
+import type { AccountUpdateData, AccountUpdateDataMultiple } from '@renderer/utils/sdk';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { AccountId, Key, KeyList, Transaction } from '@hashgraph/sdk';
@@ -12,6 +12,8 @@ import useAccountId from '@renderer/composables/useAccountId';
 import { isAccountId } from '@renderer/utils';
 import { createAccountUpdateTransaction, getAccountUpdateData } from '@renderer/utils/sdk';
 
+import { MultipleAccountUpdateRequest } from '../../TransactionProcessor';
+
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import AccountUpdateFormData from '@renderer/components/Transaction/Create/AccountUpdate/AccountUpdateFormData.vue';
 
@@ -21,7 +23,6 @@ const accountData = useAccountId();
 
 /* State */
 const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
-
 const data = reactive<AccountUpdateData>({
   accountId: '',
   receiverSignatureRequired: false,
@@ -33,23 +34,26 @@ const data = reactive<AccountUpdateData>({
   accountMemo: '',
   ownerKey: null,
 });
+const multipleAccountsData = ref<AccountUpdateDataMultiple | null>(null);
 
 /* Computed */
 const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
     createAccountUpdateTransaction(
-      {
-        ...common,
-        ...(data as AccountUpdateData),
-      },
+      { ...common, ...data },
       accountData.accountInfo.value as IAccountInfoParsed,
     );
 });
 
 const createDisabled = computed(() => {
+  const noSingleAccount = !accountData.accountId.value || !accountData.isValid.value;
+  const noMultipleAccounts =
+    !multipleAccountsData.value ||
+    multipleAccountsData.value?.accountIds.length === 0 ||
+    multipleAccountsData.value?.key === null;
+
   return (
-    !accountData.accountId.value ||
-    !accountData.isValid.value ||
+    (noSingleAccount && noMultipleAccounts) ||
     (data.stakeType === 'Account' && !isAccountId(data.stakedAccountId)) ||
     (data.stakeType === 'Node' && data.stakedNodeId === null)
   );
@@ -60,6 +64,13 @@ const transactionKey = computed(() => {
   accountData.key.value && keys.push(accountData.key.value);
   data.ownerKey && keys.push(data.ownerKey);
   return new KeyList(keys);
+});
+
+const customRequest = computed(() => {
+  if (!multipleAccountsData.value || !multipleAccountsData.value.key) {
+    return;
+  }
+  return MultipleAccountUpdateRequest.fromAccountUpdateData(multipleAccountsData.value);
 });
 
 /* Handlers */
@@ -74,8 +85,14 @@ const handleUpdateData = (newData: AccountUpdateData) => {
 
 /* Functions */
 const preCreateAssert = () => {
-  if (!isAccountId(accountData.accountId.value) || !accountData.key.value) {
-    throw Error('Invalid Account ID');
+  if (multipleAccountsData.value) {
+    if (multipleAccountsData.value.accountIds.length === 0 || !multipleAccountsData.value.key) {
+      throw Error('Invalid Account IDs');
+    }
+  } else {
+    if (!isAccountId(accountData.accountId.value) || !accountData.key.value) {
+      throw Error('Invalid Account ID');
+    }
   }
 };
 
@@ -131,9 +148,11 @@ watch(accountData.accountInfo, accountInfo => {
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
+    :custom-request="customRequest"
     @draft-loaded="handleDraftLoaded"
   >
     <AccountUpdateFormData
+      v-model:multiple-accounts-data="multipleAccountsData"
       :data="data as AccountUpdateData"
       :account-info="accountData.accountInfo.value as IAccountInfoParsed"
       @update:data="handleUpdateData"

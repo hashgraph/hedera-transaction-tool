@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ITransaction } from '@main/shared/interfaces';
+import type { IGroup, ITransaction } from '@main/shared/interfaces';
 
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 
@@ -16,9 +16,8 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
-import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
-import { getApiGroups, getTransactionsToSign } from '@renderer/services/organization';
+import { getApiGroupById, getTransactionsToSign } from '@renderer/services/organization';
 
 import {
   getNotifiedTransactions,
@@ -48,7 +47,6 @@ const nextTransaction = useNextTransactionStore();
 /* Composables */
 const router = useRouter();
 const ws = useDisposableWs();
-const { oldNotifications } = useMarkNotifications([NotificationType.TRANSACTION_INDICATOR_SIGN]);
 
 /* State */
 const transactions = ref<
@@ -61,7 +59,7 @@ const transactions = ref<
     }[]
   >
 >(new Map());
-const groups = ref();
+const groups = ref<IGroup[]>([]);
 const notifiedTransactionIds = ref<number[]>([]);
 const totalItems = ref(0);
 const currentPage = ref(1);
@@ -82,7 +80,29 @@ const generatedClass = computed(() => {
 });
 
 /* Handlers */
-const handleSign = async (id: number) => {
+const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') => {
+  sort.field = field;
+  sort.direction = direction;
+  setGetTransactionsFunction();
+  await fetchTransactions();
+};
+
+const handleGroupDetails = async (id: number) => {
+  const group = groups.value.find(g => g.id === id);
+  if(!group) return;
+
+  const transactionIds = group.groupItems.map(g => g.transactionId);
+  const serverKey = user.selectedOrganization?.serverUrl || '';
+  const notificationIds = notifications.notifications[serverKey]
+    ?.filter(n => n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN && transactionIds.includes(n.notification.entityId || -1))
+    .map(n => n.id);
+
+  await notifications.markAsReadIds(notificationIds);
+
+  redirectToGroupDetails(router, id, false, 'readyToSign')
+};
+
+const handleSingleDetails = async (id: number) => {
   const flatTransactions = Array.from(transactions.value)
     .map(e => e[1])
     .flat();
@@ -91,14 +111,17 @@ const handleSign = async (id: number) => {
     .slice(0, selectedTransactionIndex)
     .map(t => t.transactionRaw.id);
   nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
-  redirectToDetails(router, id, true);
-};
 
-const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') => {
-  sort.field = field;
-  sort.direction = direction;
-  setGetTransactionsFunction();
-  await fetchTransactions();
+  const serverKey = user.selectedOrganization?.serverUrl || '';
+  const notificationId = notifications.notifications[serverKey]
+    ?.find(n => n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN && n.notification.entityId === id)
+    ?.id;
+
+  if (notificationId) {
+    await notifications.markAsReadIds([notificationId]);
+  }
+
+  redirectToDetails(router, id, true);
 };
 
 /* Functions */
@@ -107,7 +130,7 @@ function setNotifiedTransactions() {
   const notificationsKey = user.selectedOrganization?.serverUrl || '';
 
   notifiedTransactionIds.value = getNotifiedTransactions(
-    notifications.notifications[notificationsKey]?.concat(oldNotifications.value) || [],
+    notifications.notifications[notificationsKey] || [],
     flatTransactions.map(t => t.transactionRaw),
     [NotificationType.TRANSACTION_INDICATOR_SIGN],
   );
@@ -149,6 +172,8 @@ async function fetchTransactions() {
       hexToUint8Array(t.transaction.transactionBytes),
     );
 
+    const groupIds: number[] = [];
+
     for (const [i, item] of rawTransactions.entries()) {
       const currentGroup =
         item.transaction.groupItem?.groupId != null ? item.transaction.groupItem.groupId : -1;
@@ -165,18 +190,32 @@ async function fetchTransactions() {
       } else {
         transactions.value.set(currentGroup, new Array(newVal));
       }
+
+      if (item.transaction.groupItem?.groupId && !groupIds.includes(item.transaction.groupItem.groupId)) {
+      groupIds.push(item.transaction.groupItem.groupId);
+      }
+
     }
 
     const notificationsKey = user.selectedOrganization?.serverUrl || '';
     notifiedTransactionIds.value = getNotifiedTransactions(
-      notifications.notifications[notificationsKey]?.concat(oldNotifications.value) || [],
+      notifications.notifications[notificationsKey] || [],
       rawTransactions.map(t => t.transaction),
       [NotificationType.TRANSACTION_INDICATOR_SIGN],
     );
 
     setNotifiedTransactions();
 
-    groups.value = await getApiGroups(user.selectedOrganization.serverUrl);
+    if (groupIds.length > 0) {
+      const fetchedGroups: IGroup[] = [];
+      for (const id of groupIds) {
+        if (user.selectedOrganization?.serverUrl) {
+          const group = await getApiGroupById(user.selectedOrganization.serverUrl, id);
+          fetchedGroups.push(group);
+        }
+      }
+      groups.value = fetchedGroups;
+    }
   } finally {
     isLoading.value = false;
   }
@@ -304,7 +343,7 @@ watch(
             </tr>
           </thead>
           <tbody>
-            <template v-for="group of transactions" :key="group[0]">
+            <template v-for="(group, index) of transactions" :key="group[0]">
               <template v-if="group[0] != -1">
                 <tr
                   :class="{
@@ -314,7 +353,9 @@ watch(
                   <td>
                     <i class="bi bi-stack" />
                   </td>
-                  <td>{{ groups[group[0] - 1]?.description }}</td>
+                  <td>
+                    {{ groups[group[0] - 1]?.description || groups.find((g: Record<any, any>) => g.id === group[0])?.description }}
+                  </td>
                   <td>
                     {{
                       group[1][0].transaction instanceof Transaction
@@ -324,11 +365,12 @@ watch(
                   </td>
                   <td class="text-center">
                     <AppButton
-                      @click="redirectToGroupDetails($router, group[0])"
+                      @click="handleGroupDetails(group[0])"
                       color="secondary"
-                      data-testid="button-group-details"
-                      >Details</AppButton
+                      :data-testid="`button-group-details-${index}`"
                     >
+                      Details
+                    </AppButton>
                   </td>
                 </tr>
               </template>
@@ -359,7 +401,7 @@ watch(
                     </td>
                     <td class="text-center">
                       <AppButton
-                        @click="handleSign(tx.transactionRaw.id)"
+                        @click="handleSingleDetails(tx.transactionRaw.id)"
                         :data-testid="`button-transaction-sign-${index}`"
                         color="secondary"
                         >Details</AppButton

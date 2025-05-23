@@ -33,6 +33,9 @@ const TransactionDetails = () => import('@renderer/pages/TransactionDetails');
 const Migrate = () => import('@renderer/pages/Migrate');
 const RestoreMissingKeys = () => import('@renderer/pages/RestoreMissingKeys');
 const MigrateRecoveryPhraseHash = () => import('@renderer/pages/MigrateRecoveryPhraseHash');
+const MatchRecoveryPhrase = () => import('@renderer/pages/MatchRecoveryPhrase');
+const PublicKeysTab = () =>
+  import('@renderer/pages/Settings/components/PublicKeysTab/PublicKeysTab.vue');
 
 const routes: RouteRecordRaw[] = [
   { path: '/', name: 'index', redirect: '/transactions' },
@@ -55,9 +58,15 @@ const routes: RouteRecordRaw[] = [
     component: MigrateRecoveryPhraseHash,
   },
   {
-    path: '/restore-missing-keys',
+    path: '/match-recovery-phrase',
+    name: constants.MATCH_RECOVERY_PHRASE,
+    component: MatchRecoveryPhrase,
+  },
+  {
+    path: '/restore-missing-keys/:index?/:publicKey?',
     name: constants.RESTORE_MISSING_KEYS,
     component: RestoreMissingKeys,
+    props: true,
   },
   {
     path: '/create-transaction/:type/:seq?',
@@ -98,6 +107,11 @@ const routes: RouteRecordRaw[] = [
         path: 'keys',
         name: 'settingsKeys',
         component: KeysTab,
+      },
+      {
+        path: 'public-keys',
+        name: 'settingsPublicKeys',
+        component: PublicKeysTab,
       },
       {
         path: 'profile',

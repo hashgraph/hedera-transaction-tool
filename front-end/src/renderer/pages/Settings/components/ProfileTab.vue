@@ -6,10 +6,12 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
+import useLoader from '@renderer/composables/useLoader';
 
 import { changePassword } from '@renderer/services/userService';
 import { changePassword as organizationChangePassword } from '@renderer/services/organization/auth';
 import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
+import { logout } from '@renderer/services/organization';
 
 import {
   assertUserLoggedIn,
@@ -17,6 +19,7 @@ import {
   isLoggedInOrganization,
   isPasswordStrong,
   isUserLoggedIn,
+  toggleAuthTokenInSessionStorage,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -31,6 +34,7 @@ const user = useUserStore();
 /* Composables */
 const toast = useToast();
 const router = useRouter();
+const withLoader = useLoader();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
@@ -112,6 +116,22 @@ const handleResetData = async () => router.push({ name: 'login' });
 const handleBlur = (inputType: string, value: string) => {
   if (inputType === 'newPassword') {
     newPasswordInvalid.value = value.length !== 0 && !isPasswordStrong(value).result;
+  }
+};
+
+const handleLogout = async () => {
+  if (user.selectedOrganization) {
+    if (!isUserLoggedIn(user.personal)) return;
+
+    const { id, nickname, serverUrl, key } = user.selectedOrganization;
+    await logout(serverUrl);
+    await updateOrganizationCredentials(id, user.personal.id, undefined, undefined, null);
+    toggleAuthTokenInSessionStorage(serverUrl, '', true);
+    await user.selectOrganization({ id, nickname, serverUrl, key });
+  } else {
+    localStorage.removeItem('htx_user');
+    user.logout();
+    await router.push({ name: 'login' });
   }
 };
 
@@ -225,5 +245,17 @@ watch(newPassword, pass => {
       </div>
     </form>
     <ResetDataModal v-model:show="isResetDataModalShown" @data:reset="handleResetData" />
+  </div>
+
+  <div
+    v-if="
+      (isUserLoggedIn(user.personal) && !user.personal.useKeychain && !user.selectedOrganization) ||
+      isLoggedInOrganization(user.selectedOrganization)
+    "
+    class="mt-6"
+  >
+    <AppButton color="primary" data-testid="button-logout" @click="withLoader(handleLogout)">
+      Log Out
+    </AppButton>
   </div>
 </template>

@@ -7,8 +7,12 @@ import { ErrorCodes } from '@app/common';
 import { User } from '@entities';
 
 import * as bcrypt from 'bcryptjs';
+import * as argon2 from 'argon2';
 
 import { UsersService } from './users.service';
+
+jest.mock('bcryptjs');
+jest.mock('argon2');
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -83,7 +87,7 @@ describe('UsersService', () => {
   it('should call the repo to create a user', async () => {
     userRepository.findOne.mockResolvedValue(null);
     userRepository.create.mockReturnValue(user as User);
-    jest.spyOn(bcrypt, 'hash').mockImplementation(async () => hashedPassword);
+    jest.spyOn(service, 'hash').mockImplementation(async () => hashedPassword);
 
     await service.createUser(email, password);
 
@@ -94,7 +98,7 @@ describe('UsersService', () => {
   it('should call the repo to restore a user', async () => {
     const userCopy = { ...user, id: 1, deletedAt: new Date() };
     userRepository.findOne.mockResolvedValue(userCopy as User);
-    jest.spyOn(bcrypt, 'hash').mockImplementation(async () => hashedPassword);
+    jest.spyOn(service, 'hash').mockImplementation(async () => hashedPassword);
 
     await service.createUser(email, password);
 
@@ -113,7 +117,9 @@ describe('UsersService', () => {
 
   it('should return user that verifies the email and password', async () => {
     userRepository.findOne.mockResolvedValue(user as User);
-    jest.spyOn(bcrypt, 'compare').mockImplementationOnce(() => true);
+    //@ts-expect-error - incorrect overload expected
+    jest.mocked(bcrypt.compare).mockResolvedValue(true);
+    jest.mocked(argon2.verify).mockResolvedValue(false);
 
     const result = await service.getVerifiedUser(email, password);
 
@@ -138,7 +144,9 @@ describe('UsersService', () => {
 
   it('should throw if the password is incorrect', async () => {
     userRepository.findOne.mockResolvedValue(user as User);
-    jest.spyOn(bcrypt, 'compare').mockImplementationOnce(() => false);
+    //@ts-expect-error - incorrect overload expected
+    jest.mocked(bcrypt.compare).mockResolvedValue(false);
+    jest.mocked(argon2.verify).mockResolvedValue(false);
 
     await expect(service.getVerifiedUser(email, password)).rejects.toThrow(
       'Please check your login credentials',
@@ -170,7 +178,7 @@ describe('UsersService', () => {
 
   it('should set new password the user', async () => {
     userRepository.findOne.mockResolvedValue(user as User);
-    jest.spyOn(bcrypt, 'hash').mockImplementation(async () => hashedPassword);
+    jest.spyOn(service, 'hash').mockImplementation(async () => hashedPassword);
 
     await service.setPassword({ ...user } as User, password);
 
@@ -193,5 +201,63 @@ describe('UsersService', () => {
     userRepository.findOne.mockResolvedValue(null);
 
     await expect(service.removeUser(1)).rejects.toThrow(ErrorCodes.UNF);
+  });
+
+  it('should return the email of the user who owns the public key', async () => {
+    const publicKey = '0bac491a279bc49db8ac4fb57a9a47ae1247ea91ab315a49247e042d60cc8765';
+    const userWithKey = { email, keys: [{ publicKey }] } as User;
+
+    userRepository.findOne.mockResolvedValue(userWithKey);
+
+    const result = await service.getOwnerOfPublicKey(publicKey);
+
+    expect(userRepository.findOne).toHaveBeenCalledWith({
+      where: { keys: { publicKey } },
+      relations: ['keys'],
+    });
+    expect(result).toEqual(email);
+  });
+
+  it('should return null if no user is found for the given public key', async () => {
+    const publicKey = '';
+
+    userRepository.findOne.mockResolvedValue(null);
+
+    const result = await service.getOwnerOfPublicKey(publicKey);
+
+    expect(userRepository.findOne).toHaveBeenCalledWith({
+      where: { keys: { publicKey } },
+      relations: ['keys'],
+    });
+    expect(result).toBeNull();
+  });
+
+  it('should hash data without pseudo salt', async () => {
+    const data = 'password';
+    jest.mocked(argon2.hash).mockResolvedValue(hashedPassword);
+
+    const result = await service.hash(data);
+
+    expect(argon2.hash).toHaveBeenCalledWith(data, { salt: undefined });
+    expect(result).toBe(hashedPassword);
+  });
+
+  it('should hash data with pseudo salt', async () => {
+    const data = 'password';
+    const pseudoSalt = Buffer.from('passwordxxxxxxxx'.slice(0, 16));
+    jest.mocked(argon2.hash).mockResolvedValue(hashedPassword);
+
+    const result = await service.hash(data, true);
+
+    expect(argon2.hash).toHaveBeenCalledWith(data, { salt: pseudoSalt });
+    expect(result).toBe(hashedPassword);
+  });
+
+  it('should call get admins', async () => {
+    await service.getAdmins();
+
+    expect(userRepository.find).toHaveBeenCalledWith({
+      where: { admin: true },
+    });
   });
 });

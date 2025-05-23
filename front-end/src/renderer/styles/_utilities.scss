@@ -141,6 +141,15 @@
   transition: background-color 0.15s linear;
 }
 
+.indicator-circle {
+  position: relative;
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: $danger;
+}
+
 *.indicator-circle-before {
   &::before {
     content: '';

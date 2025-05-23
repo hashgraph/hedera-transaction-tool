@@ -1,9 +1,12 @@
 const BasePage = require('./BasePage');
 
+const SettingsPage = require('./SettingsPage');
+
 class LoginPage extends BasePage {
   constructor(window) {
     super(window);
     this.window = window;
+    this.settingsPage = new SettingsPage(window);
   }
 
   /* Selectors */
@@ -22,6 +25,7 @@ class LoginPage extends BasePage {
   keepLoggedInCheckboxSelector = 'checkbox-remember';
   logoutButtonSelector = 'button-logout';
   settingsButtonSelector = 'button-menu-settings';
+  profileTabButtonSelector = 'tab-4';
 
   // Labels
   emailLabelSelector = 'label-email';
@@ -73,6 +77,7 @@ class LoginPage extends BasePage {
 
   // specific logout method for the login tests
   async logout() {
+    await this.settingsPage.navigateToLogout(this.resetForm.bind(this));
     const isLogoutButtonVisible = await this.isElementVisible(this.logoutButtonSelector);
     if (isLogoutButtonVisible) {
       console.log('Logout button is visible, clicking to logout');

@@ -77,7 +77,7 @@ class TransactionPage extends BasePage {
   receiverSigRequiredSwitchSelector = 'switch-receiver-sig-required';
   receiverSigRequiredSwitchForUpdateSelector = 'switch-receiver-sig-required';
   acceptStakingRewardsSwitchSelector = 'switch-accept-staking-rewards';
-  discardModalDraftButtonSelector = 'button-discard-draft-modal';
+  discardModalDraftButtonSelector = 'button-discard-draft-for-group-modal';
   buttonSignTransactionSelector = 'button-sign-transaction';
   buttonCancelTransactionSelector = 'button-cancel-transaction';
   closeCompletedTxButtonSelector = 'button-close-completed-tx';
@@ -1156,6 +1156,10 @@ class TransactionPage extends BasePage {
 
   async getMaxTransactionFee() {
     return await this.getTextFromInputField(this.maxTransactionFeeInputSelector);
+  }
+
+  async fillInMaxTransactionFee(fee) {
+    await this.fill(this.maxTransactionFeeInputSelector, fee);
   }
 
   async fillInDescription(description) {

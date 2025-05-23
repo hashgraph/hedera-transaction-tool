@@ -32,7 +32,7 @@ export const deleteComplexKey = async (id: string) =>
   }, `Failed to remove complex key`);
 
 /* Updates complex key */
-export const updateComplexKey = async (id: string, newKeyListBytes: Uint8Array, nickname?: string) =>
+export const updateComplexKey = async (id: string, newKeyListBytes: Uint8Array) =>
   commonIPCHandler(async () => {
-    return await window.electronAPI.local.complexKeys.update(id, newKeyListBytes, nickname);
+    return await window.electronAPI.local.complexKeys.update(id, newKeyListBytes);
   }, `Failed to update complex key`);

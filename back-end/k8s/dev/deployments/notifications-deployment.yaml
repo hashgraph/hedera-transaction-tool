@@ -29,16 +29,38 @@ spec:
               value: '3001'
             - name: RABBITMQ_URI
               value: 'amqp://rabbitmq-service:5672'
-            - name: BREVO_USERNAME
+            - name: EMAIL_API_HOST
               valueFrom:
                 secretKeyRef:
-                  name: brevo-secret
+                  name: email-api-secret
+                  key: host
+            - name: EMAIL_API_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: email-api-secret
+                  key: port
+            - name: EMAIL_API_SECURE
+              valueFrom:
+                secretKeyRef:
+                  name: email-api-secret
+                  key: secure
+            - name: EMAIL_API_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: email-api-secret
                   key: username
-            - name: BREVO_PASSWORD
+                  optional: true
+            - name: EMAIL_API_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: brevo-secret
+                  name: email-api-secret
                   key: password
+                  optional: true
+            - name: SENDER_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: email-api-secret
+                  key: sender-email
             - name: REDIS_URL
               value: 'redis://redis-service:6379'
             - name: POSTGRES_HOST

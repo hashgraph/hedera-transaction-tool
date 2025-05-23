@@ -66,11 +66,11 @@ const handleLinkAccount = async () => {
   }
 };
 
-const handleBlur = (e: Event) => {
-  const value = (e.target as HTMLInputElement).value;
-  if (!value.includes('-')) {
+const handleBlur = () => {
+  accountData.accountId.value = formatAccountId(accountData.accountId.value);
+  if (!accountData.accountId.value.includes('-')) {
     try {
-      const idWithChecksum = getAccountIdWithChecksum(value);
+      const idWithChecksum = getAccountIdWithChecksum(accountData.accountId.value);
       if (idWithChecksum) {
         accountData.accountId.value = idWithChecksum;
       }
@@ -98,8 +98,7 @@ const handleBlur = (e: Event) => {
           {{ accountData.isValid.value ? accountData.accountInfo.value?.balance || 0 : '-' }}</label
         >
         <AppInput
-          :model-value="accountData.accountIdFormatted.value"
-          @update:model-value="v => (accountData.accountId.value = formatAccountId(v))"
+          v-model="accountData.accountId.value"
           :filled="true"
           data-testid="input-existing-account-id"
           data-bs-toggle="tooltip"

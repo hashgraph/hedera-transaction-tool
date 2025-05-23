@@ -7,12 +7,16 @@ import { mock } from 'jest-mock-extended';
 
 import { AuthService } from './auth.service';
 
+import * as bcrypt from 'bcryptjs';
+import * as argon2 from 'argon2';
 import { ErrorCodes, NOTIFICATIONS_SERVICE } from '@app/common';
 import { User, UserStatus } from '@entities';
-import * as bcrypt from 'bcryptjs';
 import { totp } from 'otplib';
 import { UsersService } from '../users/users.service';
 import { SignUpUserDto } from './dtos';
+
+jest.mock('bcryptjs');
+jest.mock('argon2');
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -181,7 +185,10 @@ describe('AuthService', () => {
     const user = { id: 1, email: '', password: 'old' };
     const dto = { oldPassword: 'old', newPassword: 'new' };
 
-    jest.spyOn(bcrypt, 'compare').mockImplementationOnce(async () => true);
+    //@ts-expect-error - incorrect overload expected
+    jest.mocked(bcrypt.compare).mockResolvedValue(true);
+    jest.mocked(argon2.verify).mockResolvedValue(false);
+    jest.spyOn(service, 'dualCompareHash').mockResolvedValueOnce({ correct: true, isBcrypt: true });
 
     await service.changePassword(user as User, dto);
 
@@ -199,9 +206,30 @@ describe('AuthService', () => {
     const user = { id: 1, email: '', password: 'old' };
     const dto = { oldPassword: 'old', newPassword: 'new' };
 
-    jest.spyOn(bcrypt, 'compare').mockImplementationOnce(async () => false);
+    //@ts-expect-error - incorrect overload expected
+    jest.mocked(bcrypt.compare).mockResolvedValue(false);
+    jest.mocked(argon2.verify).mockResolvedValue(false);
 
     await expect(service.changePassword(user as User, dto)).rejects.toThrow(ErrorCodes.INOP);
+  });
+
+  it('should emit user registered notification for admins', async () => {
+    const user = { id: 1, email: '', status: UserStatus.NEW, keys: [] };
+
+    //@ts-expect-error - incorrect overload expected
+    jest.mocked(bcrypt.compare).mockResolvedValue(true);
+    jest.mocked(argon2.verify).mockResolvedValue(true);
+
+    jest.spyOn(userService, 'getAdmins').mockResolvedValue([{ id: 2 }] as User[]);
+
+    await service.changePassword(user as User, { oldPassword: '', newPassword: 'new' });
+
+    expect(notificationsService.emit).toHaveBeenCalledWith('notify_general', {
+      type: 'USER_REGISTERED',
+      userIds: [2],
+      content: `User ${user.email} has completed the registration process.`,
+      entityId: user.id,
+    });
   });
 
   it('should create otp in dev', async () => {

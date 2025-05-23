@@ -6,13 +6,18 @@ import { ref, watch } from 'vue';
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useContactsStore from '@renderer/stores/storeContacts';
 
 import { useToast } from 'vue-toast-notification';
 
 import { getComplexKey, updateComplexKey } from '@renderer/services/complexKeysService';
 
-import { isPublicKey, decodeKeyList, encodeKey, isUserLoggedIn } from '@renderer/utils';
+import {
+  isPublicKey,
+  decodeKeyList,
+  encodeKey,
+  formatPublickey,
+  extractIdentifier,
+} from '@renderer/utils';
 import * as ush from '@renderer/utils/userStoreHelpers';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -46,7 +51,6 @@ enum Tabs {
 
 /* Stores */
 const user = useUserStore();
-const contacts = useContactsStore();
 
 /* Composables */
 const toast = useToast();
@@ -59,6 +63,8 @@ const complexKeyModalShown = ref(false);
 const addPublicKeyModalShown = ref(false);
 const selectSavedKeyModalShown = ref(false);
 const saveKeyListModalShown = ref(false);
+const formattedKey = ref('');
+const identifier = ref<string | null | undefined>(null);
 
 /* Handlers */
 const handleTabChange = (tab: Tabs) => {
@@ -105,22 +111,12 @@ const handleEditComplexKey = () => {
   complexKeyModalShown.value = true;
 };
 
-const handleComplexKeyUpdate = async (keyList: KeyList, updatedName: boolean) => {
-  if (!isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
-
+const handleComplexKeyUpdate = async (keyList: KeyList) => {
   emit('update:modelKey', keyList);
 
   if (selectedComplexKey.value) {
     const keyListBytes = encodeKey(keyList);
-    let updatedKey;
-    if (updatedName) {
-      updatedKey = await getComplexKey(user.personal.id, keyList);
-    } else {
-      updatedKey = await updateComplexKey(selectedComplexKey.value.id, keyListBytes);
-    }
-    selectedComplexKey.value = updatedKey;
+    selectedComplexKey.value = await updateComplexKey(selectedComplexKey.value.id, keyListBytes);
     toast.success('Key list updated successfully');
   }
 };
@@ -143,6 +139,18 @@ watch(currentTab, tab => {
     emit('update:modelKey', null);
   }
 });
+
+watch(
+  () => props.modelKey,
+  async newKey => {
+    if (newKey && newKey instanceof PublicKey && true) {
+      const formatted = await formatPublickey(newKey.toStringRaw());
+      formattedKey.value = formatted;
+      identifier.value = extractIdentifier(formatted)?.identifier;
+    }
+  },
+  { immediate: true },
+);
 
 watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) => {
   if (!ush.isUserLoggedIn(user.personal)) {
@@ -196,14 +204,7 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
             ref="publicKeyInputRef"
             data-testid="input-public-key"
             :filled="true"
-            :label="
-              modelKey instanceof PublicKey
-                ? ush.getNickname(modelKey.toStringRaw(), user.keyPairs) ||
-                  contacts.getContactByPublicKey(modelKey)?.nickname.trim() ||
-                  contacts.getContactByPublicKey(modelKey)?.user.email ||
-                  'Public Key'
-                : 'Public Key'
-            "
+            :label="modelKey instanceof PublicKey && identifier ? identifier : 'Public Key'"
             @update:model-value="handlePublicKeyChange"
           />
         </div>

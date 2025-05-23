@@ -8,10 +8,10 @@ defineProps<{
 </script>
 <template>
   <div class="row">
-    <div class="col-5">
+    <div class="col-4 d-flex align-items-center">
       <p class="text-small text-semi-bold">{{ label }}</p>
     </div>
-    <div class="col-7">
+    <div class="col-8">
       <p class="text-small text-secondary overflow-hidden" :data-testid="['data-testid']">
         {{ value }}
         <slot></slot>

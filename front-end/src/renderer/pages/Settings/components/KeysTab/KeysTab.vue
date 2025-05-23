@@ -7,6 +7,7 @@ import { PublicKey } from '@hashgraph/sdk';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
+import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
@@ -17,6 +18,7 @@ import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import {
   assertUserLoggedIn,
   getAccountIdWithChecksum,
+  getPublicKeyAndType,
   isLoggedInOrganization,
 } from '@renderer/utils';
 
@@ -26,11 +28,16 @@ import UpdateNicknameModal from '@renderer/components/modals/UpdateNicknameModal
 import TabHeading from './components/TabHeading.vue';
 import DeleteKeyPairsModal from './components/DeleteKeyPairsModal.vue';
 
+import { RESTORE_MISSING_KEYS } from '@renderer/router';
+import ImportExternalPrivateKeyModal from '@renderer/components/ImportExternalPrivateKeyModal.vue';
+import { KeyType } from '@renderer/types';
+
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
+const router = useRouter();
 const toast = useToast();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
@@ -49,6 +56,10 @@ const selectedKeyPairIdsToDelete = ref<string[]>([]);
 const selectedMissingKeyPairIdsToDelete = ref<number[]>([]);
 const deleteSingleLocal = ref<string | null>(null);
 const deleteSingleMissing = ref<number | null>(null);
+
+const isImportExternalModalShown = ref(false);
+const publicKey = ref<string>('');
+const keyType = ref<KeyType>(KeyType.ED25519);
 
 /* Computed */
 const missingKeys = computed(() =>
@@ -94,6 +105,10 @@ const isSelectAllDisabled = computed(
   () => listedKeyPairs.value.length === 0 && listedMissingKeyPairs.value.length === 0,
 );
 
+const keyTypeString = computed(() => {
+  return KeyType[keyType.value] as 'ED25519' | 'ECDSA';
+});
+
 /* Handlers */
 const handleStartNicknameEdit = (id: string) => {
   keyPairIdToEdit.value = id;
@@ -103,35 +118,6 @@ const handleStartNicknameEdit = (id: string) => {
 const handleShowPrivateKey = async (publicKey: string) => {
   publicKeysPrivateKeyToDecrypt.value = publicKey;
   await decrypt();
-};
-
-const decrypt = async () => {
-  try {
-    assertUserLoggedIn(user.personal);
-    const personalPassword = getPassword(decrypt, {
-      subHeading: 'Enter your application password to decrypt your key',
-    });
-    if (passwordModalOpened(personalPassword)) return;
-
-    const keyFromDecrypted = decryptedKeys.value.find(
-      kp => kp.publicKey === publicKeysPrivateKeyToDecrypt.value,
-    );
-
-    if (!keyFromDecrypted) {
-      const decryptedKey = await decryptPrivateKey(
-        user.personal.id,
-        personalPassword,
-        publicKeysPrivateKeyToDecrypt.value,
-      );
-
-      decryptedKeys.value.push({
-        publicKey: publicKeysPrivateKeyToDecrypt.value,
-        decrypted: decryptedKey,
-      });
-    }
-  } catch {
-    toast.error('Failed to decrypt private key');
-  }
 };
 
 const handleHideDecryptedKey = (publicKey: string) => {
@@ -182,12 +168,52 @@ const handleMissingKeyDeleteModal = (id: number) => {
 
 const handleDeleteSelectedClick = () => (isDeleteModalShown.value = true);
 
+const handleRestoreMissingKey = (keyPair: { id: number; publicKey: string; index?: number }) => {
+  if (keyPair.index !== undefined) {
+    router.push({ name: RESTORE_MISSING_KEYS, params: { index: keyPair.index, publicKey: keyPair.publicKey } });
+  } else {
+    keyType.value = getPublicKeyAndType(keyPair.publicKey).keyType;
+    publicKey.value = keyPair.publicKey;
+    isImportExternalModalShown.value = true;
+  }
+};
+
 const handleAccountString = (publicKey: string) => {
   const account = user.publicKeyToAccounts.find(acc => acc.publicKey === publicKey)?.accounts[0]
     ?.account;
   if (account) {
     const idWithChecksum = getAccountIdWithChecksum(account);
     return idWithChecksum;
+  }
+};
+
+/* Functions */
+const decrypt = async () => {
+  try {
+    assertUserLoggedIn(user.personal);
+    const personalPassword = getPassword(decrypt, {
+      subHeading: 'Enter your application password to decrypt your key',
+    });
+    if (passwordModalOpened(personalPassword)) return;
+
+    const keyFromDecrypted = decryptedKeys.value.find(
+      kp => kp.publicKey === publicKeysPrivateKeyToDecrypt.value,
+    );
+
+    if (!keyFromDecrypted) {
+      const decryptedKey = await decryptPrivateKey(
+        user.personal.id,
+        personalPassword,
+        publicKeysPrivateKeyToDecrypt.value,
+      );
+
+      decryptedKeys.value.push({
+        publicKey: publicKeysPrivateKeyToDecrypt.value,
+        decrypted: decryptedKey,
+      });
+    }
+  } catch {
+    toast.error('Failed to decrypt private key');
   }
 };
 
@@ -437,16 +463,30 @@ watch([selectedTab, selectedRecoveryPhrase], () => {
                     size="small"
                     color="danger"
                     :data-testid="`button-delete-key-${index}`"
-                    @click="handleMissingKeyDeleteModal(keyPair.id)"
-                    class="min-w-unset"
+                    @click="handleRestoreMissingKey(keyPair)"
+                    class="min-w-unset me-2"
                     :class="
                       selectedKeyPairIdsToDelete.length === 0 &&
                       selectedMissingKeyPairIdsToDelete.length === 0
                         ? null
                         : 'invisible'
                     "
-                    >Delete missing key</AppButton
-                  >
+                    ><span class="bi bi-arrow-repeat"></span
+                  ></AppButton>
+                  <AppButton
+                    size="small"
+                    color="danger"
+                    :data-testid="`button-delete-key-${index}`"
+                    @click="handleMissingKeyDeleteModal(keyPair.id)"
+                    class="min-w-unset ms-2"
+                    :class="
+                      selectedKeyPairIdsToDelete.length === 0 &&
+                      selectedMissingKeyPairIdsToDelete.length === 0
+                        ? null
+                        : 'invisible'
+                    "
+                    ><span class="bi bi-trash"></span
+                  ></AppButton>
                 </td>
               </tr>
             </template>
@@ -467,6 +507,13 @@ watch([selectedTab, selectedRecoveryPhrase], () => {
       <UpdateNicknameModal
         v-model:show="isUpdateNicknameModalShown"
         :key-pair-id="keyPairIdToEdit || ''"
+      />
+
+      <ImportExternalPrivateKeyModal
+        class="min-w-unset"
+        :key-type="keyTypeString"
+        :public-key="publicKey"
+        v-model:show="isImportExternalModalShown"
       />
     </div>
   </div>

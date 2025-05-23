@@ -1,52 +1,35 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue';
+import { computed, ref, watchEffect } from 'vue';
 import { PublicKey } from '@hashgraph/sdk';
-
-import useUserStore from '@renderer/stores/storeUser';
-import useContactsStore from '@renderer/stores/storeContacts';
-
-import * as ush from '@renderer/utils/userStoreHelpers';
+import { extractIdentifier, formatPublickey } from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{
   publicKey: PublicKey | string;
-  brackets?: boolean;
+  signed?: boolean;
 }>();
 
-/* Emits */
-const emit = defineEmits<{
-  (event: 'nicknameStatus', hasNickname: boolean): void;
-}>();
-
-/* Stores */
-const user = useUserStore();
-const contacts = useContactsStore();
+/* State */
+const formattedPublicKey = ref('');
 
 /* Computed */
 const value = computed(() => {
   return props.publicKey instanceof PublicKey ? props.publicKey.toStringRaw() : props.publicKey;
 });
 
-const contact = computed(() => contacts.getContactByPublicKey(value.value));
-
-const localKeyPairNickname = computed(() => ush.getNickname(value.value, user.keyPairs));
-
-const hasNickname = computed(() => {
-  return !!(
-    localKeyPairNickname.value?.trim() ||
-    contact.value?.nickname?.trim() ||
-    contact.value?.user.email
-  );
-});
-
-watchEffect(() => {
-  emit('nicknameStatus', hasNickname.value);
+watchEffect(async () => {
+  if (value.value) {
+    formattedPublicKey.value = await formatPublickey(value.value);
+  }
 });
 </script>
 <template>
-  <span v-if="localKeyPairNickname?.trim() || contact">
-    <template v-if="brackets">(</template
-    >{{ localKeyPairNickname?.trim() || contact?.nickname.trim() || contact?.user.email
-    }}<template v-if="brackets">)</template>
+  <span v-if="formattedPublicKey">
+    <span v-if="signed" class="text-success">{{ formattedPublicKey }}</span>
+    <span v-else-if="!signed && extractIdentifier(formattedPublicKey)">
+      <span class="text-pink me-2">{{ extractIdentifier(formattedPublicKey)?.identifier }}</span>
+      <span>{{ `(${extractIdentifier(formattedPublicKey)?.pk})` }}</span>
+    </span>
+    <span v-else>{{ formattedPublicKey }}</span>
   </span>
 </template>

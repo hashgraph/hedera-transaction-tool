@@ -5,7 +5,7 @@ import { Tabs } from '..';
 
 import { computed, ref, watch } from 'vue';
 
-import { RESTORE_MISSING_KEYS } from '@renderer/router';
+import { MATCH_RECOVERY_PHRASE, RESTORE_MISSING_KEYS } from '@renderer/router';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -72,6 +72,10 @@ const handleTabChange = (tab: Tabs) => {
 
 const handleRedirectToRecoverMnemonicKeys = () => {
   router.push({ name: RESTORE_MISSING_KEYS });
+};
+
+const handleRedirectToMatchRecoveryPhrase = () => {
+  router.push({ name: MATCH_RECOVERY_PHRASE });
 };
 
 /* Watchers */
@@ -170,6 +174,16 @@ watch(
         class="rounded-3 text-nowrap min-w-unset"
         @click="handleRedirectToRecoverMnemonicKeys()"
         >Restore Missing Keys</AppButton
+      >
+
+      <!-- Restore missing keys from recovery phrase -->
+      <AppButton
+        v-if="selectedTab === Tabs.PRIVATE_KEY && listedKeyPairs.length > 0"
+        color="primary"
+        :data-testid="`button-restore-lost-keys`"
+        class="rounded-3 text-nowrap min-w-unset"
+        @click="handleRedirectToMatchRecoveryPhrase()"
+        >Match Recovery Phrase</AppButton
       >
     </div>
 

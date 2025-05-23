@@ -152,4 +152,59 @@ describe('UsersController', () => {
       }
     });
   });
+
+  describe('UsersController', () => {
+    let controller: UsersController;
+
+    const userService = mockDeep<UsersService>();
+    const blacklistService = mockDeep<BlacklistService>();
+
+    beforeEach(async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        controllers: [UsersController],
+        providers: [
+          {
+            provide: UsersService,
+            useValue: userService,
+          },
+          {
+            provide: BlacklistService,
+            useValue: blacklistService,
+          },
+        ],
+      })
+        .overrideGuard(VerifiedUserGuard)
+        .useValue(guardMock())
+        .compile();
+
+      controller = module.get<UsersController>(UsersController);
+    });
+
+    describe('getUserByPublicKey', () => {
+      it('should return an email if a public key is found', async () => {
+        const publicKey = 'c12e815869ad5d9f5357636cf487fe8e30cc085043a49ee8d16ca69ddcffbed9';
+        const email = 'user@example.com';
+
+        userService.getOwnerOfPublicKey.mockResolvedValue(email);
+
+        expect(await controller.getUserByPublicKey(publicKey)).toBe(email);
+      });
+
+      it('should return null if no user is found for the given public key', async () => {
+        const publicKey = 'non-existent-public-key';
+
+        userService.getOwnerOfPublicKey.mockResolvedValue(null);
+
+        expect(await controller.getUserByPublicKey(publicKey)).toBeNull();
+      });
+
+      it('should throw an error if the service fails', async () => {
+        const publicKey = 'c12e815869ad5d9f5357636cf487fe8e30cc085043a49ee8d16ca69ddcffbed9';
+
+        userService.getOwnerOfPublicKey.mockRejectedValue(new Error('Database error'));
+
+        await expect(controller.getUserByPublicKey(publicKey)).rejects.toThrow('Database error');
+      });
+    });
+  });
 });

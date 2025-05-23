@@ -48,10 +48,19 @@ export class ExecuteService {
 
   @MurLock(15000, 'transactionGroup.id + "_group"')
   async executeTransactionGroup(transactionGroup: ExecuteTransactionGroupDto) {
+    const filteredTransactionGroup: ExecuteTransactionGroupDto = {
+      ...transactionGroup,
+      groupItems: transactionGroup.groupItems.filter(
+        tx =>
+          tx.transaction.status !== TransactionStatus.CANCELED &&
+          tx.transaction.status !== TransactionStatus.EXPIRED &&
+          tx.transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES,
+      ),
+    };
     const transactions: { sdkTransaction: SDKTransaction; transaction: ExecuteTransactionDto }[] =
       [];
     // first we need to validate all the transactions, as they all need to be valid before we can execute any of them
-    for (const groupItemDto of transactionGroup.groupItems) {
+    for (const groupItemDto of filteredTransactionGroup.groupItems) {
       const transaction = groupItemDto.transaction;
       try {
         const sdkTransaction = await this.getValidatedSDKTransaction(transaction);
@@ -118,9 +127,7 @@ export class ExecuteService {
       result.status = transactionStatus;
 
       await this.transactionsRepo.update(
-        {
-          id: transaction.id,
-        },
+        { id: transaction.id },
         {
           status: transactionStatus,
           executedAt,
@@ -130,7 +137,7 @@ export class ExecuteService {
 
       client.close();
 
-      notifySyncIndicators(this.notificationsService, transaction.id, transaction.status, {
+      notifySyncIndicators(this.notificationsService, transaction.id, transactionStatus, {
         network: transaction.mirrorNetwork,
       });
       notifyTransactionAction(this.notificationsService);

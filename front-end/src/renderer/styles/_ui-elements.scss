@@ -158,7 +158,8 @@
   text-align: center;
 }
 
-.network-notification::after {
+.network-notification::after,
+.signature-notification::after {
   content: attr(data-notification);
   position: absolute;
   top: 50%;
@@ -730,6 +731,29 @@
 
   100% {
     transform: scale(0.75);
+  }
+}
+
+.ringing {
+  animation: ring 0.3s ease-in-out infinite;
+  transform-origin: 50% 10%; /* Change the rotation point */
+}
+
+@keyframes ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(15deg);
+  }
+  50% {
+    transform: rotate(0deg);
+  }
+  75% {
+    transform: rotate(-15deg);
+  }
+  100% {
+    transform: rotate(0deg);
   }
 }
 

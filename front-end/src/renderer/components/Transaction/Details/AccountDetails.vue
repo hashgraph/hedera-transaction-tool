@@ -29,6 +29,8 @@ import {
   safeAwait,
   getAccountNicknameFromId,
   getAccountIdWithChecksum,
+  formatPublickey,
+  extractIdentifier,
 } from '@renderer/utils';
 
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
@@ -54,6 +56,7 @@ const entityId = ref<string | null>(null);
 const accounts = ref<HederaAccount[]>([]);
 const newAccNickname = ref<string | null>(null);
 const txNickname = ref<string | null>(null);
+const formattedKey = ref('');
 
 /* Handlers */
 const handleLinkEntity = async () => {
@@ -136,6 +139,9 @@ onBeforeMount(async () => {
   }
 
   await checkAndFetchTransactionInfo();
+  if (props.transaction.key && props.transaction.key instanceof PublicKey && true) {
+    formattedKey.value = await formatPublickey(props.transaction.key.toStringRaw());
+  }
 });
 
 onBeforeUnmount(() => {
@@ -232,12 +238,20 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
             >See details</span
           >
         </template>
-        <template v-else-if="transaction.key instanceof PublicKey && true">
+        <template v-else-if="transaction.key instanceof PublicKey && true && formattedKey">
           <p class="overflow-hidden">
-            <span class="text-semi-bold text-pink">
+            <span class="text-semi-bold" :class="{ 'text-pink': !extractIdentifier(formattedKey) }">
               {{ transaction.key._key._type }}
             </span>
-            {{ transaction.key.toStringRaw() }}
+            <span v-if="extractIdentifier(formattedKey)" class="d-flex flex-row flex-wrap gap-2">
+              <span class="text-small text-pink">{{
+                extractIdentifier(formattedKey)?.identifier
+              }}</span>
+              <span class="text-secondary text-small">{{
+                `(${extractIdentifier(formattedKey)?.pk})`
+              }}</span>
+            </span>
+            <span v-else>{{ formattedKey }}</span>
           </p>
         </template>
         <template v-else>None</template>

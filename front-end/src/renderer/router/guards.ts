@@ -6,7 +6,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { isLoggedInOrganization } from '@renderer/utils';
 
-const exludedPreviousPaths = [
+const excludedPreviousPaths = [
   'login',
   'organizationLogin',
   'accountSetup',
@@ -23,8 +23,6 @@ export function addGuards(router: Router) {
     const userIsLoggedInOrganization = isLoggedInOrganization(user.selectedOrganization);
     const userIsAdmin =
       isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin;
-
-    if (user.migrating) return false;
 
     if (
       (to.meta.onlyAdmin && !userIsAdmin) ||
@@ -53,7 +51,7 @@ export function addGuards(router: Router) {
       return router.previousPath ? { path: router.previousPath } : { name: 'transactions' };
     }
 
-    if (!exludedPreviousPaths.includes(to.name?.toString() || '')) {
+    if (!excludedPreviousPaths.includes(to.name?.toString() || '')) {
       router.previousPath = to.path;
     }
 

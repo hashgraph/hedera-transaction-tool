@@ -11,15 +11,18 @@ import { ClientProxy } from '@nestjs/microservices';
 
 import { totp } from 'otplib';
 import * as bcrypt from 'bcryptjs';
+import * as argon2 from 'argon2';
 
 import {
   ELECTRON_APP_PROTOCOL_PREFIX,
   ErrorCodes,
   NOTIFICATIONS_SERVICE,
   NOTIFY_EMAIL,
+  NOTIFY_GENERAL,
   NotifyEmailDto,
+  NotifyGeneralDto,
 } from '@app/common';
-import { User, UserStatus } from '@entities';
+import { NotificationType, User, UserStatus } from '@entities';
 
 import { JwtPayload, OtpPayload } from '../interfaces';
 
@@ -81,8 +84,18 @@ export class AuthService {
   async changePassword(user: User, { oldPassword, newPassword }: ChangePasswordDto): Promise<void> {
     if (oldPassword === newPassword) throw new BadRequestException(ErrorCodes.NPMOP);
 
-    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
-    if (!isOldPasswordValid) throw new BadRequestException(ErrorCodes.INOP);
+    const { correct } = await this.dualCompareHash(oldPassword, user.password);
+    if (!correct) throw new BadRequestException(ErrorCodes.INOP);
+
+    if (user.status === UserStatus.NEW && user.keys.length === 0) {
+      const admins = await this.usersService.getAdmins();
+      this.notificationsService.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
+        type: NotificationType.USER_REGISTERED,
+        userIds: admins.map(admin => admin.id),
+        content: `User ${user.email} has completed the registration process.`,
+        entityId: user.id,
+      });
+    }
 
     await this.usersService.setPassword(user, newPassword);
   }
@@ -165,5 +178,12 @@ export class AuthService {
   /* Elevate user to admin */
   async elevateAdmin(userId: number): Promise<void> {
     await this.usersService.updateUserById(userId, { admin: true });
+  }
+
+  /* Compare the given data with the hash */
+  async dualCompareHash(data: string, hash: string) {
+    const matchBcrypt = await bcrypt.compare(data, hash);
+    const matchArgon2 = await argon2.verify(hash, data);
+    return { correct: matchBcrypt || matchArgon2, isBcrypt: matchBcrypt };
   }
 }

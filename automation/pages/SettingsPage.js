@@ -21,17 +21,19 @@ class SettingsPage extends BasePage {
   newPasswordInputSelector = 'input-new-password';
   defaultMaxTransactionFeeInputSelector = 'input-default-max-transaction-fee';
   keyPairNicknameInputSelector = 'input-key-pair-nickname';
+  mirrorNodeBaseURLInputSelector = 'input-mirror-node-base-url';
 
   // Buttons
   settingsButtonSelector = 'button-menu-settings';
   generalTabButtonSelector = 'tab-0';
   organisationsTabButtonSelector = 'tab-1';
   keysTabButtonSelector = 'tab-2';
-  profileTabButtonSelector = 'tab-3';
+  profileTabButtonSelector = 'tab-4';
   mainnetTabButtonSelector = 'tab-network-mainnet';
   testnetTabButtonSelector = 'tab-network-testnet';
   previewnetTabButtonSelector = 'tab-network-previewnet';
   localNodeTabButtonSelector = 'tab-network-local-node';
+  customNodeTabButtonSelector = 'tab-network-custom-node';
   darkTabButtonSelector = 'tab-appearance-dark';
   lightTabButtonSelector = 'tab-appearance-light';
   systemTabButtonSelector = 'tab-appearance-system';
@@ -183,6 +185,10 @@ class SettingsPage extends BasePage {
     await this.click(this.localNodeTabButtonSelector);
   }
 
+  async clickOnCustomNodeTab() {
+    await this.click(this.customNodeTabButtonSelector);
+  }
+
   async clickOnImportButton() {
     await this.click(this.importButtonSelector);
   }
@@ -193,6 +199,10 @@ class SettingsPage extends BasePage {
 
   async clickOnED25519DropDown() {
     await this.click(this.ed25519ImportLinkSelector);
+  }
+
+  async fillInMirrorNodeBaseURL(mirrorNodeBaseURL) {
+    await this.fill(this.mirrorNodeBaseURLInputSelector, mirrorNodeBaseURL);
   }
 
   async fillInECDSAPrivateKey(ecdsaPrivateKey) {
@@ -265,7 +275,7 @@ class SettingsPage extends BasePage {
   }
 
   async clickOnChangeKeyNicknameButton(index) {
-    await this.click(this.changeKeyNicknameButtonSelector, 0);
+    await this.click(this.changeKeyNicknameButtonSelector, index);
   }
 
   async clickOnConfirmNicknameChangeButton() {
@@ -280,6 +290,28 @@ class SettingsPage extends BasePage {
     await this.clickOnChangeKeyNicknameButton(0);
     await this.fillInKeyPairNickname(nickname);
     await this.clickOnConfirmNicknameChangeButton();
+  }
+
+  async navigateToLogout(resetFunction) {
+    const isSettingsButtonVisible = await this.isElementVisible(this.settingsButtonSelector);
+    if (!isSettingsButtonVisible) {
+      console.log('Settings button is not visible, resetting the form');
+      if (resetFunction) {
+        await resetFunction();
+      }
+      return;
+    }
+    await this.click(this.settingsButtonSelector);
+
+    const isProfileTabButtonVisible = await this.isElementVisible(this.profileTabButtonSelector);
+    if (!isProfileTabButtonVisible) {
+      console.log('Profile tab button is not visible, resetting the form');
+      if (resetFunction) {
+        await resetFunction();
+      }
+      return;
+    }
+    await this.click(this.profileTabButtonSelector);
   }
 }
 module.exports = SettingsPage;

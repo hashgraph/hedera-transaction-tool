@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Transaction } from '@prisma/client';
-import { ITransactionFull, TransactionStatus } from '@main/shared/interfaces';
+import type { ITransactionFull } from '@main/shared/interfaces';
+import { TransactionStatus } from '@main/shared/interfaces';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 
@@ -33,11 +34,12 @@ import {
   assertUserLoggedIn,
   getErrorMessage,
   getPrivateKey,
+  getStatusFromCode,
   getTransactionBodySignatureWithoutNodeAccountId,
   hexToUint8Array,
   isLoggedInOrganization,
-  publicRequiredToSign,
   redirectToDetails,
+  usersPublicRequiredToSign,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -140,10 +142,6 @@ const isCreator = computed(() => {
   return creator.value.user.id === user.selectedOrganization.userId;
 });
 
-const isAdmin = computed(() => {
-  return user.selectedOrganization.role === 'admin';
-});
-
 const transactionIsInProgress = computed(
   () =>
     props.organizationTransaction &&
@@ -187,16 +185,12 @@ const canRemind = computed(() => {
     isCreator.value &&
     transactionIsInProgress.value
   );
-})
+});
 
 const canArchive = computed(() => {
   const isManual = props.organizationTransaction?.isManual;
 
-  return (
-    isManual &&
-    isCreator.value &&
-    transactionIsInProgress.value
-  );
+  return isManual && isCreator.value && transactionIsInProgress.value;
 });
 
 const visibleButtons = computed(() => {
@@ -227,6 +221,10 @@ const dropDownItems = computed(() =>
   visibleButtons.value.slice(1).map(item => ({ label: item, value: item })),
 );
 
+const isTransactionFailed = computed(() => {
+  return props.organizationTransaction?.status === TransactionStatus.FAILED;
+});
+
 /* Handlers */
 const handleBack = () => {
   if (
@@ -255,7 +253,7 @@ const handleSign = async () => {
   try {
     loadingStates[sign] = 'Signing...';
 
-    const publicKeysRequired = await publicRequiredToSign(
+    const publicKeysRequired = await usersPublicRequiredToSign(
       props.sdkTransaction,
       user.selectedOrganization.userKeys,
       network.mirrorNodeBaseURL,
@@ -330,9 +328,14 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
         isConfirmModalLoadingState.value = true;
       }
 
-      const publicKey = user.selectedOrganization.userKeys[0].publicKey;
-      const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
-      const privateKey = getPrivateKey(publicKey, privateKeyRaw);
+      const orgKey = user.selectedOrganization.userKeys.filter(k => k.mnemonicHash)[0];
+      const privateKeyRaw = await decryptPrivateKey(
+        user.personal.id,
+        personalPassword,
+        orgKey.publicKey,
+      );
+
+      const privateKey = getPrivateKey(orgKey.publicKey, privateKeyRaw);
 
       const signature = getTransactionBodySignatureWithoutNodeAccountId(
         privateKey,
@@ -342,7 +345,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
       await sendApproverChoice(
         user.selectedOrganization.serverUrl,
         props.organizationTransaction.id,
-        user.selectedOrganization.userKeys[0].id,
+        orgKey.id,
         signature,
         approved,
       );
@@ -482,11 +485,10 @@ const handleExport = async () => {
   const transactionId = props.sdkTransaction.transactionId?.toString();
   await saveFileNamed(
     bytes,
-    `${transactionId || 'transaction'}.tx`,
+    `${transactionId || 'transaction'}.txsig`,
     'Export transaction',
     'Export',
-    [],
-    ['openDirectory'],
+    [{ name: 'Transaction Files', extensions: ['txsig'] }],
     'Export transaction',
   );
 };
@@ -543,7 +545,7 @@ watch(
     }
 
     const results = await Promise.allSettled([
-      publicRequiredToSign(
+      usersPublicRequiredToSign(
         SDKTransaction.fromBytes(hexToUint8Array(transaction.transactionBytes)),
         user.selectedOrganization.userKeys,
         network.mirrorNodeBaseURL,
@@ -580,7 +582,16 @@ watch(
         <i class="bi bi-arrow-left"></i>
       </AppButton>
 
-      <h2 class="text-title text-bold">Transaction Details</h2>
+      <h2 class="text-title text-bold">
+        Transaction Details
+        <span v-if="isTransactionFailed" class="badge bg-danger text-break ms-2">
+          {{
+            getStatusFromCode(props.organizationTransaction?.statusCode)
+              ? getStatusFromCode(props.organizationTransaction?.statusCode)
+              : 'FAILED'
+          }}
+        </span>
+      </h2>
     </div>
 
     <div class="flex-centered gap-4">

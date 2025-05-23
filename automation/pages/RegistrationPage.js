@@ -29,16 +29,15 @@ class RegistrationPage extends BasePage {
   registerButtonSelector = 'button-login';
   createNewTabSelector = 'tab-0';
   importExistingTabSelector = 'tab-1';
-  generateButtonSelector = 'button-next-genereate';
-  verifyButtonSelector = 'button-verfiy';
-  nextButtonSelector = 'button-next-generate';
+  generateButtonSelector = 'button-next-generate';
+  verifyButtonSelector = 'button-verify';
+  nextButtonSelector = 'button-verify-next-generate';
   nextButtonImportSelector = 'button-next-import';
   finalNextButtonSelector = 'button-next';
   settingsButtonSelector = 'a[href="/settings/general"].link-menu.mt-2.active';
   clearButtonSelector = 'button-clear';
   generateAgainButtonSelector = 'button-generate-again';
   showPrivateKeyButtonSelector = 'button-show-private-key';
-  logoutButtonSelector = 'button-logout';
 
   // Labels
   emailLabelSelector = 'label-email';
@@ -197,32 +196,6 @@ class RegistrationPage extends BasePage {
       }
     }
     return allFieldsCleared;
-  }
-
-  async resetForm() {
-    await this.fill(this.emailInputSelector, '');
-    await this.fill(this.passwordInputSelector, '');
-  }
-
-  async logoutForReset() {
-    const isLogoutButtonVisible = await this.isElementVisible(this.logoutButtonSelector);
-    if (isLogoutButtonVisible) {
-      console.log('Logout button is visible, clicking to logout');
-      await this.click(this.logoutButtonSelector);
-      const element = this.window.getByTestId(this.emailInputSelector);
-      await element.waitFor({ state: 'visible', timeout: 1000 });
-    } else {
-      console.log('Logout button not visible, resetting the form');
-      const isSecondPasswordVisible = await this.isElementVisible(
-        this.confirmPasswordInputSelector,
-      );
-      if (isSecondPasswordVisible) {
-        await this.resetForm();
-        await this.fill(this.confirmPasswordInputSelector, '');
-      } else {
-        await this.resetForm();
-      }
-    }
   }
 
   // Combined method to verify all elements on Registration page

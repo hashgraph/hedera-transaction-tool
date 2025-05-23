@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Handler, TransactionRequest } from '..';
+import { CustomRequest, TransactionRequest, type Handler, type Processable } from '..';
 
 import { computed, ref } from 'vue';
 import { Transaction } from '@hashgraph/sdk';
@@ -27,19 +27,21 @@ const network = useNetworkStore();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
-const request = ref<TransactionRequest | null>(null);
+const request = ref<Processable | null>(null);
 const nextHandler = ref<Handler | null>(null);
 const show = ref(false);
 
 /* Computed */
 const transaction = computed(() =>
-  request.value ? Transaction.fromBytes(request.value.transactionBytes) : null,
+  request.value instanceof TransactionRequest
+    ? Transaction.fromBytes(request.value.transactionBytes)
+    : null,
 );
 
 /* Actions */
 async function next() {
   if (nextHandler.value && request.value) {
-    await nextHandler.value.handle(request.value);
+    await nextHandler.value.handle(request.value as Processable);
   }
 }
 
@@ -47,8 +49,9 @@ function setNext(next: Handler) {
   nextHandler.value = next;
 }
 
-function handle(req: TransactionRequest) {
+function handle(req: Processable) {
   reset();
+
   request.value = req;
   show.value = true;
 }
@@ -118,6 +121,49 @@ defineExpose({
             <p class="" data-testid="p-max-tx-fee">
               {{ stringifyHbar(transaction.maxTransactionFee) }} ({{
                 getDollarAmount(network.currentRate, transaction.maxTransactionFee.toBigNumber())
+              }})
+            </p>
+          </div>
+        </div>
+
+        <hr class="separator my-5" />
+
+        <div class="flex-between-centered gap-4">
+          <AppButton
+            type="button"
+            color="borderless"
+            data-testid="button-cancel-transaction"
+            @click="show = false"
+            >Cancel</AppButton
+          >
+          <AppButton
+            color="primary"
+            type="submit"
+            data-testid="button-sign-transaction"
+            :loading="loading"
+            :disabled="loading"
+            >Confirm</AppButton
+          >
+        </div>
+      </form>
+      <form v-else-if="request instanceof CustomRequest" @submit.prevent="handleConfirmTransaction">
+        <h3 class="text-center text-title text-bold mt-5">Confirm Transaction</h3>
+        <div class="container-main-bg text-small p-4 mt-5">
+          <div class="d-flex justify-content-between p-3">
+            <p>Type of Request</p>
+            <p data-testid="p-type-transaction">{{ request.displayName }}</p>
+          </div>
+          <div class="d-flex justify-content-between p-3 mt-3">
+            <p>Valid Start</p>
+            <p class="">
+              {{ request.baseValidStart?.toDateString() }}
+            </p>
+          </div>
+          <div v-if="request.maxTransactionFee" class="d-flex justify-content-between p-3 mt-3">
+            <p>Max Transaction Fee</p>
+            <p class="" data-testid="p-max-tx-fee">
+              {{ stringifyHbar(request.maxTransactionFee) }} ({{
+                getDollarAmount(network.currentRate, request.maxTransactionFee.toBigNumber())
               }})
             </p>
           </div>

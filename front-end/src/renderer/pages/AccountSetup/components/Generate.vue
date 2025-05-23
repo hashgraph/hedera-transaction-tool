@@ -174,7 +174,7 @@ watch(words, newWords => {
         color="primary"
         class="w-100"
         @click="handleGeneratePhrase"
-        data-testid="button-next-genereate"
+        data-testid="button-next-generate"
       >
         <span>Generate</span>
       </AppButton>
@@ -210,7 +210,7 @@ watch(words, newWords => {
         :disabled="!checkboxChecked"
         color="primary"
         @click="handleProceedToVerification"
-        data-testid="button-verfiy"
+        data-testid="button-verify"
         class="w-100"
         >Verify</AppButton
       >
@@ -232,7 +232,7 @@ watch(words, newWords => {
       <div class="text-small align-self-center">Verify your Recovery Phrase</div>
       <div class="col-4">
         <AppButton
-          data-testid="button-next-generate"
+          data-testid="button-verify-next-generate"
           color="primary"
           class="w-100"
           :disabled="!wordsConfirmed"

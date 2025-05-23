@@ -1,6 +1,6 @@
 {
   "name": "hedera-transaction-tool",
-  "version": "0.9.0",
+  "version": "0.13.0",
   "description": "Transaction tool application",
   "author": {
     "name": "Hedera",
@@ -28,13 +28,13 @@
   },
   "dependencies": {
     "@electron-toolkit/utils": "3.0.0",
-    "@hashgraph/proto": "2.16.0-beta.4",
-    "@hashgraph/sdk": "2.56.0",
+    "@hashgraph/proto": "2.16.0",
+    "@hashgraph/sdk": "2.59.0",
     "@prisma/client": "6.2.1",
     "@vuepic/vue-datepicker": "10.0.0",
     "@vueuse/core": "12.5.0",
     "argon2": "0.41.1",
-    "axios": "1.7.9",
+    "axios": "1.8.3",
     "bcrypt": "5.1.1",
     "better-sqlite3": "11.8.1",
     "bignumber.js": "9.1.2",

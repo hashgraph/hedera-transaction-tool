@@ -63,7 +63,6 @@ export const saveFileNamed = async (
   title: string,
   buttonLabel: string,
   filters: FileFilter[],
-  properties: ('openFile' | 'openDirectory' | 'multiSelections')[],
   message: string,
 ): Promise<void> => {
   try {
@@ -73,7 +72,6 @@ export const saveFileNamed = async (
       title,
       buttonLabel,
       filters,
-      properties,
       message,
     );
   } catch {

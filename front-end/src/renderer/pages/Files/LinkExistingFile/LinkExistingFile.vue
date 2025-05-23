@@ -65,6 +65,10 @@ const handleLinkFile = async () => {
     }
   }
 };
+
+function handleOnBlur() {
+  fileId.value = formatAccountId(fileId.value);
+}
 </script>
 <template>
   <div class="p-5" v-focus-first-input>
@@ -79,7 +83,8 @@ const handleLinkFile = async () => {
         <label class="form-label">Hedera File ID <span class="text-danger">*</span></label>
         <AppInput
           :model-value="fileId"
-          @update:model-value="fileId = formatAccountId($event)"
+          @update:model-value="fileId = $event"
+          @blur="handleOnBlur"
           :filled="true"
           data-bs-toggle="tooltip"
           data-bs-placement="right"

@@ -7,25 +7,32 @@ import { NotifyEmailDto } from '@app/common';
 
 @Injectable()
 export class EmailService {
-  constructor(private readonly configService: ConfigService) {}
-
+  private readonly sender: string;
   private readonly transporter = nodemailer.createTransport({
-    host: 'smtp-relay.brevo.com',
-    port: 587,
-    secure: false,
-    auth: {
-      user: this.configService.getOrThrow<string>('BREVO_USERNAME'),
-      pass: this.configService.getOrThrow<string>('BREVO_PASSWORD'),
-    },
+    host: this.configService.getOrThrow<string>('EMAIL_API_HOST'),
+    port: this.configService.getOrThrow<number>('EMAIL_API_PORT'),
+    secure: this.configService.getOrThrow<boolean>('EMAIL_API_SECURE'),
+    ...this.getAuthConfig()
   });
+
+  constructor(private readonly configService: ConfigService) {
+    this.sender = configService.getOrThrow('SENDER_EMAIL');
+  }
+
+  private getAuthConfig() {
+    const user = this.configService.get<string>('EMAIL_API_USERNAME');
+    const pass = this.configService.get<string>('EMAIL_API_PASSWORD');
+    return user && pass ? { auth: { user, pass } } : {};
+  }
 
   async notifyEmail({ email, subject, text }: NotifyEmailDto) {
     // send mail with defined transport object
     const info = await this.transporter.sendMail({
-      from: '"Transaction Tool" no-reply@hederatransactiontool.com', // sender address
+      from: `"Transaction Tool" ${this.sender}`,
       to: email, // list of receivers
       subject: subject, // Subject line
-      text: text, // plain text body
+      text: text.replace(/<\/?[^>]+(>|$)/g, ''), // plain text fallback
+      html: text, // plain text body
     });
 
     console.log(`Message sent: ${info.messageId}`);

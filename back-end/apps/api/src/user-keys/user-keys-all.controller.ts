@@ -34,8 +34,6 @@ export class UserKeysAllController {
   getUserKeys(
     @PaginationParams() paginationParams: Pagination,
   ): Promise<PaginatedResourceDto<UserKey>> {
-    console.log('hereeee2');
-
     return this.userKeysService.getUserKeys(paginationParams);
   }
 }

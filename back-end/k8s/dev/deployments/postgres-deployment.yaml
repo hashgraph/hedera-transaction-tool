@@ -21,7 +21,7 @@ spec:
       containers:
         - name: postgres
           image: postgres:latest
-          args: ['-c', 'max_connections=10']
+          args: ['-c', 'max_connections=100']
           env:
             - name: POSTGRES_USER
               value: postgres

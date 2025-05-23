@@ -1,7 +1,6 @@
 const { test } = require('@playwright/test');
 const {
   setupApp,
-  resetAppState,
   closeApp,
   generateRandomEmail,
   generateRandomPassword,
@@ -434,9 +433,6 @@ test.describe('Workflow tests', () => {
 
         const getAccountMemoDetails = await detailsPage.getAccountDetailsMemo();
         expect(getAccountMemoDetails).toBe(updatedMemoText);
-
-        const getAccountDetailsDeclineRewards = await detailsPage.getAccountDetailsDeclineRewards();
-        expect(getAccountDetailsDeclineRewards).toBe('Yes');
       },
     );
   });

@@ -209,23 +209,23 @@ The Initial Developer of @eslint/plugin-kit@0.2.5,
 is Nicholas C. Zakas (https://github.com/eslint/rewrite).
 Copyright Nicholas C. Zakas. All Rights Reserved.
 
-The Initial Developer of @ethersproject/abi@5.7.0,
+The Initial Developer of @ethersproject/abi@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
-The Initial Developer of @ethersproject/abstract-provider@5.7.0,
+The Initial Developer of @ethersproject/abstract-provider@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
-The Initial Developer of @ethersproject/abstract-signer@5.7.0,
+The Initial Developer of @ethersproject/abstract-signer@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
-The Initial Developer of @ethersproject/address@5.7.0,
+The Initial Developer of @ethersproject/address@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
-The Initial Developer of @ethersproject/base64@5.7.0,
+The Initial Developer of @ethersproject/base64@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
@@ -237,27 +237,27 @@ The Initial Developer of @ethersproject/bytes@5.7.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
-The Initial Developer of @ethersproject/constants@5.7.0,
+The Initial Developer of @ethersproject/constants@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
-The Initial Developer of @ethersproject/hash@5.7.0,
+The Initial Developer of @ethersproject/hash@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
-The Initial Developer of @ethersproject/keccak256@5.7.0,
+The Initial Developer of @ethersproject/keccak256@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
-The Initial Developer of @ethersproject/logger@5.7.0,
+The Initial Developer of @ethersproject/logger@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
-The Initial Developer of @ethersproject/networks@5.7.1,
+The Initial Developer of @ethersproject/networks@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
-The Initial Developer of @ethersproject/properties@5.7.0,
+The Initial Developer of @ethersproject/properties@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
@@ -265,19 +265,19 @@ The Initial Developer of @ethersproject/rlp@5.7.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
-The Initial Developer of @ethersproject/signing-key@5.7.0,
+The Initial Developer of @ethersproject/signing-key@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
-The Initial Developer of @ethersproject/strings@5.7.0,
+The Initial Developer of @ethersproject/strings@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
-The Initial Developer of @ethersproject/transactions@5.7.0,
+The Initial Developer of @ethersproject/transactions@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
-The Initial Developer of @ethersproject/web@5.7.1,
+The Initial Developer of @ethersproject/web@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
@@ -285,7 +285,7 @@ The Initial Developer of @gar/promisify@1.1.3,
 is Gar (https://github.com/wraithgar/gar-promisify).
 Copyright Gar. All Rights Reserved.
 
-The Initial Developer of @grpc/grpc-js@1.8.2,
+The Initial Developer of @grpc/grpc-js@1.12.6,
 is Google Inc. (https://github.com/grpc/grpc-node/tree/master/packages/grpc-js).
 Copyright Google Inc.. All Rights Reserved.
 
@@ -293,20 +293,24 @@ The Initial Developer of @grpc/proto-loader@0.7.13,
 is Google Inc. (https://github.com/grpc/grpc-node).
 Copyright Google Inc.. All Rights Reserved.
 
-The Initial Developer of @hashgraph/cryptography@1.4.8-beta.10,
+The Initial Developer of @hashgraph/cryptography@1.4.8,
 is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
-The Initial Developer of @hashgraph/hedera-local@2.32.6,
+The Initial Developer of @hashgraph/hedera-local@2.34.0,
 is hashgraph (github.com:hashgraph/hedera-local-node).
 Copyright hashgraph. All Rights Reserved.
 
-The Initial Developer of @hashgraph/proto@2.16.0-beta.4,
+The Initial Developer of @hashgraph/proto@2.16.0,
 is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
-The Initial Developer of @hashgraph/sdk@2.56.0,
+The Initial Developer of @hashgraph/sdk@2.59.0,
 is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
+Copyright Launchbadge. All Rights Reserved.
+
+The Initial Developer of @hashgraph/sdk@2.61.0,
+is Launchbadge (https://github.com/hiero-ledger/hiero-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
 The Initial Developer of @humanfs/core@0.19.1,
@@ -345,6 +349,10 @@ The Initial Developer of @jridgewell/set-array@1.2.1,
 is Justin Ridgewell (https://github.com/jridgewell/set-array).
 Copyright Justin Ridgewell. All Rights Reserved.
 
+The Initial Developer of @jridgewell/source-map@0.3.6,
+is Justin Ridgewell (https://github.com/jridgewell/source-map).
+Copyright Justin Ridgewell. All Rights Reserved.
+
 The Initial Developer of @jridgewell/sourcemap-codec@1.5.0,
 is Rich Harris (https://github.com/jridgewell/sourcemap-codec).
 Copyright Rich Harris. All Rights Reserved.
@@ -352,6 +360,10 @@ Copyright Rich Harris. All Rights Reserved.
 The Initial Developer of @jridgewell/trace-mapping@0.3.25,
 is Justin Ridgewell (https://github.com/jridgewell/trace-mapping).
 Copyright Justin Ridgewell. All Rights Reserved.
+
+The Initial Developer of @js-sdsl/ordered-map@4.4.2,
+is ZLY201 (https://github.com/js-sdsl/js-sdsl).
+Copyright ZLY201. All Rights Reserved.
 
 The Initial Developer of @malept/cross-spawn-promise@2.0.0,
 is Mark Lee (https://github.com/malept/cross-spawn-promise).
@@ -466,7 +478,7 @@ The Initial Developer of @pkgr/core@0.1.1,
 is JounQin (https://github.com/un-ts/pkgr).
 Copyright JounQin. All Rights Reserved.
 
-The Initial Developer of @playwright/test@1.49.1,
+The Initial Developer of @playwright/test@1.50.0,
 is Microsoft Corporation (https://github.com/microsoft/playwright).
 Copyright Microsoft Corporation. All Rights Reserved.
 
@@ -975,6 +987,10 @@ The Initial Developer of axios@1.7.9,
 is Matt Zabriskie (https://github.com/axios/axios).
 Copyright Matt Zabriskie. All Rights Reserved.
 
+The Initial Developer of axios@1.8.3,
+is Matt Zabriskie (https://github.com/axios/axios).
+Copyright Matt Zabriskie. All Rights Reserved.
+
 The Initial Developer of balanced-match@1.0.2,
 is Julian Gruber (https://github.com/juliangruber/balanced-match).
 Copyright Julian Gruber. All Rights Reserved.
@@ -1196,7 +1212,7 @@ The Initial Developer of combined-stream@1.0.8,
 is Felix Geisendörfer (https://github.com/felixge/node-combined-stream).
 Copyright Felix Geisendörfer. All Rights Reserved.
 
-The Initial Developer of commander@5.1.0,
+The Initial Developer of commander@2.20.3,
 is TJ Holowaychuk (https://github.com/tj/commander.js).
 Copyright TJ Holowaychuk. All Rights Reserved.
 
@@ -2006,6 +2022,12 @@ The Initial Developer of levn@0.4.1,
 is George Zahariev (https://github.com/gkz/levn).
 Copyright George Zahariev. All Rights Reserved.
 
+This product includes software (lightningcss-darwin-arm64@1.27.0) developed at
+(https://github.com/parcel-bundler/lightningcss).
+
+This product includes software (lightningcss@1.27.0) developed at
+(https://github.com/parcel-bundler/lightningcss).
+
 The Initial Developer of locate-path@6.0.0,
 is Sindre Sorhus (https://github.com/sindresorhus/locate-path).
 Copyright Sindre Sorhus. All Rights Reserved.
@@ -2058,7 +2080,7 @@ The Initial Developer of long@5.2.3,
 is Daniel Wirtz (https://github.com/dcodeIO/long.js).
 Copyright Daniel Wirtz. All Rights Reserved.
 
-The Initial Developer of long@5.2.4,
+The Initial Developer of long@5.3.1,
 is Daniel Wirtz (https://github.com/dcodeIO/long.js).
 Copyright Daniel Wirtz. All Rights Reserved.
 
@@ -2405,19 +2427,19 @@ The Initial Developer of pino-pretty@10.3.1,
 is James Sumners (https://github.com/pinojs/pino-pretty).
 Copyright James Sumners. All Rights Reserved.
 
-The Initial Developer of pino-std-serializers@6.2.2,
+The Initial Developer of pino-std-serializers@7.0.0,
 is James Sumners (https://github.com/pinojs/pino-std-serializers).
 Copyright James Sumners. All Rights Reserved.
 
-The Initial Developer of pino@8.21.0,
+The Initial Developer of pino@9.6.0,
 is Matteo Collina (https://github.com/pinojs/pino).
 Copyright Matteo Collina. All Rights Reserved.
 
-The Initial Developer of playwright-core@1.49.1,
+The Initial Developer of playwright-core@1.50.0,
 is Microsoft Corporation (https://github.com/microsoft/playwright).
 Copyright Microsoft Corporation. All Rights Reserved.
 
-The Initial Developer of playwright@1.49.1,
+The Initial Developer of playwright@1.50.0,
 is Microsoft Corporation (https://github.com/microsoft/playwright).
 Copyright Microsoft Corporation. All Rights Reserved.
 
@@ -2458,7 +2480,7 @@ Copyright Tim Suchanek. All Rights Reserved.
 This product includes software (process-nextick-args@2.0.1) developed at
 (https://github.com/calvinmetcalf/process-nextick-args).
 
-The Initial Developer of process-warning@3.0.0,
+The Initial Developer of process-warning@4.0.1,
 is Tomas Della Vedova (https://github.com/fastify/process-warning).
 Copyright Tomas Della Vedova. All Rights Reserved.
 
@@ -2820,6 +2842,10 @@ The Initial Developer of temp-file@3.4.0,
 is Vladimir Krivosheev (https://github.com/develar/temp-file).
 Copyright Vladimir Krivosheev. All Rights Reserved.
 
+The Initial Developer of terser@5.39.0,
+is Mihai Bazon (https://github.com/terser/terser).
+Copyright Mihai Bazon. All Rights Reserved.
+
 The Initial Developer of test-exclude@7.0.1,
 is Ben Coe (https://github.com/istanbuljs/test-exclude).
 Copyright Ben Coe. All Rights Reserved.
@@ -2828,7 +2854,7 @@ The Initial Developer of testcontainers@10.16.0,
 is Cristian Greco (https://github.com/testcontainers/testcontainers-node).
 Copyright Cristian Greco. All Rights Reserved.
 
-The Initial Developer of thread-stream@2.7.0,
+The Initial Developer of thread-stream@3.1.0,
 is Matteo Collina (https://github.com/mcollina/thread-stream).
 Copyright Matteo Collina. All Rights Reserved.
 

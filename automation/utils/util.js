@@ -46,7 +46,8 @@ async function closeApp(app) {
 }
 
 async function setupEnvironmentForTransactions(window, privateKey = process.env.PRIVATE_KEY) {
-  if (process.env.ENVIRONMENT.toUpperCase() === 'LOCALNET') {
+  const env = process.env.ENVIRONMENT;
+  if (env.toUpperCase() === 'LOCALNET') {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnLocalNodeTab();
@@ -56,7 +57,7 @@ async function setupEnvironmentForTransactions(window, privateKey = process.env.
     await settingsPage.fillInED25519PrivateKey(privateKey);
     await settingsPage.fillInED25519Nickname('Payer Account');
     await settingsPage.clickOnED25519ImportButton();
-  } else {
+  } else if (env.toUpperCase() === 'TESTNET') {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnImportButton();
@@ -64,6 +65,17 @@ async function setupEnvironmentForTransactions(window, privateKey = process.env.
     await settingsPage.fillInECDSAPrivateKey(privateKey);
     await settingsPage.fillInECDSANickname('Payer Account');
     await settingsPage.clickOnECDSAImportButton();
+  } else {
+    const settingsPage = new SettingsPage(window);
+    await settingsPage.clickOnSettingsButton();
+    await settingsPage.clickOnCustomNodeTab();
+    await settingsPage.fillInMirrorNodeBaseURL(env);
+    await settingsPage.clickOnKeysTab();
+    await settingsPage.clickOnImportButton();
+    await settingsPage.clickOnED25519DropDown();
+    await settingsPage.fillInED25519PrivateKey(privateKey);
+    await settingsPage.fillInED25519Nickname('Payer Account');
+    await settingsPage.clickOnED25519ImportButton();
   }
 }
 

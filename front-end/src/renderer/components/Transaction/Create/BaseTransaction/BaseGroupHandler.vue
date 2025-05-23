@@ -75,11 +75,12 @@ const addGroupItem = (
   validStart: Date,
   observers: number[],
   approvers: TransactionApproverDto[],
+  path?: string,
 ) => {
   transactionGroup.addGroupItem(
     buildActionData('add', description, payerId, validStart, observers, approvers),
   );
-  router.push({ name: 'createTransactionGroup' });
+  path ? router.push(path) : router.push({ name: 'createTransactionGroup' });
 };
 
 const editGroupItem = (
@@ -88,11 +89,12 @@ const editGroupItem = (
   validStart: Date,
   observers: number[],
   approvers: TransactionApproverDto[],
+  path?: string,
 ) => {
   transactionGroup.editGroupItem(
     buildActionData('edit', description, payerId, validStart, observers, approvers),
   );
-  router.push({ name: 'createTransactionGroup' });
+  path ? router.push(path) : router.push({ name: 'createTransactionGroup' });
 };
 
 /* Exposes */

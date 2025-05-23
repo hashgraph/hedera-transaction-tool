@@ -2,8 +2,10 @@ import { Key, KeyList, Mnemonic, PrivateKey, PublicKey } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
 import { Prisma } from '@prisma/client';
+import { KeyType } from '@renderer/types';
 
 import { commonIPCHandler } from '@renderer/utils';
+import { getPublicKeyAndType } from '../utils';
 
 /* Key Pairs Service */
 
@@ -85,6 +87,11 @@ export const updateMnemonicHash = async (keyPairId: string, mnemonicHash: string
   commonIPCHandler(async () => {
     return await window.electronAPI.local.keyPairs.updateMnemonicHash(keyPairId, mnemonicHash);
   }, 'Failed to update recovery phrase hash');
+
+export const updateIndex = async (keyPairId: string, index: number) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.keyPairs.updateIndex(keyPairId, index);
+  }, 'Failed to update index');
 
 /* Validates if the provided recovery phrase is valid according to BIP-39 */
 export const validateMnemonic = async (words: string[]) => {
@@ -231,3 +238,36 @@ function flattenComplexKey(
     flattenComplexKey(childKey, nextLevel, result);
   }
 }
+
+/**
+ * Verifies that the provided private key matches the provided public key.
+ * @param publicKey - The public key to verify against (string or PublicKey).
+ * @param privateKey - The private key to verify (string or PrivateKey).
+ * @returns {boolean} - True if the keys match, false otherwise.
+ */
+export const verifyKeyPair = (
+  publicKey: string | PublicKey,
+  privateKey: string | PrivateKey,
+): boolean => {
+  try {
+    const { publicKey: resolvedPublicKey, keyType } = getPublicKeyAndType(publicKey);
+
+    if (typeof privateKey === 'string') {
+      switch (keyType) {
+        case KeyType.ECDSA:
+          privateKey = PrivateKey.fromStringECDSA(privateKey);
+          break;
+        case KeyType.ED25519:
+          privateKey = PrivateKey.fromStringED25519(privateKey);
+          break;
+        default:
+          throw new Error('Invalid key type');
+      }
+    }
+
+    return privateKey.publicKey.toString() === resolvedPublicKey.toString();
+  } catch (error) {
+    console.error('Failed to verify key pair:', error);
+    return false;
+  }
+};

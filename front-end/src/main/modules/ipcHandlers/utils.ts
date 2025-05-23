@@ -1,5 +1,4 @@
 import fs from 'fs';
-import path from 'path';
 
 import { BrowserWindow, app, dialog, ipcMain, shell, FileFilter } from 'electron';
 
@@ -54,8 +53,12 @@ export default () => {
 
       const content = Buffer.from(getNumberArrayFromString(uint8ArrayString));
       await fs.promises.writeFile(filePath, Uint8Array.from(content));
-    } catch (error: any) {
-      dialog.showErrorBox('Failed to save file', error?.message || 'Unknown error');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        dialog.showErrorBox('Failed to save file', error.message);
+      } else {
+        dialog.showErrorBox('Failed to save file', 'Unknown error');
+      }
     }
   });
 
@@ -68,35 +71,31 @@ export default () => {
       title: string,
       buttonLabel: string,
       filters: FileFilter[],
-      properties: ('openFile' | 'openDirectory' | 'multiSelections')[],
       message: string,
     ) => {
       const windows = BrowserWindow.getAllWindows();
       if (windows.length === 0) return;
 
-      const { filePaths, canceled } = await dialog.showOpenDialog(windows[0], {
-        title,
-        buttonLabel,
-        filters,
-        properties,
-        message,
-      });
+      try {
+        const {canceled, filePath} = await dialog.showSaveDialog(windows[0], {
+          title,
+          defaultPath: name,
+          buttonLabel,
+          filters,
+          message,
+        });
 
-      if (canceled) return;
+        if (canceled) return;
+        if (!filePath) throw new Error('File path is undefined');
 
-      let filePath = path.resolve(filePaths[0], name);
-      let counter = 1;
-
-      while (fs.existsSync(filePath)) {
-        const parsedPath = path.parse(filePath);
-        filePath = path.resolve(
-          parsedPath.dir,
-          `${parsedPath.name.replace(/\(\d+\)$/, '')}(${counter})${parsedPath.ext}`,
-        );
-        counter++;
+        await fs.promises.writeFile(filePath, data);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          dialog.showErrorBox('Failed to save file', error.message);
+        } else {
+          dialog.showErrorBox('Failed to save file', 'Unknown error');
+        }
       }
-
-      await fs.promises.writeFile(filePath, data);
     },
   );
 

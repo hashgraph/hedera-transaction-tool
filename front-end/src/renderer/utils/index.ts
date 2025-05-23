@@ -1,14 +1,21 @@
 import type { AccountInfo } from '@main/shared/interfaces';
 import type { HederaAccount } from '@prisma/client';
-import { AccountId, Client } from '@hashgraph/sdk';
-import { isUserLoggedIn } from './userStoreHelpers';
+
+import { AccountId, Client, Hbar, HbarUnit } from '@hashgraph/sdk';
+
 import useUserStore from '@renderer/stores/storeUser';
-import { getOne } from '@renderer/services/accountsService';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+
+import { getOne } from '@renderer/services/accountsService';
+import { getPublicKeyOwner } from '@renderer/services/organization';
+
+import { getPublicKeyMapping, isUserLoggedIn } from './userStoreHelpers';
+import { isAccountId } from './validator';
 
 export * from './dom';
 export * from './sdk';
 export * from './transactions';
+export * from './transferTransactions';
 export * from './validator';
 export * from './axios';
 export * from './ipc';
@@ -177,5 +184,174 @@ export const getAccountIdWithChecksum = (accountId: string): string => {
     return AccountId.fromString(accountId).toStringWithChecksum(networkStore.client as Client);
   } catch {
     return accountId;
+  }
+};
+
+export function stringifyHbarWithFont(hbar: Hbar, fontClass: string): string {
+  const tinybars = hbar.toTinybars().isNegative() ? hbar.toTinybars().negate() : hbar.toTinybars();
+  const isHbar = tinybars >= Hbar.fromTinybars(1_000_000).toTinybars();
+  const symbol = isHbar ? HbarUnit.Hbar._symbol : HbarUnit.Tinybar._symbol;
+  const amountString = isHbar
+    ? hbar.to(HbarUnit.Hbar).toString()
+    : hbar.to(HbarUnit.Tinybar).toString();
+
+  return `${amountString} <span class="${fontClass}">${symbol}</span>`;
+}
+
+export const splitMultipleAccounts = (input: string, client: Client): string[] => {
+  input = input.trim();
+
+  const result: string[] = [];
+  if (!input) {
+    return result;
+  }
+
+  try {
+    const accountParts = input.split(',');
+
+    for (const account of accountParts) {
+      const accountRange = account.split(/-(?=\s*\d)/);
+
+      if (accountRange.length === 2) {
+        const [start, end] = accountRange.map(a => a.trim());
+
+        if (isAccountId(start) && isAccountId(end)) {
+          const parsedStart = AccountId.fromString(start);
+          const parsedEnd = AccountId.fromString(end);
+
+          const startShard = parsedStart.shard.toNumber();
+          const endShard = parsedEnd.shard.toNumber();
+          const startRealm = parsedStart.realm.toNumber();
+          const endRealm = parsedEnd.realm.toNumber();
+          const startNum = parsedStart.num.toNumber();
+          const endNum = parsedEnd.num.toNumber();
+
+          if (startShard === endShard && startRealm == endRealm && startNum <= endNum) {
+            for (let i = startNum; i <= endNum; i++) {
+              result.push(
+                AccountId.fromString(`${startShard}.${startRealm}.${i}`).toStringWithChecksum(
+                  client,
+                ),
+              );
+            }
+          }
+        }
+      } else if (accountRange.length === 1) {
+        const account = accountRange[0].trim();
+        if (isAccountId(account)) {
+          result.push(AccountId.fromString(account).toStringWithChecksum(client));
+        }
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    throwError('Invalid multiple account input');
+  }
+
+  return result;
+};
+
+export const formatPublickey = async (publicKey: string) => {
+  const mapping = await getPublicKeyMapping(publicKey);
+  if (mapping && mapping.nickname) {
+    return `${mapping.nickname} (${mapping.public_key})`;
+  }
+  const user = useUserStore();
+  if (user.selectedOrganization) {
+    const owner = await getPublicKeyOwner(user.selectedOrganization!.serverUrl, publicKey);
+    if (owner) {
+      return `${owner} (${publicKey})`;
+    }
+  }
+  return publicKey;
+};
+
+export const findIdentifier = async (publicKey: string) => {
+  const mapping = await getPublicKeyMapping(publicKey);
+  if (mapping && mapping.nickname) {
+    return mapping.nickname as string;
+  }
+  const user = useUserStore();
+  if (user.selectedOrganization) {
+    const owner = await getPublicKeyOwner(user.selectedOrganization!.serverUrl, publicKey);
+    if (owner) {
+      return owner as string;
+    }
+  }
+  return null;
+};
+
+export const formatPublickeyContactList = async (publicKey: string) => {
+  const mapping = await getPublicKeyMapping(publicKey);
+  if (mapping) {
+    return `${mapping.nickname} (${mapping.public_key})`;
+  }
+  return publicKey;
+};
+
+export const extractIdentifier = (formattedString: string) => {
+  if (!formattedString) {
+    return null;
+  }
+
+  const match = formattedString.match(/^(.*?)\s\(([\w]+)\)$/);
+
+  if (match) {
+    return { identifier: match[1], pk: match[2] };
+  }
+  return null;
+};
+
+/**
+ * Sanitizes and formats an account ID string.
+ * This function ensures that the input string adheres to the proper format of an account ID by:
+ * - Removing any invalid characters.
+ * - Ensuring that every '.' has a number in front of it and limiting to two '.' characters.
+ * - Removing leading zeros from each part and validating each part.
+ * - Allowing '-' followed by up to 5 letters (case-insensitive) if the 0.0.0 pattern already exists.
+ *
+ * @param {string} value - The input account ID string to be sanitized.
+ * @returns {string} - The sanitized and formatted account ID string.
+ */
+export function sanitizeAccountId(value: string): string {
+  // Ensure that every '.' has a number in front of it and limit to two '.' characters
+  value = value
+    .replace(/(^|[^0-9])\./g, '$1')
+    .split('.')
+    .slice(0, 3)
+    .join('.');
+
+  // Remove leading zeros from each part and validate each part
+  const max8ByteNumber = BigInt('18446744073709551615'); // 2^64 - 1
+  value = value.replace(/(^|\.)(0+)(\d+)/g, '$1$3').replace(/(\d+)/g, match => {
+    const num = BigInt(match);
+    return num > max8ByteNumber ? match.slice(0, -1) : match;
+  });
+
+  // Allow '-' followed by up to 5 letters (case-insensitive) if the 0.0.0 pattern already exists
+  const pattern = /^(\d+\.\d+\.\d+)(-[a-zA-Z]{0,5})?$/;
+  if (!pattern.test(value)) {
+    value = value.toLowerCase().replace(/[^0-9.\-a-z]/g, ''); // Convert to lowercase and remove invalid characters
+    const [mainPart, suffix] = value.split('-');
+    value = mainPart.replace(/[^0-9.]/g, ''); // Ensure no non-digits before '-'
+    if (suffix) value += `-${suffix.slice(0, 5).replace(/[^a-z]/g, '')}`; // Allow up to 5 lowercase letters
+  }
+
+  return value;
+}
+
+export const getNetworkLabel = (network: string) => {
+  network = network.toLocaleLowerCase();
+  switch (network) {
+    case 'mainnet':
+      return 'Mainnet';
+    case 'testnet':
+      return 'Testnet';
+    case 'previewnet':
+      return 'Previewnet';
+    case 'local-node':
+      return 'Local Node';
+    default:
+      return 'Custom';
   }
 };

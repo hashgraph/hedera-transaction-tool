@@ -20,11 +20,13 @@ import {
   Timestamp,
   Transaction,
 } from '@hashgraph/sdk';
+import { KeyType } from '../../types';
+
 import { proto } from '@hashgraph/proto';
 
 import { getNetworkNodes } from '@renderer/services/mirrorNodeDataService';
 
-import { uint8ToHex, hexToUint8Array, isContractId, isAccountId } from '..';
+import { hexToUint8Array, isAccountId, isContractId, uint8ToHex } from '..';
 import { getNodeAddressBook } from '@renderer/services/sdkService';
 
 export * from './createTransactions';
@@ -70,6 +72,25 @@ export const createFileInfo = (props: {
   };
 
   return proto.FileGetInfoResponse.FileInfo.encode(protoBuf).finish();
+};
+
+/**
+ * Gets the public key and its type.
+ * @param key - The key to get the public key from.
+ * @returns {object} - An object containing the public key and the key type.
+ */
+export const getPublicKeyAndType = (key: string | PublicKey): { publicKey: PublicKey, keyType: KeyType } => {
+  let publicKey: PublicKey;
+
+  if (key instanceof PublicKey) {
+    publicKey = key;
+  } else {
+    publicKey = PublicKey.fromString(key)
+  }
+
+  const keyType = publicKey._toProtobufKey().ed25519 ? KeyType.ED25519 : KeyType.ECDSA;
+
+  return { publicKey, keyType };
 };
 
 export const normalizePublicKey = (key: Key) => {
