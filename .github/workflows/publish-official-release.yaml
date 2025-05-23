@@ -70,6 +70,18 @@ jobs:
         with:
           node-version: 22
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          version: latest
+
+      - name: Install Python Setup Tools
+        run: brew install python-setuptools
+
+      - name: Install Project Dependencies
+        run: pnpm install
+        working-directory: ./front-end
+
       # Semantic release
       - name: Install Semantic Release
         if: ${{ github.event_name == 'workflow_dispatch' && !cancelled() && !failure() }}

@@ -12,7 +12,8 @@
       "@semantic-release/github",
       {
         "assets": [
-          {"path": "front-end/dist_electron/*.pkg", "label": "macOS Package ${path}"}
+          {"path": "front-end/dist_electron/*.pkg", "label": "macOS Package ${path}"},
+          {"path": "front-end/dist/*.pkg", "label": "macOS Package ${path}"}
         ]
       }
     ]
@@ -26,27 +27,15 @@
       }
     ],
     [
-      "@semantic-release/npm",
-      {
-      "npmPublish": false,
-      "pkgRoot": "back-end"
-      }
-    ],
-    [
       "@semantic-release/exec",
       {
-        "prepareCmd": "cd front-end && pnpm install && pnpm generate:database && pnpm exec electron-builder --mac pkg"
+        "prepareCmd": "cd front-end && pnpm generate:database && pnpm build:mac pkg"
       }
     ],
     [
       "@semantic-release/git",
       {
-        "assets": [
-          "front-end/package.json",
-          "front-end/package-lock.json",
-          "back-end/package.json",
-          "back-end/package-lock.json"
-        ]
+        "assets": "front-end/package.json"
       }
     ]
   ],
