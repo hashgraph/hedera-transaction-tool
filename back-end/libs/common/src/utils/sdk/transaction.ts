@@ -6,6 +6,20 @@ import {
   Transaction as SDKTransaction,
   SignatureMap,
   TransactionId,
+  AccountCreateTransaction,
+  AccountUpdateTransaction,
+  AccountDeleteTransaction,
+  TransferTransaction,
+  AccountAllowanceApproveTransaction,
+  FileCreateTransaction,
+  FileUpdateTransaction,
+  FileAppendTransaction,
+  FileDeleteTransaction,
+  FreezeTransaction,
+  NodeCreateTransaction,
+  SystemDeleteTransaction,
+  SystemUndeleteTransaction,
+  FileContentsQuery,
 } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
@@ -32,49 +46,144 @@ export const isExpired = (transaction: SDKTransaction) => {
   return new Date().getTime() >= validStart.getTime() + duration * 1_000;
 };
 
-export const getTransactionTypeEnumValue = (transaction: SDKTransaction): TransactionType => {
-  const sdkType = transaction.constructor.name
-    .slice(transaction.constructor.name.startsWith('_') ? 1 : 0)
-    .split(/(?=[A-Z])/)
-    .join(' ')
-    .replace('Transaction', '')
-    .trim()
-    .toLocaleUpperCase();
-
-  switch (sdkType) {
-    case TransactionType.ACCOUNT_CREATE:
-      return TransactionType.ACCOUNT_CREATE;
-    case TransactionType.ACCOUNT_UPDATE:
-      return TransactionType.ACCOUNT_UPDATE;
-    case TransactionType.ACCOUNT_DELETE:
-      return TransactionType.ACCOUNT_DELETE;
-    case TransactionType.ACCOUNT_ALLOWANCE_APPROVE:
-      return TransactionType.ACCOUNT_ALLOWANCE_APPROVE;
-    case TransactionType.FILE_CREATE:
-      return TransactionType.FILE_CREATE;
-    case TransactionType.FILE_APPEND:
-      return TransactionType.FILE_APPEND;
-    case TransactionType.FILE_UPDATE:
-      return TransactionType.FILE_UPDATE;
-    case TransactionType.FILE_DELETE:
-      return TransactionType.FILE_DELETE;
-    case TransactionType.FREEZE:
-      return TransactionType.FREEZE;
-    case TransactionType.SYSTEM_DELETE:
-      return TransactionType.SYSTEM_DELETE;
-    case TransactionType.SYSTEM_UNDELETE:
-      return TransactionType.SYSTEM_UNDELETE;
-    case TransactionType.TRANSFER:
-      return TransactionType.TRANSFER;
-    case TransactionType.NODE_CREATE:
-      return TransactionType.NODE_CREATE;
-    case TransactionType.NODE_UPDATE:
-      return TransactionType.NODE_UPDATE;
-    case TransactionType.NODE_DELETE:
-      return TransactionType.NODE_DELETE;
-    default:
-      throw new Error(`Unsupported transaction type: ${sdkType}`);
+export const getTransactionType = (
+  transaction: SDKTransaction | Uint8Array,
+  short = false,
+  removeTransaction = false,
+) => {
+  if (transaction instanceof Uint8Array) {
+    transaction = SDKTransaction.fromBytes(transaction);
   }
+
+  let transactionType = 'Unknown Transaction Type';
+
+  if (transaction instanceof AccountCreateTransaction) {
+    transactionType = "Account Create Transaction";
+  } else if (transaction instanceof AccountUpdateTransaction) {
+    transactionType = "Account Update Transaction";
+  } else if (transaction instanceof AccountDeleteTransaction) {
+    transactionType = "Account Delete Transaction";
+  } else if (transaction instanceof TransferTransaction) {
+    transactionType = "Transfer Transaction";
+  } else if (transaction instanceof AccountAllowanceApproveTransaction) {
+    transactionType = "Account Allowance Approve Transaction";
+  } else if (transaction instanceof FileCreateTransaction) {
+    transactionType = "File Create Transaction";
+  } else if (transaction instanceof FileUpdateTransaction) {
+    transactionType = "File Update Transaction";
+  } else if (transaction instanceof FileAppendTransaction) {
+    transactionType = "File Append Transaction";
+  } else if (transaction instanceof FileDeleteTransaction) {
+    transactionType = "File Delete Transaction";
+  } else if (transaction instanceof FileContentsQuery) {
+    transactionType = "Read File Query";
+  } else if (transaction instanceof FreezeTransaction) {
+    transactionType = "Freeze Transaction";
+  } else if (transaction instanceof NodeCreateTransaction) {
+    transactionType = "Node Create Transaction";
+  } else if (transaction instanceof NodeUpdateTransaction) {
+    transactionType = "Node Update Transaction";
+  } else if (transaction instanceof NodeDeleteTransaction) {
+    transactionType = "Node Delete Transaction";
+  } else if (transaction instanceof SystemDeleteTransaction) {
+    transactionType = "System Delete Transaction";
+  } else if (transaction instanceof SystemUndeleteTransaction) {
+    transactionType = "System Undelete Transaction";
+    // } else if (transaction instanceof ContractCallTransaction) {
+    //   transactionType = 'ContractCallTransaction';
+    // } else if (transaction instanceof ContractCreateTransaction) {
+    //   transactionType = 'ContractCreateTransaction';
+    // } else if (transaction instanceof ContractDeleteTransaction) {
+    //   transactionType = 'ContractDeleteTransaction';
+    // } else if (transaction instanceof ContractUpdateTransaction) {
+    //   transactionType = 'ContractUpdateTransaction';
+    // } else if (transaction instanceof ScheduleCreateTransaction) {
+    //   transactionType = 'ScheduleCreateTransaction';
+    // } else if (transaction instanceof ScheduleDeleteTransaction) {
+    //   transactionType = 'ScheduleDeleteTransaction';
+    // } else if (transaction instanceof ScheduleSignTransaction) {
+    //   transactionType = 'ScheduleSignTransaction';
+    // } else if (transaction instanceof TokenAssociateTransaction) {
+    //   transactionType = 'TokenAssociateTransaction';
+    // } else if (transaction instanceof TokenBurnTransaction) {
+    //   transactionType = 'TokenBurnTransaction';
+    // } else if (transaction instanceof TokenCreateTransaction) {
+    //   transactionType = 'TokenCreateTransaction';
+    // } else if (transaction instanceof TokenDeleteTransaction) {
+    //   transactionType = 'TokenDeleteTransaction';
+    // } else if (transaction instanceof TokenFeeScheduleUpdateTransaction) {
+    //   transactionType = 'TokenFeeScheduleUpdateTransaction';
+    // } else if (transaction instanceof TokenFreezeTransaction) {
+    //   transactionType = 'TokenFreezeTransaction';
+    // } else if (transaction instanceof TokenGrantKycTransaction) {
+    //   transactionType = 'TokenGrantKycTransaction';
+    // } else if (transaction instanceof TokenMintTransaction) {
+    //   transactionType = 'TokenMintTransaction';
+    // } else if (transaction instanceof TokenPauseTransaction) {
+    //   transactionType = 'TokenPauseTransaction';
+    // } else if (transaction instanceof TokenRevokeKycTransaction) {
+    //   transactionType = 'TokenRevokeKycTransaction';
+    // } else if (transaction instanceof TokenUnfreezeTransaction) {
+    //   transactionType = 'TokenUnfreezeTransaction';
+    // } else if (transaction instanceof TokenUnpauseTransaction) {
+    //   transactionType = 'TokenUnpauseTransaction';
+    // } else if (transaction instanceof TokenUpdateTransaction) {
+    //   transactionType = 'TokenUpdateTransaction';
+    // } else if (transaction instanceof TopicCreateTransaction) {
+    //   transactionType = 'TopicCreateTransaction';
+    // } else if (transaction instanceof TopicDeleteTransaction) {
+    //   transactionType = 'TopicDeleteTransaction';
+    // } else if (transaction instanceof TopicMessageSubmitTransaction) {
+    //   transactionType = 'TopicMessageSubmitTransaction';
+    // } else if (transaction instanceof TopicUpdateTransaction) {
+    //   transactionType = 'TopicUpdateTransaction';
+  }
+
+  if (removeTransaction) {
+    // Remove ' Transaction' only if it appears at the end
+    transactionType = transactionType.replace(/ Transaction$/, '');
+  }
+  if (short) {
+    // Remove all whitespace characters
+    transactionType = transactionType.replace(/\s+/g, '');
+  }
+  return transactionType;
+};
+
+export const getTransactionTypeEnumValue = (transaction: SDKTransaction): TransactionType => {
+  if (transaction instanceof AccountCreateTransaction) {
+    return TransactionType.ACCOUNT_CREATE;
+  } else if (transaction instanceof AccountUpdateTransaction) {
+    return TransactionType.ACCOUNT_UPDATE;
+  } else if (transaction instanceof AccountDeleteTransaction) {
+    return TransactionType.ACCOUNT_DELETE;
+  } else if (transaction instanceof TransferTransaction) {
+    return TransactionType.TRANSFER;
+  } else if (transaction instanceof AccountAllowanceApproveTransaction) {
+    return TransactionType.ACCOUNT_ALLOWANCE_APPROVE;
+  } else if (transaction instanceof FileCreateTransaction) {
+    return TransactionType.FILE_CREATE;
+  } else if (transaction instanceof FileUpdateTransaction) {
+    return TransactionType.FILE_UPDATE;
+  } else if (transaction instanceof FileAppendTransaction) {
+    return TransactionType.FILE_APPEND;
+  } else if (transaction instanceof FileDeleteTransaction) {
+    return TransactionType.FILE_DELETE;
+  } else if (transaction instanceof FreezeTransaction) {
+    return TransactionType.FREEZE;
+  } else if (transaction instanceof NodeCreateTransaction) {
+    return TransactionType.NODE_CREATE;
+  } else if (transaction instanceof NodeUpdateTransaction) {
+    return TransactionType.NODE_UPDATE;
+  } else if (transaction instanceof NodeDeleteTransaction) {
+    return TransactionType.NODE_DELETE;
+  } else if (transaction instanceof SystemDeleteTransaction) {
+    return TransactionType.SYSTEM_DELETE;
+  } else if (transaction instanceof SystemUndeleteTransaction) {
+    return TransactionType.SYSTEM_UNDELETE;
+  }
+
+  throw new Error(`Unsupported transaction type: ${JSON.stringify(transaction, null, 2)}`);
 };
 
 const getSignedTransactionsDimensions = (transaction: SDKTransaction) => {

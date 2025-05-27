@@ -36,7 +36,6 @@ import {
 import {
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
-  getTransactionType,
   isAccountId,
   isLoggedInOrganization,
   safeAwait,
@@ -52,6 +51,7 @@ import SignPersonalRequestHandler from './SignPersonalRequestHandler.vue';
 import ExecutePersonalRequestHandler from './ExecutePersonalRequestHandler.vue';
 
 import { assertHandlerExists } from '..';
+import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 /* Props */
 const props = defineProps<{

@@ -1,21 +1,34 @@
 import * as crypto from 'crypto';
 
 import {
+  AccountAllowanceApproveTransaction,
   AccountCreateTransaction,
+  AccountDeleteTransaction,
   AccountId,
   AccountUpdateTransaction,
   Client,
+  FileAppendTransaction,
+  FileCreateTransaction,
+  FileDeleteTransaction,
+  FileUpdateTransaction,
+  FreezeTransaction,
   Key,
   Mnemonic,
+  NodeCreateTransaction,
+  NodeDeleteTransaction,
+  NodeUpdateTransaction,
   PrivateKey,
   PublicKey,
   SignatureMap,
+  SystemDeleteTransaction,
+  SystemUndeleteTransaction,
   Timestamp,
   Transaction,
   TransactionId,
+  TransferTransaction,
 } from '@hashgraph/sdk';
 
-import { TransactionType } from '../../../../libs/common/src/database/entities';
+import { TransactionType } from '@entities';
 
 import { HederaAccount } from './models';
 
@@ -66,42 +79,39 @@ export const createTransactionId = (accountId: AccountId, date?: Date) =>
   TransactionId.withValidStart(accountId, Timestamp.fromDate(date || new Date()));
 
 export const getTransactionTypeEnumValue = (transaction: Transaction): TransactionType => {
-  const sdkType = transaction.constructor.name
-    .slice(transaction.constructor.name.startsWith('_') ? 1 : 0)
-    .split(/(?=[A-Z])/)
-    .join(' ')
-    .replace('Transaction', '')
-    .trim()
-    .toLocaleUpperCase();
-
-  switch (sdkType) {
-    case TransactionType.ACCOUNT_CREATE:
-      return TransactionType.ACCOUNT_CREATE;
-    case TransactionType.ACCOUNT_UPDATE:
-      return TransactionType.ACCOUNT_UPDATE;
-    case TransactionType.ACCOUNT_DELETE:
-      return TransactionType.ACCOUNT_DELETE;
-    case TransactionType.ACCOUNT_ALLOWANCE_APPROVE:
-      return TransactionType.ACCOUNT_ALLOWANCE_APPROVE;
-    case TransactionType.FILE_CREATE:
-      return TransactionType.FILE_CREATE;
-    case TransactionType.FILE_APPEND:
-      return TransactionType.FILE_APPEND;
-    case TransactionType.FILE_UPDATE:
-      return TransactionType.FILE_UPDATE;
-    case TransactionType.FILE_DELETE:
-      return TransactionType.FILE_DELETE;
-    case TransactionType.FREEZE:
-      return TransactionType.FREEZE;
-    case TransactionType.SYSTEM_DELETE:
-      return TransactionType.SYSTEM_DELETE;
-    case TransactionType.SYSTEM_UNDELETE:
-      return TransactionType.SYSTEM_UNDELETE;
-    case TransactionType.TRANSFER:
-      return TransactionType.TRANSFER;
-    default:
-      throw new Error(`Unsupported transaction type: ${sdkType}`);
+  if (transaction instanceof AccountCreateTransaction) {
+    return TransactionType.ACCOUNT_CREATE;
+  } else if (transaction instanceof AccountUpdateTransaction) {
+    return TransactionType.ACCOUNT_UPDATE;
+  } else if (transaction instanceof AccountDeleteTransaction) {
+    return TransactionType.ACCOUNT_DELETE;
+  } else if (transaction instanceof TransferTransaction) {
+    return TransactionType.TRANSFER;
+  } else if (transaction instanceof AccountAllowanceApproveTransaction) {
+    return TransactionType.ACCOUNT_ALLOWANCE_APPROVE;
+  } else if (transaction instanceof FileCreateTransaction) {
+    return TransactionType.FILE_CREATE;
+  } else if (transaction instanceof FileUpdateTransaction) {
+    return TransactionType.FILE_UPDATE;
+  } else if (transaction instanceof FileAppendTransaction) {
+    return TransactionType.FILE_APPEND;
+  } else if (transaction instanceof FileDeleteTransaction) {
+    return TransactionType.FILE_DELETE;
+  } else if (transaction instanceof FreezeTransaction) {
+    return TransactionType.FREEZE;
+  } else if (transaction instanceof NodeCreateTransaction) {
+    return TransactionType.NODE_CREATE;
+  } else if (transaction instanceof NodeUpdateTransaction) {
+    return TransactionType.NODE_UPDATE;
+  } else if (transaction instanceof NodeDeleteTransaction) {
+    return TransactionType.NODE_DELETE;
+  } else if (transaction instanceof SystemDeleteTransaction) {
+    return TransactionType.SYSTEM_DELETE;
+  } else if (transaction instanceof SystemUndeleteTransaction) {
+    return TransactionType.SYSTEM_UNDELETE;
   }
+
+  throw new Error(`Unsupported transaction type: ${JSON.stringify(transaction, null, 2)}`);
 };
 
 export const createAccount = async (payerId: AccountId, payerKey: PrivateKey, key: Key) => {

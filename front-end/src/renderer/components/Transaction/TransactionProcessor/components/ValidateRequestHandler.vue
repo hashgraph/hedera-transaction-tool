@@ -12,9 +12,9 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import {
   assertUserLoggedIn,
   ableToSign,
-  getTransactionType,
   validateFileUpdateTransaction,
 } from '@renderer/utils';
+import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 /* Constants */
 const SIZE_BUFFER_BYTES = 200;
