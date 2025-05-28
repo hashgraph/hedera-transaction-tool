@@ -295,7 +295,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       </p>
     </div>
 
-    <!-- Decline staking rewards -->
+    <!-- Decline staking rewards - Displayed in reverse -->
     <div
       v-if="
         transaction instanceof AccountCreateTransaction ||
@@ -303,9 +303,9 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       "
       :class="commonColClass"
     >
-      <h4 :class="detailItemLabelClass">Decline Staking Rewards</h4>
-      <p :class="detailItemValueClass" data-testid="p-account-details-decline-rewards">
-        {{ transaction.declineStakingRewards ? 'Yes' : 'No' }}
+      <h4 :class="detailItemLabelClass">Accept Staking Rewards</h4>
+      <p :class="detailItemValueClass" data-testid="p-account-details-accept-rewards">
+        {{ transaction.declineStakingRewards ? 'No' : 'Yes' }}
       </p>
     </div>
 

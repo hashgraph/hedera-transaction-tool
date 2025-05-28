@@ -99,6 +99,20 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
         </p>
       </div>
 
+      <!-- Decline Reward - Displayed in the reverse -->
+      <div
+        v-if="
+          transaction instanceof NodeCreateTransaction ||
+          transaction.declineReward !== null
+        "
+        class="col-12 my-3"
+      >
+        <h4 :class="detailItemLabelClass">Accept Node Rewards</h4>
+        <p :class="detailItemValueClass">
+          {{ transaction.declineReward ? 'No' : 'Yes' }}
+        </p>
+      </div>
+
       <!-- Gossip Endpoints -->
       <div
         v-if="transaction.gossipEndpoints && transaction.gossipEndpoints.length > 0"

@@ -31,7 +31,7 @@ class DetailsPage extends BasePage {
   accountDetailsKeySelector = 'p-account-details-key';
   accountDetailsMemoSelector = 'p-account-details-memo';
   accountDetailsStakingSelector = 'p-account-details-staking';
-  accountDetailsDeclineRewardsSelector = 'p-account-details-decline-rewards';
+  accountDetailsAcceptRewardsSelector = 'p-account-details-accept-rewards';
   accountDetailsReceiverSigRequiredSelector = 'p-account-details-receiver-sig-required';
   accountDetailsInitBalanceSelector = 'p-account-details-init-balance';
   accountUpdateDetailsIdSelector = 'p-account-details-id';
@@ -116,8 +116,8 @@ class DetailsPage extends BasePage {
     return await this.getText(this.accountDetailsStakingSelector);
   }
 
-  async getAccountDetailsDeclineRewards() {
-    return await this.getText(this.accountDetailsDeclineRewardsSelector);
+  async getAccountDetailsAcceptRewards() {
+    return await this.getText(this.accountDetailsAcceptRewardsSelector);
   }
 
   async getAccountDetailsReceiverSigRequired() {

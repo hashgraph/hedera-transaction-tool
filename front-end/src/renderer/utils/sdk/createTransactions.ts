@@ -134,6 +134,7 @@ export type NodeData = {
   gossipCaCertificate: Uint8Array;
   certificateHash: Uint8Array;
   adminKey: Key | null;
+  declineReward: boolean;
 };
 
 export type NodeUpdateData = NodeData & {
@@ -511,6 +512,10 @@ const setNodeData = (
     !compareKeys(data.adminKey, oldData?.admin_key) && transaction.setAdminKey(data.adminKey);
   } else if (data.adminKey) {
     transaction.setAdminKey(data.adminKey);
+  }
+
+  if (oldData?.decline_reward !== data.declineReward) {
+    transaction.setDeclineReward(data.declineReward);
   }
 };
 

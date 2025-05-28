@@ -20,6 +20,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
 import KeyField from '@renderer/components/KeyField.vue';
+import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 
 /* Props */
 const props = defineProps<{
@@ -245,6 +246,38 @@ watch(
 
   <hr class="separator my-5" />
 
+  <div class="form-group col-8 col-xxxl-6">
+    <KeyField
+      label="Admin Key"
+      :model-key="data.adminKey"
+      @update:model-key="
+        emit('update:data', {
+          ...data,
+          adminKey: $event,
+        })
+      "
+      :is-required="required"
+    />
+  </div>
+
+  <div class="form-group mt-6">
+    <AppSwitch
+      :checked="!data.declineReward"
+      @update:checked="
+        emit('update:data', {
+          ...data,
+          declineReward: !$event,
+        })
+      "
+      size="md"
+      name="accept-reward"
+      label="Accept Node Rewards"
+      data-testid="switch-accept-reward"
+    />
+  </div>
+
+  <hr class="separator my-5" />
+
   <label class="form-label"
     >Gossip Endpoints <span v-if="required" class="text-danger">*</span></label
   >
@@ -321,9 +354,7 @@ watch(
     </div>
   </div>
 
-  <hr class="separator my-5" />
-
-  <label class="form-label"
+  <label class="form-label mt-6"
     >Service Endpoints <span v-if="required" class="text-danger">*</span></label
   >
   <div class="row align-items-end">
@@ -443,21 +474,5 @@ watch(
   <div class="form-group mt-6 col-8 col-xxxl-6">
     <label class="form-label">Certificate Hash</label>
     <p class="overflow-auto">{{ uint8ToHex(data.certificateHash) }}</p>
-  </div>
-
-  <hr class="separator my-5" />
-
-  <div class="form-group col-8 col-xxxl-6">
-    <KeyField
-      label="Admin Key"
-      :model-key="data.adminKey"
-      @update:model-key="
-        emit('update:data', {
-          ...data,
-          adminKey: $event,
-        })
-      "
-      :is-required="required"
-    />
   </div>
 </template>
