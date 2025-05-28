@@ -101,6 +101,19 @@ The Initial Developer of @babel/plugin-proposal-decorators@7.25.9,
 is The Babel Team (https://github.com/babel/babel).
 Copyright The Babel Team. All Rights Reserved.
 
+This product includes software (@babel/plugin-syntax-async-generators@7.8.4) developed at
+(https://github.com/babel/babel/tree/master/packages/babel-plugin-syntax-async-generators).
+
+This product includes software (@babel/plugin-syntax-bigint@7.8.3) developed at
+(https://github.com/babel/babel/tree/master/packages/babel-plugin-syntax-bigint).
+
+This product includes software (@babel/plugin-syntax-class-properties@7.12.13) developed at
+(https://github.com/babel/babel).
+
+The Initial Developer of @babel/plugin-syntax-class-static-block@7.14.5,
+is The Babel Team (https://github.com/babel/babel).
+Copyright The Babel Team. All Rights Reserved.
+
 The Initial Developer of @babel/plugin-syntax-decorators@7.25.9,
 is The Babel Team (https://github.com/babel/babel).
 Copyright The Babel Team. All Rights Reserved.
@@ -112,7 +125,36 @@ Copyright The Babel Team. All Rights Reserved.
 This product includes software (@babel/plugin-syntax-import-meta@7.10.4) developed at
 (https://github.com/babel/babel).
 
+This product includes software (@babel/plugin-syntax-json-strings@7.8.3) developed at
+(https://github.com/babel/babel/tree/master/packages/babel-plugin-syntax-json-strings).
+
 The Initial Developer of @babel/plugin-syntax-jsx@7.25.9,
+is The Babel Team (https://github.com/babel/babel).
+Copyright The Babel Team. All Rights Reserved.
+
+This product includes software (@babel/plugin-syntax-logical-assignment-operators@7.10.4) developed at
+(https://github.com/babel/babel).
+
+This product includes software (@babel/plugin-syntax-nullish-coalescing-operator@7.8.3) developed at
+(https://github.com/babel/babel/tree/master/packages/babel-plugin-syntax-nullish-coalescing-operator).
+
+This product includes software (@babel/plugin-syntax-numeric-separator@7.10.4) developed at
+(https://github.com/babel/babel).
+
+This product includes software (@babel/plugin-syntax-object-rest-spread@7.8.3) developed at
+(https://github.com/babel/babel/tree/master/packages/babel-plugin-syntax-object-rest-spread).
+
+This product includes software (@babel/plugin-syntax-optional-catch-binding@7.8.3) developed at
+(https://github.com/babel/babel/tree/master/packages/babel-plugin-syntax-optional-catch-binding).
+
+This product includes software (@babel/plugin-syntax-optional-chaining@7.8.3) developed at
+(https://github.com/babel/babel/tree/master/packages/babel-plugin-syntax-optional-chaining).
+
+The Initial Developer of @babel/plugin-syntax-private-property-in-object@7.14.5,
+is The Babel Team (https://github.com/babel/babel).
+Copyright The Babel Team. All Rights Reserved.
+
+The Initial Developer of @babel/plugin-syntax-top-level-await@7.14.5,
 is The Babel Team (https://github.com/babel/babel).
 Copyright The Babel Team. All Rights Reserved.
 
@@ -121,6 +163,10 @@ is The Babel Team (https://github.com/babel/babel).
 Copyright The Babel Team. All Rights Reserved.
 
 The Initial Developer of @babel/plugin-transform-typescript@7.26.7,
+is The Babel Team (https://github.com/babel/babel).
+Copyright The Babel Team. All Rights Reserved.
+
+The Initial Developer of @babel/runtime@7.27.1,
 is The Babel Team (https://github.com/babel/babel).
 Copyright The Babel Team. All Rights Reserved.
 
@@ -229,11 +275,11 @@ The Initial Developer of @ethersproject/base64@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
-The Initial Developer of @ethersproject/bignumber@5.7.0,
+The Initial Developer of @ethersproject/bignumber@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
-The Initial Developer of @ethersproject/bytes@5.7.0,
+The Initial Developer of @ethersproject/bytes@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
@@ -261,7 +307,7 @@ The Initial Developer of @ethersproject/properties@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
-The Initial Developer of @ethersproject/rlp@5.7.0,
+The Initial Developer of @ethersproject/rlp@5.8.0,
 is Richard Moore (https://github.com/ethers-io/ethers.js).
 Copyright Richard Moore. All Rights Reserved.
 
@@ -293,23 +339,19 @@ The Initial Developer of @grpc/proto-loader@0.7.13,
 is Google Inc. (https://github.com/grpc/grpc-node).
 Copyright Google Inc.. All Rights Reserved.
 
-The Initial Developer of @hashgraph/cryptography@1.4.8,
-is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
+The Initial Developer of @hashgraph/cryptography@1.7.2,
+is Launchbadge (https://github.com/hiero-ledger/hiero-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
 The Initial Developer of @hashgraph/hedera-local@2.34.0,
 is hashgraph (github.com:hashgraph/hedera-local-node).
 Copyright hashgraph. All Rights Reserved.
 
-The Initial Developer of @hashgraph/proto@2.16.0,
-is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
+The Initial Developer of @hashgraph/proto@2.18.5,
+is Launchbadge (https://github.com/hiero-ledger/hiero-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
-The Initial Developer of @hashgraph/sdk@2.59.0,
-is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
-Copyright Launchbadge. All Rights Reserved.
-
-The Initial Developer of @hashgraph/sdk@2.61.0,
+The Initial Developer of @hashgraph/sdk@2.64.5,
 is Launchbadge (https://github.com/hiero-ledger/hiero-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
@@ -333,9 +375,34 @@ The Initial Developer of @isaacs/cliui@8.0.2,
 is Ben Coe (https://github.com/yargs/cliui).
 Copyright Ben Coe. All Rights Reserved.
 
+The Initial Developer of @isaacs/ttlcache@1.4.1,
+is Isaac Z. Schlueter (https://github.com/isaacs/ttlcache).
+Copyright Isaac Z. Schlueter. All Rights Reserved.
+
+This product includes software (@istanbuljs/load-nyc-config@1.1.0) developed at
+(https://github.com/istanbuljs/load-nyc-config).
+
 The Initial Developer of @istanbuljs/schema@0.1.3,
 is Corey Farrell (https://github.com/istanbuljs/schema).
 Copyright Corey Farrell. All Rights Reserved.
+
+This product includes software (@jest/create-cache-key-function@29.7.0) developed at
+(https://github.com/jestjs/jest).
+
+This product includes software (@jest/environment@29.7.0) developed at
+(https://github.com/jestjs/jest).
+
+This product includes software (@jest/fake-timers@29.7.0) developed at
+(https://github.com/jestjs/jest).
+
+This product includes software (@jest/schemas@29.6.3) developed at
+(https://github.com/jestjs/jest).
+
+This product includes software (@jest/transform@29.7.0) developed at
+(https://github.com/jestjs/jest).
+
+This product includes software (@jest/types@29.6.3) developed at
+(https://github.com/jestjs/jest).
 
 The Initial Developer of @jridgewell/gen-mapping@0.3.8,
 is Justin Ridgewell (https://github.com/jridgewell/gen-mapping).
@@ -450,6 +517,14 @@ The Initial Developer of @nestjs/websockets@10.4.15,
 is Kamil Mysliwiec (https://github.com/nestjs/nest).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
+The Initial Developer of @noble/curves@1.9.1,
+is Paul Miller (https://github.com/paulmillr/noble-curves).
+Copyright Paul Miller. All Rights Reserved.
+
+The Initial Developer of @noble/hashes@1.8.0,
+is Paul Miller (https://github.com/paulmillr/noble-hashes).
+Copyright Paul Miller. All Rights Reserved.
+
 This product includes software (@nodelib/fs.scandir@2.1.5) developed at
 (https://github.com/nodelib/nodelib/tree/master/packages/fs/fs.scandir).
 
@@ -554,6 +629,33 @@ The Initial Developer of @protobufjs/utf8@1.1.0,
 is Daniel Wirtz (https://github.com/dcodeIO/protobuf.js).
 Copyright Daniel Wirtz. All Rights Reserved.
 
+This product includes software (@react-native/assets-registry@0.79.2) developed at
+(https://github.com/facebook/react-native).
+
+This product includes software (@react-native/codegen@0.79.2) developed at
+(https://github.com/facebook/react-native).
+
+This product includes software (@react-native/community-cli-plugin@0.79.2) developed at
+(https://github.com/facebook/react-native).
+
+This product includes software (@react-native/debugger-frontend@0.79.2) developed at
+(https://github.com/facebook/react-native).
+
+This product includes software (@react-native/dev-middleware@0.79.2) developed at
+(https://github.com/facebook/react-native).
+
+This product includes software (@react-native/gradle-plugin@0.79.2) developed at
+(https://github.com/facebook/react-native).
+
+This product includes software (@react-native/js-polyfills@0.79.2) developed at
+(https://github.com/facebook/react-native).
+
+This product includes software (@react-native/normalize-colors@0.79.2) developed at
+(https://github.com/facebook/react-native).
+
+This product includes software (@react-native/virtualized-lists@0.79.2) developed at
+(https://github.com/facebook/react-native).
+
 The Initial Developer of @rollup/pluginutils@4.2.1,
 is Rich Harris (https://github.com/rollup/plugins).
 Copyright Rich Harris. All Rights Reserved.
@@ -566,6 +668,10 @@ The Initial Developer of @sec-ant/readable-stream@0.4.1,
 is Ze-Zheng Wu (https://github.com/Sec-ant/readable-stream).
 Copyright Ze-Zheng Wu. All Rights Reserved.
 
+The Initial Developer of @sinclair/typebox@0.27.8,
+is sinclairzx81 (https://github.com/sinclairzx81/typebox).
+Copyright sinclairzx81. All Rights Reserved.
+
 The Initial Developer of @sindresorhus/is@4.6.0,
 is Sindre Sorhus (https://github.com/sindresorhus/is).
 Copyright Sindre Sorhus. All Rights Reserved.
@@ -573,6 +679,13 @@ Copyright Sindre Sorhus. All Rights Reserved.
 The Initial Developer of @sindresorhus/merge-streams@4.0.0,
 is Sindre Sorhus (https://github.com/sindresorhus/merge-streams).
 Copyright Sindre Sorhus. All Rights Reserved.
+
+This product includes software (@sinonjs/commons@3.0.1) developed at
+(https://github.com/sinonjs/commons).
+
+The Initial Developer of @sinonjs/fake-timers@10.3.0,
+is Christian Johansen (https://github.com/sinonjs/fake-timers).
+Copyright Christian Johansen. All Rights Reserved.
 
 This product includes software (@socket.io/component-emitter@3.1.2) developed at
 (https://github.com/socketio/emitter).
@@ -596,6 +709,18 @@ This product includes software (@testcontainers/redis@10.16.0) developed at
 The Initial Developer of @tootallnate/once@2.0.0,
 is Nathan Rajlich (https://github.com/TooTallNate/once).
 Copyright Nathan Rajlich. All Rights Reserved.
+
+This product includes software (@types/babel__core@7.20.5) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
+This product includes software (@types/babel__generator@7.27.0) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
+This product includes software (@types/babel__template@7.4.4) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
+This product includes software (@types/babel__traverse@7.20.7) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/bcrypt@5.0.2) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
@@ -636,7 +761,19 @@ This product includes software (@types/express@4.17.21) developed at
 This product includes software (@types/fs-extra@9.0.13) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
+This product includes software (@types/graceful-fs@4.1.9) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
 This product includes software (@types/http-cache-semantics@4.0.4) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
+This product includes software (@types/istanbul-lib-coverage@2.0.6) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
+This product includes software (@types/istanbul-lib-report@3.0.3) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
+This product includes software (@types/istanbul-reports@3.0.4) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/jest@29.5.14) developed at
@@ -678,6 +815,9 @@ This product includes software (@types/readline-sync@1.4.8) developed at
 This product includes software (@types/responselike@1.0.3) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
+This product includes software (@types/stack-utils@2.0.3) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
 This product includes software (@types/supertest@6.0.2) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
@@ -688,6 +828,12 @@ This product includes software (@types/verror@1.10.10) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/web-bluetooth@0.0.20) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
+This product includes software (@types/yargs-parser@21.0.3) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
+This product includes software (@types/yargs@17.0.33) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/yauzl@2.10.3) developed at
@@ -865,6 +1011,9 @@ The Initial Developer of abort-controller@3.0.0,
 is Toru Nagashima (https://github.com/mysticatea/abort-controller).
 Copyright Toru Nagashima. All Rights Reserved.
 
+This product includes software (accepts@1.3.8) developed at
+(https://github.com/jshttp/accepts).
+
 This product includes software (acorn-jsx@5.3.2) developed at
 (https://github.com/acornjs/acorn-jsx).
 
@@ -898,9 +1047,13 @@ The Initial Developer of amqp-connection-manager@4.1.14,
 is Jason Walton (https://github.com/jwalton/node-amqp-connection-manager).
 Copyright Jason Walton. All Rights Reserved.
 
-The Initial Developer of amqplib@0.10.5,
+The Initial Developer of amqplib@0.10.7,
 is Michael Bridgen (https://github.com/amqp-node/amqplib).
 Copyright Michael Bridgen. All Rights Reserved.
+
+The Initial Developer of anser@1.4.10,
+is Ionică Bizău (https://github.com/IonicaBizau/anser).
+Copyright Ionică Bizău. All Rights Reserved.
 
 The Initial Developer of ansi-regex@5.0.1,
 is Sindre Sorhus (https://github.com/chalk/ansi-regex).
@@ -944,7 +1097,10 @@ Copyright Ranieri Althoff. All Rights Reserved.
 This product includes software (argparse@2.0.1) developed at
 (https://github.com/nodeca/argparse).
 
-The Initial Developer of asn1js@3.0.5,
+This product includes software (asap@2.0.6) developed at
+(https://github.com/kriskowal/asap).
+
+The Initial Developer of asn1js@3.0.6,
 is Yury Strozhevsky (https://github.com/PeculiarVentures/asn1.js).
 Copyright Yury Strozhevsky. All Rights Reserved.
 
@@ -963,6 +1119,10 @@ Copyright Kevin Mårtensson. All Rights Reserved.
 The Initial Developer of async-exit-hook@2.0.1,
 is Tapani Moilanen (https://github.com/tapppi/async-exit-hook).
 Copyright Tapani Moilanen. All Rights Reserved.
+
+The Initial Developer of async-limiter@1.0.1,
+is Samuel Reed (https://github.com/strml/async-limiter).
+Copyright Samuel Reed. All Rights Reserved.
 
 This product includes software (async-retry@1.3.3) developed at
 (https://github.com/vercel/async-retry).
@@ -983,13 +1143,29 @@ The Initial Developer of atomic-sleep@1.0.0,
 is David Mark Clements (https://github.com/davidmarkclements/atomic-sleep).
 Copyright David Mark Clements. All Rights Reserved.
 
-The Initial Developer of axios@1.7.9,
-is Matt Zabriskie (https://github.com/axios/axios).
-Copyright Matt Zabriskie. All Rights Reserved.
-
 The Initial Developer of axios@1.8.3,
 is Matt Zabriskie (https://github.com/axios/axios).
 Copyright Matt Zabriskie. All Rights Reserved.
+
+This product includes software (babel-jest@29.7.0) developed at
+(https://github.com/jestjs/jest).
+
+The Initial Developer of babel-plugin-istanbul@6.1.1,
+is Thai Pangsakulyanont @dtinth (https://github.com/istanbuljs/babel-plugin-istanbul).
+Copyright Thai Pangsakulyanont @dtinth. All Rights Reserved.
+
+This product includes software (babel-plugin-jest-hoist@29.6.3) developed at
+(https://github.com/jestjs/jest).
+
+This product includes software (babel-plugin-syntax-hermes-parser@0.25.1) developed at
+(https://github.com/facebook/hermes).
+
+The Initial Developer of babel-preset-current-node-syntax@1.1.0,
+is Nicolò Ribaudo (https://github.com/nicolo-ribaudo/babel-preset-current-node-syntax).
+Copyright Nicolò Ribaudo. All Rights Reserved.
+
+This product includes software (babel-preset-jest@29.6.3) developed at
+(https://github.com/jestjs/jest).
 
 The Initial Developer of balanced-match@1.0.2,
 is Julian Gruber (https://github.com/juliangruber/balanced-match).
@@ -1077,6 +1253,10 @@ The Initial Developer of browserslist@4.24.4,
 is Andrey Sitnik (https://github.com/browserslist/browserslist).
 Copyright Andrey Sitnik. All Rights Reserved.
 
+The Initial Developer of bser@2.1.1,
+is Wez Furlong (https://github.com/facebook/watchman).
+Copyright Wez Furlong. All Rights Reserved.
+
 The Initial Developer of buffer-crc32@0.2.13,
 is Brian J. Brennan (https://github.com/brianloveswords/buffer-crc32).
 Copyright Brian J. Brennan. All Rights Reserved.
@@ -1122,8 +1302,20 @@ The Initial Developer of cacheable-request@7.0.4,
 is Luke Childs (https://github.com/lukechilds/cacheable-request).
 Copyright Luke Childs. All Rights Reserved.
 
+The Initial Developer of caller-callsite@2.0.0,
+is Sindre Sorhus (https://github.com/sindresorhus/caller-callsite).
+Copyright Sindre Sorhus. All Rights Reserved.
+
+The Initial Developer of caller-path@2.0.0,
+is Sindre Sorhus (https://github.com/sindresorhus/caller-path).
+Copyright Sindre Sorhus. All Rights Reserved.
+
 The Initial Developer of callsites@3.1.0,
 is Sindre Sorhus (https://github.com/sindresorhus/callsites).
+Copyright Sindre Sorhus. All Rights Reserved.
+
+The Initial Developer of camelcase@5.3.1,
+is Sindre Sorhus (https://github.com/sindresorhus/camelcase).
 Copyright Sindre Sorhus. All Rights Reserved.
 
 The Initial Developer of caniuse-lite@1.0.30001695,
@@ -1148,6 +1340,14 @@ Copyright Paul Miller. All Rights Reserved.
 The Initial Developer of chownr@1.1.4,
 is Isaac Z. Schlueter (https://github.com/isaacs/chownr).
 Copyright Isaac Z. Schlueter. All Rights Reserved.
+
+The Initial Developer of chrome-launcher@0.15.2,
+is The Chromium Authors (https://github.com/GoogleChrome/chrome-launcher).
+Copyright The Chromium Authors. All Rights Reserved.
+
+The Initial Developer of chromium-edge-launcher@0.2.0,
+is Cezar Augusto (https://github.com/cezaraugusto/chromium-edge-launcher).
+Copyright Cezar Augusto. All Rights Reserved.
 
 This product includes software (chromium-pickle-js@0.2.0) developed at
 (https://github.com/electron/node-chromium-pickle-js).
@@ -1232,6 +1432,10 @@ The Initial Developer of config-file-ts@0.2.8-rc1,
 is lee mighdoll (https://github.com/mighdoll/config-file-ts).
 Copyright lee mighdoll. All Rights Reserved.
 
+The Initial Developer of connect@3.7.0,
+is TJ Holowaychuk (https://github.com/senchalabs/connect).
+Copyright TJ Holowaychuk. All Rights Reserved.
+
 The Initial Developer of console-control-strings@1.1.0,
 is Rebecca Turner (https://github.com/iarna/console-control-strings).
 Copyright Rebecca Turner. All Rights Reserved.
@@ -1247,6 +1451,10 @@ Copyright Luca Ban - Mesqueeb. All Rights Reserved.
 The Initial Developer of core-util-is@1.0.2,
 is Isaac Z. Schlueter (https://github.com/isaacs/core-util-is).
 Copyright Isaac Z. Schlueter. All Rights Reserved.
+
+The Initial Developer of cosmiconfig@5.2.1,
+is David Clark (https://github.com/davidtheclark/cosmiconfig).
+Copyright David Clark. All Rights Reserved.
 
 The Initial Developer of crc-32@1.2.2,
 is sheetjs (https://github.com/SheetJS/js-crc32).
@@ -1346,6 +1554,14 @@ Copyright Felix Geisendörfer. All Rights Reserved.
 This product includes software (delegates@1.0.0) developed at
 (https://github.com/visionmedia/node-delegates).
 
+The Initial Developer of depd@2.0.0,
+is Douglas Christopher Wilson (https://github.com/dougwilson/nodejs-depd).
+Copyright Douglas Christopher Wilson. All Rights Reserved.
+
+The Initial Developer of destroy@1.2.0,
+is Jonathan Ong (https://github.com/stream-utils/destroy).
+Copyright Jonathan Ong. All Rights Reserved.
+
 The Initial Developer of detect-libc@2.0.3,
 is Lovell Fuller (https://github.com/lovell/detect-libc).
 Copyright Lovell Fuller. All Rights Reserved.
@@ -1380,6 +1596,10 @@ Copyright Conrad Pankoff. All Rights Reserved.
 The Initial Developer of eastasianwidth@0.2.0,
 is Masaki Komagata (https://github.com/komagata/eastasianwidth).
 Copyright Masaki Komagata. All Rights Reserved.
+
+The Initial Developer of ee-first@1.1.1,
+is Jonathan Ong (https://github.com/jonathanong/ee-first).
+Copyright Jonathan Ong. All Rights Reserved.
 
 The Initial Developer of ejs@3.1.10,
 is Matthew Eernisse (https://github.com/mde/ejs).
@@ -1421,6 +1641,9 @@ The Initial Developer of emoji-regex@8.0.0,
 is Mathias Bynens (https://github.com/mathiasbynens/emoji-regex).
 Copyright Mathias Bynens. All Rights Reserved.
 
+This product includes software (encodeurl@2.0.0) developed at
+(https://github.com/pillarjs/encodeurl).
+
 The Initial Developer of encoding@0.1.13,
 is Andris Reinman (https://github.com/andris9/encoding).
 Copyright Andris Reinman. All Rights Reserved.
@@ -1447,8 +1670,14 @@ The Initial Developer of err-code@2.0.3,
 is IndigoUnited (https://github.com/IndigoUnited/js-err-code).
 Copyright IndigoUnited. All Rights Reserved.
 
+This product includes software (error-ex@1.3.2) developed at
+(https://github.com/qix-/node-error-ex).
+
 This product includes software (error-stack-parser-es@0.1.5) developed at
 (https://github.com/antfu/error-stack-parser-es).
+
+This product includes software (error-stack-parser@2.1.4) developed at
+(https://github.com/stacktracejs/error-stack-parser).
 
 The Initial Developer of es-define-property@1.0.1,
 is Jordan Harband (https://github.com/ljharb/es-define-property).
@@ -1472,6 +1701,9 @@ This product includes software (esbuild@0.24.2) developed at
 The Initial Developer of escalade@3.2.0,
 is Luke Edwards (https://github.com/lukeed/escalade).
 Copyright Luke Edwards. All Rights Reserved.
+
+This product includes software (escape-html@1.0.3) developed at
+(https://github.com/component/escape-html).
 
 The Initial Developer of escape-string-regexp@4.0.0,
 is Sindre Sorhus (https://github.com/sindresorhus/escape-string-regexp).
@@ -1504,6 +1736,10 @@ The Initial Developer of espree@10.3.0,
 is Nicholas C. Zakas (https://github.com/eslint/js).
 Copyright Nicholas C. Zakas. All Rights Reserved.
 
+The Initial Developer of esprima@4.0.1,
+is Ariya Hidayat (https://github.com/jquery/esprima).
+Copyright Ariya Hidayat. All Rights Reserved.
+
 The Initial Developer of esquery@1.6.0,
 is Joel Feenstra (https://github.com/estools/esquery).
 Copyright Joel Feenstra. All Rights Reserved.
@@ -1521,13 +1757,12 @@ Copyright Rich Harris. All Rights Reserved.
 This product includes software (esutils@2.0.3) developed at
 (https://github.com/estools/esutils).
 
+This product includes software (etag@1.8.1) developed at
+(https://github.com/jshttp/etag).
+
 The Initial Developer of event-target-shim@5.0.1,
 is Toru Nagashima (https://github.com/mysticatea/event-target-shim).
 Copyright Toru Nagashima. All Rights Reserved.
-
-The Initial Developer of events@3.3.0,
-is Irakli Gozalishvili (https://github.com/Gozala/events).
-Copyright Irakli Gozalishvili. All Rights Reserved.
 
 The Initial Developer of execa@9.5.2,
 is Sindre Sorhus (https://github.com/sindresorhus/execa).
@@ -1554,6 +1789,9 @@ Copyright max ogden. All Rights Reserved.
 
 This product includes software (extsprintf@1.4.1) developed at
 (https://github.com/davepacheco/node-extsprintf).
+
+This product includes software (fast-base64-decode@1.0.0) developed at
+(https://github.com/LinusU/fast-base64-decode).
 
 The Initial Developer of fast-copy@3.0.2,
 is tony_quetano@planttheidea.com (https://github.com/planttheidea/fast-copy).
@@ -1591,6 +1829,10 @@ The Initial Developer of fastq@1.18.0,
 is Matteo Collina (https://github.com/mcollina/fastq).
 Copyright Matteo Collina. All Rights Reserved.
 
+The Initial Developer of fb-watchman@2.0.2,
+is Wez Furlong (https://github.com/facebook/watchman).
+Copyright Wez Furlong. All Rights Reserved.
+
 The Initial Developer of fd-slicer@1.1.0,
 is Andrew Kelley (https://github.com/andrewrk/node-fd-slicer).
 Copyright Andrew Kelley. All Rights Reserved.
@@ -1615,6 +1857,10 @@ The Initial Developer of fill-range@7.1.1,
 is Jon Schlinkert (https://github.com/jonschlinkert/fill-range).
 Copyright Jon Schlinkert. All Rights Reserved.
 
+The Initial Developer of finalhandler@1.1.2,
+is Douglas Christopher Wilson (https://github.com/pillarjs/finalhandler).
+Copyright Douglas Christopher Wilson. All Rights Reserved.
+
 The Initial Developer of find-up@5.0.0,
 is Sindre Sorhus (https://github.com/sindresorhus/find-up).
 Copyright Sindre Sorhus. All Rights Reserved.
@@ -1627,6 +1873,9 @@ The Initial Developer of flatted@3.3.2,
 is Andrea Giammarchi (https://github.com/WebReflection/flatted).
 Copyright Andrea Giammarchi. All Rights Reserved.
 
+This product includes software (flow-enums-runtime@0.0.6) developed at
+(https://github.com/facebook/flow).
+
 The Initial Developer of follow-redirects@1.15.9,
 is Ruben Verborgh (https://github.com/follow-redirects/follow-redirects).
 Copyright Ruben Verborgh. All Rights Reserved.
@@ -1635,9 +1884,17 @@ The Initial Developer of foreground-child@3.3.0,
 is Isaac Z. Schlueter (https://github.com/tapjs/foreground-child).
 Copyright Isaac Z. Schlueter. All Rights Reserved.
 
+The Initial Developer of forge-light@1.1.4,
+is Digital Bazaar, Inc. (https://github.com/kintaB/custom-forge).
+Copyright Digital Bazaar, Inc.. All Rights Reserved.
+
 The Initial Developer of form-data@4.0.1,
 is Felix Geisendörfer (https://github.com/form-data/form-data).
 Copyright Felix Geisendörfer. All Rights Reserved.
+
+The Initial Developer of fresh@0.5.2,
+is TJ Holowaychuk (https://github.com/jshttp/fresh).
+Copyright TJ Holowaychuk. All Rights Reserved.
 
 The Initial Developer of fs-constants@1.0.0,
 is Mathias Buus (https://github.com/mafintosh/fs-constants).
@@ -1672,6 +1929,10 @@ Copyright Logan Smyth. All Rights Reserved.
 The Initial Developer of get-caller-file@2.0.5,
 is Stefan Penner (https://github.com/stefanpenner/get-caller-file).
 Copyright Stefan Penner. All Rights Reserved.
+
+The Initial Developer of get-package-type@0.1.0,
+is Corey Farrell (https://github.com/cfware/get-package-type).
+Copyright Corey Farrell. All Rights Reserved.
 
 The Initial Developer of get-stream@9.0.1,
 is Sindre Sorhus (https://github.com/sindresorhus/get-stream).
@@ -1743,6 +2004,12 @@ The Initial Developer of help-me@5.0.0,
 is Matteo Collina (https://github.com/mcollina/help-me).
 Copyright Matteo Collina. All Rights Reserved.
 
+This product includes software (hermes-estree@0.25.1) developed at
+(https://github.com/facebook/hermes).
+
+This product includes software (hermes-parser@0.25.1) developed at
+(https://github.com/facebook/hermes).
+
 The Initial Developer of hmac-drbg@1.0.1,
 is Fedor Indutny (https://github.com/indutny/hmac-drbg).
 Copyright Fedor Indutny. All Rights Reserved.
@@ -1765,6 +2032,10 @@ Copyright Sindre Sorhus. All Rights Reserved.
 The Initial Developer of http-cache-semantics@4.1.1,
 is Kornel Lesiński (https://github.com/kornelski/http-cache-semantics).
 Copyright Kornel Lesiński. All Rights Reserved.
+
+The Initial Developer of http-errors@2.0.0,
+is Jonathan Ong (https://github.com/jshttp/http-errors).
+Copyright Jonathan Ong. All Rights Reserved.
 
 The Initial Developer of http-proxy-agent@7.0.2,
 is Nathan Rajlich (https://github.com/TooTallNate/proxy-agents).
@@ -1802,6 +2073,10 @@ The Initial Developer of ignore@5.3.2,
 is kael (https://github.com/kaelzhang/node-ignore).
 Copyright kael. All Rights Reserved.
 
+The Initial Developer of image-size@1.2.1,
+is netroy (https://github.com/image-size/image-size).
+Copyright netroy. All Rights Reserved.
+
 The Initial Developer of immutable@4.3.7,
 is Lee Byron (https://github.com/immutable-js/immutable-js).
 Copyright Lee Byron. All Rights Reserved.
@@ -1833,6 +2108,10 @@ The Initial Developer of ini@1.3.8,
 is Isaac Z. Schlueter (https://github.com/isaacs/ini).
 Copyright Isaac Z. Schlueter. All Rights Reserved.
 
+The Initial Developer of invariant@2.2.4,
+is Andres Suarez (https://github.com/zertosh/invariant).
+Copyright Andres Suarez. All Rights Reserved.
+
 The Initial Developer of ioredis@5.4.2,
 is Zihua Li (https://github.com/luin/ioredis).
 Copyright Zihua Li. All Rights Reserved.
@@ -1841,6 +2120,10 @@ The Initial Developer of ip-address@9.0.5,
 is Beau Gunderson (https://github.com/beaugunderson/ip-address).
 Copyright Beau Gunderson. All Rights Reserved.
 
+The Initial Developer of is-arrayish@0.2.1,
+is Qix (https://github.com/qix-/node-is-arrayish).
+Copyright Qix. All Rights Reserved.
+
 The Initial Developer of is-binary-path@2.1.0,
 is Sindre Sorhus (https://github.com/sindresorhus/is-binary-path).
 Copyright Sindre Sorhus. All Rights Reserved.
@@ -1848,6 +2131,10 @@ Copyright Sindre Sorhus. All Rights Reserved.
 The Initial Developer of is-ci@3.0.1,
 is Thomas Watson Steen (https://github.com/watson/is-ci).
 Copyright Thomas Watson Steen. All Rights Reserved.
+
+The Initial Developer of is-directory@0.3.1,
+is Jon Schlinkert (https://github.com/jonschlinkert/is-directory).
+Copyright Jon Schlinkert. All Rights Reserved.
 
 The Initial Developer of is-docker@3.0.0,
 is Sindre Sorhus (https://github.com/sindresorhus/is-docker).
@@ -1916,6 +2203,10 @@ The Initial Developer of istanbul-lib-coverage@3.2.2,
 is Krishnan Anantheswaran (https://github.com/istanbuljs/istanbuljs).
 Copyright Krishnan Anantheswaran. All Rights Reserved.
 
+The Initial Developer of istanbul-lib-instrument@5.2.1,
+is Krishnan Anantheswaran (https://github.com/istanbuljs/istanbuljs).
+Copyright Krishnan Anantheswaran. All Rights Reserved.
+
 The Initial Developer of istanbul-lib-report@3.0.1,
 is Krishnan Anantheswaran (https://github.com/istanbuljs/istanbuljs).
 Copyright Krishnan Anantheswaran. All Rights Reserved.
@@ -1936,9 +2227,36 @@ The Initial Developer of jake@10.9.2,
 is Matthew Eernisse (https://github.com/jakejs/jake).
 Copyright Matthew Eernisse. All Rights Reserved.
 
+This product includes software (jest-environment-node@29.7.0) developed at
+(https://github.com/jestjs/jest).
+
+This product includes software (jest-get-type@29.6.3) developed at
+(https://github.com/jestjs/jest).
+
+This product includes software (jest-haste-map@29.7.0) developed at
+(https://github.com/jestjs/jest).
+
+This product includes software (jest-message-util@29.7.0) developed at
+(https://github.com/jestjs/jest).
+
 The Initial Developer of jest-mock-extended@3.0.7,
 is Marc McIntyre (https://github.com/marchaos/jest-mock-extended).
 Copyright Marc McIntyre. All Rights Reserved.
+
+This product includes software (jest-mock@29.7.0) developed at
+(https://github.com/jestjs/jest).
+
+This product includes software (jest-regex-util@29.6.3) developed at
+(https://github.com/jestjs/jest).
+
+This product includes software (jest-util@29.7.0) developed at
+(https://github.com/jestjs/jest).
+
+This product includes software (jest-validate@29.7.0) developed at
+(https://github.com/jestjs/jest).
+
+This product includes software (jest-worker@29.7.0) developed at
+(https://github.com/jestjs/jest).
 
 This product includes software (jest@29.7.0) developed at
 (https://github.com/jestjs/jest).
@@ -1970,6 +2288,10 @@ The Initial Developer of jsbn@1.1.0,
 is Tom Wu (https://github.com/andyperlitch/jsbn).
 Copyright Tom Wu. All Rights Reserved.
 
+The Initial Developer of jsc-safe-url@0.2.4,
+is Rob Hogan (https://github.com/robhogan/jsc-safe-url).
+Copyright Rob Hogan. All Rights Reserved.
+
 The Initial Developer of jsesc@3.1.0,
 is Mathias Bynens (https://github.com/mathiasbynens/jsesc).
 Copyright Mathias Bynens. All Rights Reserved.
@@ -1977,6 +2299,10 @@ Copyright Mathias Bynens. All Rights Reserved.
 The Initial Developer of json-buffer@3.0.1,
 is Dominic Tarr (https://github.com/dominictarr/json-buffer).
 Copyright Dominic Tarr. All Rights Reserved.
+
+The Initial Developer of json-parse-better-errors@1.0.2,
+is Kat Marchán (https://github.com/zkat/json-parse-better-errors).
+Copyright Kat Marchán. All Rights Reserved.
 
 The Initial Developer of json-schema-traverse@0.4.1,
 is Evgeny Poberezkin (https://github.com/epoberezkin/json-schema-traverse).
@@ -2018,9 +2344,16 @@ The Initial Developer of lazystream@1.0.1,
 is Jonas Pommerening (https://github.com/jpommerening/node-lazystream).
 Copyright Jonas Pommerening. All Rights Reserved.
 
+The Initial Developer of leven@3.1.0,
+is Sindre Sorhus (https://github.com/sindresorhus/leven).
+Copyright Sindre Sorhus. All Rights Reserved.
+
 The Initial Developer of levn@0.4.1,
 is George Zahariev (https://github.com/gkz/levn).
 Copyright George Zahariev. All Rights Reserved.
+
+This product includes software (lighthouse-logger@1.4.2) developed at
+().
 
 This product includes software (lightningcss-darwin-arm64@1.27.0) developed at
 (https://github.com/parcel-bundler/lightningcss).
@@ -2064,6 +2397,10 @@ The Initial Developer of lodash.merge@4.6.2,
 is John-David Dalton (https://github.com/lodash/lodash).
 Copyright John-David Dalton. All Rights Reserved.
 
+The Initial Developer of lodash.throttle@4.1.1,
+is John-David Dalton (https://github.com/lodash/lodash).
+Copyright John-David Dalton. All Rights Reserved.
+
 The Initial Developer of lodash.union@4.6.0,
 is John-David Dalton (https://github.com/lodash/lodash).
 Copyright John-David Dalton. All Rights Reserved.
@@ -2083,6 +2420,10 @@ Copyright Daniel Wirtz. All Rights Reserved.
 The Initial Developer of long@5.3.1,
 is Daniel Wirtz (https://github.com/dcodeIO/long.js).
 Copyright Daniel Wirtz. All Rights Reserved.
+
+The Initial Developer of loose-envify@1.4.0,
+is Andres Suarez (https://github.com/zertosh/loose-envify).
+Copyright Andres Suarez. All Rights Reserved.
 
 The Initial Developer of loupe@3.1.2,
 is Veselin Todorov (https://github.com/chaijs/loupe).
@@ -2111,12 +2452,70 @@ The Initial Developer of make-fetch-happen@10.2.1,
 is GitHub Inc. (https://github.com/npm/make-fetch-happen).
 Copyright GitHub Inc.. All Rights Reserved.
 
+The Initial Developer of makeerror@1.0.12,
+is Naitik Shah (https://github.com/daaku/nodejs-makeerror).
+Copyright Naitik Shah. All Rights Reserved.
+
+The Initial Developer of marky@1.3.0,
+is Nolan Lawson (https://github.com/nolanlawson/marky).
+Copyright Nolan Lawson. All Rights Reserved.
+
 The Initial Developer of matcher@3.0.0,
 is Sindre Sorhus (https://github.com/sindresorhus/matcher).
 Copyright Sindre Sorhus. All Rights Reserved.
 
+The Initial Developer of memoize-one@5.2.1,
+is Alex Reardon (https://github.com/alexreardon/memoize-one).
+Copyright Alex Reardon. All Rights Reserved.
+
+The Initial Developer of merge-stream@2.0.0,
+is Stephen Sugden (https://github.com/grncdr/merge-stream).
+Copyright Stephen Sugden. All Rights Reserved.
+
 This product includes software (merge2@1.4.1) developed at
 (https://github.com/teambition/merge2).
+
+This product includes software (metro-babel-transformer@0.82.4) developed at
+(https://github.com/facebook/metro).
+
+This product includes software (metro-cache-key@0.82.4) developed at
+(https://github.com/facebook/metro).
+
+This product includes software (metro-cache@0.82.4) developed at
+(https://github.com/facebook/metro).
+
+This product includes software (metro-config@0.82.4) developed at
+(https://github.com/facebook/metro).
+
+This product includes software (metro-core@0.82.4) developed at
+(https://github.com/facebook/metro).
+
+This product includes software (metro-file-map@0.82.4) developed at
+(https://github.com/facebook/metro).
+
+This product includes software (metro-minify-terser@0.82.4) developed at
+(https://github.com/facebook/metro).
+
+This product includes software (metro-resolver@0.82.4) developed at
+(https://github.com/facebook/metro).
+
+This product includes software (metro-runtime@0.82.4) developed at
+(https://github.com/facebook/metro).
+
+This product includes software (metro-source-map@0.82.4) developed at
+(https://github.com/facebook/metro).
+
+This product includes software (metro-symbolicate@0.82.4) developed at
+(https://github.com/facebook/metro).
+
+This product includes software (metro-transform-plugins@0.82.4) developed at
+(https://github.com/facebook/metro).
+
+This product includes software (metro-transform-worker@0.82.4) developed at
+(https://github.com/facebook/metro).
+
+This product includes software (metro@0.82.4) developed at
+(https://github.com/facebook/metro).
 
 The Initial Developer of micromatch@4.0.8,
 is Jon Schlinkert (https://github.com/micromatch/micromatch).
@@ -2289,6 +2688,13 @@ The Initial Developer of nth-check@2.1.1,
 is Felix Boehm (https://github.com/fb55/nth-check).
 Copyright Felix Boehm. All Rights Reserved.
 
+The Initial Developer of nullthrows@1.1.1,
+is Andres Suarez (https://github.com/zertosh/nullthrows).
+Copyright Andres Suarez. All Rights Reserved.
+
+This product includes software (ob1@0.82.4) developed at
+(https://github.com/facebook/metro).
+
 The Initial Developer of object-assign@4.1.1,
 is Sindre Sorhus (https://github.com/sindresorhus/object-assign).
 Copyright Sindre Sorhus. All Rights Reserved.
@@ -2300,6 +2706,9 @@ Copyright Jordan Harband. All Rights Reserved.
 The Initial Developer of on-exit-leak-free@2.1.2,
 is Matteo Collina (https://github.com/mcollina/on-exit-or-gc).
 Copyright Matteo Collina. All Rights Reserved.
+
+This product includes software (on-finished@2.3.0) developed at
+(https://github.com/jshttp/on-finished).
 
 The Initial Developer of once@1.4.0,
 is Isaac Z. Schlueter (https://github.com/isaacs/once).
@@ -2341,6 +2750,10 @@ The Initial Developer of p-map@4.0.0,
 is Sindre Sorhus (https://github.com/sindresorhus/p-map).
 Copyright Sindre Sorhus. All Rights Reserved.
 
+The Initial Developer of p-try@2.2.0,
+is Sindre Sorhus (https://github.com/sindresorhus/p-try).
+Copyright Sindre Sorhus. All Rights Reserved.
+
 The Initial Developer of package-json-from-dist@1.0.1,
 is Isaac Z. Schlueter (https://github.com/isaacs/package-json-from-dist).
 Copyright Isaac Z. Schlueter. All Rights Reserved.
@@ -2349,9 +2762,16 @@ The Initial Developer of parent-module@1.0.1,
 is Sindre Sorhus (https://github.com/sindresorhus/parent-module).
 Copyright Sindre Sorhus. All Rights Reserved.
 
+The Initial Developer of parse-json@4.0.0,
+is Sindre Sorhus (https://github.com/sindresorhus/parse-json).
+Copyright Sindre Sorhus. All Rights Reserved.
+
 The Initial Developer of parse-ms@4.0.0,
 is Sindre Sorhus (https://github.com/sindresorhus/parse-ms).
 Copyright Sindre Sorhus. All Rights Reserved.
+
+This product includes software (parseurl@1.3.3) developed at
+(https://github.com/pillarjs/parseurl).
 
 The Initial Developer of passport-jwt@4.0.1,
 is Mike Nicholson (https://github.com/mikenicholson/passport-jwt).
@@ -2419,11 +2839,11 @@ The Initial Developer of pinia@2.3.1,
 is Eduardo San Martin Morote (https://github.com/vuejs/pinia).
 Copyright Eduardo San Martin Morote. All Rights Reserved.
 
-The Initial Developer of pino-abstract-transport@1.2.0,
+The Initial Developer of pino-abstract-transport@2.0.0,
 is Matteo Collina (https://github.com/pinojs/pino-abstract-transport).
 Copyright Matteo Collina. All Rights Reserved.
 
-The Initial Developer of pino-pretty@10.3.1,
+The Initial Developer of pino-pretty@13.0.0,
 is James Sumners (https://github.com/pinojs/pino-pretty).
 Copyright James Sumners. All Rights Reserved.
 
@@ -2434,6 +2854,10 @@ Copyright James Sumners. All Rights Reserved.
 The Initial Developer of pino@9.6.0,
 is Matteo Collina (https://github.com/pinojs/pino).
 Copyright Matteo Collina. All Rights Reserved.
+
+The Initial Developer of pirates@4.0.7,
+is Ari Porad (https://github.com/danez/pirates).
+Copyright Ari Porad. All Rights Reserved.
 
 The Initial Developer of playwright-core@1.50.0,
 is Microsoft Corporation (https://github.com/microsoft/playwright).
@@ -2469,6 +2893,10 @@ The Initial Developer of prettier@3.4.2,
 is James Long (https://github.com/prettier/prettier).
 Copyright James Long. All Rights Reserved.
 
+The Initial Developer of pretty-format@29.7.0,
+is James Kyle (https://github.com/jestjs/jest).
+Copyright James Kyle. All Rights Reserved.
+
 The Initial Developer of pretty-ms@9.2.0,
 is Sindre Sorhus (https://github.com/sindresorhus/pretty-ms).
 Copyright Sindre Sorhus. All Rights Reserved.
@@ -2484,10 +2912,6 @@ The Initial Developer of process-warning@4.0.1,
 is Tomas Della Vedova (https://github.com/fastify/process-warning).
 Copyright Tomas Della Vedova. All Rights Reserved.
 
-The Initial Developer of process@0.11.10,
-is Roman Shtylman (https://github.com/shtylman/node-process).
-Copyright Roman Shtylman. All Rights Reserved.
-
 The Initial Developer of progress@2.0.3,
 is TJ Holowaychuk (https://github.com/visionmedia/node-progress).
 Copyright TJ Holowaychuk. All Rights Reserved.
@@ -2499,6 +2923,10 @@ Copyright Rebecca Turner. All Rights Reserved.
 The Initial Developer of promise-retry@2.0.1,
 is IndigoUnited (https://github.com/IndigoUnited/node-promise-retry).
 Copyright IndigoUnited. All Rights Reserved.
+
+The Initial Developer of promise@8.3.0,
+is ForbesLindesay (https://github.com/then/promise).
+Copyright ForbesLindesay. All Rights Reserved.
 
 The Initial Developer of protobufjs@7.2.5,
 is Daniel Wirtz (https://github.com/protobufjs/protobuf.js).
@@ -2528,6 +2956,10 @@ The Initial Developer of queue-microtask@1.2.3,
 is Feross Aboukhadijeh (https://github.com/feross/queue-microtask).
 Copyright Feross Aboukhadijeh. All Rights Reserved.
 
+The Initial Developer of queue@6.0.2,
+is Jesse Tane (https://github.com/jessetane/queue).
+Copyright Jesse Tane. All Rights Reserved.
+
 The Initial Developer of quick-format-unescaped@4.0.4,
 is David Mark Clements (https://github.com/davidmarkclements/quick-format).
 Copyright David Mark Clements. All Rights Reserved.
@@ -2536,9 +2968,31 @@ The Initial Developer of quick-lru@5.1.1,
 is Sindre Sorhus (https://github.com/sindresorhus/quick-lru).
 Copyright Sindre Sorhus. All Rights Reserved.
 
+The Initial Developer of range-parser@1.2.1,
+is TJ Holowaychuk (https://github.com/jshttp/range-parser).
+Copyright TJ Holowaychuk. All Rights Reserved.
+
 The Initial Developer of rc@1.2.8,
 is Dominic Tarr (https://github.com/dominictarr/rc).
 Copyright Dominic Tarr. All Rights Reserved.
+
+This product includes software (react-devtools-core@6.1.2) developed at
+(https://github.com/facebook/react).
+
+This product includes software (react-is@18.3.1) developed at
+(https://github.com/facebook/react).
+
+This product includes software (react-native-get-random-values@1.11.0) developed at
+(https://github.com/LinusU/react-native-get-random-values).
+
+This product includes software (react-native@0.79.2) developed at
+(https://github.com/facebook/react-native).
+
+This product includes software (react-refresh@0.14.2) developed at
+(https://github.com/facebook/react).
+
+This product includes software (react@19.1.0) developed at
+(https://github.com/facebook/react).
 
 The Initial Developer of read-binary-file-arch@1.0.6,
 is Samuel Maddock (https://github.com/samuelmaddock/read-binary-file-arch).
@@ -2569,6 +3023,10 @@ This product includes software (redis@4.7.0) developed at
 The Initial Developer of reflect-metadata@0.2.2,
 is Ron Buckton (https://github.com/rbuckton/reflect-metadata).
 Copyright Ron Buckton. All Rights Reserved.
+
+The Initial Developer of regenerator-runtime@0.13.11,
+is Ben Newman (https://github.com/facebook/regenerator/tree/main/packages/runtime).
+Copyright Ben Newman. All Rights Reserved.
 
 The Initial Developer of require-directory@2.1.1,
 is Troy Goode (https://github.com/troygoode/node-require-directory).
@@ -2658,6 +3116,9 @@ The Initial Developer of sax@1.4.1,
 is Isaac Z. Schlueter (https://github.com/isaacs/sax-js).
 Copyright Isaac Z. Schlueter. All Rights Reserved.
 
+This product includes software (scheduler@0.25.0) developed at
+(https://github.com/facebook/react).
+
 This product includes software (secure-json-parse@2.7.0) developed at
 (https://github.com/fastify/secure-json-parse).
 
@@ -2669,13 +3130,25 @@ The Initial Developer of semver@7.6.3,
 is GitHub Inc. (https://github.com/npm/node-semver).
 Copyright GitHub Inc.. All Rights Reserved.
 
+The Initial Developer of send@0.19.0,
+is TJ Holowaychuk (https://github.com/pillarjs/send).
+Copyright TJ Holowaychuk. All Rights Reserved.
+
 The Initial Developer of serialize-error@7.0.1,
 is Sindre Sorhus (https://github.com/sindresorhus/serialize-error).
 Copyright Sindre Sorhus. All Rights Reserved.
 
+The Initial Developer of serve-static@1.16.2,
+is Douglas Christopher Wilson (https://github.com/expressjs/serve-static).
+Copyright Douglas Christopher Wilson. All Rights Reserved.
+
 The Initial Developer of set-blocking@2.0.0,
 is Ben Coe (https://github.com/yargs/set-blocking).
 Copyright Ben Coe. All Rights Reserved.
+
+The Initial Developer of setprototypeof@1.2.0,
+is Wes Todd (https://github.com/wesleytodd/setprototypeof).
+Copyright Wes Todd. All Rights Reserved.
 
 The Initial Developer of shebang-command@2.0.0,
 is Kevin Mårtensson (https://github.com/kevva/shebang-command).
@@ -2684,6 +3157,10 @@ Copyright Kevin Mårtensson. All Rights Reserved.
 The Initial Developer of shebang-regex@3.0.0,
 is Sindre Sorhus (https://github.com/sindresorhus/shebang-regex).
 Copyright Sindre Sorhus. All Rights Reserved.
+
+The Initial Developer of shell-quote@1.8.2,
+is James Halliday (https://github.com/ljharb/shell-quote).
+Copyright James Halliday. All Rights Reserved.
 
 The Initial Developer of siginfo@2.0.0,
 is Emil Bay (https://github.com/emilbayes/siginfo).
@@ -2709,6 +3186,10 @@ The Initial Developer of sirv@3.0.0,
 is Luke Edwards (https://github.com/lukeed/sirv).
 Copyright Luke Edwards. All Rights Reserved.
 
+The Initial Developer of slash@3.0.0,
+is Sindre Sorhus (https://github.com/sindresorhus/slash).
+Copyright Sindre Sorhus. All Rights Reserved.
+
 This product includes software (slice-ansi@3.0.0) developed at
 (https://github.com/chalk/slice-ansi).
 
@@ -2733,7 +3214,7 @@ The Initial Developer of socks@2.8.3,
 is Josh Glazebrook (https://github.com/JoshGlazebrook/socks).
 Copyright Josh Glazebrook. All Rights Reserved.
 
-The Initial Developer of sonic-boom@3.8.1,
+The Initial Developer of sonic-boom@4.2.0,
 is Matteo Collina (https://github.com/pinojs/sonic-boom).
 Copyright Matteo Collina. All Rights Reserved.
 
@@ -2772,13 +3253,27 @@ The Initial Developer of ssri@9.0.1,
 is GitHub Inc. (https://github.com/npm/ssri).
 Copyright GitHub Inc.. All Rights Reserved.
 
+The Initial Developer of stack-utils@2.0.6,
+is James Talmage (https://github.com/tapjs/stack-utils).
+Copyright James Talmage. All Rights Reserved.
+
 The Initial Developer of stackback@0.0.2,
 is Roman Shtylman (https://github.com/shtylman/node-stackback).
 Copyright Roman Shtylman. All Rights Reserved.
 
+This product includes software (stackframe@1.3.4) developed at
+(https://github.com/stacktracejs/stackframe).
+
+The Initial Developer of stacktrace-parser@0.1.11,
+is Georg Tavonius (https://github.com/errwischt/stacktrace-parser).
+Copyright Georg Tavonius. All Rights Reserved.
+
 The Initial Developer of stat-mode@1.0.0,
 is Nathan Rajlich (https://github.com/TooTallNate/stat-mode).
 Copyright Nathan Rajlich. All Rights Reserved.
+
+This product includes software (statuses@1.5.0) developed at
+(https://github.com/jshttp/statuses).
 
 This product includes software (std-env@3.8.0) developed at
 (https://github.com/unjs/std-env).
@@ -2787,7 +3282,7 @@ The Initial Developer of string-width@4.2.3,
 is Sindre Sorhus (https://github.com/sindresorhus/string-width).
 Copyright Sindre Sorhus. All Rights Reserved.
 
-This product includes software (string_decoder@1.3.0) developed at
+This product includes software (string_decoder@1.1.1) developed at
 (https://github.com/nodejs/string_decoder).
 
 The Initial Developer of strip-ansi@6.0.1,
@@ -2858,6 +3353,10 @@ The Initial Developer of thread-stream@3.1.0,
 is Matteo Collina (https://github.com/mcollina/thread-stream).
 Copyright Matteo Collina. All Rights Reserved.
 
+The Initial Developer of throat@5.0.0,
+is ForbesLindesay (https://github.com/ForbesLindesay/throat).
+Copyright ForbesLindesay. All Rights Reserved.
+
 The Initial Developer of tiny-typed-emitter@2.1.0,
 is Zurab Benashvili (https://github.com/binier/tiny-typed-emitter).
 Copyright Zurab Benashvili. All Rights Reserved.
@@ -2886,9 +3385,17 @@ The Initial Developer of tmp@0.2.3,
 is KARASZI István (https://github.com/raszi/node-tmp).
 Copyright KARASZI István. All Rights Reserved.
 
+The Initial Developer of tmpl@1.0.5,
+is Naitik Shah (https://github.com/daaku/nodejs-tmpl).
+Copyright Naitik Shah. All Rights Reserved.
+
 The Initial Developer of to-regex-range@5.0.1,
 is Jon Schlinkert (https://github.com/micromatch/to-regex-range).
 Copyright Jon Schlinkert. All Rights Reserved.
+
+The Initial Developer of toidentifier@1.0.1,
+is Douglas Christopher Wilson (https://github.com/component/toidentifier).
+Copyright Douglas Christopher Wilson. All Rights Reserved.
 
 The Initial Developer of totalist@3.0.1,
 is Luke Edwards (https://github.com/lukeed/totalist).
@@ -2942,6 +3449,10 @@ The Initial Developer of type-check@0.4.0,
 is George Zahariev (https://github.com/gkz/type-check).
 Copyright George Zahariev. All Rights Reserved.
 
+The Initial Developer of type-detect@4.0.8,
+is Jake Luer (https://github.com/chaijs/type-detect).
+Copyright Jake Luer. All Rights Reserved.
+
 The Initial Developer of type-fest@0.20.2,
 is Sindre Sorhus (https://github.com/sindresorhus/type-fest).
 Copyright Sindre Sorhus. All Rights Reserved.
@@ -2976,6 +3487,10 @@ The Initial Developer of universalify@2.0.1,
 is Ryan Zimmerman (https://github.com/RyanZim/universalify).
 Copyright Ryan Zimmerman. All Rights Reserved.
 
+The Initial Developer of unpipe@1.0.0,
+is Douglas Christopher Wilson (https://github.com/stream-utils/unpipe).
+Copyright Douglas Christopher Wilson. All Rights Reserved.
+
 The Initial Developer of unzipper@0.12.3,
 is Evan Oxfeld (https://github.com/ZJONSSON/node-unzipper).
 Copyright Evan Oxfeld. All Rights Reserved.
@@ -2999,6 +3514,10 @@ Copyright Mathias Bynens. All Rights Reserved.
 The Initial Developer of util-deprecate@1.0.2,
 is Nathan Rajlich (https://github.com/TooTallNate/util-deprecate).
 Copyright Nathan Rajlich. All Rights Reserved.
+
+The Initial Developer of utils-merge@1.0.1,
+is Jared Hanson (https://github.com/jaredhanson/utils-merge).
+Copyright Jared Hanson. All Rights Reserved.
 
 This product includes software (uuid@10.0.0) developed at
 (https://github.com/uuidjs/uuid).
@@ -3046,6 +3565,10 @@ The Initial Developer of vitest@3.0.5,
 is Anthony Fu (https://github.com/vitest-dev/vitest).
 Copyright Anthony Fu. All Rights Reserved.
 
+The Initial Developer of vlq@1.0.1,
+is Rich Harris (https://github.com/Rich-Harris/vlq).
+Copyright Rich Harris. All Rights Reserved.
+
 The Initial Developer of vscode-uri@3.0.8,
 is Microsoft (https://github.com/microsoft/vscode-uri).
 Copyright Microsoft. All Rights Reserved.
@@ -3073,6 +3596,10 @@ The Initial Developer of vue@3.5.13,
 is Evan You (https://github.com/vuejs/core).
 Copyright Evan You. All Rights Reserved.
 
+The Initial Developer of walker@1.0.8,
+is Naitik Shah (https://github.com/daaku/nodejs-walker).
+Copyright Naitik Shah. All Rights Reserved.
+
 The Initial Developer of wcwidth@1.0.1,
 is Tim Oxley (https://github.com/timoxley/wcwidth).
 Copyright Tim Oxley. All Rights Reserved.
@@ -3080,6 +3607,9 @@ Copyright Tim Oxley. All Rights Reserved.
 The Initial Developer of webidl-conversions@3.0.1,
 is Domenic Denicola (https://github.com/jsdom/webidl-conversions).
 Copyright Domenic Denicola. All Rights Reserved.
+
+This product includes software (whatwg-fetch@3.6.20) developed at
+(https://github.com/github/fetch).
 
 The Initial Developer of whatwg-url@5.0.0,
 is Sebastian Mayr (https://github.com/jsdom/whatwg-url).
@@ -3112,6 +3642,10 @@ Copyright Sindre Sorhus. All Rights Reserved.
 The Initial Developer of wrappy@1.0.2,
 is Isaac Z. Schlueter (https://github.com/npm/wrappy).
 Copyright Isaac Z. Schlueter. All Rights Reserved.
+
+The Initial Developer of write-file-atomic@4.0.2,
+is GitHub Inc. (https://github.com/npm/write-file-atomic).
+Copyright GitHub Inc.. All Rights Reserved.
 
 The Initial Developer of ws@8.17.1,
 is Einar Otto Stangvik (https://github.com/websockets/ws).

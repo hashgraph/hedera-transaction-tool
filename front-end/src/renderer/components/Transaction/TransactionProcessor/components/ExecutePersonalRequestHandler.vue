@@ -14,11 +14,12 @@ import useDraft from '@renderer/composables/useDraft';
 
 import { execute, storeTransaction } from '@renderer/services/transactionService';
 
-import { assertUserLoggedIn, getStatusFromCode, getTransactionType } from '@renderer/utils';
+import { assertUserLoggedIn, getStatusFromCode } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
+import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 /* Emits */
 const emit = defineEmits<{

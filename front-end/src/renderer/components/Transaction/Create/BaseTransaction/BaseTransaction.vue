@@ -20,7 +20,6 @@ import useLoader from '@renderer/composables/useLoader';
 
 import {
   getErrorMessage,
-  getTransactionType,
   isAccountId,
   redirectToDetails,
   redirectToGroupDetails,
@@ -40,6 +39,7 @@ import TransactionProcessor, {
 import BaseDraftLoad from '@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.vue';
 import BaseGroupHandler from '@renderer/components/Transaction/Create/BaseTransaction/BaseGroupHandler.vue';
 import BaseApproversObserverData from '@renderer/components/Transaction/Create/BaseTransaction/BaseApproversObserverData.vue';
+import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 /* Props */
 const { createTransaction, preCreateAssert, transactionBaseKey, customRequest } = defineProps<{

@@ -35,6 +35,7 @@ const data = reactive<NodeUpdateData>({
   gossipCaCertificate: Uint8Array.from([]),
   certificateHash: Uint8Array.from([]),
   adminKey: null,
+  declineReward: false,
 });
 
 /* Computed */
@@ -105,6 +106,7 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.gossipCaCertificate = Uint8Array.from([]);
     data.certificateHash = Uint8Array.from([]);
     data.adminKey = null;
+    data.declineReward = false;
   } else if (!route.query.draftId) {
     data.nodeAccountId = nodeInfo.node_account_id?.toString() || '';
     newNodeAccountData.accountId.value = data.nodeAccountId;
@@ -114,6 +116,7 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.gossipCaCertificate = Uint8Array.from([]);
     data.certificateHash = Uint8Array.from([]);
     data.adminKey = nodeInfo.admin_key;
+    data.declineReward = nodeInfo.decline_reward;
   }
 });
 </script>

@@ -323,6 +323,7 @@ export const getNodeInfo = async (
         stake_rewarded: parseHbar(node.stake_rewarded, HbarUnit.Tinybar),
         staking_period: node.staking_period || null,
         reward_rate_start: parseHbar(node.reward_rate_start, HbarUnit.Tinybar),
+        decline_reward: node.decline_reward,
       };
       return nodeInfo;
     }

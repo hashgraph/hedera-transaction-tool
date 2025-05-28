@@ -393,8 +393,8 @@ test.describe('Workflow tests', () => {
         const getAccountDetailsStaking = await detailsPage.getAccountDetailsStaking();
         expect(getAccountDetailsStaking).toBe('None');
 
-        const getAccountDetailsDeclineRewards = await detailsPage.getAccountDetailsDeclineRewards();
-        expect(getAccountDetailsDeclineRewards).toBe('No');
+        const getAccountDetailsAcceptRewards = await detailsPage.getAccountDetailsAcceptRewards();
+        expect(getAccountDetailsAcceptRewards).toBe('Yes');
 
         const getAccountDetailsReceiverSigRequired =
           await detailsPage.getAccountDetailsReceiverSigRequired();
