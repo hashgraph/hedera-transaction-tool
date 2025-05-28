@@ -23,7 +23,6 @@ import {
 import {
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
-  getTransactionType,
   isLoggedInOrganization,
   safeAwait,
   uint8ToHex,
@@ -33,6 +32,7 @@ import {
   createFileAppendTransaction,
   getPrivateKey,
 } from '@renderer/utils/sdk';
+import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 /* Constants */
 const FIRST_CHUNK_SIZE_BYTES = 100;

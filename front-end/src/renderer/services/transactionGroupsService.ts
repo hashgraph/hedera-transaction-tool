@@ -3,9 +3,10 @@ import type { GroupItem } from '@prisma/client';
 
 import { Prisma } from '@prisma/client';
 
-import { getMessageFromIPCError, getTransactionType } from '@renderer/utils';
+import { getMessageFromIPCError } from '@renderer/utils';
 
 import { deleteDraft } from './transactionDraftsService';
+import { getTransactionType } from '../utils/sdk/transactions';
 
 /* Transaction Groups Service */
 

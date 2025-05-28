@@ -32,6 +32,7 @@ const data = reactive<NodeData>({
   gossipCaCertificate: Uint8Array.from([]),
   certificateHash: Uint8Array.from([]),
   adminKey: null,
+  declineReward: false,
 });
 
 /* Computed */
