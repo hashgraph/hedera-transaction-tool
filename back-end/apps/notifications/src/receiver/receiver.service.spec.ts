@@ -7,7 +7,6 @@ import {
   MirrorNodeService,
   NotifyForTransactionDto,
   NotifyGeneralDto,
-  getNetwork,
 } from '@app/common';
 import {
   Notification,
@@ -686,8 +685,6 @@ describe('ReceiverService', () => {
 
       await service.notifyTransactionRequiredSigners(dto);
 
-      const networkString = getNetwork(transaction as Transaction);
-
       expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
         where: { id: dto.transactionId },
         relations: { creatorKey: true },
@@ -887,7 +884,7 @@ describe('ReceiverService', () => {
       await actAssert(TransactionStatus.ARCHIVED);
     });
 
-    it('should delete previuos notifications and do nothing more if there is not new indicator type', async () => {
+    it('should delete previous notifications and do nothing more if there is not new indicator type', async () => {
       const transactionId = 1;
       const transactionStatus = TransactionStatus.CANCELED;
       const additionalData = { network: 'testnet' };
@@ -1035,6 +1032,97 @@ describe('ReceiverService', () => {
 
       expect(entityManager.delete).not.toHaveBeenCalled();
       expect(fanOutService.fanOutIndicatorsDelete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getIndicatorReceiverIds', () => {
+    beforeAll(() => {
+      jest.restoreAllMocks();
+    });
+
+    beforeEach(() => {
+      jest.resetAllMocks();
+      mockTransaction();
+    });
+
+    test.each([
+      NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
+      NotificationType.TRANSACTION_INDICATOR_EXECUTED,
+      NotificationType.TRANSACTION_INDICATOR_FAILED,
+      NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+    ])('should return creator, approvers, observers and required users for %s', async (indicatorType) => {
+      const transactionId = 1;
+      const data = {
+        creatorId: 10,
+        approversUserIds: [20, 21],
+        observerUserIds: [30],
+        requiredUserIds: [40],
+        approversShouldChooseUserIds: [50],
+      };
+      //@ts-expect-error getTransactionParticipants is private
+      jest.spyOn(service, 'getTransactionParticipants').mockResolvedValueOnce(data);
+      const result = await service['getIndicatorReceiverIds'](transactionId, indicatorType);
+      expect(new Set(result)).toEqual(new Set([10, 20, 21, 30, 40]));
+    });
+
+    test('should return approversShouldChooseUserIds for TRANSACTION_INDICATOR_APPROVE', async () => {
+      const transactionId = 1;
+      const data = {
+        creatorId: 10,
+        approversUserIds: [20, 21],
+        observerUserIds: [30],
+        requiredUserIds: [40],
+        approversShouldChooseUserIds: [50, 51],
+      };
+      //@ts-expect-error getTransactionParticipants is private
+      jest.spyOn(service, 'getTransactionParticipants').mockResolvedValueOnce(data);
+      const result = await service['getIndicatorReceiverIds'](transactionId, NotificationType.TRANSACTION_INDICATOR_APPROVE);
+      expect(new Set(result)).toEqual(new Set([50, 51]));
+    });
+
+    test('should return creator, approvers and observers for TRANSACTION_INDICATOR_REJECTED', async () => {
+      const transactionId = 1;
+      const data = {
+        creatorId: 10,
+        approversUserIds: [20, 21],
+        observerUserIds: [30, 31],
+        requiredUserIds: [40],
+        approversShouldChooseUserIds: [50],
+      };
+      //@ts-expect-error getTransactionParticipants is private
+      jest.spyOn(service, 'getTransactionParticipants').mockResolvedValueOnce(data);
+      const result = await service['getIndicatorReceiverIds'](transactionId, NotificationType.TRANSACTION_INDICATOR_REJECTED);
+      expect(new Set(result)).toEqual(new Set([10, 20, 21, 30, 31]));
+    });
+
+    test('should return approvers, observers and required users for TRANSACTION_INDICATOR_CANCELLED', async () => {
+      const transactionId = 1;
+      const data = {
+        creatorId: 10,
+        approversUserIds: [20, 21],
+        observerUserIds: [30],
+        requiredUserIds: [40, 41],
+        approversShouldChooseUserIds: [50],
+      };
+      //@ts-expect-error getTransactionParticipants is private
+      jest.spyOn(service, 'getTransactionParticipants').mockResolvedValueOnce(data);
+      const result = await service['getIndicatorReceiverIds'](transactionId, NotificationType.TRANSACTION_INDICATOR_CANCELLED);
+      expect(new Set(result)).toEqual(new Set([20, 21, 30, 40, 41]));
+    });
+
+    test('should return only required users for TRANSACTION_INDICATOR_SIGN', async () => {
+      const transactionId = 1;
+      const data = {
+        creatorId: 10,
+        approversUserIds: [20, 21],
+        observerUserIds: [30],
+        requiredUserIds: [40, 41, 42],
+        approversShouldChooseUserIds: [50],
+      };
+      //@ts-expect-error getTransactionParticipants is private
+      jest.spyOn(service, 'getTransactionParticipants').mockResolvedValueOnce(data);
+      const result = await service['getIndicatorReceiverIds'](transactionId, NotificationType.TRANSACTION_INDICATOR_SIGN);
+      expect(new Set(result)).toEqual(new Set([40, 41, 42]));
     });
   });
 });
