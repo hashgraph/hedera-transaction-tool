@@ -424,17 +424,14 @@ export async function addNotifications() {
   const notificationReceiverRepo = await getRepository(NotificationReceiver);
 
   const notification = notificationsRepo.create({
-    content: 'A transaction #1 has been created',
     entityId: 1,
     type: NotificationType.TRANSACTION_CREATED,
   });
   const notification2 = notificationsRepo.create({
-    content: 'A transaction #2 has been created',
     entityId: 2,
     type: NotificationType.TRANSACTION_CREATED,
   });
   const notification3 = notificationsRepo.create({
-    content: 'A transaction #2 is ready for execution',
     entityId: 2,
     type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
   });

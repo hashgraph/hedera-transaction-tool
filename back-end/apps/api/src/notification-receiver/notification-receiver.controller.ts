@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   Param,
+  ParseArrayPipe,
   ParseIntPipe,
   Patch,
   Post,
@@ -128,7 +129,7 @@ export class NotificationsController {
   @Serialize(NotificationReceiverDto)
   async updateReceivedNotifications(
     @GetUser() user: User,
-    @Body() body: UpdateNotificationReceiverDto[],
+    @Body(new ParseArrayPipe({ items: UpdateNotificationReceiverDto })) body: UpdateNotificationReceiverDto[],
   ): Promise<NotificationReceiver[]> {
     return this.notificationsService.updateReceivedNotifications(user, body);
   }

@@ -169,7 +169,7 @@ describe('Notification Receiver (e2e)', () => {
       expect(body.isRead).toEqual(notificationForUser[0].isRead);
       expect(body.notification).toEqual(
         expect.objectContaining({
-          content: notificationForUser[0].notification.content,
+          additionalData: notificationForUser[0].notification.additionalData,
           type: notificationForUser[0].notification.type,
         }),
       );
