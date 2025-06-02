@@ -21,6 +21,7 @@ export class FanOutService {
     NotificationType.TRANSACTION_INDICATOR_SIGN,
     NotificationType.TRANSACTION_INDICATOR_EXECUTED,
     NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+    NotificationType.TRANSACTION_INDICATOR_CANCELLED,
     NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
     NotificationType.TRANSACTION_EXPIRED,
     NotificationType.USER_REGISTERED,

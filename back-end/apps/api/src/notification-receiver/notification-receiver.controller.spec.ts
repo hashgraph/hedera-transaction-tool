@@ -23,7 +23,6 @@ describe('NotificationsController', () => {
     notification: {
       actor: {},
       type: NotificationType.TRANSACTION_CREATED,
-      content: 'this-is-content',
     },
   } as NotificationReceiver;
 

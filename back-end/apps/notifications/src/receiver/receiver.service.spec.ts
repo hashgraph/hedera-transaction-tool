@@ -169,16 +169,14 @@ describe('ReceiverService', () => {
   describe('createNotification', () => {
     it('should create a notification', async () => {
       const type = NotificationType.TRANSACTION_CREATED;
-      const content = 'some-content';
       const entityId = 1;
       const actorId = 1;
 
       //@ts-expect-error createNotification is private
-      await service.createNotification(entityManager, type, content, entityId, actorId);
+      await service.createNotification(entityManager, type, entityId, actorId);
 
       expect(entityManager.create).toHaveBeenCalledWith(Notification, {
         type,
-        content,
         entityId,
         actorId,
         notificationReceivers: [],
@@ -698,7 +696,6 @@ describe('ReceiverService', () => {
       expect(notifyGeneral).toHaveBeenCalledWith({
         userIds: usersIdsRequiredToSign.filter(id => id !== creatorId),
         type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
-        content: `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction.\nTransaction ID: ${transaction.transactionId}\nNetwork: ${networkString}`,
         entityId: 1,
         actorId: null,
         additionalData: { network: transaction.mirrorNetwork },

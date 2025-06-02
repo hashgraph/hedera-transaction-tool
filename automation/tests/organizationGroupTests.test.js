@@ -138,26 +138,27 @@ test.describe('Organization Group Tx tests', () => {
     expect(secondResult).toBe('SUCCESS');
   });
 
-  test('Verify user can import csv transactions', async () => {
-    test.slow();
-    const numberOfTransactions = 5;
-    await groupPage.fillDescription('test');
-    await groupPage.generateAndImportCsvFile(complexKeyAccountId, numberOfTransactions);
-    await groupPage.clickOnSignAndExecuteButton();
-    await groupPage.clickOnConfirmGroupTransactionButton();
-    const timestamps = await groupPage.getAllTransactionTimestamps(numberOfTransactions);
-    await groupPage.clickOnSignAllButton();
-    await loginPage.waitForToastToDisappear();
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
-    await groupPage.logInAndSignGroupTransactionsByAllUsers(globalCredentials.password);
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
-    const isAllTransactionsSuccessful =
-      await groupPage.verifyAllTransactionsAreSuccessful(timestamps);
-    expect(isAllTransactionsSuccessful).toBe(true);
+  [5, 100].forEach((numberOfTransactions) => {
+    test(`Verify user can import csv transactions with ${numberOfTransactions} transactions`, async () => {
+      test.slow();
+      await groupPage.fillDescription('test');
+      await groupPage.generateAndImportCsvFile(complexKeyAccountId, numberOfTransactions);
+      await groupPage.clickOnSignAndExecuteButton();
+      await groupPage.clickOnConfirmGroupTransactionButton();
+      const timestamps = await groupPage.getAllTransactionTimestamps(numberOfTransactions);
+      await groupPage.clickOnSignAllButton();
+      await loginPage.waitForToastToDisappear();
+      await transactionPage.clickOnTransactionsMenuButton();
+      await organizationPage.logoutFromOrganization();
+      await groupPage.logInAndSignGroupTransactionsByAllUsers(globalCredentials.password);
+      await organizationPage.signInOrganization(
+        firstUser.email,
+        firstUser.password,
+        globalCredentials.password,
+      );
+      const isAllTransactionsSuccessful =
+        await groupPage.verifyAllTransactionsAreSuccessful(timestamps);
+      expect(isAllTransactionsSuccessful).toBe(true);
+    });
   });
 });

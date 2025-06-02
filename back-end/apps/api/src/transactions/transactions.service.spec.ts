@@ -445,6 +445,7 @@ describe('TransactionsService', () => {
       expect(transactionsRepo.save).toHaveBeenCalled();
       expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, 1, {
         network: dto.mirrorNetwork,
+        transactionId: expect.any(String),
       });
       expect(schedulerService.addReminder).toHaveBeenCalledWith(
         `transaction:sign:1`,
@@ -496,6 +497,7 @@ describe('TransactionsService', () => {
       );
       expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, 1, {
         network: dto.mirrorNetwork,
+        transactionId: expect.any(String),
       });
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
 
@@ -700,13 +702,15 @@ describe('TransactionsService', () => {
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
 
-    it('should emit notification to the notifiaction service', async () => {
+    it('should emit notification to the notification service', async () => {
       const transaction = {
         id: 123,
         creatorKey: { userId: 1 },
         observers: [{ userId: 2 }],
         signers: [{ userId: 3 }],
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        mirrorNetwork: 'testnet',
+        transactionId: '0.0.123@123134145.139840'
       };
 
       jest
@@ -719,8 +723,12 @@ describe('TransactionsService', () => {
         notificationsService,
         NotificationType.TRANSACTION_CANCELLED,
         expect.arrayContaining([2, 3]),
-        expect.any(String),
         123,
+        false,
+        {
+          network: transaction.mirrorNetwork,
+          transactionId: transaction.transactionId,
+        },
       );
     });
   });

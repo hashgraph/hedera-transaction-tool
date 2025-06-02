@@ -42,7 +42,6 @@ describe('In App Processor Service', () => {
       const notification: Notification = {
         id: 1,
         type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
-        content: `A new transaction requires your review and signature.`,
         entityId: 2,
         actorId: null,
         createdAt: now,
@@ -102,7 +101,6 @@ describe('In App Processor Service', () => {
         notification: {
           id: 1,
           type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
-          content: `A new transaction requires your review and signature.`,
           entityId: 2,
           actorId: null,
           createdAt: now,
@@ -115,7 +113,6 @@ describe('In App Processor Service', () => {
         notification: {
           id: 1,
           type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
-          content: `A new transaction requires your review and signature.`,
           entityId: 2,
           actorId: null,
           createdAt: now,
@@ -129,7 +126,6 @@ describe('In App Processor Service', () => {
       const notification: Notification = {
         id: 1,
         type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
-        content: `A new transaction requires your review and signature.`,
         entityId: 2,
         actorId: null,
         createdAt: new Date(),

@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Server } from 'socket.io';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { mockDeep } from 'jest-mock-extended';
 
 import { AUTH_SERVICE, NotifyClientDto, BlacklistService } from '@app/common';
@@ -11,7 +12,6 @@ import { WebsocketGateway } from './websocket.gateway';
 
 import { AuthWebsocket, AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
 import { roomKeys } from './helpers';
-import { NotificationMessage } from './helpers';
 
 jest.mock('./middlewares/auth-websocket.middleware');
 
@@ -19,6 +19,7 @@ describe('WebsocketGateway', () => {
   let gateway: WebsocketGateway;
   const authService = mockDeep<ClientProxy>();
   const blacklistService = mockDeep<BlacklistService>();
+  const configService = mockDeep<ConfigService>();
   const authWebsocket: Partial<AuthWebsocket> = {
     user: {
       id: 1,
@@ -37,6 +38,10 @@ describe('WebsocketGateway', () => {
         {
           provide: BlacklistService,
           useValue: blacklistService,
+        },
+        {
+          provide: ConfigService,
+          useValue: configService,
         },
       ],
     }).compile();
@@ -151,9 +156,9 @@ describe('WebsocketGateway', () => {
     it('should emit messages to a specific user room when groupKey is provided', async () => {
       const groupKey = 1;
       const messages = [
-        new NotificationMessage('message1', ['content1']),
-        new NotificationMessage('message1', ['content2']),
-        new NotificationMessage('message2', ['content3']),
+        { message: 'message1', content: ['content1'] },
+        { message: 'message1', content: ['content2'] },
+        { message: 'message2', content: ['content3'] },
       ];
 
       //@ts-expect-error - accessing private method for testing
@@ -170,9 +175,9 @@ describe('WebsocketGateway', () => {
     it('should emit messages globally when groupKey is null', async () => {
       const groupKey = null;
       const messages = [
-        new NotificationMessage('message1', ['content1']),
-        new NotificationMessage('message1', ['content2']),
-        new NotificationMessage('message2', ['content3']),
+        { message: 'message1', content: ['content1'] },
+        { message: 'message1', content: ['content2'] },
+        { message: 'message2', content: ['content3'] },
       ];
 
       //@ts-expect-error - accessing private method for testing
