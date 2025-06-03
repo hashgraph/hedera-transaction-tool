@@ -33,6 +33,10 @@ test.describe('Organization Group Tx tests', () => {
     registrationPage = new RegistrationPage(window);
     groupPage = new GroupPage(window);
 
+    // window.on('console', (message) => {
+    //   console.log('Console Log:', message.text());
+    // });
+
     organizationPage.complexFileId = [];
 
     // Generate credentials and store them globally
@@ -138,6 +142,8 @@ test.describe('Organization Group Tx tests', () => {
     expect(secondResult).toBe('SUCCESS');
   });
 
+  //i think this is due again to the delay, it is looking for the sign button to change
+  // if I change this to make the accounts have lots of users and lots of keys, and require all to sign, then see how that goes?
   [5, 100].forEach((numberOfTransactions) => {
     test(`Verify user can import csv transactions with ${numberOfTransactions} transactions`, async () => {
       test.slow();
@@ -150,7 +156,7 @@ test.describe('Organization Group Tx tests', () => {
       await loginPage.waitForToastToDisappear();
       await transactionPage.clickOnTransactionsMenuButton();
       await organizationPage.logoutFromOrganization();
-      await groupPage.logInAndSignGroupTransactionsByAllUsers(globalCredentials.password);
+      await groupPage.logInAndSignGroupTransactionsByAllUsers(globalCredentials.password, numberOfTransactions > 10);
       await organizationPage.signInOrganization(
         firstUser.email,
         firstUser.password,
