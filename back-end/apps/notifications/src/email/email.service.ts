@@ -66,9 +66,6 @@ export class EmailService {
       return map;
     }, new Map<string, Notification[]>());
 
-    console.log(`Processing ${groupedNotifications.size} grouped notifications for ${groupKey}`);
-    console.log(`Grouped notifications: ${JSON.stringify(groupedNotifications)}`);
-
     for (const [type, notifications] of groupedNotifications.entries()) {
       const mailOptions: SendMailOptions = {
         from: `"Transaction Tool" ${this.sender}`,
