@@ -1,0 +1,117 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "transactiontool.fullname" . }}-api
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "common.labels" . | nindent 4 }}
+{{- if .Values.global.annotations }}
+  annotations:  {{- toYaml .Values.global.annotations | nindent 4 }}
+{{- end }}
+spec:
+  replicas: {{ .Values.api.replicas }}
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+    {{- if .Values.global.annotations }}
+      annotations:  {{- toYaml .Values.global.annotations | nindent 8 }}
+    {{- end }}
+      labels:
+        app: api
+        {{- include "common.labels" . | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      seccompProfile:
+        type: RuntimeDefault
+      containers:
+        - name: api
+          image: {{ .Values.api.image }}
+          resources:
+            requests:
+              memory: {{ .Values.api.resources.requests.memory | quote }}
+              cpu: {{ .Values.api.resources.requests.cpu | quote }}
+            limits:
+              memory: {{ .Values.api.resources.limits.memory | quote }}
+              cpu: {{ .Values.api.resources.limits.cpu | quote }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: HTTP_PORT
+              value: {{ .Values.api.env.HTTP_PORT | squote }}
+            - name: TCP_PORT
+              value: {{ .Values.api.env.TCP_PORT | squote }}
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ dig "cluster" "config" "secretBackend" "externalSecret" "name" .Values.rabbitmq.secretName .Values.rabbitmq }}
+                  key: username
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ dig "cluster" "config" "secretBackend" "externalSecret" "name" .Values.rabbitmq.secretName .Values.rabbitmq }}
+                  key: password
+            - name: RABBITMQ_URI
+              value: {{ if not (empty .Values.rabbitmq.endpoint) -}}
+                'amqp://$(RABBITMQ_USERNAME):$(RABBITMQ_PASSWORD)@{{ .Values.rabbitmq.endpoint }}:{{ .Values.rabbitmq.port }}'
+              {{- else -}}
+                'amqp://$(RABBITMQ_USERNAME):$(RABBITMQ_PASSWORD)@{{ template "transactiontool.fullname" . }}-rmq.{{ .Release.Namespace}}.svc:{{ .Values.rabbitmq.port }}'
+              {{- end }}
+            - name: POSTGRES_HOST
+              value: {{ include "transactiontool.sqlHost" . }}
+            - name: POSTGRES_PORT
+              value: {{ .Values.postgres.port | squote }}
+            - name: POSTGRES_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ coalesce .Values.postgres.secretName (printf "postgres-%s" .Release.Namespace) }}
+                  key: database
+            - name: POSTGRES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ coalesce .Values.postgres.secretName (printf "postgres-%s" .Release.Namespace) }}
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ coalesce .Values.postgres.secretName (printf "postgres-%s" .Release.Namespace) }}
+                  key: password
+            - name: POSTGRES_SYNCHRONIZE
+              value: {{ .Values.api.env.POSTGRES_SYNCHRONIZE | squote }}
+            - name: POSTGRES_MAX_POOL_SIZE
+              value: {{ .Values.api.env.POSTGRES_MAX_POOL_SIZE | squote }}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.jwt.secretName }}
+                  key: jwt_key
+            - name: JWT_EXPIRATION
+              value: {{ .Values.api.env.JWT_EXPIRATION | squote }}
+            - name: OTP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.otp.secretName }}
+                  key: otp_key
+            - name: OTP_EXPIRATION
+              value: {{ .Values.api.env.OTP_EXPIRATION | squote }}
+            - name: REDIS_URL
+              value: {{ include "transactiontool.redisUrl" .  }}
+            - name: ANONYMOUS_MINUTE_LIMIT
+              value: {{ .Values.api.env.ANONYMOUS_MINUTE_LIMIT | squote }}
+            - name: ANONYMOUS_FIVE_SECOND_LIMIT
+              value: {{ .Values.api.env.ANONYMOUS_FIVE_SECOND_LIMIT | squote }}
+            - name: GLOBAL_MINUTE_LIMIT
+              value: {{ .Values.api.env.GLOBAL_MINUTE_LIMIT | squote }}
+            - name: GLOBAL_SECOND_LIMIT
+              value: {{ .Values.api.env.GLOBAL_SECOND_LIMIT | squote }}
+            - name: NODE_ENV
+              value: {{ .Values.api.env.NODE_ENV | squote }}
+          ports:
+            - containerPort: 3000
