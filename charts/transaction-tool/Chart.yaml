@@ -1,7 +1,7 @@
 apiVersion: v2
 name: transaction-tool-chart
-version: v0.0.1
-appVersion: "v0.0.1"
+version: v0.14.0
+appVersion: "v0.14.0"
 icon: https://avatars.githubusercontent.com/u/31002956?s=200&v=4
 description: A Helm chart for deploying the transaction tool services including auth, api, chain, notifications, and ingress.
 maintainers:
