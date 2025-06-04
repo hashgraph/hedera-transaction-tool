@@ -129,7 +129,7 @@ brevo:
 # API service configuration
 api:
   replicas: 1
-  image: gcr.io/transaction-tool-dev/api
+  image: ghcr.io/hedera-transaction-tool/api
   resources:
     requests:
       memory: "200Mi"
@@ -164,7 +164,7 @@ auth:
 # Notifications service configuration
 notifications:
   replicas: 1
-  image: gcr.io/transaction-tool-dev/notifications
+  image: ghcr.io/hedera-transaction-tool/notifications
   resources:
     requests:
       memory: "200Mi"
@@ -188,7 +188,7 @@ notifications:
 # Chain service configuration
 chain:
   replicas: 1
-  image: gcr.io/transaction-tool-dev/chain
+  image: ghcr.io/hedera-transaction-tool/chain
   resources:
     requests:
       memory: "200Mi"
