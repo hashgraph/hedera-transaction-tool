@@ -1,0 +1,13 @@
+{{- if .Values.postgres.enabled }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ include "transactiontool.fullname" . }}-pg
+  namespace: {{ .Release.Namespace }}
+{{- if .Values.global.annotations }}
+  annotations:  {{- toYaml .Values.global.annotations | nindent 4 }}
+{{- end }}
+  labels: {{- include "common.labels" . | nindent 4 }}
+spec:
+{{- .Values.postgres.cluster.config | toYaml | nindent 2 }}
+{{- end }}

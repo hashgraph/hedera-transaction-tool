@@ -1,0 +1,9 @@
+dependencies:
+- name: traefik
+  repository: https://traefik.github.io/charts
+  version: 32.1.1
+- name: redis-ha
+  repository: https://dandydeveloper.github.io/charts
+  version: 4.29.4
+digest: sha256:95da7b550b661b964e3d0bb9a3100b1c040be2883c70f2bdc9d75c746c8cd0ec
+generated: "2025-04-28T16:13:40.127034-04:00"

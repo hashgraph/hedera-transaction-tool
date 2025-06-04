@@ -1,0 +1,23 @@
+apiVersion: v2
+name: transaction-tool-chart
+version: v0.0.1
+appVersion: "v0.0.1"
+icon: https://avatars.githubusercontent.com/u/31002956?s=200&v=4
+description: A Helm chart for deploying the transaction tool services including auth, api, chain, notifications, and ingress.
+maintainers:
+  - name: DevOps Team - SaaS
+    email: devops@hashgraph.com
+keywords:
+  - transaction
+  - tool
+sources:
+  - https://github.com/hashgraph/hedera-transaction-tool
+dependencies:
+  - name: traefik
+    version: 32.1.1
+    repository: https://traefik.github.io/charts
+    condition: traefik.enabled
+  - name: redis-ha
+    version: 4.29.4
+    repository: https://dandydeveloper.github.io/charts
+    condition: redis.enabled
