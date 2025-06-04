@@ -118,14 +118,6 @@ emailApi:
   #  secure (boolean)
   secretName: email-api-development
 
-# Brevo configuration
-brevo:
-  # @param brevo.secretName must be provided. These cannot be created.
-  # The following fields are required in the secret object:
-  #  username
-  #  password
-  secretName: brevo-development
-
 # API service configuration
 api:
   replicas: 1

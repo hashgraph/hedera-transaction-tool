@@ -21,6 +21,9 @@ spec:
         app: notifications
         {{- include "common.labels" . | nindent 8 }}
     spec:
+      automountServiceAccountToken: false
+      seccompProfile:
+        type: RuntimeDefault
       containers:
         - name: notifications
           image: gcr.io/transaction-tool-dev/notifications
@@ -83,26 +86,18 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.emailApi.secretName }}
                   key: username
+                  optional: true
             - name: EMAIL_API_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.emailApi.secretName }}
                   key: password
+                  optional: true
             - name: SENDER_EMAIL
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.emailApi.secretName }}
                   key: sender-email
-            - name: BREVO_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.brevo.secretName }}
-                  key: username
-            - name: BREVO_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.brevo.secretName }}
-                  key: password
             - name: REDIS_URL
               value: {{ include "transactiontool.redisUrl" .  }}
             - name: POSTGRES_HOST

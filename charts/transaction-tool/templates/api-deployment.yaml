@@ -21,6 +21,9 @@ spec:
         app: api
         {{- include "common.labels" . | nindent 8 }}
     spec:
+      automountServiceAccountToken: false
+      seccompProfile:
+        type: RuntimeDefault
       containers:
         - name: api
           image: {{ .Values.api.image }}

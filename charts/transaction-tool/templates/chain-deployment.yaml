@@ -21,6 +21,9 @@ spec:
         app: chain
         {{- include "common.labels" . | nindent 8 }}
     spec:
+      automountServiceAccountToken: false
+      seccompProfile:
+        type: RuntimeDefault
       containers:
         - name: chain
           image: gcr.io/transaction-tool-dev/chain
