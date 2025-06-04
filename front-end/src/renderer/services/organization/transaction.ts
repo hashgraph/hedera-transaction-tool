@@ -79,28 +79,49 @@ export const executeTransaction = async (serverUrl: string, id: number): Promise
   }, `Failed to execute transaction with id ${id}`);
 
 /* Decrypt, sign, upload signatures to the backend */
-export const uploadSignatureMap = async (
+export const uploadSignatures = async (
   userId: string,
   userPassword: string | null,
   organization: LoggedInOrganization & Organization,
-  publicKeys: string[],
-  transaction: Transaction,
-  transactionId: number,
+  publicKeys?: string[],
+  transaction?: Transaction,
+  transactionId?: number,
+  items?: SignatureItem[],
 ) => {
-  for (const publicKey of publicKeys) {
-    const privateKeyRaw = await decryptPrivateKey(userId, userPassword, publicKey);
-    const privateKey = getPrivateKey(publicKey, privateKeyRaw);
-    await transaction.sign(privateKey);
+  const formattedMaps = [];
+
+  if (!items) {
+    if (!publicKeys || !transaction || !transactionId) {
+      throw new Error('Invalid parameters');
+    }
+
+    items = [
+      {
+        publicKeys,
+        transaction,
+        transactionId,
+      },
+    ];
   }
 
-  const signatureMap = getSignatureMapForPublicKeys(publicKeys, transaction);
+  for (const { publicKeys, transaction, transactionId } of items) {
+    for (const publicKey of publicKeys) {
+      const privateKeyRaw = await decryptPrivateKey(userId, userPassword, publicKey);
+      const privateKey = getPrivateKey(publicKey, privateKeyRaw);
+      await transaction.sign(privateKey);
+    }
+
+    const signatureMap = getSignatureMapForPublicKeys(publicKeys, transaction);
+    formattedMaps.push({
+      transactionId: transactionId,
+      signatureMap: formatSignatureMap(signatureMap),
+    });
+  }
 
   await commonRequestHandler(async () => {
     await axiosWithCredentials.post(
-      `${organization.serverUrl}/${controller}/${transactionId}/signers`,
-      {
-        signatureMap: formatSignatureMap(signatureMap),
-      },
+      `${organization.serverUrl}/${controller}/signers`,
+      formattedMaps,
     );
   }, 'Failed upload signatures');
 };
@@ -167,11 +188,18 @@ export const getUserShouldApprove = async (
   transactionId: number,
 ): Promise<boolean> =>
   commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.get(
-      `${serverUrl}/${controller}/approve/${transactionId}`,
-    );
+    //TODO Approve is not implemented yet, and doing it this way is not correct
+    // as it will request the backend for every transaction, in the case of TransactionGroupDetails.vue
+    // where the group is large, this is a problem. The approval status should be pulled initially for all
+    // transactions.
 
-    return data;
+    // const { data } = await axiosWithCredentials.get(
+    //   `${serverUrl}/${controller}/approve/${transactionId}`,
+    // );
+    //
+    // return data;
+
+    return false;
   }, 'Failed to get if user should approve the transaction');
 
 /* Get the count of the transactions to sign */

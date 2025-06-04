@@ -4,7 +4,7 @@ import { BadRequestException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClientProxy } from '@nestjs/microservices';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import {
   Filtering,
@@ -173,25 +173,23 @@ describe('NotificationReceiverService', () => {
     });
   });
 
-  describe('updateReceivedNotification', () => {
+  describe('updateReceivedNotifications', () => {
     it('should update the notification receiver', async () => {
-      const dto: UpdateNotificationReceiverDto = { isRead: true };
-      repo.findOne.mockResolvedValue(notificationReceiver);
+      const dto: UpdateNotificationReceiverDto = { id: 1, isRead: true };
+      repo.findBy
+        .mockResolvedValueOnce([notificationReceiver])
+        .mockResolvedValueOnce([{ ...notificationReceiver, isRead: true }]);
 
-      const result = await service.updateReceivedNotification(user, 1, dto);
+      const result = await service.updateReceivedNotifications(user, [dto]);
 
-      expect(repo.findOne).toHaveBeenCalledWith({
-        where: { id: 1, userId: user.id },
-        relations: { notification: true },
-      });
-      expect(repo.update).toHaveBeenCalledWith({ id: 1 }, { isRead: true });
-      expect(result.isRead).toBe(true);
+      expect(repo.update).toHaveBeenCalledWith({ id: In([1]) }, { isRead: true });
+      expect(result[0].isRead).toBe(true);
     });
 
     it('should throw BadRequestException if notification receiver not found', async () => {
-      repo.findOne.mockResolvedValue(null);
+      repo.findBy.mockResolvedValue([]);
 
-      await expect(service.updateReceivedNotification(user, 1, { isRead: true })).rejects.toThrow(
+      await expect(service.updateReceivedNotifications(user, [{ id: 1, isRead: true }])).rejects.toThrow(
         BadRequestException,
       );
     });

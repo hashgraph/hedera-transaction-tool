@@ -20,6 +20,10 @@ spec:
       containers:
         - name: redis
           image: redis:latest
+          command:
+            - redis-server
+            - --notify-keyspace-events
+            - Ex
           ports:
             - containerPort: 6379
 ---

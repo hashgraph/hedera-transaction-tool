@@ -318,8 +318,6 @@ describe('TransactionStatusService', () => {
 
       await service.updateTransactions(new Date(), new Date());
 
-      const networkString = getNetwork(transactions[0] as Transaction);
-
       expect(transactionRepo.update).toHaveBeenNthCalledWith(
         1,
         {
@@ -349,20 +347,37 @@ describe('TransactionStatusService', () => {
         entityId: transactions[0].id,
         type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
         actorId: null,
-        content: `Transaction is ready for execution!\nTransaction ID: ${transactions[0].transactionId}\nNetwork: ${networkString}`,
         userIds: [transactions[0].creatorKey?.userId],
-        additionalData: { network: transactions[0].mirrorNetwork },
+        additionalData: {
+          network: transactions[0].mirrorNetwork,
+          transactionId: "0.0.1",
+        },
       });
-      expect(notifySyncIndicators).toHaveBeenCalledWith(
+      expect(notifySyncIndicators).toHaveBeenNthCalledWith(
+        1,
+        notificationsService,
+        transactions[0].id,
+        TransactionStatus.WAITING_FOR_EXECUTION,
+        {
+          network: transactions[0].mirrorNetwork,
+        }
+      );
+      expect(notifySyncIndicators).toHaveBeenNthCalledWith(
+        2,
         notificationsService,
         transactions[1].id,
         TransactionStatus.WAITING_FOR_SIGNATURES,
-        { network: transactions[1].mirrorNetwork },
+        {
+          network: transactions[1].mirrorNetwork,
+        }
       );
       expect(notifyWaitingForSignatures).toHaveBeenCalledWith(
         notificationsService,
         transactions[1].id,
-        { network: transactions[1].mirrorNetwork },
+        {
+          network: transactions[1].mirrorNetwork,
+          transactionId: "0.0.2",
+        },
       );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
       expect(notifyTransactionAction).toHaveBeenCalledTimes(1);
@@ -445,9 +460,11 @@ describe('TransactionStatusService', () => {
         entityId: transaction.id,
         type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
         actorId: null,
-        content: `Transaction is ready for execution!\nTransaction ID: ${transaction.transactionId}\nNetwork: ${networkString}`,
         userIds: [transaction.creatorKey?.userId],
-        additionalData: { network: transaction.mirrorNetwork },
+        additionalData: {
+          network: transaction.mirrorNetwork,
+          transactionId: transaction.transactionId
+        },
       });
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });

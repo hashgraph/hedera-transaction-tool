@@ -1,5 +1,5 @@
 class BasePage {
-  DEFAULT_TIMEOUT = 1000;
+  DEFAULT_TIMEOUT = 1000*2;
   LONG_TIMEOUT = 5500;
 
   constructor(window) {

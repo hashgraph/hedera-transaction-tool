@@ -1,31 +1,10 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-import { CommonNetwork } from '@main/shared/enums';
+import { networkMapping } from '@renderer/shared/constants';
 
 import { useGroupedNotifications } from './composables';
-
-/* Mappings */
-const networkMapping: {
-  [key in string]: { label: string; className: string };
-} = {
-  [CommonNetwork.TESTNET]: {
-    label: 'TESTNET',
-    className: 'text-testnet',
-  },
-  [CommonNetwork.MAINNET]: {
-    label: 'MAINNET',
-    className: 'text-mainnet',
-  },
-  [CommonNetwork.PREVIEWNET]: {
-    label: 'PREVIEWNET',
-    className: 'text-previewnet',
-  },
-  [CommonNetwork.LOCAL_NODE]: {
-    label: 'LOCAL NODE',
-    className: 'text-info',
-  },
-};
+import { setDockBounce } from '@renderer/services/electronUtilsService';
 
 /* Composables */
 const { groupedNotifications, totalCount } = useGroupedNotifications();
@@ -39,6 +18,8 @@ const triggerRingAnimation = () => {
   setTimeout(() => {
     isRinging.value = false;
   }, 2000);
+
+  setDockBounce();
 };
 
 /* Watchers */
@@ -71,41 +52,48 @@ watch(totalCount, (newCount) => {
 
     <div class="dropdown-menu overflow-hidden" :style="{ width: '300px' }">
       <ul class="overflow-auto" :style="{ maxHeight: '45vh' }">
-        <template
-          v-for="[serverUrl, networkToNotifications] of Object.entries(groupedNotifications)"
-          :key="serverUrl"
-        >
+        <template v-if="totalCount === 0">
+          <li class="dropdown-item text-small text-center user-select-none">
+            No notifications
+          </li>
+        </template>
+        <template v-else>
           <template
-            v-for="[network, notifications] of Object.entries(networkToNotifications)"
-            :key="network"
+            v-for="[serverUrl, networkToNotifications] of Object.entries(groupedNotifications)"
+            :key="serverUrl"
           >
             <template
-              v-for="notification of notifications"
-              :key="`${notification.content}${notification.network}`"
+              v-for="[network, notifications] of Object.entries(networkToNotifications)"
+              :key="network"
             >
-              <li class="dropdown-item text-small cursor-pointer user-select-none" @click="notification.action()">
-                <div class="row">
-                  <div class="col-8" :class="{ 'col-12': notification.network === 'Unknown' }">
+              <template
+                v-for="notification of notifications"
+                :key="`${notification.content}${notification.network}`"
+              >
+                <li class="dropdown-item text-small cursor-pointer user-select-none" @click="notification.action()">
+                  <div class="row">
+                    <div class="col-8" :class="{ 'col-12': notification.network === 'Unknown' }">
+                      <p class="text-truncate">
+                        <strong>{{ serverUrl }}</strong>
+                      </p>
+                    </div>
+                    <template v-if="notification.network !== 'Unknown'">
+                      <div
+                        class="col-4 text-end"
+                        :class="networkMapping[notification.network]?.className || 'text-info'"
+                      >
+                        {{ networkMapping[notification.network]?.label || 'CUSTOM' }}
+                      </div>
+                    </template>
+                  </div>
+                  <div>
                     <p class="text-truncate">
-                      <strong>{{ serverUrl }}</strong>
+                      {{ notification.content }}
+                      <span v-if="notification.count > 1">({{ notification.count }})</span>
                     </p>
                   </div>
-                  <template v-if="notification.network !== 'Unknown'">
-                    <div
-                      class="col-4 text-end"
-                      :class="networkMapping[notification.network]?.className || 'text-info'"
-                    >
-                      {{ networkMapping[notification.network]?.label || 'CUSTOM' }}
-                    </div>
-                  </template>
-                </div>
-                <div>
-                  <p class="text-truncate">
-                    {{ notification.content }}
-                    <span v-if="notification.count > 1">({{ notification.count }})</span>
-                  </p>
-                </div>
-              </li>
+                </li>
+              </template>
             </template>
           </template>
         </template>
