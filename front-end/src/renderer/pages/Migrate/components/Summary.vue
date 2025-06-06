@@ -32,7 +32,7 @@ const recoveryPhraseItemRef = ref<HTMLElement | null>(null);
 
 /* Handlers */
 const handleFinishMigration = () => {
-  user.setMigrating(false);
+  user.setAccountSetupStarted(false);
   router.push({ name: 'settingsKeys' });
 };
 

@@ -103,7 +103,14 @@ const handleSetOrganizationId = async (value: string) => {
   organizationId.value = value;
   await initializeUserStore();
   userInitialized.value = true;
-  step.value = 'selectKeys';
+  if (allUserKeysToRecover.value.length === 0) {
+    // In the case that the user didn't import any keys, we still want to skip the setup step so as to not annoy
+    // the user, nor confuse them.
+    user.skippedSetup = true;
+    step.value = 'summary';
+  } else {
+    step.value = 'selectKeys';
+  }
 };
 
 const handleKeysImported = async (value: number) => {

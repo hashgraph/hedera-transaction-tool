@@ -25,7 +25,6 @@ const handleContinue = () => {
   emit('selected-keys', filteredKeys);
 };
 </script>
-
 <template>
   <div class="flex-column-100">
     <div class="pb-2 mt-4 flex-grow-1 overflow-y-auto">
