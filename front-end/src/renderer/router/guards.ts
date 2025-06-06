@@ -24,7 +24,9 @@ export function addGuards(router: Router) {
     const userIsAdmin =
       isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin;
 
-    if (user.accountSetupStarted) return false;
+    if (user.accountSetupStarted) {
+      return to.name === 'accountSetup';
+    }
 
     if (
       (to.meta.onlyAdmin && !userIsAdmin) ||
@@ -33,6 +35,7 @@ export function addGuards(router: Router) {
       return { name: 'transactions' };
     }
 
+    console.log('user skipped setup:', user.skippedSetup);
     if (
       userIsLoggedIn &&
       (user.selectedOrganization ? userIsLoggedInOrganization : true) &&
