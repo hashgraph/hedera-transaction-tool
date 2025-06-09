@@ -24,7 +24,7 @@ import {
   getApiGroupById,
   getUserShouldApprove,
   sendApproverChoice,
-  uploadSignatureMap,
+  uploadSignatures,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 
@@ -185,6 +185,7 @@ const handleSignGroup = async () => {
 
   try {
     isSigning.value = true;
+    const items: SignatureItem[]= [];
     if (group.value != undefined) {
       for (const groupItem of group.value.groupItems) {
         const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
@@ -200,16 +201,23 @@ const handleSignGroup = async () => {
           user.selectedOrganization.userKeys,
           network.mirrorNodeBaseURL,
         );
-        await uploadSignatureMap(
-          user.personal.id,
-          personalPassword,
-          user.selectedOrganization,
-          publicKeysRequired,
-          Transaction.fromBytes(transaction.toBytes()),
-          groupItem.transaction.id,
-        );
+        const item: SignatureItem = {
+          publicKeys: publicKeysRequired,
+          transaction,
+          transactionId: groupItem.transaction.id,
+        };
+        items.push(item);
       }
     }
+    await uploadSignatures(
+      user.personal.id,
+      personalPassword,
+      user.selectedOrganization,
+      null,
+      null,
+      null,
+      items,
+    );
     toast.success('Transactions signed successfully');
     disableSignAll.value = true;
   } catch {

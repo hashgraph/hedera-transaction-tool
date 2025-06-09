@@ -24,7 +24,7 @@ import {
   getUserShouldApprove,
   remindSigners,
   sendApproverChoice,
-  uploadSignatureMap,
+  uploadSignatures,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { saveFileNamed } from '@renderer/services/electronUtilsService';
@@ -202,13 +202,13 @@ const visibleButtons = computed(() => {
   shouldApprove.value && buttons.push(reject, approve);
   canSign.value && !shouldApprove.value && buttons.push(sign);
   canExecute.value && buttons.push(execute);
-  if (isLargeScreen.value) {
-    props.previousId && buttons.push(previous);
+  // if (isLargeScreen.value) {
+  //   props.previousId && buttons.push(previous);
+  //   props.nextId && buttons.push(next);
+  // } else {
     props.nextId && buttons.push(next);
-  } else {
-    props.nextId && buttons.push(next);
     props.previousId && buttons.push(previous);
-  }
+  // }
   canCancel.value && buttons.push(cancel);
   canRemind.value && buttons.push(remindSignersLabel);
   canArchive.value && buttons.push(archive);
@@ -279,7 +279,7 @@ const handleSign = async () => {
     }
 
     if (restoredRequiredKeys.length > 0) {
-      await uploadSignatureMap(
+      await uploadSignatures(
         user.personal.id,
         personalPassword,
         user.selectedOrganization,

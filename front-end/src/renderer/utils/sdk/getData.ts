@@ -258,6 +258,7 @@ export function getNodeData(transaction: Transaction): NodeData {
     gossipCaCertificate: transaction.gossipCaCertificate || Uint8Array.from([]),
     certificateHash: transaction.certificateHash || Uint8Array.from([]),
     adminKey: transaction.adminKey,
+    declineReward: transaction.declineReward || false,
   };
 }
 

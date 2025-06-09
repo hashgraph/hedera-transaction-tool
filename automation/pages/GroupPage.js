@@ -254,7 +254,7 @@ class GroupPage extends BasePage {
     await this.click(this.orgTransactionDetailsButtonIndexSelector + index);
   }
 
-  async logInAndSignGroupTransactionsByAllUsers(encryptionPassword) {
+  async logInAndSignGroupTransactionsByAllUsers(encryptionPassword, signAll = true) {
     for (let i = 1; i < this.organizationPage.users.length; i++) {
       console.log(`Signing transaction for user ${i}`);
       const user = this.organizationPage.users[i];
@@ -262,26 +262,30 @@ class GroupPage extends BasePage {
       await this.transactionPage.clickOnTransactionsMenuButton();
       await this.organizationPage.clickOnReadyToSignTab();
       await this.clickOnDetailsGroupButton(0);
-      await this.clickOnTransactionDetailsButton(0);
+      if (signAll) {
+        await this.clickOnSignAllButton();
+      } else {
+        await this.clickOnTransactionDetailsButton(0);
 
-      // Initially sign the first transaction
-      await this.organizationPage.clickOnSignTransactionButton();
+        // Sign the first transaction and continue while "Next" button is visible
+        do {
+          await this.organizationPage.clickOnSignTransactionButton();
+          // Wait for 1 second to allow details to load
+          // await new Promise(resolve => setTimeout(resolve, 5000));
 
-      // After signing, we check if there's a "Next" button to continue to the next transaction
-      let hasNext = await this.isElementVisible(
-        this.organizationPage.nextTransactionButtonSelector,
-      );
+          // Check if there's a "Next" button to move to the next transaction
+          // the main issue is the 'next' button is not visible as long as there is a 'previous' button. I think these really should be done differently anyway
+          // not really sure how this ever worked
+          const hasNext = await this.isElementVisible(this.organizationPage.nextTransactionButtonSelector);
 
-      while (hasNext) {
-        // Click on the "Next" button to move to the next transaction
-        await this.click(this.organizationPage.nextTransactionButtonSelector);
-
-        // Now the button transforms into "Sign" for the next transaction
-        // Sign this transaction as well
-        await this.organizationPage.clickOnSignTransactionButton();
-
-        // Check again if there's another transaction after this one
-        hasNext = await this.isElementVisible(this.organizationPage.nextTransactionButtonSelector);
+          if (hasNext) {
+            console.log(`User ${i} signed a transaction, moving to the next one.`);
+            await this.click(this.organizationPage.nextTransactionButtonSelector);
+          } else {
+            console.log(`No more transactions to sign for user ${i}.`);
+            break;
+          }
+        } while (true);
       }
 
       await this.organizationPage.logoutFromOrganization();

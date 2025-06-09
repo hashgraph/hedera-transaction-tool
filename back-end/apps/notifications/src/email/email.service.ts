@@ -3,7 +3,10 @@ import { ConfigService } from '@nestjs/config';
 
 import * as nodemailer from 'nodemailer';
 
-import { NotifyEmailDto } from '@app/common';
+import { generateEmailContent, NotificationTypeEmailSubjects, NotifyEmailDto } from '@app/common';
+import { DebouncedNotificationBatcher } from '../utils';
+import { Notification } from '@entities';
+import { SendMailOptions } from 'nodemailer';
 
 @Injectable()
 export class EmailService {
@@ -14,9 +17,19 @@ export class EmailService {
     secure: this.configService.getOrThrow<boolean>('EMAIL_API_SECURE'),
     ...this.getAuthConfig()
   });
+  private batcher: DebouncedNotificationBatcher;
 
   constructor(private readonly configService: ConfigService) {
     this.sender = configService.getOrThrow('SENDER_EMAIL');
+
+    this.batcher = new DebouncedNotificationBatcher(
+      this.processMessages.bind(this),
+      2000,
+      200,
+      10000,
+      this.configService.get('REDIS_URL'),
+      'emails',
+    );
   }
 
   private getAuthConfig() {
@@ -38,12 +51,31 @@ export class EmailService {
     console.log(`Message sent: ${info.messageId}`);
   }
 
-  async processEmail(options: nodemailer.SendMailOptions) {
-    /* 
-      TODO Add to email processor queue
-      Currently, just send the email
-    */
-    const info = await this.transporter.sendMail(options);
-    console.log(`Message sent: ${info.messageId}`);
+  async processEmail(emails: string[], notification: Notification) {
+    for (const email of emails) {
+      await this.batcher.add(notification, email)
+    }
   }
+
+  private async processMessages(groupKey: string, notifications: Notification[]) {
+    const groupedNotifications = notifications.reduce((map, msg) => {
+      if (!map.has(msg.type)) {
+        map.set(msg.type, []);
+      }
+      map.get(msg.type)!.push(msg);
+      return map;
+    }, new Map<string, Notification[]>());
+
+    for (const [type, notifications] of groupedNotifications.entries()) {
+      const mailOptions: SendMailOptions = {
+        from: `"Transaction Tool" ${this.sender}`,
+        to: groupKey,
+        subject: NotificationTypeEmailSubjects[type],
+        text: generateEmailContent(type, ...notifications),
+      };
+
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log(`Message sent: ${info.messageId}`);
+    }
+  };
 }

@@ -34,7 +34,6 @@ import {
   ableToSign,
   getPrivateKey,
   getStatusFromCode,
-  getTransactionType,
   uint8ToHex,
   isLoggedInOrganization,
   isUserLoggedIn,
@@ -44,6 +43,7 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
+import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 /* Props */
 const props = defineProps<{
@@ -380,7 +380,7 @@ async function uploadObservers(transactionId: number, seqId: number) {
 async function uploadApprovers(transactionId: number, seqId: number) {
   const hasApprovers = transactionGroup.hasApprovers(seqId);
 
-  if (hasApprovers) {
+  if (!hasApprovers) {
     return;
   }
 

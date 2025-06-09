@@ -8,7 +8,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../user.entity';
-import { NotificationReceiver } from './notification-receiver.entity';
+import { NotificationReceiver } from '@app/common/database/entities';
 
 export enum NotificationType {
   TRANSACTION_CREATED = 'TRANSACTION_CREATED',
@@ -43,9 +43,6 @@ export class Notification {
   @Column()
   type: NotificationType;
 
-  @Column()
-  content: string;
-
   @Column({ nullable: true })
   entityId?: number;
 
@@ -69,7 +66,6 @@ export class Notification {
 export const notificationProperties: (keyof Notification)[] = [
   'id',
   'type',
-  'content',
   'entityId',
   'actorId',
   'createdAt',

@@ -33,6 +33,10 @@ test.describe('Organization Group Tx tests', () => {
     registrationPage = new RegistrationPage(window);
     groupPage = new GroupPage(window);
 
+    // window.on('console', (message) => {
+    //   console.log('Console Log:', message.text());
+    // });
+
     organizationPage.complexFileId = [];
 
     // Generate credentials and store them globally
@@ -138,26 +142,29 @@ test.describe('Organization Group Tx tests', () => {
     expect(secondResult).toBe('SUCCESS');
   });
 
-  test('Verify user can import csv transactions', async () => {
-    test.slow();
-    const numberOfTransactions = 5;
-    await groupPage.fillDescription('test');
-    await groupPage.generateAndImportCsvFile(complexKeyAccountId, numberOfTransactions);
-    await groupPage.clickOnSignAndExecuteButton();
-    await groupPage.clickOnConfirmGroupTransactionButton();
-    const timestamps = await groupPage.getAllTransactionTimestamps(numberOfTransactions);
-    await groupPage.clickOnSignAllButton();
-    await loginPage.waitForToastToDisappear();
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
-    await groupPage.logInAndSignGroupTransactionsByAllUsers(globalCredentials.password);
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
-    const isAllTransactionsSuccessful =
-      await groupPage.verifyAllTransactionsAreSuccessful(timestamps);
-    expect(isAllTransactionsSuccessful).toBe(true);
+  //i think this is due again to the delay, it is looking for the sign button to change
+  // if I change this to make the accounts have lots of users and lots of keys, and require all to sign, then see how that goes?
+  [5, 100].forEach((numberOfTransactions) => {
+    test(`Verify user can import csv transactions with ${numberOfTransactions} transactions`, async () => {
+      test.slow();
+      await groupPage.fillDescription('test');
+      await groupPage.generateAndImportCsvFile(complexKeyAccountId, numberOfTransactions);
+      await groupPage.clickOnSignAndExecuteButton();
+      await groupPage.clickOnConfirmGroupTransactionButton();
+      const timestamps = await groupPage.getAllTransactionTimestamps(numberOfTransactions);
+      await groupPage.clickOnSignAllButton();
+      await loginPage.waitForToastToDisappear();
+      await transactionPage.clickOnTransactionsMenuButton();
+      await organizationPage.logoutFromOrganization();
+      await groupPage.logInAndSignGroupTransactionsByAllUsers(globalCredentials.password, numberOfTransactions > 10);
+      await organizationPage.signInOrganization(
+        firstUser.email,
+        firstUser.password,
+        globalCredentials.password,
+      );
+      const isAllTransactionsSuccessful =
+        await groupPage.verifyAllTransactionsAreSuccessful(timestamps);
+      expect(isAllTransactionsSuccessful).toBe(true);
+    });
   });
 });

@@ -1,6 +1,6 @@
 {
   "name": "back-end",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "",
   "author": "",
   "private": true,
@@ -21,11 +21,13 @@
     "typeorm": "typeorm-ts-node-commonjs",
     "create-admin": "npx ts-node ./scripts/create-admin.ts",
     "create-users": "npx ts-node ./scripts/add-users.ts",
-    "deploy:dev": "sh ./k8s/dev/deploy.sh"
+    "deploy:dev": "sh ./k8s/dev/deploy.sh",
+    "test:all": "npm run test --workspace=apps/api && npm run test --workspace=apps/chain && npm run test --workspace=apps/notifications",
+    "test:cov:all": "npm run test:cov --workspace=apps/api && npm run test:cov --workspace=apps/chain && npm run test:cov --workspace=apps/notifications"
   },
   "dependencies": {
-    "@hashgraph/proto": "2.16.0",
-    "@hashgraph/sdk": "2.59.0",
+    "@hashgraph/proto": "2.18.5",
+    "@hashgraph/sdk": "2.64.5",
     "@nest-lab/throttler-storage-redis": "1.0.0",
     "@nestjs/axios": "3.1.3",
     "@nestjs/cache-manager": "2.3.0",
@@ -43,7 +45,7 @@
     "@nestjs/typeorm": "10.0.2",
     "@nestjs/websockets": "10.4.15",
     "amqp-connection-manager": "4.1.14",
-    "amqplib": "0.10.5",
+    "amqplib": "0.10.7",
     "argon2": "0.41.1",
     "axios": "1.8.3",
     "bcryptjs": "2.4.3",

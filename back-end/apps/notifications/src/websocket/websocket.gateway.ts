@@ -9,10 +9,16 @@ import {
 } from '@nestjs/websockets';
 import { Server } from 'socket.io';
 
-import { AUTH_SERVICE, BlacklistService, NotifyClientDto } from '@app/common';
+import {
+  AUTH_SERVICE,
+  BlacklistService,
+  NotifyClientDto
+} from '@app/common';
 
 import { AuthWebsocket, AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
 import { roomKeys } from './helpers';
+import { DebouncedNotificationBatcher } from '../utils';
+import { ConfigService } from '@nestjs/config';
 
 @WebSocketGateway({
   path: '/ws',
@@ -23,10 +29,22 @@ import { roomKeys } from './helpers';
 export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(WebsocketGateway.name);
 
+  private batcher: DebouncedNotificationBatcher;
+
   constructor(
     @Inject(AUTH_SERVICE) private readonly authService: ClientProxy,
     private readonly blacklistService: BlacklistService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.batcher = new DebouncedNotificationBatcher(
+      this.processMessages.bind(this),
+      500,
+      200,
+      2000,
+      this.configService.get('REDIS_URL'),
+      'inapp-notifications',
+    );
+  }
 
   @WebSocketServer()
   private io: Server;
@@ -43,11 +61,6 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
       this.logger.error('Socket client connected without user');
       return socket.disconnect();
     }
-    // console.log('Socket client connected with initial transport', socket.conn.transport.name);
-    // socket.conn.once('upgrade', () => {
-    //   /* called when the transport is upgraded (i.e. from HTTP long-polling to WebSocket) */
-    //   console.log('upgraded transport', socket.conn.transport.name);
-    // });
 
     /* Join user room */
     socket.join(roomKeys.USER_KEY(socket.user?.id));
@@ -57,11 +70,38 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
     this.logger.log(`Socket socket disconnected for User ID: ${socket.user?.id}`);
   }
 
-  notifyClient({ message, content }: NotifyClientDto) {
-    this.io.emit(message, { content });
+  async notifyClient({ message, content }: NotifyClientDto) {
+    const newMessage = new NotificationMessage(message, [content]);
+    await this.batcher.add(newMessage);
   }
 
-  notifyUser(userId: number, message: string, data) {
-    this.io.to(roomKeys.USER_KEY(userId)).emit(message, { data });
+  async notifyUser(userId: number, message: string, data) {
+    const newMessage = new NotificationMessage(message, [data]);
+    await this.batcher.add(newMessage, userId);
   }
+
+  private async processMessages(groupKey: number | null, messages: NotificationMessage[]) {
+    const groupedMessages = messages.reduce((map, msg) => {
+      if (!map.has(msg.message)) {
+        map.set(msg.message, []);
+      }
+      map.get(msg.message)!.push(...msg.content);
+      return map;
+    }, new Map<string, string[]>());
+
+    for (const [message, content] of groupedMessages.entries()) {
+      if (groupKey) {
+        this.io.to(roomKeys.USER_KEY(groupKey)).emit(message, content);
+      } else {
+        this.io.emit(message, content);
+      }
+    }
+  };
+}
+
+class NotificationMessage {
+  constructor(
+    public readonly message: string,
+    public readonly content: string[],
+  ) {}
 }

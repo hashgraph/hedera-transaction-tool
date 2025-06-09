@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
-import { FindManyOptions, FindOptionsOrder, FindOptionsWhere, Repository } from 'typeorm';
+import { FindManyOptions, FindOptionsOrder, FindOptionsWhere, In, Repository } from 'typeorm';
 
 import {
   Notification,
@@ -78,22 +78,48 @@ export class NotificationReceiverService {
     return notificationReceiver;
   }
 
-  async updateReceivedNotification(user: User, id: number, dto: UpdateNotificationReceiverDto) {
-    const { isRead } = dto;
+  async updateReceivedNotifications(user: User, dtos: UpdateNotificationReceiverDto[]) {
+    const dtoIds = dtos.map(dto => dto.id);
 
-    const notificationReceiver = await this.getReceivedNotification(user, id);
-    notificationReceiver.isRead = isRead;
+    // get only the notifications that belong to the user
+    const notifications = await this.repo.findBy({
+      id: In(dtoIds),
+      userId: user.id,
+    });
 
-    await this.repo.update(
-      {
-        id,
-      },
-      {
-        isRead,
-      },
-    );
+    if (notifications.length === 0) {
+      throw new BadRequestException(ErrorCodes.NNF);
+    }
 
-    return notificationReceiver;
+    // set up filter to ensure only to include dtos that are in the notifications
+    const notificationIds = new Set(notifications.map(notification => notification.id));
+
+    const updates = dtos.reduce((map, dto) => {
+      if (notificationIds.has(dto.id)) {
+        if (!map.has(dto.isRead)) {
+          map.set(dto.isRead, []);
+        }
+        map.get(dto.isRead)!.push(dto.id);
+      }
+      return map;
+    }, new Map<boolean, number[]>());
+
+    for (const [isRead, ids] of updates) {
+      if (ids.length > 0) {
+        await this.repo.update(
+          { id: In(ids) },
+          { isRead },
+        );
+      }
+    }
+
+    const allIds = [...updates.values()].flat();
+
+    // Get only the updated notifications fresh from the database
+    return await this.repo.findBy({
+      id: In(allIds),
+      userId: user.id,
+    });
   }
 
   async deleteReceivedNotification(user: User, id: number) {
@@ -130,13 +156,13 @@ export class NotificationReceiverService {
       .filter(Boolean);
 
     const dto = getRemindSignersDTO(transaction, userIds, true, true);
-    await notifyGeneral(
+    notifyGeneral(
       this.notificationsService,
       dto.type,
       userIds,
-      dto.content,
       dto.entityId,
       dto.recreateReceivers,
+      { transactionId: transaction.transactionId, network: transaction.mirrorNetwork },
     );
   }
 

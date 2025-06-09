@@ -211,23 +211,15 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   }
 
   function hasObservers(seq: number) {
-    if (
-      groupItems.value[seq].observers === undefined ||
-      groupItems.value[seq].observers.length === 0
-    ) {
-      return false;
-    }
-    return true;
+    return !(groupItems.value[seq].observers === undefined ||
+      groupItems.value[seq].observers.length === 0);
+
   }
 
   function hasApprovers(seq: number) {
-    if (
-      groupItems.value[seq].approvers === undefined ||
-      groupItems.value[seq].approvers.length === 0
-    ) {
-      return false;
-    }
-    return true;
+    return !(groupItems.value[seq].approvers === undefined ||
+      groupItems.value[seq].approvers.length === 0);
+
   }
 
   function setModified() {

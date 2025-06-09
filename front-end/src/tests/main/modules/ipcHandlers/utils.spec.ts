@@ -1,5 +1,28 @@
 import { mockDeep } from 'vitest-mock-extended';
 
+vi.mock('bcrypt', () => mockDeep());
+vi.mock('crypto', () => mockDeep());
+vi.mock('electron', () => {
+  const actualElectron = vi.importActual('electron');
+  return {
+    ...actualElectron,
+    ipcMain: { on: vi.fn(), removeListener: vi.fn(), ...actualElectron.ipcMain },
+    BrowserWindow: {
+      ...actualElectron.BrowserWindow,
+      getAllWindows: vi.fn(), // add a stub for getAllWindows
+    },
+    app: actualElectron.app,
+    dialog: actualElectron.dialog,
+    shell: actualElectron.shell,
+  };
+});
+vi.mock('fs', () => mockDeep());
+vi.mock('path', () => mockDeep());
+vi.mock('path', () => mockDeep());
+vi.mock('@hashgraph/proto', () => mockDeep());
+vi.mock('@main/utils/crypto', () => mockDeep());
+vi.mock('@main/utils', () => mockDeep());
+
 import { getIPCHandler, getIPCListener, invokeIPCHandler, invokeIPCListener } from '../../_utils_';
 
 import registerUtilsListeners from '@main/modules/ipcHandlers/utils';
@@ -9,16 +32,6 @@ import { getNumberArrayFromString } from '@main/utils';
 import { hash, dualCompareHash } from '@main/utils/crypto';
 import fs from 'fs';
 import { createHash, X509Certificate } from 'crypto';
-
-vi.mock('bcrypt', () => mockDeep());
-vi.mock('crypto', () => mockDeep());
-vi.mock('electron', () => mockDeep());
-vi.mock('fs', () => mockDeep());
-vi.mock('path', () => mockDeep());
-vi.mock('path', () => mockDeep());
-vi.mock('@hashgraph/proto', () => mockDeep());
-vi.mock('@main/utils/crypto', () => mockDeep());
-vi.mock('@main/utils', () => mockDeep());
 
 describe('createChannelName', () => {
   test('Should create correct channel name', () => {
@@ -35,7 +48,7 @@ describe('registerUtilsListeners', () => {
   });
 
   test('Should register handlers for each util', () => {
-    const eventListeners = ['openExternal', 'openPath'];
+    const eventListeners = ['setDockBounce', 'openExternal', 'openPath'];
     const eventHandlers = [
       'hash',
       'compareHash',
@@ -511,5 +524,44 @@ describe('registerUtilsListeners', () => {
       const result = await invokeIPCHandler('utils:x509BytesFromPem', pem);
       expect(result).toBeUndefined();
     });
+  });
+});
+
+describe('setDockBounce listener', () => {
+  let listenerCallback: (e: unknown, bounce: boolean) => void;
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+
+    registerUtilsListeners();
+    const calls = (ipcMain.on as vi.Mock).mock.calls;
+    const call = calls.find(([channel]) => channel === 'utils:setDockBounce');
+    if (call) {
+      listenerCallback = call[1];
+    }
+  });
+
+  test('should bounce dock if not focused and bounce is true', () => {
+    const fakeWindow = { isFocused: vi.fn().mockReturnValue(false) } as unknown as Electron.BrowserWindow;
+    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([fakeWindow] as unknown as BrowserWindow[]);
+    const bounceId = 123;
+    const bounceMock = vi.fn().mockReturnValue(bounceId);
+    const cancelBounceMock = vi.fn();
+    (app as any).dock = { bounce: bounceMock, cancelBounce: cancelBounceMock };
+
+    listenerCallback(null, true);
+    expect(bounceMock).toHaveBeenCalledWith('critical');
+  });
+
+  test('should cancel bounce if bounce is false and bounceId is defined', () => {
+    const fakeWindow = { isFocused: vi.fn().mockReturnValue(false) } as unknown as Electron.BrowserWindow;
+    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([fakeWindow] as unknown as BrowserWindow[]);
+    const bounceMock = vi.fn();
+    const cancelBounceMock = vi.fn();
+    (app as any).dock = { bounce: bounceMock, cancelBounce: cancelBounceMock };
+
+    listenerCallback(null, true);
+    listenerCallback(null, false);
+    expect(cancelBounceMock).toHaveBeenCalled();
   });
 });

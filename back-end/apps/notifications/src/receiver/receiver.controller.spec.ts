@@ -33,7 +33,7 @@ describe('Receiver Controller', () => {
     const dto: NotifyGeneralDto = {
       userIds: [1, 2],
       type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
-      content: 'General notification content',
+      // content: 'General notification content',
       entityId: 1,
       actorId: 1,
       additionalData: { network: 'testnet' },
