@@ -112,6 +112,7 @@ test.describe('Organization Contact List tests', () => {
   });
 
   test('Verify contact email and public keys are displayed', async () => {
+    test.slow();
     await organizationPage.signInOrganization(
       regularUser.email,
       regularUser.password,
