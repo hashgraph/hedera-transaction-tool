@@ -30,6 +30,7 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits<{
+  (event: 'skipOrganizationSetup'): void;
   (event: 'migration:cancel'): void;
 }>();
 
@@ -72,6 +73,10 @@ const handleOnFormSubmit = async () => {
   });
 
   loginError.value = result.error;
+};
+
+const handleSkip = () => {
+  emit('skipOrganizationSetup');
 };
 
 const handleCancel = () => emit('migration:cancel');
@@ -175,31 +180,35 @@ watch(inputNewOrganizationPassword, pass => {
 
     <!-- Submit -->
     <div class="d-flex justify-content-between align-items-end mt-5">
-      <div>
+      <AppButton
+        color="secondary"
+        type="button"
+        data-testid="button-migration-cancel"
+        @click="handleCancel"
+      >Cancel</AppButton>
+
+      <div class="d-flex align-items-end ms-10 gap-3">
         <AppButton
-          color="secondary"
           type="button"
-          data-testid="button-migration-cancel"
-          @click="handleCancel"
-          >Cancel</AppButton
-        >
-      </div>
-      <div>
+          class="btn btn-link min-w-unset"
+          data-testid="button-migration-skip-organization-setup"
+          @click="handleSkip"
+        >Skip</AppButton>
+
         <AppButton
           color="primary"
           type="submit"
           :loading="loading"
           :loading-text="loadingText"
           :disabled="
-            inputTemporaryOrganizationPassword.trim().length === 0 ||
-            inputOrganizationURL.trim().length === 0 ||
-            (personalUser.useKeychain ? inputOrganizationEmail.length === 0 : false) ||
-            inputNewOrganizationPassword.trim().length === 0 ||
-            inputNewOrganizationPassword.trim() === inputTemporaryOrganizationPassword.trim()
-          "
+          inputTemporaryOrganizationPassword.trim().length === 0 ||
+          inputOrganizationURL.trim().length === 0 ||
+          (personalUser.useKeychain ? inputOrganizationEmail.length === 0 : false) ||
+          inputNewOrganizationPassword.trim().length === 0 ||
+          inputNewOrganizationPassword.trim() === inputTemporaryOrganizationPassword.trim()
+        "
           data-testid="button-migration-setup-organization"
-          >Continue</AppButton
-        >
+        >Continue</AppButton>
       </div>
     </div>
   </form>

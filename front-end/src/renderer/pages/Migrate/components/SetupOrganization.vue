@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { RecoveryPhrase } from '@renderer/types';
 import type { PersonalUser } from './SetupPersonal.vue';
 import type { ModelValue, SubmitCallback } from './SetupOrganizationForm.vue';
 
@@ -15,7 +14,6 @@ import SetupOrganizationForm from './SetupOrganizationForm.vue';
 
 /* Props */
 const props = defineProps<{
-  recoveryPhrase: RecoveryPhrase;
   personalUser: PersonalUser;
 }>();
 
@@ -111,6 +109,10 @@ const handleFormSubmit: SubmitCallback = async (formData: ModelValue) => {
   return { error: null };
 };
 
+const handleSkip = () => {
+  emit('setOrganizationId', null);
+};
+
 const handleMigrationCancel = () => emit('migration:cancel');
 
 /* Functions */
@@ -160,6 +162,7 @@ const setNewPassword = async ({
     :loading-text="loadingText"
     :personal-user="personalUser"
     :submit-callback="handleFormSubmit"
+    @skip-organization-setup="handleSkip"
     @migration:cancel="handleMigrationCancel"
   />
 </template>
