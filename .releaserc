@@ -12,8 +12,7 @@
       "@semantic-release/github",
       {
         "assets": [
-          {"path": "front-end/dist_electron/*.pkg", "label": "macOS Package ${path}"},
-          {"path": "front-end/dist/*.pkg", "label": "macOS Package ${path}"}
+          {"path": "front-end/release/*.pkg", "label": "macOS Package ${path}"}
         ]
       }
     ]
@@ -29,7 +28,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "cd front-end && pnpm generate:database && pnpm build:mac pkg"
+        "prepareCmd": "cd front-end && pnpm build:mac"
       }
     ],
     [
