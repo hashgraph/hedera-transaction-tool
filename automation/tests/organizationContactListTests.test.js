@@ -126,6 +126,7 @@ test.describe('Organization Contact List tests', () => {
     expect(contactEmail).toBe(regularUser.email);
 
     // verifying that public keys displayed for the contact are matching the public keys in the database
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Delay for 1 second
     const isPublicKeyCorrect = await contactListPage.comparePublicKeys(regularUser.email);
     expect(isPublicKeyCorrect).toBe(true);
   });

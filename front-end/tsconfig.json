@@ -2,6 +2,9 @@
   "files": [],
   "compilerOptions": {
     "skipLibCheck": true,
+    "paths": {
+      "@main/*": ["./src/main/*"],
+    }
   },
   "references": [{ "path": "./tsconfig.node.json" }, { "path": "./tsconfig.web.json" }],
 }
