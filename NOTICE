@@ -339,7 +339,7 @@ The Initial Developer of @grpc/proto-loader@0.7.13,
 is Google Inc. (https://github.com/grpc/grpc-node).
 Copyright Google Inc.. All Rights Reserved.
 
-The Initial Developer of @hashgraph/cryptography@1.7.2,
+The Initial Developer of @hashgraph/cryptography@1.7.4,
 is Launchbadge (https://github.com/hiero-ledger/hiero-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
@@ -347,11 +347,15 @@ The Initial Developer of @hashgraph/hedera-local@2.34.0,
 is hashgraph (github.com:hashgraph/hedera-local-node).
 Copyright hashgraph. All Rights Reserved.
 
+The Initial Developer of @hashgraph/proto@2.16.0,
+is Launchbadge (https://github.com/hashgraph/hedera-sdk-js).
+Copyright Launchbadge. All Rights Reserved.
+
 The Initial Developer of @hashgraph/proto@2.18.5,
 is Launchbadge (https://github.com/hiero-ledger/hiero-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
-The Initial Developer of @hashgraph/sdk@2.64.5,
+The Initial Developer of @hashgraph/sdk@2.66.0,
 is Launchbadge (https://github.com/hiero-ledger/hiero-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 

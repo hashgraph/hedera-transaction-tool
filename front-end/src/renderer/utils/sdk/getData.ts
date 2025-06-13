@@ -216,27 +216,33 @@ export const getTransferHbarData = (transaction: Transaction): TransferHbarData 
   };
 };
 
-export const getEndpointData = (
-  serviceEndpoints: ServiceEndpoint[],
-): ComponentServiceEndpoint[] => {
-  const result = new Array<ComponentServiceEndpoint>();
-
-  for (const endpoint of serviceEndpoints) {
-    const ipAddressV4 =
-      endpoint.getIpAddressV4 && endpoint.getIpAddressV4.length > 0
-        ? endpoint.getIpAddressV4.join('.')
-        : '';
-    const port = endpoint.getPort ? endpoint.getPort.toString() : '';
-    const domainName = endpoint.getDomainName || '';
-
-    result.push({
-      ipAddressV4,
-      port,
-      domainName,
-    });
+export const getComponentServiceEndpoint = ( serviceEndpoint: ServiceEndpoint | null): ComponentServiceEndpoint => {
+  if (!serviceEndpoint) {
+    return{
+        ipAddressV4: '',
+        port: '',
+        domainName: '',
+      };
   }
 
-  return result;
+  const ipAddressV4 =
+    serviceEndpoint.getIpAddressV4 && serviceEndpoint.getIpAddressV4.length > 0
+      ? serviceEndpoint.getIpAddressV4.join('.')
+      : '';
+  const port = serviceEndpoint.getPort ? serviceEndpoint.getPort.toString() : '';
+  const domainName = serviceEndpoint.getDomainName || '';
+
+  return {
+    ipAddressV4,
+    port,
+    domainName,
+  };
+}
+
+export const getComponentServiceEndpoints = (
+  serviceEndpoints: ServiceEndpoint[],
+): ComponentServiceEndpoint[] => {
+  return serviceEndpoints.map(getComponentServiceEndpoint);
 };
 
 export function getNodeData(transaction: Transaction): NodeData {
@@ -247,18 +253,20 @@ export function getNodeData(transaction: Transaction): NodeData {
     throw new Error('Invalid transaction type.');
   }
 
-  const gossipEndpoints = getEndpointData(transaction.gossipEndpoints || []);
-  const serviceEndpoints = getEndpointData(transaction.serviceEndpoints || []);
-
+  const gossipEndpoints = getComponentServiceEndpoints(transaction.gossipEndpoints || []);
+  const serviceEndpoints = getComponentServiceEndpoints(transaction.serviceEndpoints || []);
+  const grpcWebProxyEndpoint = getComponentServiceEndpoint(transaction.grpcWebProxyEndpoint)
   return {
     nodeAccountId: transaction.accountId?.toString() || '',
     description: transaction.description || '',
     gossipEndpoints: gossipEndpoints || [],
+    grpcWebProxyEndpoint,
     serviceEndpoints: serviceEndpoints || [],
     gossipCaCertificate: transaction.gossipCaCertificate || Uint8Array.from([]),
     certificateHash: transaction.certificateHash || Uint8Array.from([]),
     adminKey: transaction.adminKey,
     declineReward: transaction.declineReward || false,
+
   };
 }
 

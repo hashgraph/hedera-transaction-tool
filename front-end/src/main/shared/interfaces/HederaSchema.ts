@@ -661,6 +661,13 @@ export interface NetworkNode {
   stake_rewarded: number | null; // The sum (balance + staked) for all accounts staked to the node that are not declining rewards at the beginning of the staking period
   staking_period: TimestampRange | null;
   reward_rate_start: number | null;
+  decline_reward: boolean | null;
+  grpc_web_proxy_endpoint?: {
+    ip_address_v4?: string | null;
+    port: number;
+    domain_name?: string | null;
+  };
+
 }
 
 export interface ServiceEndPoint {

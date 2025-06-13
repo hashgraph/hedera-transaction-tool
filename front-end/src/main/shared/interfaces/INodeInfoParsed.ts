@@ -20,4 +20,5 @@ export interface INodeInfoParsed {
   staking_period: TimestampRange | null;
   reward_rate_start: Hbar | null;
   decline_reward: boolean;
+  grpc_web_proxy_endpoint: ServiceEndpoint | null;
 }

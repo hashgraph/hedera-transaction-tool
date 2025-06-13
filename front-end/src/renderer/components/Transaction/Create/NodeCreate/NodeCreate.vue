@@ -29,6 +29,7 @@ const data = reactive<NodeData>({
   description: '',
   gossipEndpoints: [],
   serviceEndpoints: [],
+  grpcWebProxyEndpoint: null,
   gossipCaCertificate: Uint8Array.from([]),
   certificateHash: Uint8Array.from([]),
   adminKey: null,

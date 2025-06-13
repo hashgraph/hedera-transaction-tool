@@ -167,6 +167,37 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
         </table>
       </div>
 
+      <!-- gRPC Web Proxy Endpoint -->
+      <div
+        v-if="transaction.grpcWebProxyEndpoint"
+        class="col-12 my-3"
+      >
+        <h4 :class="detailItemLabelClass">gRPC Web Proxy Endpoint</h4>
+        <table class="table-custom">
+          <thead class="thin">
+          <tr>
+            <th class="text-start">IP Address</th>
+            <th class="text-start">Port</th>
+            <th class="text-start">Domain Name</th>
+          </tr>
+          </thead>
+          <tbody class="thin">
+          <tr v-if="transaction.grpcWebProxyEndpoint">
+            <td class="col text-start">
+              {{ getEndpointData([transaction.grpcWebProxyEndpoint])[0].ipAddressV4 }}
+            </td>
+            <td class="col text-start">
+              {{ getEndpointData([transaction.grpcWebProxyEndpoint])[0].port }}
+            </td>
+            <td class="col text-start">
+              {{ getEndpointData([transaction.grpcWebProxyEndpoint])[0].domainName }}
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+
       <!-- Gossip CA Certificate -->
       <div
         v-if="transaction.gossipCaCertificate && transaction.gossipCaCertificate.length > 0"
