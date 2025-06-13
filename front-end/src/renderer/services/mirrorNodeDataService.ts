@@ -19,7 +19,7 @@ import {
   FileId,
   Hbar,
   HbarUnit,
-  PublicKey,
+  PublicKey, ServiceEndpoint,
   Timestamp,
 } from '@hashgraph/sdk';
 import { BigNumber } from 'bignumber.js';
@@ -323,7 +323,13 @@ export const getNodeInfo = async (
         stake_rewarded: parseHbar(node.stake_rewarded, HbarUnit.Tinybar),
         staking_period: node.staking_period || null,
         reward_rate_start: parseHbar(node.reward_rate_start, HbarUnit.Tinybar),
-        decline_reward: node.decline_reward,
+        decline_reward:node.decline_reward ?? false,
+        grpc_web_proxy_endpoint: node.grpc_web_proxy_endpoint
+          ? new ServiceEndpoint()
+            .setPort(node.grpc_web_proxy_endpoint.port)
+            .setDomainName(node.grpc_web_proxy_endpoint.domain_name || '')
+          : null,
+
       };
       return nodeInfo;
     }

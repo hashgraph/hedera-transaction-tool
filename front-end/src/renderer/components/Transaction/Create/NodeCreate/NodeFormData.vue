@@ -43,6 +43,8 @@ const gossipCaCertificateText = ref('');
 const gossipFile = useTemplateRef('gossipFile');
 const grpcFile = useTemplateRef('grpcFile');
 const nodeDescriptionError = ref(false);
+const grpcFqdn = ref('');
+const grpcPort = ref('');
 
 const validIp =
   '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]).){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$';
@@ -333,6 +335,9 @@ watch(
       </div>
     </div>
 
+   <label class="form-label mt-6"
+    >Gossip Endpoints <span v-if="required" class="text-danger">*</span></label
+   >
     <div v-for="(endpoint, index) of data.gossipEndpoints" :key="index" class="row py-3">
       <div class="col-3 col-xxxl-3 d-flex align-items-center text-small">
         <div v-if="index === 0">Internal</div>
@@ -354,6 +359,7 @@ watch(
     </div>
   </div>
 
+<!-- Service Endpoint -->
   <label class="form-label mt-6"
     >Service Endpoints <span v-if="required" class="text-danger">*</span></label
   >
@@ -419,6 +425,50 @@ watch(
       </div>
     </div>
   </div>
+  <div class="form-group mt-6">
+  <label class="form-label">gRPC Web Proxy Endpoint</label>
+  <div class="text-micro mb-3 text-muted">Fully Qualified Domain Name (FQDN) is required</div>
+  <div class="row align-items-end">
+    <div class="col-4 col-xxxl-3">
+      <label class="form-label">Domain</label>
+      <AppInput
+        :model-value="data.grpcWebProxyEndpoint?.domainName || ''"
+        @update:model-value="
+          emit('update:data', {
+      ...data,
+        grpcWebProxyEndpoint: {
+          ipAddressV4: '',
+          domainName: $event,
+          port: data.grpcWebProxyEndpoint?.port || '',
+        },
+      })
+      "
+        placeholder="Enter FQDN"
+        :filled="true"
+      />
+    </div>
+
+    <div class="col-4 col-xxxl-3">
+      <label class="form-label">Port</label>
+      <AppInput
+        :model-value="data.grpcWebProxyEndpoint?.port || ''"
+        @update:model-value="
+        emit('update:data', {
+          ...data,
+          grpcWebProxyEndpoint: {
+            ipAddressV4: '',
+            domainName: data.grpcWebProxyEndpoint?.domainName || '',
+          port: $event,
+        },
+       })
+        "
+        placeholder="Enter Port"
+        :filled="true"
+      />
+    </div>
+  </div>
+</div>
+
 
   <hr class="separator my-5" />
 
