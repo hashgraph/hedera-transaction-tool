@@ -29,7 +29,7 @@ export type PersonalUser = { personalId: string } & (
 
 /* Props */
 const props = defineProps<{
-  recoveryPhrase: RecoveryPhrase;
+  recoveryPhrase?: RecoveryPhrase;
 }>();
 
 /* Emits */
@@ -74,30 +74,31 @@ const setupPersonal = async ({
     : (await registerLocal(email, password, true)).id;
 
   /* Restore first key pair */
-  if (!props.recoveryPhrase) throw new Error('(BUG) Recovery phrase not set');
-  const passphrase = '';
-  const index = 0;
-  const type = 'ED25519';
-  const restoredPrivateKey = await restorePrivateKey(
-    props.recoveryPhrase.words,
-    passphrase,
-    index,
-    type,
-  );
+  if (props.recoveryPhrase) {
+    const passphrase = '';
+    const index = 0;
+    const type = 'ED25519';
+    const restoredPrivateKey = await restorePrivateKey(
+      props.recoveryPhrase.words,
+      passphrase,
+      index,
+      type,
+    );
 
-  /* Store the key pair */
-  const keyPair: Prisma.KeyPairUncheckedCreateInput = {
-    user_id: personalId,
-    index,
-    public_key: restoredPrivateKey.publicKey.toStringRaw(),
-    private_key: restoredPrivateKey.toStringRaw(),
-    type,
-    organization_id: null,
-    organization_user_id: null,
-    secret_hash: props.recoveryPhrase.hash,
-    nickname: null,
-  };
-  await storeKeyPair(keyPair, !useKeychain ? password : null, false);
+    /* Store the key pair */
+    const keyPair: Prisma.KeyPairUncheckedCreateInput = {
+      user_id: personalId,
+      index,
+      public_key: restoredPrivateKey.publicKey.toStringRaw(),
+      private_key: restoredPrivateKey.toStringRaw(),
+      type,
+      organization_id: null,
+      organization_user_id: null,
+      secret_hash: props.recoveryPhrase.hash,
+      nickname: null,
+    };
+    await storeKeyPair(keyPair, !useKeychain ? password : null, false);
+  }
 
   if (useKeychain) {
     return {

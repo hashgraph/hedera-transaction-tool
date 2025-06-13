@@ -58,7 +58,7 @@ const handleStored = () => {
 };
 
 /* Functions */
-async function process(keyPaths: string[], words: string[] | null) {
+async function process(keyPaths: string[], words?: string[] | null) {
   reset();
 
   allKeyPaths.value = keyPaths;
