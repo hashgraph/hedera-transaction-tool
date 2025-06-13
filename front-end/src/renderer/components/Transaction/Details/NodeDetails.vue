@@ -12,7 +12,8 @@ import {
   PublicKey,
 } from '@hashgraph/sdk';
 
-import { getEndpointData, uint8ToHex } from '@renderer/utils';
+import { getComponentServiceEndpoint, getComponentServiceEndpoints,  uint8ToHex } from '@renderer/utils';
+
 
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 
@@ -112,6 +113,22 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           {{ transaction.declineReward ? 'No' : 'Yes' }}
         </p>
       </div>
+      <!-- gRPC Web Proxy  -->
+      <div
+        v-if="
+          transaction instanceof NodeCreateTransaction ||
+          transaction.grpcWebProxyEndpoint !== null
+        "
+        class="col-12 my-3"
+      >
+        <h4 :class="detailItemLabelClass">gRPC Web Proxy</h4>
+<!--        <p :class="detailItemValueClass">-->
+<!--          {{ transaction.grpcWebProxyEndpoint?.getDomainName}}-->
+<!--        </p>-->
+<!--        <p :class="detailItemValueClass">-->
+<!--          {{ transaction.grpcWebProxyEndpoint?.getPort }}-->
+<!--        </p>-->
+      </div>
 
       <!-- Gossip Endpoints -->
       <div
@@ -129,7 +146,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           </thead>
           <tbody class="thin">
             <tr
-              v-for="(endpoint, index) of getEndpointData(transaction.gossipEndpoints)"
+              v-for="(endpoint, index) of getComponentServiceEndpoints(transaction.gossipEndpoints)"
               :key="index"
             >
               <td class="col text-start">{{ endpoint.ipAddressV4 }}</td>
@@ -156,7 +173,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           </thead>
           <tbody class="thin">
             <tr
-              v-for="(endpoint, index) of getEndpointData(transaction.serviceEndpoints)"
+              v-for="(endpoint, index) of getComponentServiceEndpoints(transaction.serviceEndpoints)"
               :key="index"
             >
               <td class="col text-start">{{ endpoint.ipAddressV4 }}</td>
@@ -169,28 +186,23 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 
       <!-- gRPC Web Proxy Endpoint -->
       <div
-        v-if="transaction.grpcWebProxyEndpoint"
         class="col-12 my-3"
       >
         <h4 :class="detailItemLabelClass">gRPC Web Proxy Endpoint</h4>
         <table class="table-custom">
           <thead class="thin">
           <tr>
-            <th class="text-start">IP Address</th>
-            <th class="text-start">Port</th>
             <th class="text-start">Domain Name</th>
+            <th class="text-start">Port</th>
           </tr>
           </thead>
           <tbody class="thin">
           <tr v-if="transaction.grpcWebProxyEndpoint">
             <td class="col text-start">
-              {{ getEndpointData([transaction.grpcWebProxyEndpoint])[0].ipAddressV4 }}
+              {{ getComponentServiceEndpoint(transaction.grpcWebProxyEndpoint).port }}
             </td>
             <td class="col text-start">
-              {{ getEndpointData([transaction.grpcWebProxyEndpoint])[0].port }}
-            </td>
-            <td class="col text-start">
-              {{ getEndpointData([transaction.grpcWebProxyEndpoint])[0].domainName }}
+              {{ getComponentServiceEndpoint(transaction.grpcWebProxyEndpoint).domainName}}
             </td>
           </tr>
           </tbody>

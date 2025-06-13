@@ -662,11 +662,7 @@ export interface NetworkNode {
   staking_period: TimestampRange | null;
   reward_rate_start: number | null;
   decline_reward: boolean | null;
-  grpc_web_proxy_endpoint?: {
-    ip_address_v4?: string | null;
-    port: number;
-    domain_name?: string | null;
-  };
+  grpc_web_proxy_endpoint?: ServiceEndPoint | null;
 
 }
 
