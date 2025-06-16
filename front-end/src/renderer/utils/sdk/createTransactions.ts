@@ -508,7 +508,7 @@ const setNodeData = (
     transaction.setServiceEndpoints(txServiceEndpoints);
   }
 
-  if (txGrpcWebProxyEndpoint) {
+  if (oldData?.grpcWebProxyEndpoint != data.grpcWebProxyEndpoint) {
     transaction.setGrpcWebProxyEndpoint(txGrpcWebProxyEndpoint);
   }
 
@@ -605,6 +605,4 @@ export function createSystemUndeleteTransaction(
   setTransactionCommonData(transaction, data);
   setSystemData(transaction, data);
   return transaction;
-
-
 }

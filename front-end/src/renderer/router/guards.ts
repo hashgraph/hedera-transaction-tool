@@ -35,7 +35,6 @@ export function addGuards(router: Router) {
       return { name: 'transactions' };
     }
 
-    console.log('user skipped setup:', user.skippedSetup);
     if (
       userIsLoggedIn &&
       (user.selectedOrganization ? userIsLoggedInOrganization : true) &&

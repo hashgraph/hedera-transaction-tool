@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ITransactionFull } from '@main/shared/interfaces';
 
-import { onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 
 import {
   Transaction,
@@ -25,6 +25,18 @@ const props = defineProps<{
 
 /* State */
 const isKeyStructureModalShown = ref(false);
+
+/* Computed */
+const grpcWebProxyEndpoint = computed(() => {
+  if (
+    props.transaction.grpcWebProxyEndpoint &&
+    (props.transaction instanceof NodeCreateTransaction ||
+      props.transaction instanceof NodeUpdateTransaction)
+  ) {
+    return getComponentServiceEndpoint(props.transaction.grpcWebProxyEndpoint);
+  }
+  return null;
+});
 
 /* Hooks */
 onBeforeMount(async () => {
@@ -113,22 +125,6 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           {{ transaction.declineReward ? 'No' : 'Yes' }}
         </p>
       </div>
-      <!-- gRPC Web Proxy  -->
-      <div
-        v-if="
-          transaction instanceof NodeCreateTransaction ||
-          transaction.grpcWebProxyEndpoint !== null
-        "
-        class="col-12 my-3"
-      >
-        <h4 :class="detailItemLabelClass">gRPC Web Proxy</h4>
-<!--        <p :class="detailItemValueClass">-->
-<!--          {{ transaction.grpcWebProxyEndpoint?.getDomainName}}-->
-<!--        </p>-->
-<!--        <p :class="detailItemValueClass">-->
-<!--          {{ transaction.grpcWebProxyEndpoint?.getPort }}-->
-<!--        </p>-->
-      </div>
 
       <!-- Gossip Endpoints -->
       <div
@@ -186,29 +182,14 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 
       <!-- gRPC Web Proxy Endpoint -->
       <div
+        v-if="grpcWebProxyEndpoint"
         class="col-12 my-3"
       >
         <h4 :class="detailItemLabelClass">gRPC Web Proxy Endpoint</h4>
-        <table class="table-custom">
-          <thead class="thin">
-          <tr>
-            <th class="text-start">Domain Name</th>
-            <th class="text-start">Port</th>
-          </tr>
-          </thead>
-          <tbody class="thin">
-          <tr v-if="transaction.grpcWebProxyEndpoint">
-            <td class="col text-start">
-              {{ getComponentServiceEndpoint(transaction.grpcWebProxyEndpoint).port }}
-            </td>
-            <td class="col text-start">
-              {{ getComponentServiceEndpoint(transaction.grpcWebProxyEndpoint).domainName}}
-            </td>
-          </tr>
-          </tbody>
-        </table>
+        <p>
+          {{ grpcWebProxyEndpoint.domainName }}:{{ grpcWebProxyEndpoint.port }}
+        </p>
       </div>
-
 
       <!-- Gossip CA Certificate -->
       <div
