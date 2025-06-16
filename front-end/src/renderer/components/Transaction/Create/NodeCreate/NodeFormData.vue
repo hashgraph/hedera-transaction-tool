@@ -43,8 +43,6 @@ const gossipCaCertificateText = ref('');
 const gossipFile = useTemplateRef('gossipFile');
 const grpcFile = useTemplateRef('grpcFile');
 const nodeDescriptionError = ref(false);
-const grpcFqdn = ref('');
-const grpcPort = ref('');
 
 const validIp =
   '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]).){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$';
@@ -185,6 +183,17 @@ function getEndpointData(ipOrDomain: string, port: string) {
     port,
     domainName: domain.trim(),
   };
+}
+
+function getGrpcWebProxyEndpoint(field: 'domainName' | 'port', value: string) {
+  emit('update:data', {
+    ...data,
+    grpcWebProxyEndpoint: {
+      ipAddressV4: '',
+      domainName: field === 'domainName' ? value : data.grpcWebProxyEndpoint?.domainName || '',
+      port: field === 'port' ? value : data.grpcWebProxyEndpoint?.port || '',
+    },
+  });
 }
 
 function formatPort(event: Event, key: 'gossip' | 'service') {
@@ -432,17 +441,8 @@ watch(
     <div class="col-4 col-xxxl-3">
       <label class="form-label">Domain</label>
       <AppInput
-        :model-value="data.grpcWebProxyEndpoint?.domainName || ''"
-        @update:model-value="
-          emit('update:data', {
-      ...data,
-        grpcWebProxyEndpoint: {
-          ipAddressV4: '',
-          domainName: $event,
-          port: data.grpcWebProxyEndpoint?.port || '',
-        },
-      })
-      "
+        :model-value="data.grpcWebProxyEndpoint?.domainName"
+        @update:model-value="getGrpcWebProxyEndpoint('domainName', $event)"
         placeholder="Enter FQDN"
         :filled="true"
       />
@@ -451,21 +451,49 @@ watch(
     <div class="col-4 col-xxxl-3">
       <label class="form-label">Port</label>
       <AppInput
-        :model-value="data.grpcWebProxyEndpoint?.port || ''"
-        @update:model-value="
-        emit('update:data', {
-          ...data,
-          grpcWebProxyEndpoint: {
-            ipAddressV4: '',
-            domainName: data.grpcWebProxyEndpoint?.domainName || '',
-          port: $event,
-        },
-       })
-        "
+        :model-value="data.grpcWebProxyEndpoint?.port"
+        @update:model-value="getGrpcWebProxyEndpoint('port', $event)"
         placeholder="Enter Port"
         :filled="true"
       />
     </div>
+<!--    <div class="col-4 col-xxxl-3">-->
+<!--      <label class="form-label">Domain</label>-->
+<!--      <AppInput-->
+<!--        :model-value="data.grpcWebProxyEndpoint?.domainName"-->
+<!--        @update:model-value="-->
+<!--          emit('update:data', {-->
+<!--      ...data,-->
+<!--        grpcWebProxyEndpoint: {-->
+<!--          ipAddressV4: '',-->
+<!--          domainName: $event,-->
+<!--          port: data.grpcWebProxyEndpoint?.port || '',-->
+<!--        },-->
+<!--      })-->
+<!--      "-->
+<!--        placeholder="Enter FQDN"-->
+<!--        :filled="true"-->
+<!--      />-->
+<!--    </div>-->
+
+<!--    <div class="col-4 col-xxxl-3">-->
+<!--      <label class="form-label">Port</label>-->
+<!--      <AppInput-->
+<!--        :model-value="data.grpcWebProxyEndpoint?.port"-->
+<!--        @update:model-value="-->
+<!--        emit('update:data', {-->
+<!--          ...data,-->
+<!--          grpcWebProxyEndpoint: {-->
+<!--            ipAddressV4: '',-->
+<!--            domainName: data.grpcWebProxyEndpoint?.domainName || '',-->
+<!--            port: $event,-->
+<!--          },-->
+<!--       })-->
+<!--        "-->
+<!--        placeholder="Enter Port"-->
+<!--        :filled="true"-->
+<!--      />-->
+<!--    </div>-->
   </div>
 </div>
 
