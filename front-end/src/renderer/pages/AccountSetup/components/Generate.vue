@@ -165,7 +165,7 @@ watch(words, newWords => {
         color="secondary"
         class="w-100 mb-4"
         @click="handleSkip"
-        data-testid="button-skip-genereate"
+        data-testid="button-skip-generate"
       >
         <span>Skip</span>
       </AppButton>

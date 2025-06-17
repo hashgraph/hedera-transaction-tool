@@ -33,6 +33,8 @@ export const generateEmailContent = (type: string | NotificationType, ...notific
   switch (type) {
     case NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES:
       return generateTransactionWaitingForSignaturesContent(...notifications);
+    case NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER:
+      return generateRemindSignersContent(...notifications);
     case NotificationType.TRANSACTION_READY_FOR_EXECUTION:
       return generateTransactionReadyForExecutionContent(...notifications);
     case NotificationType.TRANSACTION_CANCELLED:
@@ -42,15 +44,17 @@ export const generateEmailContent = (type: string | NotificationType, ...notific
   }
 }
 
-//todo where did this go?
 export const getNetworkString = (network: string) => {
+  network = network.toLocaleLowerCase();
   switch (network) {
-    case 'testnet':
-      return 'Testnet';
     case 'mainnet':
       return 'Mainnet';
+    case 'testnet':
+      return 'Testnet';
     case 'previewnet':
       return 'Previewnet';
+    case 'local-node':
+      return 'Local Node';
     default:
       return network;
   }

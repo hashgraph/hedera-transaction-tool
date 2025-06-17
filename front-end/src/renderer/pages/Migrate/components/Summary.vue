@@ -111,10 +111,19 @@ onBeforeUnmount(() => {
 
       <SummaryItem
         class="mt-4"
-        label="Imported Keys"
+        label="Imported Key Pairs"
         :value="importedKeysCount.toString()"
         data-testid="p-migration-summary-imported-keys"
       />
+
+      <template v-if="importedUserData?.publicKeysImported > 0">
+        <SummaryItem
+          class="mt-4"
+          label="Imported Public Keys"
+          :value="importedUserData.publicKeysImported"
+          data-testid="p-migration-summary-imported-personal-id"
+        />
+      </template>
 
       <SummaryItem
         v-if="importedUserData?.accountsImported"
@@ -140,7 +149,13 @@ onBeforeUnmount(() => {
         data-testid="p-migration-summary-network"
       />
 
-      <SummaryItem class="mt-4" label="Recovery Phrase" value="" ref="recoveryPhraseItemRef">
+      <SummaryItem
+        v-if="user.recoveryPhrase?.words.length > 0"
+        class="mt-4"
+        label="Recovery Phrase"
+        value=""
+        ref="recoveryPhraseItemRef"
+      >
         <div class="position-relative">
           <AppButton
             color="primary"
