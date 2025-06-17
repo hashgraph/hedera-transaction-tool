@@ -21,6 +21,7 @@ import { safeAwait } from '@main/utils/safeAwait';
 
 import { addAccount } from './accounts';
 import { addClaim } from './claim';
+import { addPublicKey } from './publicKeyMapping';
 
 export const SALT_LENGTH = 16;
 export const KEY_LENGTH = 32;
@@ -223,6 +224,7 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
 
   const result: MigrateUserDataResult = {
     accountsImported: 0,
+    publicKeysImported: 0,
     defaultMaxTransactionFee: null,
     currentNetwork: defaultNetwork,
   };
@@ -287,6 +289,26 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
         console.log(error);
       } else {
         result.accountsImported++;
+      }
+    }
+  } catch (error) {
+    console.log(error);
+  }
+
+  try {
+    const keysPath = getDataMigrationKeysPath();
+    if (fs.existsSync(keysPath)) {
+      const files = await fs.promises.readdir(keysPath);
+      const pemFiles = new Set(
+        files.filter(file => file.endsWith('.pem')).map(file => path.parse(file).name)
+      );
+
+      for (const file of files.filter(file => file.endsWith('.pub') && !pemFiles.has(path.parse(file).name))) {
+        const filePath = path.join(keysPath, file);
+        const publicKeyContent = await fs.promises.readFile(filePath, 'utf-8');
+        const nickname = path.basename(filePath, '.pub');
+        await addPublicKey(publicKeyContent, nickname);
+        result.publicKeysImported++;
       }
     }
   } catch (error) {

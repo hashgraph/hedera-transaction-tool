@@ -32,6 +32,13 @@ const handleFormSubmit: SubmitCallback = async ({ recoveryPhrasePassword }: Mode
   return null;
 };
 
+const handleSkipDecrypt = () => {
+  emit('setRecoveryPhrase', {
+    recoveryPhrase: null,
+    recoveryPhrasePassword: null,
+  });
+};
+
 /* Functions */
 const decryptRecoveryPhrase = async (recoveryPhrasePassword: string) => {
   const { data, error } = await safeAwait(decryptMigrationMnemonic(recoveryPhrasePassword));
@@ -49,6 +56,7 @@ const decryptRecoveryPhrase = async (recoveryPhrasePassword: string) => {
   <DecryptRecoveryPhraseForm
     :loading="loading"
     :submit-callback="handleFormSubmit"
+    @skip-decrypt="handleSkipDecrypt"
     @stop-migration="$emit('stopMigration')"
   />
 </template>
