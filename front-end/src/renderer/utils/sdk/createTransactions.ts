@@ -14,7 +14,8 @@ import {
   FreezeType,
   Hbar,
   Key,
-  KeyList, Long,
+  KeyList,
+  Long,
   NodeCreateTransaction,
   NodeDeleteTransaction,
   NodeUpdateTransaction,
@@ -76,7 +77,6 @@ export type AccountDeleteData = {
 export type AccountUpdateData = AccountData & {
   accountId: string;
 };
-
 
 export type AccountUpdateDataMultiple = {
   accountIds: string[];

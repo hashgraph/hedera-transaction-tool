@@ -29,7 +29,6 @@ const isKeyStructureModalShown = ref(false);
 /* Computed */
 const grpcWebProxyEndpoint = computed(() => {
   if (
-    props.transaction.grpcWebProxyEndpoint &&
     (props.transaction instanceof NodeCreateTransaction ||
       props.transaction instanceof NodeUpdateTransaction)
   ) {
