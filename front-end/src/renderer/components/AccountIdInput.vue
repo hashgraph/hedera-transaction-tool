@@ -29,13 +29,13 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* State */
-const accoundIds = ref<HederaAccount[]>([]);
+const accountIds = ref<HederaAccount[]>([]);
 
 /* Computed */
 const formattedAccountIds = computed(() =>
   (
     props.items ||
-    accoundIds.value.map(a => a.account_id).concat(user.publicKeysToAccountsFlattened)
+    accountIds.value.map(a => a.account_id).concat(user.publicKeysToAccountsFlattened)
   ).map(id => getAccountIdWithChecksum(id)),
 );
 
@@ -60,7 +60,7 @@ function handleOnBlur() {
 /* Hooks */
 onBeforeMount(async () => {
   if (isUserLoggedIn(user.personal)) {
-    accoundIds.value = await getAll({
+    accountIds.value = await getAll({
       where: {
         user_id: user.personal.id,
         network: network.network,

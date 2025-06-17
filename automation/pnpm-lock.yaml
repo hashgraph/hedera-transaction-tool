@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@hashgraph/proto':
-        specifier: 2.18.5
-        version: 2.18.5
+        specifier: 2.19.0
+        version: 2.19.0
       '@hashgraph/sdk':
-        specifier: 2.64.5
-        version: 2.64.5(bn.js@5.2.1)(react-native@0.79.2(@babel/core@7.27.1)(react@19.1.0))
+        specifier: 2.66.0
+        version: 2.66.0(bn.js@5.2.1)(react-native@0.79.2(@babel/core@7.27.1)(react@19.1.0))
       '@playwright/test':
         specifier: 1.50.0
         version: 1.50.0
@@ -288,8 +288,8 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
-  '@hashgraph/cryptography@1.7.2':
-    resolution: {integrity: sha512-XeLpuoUNrW/F9gCiivmg5RnHjoNc8i5S4kK5BII6Dk3KfgeYt6hwJw1jGqwXenmrprbxPq7QIh10HuCTrGCzcw==}
+  '@hashgraph/cryptography@1.8.0':
+    resolution: {integrity: sha512-tkBbGd8zU2dNCwlxCX47cS+VhRosh8mEbFfjvjzjcuW2KxdVsdV6GshyVtXeFxHMijo5kAcxd2CoubhCreNdaQ==}
     engines: {node: '>=12.0.0'}
     peerDependencies:
       expo-crypto: '*'
@@ -297,12 +297,12 @@ packages:
       expo-crypto:
         optional: true
 
-  '@hashgraph/proto@2.18.5':
-    resolution: {integrity: sha512-LifEGGhvkqF49PYVP0xkcnCh8fP43q/+JkGPdZkwKglw1wFAJkPHZtQmGZSjmDpl2gbJiRyzvzJ1Q9MJ1VBA4Q==}
+  '@hashgraph/proto@2.19.0':
+    resolution: {integrity: sha512-ghlkyPb8JJx9ACGVna84vOtMqQkisBZ+EGeQe+FT+ci7qlhdf/ecRGvMw/uanSE5yviOFBqJeH0c2SzVIqpydQ==}
     engines: {node: '>=10.0.0'}
 
-  '@hashgraph/sdk@2.64.5':
-    resolution: {integrity: sha512-AIa8jlkhDx2GZHSURWb3YuobTDwozmVyiyvt7MZRDDYKQbibrpyvrTI6E2IRx1xn7fI0Vd5aHELtmHYmkEVjag==}
+  '@hashgraph/sdk@2.66.0':
+    resolution: {integrity: sha512-A5dCSxb7pzYhgd7zhkOJ7lJRwg29MEcfkq0B/Nqb5j2Swdee6v+DCse7xkB978dmHnfrG6UM64LZX0qMWw8Uiw==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       bn.js: ^5.2.1
@@ -2387,7 +2387,7 @@ snapshots:
       protobufjs: 7.2.5
       yargs: 17.7.2
 
-  '@hashgraph/cryptography@1.7.2(react-native@0.79.2(@babel/core@7.27.1)(react@19.1.0))':
+  '@hashgraph/cryptography@1.8.0(react-native@0.79.2(@babel/core@7.27.1)(react@19.1.0))':
     dependencies:
       '@noble/curves': 1.9.1
       asn1js: 3.0.6
@@ -2404,20 +2404,20 @@ snapshots:
     transitivePeerDependencies:
       - react-native
 
-  '@hashgraph/proto@2.18.5':
+  '@hashgraph/proto@2.19.0':
     dependencies:
       long: 5.2.3
       protobufjs: 7.2.5
 
-  '@hashgraph/sdk@2.64.5(bn.js@5.2.1)(react-native@0.79.2(@babel/core@7.27.1)(react@19.1.0))':
+  '@hashgraph/sdk@2.66.0(bn.js@5.2.1)(react-native@0.79.2(@babel/core@7.27.1)(react@19.1.0))':
     dependencies:
       '@ethersproject/abi': 5.8.0
       '@ethersproject/bignumber': 5.8.0
       '@ethersproject/bytes': 5.8.0
       '@ethersproject/rlp': 5.8.0
       '@grpc/grpc-js': 1.12.6
-      '@hashgraph/cryptography': 1.7.2(react-native@0.79.2(@babel/core@7.27.1)(react@19.1.0))
-      '@hashgraph/proto': 2.18.5
+      '@hashgraph/cryptography': 1.8.0(react-native@0.79.2(@babel/core@7.27.1)(react@19.1.0))
+      '@hashgraph/proto': 2.19.0
       bignumber.js: 9.1.2
       bn.js: 5.2.1
       crypto-js: 4.2.0

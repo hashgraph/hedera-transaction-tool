@@ -15,6 +15,7 @@ import {
   Hbar,
   Key,
   KeyList,
+  Long,
   NodeCreateTransaction,
   NodeDeleteTransaction,
   NodeUpdateTransaction,
@@ -131,6 +132,7 @@ export type NodeData = {
   description: string;
   gossipEndpoints: ComponentServiceEndpoint[];
   serviceEndpoints: ComponentServiceEndpoint[];
+  grpcWebProxyEndpoint: ComponentServiceEndpoint | null;
   gossipCaCertificate: Uint8Array;
   certificateHash: Uint8Array;
   adminKey: Key | null;
@@ -231,7 +233,7 @@ export const createApproveHbarAllowanceTransaction = (
   return transaction;
 };
 
-/* Accound Delete Transaction */
+/* Account Delete Transaction */
 export const createAccountDeleteTransaction = (
   data: TransactionCommonData & AccountDeleteData,
 ): AccountDeleteTransaction => {
@@ -249,7 +251,7 @@ export const createAccountDeleteTransaction = (
   return transaction;
 };
 
-/* Accound Update Transaction */
+/* Account Update Transaction */
 export const createAccountUpdateTransaction = (
   data: TransactionCommonData & AccountUpdateData,
   oldData: IAccountInfoParsed | null,
@@ -441,37 +443,42 @@ export const createTransferHbarTransaction = (
   return transaction;
 };
 
-export const getServiceEndpoints = (data: ComponentServiceEndpoint[]) => {
-  const endpoints = new Array<ServiceEndpoint>();
-
-  for (const serviceEndpoint of data) {
-    const ipAddressV4 =
-      serviceEndpoint.ipAddressV4
-        ?.trim()
-        ?.split('.')
-        .filter(oct => oct.length > 0) || [];
-    const domainName = serviceEndpoint.domainName?.trim();
-    const port = Number.parseInt(serviceEndpoint.port?.trim());
-
-    if (ipAddressV4 || domainName) {
-      const serviceEndpoint = new ServiceEndpoint();
-
-      if (ipAddressV4.length > 0) {
-        serviceEndpoint.setIpAddressV4(Uint8Array.from(ipAddressV4.map(Number)));
-      } else if (domainName) {
-        serviceEndpoint.setDomainName(domainName);
-      }
-
-      if (!isNaN(port)) {
-        serviceEndpoint.setPort(port);
-      }
-
-      endpoints.push(serviceEndpoint);
-    }
-  }
-
-  return endpoints;
+export const getServiceEndpoints = (data: ComponentServiceEndpoint[]): ServiceEndpoint[] => {
+  return data
+    .map(getServiceEndpoint)
+    .filter((endpoint): endpoint is ServiceEndpoint => endpoint !== null);
 };
+
+
+
+export const getServiceEndpoint= (serviceEndpoint: ComponentServiceEndpoint | null) => {
+  if (!serviceEndpoint) {
+    return null;
+  }
+  const ipAddressV4 =
+    serviceEndpoint.ipAddressV4
+      ?.trim()
+      ?.split('.')
+      .filter(oct => oct.length > 0) || [];
+  const domainName = serviceEndpoint.domainName?.trim();
+  const port = Number.parseInt(serviceEndpoint.port?.trim());
+
+  if (ipAddressV4 || domainName) {
+    const serviceEndpoint = new ServiceEndpoint();
+
+    if (ipAddressV4.length > 0) {
+      serviceEndpoint.setIpAddressV4(Uint8Array.from(ipAddressV4.map(Number)));
+    } else if (domainName) {
+      serviceEndpoint.setDomainName(domainName);
+    }
+
+    if (!isNaN(port)) {
+      serviceEndpoint.setPort(port);
+    }
+    return serviceEndpoint;
+  }
+}
+
 
 const setNodeData = (
   transaction: NodeCreateTransaction | NodeUpdateTransaction,
@@ -480,6 +487,7 @@ const setNodeData = (
 ) => {
   const txGossipEndpoints = getServiceEndpoints(data.gossipEndpoints);
   const txServiceEndpoints = getServiceEndpoints(data.serviceEndpoints);
+  const txGrpcWebProxyEndpoint = getServiceEndpoint(data.grpcWebProxyEndpoint);
 
   if (oldData?.description !== data.description) {
     transaction.setDescription(data.description);
@@ -498,6 +506,10 @@ const setNodeData = (
 
   if (txServiceEndpoints.length > 0) {
     transaction.setServiceEndpoints(txServiceEndpoints);
+  }
+
+  if (oldData?.grpcWebProxyEndpoint != data.grpcWebProxyEndpoint) {
+    transaction.setGrpcWebProxyEndpoint(txGrpcWebProxyEndpoint);
   }
 
   if (data.certificateHash.length > 0) {
@@ -537,7 +549,7 @@ export function createNodeUpdateTransaction(
   setNodeData(transaction, data, oldData);
 
   if (data.nodeId) {
-    transaction.setNodeId(data.nodeId);
+    transaction.setNodeId(Long.fromString(data.nodeId));
   }
 
   return transaction;
@@ -551,7 +563,7 @@ export function createNodeDeleteTransaction(
   setTransactionCommonData(transaction, data);
 
   if (data.nodeId) {
-    transaction.setNodeId(data.nodeId);
+    transaction.setNodeId(Long.fromString(data.nodeId));
   }
 
   return transaction;
