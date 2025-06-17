@@ -187,11 +187,11 @@ function getEndpointData(ipOrDomain: string, port: string) {
 
 function getGrpcWebProxyEndpoint(field: 'domainName' | 'port', value: string) {
   emit('update:data', {
-    ...data,
+    ...this.props.data,
     grpcWebProxyEndpoint: {
       ipAddressV4: '',
-      domainName: field === 'domainName' ? value : data.grpcWebProxyEndpoint?.domainName || '',
-      port: field === 'port' ? value : data.grpcWebProxyEndpoint?.port || '',
+      domainName: field === 'domainName' ? value : this.props.data.grpcWebProxyEndpoint?.domainName || '',
+      port: field === 'port' ? value : this.props.data.grpcWebProxyEndpoint?.port || '',
     },
   });
 }
