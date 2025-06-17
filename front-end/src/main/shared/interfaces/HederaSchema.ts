@@ -662,7 +662,7 @@ export interface NetworkNode {
   staking_period: TimestampRange | null;
   reward_rate_start: number | null;
   decline_reward: boolean | null;
-  grpc_web_proxy_endpoint?: ServiceEndPoint | null;
+  grpc_proxy_endpoint: ServiceEndPoint | null;
 
 }
 

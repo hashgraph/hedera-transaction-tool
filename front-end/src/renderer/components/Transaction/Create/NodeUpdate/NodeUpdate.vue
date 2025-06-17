@@ -12,7 +12,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 import useNodeId from '@renderer/composables/useNodeId';
 
 import { createNodeUpdateTransaction } from '@renderer/utils/sdk/createTransactions';
-import { getNodeUpdateData, isAccountId } from '@renderer/utils';
+import {getComponentServiceEndpoint, getNodeUpdateData, isAccountId} from '@renderer/utils';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeUpdateFormData from '@renderer/components/Transaction/Create/NodeUpdate/NodeUpdateFormData.vue';
@@ -115,7 +115,7 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.description = nodeInfo.description || '';
     data.gossipEndpoints = [];
     data.serviceEndpoints = [];
-    data.grpcWebProxyEndpoint = null;
+    data.grpcWebProxyEndpoint = getComponentServiceEndpoint(nodeInfo.grpc_web_proxy_endpoint);
     data.gossipCaCertificate = Uint8Array.from([]);
     data.certificateHash = Uint8Array.from([]);
     data.adminKey = nodeInfo.admin_key;

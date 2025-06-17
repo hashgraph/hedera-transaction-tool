@@ -216,13 +216,9 @@ export const getTransferHbarData = (transaction: Transaction): TransferHbarData 
   };
 };
 
-export const getComponentServiceEndpoint = ( serviceEndpoint: ServiceEndpoint | null): ComponentServiceEndpoint => {
+export const getComponentServiceEndpoint = ( serviceEndpoint: ServiceEndpoint | null): ComponentServiceEndpoint | null => {
   if (!serviceEndpoint) {
-    return{
-        ipAddressV4: '',
-        port: '',
-        domainName: '',
-      };
+    return null;
   }
 
   const ipAddressV4 =

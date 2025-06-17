@@ -91,6 +91,14 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
         </p>
       </div>
 
+      <!-- Description -->
+      <div v-if="transaction.description" :class="commonColClass">
+        <h4 :class="detailItemLabelClass">Description</h4>
+        <p :class="detailItemValueClass" data-testid="p-node-details-description">
+          {{ transaction.description }}
+        </p>
+      </div>
+
       <!-- Admin Key -->
       <div v-if="transaction.adminKey" class="col-12 my-3">
         <h4 :class="detailItemLabelClass">Admin Key</h4>
