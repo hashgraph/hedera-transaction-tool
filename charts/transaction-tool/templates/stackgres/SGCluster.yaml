@@ -1,0 +1,9 @@
+{{- if and (hasKey .Values.stackgres "SGCluster") .Values.stackgres.enabled }}
+apiVersion: stackgres.io/v1
+kind: SGCluster
+metadata:
+  name: {{ include "transactiontool.fullname" . }}-pg
+  namespace: {{ .Release.Namespace }}
+spec:
+{{- .Values.stackgres.SGCluster.config | toYaml | nindent 2 }}
+{{- end }}

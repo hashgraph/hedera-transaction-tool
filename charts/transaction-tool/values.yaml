@@ -7,8 +7,351 @@ global:
   labels: {}
   annotations: {}
 
+stackgres:
+  enabled: true
+  # @param stackgres.shardedCluster https://stackgres.io/doc/1.16/reference/crd/sgshardedcluster/
+  shardedCluster:
+    configurations:
+      backups:
+      - sgObjectStorage: transaction-tool-citus-object-storage
+        compression: lz4
+        cronSchedule: 45 22 * * *
+        fastVolumeSnapshot: true
+        performance:
+          uploadDiskConcurrency: 1
+        retention: 7
+        useVolumeSnapshot: true
+        volumeSnapshotClass: zfs
+      - sgObjectStorage: transaction-tool-citus-object-storage-test
+        compression: lz4
+        cronSchedule: 45 22 * * *
+        fastVolumeSnapshot: true
+        performance:
+          uploadDiskConcurrency: 1
+        retention: 7
+        useVolumeSnapshot: true
+        volumeSnapshotClass: zfs
+      observability:
+        disableMetrics: false
+        prometheusAutobind: true
+    coordinator:
+      configurations:
+        sgPoolingConfig: transaction-tool-citus-coordinator
+        sgPostgresConfig: transaction-tool-citus-coordinator
+      instances: 2
+      managedSql:
+        scripts:
+          - sgScript: transaction-tool-citus-coordinator
+          - sgScript: transaction-tool-citus-coordinator-test
+      pods:
+        disableEnvoy: true
+        disablePostgresUtil: false
+        persistentVolume:
+          size: 5Gi
+          storageClass: zfs
+        resources:
+          disableResourcesRequestsSplitFromTotal: true
+        scheduling:
+          backup:
+            priorityClassName: system-cluster-critical
+          priorityClassName: system-cluster-critical
+          nodeSelector:
+            citus-role: coordinator
+            csi-type: zfs
+          tolerations:
+            - key: zfs
+              operator: Equal
+              value: "true"
+              effect: NoSchedule
+      sgInstanceProfile: transaction-tool-citus-coordinator
+    database: transaction_tool
+    nonProductionOptions:
+      disableClusterPodAntiAffinity: false
+    postgres:
+      extensions:
+        - name: citus
+          version: 12.1.1
+        - name: btree_gist
+          version: stable
+        - name: pg_trgm
+          version: "1.6"
+      ssl:
+        enabled: false
+      version: "16.2"
+    replication:
+      initialization:
+        mode: FromReplica
+      mode: sync-all
+    shards:
+      clusters: 3
+      configurations:
+        sgPoolingConfig: transaction-tool-citus-worker
+        sgPostgresConfig: transaction-tool-citus-worker
+      instancesPerCluster: 1
+      managedSql:
+        scripts:
+          - sgScript: transaction-tool-citus-worker
+      overrides:
+        []
+      pods:
+        disableEnvoy: true
+        disablePostgresUtil: false
+        persistentVolume:
+          size: 10Gi
+          storageClass: zfs
+        resources:
+          disableResourcesRequestsSplitFromTotal: true
+        scheduling:
+          backup:
+            priorityClassName: system-cluster-critical
+          priorityClassName: system-cluster-critical
+          nodeSelector:
+            citus-role: worker
+            csi-type: zfs
+          tolerations:
+            - key: zfs
+              operator: Equal
+              value: "true"
+              effect: NoSchedule
+      sgInstanceProfile: transaction-tool-citus-worker
+    type: citus
+  # @param stackgres.objectStorage https://stackgres.io/doc/1.16/reference/crd/sgobjectstorage/
+  objectStorage:
+    transaction-tool-citus-object-storage:
+      type: s3Compatible
+      s3Compatible:
+        bucket: stackgres-backup
+        enablePathStyleAddressing: true
+        endpoint: http://transaction-tool-minio.common:9000
+        awsCredentials:
+          secretKeySelectors:
+            accessKeyId:
+              key: root-user
+              name: transaction-tool-citus-objectstorage-creds
+            secretAccessKey:
+              key: root-password
+              name: transaction-tool-citus-objectstorage-creds
+    transaction-tool-citus-object-storage-test:
+      type: s3Compatible
+      s3Compatible:
+        bucket: stackgres-backup
+        enablePathStyleAddressing: true
+        endpoint: http://transaction-tool-minio.common:9000
+        awsCredentials:
+          secretKeySelectors:
+            accessKeyId:
+              key: root-user-test
+              name: transaction-tool-citus-objectstorage-creds
+            secretAccessKey:
+              key: root-password-test
+              name: transaction-tool-citus-objectstorage-creds
+  # @param stackgres.poolingConfig https://stackgres.io/doc/1.16/reference/crd/sgpoolingconfig/
+  poolingConfig:
+    coordinator:
+      pgBouncer:
+        pgbouncer.ini:
+          pgbouncer:
+            default_pool_size: "800"
+            ignore_startup_parameters: extra_float_digits,options,statement_timeout
+            max_client_conn: "1600"
+            max_prepared_statements: "512"
+            pool_mode: transaction
+            server_lifetime: "1200"
+          users:
+            mirror_importer:
+              pool_mode: session
+            mirror_node:
+              pool_mode: session
+            mirror_rest:
+              max_user_client_connections: 1000
+              max_user_connections: 250
+            mirror_web3:
+              max_user_client_connections: 1000
+              max_user_connections: 250
+    worker:
+      pgBouncer:
+        pgbouncer.ini:
+          pgbouncer:
+            default_pool_size: "900"
+            ignore_startup_parameters: extra_float_digits,options,statement_timeout
+            max_client_conn: "2000"
+            max_prepared_statements: "512"
+            pool_mode: transaction
+            server_lifetime: "1200"
+          users:
+            mirror_importer:
+              pool_mode: session
+            mirror_node:
+              pool_mode: session
+  postgresConfig:
+    coordinator:
+      postgresql.conf:
+        autovacuum_max_workers: "2"
+        checkpoint_timeout: "1800"
+        citus.executor_slow_start_interval: 10ms
+        citus.force_max_query_parallelization: "on"
+        citus.max_cached_conns_per_worker: "6"
+        citus.max_shared_pool_size: "850"
+        citus.node_conninfo: sslmode=disable
+        full_page_writes: "true"
+        log_checkpoints: "true"
+        log_timezone: Etc/UTC
+        maintenance_work_mem: 256MB
+        max_connections: "800"
+        max_wal_size: 24GB
+        password_encryption: scram-sha-256
+        random_page_cost: "1.1"
+        shared_buffers: 7GB
+        wal_init_zero: "off"
+        wal_recycle: "off"
+        work_mem: 12MB
+      postgresVersion: "16"
+    worker:
+      postgresql.conf:
+        autovacuum_max_workers: "2"
+        checkpoint_timeout: "1800"
+        citus.node_conninfo: sslmode=disable
+        full_page_writes: "false"
+        log_checkpoints: "true"
+        log_timezone: Etc/UTC
+        maintenance_work_mem: 256MB
+        max_connections: "900"
+        max_wal_size: 24GB
+        password_encryption: scram-sha-256
+        random_page_cost: "1.1"
+        shared_buffers: 12GB
+        wal_init_zero: "off"
+        wal_recycle: "off"
+        work_mem: 12MB
+      postgresVersion: "16"
+  script:
+    coordinator:
+      transaction-tool-citus-coordinator:
+        continueOnError: false
+        managedVersions: true
+        scripts:
+          - database: postgres
+            id: 0
+            name: all-postgres
+            retryOnError: true
+            scriptFrom:
+              secretKeyRef:
+                name: transaction-tool-passwords
+                key: all-postgres.sql
+            storeStatusInDatabase: true
+            user: postgres
+            wrapInTransaction: serializable
+          - database: transaction_tool
+            id: 1
+            name: all-db
+            retryOnError: true
+            scriptFrom:
+              secretKeyRef:
+                name: transaction-tool-passwords
+                key: all-db.sql
+            storeStatusInDatabase: true
+            user: postgres
+            wrapInTransaction: serializable
+          - database: transaction_tool
+            id: 2
+            name: coordinator-owner
+            retryOnError: true
+            scriptFrom:
+              secretKeyRef:
+                name: transaction-tool-passwords
+                key: coordinator-owner.sql
+            storeStatusInDatabase: true
+            user: mirror_node
+            wrapInTransaction: serializable
+          - database: transaction_tool
+            id: 3
+            name: coordinator-superuser
+            retryOnError: true
+            scriptFrom:
+              secretKeyRef:
+                name: transaction-tool-passwords
+                key: coordinator-superuser.sql
+            storeStatusInDatabase: true
+            user: postgres
+            wrapInTransaction: serializable
+      transaction-tool-citus-coordinator-test:
+        continueOnError: false
+        managedVersions: true
+        scripts:
+          - database: postgres
+            id: 0
+            name: all-postgres
+            retryOnError: true
+            scriptFrom:
+              secretKeyRef:
+                name: transaction-tool-passwords
+                key: all-postgres.sql
+            storeStatusInDatabase: true
+            user: postgres
+            wrapInTransaction: serializable
+    worker:
+      transaction-tool-citus-worker:
+        continueOnError: false
+        managedVersions: true
+        scripts:
+          - database: postgres
+            id: 0
+            name: all-postgres
+            retryOnError: true
+            scriptFrom:
+              secretKeyRef:
+                name: transaction-tool-passwords
+                key: all-postgres.sql
+            user: postgres
+            wrapInTransaction: serializable
+          - database: transaction_tool
+            id: 1
+            name: all-db
+            retryOnError: true
+            scriptFrom:
+              secretKeyRef:
+                name: transaction-tool-passwords
+                key: all-db.sql
+            user: postgres
+            wrapInTransaction: serializable
+  instanceProfile:
+    coordinator:
+      transaction-tool-citus-coordinator:
+        cpu: 8100m
+        memory: 24Gi
+        requests:
+          containers:
+            backup.create-backup:
+              cpu: 1500m
+              memory: 512Mi
+            cluster-controller:
+              cpu: 500m
+            patroni:
+              cpu: 8100m
+            pgbouncer:
+              cpu: 300m
+            prometheus-postgres-exporter:
+              cpu: 100m
+    worker:
+      transaction-tool-citus-worker:
+        cpu: 10250m
+        memory: 40Gi
+        requests:
+          containers:
+            backup.create-backup:
+              cpu: 1500m
+              memory: 512Mi
+            cluster-controller:
+              cpu: 500m
+            patroni:
+              cpu: 10250m
+            pgbouncer:
+              cpu: 300m
+            prometheus-postgres-exporter:
+              cpu: 100m
+
 rabbitmq:
-  # @param rabbitmq.enabled set to true if you want to self-host on your k8s cluster.
+  # @param rabbitmq.enabled set to true if you want to self-host RabbitMQ in your k8s cluster.
   enabled: true
   # @param rabbitmq.createSecrets required only if you are self-hosting RabbitMQ in your cluster AND you don't want to create your own secret object.
   createSecrets: true

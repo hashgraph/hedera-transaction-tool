@@ -1,0 +1,9 @@
+{{- if .Values.stackgres.enabled }}
+apiVersion: stackgres.io/v1
+kind: SGShardedCluster
+metadata:
+  name: {{ include "transactiontool.fullname" . }}-citus
+  namespace: {{ .Release.Namespace }}
+spec:
+{{- .Values.stackgres.shardedCluster | toYaml | nindent 2 }}
+{{- end -}}
