@@ -12,7 +12,7 @@
       "@semantic-release/github",
       {
         "assets": [
-          {"path": "front-end/release/*.pkg", "label": "macOS Package ${path}"}
+          {"path": "front-end/release/*.pkg"}
         ]
       }
     ]
