@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { IAccountInfoParsed } from '@main/shared/interfaces';
+import type { IAccountInfoParsed } from 'lib';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 import type { ApproveHbarAllowanceData } from '@renderer/utils/sdk';
 

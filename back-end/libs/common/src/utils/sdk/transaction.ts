@@ -303,12 +303,12 @@ export const computeSignatureKey = async (
       const nodeInfo = parseNodeInfo(await mirrorNodeService.getNodeInfo(nodeId, mirrorNetwork));
       const nodeSignatureKey = new KeyList();
 
-      if (nodeInfo.admin_key) {
-        nodeSignatureKey.push(nodeInfo.admin_key);
+      if (nodeInfo.adminKey) {
+        nodeSignatureKey.push(nodeInfo.adminKey);
       }
 
       if (transactionIs(NodeUpdateTransaction, transaction)) {
-        const nodeAccountId = nodeInfo?.node_account_id?.toString() || null;
+        const nodeAccountId = nodeInfo?.nodeAccountId?.toString() || null;
         if (transaction.accountId && nodeAccountId) {
           const accountInfo = parseAccountInfo(
             await mirrorNodeService.getAccountInfo(nodeAccountId, mirrorNetwork),

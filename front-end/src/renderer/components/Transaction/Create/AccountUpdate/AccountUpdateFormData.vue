@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Client } from '@hashgraph/sdk';
-import type { IAccountInfoParsed } from '@main/shared/interfaces';
+import type { IAccountInfoParsed } from 'lib';
 import type {
   AccountData,
   AccountUpdateData,

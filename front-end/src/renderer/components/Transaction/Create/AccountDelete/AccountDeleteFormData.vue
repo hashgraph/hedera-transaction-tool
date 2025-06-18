@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { IAccountInfoParsed } from '@main/shared/interfaces';
+import type { IAccountInfoParsed } from 'lib';
 import type { AccountDeleteData } from '@renderer/utils/sdk';
 
 import { ref } from 'vue';

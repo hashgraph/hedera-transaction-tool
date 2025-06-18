@@ -1,4 +1,4 @@
-import type { IAccountInfoParsed, INodeInfoParsed } from '@main/shared/interfaces';
+import type { IAccountInfoParsed, INodeInfoParsed } from 'lib';
 
 import {
   AccountAllowanceApproveTransaction,
@@ -449,9 +449,7 @@ export const getServiceEndpoints = (data: ComponentServiceEndpoint[]): ServiceEn
     .filter((endpoint): endpoint is ServiceEndpoint => endpoint !== null);
 };
 
-
-
-export const getServiceEndpoint= (serviceEndpoint: ComponentServiceEndpoint | null) => {
+export const getServiceEndpoint = (serviceEndpoint: ComponentServiceEndpoint | null) => {
   if (!serviceEndpoint) {
     return null;
   }
@@ -495,7 +493,7 @@ const setNodeData = (
 
   if (
     isAccountId(data.nodeAccountId) &&
-    data.nodeAccountId !== oldData?.node_account_id?.toString()
+    data.nodeAccountId !== oldData?.nodeAccountId?.toString()
   ) {
     transaction.setAccountId(data.nodeAccountId);
   }
@@ -520,13 +518,13 @@ const setNodeData = (
     transaction.setGossipCaCertificate(data.gossipCaCertificate);
   }
 
-  if (data.adminKey && oldData?.admin_key) {
-    !compareKeys(data.adminKey, oldData?.admin_key) && transaction.setAdminKey(data.adminKey);
+  if (data.adminKey && oldData?.adminKey) {
+    !compareKeys(data.adminKey, oldData?.adminKey) && transaction.setAdminKey(data.adminKey);
   } else if (data.adminKey) {
     transaction.setAdminKey(data.adminKey);
   }
 
-  if (oldData?.decline_reward !== data.declineReward) {
+  if (oldData?.declineReward !== data.declineReward) {
     transaction.setDeclineReward(data.declineReward);
   }
 };

@@ -85,14 +85,27 @@ export interface TokenAllowance extends CryptoAllowance {
   token_id: string | null; // Network entity ID in the format of shard.realm.num
 }
 
+export interface NftAllowance {
+  approved_for_all: boolean; // Boolean value indicating if the spender has the allowance to spend all NFTs owned by the given owner
+  owner: string | null; // Network entity ID in the format of shard.realm.num
+  spender: string | null; // Network entity ID in the format of shard.realm.num
+  timestamp: TimestampRange;
+  token_id: string | null; // Network entity ID in the format of shard.realm.num
+}
+
+export interface NftAllowancesResponse {
+  allowances: Array<NftAllowance>;
+  links: Links;
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 //                                                   Balance
 // ---------------------------------------------------------------------------------------------------------------------
 
 export interface BalancesResponse {
-  timestamp: string | null | undefined;
-  balances: Array<AccountBalance> | undefined;
-  links: Links | undefined;
+  timestamp: string | null;
+  balances: Array<AccountBalance>;
+  links: Links;
 }
 
 export interface AccountBalance {
@@ -118,6 +131,7 @@ export interface NftTransactionHistory {
 export interface TransactionByIdResponse {
   transactions: Array<TransactionDetail> | undefined;
 }
+
 export interface Transaction {
   bytes: string | null;
   charged_tx_fee: number;
@@ -152,7 +166,6 @@ export interface NftTransactionTransfer {
 }
 
 export interface TransactionDetail extends Transaction {
-  nft_transfers: NftTransfer[];
   assessed_custom_fees: CustomFee[];
 }
 
@@ -221,18 +234,26 @@ export enum TransactionType {
   CRYPTOUPDATEACCOUNT = 'CRYPTOUPDATEACCOUNT',
   CRYPTOAPPROVEALLOWANCE = 'CRYPTOAPPROVEALLOWANCE',
   CRYPTODELETEALLOWANCE = 'CRYPTODELETEALLOWANCE',
+  ETHEREUMTRANSACTION = 'ETHEREUMTRANSACTION',
   FILEAPPEND = 'FILEAPPEND',
   FILECREATE = 'FILECREATE',
   FILEDELETE = 'FILEDELETE',
   FILEUPDATE = 'FILEUPDATE',
   FREEZE = 'FREEZE',
+  NODECREATE = 'NODECREATE',
+  NODEDELETE = 'NODEDELETE',
+  NODESTAKEUPDATE = 'NODESTAKEUPDATE',
+  NODEUPDATE = 'NODEUPDATE',
   SCHEDULECREATE = 'SCHEDULECREATE',
   SCHEDULEDELETE = 'SCHEDULEDELETE',
   SCHEDULESIGN = 'SCHEDULESIGN',
   SYSTEMDELETE = 'SYSTEMDELETE',
   SYSTEMUNDELETE = 'SYSTEMUNDELETE',
   TOKENASSOCIATE = 'TOKENASSOCIATE',
+  TOKENAIRDROP = 'TOKENAIRDROP',
   TOKENBURN = 'TOKENBURN',
+  TOKENCANCELAIRDROP = 'TOKENCANCELAIRDROP',
+  TOKENCLAIMAIRDROP = 'TOKENCLAIMAIRDROP',
   TOKENCREATION = 'TOKENCREATION',
   TOKENDELETION = 'TOKENDELETION',
   TOKENDISSOCIATE = 'TOKENDISSOCIATE',
@@ -241,14 +262,14 @@ export enum TransactionType {
   TOKENGRANTKYC = 'TOKENGRANTKYC',
   TOKENMINT = 'TOKENMINT',
   TOKENPAUSE = 'TOKENPAUSE',
+  TOKENREJECT = 'TOKENREJECT',
   TOKENREVOKEKYC = 'TOKENREVOKEKYC',
   TOKENUNFREEZE = 'TOKENUNFREEZE',
   TOKENUNPAUSE = 'TOKENUNPAUSE',
   TOKENUPDATE = 'TOKENUPDATE',
+  TOKENUPDATENFTS = 'TOKENUPDATENFTS',
   TOKENWIPE = 'TOKENWIPE',
   UNCHECKEDSUBMIT = 'UNCHECKEDSUBMIT',
-  ETHEREUMTRANSACTION = 'ETHEREUMTRANSACTION',
-  NODESTAKEUPDATE = 'NODESTAKEUPDATE',
   UTILPRNG = 'UTILPRNG',
 }
 
@@ -271,10 +292,18 @@ export interface TokensResponse {
 }
 
 export interface Token {
-  token_id: string | null;
-  symbol: string;
   admin_key: Key | null;
-  type: string;
+  decimals: number;
+  metadata: string;
+  name: string;
+  symbol: string;
+  token_id: string | null;
+  type: string; // FUNGIBLE_COMMON, NON_FUNGIBLE_UNIQUE
+}
+
+export enum TokenType {
+  FUNGIBLE_COMMON = 'FUNGIBLE_COMMON',
+  NON_FUNGIBLE_UNIQUE = 'NON_FUNGIBLE_UNIQUE',
 }
 
 export interface TokenInfo {
@@ -291,6 +320,8 @@ export interface TokenInfo {
   initial_supply: string;
   kyc_key: Key | null;
   max_supply: string;
+  metadata: string;
+  metadata_key: Key | null;
   modified_timestamp: string;
   name: string;
   memo: string;
@@ -366,15 +397,31 @@ export interface Nfts {
 }
 
 export interface Nft {
-  account_id: string | null | undefined; // Network entity ID in the format of shard.realm.num
-  created_timestamp: string | null | undefined;
-  delegating_spender: string | null | undefined;
+  account_id: string | null; // Network entity ID in the format of shard.realm.num
+  created_timestamp: string | null;
+  delegating_spender: string | null;
   deleted: boolean;
-  metadata: string | undefined;
-  modified_timestamp: string | null | undefined;
-  serial_number: number | undefined;
-  spender_id: string | null | undefined;
-  token_id: string | null | undefined; // Network entity ID in the format of shard.realm.num
+  metadata: string;
+  modified_timestamp: string | null;
+  serial_number: number;
+  spender: string | null;
+  token_id: string | null; // Network entity ID in the format of shard.realm.num
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+//                                               Topic
+// ---------------------------------------------------------------------------------------------------------------------
+
+export interface Topic {
+  admin_key: Key | null;
+  auto_renew_account: string | null; // Network entity ID in the format of shard.realm.num
+  auto_renew_period: number | null;
+  created_timestamp: string | null;
+  deleted: boolean | null;
+  memo: string;
+  submit_key: Key | null;
+  timestamp: TimestampRange; // timestamp range the entity is valid for
+  topic_id: string | null; // Network entity ID in the format of shard.realm.num
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -471,6 +518,7 @@ export interface ContractResult {
   gas_limit: number;
   gas_price: string | null;
   gas_used: number | null;
+  gas_consumed: number | null;
   hash: string | null;
   max_fee_per_gas: string | null;
   max_priority_fee_per_gas: string | null;
@@ -558,6 +606,34 @@ export enum ResultDataType {
   ERROR = 'ERROR',
 }
 
+export interface ContractCallRequest {
+  block?: string | null; // Hexadecimal block number or the string "latest", "pending", "earliest". Defaults to "latest"
+  data?: string | null; // Hexadecimal method signature and encoded parameters
+  estimate?: boolean | null; // Whether gas estimation is called. Defaults to false
+  from?: string | null; // The 20-byte hexadecimal EVM address the transaction is sent from
+  gas?: number | null; // Gas provided for the transaction execution. Defaults to 15000000
+  gasPrice?: number | null; // Gas price used for each paid gas
+  to: string; // The 20-byte hexadecimal EVM address the transaction is directed to
+  value?: number | null; // Value sent with this transaction. Defaults to 0
+}
+
+export interface ContractCallResponse {
+  result: string; // Result in hexadecimal from executed contract call
+}
+
+export interface ContractStateResponse {
+  state: Array<ContractState> | undefined;
+  links: Links | undefined;
+}
+
+export interface ContractState {
+  address: string; // A network entity encoded as an EVM address in hex
+  contract_id: string; // Network entity ID in the format of shard.realm.num
+  timestamp: string; // A Unix timestamp in seconds.nanoseconds format
+  slot: string; // The hex encoded storage slot
+  value: string; // The hex encoded value to the slot. 0x implies no value written
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 //                                                      Node
 // ---------------------------------------------------------------------------------------------------------------------
@@ -585,17 +661,14 @@ export interface NetworkNode {
   stake_rewarded: number | null; // The sum (balance + staked) for all accounts staked to the node that are not declining rewards at the beginning of the staking period
   staking_period: TimestampRange | null;
   reward_rate_start: number | null;
+  decline_reward: boolean | null;
+  grpc_web_proxy_endpoint: ServiceEndPoint | null;
 }
 
 export interface ServiceEndPoint {
-  ip_address_v4: string;
+  ip_address_v4: string | null;
   port: number;
-  domain_name: string;
-}
-
-export function makeShortNodeDescription(description: string): string {
-  const separator = description.indexOf('|') ?? -1;
-  return separator !== -1 ? (description.slice(0, separator) ?? null) : description;
+  domain_name: string | null;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -704,6 +777,8 @@ export interface Links {
 }
 
 export const infiniteDuration = 31556888202959784;
+export const HTS_PRECOMPILE_CONTRACT_ID = '0.0.359';
+export const REDIRECT_FOR_TOKEN_FUNCTION_SIGHASH = '0x618dc65e';
 
 // ---------------------------------------------------------------------------------------------------------------------
 //                                                      Private

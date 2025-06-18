@@ -113,12 +113,12 @@ export const keysRequiredToSign = async (
       const nodeInfo = parseNodeInfo(
         await mirrorNodeService.getNodeInfo(nodeId, transaction.mirrorNetwork),
       );
-      if (nodeInfo.admin_key) {
-        addUserPublicKeyIfRequired(nodeInfo.admin_key);
+      if (nodeInfo.adminKey) {
+        addUserPublicKeyIfRequired(nodeInfo.adminKey);
       }
 
       if (transactionIs(NodeUpdateTransaction, sdkTransaction)) {
-        const nodeAccountId = nodeInfo?.node_account_id?.toString() || null;
+        const nodeAccountId = nodeInfo?.nodeAccountId?.toString() || null;
         if (sdkTransaction.accountId && nodeAccountId) {
           const accountInfo = parseAccountInfo(
             await mirrorNodeService.getAccountInfo(nodeAccountId, transaction.mirrorNetwork),

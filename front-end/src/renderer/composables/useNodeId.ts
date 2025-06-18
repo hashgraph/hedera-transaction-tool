@@ -1,4 +1,4 @@
-import type { INodeInfoParsed } from '@main/shared/interfaces';
+import type { INodeInfoParsed } from 'lib';
 
 import { computed, ref, watch } from 'vue';
 
@@ -23,7 +23,7 @@ export default function useNodeId() {
 
   /* Computed */
   const isValid = computed(() => Boolean(nodeInfo.value));
-  const key = computed(() => nodeInfo.value?.admin_key);
+  const key = computed(() => nodeInfo.value?.adminKey);
 
   /* Watchers */
   watch(nodeId, async newNodeId => {
@@ -43,8 +43,8 @@ export default function useNodeId() {
 
       nodeInfo.value = nodeInfoRes;
 
-      if (nodeInfoRes?.node_account_id) {
-        accountData.accountId.value = nodeInfoRes.node_account_id.toString();
+      if (nodeInfoRes?.nodeAccountId) {
+        accountData.accountId.value = nodeInfoRes.nodeAccountId.toString();
       }
     } catch {
       resetData();

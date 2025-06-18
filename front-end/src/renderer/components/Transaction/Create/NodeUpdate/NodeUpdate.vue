@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { INodeInfoParsed } from '@main/shared/interfaces';
+import type { INodeInfoParsed } from 'lib';
 import type { NodeUpdateData } from '@renderer/utils/sdk/createTransactions';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 
@@ -54,7 +54,7 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
 const transactionKey = computed(() => {
   const keys: Key[] = [];
 
-  const oldAccountId = nodeData.nodeInfo?.value?.node_account_id?.toString()?.trim();
+  const oldAccountId = nodeData.nodeInfo?.value?.nodeAccountId?.toString()?.trim();
   if (isAccountId(data.nodeAccountId) && oldAccountId !== data.nodeAccountId.trim()) {
     nodeData.accountData.key.value && keys.push(nodeData.accountData.key.value);
     newNodeAccountData.key.value && keys.push(newNodeAccountData.key.value);
@@ -110,16 +110,16 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.adminKey = null;
     data.declineReward = false;
   } else if (!route.query.draftId) {
-    data.nodeAccountId = nodeInfo.node_account_id?.toString() || '';
+    data.nodeAccountId = nodeInfo.nodeAccountId?.toString() || '';
     newNodeAccountData.accountId.value = data.nodeAccountId;
     data.description = nodeInfo.description || '';
     data.gossipEndpoints = [];
     data.serviceEndpoints = [];
-    data.grpcWebProxyEndpoint = getComponentServiceEndpoint(nodeInfo.grpc_web_proxy_endpoint);
+    data.grpcWebProxyEndpoint = getComponentServiceEndpoint(nodeInfo.grpcWebProxyEndpoint);
     data.gossipCaCertificate = Uint8Array.from([]);
     data.certificateHash = Uint8Array.from([]);
-    data.adminKey = nodeInfo.admin_key;
-    data.declineReward = nodeInfo.decline_reward;
+    data.adminKey = nodeInfo.adminKey;
+    data.declineReward = nodeInfo.declineReward;
   }
 });
 </script>

@@ -56,6 +56,7 @@
     "express": "4.21.2",
     "ioredis": "5.4.2",
     "joi": "17.13.3",
+    "lib": "file:../lib",
     "murlock": "4.0.0",
     "nest-winston": "1.9.7",
     "pg": "8.13.1",
