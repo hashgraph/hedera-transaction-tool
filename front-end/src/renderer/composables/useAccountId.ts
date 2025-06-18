@@ -40,7 +40,7 @@ export default function useAccountId() {
     }
   });
 
-  const accoundIdWithChecksum = computed(() => {
+  const accountIdWithChecksum = computed(() => {
     try {
       return isValid.value
         ? accountInfo.value?.accountId
@@ -145,7 +145,7 @@ export default function useAccountId() {
     accountId,
     accountInfo,
     accountIdFormatted,
-    accoundIdWithChecksum,
+    accountIdWithChecksum,
     autoRenewPeriodInDays,
     key,
     keysFlattened,

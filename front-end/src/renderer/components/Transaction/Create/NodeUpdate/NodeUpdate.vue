@@ -12,7 +12,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 import useNodeId from '@renderer/composables/useNodeId';
 
 import { createNodeUpdateTransaction } from '@renderer/utils/sdk/createTransactions';
-import { getNodeUpdateData, isAccountId } from '@renderer/utils';
+import {getComponentServiceEndpoint, getNodeUpdateData, isAccountId} from '@renderer/utils';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeUpdateFormData from '@renderer/components/Transaction/Create/NodeUpdate/NodeUpdateFormData.vue';
@@ -32,6 +32,7 @@ const data = reactive<NodeUpdateData>({
   description: '',
   gossipEndpoints: [],
   serviceEndpoints: [],
+  grpcWebProxyEndpoint: null,
   gossipCaCertificate: Uint8Array.from([]),
   certificateHash: Uint8Array.from([]),
   adminKey: null,
@@ -104,6 +105,7 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.gossipEndpoints = [];
     data.serviceEndpoints = [];
     data.gossipCaCertificate = Uint8Array.from([]);
+    data.grpcWebProxyEndpoint = null;
     data.certificateHash = Uint8Array.from([]);
     data.adminKey = null;
     data.declineReward = false;
@@ -113,6 +115,7 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.description = nodeInfo.description || '';
     data.gossipEndpoints = [];
     data.serviceEndpoints = [];
+    data.grpcWebProxyEndpoint = getComponentServiceEndpoint(nodeInfo.grpc_web_proxy_endpoint);
     data.gossipCaCertificate = Uint8Array.from([]);
     data.certificateHash = Uint8Array.from([]);
     data.adminKey = nodeInfo.admin_key;
