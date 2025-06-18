@@ -44,6 +44,8 @@ jobs:
         with:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
+      - name: Install GnuPG Tools
+        run: brew install gnupg
       - name: Import GPG Key
         id: gpg
         uses: crazy-max/ghaction-import-gpg@01dd5d3ca463c7f10f7f4f7b4f177225ac661ee4 # v6.1.0
@@ -52,18 +54,6 @@ jobs:
           git_user_signingkey: true
           gpg_private_key: ${{ secrets.GPG_KEY_CONTENTS }}
           passphrase: ${{ secrets.GPG_KEY_PASSPHRASE }}
-
-      - name: Install GnuPG Tools
-        if: ${{ github.event_name == 'workflow_dispatch' && !cancelled() && !failure() }}
-        run: |
-          if ! command -v gpg2 >/dev/null 2>&1; then
-            echo "::group::Updating APT Repository Indices"
-              sudo apt update
-            echo "::endgroup::"
-            echo "::group::Installing GnuPG Tools"
-              sudo apt install -y gnupg2
-            echo "::endgroup::"
-          fi
 
       - name: Setup Node
         uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
