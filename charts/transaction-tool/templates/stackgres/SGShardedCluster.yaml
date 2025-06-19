@@ -1,5 +1,5 @@
 {{- if .Values.stackgres.enabled }}
-apiVersion: stackgres.io/v1
+apiVersion: stackgres.io/v1alpha1
 kind: SGShardedCluster
 metadata:
   name: {{ include "transactiontool.fullname" . }}-citus

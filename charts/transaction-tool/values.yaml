@@ -22,15 +22,6 @@ stackgres:
         retention: 7
         useVolumeSnapshot: true
         volumeSnapshotClass: zfs
-      - sgObjectStorage: transaction-tool-citus-object-storage-test
-        compression: lz4
-        cronSchedule: 45 22 * * *
-        fastVolumeSnapshot: true
-        performance:
-          uploadDiskConcurrency: 1
-        retention: 7
-        useVolumeSnapshot: true
-        volumeSnapshotClass: zfs
       observability:
         disableMetrics: false
         prometheusAutobind: true
@@ -42,7 +33,6 @@ stackgres:
       managedSql:
         scripts:
           - sgScript: transaction-tool-citus-coordinator
-          - sgScript: transaction-tool-citus-coordinator-test
       pods:
         disableEnvoy: true
         disablePostgresUtil: false
@@ -55,14 +45,14 @@ stackgres:
           backup:
             priorityClassName: system-cluster-critical
           priorityClassName: system-cluster-critical
-          nodeSelector:
-            citus-role: coordinator
-            csi-type: zfs
-          tolerations:
-            - key: zfs
-              operator: Equal
-              value: "true"
-              effect: NoSchedule
+          # nodeSelector:
+          #   citus-role: coordinator
+          #   csi-type: zfs
+          # tolerations:
+          #   - key: zfs
+          #     operator: Equal
+          #     value: "true"
+          #     effect: NoSchedule
       sgInstanceProfile: transaction-tool-citus-coordinator
     database: transaction_tool
     nonProductionOptions:
@@ -105,14 +95,14 @@ stackgres:
           backup:
             priorityClassName: system-cluster-critical
           priorityClassName: system-cluster-critical
-          nodeSelector:
-            citus-role: worker
-            csi-type: zfs
-          tolerations:
-            - key: zfs
-              operator: Equal
-              value: "true"
-              effect: NoSchedule
+          # nodeSelector:
+          #   citus-role: worker
+          #   csi-type: zfs
+          # tolerations:
+          #   - key: zfs
+          #     operator: Equal
+          #     value: "true"
+          #     effect: NoSchedule
       sgInstanceProfile: transaction-tool-citus-worker
     type: citus
   # @param stackgres.objectStorage https://stackgres.io/doc/1.16/reference/crd/sgobjectstorage/
@@ -130,20 +120,6 @@ stackgres:
               name: transaction-tool-citus-objectstorage-creds
             secretAccessKey:
               key: root-password
-              name: transaction-tool-citus-objectstorage-creds
-    transaction-tool-citus-object-storage-test:
-      type: s3Compatible
-      s3Compatible:
-        bucket: stackgres-backup
-        enablePathStyleAddressing: true
-        endpoint: http://transaction-tool-minio.common:9000
-        awsCredentials:
-          secretKeySelectors:
-            accessKeyId:
-              key: root-user-test
-              name: transaction-tool-citus-objectstorage-creds
-            secretAccessKey:
-              key: root-password-test
               name: transaction-tool-citus-objectstorage-creds
   # @param stackgres.poolingConfig https://stackgres.io/doc/1.16/reference/crd/sgpoolingconfig/
   poolingConfig:
@@ -183,6 +159,7 @@ stackgres:
               pool_mode: session
             mirror_node:
               pool_mode: session
+  # @param stackgres.postgresConfig https://stackgres.io/doc/1.16/reference/crd/sgpostgresconfig/
   postgresConfig:
     coordinator:
       postgresql.conf:
@@ -224,6 +201,7 @@ stackgres:
         wal_recycle: "off"
         work_mem: 12MB
       postgresVersion: "16"
+  # @param stackgres.script https://stackgres.io/doc/1.16/reference/crd/sgscript/
   script:
     coordinator:
       transaction-tool-citus-coordinator:
@@ -274,21 +252,6 @@ stackgres:
             storeStatusInDatabase: true
             user: postgres
             wrapInTransaction: serializable
-      transaction-tool-citus-coordinator-test:
-        continueOnError: false
-        managedVersions: true
-        scripts:
-          - database: postgres
-            id: 0
-            name: all-postgres
-            retryOnError: true
-            scriptFrom:
-              secretKeyRef:
-                name: transaction-tool-passwords
-                key: all-postgres.sql
-            storeStatusInDatabase: true
-            user: postgres
-            wrapInTransaction: serializable
     worker:
       transaction-tool-citus-worker:
         continueOnError: false
@@ -314,6 +277,7 @@ stackgres:
                 key: all-db.sql
             user: postgres
             wrapInTransaction: serializable
+  # @param stackgres.instanceProfile https://stackgres.io/doc/1.16/reference/crd/sginstanceprofile/
   instanceProfile:
     coordinator:
       transaction-tool-citus-coordinator:
@@ -417,21 +381,6 @@ postgres:
   secretName: ""
   host: ""
   port: 5432
-  cluster:
-    # Official ProstgreSQL configuration starts here: https://cloudnative-pg.io/documentation/1.24/
-    config:
-      instances: 1
-      storage:
-        size: 1Gi
-      bootstrap:
-        initdb:
-          database: development
-          owner: development
-          secret:
-            name: development-db-user
-      enableSuperuserAccess: true
-      superuserSecret:
-        name: development-db-superuser
 
 redis:
   # @param redis.enabled set to true if you want to self-host on your k8s cluster.
