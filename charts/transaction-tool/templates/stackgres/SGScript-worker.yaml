@@ -1,0 +1,15 @@
+{{- if and .Values.stackgres.enabled (hasKey .Values.stackgres.shardedCluster.shards.managedSql "scripts") }}
+{{- range .Values.stackgres.shardedCluster.shards.managedSql.scripts }}
+{{- $scriptName := .sgScript }}
+{{- if hasKey $.Values.stackgres.script.worker $scriptName }}
+---
+apiVersion: stackgres.io/v1
+kind: SGScript
+metadata:
+  name: {{ $scriptName }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+{{- index $.Values.stackgres.script.worker $scriptName | toYaml | nindent 2 }}
+{{- end }}
+{{- end }}
+{{- end -}}

@@ -21,3 +21,8 @@ dependencies:
     version: 4.29.4
     repository: https://dandydeveloper.github.io/charts
     condition: redis.enabled
+  - name: stackgres-operator
+    alias: stackgres
+    version: 1.16.3
+    repository: https://stackgres.io/downloads/stackgres-k8s/stackgres/helm/
+    condition: stackgres.enabled

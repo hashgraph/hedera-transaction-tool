@@ -1,0 +1,9 @@
+{{ if and .Values.stackgres.enabled (hasKey .Values.stackgres.shardedCluster.shards.configurations "sgPoolingConfig") (hasKey .Values.stackgres.poolingConfig "worker") }}
+apiVersion: stackgres.io/v1
+kind: SGPoolingConfig
+metadata:
+  name: {{ .Values.stackgres.shardedCluster.shards.configurations.sgPoolingConfig }}
+  namespace: {{ .Release.Namespace }}
+spec:
+{{- .Values.stackgres.poolingConfig.worker | toYaml | nindent 2 }}
+{{- end -}}
