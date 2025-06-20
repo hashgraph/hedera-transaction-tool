@@ -12,16 +12,16 @@ stackgres:
   # @param stackgres.shardedCluster https://stackgres.io/doc/1.16/reference/crd/sgshardedcluster/
   shardedCluster:
     configurations:
-      backups:
-      - sgObjectStorage: transaction-tool-citus-object-storage
-        compression: lz4
-        cronSchedule: 45 22 * * *
-        fastVolumeSnapshot: true
-        performance:
-          uploadDiskConcurrency: 1
-        retention: 7
-        useVolumeSnapshot: true
-        volumeSnapshotClass: zfs
+    #   backups:
+    #   - sgObjectStorage: transaction-tool-citus-object-storage
+    #     compression: lz4
+    #     cronSchedule: 45 22 * * *
+    #     fastVolumeSnapshot: true
+    #     performance:
+    #       uploadDiskConcurrency: 1
+    #     retention: 7
+    #     useVolumeSnapshot: true
+    #     volumeSnapshotClass: zfs
       observability:
         disableMetrics: false
         prometheusAutobind: true
@@ -29,7 +29,7 @@ stackgres:
       configurations:
         sgPoolingConfig: transaction-tool-citus-coordinator
         sgPostgresConfig: transaction-tool-citus-coordinator
-      instances: 2
+      instances: 1
       managedSql:
         scripts:
           - sgScript: transaction-tool-citus-coordinator
@@ -38,13 +38,13 @@ stackgres:
         disablePostgresUtil: false
         persistentVolume:
           size: 5Gi
-          storageClass: zfs
+          # storageClass: zfs
         resources:
           disableResourcesRequestsSplitFromTotal: true
-        scheduling:
-          backup:
-            priorityClassName: system-cluster-critical
-          priorityClassName: system-cluster-critical
+        # scheduling:
+        #   backup:
+        #     priorityClassName: system-cluster-critical
+        #   priorityClassName: system-cluster-critical
           # nodeSelector:
           #   citus-role: coordinator
           #   csi-type: zfs
@@ -73,7 +73,7 @@ stackgres:
         mode: FromReplica
       mode: sync-all
     shards:
-      clusters: 3
+      clusters: 1
       configurations:
         sgPoolingConfig: transaction-tool-citus-worker
         sgPostgresConfig: transaction-tool-citus-worker
@@ -88,13 +88,13 @@ stackgres:
         disablePostgresUtil: false
         persistentVolume:
           size: 10Gi
-          storageClass: zfs
+          # storageClass: zfs
         resources:
           disableResourcesRequestsSplitFromTotal: true
-        scheduling:
-          backup:
-            priorityClassName: system-cluster-critical
-          priorityClassName: system-cluster-critical
+        # scheduling:
+        #   backup:
+        #     priorityClassName: system-cluster-critical
+        #   priorityClassName: system-cluster-critical
           # nodeSelector:
           #   citus-role: worker
           #   csi-type: zfs
@@ -106,21 +106,21 @@ stackgres:
       sgInstanceProfile: transaction-tool-citus-worker
     type: citus
   # @param stackgres.objectStorage https://stackgres.io/doc/1.16/reference/crd/sgobjectstorage/
-  objectStorage:
-    transaction-tool-citus-object-storage:
-      type: s3Compatible
-      s3Compatible:
-        bucket: stackgres-backup
-        enablePathStyleAddressing: true
-        endpoint: http://transaction-tool-minio.common:9000
-        awsCredentials:
-          secretKeySelectors:
-            accessKeyId:
-              key: root-user
-              name: transaction-tool-citus-objectstorage-creds
-            secretAccessKey:
-              key: root-password
-              name: transaction-tool-citus-objectstorage-creds
+  # objectStorage:
+  #   transaction-tool-citus-object-storage:
+  #     type: s3Compatible
+  #     s3Compatible:
+  #       bucket: stackgres-backup
+  #       enablePathStyleAddressing: true
+  #       endpoint: http://transaction-tool-minio.common:9000
+  #       awsCredentials:
+  #         secretKeySelectors:
+  #           accessKeyId:
+  #             key: root-user
+  #             name: transaction-tool-citus-objectstorage-creds
+  #           secretAccessKey:
+  #             key: root-password
+  #             name: transaction-tool-citus-objectstorage-creds
   # @param stackgres.poolingConfig https://stackgres.io/doc/1.16/reference/crd/sgpoolingconfig/
   poolingConfig:
     coordinator:
@@ -281,34 +281,34 @@ stackgres:
   instanceProfile:
     coordinator:
       transaction-tool-citus-coordinator:
-        cpu: 8100m
-        memory: 24Gi
+        cpu: 1000m
+        memory: 1Gi
         requests:
           containers:
             backup.create-backup:
-              cpu: 1500m
-              memory: 512Mi
+              cpu: 500m
+              memory: 128Mi
             cluster-controller:
               cpu: 500m
             patroni:
-              cpu: 8100m
+              cpu: 200m
             pgbouncer:
               cpu: 300m
             prometheus-postgres-exporter:
               cpu: 100m
     worker:
       transaction-tool-citus-worker:
-        cpu: 10250m
-        memory: 40Gi
+        cpu: 250m
+        memory: 1Gi
         requests:
           containers:
             backup.create-backup:
-              cpu: 1500m
-              memory: 512Mi
+              cpu: 500m
+              memory: 128Mi
             cluster-controller:
               cpu: 500m
             patroni:
-              cpu: 10250m
+              cpu: 250m
             pgbouncer:
               cpu: 300m
             prometheus-postgres-exporter:

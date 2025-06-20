@@ -1,4 +1,4 @@
-{{- if and .Values.stackgres.enabled (hasKey .Values.stackgres.shardedCluster.configurations "backups") }}
+{{- if and .Values.stackgres.enabled (hasKey .Values.stackgres.shardedCluster "configurations") (hasKey .Values.stackgres.shardedCluster.configurations "backups") }}
 {{- range .Values.stackgres.shardedCluster.configurations.backups }}
 {{- $storageName := .sgObjectStorage }}
 {{- if hasKey $.Values.stackgres.objectStorage $storageName }}
