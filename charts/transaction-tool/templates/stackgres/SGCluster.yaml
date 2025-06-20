@@ -1,9 +1,11 @@
+# For dev use only, not for production deployments.
+{{- if not .Values.stackgres.enabled }}
 ---
 apiVersion: stackgres.io/v1
 kind: SGCluster
 metadata:
-  name: simple
-  namespace: stackgres
+  name: {{ include "transactiontool.fullname" . }}-dev
+  namespace: {{ .Release.Namespace }}
 spec:
   instances: 1
   postgres:
@@ -11,3 +13,4 @@ spec:
   pods:
     persistentVolume:
       size: '5Gi'
+{{- end -}}

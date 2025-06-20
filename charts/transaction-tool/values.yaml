@@ -60,7 +60,7 @@ stackgres:
     postgres:
       extensions:
         - name: citus
-          version: 12.1.1
+          version: 13.0.1
         - name: btree_gist
           version: stable
         - name: pg_trgm
