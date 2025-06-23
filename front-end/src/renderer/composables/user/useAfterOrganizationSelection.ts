@@ -82,7 +82,10 @@ export default function useAfterOrganizationSelection() {
       return;
     }
 
-    await router.push({ name: 'transactions' });
+    // only automatically redirect the user to transactions if an account setup is not in progress.
+    if (!user.accountSetupStarted) {
+      await router.push({ name: 'transactions' });
+    }
   };
 
   const afterOrganizationSelection = async () => {
