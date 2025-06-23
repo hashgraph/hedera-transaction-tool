@@ -96,8 +96,7 @@ const handleSetRecoveryPhrase = async (value: {
 
   step.value = 'personal';
 };
-//this should make sure that if user logs in with username/password, then log out, then log in, it won't require mnemonic
-//org setup doesn't have username IF i create personal user with username/password. it would be better to preset it instead of hide it
+
 const handleSetPersonalUser = async (value: PersonalUser) => {
   personalUser.value = value;
   await user.setAccountSetupStarted(true);
@@ -119,7 +118,6 @@ const handleSetOrganizationId = async (value: string | null) => {
 
 const handleKeysImported = async (value: number) => {
   if (!personalUser.value) throw new Error('(BUG) Personal User not set');
-  await user.setAccountSetupStarted(false);
   if (!value) {
     await handleSkipSetupAfterMigration();
   }
