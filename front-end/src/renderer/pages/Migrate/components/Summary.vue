@@ -32,7 +32,6 @@ const recoveryPhraseItemRef = ref<HTMLElement | null>(null);
 
 /* Handlers */
 const handleFinishMigration = () => {
-  user.setAccountSetupStarted(false);
   router.push({ name: 'settingsKeys' });
 };
 
@@ -41,10 +40,6 @@ const handleCopy = (event: ClipboardEvent) => {
   if (!selection) return;
 
   const selectedText = selection.toString();
-
-  //This is the label that is the lead anchor. so the first item in the list for example. this still isnt' working
-  //also, what if hte user selects the whole page? maybe we just also filter out the numbers?
-  console.log('selection.node', selection.anchorNode);
 
   if (recoveryPhraseItemRef.value instanceof HTMLElement && selection.rangeCount > 0) {
     const range = selection.getRangeAt(0);
@@ -69,6 +64,8 @@ const copyRecoveryPhrase = () => {
 /* Hooks */
 onMounted(() => {
   document.addEventListener('copy', handleCopy);
+  // whether the user 'finishes' or not, they have finished account setup.
+  user.setAccountSetupStarted(false);
 });
 
 onBeforeUnmount(() => {
@@ -120,7 +117,7 @@ onBeforeUnmount(() => {
         <SummaryItem
           class="mt-4"
           label="Imported Public Keys"
-          :value="importedUserData.publicKeysImported"
+          :value="importedUserData.publicKeysImported.toString()"
           data-testid="p-migration-summary-imported-personal-id"
         />
       </template>

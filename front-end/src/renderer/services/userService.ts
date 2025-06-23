@@ -1,4 +1,4 @@
-import { LOCAL_STORAGE_IMPORTANT_NOTE_ACCEPTED } from '@main/shared/constants';
+import { HTX_USER, LOCAL_STORAGE_IMPORTANT_NOTE_ACCEPTED } from '@main/shared/constants';
 
 import { commonIPCHandler } from '@renderer/utils';
 
@@ -19,9 +19,9 @@ export const loginLocal = async (
     );
 
     if (keepLoggedIn) {
-      localStorage.setItem('htx_user', JSON.stringify({ userId: id, email: userEmail }));
+      localStorage.setItem(HTX_USER, JSON.stringify({ userId: id, email: userEmail }));
     } else {
-      localStorage.removeItem('htx_user');
+      localStorage.removeItem(HTX_USER);
     }
     return { id, email: userEmail };
   }, 'Login failed');
@@ -35,7 +35,7 @@ export const registerLocal = async (email: string, password: string, keepLoggedI
     );
 
     if (keepLoggedIn) {
-      localStorage.setItem('htx_user', JSON.stringify({ userId: id, email: userEmail }));
+      localStorage.setItem(HTX_USER, JSON.stringify({ userId: id, email: userEmail }));
     }
 
     return { id: id, email: userEmail };

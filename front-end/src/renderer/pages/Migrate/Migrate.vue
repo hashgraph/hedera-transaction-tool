@@ -118,7 +118,6 @@ const handleSetOrganizationId = async (value: string | null) => {
 
 const handleKeysImported = async (value: number) => {
   if (!personalUser.value) throw new Error('(BUG) Personal User not set');
-  await user.setAccountSetupStarted(false);
   if (!value) {
     await handleSkipSetupAfterMigration();
   }
