@@ -96,7 +96,8 @@ const handleSetRecoveryPhrase = async (value: {
 
   step.value = 'personal';
 };
-
+//this should make sure that if user logs in with username/password, then log out, then log in, it won't require mnemonic
+//org setup doesn't have username IF i create personal user with username/password. it would be better to preset it instead of hide it
 const handleSetPersonalUser = async (value: PersonalUser) => {
   personalUser.value = value;
   await user.setAccountSetupStarted(true);
@@ -148,6 +149,8 @@ const initializeUserStore = async () => {
   await user.refetchOrganizations();
 
   if (user.organizations[0]) {
+    // before the org is selected, set the org to skip setup.
+    await handleSkipSetupAfterMigration();
     await user.selectOrganization(user.organizations[0]);
   }
 
@@ -160,19 +163,19 @@ const initializeUserStore = async () => {
 const handleSkipSetupAfterMigration = async () => {
   if (!personalUser.value) throw new Error('(BUG) Personal User not set');
 
-  if (!user.selectedOrganization) {
+  // in order to set the skip setup BEFORE org is selected, user the user.organization[0]
+  const org = user.selectedOrganization || user.organizations[0];
+  if (!org) {
     const { data } = await safeAwait(getStoredClaim(personalUser.value.personalId, SKIPPED_PERSONAL_SETUP));
     const addOrUpdate = data !== undefined ? update : add;
     await addOrUpdate(personalUser.value.personalId, SKIPPED_PERSONAL_SETUP, 'true');
     user.skippedSetup = true;
-  } else if (isLoggedInOrganization(user.selectedOrganization)) {
+  } else if (isLoggedInOrganization(org)) {
     const claimKey = buildSkipClaimKey(
-      user.selectedOrganization.serverUrl,
-      user.selectedOrganization.userId,
+      org.serverUrl,
+      org.userId,
     );
     const { data } = await safeAwait(getStoredClaim(user.personal.id, claimKey));
-    //I don't like this line being reused everywhere, maybe combine it in the claim service? unless there's a need to know the difference
-    //between an add and an update
     const addOrUpdate = data !== undefined ? update : add;
     await addOrUpdate(user.personal.id, claimKey, 'true');
     user.skippedSetup = true;
