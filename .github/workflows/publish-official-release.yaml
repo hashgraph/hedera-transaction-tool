@@ -9,16 +9,6 @@ on:
         type: boolean
         required: false
         default: false
-      java-distribution:
-        description: "Java JDK Distribution:"
-        type: string
-        required: false
-        default: "temurin"
-      java-version:
-        description: "Java JDK Version:"
-        type: string
-        required: false
-        default: "21.0.4"
 
 defaults:
   run:
@@ -72,7 +62,6 @@ jobs:
         run: pnpm install
         working-directory: ./front-end
 
-      # Semantic release
       - name: Install Semantic Release
         if: ${{ github.event_name == 'workflow_dispatch' && !cancelled() && !failure() }}
         run: |
