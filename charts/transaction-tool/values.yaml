@@ -99,7 +99,7 @@ rabbitmq:
 
 # Required: @param postgres
 postgres:
-  # @param postgres.secretName.
+  # @param postgres.secretName. Required
   secretName: "transaction-tool-postgres" # The secret must contain the following fields: dbname, dbusername dbpassword.
   host: ""    # Required only if you are using a managed service.
   port: 5432  # Required
