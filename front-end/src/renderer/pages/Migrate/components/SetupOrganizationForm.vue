@@ -96,6 +96,13 @@ watch(inputNewOrganizationPassword, pass => {
   if (isPasswordStrong(pass).result && pass !== inputTemporaryOrganizationPassword.value)
     inputOrganizationURLInvalid.value = false;
 });
+watch(
+  () => props.personalUser.email,
+  email => {
+    if (email) inputOrganizationEmail.value = email;
+  },
+  { immediate: true }
+);
 </script>
 <template>
   <form @submit.prevent="handleOnFormSubmit" class="flex-column-100" v-focus-first-input>
@@ -137,7 +144,7 @@ watch(inputNewOrganizationPassword, pass => {
       </div>
 
       <!-- Organization Email -->
-      <div v-if="personalUser.useKeychain" class="mt-4">
+      <div class="mt-4">
         <label data-testid="label-organization-email" class="form-label">Organization Email</label>
         <AppInput
           data-testid="input-organization-email"
