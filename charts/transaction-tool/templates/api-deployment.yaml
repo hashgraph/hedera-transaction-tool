@@ -72,17 +72,17 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ coalesce .Values.postgres.secretName (printf "postgres-%s" .Release.Namespace) }}
-                  key: database
+                  key: dbname
             - name: POSTGRES_USERNAME
               valueFrom:
                 secretKeyRef:
                   name: {{ coalesce .Values.postgres.secretName (printf "postgres-%s" .Release.Namespace) }}
-                  key: username
+                  key: dbusername
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ coalesce .Values.postgres.secretName (printf "postgres-%s" .Release.Namespace) }}
-                  key: password
+                  key: dbpassword
             - name: POSTGRES_SYNCHRONIZE
               value: {{ .Values.api.env.POSTGRES_SYNCHRONIZE | squote }}
             - name: POSTGRES_MAX_POOL_SIZE

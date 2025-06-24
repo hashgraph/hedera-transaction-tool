@@ -1,0 +1,9 @@
+{{ if and .Values.stackgres.enabled (hasKey .Values.stackgres.shardedCluster.coordinator.configurations "sgPostgresConfig") (hasKey .Values.stackgres.postgresConfig "coordinator") }}
+apiVersion: stackgres.io/v1
+kind: SGPostgresConfig
+metadata:
+  name: {{ .Values.stackgres.shardedCluster.coordinator.configurations.sgPostgresConfig }}
+  namespace: {{ .Release.Namespace }}
+spec:
+{{- .Values.stackgres.postgresConfig.coordinator | toYaml | nindent 2 }}
+{{- end -}}

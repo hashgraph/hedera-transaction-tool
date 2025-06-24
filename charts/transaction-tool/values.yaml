@@ -7,8 +7,40 @@ global:
   labels: {}
   annotations: {}
 
+stackgres:
+  enabled: true
+  # @param stackgres.shardedCluster https://stackgres.io/doc/1.16/reference/crd/sgshardedcluster/
+  shardedCluster:
+    coordinator:
+      instances: 1
+      pods:
+        disableEnvoy: true
+        disablePostgresUtil: false
+        persistentVolume:
+          size: 5Gi
+        resources:
+          disableResourcesRequestsSplitFromTotal: true
+    database: transaction_tool
+    nonProductionOptions:
+      disableClusterPodAntiAffinity: false
+    postgres:
+      ssl:
+        enabled: false
+      version: "16.2"
+    shards:
+      clusters: 1
+      instancesPerCluster: 1
+      pods:
+        disableEnvoy: true
+        disablePostgresUtil: false
+        persistentVolume:
+          size: 10Gi
+        resources:
+          disableResourcesRequestsSplitFromTotal: true
+    type: citus
+
 rabbitmq:
-  # @param rabbitmq.enabled set to true if you want to self-host on your k8s cluster.
+  # @param rabbitmq.enabled set to true if you want to self-host RabbitMQ in your k8s cluster.
   enabled: true
   # @param rabbitmq.createSecrets required only if you are self-hosting RabbitMQ in your cluster AND you don't want to create your own secret object.
   createSecrets: true
@@ -65,30 +97,12 @@ rabbitmq:
                     matchLabels:
                       app.kubernetes.io/name: development-rmq
 
+# Required: @param postgres
 postgres:
-  # @param postgres.enabled set to true if you want to self-host on your k8s cluster.
-  enabled: true
-  # @param postgres.createSecrets required only if @param postgres.enabled is true.
-  createSecrets: true
-  # @param postgres.secretName must be set if you are NOT self-hosting in your cluster i.e. @param postgres.enabled is false.
-  secretName: ""
-  host: ""
-  port: 5432
-  cluster:
-    # Official ProstgreSQL configuration starts here: https://cloudnative-pg.io/documentation/1.24/
-    config:
-      instances: 1
-      storage:
-        size: 1Gi
-      bootstrap:
-        initdb:
-          database: development
-          owner: development
-          secret:
-            name: development-db-user
-      enableSuperuserAccess: true
-      superuserSecret:
-        name: development-db-superuser
+  # @param postgres.secretName. Required
+  secretName: "transaction-tool-postgres" # The secret must contain the following fields: dbname, dbusername dbpassword.
+  host: ""    # Required only if you are using a managed service.
+  port: 5432  # Required
 
 redis:
   # @param redis.enabled set to true if you want to self-host on your k8s cluster.

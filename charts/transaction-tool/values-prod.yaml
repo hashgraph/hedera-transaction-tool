@@ -1,0 +1,459 @@
+# @param nameOverride overrides the name of the chart.
+nameOverride: ""
+# @param fullnameOverride overrides the full name of the chart.
+fullnameOverride: ""
+
+global:
+  labels: {}
+  annotations: {}
+
+stackgres:
+  enabled: true
+  # @param stackgres.shardedCluster https://stackgres.io/doc/1.16/reference/crd/sgshardedcluster/
+  shardedCluster:
+    configurations:
+    #   backups:
+    #   - sgObjectStorage: transaction-tool-citus-object-storage
+    #     compression: lz4
+    #     cronSchedule: 45 22 * * *
+    #     fastVolumeSnapshot: true
+    #     performance:
+    #       uploadDiskConcurrency: 1
+    #     retention: 7
+    #     useVolumeSnapshot: true
+    #     volumeSnapshotClass: zfs
+      observability:
+        disableMetrics: false
+        prometheusAutobind: true
+    coordinator:
+      configurations:
+        sgPoolingConfig: transaction-tool-citus-coordinator
+        sgPostgresConfig: transaction-tool-citus-coordinator
+      instances: 1
+      managedSql:
+        scripts:
+          - sgScript: transaction-tool-citus-coordinator
+      pods:
+        disableEnvoy: true
+        disablePostgresUtil: false
+        persistentVolume:
+          size: 5Gi
+          # storageClass: zfs
+        resources:
+          disableResourcesRequestsSplitFromTotal: true
+        # scheduling:
+        #   backup:
+        #     priorityClassName: system-cluster-critical
+        #   priorityClassName: system-cluster-critical
+          # nodeSelector:
+          #   citus-role: coordinator
+          #   csi-type: zfs
+          # tolerations:
+          #   - key: zfs
+          #     operator: Equal
+          #     value: "true"
+          #     effect: NoSchedule
+      sgInstanceProfile: transaction-tool-citus-coordinator
+    database: transaction_tool
+    nonProductionOptions:
+      disableClusterPodAntiAffinity: false
+    postgres:
+      extensions:
+        - name: citus
+          version: 13.0.1
+        - name: btree_gist
+          version: stable
+        - name: pg_trgm
+          version: "1.6"
+      ssl:
+        enabled: false
+      version: "16.2"
+    replication:
+      initialization:
+        mode: FromReplica
+      mode: sync-all
+    shards:
+      clusters: 1
+      configurations:
+        sgPoolingConfig: transaction-tool-citus-worker
+        sgPostgresConfig: transaction-tool-citus-worker
+      instancesPerCluster: 1
+      managedSql:
+        scripts:
+          - sgScript: transaction-tool-citus-worker
+      overrides:
+        []
+      pods:
+        disableEnvoy: true
+        disablePostgresUtil: false
+        persistentVolume:
+          size: 10Gi
+          # storageClass: zfs
+        resources:
+          disableResourcesRequestsSplitFromTotal: true
+        # scheduling:
+        #   backup:
+        #     priorityClassName: system-cluster-critical
+        #   priorityClassName: system-cluster-critical
+          # nodeSelector:
+          #   citus-role: worker
+          #   csi-type: zfs
+          # tolerations:
+          #   - key: zfs
+          #     operator: Equal
+          #     value: "true"
+          #     effect: NoSchedule
+      sgInstanceProfile: transaction-tool-citus-worker
+    type: citus
+  # @param stackgres.objectStorage https://stackgres.io/doc/1.16/reference/crd/sgobjectstorage/
+  # objectStorage:
+  #   transaction-tool-citus-object-storage:
+  #     type: s3Compatible
+  #     s3Compatible:
+  #       bucket: stackgres-backup
+  #       enablePathStyleAddressing: true
+  #       endpoint: http://transaction-tool-minio.common:9000
+  #       awsCredentials:
+  #         secretKeySelectors:
+  #           accessKeyId:
+  #             key: root-user
+  #             name: transaction-tool-citus-objectstorage-creds
+  #           secretAccessKey:
+  #             key: root-password
+  #             name: transaction-tool-citus-objectstorage-creds
+  # @param stackgres.poolingConfig https://stackgres.io/doc/1.16/reference/crd/sgpoolingconfig/
+  poolingConfig:
+    coordinator:
+      pgBouncer:
+        pgbouncer.ini:
+          pgbouncer:
+            default_pool_size: "800"
+            ignore_startup_parameters: extra_float_digits,options,statement_timeout
+            max_client_conn: "1600"
+            max_prepared_statements: "512"
+            pool_mode: transaction
+            server_lifetime: "1200"
+          users:
+            mirror_importer:
+              pool_mode: session
+            mirror_node:
+              pool_mode: session
+            mirror_rest:
+              max_user_client_connections: 1000
+              max_user_connections: 250
+            mirror_web3:
+              max_user_client_connections: 1000
+              max_user_connections: 250
+    worker:
+      pgBouncer:
+        pgbouncer.ini:
+          pgbouncer:
+            default_pool_size: "900"
+            ignore_startup_parameters: extra_float_digits,options,statement_timeout
+            max_client_conn: "2000"
+            max_prepared_statements: "512"
+            pool_mode: transaction
+            server_lifetime: "1200"
+          users:
+            mirror_importer:
+              pool_mode: session
+            mirror_node:
+              pool_mode: session
+  # @param stackgres.postgresConfig https://stackgres.io/doc/1.16/reference/crd/sgpostgresconfig/
+  postgresConfig:
+    coordinator:
+      postgresql.conf:
+        autovacuum_max_workers: "2"
+        checkpoint_timeout: "1800"
+        citus.executor_slow_start_interval: 10ms
+        citus.force_max_query_parallelization: "on"
+        citus.max_cached_conns_per_worker: "6"
+        citus.max_shared_pool_size: "850"
+        citus.node_conninfo: sslmode=disable
+        full_page_writes: "true"
+        log_checkpoints: "true"
+        log_timezone: Etc/UTC
+        maintenance_work_mem: 256MB
+        max_connections: "800"
+        max_wal_size: 24GB
+        password_encryption: scram-sha-256
+        random_page_cost: "1.1"
+        shared_buffers: 7GB
+        wal_init_zero: "off"
+        wal_recycle: "off"
+        work_mem: 12MB
+      postgresVersion: "16"
+    worker:
+      postgresql.conf:
+        autovacuum_max_workers: "2"
+        checkpoint_timeout: "1800"
+        citus.node_conninfo: sslmode=disable
+        full_page_writes: "false"
+        log_checkpoints: "true"
+        log_timezone: Etc/UTC
+        maintenance_work_mem: 256MB
+        max_connections: "900"
+        max_wal_size: 24GB
+        password_encryption: scram-sha-256
+        random_page_cost: "1.1"
+        shared_buffers: 12GB
+        wal_init_zero: "off"
+        wal_recycle: "off"
+        work_mem: 12MB
+      postgresVersion: "16"
+  # @param stackgres.script https://stackgres.io/doc/1.16/reference/crd/sgscript/
+  script:
+    coordinator:
+      transaction-tool-citus-coordinator:
+        continueOnError: false
+        managedVersions: true
+        scripts:
+          - database: postgres
+            id: 0
+            name: init
+            retryOnError: true
+            scriptFrom:
+              secretKeyRef:
+                name: transaction-tool-postgres
+                key: script.sql
+            storeStatusInDatabase: true
+            user: postgres
+            wrapInTransaction: serializable
+    worker:
+      transaction-tool-citus-worker:
+        continueOnError: false
+        managedVersions: true
+        scripts:
+          - database: postgres
+            id: 0
+            name: init
+            retryOnError: true
+            scriptFrom:
+              secretKeyRef:
+                name: transaction-tool-postgres
+                key: script.sql
+            user: postgres
+            wrapInTransaction: serializable
+  # @param stackgres.instanceProfile https://stackgres.io/doc/1.16/reference/crd/sginstanceprofile/
+  instanceProfile:
+    coordinator:
+      transaction-tool-citus-coordinator:
+        cpu: 1000m
+        memory: 1Gi
+        requests:
+          containers:
+            backup.create-backup:
+              cpu: 500m
+              memory: 128Mi
+            cluster-controller:
+              cpu: 500m
+            patroni:
+              cpu: 200m
+            pgbouncer:
+              cpu: 300m
+            prometheus-postgres-exporter:
+              cpu: 100m
+    worker:
+      transaction-tool-citus-worker:
+        cpu: 250m
+        memory: 1Gi
+        requests:
+          containers:
+            backup.create-backup:
+              cpu: 500m
+              memory: 128Mi
+            cluster-controller:
+              cpu: 500m
+            patroni:
+              cpu: 250m
+            pgbouncer:
+              cpu: 300m
+            prometheus-postgres-exporter:
+              cpu: 100m
+
+rabbitmq:
+  # @param rabbitmq.enabled set to true if you want to self-host RabbitMQ in your k8s cluster.
+  enabled: true
+  # @param rabbitmq.createSecrets required only if you are self-hosting RabbitMQ in your cluster AND you don't want to create your own secret object.
+  createSecrets: true
+  # @param rabbitmq.secretName. Required only if you are NOT self-hosting in your cluster i.e. managed service.
+  secretName: ""
+  # @param rabbitmq.endpoint matches the service name of the RabbitMQ cluster created by @param rabbitmqCluster.name.<namespace>.svc
+  # Change if you are using managed RabbitMQ.
+  endpoint: ""
+  port: 5672
+  cluster:
+    # Official RabbitMQ configuration starts here: https://www.rabbitmq.com/kubernetes/operator/using-operator#configure
+    config:
+      replicas: 1
+      resources:
+        requests:
+          cpu: '1'
+          memory: 2Gi
+        limits:
+          cpu: '2'
+          memory: 3Gi
+      rabbitmq:
+        additionalConfig: |
+          cluster_partition_handling = pause_minority
+          disk_free_limit.relative = 1.0
+          collect_statistics_interval = 10000
+      persistence:
+        # storageClassName: rabbitmq
+        storage: "1Gi"
+      secretBackend:
+        externalSecret:
+          # @param rabbitmq.config.cluster.secretBackend.externalSecret.name must be set if you are self-hosting in your cluster i.e. @param rabbitmq.enabled is true.
+          name: rabbitmq-development
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - development-rmq
+            topologyKey: kubernetes.io/hostname
+      override:
+        statefulSet:
+          spec:
+            template:
+              spec:
+                containers: []
+                topologySpreadConstraints:
+                - maxSkew: 1
+                  topologyKey: "topology.kubernetes.io/zone"
+                  whenUnsatisfiable: ScheduleAnyway
+                  labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/name: development-rmq
+
+# Required: @param postgres
+postgres:
+  # @param postgres.secretName.
+  secretName: "transaction-tool-postgres" # The secret must contain the following fields: dbname, dbusername dbpassword, script.sql (optional, if self-hosting).
+  host: ""    # Required only if you are using a managed service.
+  port: 5432  # Required
+
+redis:
+  # @param redis.enabled set to true if you want to self-host on your k8s cluster.
+  enabled: true
+  # param redis.url required only if @param redis.enabled is false. If set, it must be of the form redis://<endpoint>.
+  url: ""
+
+# JWT configuration
+jwt:
+  createSecrets: true
+  secretName: jwt-development
+
+# OTP configuration
+otp:
+  createSecrets: true
+  secretName: otp-development
+
+# Email API configuration
+emailApi:
+  # @param emailApi.secretName must be provided. These cannot be created.
+  # The following fields are required in the secret object:
+  #  host
+  #  port
+  #  username
+  #  password
+  #  sender-email
+  #  secure (boolean)
+  secretName: email-api-development
+
+# API service configuration
+api:
+  replicas: 1
+  image: ghcr.io/hedera-transaction-tool/api
+  resources:
+    requests:
+      memory: "200Mi"
+      cpu: "50m"
+    limits:
+      memory: "250Mi"
+      cpu: "250m"
+  env:
+    HTTP_PORT: "3000"
+    TCP_PORT: "3001"
+    POSTGRES_SYNCHRONIZE: "true"
+    POSTGRES_MAX_POOL_SIZE: "3"
+    JWT_EXPIRATION: "365"
+    OTP_EXPIRATION: "20"
+    ANONYMOUS_MINUTE_LIMIT: "3"
+    ANONYMOUS_FIVE_SECOND_LIMIT: "1"
+    GLOBAL_MINUTE_LIMIT: "10000"
+    GLOBAL_SECOND_LIMIT: "1000"
+    NODE_ENV: "production"
+  service:
+    httpPort: 3000
+    targetPort: 3000
+    ingress:
+      annotations: {}
+
+# Auth service configuration
+auth:
+  service:
+    port: 3001
+    targetPort: 3001
+
+# Notifications service configuration
+notifications:
+  replicas: 1
+  image: ghcr.io/hedera-transaction-tool/notifications
+  resources:
+    requests:
+      memory: "200Mi"
+      cpu: "50m"
+    limits:
+      memory: "250Mi"
+      cpu: "250m"
+  env:
+    POSTGRES_SYNCHRONIZE: "true"
+    POSTGRES_MAX_POOL_SIZE: "3"
+  service:
+    httpPort: 3020
+    targetPort: 3020
+    ingress:
+      annotations:
+        traefik.ingress.kubernetes.io/service.sticky.cookie: "true"
+        traefik.ingress.kubernetes.io/service.sticky.cookie.name: "transaction-tool-notifications-development"
+        traefik.ingress.kubernetes.io/service.sticky.cookie.secure: "true"
+        traefik.ingress.kubernetes.io/service.passhostheader: "true"
+
+# Chain service configuration
+chain:
+  replicas: 1
+  image: ghcr.io/hedera-transaction-tool/chain
+  resources:
+    requests:
+      memory: "200Mi"
+      cpu: "50m"
+    limits:
+      memory: "250Mi"
+      cpu: "250m"
+  env:
+    POSTGRES_SYNCHRONIZE: "true"
+    POSTGRES_MAX_POOL_SIZE: "3"
+
+traefik:
+  # @param traefik.enabled set to true if you want to self-host on your k8s cluster and you don't already have traefik installed.
+  enabled: true
+  # Official Traefik configuration starts here
+  providers:
+    kubernetesIngress:
+      publishedService:
+        enabled: true
+      namespaces:
+        - "development"
+  ingressClass:
+    enabled: true
+    isDefaultClass: false
+    name: "development"
+
+# Ingress object configuration.
+ingress:
+  className: development
+  host: development-transaction-tool.swirldslabs-devops.com
