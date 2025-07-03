@@ -45,7 +45,7 @@ If release name contains chart name it will be used as a full name.
 
 
 {{- define "transactiontool.sqlHost" -}}
-{{ coalesce .Values.postgres.host (printf "%s-pg-rw.%s.svc" (include "transactiontool.fullname" .) .Release.Namespace) | squote }}
+{{ coalesce .Values.postgres.host (printf "%s-pg-rw.%s.svc" (include "transactiontool.fullname" .) .Release.Namespace) (printf "%s-citus.%s.svc" (include "transactiontool.fullname" .) .Release.Namespace) | squote }}
 {{- end -}}
 
 {{- define "transactiontool.redisUrl" -}}

@@ -1,0 +1,9 @@
+{{- if and (hasKey .Values.stackgres "SGPostgresConfig") .Values.stackgres.enabled }}
+apiVersion: stackgres.io/v1
+kind: SGPostgresConfig
+metadata:
+  name: {{ include "transactiontool.fullname" . }}-pg-config
+  namespace: {{ .Release.Namespace }}
+spec:
+{{- .Values.stackgres.SGPostgresConfig.config | toYaml | nindent 2 }}
+{{- end }}
