@@ -435,7 +435,7 @@ watch(
       </div>
     </div>
   </div>
-  <template v-if="false">
+  <!-- gRPC Web Endpoint -->
     <div class="form-group mt-6">
       <label class="form-label">gRPC Web Proxy Endpoint</label>
       <div class="text-micro mb-3 text-muted">Fully Qualified Domain Name (FQDN) is required</div>
@@ -460,7 +460,6 @@ watch(
         </div>
       </div>
     </div>
-  </template>
 
   <hr class="separator my-5" />
 
