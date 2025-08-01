@@ -1,5 +1,4 @@
 import {
-  KeyList,
   NodeDeleteTransaction,
   NodeUpdateTransaction,
   PublicKey,
@@ -27,12 +26,8 @@ import { MAX_TRANSACTION_BYTE_SIZE, TransactionType, Transaction } from '@entiti
 import {
   MirrorNodeService,
   decode,
-  getSignatureEntities,
   computeShortenedPublicKeyList,
-  parseAccountInfo,
-  parseNodeInfo,
-  safeAwait,
-  COUNCIL_ACCOUNTS,
+  computeSignatureKey,
 } from '@app/common';
 
 export const isExpired = (transaction: SDKTransaction) => {
@@ -254,89 +249,6 @@ export const getStatusCodeFromMessage = (message: string) => {
   } else {
     return 21;
   }
-};
-
-/* Computes the signature key for the transaction */
-export const computeSignatureKey = async (
-  transaction: SDKTransaction,
-  mirrorNodeService: MirrorNodeService,
-  mirrorNetwork: string,
-) => {
-  /* Get the accounts, receiver accounts and new keys from the transaction */
-  const { accounts, receiverAccounts, newKeys, nodeId } = getSignatureEntities(transaction);
-
-  /* Create a new key list */
-  const signatureKey = new KeyList();
-
-  /* Add keys to the signature key list */
-  newKeys.forEach(key => signatureKey.push(key));
-
-  /* Get the keys of the account ids to the signature key list */
-  for (const accountId of accounts) {
-    try {
-      const accountInfo = parseAccountInfo(
-        await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork),
-      );
-      if (!accountInfo.key) continue;
-      signatureKey.push(accountInfo.key);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  /* Check if there is a receiver account that required signature, if so get it */
-  for (const accountId of receiverAccounts) {
-    try {
-      const accountInfo = parseAccountInfo(
-        await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork),
-      );
-      if (!accountInfo.receiverSignatureRequired || !accountInfo.key) continue;
-      signatureKey.push(accountInfo.key);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  /* Check if user has a key included in the node admin key */
-  try {
-    if (!isNaN(nodeId) && nodeId !== null) {
-      const nodeInfo = parseNodeInfo(await mirrorNodeService.getNodeInfo(nodeId, mirrorNetwork));
-      const nodeSignatureKey = new KeyList();
-
-      if (nodeInfo.admin_key) {
-        nodeSignatureKey.push(nodeInfo.admin_key);
-      }
-
-      if (transactionIs(NodeUpdateTransaction, transaction)) {
-        const nodeAccountId = nodeInfo?.node_account_id?.toString() || null;
-        if (transaction.accountId && nodeAccountId) {
-          const accountInfo = parseAccountInfo(
-            await mirrorNodeService.getAccountInfo(nodeAccountId, mirrorNetwork),
-          );
-          if (accountInfo?.key) {
-            nodeSignatureKey.push(accountInfo.key);
-          }
-        }
-      }
-
-      if (transactionIs(NodeDeleteTransaction, transaction)) {
-        for (const acc of COUNCIL_ACCOUNTS) {
-          const res = await safeAwait(mirrorNodeService.getAccountInfo(acc, mirrorNetwork));
-          if (res.data) {
-            const councilAccountInfo = parseAccountInfo(res.data);
-            nodeSignatureKey.push(councilAccountInfo.key);
-          }
-        }
-        nodeSignatureKey.setThreshold(1);
-      }
-
-      signatureKey.push(nodeSignatureKey);
-    }
-  } catch (error) {
-    console.log(error);
-  }
-
-  return signatureKey;
 };
 
 /* Get transaction body bytes without node account id */
