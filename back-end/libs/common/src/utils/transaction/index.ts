@@ -1,22 +1,12 @@
-import {
-  Key,
-  NodeDeleteTransaction,
-  NodeUpdateTransaction,
-  Transaction as SDKTransaction,
-} from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
-import { EntityManager, In, Not } from 'typeorm';
+import { EntityManager, In } from 'typeorm';
 
 import {
-  getSignatureEntities,
-  isPublicKeyInKeyList,
   MirrorNodeService,
   attachKeys,
-  parseAccountInfo,
-  parseNodeInfo,
-  transactionIs,
-  safeAwait,
-  COUNCIL_ACCOUNTS,
+  computeSignatureKey,
+  flattenKeyList,
 } from '@app/common';
 import { User, Transaction, UserKey, TransactionSigner } from '@entities';
 
@@ -26,14 +16,8 @@ export const keysRequiredToSign = async (
   entityManager: EntityManager,
   userKeys?: UserKey[],
 ): Promise<UserKey[]> => {
-  const userKeyIdsRequired: Set<number> = new Set<number>();
-
   if (!transaction) return [];
 
-  /* Deserialize the transaction */
-  const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
-
-  /* Get the user signatures for this transaction */
   const signatures = await entityManager.find(TransactionSigner, {
     where: {
       transaction: {
@@ -46,106 +30,38 @@ export const keysRequiredToSign = async (
     withDeleted: true,
   });
 
-  /* Signer keys */
-  const signerKeys = signatures.map(s => s.userKey);
+  // list of just public keys that have already signed the transaction
+  const signerKeys = signatures.map(s => s.userKey.publicKey);
 
-  /* Get all keys */
-  if (!userKeys) {
-    userKeys = await entityManager.find(UserKey, {
+  /* Deserialize the transaction */
+  const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
+
+  const signature = await computeSignatureKey(sdkTransaction, mirrorNodeService, transaction.mirrorNetwork);
+  // flatten the key list to an array of public keys
+  // and filter out any keys that have already signed the transaction
+  const flatPublicKeys = flattenKeyList(signature)
+    .map(pk => pk.toStringRaw())
+    .filter(pk => !signerKeys.includes(pk));
+
+  if (flatPublicKeys.length === 0) return [];
+
+  let results: UserKey[] = [];
+  // Now if userKeys is provided, filter out any keys that are not in the flatPublicKeys array
+  // this way a user requesting required keys will only see their own keys that are required
+  // Otherwise, fetch all UserKeys that are in flatPublicKeys
+  if (userKeys) {
+    results = userKeys.filter(publicKey =>
+        flatPublicKeys.includes(publicKey.publicKey)
+    );
+  } else {
+    results = await entityManager.find(UserKey, {
       where: {
-        id: Not(In(signerKeys.map(k => k.id))),
+        publicKey: In(flatPublicKeys),
       },
     });
   }
 
-  /* Get signature entities */
-  const { newKeys, accounts, receiverAccounts, nodeId } = getSignatureEntities(sdkTransaction);
-
-  /* Check if the user has a key that is required to sign */
-  for (const userKey of userKeys) {
-    const includedInTransaction =
-      newKeys.some(key => isPublicKeyInKeyList(userKey.publicKey, key)) &&
-      !signatures.some(s => s.userKey.publicKey === userKey.publicKey);
-
-    if (includedInTransaction) {
-      userKeyIdsRequired.add(userKey.id);
-    }
-  }
-
-  const addUserPublicKeyIfRequired = (key: Key) => {
-    const userKeysRequired = userKeys.filter(
-      userKey =>
-        isPublicKeyInKeyList(userKey.publicKey, key) &&
-        !signatures.some(s => s.userKey.publicKey === userKey.publicKey),
-    );
-    userKeysRequired.forEach(userKey => userKeyIdsRequired.add(userKey.id));
-  };
-
-  /* Check if a key of the user is inside the key of some account required to sign */
-  for (const accountId of accounts) {
-    try {
-      const accountInfo = parseAccountInfo(
-        await mirrorNodeService.getAccountInfo(accountId, transaction.mirrorNetwork),
-      );
-      if (!accountInfo.key) continue;
-      addUserPublicKeyIfRequired(accountInfo.key);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  /* Check if user has a key included in a receiver account that required signature */
-  for (const accountId of receiverAccounts) {
-    try {
-      const accountInfo = parseAccountInfo(
-        await mirrorNodeService.getAccountInfo(accountId, transaction.mirrorNetwork),
-      );
-      if (!accountInfo.receiverSignatureRequired || !accountInfo.key) continue;
-      addUserPublicKeyIfRequired(accountInfo.key);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  /* Check if user has a key included in the node admin key */
-  try {
-    if (!isNaN(nodeId) && nodeId !== null) {
-      const nodeInfo = parseNodeInfo(
-        await mirrorNodeService.getNodeInfo(nodeId, transaction.mirrorNetwork),
-      );
-      if (nodeInfo.admin_key) {
-        addUserPublicKeyIfRequired(nodeInfo.admin_key);
-      }
-
-      if (transactionIs(NodeUpdateTransaction, sdkTransaction)) {
-        const nodeAccountId = nodeInfo?.node_account_id?.toString() || null;
-        if (sdkTransaction.accountId && nodeAccountId) {
-          const accountInfo = parseAccountInfo(
-            await mirrorNodeService.getAccountInfo(nodeAccountId, transaction.mirrorNetwork),
-          );
-          if (accountInfo?.key) {
-            addUserPublicKeyIfRequired(accountInfo.key);
-          }
-        }
-      }
-
-      if (transactionIs(NodeDeleteTransaction, sdkTransaction)) {
-        for (const acc of COUNCIL_ACCOUNTS) {
-          const res = await safeAwait(
-            mirrorNodeService.getAccountInfo(acc, transaction.mirrorNetwork),
-          );
-          if (res.data) {
-            const councilAccountInfo = parseAccountInfo(res.data);
-            addUserPublicKeyIfRequired(councilAccountInfo.key);
-          }
-        }
-      }
-    }
-  } catch (error) {
-    console.error(error);
-  }
-
-  return userKeys.filter(userKey => userKeyIdsRequired.has(userKey.id));
+  return results;
 };
 
 export const userKeysRequiredToSign = async (
