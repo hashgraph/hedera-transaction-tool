@@ -1,6 +1,11 @@
 import { Key, KeyList, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
-import { MirrorNodeService, parseAccountInfo, parseNodeInfo } from '@app/common';
+import {
+  MirrorNodeService,
+  NodeInfoParsed,
+  parseAccountInfo,
+  parseNodeInfo
+} from '@app/common';
 
 export abstract class TransactionBaseModel<T extends SDKTransaction> {
   constructor(protected readonly transaction: T) {}
@@ -30,6 +35,10 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
   }
 
   getNodeId(): number | null {
+    return null;
+  }
+
+  getNodeAccountId(nodeInfo: NodeInfoParsed): string | null {
     return null;
   }
 
@@ -81,6 +90,22 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
 
         if (nodeInfo.admin_key) {
           signatureKey.push(nodeInfo.admin_key);
+        }
+
+        //TODO documentation on this requirement is still in the works.
+        //Current documentation states that when the node account id is unset, it can be signed by
+        //the account key OR the node admin key. Which means I would need to put these in an keyList with
+        //a threshold before added them to the signature keys.
+        //In the case of account id being changed, both the old key and the new key are required
+        // to sign the transaction. So they can be added like this.
+        const nodeAccountId = this.getNodeAccountId(nodeInfo);
+        if (nodeAccountId) {
+          const { key } = parseAccountInfo(
+            await mirrorNodeService.getAccountInfo(nodeAccountId, mirrorNetwork)
+          );
+          if (key) {
+            signatureKey.push(key);
+          }
         }
       }
     } catch (error) {

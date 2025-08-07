@@ -152,24 +152,16 @@ export function getMaximumExpirationTime() {
 }
 
 export function isPublicKeyInKeyList(publicKey: PublicKey | string, key: Key): boolean {
-  const keyIsKeyList = key instanceof KeyList;
-  const keyIsPublicKey = key instanceof PublicKey;
+  if (key instanceof PublicKey) {
+    return key.toStringRaw() === (publicKey instanceof PublicKey ? publicKey.toStringRaw() : publicKey);
+  }
 
-  if (!keyIsKeyList && !keyIsPublicKey) return false;
+  if (key instanceof KeyList) {
+    const keys = key.toArray();
+    return keys.some(k => isPublicKeyInKeyList(publicKey, k));
+  }
 
-  publicKey = publicKey instanceof PublicKey ? publicKey.toStringRaw() : publicKey;
-
-  const keyList = keyIsKeyList ? key : new KeyList([key]);
-
-  const keys = keyList.toArray();
-  return keys.some(k => {
-    if (k instanceof PublicKey) {
-      return k.toStringRaw() === publicKey;
-    } else if (k instanceof KeyList) {
-      return isPublicKeyInKeyList(publicKey, k);
-    }
-    return false;
-  });
+  return false;
 }
 
 export function isKeyListValid(keyList: KeyList) {
@@ -206,7 +198,7 @@ export function compareKeys(key1: Key, key2: Key) {
 
     const keys2Copy = [...keys2];
     for (const key of keys1) {
-      const idx = keys2Copy.findIndex(k => areKeysEqual(key, k));
+      const idx = keys2Copy.findIndex(k => compareKeys(key, k));
       if (idx === -1) return false;
       keys2Copy.splice(idx, 1);
     }

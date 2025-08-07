@@ -5,9 +5,6 @@
 # yaml secrets files
 *-secret.yaml
 
-# files with notes and scripts for manual data/image manipulation
-*.helper
-
 # compiled output
 /dist
 **/node_modules

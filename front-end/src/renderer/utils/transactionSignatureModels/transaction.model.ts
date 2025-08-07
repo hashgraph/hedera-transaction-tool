@@ -1,7 +1,8 @@
 import { Key, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
-import { getAccountInfo, getNodeKeys } from '@renderer/services/mirrorNodeDataService';
+import { getAccountInfo, getNodeInfo } from '@renderer/services/mirrorNodeDataService';
 import { compareKeys } from '../sdk';
+import type { INodeInfoParsed } from '@main/shared/interfaces';
 
 export abstract class TransactionBaseModel<T extends SDKTransaction> {
   constructor(protected transaction: T) {}
@@ -38,6 +39,10 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     return null;
   }
 
+  getNodeAccountId(nodeInfo: INodeInfoParsed): string | null {
+    return null;
+  }
+
   async computeSignatureKey(
     mirrorNodeLink: string,
   ) {
@@ -53,7 +58,6 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     const payerKey: Record<string, Key> = {};
     const receiverAccountsKeys: Record<string, Key> = {};
     const nodeAdminKeys: Record<number, Key> = {};
-    // const nodeAccountKeys: Record<string, Key> = {};
 
     const currentKeyList: Key[] = [];
     const hasKey = (key: Key) => currentKeyList.some(existingKey => compareKeys(existingKey, key));
@@ -102,21 +106,28 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     /* Check if user has a key included in the node admin key */
     try {
       if (!Number.isNaN(nodeId) && nodeId !== null) {
-        const {
-          adminKey,
-          nodeAccountId,
-          nodeAccountKey,
-          signatureKey
-        } = await getNodeKeys(
-          nodeId,
-          transaction,
-          mirrorNodeLink,
-        );
-
+        const nodeInfo = await getNodeInfo(nodeId, mirrorNodeLink);
+        const adminKey = nodeInfo.adminKey;
         if (adminKey && !hasKey(adminKey)) {
-          signatureKey.push(adminKey);
+          signatureKeys.push(adminKey);
           nodeAdminKeys[nodeId] = adminKey
           currentKeyList.push(adminKey);
+        }
+
+        //TODO documentation on this requirement is still in the works.
+        //Current documentation states that when the node account id is unset, it can be signed by
+        //the account key OR the node admin key. Which means I would need to put these in an keyList with
+        //a threshold before added them to the signature keys.
+        //In the case of account id being changed, both the old key and the new key are required
+        // to sign the transaction. So they can be added like this.
+        const nodeAccountId = this.getNodeAccountId(nodeInfo);
+        if (nodeAccountId) {
+          const { key } = await getAccountInfo(nodeAccountId, mirrorNodeLink);
+          if (key && !has(key)) {
+            signatureKeys.push(key);
+            nodeAdminKeys[nodeId] = key
+            currentKeyList.push(key);
+          }
         }
       }
     } catch (error) {

@@ -36,7 +36,6 @@ import {
   hexToUint8Array,
   isLoggedInOrganization,
   isUserLoggedIn,
-  publicRequiredToSign,
   usersPublicRequiredToSign,
 } from '@renderer/utils';
 
@@ -45,6 +44,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
+import { SignatureItem } from '@renderer/types';
 
 /* Stores */
 const user = useUserStore();
@@ -105,17 +105,11 @@ async function handleFetchGroup(id: string | number) {
           const tx = Transaction.fromBytes(transactionBytes);
           const txId = item.transaction.id;
 
-          const { usersPublicKeys } = await publicRequiredToSign(
+          const usersPublicKeys = await usersPublicRequiredToSign(
             tx,
             user.selectedOrganization.userKeys,
             network.mirrorNodeBaseURL,
           );
-
-          const signedSigners = new Set([...tx._signerPublicKeys]);
-
-          const usersUnsigned = usersPublicKeys.length
-            ? usersPublicKeys.filter(pk => !signedSigners.has(pk))
-            : [];
 
           if (route.query.previousTab) {
             const previousTab = route.query.previousTab;
@@ -127,7 +121,7 @@ async function handleFetchGroup(id: string | number) {
             ) {
               unsignedSignersToCheck.value = {
                 ...unsignedSignersToCheck.value,
-                [txId]: usersUnsigned,
+                [txId]: usersPublicKeys,
               };
             }
           }
@@ -136,7 +130,7 @@ async function handleFetchGroup(id: string | number) {
             item.transaction.status !== TransactionStatus.CANCELED &&
             item.transaction.status !== TransactionStatus.EXPIRED
           ) {
-            publicKeysRequiredToSign.value = publicKeysRequiredToSign.value!.concat(usersUnsigned);
+            publicKeysRequiredToSign.value = publicKeysRequiredToSign.value!.concat(usersPublicKeys);
           }
         }
       }
