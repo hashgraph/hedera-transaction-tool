@@ -117,11 +117,7 @@ export const ableToSign = (publicKeys: string[], key: Key) => {
 
     return currentThreshold >= (key.threshold || keys.length);
   } else if (key instanceof PublicKey) {
-    if (publicKeys.includes(key.toStringRaw())) {
-      return true;
-    } else {
-      return false;
-    }
+    return publicKeys.includes(key.toStringRaw());
   } else {
     throw new Error(`Invalid key type`);
   }
@@ -156,24 +152,16 @@ export function getMaximumExpirationTime() {
 }
 
 export function isPublicKeyInKeyList(publicKey: PublicKey | string, key: Key): boolean {
-  const keyIsKeyList = key instanceof KeyList;
-  const keyIsPublicKey = key instanceof PublicKey;
+  if (key instanceof PublicKey) {
+    return key.toStringRaw() === (publicKey instanceof PublicKey ? publicKey.toStringRaw() : publicKey);
+  }
 
-  if (!keyIsKeyList && !keyIsPublicKey) return false;
+  if (key instanceof KeyList) {
+    const keys = key.toArray();
+    return keys.some(k => isPublicKeyInKeyList(publicKey, k));
+  }
 
-  publicKey = publicKey instanceof PublicKey ? publicKey.toStringRaw() : publicKey;
-
-  const keyList = keyIsKeyList ? key : new KeyList([key]);
-
-  const keys = keyList.toArray();
-  return keys.some(k => {
-    if (k instanceof PublicKey) {
-      return k.toStringRaw() === publicKey;
-    } else if (k instanceof KeyList) {
-      return isPublicKeyInKeyList(publicKey, k);
-    }
-    return false;
-  });
+  return false;
 }
 
 export function isKeyListValid(keyList: KeyList) {
@@ -200,7 +188,23 @@ export function encodeKey(keyList: Key) {
 }
 
 export function compareKeys(key1: Key, key2: Key) {
-  return encodeKey(key1).toString() === encodeKey(key2).toString();
+  if (key1 instanceof PublicKey && key2 instanceof PublicKey) {
+    return key1.equals(key2);
+  } else if (key1 instanceof KeyList && key2 instanceof KeyList) {
+    if (key1.threshold !== key2.threshold) return false;
+    const keys1 = key1.toArray();
+    const keys2 = key2.toArray();
+    if (keys1.length !== keys2.length) return false;
+
+    const keys2Copy = [...keys2];
+    for (const key of keys1) {
+      const idx = keys2Copy.findIndex(k => compareKeys(key, k));
+      if (idx === -1) return false;
+      keys2Copy.splice(idx, 1);
+    }
+    return true;
+  }
+  return false;
 }
 
 export function decodeKeyList(keyListBytes: string) {

@@ -1,5 +1,5 @@
 import type { Organization } from '@prisma/client';
-import type { LoggedInOrganization } from '@renderer/types';
+import type { LoggedInOrganization, SignatureItem } from '@renderer/types';
 import type {
   ITransaction,
   ITransactionFull,

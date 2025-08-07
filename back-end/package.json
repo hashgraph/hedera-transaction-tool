@@ -21,7 +21,8 @@
     "create-admin": "npx ts-node ./scripts/create-admin.ts",
     "create-users": "npx ts-node ./scripts/add-users.ts",
     "deploy:dev": "sh ./k8s/dev/deploy.sh",
-    "test:all": "npm run test --workspace=apps/api && npm run test --workspace=apps/chain && npm run test --workspace=apps/notifications",
+    "test:libs": "jest --config ./jest.config.ts",
+    "test:all": "npm run test --workspace=apps/api && npm run test --workspace=apps/chain && npm run test --workspace=apps/notifications && npm run test:libs",
     "test:cov:all": "npm run test:cov --workspace=apps/api && npm run test:cov --workspace=apps/chain && npm run test:cov --workspace=apps/notifications"
   },
   "dependencies": {

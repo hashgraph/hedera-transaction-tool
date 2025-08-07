@@ -101,6 +101,8 @@ test.describe('System file tests', () => {
     expect(result).toBe('SUCCESS');
   });
 
+  //NOTE: whether due to the latest mirror node, some other code, or just a bad 102.json file, this test will pass
+  // but then crash mirror node, failing all future tests.
   test('Verify user can execute file update transaction for node address book(102) ', async () => {
     test.slow();
     const fileId = '0.0.102';

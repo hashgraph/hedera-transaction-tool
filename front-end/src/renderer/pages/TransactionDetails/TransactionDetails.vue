@@ -279,7 +279,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 
               <!-- Approvers -->
               <div
-                v-if="orgTransaction?.approvers && orgTransaction?.approvers.length > 0"
+                v-if="orgTransaction?.approvers && orgTransaction.approvers.length > 0"
                 class="mt-5"
               >
                 <h4 class="text-title text-bold">Approvers</h4>

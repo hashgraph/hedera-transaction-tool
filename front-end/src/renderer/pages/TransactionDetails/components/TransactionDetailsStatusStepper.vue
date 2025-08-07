@@ -117,7 +117,7 @@ const createErrorItem = (title: string, name: string) => {
 const detailItemLabelClass = 'text-micro text-semi-bold text-dark-blue';
 </script>
 <template>
-  <h4 :class="detailItemLabelClass">Transaction Status</h4>
+  <h2 class="text-title text-bold">Transaction Status</h2>
   <AppStepper
     :items="stepperItems"
     :active-index="stepperActiveIndex"

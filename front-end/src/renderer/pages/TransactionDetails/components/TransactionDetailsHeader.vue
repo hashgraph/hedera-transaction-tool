@@ -262,6 +262,8 @@ const handleSign = async () => {
     const restoredRequiredKeys = [];
     const requiredNonRestoredKeys = [];
 
+    // Separate keys into restored and non-restored, where restored indicates that the
+    // key is locally present.
     for (const requiredKey of publicKeysRequired) {
       if (user.keyPairs.some(k => k.public_key === requiredKey)) {
         restoredRequiredKeys.push(requiredKey);
