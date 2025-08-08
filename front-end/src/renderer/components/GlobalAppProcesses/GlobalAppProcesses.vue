@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
 
-import { ACCOUNT_SETUP_STARTED } from '@main/shared/constants';
+import { ACCOUNT_SETUP_STARTED } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 

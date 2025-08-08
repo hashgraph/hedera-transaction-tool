@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ITransactionFull } from '@main/shared/interfaces';
+import type { ITransactionFull } from '@shared/interfaces';
 
 import { computed, onBeforeMount, ref } from 'vue';
 

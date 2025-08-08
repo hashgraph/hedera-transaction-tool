@@ -14,7 +14,7 @@ import {
   decryptPrivateKeyFromPem,
   getRecoveryPhraseInfo,
 } from '@main/services/localUser/encryptedKeys';
-import { ENCRYPTED_KEY_ALREADY_IMPORTED } from '@main/shared/constants';
+import { ENCRYPTED_KEY_ALREADY_IMPORTED } from '@shared/constants';
 import { copyFile, getUniquePath, unzip } from '@main/utils/files';
 import { Stats } from 'fs';
 

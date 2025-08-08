@@ -5,7 +5,7 @@ import { getIPCHandler, invokeIPCHandler } from '../../../_utils_';
 import registerAccountsHandlers from '@main/modules/ipcHandlers/localUser/accounts';
 
 import { Prisma } from '@prisma/client';
-import { CommonNetwork } from '@main/shared/enums';
+import { CommonNetwork } from '@shared/enums';
 import {
   addAccount,
   changeAccountNickname,

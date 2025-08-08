@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { IAccountInfoParsed } from '@main/shared/interfaces';
+import type { IAccountInfoParsed } from '@shared/interfaces';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 import type { AccountUpdateData, AccountUpdateDataMultiple } from '@renderer/utils/sdk';
 

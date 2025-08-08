@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { KeyPathWithName } from '@main/shared/interfaces';
+import type { KeyPathWithName } from '@shared/interfaces';
 import EncryptedKeysBox from '@renderer/components/KeyPair/ImportEncrypted/components/EncryptedKeysBox.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { ref } from 'vue';

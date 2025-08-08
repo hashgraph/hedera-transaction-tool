@@ -5,15 +5,15 @@ import type {
   ITransactionFull,
   Network,
   PaginatedResourceDto,
-} from '@main/shared/interfaces';
+} from '@shared/interfaces';
 import type {
   ITransactionApprover,
   TransactionApproverDto,
-} from '@main/shared/interfaces/organization/approvers';
+} from '@shared/interfaces';
 
 import { Transaction } from '@hashgraph/sdk';
 
-import { ObserverRole, TransactionStatus } from '@main/shared/interfaces';
+import { ObserverRole, TransactionStatus } from '@shared/interfaces';
 
 import {
   axiosWithCredentials,

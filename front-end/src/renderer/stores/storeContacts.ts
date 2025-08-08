@@ -1,4 +1,4 @@
-import type { Contact, IUserKey } from '@main/shared/interfaces';
+import type { Contact, IUserKey } from '@shared/interfaces';
 
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';

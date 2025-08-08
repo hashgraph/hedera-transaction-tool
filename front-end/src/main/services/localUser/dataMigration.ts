@@ -1,4 +1,4 @@
-import type { Network } from '@main/shared/interfaces';
+import type { Network } from '@shared/interfaces';
 
 import * as crypto from 'crypto';
 import * as fs from 'fs';
@@ -8,13 +8,13 @@ import { app } from 'electron';
 import * as argon2 from 'argon2';
 import { AccountId, Hbar, HbarUnit } from '@hashgraph/sdk';
 
-import { CommonNetwork } from '@main/shared/enums';
-import { MigrateUserDataResult } from '@main/shared/interfaces/migration';
+import { CommonNetwork } from '@shared/enums';
+import { MigrateUserDataResult } from '@shared/interfaces/migration';
 import {
   DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
   SELECTED_NETWORK,
   UPDATE_LOCATION,
-} from '@main/shared/constants';
+} from '@shared/constants';
 
 import { parseNetwork } from '@main/utils/parsers';
 import { safeAwait } from '@main/utils/safeAwait';

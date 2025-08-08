@@ -1,4 +1,4 @@
-import type { IDefaultNetworks, Network } from '@main/shared/interfaces';
+import type { IDefaultNetworks, Network } from '@shared/interfaces';
 import type { KeyPair, Transaction } from '@prisma/client';
 
 import {
@@ -10,8 +10,8 @@ import {
   Key,
 } from '@hashgraph/sdk';
 
-import { CommonNetwork } from '@main/shared/enums';
-import { TransactionStatus } from '@main/shared/interfaces';
+import { CommonNetwork } from '@shared/enums';
+import { TransactionStatus } from '@shared/interfaces';
 
 import { openExternal } from '@renderer/services/electronUtilsService';
 import { flattenKeyList } from '@renderer/services/keyPairService';

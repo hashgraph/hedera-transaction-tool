@@ -1,4 +1,4 @@
-import type { IAccountInfoParsed, CryptoAllowance } from '@main/shared/interfaces';
+import type { IAccountInfoParsed, CryptoAllowance } from '@shared/interfaces';
 
 import { computed, ref, watch } from 'vue';
 import { AccountId, Client, Hbar } from '@hashgraph/sdk';

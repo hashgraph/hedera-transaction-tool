@@ -5,7 +5,7 @@ import { getIPCHandler, invokeIPCHandler } from '../../../_utils_';
 import registerFilesHandlers from '@main/modules/ipcHandlers/localUser/files';
 
 import { Prisma } from '@prisma/client';
-import { CommonNetwork } from '@main/shared/enums';
+import { CommonNetwork } from '@shared/enums';
 import {
   addFile,
   getFiles,
@@ -13,7 +13,7 @@ import {
   showStoredFileInTemp,
   updateFile,
 } from '@main/services/localUser/files';
-import { decodeProto } from '@main/utils/hederaSpecialFiles';
+import { decodeProto } from '@shared/hederaSpecialFiles';
 
 vi.mock('@main/services/localUser/files', () => mockDeep());
 vi.mock('@main/utils/hederaSpecialFiles', () => mockDeep());

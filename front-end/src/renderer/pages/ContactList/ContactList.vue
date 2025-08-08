@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HederaAccount } from '@prisma/client';
-import { NotificationType, type Contact } from '@main/shared/interfaces';
+import { NotificationType, type Contact } from '@shared/interfaces';
 
 import { computed, onBeforeMount, ref } from 'vue';
 

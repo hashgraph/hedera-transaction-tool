@@ -1,4 +1,4 @@
-import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+import type { TransactionApproverDto } from '@shared/interfaces';
 
 import { ref } from 'vue';
 import { defineStore } from 'pinia';

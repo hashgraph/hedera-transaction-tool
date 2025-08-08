@@ -11,7 +11,7 @@ import {
   FileAppendTransaction,
 } from '@hashgraph/sdk';
 
-import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
+import { TRANSACTION_MAX_SIZE } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 

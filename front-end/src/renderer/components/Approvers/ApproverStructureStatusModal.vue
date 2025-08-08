@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ITransactionApprover } from '@main/shared/interfaces/organization/approvers';
+import type { ITransactionApprover } from '@shared/interfaces/organization/approvers';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import ApproverStructureStatus from '@renderer/components/Approvers/ApproverStructureStatus.vue';

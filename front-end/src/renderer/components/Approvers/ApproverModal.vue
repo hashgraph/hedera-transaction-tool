@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
 import type { TabItem } from '@renderer/components/ui/AppTabs.vue';
 
 import { computed, nextTick, ref, watch } from 'vue';

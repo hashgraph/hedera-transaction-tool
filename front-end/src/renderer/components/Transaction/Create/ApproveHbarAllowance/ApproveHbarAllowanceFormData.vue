@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CryptoAllowance, IAccountInfoParsed } from '@main/shared/interfaces';
+import type { CryptoAllowance, IAccountInfoParsed } from '@shared/interfaces';
 import type { ApproveHbarAllowanceData } from '@renderer/utils/sdk';
 
 import { computed, ref, watch } from 'vue';

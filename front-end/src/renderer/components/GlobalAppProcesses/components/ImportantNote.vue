@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 
-import { LOCAL_STORAGE_IMPORTANT_NOTE_ACCEPTED } from '@main/shared/constants';
+import { LOCAL_STORAGE_IMPORTANT_NOTE_ACCEPTED } from '@shared/constants';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';

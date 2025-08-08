@@ -1,11 +1,11 @@
-import type { Network, NetworkExchangeRateSetResponse } from '@main/shared/interfaces';
+import type { Network, NetworkExchangeRateSetResponse } from '@shared/interfaces';
 
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
 import { Client } from '@hashgraph/sdk';
 
-import { CommonNetwork } from '@main/shared/enums';
+import { CommonNetwork } from '@shared/enums';
 
 import { getExchangeRateSet } from '@renderer/services/mirrorNodeDataService';
 import { setClient } from '@renderer/services/transactionService';

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { ITransaction } from '@main/shared/interfaces';
+import type { ITransaction } from '@shared/interfaces';
 
-import { TransactionStatus } from '@main/shared/interfaces';
+import { TransactionStatus } from '@shared/interfaces';
 
 import MultipleSelectFilterField from './MultipleSelectFilterField.vue';
 

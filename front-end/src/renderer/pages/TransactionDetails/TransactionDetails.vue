@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import type { Transaction } from '@prisma/client';
-import type { ITransactionFull } from '@main/shared/interfaces';
+import type { ITransactionFull } from '@shared/interfaces';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
-import { TransactionStatus } from '@main/shared/interfaces';
-import { TRANSACTION_ACTION } from '@main/shared/constants';
-import { CommonNetwork } from '@main/shared/enums';
+import { TransactionStatus } from '@shared/interfaces';
+import { TRANSACTION_ACTION } from '@shared/constants';
+import { CommonNetwork } from '@shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';

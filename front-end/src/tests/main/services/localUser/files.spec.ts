@@ -16,7 +16,7 @@ import {
   updateFile,
 } from '@main/services/localUser/files';
 
-import { CommonNetwork } from '@main/shared/enums';
+import { CommonNetwork } from '@shared/enums';
 import { saveContentToPath, getNumberArrayFromString, deleteDirectory } from '@main/utils';
 import { safeAwait } from '@main/utils/safeAwait';
 
