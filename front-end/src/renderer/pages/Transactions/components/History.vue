@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ITransaction } from '@main/shared/interfaces';
+import type { ITransaction } from '@shared/interfaces';
 import type { Transaction } from '@prisma/client';
 
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
@@ -7,8 +7,8 @@ import { Prisma } from '@prisma/client';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
-import { NotificationType, TransactionStatus } from '@main/shared/interfaces';
-import { TRANSACTION_ACTION } from '@main/shared/constants';
+import { NotificationType, TransactionStatus } from '@shared/interfaces';
+import { TRANSACTION_ACTION } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';

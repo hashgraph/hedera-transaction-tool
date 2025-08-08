@@ -25,6 +25,7 @@ export default defineConfig(({ command }) => {
       alias: {
         '@renderer': resolve('src/renderer'),
         '@main': resolve('src/main'),
+        '@shared': resolve('src/shared'),
       },
     },
     plugins: [

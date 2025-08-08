@@ -1,5 +1,5 @@
 import type { Hbar, Key } from '@hashgraph/sdk';
-import type { IAccountInfoParsed } from '@main/shared/interfaces';
+import type { IAccountInfoParsed } from '@shared/interfaces';
 import type { AccountUpdateDataMultiple } from '@renderer/utils';
 
 import { AccountId, KeyList } from '@hashgraph/sdk';

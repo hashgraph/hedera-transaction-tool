@@ -2,7 +2,7 @@ import { Key, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import { getAccountInfo, getNodeInfo } from '@renderer/services/mirrorNodeDataService';
 import { compareKeys } from '../sdk';
-import type { INodeInfoParsed } from '@main/shared/interfaces';
+import type { INodeInfoParsed } from '@shared/interfaces';
 
 export abstract class TransactionBaseModel<T extends SDKTransaction> {
   constructor(protected transaction: T) {}

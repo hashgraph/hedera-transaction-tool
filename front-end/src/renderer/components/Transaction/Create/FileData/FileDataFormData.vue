@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { FileData } from '@renderer/utils';
 
+import { isHederaSpecialFileId } from '@shared/hederaSpecialFiles';
+
 import {
   getMinimumExpirationTime,
   getMaximumExpirationTime,
-  isHederaSpecialFileId,
 } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';

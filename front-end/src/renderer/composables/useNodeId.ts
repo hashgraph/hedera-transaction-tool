@@ -1,4 +1,4 @@
-import type { INodeInfoParsed } from '@main/shared/interfaces';
+import type { INodeInfoParsed } from '@shared/interfaces';
 
 import { computed, ref, watch } from 'vue';
 

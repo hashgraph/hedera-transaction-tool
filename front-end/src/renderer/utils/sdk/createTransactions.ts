@@ -1,4 +1,4 @@
-import type { IAccountInfoParsed, INodeInfoParsed } from '@main/shared/interfaces';
+import type { IAccountInfoParsed, INodeInfoParsed } from '@shared/interfaces';
 
 import {
   AccountAllowanceApproveTransaction,
@@ -29,7 +29,7 @@ import {
   TransferTransaction,
 } from '@hashgraph/sdk';
 
-import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+import { MEMO_MAX_LENGTH } from '@shared/constants';
 
 import { isAccountId, isContractId, isFileId } from '../validator';
 import { compareKeys } from '.';

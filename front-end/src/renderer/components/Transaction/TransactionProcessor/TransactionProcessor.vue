@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
 import type { ExecutedData, Processable } from '.';
 
 import { ref } from 'vue';

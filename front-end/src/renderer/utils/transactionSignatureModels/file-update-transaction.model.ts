@@ -1,7 +1,7 @@
 import { FileUpdateTransaction } from '@hashgraph/sdk';
 
 import { TransactionBaseModel } from './transaction.model';
-import { isHederaSpecialFileId } from '@main/utils/hederaSpecialFiles';
+import { isHederaSpecialFileId } from '@shared/hederaSpecialFiles';
 
 export default class FileUpdateTransactionModel extends TransactionBaseModel<FileUpdateTransaction> {
   getNewKeys() {

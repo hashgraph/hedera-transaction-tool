@@ -1,4 +1,4 @@
-import type { AccountInfo, IUserKey } from '@main/shared/interfaces';
+import type { AccountInfo, IUserKey } from '@shared/interfaces';
 import type { Organization } from '@prisma/client';
 
 import { Mnemonic } from '@hashgraph/sdk';

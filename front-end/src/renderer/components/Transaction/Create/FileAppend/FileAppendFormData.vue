@@ -4,11 +4,12 @@ import type { FileAppendData } from '@renderer/utils/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { isLoggedInOrganization, isHederaSpecialFileId, formatAccountId } from '@renderer/utils';
+import { isLoggedInOrganization, formatAccountId } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import KeyField from '@renderer/components/KeyField.vue';
 import FileContentFormData from '@renderer/components/Transaction/Create/FileData/FileContentFormData.vue';
+import { isHederaSpecialFileId } from '@shared/hederaSpecialFiles';
 
 /* Props */
 const props = defineProps<{

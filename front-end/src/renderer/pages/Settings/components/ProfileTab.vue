@@ -6,7 +6,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
 
-import { HTX_USER } from '@main/shared/constants';
+import { HTX_USER } from '@shared/constants';
 
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useLoader from '@renderer/composables/useLoader';

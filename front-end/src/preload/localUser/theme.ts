@@ -1,4 +1,4 @@
-import type { Theme } from '@main/shared/interfaces';
+import type { Theme } from '@shared/interfaces';
 
 import { ipcRenderer } from 'electron';
 

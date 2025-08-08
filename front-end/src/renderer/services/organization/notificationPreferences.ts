@@ -1,7 +1,7 @@
 import type {
   INotificationPreferencesCore,
   IUpdateNotificationPreferencesDto,
-} from '@main/shared/interfaces/organization';
+} from '@shared/interfaces';
 
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 

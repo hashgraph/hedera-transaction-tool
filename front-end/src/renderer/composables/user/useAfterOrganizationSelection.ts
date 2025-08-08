@@ -2,7 +2,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 
-import { SKIPPED_PERSONAL_SETUP } from '@main/shared/constants';
+import { SKIPPED_PERSONAL_SETUP } from '@shared/constants';
 
 import useSetupStores from '@renderer/composables/user/useSetupStores';
 

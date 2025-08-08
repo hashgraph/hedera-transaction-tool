@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Prisma } from '@prisma/client';
-import type { KeyPathWithName, IUserKeyWithMnemonic } from '@main/shared/interfaces';
+import type { KeyPathWithName, IUserKeyWithMnemonic } from '@shared/interfaces';
 import type { RecoveryPhrase } from '@renderer/types';
 
 import { ref, watch } from 'vue';

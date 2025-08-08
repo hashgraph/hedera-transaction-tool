@@ -1,6 +1,6 @@
 import useUserStore from '@renderer/stores/storeUser';
 
-import { DEFAULT_ORGANIZATION_OPTION, LAST_SELECTED_ORGANIZATION } from '@main/shared/constants';
+import { DEFAULT_ORGANIZATION_OPTION, LAST_SELECTED_ORGANIZATION } from '@shared/constants';
 
 import { getOrganizations } from '@renderer/services/organizationsService';
 import { getStoredClaim, add, update, remove } from '@renderer/services/claimService';

@@ -1,5 +1,5 @@
 import type { HederaAccount } from '@prisma/client';
-import type { Network } from '@main/shared/interfaces';
+import type { Network } from '@shared/interfaces';
 
 import { ipcRenderer } from 'electron';
 

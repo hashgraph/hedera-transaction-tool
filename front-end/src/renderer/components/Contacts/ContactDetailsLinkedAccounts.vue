@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HederaAccount } from '@prisma/client';
-import type { AccountInfo } from '@main/shared/interfaces';
+import type { AccountInfo } from '@shared/interfaces';
 
 import { computed, ref } from 'vue';
 import { handleFormatAccount } from '@renderer/utils';

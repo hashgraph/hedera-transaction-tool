@@ -1,4 +1,4 @@
-import type { Network } from '..';
+import type { Network } from '../index';
 
 export interface MigrateUserDataResult {
   accountsImported: number;

@@ -7,7 +7,7 @@ import { Client, FileId, FileInfo } from '@hashgraph/sdk';
 
 import { Prisma } from '@prisma/client';
 
-import { DISPLAY_FILE_SIZE_LIMIT } from '@main/shared/constants';
+import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';

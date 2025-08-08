@@ -1,4 +1,4 @@
-import type { AccountInfo } from '@main/shared/interfaces';
+import type { AccountInfo } from '@shared/interfaces';
 import type { HederaAccount } from '@prisma/client';
 
 import { AccountId, Client, Hbar, HbarUnit } from '@hashgraph/sdk';

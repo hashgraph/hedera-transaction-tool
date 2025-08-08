@@ -2,13 +2,13 @@ import type {
   INotificationReceiver,
   IUpdateNotificationPreferencesDto,
   IUpdateNotificationReceiver,
-} from '@main/shared/interfaces';
+} from '@shared/interfaces';
 
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
-import { NotificationType } from '@main/shared/interfaces';
-import { NOTIFICATIONS_INDICATORS_DELETE, NOTIFICATIONS_NEW } from '@main/shared/constants';
+import { NotificationType } from '@shared/interfaces';
+import { NOTIFICATIONS_INDICATORS_DELETE, NOTIFICATIONS_NEW } from '@shared/constants';
 
 import {
   getUserNotificationPreferences,

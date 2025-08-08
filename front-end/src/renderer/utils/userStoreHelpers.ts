@@ -1,6 +1,6 @@
 import type { Ref } from 'vue';
 import type { KeyPair, Organization } from '@prisma/client';
-import type { IUserKey } from '@main/shared/interfaces';
+import type { IUserKey } from '@shared/interfaces';
 import type {
   ConnectedOrganization,
   LoggedInOrganization,
@@ -18,7 +18,7 @@ import type {
 import { Prisma } from '@prisma/client';
 import { Mnemonic } from '@hashgraph/sdk';
 
-import { SELECTED_NETWORK, SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@main/shared/constants';
+import { SELECTED_NETWORK, SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@shared/constants';
 
 import {
   getUserState,
