@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onUpdated } from 'vue';
 
-import { networkMapping } from '@renderer/shared/constants';
+import { networkMapping } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';

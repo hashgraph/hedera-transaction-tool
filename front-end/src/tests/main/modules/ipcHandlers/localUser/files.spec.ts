@@ -16,7 +16,7 @@ import {
 import { decodeProto } from '@shared/hederaSpecialFiles';
 
 vi.mock('@main/services/localUser/files', () => mockDeep());
-vi.mock('@main/utils/hederaSpecialFiles', () => mockDeep());
+vi.mock('@shared/hederaSpecialFiles', () => mockDeep());
 
 describe('IPC handlers Files', () => {
   beforeEach(() => {
