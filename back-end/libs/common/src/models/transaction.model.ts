@@ -1,4 +1,4 @@
-import { Key, KeyList, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { AccountId, Key, KeyList, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
   MirrorNodeService,
@@ -18,11 +18,15 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     return this.transaction.toBytesAsync();
   }
 
-  getSigningAccounts(): Set<string> {
+  getFeePayerAccountId(): AccountId | null {
     const payerId = this.transaction.transactionId?.accountId;
     if (payerId) {
-      return new Set<string>([payerId.toString()]);
+      return payerId;
     }
+    return null;
+  }
+
+  getSigningAccounts(): Set<string> {
     return new Set<string>();
   }
 
@@ -46,6 +50,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     mirrorNodeService: MirrorNodeService,
     mirrorNetwork: string,
   ): Promise<KeyList> {
+    const feePayerAccountId = this.getFeePayerAccountId();
     const accounts = this.getSigningAccounts();
     const receiverAccounts = this.getReceiverAccounts();
     const newKeys = this.getNewKeys() ?? [];
@@ -53,6 +58,19 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
 
     /* Create a new key list */
     const signatureKey = new KeyList();
+
+    if (feePayerAccountId) {
+      try {
+        const accountInfo = parseAccountInfo(
+          await mirrorNodeService.getAccountInfo(feePayerAccountId.toString(), mirrorNetwork)
+        );
+        if (accountInfo.key) {
+          signatureKey.push(accountInfo.key);
+        }
+      } catch (error) {
+        console.log(`Fee payer key error:`, error);
+      }
+    }
 
     /* Add keys to the signature key list */
     signatureKey.push(...newKeys);
@@ -63,8 +81,9 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
         const accountInfo = parseAccountInfo(
           await mirrorNodeService.getAccountInfo(accountId, mirrorNetwork),
         );
-        if (!accountInfo.key) continue;
-        signatureKey.push(accountInfo.key);
+        if (accountInfo.key) {
+          signatureKey.push(accountInfo.key);
+        }
       } catch (error) {
         console.log(error);
       }
