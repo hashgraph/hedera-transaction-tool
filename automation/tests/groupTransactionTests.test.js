@@ -75,8 +75,8 @@ test.describe('Group transaction tests', () => {
 
     //verify transaction group is not saved
     await transactionPage.navigateToDrafts();
-    const isContinueButtonVisible = await transactionPage.isFirstDraftContinueButtonVisible();
-    expect(isContinueButtonVisible).toBe(false);
+    const isContinueButtonHidden = await transactionPage.isFirstDraftContinueButtonHidden();
+    expect(isContinueButtonHidden).toBe(true);
   });
 
   test('Verify continue editing action saves the group', async () => {
@@ -89,7 +89,7 @@ test.describe('Group transaction tests', () => {
     await groupPage.clickOnContinueEditingButton();
 
     //verify user is still at tx group page
-    expect(await groupPage.isDeleteModalVisible()).toBe(false);
+    expect(await groupPage.isDeleteModalHidden()).toBe(true);
     expect(await groupPage.verifyGroupElements()).toBe(true);
   });
 
@@ -100,7 +100,7 @@ test.describe('Group transaction tests', () => {
 
     //verifying that the transaction is deleted
     expect(await groupPage.isEmptyTransactionTextVisible()).toBe(true);
-    expect(await groupPage.isTransactionVisible(0)).toBe(false);
+    expect(await groupPage.isTransactionHidden(0)).toBe(true);
   });
 
   test('Verify description is mandatory for saving group transaction', async () => {
@@ -133,7 +133,7 @@ test.describe('Group transaction tests', () => {
     await groupPage.clickAddToGroupButton();
 
     //verifying that there is no duplicate transaction
-    expect(await groupPage.isTransactionVisible(1)).toBe(false);
+    expect(await groupPage.isTransactionHidden(1)).toBe(true);
 
     //verifying that the transaction data is updated
     await groupPage.clickTransactionEditButton(0);
@@ -181,7 +181,7 @@ test.describe('Group transaction tests', () => {
 
     //verifying that the transaction is deleted
     expect(await groupPage.isEmptyTransactionTextVisible()).toBe(true);
-    expect(await groupPage.isTransactionVisible(0)).toBe(false);
+    expect(await groupPage.isTransactionHidden(0)).toBe(true);
   });
 
   test('Verify user can save a transaction group', async () => {
@@ -204,8 +204,8 @@ test.describe('Group transaction tests', () => {
     await transactionPage.navigateToDrafts();
     await transactionPage.deleteFirstDraft();
 
-    const isContinueButtonVisible = await transactionPage.isFirstDraftContinueButtonVisible();
-    expect(isContinueButtonVisible).toBe(false);
+    const isContinueButtonHidden = await transactionPage.isFirstDraftContinueButtonHidden();
+    expect(isContinueButtonHidden).toBe(true);
   });
 
   test('Verify user can execute group transaction', async () => {

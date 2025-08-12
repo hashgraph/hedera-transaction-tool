@@ -349,11 +349,11 @@ test.describe('Workflow tests', () => {
     await filePage.addFileToUnliked(fileId);
     await loginPage.waitForToastToDisappear();
 
-    const isFileCardVisible = await filePage.isFileCardVisible(fileId);
-    expect(isFileCardVisible).toBe(false);
+    const isFileCardHidden = await filePage.isFileCardHidden(fileId);
+    expect(isFileCardHidden).toBe(true);
 
-    const isSecondFileCardVisible = await filePage.isFileCardVisible(fileFromPage);
-    expect(isSecondFileCardVisible).toBe(false);
+    const isSecondFileCardHidden = await filePage.isFileCardHidden(fileFromPage);
+    expect(isSecondFileCardHidden).toBe(true);
   });
 
   test('Verify user can add an existing file to files card', async () => {

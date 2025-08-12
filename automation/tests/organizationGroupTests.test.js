@@ -19,7 +19,7 @@ let app, window;
 let globalCredentials = { email: '', password: '' };
 let registrationPage, loginPage, transactionPage, organizationPage, groupPage;
 let firstUser, secondUser, thirdUser;
-let complexKeyAccountId;
+let complexKeyAccountId, newAccountId;
 
 test.describe('Organization Group Tx tests', () => {
   test.beforeAll(async () => {
@@ -74,6 +74,8 @@ test.describe('Organization Group Tx tests', () => {
     await organizationPage.addComplexKeyAccountForTransactions();
 
     complexKeyAccountId = organizationPage.getComplexAccountId();
+    await organizationPage.addComplexKeyAccountForTransactions();
+    newAccountId = organizationPage.complexAccountId[organizationPage.complexAccountId.length - 1];
     groupPage.organizationPage = organizationPage;
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
@@ -142,13 +144,11 @@ test.describe('Organization Group Tx tests', () => {
     expect(secondResult).toBe('SUCCESS');
   });
 
-  //i think this is due again to the delay, it is looking for the sign button to change
-  // if I change this to make the accounts have lots of users and lots of keys, and require all to sign, then see how that goes?
   [5, 100].forEach((numberOfTransactions) => {
     test(`Verify user can import csv transactions with ${numberOfTransactions} transactions`, async () => {
       test.slow();
       await groupPage.fillDescription('test');
-      await groupPage.generateAndImportCsvFile(complexKeyAccountId, numberOfTransactions);
+      await groupPage.generateAndImportCsvFile(complexKeyAccountId, newAccountId,  numberOfTransactions);
       await groupPage.clickOnSignAndExecuteButton();
       await groupPage.clickOnConfirmGroupTransactionButton();
       const timestamps = await groupPage.getAllTransactionTimestamps(numberOfTransactions);

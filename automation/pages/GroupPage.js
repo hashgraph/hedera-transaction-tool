@@ -109,8 +109,8 @@ class GroupPage extends BasePage {
     await this.click(this.continueEditingButtonSelector);
   }
 
-  async isDeleteModalVisible() {
-    return this.isElementVisible(this.deleteGroupButtonSelector);
+  async isDeleteModalHidden() {
+    return this.isElementHidden(this.deleteGroupButtonSelector);
   }
 
   async getToastMessage() {
@@ -166,8 +166,8 @@ class GroupPage extends BasePage {
     await this.click(this.transactionEditButtonIndexSelector + index);
   }
 
-  async isTransactionVisible(index) {
-    return this.isElementVisible(this.transactionTypeIndexSelector + index);
+  async isTransactionHidden(index) {
+    return this.isElementHidden(this.transactionTypeIndexSelector + index);
   }
 
   async addSingleTransactionToGroup(numberOfTransactions = 1, isFileTransaction = false) {
@@ -186,12 +186,11 @@ class GroupPage extends BasePage {
     }
   }
 
-  async generateAndImportCsvFile(fromAccountId, numberOfTransactions = 10) {
+  async generateAndImportCsvFile(fromAccountId, receiverAccountId, numberOfTransactions = 10) {
     const fileName = 'groupTransactions.csv';
-    const receiverAccount = '0.0.1031';
     await generateCSVFile({
       senderAccount: fromAccountId,
-      accountId: receiverAccount,
+      accountId: receiverAccountId,
       startingAmount: 1,
       numberOfTransactions: numberOfTransactions,
       fileName: fileName,
@@ -300,10 +299,9 @@ class GroupPage extends BasePage {
 
       try {
         await this.click(selector);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        const isButtonVisible = await this.isElementVisible(selector, null, 3000);
+        const isButtonHidden = await this.isElementHidden(selector, null, 3000);
 
-        if (!isButtonVisible) {
+        if (isButtonHidden) {
           return;
         }
 

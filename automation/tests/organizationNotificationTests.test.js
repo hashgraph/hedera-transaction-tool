@@ -22,7 +22,6 @@ let app, window;
 let globalCredentials = { email: '', password: '' };
 let registrationPage, loginPage, transactionPage, organizationPage, settingsPage;
 let firstUser, secondUser;
-let complexKeyAccountId;
 
 test.describe('Organization Notification tests', () => {
   test.beforeAll(async () => {
@@ -70,8 +69,6 @@ test.describe('Organization Notification tests', () => {
 
     // Set complex account for transactions
     await organizationPage.addComplexKeyAccountForTransactions();
-
-    complexKeyAccountId = organizationPage.getComplexAccountId();
   });
 
   test.afterAll(async () => {
@@ -109,7 +106,7 @@ test.describe('Organization Notification tests', () => {
     await organizationPage.clickOnSubmitSignButtonByIndex(0);
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    expect(await organizationPage.isNotificationNumberVisible()).toBe(false);
+    expect(await organizationPage.isNotificationNumberHidden()).toBe(true);
   });
 
   test('Verify notification element is shown next to the transaction', async () => {
