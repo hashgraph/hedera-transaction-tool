@@ -2,7 +2,7 @@
   "extends": "@vue/tsconfig/tsconfig.dom.json",
   "include": [
     "node_modules/@prisma/client",
-    "src/main/shared/**/*",
+    "src/shared/**/*",
     "src/renderer/env.d.ts",
     "src/renderer/**/*",
     "src/renderer/**/*.vue",

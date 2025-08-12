@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-import { networkMapping } from '@renderer/shared/constants';
+import { networkMapping } from '@shared/constants';
 
 import { useGroupedNotifications } from './composables';
 import { setDockBounce } from '@renderer/services/electronUtilsService';
