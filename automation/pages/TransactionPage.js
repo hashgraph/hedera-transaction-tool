@@ -372,6 +372,16 @@ class TransactionPage extends BasePage {
     }
   }
 
+  async isAccountCardHidden(accountId) {
+    await this.waitForElementToBeVisible(this.addNewAccountButtonSelector, 8000);
+    const index = await this.findAccountIndexById(accountId);
+    if (index === -1) {
+      return true; // account not found
+    } else {
+      return await this.isElementHidden(this.accountIdPrefixSelector + index);
+    }
+  }
+
   async ensureAccountExists() {
     if (await this.isAccountsListEmpty()) {
       await this.createNewAccount();
@@ -1104,6 +1114,10 @@ class TransactionPage extends BasePage {
 
   async isFirstDraftContinueButtonVisible() {
     return await this.isElementVisible(this.draftContinueButtonIndexSelector + '0');
+  }
+
+  async isFirstDraftContinueButtonHidden() {
+    return await this.isElementHidden(this.draftContinueButtonIndexSelector + '0');
   }
 
   async saveDraft() {

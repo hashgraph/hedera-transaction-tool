@@ -4,8 +4,8 @@ const path = require('path');
 /**
  * Generates a CSV file with the specified configuration for transaction groups.
  *
- * @param {string} senderAccount - The sender account in the format "0.0.xxxx".
- * @param {string} accountId - The account ID for the transaction rows, "0.0.xxxx".
+ * @param {string} senderAccount - The sender account in the format "0.0.xxxx". Default value is based on LocalNode usage
+ * @param {string} accountId - The account ID for the transaction rows, "0.0.xxxx". Default value is based on LocalNode usage
  * @param {number} startingAmount - The amount to start with for the first line.
  * @param {number} numberOfTransactions - The number of transactions in the group.
  * @param {string} [fileName='output.csv'] - The name of the CSV file to create.

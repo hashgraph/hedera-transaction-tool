@@ -201,8 +201,8 @@ test.describe('Transaction tests', () => {
     await transactionPage.deleteAccount(accountFromList);
     await transactionPage.clickOnAccountsMenuButton();
 
-    const isAccountVisible = await transactionPage.isAccountCardVisible(accountFromList);
-    expect(isAccountVisible).toBe(false);
+    const isAccountHidden = await transactionPage.isAccountCardHidden(accountFromList);
+    expect(isAccountHidden).toBe(true);
   });
 
   test('Verify that account is updated after we execute an account update tx', async () => {
@@ -433,8 +433,8 @@ test.describe('Transaction tests', () => {
 
     await transactionPage.deleteFirstDraft();
 
-    const isContinueButtonVisible = await transactionPage.isFirstDraftContinueButtonVisible();
-    expect(isContinueButtonVisible).toBe(false);
+    const isContinueButtonHidden = await transactionPage.isFirstDraftContinueButtonHidden();
+    expect(isContinueButtonHidden).toBe(true);
   });
 
   test('Verify draft transaction is no longer visible after we execute the tx', async () => {
@@ -447,8 +447,8 @@ test.describe('Transaction tests', () => {
     await transactionPage.createNewAccount({}, true);
     await transactionPage.clickOnTransactionsMenuButton();
 
-    const isContinueButtonVisible = await transactionPage.isFirstDraftContinueButtonVisible();
-    expect(isContinueButtonVisible).toBe(false);
+    const isContinueButtonHidden = await transactionPage.isFirstDraftContinueButtonHidden();
+    expect(isContinueButtonHidden).toBe(true);
   });
 
   test('Verify draft transaction is visible after we execute the tx and we have template checkbox selected', async () => {

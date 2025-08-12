@@ -306,6 +306,24 @@ class BasePage {
   }
 
   /**
+   * Checks if an element is hidden.
+   * @param {string} selector - The selector of the element to check.
+   * @param {number|null} [index=null] - Optional index to select a specific element when multiple are present.
+   * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be hidden.
+   * @returns {Promise<boolean>} - True if the element is hidden, false otherwise.
+   */
+  async isElementHidden(selector, index = null, timeout = this.DEFAULT_TIMEOUT) {
+    console.log(`Checking if element with selector: ${selector} is hidden`);
+    try {
+      const element = this.getElement(selector, index);
+      await element.waitFor({ state: 'hidden', timeout });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
    * Checks if an element is editable.
    * @param {string} selector - The selector of the element to check.
    * @param {number|null} [index=null] - Optional index to select a specific element when multiple are present.

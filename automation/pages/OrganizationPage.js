@@ -416,6 +416,10 @@ class OrganizationPage extends BasePage {
     return await this.isElementVisible(this.contactListButton);
   }
 
+  async isContactListButtonHidden() {
+    return await this.isElementHidden(this.contactListButton);
+  }
+
   async clickOnEditNicknameOrganizationButton() {
     await this.click(this.editNicknameOrganizationButtonSelector);
   }
@@ -448,6 +452,10 @@ class OrganizationPage extends BasePage {
 
   async isFirstMissingKeyVisible() {
     return await this.isElementVisible(this.firstMissingKeyIndexSelector);
+  }
+
+  async isFirstMissingKeyHidden() {
+    return await this.isElementHidden(this.firstMissingKeyIndexSelector);
   }
 
   async clickOnDeleteNextButton() {
@@ -1448,8 +1456,8 @@ class OrganizationPage extends BasePage {
     return await this.getText(this.observerIndexSelector + index);
   }
 
-  async isNotificationNumberVisible() {
-    return await this.isElementVisible(this.spanNotificationNumberSelector);
+  async isNotificationNumberHidden() {
+    return await this.isElementHidden(this.spanNotificationNumberSelector);
   }
 
   async createNotificationForUser(firstUser, secondUser, globalCredentials) {
