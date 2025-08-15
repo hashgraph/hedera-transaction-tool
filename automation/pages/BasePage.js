@@ -82,6 +82,7 @@ class BasePage {
   async fill(selector, value, index = null, timeout = this.DEFAULT_TIMEOUT) {
     console.log(`Filling element with selector: ${selector} with value: ${value}`);
     const element = this.getElement(selector, index);
+    await element.waitFor({ state: 'visible', timeout });
     await element.fill(value);
   }
 

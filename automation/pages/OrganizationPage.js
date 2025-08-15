@@ -601,7 +601,7 @@ class OrganizationPage extends BasePage {
     await waitForValidStart(validStart);
     const transactionResponse =
       await this.transactionPage.mirrorGetTransactionResponse(transactionId);
-    this.complexAccountId.push(transactionResponse.transactions[0].entity_id);
+    this.complexAccountId.push(transactionResponse?.entity_id);
   }
 
   async logInAndSignTransactionByAllUsers(encryptionPassword, txId) {
@@ -718,7 +718,7 @@ class OrganizationPage extends BasePage {
     // Store the complex account ID
     const transactionResponse =
       await this.transactionPage.mirrorGetTransactionResponse(transactionId);
-    this.complexAccountId.push(transactionResponse.transactions[0].entity_id);
+    this.complexAccountId.push(transactionResponse.entity_id);
   }
 
   async createAccount(timeForExecution = 60, numberOfObservers = 1, isSignRequired = true) {
@@ -960,7 +960,7 @@ class OrganizationPage extends BasePage {
       await this.signTxByAllUsersAndRefresh(globalCredentials, firstUser, txId);
       await waitForValidStart(validStart);
       const txResponse = await this.transactionPage.mirrorGetTransactionResponse(txId);
-      fileId = txResponse.transactions[0]?.entity_id;
+      fileId = txResponse?.entity_id;
       this.complexFileId.push(fileId);
       return { txId, fileId };
     } else {

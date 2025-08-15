@@ -117,8 +117,8 @@ test.describe.skip('Organization Regression tests', () => {
     await waitForValidStart(validStart);
 
     const transactionResponse = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionResponse.transactions[0]?.name;
-    const result = transactionResponse.transactions[0]?.result;
+    const transactionType = transactionResponse?.name;
+    const result = transactionResponse?.result;
     expect(transactionType).toBe('CRYPTOUPDATEACCOUNT');
     expect(result).toBe('SUCCESS');
 
@@ -152,8 +152,8 @@ test.describe.skip('Organization Regression tests', () => {
     await waitForValidStart(validStart);
 
     const transactionResponse = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionResponse.transactions[0]?.name;
-    const result = transactionResponse.transactions[0]?.result;
+    const transactionType = transactionResponse?.name;
+    const result = transactionResponse?.result;
     expect(transactionType).toBe('CRYPTOTRANSFER');
     expect(result).toBe('SUCCESS');
 

@@ -216,9 +216,9 @@ test.describe('Group transaction tests', () => {
     await groupPage.clickOnConfirmGroupTransactionButton();
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const newAccount = transactionDetails.transactions[0]?.entity_id;
-    const result = transactionDetails.transactions[0]?.result;
+    const transactionType = transactionDetails?.name;
+    const newAccount = transactionDetails?.entity_id;
+    const result = transactionDetails?.result;
 
     expect(transactionType).toBe('CRYPTOCREATEACCOUNT');
     expect(newAccount).toBeTruthy();
@@ -238,25 +238,25 @@ test.describe('Group transaction tests', () => {
     await groupPage.clickOnConfirmGroupTransactionButton();
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const newAccount = transactionDetails.transactions[0]?.entity_id;
-    const result = transactionDetails.transactions[0]?.result;
+    const transactionType = transactionDetails?.name;
+    const newAccount = transactionDetails?.entity_id;
+    const result = transactionDetails?.result;
     expect(transactionType).toBe('CRYPTOCREATEACCOUNT');
     expect(newAccount).toBeTruthy();
     expect(result).toBe('SUCCESS');
 
     const secondTransactionDetails = await transactionPage.mirrorGetTransactionResponse(secondTxId);
-    const secondTransactionType = secondTransactionDetails.transactions[0]?.name;
-    const secondNewAccount = secondTransactionDetails.transactions[0]?.entity_id;
-    const secondResult = secondTransactionDetails.transactions[0]?.result;
+    const secondTransactionType = secondTransactionDetails?.name;
+    const secondNewAccount = secondTransactionDetails?.entity_id;
+    const secondResult = secondTransactionDetails?.result;
     expect(secondTransactionType).toBe('CRYPTOCREATEACCOUNT');
     expect(secondNewAccount).toBeTruthy();
     expect(secondResult).toBe('SUCCESS');
 
     const thirdTransactionDetails = await transactionPage.mirrorGetTransactionResponse(thirdTxId);
-    const thirdTransactionType = thirdTransactionDetails.transactions[0]?.name;
-    const thirdNewAccount = thirdTransactionDetails.transactions[0]?.entity_id;
-    const thirdResult = thirdTransactionDetails.transactions[0]?.result;
+    const thirdTransactionType = thirdTransactionDetails?.name;
+    const thirdNewAccount = thirdTransactionDetails?.entity_id;
+    const thirdResult = thirdTransactionDetails?.result;
     expect(thirdTransactionType).toBe('CRYPTOCREATEACCOUNT');
     expect(thirdNewAccount).toBeTruthy();
     expect(thirdResult).toBe('SUCCESS');
@@ -272,17 +272,17 @@ test.describe('Group transaction tests', () => {
     await groupPage.clickOnConfirmGroupTransactionButton();
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const newAccount = transactionDetails.transactions[0]?.entity_id;
-    const result = transactionDetails.transactions[0]?.result;
+    const transactionType = transactionDetails?.name;
+    const newAccount = transactionDetails?.entity_id;
+    const result = transactionDetails?.result;
     expect(transactionType).toBe('CRYPTOCREATEACCOUNT');
     expect(newAccount).toBeTruthy();
     expect(result).toBe('SUCCESS');
 
     const secondTransactionDetails = await transactionPage.mirrorGetTransactionResponse(secondTxId);
-    const secondTransactionType = secondTransactionDetails.transactions[0]?.name;
-    const secondNewAccount = secondTransactionDetails.transactions[0]?.entity_id;
-    const secondResult = secondTransactionDetails.transactions[0]?.result;
+    const secondTransactionType = secondTransactionDetails?.name;
+    const secondNewAccount = secondTransactionDetails?.entity_id;
+    const secondResult = secondTransactionDetails?.result;
     expect(secondTransactionType).toBe('FILECREATE');
     expect(secondNewAccount).toBeTruthy();
     expect(secondResult).toBe('SUCCESS');

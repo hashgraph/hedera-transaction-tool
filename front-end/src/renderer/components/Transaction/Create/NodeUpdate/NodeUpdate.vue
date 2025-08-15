@@ -122,6 +122,12 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.declineReward = nodeInfo.decline_reward;
   }
 });
+watch(
+  () => [data.nodeAccountId, data.adminKey, data.nodeId],
+  () => {
+    baseTransactionRef.value?.updateTransactionKey();
+  }
+);
 </script>
 <template>
   <BaseTransaction

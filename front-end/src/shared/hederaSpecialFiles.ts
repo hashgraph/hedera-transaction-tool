@@ -1,3 +1,5 @@
+import type { HederaSpecialFileId } from './interfaces';
+
 import { proto } from '@hashgraph/proto';
 import {
   AccountId,
@@ -8,7 +10,6 @@ import {
   FeeSchedules,
   Long,
 } from '@hashgraph/sdk';
-import { HederaSpecialFileId } from './interfaces';
 
 export function isHederaSpecialFileId(value: any): value is HederaSpecialFileId {
   const validValues: HederaSpecialFileId[] = [

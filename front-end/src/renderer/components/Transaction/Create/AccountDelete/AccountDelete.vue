@@ -3,7 +3,7 @@ import type { IAccountInfoParsed } from '@shared/interfaces';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 import type { AccountDeleteData } from '@renderer/utils/sdk';
 
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { Key, KeyList, Transaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -120,6 +120,14 @@ onMounted(async () => {
     data.accountId = accountId;
   }
 });
+
+/* Watchers */
+watch(
+  () => data,
+  () => {
+    baseTransactionRef.value?.updateTransactionKey();
+  },
+);
 </script>
 <template>
   <BaseTransaction

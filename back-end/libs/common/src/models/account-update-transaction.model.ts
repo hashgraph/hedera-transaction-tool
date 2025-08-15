@@ -10,8 +10,12 @@ export default class AccountUpdateTransactionModel extends TransactionBaseModel<
 
   // New key is required:
   // https://docs.hedera.com/hedera/sdks-and-apis/sdks/accounts-and-hbar/update-an-account
+  // UNLESS waived.
   getNewKeys(): Key[] {
-    if (this.transaction.key != null) {
+    if (
+      this.transaction.key != null &&
+      !this.shouldWaiveSigningRequirements(this.transaction.accountId)
+    ) {
       return [this.transaction.key];
     }
     return [];
@@ -22,18 +26,24 @@ export default class AccountUpdateTransactionModel extends TransactionBaseModel<
   // https://github.com/hiero-ledger/hiero-consensus-node/blob/main/hedera-node/docs/privileged-transactions.md#waived-signing-requirements-for-crypto-updates
   getSigningAccounts(): Set<string> {
     const set = super.getSigningAccounts();
-    const feePayer = super.getFeePayerAccountId();
     const accountId = this.transaction.accountId;
-    if (accountId) {
-      if (!this.isSystemAccount(accountId) || !this.isPrivilegedFeePayer(feePayer)) {
-        set.add(accountId.toString());
-      }
+    if (accountId != null && !this.shouldWaiveSigningRequirements(accountId)) {
+      set.add(accountId.toString());
     }
     return set;
   }
 
+  private shouldWaiveSigningRequirements(accountId: AccountId): boolean {
+    const feePayer = this.getFeePayerAccountId();
+    return (
+      this.isSystemAccount(accountId) &&
+      this.isPrivilegedFeePayer(feePayer)
+    );
+  }
+
   private isSystemAccount(accountId: AccountId): boolean {
     return (
+      accountId != null &&
       accountId.compare(this.MINIMUM_SYSTEM_ACCOUNT) >= 0 &&
       accountId.compare(this.MAXIMUM_SYSTEM_ACCOUNT) <= 0
     );

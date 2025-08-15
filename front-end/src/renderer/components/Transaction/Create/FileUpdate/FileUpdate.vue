@@ -2,7 +2,7 @@
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 import type { FileUpdateData } from '@renderer/utils/sdk';
 
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { Key, KeyList, Transaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -79,6 +79,14 @@ onMounted(() => {
     data.fileId = route.query.fileId.toString();
   }
 });
+
+/* Watchers */
+watch(
+  () => [data.fileId, data.ownerKey],
+  () => {
+    baseTransactionRef.value?.updateTransactionKey();
+  }
+);
 </script>
 <template>
   <BaseTransaction
