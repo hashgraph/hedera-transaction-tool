@@ -114,7 +114,6 @@ watch(
     }
   },
 );
-
 watch(accountData.accountInfo, accountInfo => {
   if (!accountInfo) {
     data.receiverSignatureRequired = false;
@@ -140,6 +139,12 @@ watch(accountData.accountInfo, accountInfo => {
     data.ownerKey = accountInfo.key;
   }
 });
+watch(
+  () => [data.accountId, data.ownerKey],
+  () => {
+    baseTransactionRef.value?.updateTransactionKey();
+  },
+);
 </script>
 <template>
   <BaseTransaction

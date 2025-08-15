@@ -196,12 +196,15 @@ class TransactionPage extends BasePage {
 
   async mirrorGetTransactionResponse(transactionId) {
     const transactionDetails = await getTransactionDetails(transactionId);
-    if (transactionDetails.transactions.length > 0) {
-      console.log('Transaction Details:', transactionDetails.transactions[0]);
+    const firstTransaction = transactionDetails.transactions.find(
+      tx => typeof tx.nonce === 'undefined' || tx.nonce === 0
+    );
+    if (firstTransaction) {
+      console.log('Transaction Details:', firstTransaction);
     } else {
       console.log('Transaction not found in mirror node');
     }
-    return transactionDetails;
+    return firstTransaction;
   }
 
   async clickOnTransactionsMenuButton() {
@@ -435,7 +438,7 @@ class TransactionPage extends BasePage {
 
     const newTransactionId = await this.getTransactionDetailsId();
     const transactionDetails = await this.mirrorGetTransactionResponse(newTransactionId);
-    const newAccountId = transactionDetails.transactions[0].entity_id;
+    const newAccountId = transactionDetails.entity_id;
 
     await this.clickOnTransactionsMenuButton();
 
@@ -470,10 +473,32 @@ class TransactionPage extends BasePage {
     return transactionId;
   }
 
-  async updateAccount(accountId, maxAutoAssociations, memo) {
+  async updateAccountKey(accountId, newKey, feePayerAccountId = null) {
     await this.clickOnTransactionsMenuButton();
     await this.clickOnCreateNewTransactionButton();
     await this.clickOnUpdateAccountTransaction();
+    if (feePayerAccountId) {
+      await this.fillInPayerAccountId(feePayerAccountId);
+    }
+    await this.fillInUpdatedAccountId(accountId);
+    await this.fillInPublicKeyForAccount(newKey);
+    await this.fillInTransactionMemoUpdate('Transaction memo update');
+    await this.waitForElementPresentInDOM(this.updateAccountIdFetchedDivSelector, 30000);
+    await this.clickOnSignAndSubmitButton();
+    await this.clickSignTransactionButton();
+    await this.waitForCreatedAtToBeVisible();
+    const transactionId = await this.getTransactionDetailsId();
+    await this.clickOnTransactionsMenuButton();
+    return transactionId;
+  }
+
+  async updateAccount(accountId, maxAutoAssociations, memo, feePayerAccountId = null) {
+    await this.clickOnTransactionsMenuButton();
+    await this.clickOnCreateNewTransactionButton();
+    await this.clickOnUpdateAccountTransaction();
+    if (feePayerAccountId) {
+      await this.fillInPayerAccountId(feePayerAccountId);
+    }
     await this.fillInUpdatedAccountId(accountId);
     await this.fillInMaxAutoAssociations(maxAutoAssociations);
     await this.fillInMemoUpdate(memo);
@@ -511,7 +536,7 @@ class TransactionPage extends BasePage {
     const transactionId = await this.getTransactionDetailsId();
     await this.clickOnTransactionsMenuButton();
     const transactionDetails = await this.mirrorGetTransactionResponse(transactionId);
-    const fileId = transactionDetails.transactions[0].entity_id;
+    const fileId = transactionDetails.entity_id;
     await this.addGeneratedFile(fileId, fileContent, publicKey);
     return { transactionId, fileId };
   }
@@ -534,7 +559,7 @@ class TransactionPage extends BasePage {
     await this.clickOnUpdateFileSublink();
     await this.fillInFileIdForUpdate(fileId);
     const publicKey = await this.getPublicKeyFromFile(fileId);
-    await this.fillInPublicKeyForFile(publicKey);
+    await this.fillInCurrentPublicKeyForFile(publicKey);
     await this.fillInFileContentForUpdate(fileContent);
     await this.clickOnSignAndSubmitButton();
     await this.clickSignTransactionButton();
@@ -731,8 +756,7 @@ class TransactionPage extends BasePage {
   }
 
   /**
-   * Generalized function to fill in the account ID input field, remove the last character,
-   * type it again to trigger UI updates, and retry until the target button is enabled.
+   * Generalized function to fill in the account ID input field and retry until the target button is enabled.
    * @param {string} accountId - The account ID to be filled in.
    * @param {string} inputSelector - The test ID selector for the input field.
    * @param {string} buttonSelector - The test ID selector for the button to check.
@@ -745,16 +769,6 @@ class TransactionPage extends BasePage {
       // Fill the input normally
       const element = this.window.getByTestId(inputSelector);
       await element.fill(accountId);
-
-      // Grab the last character of accountId and prepare the version without the last char
-      const lastChar = accountId.slice(-1);
-      const withoutLastChar = accountId.slice(0, -1);
-
-      // Clear the input and retype it without the last character
-      await element.fill(withoutLastChar);
-
-      // Type the last character
-      await this.window.keyboard.type(lastChar);
 
       // Check if the target button is enabled
       if (await this.isButtonEnabled(buttonSelector)) {
@@ -959,11 +973,9 @@ class TransactionPage extends BasePage {
 
   async fillInAllowanceOwnerAccount() {
     const allAccountIdsText = await this.getText(this.payerDropdownSelector);
-    console.log('All Account IDs:', allAccountIdsText);
     const firstAccountId = getCleanAccountId(
       await this.getFirstAccountIdFromText(allAccountIdsText),
     );
-    console.log('First Account ID:', firstAccountId);
     await this.fill(this.allowanceOwnerAccountSelector, firstAccountId);
     return firstAccountId;
   }
@@ -1025,7 +1037,11 @@ class TransactionPage extends BasePage {
   }
 
   async getPublicKeyText() {
-    return await this.getTextFromInputFieldWithRetry(this.publicKeyInputSelector, 1);
+    return await this.getTextFromInputFieldWithRetry(this.publicKeyInputSelector);
+  }
+
+  async fillInPublicKeyForAccount(publicKey) {
+    await this.fill(this.publicKeyInputSelector, publicKey);
   }
 
   async fillInFileIdForUpdate(fileId) {
@@ -1036,8 +1052,12 @@ class TransactionPage extends BasePage {
     return await this.getTextFromInputField(this.fileIdUpdateInputSelector);
   }
 
+  async fillInCurrentPublicKeyForFile(publicKey) {
+    await this.fill(this.publicKeyInputSelector, publicKey, 0);
+  }
+
   async fillInPublicKeyForFile(publicKey) {
-    await this.fill(this.publicKeyInputSelector, publicKey, 1);
+    await this.fill(this.publicKeyInputSelector, publicKey);
   }
 
   async fillInFileContentForUpdate(fileContent) {
@@ -1139,7 +1159,7 @@ class TransactionPage extends BasePage {
   }
 
   async waitForPublicKeyToBeFilled() {
-    await this.waitForInputFieldToBeFilled(this.publicKeyInputSelector, 1);
+    await this.waitForInputFieldToBeFilled(this.publicKeyInputSelector);
   }
 
   async turnReceiverSigSwitchOn() {
@@ -1186,7 +1206,13 @@ class TransactionPage extends BasePage {
   }
 
   async fillInPayerAccountId(accountId) {
-    await this.fill(this.payerDropdownSelector, accountId);
+    const element = await this.getElement(this.payerDropdownSelector);
+    const type = await element.evaluate(node=> node.tagName.toLowerCase());
+    if (type === 'input') {
+      await this.fill(this.payerDropdownSelector, accountId);
+    } else if (type === 'select') {
+      await this.selectOptionByValue(this.payerDropdownSelector, accountId);
+    }
   }
 
   async fillInComplexAccountID(accountId) {

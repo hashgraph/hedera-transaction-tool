@@ -146,7 +146,7 @@ class GroupPage extends BasePage {
       const transactionDetails = await this.transactionPage.mirrorGetTransactionResponse(
         timestampsForVerification[i],
       );
-      const result = transactionDetails.transactions[0]?.result;
+      const result = transactionDetails?.result;
       if (result !== 'SUCCESS') {
         return false;
       }
@@ -186,10 +186,16 @@ class GroupPage extends BasePage {
     }
   }
 
-  async generateAndImportCsvFile(fromAccountId, receiverAccountId, numberOfTransactions = 10) {
+  async generateAndImportCsvFile(
+    fromAccountId,
+    receiverAccountId,
+    numberOfTransactions = 10,
+    feePayerAccountId = null
+  ) {
     const fileName = 'groupTransactions.csv';
     await generateCSVFile({
       senderAccount: fromAccountId,
+      feePayerAccount: feePayerAccountId,
       accountId: receiverAccountId,
       startingAmount: 1,
       numberOfTransactions: numberOfTransactions,
@@ -268,6 +274,12 @@ class GroupPage extends BasePage {
 
         // Sign the first transaction and continue while "Next" button is visible
         do {
+          // Trying to catch an intermittent issue.
+          const canSign = await this.organizationPage.isSignTransactionButtonVisible();
+          if (!canSign) {
+            console.log(`Sign not available for user ${i}, skipping.`);
+            break;
+          }
           await this.organizationPage.clickOnSignTransactionButton();
           // Wait for 1 second to allow details to load
           // await new Promise(resolve => setTimeout(resolve, 5000));

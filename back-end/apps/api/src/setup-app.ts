@@ -1,4 +1,4 @@
-import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationError, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Transport } from '@nestjs/microservices';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -19,7 +19,8 @@ export function setupApp(app: NestExpressApplication, addLogger: boolean = true)
     new ValidationPipe({
       whitelist: true,
       transform: true,
-      exceptionFactory() {
+      exceptionFactory(errors: ValidationError[]) {
+        console.error('Validation failed:', JSON.stringify(errors, null, 2));
         return new BadRequestException(ErrorCodes.IB);
       },
     }),

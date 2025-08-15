@@ -2,7 +2,7 @@ import type { TransactionApproverDto } from '@shared/interfaces';
 
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
-import { Key, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
+import { KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
 import { getDrafts } from '@renderer/services/transactionDraftsService';
@@ -200,13 +200,10 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   function getRequiredKeys() {
     const keys = new Array<string>();
     for (const groupItem of groupItems.value) {
-      keys.concat(groupItem.keyList);
+      keys.push(...groupItem.keyList);
     }
     const keySet = new Set(keys);
-    const returningKeys = new Array<Key>();
-    for (const key of Array.from(keySet)) {
-      returningKeys.push(PublicKey.fromString(key));
-    }
+    const returningKeys = Array.from(keySet).map(key => PublicKey.fromString(key));
     return KeyList.from(returningKeys);
   }
 

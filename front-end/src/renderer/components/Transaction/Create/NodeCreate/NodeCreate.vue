@@ -2,7 +2,7 @@
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 import type { NodeData } from '@renderer/utils/sdk/createTransactions';
 
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { Key, KeyList, Transaction } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
@@ -96,6 +96,14 @@ const preCreateAssert = () => {
 
   return true;
 };
+
+/* Watchers */
+watch(
+  () => [data.nodeAccountId, data.adminKey],
+  () => {
+    baseTransactionRef.value?.updateTransactionKey();
+  }
+);
 </script>
 <template>
   <BaseTransaction
