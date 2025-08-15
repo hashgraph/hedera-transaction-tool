@@ -1206,7 +1206,6 @@ class TransactionPage extends BasePage {
   }
 
   async fillInPayerAccountId(accountId) {
-    await this.waitForElementToBeVisible(this.payerDropdownSelector, 10000);
     const element = await this.getElement(this.payerDropdownSelector);
     const type = await element.evaluate(node=> node.tagName.toLowerCase());
     if (type === 'input') {
