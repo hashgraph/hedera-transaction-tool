@@ -1,8 +1,8 @@
-import { Key, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { AccountId, Key, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import { getAccountInfo, getNodeInfo } from '@renderer/services/mirrorNodeDataService';
 import { compareKeys } from '../sdk';
-import type { INodeInfoParsed } from '@main/shared/interfaces';
+import type { INodeInfoParsed } from '@shared/interfaces';
 
 export abstract class TransactionBaseModel<T extends SDKTransaction> {
   constructor(protected transaction: T) {}
@@ -15,10 +15,10 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     return this.transaction.toBytesAsync();
   }
 
-  getFeePayerAccountId(): string | null {
+  getFeePayerAccountId(): AccountId | null {
     const payerId = this.transaction.transactionId?.accountId;
     if (payerId) {
-      return payerId.toString();
+      return payerId;
     }
     return null;
   }
@@ -64,7 +64,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
 
     if (feePayerAccountId) {
       try {
-        const accountInfo = await getAccountInfo(feePayerAccountId, mirrorNodeLink);
+        const accountInfo = await getAccountInfo(feePayerAccountId.toString(), mirrorNodeLink);
         if (accountInfo.key) {
           signatureKeys.push(accountInfo.key);
           payerKey[feePayerAccountId] = accountInfo.key;

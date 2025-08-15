@@ -1,4 +1,4 @@
-import type { IUserKey } from '@main/shared/interfaces';
+import type { IUserKey } from '@shared/interfaces';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 

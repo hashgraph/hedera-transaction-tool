@@ -11,7 +11,7 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
-import { CommonNetwork } from '@main/shared/enums';
+import { CommonNetwork } from '@shared/enums';
 
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 

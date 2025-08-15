@@ -97,7 +97,7 @@ test.describe('Organization Contact List tests', () => {
     );
     await organizationPage.clickOnContactListButton();
     await contactListPage.clickOnAccountInContactListByEmail(adminUser.email);
-    expect(await contactListPage.isRemoveContactButtonVisible()).toBe(false);
+    expect(await contactListPage.isRemoveContactButtonHidden()).toBe(true);
   });
 
   test('Verify "Add new" button is invisible for a regular role', async () => {
@@ -108,7 +108,7 @@ test.describe('Organization Contact List tests', () => {
     );
 
     await organizationPage.clickOnContactListButton();
-    expect(await contactListPage.isAddNewContactButtonVisible()).toBe(false);
+    expect(await contactListPage.isAddNewContactButtonHidden()).toBe(true);
   });
 
   test('Verify contact email and public keys are displayed', async () => {

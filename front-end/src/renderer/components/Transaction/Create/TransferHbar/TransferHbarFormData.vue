@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HederaAccount } from '@prisma/client';
-import type { IAccountInfoParsed } from '@main/shared/interfaces';
+import type { IAccountInfoParsed } from '@shared/interfaces';
 import type { TransferHbarData } from '@renderer/utils/sdk';
 
 import { ref, onMounted } from 'vue';

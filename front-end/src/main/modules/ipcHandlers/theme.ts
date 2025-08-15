@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain, nativeTheme } from 'electron';
 
-import { Theme } from '@main/shared/interfaces';
+import { Theme } from '@shared/interfaces';
 
 export function sendUpdateThemeEventTo(window: BrowserWindow) {
   if (nativeTheme.listenerCount('updated') === 0) {

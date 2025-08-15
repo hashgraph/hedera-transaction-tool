@@ -364,8 +364,8 @@ class RegistrationPage extends BasePage {
     return await this.getText(this.emailErrorMessageSelector);
   }
 
-  async isEmailErrorMessageVisible() {
-    return await this.isElementVisible(this.emailErrorMessageSelector);
+  async isEmailErrorMessageHidden() {
+    return await this.isElementHidden(this.emailErrorMessageSelector);
   }
 
   async getPasswordErrorMessage() {
@@ -384,8 +384,16 @@ class RegistrationPage extends BasePage {
     return await this.isElementVisible(this.understandBackedUpCheckboxSelector);
   }
 
+  async isUnderstandCheckboxHidden() {
+    return await this.isElementHidden(this.understandBackedUpCheckboxSelector);
+  }
+
   async isGenerateButtonVisible() {
     return await this.isElementVisible(this.generateButtonSelector);
+  }
+
+  async isGenerateButtonHidden() {
+    return await this.isElementHidden(this.generateButtonSelector);
   }
 
   async isGenerateButtonDisabled() {

@@ -9,7 +9,7 @@ import type {
   NetworkNodesResponse,
   INodeInfoParsed,
   Key as NetworkResponseKey,
-} from '@main/shared/interfaces';
+} from '@shared/interfaces';
 
 import axios from 'axios';
 

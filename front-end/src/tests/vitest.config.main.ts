@@ -5,6 +5,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@main': resolve('src/main'),
+      '@shared': resolve('src/shared'),
     },
   },
   test: {
@@ -12,7 +13,7 @@ export default defineConfig({
     globals: true,
     include: ['src/tests/main/**/*.{test,spec}.{ts,js}'],
     coverage: {
-      exclude: ['src/main/shared', 'src/main/electron-env.d.ts'],
+      exclude: ['src/shared', 'src/main/electron-env.d.ts'],
     },
   },
 });

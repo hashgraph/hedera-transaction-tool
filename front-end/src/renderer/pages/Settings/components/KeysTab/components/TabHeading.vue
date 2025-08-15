@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { KeyPair } from '@prisma/client';
-import type { IUserKey } from '@main/shared/interfaces';
+import type { IUserKey } from '@shared/interfaces';
 import { Tabs } from '..';
 
 import { computed, ref, watch } from 'vue';

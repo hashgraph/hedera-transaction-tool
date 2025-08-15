@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { IAccountInfoParsed } from '@main/shared/interfaces';
+import type { IAccountInfoParsed } from '@shared/interfaces';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 import type { TransferHbarData } from '@renderer/utils/sdk';
 
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { Hbar, Key, KeyList, Transaction } from '@hashgraph/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -111,6 +111,14 @@ const preCreateAssert = () => {
     throw new Error('The balance difference must be 0');
   }
 };
+
+/* Watchers */
+watch(
+  () => data,
+  () => {
+    baseTransactionRef.value?.updateTransactionKey();
+  }
+);
 </script>
 <template>
   <BaseTransaction

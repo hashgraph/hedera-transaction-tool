@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ITransaction } from '@main/shared/interfaces';
+import type { ITransaction } from '@shared/interfaces';
 
 import StatusField from '@renderer/components/Filter/StatusField.vue';
 import TransactionTypeField from '@renderer/components/Filter/TransactionTypeField.vue';

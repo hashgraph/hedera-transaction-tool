@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeMount, ref, watch } from 'vue';
 
-import { UPDATE_LOCATION } from '@main/shared/constants';
+import { UPDATE_LOCATION } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 

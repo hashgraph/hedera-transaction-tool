@@ -75,8 +75,8 @@ test.describe('Group transaction tests', () => {
 
     //verify transaction group is not saved
     await transactionPage.navigateToDrafts();
-    const isContinueButtonVisible = await transactionPage.isFirstDraftContinueButtonVisible();
-    expect(isContinueButtonVisible).toBe(false);
+    const isContinueButtonHidden = await transactionPage.isFirstDraftContinueButtonHidden();
+    expect(isContinueButtonHidden).toBe(true);
   });
 
   test('Verify continue editing action saves the group', async () => {
@@ -89,7 +89,7 @@ test.describe('Group transaction tests', () => {
     await groupPage.clickOnContinueEditingButton();
 
     //verify user is still at tx group page
-    expect(await groupPage.isDeleteModalVisible()).toBe(false);
+    expect(await groupPage.isDeleteModalHidden()).toBe(true);
     expect(await groupPage.verifyGroupElements()).toBe(true);
   });
 
@@ -100,7 +100,7 @@ test.describe('Group transaction tests', () => {
 
     //verifying that the transaction is deleted
     expect(await groupPage.isEmptyTransactionTextVisible()).toBe(true);
-    expect(await groupPage.isTransactionVisible(0)).toBe(false);
+    expect(await groupPage.isTransactionHidden(0)).toBe(true);
   });
 
   test('Verify description is mandatory for saving group transaction', async () => {
@@ -133,7 +133,7 @@ test.describe('Group transaction tests', () => {
     await groupPage.clickAddToGroupButton();
 
     //verifying that there is no duplicate transaction
-    expect(await groupPage.isTransactionVisible(1)).toBe(false);
+    expect(await groupPage.isTransactionHidden(1)).toBe(true);
 
     //verifying that the transaction data is updated
     await groupPage.clickTransactionEditButton(0);
@@ -181,7 +181,7 @@ test.describe('Group transaction tests', () => {
 
     //verifying that the transaction is deleted
     expect(await groupPage.isEmptyTransactionTextVisible()).toBe(true);
-    expect(await groupPage.isTransactionVisible(0)).toBe(false);
+    expect(await groupPage.isTransactionHidden(0)).toBe(true);
   });
 
   test('Verify user can save a transaction group', async () => {
@@ -204,8 +204,8 @@ test.describe('Group transaction tests', () => {
     await transactionPage.navigateToDrafts();
     await transactionPage.deleteFirstDraft();
 
-    const isContinueButtonVisible = await transactionPage.isFirstDraftContinueButtonVisible();
-    expect(isContinueButtonVisible).toBe(false);
+    const isContinueButtonHidden = await transactionPage.isFirstDraftContinueButtonHidden();
+    expect(isContinueButtonHidden).toBe(true);
   });
 
   test('Verify user can execute group transaction', async () => {
@@ -216,9 +216,9 @@ test.describe('Group transaction tests', () => {
     await groupPage.clickOnConfirmGroupTransactionButton();
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const newAccount = transactionDetails.transactions[0]?.entity_id;
-    const result = transactionDetails.transactions[0]?.result;
+    const transactionType = transactionDetails?.name;
+    const newAccount = transactionDetails?.entity_id;
+    const result = transactionDetails?.result;
 
     expect(transactionType).toBe('CRYPTOCREATEACCOUNT');
     expect(newAccount).toBeTruthy();
@@ -238,25 +238,25 @@ test.describe('Group transaction tests', () => {
     await groupPage.clickOnConfirmGroupTransactionButton();
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const newAccount = transactionDetails.transactions[0]?.entity_id;
-    const result = transactionDetails.transactions[0]?.result;
+    const transactionType = transactionDetails?.name;
+    const newAccount = transactionDetails?.entity_id;
+    const result = transactionDetails?.result;
     expect(transactionType).toBe('CRYPTOCREATEACCOUNT');
     expect(newAccount).toBeTruthy();
     expect(result).toBe('SUCCESS');
 
     const secondTransactionDetails = await transactionPage.mirrorGetTransactionResponse(secondTxId);
-    const secondTransactionType = secondTransactionDetails.transactions[0]?.name;
-    const secondNewAccount = secondTransactionDetails.transactions[0]?.entity_id;
-    const secondResult = secondTransactionDetails.transactions[0]?.result;
+    const secondTransactionType = secondTransactionDetails?.name;
+    const secondNewAccount = secondTransactionDetails?.entity_id;
+    const secondResult = secondTransactionDetails?.result;
     expect(secondTransactionType).toBe('CRYPTOCREATEACCOUNT');
     expect(secondNewAccount).toBeTruthy();
     expect(secondResult).toBe('SUCCESS');
 
     const thirdTransactionDetails = await transactionPage.mirrorGetTransactionResponse(thirdTxId);
-    const thirdTransactionType = thirdTransactionDetails.transactions[0]?.name;
-    const thirdNewAccount = thirdTransactionDetails.transactions[0]?.entity_id;
-    const thirdResult = thirdTransactionDetails.transactions[0]?.result;
+    const thirdTransactionType = thirdTransactionDetails?.name;
+    const thirdNewAccount = thirdTransactionDetails?.entity_id;
+    const thirdResult = thirdTransactionDetails?.result;
     expect(thirdTransactionType).toBe('CRYPTOCREATEACCOUNT');
     expect(thirdNewAccount).toBeTruthy();
     expect(thirdResult).toBe('SUCCESS');
@@ -272,17 +272,17 @@ test.describe('Group transaction tests', () => {
     await groupPage.clickOnConfirmGroupTransactionButton();
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const newAccount = transactionDetails.transactions[0]?.entity_id;
-    const result = transactionDetails.transactions[0]?.result;
+    const transactionType = transactionDetails?.name;
+    const newAccount = transactionDetails?.entity_id;
+    const result = transactionDetails?.result;
     expect(transactionType).toBe('CRYPTOCREATEACCOUNT');
     expect(newAccount).toBeTruthy();
     expect(result).toBe('SUCCESS');
 
     const secondTransactionDetails = await transactionPage.mirrorGetTransactionResponse(secondTxId);
-    const secondTransactionType = secondTransactionDetails.transactions[0]?.name;
-    const secondNewAccount = secondTransactionDetails.transactions[0]?.entity_id;
-    const secondResult = secondTransactionDetails.transactions[0]?.result;
+    const secondTransactionType = secondTransactionDetails?.name;
+    const secondNewAccount = secondTransactionDetails?.entity_id;
+    const secondResult = secondTransactionDetails?.result;
     expect(secondTransactionType).toBe('FILECREATE');
     expect(secondNewAccount).toBeTruthy();
     expect(secondResult).toBe('SUCCESS');

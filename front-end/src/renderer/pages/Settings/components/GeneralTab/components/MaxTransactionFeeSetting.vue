@@ -2,7 +2,7 @@
 import { onBeforeMount, ref } from 'vue';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
-import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY } from '@main/shared/constants';
+import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 

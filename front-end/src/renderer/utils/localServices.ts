@@ -1,4 +1,4 @@
-import { SKIPPED_ORGANIZATION_SETUP } from '@main/shared/constants';
+import { SKIPPED_ORGANIZATION_SETUP } from '@shared/constants';
 
 export const buildSkipClaimKey = (
   serverUrl: string,

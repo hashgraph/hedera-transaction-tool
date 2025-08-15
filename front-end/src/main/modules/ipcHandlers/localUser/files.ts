@@ -5,7 +5,7 @@ import {
   showStoredFileInTemp,
   updateFile,
 } from '@main/services/localUser/files';
-import { decodeProto } from '@main/utils/hederaSpecialFiles';
+import { decodeProto } from '@shared/hederaSpecialFiles';
 import { createIPCChannel, renameFunc } from '@main/utils/electronInfra';
 
 export default () => {

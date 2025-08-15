@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { INodeInfoParsed } from '@main/shared/interfaces';
+import type { INodeInfoParsed } from '@shared/interfaces';
 import type { NodeUpdateData } from '@renderer/utils/sdk/createTransactions';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 
@@ -122,6 +122,12 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.declineReward = nodeInfo.decline_reward;
   }
 });
+watch(
+  () => [data.nodeAccountId, data.adminKey, data.nodeId],
+  () => {
+    baseTransactionRef.value?.updateTransactionKey();
+  }
+);
 </script>
 <template>
   <BaseTransaction

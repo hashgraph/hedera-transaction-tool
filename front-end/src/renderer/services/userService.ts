@@ -1,4 +1,4 @@
-import { HTX_USER, LOCAL_STORAGE_IMPORTANT_NOTE_ACCEPTED } from '@main/shared/constants';
+import { HTX_USER, LOCAL_STORAGE_IMPORTANT_NOTE_ACCEPTED } from '@shared/constants';
 
 import { commonIPCHandler } from '@renderer/utils';
 

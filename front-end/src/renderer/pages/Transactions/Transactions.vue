@@ -3,7 +3,7 @@ import type { TabItem } from '@renderer/components/ui/AppTabs.vue';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
 
-import { NotificationType } from '@main/shared/interfaces';
+import { NotificationType } from '@shared/interfaces';
 import {
   draftsTitle,
   historyTitle,
@@ -11,7 +11,7 @@ import {
   readyForExecutionTitle,
   readyForReviewTitle,
   readyToSignTitle,
-} from '@main/shared/constants';
+} from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';

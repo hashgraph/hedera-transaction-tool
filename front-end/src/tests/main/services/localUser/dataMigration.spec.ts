@@ -4,12 +4,12 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
-import { CommonNetwork } from '@main/shared/enums';
+import { CommonNetwork } from '@shared/enums';
 import {
   DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
   SELECTED_NETWORK,
   UPDATE_LOCATION,
-} from '@main/shared/constants';
+} from '@shared/constants';
 
 import {
   locateDataMigrationFiles,

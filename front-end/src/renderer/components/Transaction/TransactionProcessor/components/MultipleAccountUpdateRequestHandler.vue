@@ -5,7 +5,7 @@ import {
   type Handler,
   type Processable,
 } from '..';
-import type { IGroup, TransactionApproverDto } from '@main/shared/interfaces';
+import type { IGroup, TransactionApproverDto } from '@shared/interfaces';
 import type { GroupItem } from '@renderer/stores/storeTransactionGroup';
 import type { ApiGroupItem } from '@renderer/services/organization';
 

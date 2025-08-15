@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import type { MigrateUserDataResult } from '@main/shared/interfaces/migration';
+import type { MigrateUserDataResult } from '@shared/interfaces/migration';
 import type { RecoveryPhrase } from '@renderer/types';
 import type { PersonalUser } from './components/SetupPersonal.vue';
 import { computed, ref } from 'vue';
 
-import { KeyPathWithName } from '@main/shared/interfaces';
+import { KeyPathWithName } from '@shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 import useSetDynamicLayout, { DEFAULT_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import { useRouter } from 'vue-router';
 
-import { SKIPPED_PERSONAL_SETUP } from '@main/shared/constants';
+import { SKIPPED_PERSONAL_SETUP } from '@shared/constants';
 
 import { resetDataLocal } from '@renderer/services/userService';
 import { getStaticUser } from '@renderer/services/safeStorageService';

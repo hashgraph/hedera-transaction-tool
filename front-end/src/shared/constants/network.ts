@@ -1,6 +1,5 @@
-import { CommonNetwork } from '@main/shared/enums';
+import { CommonNetwork } from '../enums';
 
-/* Mappings */
 export const networkMapping: {
   [key in string]: { label: string; className: string };
 } = {

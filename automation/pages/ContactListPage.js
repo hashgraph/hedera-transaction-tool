@@ -43,8 +43,12 @@ class ContactListPage extends BasePage {
     return await this.isElementVisible(this.removeContactButtonSelector);
   }
 
-  async isAddNewContactButtonVisible() {
-    return await this.isElementVisible(this.addNewContactButtonSelector);
+  async isRemoveContactButtonHidden() {
+    return await this.isElementHidden(this.removeContactButtonSelector);
+  }
+
+  async isAddNewContactButtonHidden() {
+    return await this.isElementHidden(this.addNewContactButtonSelector);
   }
 
   async isAddNewContactButtonEnabled() {

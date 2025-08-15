@@ -12,8 +12,8 @@ import {
 import { Prisma } from '@prisma/client';
 import { getPrismaClient } from '@main/db/prisma';
 
-import { HederaSpecialFileId } from '@main/shared/interfaces';
-import { DISPLAY_FILE_SIZE_LIMIT } from '@main/shared/constants';
+import { HederaSpecialFileId } from '@shared/interfaces';
+import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
 
 import { getKeyPairs } from '@main/services/localUser/keyPairs';
 import { showContentInTemp } from '@main/services/localUser/files';
@@ -24,7 +24,7 @@ import {
   isHederaSpecialFileId,
   decodeProto,
   encodeHederaSpecialFile,
-} from '@main/utils/hederaSpecialFiles';
+} from '@shared/hederaSpecialFiles';
 import { decrypt } from '@main/utils/crypto';
 import { getStatusCodeFromMessage } from '@main/utils/sdk';
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
 import type { TransactionCommonData } from '@renderer/utils/sdk';
 import {
   CustomRequest,
@@ -8,10 +8,11 @@ import {
 } from '@renderer/components/Transaction/TransactionProcessor';
 import type { CreateTransactionFunc } from '.';
 
-import { computed, reactive, ref, toRaw } from 'vue';
+import { computed, reactive, ref, toRaw, watch } from 'vue';
 import { Hbar, Transaction, KeyList } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -19,6 +20,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 import useLoader from '@renderer/composables/useLoader';
 
 import {
+  computeSignatureKey,
   getErrorMessage,
   isAccountId,
   redirectToDetails,
@@ -42,11 +44,10 @@ import BaseApproversObserverData from '@renderer/components/Transaction/Create/B
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 /* Props */
-const { createTransaction, preCreateAssert, transactionBaseKey, customRequest } = defineProps<{
+const { createTransaction, preCreateAssert, customRequest } = defineProps<{
   createTransaction: CreateTransactionFunc;
   preCreateAssert?: () => boolean | void;
   createDisabled?: boolean;
-  transactionBaseKey?: KeyList;
   customRequest?: CustomRequest;
 }>();
 
@@ -61,6 +62,7 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
@@ -93,15 +95,10 @@ const groupActionTaken = ref(false);
 const memoError = ref(false);
 const initialTransactionData = ref('');
 const initialDescription = ref('');
+const transactionKey = ref<KeyList>(new KeyList([]));
 
 /* Computed */
 const transaction = computed(() => createTransaction({ ...data } as TransactionCommonData));
-
-const transactionKey = computed(() => {
-  const keys = transactionBaseKey?.toArray() || [];
-  payerData.key.value && keys.push(payerData.key.value);
-  return new KeyList(keys);
-});
 
 const hasTransactionChanged = computed(() => {
   if (!initialTransactionData.value) return false;
@@ -236,10 +233,23 @@ function basePreCreateAssert() {
   }
 }
 
+async function updateTransactionKey() {
+  const computedKeys =  await computeSignatureKey(transaction.value, network.mirrorNodeBaseURL);
+  transactionKey.value = new KeyList(computedKeys.signatureKeys);
+}
+
+/* Watches */
+watch(
+  [() => payerData.key.value],
+  updateTransactionKey,
+  { immediate: true }
+);
+
 /* Exposes */
 defineExpose({
   payerData,
   submit: handleCreate,
+  updateTransactionKey,
 });
 </script>
 <template>

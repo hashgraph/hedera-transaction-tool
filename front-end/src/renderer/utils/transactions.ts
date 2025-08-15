@@ -1,4 +1,4 @@
-import type { IDefaultNetworks, Network } from '@main/shared/interfaces';
+import type { IDefaultNetworks, Network } from '@shared/interfaces';
 import type { KeyPair, Transaction } from '@prisma/client';
 
 import {
@@ -10,11 +10,10 @@ import {
   Key,
 } from '@hashgraph/sdk';
 
-import { CommonNetwork } from '@main/shared/enums';
-import { TransactionStatus } from '@main/shared/interfaces';
+import { CommonNetwork } from '@shared/enums';
+import { TransactionStatus } from '@shared/interfaces';
 
 import { openExternal } from '@renderer/services/electronUtilsService';
-import { flattenKeyList } from '@renderer/services/keyPairService';
 
 export const getTransactionDate = (transaction: Transaction): string => {
   return new Timestamp(
@@ -99,17 +98,7 @@ export const getPropagationButtonLabel = (
   activeOrganization: boolean,
 ): string => {
   if (activeOrganization) {
-    const userPublicKeys = userKeys.map(key => key.public_key);
-    const publicKeys = flattenKeyList(transactionKey);
-
-    const publicKeysRaw = publicKeys.map(pk => pk.toStringRaw());
-    const publicKeysDer = publicKeys.map(pk => pk.toStringRaw());
-
-    const userKeyRequired = userPublicKeys.some(userKey => {
-      return publicKeysRaw.includes(userKey) || publicKeysDer.includes(userKey);
-    });
-
-    return userKeyRequired ? 'Create' : 'Create and Share';
+    return 'Create and Share';
   } else {
     return 'Sign & Execute';
   }

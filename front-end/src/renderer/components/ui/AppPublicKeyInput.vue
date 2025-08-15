@@ -2,6 +2,10 @@
 import AppInput from './AppInput.vue';
 import { nextTick, onMounted, onUpdated, ref } from 'vue';
 
+// Prevent automatic inheritance of attributes, specifically for data-testid attribute
+// which is bound to the input element.
+defineOptions({ inheritAttrs: false });
+
 /* Props */
 const props = withDefaults(
   defineProps<{

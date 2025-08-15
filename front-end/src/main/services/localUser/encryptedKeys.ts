@@ -5,7 +5,7 @@ import EventEmitter from 'events';
 import { app } from 'electron';
 import * as forge from 'node-forge';
 
-import { ENCRYPTED_KEY_ALREADY_IMPORTED } from '@main/shared/constants';
+import { ENCRYPTED_KEY_ALREADY_IMPORTED } from '@shared/constants';
 
 import { copyFile, getFilePaths, getUniquePath, unzip } from '@main/utils/files';
 

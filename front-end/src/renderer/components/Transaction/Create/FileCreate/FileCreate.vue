@@ -121,6 +121,12 @@ watch(
     }
   },
 );
+watch(
+  () => [data.ownerKey],
+  () => {
+    baseTransactionRef.value?.updateTransactionKey();
+  },
+);
 </script>
 <template>
   <BaseTransaction

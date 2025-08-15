@@ -4,7 +4,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { Prisma } from '@prisma/client';
 import { PrivateKey } from '@hashgraph/sdk';
 
-import { ENCRYPTED_KEY_ALREADY_IMPORTED } from '@main/shared/constants';
+import { ENCRYPTED_KEY_ALREADY_IMPORTED } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 

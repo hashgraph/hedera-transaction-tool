@@ -416,6 +416,10 @@ class OrganizationPage extends BasePage {
     return await this.isElementVisible(this.contactListButton);
   }
 
+  async isContactListButtonHidden() {
+    return await this.isElementHidden(this.contactListButton);
+  }
+
   async clickOnEditNicknameOrganizationButton() {
     await this.click(this.editNicknameOrganizationButtonSelector);
   }
@@ -448,6 +452,10 @@ class OrganizationPage extends BasePage {
 
   async isFirstMissingKeyVisible() {
     return await this.isElementVisible(this.firstMissingKeyIndexSelector);
+  }
+
+  async isFirstMissingKeyHidden() {
+    return await this.isElementHidden(this.firstMissingKeyIndexSelector);
   }
 
   async clickOnDeleteNextButton() {
@@ -593,7 +601,7 @@ class OrganizationPage extends BasePage {
     await waitForValidStart(validStart);
     const transactionResponse =
       await this.transactionPage.mirrorGetTransactionResponse(transactionId);
-    this.complexAccountId.push(transactionResponse.transactions[0].entity_id);
+    this.complexAccountId.push(transactionResponse?.entity_id);
   }
 
   async logInAndSignTransactionByAllUsers(encryptionPassword, txId) {
@@ -710,7 +718,7 @@ class OrganizationPage extends BasePage {
     // Store the complex account ID
     const transactionResponse =
       await this.transactionPage.mirrorGetTransactionResponse(transactionId);
-    this.complexAccountId.push(transactionResponse.transactions[0].entity_id);
+    this.complexAccountId.push(transactionResponse.entity_id);
   }
 
   async createAccount(timeForExecution = 60, numberOfObservers = 1, isSignRequired = true) {
@@ -952,7 +960,7 @@ class OrganizationPage extends BasePage {
       await this.signTxByAllUsersAndRefresh(globalCredentials, firstUser, txId);
       await waitForValidStart(validStart);
       const txResponse = await this.transactionPage.mirrorGetTransactionResponse(txId);
-      fileId = txResponse.transactions[0]?.entity_id;
+      fileId = txResponse?.entity_id;
       this.complexFileId.push(fileId);
       return { txId, fileId };
     } else {
@@ -1448,8 +1456,8 @@ class OrganizationPage extends BasePage {
     return await this.getText(this.observerIndexSelector + index);
   }
 
-  async isNotificationNumberVisible() {
-    return await this.isElementVisible(this.spanNotificationNumberSelector);
+  async isNotificationNumberHidden() {
+    return await this.isElementHidden(this.spanNotificationNumberSelector);
   }
 
   async createNotificationForUser(firstUser, secondUser, globalCredentials) {

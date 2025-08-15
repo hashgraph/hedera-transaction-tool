@@ -1,6 +1,6 @@
 import { onMounted } from 'vue';
 
-import { HTX_USER } from '@main/shared/constants';
+import { HTX_USER } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 

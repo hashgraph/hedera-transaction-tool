@@ -1,4 +1,4 @@
-import { CommonNetwork } from '@main/shared/enums';
+import { CommonNetwork } from '@shared/enums';
 import { parseNetwork } from '@main/utils/parsers';
 
 describe('parseNetwork', () => {

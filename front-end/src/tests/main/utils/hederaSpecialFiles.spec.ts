@@ -7,8 +7,8 @@ import {
   decodeProto,
   encodeHederaSpecialFile,
   isHederaSpecialFileId,
-} from '@main/utils/hederaSpecialFiles';
-import { HederaSpecialFileId } from '@main/shared/interfaces';
+} from '@shared/hederaSpecialFiles';
+import { HederaSpecialFileId } from '@shared/interfaces';
 
 import {
   buffer as buffer101,

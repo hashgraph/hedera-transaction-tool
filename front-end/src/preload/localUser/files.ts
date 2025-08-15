@@ -1,5 +1,5 @@
 import type { HederaFile } from '@prisma/client';
-import type { HederaSpecialFileId } from '@main/shared/interfaces';
+import type { HederaSpecialFileId } from '@shared/interfaces';
 
 import { ipcRenderer } from 'electron';
 

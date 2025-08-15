@@ -30,7 +30,7 @@ import {
   decodeProto,
   encodeHederaSpecialFile,
   isHederaSpecialFileId,
-} from '@main/utils/hederaSpecialFiles';
+} from '@shared/hederaSpecialFiles';
 
 vi.mock('crypto', () => ({ randomUUID: vi.fn() }));
 vi.mock('electron', () => ({ safeStorage: { decryptString: vi.fn() } }));
@@ -57,7 +57,7 @@ vi.mock('@main/utils/sdk', () => ({
   getStatusCodeFromMessage: vi.fn(),
 }));
 vi.mock('fs/promises', () => ({ default: { writeFile: vi.fn() } }));
-vi.mock('@main/utils/hederaSpecialFiles', () => ({
+vi.mock('@shared/hederaSpecialFiles', () => ({
   decodeProto: vi.fn(),
   isHederaSpecialFileId: vi.fn(),
   encodeHederaSpecialFile: vi.fn(),

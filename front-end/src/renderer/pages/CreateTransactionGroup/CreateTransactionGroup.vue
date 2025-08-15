@@ -11,6 +11,7 @@ import {
 } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { useToast } from 'vue-toast-notification';
@@ -39,6 +40,7 @@ import TransactionSelectionModal from '@renderer/components/TransactionSelection
 import TransactionGroupProcessor from '@renderer/components/Transaction/TransactionGroupProcessor.vue';
 import SaveTransactionGroupModal from '@renderer/components/modals/SaveTransactionGroupModal.vue';
 import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
+import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
@@ -49,6 +51,7 @@ const router = useRouter();
 const route = useRoute();
 const toast = useToast();
 const payerData = useAccountId();
+const network = useNetworkStore();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 /* State */
@@ -209,14 +212,23 @@ function handleOnImportClick() {
   }
 }
 
+async function readFileAsText(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+}
+
 async function handleOnFileChanged(e: Event) {
   transactionGroup.clearGroup();
-  const reader = new FileReader();
-  const maxTransactionFee = ref<Hbar>(new Hbar(2));
   const target = e.target as HTMLInputElement;
-  reader.readAsText(target.files![0]);
-  reader.onload = () => {
-    const result = reader.result as string;
+  const selectedFile = target.files?.[0];
+  if (!selectedFile) return;
+
+  try {
+    const result = await readFileAsText(selectedFile);
     const rows = result.split(/\r?\n|\r|\n/g);
     let senderAccount = '';
     let feePayer = '';
@@ -225,21 +237,38 @@ async function handleOnFileChanged(e: Event) {
     let txValidDuration = '';
     let memo = '';
     let validStart: Date | null = null;
+    const maxTransactionFee = ref<Hbar>(new Hbar(2));
+
     for (const row of rows) {
       const rowInfo =
         row
           .match(/(?:"(?:\\"|[^"])*"|[^,]+)(?=,|$)/g)
           ?.map(s => s.trim().replace(/^"|"$/g, '').replace(/\\"/g, '"')) || [];
       const title = rowInfo[0]?.toLowerCase();
+
       switch (title) {
         case 'transaction description':
           groupDescription.value = rowInfo[1];
           break;
         case 'sender account':
           senderAccount = rowInfo[1];
+          try {
+            await getAccountInfo(senderAccount, network.mirrorNodeBaseURL);
+          } catch (error) {
+            toast.error(`Sender account ${senderAccount} does not exist on network. Review the CSV file.`);
+            console.log(error);
+            return;
+          }
           break;
         case 'fee payer account':
           feePayer = rowInfo[1];
+          try {
+            await getAccountInfo(feePayer, network.mirrorNodeBaseURL);
+          } catch (error) {
+            toast.error(`Fee payer account ${feePayer} does not exist on network. Review the CSV file.`);
+            console.log(error);
+            return;
+          }
           break;
         case 'sending time':
           sendingTime = rowInfo[1];
@@ -260,66 +289,80 @@ async function handleOnFileChanged(e: Event) {
           break;
         default: {
           if (row === '') {
-            console.log();
-          } else {
-            // Create the new validStart value, or add 1 millisecond to the existing one for subsequent transactions
-            if (!validStart) {
-              const startDate = rowInfo[2];
-              validStart = new Date(`${startDate} ${sendingTime}`);
-              if (validStart < new Date()) {
-                validStart = new Date();
-              }
-            } else {
-              validStart.setMilliseconds(validStart.getMilliseconds() + 1);
-            }
-            const transaction = new TransferTransaction()
-              .setTransactionValidDuration(txValidDuration ? Number.parseInt(txValidDuration) : 180)
-              .setMaxTransactionFee(
-                (transactionFee
-                  ? new Hbar(transactionFee, HbarUnit.Tinybar)
-                  : maxTransactionFee.value) as Hbar,
-              );
-
-            transaction.setTransactionId(
-              createTransactionId(feePayer ? feePayer : senderAccount, validStart),
-            );
-            const transferAmount = rowInfo[1].replace(/,/g, '');
-            transaction.addHbarTransfer(rowInfo[0], new Hbar(transferAmount, HbarUnit.Tinybar));
-            transaction.addHbarTransfer(senderAccount, new Hbar(-transferAmount, HbarUnit.Tinybar));
-            // If memo is not provided for the row, use the memo from the header portion
-            // otherwise check if the memo is not 'n/a' and set it
-            if (rowInfo.length < 4 || !rowInfo[3]?.trim()) {
-              transaction.setTransactionMemo(memo);
-            } else if (!/^(n\/a)$/i.test(rowInfo[3])) {
-              transaction.setTransactionMemo(rowInfo[3]);
-            }
-
-            const transactionBytes = transaction.toBytes();
-            const keys = new Array<string>();
-            if (payerData.key.value instanceof KeyList) {
-              for (const key of payerData.key.value.toArray()) {
-                keys.push(key.toString());
-              }
-            }
-            transactionGroup.addGroupItem({
-              transactionBytes,
-              type: 'Transfer Transaction',
-              seq: transactionGroup.groupItems.length.toString(),
-              keyList: keys,
-              observers: [],
-              approvers: [],
-              payerAccountId: feePayer ? feePayer : senderAccount,
-              validStart: new Date(validStart.getTime()),
-              description: '',
-            });
+            continue;
           }
+          // Create the new validStart value, or add 1 millisecond to the existing one for subsequent transactions
+          if (!validStart) {
+            const startDate = rowInfo[2];
+            validStart = new Date(`${startDate} ${sendingTime}`);
+            if (validStart < new Date()) {
+              validStart = new Date();
+            }
+          } else {
+            validStart.setMilliseconds(validStart.getMilliseconds() + 1);
+          }
+          feePayer = feePayer || senderAccount;
+          const receiverAccount = rowInfo[0];
+          try {
+            await getAccountInfo(receiverAccount, network.mirrorNodeBaseURL);
+          } catch (error) {
+            toast.error(`Receiver account ${receiverAccount} does not exist on network. Review the CSV file.`);
+            console.log(error);
+            transactionGroup.clearGroup();
+            return;
+          }
+
+          const transaction = new TransferTransaction()
+            .setTransactionValidDuration(txValidDuration ? Number.parseInt(txValidDuration) : 180)
+            .setMaxTransactionFee(
+              (transactionFee
+                ? new Hbar(transactionFee, HbarUnit.Tinybar)
+                : maxTransactionFee.value) as Hbar,
+            );
+
+          transaction.setTransactionId(
+            createTransactionId(feePayer, validStart),
+          );
+          const transferAmount = rowInfo[1].replace(/,/g, '');
+          transaction.addHbarTransfer(receiverAccount, new Hbar(transferAmount, HbarUnit.Tinybar));
+          transaction.addHbarTransfer(senderAccount, new Hbar(-transferAmount, HbarUnit.Tinybar));
+          // If memo is not provided for the row, use the memo from the header portion
+          // otherwise check if the memo is not 'n/a' and set it
+          if (rowInfo.length < 4 || !rowInfo[3]?.trim()) {
+            transaction.setTransactionMemo(memo);
+          } else if (!/^(n\/a)$/i.test(rowInfo[3])) {
+            transaction.setTransactionMemo(rowInfo[3]);
+          }
+
+          const transactionBytes = transaction.toBytes();
+          const keys = new Array<string>();
+          if (payerData.key.value instanceof KeyList) {
+            for (const key of payerData.key.value.toArray()) {
+              keys.push(key.toString());
+            }
+          }
+          transactionGroup.addGroupItem({
+            transactionBytes,
+            type: 'Transfer Transaction',
+            seq: transactionGroup.groupItems.length.toString(),
+            keyList: keys,
+            observers: [],
+            approvers: [],
+            payerAccountId: feePayer ? feePayer : senderAccount,
+            validStart: new Date(validStart.getTime()),
+            description: '',
+          });
         }
       }
     }
-  };
-
-  if (file.value != null) {
-    file.value.value = '';
+    toast.success('Import complete');
+  } catch (error) {
+    toast.error('Failed to import CSV file');
+    console.log(error);
+  } finally {
+    if (file.value != null) {
+      file.value.value = '';
+    }
   }
 }
 

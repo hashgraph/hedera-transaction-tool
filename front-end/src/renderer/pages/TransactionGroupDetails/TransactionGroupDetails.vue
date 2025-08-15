@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import type { IGroup } from '@renderer/services/organization';
-import { TransactionStatus } from '@main/shared/interfaces';
+import { TransactionStatus } from '@shared/interfaces';
 
 import { computed, onBeforeMount, ref, watch, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { Transaction } from '@hashgraph/sdk';
 
-import { historyTitle, TRANSACTION_ACTION } from '@main/shared/constants';
-import { TransactionTypeName } from '@main/shared/interfaces';
+import { historyTitle, TRANSACTION_ACTION } from '@shared/constants';
+import { TransactionTypeName } from '@shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
