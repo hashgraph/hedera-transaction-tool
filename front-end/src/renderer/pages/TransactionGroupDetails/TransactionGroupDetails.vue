@@ -45,6 +45,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import { SignatureItem } from '@renderer/types';
+import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
 /* Stores */
 const user = useUserStore();
@@ -66,6 +67,7 @@ const group = ref<IGroup | null>(null);
 const shouldApprove = ref(false);
 const isConfirmModalShown = ref(false);
 const publicKeysRequiredToSign = ref<string[] | null>([]);
+const showSignAll = ref(true);
 const disableSignAll = ref(false);
 const isSigning = ref(false);
 const isApproving = ref(false);
@@ -97,12 +99,20 @@ async function handleFetchGroup(id: string | number) {
 
       if (group.value?.groupItems != undefined) {
         for (const item of group.value.groupItems) {
+          const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
+          const tx = Transaction.fromBytes(transactionBytes);
+
+          const isTransactionVersionMismatch = !areByteArraysEqual(tx.toBytes(), transactionBytes);
+          if (isTransactionVersionMismatch) {
+            toast.error('Transaction version mismatch. Cannot sign all.');
+            disableSignAll.value = true;
+            break;
+          }
+
           shouldApprove.value =
             shouldApprove.value ||
             (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id));
 
-          const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
-          const tx = Transaction.fromBytes(transactionBytes);
           const txId = item.transaction.id;
 
           const usersPublicKeys = await usersPublicRequiredToSign(
@@ -130,7 +140,8 @@ async function handleFetchGroup(id: string | number) {
             item.transaction.status !== TransactionStatus.CANCELED &&
             item.transaction.status !== TransactionStatus.EXPIRED
           ) {
-            publicKeysRequiredToSign.value = publicKeysRequiredToSign.value!.concat(usersPublicKeys);
+            publicKeysRequiredToSign.value =
+              publicKeysRequiredToSign.value!.concat(usersPublicKeys);
           }
         }
       }
@@ -179,7 +190,7 @@ const handleSignGroup = async () => {
 
   try {
     isSigning.value = true;
-    const items: SignatureItem[]= [];
+    const items: SignatureItem[] = [];
     if (group.value != undefined) {
       for (const groupItem of group.value.groupItems) {
         const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
@@ -213,7 +224,7 @@ const handleSignGroup = async () => {
       items,
     );
     toast.success('Transactions signed successfully');
-    disableSignAll.value = true;
+    showSignAll.value = true;
   } catch {
     toast.error('Transactions not signed');
   } finally {
@@ -478,7 +489,7 @@ watchEffect(() => {
                   (isLoggedInOrganization(user.selectedOrganization) &&
                     publicKeysRequiredToSign &&
                     publicKeysRequiredToSign.length > 0 &&
-                    !disableSignAll)
+                    !showSignAll)
                 "
               >
                 <div class="d-flex gap-4 mt-5">
@@ -510,7 +521,7 @@ watchEffect(() => {
                       isLoggedInOrganization(user.selectedOrganization) &&
                       publicKeysRequiredToSign &&
                       publicKeysRequiredToSign.length > 0 &&
-                      !disableSignAll
+                      !showSignAll
                     "
                   >
                     <AppButton
@@ -520,6 +531,14 @@ watchEffect(() => {
                       loading-text="Signing..."
                       data-testid="button-sign-all-tx"
                       @click="handleSignGroup"
+                      :disabled="disableSignAll"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="top"
+                      :title="
+                        disableSignAll
+                          ? 'Cannot sign all due to transaction version mismatch.'
+                          : 'Sign all transactions.'
+                      "
                     >
                       Sign All
                     </AppButton>

@@ -46,6 +46,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
+import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
 /* Types */
 type ActionButton =
@@ -160,6 +161,11 @@ const canSign = computed(() => {
   if (!props.organizationTransaction || !publicKeysRequiredToSign.value) return false;
   if (!isLoggedInOrganization(user.selectedOrganization)) return false;
 
+  if (isTransactionVersionMismatch.value) {
+    toast.error('Transaction version mismatch. Cannot sign.');
+    return false;
+  }
+
   const userShouldSign = publicKeysRequiredToSign.value.length > 0;
 
   return userShouldSign && transactionIsInProgress.value;
@@ -206,8 +212,8 @@ const visibleButtons = computed(() => {
   //   props.previousId && buttons.push(previous);
   //   props.nextId && buttons.push(next);
   // } else {
-    props.nextId && buttons.push(next);
-    props.previousId && buttons.push(previous);
+  props.nextId && buttons.push(next);
+  props.previousId && buttons.push(previous);
   // }
   canCancel.value && buttons.push(cancel);
   canRemind.value && buttons.push(remindSignersLabel);
@@ -223,6 +229,17 @@ const dropDownItems = computed(() =>
 
 const isTransactionFailed = computed(() => {
   return props.organizationTransaction?.status === TransactionStatus.FAILED;
+});
+
+const isTransactionVersionMismatch = computed(() => {
+  if (!props.sdkTransaction || !props.organizationTransaction) return false;
+
+  // The sdkTransaction has already been deserialized from bytes, serialize back into bytes
+  // and compare to the organizations transaction bytes.
+  return !areByteArraysEqual(
+    props.sdkTransaction.toBytes(),
+    hexToUint8Array(props.organizationTransaction.transactionBytes),
+  );
 });
 
 /* Handlers */
@@ -592,6 +609,9 @@ watch(
               ? getStatusFromCode(props.organizationTransaction?.statusCode)
               : 'FAILED'
           }}
+        </span>
+        <span v-else-if="isTransactionVersionMismatch" class="badge bg-danger text-break ms-2">
+          Transaction Version Mismatch
         </span>
       </h2>
     </div>
