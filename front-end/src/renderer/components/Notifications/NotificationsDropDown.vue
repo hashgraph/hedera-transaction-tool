@@ -24,7 +24,7 @@ const triggerRingAnimation = () => {
 
 /* Watchers */
 let previousTotalCount = totalCount.value;
-watch(totalCount, (newCount) => {
+watch(totalCount, newCount => {
   if (newCount > previousTotalCount) {
     triggerRingAnimation();
   }
@@ -53,9 +53,7 @@ watch(totalCount, (newCount) => {
     <div class="dropdown-menu overflow-hidden" :style="{ width: '300px' }">
       <ul class="overflow-auto" :style="{ maxHeight: '45vh' }">
         <template v-if="totalCount === 0">
-          <li class="dropdown-item text-small text-center user-select-none">
-            No notifications
-          </li>
+          <li class="dropdown-item text-small text-center user-select-none">No notifications</li>
         </template>
         <template v-else>
           <template
@@ -70,7 +68,10 @@ watch(totalCount, (newCount) => {
                 v-for="notification of notifications"
                 :key="`${notification.content}${notification.network}`"
               >
-                <li class="dropdown-item text-small cursor-pointer user-select-none" @click="notification.action()">
+                <li
+                  class="dropdown-item text-small cursor-pointer user-select-none"
+                  @click="notification.action()"
+                >
                   <div class="row">
                     <div class="col-8" :class="{ 'col-12': notification.network === 'Unknown' }">
                       <p class="text-truncate">

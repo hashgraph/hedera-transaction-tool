@@ -124,7 +124,7 @@ const useNotificationsStore = defineStore('notifications', () => {
         const result = results[i];
         result.status === 'fulfilled' && (notifications.value[severUrls[i]] = result.value);
       }
-      notifications.value = {...notifications.value};
+      notifications.value = { ...notifications.value };
     });
 
     await notificationsQueue;
@@ -172,7 +172,7 @@ const useNotificationsStore = defineStore('notifications', () => {
     if (networkFilteredNotifications.length > 0) {
       const notificationIds = networkFilteredNotifications
         .filter(nr => nr.notification.type === type)
-        .map(nr => nr.id );
+        .map(nr => nr.id);
 
       await _updateNotifications(notificationsKey, notificationIds);
     }
@@ -203,7 +203,7 @@ const useNotificationsStore = defineStore('notifications', () => {
       notifications.value[notificationsKey] = notifications.value[notificationsKey].filter(
         nr => !notificationIds.includes(nr.id),
       );
-      notifications.value = {...notifications.value};
+      notifications.value = { ...notifications.value };
     });
 
     // Wait for the current update to complete

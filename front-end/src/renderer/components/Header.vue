@@ -22,7 +22,7 @@ const createTooltips = useCreateTooltips();
 
 /* Computed */
 const isAccountSetupComplete = computed(() => {
-  return user.personal && user.personal.isLoggedIn && !user.accountSetupStarted ;
+  return user.personal && user.personal.isLoggedIn && !user.accountSetupStarted;
 });
 
 /* Hooks */
@@ -35,10 +35,7 @@ onUpdated(createTooltips);
       <Logo class="me-2" />
       <LogoText />
     </div>
-    <div
-      v-if="isAccountSetupComplete"
-      class="flex-centered justify-content-end"
-    >
+    <div v-if="isAccountSetupComplete" class="flex-centered justify-content-end">
       <!-- <span class="container-icon">
         <i class="text-icon-main bi bi-search"></i>
       </span>

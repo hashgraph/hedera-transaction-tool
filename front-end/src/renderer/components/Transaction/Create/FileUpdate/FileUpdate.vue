@@ -85,7 +85,7 @@ watch(
   () => [data.fileId, data.ownerKey],
   () => {
     baseTransactionRef.value?.updateTransactionKey();
-  }
+  },
 );
 </script>
 <template>

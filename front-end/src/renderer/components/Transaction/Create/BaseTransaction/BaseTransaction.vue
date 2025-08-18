@@ -234,16 +234,12 @@ function basePreCreateAssert() {
 }
 
 async function updateTransactionKey() {
-  const computedKeys =  await computeSignatureKey(transaction.value, network.mirrorNodeBaseURL);
+  const computedKeys = await computeSignatureKey(transaction.value, network.mirrorNodeBaseURL);
   transactionKey.value = new KeyList(computedKeys.signatureKeys);
 }
 
 /* Watches */
-watch(
-  [() => payerData.key.value],
-  updateTransactionKey,
-  { immediate: true }
-);
+watch([() => payerData.key.value], updateTransactionKey, { immediate: true });
 
 /* Exposes */
 defineExpose({

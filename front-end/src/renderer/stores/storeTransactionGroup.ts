@@ -208,15 +208,15 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   }
 
   function hasObservers(seq: number) {
-    return !(groupItems.value[seq].observers === undefined ||
-      groupItems.value[seq].observers.length === 0);
-
+    return !(
+      groupItems.value[seq].observers === undefined || groupItems.value[seq].observers.length === 0
+    );
   }
 
   function hasApprovers(seq: number) {
-    return !(groupItems.value[seq].approvers === undefined ||
-      groupItems.value[seq].approvers.length === 0);
-
+    return !(
+      groupItems.value[seq].approvers === undefined || groupItems.value[seq].approvers.length === 0
+    );
   }
 
   function setModified() {

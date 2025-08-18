@@ -9,11 +9,7 @@ import { TRANSACTION_MAX_SIZE } from '@shared/constants';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import {
-  assertUserLoggedIn,
-  ableToSign,
-  validateFileUpdateTransaction,
-} from '@renderer/utils';
+import { assertUserLoggedIn, ableToSign, validateFileUpdateTransaction } from '@renderer/utils';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 /* Constants */

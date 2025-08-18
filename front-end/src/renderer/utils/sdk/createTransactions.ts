@@ -449,9 +449,7 @@ export const getServiceEndpoints = (data: ComponentServiceEndpoint[]): ServiceEn
     .filter((endpoint): endpoint is ServiceEndpoint => endpoint !== null);
 };
 
-
-
-export const getServiceEndpoint= (serviceEndpoint: ComponentServiceEndpoint | null) => {
+export const getServiceEndpoint = (serviceEndpoint: ComponentServiceEndpoint | null) => {
   if (!serviceEndpoint) {
     return null;
   }
@@ -477,8 +475,7 @@ export const getServiceEndpoint= (serviceEndpoint: ComponentServiceEndpoint | nu
     }
     return serviceEndpoint;
   }
-}
-
+};
 
 const setNodeData = (
   transaction: NodeCreateTransaction | NodeUpdateTransaction,

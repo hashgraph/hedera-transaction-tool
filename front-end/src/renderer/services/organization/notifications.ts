@@ -1,7 +1,4 @@
-import type {
-  INotificationReceiver,
-  IUpdateNotificationReceiver,
-} from '@shared/interfaces';
+import type { INotificationReceiver, IUpdateNotificationReceiver } from '@shared/interfaces';
 
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 
@@ -54,10 +51,7 @@ export const updateNotifications = async (
       const batchSize = 500;
       for (let i = 0; i < notificationsToUpdate.length; i += batchSize) {
         const batch = notificationsToUpdate.slice(i, i + batchSize);
-        await axiosWithCredentials.patch(
-          `${organizationServerUrl}/${controller}`,
-          batch,
-        );
+        await axiosWithCredentials.patch(`${organizationServerUrl}/${controller}`, batch);
       }
     } catch (error) {
       console.log(error);

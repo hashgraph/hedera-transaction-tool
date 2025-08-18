@@ -187,10 +187,10 @@ export function useGroupedNotifications() {
   /* Watch */
   watch(
     () => notificationsStore.notifications,
-    (newNotifications) => {
+    newNotifications => {
       previousNotifications.value = { ...newNotifications };
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   return {

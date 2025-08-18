@@ -164,15 +164,14 @@ const handleSkipSetupAfterMigration = async () => {
   // in order to set the skip setup BEFORE org is selected, user the user.organization[0]
   const org = user.selectedOrganization || user.organizations[0];
   if (!org) {
-    const { data } = await safeAwait(getStoredClaim(personalUser.value.personalId, SKIPPED_PERSONAL_SETUP));
+    const { data } = await safeAwait(
+      getStoredClaim(personalUser.value.personalId, SKIPPED_PERSONAL_SETUP),
+    );
     const addOrUpdate = data !== undefined ? update : add;
     await addOrUpdate(personalUser.value.personalId, SKIPPED_PERSONAL_SETUP, 'true');
     user.skippedSetup = true;
   } else if (isLoggedInOrganization(org)) {
-    const claimKey = buildSkipClaimKey(
-      org.serverUrl,
-      org.userId,
-    );
+    const claimKey = buildSkipClaimKey(org.serverUrl, org.userId);
     const { data } = await safeAwait(getStoredClaim(user.personal.id, claimKey));
     const addOrUpdate = data !== undefined ? update : add;
     await addOrUpdate(user.personal.id, claimKey, 'true');
@@ -186,7 +185,7 @@ const handleSkipSetupAfterMigration = async () => {
       class="container-dark-border bg-modal-surface glow-dark-bg p-5"
       :class="{
         'custom-key-modal': stepIs('selectKeys'),
-        'col-12 col-md-10 col-lg-8': stepIs('summary')
+        'col-12 col-md-10 col-lg-8': stepIs('summary'),
       }"
     >
       <h4 class="text-title text-semi-bold text-center">{{ heading }}</h4>
@@ -216,9 +215,7 @@ const handleSkipSetupAfterMigration = async () => {
         </template>
 
         <!-- Setup Organization Step -->
-        <template
-          v-if="stepIs('organization') && personalUser"
-        >
+        <template v-if="stepIs('organization') && personalUser">
           <SetupOrganization
             :personal-user="personalUser"
             @set-organization-id="handleSetOrganizationId"
@@ -232,13 +229,7 @@ const handleSkipSetupAfterMigration = async () => {
         </template>
 
         <!-- Select Keys Step -->
-        <template
-          v-if="
-            stepIs('selectKeys') &&
-            personalUser &&
-            allUserKeysToRecover.length > 0
-          "
-        >
+        <template v-if="stepIs('selectKeys') && personalUser && allUserKeysToRecover.length > 0">
           <SelectKeys
             v-if="userInitialized"
             :keys-to-recover="allUserKeysToRecover"
