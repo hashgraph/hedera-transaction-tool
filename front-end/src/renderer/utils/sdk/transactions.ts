@@ -16,7 +16,7 @@ import {
   SystemDeleteTransaction,
   SystemUndeleteTransaction,
   Transaction,
-  TransferTransaction
+  TransferTransaction,
 } from '@hashgraph/sdk';
 import { getDateStringExtended } from '..';
 
@@ -57,37 +57,37 @@ export const getTransactionType = (
   let transactionType = 'Unknown Transaction Type';
 
   if (transaction instanceof AccountCreateTransaction) {
-    transactionType = "Account Create Transaction";
+    transactionType = 'Account Create Transaction';
   } else if (transaction instanceof AccountUpdateTransaction) {
-    transactionType = "Account Update Transaction";
+    transactionType = 'Account Update Transaction';
   } else if (transaction instanceof AccountDeleteTransaction) {
-    transactionType = "Account Delete Transaction";
+    transactionType = 'Account Delete Transaction';
   } else if (transaction instanceof TransferTransaction) {
-    transactionType = "Transfer Transaction";
+    transactionType = 'Transfer Transaction';
   } else if (transaction instanceof AccountAllowanceApproveTransaction) {
-    transactionType = "Account Allowance Approve Transaction";
+    transactionType = 'Account Allowance Approve Transaction';
   } else if (transaction instanceof FileCreateTransaction) {
-    transactionType = "File Create Transaction";
+    transactionType = 'File Create Transaction';
   } else if (transaction instanceof FileUpdateTransaction) {
-    transactionType = "File Update Transaction";
+    transactionType = 'File Update Transaction';
   } else if (transaction instanceof FileAppendTransaction) {
-    transactionType = "File Append Transaction";
+    transactionType = 'File Append Transaction';
   } else if (transaction instanceof FileDeleteTransaction) {
-    transactionType = "File Delete Transaction";
+    transactionType = 'File Delete Transaction';
   } else if (transaction instanceof FileContentsQuery) {
-    transactionType = "Read File Query";
+    transactionType = 'Read File Query';
   } else if (transaction instanceof FreezeTransaction) {
-    transactionType = "Freeze Transaction";
+    transactionType = 'Freeze Transaction';
   } else if (transaction instanceof NodeCreateTransaction) {
-    transactionType = "Node Create Transaction";
+    transactionType = 'Node Create Transaction';
   } else if (transaction instanceof NodeUpdateTransaction) {
-    transactionType = "Node Update Transaction";
+    transactionType = 'Node Update Transaction';
   } else if (transaction instanceof NodeDeleteTransaction) {
-    transactionType = "Node Delete Transaction";
+    transactionType = 'Node Delete Transaction';
   } else if (transaction instanceof SystemDeleteTransaction) {
-    transactionType = "System Delete Transaction";
+    transactionType = 'System Delete Transaction';
   } else if (transaction instanceof SystemUndeleteTransaction) {
-    transactionType = "System Undelete Transaction";
+    transactionType = 'System Undelete Transaction';
     // } else if (transaction instanceof ContractCallTransaction) {
     //   transactionType = 'ContractCallTransaction';
     // } else if (transaction instanceof ContractCreateTransaction) {

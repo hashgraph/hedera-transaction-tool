@@ -6,10 +6,7 @@ import type {
   Network,
   PaginatedResourceDto,
 } from '@shared/interfaces';
-import type {
-  ITransactionApprover,
-  TransactionApproverDto,
-} from '@shared/interfaces';
+import type { ITransactionApprover, TransactionApproverDto } from '@shared/interfaces';
 
 import { Transaction } from '@hashgraph/sdk';
 

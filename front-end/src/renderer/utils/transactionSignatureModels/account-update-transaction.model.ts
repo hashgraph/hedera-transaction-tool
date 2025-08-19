@@ -36,10 +36,7 @@ export default class AccountUpdateTransactionModel extends TransactionBaseModel<
 
   private shouldWaiveSigningRequirements(accountId: AccountId): boolean {
     const feePayer = this.getFeePayerAccountId();
-    return (
-      this.isSystemAccount(accountId) &&
-      this.isPrivilegedFeePayer(feePayer)
-    );
+    return this.isSystemAccount(accountId) && this.isPrivilegedFeePayer(feePayer);
   }
 
   private isSystemAccount(accountId: AccountId): boolean {

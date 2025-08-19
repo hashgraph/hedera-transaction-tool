@@ -78,13 +78,15 @@ export const createFileInfo = (props: {
  * @param key - The key to get the public key from.
  * @returns {object} - An object containing the public key and the key type.
  */
-export const getPublicKeyAndType = (key: string | PublicKey): { publicKey: PublicKey, keyType: KeyType } => {
+export const getPublicKeyAndType = (
+  key: string | PublicKey,
+): { publicKey: PublicKey; keyType: KeyType } => {
   let publicKey: PublicKey;
 
   if (key instanceof PublicKey) {
     publicKey = key;
   } else {
-    publicKey = PublicKey.fromString(key)
+    publicKey = PublicKey.fromString(key);
   }
 
   const keyType = publicKey._toProtobufKey().ed25519 ? KeyType.ED25519 : KeyType.ECDSA;
@@ -138,7 +140,9 @@ export function getMaximumExpirationTime() {
 
 export function isPublicKeyInKeyList(publicKey: PublicKey | string, key: Key): boolean {
   if (key instanceof PublicKey) {
-    return key.toStringRaw() === (publicKey instanceof PublicKey ? publicKey.toStringRaw() : publicKey);
+    return (
+      key.toStringRaw() === (publicKey instanceof PublicKey ? publicKey.toStringRaw() : publicKey)
+    );
   }
 
   if (key instanceof KeyList) {

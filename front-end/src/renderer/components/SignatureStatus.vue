@@ -30,13 +30,9 @@ const props = defineProps<{
 }>();
 
 /* Computed */
-const hasMultiplePublicKeys = computed(() =>
-  props.signatureKeyObject.signatureKeys.length > 1
-);
+const hasMultiplePublicKeys = computed(() => props.signatureKeyObject.signatureKeys.length > 1);
 const isSignatureKeySatisfied = computed(() =>
-  props.signatureKeyObject.signatureKeys.every(key =>
-    ableToSign(props.publicKeysSigned, key)
-  )
+  props.signatureKeyObject.signatureKeys.every(key => ableToSign(props.publicKeysSigned, key)),
 );
 </script>
 <template>
@@ -48,10 +44,9 @@ const isSignatureKeySatisfied = computed(() =>
           class="bi bi-check-lg text-success position-absolute"
           :style="{ left: '-15px' }"
         ></span>
-        <p
-          class="text-nowrap"
-          :class="{ 'text-success': isSignatureKeySatisfied }"
-        >Required Keys</p>
+        <p class="text-nowrap" :class="{ 'text-success': isSignatureKeySatisfied }">
+          Required Keys
+        </p>
       </div>
     </template>
     <template v-if="signatureKeyObject.payerKey">

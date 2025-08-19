@@ -125,7 +125,10 @@ const TransactionStatusName = {
   [TransactionStatus.ARCHIVED]: 'Archived',
 };
 
-export const getTransactionStatusName = (status: TransactionStatus, uppercase: boolean = false): string => {
+export const getTransactionStatusName = (
+  status: TransactionStatus,
+  uppercase: boolean = false,
+): string => {
   const statusName = TransactionStatusName[status];
   return uppercase ? statusName.toUpperCase() : statusName;
 };

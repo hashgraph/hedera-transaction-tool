@@ -3,10 +3,7 @@ import type { FileData } from '@renderer/utils';
 
 import { isHederaSpecialFileId } from '@shared/hederaSpecialFiles';
 
-import {
-  getMinimumExpirationTime,
-  getMaximumExpirationTime,
-} from '@renderer/utils';
+import { getMinimumExpirationTime, getMaximumExpirationTime } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppDatePicker from '@renderer/components/ui/AppDatePicker.vue';

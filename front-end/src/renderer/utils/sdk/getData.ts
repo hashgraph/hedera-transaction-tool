@@ -216,7 +216,9 @@ export const getTransferHbarData = (transaction: Transaction): TransferHbarData 
   };
 };
 
-export const getComponentServiceEndpoint = ( serviceEndpoint: ServiceEndpoint | null): ComponentServiceEndpoint | null => {
+export const getComponentServiceEndpoint = (
+  serviceEndpoint: ServiceEndpoint | null,
+): ComponentServiceEndpoint | null => {
   if (!serviceEndpoint) {
     return null;
   }
@@ -233,7 +235,7 @@ export const getComponentServiceEndpoint = ( serviceEndpoint: ServiceEndpoint | 
     port,
     domainName,
   };
-}
+};
 
 export const getComponentServiceEndpoints = (
   serviceEndpoints: ServiceEndpoint[],
@@ -251,7 +253,7 @@ export function getNodeData(transaction: Transaction): NodeData {
 
   const gossipEndpoints = getComponentServiceEndpoints(transaction.gossipEndpoints || []);
   const serviceEndpoints = getComponentServiceEndpoints(transaction.serviceEndpoints || []);
-  const grpcWebProxyEndpoint = getComponentServiceEndpoint(transaction.grpcWebProxyEndpoint)
+  const grpcWebProxyEndpoint = getComponentServiceEndpoint(transaction.grpcWebProxyEndpoint);
   return {
     nodeAccountId: transaction.accountId?.toString() || '',
     description: transaction.description || '',
@@ -262,7 +264,6 @@ export function getNodeData(transaction: Transaction): NodeData {
     certificateHash: transaction.certificateHash || Uint8Array.from([]),
     adminKey: transaction.adminKey,
     declineReward: transaction.declineReward || false,
-
   };
 }
 

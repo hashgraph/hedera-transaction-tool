@@ -436,30 +436,30 @@ watch(
     </div>
   </div>
   <!-- gRPC Web Endpoint -->
-    <div class="form-group mt-6">
-      <label class="form-label">gRPC Web Proxy Endpoint</label>
-      <div class="text-micro mb-3 text-muted">Fully Qualified Domain Name (FQDN) is required</div>
-      <div class="row align-items-end">
-        <div class="col-4 col-xxxl-3">
-          <label class="form-label">Domain</label>
-          <AppInput
-            :model-value="data.grpcWebProxyEndpoint?.domainName"
-            @update:model-value="getGrpcWebProxyEndpoint('domainName', $event)"
-            placeholder="Enter FQDN"
-            :filled="true"
-          />
-        </div>
-        <div class="col-4 col-xxxl-3">
-          <label class="form-label">Port</label>
-          <AppInput
-            :model-value="data.grpcWebProxyEndpoint?.port"
-            @update:model-value="getGrpcWebProxyEndpoint('port', $event)"
-            placeholder="Enter Port"
-            :filled="true"
-          />
-        </div>
+  <div class="form-group mt-6">
+    <label class="form-label">gRPC Web Proxy Endpoint</label>
+    <div class="text-micro mb-3 text-muted">Fully Qualified Domain Name (FQDN) is required</div>
+    <div class="row align-items-end">
+      <div class="col-4 col-xxxl-3">
+        <label class="form-label">Domain</label>
+        <AppInput
+          :model-value="data.grpcWebProxyEndpoint?.domainName"
+          @update:model-value="getGrpcWebProxyEndpoint('domainName', $event)"
+          placeholder="Enter FQDN"
+          :filled="true"
+        />
+      </div>
+      <div class="col-4 col-xxxl-3">
+        <label class="form-label">Port</label>
+        <AppInput
+          :model-value="data.grpcWebProxyEndpoint?.port"
+          @update:model-value="getGrpcWebProxyEndpoint('port', $event)"
+          placeholder="Enter Port"
+          :filled="true"
+        />
       </div>
     </div>
+  </div>
 
   <hr class="separator my-5" />
 

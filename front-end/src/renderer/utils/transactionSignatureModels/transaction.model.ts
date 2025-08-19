@@ -43,9 +43,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     return null;
   }
 
-  async computeSignatureKey(
-    mirrorNodeLink: string,
-  ) {
+  async computeSignatureKey(mirrorNodeLink: string) {
     const feePayerAccountId = this.getFeePayerAccountId();
     const accounts = this.getSigningAccounts();
     const receiverAccounts = this.getReceiverAccounts();
@@ -110,7 +108,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
         const adminKey = nodeInfo.adminKey;
         if (adminKey && !hasKey(adminKey)) {
           signatureKeys.push(adminKey);
-          nodeAdminKeys[nodeId] = adminKey
+          nodeAdminKeys[nodeId] = adminKey;
           currentKeyList.push(adminKey);
         }
 
@@ -125,7 +123,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
           const { key } = await getAccountInfo(nodeAccountId, mirrorNodeLink);
           if (key && !has(key)) {
             signatureKeys.push(key);
-            nodeAdminKeys[nodeId] = key
+            nodeAdminKeys[nodeId] = key;
             currentKeyList.push(key);
           }
         }

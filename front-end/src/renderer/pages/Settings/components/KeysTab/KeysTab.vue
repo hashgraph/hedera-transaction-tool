@@ -170,7 +170,10 @@ const handleDeleteSelectedClick = () => (isDeleteModalShown.value = true);
 
 const handleRestoreMissingKey = (keyPair: { id: number; publicKey: string; index?: number }) => {
   if (keyPair.index !== undefined) {
-    router.push({ name: RESTORE_MISSING_KEYS, params: { index: keyPair.index, publicKey: keyPair.publicKey } });
+    router.push({
+      name: RESTORE_MISSING_KEYS,
+      params: { index: keyPair.index, publicKey: keyPair.publicKey },
+    });
   } else {
     keyType.value = getPublicKeyAndType(keyPair.publicKey).keyType;
     publicKey.value = keyPair.publicKey;

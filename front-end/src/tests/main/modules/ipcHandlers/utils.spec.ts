@@ -304,15 +304,7 @@ describe('registerUtilsListeners', () => {
     vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
     vi.mocked(dialog.showSaveDialog).mockResolvedValue(dialogReturnValue);
 
-    await invokeIPCHandler(
-      'utils:saveFileNamed',
-      data,
-      name,
-      title,
-      buttonLabel,
-      filters,
-      message,
-    );
+    await invokeIPCHandler('utils:saveFileNamed', data, name, title, buttonLabel, filters, message);
 
     expect(BrowserWindow.getAllWindows).toHaveBeenCalled();
     expect(dialog.showSaveDialog).toHaveBeenCalledWith(windows[0], {
@@ -337,15 +329,7 @@ describe('registerUtilsListeners', () => {
     vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
     vi.mocked(dialog.showSaveDialog).mockResolvedValueOnce({ filePath: '', canceled: true });
 
-    await invokeIPCHandler(
-      'utils:saveFileNamed',
-      data,
-      name,
-      title,
-      buttonLabel,
-      filters,
-      message,
-    );
+    await invokeIPCHandler('utils:saveFileNamed', data, name, title, buttonLabel, filters, message);
 
     expect(fs.promises.writeFile).not.toHaveBeenCalled();
   });
@@ -542,8 +526,12 @@ describe('setDockBounce listener', () => {
   });
 
   test('should bounce dock if not focused and bounce is true', () => {
-    const fakeWindow = { isFocused: vi.fn().mockReturnValue(false) } as unknown as Electron.BrowserWindow;
-    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([fakeWindow] as unknown as BrowserWindow[]);
+    const fakeWindow = {
+      isFocused: vi.fn().mockReturnValue(false),
+    } as unknown as Electron.BrowserWindow;
+    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([
+      fakeWindow,
+    ] as unknown as BrowserWindow[]);
     const bounceId = 123;
     const bounceMock = vi.fn().mockReturnValue(bounceId);
     const cancelBounceMock = vi.fn();
@@ -554,8 +542,12 @@ describe('setDockBounce listener', () => {
   });
 
   test('should cancel bounce if bounce is false and bounceId is defined', () => {
-    const fakeWindow = { isFocused: vi.fn().mockReturnValue(false) } as unknown as Electron.BrowserWindow;
-    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([fakeWindow] as unknown as BrowserWindow[]);
+    const fakeWindow = {
+      isFocused: vi.fn().mockReturnValue(false),
+    } as unknown as Electron.BrowserWindow;
+    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([
+      fakeWindow,
+    ] as unknown as BrowserWindow[]);
     const bounceMock = vi.fn();
     const cancelBounceMock = vi.fn();
     (app as any).dock = { bounce: bounceMock, cancelBounce: cancelBounceMock };

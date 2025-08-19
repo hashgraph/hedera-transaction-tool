@@ -102,7 +102,7 @@ watch(
   () => [data.nodeAccountId, data.adminKey],
   () => {
     baseTransactionRef.value?.updateTransactionKey();
-  }
+  },
 );
 </script>
 <template>

@@ -300,10 +300,12 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
     if (fs.existsSync(keysPath)) {
       const files = await fs.promises.readdir(keysPath);
       const pemFiles = new Set(
-        files.filter(file => file.endsWith('.pem')).map(file => path.parse(file).name)
+        files.filter(file => file.endsWith('.pem')).map(file => path.parse(file).name),
       );
 
-      for (const file of files.filter(file => file.endsWith('.pub') && !pemFiles.has(path.parse(file).name))) {
+      for (const file of files.filter(
+        file => file.endsWith('.pub') && !pemFiles.has(path.parse(file).name),
+      )) {
         const filePath = path.join(keysPath, file);
         const publicKeyContent = await fs.promises.readFile(filePath, 'utf-8');
         const nickname = path.basename(filePath, '.pub');
