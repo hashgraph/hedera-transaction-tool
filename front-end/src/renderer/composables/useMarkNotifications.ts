@@ -34,16 +34,16 @@ export default function useMarkNotifications(notificationTypes: NotificationType
   /* Functions */
   async function markAsRead() {
     if (isLoggedInOrganization(user.selectedOrganization)) {
-      const typesToMark = [...new Set(
-        networkFilteredNotifications.value
-          .filter(nr => notificationTypes.includes(nr.notification.type))
-          .map(nr => nr.notification.type)
-      )];
+      const typesToMark = [
+        ...new Set(
+          networkFilteredNotifications.value
+            .filter(nr => notificationTypes.includes(nr.notification.type))
+            .map(nr => nr.notification.type),
+        ),
+      ];
 
       if (typesToMark.length > 0) {
-        await Promise.allSettled(
-          typesToMark.map(type => notifications.markAsRead(type)),
-        );
+        await Promise.allSettled(typesToMark.map(type => notifications.markAsRead(type)));
       }
     }
   }

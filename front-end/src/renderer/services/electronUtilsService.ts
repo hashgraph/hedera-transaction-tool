@@ -3,7 +3,8 @@ import type { FileFilter, OpenDialogReturnValue } from 'electron';
 import { commonIPCHandler } from '@renderer/utils';
 
 /* Set dock bounce */
-export const setDockBounce = (bounce: boolean = true) => window.electronAPI.local.utils.setDockBounce(bounce);
+export const setDockBounce = (bounce: boolean = true) =>
+  window.electronAPI.local.utils.setDockBounce(bounce);
 
 /* Open external URL */
 export const openExternal = (url: string) => window.electronAPI.local.utils.openExternal(url);

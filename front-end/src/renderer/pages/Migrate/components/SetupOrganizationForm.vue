@@ -101,7 +101,7 @@ watch(
   email => {
     if (email) inputOrganizationEmail.value = email;
   },
-  { immediate: true }
+  { immediate: true },
 );
 </script>
 <template>
@@ -208,12 +208,12 @@ watch(
           :loading="loading"
           :loading-text="loadingText"
           :disabled="
-          inputTemporaryOrganizationPassword.trim().length === 0 ||
-          inputOrganizationURL.trim().length === 0 ||
-          (personalUser.useKeychain ? inputOrganizationEmail.length === 0 : false) ||
-          inputNewOrganizationPassword.trim().length === 0 ||
-          inputNewOrganizationPassword.trim() === inputTemporaryOrganizationPassword.trim()
-        "
+            inputTemporaryOrganizationPassword.trim().length === 0 ||
+            inputOrganizationURL.trim().length === 0 ||
+            (personalUser.useKeychain ? inputOrganizationEmail.length === 0 : false) ||
+            inputNewOrganizationPassword.trim().length === 0 ||
+            inputNewOrganizationPassword.trim() === inputTemporaryOrganizationPassword.trim()
+          "
           data-testid="button-migration-setup-organization"
         >Continue</AppButton>
       </div>

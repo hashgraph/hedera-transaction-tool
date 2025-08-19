@@ -22,9 +22,7 @@ const stepperItems = computed(() => {
     bubbleClass?: string;
     bubbleLabel?: string;
     bubbleIcon?: string;
-  }[] = [
-    { title: 'Transaction Created', name: 'Transaction Created' }
-  ];
+  }[] = [{ title: 'Transaction Created', name: 'Transaction Created' }];
 
   // If rejected, add rejected step and return
   if (props.transaction.status === TransactionStatus.REJECTED) {
@@ -78,7 +76,7 @@ const stepperActiveIndex = computed(() => {
     case TransactionStatus.NEW:
       return 0;
     case TransactionStatus.REJECTED:
-    // case TransactionStatus.WAITING_FOR_APPROVAL:
+      // case TransactionStatus.WAITING_FOR_APPROVAL:
       return 1;
     case TransactionStatus.WAITING_FOR_SIGNATURES:
       return hasApproveStep.value ? 2 : 1;
@@ -89,7 +87,7 @@ const stepperActiveIndex = computed(() => {
       return hasApproveStep.value ? 3 : 2;
     case TransactionStatus.EXECUTED:
     case TransactionStatus.FAILED:
-      return hasApproveStep.value? 4 : 3;
+      return hasApproveStep.value ? 4 : 3;
     default:
       return -1;
   }
@@ -118,8 +116,5 @@ const detailItemLabelClass = 'text-micro text-semi-bold text-dark-blue';
 </script>
 <template>
   <h2 class="text-title text-bold">Transaction Status</h2>
-  <AppStepper
-    :items="stepperItems"
-    :active-index="stepperActiveIndex"
-  />
+  <AppStepper :items="stepperItems" :active-index="stepperActiveIndex" />
 </template>

@@ -30,15 +30,7 @@ export default {
       filters: FileFilter[],
       message: string,
     ): Promise<void> =>
-      ipcRenderer.invoke(
-        'utils:saveFileNamed',
-        data,
-        name,
-        title,
-        buttonLabel,
-        filters,
-        message,
-      ),
+      ipcRenderer.invoke('utils:saveFileNamed', data, name, title, buttonLabel, filters, message),
     sha384: (str: string): Promise<string> => ipcRenderer.invoke('utils:sha384', str),
     x509BytesFromPem: (
       pem: string | Uint8Array,

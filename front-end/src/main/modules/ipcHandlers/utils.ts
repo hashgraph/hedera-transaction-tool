@@ -14,7 +14,7 @@ export default () => {
   ipcMain.on(createChannelName('setDockBounce'), (_e, bounce: boolean) => {
     if (bounce) {
       const windows = BrowserWindow.getAllWindows();
-      const isAppFocused = windows.some((win) => win.isFocused());
+      const isAppFocused = windows.some(win => win.isFocused());
 
       if (!isAppFocused && app.dock) {
         bounceId = app.dock.bounce('critical');
@@ -94,7 +94,7 @@ export default () => {
       if (windows.length === 0) return;
 
       try {
-        const {canceled, filePath} = await dialog.showSaveDialog(windows[0], {
+        const { canceled, filePath } = await dialog.showSaveDialog(windows[0], {
           title,
           defaultPath: name,
           buttonLabel,

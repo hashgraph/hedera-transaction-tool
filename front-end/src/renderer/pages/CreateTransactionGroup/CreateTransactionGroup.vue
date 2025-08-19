@@ -255,7 +255,9 @@ async function handleOnFileChanged(e: Event) {
           try {
             await getAccountInfo(senderAccount, network.mirrorNodeBaseURL);
           } catch (error) {
-            toast.error(`Sender account ${senderAccount} does not exist on network. Review the CSV file.`);
+            toast.error(
+              `Sender account ${senderAccount} does not exist on network. Review the CSV file.`,
+            );
             console.log(error);
             return;
           }
@@ -265,7 +267,9 @@ async function handleOnFileChanged(e: Event) {
           try {
             await getAccountInfo(feePayer, network.mirrorNodeBaseURL);
           } catch (error) {
-            toast.error(`Fee payer account ${feePayer} does not exist on network. Review the CSV file.`);
+            toast.error(
+              `Fee payer account ${feePayer} does not exist on network. Review the CSV file.`,
+            );
             console.log(error);
             return;
           }
@@ -306,7 +310,9 @@ async function handleOnFileChanged(e: Event) {
           try {
             await getAccountInfo(receiverAccount, network.mirrorNodeBaseURL);
           } catch (error) {
-            toast.error(`Receiver account ${receiverAccount} does not exist on network. Review the CSV file.`);
+            toast.error(
+              `Receiver account ${receiverAccount} does not exist on network. Review the CSV file.`,
+            );
             console.log(error);
             transactionGroup.clearGroup();
             return;
@@ -320,9 +326,7 @@ async function handleOnFileChanged(e: Event) {
                 : maxTransactionFee.value) as Hbar,
             );
 
-          transaction.setTransactionId(
-            createTransactionId(feePayer, validStart),
-          );
+          transaction.setTransactionId(createTransactionId(feePayer, validStart));
           const transferAmount = rowInfo[1].replace(/,/g, '');
           transaction.addHbarTransfer(receiverAccount, new Hbar(transferAmount, HbarUnit.Tinybar));
           transaction.addHbarTransfer(senderAccount, new Hbar(-transferAmount, HbarUnit.Tinybar));

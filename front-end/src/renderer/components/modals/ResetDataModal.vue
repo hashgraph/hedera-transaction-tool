@@ -49,7 +49,8 @@ const handleResetData = async () => {
       </div>
       <h3 class="text-center text-title text-bold">Reset Data</h3>
       <p class="text-center text-small text-secondary mt-4">
-        Resetting the application will remove all personal data, including keys and organization credentials.
+        Resetting the application will remove all personal data, including keys and organization
+        credentials.
       </p>
       <p class="text-center text-small text-secondary mt-2">
         You will need to import all of your keys and reconnect to each organization.

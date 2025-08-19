@@ -47,7 +47,8 @@ watch(inputRecoveryPhrasePassword, () => (inputRecoveryPhrasePasswordError.value
     <div class="fill-remaining">
       <p class="text-secondary text-small lh-base text-center">
         Enter your recovery phrase password from the old tool. <br />
-        This is the password used when first installing the old tool, or when creating a new key. <br />
+        This is the password used when first installing the old tool, or when creating a new key.
+        <br />
         This is likely the same password used when signing a transaction in the old tool.
       </p>
 

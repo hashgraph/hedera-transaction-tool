@@ -251,9 +251,9 @@ describe('Data Migration', () => {
       vi.mocked(fs.existsSync).mockReturnValueOnce(true);
       vi.mocked(fs.promises.readdir).mockResolvedValueOnce(['publicKey1.pub'] as any);
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(
-          '302a300506032b6570032100a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90'
+        '302a300506032b6570032100a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90',
       );
-    }
+    };
 
     test('Should correctly migrate user', async () => {
       const mockUserId = 'userId';

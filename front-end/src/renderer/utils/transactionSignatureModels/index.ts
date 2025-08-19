@@ -18,10 +18,7 @@ export * from './transaction-factory';
 export * from './transaction.model';
 export * from './transfer-transaction.model';
 
-export const computeSignatureKey = async (
-  transaction: SDKTransaction,
-  mirrorNodeLink: string,
-) => {
+export const computeSignatureKey = async (transaction: SDKTransaction, mirrorNodeLink: string) => {
   const transactionModel = TransactionFactory.fromTransaction(transaction);
 
   return await transactionModel.computeSignatureKey(mirrorNodeLink);

@@ -117,7 +117,7 @@ watch(
   () => data,
   () => {
     baseTransactionRef.value?.updateTransactionKey();
-  }
+  },
 );
 </script>
 <template>

@@ -40,7 +40,10 @@ export default class TransactionFactory {
       NodeDeleteTransaction: NodeDeleteTransactionModel,
     };
 
-    const transactionType = getTransactionType(transaction, true) as keyof typeof transactionModelMap;
+    const transactionType = getTransactionType(
+      transaction,
+      true,
+    ) as keyof typeof transactionModelMap;
 
     if (transactionModelMap[transactionType]) {
       const Model = transactionModelMap[transactionType];

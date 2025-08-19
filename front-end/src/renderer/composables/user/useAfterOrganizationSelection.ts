@@ -75,7 +75,8 @@ export default function useAfterOrganizationSelection() {
 
     const shouldSetup = accountSetupRequired(organization, user.keyPairs);
     const shouldNavigateToSetup =
-      shouldSetup && ((organization && !isLoggedInOrganization(organization)) || !user.skippedSetup);
+      shouldSetup &&
+      ((organization && !isLoggedInOrganization(organization)) || !user.skippedSetup);
 
     if (shouldNavigateToSetup) {
       await router.push({ name: 'accountSetup' });

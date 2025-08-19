@@ -53,7 +53,7 @@ const selectedIndex = computed(() => {
 
   // Partial match
   const partialMatchIndex = props.items.findIndex(item =>
-    item.split('.').some(part => part.startsWith(input))
+    item.split('.').some(part => part.startsWith(input)),
   );
   if (partialMatchIndex !== -1) return partialMatchIndex;
 
@@ -97,7 +97,13 @@ const handleKeyDown = (e: KeyboardEvent) => {
   } else if (e.key === 'Enter') {
     e.preventDefault();
     if (lastKeyPressed.value !== 'Escape') {
-      setValue((autocompletePrefixSuggestion.value + modelValue.value + autocompletePostfixSuggestion.value).trim());
+      setValue(
+        (
+          autocompletePrefixSuggestion.value +
+          modelValue.value +
+          autocompletePostfixSuggestion.value
+        ).trim(),
+      );
     }
     toggleDropdown(false);
     focusNextElement();
@@ -115,7 +121,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
 const handleUpdate = (value: string) => {
   value = sanitizeAccountId(value);
 
-  setValue(value)
+  setValue(value);
 
   // Update the input field value
   if (inputRef.value?.inputRef) {
@@ -213,7 +219,8 @@ function measureTextWidth(text: string, input: HTMLInputElement): number {
 }
 
 async function positionSuggestion() {
-  if (!inputRef.value?.inputRef || !prefixSuggestionRef.value || !postfixSuggestionRef.value) return;
+  if (!inputRef.value?.inputRef || !prefixSuggestionRef.value || !postfixSuggestionRef.value)
+    return;
 
   const input = inputRef.value.inputRef;
   const prefixSuggestion = prefixSuggestionRef.value;
@@ -321,7 +328,9 @@ watchEffect(() => {
 <template>
   <div @blur="toggleDropdown(false)" class="w-100 autocomplete-container">
     <div @click="toggleDropdown(true)" class="input-wrapper">
-      <span ref="prefixSuggestionRef" class="autocomplete-suggestion">{{ autocompletePrefixSuggestion }}</span>
+      <span ref="prefixSuggestionRef" class="autocomplete-suggestion">{{
+        autocompletePrefixSuggestion
+      }}</span>
       <AppInput
         ref="inputRef"
         :model-value="modelValue"
@@ -330,7 +339,9 @@ watchEffect(() => {
         :data-testid="dataTestid"
         v-bind="$attrs"
       />
-      <span ref="postfixSuggestionRef" class="autocomplete-suggestion">{{ autocompletePostfixSuggestion }}</span>
+      <span ref="postfixSuggestionRef" class="autocomplete-suggestion">{{
+        autocompletePostfixSuggestion
+      }}</span>
     </div>
 
     <div
