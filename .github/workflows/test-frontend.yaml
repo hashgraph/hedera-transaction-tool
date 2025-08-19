@@ -128,7 +128,8 @@ jobs:
       - name: run automation
         env:
           EXECUTABLE_PATH: ../front-end/release/linux-unpacked/hedera-transaction-tool
-          PRIVATE_KEY: '0x9a07bbdbb62e24686d2a4259dc88e38438e2c7a1ba167b147ad30ac540b0a3cd'
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          OPERATOR_KEY: ${{ secrets.OPERATOR_KEY }}
           ENVIRONMENT: LOCALNET
 
         run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }}
