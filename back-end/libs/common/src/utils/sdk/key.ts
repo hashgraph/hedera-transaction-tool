@@ -73,7 +73,8 @@ export function isPublicKeyInKeyList(publicKey: PublicKey | string, key: Key) {
 }
 
 /**
- * Given a list of public keys and a key list, returns a list of public keys that are in the key list.
+ * Given a list of public keys and a key list, return the smallest set
+ * of public keys that can satisfy the threshold of the key list.
  *
  * @param publicKeys
  * @param keyList
@@ -86,17 +87,19 @@ export function computeShortenedPublicKeyList(
   const secondary = [];
   const threshold = keyList.threshold ? keyList.threshold : keyList.toArray().length;
 
-  /* Iterates through the key list, prioritizing PublicKeys over KeyLists */
+  // Iterates through the key list, prioritizing PublicKeys over KeyLists
   for (const key of keyList.toArray()) {
     if (key instanceof PublicKey) {
       const rawKey = key.toStringRaw();
       if (publicKeys.includes(rawKey)) {
         result.push(key);
+        // If the result has reached the threshold, return it immediately
         if (result.length === threshold) {
           return result;
         }
       }
     } else if (key instanceof KeyList) {
+      // If the key is a KeyList, compute the shortened public key list recursively
       const resultingKeys = computeShortenedPublicKeyList(publicKeys, key);
       if (resultingKeys && resultingKeys.length > 0) {
         secondary.push(resultingKeys);
@@ -104,7 +107,7 @@ export function computeShortenedPublicKeyList(
     }
   }
 
-  /* If enough valid signatures were found from both key types, retrieve and merge the shortest arrays */
+  // If enough valid signatures were found from both key types, retrieve and merge the shortest arrays
   if (result.length + secondary.length >= threshold) {
     secondary.sort((a, b) => a.length - b.length);
     return result.concat(secondary.slice(0, threshold - result.length).flat());
