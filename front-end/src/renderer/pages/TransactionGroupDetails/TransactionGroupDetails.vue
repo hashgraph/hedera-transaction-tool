@@ -489,7 +489,7 @@ watchEffect(() => {
                   (isLoggedInOrganization(user.selectedOrganization) &&
                     publicKeysRequiredToSign &&
                     publicKeysRequiredToSign.length > 0 &&
-                    !showSignAll)
+                    showSignAll)
                 "
               >
                 <div class="d-flex gap-4 mt-5">
@@ -521,7 +521,7 @@ watchEffect(() => {
                       isLoggedInOrganization(user.selectedOrganization) &&
                       publicKeysRequiredToSign &&
                       publicKeysRequiredToSign.length > 0 &&
-                      !showSignAll
+                      showSignAll
                     "
                   >
                     <AppButton
