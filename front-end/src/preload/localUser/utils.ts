@@ -22,6 +22,14 @@ export default {
       message: string,
     ): Promise<OpenDialogReturnValue> =>
       ipcRenderer.invoke('utils:showOpenDialog', title, buttonLabel, filters, properties, message),
+    showSaveDialog: (
+      name: string,
+      title: string,
+      buttonLabel: string,
+      filters: FileFilter[],
+      message: string,
+    ): Promise<OpenDialogReturnValue> =>
+      ipcRenderer.invoke('utils:showSaveDialog', name, title, buttonLabel, filters, message),
     saveFileNamed: (
       data: Uint8Array,
       name: string,

@@ -139,6 +139,29 @@ export default () => {
     },
   );
 
+  ipcMain.handle(
+    createChannelName('showSaveDialog'),
+    async (
+      e,
+      name: string,
+      title: string,
+      buttonLabel: string,
+      filters: FileFilter[],
+      message: string
+    ) => {
+      const windows = BrowserWindow.getAllWindows();
+      if (windows.length === 0) return;
+
+      return await dialog.showSaveDialog(windows[0], {
+        title,
+        defaultPath: name,
+        buttonLabel,
+        filters,
+        message,
+      });
+    },
+  );
+
   ipcMain.handle(createChannelName('sha384'), async (_e, str: string): Promise<string> => {
     return await createHash('sha384').update(str).digest('hex');
   });
