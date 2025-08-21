@@ -444,6 +444,10 @@ The Initial Developer of @mapbox/node-pre-gyp@1.0.11,
 is Dane Springmeyer (https://github.com/mapbox/node-pre-gyp).
 Copyright Dane Springmeyer. All Rights Reserved.
 
+The Initial Developer of @msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3,
+is Kris Zyp (https://github.com/kriszyp/msgpackr-extract).
+Copyright Kris Zyp. All Rights Reserved.
+
 This product includes software (@nest-lab/throttler-storage-redis@1.0.0) developed at
 (https://github.com/jmcdo29/nest-lab).
 
@@ -2599,6 +2603,14 @@ Copyright Luke Edwards. All Rights Reserved.
 This product includes software (ms@2.1.3) developed at
 (https://github.com/vercel/ms).
 
+The Initial Developer of msgpackr-extract@3.0.3,
+is Kris Zyp (https://github.com/kriszyp/msgpackr-extract).
+Copyright Kris Zyp. All Rights Reserved.
+
+The Initial Developer of msgpackr@1.11.5,
+is Kris Zyp (https://github.com/kriszyp/msgpackr).
+Copyright Kris Zyp. All Rights Reserved.
+
 This product includes software (muggle-string@0.4.1) developed at
 (https://github.com/johnsoncodehk/muggle-string).
 
@@ -2643,6 +2655,10 @@ Copyright David Frank. All Rights Reserved.
 The Initial Developer of node-forge@1.3.1,
 is Digital Bazaar, Inc. (https://github.com/digitalbazaar/forge).
 Copyright Digital Bazaar, Inc.. All Rights Reserved.
+
+The Initial Developer of node-gyp-build-optional-packages@5.2.2,
+is Mathias Buus (https://github.com/prebuild/node-gyp-build).
+Copyright Mathias Buus. All Rights Reserved.
 
 The Initial Developer of node-gyp-build@4.8.4,
 is Mathias Buus (https://github.com/prebuild/node-gyp-build).
