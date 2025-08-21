@@ -1,6 +1,6 @@
 import { SKIPPED_ORGANIZATION_SETUP } from '@shared/constants';
 
-const EXPORT_FORMAT = 'exportFormat';
+const EXPORT_EXTENSION = 'exportExtension';
 
 export const buildSkipClaimKey = (
   serverUrl: string,
@@ -9,10 +9,10 @@ export const buildSkipClaimKey = (
   return `${serverUrl}${organizationUserId}${SKIPPED_ORGANIZATION_SETUP}`;
 };
 
-export const getLastExportFormat = () => {
-  return localStorage.getItem(EXPORT_FORMAT);
+export const getLastExportExtension = () => {
+  return localStorage.getItem(EXPORT_EXTENSION);
 };
 
-export const setLastExportFormat = (ext: string) => {
-  localStorage.setItem(EXPORT_FORMAT, ext);
+export const setLastExportExtension = (ext: string) => {
+  localStorage.setItem(EXPORT_EXTENSION, ext);
 };

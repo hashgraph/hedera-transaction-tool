@@ -80,29 +80,13 @@ export default () => {
   });
 
   ipcMain.handle(
-    createChannelName('saveFileNamed'),
+    createChannelName('saveFileToPath'),
     async (
       _e,
-      data: Uint8Array,
-      name: string,
-      title: string,
-      buttonLabel: string,
-      filters: FileFilter[],
-      message: string,
+      data: Uint8Array | string,
+      filePath: string,
     ) => {
-      const windows = BrowserWindow.getAllWindows();
-      if (windows.length === 0) return;
-
       try {
-        const { canceled, filePath } = await dialog.showSaveDialog(windows[0], {
-          title,
-          defaultPath: name,
-          buttonLabel,
-          filters,
-          message,
-        });
-
-        if (canceled) return;
         if (!filePath) throw new Error('File path is undefined');
 
         await fs.promises.writeFile(filePath, data);
