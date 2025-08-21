@@ -294,56 +294,11 @@ describe('registerUtilsListeners', () => {
   test('Should save file to a path in util:saveFileToPath', async () => {
     const windows = [{}];
     const data = new Uint8Array([1, 2, 3, 4]);
-    const name = 'test.txt';
-    const title = 'Save File';
-    const buttonLabel = 'Save';
-    const filters = [{ name: 'Text Files', extensions: ['txt'] }];
-    const message = 'Select a file to save';
-    const dialogReturnValue = { filePath: '/path/to/test.txt', canceled: false };
+    const filePath = '/path/to/test.txt';
 
-    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
-    vi.mocked(dialog.showSaveDialog).mockResolvedValue(dialogReturnValue);
+    await invokeIPCHandler('utils:saveFileToPath', data, filePath);
 
-    await invokeIPCHandler('utils:saveFileToPath', data, name, title, buttonLabel, filters, message);
-
-    expect(BrowserWindow.getAllWindows).toHaveBeenCalled();
-    expect(dialog.showSaveDialog).toHaveBeenCalledWith(windows[0], {
-      title,
-      defaultPath: name,
-      buttonLabel,
-      filters,
-      message,
-    });
     expect(fs.promises.writeFile).toHaveBeenCalledWith('/path/to/test.txt', data);
-  });
-
-  test('Should not write if no file path or canceled dialog in util:saveFileToPath', async () => {
-    const windows = [{}];
-    const data = new Uint8Array([1, 2, 3, 4]);
-    const name = 'test.txt';
-    const title = 'Save File';
-    const buttonLabel = 'Save';
-    const filters = [{ name: 'Text Files', extensions: ['txt'] }];
-    const message = 'Select a file to save';
-
-    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
-    vi.mocked(dialog.showSaveDialog).mockResolvedValueOnce({ filePath: '', canceled: true });
-
-    await invokeIPCHandler('utils:saveFileToPath', data, name, title, buttonLabel, filters, message);
-
-    expect(fs.promises.writeFile).not.toHaveBeenCalled();
-  });
-
-  test('Should do nothing if no windows in util:saveFileToPath', async () => {
-    const windows = [];
-
-    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows);
-
-    await invokeIPCHandler('utils:saveFileToPath');
-
-    expect(BrowserWindow.getAllWindows).toHaveBeenCalled();
-    expect(dialog.showSaveDialog).not.toHaveBeenCalled();
-    expect(fs.promises.writeFile).not.toHaveBeenCalled();
   });
 
   test('Should show error in dialog if fail to write in util:saveFileToPath', async () => {
@@ -361,25 +316,6 @@ describe('registerUtilsListeners', () => {
     vi.mocked(dialog.showSaveDialog).mockResolvedValue({ filePath, canceled });
     vi.mocked(fs.promises.writeFile).mockRejectedValueOnce(new Error('An error'));
     vi.mocked(fs.promises.writeFile).mockRejectedValueOnce(undefined);
-
-    await invokeIPCHandler('utils:saveFileToPath', data, name, title, buttonLabel, filters, message);
-    expect(dialog.showErrorBox).toHaveBeenCalledWith('Failed to save file', 'An error');
-    await invokeIPCHandler('utils:saveFileToPath', data, name, title, buttonLabel, filters, message);
-    expect(dialog.showErrorBox).toHaveBeenCalledWith('Failed to save file', 'Unknown error');
-  });
-
-  test('Should show error in dialog if error in util:saveFileToPath', async () => {
-    const windows = [{}];
-    const data = new Uint8Array([1, 2, 3, 4]);
-    const name = 'test.txt';
-    const title = 'Save File';
-    const buttonLabel = 'Save';
-    const filters = [{ name: 'Text Files', extensions: ['txt'] }];
-    const message = 'Select a file to save';
-
-    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
-    vi.mocked(dialog.showSaveDialog).mockRejectedValueOnce(new Error('An error'));
-    vi.mocked(dialog.showSaveDialog).mockRejectedValueOnce(undefined);
 
     await invokeIPCHandler('utils:saveFileToPath', data, name, title, buttonLabel, filters, message);
     expect(dialog.showErrorBox).toHaveBeenCalledWith('Failed to save file', 'An error');
