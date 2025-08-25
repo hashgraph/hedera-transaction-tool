@@ -7,29 +7,45 @@ and is at your own risk.
 
 # Prerequisites
 
-- [Node](https://nodejs.org/en/download/package-manager) version: >=`22.12.0`
-- Version check: `node-v`
-- [pnpm](https://pnpm.io/installation) version: >=`9.13.1`
-- Version check: `pnpm --version`
-- [python-setuptools](https://pypi.org/project/setuptools) version: >=`75.6.0`
+- [**Node.js**](https://nodejs.org/en/download/package-manager)
+  - Required version: `>= 22.12.0`
+  - Verify installation:
+    
+    ```bash
+    node -v
+    ```
 
-Installation of `pnpm`:
+- [**pnpm**](https://pnpm.io/installation) 
+  - Required version: `>= 9.13.1`
+  - Installation of `pnpm`(if not already installed):
+    
+    ```bash
+    npm install -g pnpm@latest
+    ```
+  - Verify installation:
+     
+    ```bash
+    pnpm --version
+    ```
 
-```bash
-npm install -g pnpm@latest
-```
-
-Installation of `python-setuptools` with `brew`:
-
-```bash
-brew install python-setuptools
-```
+- [**Python setuptools**](https://pypi.org/project/setuptools)
+  - Required version: `>= 75.6.0`
+  - Installation of `python-setuptools` with `brew`:
+    
+    ```bash
+    brew install python-setuptools
+    ```
+  - Verify installation:
+      
+    ```bash
+    python -m setuptools --version
+    ```
 
 ## 1. Clone the project
 
 ```bash
 git clone https://github.com/hashgraph/hedera-transaction-tool.git
-cd front-end
+cd hedera-transaction-tool/front-end
 ```
 
 ## 2. Install dependencies
@@ -70,4 +86,23 @@ pnpm test:main:coverage # run tests for the main process
 
 ## 7. Troubleshooting
 
-- If a problem with the @prisma/client occur, try running `npx prisma generate` or reinstall the `node_modules` and then run `npx prisma generate`
+- **Prisma issues**
+  - If you encounter problems with `@prisma/client`:
+    
+    ```bash
+    npx prisma generate
+    ```
+  - Alternatively, reinstall `node_modules` and run:
+    
+    ```bash
+    npx prisma generate
+    ```
+
+- **ENOENT errors**
+  - If errors persist after reinstalling `node_modules` and running `prisma_generate`, it may be caused by a missing Electron distribution.  
+  - To fix this, manually rebuild Electron from the `front-end` directory:
+    
+    ```bash
+    pnpm rebuild electron
+    ```
+    
