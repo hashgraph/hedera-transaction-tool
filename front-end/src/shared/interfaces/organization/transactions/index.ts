@@ -68,6 +68,8 @@ export interface ITransaction {
   updatedAt: string;
   mirrorNetwork: string;
   creatorKeyId: number;
+  creatorId: number;
+  creatorEmail: string;
   groupItem: IGroupItem;
 }
 

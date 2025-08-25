@@ -22,15 +22,19 @@ export default {
       message: string,
     ): Promise<OpenDialogReturnValue> =>
       ipcRenderer.invoke('utils:showOpenDialog', title, buttonLabel, filters, properties, message),
-    saveFileNamed: (
-      data: Uint8Array,
+    showSaveDialog: (
       name: string,
       title: string,
       buttonLabel: string,
       filters: FileFilter[],
       message: string,
+    ): Promise<OpenDialogReturnValue> =>
+      ipcRenderer.invoke('utils:showSaveDialog', name, title, buttonLabel, filters, message),
+    saveFileToPath: (
+      data: Uint8Array | string,
+      filePath: string,
     ): Promise<void> =>
-      ipcRenderer.invoke('utils:saveFileNamed', data, name, title, buttonLabel, filters, message),
+      ipcRenderer.invoke('utils:saveFileToPath', data, filePath),
     sha384: (str: string): Promise<string> => ipcRenderer.invoke('utils:sha384', str),
     x509BytesFromPem: (
       pem: string | Uint8Array,

@@ -70,7 +70,7 @@ describe('computeShortenedPublicKeyList', () => {
     ];
 
     // Act
-    const result = computeShortenedPublicKeyList(publicKeys, keyList);
+    const result = computeShortenedPublicKeyList(new Set(publicKeys), keyList);
 
     // Assert
     expect(result).toBeNull();
@@ -88,7 +88,7 @@ describe('computeShortenedPublicKeyList', () => {
     ];
 
     // Act
-    const result = computeShortenedPublicKeyList(publicKeys2, keyList);
+    const result = computeShortenedPublicKeyList(new Set(publicKeys2), keyList);
 
     // Assert
     expect(result).toHaveLength(6);
@@ -113,7 +113,7 @@ describe('computeShortenedPublicKeyList', () => {
     ];
 
     // Act
-    const result = computeShortenedPublicKeyList(publicKeys3, keyList);
+    const result = computeShortenedPublicKeyList(new Set(publicKeys3), keyList);
 
     // Assert
     expect(result).toHaveLength(5);
