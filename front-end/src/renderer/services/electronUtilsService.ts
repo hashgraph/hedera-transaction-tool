@@ -60,9 +60,30 @@ export const showOpenDialog = async (
   }
 };
 
+/* Opens a save dialog */
+export const showSaveDialog = async (
+  name: string,
+  title: string,
+  buttonLabel: string,
+  filters: FileFilter[],
+  message: string,
+): Promise<OpenDialogReturnValue> => {
+  try {
+    return await window.electronAPI.local.utils.showSaveDialog(
+      name,
+      title,
+      buttonLabel,
+      filters,
+      message,
+    );
+  } catch {
+    throw new Error('Failed to open the dialog');
+  }
+};
+
 /* Save a prename file */
-export const saveFileNamed = async (
-  data: Uint8Array,
+export const saveFileToPath = async (
+  data: Uint8Array | string,
   name: string,
   title: string,
   buttonLabel: string,
@@ -70,7 +91,7 @@ export const saveFileNamed = async (
   message: string,
 ): Promise<void> => {
   try {
-    return await window.electronAPI.local.utils.saveFileNamed(
+    return await window.electronAPI.local.utils.saveFileToPath(
       data,
       name,
       title,

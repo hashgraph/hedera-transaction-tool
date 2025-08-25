@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-/* Authentification service for organization */
+/* Authentication service for organization */
 
 export const login = async (serverUrl: string, email: string, password: string) => {
   try {

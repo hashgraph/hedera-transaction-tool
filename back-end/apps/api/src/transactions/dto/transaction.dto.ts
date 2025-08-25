@@ -59,6 +59,14 @@ export class TransactionDto {
   @Expose()
   creatorKeyId: number;
 
+  @Transform(({ obj }) => obj.creatorKey?.user?.id)
+  @Expose()
+  creatorId: number;
+
+  @Transform(({ obj }) => obj.creatorKey?.user?.email)
+  @Expose()
+  creatorEmail: string;
+
   @Expose()
   @Type(() => TransactionGroupItemDto)
   groupItem: TransactionGroupItemDto;

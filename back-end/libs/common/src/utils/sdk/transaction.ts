@@ -294,7 +294,7 @@ export async function smartCollate(
     );
 
     const publicKeys = computeShortenedPublicKeyList(
-      [...sdkTransaction._signerPublicKeys],
+      sdkTransaction._signerPublicKeys,
       signatureKey,
     );
 

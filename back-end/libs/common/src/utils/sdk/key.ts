@@ -80,7 +80,7 @@ export function isPublicKeyInKeyList(publicKey: PublicKey | string, key: Key) {
  * @param keyList
  */
 export function computeShortenedPublicKeyList(
-  publicKeys: string[],
+  publicKeys: Set<string>,
   keyList: KeyList,
 ): PublicKey[] | null {
   const result = [];
@@ -91,7 +91,7 @@ export function computeShortenedPublicKeyList(
   for (const key of keyList.toArray()) {
     if (key instanceof PublicKey) {
       const rawKey = key.toStringRaw();
-      if (publicKeys.includes(rawKey)) {
+      if (publicKeys.has(rawKey)) {
         result.push(key);
         // If the result has reached the threshold, return it immediately
         if (result.length === threshold) {
