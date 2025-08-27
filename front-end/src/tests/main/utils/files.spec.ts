@@ -6,9 +6,32 @@ import * as fsp from 'fs/promises';
 import * as unzipper from 'unzipper';
 
 import * as files from '@main/utils/files';
-import { AbortableState } from '@main/services/localUser';
+import { abortFileSearch } from '@main/utils/files';
 
-vi.mock('fs');
+export const readStream = {
+  on: vi.fn((event, callback) => {
+    if (event === 'data') callback(); // Simulate data event
+    return readStream;
+  }),
+  pipe: vi.fn(() => writeStream),
+  destroy: vi.fn(),
+};
+
+export const writeStream = {
+  on: vi.fn((event, callback) => {
+    if (event === 'finish') callback(); // Simulate finish event
+    return writeStream;
+  }),
+  destroy: vi.fn(),
+};
+
+vi.mock('fs', () => {
+  return {
+    createReadStream: vi.fn(() => readStream),
+    createWriteStream: vi.fn(() => writeStream),
+    constants: { F_OK: 0 },
+  };
+});
 vi.mock('fs/promises');
 vi.mock('path', () => ({
   join: vi.fn((...args) => args.join('/')),
@@ -20,19 +43,7 @@ vi.mock('electron', () => ({
 }));
 vi.mock('unzipper');
 
-// const mockStream = {
-//   on: vi.fn((event, callback) => {
-//     if (event === 'close') setTimeout(callback, 0);
-//     return mockStream;
-//   }),
-//   pipe: vi.fn().mockReturnThis(),
-// };
-//
-// const mockFile = {
-//   path: 'file1.pub',
-//   stream: vi.fn(() => mockStream),
-// };
-
+// then change files to separate out the functions or turn it into a class, then fix tests again
 describe('Files utilities', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -41,29 +52,11 @@ describe('Files utilities', () => {
   describe('searchFiles', () => {
     const extensions = ['.pub'];
     const processor = vi.fn(async (filePath: string) => [{ file: filePath }]);
-    let uniquePath = '';
 
     beforeEach(() => {
       vi.resetAllMocks();
-      uniquePath = '/tmp/unzipped_123';
 
-      // Mock copyFile and getUniquePath
-      // vi.spyOn(files, 'copyFile').mockImplementation(() => Promise.resolve('mockedDist'));
-      // vi.spyOn(files, 'getUniquePath').mockImplementation(() => Promise.resolve('/tmp/unzipped_123'));
-      // vi.spyOn(files, 'copyFile').mockReturnValue(Promise.resolve('mockedDist'));
-      // vi.spyOn(files, 'getUniquePath').mockImplementation(() => Promise.resolve('/tmp/unzipped_123'));
-
-      // Other mocks as needed
       vi.mocked(fsp.mkdir).mockResolvedValue(undefined);
-      vi.mocked(fsp.stat).mockResolvedValue({
-        isFile: () => true,
-        isDirectory: () => false,
-      });
-      vi.mocked(path.extname).mockReturnValue('.pub');
-      vi.mocked(fsp.access).mockRejectedValue(new Error('File does not exist'));
-      // vi.mocked(unzipper.Open.file).mockResolvedValue({
-      //   files: [mockFile],
-      // } as any);
     });
 
     test('Should create search directory', async () => {
@@ -72,10 +65,15 @@ describe('Files utilities', () => {
     });
 
     test('Should process a file with supported extension', async () => {
-      vi.fn().mockImplementation(files.copyFile).mockImplementationOnce(() => Promise.resolve('mockedDist'));
-      processor.mockResolvedValue([{ file: '/file.pub' }]);
+      vi.mocked(fsp.stat).mockResolvedValue({
+        isFile: () => true,
+        isDirectory: () => false,
+      });
+      vi.mocked(fsp.access).mockRejectedValue(new Error('File does not exist'));
+
+      processor.mockResolvedValue({ file: '/file.pub' });
       const result = await files.searchFiles(['/file.pub'], extensions, processor);
-      expect(processor).toHaveBeenCalledWith('/file.pub');
+      expect(processor).toHaveBeenCalledWith(expect.stringMatching(/\/file\.pub$/));
       expect(result).toEqual([{ file: '/file.pub' }]);
     });
 
@@ -84,7 +82,7 @@ describe('Files utilities', () => {
         isFile: () => false,
         isDirectory: () => true,
       } as any);
-      vi.mocked(fsp.readdir).mockResolvedValue(['file1.pub', 'file2.enc']);
+      vi.mocked(fsp.readdir).mockResolvedValue(['file1.pub', 'file2.pub']);
       vi.mocked(fsp.stat).mockResolvedValue({
         isFile: () => true,
         isDirectory: () => false,
@@ -92,14 +90,31 @@ describe('Files utilities', () => {
       vi.mocked(path.extname).mockImplementation((filePath: string) =>
         filePath.endsWith('.pub') ? '.pub' : '.enc'
       );
-      processor.mockResolvedValue([{ file: '/dir/file1.pub' }, { file: '/dir/file2.enc' }]);
+      vi.mocked(fsp.access).mockRejectedValue(new Error('File does not exist'));
+      processor.mockResolvedValueOnce({ file: '/dir/file1.pub' });
+      processor.mockResolvedValueOnce({ file: '/dir/file2.pub' });
       const result = await files.searchFiles(['/dir'], extensions, processor);
       expect(fsp.readdir).toHaveBeenCalledWith('/dir');
-      expect(result).toEqual([{ file: '/dir/file1.pub' }, { file: '/dir/file2.enc' }]);
+      expect(result).toEqual([{ file: '/dir/file1.pub' }, { file: '/dir/file2.pub' }]);
     });
 
     test('Should process a zip file', async () => {
-      vi.mocked(fsp.mkdir).mockResolvedValue(undefined);
+      const mockStream = {
+        on: vi.fn((event, callback) => {
+          if (event === 'close') setTimeout(callback, 0);
+          return mockStream;
+        }),
+        pipe: vi.fn().mockReturnThis(),
+      };
+
+      const mockFile = {
+        path: 'file1.pub',
+        stream: vi.fn(() => mockStream),
+      };
+
+      vi.mocked(unzipper.Open.file).mockResolvedValue({
+        files: [mockFile],
+      } as any);
       vi.mocked(fsp.stat)
         .mockResolvedValueOnce({ isFile: () => true, isDirectory: () => false } as any)
         .mockResolvedValueOnce({ isFile: () => false, isDirectory: () => true } as any)
@@ -109,9 +124,10 @@ describe('Files utilities', () => {
         if (filePath.endsWith('.pub')) return '.pub';
         return '';
       });
-
+      vi.mocked(fsp.access).mockRejectedValue(new Error('File does not exist'));
       vi.mocked(fsp.readdir).mockResolvedValue(['file1.pub']);
-      processor.mockResolvedValue([{ file: '/tmp/unzipped_123/file1.pub' }]);
+
+      processor.mockResolvedValue({ file: '/tmp/unzipped_123/file1.pub' });
       const result = await files.searchFiles(['/archive.zip'], extensions, processor);
       expect(unzipper.Open.file).toHaveBeenCalled();
       expect(result).toEqual([{ file: '/tmp/unzipped_123/file1.pub' }]);
@@ -127,6 +143,7 @@ describe('Files utilities', () => {
         } as any);
       });
       vi.mocked(path.extname).mockReturnValue('.pub');
+      vi.mocked(fsp.access).mockRejectedValue(new Error('File does not exist'));
       processor.mockResolvedValue([{ file: '/file.pub' }]);
       vi.mocked(fsp.rm).mockResolvedValue(undefined);
       const result = await files.searchFiles(['/file.pub'], extensions, processor);
@@ -157,7 +174,6 @@ describe('Files utilities', () => {
     });
 
     test('Should cleanup temp directories on abort', async () => {
-      vi.mocked(fsp.mkdir).mockResolvedValue(undefined);
       vi.mocked(fsp.stat).mockImplementation(() => {
         abortFileSearch();
         return Promise.resolve({
@@ -166,6 +182,7 @@ describe('Files utilities', () => {
         } as any);
       });
       vi.mocked(path.extname).mockReturnValue('.pub');
+      vi.mocked(fsp.access).mockRejectedValue(new Error('File does not exist'));
       processor.mockResolvedValue([{ file: '/file.pub' }]);
       vi.mocked(fsp.rm).mockResolvedValue(undefined);
       await files.searchFiles(['/file.pub'], extensions, processor);
@@ -179,19 +196,8 @@ describe('Files utilities', () => {
     test('Should copy file with stream', async () => {
       const filePath = '/path/to/source/file.txt';
       const fileDist = '/path/to/dest/file.txt';
-      const state: AbortableState = { aborted: false };
-      const readStream = { on: vi.fn(), pipe: vi.fn() };
-      const writeStream = { on: vi.fn() };
 
-      vi.spyOn(fs, 'createReadStream').mockReturnValue(readStream as any);
-      vi.spyOn(fs, 'createWriteStream').mockReturnValue(writeStream as any);
-      readStream.pipe.mockReturnValue(writeStream);
-      writeStream.on.mockImplementation((event, callback) => {
-        if (event === 'finish') callback();
-        return writeStream;
-      });
-
-      await files.copyFile(filePath, fileDist, state);
+      await files.copyFile(filePath, fileDist);
 
       expect(fs.createReadStream).toHaveBeenCalledWith(filePath);
       expect(fs.createWriteStream).toHaveBeenCalledWith(fileDist);
@@ -202,19 +208,9 @@ describe('Files utilities', () => {
     test('Should handle abort state during file copy', async () => {
       const filePath = '/path/to/source/file.txt';
       const fileDist = '/path/to/dest/file.txt';
-      const state: AbortableState = { aborted: true };
-      const readStream = { on: vi.fn(), pipe: vi.fn(), destroy: vi.fn() };
-      const writeStream = { on: vi.fn() };
+      const signal = { aborted: true };
 
-      vi.spyOn(fs, 'createReadStream').mockReturnValue(readStream as any);
-      vi.spyOn(fs, 'createWriteStream').mockReturnValue(writeStream as any);
-      readStream.pipe.mockReturnValue(writeStream);
-      readStream.on.mockImplementation((event, callback) => {
-        if (event === 'data') callback();
-        return readStream;
-      });
-
-      await expect(files.copyFile(filePath, fileDist, state)).rejects.toEqual('File copying aborted');
+      await expect(files.copyFile(filePath, fileDist, signal)).rejects.toEqual('File copying aborted');
 
       expect(fs.createReadStream).toHaveBeenCalledWith(filePath);
       expect(fs.createWriteStream).toHaveBeenCalledWith(fileDist);
@@ -230,7 +226,7 @@ describe('Files utilities', () => {
       const fileName = 'file.txt';
       const fileDist = path.join(dist, fileName);
 
-      vi.spyOn(fsp, 'access').mockRejectedValue(new Error('File does not exist'));
+      vi.mocked(fsp.access).mockRejectedValue(new Error('File does not exist'));
 
       const result = await files.getUniquePath(dist, fileName);
 
@@ -244,7 +240,7 @@ describe('Files utilities', () => {
       const fileDist1 = path.join(dist, fileName);
       const fileDist2 = path.join(dist, 'copy_1_file.txt');
 
-      vi.spyOn(fsp, 'access')
+      vi.mocked(fsp.access)
         .mockResolvedValueOnce(undefined)
         .mockRejectedValueOnce(new Error('File does not exist'));
 

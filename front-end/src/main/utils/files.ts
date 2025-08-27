@@ -52,7 +52,7 @@ export const searchFiles = async (
         // Get a unique name and copy it into the searchDir to be processed
         const fileDist = await getUniquePath(searchDir, path.basename(filePath));
         await copyFile(filePath, fileDist, abortSignal);
-        //TODO IF this returns an array of items, this could be an issue, but if not, this is fine
+        // Wrap the result in array so the returned result will be added as is to the final results
         return [await processor(fileDist)];
       }
     } catch (error) {
@@ -60,42 +60,6 @@ export const searchFiles = async (
     }
 
     return [];
-  }
-
-  async function unzipFile(
-    zipPath: string,
-    dist: string,
-    extensions: string[],
-  ) {
-    const macosx = '__MACOSX';
-    await fsp.mkdir(dist, { recursive: true });
-    const directory = await unzipper.Open.file(zipPath);
-    const files = directory.files
-      .filter(f => !f.path.startsWith(macosx))
-      .filter(f => extensions.length > 0 ? extensions.some(ext => f.path.endsWith(ext)) : true);
-
-    for (const file of files) {
-      if (abortSignal && abortSignal.aborted) return;
-      const fileName = path.basename(file.path);
-      const fileDist = path.join(dist, fileName);
-      await extractUnzipperFile(file, fileDist);
-    }
-  }
-
-  function extractUnzipperFile(file: unzipper.File, dist: string) {
-    return new Promise((resolve, reject) => {
-      const stream = file.stream();
-      stream
-        .on('data', () => {
-          if (abortSignal && abortSignal.aborted) {
-            stream.destroy();
-            reject('File extraction aborted');
-          }
-        })
-        .pipe(fs.createWriteStream(dist))
-        .on('close', () => resolve(dist))
-        .on('error', reject);
-    });
   }
 
   try {
@@ -121,13 +85,50 @@ export const abortFileSearch = () => {
   if (currentController) currentController.abort();
 }
 
+const unzipFile = async (
+  zipPath: string,
+  dist: string,
+  extensions: string[],
+  abortSignal?: AbortSignal,
+) => {
+  const macosx = '__MACOSX';
+  await fsp.mkdir(dist, { recursive: true });
+  const directory = await unzipper.Open.file(zipPath);
+  const files = directory.files
+    .filter(f => !f.path.startsWith(macosx))
+    .filter(f => extensions.length > 0 ? extensions.some(ext => f.path.endsWith(ext)) : true);
+
+  for (const file of files) {
+    if (abortSignal?.aborted) return;
+    const fileName = path.basename(file.path);
+    const fileDist = path.join(dist, fileName);
+    await extractUnzipperFile(file, fileDist, abortSignal);
+  }
+}
+
+const extractUnzipperFile = (file: unzipper.File, dist: string, abortSignal?: AbortSignal) => {
+  return new Promise((resolve, reject) => {
+    const stream = file.stream();
+    stream
+      .on('data', () => {
+        if (abortSignal?.aborted) {
+          stream.destroy();
+          reject('File extraction aborted');
+        }
+      })
+      .pipe(fs.createWriteStream(dist))
+      .on('close', () => resolve(dist))
+      .on('error', reject);
+  });
+}
+
 /* Copy the file to directory with stream */
 export const copyFile = (filePath: string, fileDist: string, signal?: AbortSignal) => {
   return new Promise((resolve, reject) => {
     const readStream = fs.createReadStream(filePath);
 
     readStream.on('data', () => {
-      if (signal && signal.aborted) {
+      if (signal?.aborted) {
         readStream.destroy();
         reject('File copying aborted');
       }
@@ -140,7 +141,7 @@ export const copyFile = (filePath: string, fileDist: string, signal?: AbortSigna
     writeStream.on('error', reject);
     writeStream.on('finish', () => resolve(fileDist));
   });
-};
+}
 
 /* Get unique path for file */
 export const getUniquePath = async (dist: string, fileName: string) => {
@@ -161,4 +162,4 @@ export const getUniquePath = async (dist: string, fileName: string) => {
   }
 
   return fileDist;
-};
+}

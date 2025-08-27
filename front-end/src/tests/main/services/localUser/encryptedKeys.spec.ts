@@ -36,10 +36,20 @@ describe('Encrypted Keys Utilities', () => {
     });
 
     test('calls searchFiles with correct arguments', async () => {
+      vi.mocked(searchFiles).mockImplementation(async (filePaths, extensions, processFile) => {
+        // Simulate calling processFile for each filePath
+        const results = [];
+        for (const filePath of filePaths) {
+          const res = [await processFile(filePath)];
+          results.push(...res);
+        }
+        return results;
+      });
+
       const mockResult = ['file1.pem', 'file2.pem'];
       vi.mocked(searchFiles).mockResolvedValue(mockResult);
 
-      const inputPaths = ['/a.pem', '/b.pem'];
+      const inputPaths = ['/file1.pem', '/file2.pem'];
       const result = await searchEncryptedKeys(inputPaths);
 
       expect(searchFiles).toHaveBeenCalledWith(

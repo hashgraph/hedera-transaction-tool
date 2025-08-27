@@ -11,6 +11,8 @@ import {
 } from '@main/services/localUser/publicKeyMapping';
 import { getPrismaClient } from '@main/db/prisma';
 import { abortFileSearch, searchFiles } from '@main/utils/files';
+import fsp from 'fs/promises';
+import path from 'path';
 
 vi.mock('fs/promises');
 vi.mock('path');
@@ -120,8 +122,33 @@ describe('PublicKeyMapping Service', () => {
     });
 
     test('calls searchFiles with correct arguments', async () => {
-      const mockResult = ['file1.pub', 'file2.pub'];
-      vi.mocked(searchFiles).mockResolvedValue(mockResult);
+      vi.mocked(fsp.readFile)
+        .mockResolvedValueOnce('publicKey1')
+        .mockResolvedValueOnce('publicKey2');
+      vi.mocked(path.basename)
+        .mockReturnValueOnce('a')
+        .mockReturnValueOnce('b');
+
+      const mockResult = [
+        {
+          publicKey: 'publicKey1',
+          nickname: 'a',
+        },
+        {
+          publicKey: 'publicKey2',
+          nickname: 'b',
+        }
+      ];
+
+      vi.mocked(searchFiles).mockImplementation(async (filePaths, extensions, processFile) => {
+        // Simulate calling processFile for each filePath
+        const results = [];
+        for (const filePath of filePaths) {
+          const res = [await processFile(filePath)];
+          results.push(...res);
+        }
+        return results;
+      });
 
       const inputPaths = ['/a.pub', '/b.pub'];
       const result = await searchPublicKeys(inputPaths);
@@ -137,6 +164,7 @@ describe('PublicKeyMapping Service', () => {
     test('returns empty array if searchFiles returns empty', async () => {
       vi.mocked(searchFiles).mockResolvedValue([]);
 
+      // if no c.pub file found, processFile won't be called, so no results
       const result = await searchPublicKeys(['/c.pub']);
       expect(result).toEqual([]);
     });
