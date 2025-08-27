@@ -18,7 +18,6 @@ import {
 
 import { CommonNetwork } from '@shared/enums';
 import { saveContentToPath, getNumberArrayFromString, deleteDirectory } from '@main/utils';
-import { safeAwait } from '@main/utils/safeAwait';
 
 import { app, shell } from 'electron';
 
@@ -28,11 +27,11 @@ vi.mock('@main/utils', () => ({
   getNumberArrayFromString: vi.fn(),
   deleteDirectory: vi.fn(),
 }));
-vi.mock('@main/utils/safeAwait');
 vi.mock('electron', () => ({
   app: { getPath: vi.fn(() => '') },
   shell: { showItemInFolder: vi.fn(), openPath: vi.fn() },
 }));
+
 describe('Services Local User Files', () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -215,7 +214,6 @@ describe('Services Local User Files', () => {
 
     test('Should do nothing if deleteDirectory fails', async () => {
       vi.mocked(app.getPath).mockReturnValue('/tmp');
-      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: new Error('An error') });
 
       const result = await deleteTempFolder('electronHederaFiles');
 
@@ -244,7 +242,6 @@ describe('Services Local User Files', () => {
 
     test('Should do nothing if deleteDirectory fails', async () => {
       vi.mocked(app.getPath).mockReturnValue('/tmp');
-      vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: new Error('An error') });
 
       const result = await deleteAllTempFolders();
 
