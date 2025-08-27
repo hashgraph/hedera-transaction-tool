@@ -52,7 +52,8 @@ export const searchFiles = async (
         // Get a unique name and copy it into the searchDir to be processed
         const fileDist = await getUniquePath(searchDir, path.basename(filePath));
         await copyFile(filePath, fileDist, abortSignal);
-        return await processor(filePath);
+        //TODO IF this returns an array of items, this could be an issue, but if not, this is fine
+        return [await processor(fileDist)];
       }
     } catch (error) {
       console.log(`Error processing ${filePath}:`, error);
