@@ -239,7 +239,7 @@ export function formatHbar(hbar: Hbar) {
 export function stringifyHbar(hbar: Hbar) {
   return hbar.toBigNumber().eq(0)
     ? `0 ${HbarUnit.Hbar._symbol}`
-    : `${hbar.to(HbarUnit.Hbar).toString()} ${HbarUnit.Hbar._symbol}`;
+    : `${formatHbar(hbar)} ${HbarUnit.Hbar._symbol}`;
 }
 
 // export function stringifyHbar(hbar: Hbar) {
