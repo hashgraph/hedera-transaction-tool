@@ -84,7 +84,7 @@ export const getRecoveryPhraseInfo = (pem: string): { hashCode: number; index: n
 /* Searches for `.pub` public key files in the given paths */
 export const searchEncryptedKeys = async (filePaths: string[]) => {
   const processFile = async (filePath: string) => {
-    return filePath;
+    return [filePath];
   }
 
   return await searchFiles(filePaths, ['.pem'], processFile);
