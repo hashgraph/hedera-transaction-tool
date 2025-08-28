@@ -40,7 +40,8 @@ describe('Encrypted Keys Utilities', () => {
         // Simulate calling processFile for each filePath
         const results: any[] = [];
         for (const filePath of filePaths) {
-          results.push(...await processFile(filePath));
+          const res = [await processFile(filePath)];
+          results.push(...res);
         }
         return results;
       });
@@ -53,6 +54,7 @@ describe('Encrypted Keys Utilities', () => {
         ['.pem'],
         expect.any(Function),
       );
+      // In this case, processFile just returns the filePath, so result should equal inputPaths
       expect(result).toEqual(inputPaths);
     });
 

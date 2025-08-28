@@ -11,7 +11,7 @@ let currentController: AbortController | null = null;
 export const searchFiles = async (
   filePaths: string[],
   extensions: string[],
-  processor: (filePath: string) => Promise<any[]>,
+  processor: (filePath: string) => Promise<any>,
 ) => {// Abort any previous search
   if (currentController) currentController.abort();
 
