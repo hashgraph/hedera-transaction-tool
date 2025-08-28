@@ -8,7 +8,7 @@ import * as unzipper from 'unzipper';
 import * as files from '@main/utils/files';
 import { abortFileSearch } from '@main/utils/files';
 
-export const readStream = {
+const readStream = {
   on: vi.fn((event, callback) => {
     if (event === 'data') callback(); // Simulate data event
     return readStream;
@@ -17,7 +17,7 @@ export const readStream = {
   destroy: vi.fn(),
 };
 
-export const writeStream = {
+const writeStream = {
   on: vi.fn((event, callback) => {
     if (event === 'finish') callback(); // Simulate finish event
     return writeStream;
@@ -98,61 +98,22 @@ describe('Files utilities', () => {
       expect(result).toEqual([{ file: '/dir/file1.pub' }, { file: '/dir/file2.pub' }]);
     });
 
-    test('Should process a zip file', async () => {
-      const mockStream = {
-        on: vi.fn((event, callback) => {
-          if (event === 'close') setTimeout(callback, 0);
-          return mockStream;
-        }),
-        pipe: vi.fn().mockReturnThis(),
-      };
-
-      const mockFile = {
-        path: 'file1.pub',
-        stream: vi.fn(() => mockStream),
-      };
-
-      vi.mocked(unzipper.Open.file).mockResolvedValue({
-        files: [mockFile],
-      } as any);
-      vi.mocked(fsp.stat)
-        .mockResolvedValueOnce({ isFile: () => true, isDirectory: () => false } as any)
-        .mockResolvedValueOnce({ isFile: () => false, isDirectory: () => true } as any)
-        .mockResolvedValueOnce({ isFile: () => true, isDirectory: () => false } as any);
-      vi.mocked(path.extname).mockImplementation((filePath: string) => {
-        if (filePath === '/archive.zip') return '.zip';
-        if (filePath.endsWith('.pub')) return '.pub';
-        return '';
+    test('Should handles errors in processor gracefully', async () => {
+      vi.mocked(fsp.stat).mockResolvedValue({
+        isFile: () => true,
+        isDirectory: () => false,
       });
       vi.mocked(fsp.access).mockRejectedValue(new Error('File does not exist'));
-      vi.mocked(fsp.readdir).mockResolvedValue(['file1.pub']);
-
-      processor.mockResolvedValue({ file: '/tmp/unzipped_123/file1.pub' });
-      const result = await files.searchFiles(['/archive.zip'], extensions, processor);
-      expect(unzipper.Open.file).toHaveBeenCalled();
-      expect(result).toEqual([{ file: '/tmp/unzipped_123/file1.pub' }]);
-    });
-
-    test('Should abort search and cleanup if signal is aborted', async () => {
-      vi.mocked(fsp.mkdir).mockResolvedValue(undefined);
-      vi.mocked(fsp.stat).mockImplementation(() => {
-        abortFileSearch();
-        return Promise.resolve({
-          isFile: () => true,
-          isDirectory: () => false,
-        } as any);
-      });
-      vi.mocked(path.extname).mockReturnValue('.pub');
-      vi.mocked(fsp.access).mockRejectedValue(new Error('File does not exist'));
-      processor.mockResolvedValue([{ file: '/file.pub' }]);
       vi.mocked(fsp.rm).mockResolvedValue(undefined);
+      processor.mockRejectedValue(new Error('Processing error'));
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const result = await files.searchFiles(['/file.pub'], extensions, processor);
+      expect(fsp.rm).toHaveBeenCalledWith(expect.stringMatching(/\/file\.pub$/));
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringMatching(/Error processing file/), expect.any(Error));
       expect(result).toEqual([]);
-      expect(fsp.rm).toHaveBeenCalled();
     });
 
     test('Should handle errors in recursiveSearch gracefully', async () => {
-      vi.mocked(fsp.mkdir).mockResolvedValue(undefined);
       vi.mocked(fsp.stat).mockRejectedValue(new Error('stat error'));
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const result = await files.searchFiles(['/badfile'], extensions, processor);
@@ -161,7 +122,6 @@ describe('Files utilities', () => {
     });
 
     test('Should handle errors in directory reading gracefully', async () => {
-      vi.mocked(fsp.mkdir).mockResolvedValue(undefined);
       vi.mocked(fsp.stat).mockResolvedValueOnce({
         isFile: () => false,
         isDirectory: () => true,
@@ -173,23 +133,110 @@ describe('Files utilities', () => {
       expect(result).toEqual([]);
     });
 
-    test('Should cleanup temp directories on abort', async () => {
-      vi.mocked(fsp.stat).mockImplementation(() => {
-        abortFileSearch();
-        return Promise.resolve({
-          isFile: () => true,
-          isDirectory: () => false,
+    describe('Zip import and abort cleanup', () => {
+      let mockStream: any;
+      let mockFile: any;
+      let error: Error;
+
+      beforeEach(() => {
+        vi.resetAllMocks();
+
+        vi.mocked(path.extname).mockReturnValue('.pub');
+        vi.mocked(fsp.access).mockRejectedValue(new Error('File does not exist'));
+
+        mockStream = {
+          on: vi.fn((event, callback) => {
+            if (event === 'data' || event === 'close') setTimeout(callback, 0);
+            if (event === 'error') return this;
+            return mockStream;
+          }),
+          pipe: vi.fn().mockReturnThis(),
+          destroy: vi.fn(),
+        };
+
+        mockFile = {
+          path: 'file1.pub',
+          stream: vi.fn(() => mockStream),
+        };
+
+        vi.mocked(unzipper.Open.file).mockResolvedValue({
+          files: [mockFile],
         } as any);
+        vi.mocked(fsp.stat)
+          .mockResolvedValueOnce({ isFile: () => true, isDirectory: () => false } as any)
+          .mockResolvedValueOnce({ isFile: () => false, isDirectory: () => true } as any)
+          .mockResolvedValueOnce({ isFile: () => true, isDirectory: () => false } as any);
+        vi.mocked(path.extname).mockImplementation((filePath: string) => {
+          if (filePath === '/archive.zip') return '.zip';
+          if (filePath.endsWith('.pub')) return '.pub';
+          return '';
+        });
+        vi.mocked(fsp.access).mockRejectedValue(new Error('File does not exist'));
+        vi.mocked(fsp.readdir).mockResolvedValue(['file1.pub']);
       });
-      vi.mocked(path.extname).mockReturnValue('.pub');
-      vi.mocked(fsp.access).mockRejectedValue(new Error('File does not exist'));
-      processor.mockResolvedValue([{ file: '/file.pub' }]);
-      vi.mocked(fsp.rm).mockResolvedValue(undefined);
-      await files.searchFiles(['/file.pub'], extensions, processor);
-      expect(fsp.rm).toHaveBeenCalled();
+
+      test('Should process a zip file', async () => {
+        processor.mockResolvedValue({ file: '/tmp/unzipped_123/file1.pub' });
+        const result = await files.searchFiles(['/archive.zip'], extensions, processor);
+        expect(unzipper.Open.file).toHaveBeenCalled();
+        expect(result).toEqual([{ file: '/tmp/unzipped_123/file1.pub' }]);
+      });
+
+      test('Should abort unzipping if signal is aborted', async () => {
+        let callCount = 0;
+        vi.mocked(path.join).mockImplementation((...args) => {
+          callCount++;
+          if (callCount === 3) {
+            // abort when creating the unzip dir
+            abortFileSearch();
+          }
+          return args.join('/');
+        });
+        vi.mocked(fsp.rm).mockResolvedValue(undefined);
+        const results = await files.searchFiles(['/archive.zip'], extensions, processor);
+
+        expect(mockStream.destroy).toHaveBeenCalled();
+        expect(results).toEqual([]);
+      });
+
+      test('Should cleanup temp directories on abort', async () => {
+        vi.mocked(fsp.rm).mockResolvedValue(undefined);
+        processor.mockImplementation(async (filePath: string) => {
+          abortFileSearch();
+          return filePath;
+        });
+        const results = await files.searchFiles(['/archive.zip'], extensions, processor);
+        expect(fsp.rm).toHaveBeenCalledWith(expect.stringMatching(/^\/tmp\/search_/), { recursive: true });
+        expect(fsp.rm).toHaveBeenCalledWith(expect.stringMatching(/^\/tmp\/unzipped_/), { recursive: true });
+        expect(results).toEqual([]);
+      });
+
+      test('Should log errors if directories fail to delete', async () => {
+        error = new Error('Failed to delete');
+        vi.mocked(fsp.rm).mockImplementation(dir => {
+          if (typeof dir === 'string' && dir.startsWith('/tmp/unzipped_')) {
+            return Promise.reject(error);
+          }
+          return Promise.resolve();
+        });
+        processor.mockImplementation(async (filePath: string) => {
+          abortFileSearch();
+          return filePath;
+        });
+
+        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+        const results = await files.searchFiles(['/archive.zip'], extensions, processor);
+
+        expect(fsp.rm).toHaveBeenCalledWith(expect.stringMatching(/^\/tmp\/search_/), { recursive: true });
+        expect(fsp.rm).toHaveBeenCalledWith(expect.stringMatching(/^\/tmp\/unzipped_/), { recursive: true });
+
+        expect(consoleSpy).toHaveBeenCalledWith('Delete search dirs error:', error);
+        expect(results).toEqual([]);
+
+        consoleSpy.mockRestore();
+      });
     });
-
-
   });
 
   describe('copyFile', () => {

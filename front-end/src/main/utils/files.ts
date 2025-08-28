@@ -25,7 +25,13 @@ export const searchFiles = async (
 
   const cleanup = async () => {
     const dirs = [searchDir, ...unzipDirs];
-    await Promise.allSettled(dirs.map(dir => fsp.rm(dir, { recursive: true })));
+    const results = await Promise.allSettled(dirs.map(dir => fsp.rm(dir, { recursive: true })));
+
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        console.log(`Delete search dirs error:`, result.reason);
+      }
+    }
   };
 
   abortSignal.addEventListener('abort', cleanup);
@@ -46,14 +52,20 @@ export const searchFiles = async (
       } else if (stat.isFile() && ext === '.zip') {
         const dist = path.join(app.getPath('temp'), `unzipped_${Date.now()}`);
         unzipDirs.push(dist);
-        await unzipFile(filePath, dist, extensions);
+        await unzipFile(filePath, dist, extensions, abortSignal);
         return await recursiveSearch(dist);
       } else if (stat.isFile() && extensions.includes(ext)) {
         // Get a unique name and copy it into the searchDir to be processed
         const fileDist = await getUniquePath(searchDir, path.basename(filePath));
         await copyFile(filePath, fileDist, abortSignal);
         // Wrap the result in array so the returned result will be added as is to the final results
-        return [await processor(fileDist)];
+        try {
+          return [await processor(fileDist)];
+        } catch (error) {
+          await fsp.rm(fileDist);
+          console.log(`Error processing file ${fileDist}:`, error);
+          return [];
+        }
       }
     } catch (error) {
       console.log(`Error processing ${filePath}:`, error);
@@ -73,9 +85,6 @@ export const searchFiles = async (
     }
 
     return results;
-  } catch (error) {
-    await cleanup();
-    throw error;
   } finally {
     abortSignal.removeEventListener('abort', cleanup);
   }
