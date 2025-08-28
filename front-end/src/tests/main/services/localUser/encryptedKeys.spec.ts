@@ -38,16 +38,12 @@ describe('Encrypted Keys Utilities', () => {
     test('calls searchFiles with correct arguments', async () => {
       vi.mocked(searchFiles).mockImplementation(async (filePaths, extensions, processFile) => {
         // Simulate calling processFile for each filePath
-        const results = [];
+        const results: any[] = [];
         for (const filePath of filePaths) {
-          const res = [await processFile(filePath)];
-          results.push(...res);
+          results.push(...await processFile(filePath));
         }
         return results;
       });
-
-      const mockResult = ['file1.pem', 'file2.pem'];
-      vi.mocked(searchFiles).mockResolvedValue(mockResult);
 
       const inputPaths = ['/file1.pem', '/file2.pem'];
       const result = await searchEncryptedKeys(inputPaths);
@@ -57,7 +53,7 @@ describe('Encrypted Keys Utilities', () => {
         ['.pem'],
         expect.any(Function),
       );
-      expect(result).toEqual(mockResult);
+      expect(result).toEqual(inputPaths);
     });
 
     test('returns empty array if searchFiles returns empty', async () => {
