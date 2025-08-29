@@ -25,6 +25,7 @@ const network = useNetworkStore();
 /* State */
 const linkedAccounts = ref<HederaAccount[]>([]);
 const transfersExceedingBalance = ref<Transfer[]>([]);
+const transferParsingComplete = ref(false);
 
 /* Computed */
 const errorMessage = computed(() => {
@@ -58,6 +59,7 @@ onBeforeMount(async () => {
       }
     }
   }
+  transferParsingComplete.value = true;
 
   linkedAccounts.value = await getAll({
     where: {
@@ -75,7 +77,7 @@ const balanceExceeded = (transfer: Transfer): boolean => {
 <template>
   <div v-if="transaction instanceof TransferTransaction && true" class="mt-5">
     <!-- Hbar transfers -->
-    <div class="row">
+    <div v-if="transferParsingComplete" class="row">
       <div class="col-6">
         <div class="mt-3">
           <template v-for="debit in transaction.hbarTransfersList" :key="debit.accountId">
