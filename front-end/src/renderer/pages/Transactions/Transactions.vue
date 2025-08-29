@@ -35,7 +35,7 @@ import InProgress from './components/InProgress.vue';
 import ReadyForExecution from './components/ReadyForExecution.vue';
 import ReadyForReview from './components/ReadyForReview.vue';
 import useLoader from '@renderer/composables/useLoader';
-import { showOpenDialog } from '@renderer/services/electronUtilsService.ts';
+import TransactionImportButton from '@renderer/components/TransactionImportButton.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -180,19 +180,6 @@ async function changeTabIfReadyToSign() {
   }
 }
 
-async function handleImport() {
-
-  const result = await showOpenDialog(
-    'Select a folder or a zip file',
-    'Select',
-    [{ name: 'Zip, PUB or a folder ', extensions: ['zip', 'pub'] }],
-    ['openFile', 'openDirectory', 'multiSelections'],
-    'Import transactions',
-  );
-
-  console.log("handleImport: result = " + result);
-}
-
 /* Hooks */
 onBeforeMount(syncTab);
 
@@ -212,28 +199,29 @@ watch(activeTabTitle, setQueryTab);
       <div class="flex-centered gap-4">
         <div class="dropdown">
           <AppButton color="primary" data-testid="button-create-new" data-bs-toggle="dropdown"
-          ><i class="bi bi-plus-lg"></i> <span>Create New</span></AppButton
+            ><i class="bi bi-plus-lg"></i> <span>Create New</span></AppButton
           >
           <ul class="dropdown-menu mt-3">
-            <li class="dropdown-item cursor-pointer" @click="isTransactionSelectionModalShown = true">
-            <span class="text-small text-bold" data-testid="span-single-transaction"
-              >Transaction</span
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="isTransactionSelectionModalShown = true"
             >
+              <span class="text-small text-bold" data-testid="span-single-transaction"
+                >Transaction</span
+              >
             </li>
             <li
               class="dropdown-item cursor-pointer mt-3"
               @click="$router.push('create-transaction-group')"
             >
-            <span class="text-small text-bold" data-testid="span-group-transaction"
-              >Transaction Group</span
-            >
+              <span class="text-small text-bold" data-testid="span-group-transaction"
+                >Transaction Group</span
+              >
             </li>
           </ul>
         </div>
         <div>
-          <AppButton color="primary" data-testid="button-create-new" data-bs-toggle="dropdown" @click="handleImport">
-            <span>Import</span>
-          </AppButton>
+          <TransactionImportButton/>
         </div>
       </div>
 
