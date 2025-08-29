@@ -134,3 +134,9 @@ export const encodeSpecialFileContent = async (content: Uint8Array, fileId: stri
   commonIPCHandler(async () => {
     return await window.electronAPI.local.transactions.encodeSpecialFile(content, fileId);
   }, 'Failed to encode special file');
+
+/* Search transactions on file system */
+export const searchTransactions = async (filePaths: string[]) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.transactions.searchTransactions(filePaths);
+  }, 'Failed to encode special file');
