@@ -11,6 +11,7 @@ import {
 
 import { Prisma } from '@prisma/client';
 import { getPrismaClient } from '@main/db/prisma';
+import { searchFiles } from '@main/utils/files';
 
 import { HederaSpecialFileId } from '@shared/interfaces';
 import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
@@ -27,6 +28,7 @@ import {
 } from '@shared/hederaSpecialFiles';
 import { decrypt } from '@main/utils/crypto';
 import { getStatusCodeFromMessage } from '@main/utils/sdk';
+import fsp from 'fs/promises';
 
 let client: Client;
 
@@ -292,3 +294,18 @@ export const encodeSpecialFile = async (content: Uint8Array, fileId: string) => 
     throw new Error(error instanceof Error ? error.message : 'Failed to encode special file');
   }
 };
+
+/* Searches for `.tx2` transaction files in the given paths */
+export const searchTransactions = async (filePaths: string[]): Promise<TransactionMatch[]> => {
+  const processFile = async (filePath: string): Promise<TransactionMatch> => {
+    const transactionBuffer = await fsp.readFile(filePath)
+    const transactionBytes = transactionBuffer.toString('hex')
+    return { filePath, transactionBytes };
+  }
+  return await searchFiles(filePaths, ['.tx2', '.zip'], processFile);
+}
+
+export interface TransactionMatch {
+  filePath: string
+  transactionBytes: string // Hex encoding
+}
