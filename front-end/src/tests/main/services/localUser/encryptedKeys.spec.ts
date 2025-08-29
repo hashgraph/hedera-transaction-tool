@@ -1,22 +1,17 @@
-import { expect, vi } from 'vitest';
+import { describe, expect, vi } from 'vitest';
 import * as fsp from 'fs/promises';
-import * as path from 'path';
-import EventEmitter from 'events';
-import { app } from 'electron';
 import * as forge from 'node-forge';
 
 import {
-  getFileStreamEventEmitter,
-  searchEncryptedKeysAbort,
-  Abortable,
-  EncryptedKeysSearcher,
+  abortEncryptedKeySearch,
   decryptPrivateKeyFromPath,
   decryptPrivateKeyFromPem,
   getRecoveryPhraseInfo,
+  searchEncryptedKeys,
 } from '@main/services/localUser/encryptedKeys';
 import { ENCRYPTED_KEY_ALREADY_IMPORTED } from '@shared/constants';
-import { copyFile, getUniquePath, unzip } from '@main/utils/files';
-import { Stats } from 'fs';
+
+import { searchFiles, abortFileSearch } from '@main/utils/files';
 
 vi.mock('fs/promises');
 vi.mock('path');
@@ -35,257 +30,56 @@ describe('Encrypted Keys Utilities', () => {
     vi.resetAllMocks();
   });
 
-  describe('getFileStreamEventEmitter', () => {
-    test('Should return a singleton EventEmitter instance', () => {
-      const emitter1 = getFileStreamEventEmitter();
-      const emitter2 = getFileStreamEventEmitter();
-
-      expect(emitter1).toBe(emitter2);
-      expect(emitter1).toBeInstanceOf(EventEmitter);
-    });
-  });
-
-  describe('Abortable', () => {
-    test('Should set aborted state to true on abort event', () => {
-      const abortable = new Abortable(searchEncryptedKeysAbort);
-
-      expect(abortable.state.aborted).toBe(false);
-
-      getFileStreamEventEmitter().emit(searchEncryptedKeysAbort);
-
-      expect(abortable.state.aborted).toBe(true);
-    });
-  });
-
-  describe('EncryptedKeysSearcher', () => {
-    let searcher: EncryptedKeysSearcher;
-    let abortable: Abortable;
-
+  describe('searchEncryptedKeys', () => {
     beforeEach(() => {
       vi.resetAllMocks();
-      vi.mocked(path.join).mockImplementation((...args) => args.join('/'));
-
-      abortable = new Abortable(searchEncryptedKeysAbort);
-      searcher = new EncryptedKeysSearcher(abortable, ['.pem']);
     });
 
-    test('Should create search directory', async () => {
-      const tempDir = '/temp';
-      vi.mocked(app.getPath).mockReturnValue(tempDir);
-      await searcher.search([]);
-
-      expect(fsp.mkdir).toHaveBeenCalledWith(expect.stringContaining(tempDir), { recursive: true });
-    });
-
-    test('Should search encrypted files in given paths', async () => {
-      const filePaths = ['/path/to/dir', '/path/to/file1.pem', '/path/to/file2.zip'];
-      const tempDir = '/temp';
-      vi.mocked(app.getPath).mockReturnValue(tempDir);
-
-      vi.spyOn(searcher, '_searchFromPath' as any).mockImplementation(vi.fn());
-
-      await searcher.search(filePaths);
-
-      expect(searcher['_searchFromPath']).toHaveBeenCalledWith(filePaths[0]);
-      expect(searcher['_searchFromPath']).toHaveBeenCalledWith(filePaths[1]);
-      expect(searcher['_searchFromPath']).toHaveBeenCalledWith(filePaths[2]);
-    });
-
-    test('Should search encrypted files in given dir path', async () => {
-      const filePaths = ['/path/to/dir'];
-      const tempDir = '/temp';
-
-      vi.mocked(app.getPath).mockReturnValue(tempDir);
-      vi.mocked(fsp.stat).mockResolvedValue({
-        isFile: () => false,
-        isDirectory: () => true,
-      } as Stats);
-      vi.spyOn(searcher, '_searchFromDir' as any).mockImplementation(vi.fn());
-
-      await searcher.search(filePaths);
-
-      expect(searcher['_searchFromDir']).toHaveBeenCalledWith(filePaths[0]);
-    });
-
-    test('Should search encrypted files in given zip path', async () => {
-      const filePaths = ['/path/to/file.zip'];
-      const tempDir = '/temp';
-
-      vi.mocked(app.getPath).mockReturnValue(tempDir);
-      vi.mocked(fsp.stat).mockResolvedValue({
-        isFile: () => true,
-        isDirectory: () => false,
-      } as Stats);
-      vi.mocked(path.extname).mockReturnValue('.zip');
-      vi.spyOn(searcher, '_searchFromZip' as any).mockImplementation(vi.fn());
-
-      await searcher.search(filePaths);
-
-      expect(searcher['_searchFromZip']).toHaveBeenCalledWith(filePaths[0]);
-    });
-
-    test('Should catch error if search fails', async () => {
-      const filePaths = ['/path/to/file.zip'];
-      const tempDir = '/temp';
-
-      vi.mocked(app.getPath).mockReturnValue(tempDir);
-      vi.mocked(fsp.stat).mockResolvedValue({
-        isFile: () => true,
-        isDirectory: () => false,
-      } as Stats);
-      vi.mocked(path.extname).mockReturnValue('.zip');
-      vi.spyOn(searcher, '_searchFromZip' as any).mockImplementation(() => {
-        throw new Error('Search failed');
-      });
-
-      await searcher.search(filePaths);
-    });
-
-    test('Should catch error if search dir fails', async () => {
-      const tempDir = '/temp';
-
-      vi.mocked(app.getPath).mockReturnValue(tempDir);
-      vi.mocked(fsp.readdir).mockResolvedValue(['file1.pem', 'file2.zip'] as any);
-      vi.spyOn(searcher, '_searchFromPath' as any).mockImplementation(() => {
-        throw new Error('Search failed');
-      });
-
-      await searcher['_searchFromDir']('/path/to/dir');
-    });
-
-    test("Should abort search if it's already aborted", async () => {
-      const tempDir = '/temp';
-      vi.mocked(app.getPath).mockReturnValue(tempDir);
-
-      vi.spyOn(searcher, '_searchFromPath' as any).mockImplementation(vi.fn());
-      vi.spyOn(searcher, '_searchFromDir' as any).mockImplementation(vi.fn());
-      vi.spyOn(searcher, '_searchFromZip' as any).mockImplementation(vi.fn());
-
-      abortable.abort();
-
-      await searcher.search(['file1.pem', 'file2.zip', '/path/to/dir']);
-
-      expect(searcher['_searchFromPath']).not.toHaveBeenCalled();
-      expect(searcher['_searchFromDir']).not.toHaveBeenCalled();
-      expect(searcher['_searchFromZip']).not.toHaveBeenCalled();
-    });
-
-    test("Should abort _searchFromDir if it's already aborted", async () => {
-      const tempDir = '/temp';
-      vi.mocked(app.getPath).mockReturnValue(tempDir);
-
-      vi.mocked(fsp.readdir).mockResolvedValue(['file1.pem', 'file2.zip'] as any);
-      vi.spyOn(searcher, '_searchFromPath' as any).mockImplementation(vi.fn());
-
-      abortable.abort();
-
-      await searcher['_searchFromDir']('/path/to/dir');
-
-      expect(searcher['_searchFromPath']).not.toHaveBeenCalled();
-    });
-
-    test('Should delete search directories on abort', async () => {
-      const tempDir = '/temp';
-      vi.mocked(app.getPath).mockReturnValue(tempDir);
-
-      vi.spyOn(searcher, '_createSearchDir' as any).mockImplementation(vi.fn());
-      vi.spyOn(searcher, 'deleteSearchDirs' as any).mockImplementation(vi.fn());
-
-      abortable.abort();
-
-      await searcher.search([]);
-
-      expect(searcher.deleteSearchDirs).toHaveBeenCalled();
-    });
-
-    test('Should handle directory search', async () => {
-      const dirPath = '/path/to/dir';
-      const fileNames = ['file1.pem', 'file2.zip'];
-      vi.mocked(fsp.readdir).mockResolvedValue(fileNames as any);
-
-      vi.spyOn(searcher, '_searchFromPath' as any).mockImplementation(vi.fn());
-
-      await searcher['_searchFromDir'](dirPath);
-
-      expect(searcher['_searchFromPath']).toHaveBeenCalledWith(path.join(dirPath, fileNames[0]));
-      expect(searcher['_searchFromPath']).toHaveBeenCalledWith(path.join(dirPath, fileNames[1]));
-    });
-
-    test('Should handle zip file search', async () => {
-      const zipPath = '/path/to/file.zip';
-      const tempDir = '/temp';
-      vi.mocked(app.getPath).mockReturnValue(tempDir);
-
-      vi.spyOn(searcher, '_searchFromDir' as any).mockImplementation(vi.fn());
-
-      await searcher['_searchFromZip'](zipPath);
-
-      expect(unzip).toHaveBeenCalledWith(
-        zipPath,
-        expect.stringContaining(tempDir),
-        ['.pem'],
-        abortable.state,
-      );
-      expect(searcher['_searchFromDir']).toHaveBeenCalled();
-    });
-
-    test('Should handle encrypted file search', async () => {
-      const filePath = '/path/to/file.pem';
-      const tempDir = '/temp';
-      vi.mocked(app.getPath).mockReturnValue(tempDir);
-
-      vi.mocked(fsp.stat).mockResolvedValue({
-        isFile: () => true,
-        isDirectory: () => false,
-      } as Stats);
-      vi.mocked(path.extname).mockReturnValue('.pem');
-      vi.mocked(getUniquePath).mockResolvedValue('/unique/path/to/file.pem');
-
-      await searcher['_searchFromPath'](filePath);
-
-      expect(copyFile).toHaveBeenCalledWith(filePath, '/unique/path/to/file.pem', abortable.state);
-    });
-
-    test('Should delete all directories successfully', async () => {
-      const searchDir = '/path/to/searchDir';
-      const unzipDirs = ['/path/to/unzipDir1', '/path/to/unzipDir2'];
-      searcher.searchDir = searchDir;
-      searcher.unzipDirs = unzipDirs;
-
-      vi.mocked(fsp.rm).mockResolvedValue(undefined);
-
-      await searcher.deleteSearchDirs();
-
-      expect(fsp.rm).toHaveBeenCalledWith(searchDir, { recursive: true });
-      expect(fsp.rm).toHaveBeenCalledWith(unzipDirs[0], { recursive: true });
-      expect(fsp.rm).toHaveBeenCalledWith(unzipDirs[1], { recursive: true });
-    });
-
-    test('Should log errors if directories fail to delete', async () => {
-      const searchDir = '/path/to/searchDir';
-      const unzipDirs = ['/path/to/unzipDir1', '/path/to/unzipDir2'];
-      searcher.searchDir = searchDir;
-      searcher.unzipDirs = unzipDirs;
-
-      const error = new Error('Failed to delete');
-      vi.mocked(fsp.rm).mockImplementation(dir => {
-        if (dir === unzipDirs[0]) {
-          return Promise.reject(error);
+    test('calls searchFiles with correct arguments', async () => {
+      vi.mocked(searchFiles).mockImplementation(async (filePaths, extensions, processFile) => {
+        // Simulate calling processFile for each filePath
+        const results: any[] = [];
+        for (const filePath of filePaths) {
+          const res = [await processFile(filePath)];
+          results.push(...res);
         }
-        return Promise.resolve();
+        return results;
       });
 
-      const consoleSpy = vi.spyOn(console, 'log');
+      const inputPaths = ['/file1.pem', '/file2.pem'];
+      const result = await searchEncryptedKeys(inputPaths);
 
-      await searcher.deleteSearchDirs();
+      expect(searchFiles).toHaveBeenCalledWith(
+        inputPaths,
+        ['.pem'],
+        expect.any(Function),
+      );
+      // In this case, processFile just returns the filePath, so result should equal inputPaths
+      expect(result).toEqual(inputPaths);
+    });
 
-      expect(fsp.rm).toHaveBeenCalledWith(searchDir, { recursive: true });
-      expect(fsp.rm).toHaveBeenCalledWith(unzipDirs[0], { recursive: true });
-      expect(fsp.rm).toHaveBeenCalledWith(unzipDirs[1], { recursive: true });
+    test('returns empty array if searchFiles returns empty', async () => {
+      vi.mocked(searchFiles).mockResolvedValue([]);
 
-      expect(consoleSpy).toHaveBeenCalledWith('Delete search dirs error:', error);
+      const result = await searchEncryptedKeys(['/c.pem']);
+      expect(result).toEqual([]);
+    });
 
-      consoleSpy.mockRestore();
+    test('handles empty input', async () => {
+      vi.mocked(searchFiles).mockResolvedValue([]);
+      const result = await searchEncryptedKeys([]);
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('abortEncryptedKeySearch', () => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+    });
+
+    test('should call abortFileSearch', () => {
+      abortEncryptedKeySearch();
+      expect(abortFileSearch).toHaveBeenCalled();
     });
   });
 
