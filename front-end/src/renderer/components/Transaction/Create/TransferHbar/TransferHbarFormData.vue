@@ -3,7 +3,7 @@ import type { HederaAccount } from '@prisma/client';
 import type { IAccountInfoParsed } from '@shared/interfaces';
 import type { TransferHbarData } from '@renderer/utils/sdk';
 
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { Hbar, Transfer } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -44,6 +44,33 @@ const network = useNetworkStore();
 /* State */
 const linkedAccounts = ref<HederaAccount[]>([]);
 
+/* Computed */
+const transfersExceedingBalance = computed(() => {
+  const result = [];
+  for (const transfer of props.data.transfers) {
+    if (transfer.amount.isNegative()) {
+      const accountInfo = props.accountInfos[transfer.accountId.toString()];
+      if (
+        accountInfo &&
+        transfer.amount.negated().toBigNumber().isGreaterThan(accountInfo.balance.toBigNumber())
+      ) {
+        result.push(transfer);
+      }
+    }
+  }
+  return result;
+});
+
+const errorMessage = computed(() => {
+  let result: string | null;
+  if (transfersExceedingBalance.value.length > 0) {
+    result = `Insufficient balance for transfer`;
+  } else {
+    result = null;
+  }
+  return result;
+});
+
 /* Handlers */
 const handleAddTransfer = async (accountId: string, amount: Hbar, isApproved: boolean) => {
   const transfers = [...props.data.transfers];
@@ -78,6 +105,10 @@ const handleReceiverRestButtonClick = (accountId: string, isApproved: boolean) =
 };
 
 /* Functions */
+const balanceExceeded = (transfer: Transfer): boolean => {
+  return transfersExceedingBalance.value.some(t => t.accountId === transfer.accountId);
+};
+
 const addTransfer = (accountId: string, amount: Hbar, isApproved: boolean) => {
   const newTransfer = new Transfer({
     accountId,
@@ -200,10 +231,19 @@ onMounted(async () => {
                 </div>
                 <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
                   <p
-                    class="text-secondary text-small text-bold overflow-hidden"
+                    class="text-danger text-small text-bold overflow-hidden"
+                    :class="{
+                      'text-danger': balanceExceeded(debit),
+                      'text-secondary': !balanceExceeded(debit),
+                    }"
                     data-testid="p-debit-amount"
                   >
-                    {{ stringifyHbar(debit.amount as Hbar) }}
+                    {{ stringifyHbar(debit.amount as Hbar)
+                    }}<span
+                    v-if="transfersExceedingBalance.length > 0"
+                      class="bi bi-exclamation-triangle-fill ms-2"
+                      :class="{'invisible': !balanceExceeded(debit)}"
+                    ></span>
                   </p>
                 </div>
                 <div class="col-2 col-lg-1 text-end">
@@ -276,6 +316,7 @@ onMounted(async () => {
         <span>{{ totalBalanceAdjustments }}</span>
         <span class="text-secondary"> Adjustment{{ totalBalanceAdjustments != 1 ? 's' : '' }}</span>
       </p>
+      <p v-if="errorMessage" class="text-danger text-small">{{ errorMessage }}</p>
       <p class="text-small text-wrap">
         <span class="text-secondary">Balance</span>
         <span> {{ ` ${stringifyHbar(totalBalance)}` }}</span>
