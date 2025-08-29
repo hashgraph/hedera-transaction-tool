@@ -31,7 +31,7 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Set up Node.js
@@ -45,7 +45,7 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm@9.15.3
 
-      - name: Install front-end dependencies
+      - name: Install front-end Dependencies
         run: pnpm install --frozen-lockfile
         working-directory: front-end
 
@@ -83,7 +83,7 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Set up Node.js
@@ -102,15 +102,30 @@ jobs:
           sudo curl -fLo /usr/local/lib/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v2.29.1/docker-compose-linux-x86_64
           sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
-      - name: Install automation dependencies
+      - name: Install Automation Dependencies
         run: pnpm install --frozen-lockfile
         working-directory: automation
 
-      - name: Install hedera globally
-        run: npm i -g @hashgraph/hedera-local
+      - name: Install Solo CLI
+        run: |
+          set -euo pipefail
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
+          chmod +x ./kind && sudo mv ./kind /usr/local/bin/kind
+          npm install -g @hashgraph/solo
+          solo --version
+          kind --version
 
-      - name: run hedera local
-        run: hedera start -d --verbose=trace
+      - name: Deploy Solo
+        id: solo_deploy
+        env:
+          SOLO_CLUSTER_NAME: solo
+          SOLO_NAMESPACE: solo
+          SOLO_CLUSTER_SETUP_NAMESPACE: solo-cluster
+          SOLO_DEPLOYMENT: solo-deployment
+        run: |
+          set -euo pipefail
+          kind create cluster -n "${SOLO_CLUSTER_NAME}"
+          solo quick-start single deploy | tee solo-deploy.log
 
       - name: Restore Build Artifacts
         uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
@@ -122,14 +137,14 @@ jobs:
       - name: Install xvfb
         run: sudo apt-get update && sudo apt-get install -y xvfb
 
-      - name: Install runtime shared libraries
+      - name: Install Runtime Shared Libraries
         run: sudo apt-get install --no-install-recommends -y xorg openbox libnss3 libasound2 libatk-adaptor libgtk-3-0
 
-      - name: run automation
+      - name: Run Automation
         env:
           EXECUTABLE_PATH: ../front-end/release/linux-unpacked/hedera-transaction-tool
-          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
-          OPERATOR_KEY: ${{ secrets.OPERATOR_KEY }}
+          PRIVATE_KEY: ${{ secrets.SOLO_PRIVATE_KEY }}
+          OPERATOR_KEY: ${{ secrets.SOLO_OPERATOR_KEY }}
           ENVIRONMENT: LOCALNET
 
         run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }}
@@ -150,7 +165,7 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Set up Node.js
@@ -164,11 +179,11 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm@9.15.3
 
-      - name: Install front-end dependencies
+      - name: Install front-end Dependencies
         run: pnpm install --frozen-lockfile
         working-directory: front-end
 
-      - name: Run unit tests
+      - name: Run Unit Tests
         run: pnpm run test:${{ matrix.test-suite.command }}:coverage
         working-directory: front-end
 
