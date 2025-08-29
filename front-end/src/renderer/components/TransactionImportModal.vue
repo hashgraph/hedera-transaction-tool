@@ -4,6 +4,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import type { TransactionMatch } from '@main/services/localUser';
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import TransactionImportRow from '@renderer/components/TransactionImportRow.vue';
 
 /* Props */
 const props = defineProps<{
@@ -44,10 +45,6 @@ const handleSelectAll = (checked: boolean) => {
 
 const handleSubmit = () => {};
 
-/* Function */
-function basename(filePath: string): string {
-  return filePath.substring(filePath.lastIndexOf('/') + 1);
-}
 </script>
 
 <template>
@@ -80,10 +77,7 @@ function basename(filePath: string): string {
                 class="cursor-pointer"
                 :data-testid="`checkbox-key-${index}`"
               />
-              <div class="overflow-x-auto">
-                <strong>{{ basename(match.filePath) }}</strong>
-                <p class="text-muted small">{{ match.transactionBytes.length }} bytes</p>
-              </div>
+              <TransactionImportRow :transaction="match"/>
             </li>
           </ul>
         </div>
