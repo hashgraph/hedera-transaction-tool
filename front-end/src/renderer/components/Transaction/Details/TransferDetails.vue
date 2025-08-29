@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { HederaAccount } from '@prisma/client';
 
-import { onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 
-import { TransferTransaction, Transaction } from '@hashgraph/sdk';
+import { Transaction, Transfer, TransferTransaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -11,6 +11,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { getAll } from '@renderer/services/accountsService';
 
 import { getAccountIdWithChecksum, isUserLoggedIn, stringifyHbar } from '@renderer/utils';
+import { getAccountInfo } from '@renderer/services/mirrorNodeDataService.ts';
 
 /* Props */
 const props = defineProps<{
@@ -23,12 +24,39 @@ const network = useNetworkStore();
 
 /* State */
 const linkedAccounts = ref<HederaAccount[]>([]);
+const transfersExceedingBalance = ref<Transfer[]>([]);
+
+/* Computed */
+const errorMessage = computed(() => {
+  let result: string | null;
+  if (transfersExceedingBalance.value.length > 0) {
+    result = `Insufficient balance for transfer`;
+  } else {
+    result = null;
+  }
+  return result;
+});
 
 /* Hooks */
 onBeforeMount(async () => {
   if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
   if (!(props.transaction instanceof TransferTransaction)) {
     throw new Error('Transaction is not Transfer Transaction');
+  }
+
+  for (const transfer of props.transaction.hbarTransfersList) {
+    if (transfer.amount.isNegative()) {
+      const accountInfo = await getAccountInfo(
+        transfer.accountId.toString(),
+        network.mirrorNodeBaseURL,
+      );
+      if (
+        accountInfo &&
+        transfer.amount.negated().toBigNumber().isGreaterThan(accountInfo.balance.toBigNumber())
+      ) {
+        transfersExceedingBalance.value.push(transfer);
+      }
+    }
   }
 
   linkedAccounts.value = await getAll({
@@ -38,6 +66,11 @@ onBeforeMount(async () => {
     },
   });
 });
+
+/* Functions */
+const balanceExceeded = (transfer: Transfer): boolean => {
+  return transfersExceedingBalance.value.some(t => t.accountId === transfer.accountId);
+};
 </script>
 <template>
   <div v-if="transaction instanceof TransferTransaction && true" class="mt-5">
@@ -84,12 +117,30 @@ onBeforeMount(async () => {
                   </template>
                 </div>
                 <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
-                  <p
-                    class="text-secondary text-small text-bold overflow-hidden"
-                    data-testid="p-transfer-from-amount-details"
-                  >
-                    {{ stringifyHbar(debit.amount) }}
-                  </p>
+                  <template v-if="balanceExceeded(debit)">
+                    <p
+                      class="text-danger text-small text-bold overflow-hidden"
+                      data-testid="p-transfer-from-amount-details"
+                    >
+                      {{ stringifyHbar(debit.amount)
+                      }}<span
+                        v-if="transfersExceedingBalance.length > 0"
+                        class="bi bi-exclamation-triangle-fill ms-2"
+                      ></span>
+                    </p>
+                  </template>
+                  <template v-else>
+                    <p
+                      class="text-secondary text-small text-bold overflow-hidden"
+                      data-testid="p-transfer-from-amount-details"
+                    >
+                      {{ stringifyHbar(debit.amount)
+                      }}<span
+                        v-if="transfersExceedingBalance.length > 0"
+                        class="invisible bi bi-exclamation-triangle-fill ms-2"
+                      ></span>
+                    </p>
+                  </template>
                 </div>
               </div>
               <hr class="separator" />
@@ -151,6 +202,9 @@ onBeforeMount(async () => {
           </template>
         </div>
       </div>
+    </div>
+    <div class="d-flex justify-content-center mt-4">
+      <p v-if="errorMessage" class="text-danger text-small">{{ errorMessage }}</p>
     </div>
   </div>
 </template>
