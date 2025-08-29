@@ -6,38 +6,71 @@ The Transaction Tool backend is responsible for facilitating the process by whic
 signed by multiple users. This includes creating, sharing, collecting signatures, preparing for submission, and executing
 the transactions to the specified network.
 
+# Usage Modes
+
 **Personal User Mode**: You do not need to set up your local backend to use the application in personal mode.
 Personal mode allows you to create, sign and submit transactions that requires one user to sign.
 
 **Organizational User Mode**:
 The Transaction Tool application can be used without setting up the
 back end in personal mode. The backend is not required if you are not developing features in the Organization flow.
-To setup the front end application, you will need to follow this addition readme.
+To setup the front end application, Follow the complete setup process below..
 
 # Prerequisites
 
-- [Node](https://nodejs.org/en/download/package-manager) version: >=`22.12.0`
-- Version check: `node-v`
-- [pnpm](https://pnpm.io/installation) version: >=`9.13.1`
-- Version check: `pnpm --version`
-- [Docker Desktop](https://docs.docker.com/desktop/install/mac-install/)
+- [**Node.js**](https://nodejs.org/en/download/package-manager)
+  - Required version: `>= 22.12.0`
+  - Verify installation:
+    
+    ```bash
+    node -v
+    ```
+
+- [**pnpm**](https://pnpm.io/installation) 
+  - Required version: `>= 9.13.1`
+  - Installation of `pnpm`(if not already installed):
+    
+    ```bash
+    npm install -g pnpm@latest
+    ```
+  - Verify installation:
+     
+    ```bash
+    pnpm --version
+    ```
+
+- [**Python setuptools**](https://pypi.org/project/setuptools)
+  - Required version: `>= 75.6.0`
+  - Installation of `python-setuptools` with `brew`:
+    
+    ```bash
+    brew install python-setuptools
+    ```
+  - Verify installation:
+      
+    ```bash
+    python -m setuptools --version
+    ```
+
+- **Docker Desktop with Kubernetes enabled**
+   - Enable Kubernetes: Docker Desktop → Settings → Kubernetes → Enable Kubernetes → Apply & Restart.
 
 ## 1. Clone the project
 
 ```bash
 git clone https://github.com/hashgraph/hedera-transaction-tool.git
-cd back-end
+cd hedera-transaction-tool/back-end
 ```
 
-## 2. Install Dependencies
+## 2. Install dependencies
 
 ```bash
 pnpm install
 ```
 
-## 3. Fill `.env` files
+## 3. Environment Configuration
 
-There are `example.env` files in the following directories:
+Create `.env` files from the provided `example.env` templates in each of the following directories:
 
 - `apps/api`
 - `apps/chain`
@@ -45,19 +78,22 @@ There are `example.env` files in the following directories:
 - `scripts`
 - the root one
 
-1. Create a `.env` from the `example.env` files. The default values works for development
+The default values works for development.
 
-## 4. Create Email API Account
+## 4. Email API Configuration
 
 An email api account enables you to set-up the notification system in the application. You will need to create a free tier Brevo account, or another provider of your choosing.
-Note that some providers require no username and password, such as Gmail's smtp-relay service. These values, therefore, are optional.
+
+> **Note:** some providers require no username and password, such as Gmail's smtp-relay service. These values, therefore, are optional.
+
+Create Brevo Account (Example):
 
 1. Create a free tier [Brevo account](https://onboarding.brevo.com/account/register)
-2. Login to your account
-3. Click on the drop down menu on the top right of the page next to the notifications icon
-4. Click on SMTP & API
-5. Copy the SMTP key value
-6. Enter the SMTP key in the apps/api/notifications `.env`
+2. Log in to your account.
+3. Select the drop down menu on the top right of the page next to the notifications icon.
+4. Select on SMTP & API.
+5. Copy the SMTP key value.
+6. Enter the SMTP key in the apps/notifications/`.env`:
 
 ```
    EMAIL_API_HOST=smtp-relay.brevo.com
@@ -68,159 +104,139 @@ Note that some providers require no username and password, such as Gmail's smtp-
    SENDER_EMAIL=no-reply@<yourdomain.com>
 ```
 
-## 5. Deploy
+## 5. Create Email API Secret for Kubernetes
+(First time only) Create `email-api-secret.yaml` from the example template:
 
-You can deploy the backend for local development in two ways
+   1. Navigate to `backend/k8s/dev/`
+   2. Copy `email-api-secret.example.yaml` to `email-api-secret.yaml`
+   3. Update the file with your Brevo (or other provider) credentials from step 4.
 
-- Docker
-- Kubernetes
+## 6. Deployment on Kubernetes
 
-### Deploy Using Docker
+Ensure Kubernetes cluster is running (Docker Desktop with Kubernetes enabled).
 
-**HTTP Mode**
-In the root of the `backend` directory run the following Docker command:
+**HTTPS Mode Setup (Preferred)**
 
-```bash
-docker-compose up
-```
+(First time only) Create self-signed certificates for HTTPS. Required for testing with the built Electron client application.
 
-This mode is used for testing the client application in development mode.
+1. **Install mkcert (macOS example)**:
+   ```bash
+   brew install mkcert
+   ```
 
-**HTTPS Mode (Preferred)**
+2. **Create cert directory (if it doesn't exist):**
+   ```bash
+   mkdir -p cert
+   ```
 
-For HTTPS mode, you are required to create a self-signed certificate. Often used to test on BUILT electron client application. Please execute the following commands:
+3. **Generate certificates:**
+   ```bash
+   mkcert -install
+   mkcert -key-file ./cert/key.pem -cert-file ./cert/cert.pem localhost
+   ```
 
-Make sure you have `mkcert` installed (on MACyou can install it with)
+### Deployment Options
+You can deploy using either the automated script (preferred) or manual steps.
 
-```bash
-brew install mkcert
-```
+Option 1: Automated Deployment (Preferred)
 
-```bash
-# if you don't have the cert directory
-mkdir -p cert
-mkcert -install
-mkcert -key-file ./cert/key.pem -cert-file ./cert/cert.pem localhost
-```
+   ```bash
+   sh deploy.sh
+   # or
+   ./deploy.sh
+   ```
 
-Run the following Docker command
+Option 2: Manual Deployment
 
-```bash
-docker-compose up
-```
+1. (First time only) Create Kubernetes secret for self-signed certificate:
 
-**Exposed Endpoints**
-All ports are defined in the docker-compose.yaml file
+   ```bash
+   kubectl create secret tls self-signed-certificate --cert=./cert/cert.pem --key=./cert/key.pem
+   ```
+
+2. (On backend changes only) Build Docker images from the root back-end folder:
+
+   ```bash
+   # API service
+   docker build -t back-end-api:1.0.0 -f ./apps/api/Dockerfile .
+   
+   # Chain service
+   docker build -t back-end-chain:1.0.0 -f ./apps/chain/Dockerfile .
+   
+   # Notifications service
+   docker build -t back-end-notifications:1.0.0 -f ./apps/notifications/Dockerfile .
+   ```
+
+3. Apply deployments:
+
+   ```bash
+   kubectl apply -f ./k8s/dev/deployments
+   ```
+
+4. Install Ingress Controller:
+
+   ```bash
+   helm repo add traefik https://helm.traefik.io/traefik
+   helm repo update
+   helm install traefik traefik/traefik
+   ```
+
+5. Apply Ingress configuration:
+
+   ```bash
+   kubectl apply -f ./k8s/dev/ingress.yaml
+   ```
+
+6. Expose PostgreSQL service:
+   
+   ```bash
+   kubectl port-forward svc/postgres 5432:5432
+   ```
+
+**Exposed Endpoints**:
+
+All ports are defined in the `docker-compose.yaml` file.
 The default ports are:
 
 | Type                           | Endpoint                                        |
 | ------------------------------ | ----------------------------------------------- |
-| API Service Endpoint           | [http://localhost:3001](http://localhost:3001/) |
-| Notifications Service Endpoint | [http://localhost:3020](http://localhost:3020/) |
+| API Service Endpoint           | [http://localhost](http://localhost) |
+| Notifications Service Endpoint | [http://localhost/notifications](https://localhost/notifications) |
 | PgAdmin                        | [http://localhost:5050](http://localhost:5050/) |
 
-### Deploy Using Kubernetes
+## Stopping the Deployment
 
-#### [For local deployment on Kubernetes refer here](./k8s/dev/README.md)
+To stop all services:
 
-When deploying to a server, it may be desired to use Kubernetes. The docker images are currently private. They must be created and pushed to an accessible location. Update the deployment files as needed.
-
-A helm chart is forthcoming. Until then, use the following commands once connected to a cluster:
-
-1.  Create the namespace:
-
-    ```
-    kubectl create -f ./namespace.yaml
-    ```
-
-2.  Setup postgres:
-
-    ```
-      kubectl apply -f ./postgres-secret.yaml
-      kubectl apply -f ./postgres-deployment.yaml
-    ```
-
-3.  Install the helm chart and apply the rabbitmq definition:
-
-    ```
-    kubectl apply -f ./rabbitmq-secret.yaml
-
-    helm repo add bitnami https://charts.bitnami.com/bitnami
-    helm install back-end bitnami/rabbitmq-cluster-operator \
-      -f ./rabbitmq-values.yaml \
-      --namespace hedera-transaction-tool
-
-    kubectl apply -f ./rabbitmq-definition.yaml
-    ```
-
-4.  Install the helm chart for redis:
-    ```
-    helm install redis bitnami/redis --namespace hedera-transaction-tool --set auth.enabled=false --set architecture=standalone
-    ```
-5.  Apply the required secrets:
-    ```
-    kubectl apply -f ./jwt-secret.yaml
-    kubectl apply -f ./otp-secret.yaml
-    kubectl apply -f ./email-api-secret.yaml
-    ```
-6.  Deploy the services. Until migration is properly in place, the first time the api service is deployed, ensure that POSTGRES_SYNCHRONIZE is set to true in the yaml:
-    ```
-    kubectl apply -f ./api-deployment.yaml
-    kubectl apply -f ./chain-deployment.yaml
-    kubectl apply -f ./notifications-deployment.yaml
-    ```
-7.  The IP for the ingress can be set by the controller, or it can be set as a static IP. Either remove the loadBalancerIp value, or set it with a reserved IP.
-
-8.  Install the ingress controller, and ingress.
-    ```
-    helm repo add traefik https://helm.traefik.io/traefik
-    helm repo update
-    helm install traefik traefik/traefik -f traefik-values.yaml
-    ```
-    Apply the ingress:
-    ```
-    kubectl apply -f ./ingress.yaml
-    ```
-9.  Using the actual name of the Postgres pod, connect to Postgres to create the admin user:
-    ```
-    kubectl exec -it <podname> -- psql -h localhost -U postgres --password -p 5432
-    ```
+   ```bash
+   kubectl delete --all deployments,ingresses
+   helm uninstall traefik
+   ```
 
 ## Adding a Local Organization to Your Local Development Environment
 
-To add the local organization to your application, you will need to create an admin user. When you create your admin user,
-you will need to enter an email address and password.
+To add the local organization to your application for development:
 
 ### Create your admin
 
-Make sure you need your local database up and running. The script will create a new admin user for your in your local database.
+Ensure your local database is running, then create an admin user:
 
-1. Go to the `backend/scripts` folder
-2. Run the following command:
+   ```bash
+   cd backend/scripts
+   pnpm create-admin
+   ```
 
-```
-pnpm create-admin
-```
+Follow the prompts to:
 
-3. Enter an email address. You can use any email address.
-4. Enter a password. You can enter any password.
+- Enter an email address (can be any email).
+- Enter a password (can be any password).
 
 ### Add an Organization
 
-1. Go to the Transaction Tool application
-2. Add an organization
-3. Enter a name for your local organization
-4. Enter the local server URL: `https:/localhost:3001` or `http:/localhost:3001`
-
-### Resetting Local Postgres Data
-
-To reset the local postgres database, do the following:
-
-```
-docker-compose down
-rm -rf <back-end base directory>/pgdata
-docker-compose up
-```
+1. Go to the Transaction Tool application.
+2. Select **Add an organization**.
+3. Enter a name for your local organization.
+4. Enter the local server URL: `https://localhost`
 
 ## Tests
 
@@ -229,7 +245,8 @@ docker-compose up
 
 ### Unit/Integration
 
-Tests are run per service. Navigate to the service you want to test. There you can use the test commands to run the tests and see the coverage
+Tests are run per service. Navigate to the service you want to test and run the test commands:
+
 **API**
 
     cd apps/api
@@ -247,39 +264,84 @@ Tests are run per service. Navigate to the service you want to test. There you c
 
 ### E2E
 
-Make sure you have Docker running.
-The first task is to start Docker!
+Ensure Docker is running and stop any running backend services.
 
-To run the E2E tests navigate to the the desired service and follow the steps below:  
-A testing containers for `Postgres`, `Redis`, `RabbitMQ` and `Hedera Localnet` will be started once you run the test command.
+   ```bash
+   cd apps/api
+   pnpm test:e2e
+   ```
+**Important Notes:**
 
-Things to notice:
+> Testing containers for `Postgres`, `Redis`, `RabbitMQ` and `Hedera Localnet` will start automatically.
 
-- Note that you should not have the back-end running, stop it!
+> Stop the backend before running E2E tests
 
-- Note that after running the tests you may receive an error when starting the back-end with `docker compose`. This problem is mitigated by recreating the back-end containers, to do so start the back-end with the `--force-recreate` flag:
+> After running tests, restart the backend:
 
-  ```bash
-  docker compose up --force-recreate
-  ```
+   ```bash
+   docker compose up --force-recreate
+   ```
+    
+> To speed up Hedera Localnet startup:
+    
+   ```bash
+   pnpx hedera restart -d
+   ```
 
-- Note that the `Hedera Localnet` may boot up slowly, if you want to speed-up the process, start it manually by running:
+### Resetting Local Postgres Data
 
-  ```bash
-  pnpx hedera restart -d
-  ```
+To reset your local PostgreSQL database:
 
-After the reading the above notes, start the tests:
-
-```bash
-cd apps/api
-pnpm test:e2e
-```
+   ```bash
+   docker-compose down
+   rm -rf <back-end base directory>/pgdata
+   docker-compose up
+   ```
 
 # Troubleshooting
 
-If you are having issues getting your local development environment set up consider the following:
+1. If you encounter setup problems:
 
-- Delete the `node_modules` folder in the `frontend` or `backend` or both directories. Reinstall `node_modules` with `pnpm install`
-- Delete the `pgdata` folder found in the `backend` directory. Run `docker compose --build`
-- Verify you are connected to your local development backend to observe the deployed changes and not your staging backend
+   - Delete the `node_modules` folder in the `frontend` or `backend` or both directories. Reinstall `node_modules` with `pnpm install`.
+   - Delete the `pgdata` folder found in the `backend` directory. Run `docker compose --build`.
+   - Verify you are connected to your local development backend to observe the deployed changes and not your staging backend.
+
+2. When installing `traefik`, if you receive `Error: INSTALLATION FAILED: cannot re-use a name that is still in use`:
+   
+     ```bash
+     helm upgrade traefik traefik/traefik
+     ```
+4. Docker Image Pull Errors
+If you encounter Cloudflare storage connection errors:
+   ```
+   error pulling image configuration: download failed after attempts=6: 
+   dialing docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage.com:443
+   ```
+**Solution**: Use DockerHub Mirror
+
+1. Pull from mirror registry:
+
+   ```bash
+   docker pull mirror.gcr.io/library/node:22-alpine
+   ```
+   
+2.Tag the image:
+   
+   ```bash
+   docker tag mirror.gcr.io/library/node:22-alpine node:22-alpine
+   ```
+
+**Alternative**: Configure Docker Desktop Registry Mirrors
+
+   1. Open Docker Desktop → Settings → Docker Engine.
+   2. Add registry mirror configuration:
+      ```
+      json
+      {
+        "registry-mirrors": [
+          "https://your-mirror-url/"
+        ]
+      }
+      ```
+   3. Click Apply & Restart.
+      
