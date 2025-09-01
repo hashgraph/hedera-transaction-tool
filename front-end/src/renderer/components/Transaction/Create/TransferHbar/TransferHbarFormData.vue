@@ -257,6 +257,7 @@ onMounted(async () => {
             </div>
           </template>
         </div>
+        <p v-if="errorMessage" class="text-danger text-small text-end mt-3">{{ errorMessage }}</p>
       </div>
       <div class="col-1"></div>
       <div class="col-5 flex-1">
@@ -316,7 +317,6 @@ onMounted(async () => {
         <span>{{ totalBalanceAdjustments }}</span>
         <span class="text-secondary"> Adjustment{{ totalBalanceAdjustments != 1 ? 's' : '' }}</span>
       </p>
-      <p v-if="errorMessage" class="text-danger text-small">{{ errorMessage }}</p>
       <p class="text-small text-wrap">
         <span class="text-secondary">Balance</span>
         <span> {{ ` ${stringifyHbar(totalBalance)}` }}</span>

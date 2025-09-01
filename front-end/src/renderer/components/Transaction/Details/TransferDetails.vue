@@ -149,6 +149,7 @@ const balanceExceeded = (transfer: Transfer): boolean => {
             </div>
           </template>
         </div>
+        <p v-if="errorMessage" class="text-danger text-small text-end mt-3">{{ errorMessage }}</p>
       </div>
       <div class="col-6">
         <div class="mt-3">
@@ -204,9 +205,6 @@ const balanceExceeded = (transfer: Transfer): boolean => {
           </template>
         </div>
       </div>
-    </div>
-    <div class="d-flex justify-content-center mt-4">
-      <p v-if="errorMessage" class="text-danger text-small">{{ errorMessage }}</p>
     </div>
   </div>
 </template>
