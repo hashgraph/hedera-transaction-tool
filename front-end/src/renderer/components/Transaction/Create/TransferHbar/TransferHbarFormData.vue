@@ -240,9 +240,9 @@ onMounted(async () => {
                   >
                     {{ stringifyHbar(debit.amount as Hbar)
                     }}<span
-                    v-if="transfersExceedingBalance.length > 0"
+                      v-if="transfersExceedingBalance.length > 0"
                       class="bi bi-exclamation-triangle-fill ms-2"
-                      :class="{'invisible': !balanceExceeded(debit)}"
+                      :class="{ invisible: !balanceExceeded(debit) }"
                     ></span>
                   </p>
                 </div>
