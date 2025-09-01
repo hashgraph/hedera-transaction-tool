@@ -12,7 +12,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 import { getAll } from '@renderer/services/accountsService';
 
-import { isUserLoggedIn, stringifyHbar } from '@renderer/utils';
+import { getAccountIdWithChecksum, isUserLoggedIn, stringifyHbar } from '@renderer/utils';
 
 import TransferCard from '@renderer/components/TransferCard.vue';
 
@@ -203,7 +203,12 @@ onMounted(async () => {
               <div class="row align-items-center px-3">
                 <div class="col-4 flex-centered justify-content-start flex-wrap overflow-hidden">
                   <template
-                    v-if="linkedAccounts.find(la => la.account_id === debit.accountId.toString())"
+                    v-if="
+                      (
+                        linkedAccounts.find(la => la.account_id === debit.accountId.toString())
+                          ?.nickname || ''
+                      ).length > 0
+                    "
                   >
                     <p v-if="debit.isApproved" class="text-small text-semi-bold me-2">Approved</p>
 
@@ -215,7 +220,7 @@ onMounted(async () => {
                         }}
                       </p>
                       <p class="text-secondary text-micro overflow-hidden">
-                        {{ debit.accountId }}
+                        ({{ getAccountIdWithChecksum(debit.accountId.toString()) }})
                       </p>
                     </div>
                   </template>
@@ -225,7 +230,7 @@ onMounted(async () => {
                       class="text-secondary text-small overflow-hidden"
                       data-testid="p-debit-account"
                     >
-                      {{ debit.accountId }}
+                      {{ getAccountIdWithChecksum(debit.accountId.toString()) }}
                     </p>
                   </template>
                 </div>
@@ -267,7 +272,12 @@ onMounted(async () => {
               <div class="row align-items-center px-3">
                 <div class="col-4 flex-centered justify-content-start flex-wrap overflow-hidden">
                   <template
-                    v-if="linkedAccounts.find(la => la.account_id === credit.accountId.toString())"
+                    v-if="
+                      (
+                        linkedAccounts.find(la => la.account_id === credit.accountId.toString())
+                          ?.nickname || ''
+                      ).length > 0
+                    "
                   >
                     <div class="flex-centered justify-content-start flex-wrap">
                       <p class="text-small text-semi-bold me-2">
@@ -277,7 +287,7 @@ onMounted(async () => {
                         }}
                       </p>
                       <p class="text-secondary text-micro overflow-hidden">
-                        {{ credit.accountId }}
+                        ({{ getAccountIdWithChecksum(credit.accountId.toString()) }})
                       </p>
                     </div>
                   </template>
@@ -286,7 +296,7 @@ onMounted(async () => {
                       class="text-secondary text-small overflow-hidden"
                       data-testid="p-credit-account"
                     >
-                      {{ credit.accountId }}
+                      {{ getAccountIdWithChecksum(credit.accountId.toString()) }}
                     </p>
                   </template>
                 </div>
