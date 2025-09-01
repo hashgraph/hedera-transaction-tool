@@ -296,8 +296,8 @@ export const encodeSpecialFile = async (content: Uint8Array, fileId: string) => 
 };
 
 /* Searches for `.tx2` transaction files in the given paths */
-export const searchTransactions = async (filePaths: string[]): Promise<TransactionMatch[]> => {
-  const processFile = async (filePath: string): Promise<TransactionMatch> => {
+export const searchTransactions = async (filePaths: string[]): Promise<TransactionSearchResult[]> => {
+  const processFile = async (filePath: string): Promise<TransactionSearchResult> => {
     const transactionBuffer = await fsp.readFile(filePath)
     const transactionBytes = transactionBuffer.toString('hex')
     return { filePath, transactionBytes };
@@ -305,7 +305,7 @@ export const searchTransactions = async (filePaths: string[]): Promise<Transacti
   return await searchFiles(filePaths, ['.tx2', '.zip'], processFile);
 }
 
-export interface TransactionMatch {
+export interface TransactionSearchResult {
   filePath: string
   transactionBytes: string // Hex encoding
 }

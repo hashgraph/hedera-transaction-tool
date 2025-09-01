@@ -4,12 +4,12 @@ import { showOpenDialog } from '@renderer/services/electronUtilsService.ts';
 import { safeAwait } from '@renderer/utils';
 import { searchTransactions } from '@renderer/services/transactionService.ts';
 import { ref } from 'vue';
-import type { TransactionMatch } from '@main/services/localUser';
+import type { TransactionSearchResult } from '@main/services/localUser';
 import TransactionImportModal from '@renderer/components/TransactionImportModal.vue';
 
 /* State */
-const foundTransactions = ref<TransactionMatch[]>([]);
-const selectedTransactions = ref<TransactionMatch[]>([]);
+const foundTransactions = ref<TransactionSearchResult[]>([]);
+const selectedTransactions = ref<TransactionSearchResult[]>([]);
 const isTransactionImportModalVisible = ref(false);
 
 async function handleImport() {

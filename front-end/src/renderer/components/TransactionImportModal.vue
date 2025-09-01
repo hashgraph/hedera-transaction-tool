@@ -2,17 +2,17 @@
 import { computed } from 'vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
-import type { TransactionMatch } from '@main/services/localUser';
+import type { TransactionSearchResult } from '@main/services/localUser';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionImportRow from '@renderer/components/TransactionImportRow.vue';
 
 /* Props */
 const props = defineProps<{
-  transactions: TransactionMatch[];
+  transactions: TransactionSearchResult[];
 }>();
 
 /* Model */
-const selectedTransactions = defineModel<TransactionMatch[]>('selectedTransactions', {
+const selectedTransactions = defineModel<TransactionSearchResult[]>('selectedTransactions', {
   required: true,
 });
 
@@ -29,7 +29,7 @@ const isAllSelected = computed(() => {
 });
 
 /* Handlers */
-const handleCheckboxChecked = (match: TransactionMatch, checked: boolean) => {
+const handleCheckboxChecked = (match: TransactionSearchResult, checked: boolean) => {
   if (checked) {
     selectedTransactions.value = [...selectedTransactions.value, match];
   } else {

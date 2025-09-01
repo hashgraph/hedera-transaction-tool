@@ -1,12 +1,12 @@
 <script setup lang="ts">
 /* Props */
 import { computed } from 'vue';
-import type { TransactionMatch } from '@main/services/localUser';
+import type { TransactionSearchResult } from '@main/services/localUser';
 import { decode } from 'msgpackr';
 import { hexToUint8Array } from '@renderer/utils';
 
 const props = defineProps<{
-  transaction: TransactionMatch;
+  transaction: TransactionSearchResult;
 }>();
 
 /* Computed */

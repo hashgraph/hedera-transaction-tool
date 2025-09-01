@@ -3,7 +3,7 @@ import type { Transaction } from '@prisma/client';
 import { ipcRenderer } from 'electron';
 
 import { Prisma } from '@prisma/client';
-import { TransactionMatch } from '@main/services/localUser';
+import { TransactionSearchResult } from '@main/services/localUser';
 
 export default {
   transactions: {
@@ -51,7 +51,7 @@ export default {
       ipcRenderer.invoke('transactions:getTransactionsCount', userId),
     encodeSpecialFile: (content: Uint8Array, fileId: string) =>
       ipcRenderer.invoke('transactions:encodeSpecialFile', content, fileId),
-    searchTransactions: (filePaths: string[]): Promise<TransactionMatch[]> =>
+    searchTransactions: (filePaths: string[]): Promise<TransactionSearchResult[]> =>
       ipcRenderer.invoke('transactions:searchTransactions', filePaths),
   },
 };
