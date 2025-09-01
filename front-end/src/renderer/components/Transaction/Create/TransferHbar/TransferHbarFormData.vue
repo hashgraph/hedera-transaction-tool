@@ -201,7 +201,7 @@ onMounted(async () => {
           <template v-for="(debit, i) in data.transfers" :key="debit.accountId">
             <div v-if="debit.amount.isNegative()" class="mt-3">
               <div class="row align-items-center px-3">
-                <div class="col-4 flex-centered justify-content-start flex-wrap overflow-hidden">
+                <div class="col-5 flex-centered justify-content-start flex-wrap overflow-hidden">
                   <template
                     v-if="
                       (
@@ -234,7 +234,7 @@ onMounted(async () => {
                     </p>
                   </template>
                 </div>
-                <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
+                <div class="col-5 col-lg-6 text-end text-nowrap overflow-hidden">
                   <p
                     class="text-danger text-small text-bold overflow-hidden"
                     :class="{
@@ -270,7 +270,7 @@ onMounted(async () => {
           <template v-for="(credit, i) in data.transfers" :key="credit.accountId">
             <div v-if="!credit.amount.isNegative()" class="mt-3">
               <div class="row align-items-center px-3">
-                <div class="col-4 flex-centered justify-content-start flex-wrap overflow-hidden">
+                <div class="col-5 flex-centered justify-content-start flex-wrap overflow-hidden">
                   <template
                     v-if="
                       (
@@ -300,7 +300,7 @@ onMounted(async () => {
                     </p>
                   </template>
                 </div>
-                <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
+                <div class="col-5 col-lg-6 text-end text-nowrap overflow-hidden">
                   <p
                     class="text-secondary text-small text-bold overflow-hidden"
                     data-testid="p-hbar-amount"
