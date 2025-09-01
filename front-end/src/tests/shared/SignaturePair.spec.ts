@@ -1,45 +1,31 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import * as fs from 'fs';
-import { PrivateKey, PublicKey } from '@hashgraph/sdk';
+import { describe, it, expect } from 'vitest';
+import * as path from 'path';
 
 import { SignaturePair } from '@shared/transaction/SignaturePair';
+import fs from 'fs';
 
-const testFile = 'test-signature-pair.json';
-
-beforeAll(() => {
-  fs.writeFileSync(testFile, JSON.stringify({
-    publicKey: publicKeyBytes,
-    signature: signatureBytes,
-  }));
-});
-
-afterAll(() => {
-  fs.unlinkSync(testFile);
-});
+const resourcesDir = path.join(__dirname, '../resources');
+const jsonFile = path.join(resourcesDir, 'test-signature-pair.json');
 
 describe('SignaturePair', () => {
-  let publicKeyBytes, signatureBytes: Uint8Array;
-  beforeEach(() => {
-    publicKeyBytes = PrivateKey.generateED25519().publicKey.toBytes();
-    signatureBytes = new Uint8Array([1, 2, 3, 4, 5]);
-
-
-  });
-
   it('reads and exposes values', () => {
-    const pair = SignaturePair.read(testFile);
-    expect(Array.from(pair.getPublicKey().toBytes())).toEqual(publicKeyBytes);
-    expect(Array.from(pair.getSignature())).toEqual(signatureBytes);
+    const pair = SignaturePair.read(jsonFile);
+    const publicKeyBase64 = Buffer.from(pair.getPublicKey().toBytes()).toString('base64');
+    const data = JSON.parse(fs.readFileSync(jsonFile, 'utf8'));
+    expect(publicKeyBase64).toEqual(data.publicKey);
+
+    const signatureBase64 = Buffer.from(pair.getSignature()).toString('base64');
+    expect(signatureBase64).toEqual(data.signature);
   });
 
   it('equals returns true for identical pairs', () => {
-    const pair1 = SignaturePair.read(testFile);
-    const pair2 = SignaturePair.read(testFile);
+    const pair1 = SignaturePair.read(jsonFile);
+    const pair2 = SignaturePair.read(jsonFile);
     expect(pair1.equals(pair2)).toBe(true);
   });
 
   it('hashCode matches Java algorithm', () => {
-    const pair = SignaturePair.read(testFile);
+    const pair = SignaturePair.read(jsonFile);
     // Optionally, compare to a known Java hashCode value
     expect(typeof pair.hashCode()).toBe('number');
   });

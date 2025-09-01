@@ -13,13 +13,13 @@ export class SignaturePair {
 
   static read(filePath: string): SignaturePair {
     const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    const publicKey = Uint8Array.from(data.publicKey);
-    const signature = Uint8Array.from(data.signature);
+    const publicKey = Buffer.from(data.publicKey, 'base64');
+    const signature = Buffer.from(data.signature, 'base64');
     return new SignaturePair(publicKey, signature);
   }
 
   getPublicKey(): PublicKey {
-    return PublicKey.fromBytes(this.publicKey);
+    return PublicKey.fromBytesED25519(this.publicKey);
   }
 
   getSignature(): Uint8Array {
