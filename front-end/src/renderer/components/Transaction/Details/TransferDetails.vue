@@ -96,7 +96,7 @@ const balanceExceeded = (transfer: Transfer): boolean => {
                   >
                     <p v-if="debit.isApproved" class="text-small text-semi-bold me-2">Approved</p>
 
-                    <div class="flex-centered justify-content-start flex-wrap">
+                    <div class="d-flex align-items-baseline justify-content-start flex-wrap">
                       <p class="text-small text-semi-bold me-2">
                         {{
                           linkedAccounts.find(la => la.account_id === debit.accountId.toString())
@@ -167,7 +167,7 @@ const balanceExceeded = (transfer: Transfer): boolean => {
                       ).length > 0
                     "
                   >
-                    <div class="flex-centered justify-content-start flex-wrap">
+                    <div class="d-flex align-items-baseline justify-content-start flex-wrap">
                       <p class="text-small text-semi-bold me-2">
                         {{
                           linkedAccounts.find(la => la.account_id === credit.accountId.toString())
