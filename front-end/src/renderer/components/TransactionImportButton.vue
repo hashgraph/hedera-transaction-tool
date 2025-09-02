@@ -14,9 +14,9 @@ const isTransactionImportModalVisible = ref(false);
 
 async function handleImport() {
   const result = await showOpenDialog(
-    'Select a transaction, a folder or a zip file',
+    'Select a V1 transaction (.tx + .csva + .txt) or a folder or a zip file',
     'Select',
-    [{ name: '.tx2, .csv or a folder ', extensions: ['tx2', 'csv'] }],
+    [{ name: '.tx, .csva, .zip or a folder ', extensions: ['tx', 'csva', 'txt', 'zip'] }],
     ['openFile', 'openDirectory', 'multiSelections'],
     'Import transactions',
   );

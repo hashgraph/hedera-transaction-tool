@@ -29,6 +29,7 @@ import {
 import { decrypt } from '@main/utils/crypto';
 import { getStatusCodeFromMessage } from '@main/utils/sdk';
 import fsp from 'fs/promises';
+import path from 'path';
 
 let client: Client;
 
@@ -295,17 +296,82 @@ export const encodeSpecialFile = async (content: Uint8Array, fileId: string) => 
   }
 };
 
-/* Searches for `.tx2` transaction files in the given paths */
+/* Searches for `.tx` transaction files in the given paths */
 export const searchTransactions = async (filePaths: string[]): Promise<TransactionSearchResult[]> => {
-  const processFile = async (filePath: string): Promise<TransactionSearchResult> => {
-    const transactionBuffer = await fsp.readFile(filePath)
-    const transactionBytes = transactionBuffer.toString('hex')
-    return { filePath, transactionBytes };
+  const processFile = async (filePath: string): Promise<string> => Promise.resolve(filePath);
+  const selectedPaths = await searchFiles(filePaths, ['.tx', '.csva', '.txt'], processFile);
+  return makeTransactionResults(selectedPaths)
+};
+
+const makeTransactionResults = async (filePaths: string[]): Promise<TransactionSearchResult[]> => {
+  const result: TransactionSearchResult[] = []
+
+  for (const p of filePaths) {
+    if (path.extname(p) === ".tx") {
+      result.push(await makeTransactionResult(p))
+    }
   }
-  return await searchFiles(filePaths, ['.tx2', '.zip'], processFile);
+
+  return Promise.resolve(result)
 }
 
-export interface TransactionSearchResult {
-  filePath: string
-  transactionBytes: string // Hex encoding
+const makeTransactionResult = async (txFilePath: string): Promise<TransactionSearchResult> => {
+  const transactionBuffer = await fsp.readFile(txFilePath);
+  const transactionBytes = transactionBuffer.toString('hex');
+  let transactionCsva: TransactionCsva | null;
+  try {
+    const csvaFilePath = makeCsvaPath(txFilePath)
+    const csvaBuffer = await fsp.readFile(csvaFilePath);
+    transactionCsva = JSON.parse(csvaBuffer.toString('utf-8'));
+  } catch {
+    transactionCsva = null;
+  }
+  let transactionTxt: TransactionTxt | null;
+  try {
+    const txtFilePath = makeTxtPath(txFilePath)
+    const txtBuffer = await fsp.readFile(txtFilePath);
+    transactionTxt = JSON.parse(txtBuffer.toString('utf-8'));
+  } catch {
+    transactionTxt = null
+  }
+  const result = { txFilePath, transactionBytes, transactionCsva, transactionTxt }
+  return Promise.resolve(result);
 }
+
+const makeCsvaPath = (txFilePath: string): string => {
+  const baseName = path.basename(txFilePath, '.tx');
+  return path.dirname(txFilePath) + path.sep + baseName + '.csva';
+}
+
+const makeTxtPath = (txFilePath: string): string => {
+  const baseName = path.basename(txFilePath, '.tx');
+  return path.dirname(txFilePath) + path.sep + baseName + '.txt';
+}
+
+
+export interface TransactionSearchResult {
+  txFilePath: string;
+  transactionBytes: string; // Hex encoding
+  transactionCsva: TransactionCsva | null;
+  transactionTxt: TransactionTxt | null;
+}
+
+export interface TransactionCsva {
+  nodes: {
+    input: string;
+    list:
+      {
+        realmNum: number;
+        shardNum: number;
+        accountNum: number;
+        network: string;
+      }[]
+  };
+}
+
+export interface TransactionTxt {
+  "Author": string,
+  "Contents":string,
+  "Timestamp":string
+}
+
