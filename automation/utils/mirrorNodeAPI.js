@@ -5,7 +5,7 @@ const { formatTransactionId } = require('./util');
 const getBaseURL = () => {
   const env = process.env.ENVIRONMENT;
   return env.toUpperCase() === 'LOCALNET'
-    ? 'http://localhost:8080/api/v1'
+    ? 'http://localhost:8081/api/v1'
     : 'https://testnet.mirrornode.hedera.com/api/v1';
 };
 
