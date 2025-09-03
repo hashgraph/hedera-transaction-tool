@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import type { TransactionSearchResult } from '@main/services/localUser';
@@ -44,6 +44,11 @@ const handleSelectAll = (checked: boolean) => {
 };
 
 const handleSubmit = () => {};
+/* Watchers */
+
+watch(() => props.transactions, () =>{
+  selectedTransactions.value = props.transactions
+}, {immediate: true});
 
 </script>
 
