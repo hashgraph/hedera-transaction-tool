@@ -34,7 +34,7 @@ const handleCheckboxChecked = (match: TransactionSearchResult, checked: boolean)
     selectedTransactions.value = [...selectedTransactions.value, match];
   } else {
     selectedTransactions.value = selectedTransactions.value.filter(
-      m => m.filePath !== match.filePath,
+      m => m.txFilePath !== match.txFilePath,
     );
   }
 };
@@ -67,17 +67,17 @@ const handleSubmit = () => {};
           <ul class="overflow-x-hidden" style="max-height: 30vh">
             <li
               v-for="(match, index) in props.transactions"
-              :key="match.filePath"
+              :key="match.txFilePath"
               class="d-flex flex-row align-items-center gap-3"
             >
               <AppCheckBox
-                :checked="selectedTransactions.some(m => m.filePath === match.filePath)"
+                :checked="selectedTransactions.some(m => m.txFilePath === match.txFilePath)"
                 @update:checked="handleCheckboxChecked(match, $event)"
                 :name="`checkbox-key-${index}`"
                 class="cursor-pointer"
                 :data-testid="`checkbox-key-${index}`"
               />
-              <TransactionImportRow :transaction="match"/>
+              <TransactionImportRow :transaction="match" />
             </li>
           </ul>
         </div>
