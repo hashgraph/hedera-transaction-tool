@@ -126,6 +126,28 @@ jobs:
           set -euo pipefail
           kind create cluster -n "${SOLO_CLUSTER_NAME}"
           solo quick-start single deploy | tee solo-deploy.log
+      
+      - name: Port-forward Mirror REST to localhost:8080
+        run: |
+          set -euo pipefail
+          kubectl -n solo port-forward svc/mirror-node-rest 8080:8080 >/tmp/pf.log 2>&1 &
+          echo $! > /tmp/pf.pid
+          # wait until port-forward is ready
+          for i in {1..20}; do
+          if nc -z localhost 8080; then break; fi
+          sleep 0.5
+          done
+
+      - name: Wait for Mirror REST on :8080
+        env: { TIMEOUT_SECS: "420" }
+        run: |
+          set -euo pipefail
+          start=$(date +%s)
+          until curl -fsS http://localhost:8080/api/v1/network/nodes >/dev/null 2>&1; do
+          (( $(date +%s) - start > TIMEOUT_SECS )) && { echo "Mirror REST not reachable"; exit 1; }
+          echo "…not ready yet"; sleep 5
+          done
+          echo "Mirror REST is up"
 
       - name: Verify Solo Mirror Node
         run: |
