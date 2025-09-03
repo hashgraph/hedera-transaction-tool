@@ -14,9 +14,11 @@ import { createTransferHbarTransaction, getTransferHbarData } from '@renderer/ut
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import TransferHbarFormData from '@renderer/components/Transaction/Create/TransferHbar/TransferHbarFormData.vue';
+import useUserStore from '@renderer/stores/storeUser.ts';
 
 /* Stores */
 const network = useNetworkStore();
+const user = useUserStore();
 
 /* State */
 const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
@@ -41,7 +43,8 @@ const createDisabled = computed(() => {
   return (
     !totalBalance.value.toBigNumber().isEqualTo(0) ||
     totalBalanceAdjustments.value > 10 ||
-    totalBalanceAdjustments.value === 0
+    totalBalanceAdjustments.value === 0 ||
+    (user.selectedOrganization === null && anyTransfersExceedingBalance.value)
   );
 });
 
@@ -79,6 +82,23 @@ const totalBalance = computed(() => {
 const totalBalanceAdjustments = computed(
   () => [...new Set(data.transfers.map(t => t.accountId.toString()))].length,
 );
+
+const anyTransfersExceedingBalance = computed(() => {
+  let result = false;
+  for (const transfer of data.transfers) {
+    if (transfer.amount.isNegative()) {
+      const accountInfo = accountInfos.value[transfer.accountId.toString()];
+      if (
+        accountInfo &&
+        transfer.amount.negated().toBigNumber().isGreaterThan(accountInfo.balance.toBigNumber())
+      ) {
+        result = true;
+        break;
+      }
+    }
+  }
+  return result;
+});
 
 /* Handlers */
 const handleDraftLoaded = async (transaction: Transaction) => {
