@@ -127,6 +127,10 @@ jobs:
           kind create cluster -n "${SOLO_CLUSTER_NAME}"
           solo quick-start single deploy | tee solo-deploy.log
 
+      - name: Check port forwarding
+        run: |
+          ps -ef | grep port-forward
+
       - name: Restore Build Artifacts
         uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
         with:
