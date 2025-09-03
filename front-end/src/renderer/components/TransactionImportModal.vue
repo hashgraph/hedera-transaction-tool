@@ -5,6 +5,12 @@ import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import type { TransactionSearchResult } from '@main/services/localUser';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionImportRow from '@renderer/components/TransactionImportRow.vue';
+import { hexToUint8Array, isUserLoggedIn } from '@renderer/utils';
+import { addDraft, draftExists, getDraft } from '@renderer/services/transactionDraftsService.ts';
+import useUserStore from '@renderer/stores/storeUser.ts';
+import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toast-notification';
+import type { TransactionDraft } from '@prisma/client';
 
 /* Props */
 const props = defineProps<{
@@ -15,9 +21,12 @@ const props = defineProps<{
 const selectedTransactions = defineModel<TransactionSearchResult[]>('selectedTransactions', {
   required: true,
 });
-
-/* State */
 const show = defineModel<boolean>('show', { required: true });
+
+/* Stores */
+const router = useRouter();
+const user = useUserStore();
+const toast = useToast();
 
 /* Computed */
 // const selectedCount = computed(() => selectedTransactions.value.length);
@@ -43,7 +52,53 @@ const handleSelectAll = (checked: boolean) => {
   selectedTransactions.value = checked ? [...props.transactions] : [];
 };
 
-const handleSubmit = () => {};
+const handleSubmit = async () => {
+  //See SaveDraftButton.handleDraft()
+  if (!isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in');
+  }
+  const userId = user.personal!.id;
+  const importedDrafts: TransactionDraft[] = [];
+  for (const r of selectedTransactions.value) {
+    try {
+      const transactionBytes = hexToUint8Array(r.transactionBytes);
+      if (!(await draftExists(transactionBytes))) {
+        const dtf = new Intl.DateTimeFormat("en-US", {
+          dateStyle: "short",
+          timeStyle: "short",
+        })
+        const now = dtf.format(Date.now())
+        const { id } = await addDraft(userId, transactionBytes, 'V1 transaction imported on ' + now);
+        importedDrafts.push(await getDraft(id));
+      }
+    } catch (error) {
+      console.log('error=' + error);
+    }
+  }
+  switch (importedDrafts.length) {
+    case 0:
+      toast.warning('No transaction imported');
+      break;
+    case 1:
+      toast.success('Transaction imported as a draft');
+      await router.push({
+        name: 'createTransaction',
+        params: {
+          type: importedDrafts[0].type.replace(/\s/g, ''),
+        },
+        query: {
+          draftId: importedDrafts[0].id,
+        },
+      });
+      break;
+    default:
+      toast.success(importedDrafts.length + ' transactions imported as a draft');
+      await router.push('/transactions?tab=Drafts');
+      break;
+  }
+  show.value = false;
+};
+
 /* Watchers */
 
 watch(() => props.transactions, () =>{
