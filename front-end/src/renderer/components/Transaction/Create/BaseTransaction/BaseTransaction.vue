@@ -113,12 +113,13 @@ const hasTransactionChanged = computed(() => {
       initialValidStart.compare(validStart) !== 0 &&
       (initialValidStart.compare(now) > 0 || validStart.compare(now) > 0)
     ) {
-      result = true;
+      result = true; // validStart was updated
     } else {
+      // whether tx data match, excluding validStart
       result = !transactionsDataMatch(initialTransaction.value as Transaction, transaction.value);
     }
   } else {
-    result = true;
+    result = true; // transaction is new or does not have valid start set
   }
   return result;
 });
