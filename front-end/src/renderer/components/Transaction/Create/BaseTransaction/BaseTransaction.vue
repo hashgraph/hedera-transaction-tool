@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
-import type { TransactionCommonData } from '@renderer/utils/sdk';
+import { transactionsDataMatch, type TransactionCommonData } from '@renderer/utils/sdk';
 import {
   CustomRequest,
   type ExecutedData,
@@ -9,7 +9,7 @@ import {
 import type { CreateTransactionFunc } from '.';
 
 import { computed, reactive, ref, toRaw, watch } from 'vue';
-import { Hbar, Transaction, KeyList } from '@hashgraph/sdk';
+import { Hbar, Transaction, KeyList, Timestamp } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -93,7 +93,7 @@ const approvers = ref<TransactionApproverDto[]>([]);
 const isProcessed = ref(false);
 const groupActionTaken = ref(false);
 const memoError = ref(false);
-const initialTransactionData = ref('');
+const initialTransaction = ref<Transaction | null>(null);
 const initialDescription = ref('');
 const transactionKey = ref<KeyList>(new KeyList([]));
 
@@ -101,11 +101,26 @@ const transactionKey = ref<KeyList>(new KeyList([]));
 const transaction = computed(() => createTransaction({ ...data } as TransactionCommonData));
 
 const hasTransactionChanged = computed(() => {
-  if (!initialTransactionData.value) return false;
+  let result: boolean;
 
-  const currentTransactionData = transaction.value.toBytes().join(',');
+  const initialValidStart =
+    initialTransaction.value?.transactionId?.validStart ?? Timestamp.fromDate(Date.now());
+  const validStart = transaction.value.transactionId?.validStart;
+  const now = Timestamp.fromDate(new Date());
 
-  return currentTransactionData !== initialTransactionData.value;
+  if (validStart && initialTransaction.value) {
+    if (
+      initialValidStart.compare(validStart) !== 0 &&
+      (initialValidStart.compare(now) > 0 || validStart.compare(now) > 0)
+    ) {
+      result = true;
+    } else {
+      result = !transactionsDataMatch(initialTransaction.value as Transaction, transaction.value);
+    }
+  } else {
+    result = true;
+  }
+  return result;
 });
 
 const hasDescriptionChanged = computed(() => {
@@ -116,13 +131,12 @@ const hasDataChanged = computed(() => hasTransactionChanged.value || hasDescript
 
 /* Handlers */
 const handleDraftLoaded = async (transaction: Transaction) => {
-  const txBytes = transaction.toBytes().join(',');
+  initialTransaction.value = transaction;
 
   const txData = getTransactionCommonData(transaction) as TransactionCommonData;
   payerData.accountId.value = txData.payerId;
   Object.assign(data, txData);
 
-  initialTransactionData.value = txBytes;
   emit('draft-loaded', transaction);
 };
 
