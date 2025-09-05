@@ -76,9 +76,9 @@ test.describe('Transaction tests', () => {
     const transactionId = await transactionPage.deleteAccount(accountFromList);
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const deletedAccount = transactionDetails.transactions[0]?.entity_id;
-    const result = transactionDetails.transactions[0]?.result;
+    const transactionType = transactionDetails?.name;
+    const deletedAccount = transactionDetails?.entity_id;
+    const result = transactionDetails?.result;
 
     expect(transactionType).toBe('CRYPTODELETE');
     expect(deletedAccount).toBe(accountFromList);
@@ -201,8 +201,8 @@ test.describe('Transaction tests', () => {
     await transactionPage.deleteAccount(accountFromList);
     await transactionPage.clickOnAccountsMenuButton();
 
-    const isAccountVisible = await transactionPage.isAccountCardVisible(accountFromList);
-    expect(isAccountVisible).toBe(false);
+    const isAccountHidden = await transactionPage.isAccountCardHidden(accountFromList);
+    expect(isAccountHidden).toBe(true);
   });
 
   test('Verify that account is updated after we execute an account update tx', async () => {
@@ -218,9 +218,9 @@ test.describe('Transaction tests', () => {
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
 
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const updatedAccount = transactionDetails.transactions[0]?.entity_id;
-    const result = transactionDetails.transactions[0]?.result;
+    const transactionType = transactionDetails?.name;
+    const updatedAccount = transactionDetails?.entity_id;
+    const result = transactionDetails?.result;
     expect(transactionType).toBe('CRYPTOUPDATEACCOUNT');
     expect(updatedAccount).toBe(accountFromList);
     expect(result).toBe('SUCCESS');
@@ -234,6 +234,29 @@ test.describe('Transaction tests', () => {
     expect(maxAutoAssocFromResponse.toString()).toBe(maxAutoAssociationsNumber);
   });
 
+  test('Verify that system account can be updated without account key', async () => {
+    await setupEnvironmentForTransactions(window, process.env.OPERATOR_KEY);
+    const newPublicKey = await transactionPage.generateRandomPublicKey();
+    const transactionId = await transactionPage.updateAccountKey(
+      '0.0.100',
+      newPublicKey,
+      '0.0.2',
+    );
+
+    const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
+
+    const transactionType = transactionDetails?.name;
+    const updatedAccount = transactionDetails?.entity_id;
+    const result = transactionDetails?.result;
+    expect(transactionType).toBe('CRYPTOUPDATEACCOUNT');
+    expect(updatedAccount).toBe('0.0.100');
+    expect(result).toBe('SUCCESS');
+
+    const accountDetails = await transactionPage.mirrorGetAccountResponse('0.0.100');
+
+    const key = accountDetails.accounts[0]?.key?.key;
+  });
+
   test('Verify user can execute transfer tokens tx', async () => {
     await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
@@ -245,10 +268,10 @@ test.describe('Transaction tests', () => {
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
 
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const allTransfer = transactionDetails.transactions[0]?.transfers;
+    const transactionType = transactionDetails?.name;
+    const allTransfer = transactionDetails?.transfers;
     const amount = allTransfer.find(acc => acc.account === accountFromList)?.amount;
-    const result = transactionDetails.transactions[0]?.result;
+    const result = transactionDetails?.result;
     expect(transactionType).toBe('CRYPTOTRANSFER');
     expect(amount).toBe(amountToBeTransferred * 100000000);
     expect(result).toBe('SUCCESS');
@@ -314,8 +337,8 @@ test.describe('Transaction tests', () => {
     );
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const result = transactionDetails.transactions[0]?.result;
+    const transactionType = transactionDetails?.name;
+    const result = transactionDetails?.result;
     expect(transactionType).toBe('CRYPTOAPPROVEALLOWANCE');
     expect(result).toBe('SUCCESS');
 
@@ -341,8 +364,8 @@ test.describe('Transaction tests', () => {
     const { transactionId } = await transactionPage.createFile('test');
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const result = transactionDetails.transactions[0]?.result;
+    const transactionType = transactionDetails?.name;
+    const result = transactionDetails?.result;
     expect(transactionType).toBe('FILECREATE');
     expect(result).toBe('SUCCESS');
   });
@@ -373,8 +396,8 @@ test.describe('Transaction tests', () => {
     const transactionId = await transactionPage.updateFile(fileId, newText);
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const result = transactionDetails.transactions[0]?.result;
+    const transactionType = transactionDetails?.name;
+    const result = transactionDetails?.result;
     expect(transactionType).toBe('FILEUPDATE');
     expect(result).toBe('SUCCESS');
 
@@ -391,8 +414,8 @@ test.describe('Transaction tests', () => {
     const transactionId = await transactionPage.appendFile(fileId, newText);
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(transactionId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const result = transactionDetails.transactions[0]?.result;
+    const transactionType = transactionDetails?.name;
+    const result = transactionDetails?.result;
     expect(transactionType).toBe('FILEAPPEND');
     expect(result).toBe('SUCCESS');
 
@@ -433,8 +456,8 @@ test.describe('Transaction tests', () => {
 
     await transactionPage.deleteFirstDraft();
 
-    const isContinueButtonVisible = await transactionPage.isFirstDraftContinueButtonVisible();
-    expect(isContinueButtonVisible).toBe(false);
+    const isContinueButtonHidden = await transactionPage.isFirstDraftContinueButtonHidden();
+    expect(isContinueButtonHidden).toBe(true);
   });
 
   test('Verify draft transaction is no longer visible after we execute the tx', async () => {
@@ -447,8 +470,8 @@ test.describe('Transaction tests', () => {
     await transactionPage.createNewAccount({}, true);
     await transactionPage.clickOnTransactionsMenuButton();
 
-    const isContinueButtonVisible = await transactionPage.isFirstDraftContinueButtonVisible();
-    expect(isContinueButtonVisible).toBe(false);
+    const isContinueButtonHidden = await transactionPage.isFirstDraftContinueButtonHidden();
+    expect(isContinueButtonHidden).toBe(true);
   });
 
   test('Verify draft transaction is visible after we execute the tx and we have template checkbox selected', async () => {

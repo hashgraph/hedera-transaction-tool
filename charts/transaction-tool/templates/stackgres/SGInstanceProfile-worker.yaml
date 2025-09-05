@@ -1,0 +1,12 @@
+{{- if and .Values.stackgres.enabled (hasKey .Values.stackgres.shardedCluster.shards "sgInstanceProfile") }}
+{{- $profileName := .Values.stackgres.shardedCluster.shards.sgInstanceProfile }}
+{{- if hasKey .Values.stackgres.instanceProfile.worker $profileName}}
+apiVersion: stackgres.io/v1
+kind: SGInstanceProfile
+metadata:
+  name: {{ $profileName }}
+  namespace: {{ .Release.Namespace }}
+spec:
+{{- index .Values.stackgres.instanceProfile.worker $profileName | toYaml | nindent 2 }}
+{{- end -}}
+{{- end -}}

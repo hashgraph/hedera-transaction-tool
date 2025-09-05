@@ -1,6 +1,6 @@
 import { KeyList, PublicKey } from '@hashgraph/sdk';
 
-import { computeShortenedPublicKeyList } from '.';
+import { areKeysEqual, computeShortenedPublicKeyList } from '.';
 
 jest.mock('@app/common');
 
@@ -70,7 +70,7 @@ describe('computeShortenedPublicKeyList', () => {
     ];
 
     // Act
-    const result = computeShortenedPublicKeyList(publicKeys, keyList);
+    const result = computeShortenedPublicKeyList(new Set(publicKeys), keyList);
 
     // Assert
     expect(result).toBeNull();
@@ -88,7 +88,7 @@ describe('computeShortenedPublicKeyList', () => {
     ];
 
     // Act
-    const result = computeShortenedPublicKeyList(publicKeys2, keyList);
+    const result = computeShortenedPublicKeyList(new Set(publicKeys2), keyList);
 
     // Assert
     expect(result).toHaveLength(6);
@@ -113,7 +113,7 @@ describe('computeShortenedPublicKeyList', () => {
     ];
 
     // Act
-    const result = computeShortenedPublicKeyList(publicKeys3, keyList);
+    const result = computeShortenedPublicKeyList(new Set(publicKeys3), keyList);
 
     // Assert
     expect(result).toHaveLength(5);
@@ -122,5 +122,33 @@ describe('computeShortenedPublicKeyList', () => {
     expect(result).toContainEqual(publicKey9);
     expect(result).toContainEqual(publicKey10);
     expect(result).toContainEqual(publicKey7);
+  });
+
+  it('should return true if the two key lists are logically equivalent', () => {
+    expect(areKeysEqual(keyList, keyList)).toBe(true);
+
+    const _nestedKeyList1 = new KeyList([publicKey6, publicKey4, publicKey5]);
+    const _nestedKeyList2 = new KeyList([publicKey8, _nestedKeyList1, publicKey7]);
+    const _nestedKeyList3 = new KeyList([publicKey9, publicKey10, _nestedKeyList2]);
+    const keyList2 = new KeyList([publicKey3, publicKey1, publicKey2, _nestedKeyList3]);
+    keyList2.setThreshold(3);
+    _nestedKeyList1.setThreshold(2);
+    _nestedKeyList2.setThreshold(1);
+    _nestedKeyList3.setThreshold(3);
+
+    expect(areKeysEqual(keyList, keyList2)).toBe(true);
+  });
+
+  it('should return false if the two key lists are not logically equivalent', () => {
+    expect(areKeysEqual(keyList, keyList)).toBe(true);
+
+    const _nestedKeyList1 = new KeyList([publicKey6, publicKey4, publicKey5]);
+    const _nestedKeyList2 = new KeyList([publicKey8, _nestedKeyList1, publicKey7]);
+    const keyList2 = new KeyList([publicKey3, publicKey1, publicKey2]);
+    keyList2.setThreshold(3);
+    _nestedKeyList1.setThreshold(2);
+    _nestedKeyList2.setThreshold(1);
+
+    expect(areKeysEqual(keyList, keyList2)).toBe(false);
   });
 });

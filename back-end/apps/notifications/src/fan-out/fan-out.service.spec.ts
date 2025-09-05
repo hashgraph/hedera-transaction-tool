@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EntityManager, In } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
-import { NotificationTypeEmailSubjects } from '@app/common';
 import {
   Notification,
   NotificationPreferences,
@@ -53,7 +52,6 @@ describe('Fan Out Service', () => {
     id: 1,
     type: NotificationType.TRANSACTION_EXECUTED,
     actorId: null,
-    content: '',
     createdAt: new Date(),
     notificationReceivers: [],
   };
@@ -115,12 +113,10 @@ describe('Fan Out Service', () => {
 
       await service.fanOutNew(notification, receivers);
 
-      expect(emailService.processEmail).toHaveBeenCalledWith({
-        from: '"Transaction Tool" no-reply@hederatransactiontool.com',
-        to: [receivers[0].user.email],
-        subject: NotificationTypeEmailSubjects.TRANSACTION_EXECUTED,
-        text: notification.content,
-      });
+      expect(emailService.processEmail).toHaveBeenCalledWith(
+        [receivers[0].user.email],
+        notification,
+      );
       expect(inAppProcessorService.processNewNotification).not.toHaveBeenCalled();
       expect(entityManager.update).toHaveBeenCalledTimes(2); //1 to mark email sent as false, 1 to mark email sent as true
       expect(entityManager.update).toHaveBeenNthCalledWith(
@@ -155,12 +151,10 @@ describe('Fan Out Service', () => {
 
       await service.fanOutNew(notification, receivers);
 
-      expect(emailService.processEmail).toHaveBeenCalledWith({
-        from: '"Transaction Tool" no-reply@hederatransactiontool.com',
-        to: [receivers[0].user.email],
-        subject: NotificationTypeEmailSubjects.TRANSACTION_EXECUTED,
-        text: notification.content,
-      });
+      expect(emailService.processEmail).toHaveBeenCalledWith(
+        [receivers[0].user.email],
+        notification,
+      );
       expect(entityManager.update).toHaveBeenCalledTimes(4);
       expect(entityManager.update).toHaveBeenCalledWith(
         NotificationReceiver,
@@ -219,12 +213,10 @@ describe('Fan Out Service', () => {
 
       await service.fanOutNew(notification, receivers);
 
-      expect(emailService.processEmail).toHaveBeenCalledWith({
-        from: '"Transaction Tool" no-reply@hederatransactiontool.com',
-        to: [receivers[0].user.email],
-        subject: NotificationTypeEmailSubjects.TRANSACTION_EXECUTED,
-        text: notification.content,
-      });
+      expect(emailService.processEmail).toHaveBeenCalledWith(
+        [receivers[0].user.email],
+        notification,
+      );
       expect(entityManager.update).toHaveBeenCalledTimes(2);
       expect(entityManager.update).toHaveBeenNthCalledWith(
         1,
@@ -261,12 +253,10 @@ describe('Fan Out Service', () => {
 
       await service.fanOutNew(notification, receivers);
 
-      expect(emailService.processEmail).toHaveBeenCalledWith({
-        from: '"Transaction Tool" no-reply@hederatransactiontool.com',
-        to: [receivers[0].user.email],
-        subject: NotificationTypeEmailSubjects.TRANSACTION_EXECUTED,
-        text: notification.content,
-      });
+      expect(emailService.processEmail).toHaveBeenCalledWith(
+        [receivers[0].user.email],
+        notification,
+      );
       expect(entityManager.update).not.toHaveBeenCalledWith(
         NotificationReceiver,
         {
@@ -304,7 +294,6 @@ describe('Fan Out Service', () => {
         id: 1,
         type: NotificationType.TRANSACTION_INDICATOR_SIGN,
         actorId: null,
-        content: '',
         createdAt: new Date(),
         notificationReceivers: [],
       };

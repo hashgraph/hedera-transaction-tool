@@ -21,6 +21,7 @@ const props = defineProps<{
 
 /* Emits */
 defineEmits<{
+  (event: 'skipDecrypt'): void;
   (event: 'stopMigration'): void;
 }>();
 
@@ -45,7 +46,10 @@ watch(inputRecoveryPhrasePassword, () => (inputRecoveryPhrasePasswordError.value
   <form @submit.prevent="handleOnFormSubmit" class="flex-column-100">
     <div class="fill-remaining">
       <p class="text-secondary text-small lh-base text-center">
-        Enter your recovery phrase password from the old tool
+        Enter your recovery phrase password from the old tool. <br />
+        This is the password used when first installing the old tool, or when creating a new key.
+        <br />
+        This is likely the same password used when signing a transaction in the old tool.
       </p>
 
       <!-- Mnemonic Password -->
@@ -68,35 +72,38 @@ watch(inputRecoveryPhrasePassword, () => (inputRecoveryPhrasePasswordError.value
       </div>
     </div>
 
-    <div class="d-flex justify-content-between">
+    <div class="d-flex justify-content-between align-items-end mt-5">
       <!-- Back -->
-      <div class="d-flex justify-content-end align-items-end mt-5">
-        <div>
-          <AppButton
-            color="secondary"
-            type="button"
-            class="w-100"
-            data-testid="button-stop-migration"
-            @click="$emit('stopMigration')"
-            >Back</AppButton
-          >
-        </div>
-      </div>
+      <AppButton
+        color="secondary"
+        type="button"
+        data-testid="button-stop-migration"
+        @click="$emit('stopMigration')"
+      >
+        Back
+      </AppButton>
 
-      <!-- Submit -->
-      <div class="d-flex justify-content-end align-items-end mt-5">
-        <div>
-          <AppButton
-            color="primary"
-            type="submit"
-            class="w-100"
-            loading-text="Decrypting..."
-            :loading="loading"
-            :disabled="inputRecoveryPhrasePassword.length === 0"
-            data-testid="button-decrypt-recovery-phrase"
-            >Continue</AppButton
-          >
-        </div>
+      <!-- Skip and Submit -->
+      <div class="d-flex align-items-end gap-3">
+        <AppButton
+          type="button"
+          class="btn btn-link min-w-unset"
+          data-testid="button-skip-recovery-phrase-decryption"
+          @click="$emit('skipDecrypt')"
+        >
+          Skip
+        </AppButton>
+
+        <AppButton
+          color="primary"
+          type="submit"
+          loading-text="Decrypting..."
+          :loading="loading"
+          :disabled="inputRecoveryPhrasePassword.length === 0"
+          data-testid="button-decrypt-recovery-phrase"
+        >
+          Continue
+        </AppButton>
       </div>
     </div>
   </form>

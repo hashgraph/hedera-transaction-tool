@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { IGroup, ITransaction } from '@main/shared/interfaces';
+import type { IGroup, ITransaction } from '@shared/interfaces';
 
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 
 import { Transaction } from '@hashgraph/sdk';
 
-import { NotificationType } from '@main/shared/interfaces';
-import { TRANSACTION_ACTION } from '@main/shared/constants';
+import { NotificationType } from '@shared/interfaces';
+import { TRANSACTION_ACTION } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';

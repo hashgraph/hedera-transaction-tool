@@ -1,4 +1,4 @@
-import type { Network } from '@main/shared/interfaces';
+import type { Network } from '@shared/interfaces';
 
 import { Prisma } from '@prisma/client';
 

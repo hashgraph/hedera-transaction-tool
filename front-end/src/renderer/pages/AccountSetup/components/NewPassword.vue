@@ -139,7 +139,7 @@ watch(newPassword, pass => {
           v-model="currentPassword"
           :filled="true"
           :class="{ 'is-invalid': currentPasswordInvalid }"
-          placeholder="Current Password"
+          placeholder="Enter Temporary Password"
           @blur="handleBlur('currentPassword', $event.target.value)"
         />
         <div v-if="currentPasswordInvalid" class="invalid-feedback">

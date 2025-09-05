@@ -13,7 +13,7 @@ import { defineStore } from 'pinia';
 
 import { Prisma } from '@prisma/client';
 
-import { ACCOUNT_SETUP_STARTED } from '@main/shared/constants';
+import { ACCOUNT_SETUP_STARTED } from '@shared/constants';
 
 import { add, remove } from '@renderer/services/claimService';
 

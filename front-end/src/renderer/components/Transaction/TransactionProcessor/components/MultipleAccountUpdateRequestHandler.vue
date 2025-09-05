@@ -5,7 +5,7 @@ import {
   type Handler,
   type Processable,
 } from '..';
-import type { IGroup, TransactionApproverDto } from '@main/shared/interfaces';
+import type { IGroup, TransactionApproverDto } from '@shared/interfaces';
 import type { GroupItem } from '@renderer/stores/storeTransactionGroup';
 import type { ApiGroupItem } from '@renderer/services/organization';
 
@@ -36,7 +36,6 @@ import {
 import {
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
-  getTransactionType,
   isAccountId,
   isLoggedInOrganization,
   safeAwait,
@@ -52,6 +51,7 @@ import SignPersonalRequestHandler from './SignPersonalRequestHandler.vue';
 import ExecutePersonalRequestHandler from './ExecutePersonalRequestHandler.vue';
 
 import { assertHandlerExists } from '..';
+import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 /* Props */
 const props = defineProps<{

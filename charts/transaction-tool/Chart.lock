@@ -1,0 +1,12 @@
+dependencies:
+- name: traefik
+  repository: https://traefik.github.io/charts
+  version: 32.1.1
+- name: redis-ha
+  repository: https://dandydeveloper.github.io/charts
+  version: 4.29.4
+- name: stackgres-operator
+  repository: https://stackgres.io/downloads/stackgres-k8s/stackgres/helm/
+  version: 1.16.3
+digest: sha256:1ff851399d15b4cb96da6c7372a1c1f8b7ba5f709f5dfaa36b745693909afe85
+generated: "2025-06-17T09:38:11.516601-04:00"

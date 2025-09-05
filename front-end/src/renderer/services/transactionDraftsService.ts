@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 
-import { commonIPCHandler, getTransactionType } from '@renderer/utils';
+import { commonIPCHandler } from '@renderer/utils';
+import { getTransactionType } from '../utils/sdk/transactions';
 
 /* Transaction Drafts Service */
 

@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, In } from 'typeorm';
-import { SendMailOptions } from 'nodemailer';
 
-import { NotificationTypeEmailSubjects } from '@app/common';
 import {
   Notification,
   NotificationPreferences,
@@ -23,6 +21,7 @@ export class FanOutService {
     NotificationType.TRANSACTION_INDICATOR_SIGN,
     NotificationType.TRANSACTION_INDICATOR_EXECUTED,
     NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+    NotificationType.TRANSACTION_INDICATOR_CANCELLED,
     NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
     NotificationType.TRANSACTION_EXPIRED,
     NotificationType.USER_REGISTERED,
@@ -134,14 +133,7 @@ export class FanOutService {
     if (this.emailBlacklistTypes.includes(notification.type)) return;
 
     if (emails.length > 0) {
-      const mailOptions: SendMailOptions = {
-        from: '"Transaction Tool" no-reply@hederatransactiontool.com',
-        to: emails,
-        subject: NotificationTypeEmailSubjects[notification.type],
-        text: notification.content,
-      };
-
-      await this.emailService.processEmail(mailOptions);
+      await this.emailService.processEmail(emails, notification);
       await this.updateIsEmailSent(notification.id, userIds, true);
     }
   }

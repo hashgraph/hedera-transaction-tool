@@ -1,8 +1,6 @@
 import { NotifyGeneralDto } from '@app/common';
 import { NotificationType, Transaction } from '@entities';
 
-import { getNetwork } from '../transaction';
-
 export const getRemindSignersDTO = (
   transaction: Transaction,
   receiverIds: number[],
@@ -13,14 +11,14 @@ export const getRemindSignersDTO = (
     type: manual
       ? NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER_MANUAL
       : NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER,
-    content: `A transaction has not collected the required signatures and requires attention.
-  Please visit the Hedera Transaction Tool and locate the transaction.
-  Valid start: ${transaction.validStart.toUTCString()}
-  Transaction ID: ${transaction.transactionId}
-  Network: ${getNetwork(transaction)}`,
     entityId: transaction.id,
     actorId: null,
     userIds: receiverIds,
     recreateReceivers,
+    additionalData: {
+      validStart: transaction.validStart,
+      transactionId: transaction.transactionId,
+      network: transaction.mirrorNetwork,
+    }
   };
 };

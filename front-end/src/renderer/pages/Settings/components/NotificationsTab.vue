@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NotificationType } from '@main/shared/interfaces';
+import { NotificationType } from '@shared/interfaces';
 
 import useNotificationsStore from '@renderer/stores/storeNotifications';
 

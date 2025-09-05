@@ -293,8 +293,8 @@ class SettingsPage extends BasePage {
   }
 
   async navigateToLogout(resetFunction) {
-    const isSettingsButtonVisible = await this.isElementVisible(this.settingsButtonSelector);
-    if (!isSettingsButtonVisible) {
+    const isSettingsButtonHidden = await this.isElementHidden(this.settingsButtonSelector);
+    if (isSettingsButtonHidden) {
       console.log('Settings button is not visible, resetting the form');
       if (resetFunction) {
         await resetFunction();
@@ -303,8 +303,8 @@ class SettingsPage extends BasePage {
     }
     await this.click(this.settingsButtonSelector);
 
-    const isProfileTabButtonVisible = await this.isElementVisible(this.profileTabButtonSelector);
-    if (!isProfileTabButtonVisible) {
+    const isProfileTabButtonHidden = await this.isElementHidden(this.profileTabButtonSelector);
+    if (isProfileTabButtonHidden) {
       console.log('Profile tab button is not visible, resetting the form');
       if (resetFunction) {
         await resetFunction();

@@ -8,7 +8,7 @@ import {
 
 import prisma from '@main/db/__mocks__/prisma';
 
-import { USE_KEYCHAIN } from '@main/shared/constants';
+import { USE_KEYCHAIN } from '@shared/constants';
 
 vi.mock('@main/db/prisma');
 

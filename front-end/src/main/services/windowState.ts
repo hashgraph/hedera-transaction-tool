@@ -2,7 +2,7 @@ import type { Rectangle } from 'electron';
 
 import { BrowserWindow } from 'electron';
 
-import { STATIC_USER, WINDOW_STATE } from '@main/shared/constants';
+import { STATIC_USER, WINDOW_STATE } from '@shared/constants';
 
 import { getPrismaClient } from '@main/db/prisma';
 

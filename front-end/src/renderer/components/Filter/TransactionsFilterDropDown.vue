@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ITransaction } from '@main/shared/interfaces';
+import type { ITransaction } from '@shared/interfaces';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import FilterFields from '@renderer/components/Filter/FilterFields.vue';

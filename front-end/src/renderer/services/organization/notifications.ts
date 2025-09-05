@@ -1,7 +1,4 @@
-import type {
-  INotificationReceiver,
-  IUpdateNotificationReceiver,
-} from '@main/shared/interfaces/organization';
+import type { INotificationReceiver, IUpdateNotificationReceiver } from '@shared/interfaces';
 
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 
@@ -45,37 +42,19 @@ export const getAllInAppNotifications = async (
   }, 'Failed to get user notifications');
 
 /* Update notification */
-export const updateNotification = async (
+export const updateNotifications = async (
   organizationServerUrl: string,
-  notificationId: string,
-  updateNotificationPreferencesDto: IUpdateNotificationReceiver,
+  notificationsToUpdate: IUpdateNotificationReceiver[],
 ): Promise<void> =>
   commonRequestHandler(async () => {
     try {
-      await axiosWithCredentials.patch(
-        `${organizationServerUrl}/${controller}/${notificationId}`,
-        updateNotificationPreferencesDto,
-      );
+      const batchSize = 500;
+      for (let i = 0; i < notificationsToUpdate.length; i += batchSize) {
+        const batch = notificationsToUpdate.slice(i, i + batchSize);
+        await axiosWithCredentials.patch(`${organizationServerUrl}/${controller}`, batch);
+      }
     } catch (error) {
       console.log(error);
-    }
-  }, 'Failed to update notification');
-
-export const updateNotifications = async (
-  organizationServerUrl: string,
-  notificationIds: number[],
-  updateNotificationPreferencesDtos: IUpdateNotificationReceiver[],
-): Promise<void> =>
-  commonRequestHandler(async () => {
-    for (let i = 0; i < notificationIds.length; i++) {
-      try {
-        await axiosWithCredentials.patch(
-          `${organizationServerUrl}/${controller}/${notificationIds[i]}`,
-          updateNotificationPreferencesDtos[i],
-        );
-      } catch (error) {
-        console.log(error);
-      }
     }
   }, 'Failed to update notifications');
 

@@ -2,6 +2,8 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 
+import { SKIPPED_PERSONAL_SETUP } from '@shared/constants';
+
 import useSetupStores from '@renderer/composables/user/useSetupStores';
 
 import { get as getStoredMnemonics } from '@renderer/services/mnemonicService';
@@ -43,7 +45,10 @@ export default function useAfterOrganizationSelection() {
     user.keyPairs = keyPairs;
     user.mnemonics = mnemonics;
 
-    if (isLoggedInOrganization(organization)) {
+    if (!organization) {
+      const { data } = await safeAwait(getStoredClaim(user.personal.id, SKIPPED_PERSONAL_SETUP));
+      user.skippedSetup = !!data;
+    } else if (isLoggedInOrganization(organization)) {
       const claimKey = buildSkipClaimKey(organization.serverUrl, organization.userId);
       const { data } = await safeAwait(getStoredClaim(user.personal.id, claimKey));
       user.skippedSetup = !!data;
@@ -70,14 +75,18 @@ export default function useAfterOrganizationSelection() {
 
     const shouldSetup = accountSetupRequired(organization, user.keyPairs);
     const shouldNavigateToSetup =
-      shouldSetup && (!isLoggedInOrganization(organization) || !user.skippedSetup);
+      shouldSetup &&
+      ((organization && !isLoggedInOrganization(organization)) || !user.skippedSetup);
 
     if (shouldNavigateToSetup) {
       await router.push({ name: 'accountSetup' });
       return;
     }
 
-    await router.push({ name: 'transactions' });
+    // only automatically redirect the user to transactions if an account setup is not in progress.
+    if (!user.accountSetupStarted) {
+      await router.push({ name: 'transactions' });
+    }
   };
 
   const afterOrganizationSelection = async () => {

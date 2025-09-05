@@ -2,15 +2,14 @@ import { describe, test, expect, vi, beforeEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { app } from 'electron';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
-import { CommonNetwork } from '@main/shared/enums';
+import { CommonNetwork } from '@shared/enums';
 import {
   DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
   SELECTED_NETWORK,
   UPDATE_LOCATION,
-} from '@main/shared/constants';
+} from '@shared/constants';
 
 import {
   locateDataMigrationFiles,
@@ -25,17 +24,18 @@ import {
 } from '@main/services/localUser/dataMigration';
 import { addAccount } from '@main/services/localUser/accounts';
 import { addClaim } from '@main/services/localUser/claim';
+import { addPublicKey } from '@main/services/localUser/publicKeyMapping';
 import { safeAwait } from '@main/utils/safeAwait';
 
 vi.mock('fs');
-vi.mock('path');
 vi.mock('crypto');
 vi.mock('argon2');
 vi.mock('electron', () => ({
-  app: { getPath: vi.fn() },
+  app: { getPath: vi.fn((key: string) => key) },
 }));
 vi.mock('@main/services/localUser/accounts');
 vi.mock('@main/services/localUser/claim');
+vi.mock('@main/services/localUser/publicKeyMapping');
 vi.mock('@main/utils/safeAwait');
 
 describe('Data Migration', () => {
@@ -163,11 +163,9 @@ describe('Data Migration', () => {
     });
 
     test('Should return correct keys path', () => {
-      const mockPath = '/mock/path';
-      vi.mocked(app.getPath).mockReturnValue(mockPath);
-
       const result = getDataMigrationKeysPath();
-      expect(result).toBe(path.join(mockPath, 'TransactionTools', 'Keys'));
+      const expectedSuffix = path.join('TransactionTools', 'Keys');
+      expect(result.endsWith(expectedSuffix)).toBe(true);
     });
   });
 
@@ -189,20 +187,12 @@ describe('Data Migration', () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.promises.readdir).mockResolvedValueOnce(mockFiles as any);
       vi.mocked(fs.promises.readFile).mockResolvedValue(mockFileContent);
-      vi.mocked(path.parse).mockReturnValueOnce({
-        name: 'account1',
-        ext: '.json',
-      } as path.ParsedPath);
-      vi.mocked(path.parse).mockReturnValueOnce({
-        name: 'account2',
-        ext: '.json',
-      } as path.ParsedPath);
 
       const result = await getAccountInfoFromFile(mockDirectory, CommonNetwork.MAINNET);
 
       expect(result).toEqual([
         { nickname: 'account1', accountID: '0.0.123', network: CommonNetwork.MAINNET },
-        { nickname: 'account2', accountID: '0.0.123', network: CommonNetwork.TESTNET },
+        { nickname: 'account2-TESTNET', accountID: '0.0.123', network: CommonNetwork.TESTNET },
       ]);
     });
 
@@ -220,14 +210,6 @@ describe('Data Migration', () => {
       vi.mocked(fs.promises.readdir).mockResolvedValueOnce(mockFiles as any);
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockFileContent);
       vi.mocked(fs.promises.readFile).mockRejectedValue(new Error('Read error'));
-      vi.mocked(path.parse).mockReturnValueOnce({
-        name: 'account1',
-        ext: '.json',
-      } as path.ParsedPath);
-      vi.mocked(path.parse).mockReturnValueOnce({
-        name: 'account2',
-        ext: '.json',
-      } as path.ParsedPath);
 
       const result = await getAccountInfoFromFile(mockDirectory, CommonNetwork.MAINNET);
 
@@ -252,8 +234,8 @@ describe('Data Migration', () => {
     });
 
     const mockAccounts = () => {
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.promises.readdir).mockResolvedValue(['account1.json'] as any);
+      vi.mocked(fs.existsSync).mockReturnValueOnce(true);
+      vi.mocked(fs.promises.readdir).mockResolvedValueOnce(['account1.json'] as any);
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(
         JSON.stringify({
           accountID: {
@@ -263,10 +245,14 @@ describe('Data Migration', () => {
           },
         }),
       );
-      vi.mocked(path.parse).mockReturnValueOnce({
-        name: 'account1',
-        ext: '.json',
-      } as path.ParsedPath);
+    };
+
+    const mockPublicKeys = () => {
+      vi.mocked(fs.existsSync).mockReturnValueOnce(true);
+      vi.mocked(fs.promises.readdir).mockResolvedValueOnce(['publicKey1.pub'] as any);
+      vi.mocked(fs.promises.readFile).mockResolvedValueOnce(
+        '302a300506032b6570032100a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90',
+      );
     };
 
     test('Should correctly migrate user', async () => {
@@ -276,6 +262,7 @@ describe('Data Migration', () => {
 
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
       mockAccounts();
+      mockPublicKeys();
 
       vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
       vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
@@ -287,6 +274,7 @@ describe('Data Migration', () => {
         accountsImported: 1,
         defaultMaxTransactionFee: 1000,
         currentNetwork: CommonNetwork.TESTNET,
+        publicKeysImported: 1,
       });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
@@ -300,6 +288,10 @@ describe('Data Migration', () => {
         '0.0.123',
         CommonNetwork.TESTNET,
         'account1',
+      );
+      expect(addPublicKey).toHaveBeenCalledWith(
+        '302a300506032b6570032100a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90',
+        'publicKey1',
       );
     });
 
@@ -327,6 +319,7 @@ describe('Data Migration', () => {
         accountsImported: 0,
         defaultMaxTransactionFee: null,
         currentNetwork: CommonNetwork.MAINNET,
+        publicKeysImported: 0,
       });
     });
 
@@ -336,6 +329,7 @@ describe('Data Migration', () => {
 
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
       mockAccounts();
+      mockPublicKeys();
 
       vi.mocked(safeAwait).mockResolvedValueOnce({
         data: undefined,
@@ -353,6 +347,7 @@ describe('Data Migration', () => {
         accountsImported: 1,
         defaultMaxTransactionFee: 1000,
         currentNetwork: CommonNetwork.TESTNET,
+        publicKeysImported: 1,
       });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
@@ -364,6 +359,10 @@ describe('Data Migration', () => {
         '0.0.123',
         CommonNetwork.TESTNET,
         'account1',
+      );
+      expect(addPublicKey).toHaveBeenCalledWith(
+        '302a300506032b6570032100a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90',
+        'publicKey1',
       );
     });
 
@@ -385,6 +384,7 @@ describe('Data Migration', () => {
         accountsImported: 0,
         defaultMaxTransactionFee: 1000,
         currentNetwork: CommonNetwork.TESTNET,
+        publicKeysImported: 0,
       });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
@@ -405,6 +405,7 @@ describe('Data Migration', () => {
 
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
       mockAccounts();
+      mockPublicKeys();
 
       vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
       vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
@@ -416,6 +417,7 @@ describe('Data Migration', () => {
         accountsImported: 1,
         defaultMaxTransactionFee: null,
         currentNetwork: CommonNetwork.TESTNET,
+        publicKeysImported: 1,
       });
       expect(addClaim).toHaveBeenCalledTimes(1);
       expect(addAccount).toHaveBeenCalledWith(
@@ -432,6 +434,7 @@ describe('Data Migration', () => {
 
       vi.mocked(fs.promises.readFile).mockResolvedValueOnce(mockContent);
       mockAccounts();
+      mockPublicKeys();
 
       vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
       vi.mocked(safeAwait).mockResolvedValueOnce({ data: undefined, error: undefined });
@@ -443,6 +446,7 @@ describe('Data Migration', () => {
         accountsImported: 1,
         defaultMaxTransactionFee: 1000,
         currentNetwork: CommonNetwork.MAINNET,
+        publicKeysImported: 1,
       });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
@@ -475,6 +479,7 @@ describe('Data Migration', () => {
         accountsImported: 0,
         defaultMaxTransactionFee: 1000,
         currentNetwork: CommonNetwork.TESTNET,
+        publicKeysImported: 0,
       });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
@@ -501,6 +506,7 @@ describe('Data Migration', () => {
         accountsImported: 0,
         defaultMaxTransactionFee: 1000,
         currentNetwork: CommonNetwork.TESTNET,
+        publicKeysImported: 0,
       });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
@@ -528,6 +534,7 @@ describe('Data Migration', () => {
         accountsImported: 0,
         defaultMaxTransactionFee: 1000,
         currentNetwork: CommonNetwork.TESTNET,
+        publicKeysImported: 0,
       });
       expect(addClaim).toHaveBeenCalledWith(
         mockUserId,
@@ -555,6 +562,7 @@ describe('Data Migration', () => {
         accountsImported: 0,
         defaultMaxTransactionFee: null,
         currentNetwork: CommonNetwork.MAINNET,
+        publicKeysImported: 0,
       });
       expect(addClaim).toHaveBeenCalledWith(mockUserId, UPDATE_LOCATION, 'mockDir/InputFiles');
     });

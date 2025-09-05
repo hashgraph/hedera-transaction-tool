@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { IAccountInfoParsed } from '@main/shared/interfaces';
+import type { IAccountInfoParsed } from '@shared/interfaces';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 import type { ApproveHbarAllowanceData } from '@renderer/utils/sdk';
 
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { Hbar, Key, KeyList, Transaction } from '@hashgraph/sdk';
 
 import useAccountId from '@renderer/composables/useAccountId';
@@ -67,6 +67,14 @@ const preCreateAssert = () => {
     throw Error('Invalid Spender ID');
   }
 };
+
+/* Watchers */
+watch(
+  () => [data.ownerAccountId, data.spenderAccountId],
+  () => {
+    baseTransactionRef.value?.updateTransactionKey();
+  },
+);
 </script>
 <template>
   <BaseTransaction

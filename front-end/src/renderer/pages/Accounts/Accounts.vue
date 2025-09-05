@@ -479,17 +479,17 @@ onMounted(async () => {
                     <p class="text-small text-semi-bold" data-testid="p-account-data-account-id">
                       <template
                         v-if="
-                          accountData.accoundIdWithChecksum.value &&
-                          Array.isArray(accountData.accoundIdWithChecksum.value)
+                          accountData.accountIdWithChecksum.value &&
+                          Array.isArray(accountData.accountIdWithChecksum.value)
                         "
                       >
-                        <span>{{ accountData.accoundIdWithChecksum.value[0] }}</span>
+                        <span>{{ accountData.accountIdWithChecksum.value[0] }}</span>
                         <span class="text-secondary"
-                          >-{{ accountData.accoundIdWithChecksum.value[1] }}</span
+                          >-{{ accountData.accountIdWithChecksum.value[1] }}</span
                         >
                       </template>
                       <template v-else
-                        ><span>{{ accountData.accoundIdWithChecksum.value }}</span></template
+                        ><span>{{ accountData.accountIdWithChecksum.value }}</span></template
                       >
 
                       <i

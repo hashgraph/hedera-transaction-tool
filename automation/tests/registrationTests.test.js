@@ -52,9 +52,9 @@ test.describe('Registration tests', () => {
     await registrationPage.typeEmail('test23@test.com');
     await registrationPage.typePassword('test');
 
-    const isErrorMessageVisible = await registrationPage.isEmailErrorMessageVisible();
+    const isErrorMessageHidden = await registrationPage.isEmailErrorMessageHidden();
 
-    expect(isErrorMessageVisible).toBe(false);
+    expect(isErrorMessageHidden).toBe(true);
   });
 
   test('Verify password field rejects empty password', async () => {
@@ -130,11 +130,11 @@ test.describe('Registration tests', () => {
     const isClearButtonVisible = await registrationPage.isClearButtonVisible();
     expect(isClearButtonVisible).toBe(true);
 
-    const isCheckBoxVisible = await registrationPage.isUnderstandCheckboxVisible();
-    expect(isCheckBoxVisible).toBe(false);
+    const isCheckBoxHidden = await registrationPage.isUnderstandCheckboxHidden();
+    expect(isCheckBoxHidden).toBe(true);
 
-    const isGenerateButtonVisible = await registrationPage.isGenerateButtonVisible();
-    expect(isGenerateButtonVisible).toBe(false);
+    const isGenerateButtonHidden = await registrationPage.isGenerateButtonHidden();
+    expect(isGenerateButtonHidden).toBe(true);
   });
 
   test('Verify re-generate of recovery phrase changes words', async () => {

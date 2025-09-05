@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-import { DISPLAY_FILE_SIZE_LIMIT } from '@main/shared/constants';
+import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
+import { isHederaSpecialFileId } from '@shared/hederaSpecialFiles';
 
-import { isHederaSpecialFileId, safeAwait } from '@renderer/utils';
+import { safeAwait } from '@renderer/utils';
 
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppUploadFile from '@renderer/components/ui/AppUploadFile.vue';

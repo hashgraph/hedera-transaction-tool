@@ -66,8 +66,8 @@ test.describe('Organization Settings tests', () => {
 
   test('Verify user can switch between personal and organization mode', async () => {
     await organizationPage.selectPersonalMode();
-    const isContactListVisible = await organizationPage.isContactListButtonVisible();
-    expect(isContactListVisible).toBe(false);
+    const isContactListHidden = await organizationPage.isContactListButtonHidden();
+    expect(isContactListHidden).toBe(true);
 
     await organizationPage.selectOrganizationMode();
     const isContactListVisibleAfterSwitch = await organizationPage.isContactListButtonVisible();
@@ -139,8 +139,8 @@ test.describe('Organization Settings tests', () => {
     await organizationPage.recoverPrivateKey(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
-    const missingKey = await organizationPage.isFirstMissingKeyVisible();
-    expect(missingKey).toBe(false);
+    const missingKeyHidden = await organizationPage.isFirstMissingKeyHidden();
+    expect(missingKeyHidden).toBe(true);
   });
 
   test('Verify organization user can change password', async () => {

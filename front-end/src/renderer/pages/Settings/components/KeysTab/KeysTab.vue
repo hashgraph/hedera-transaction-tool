@@ -11,7 +11,7 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
-import { CommonNetwork } from '@main/shared/enums';
+import { CommonNetwork } from '@shared/enums';
 
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 
@@ -170,7 +170,10 @@ const handleDeleteSelectedClick = () => (isDeleteModalShown.value = true);
 
 const handleRestoreMissingKey = (keyPair: { id: number; publicKey: string; index?: number }) => {
   if (keyPair.index !== undefined) {
-    router.push({ name: RESTORE_MISSING_KEYS, params: { index: keyPair.index, publicKey: keyPair.publicKey } });
+    router.push({
+      name: RESTORE_MISSING_KEYS,
+      params: { index: keyPair.index, publicKey: keyPair.publicKey },
+    });
   } else {
     keyType.value = getPublicKeyAndType(keyPair.publicKey).keyType;
     publicKey.value = keyPair.publicKey;

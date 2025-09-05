@@ -5,6 +5,9 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
+
+import { HTX_USER } from '@shared/constants';
+
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useLoader from '@renderer/composables/useLoader';
 
@@ -129,7 +132,7 @@ const handleLogout = async () => {
     toggleAuthTokenInSessionStorage(serverUrl, '', true);
     await user.selectOrganization({ id, nickname, serverUrl, key });
   } else {
-    localStorage.removeItem('htx_user');
+    localStorage.removeItem(HTX_USER);
     user.logout();
     await router.push({ name: 'login' });
   }

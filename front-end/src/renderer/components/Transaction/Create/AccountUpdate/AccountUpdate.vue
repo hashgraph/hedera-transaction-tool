@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { IAccountInfoParsed } from '@main/shared/interfaces';
+import type { IAccountInfoParsed } from '@shared/interfaces';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 import type { AccountUpdateData, AccountUpdateDataMultiple } from '@renderer/utils/sdk';
 
@@ -114,7 +114,6 @@ watch(
     }
   },
 );
-
 watch(accountData.accountInfo, accountInfo => {
   if (!accountInfo) {
     data.receiverSignatureRequired = false;
@@ -140,6 +139,12 @@ watch(accountData.accountInfo, accountInfo => {
     data.ownerKey = accountInfo.key;
   }
 });
+watch(
+  () => [data.accountId, data.ownerKey],
+  () => {
+    baseTransactionRef.value?.updateTransactionKey();
+  },
+);
 </script>
 <template>
   <BaseTransaction

@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import type { Transaction } from '@prisma/client';
-import type { ITransactionFull } from '@main/shared/interfaces';
-import { TransactionStatus } from '@main/shared/interfaces';
+import type { ITransactionFull } from '@shared/interfaces';
+import { TransactionStatus } from '@shared/interfaces';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { format } from 'date-fns';
+import { encode } from 'msgpackr';
 
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Long, Transaction as SDKTransaction } from '@hashgraph/sdk';
+
+import { areByteArraysEqual, javaFormatArrayHashCode } from '@shared/utils/byteUtils';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
@@ -24,21 +28,23 @@ import {
   getUserShouldApprove,
   remindSigners,
   sendApproverChoice,
-  uploadSignatureMap,
+  uploadSignatures,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
-import { saveFileNamed } from '@renderer/services/electronUtilsService';
+import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService';
 
 import {
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
   getErrorMessage,
+  getLastExportExtension,
   getPrivateKey,
   getStatusFromCode,
   getTransactionBodySignatureWithoutNodeAccountId,
   hexToUint8Array,
   isLoggedInOrganization,
   redirectToDetails,
+  setLastExportExtension,
   usersPublicRequiredToSign,
 } from '@renderer/utils';
 
@@ -85,6 +91,21 @@ const buttonsDataTestIds: { [key: string]: string } = {
   [archive]: 'button-archive-org-transaction',
   [exportName]: 'button-export-transaction',
 };
+
+const EXPORT_FORMATS = [
+  {
+    name: 'Transaction Tool 2.0 (.tx2)',
+    value: 'tt2',
+    extensions: ['tx2'],
+    enabled: true, // Set to false to hide/remove in the future
+  },
+  {
+    name: 'Transaction Tool (.tx)',
+    value: 'tt1',
+    extensions: ['tx'],
+    enabled: true, // Set to false to hide/remove
+  },
+];
 
 /* Props */
 const props = defineProps<{
@@ -160,6 +181,11 @@ const canSign = computed(() => {
   if (!props.organizationTransaction || !publicKeysRequiredToSign.value) return false;
   if (!isLoggedInOrganization(user.selectedOrganization)) return false;
 
+  if (isTransactionVersionMismatch.value) {
+    toast.error('Transaction version mismatch. Cannot sign.');
+    return false;
+  }
+
   const userShouldSign = publicKeysRequiredToSign.value.length > 0;
 
   return userShouldSign && transactionIsInProgress.value;
@@ -202,13 +228,13 @@ const visibleButtons = computed(() => {
   shouldApprove.value && buttons.push(reject, approve);
   canSign.value && !shouldApprove.value && buttons.push(sign);
   canExecute.value && buttons.push(execute);
-  if (isLargeScreen.value) {
-    props.previousId && buttons.push(previous);
-    props.nextId && buttons.push(next);
-  } else {
-    props.nextId && buttons.push(next);
-    props.previousId && buttons.push(previous);
-  }
+  // if (isLargeScreen.value) {
+  //   props.previousId && buttons.push(previous);
+  //   props.nextId && buttons.push(next);
+  // } else {
+  props.nextId && buttons.push(next);
+  props.previousId && buttons.push(previous);
+  // }
   canCancel.value && buttons.push(cancel);
   canRemind.value && buttons.push(remindSignersLabel);
   canArchive.value && buttons.push(archive);
@@ -223,6 +249,17 @@ const dropDownItems = computed(() =>
 
 const isTransactionFailed = computed(() => {
   return props.organizationTransaction?.status === TransactionStatus.FAILED;
+});
+
+const isTransactionVersionMismatch = computed(() => {
+  if (!props.sdkTransaction || !props.organizationTransaction) return false;
+
+  // The sdkTransaction has already been deserialized from bytes, serialize back into bytes
+  // and compare to the organizations transaction bytes.
+  return !areByteArraysEqual(
+    props.sdkTransaction.toBytes(),
+    hexToUint8Array(props.organizationTransaction.transactionBytes),
+  );
 });
 
 /* Handlers */
@@ -262,6 +299,8 @@ const handleSign = async () => {
     const restoredRequiredKeys = [];
     const requiredNonRestoredKeys = [];
 
+    // Separate keys into restored and non-restored, where restored indicates that the
+    // key is locally present.
     for (const requiredKey of publicKeysRequired) {
       if (user.keyPairs.some(k => k.public_key === requiredKey)) {
         restoredRequiredKeys.push(requiredKey);
@@ -279,7 +318,7 @@ const handleSign = async () => {
     }
 
     if (restoredRequiredKeys.length > 0) {
-      await uploadSignatureMap(
+      await uploadSignatures(
         user.personal.id,
         personalPassword,
         user.selectedOrganization,
@@ -480,17 +519,135 @@ const handleExport = async () => {
     throw new Error('(BUG) Transaction is not available');
   }
 
-  const bytes = props.sdkTransaction.toBytes();
+  // Load the last export format the user selected, if applicable
+  const enabledFormats = EXPORT_FORMATS.filter(f => f.enabled);
+  const defaultFormat = getLastExportExtension() || (enabledFormats[0] || EXPORT_FORMATS[0]).extensions[0];
 
-  const transactionId = props.sdkTransaction.transactionId?.toString();
-  await saveFileNamed(
-    bytes,
-    `${transactionId || 'transaction'}.txsig`,
+  // Move the default format to the top
+  enabledFormats.sort((a, b) => (a.extensions[0] === defaultFormat ? -1 : 1));
+
+  // Show the save dialog to the user, allowing them to choose the file name and location
+
+  // Continue to use the same format as TTv1, for now.
+  // The default format based on TTv1 is as follows:
+  // `${epochSeconds}_${accountId}_${hash}.tx`
+  const validStart = props.sdkTransaction.transactionId.validStart;
+  const accountId = props.sdkTransaction.transactionId.accountId.toString();
+
+  const hash = javaFormatArrayHashCode(props.sdkTransaction.toBytes());
+  const defaultName = `${validStart.seconds}_${accountId}_${hash}`;
+
+  const { filePath, canceled } = await showSaveDialog(
+    `${defaultName || 'transaction'}`,
     'Export transaction',
     'Export',
-    [{ name: 'Transaction Files', extensions: ['txsig'] }],
+    enabledFormats,
     'Export transaction',
   );
+
+  if (canceled || !filePath) {
+    return;
+  }
+
+  // Save selected format to local storage
+  const ext = filePath.split('.').pop();
+  if (!EXPORT_FORMATS.find(f => f.extensions[0] === ext)) {
+    throw new Error(`Unsupported file extension: ${ext}`);
+  }
+  setLastExportExtension(ext);
+
+  // Create file(s) based on name and selected format
+  if (ext === 'tx2') {
+    // TTv2 is the new format, which includes the entire transaction, comments, and any other
+    // metadata that might be relevant.
+    const bytes = encode(props.organizationTransaction);
+    await saveFileToPath(
+      bytes,
+      filePath,
+    );
+  } else if (ext === 'tx') {
+    // Remove all signatures, 'unfreeze' it, then set nodes. This gives us the 'base' transaction.
+    const nodeAccountIds = props.sdkTransaction._nodeAccountIds;
+    const mainTransaction = SDKTransaction.fromBytes(props.sdkTransaction.toBytes());
+    mainTransaction.removeAllSignatures();
+    mainTransaction._signedTransactions.clear();
+    mainTransaction.setNodeAccountIds([nodeAccountIds.get(0)]);
+    // If not frozen, it doesn't appear to set something correctly, the JavaSDK cannot deserialize it properly.
+    mainTransaction.freeze();
+
+    const bytes = mainTransaction.toBytes();
+    await saveFileToPath(
+      bytes,
+      filePath,
+    );
+
+    // now create txt
+    const author = props.organizationTransaction.creatorEmail;
+    const contents = props.organizationTransaction.description || '';
+    const timestamp = new Date(props.organizationTransaction.createdAt);
+    const formattedTimestamp = format(timestamp, 'yyyy-MM-dd HH:mm:ss');
+
+    const exportJson = JSON.stringify({
+      Author: author,
+      Contents: contents,
+      Timestamp: formattedTimestamp,
+    });
+
+    const txtFilePath = filePath.replace(/\.[^/.]+$/, '.txt');
+
+    await saveFileToPath(
+      exportJson,
+      txtFilePath,
+    );
+
+    const accountNums: number[] = [];
+    const list: Array<{ realmNum: number; shardNum: number; accountNum: number; network: string }> = [];
+
+    for (let i = 0; i < nodeAccountIds.length; i++) {
+      const id = nodeAccountIds.get(i);
+      accountNums.push(id.num ?? 0);
+      list.push({
+        realmNum: id.realm?.toString() ?? 0,
+        shardNum: id.shard?.toString() ?? 0,
+        accountNum: id.num?.toString() ?? 0,
+        network: network.network, // or use your variable
+      });
+    }
+
+    // Build input string (e.g. "3-5,7")
+    const sorted = accountNums.sort((a, b) => a - b);
+    const ranges: string[] = [];
+    let start = sorted[0], end = sorted[0];
+    function addRange(start: Long, end: Long) {
+      ranges.push(start.equals(end) ? `${start.toString()}` : `${start.toString()}-${end.toString()}`);
+    }
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i].equals(end.add(1))) {
+        end = sorted[i];
+      } else {
+        addRange(start, end);
+        start = sorted[i];
+        end = sorted[i];
+      }
+    }
+    addRange(start, end);
+    const input = ranges.join(',');
+
+    const metadata = JSON.stringify({
+      nodes: {
+        input,
+        list,
+      }
+    });
+
+    const csvaFilePath = filePath.replace(/\.[^/.]+$/, '.csva');
+
+    // now create csva
+    await saveFileToPath(
+      metadata,
+      csvaFilePath,
+    );
+  }
 };
 
 const handleAction = async (value: ActionButton) => {
@@ -590,6 +747,9 @@ watch(
               ? getStatusFromCode(props.organizationTransaction?.statusCode)
               : 'FAILED'
           }}
+        </span>
+        <span v-else-if="isTransactionVersionMismatch" class="badge bg-danger text-break ms-2">
+          Transaction Version Mismatch
         </span>
       </h2>
     </div>

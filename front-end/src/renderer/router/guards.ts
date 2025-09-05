@@ -24,6 +24,10 @@ export function addGuards(router: Router) {
     const userIsAdmin =
       isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin;
 
+    if (user.accountSetupStarted) {
+      return to.name === 'accountSetup';
+    }
+
     if (
       (to.meta.onlyAdmin && !userIsAdmin) ||
       (to.meta.onlyOrganization && !userIsLoggedInOrganization)

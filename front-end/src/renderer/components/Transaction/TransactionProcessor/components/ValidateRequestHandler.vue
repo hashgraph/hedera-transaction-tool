@@ -4,17 +4,13 @@ import { BaseRequest, CustomRequest, TransactionRequest, type Handler, type Proc
 import { ref } from 'vue';
 import { FileCreateTransaction, Transaction } from '@hashgraph/sdk';
 
-import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
+import { TRANSACTION_MAX_SIZE } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import {
-  assertUserLoggedIn,
-  ableToSign,
-  getTransactionType,
-  validateFileUpdateTransaction,
-} from '@renderer/utils';
+import { assertUserLoggedIn, ableToSign, validateFileUpdateTransaction } from '@renderer/utils';
+import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 /* Constants */
 const SIZE_BUFFER_BYTES = 200;

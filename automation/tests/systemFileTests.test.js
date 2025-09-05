@@ -22,9 +22,10 @@ let registrationPage, loginPage, transactionPage, organizationPage, settingsPage
 let firstUser;
 
 /**
- * These tests verify that the user can execute file update transactions for system files
+ * These tests verify that the user can execute file update transactions for system files.
+ * Please note: some delays have been observed between file update and file read. This results in
+ * flaky tests.
  */
-
 test.describe('System file tests', () => {
   test.beforeAll(async () => {
     test.slow();
@@ -93,9 +94,9 @@ test.describe('System file tests', () => {
     expect(areIdentical).toBe(true);
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const result = transactionDetails.transactions[0]?.result;
-    const entityId = transactionDetails.transactions[0]?.entity_id;
+    const transactionType = transactionDetails?.name;
+    const result = transactionDetails?.result;
+    const entityId = transactionDetails?.entity_id;
     expect(transactionType).toBe('FILEUPDATE');
     expect(entityId).toBe('0.0.101');
     expect(result).toBe('SUCCESS');
@@ -104,20 +105,47 @@ test.describe('System file tests', () => {
   test('Verify user can execute file update transaction for node address book(102) ', async () => {
     test.slow();
     const fileId = '0.0.102';
-    const { txId, validStart } = await organizationPage.updateSystemFile(fileId, 5, true);
+
+    // Read current file from network
+    const networkFileContents = await transactionPage.readFile(fileId);
+    const networkJson = JSON.parse(networkFileContents);
+
+    // Read local file
+    const fs = require('fs');
+    const localJson = JSON.parse(fs.readFileSync('data/102-base.json', 'utf8'));
+
+    // Combine nodeAddress lists
+    const combinedNodeAddress = [
+      ...networkJson.nodeAddress,
+      ...localJson.nodeAddress
+    ];
+
+    // Remove duplicates by nodeId (optional, if needed)
+    const uniqueNodeAddress = Array.from(
+      new Map(combinedNodeAddress.map(n => [n.nodeId, n])).values()
+    );
+
+    // Create merged file content
+    const mergedJson = { nodeAddress: uniqueNodeAddress };
+
+    fs.writeFileSync('data/102.json', JSON.stringify(mergedJson, null, 2), 'utf8');
+
+    // Update the file on the network
+    const { txId, validStart } = await organizationPage.updateSystemFile(
+      fileId,
+      5,
+      true
+    );
     await waitForValidStart(validStart);
 
-    //comparing the file from read query with the file from data folder
+    // Verify update
     const areIdentical = await organizationPage.areFilesIdentical(fileId);
     expect(areIdentical).toBe(true);
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const result = transactionDetails.transactions[0]?.result;
-    const entityId = transactionDetails.transactions[0]?.entity_id;
-    expect(transactionType).toBe('FILEUPDATE');
-    expect(entityId).toBe('0.0.102');
-    expect(result).toBe('SUCCESS');
+    expect(transactionDetails?.name).toBe('FILEUPDATE');
+    expect(transactionDetails?.entity_id).toBe('0.0.102');
+    expect(transactionDetails?.result).toBe('SUCCESS');
   });
 
   test('Verify user can execute file update transaction for fee schedule(111)', async () => {
@@ -131,9 +159,9 @@ test.describe('System file tests', () => {
     expect(areIdentical).toBe(true);
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const result = transactionDetails.transactions[0]?.result;
-    const entityId = transactionDetails.transactions[0]?.entity_id;
+    const transactionType = transactionDetails?.name;
+    const result = transactionDetails?.result;
+    const entityId = transactionDetails?.entity_id;
     expect(transactionType).toBe('FILEAPPEND');
     expect(entityId).toBe('0.0.111');
     expect(result).toBe('FEE_SCHEDULE_FILE_PART_UPLOADED');
@@ -150,9 +178,9 @@ test.describe('System file tests', () => {
     expect(areIdentical).toBe(true);
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const result = transactionDetails.transactions[0]?.result;
-    const entityId = transactionDetails.transactions[0]?.entity_id;
+    const transactionType = transactionDetails?.name;
+    const result = transactionDetails?.result;
+    const entityId = transactionDetails?.entity_id;
     expect(transactionType).toBe('FILEUPDATE');
     expect(result).toBe('SUCCESS');
     expect(entityId).toBe('0.0.112');
@@ -168,9 +196,9 @@ test.describe('System file tests', () => {
     expect(areIdentical).toBe(true);
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const result = transactionDetails.transactions[0]?.result;
-    const entityId = transactionDetails.transactions[0]?.entity_id;
+    const transactionType = transactionDetails?.name;
+    const result = transactionDetails?.result;
+    const entityId = transactionDetails?.entity_id;
     expect(transactionType).toBe('FILEUPDATE');
     expect(entityId).toBe('0.0.121');
     expect(result).toBe('SUCCESS');
@@ -186,9 +214,9 @@ test.describe('System file tests', () => {
     expect(areIdentical).toBe(true);
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const result = transactionDetails.transactions[0]?.result;
-    const entityId = transactionDetails.transactions[0]?.entity_id;
+    const transactionType = transactionDetails?.name;
+    const result = transactionDetails?.result;
+    const entityId = transactionDetails?.entity_id;
     expect(transactionType).toBe('FILEUPDATE');
     expect(entityId).toBe('0.0.122');
     expect(result).toBe('SUCCESS');
@@ -204,9 +232,9 @@ test.describe('System file tests', () => {
     expect(areIdentical).toBe(true);
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const result = transactionDetails.transactions[0]?.result;
-    const entityId = transactionDetails.transactions[0]?.entity_id;
+    const transactionType = transactionDetails?.name;
+    const result = transactionDetails?.result;
+    const entityId = transactionDetails?.entity_id;
     expect(transactionType).toBe('FILEUPDATE');
     expect(entityId).toBe('0.0.123');
     expect(result).toBe('SUCCESS');

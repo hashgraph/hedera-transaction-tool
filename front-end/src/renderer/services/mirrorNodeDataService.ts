@@ -9,7 +9,7 @@ import type {
   NetworkNodesResponse,
   INodeInfoParsed,
   Key as NetworkResponseKey,
-} from '@main/shared/interfaces';
+} from '@shared/interfaces';
 
 import axios from 'axios';
 
@@ -30,6 +30,7 @@ import {
   isAccountId,
   isFileId,
   parseHbar,
+  getServiceEndpoint,
 } from '@renderer/utils';
 
 /* Mirror node data service */
@@ -323,6 +324,14 @@ export const getNodeInfo = async (
         stake_rewarded: parseHbar(node.stake_rewarded, HbarUnit.Tinybar),
         staking_period: node.staking_period || null,
         reward_rate_start: parseHbar(node.reward_rate_start, HbarUnit.Tinybar),
+        decline_reward: node.decline_reward ?? false,
+        grpc_web_proxy_endpoint: node.grpc_proxy_endpoint
+          ? getServiceEndpoint({
+              ipAddressV4: '',
+              port: node.grpc_proxy_endpoint.port.toString(),
+              domainName: node.grpc_proxy_endpoint.domain_name || '',
+            })
+          : null,
       };
       return nodeInfo;
     }

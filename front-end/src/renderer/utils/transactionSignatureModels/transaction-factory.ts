@@ -14,6 +14,7 @@ import FileCreateTransactionModel from './file-create-transaction.model';
 import NodeCreateTransactionModel from './node-create-transaction.model';
 import NodeUpdateTransactionModel from './node-update-transaction.model';
 import NodeDeleteTransactionModel from './node-delete-transaction.model';
+import { getTransactionType } from '../sdk/transactions';
 
 export default class TransactionFactory {
   static fromBytes(bytes: Buffer) {
@@ -39,8 +40,9 @@ export default class TransactionFactory {
       NodeDeleteTransaction: NodeDeleteTransactionModel,
     };
 
-    const transactionType = transaction.constructor.name.slice(
-      transaction.constructor.name.startsWith('_') ? 1 : 0,
+    const transactionType = getTransactionType(
+      transaction,
+      true,
     ) as keyof typeof transactionModelMap;
 
     if (transactionModelMap[transactionType]) {

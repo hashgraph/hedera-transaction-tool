@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { IGroup, TransactionApproverDto } from '@main/shared/interfaces';
+import type { IGroup, TransactionApproverDto } from '@shared/interfaces';
 import type { GroupItem } from '@renderer/stores/storeTransactionGroup';
 import { addApprovers, addObservers, type ApiGroupItem } from '@renderer/services/organization';
 import { TransactionRequest, type Handler, type Processable } from '..';
@@ -7,7 +7,7 @@ import { TransactionRequest, type Handler, type Processable } from '..';
 import { ref } from 'vue';
 import { Transaction, FileUpdateTransaction, Hbar, Key } from '@hashgraph/sdk';
 
-import { TRANSACTION_MAX_SIZE } from '@main/shared/constants';
+import { TRANSACTION_MAX_SIZE } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -23,7 +23,6 @@ import {
 import {
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
-  getTransactionType,
   isLoggedInOrganization,
   safeAwait,
   uint8ToHex,
@@ -33,6 +32,7 @@ import {
   createFileAppendTransaction,
   getPrivateKey,
 } from '@renderer/utils/sdk';
+import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 /* Constants */
 const FIRST_CHUNK_SIZE_BYTES = 100;

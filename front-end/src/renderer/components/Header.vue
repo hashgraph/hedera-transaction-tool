@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import type { Network } from '@main/shared/interfaces';
-
 import { computed, onUpdated } from 'vue';
 
-import { CommonNetwork } from '@main/shared/enums';
+import { networkMapping } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -15,28 +13,6 @@ import LogoText from '@renderer/components/LogoText.vue';
 import NotificationsDropDown from '@renderer/components/Notifications/NotificationsDropDown.vue';
 import UserModeSelect from './UserModeSelect.vue';
 
-/* Mappings */
-const networkMapping: {
-  [key in Network]: { label: string; className: string };
-} = {
-  [CommonNetwork.TESTNET]: {
-    label: 'TESTNET',
-    className: 'text-testnet',
-  },
-  [CommonNetwork.MAINNET]: {
-    label: 'MAINNET',
-    className: 'text-mainnet',
-  },
-  [CommonNetwork.PREVIEWNET]: {
-    label: 'PREVIEWNET',
-    className: 'text-previewnet',
-  },
-  [CommonNetwork.LOCAL_NODE]: {
-    label: 'LOCAL NODE',
-    className: 'text-info',
-  },
-};
-
 /* Stores */
 const user = useUserStore();
 const networkStore = useNetworkStore();
@@ -46,7 +22,7 @@ const createTooltips = useCreateTooltips();
 
 /* Computed */
 const isAccountSetupComplete = computed(() => {
-  return user.personal && user.personal.isLoggedIn && !user.accountSetupStarted ;
+  return user.personal && user.personal.isLoggedIn && !user.accountSetupStarted;
 });
 
 /* Hooks */
@@ -59,10 +35,7 @@ onUpdated(createTooltips);
       <Logo class="me-2" />
       <LogoText />
     </div>
-    <div
-      v-if="isAccountSetupComplete"
-      class="flex-centered justify-content-end"
-    >
+    <div v-if="isAccountSetupComplete" class="flex-centered justify-content-end">
       <!-- <span class="container-icon">
         <i class="text-icon-main bi bi-search"></i>
       </span>

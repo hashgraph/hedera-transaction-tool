@@ -187,6 +187,16 @@ class FilePage extends BasePage {
     }
   }
 
+  async isFileCardHidden(fileId) {
+    await this.waitForElementToBeVisible(this.addNewButtonSelector);
+    const index = await this.findFileByIndex(fileId);
+    if (index === -1) {
+      return true; // file not found
+    } else {
+      return await this.isElementHidden(this.fileIdListPrefixSelector + index);
+    }
+  }
+
   async ensureFileExistsAndUnlinked() {
     if (await this.isUnlinkedFilesEmpty()) {
       const { fileId } = await this.transactionPage.createFile('test');

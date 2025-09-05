@@ -2,6 +2,12 @@
   "files": [],
   "compilerOptions": {
     "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@main/*": ["src/main/*"],
+      "@renderer/*": ["src/renderer/*"],
+      "@shared/*": ["src/shared/*"]
+    }
   },
   "references": [{ "path": "./tsconfig.node.json" }, { "path": "./tsconfig.web.json" }],
 }

@@ -1,4 +1,4 @@
-import type { IUserKey, PaginatedResourceDto } from '@main/shared/interfaces';
+import type { IUserKey, PaginatedResourceDto } from '@shared/interfaces';
 
 import { axiosWithCredentials, commonRequestHandler, safeAwait } from '@renderer/utils';
 

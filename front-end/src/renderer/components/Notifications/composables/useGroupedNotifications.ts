@@ -1,8 +1,8 @@
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { type INotificationReceiver, NotificationType } from '@main/shared/interfaces';
-import { readyToSignTitle, historyTitle, readyForExecutionTitle } from '@main/shared/constants';
+import { type INotificationReceiver, NotificationType } from '@shared/interfaces';
+import { readyToSignTitle, historyTitle, readyForExecutionTitle } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -187,10 +187,10 @@ export function useGroupedNotifications() {
   /* Watch */
   watch(
     () => notificationsStore.notifications,
-    (newNotifications) => {
+    newNotifications => {
       previousNotifications.value = { ...newNotifications };
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   return {

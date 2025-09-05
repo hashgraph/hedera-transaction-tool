@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Theme } from '@main/shared/interfaces';
+import type { Theme } from '@shared/interfaces';
 
 import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue';
 

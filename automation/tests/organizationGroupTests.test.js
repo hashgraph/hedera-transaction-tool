@@ -19,7 +19,14 @@ let app, window;
 let globalCredentials = { email: '', password: '' };
 let registrationPage, loginPage, transactionPage, organizationPage, groupPage;
 let firstUser, secondUser, thirdUser;
-let complexKeyAccountId;
+let complexKeyAccountId, newAccountId;
+
+function incrementAccountId(accountId) {
+  const parts = accountId.split('.');
+  const lastIndex = parts.length - 1;
+  parts[lastIndex] = (parseInt(parts[lastIndex], 10) + 1).toString();
+  return parts.join('.');
+}
 
 test.describe('Organization Group Tx tests', () => {
   test.beforeAll(async () => {
@@ -68,8 +75,9 @@ test.describe('Organization Group Tx tests', () => {
 
     // Set complex account for transactions
     await organizationPage.addComplexKeyAccountForTransactions();
-
     complexKeyAccountId = organizationPage.getComplexAccountId();
+    await organizationPage.addComplexKeyAccountForTransactions();
+    newAccountId = organizationPage.complexAccountId[1];
     groupPage.organizationPage = organizationPage;
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
@@ -126,38 +134,70 @@ test.describe('Organization Group Tx tests', () => {
     );
 
     const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionDetails.transactions[0]?.name;
-    const result = transactionDetails.transactions[0]?.result;
+    const transactionType = transactionDetails?.name;
+    const result = transactionDetails?.result;
     expect(transactionType).toBe('CRYPTOAPPROVEALLOWANCE');
     expect(result).toBe('SUCCESS');
 
     const secondTransactionDetails = await transactionPage.mirrorGetTransactionResponse(secondTxId);
-    const secondTransactionType = secondTransactionDetails.transactions[0]?.name;
-    const secondResult = secondTransactionDetails.transactions[0]?.result;
+    const secondTransactionType = secondTransactionDetails?.name;
+    const secondResult = secondTransactionDetails?.result;
     expect(secondTransactionType).toBe('CRYPTOAPPROVEALLOWANCE');
     expect(secondResult).toBe('SUCCESS');
   });
 
-  test('Verify user can import csv transactions', async () => {
+  //This test (for the 5 transactions option) appears to be a bit flaky, but very rare.
+  [5, 100].forEach((numberOfTransactions) => {
+    test(`Verify user can import csv transactions with ${numberOfTransactions} transactions`, async () => {
+      test.slow();
+      await groupPage.fillDescription('test');
+      await groupPage.generateAndImportCsvFile(complexKeyAccountId, newAccountId,  numberOfTransactions);
+      const message = await groupPage.getToastMessage();
+      expect(message).toBe('Import complete');
+      await groupPage.clickOnSignAndExecuteButton();
+      await groupPage.clickOnConfirmGroupTransactionButton();
+      const timestamps = await groupPage.getAllTransactionTimestamps(numberOfTransactions);
+      await groupPage.clickOnSignAllButton();
+      await loginPage.waitForToastToDisappear();
+      await transactionPage.clickOnTransactionsMenuButton();
+      await organizationPage.logoutFromOrganization();
+      await groupPage.logInAndSignGroupTransactionsByAllUsers(globalCredentials.password, numberOfTransactions > 10);
+      await organizationPage.signInOrganization(
+        firstUser.email,
+        firstUser.password,
+        globalCredentials.password,
+      );
+      const isAllTransactionsSuccessful =
+        await groupPage.verifyAllTransactionsAreSuccessful(timestamps);
+      expect(isAllTransactionsSuccessful).toBe(true);
+    });
+  });
+
+  test('Verify import fails if sender account does not exist on network', async () => {
     test.slow();
-    const numberOfTransactions = 5;
     await groupPage.fillDescription('test');
-    await groupPage.generateAndImportCsvFile(complexKeyAccountId, numberOfTransactions);
-    await groupPage.clickOnSignAndExecuteButton();
-    await groupPage.clickOnConfirmGroupTransactionButton();
-    const timestamps = await groupPage.getAllTransactionTimestamps(numberOfTransactions);
-    await groupPage.clickOnSignAllButton();
-    await loginPage.waitForToastToDisappear();
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
-    await groupPage.logInAndSignGroupTransactionsByAllUsers(globalCredentials.password);
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
-    const isAllTransactionsSuccessful =
-      await groupPage.verifyAllTransactionsAreSuccessful(timestamps);
-    expect(isAllTransactionsSuccessful).toBe(true);
+    // create a non-existing account Id
+    const senderAccountId = incrementAccountId(newAccountId);
+    await groupPage.generateAndImportCsvFile(senderAccountId, newAccountId, 5);
+    const message = await groupPage.getToastMessage();
+    expect(message).toBe(`Sender account ${senderAccountId} does not exist on network. Review the CSV file.`);
+  });
+
+  test('Verify import fails if fee payer account does not exist on network', async () => {
+    test.slow();
+    await groupPage.fillDescription('test');
+    const feePayerAccountId = incrementAccountId(newAccountId);
+    await groupPage.generateAndImportCsvFile(complexKeyAccountId, newAccountId, 5, feePayerAccountId);
+    const message = await groupPage.getToastMessage();
+    expect(message).toBe(`Fee payer account ${feePayerAccountId} does not exist on network. Review the CSV file.`);
+  });
+
+  test('Verify import fails if receiver account does not exist on network', async () => {
+    test.slow();
+    await groupPage.fillDescription('test');
+    const receiverAccountId = incrementAccountId(newAccountId);
+    await groupPage.generateAndImportCsvFile(complexKeyAccountId, receiverAccountId, 5);
+    const message = await groupPage.getToastMessage();
+    expect(message).toBe(`Receiver account ${receiverAccountId} does not exist on network. Review the CSV file.`);
   });
 });

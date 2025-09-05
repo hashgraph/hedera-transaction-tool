@@ -21,8 +21,7 @@ import {
 } from '@app/common';
 import { NotificationType, Transaction, TransactionGroup, TransactionStatus } from '@entities';
 
-import { ExecuteService } from '../execute/execute.service';
-import { getNetwork } from '@app/common';
+import { ExecuteService } from '../execute';
 
 @Injectable()
 export class TransactionStatusService {
@@ -128,6 +127,7 @@ export class TransactionStatusService {
         );
 
         notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.EXPIRED, {
+          transactionId: transaction.transactionId,
           network: transaction.mirrorNetwork,
         });
       }
@@ -237,21 +237,19 @@ export class TransactionStatusService {
     notifySyncIndicators(this.notificationsService, transaction.id, newStatus, {
       network: transaction.mirrorNetwork,
     });
-    const networkString = getNetwork(transaction);
-
     if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
       this.notificationsService.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
         entityId: transaction.id,
         type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
         actorId: null,
-        content: `Transaction is ready for execution!\nTransaction ID: ${transaction.transactionId}\nNetwork: ${networkString}`,
         userIds: [transaction.creatorKey?.userId],
-        additionalData: { network: transaction.mirrorNetwork },
+        additionalData: { transactionId: transaction.transactionId, network: transaction.mirrorNetwork },
       });
     }
 
     if (newStatus === TransactionStatus.WAITING_FOR_SIGNATURES) {
       notifyWaitingForSignatures(this.notificationsService, transaction.id, {
+        transactionId: transaction.transactionId,
         network: transaction.mirrorNetwork,
       });
     }

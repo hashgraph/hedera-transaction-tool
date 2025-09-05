@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HederaAccount, PublicKeyMapping } from '@prisma/client';
-import type { AccountInfo, Contact } from '@main/shared/interfaces';
+import type { AccountInfo, Contact } from '@shared/interfaces';
 import { useToast } from 'vue-toast-notification';
 
 import { onBeforeMount, ref, watch } from 'vue';

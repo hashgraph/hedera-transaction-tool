@@ -37,7 +37,7 @@ import {
   notifySyncIndicators,
   MirrorNetworkGRPC,
   isTransactionBodyOverMaxSize,
-  emitExecuteTranasction,
+  emitExecuteTransaction,
   notifyGeneral,
   getTransactionSignReminderKey,
 } from '@app/common/utils';
@@ -147,7 +147,7 @@ describe('TransactionsService', () => {
 
       expect(transactionsRepo.findOne).toHaveBeenCalledWith({
         where: { id: 1 },
-        relations: ['creatorKey', 'observers', 'comments', 'groupItem'],
+        relations: ['creatorKey', 'creatorKey.user', 'observers', 'comments', 'groupItem'],
       });
 
       expect(entityManager.find).toHaveBeenCalledWith(TransactionSigner, {
@@ -445,6 +445,7 @@ describe('TransactionsService', () => {
       expect(transactionsRepo.save).toHaveBeenCalled();
       expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, 1, {
         network: dto.mirrorNetwork,
+        transactionId: expect.any(String),
       });
       expect(schedulerService.addReminder).toHaveBeenCalledWith(
         `transaction:sign:1`,
@@ -496,6 +497,7 @@ describe('TransactionsService', () => {
       );
       expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, 1, {
         network: dto.mirrorNetwork,
+        transactionId: expect.any(String),
       });
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
 
@@ -700,13 +702,15 @@ describe('TransactionsService', () => {
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
 
-    it('should emit notification to the notifiaction service', async () => {
+    it('should emit notification to the notification service', async () => {
       const transaction = {
         id: 123,
         creatorKey: { userId: 1 },
         observers: [{ userId: 2 }],
         signers: [{ userId: 3 }],
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        mirrorNetwork: 'testnet',
+        transactionId: '0.0.123@123134145.139840'
       };
 
       jest
@@ -719,8 +723,12 @@ describe('TransactionsService', () => {
         notificationsService,
         NotificationType.TRANSACTION_CANCELLED,
         expect.arrayContaining([2, 3]),
-        expect.any(String),
         123,
+        false,
+        {
+          network: transaction.mirrorNetwork,
+          transactionId: transaction.transactionId,
+        },
       );
     });
   });
@@ -812,7 +820,7 @@ describe('TransactionsService', () => {
       const result = await service.executeTransaction(123, user as User);
 
       expect(result).toBe(true);
-      expect(emitExecuteTranasction).toHaveBeenCalledWith(chainService, {
+      expect(emitExecuteTransaction).toHaveBeenCalledWith(chainService, {
         id: transaction.id,
         status: transaction.status,
         transactionBytes: transaction.transactionBytes.toString('hex'),
@@ -867,7 +875,18 @@ describe('TransactionsService', () => {
     });
 
     it('should return the transaction if the user is the creator', async () => {
-      const transaction = { id: 123, creatorKey: { userId: user.id }, observers: [] };
+      const transaction = {
+        id: 123,
+        creatorKey: {
+          id: 1,
+          userId: 1,
+          user: {
+            id: user.id,
+            email: 'test@email.com',
+          },
+        },
+        observers: []
+      };
 
       jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
@@ -881,6 +900,14 @@ describe('TransactionsService', () => {
     it('should return the transaction if the user is a signer', async () => {
       const transaction = {
         id: 123,
+        creatorKey: {
+          id: 1,
+          userId: 1,
+          user: {
+            id: 1,
+            email: 'test@email.com',
+          },
+        },
         observers: [],
       };
 
@@ -904,6 +931,14 @@ describe('TransactionsService', () => {
     it('should return the transaction if the user is an observer', async () => {
       const transaction = {
         id: 123,
+        creatorKey: {
+          id: 1,
+          userId: 1,
+          user: {
+            id: 1,
+            email: 'test@email.com',
+          },
+        },
         observers: [{ userId: user.id }],
       };
 
@@ -920,6 +955,14 @@ describe('TransactionsService', () => {
     it('should return the transaction if the user is an approver', async () => {
       const transaction = {
         id: 123,
+        creatorKey: {
+          id: 1,
+          userId: 1,
+          user: {
+            id: 1,
+            email: 'test@email.com',
+          },
+        },
         observers: [],
       };
 
@@ -939,7 +982,14 @@ describe('TransactionsService', () => {
     it('should throw if the user does not have verified access', async () => {
       const transaction = {
         id: 123,
-        creatorKey: { userId: 2 },
+        creatorKey: {
+          id: 1,
+          userId: 2,
+          user: {
+            id: 2,
+            email: 'test@email.com',
+          },
+        },
         observers: [],
       };
 
@@ -954,9 +1004,17 @@ describe('TransactionsService', () => {
       );
     });
 
-    it('should return null if the user does not have verified access', async () => {
+    it('should return history transaction, even if the user does not have verified access', async () => {
       const transaction = {
         id: 123,
+        creatorKey: {
+          id: 1,
+          userId: 1,
+          user: {
+            id: 1,
+            email: 'test@email.com',
+          },
+        },
         status: TransactionStatus.EXECUTED,
       };
 

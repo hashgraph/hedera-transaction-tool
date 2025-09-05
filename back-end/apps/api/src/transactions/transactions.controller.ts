@@ -247,7 +247,7 @@ export class TransactionsController {
   })
   @ApiResponse({
     status: 200,
-    type: TransactionDto,
+    type: TransactionFullDto,
   })
   @Get('/:id')
   @Serialize(TransactionFullDto)

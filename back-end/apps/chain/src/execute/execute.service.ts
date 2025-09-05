@@ -7,8 +7,8 @@ import { MurLock } from 'murlock';
 import {
   AccountUpdateTransaction,
   NodeUpdateTransaction,
-  Transaction as SDKTransaction,
   Status,
+  Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
 import { Transaction, TransactionStatus } from '@entities';
@@ -22,11 +22,11 @@ import {
   hasValidSignatureKey,
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
+  notifySyncIndicators,
   notifyTransactionAction,
+  sleep,
   TransactionExecutedDto,
   TransactionGroupExecutedDto,
-  notifySyncIndicators,
-  sleep,
   transactionIs,
 } from '@app/common';
 
@@ -51,10 +51,7 @@ export class ExecuteService {
     const filteredTransactionGroup: ExecuteTransactionGroupDto = {
       ...transactionGroup,
       groupItems: transactionGroup.groupItems.filter(
-        tx =>
-          tx.transaction.status !== TransactionStatus.CANCELED &&
-          tx.transaction.status !== TransactionStatus.EXPIRED &&
-          tx.transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES,
+        tx => tx.transaction.status === TransactionStatus.WAITING_FOR_EXECUTION
       ),
     };
     const transactions: { sdkTransaction: SDKTransaction; transaction: ExecuteTransactionDto }[] =

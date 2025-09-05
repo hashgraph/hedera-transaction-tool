@@ -1,0 +1,15 @@
+{{- if and .Values.stackgres.enabled (hasKey .Values.stackgres.shardedCluster "configurations") (hasKey .Values.stackgres.shardedCluster.configurations "backups") }}
+{{- range .Values.stackgres.shardedCluster.configurations.backups }}
+{{- $storageName := .sgObjectStorage }}
+{{- if hasKey $.Values.stackgres.objectStorage $storageName }}
+---
+apiVersion: stackgres.io/v1beta1
+kind: SGObjectStorage
+metadata:
+  name: {{ $storageName }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+{{- index $.Values.stackgres.objectStorage $storageName | toYaml | nindent 2 }}
+{{- end }}
+{{- end }}
+{{- end -}}

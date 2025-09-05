@@ -36,8 +36,7 @@ const colorMapping = {
     :class="['btn', color ? colorMapping[color] : '', sizeMapping[size || 'default']]"
   >
     <template v-if="loading">
-      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span
-      >{{ ' ' }}
+      <span class="spinner-border spinner-border-sm me-2" role="status" inert></span>{{ ' ' }}
       <span v-if="loadingText">{{ loadingText }}</span>
       <span v-else>Loading...</span>
     </template>

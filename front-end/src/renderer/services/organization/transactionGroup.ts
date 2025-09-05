@@ -1,4 +1,4 @@
-import type { ITransaction } from '@main/shared/interfaces';
+import type { ITransaction } from '@shared/interfaces';
 
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 

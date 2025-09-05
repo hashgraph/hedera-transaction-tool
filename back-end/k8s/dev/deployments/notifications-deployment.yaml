@@ -49,11 +49,13 @@ spec:
                 secretKeyRef:
                   name: email-api-secret
                   key: username
+                  optional: true
             - name: EMAIL_API_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: email-api-secret
                   key: password
+                  optional: true
             - name: SENDER_EMAIL
               valueFrom:
                 secretKeyRef:

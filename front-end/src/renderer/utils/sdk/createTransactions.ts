@@ -1,4 +1,4 @@
-import type { IAccountInfoParsed, INodeInfoParsed } from '@main/shared/interfaces';
+import type { IAccountInfoParsed, INodeInfoParsed } from '@shared/interfaces';
 
 import {
   AccountAllowanceApproveTransaction,
@@ -15,6 +15,7 @@ import {
   Hbar,
   Key,
   KeyList,
+  Long,
   NodeCreateTransaction,
   NodeDeleteTransaction,
   NodeUpdateTransaction,
@@ -28,7 +29,7 @@ import {
   TransferTransaction,
 } from '@hashgraph/sdk';
 
-import { MEMO_MAX_LENGTH } from '@main/shared/constants';
+import { MEMO_MAX_LENGTH } from '@shared/constants';
 
 import { isAccountId, isContractId, isFileId } from '../validator';
 import { compareKeys } from '.';
@@ -131,9 +132,11 @@ export type NodeData = {
   description: string;
   gossipEndpoints: ComponentServiceEndpoint[];
   serviceEndpoints: ComponentServiceEndpoint[];
+  grpcWebProxyEndpoint: ComponentServiceEndpoint | null;
   gossipCaCertificate: Uint8Array;
   certificateHash: Uint8Array;
   adminKey: Key | null;
+  declineReward: boolean;
 };
 
 export type NodeUpdateData = NodeData & {
@@ -230,7 +233,7 @@ export const createApproveHbarAllowanceTransaction = (
   return transaction;
 };
 
-/* Accound Delete Transaction */
+/* Account Delete Transaction */
 export const createAccountDeleteTransaction = (
   data: TransactionCommonData & AccountDeleteData,
 ): AccountDeleteTransaction => {
@@ -248,7 +251,7 @@ export const createAccountDeleteTransaction = (
   return transaction;
 };
 
-/* Accound Update Transaction */
+/* Account Update Transaction */
 export const createAccountUpdateTransaction = (
   data: TransactionCommonData & AccountUpdateData,
   oldData: IAccountInfoParsed | null,
@@ -440,36 +443,38 @@ export const createTransferHbarTransaction = (
   return transaction;
 };
 
-export const getServiceEndpoints = (data: ComponentServiceEndpoint[]) => {
-  const endpoints = new Array<ServiceEndpoint>();
+export const getServiceEndpoints = (data: ComponentServiceEndpoint[]): ServiceEndpoint[] => {
+  return data
+    .map(getServiceEndpoint)
+    .filter((endpoint): endpoint is ServiceEndpoint => endpoint !== null);
+};
 
-  for (const serviceEndpoint of data) {
-    const ipAddressV4 =
-      serviceEndpoint.ipAddressV4
-        ?.trim()
-        ?.split('.')
-        .filter(oct => oct.length > 0) || [];
-    const domainName = serviceEndpoint.domainName?.trim();
-    const port = Number.parseInt(serviceEndpoint.port?.trim());
-
-    if (ipAddressV4 || domainName) {
-      const serviceEndpoint = new ServiceEndpoint();
-
-      if (ipAddressV4.length > 0) {
-        serviceEndpoint.setIpAddressV4(Uint8Array.from(ipAddressV4.map(Number)));
-      } else if (domainName) {
-        serviceEndpoint.setDomainName(domainName);
-      }
-
-      if (!isNaN(port)) {
-        serviceEndpoint.setPort(port);
-      }
-
-      endpoints.push(serviceEndpoint);
-    }
+export const getServiceEndpoint = (serviceEndpoint: ComponentServiceEndpoint | null) => {
+  if (!serviceEndpoint) {
+    return null;
   }
+  const ipAddressV4 =
+    serviceEndpoint.ipAddressV4
+      ?.trim()
+      ?.split('.')
+      .filter(oct => oct.length > 0) || [];
+  const domainName = serviceEndpoint.domainName?.trim();
+  const port = Number.parseInt(serviceEndpoint.port?.trim());
 
-  return endpoints;
+  if (ipAddressV4 || domainName) {
+    const serviceEndpoint = new ServiceEndpoint();
+
+    if (ipAddressV4.length > 0) {
+      serviceEndpoint.setIpAddressV4(Uint8Array.from(ipAddressV4.map(Number)));
+    } else if (domainName) {
+      serviceEndpoint.setDomainName(domainName);
+    }
+
+    if (!isNaN(port)) {
+      serviceEndpoint.setPort(port);
+    }
+    return serviceEndpoint;
+  }
 };
 
 const setNodeData = (
@@ -479,6 +484,7 @@ const setNodeData = (
 ) => {
   const txGossipEndpoints = getServiceEndpoints(data.gossipEndpoints);
   const txServiceEndpoints = getServiceEndpoints(data.serviceEndpoints);
+  const txGrpcWebProxyEndpoint = getServiceEndpoint(data.grpcWebProxyEndpoint);
 
   if (oldData?.description !== data.description) {
     transaction.setDescription(data.description);
@@ -499,6 +505,10 @@ const setNodeData = (
     transaction.setServiceEndpoints(txServiceEndpoints);
   }
 
+  if (oldData?.grpcWebProxyEndpoint != data.grpcWebProxyEndpoint) {
+    transaction.setGrpcWebProxyEndpoint(txGrpcWebProxyEndpoint);
+  }
+
   if (data.certificateHash.length > 0) {
     transaction.setCertificateHash(data.certificateHash);
   }
@@ -511,6 +521,10 @@ const setNodeData = (
     !compareKeys(data.adminKey, oldData?.admin_key) && transaction.setAdminKey(data.adminKey);
   } else if (data.adminKey) {
     transaction.setAdminKey(data.adminKey);
+  }
+
+  if (oldData?.decline_reward !== data.declineReward) {
+    transaction.setDeclineReward(data.declineReward);
   }
 };
 
@@ -532,7 +546,7 @@ export function createNodeUpdateTransaction(
   setNodeData(transaction, data, oldData);
 
   if (data.nodeId) {
-    transaction.setNodeId(data.nodeId);
+    transaction.setNodeId(Long.fromString(data.nodeId));
   }
 
   return transaction;
@@ -546,7 +560,7 @@ export function createNodeDeleteTransaction(
   setTransactionCommonData(transaction, data);
 
   if (data.nodeId) {
-    transaction.setNodeId(data.nodeId);
+    transaction.setNodeId(Long.fromString(data.nodeId));
   }
 
   return transaction;

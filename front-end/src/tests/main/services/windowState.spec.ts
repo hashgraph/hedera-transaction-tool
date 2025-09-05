@@ -1,7 +1,7 @@
 import { mockDeep } from 'vitest-mock-extended';
 import prisma from '@main/db/__mocks__/prisma';
 
-import { STATIC_USER, WINDOW_STATE } from '@main/shared/constants';
+import { STATIC_USER, WINDOW_STATE } from '@shared/constants';
 
 import { Claim } from '@prisma/client';
 import { BrowserWindow } from 'electron';

@@ -8,8 +8,25 @@ import { getNumberArrayFromString } from '@main/utils';
 import { dualCompareHash, hash } from '@main/utils/crypto';
 
 const createChannelName = (...props: string[]) => ['utils', ...props].join(':');
+let bounceId: number | null = null;
 
 export default () => {
+  ipcMain.on(createChannelName('setDockBounce'), (_e, bounce: boolean) => {
+    if (bounce) {
+      const windows = BrowserWindow.getAllWindows();
+      const isAppFocused = windows.some(win => win.isFocused());
+
+      if (!isAppFocused && app.dock) {
+        bounceId = app.dock.bounce('critical');
+      }
+    } else {
+      if (bounceId !== null && app.dock) {
+        app.dock.cancelBounce(bounceId);
+        bounceId = null;
+      }
+    }
+  });
+
   ipcMain.on(createChannelName('openExternal'), (_e, url: string) => shell.openExternal(url));
 
   ipcMain.on(createChannelName('openPath'), (_e, path: string) => shell.openPath(path));
@@ -63,29 +80,13 @@ export default () => {
   });
 
   ipcMain.handle(
-    createChannelName('saveFileNamed'),
+    createChannelName('saveFileToPath'),
     async (
       _e,
-      data: Uint8Array,
-      name: string,
-      title: string,
-      buttonLabel: string,
-      filters: FileFilter[],
-      message: string,
+      data: Uint8Array | string,
+      filePath: string,
     ) => {
-      const windows = BrowserWindow.getAllWindows();
-      if (windows.length === 0) return;
-
       try {
-        const {canceled, filePath} = await dialog.showSaveDialog(windows[0], {
-          title,
-          defaultPath: name,
-          buttonLabel,
-          filters,
-          message,
-        });
-
-        if (canceled) return;
         if (!filePath) throw new Error('File path is undefined');
 
         await fs.promises.writeFile(filePath, data);
@@ -117,6 +118,29 @@ export default () => {
         buttonLabel,
         filters,
         properties,
+        message,
+      });
+    },
+  );
+
+  ipcMain.handle(
+    createChannelName('showSaveDialog'),
+    async (
+      e,
+      name: string,
+      title: string,
+      buttonLabel: string,
+      filters: FileFilter[],
+      message: string
+    ) => {
+      const windows = BrowserWindow.getAllWindows();
+      if (windows.length === 0) return;
+
+      return await dialog.showSaveDialog(windows[0], {
+        title,
+        defaultPath: name,
+        buttonLabel,
+        filters,
         message,
       });
     },

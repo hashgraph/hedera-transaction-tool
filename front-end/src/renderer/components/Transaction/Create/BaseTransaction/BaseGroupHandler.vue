@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
 import type { KeyList, Transaction } from '@hashgraph/sdk';
 
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
@@ -8,8 +8,8 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { flattenKeyList } from '@renderer/services/keyPairService';
 
-import { getTransactionType } from '@renderer/utils';
 import { onMounted } from 'vue';
+import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 /* Props */
 const props = defineProps<{

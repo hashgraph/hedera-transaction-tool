@@ -1,8 +1,8 @@
-import type { INotificationReceiver } from '@main/shared/interfaces';
+import type { INotificationReceiver } from '@shared/interfaces';
 
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
-import { NotificationType } from '@main/shared/interfaces';
+import { NotificationType } from '@shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
@@ -34,18 +34,21 @@ export default function useMarkNotifications(notificationTypes: NotificationType
   /* Functions */
   async function markAsRead() {
     if (isLoggedInOrganization(user.selectedOrganization)) {
-      const notificationsToMark = networkFilteredNotifications.value.filter(nr =>
-        notificationTypes.includes(nr.notification.type),
-      );
+      const typesToMark = [
+        ...new Set(
+          networkFilteredNotifications.value
+            .filter(nr => notificationTypes.includes(nr.notification.type))
+            .map(nr => nr.notification.type),
+        ),
+      ];
 
-      if (notificationsToMark.length > 0) {
-        await Promise.allSettled(
-          notificationsToMark.map(nr => notifications.markAsRead(nr.notification.type)),
-        );
+      if (typesToMark.length > 0) {
+        await Promise.allSettled(typesToMark.map(type => notifications.markAsRead(type)));
       }
     }
   }
 
+  /* retain the previous notifications to allow the indicators to be shown temporarily */
   function setOldNotifications(addPrevious = false) {
     const data =
       networkFilteredNotifications.value?.filter(nr =>

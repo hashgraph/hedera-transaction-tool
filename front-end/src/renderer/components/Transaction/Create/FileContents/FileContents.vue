@@ -2,15 +2,16 @@
 import type { HederaFile } from '@prisma/client';
 
 import { onMounted, ref } from 'vue';
+import { useToast } from 'vue-toast-notification';
+import { useRoute } from 'vue-router';
 import { FileContentsQuery, FileInfoQuery, Hbar, HbarUnit } from '@hashgraph/sdk';
 
-import { DISPLAY_FILE_SIZE_LIMIT } from '@main/shared/constants';
+import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
+import { isHederaSpecialFileId } from '@shared/hederaSpecialFiles';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useToast } from 'vue-toast-notification';
-import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
@@ -20,7 +21,6 @@ import { add, getAll, update } from '@renderer/services/filesService';
 
 import {
   assertUserLoggedIn,
-  isHederaSpecialFileId,
   formatAccountId,
   encodeString,
   getErrorMessage,
