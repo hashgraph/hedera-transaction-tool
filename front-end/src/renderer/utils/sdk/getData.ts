@@ -45,6 +45,7 @@ import type {
 } from './createTransactions';
 import { getMaximumExpirationTime, getMinimumExpirationTime } from '.';
 import { uint8ToHex } from '..';
+import { transactionTypeKeys } from '@renderer/components/Transaction/Create/txTypeComponentMapping.ts';
 
 export type ExtendedTransactionData = TransactionCommonData &
   (
@@ -311,6 +312,7 @@ const transactionHandlers = new Map<
   [
     AccountCreateTransaction,
     tx => ({
+      transactionType: transactionTypeKeys.createAccount,
       ...getTransactionCommonData(tx),
       ...getAccountData(tx),
       ...getAccountCreateData(tx),
@@ -320,6 +322,7 @@ const transactionHandlers = new Map<
   [
     AccountUpdateTransaction,
     tx => ({
+      transactionType: transactionTypeKeys.updateAccount,
       ...getTransactionCommonData(tx),
       ...getAccountUpdateData(tx),
     }),
@@ -328,6 +331,7 @@ const transactionHandlers = new Map<
   [
     AccountAllowanceApproveTransaction,
     tx => ({
+      transactionType: transactionTypeKeys.approveAllowance,
       ...getTransactionCommonData(tx),
       ...getApproveHbarAllowanceTransactionData(tx),
     }),
@@ -336,6 +340,7 @@ const transactionHandlers = new Map<
   [
     AccountDeleteTransaction,
     tx => ({
+      transactionType: transactionTypeKeys.deleteAccount,
       ...getTransactionCommonData(tx),
       ...getAccountDeleteData(tx),
     }),
@@ -344,6 +349,7 @@ const transactionHandlers = new Map<
   [
     FileCreateTransaction,
     tx => ({
+      transactionType: transactionTypeKeys.createFile,
       ...getTransactionCommonData(tx),
       ...getFileInfoTransactionData(tx),
       ...getFileCreateTransactionData(tx),
@@ -353,6 +359,7 @@ const transactionHandlers = new Map<
   [
     FileUpdateTransaction,
     tx => ({
+      transactionType: transactionTypeKeys.updateFile,
       ...getTransactionCommonData(tx),
       ...getFileInfoTransactionData(tx),
       ...getFileUpdateTransactionData(tx),
@@ -362,6 +369,7 @@ const transactionHandlers = new Map<
   [
     FileAppendTransaction,
     tx => ({
+      transactionType: transactionTypeKeys.appendToFile,
       ...getTransactionCommonData(tx),
       ...getFileAppendTransactionData(tx),
     }),
@@ -370,6 +378,7 @@ const transactionHandlers = new Map<
   [
     FreezeTransaction,
     tx => ({
+      transactionType: transactionTypeKeys.freeze,
       ...getTransactionCommonData(tx),
       ...getFreezeData(tx),
     }),
@@ -378,6 +387,7 @@ const transactionHandlers = new Map<
   [
     TransferTransaction,
     tx => ({
+      transactionType: transactionTypeKeys.transfer,
       ...getTransactionCommonData(tx),
       ...getTransferHbarData(tx),
     }),
@@ -386,6 +396,7 @@ const transactionHandlers = new Map<
   [
     NodeCreateTransaction,
     tx => ({
+      transactionType: transactionTypeKeys.nodeCreate,
       ...getTransactionCommonData(tx),
       ...getNodeData(tx),
     }),
@@ -394,6 +405,7 @@ const transactionHandlers = new Map<
   [
     NodeUpdateTransaction,
     tx => ({
+      transactionType: transactionTypeKeys.nodeUpdate,
       ...getTransactionCommonData(tx),
       ...getNodeData(tx),
       ...getNodeUpdateData(tx),
@@ -403,6 +415,7 @@ const transactionHandlers = new Map<
   [
     NodeDeleteTransaction,
     tx => ({
+      transactionType: transactionTypeKeys.nodeDelete,
       ...getTransactionCommonData(tx),
       ...getNodeDeleteData(tx),
     }),
@@ -411,6 +424,7 @@ const transactionHandlers = new Map<
   [
     SystemDeleteTransaction,
     tx => ({
+      transactionType: transactionTypeKeys.systemDelete,
       ...getTransactionCommonData(tx),
       ...getSystemDeleteData(tx),
     }),
@@ -419,6 +433,7 @@ const transactionHandlers = new Map<
   [
     SystemUndeleteTransaction,
     tx => ({
+      transactionType: transactionTypeKeys.systemUndelete,
       ...getTransactionCommonData(tx),
       ...getSystemUndeleteData(tx),
     }),
