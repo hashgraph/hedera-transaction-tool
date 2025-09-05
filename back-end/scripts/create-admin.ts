@@ -1,4 +1,5 @@
 /// <reference types="./environment.d.ts" />
+import 'tsconfig-paths/register';
 
 import * as path from 'path';
 import * as rl from 'readline-sync';
@@ -23,7 +24,7 @@ import {
   Notification,
   NotificationPreferences,
   NotificationReceiver,
-} from '../libs/common/src/database/entities';
+} from '@entities';
 
 dotenv.config({
   path: path.join(__dirname, './.env'),

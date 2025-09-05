@@ -9,7 +9,10 @@ import useContactsStore from '@renderer/stores/storeContacts';
 import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
-import { generateExternalKeyPairFromString, verifyKeyPair } from '@renderer/services/keyPairService';
+import {
+  generateExternalKeyPairFromString,
+  verifyKeyPair,
+} from '@renderer/services/keyPairService';
 
 import {
   assertUserLoggedIn,
@@ -127,8 +130,9 @@ watch(
           <p
             :data-testid="`label-${keyType.toLocaleLowerCase()}-public-key`"
             class="d-inline-block text-truncate w-100"
-            >{{ props.publicKey }}</p
           >
+            {{ props.publicKey }}
+          </p>
         </div>
         <div class="form-group mt-4">
           <label class="form-label">Enter {{ keyType }} Private key</label>

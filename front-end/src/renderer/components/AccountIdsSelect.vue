@@ -29,7 +29,7 @@ const network = useNetworkStore();
 const linkedAccounts = ref<HederaAccount[]>([]);
 
 /* Computed */
-const accoundIds = computed(() => flattenAccountIds(user.publicKeyToAccounts));
+const accountIds = computed(() => flattenAccountIds(user.publicKeyToAccounts));
 
 /* Handlers */
 const handleAccountIdChange = (e: Event) => {
@@ -52,7 +52,7 @@ onBeforeMount(async () => {
   });
 
   if (props.accountId.length === 0 && props.selectDefault) {
-    emit('update:accountId', accoundIds.value[0] || '');
+    emit('update:accountId', accountIds.value[0] || '');
   }
 });
 
@@ -62,8 +62,8 @@ watch(
   () => {
     const accountId = props.accountId?.trim() || '';
 
-    if ((accountId.length === 0 && props.selectDefault) || !accoundIds.value.includes(accountId)) {
-      emit('update:accountId', accoundIds.value[0]);
+    if ((accountId.length === 0 && props.selectDefault) || !accountIds.value.includes(accountId)) {
+      emit('update:accountId', accountIds.value[0]);
     }
   },
 );
@@ -76,7 +76,7 @@ watch(
     :value="accountId"
     @change="handleAccountIdChange"
   >
-    <template v-for="accountId in accoundIds" :key="accountId">
+    <template v-for="accountId in accountIds" :key="accountId">
       <option :value="accountId">
         {{
           (linkedAccounts.find(la => la.account_id === accountId)?.nickname?.trim() || '').length >

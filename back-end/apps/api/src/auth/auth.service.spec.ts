@@ -227,8 +227,8 @@ describe('AuthService', () => {
     expect(notificationsService.emit).toHaveBeenCalledWith('notify_general', {
       type: 'USER_REGISTERED',
       userIds: [2],
-      content: `User ${user.email} has completed the registration process.`,
       entityId: user.id,
+      additionalData: { username: user.email },
     });
   });
 

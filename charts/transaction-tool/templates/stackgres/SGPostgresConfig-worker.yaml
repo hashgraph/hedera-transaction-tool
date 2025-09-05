@@ -1,0 +1,9 @@
+{{ if and .Values.stackgres.enabled (hasKey .Values.stackgres.shardedCluster.shards.configurations "sgPostgresConfig") (hasKey .Values.stackgres.postgresConfig "worker") }}
+apiVersion: stackgres.io/v1
+kind: SGPostgresConfig
+metadata:
+  name: {{ .Values.stackgres.shardedCluster.shards.configurations.sgPostgresConfig }}
+  namespace: {{ .Release.Namespace }}
+spec:
+{{- .Values.stackgres.postgresConfig.worker | toYaml | nindent 2 }}
+{{- end -}}

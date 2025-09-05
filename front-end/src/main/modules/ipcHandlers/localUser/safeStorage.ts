@@ -1,6 +1,6 @@
 import { ipcMain, safeStorage } from 'electron';
 
-import { STATIC_USER, USE_KEYCHAIN } from '@main/shared/constants';
+import { STATIC_USER, USE_KEYCHAIN } from '@shared/constants';
 
 import { addClaim, getClaims } from '@main/services/localUser/claim';
 import { login, register } from '@main/services/localUser/auth';

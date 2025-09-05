@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Network } from '@main/shared/interfaces';
+import type { Network } from '@shared/interfaces';
 
 import { computed, onBeforeMount, ref } from 'vue';
 
-import { SELECTED_NETWORK } from '@main/shared/constants';
-import { CommonNetwork, CommonNetworkNames } from '@main/shared/enums';
+import { SELECTED_NETWORK } from '@shared/constants';
+import { CommonNetwork, CommonNetworkNames } from '@shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';

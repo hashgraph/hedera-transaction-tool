@@ -10,6 +10,24 @@ import { VerifiedUserGuard } from '../../guards';
 
 import { SignersController } from './signers.controller';
 import { SignersService } from './signers.service';
+import { plainToInstance } from 'class-transformer';
+import { validateOrReject } from 'class-validator';
+import { UploadSignatureMapDto } from '../dto';
+
+jest.mock('class-transformer', () => {
+  const actualModule = jest.requireActual('class-transformer');
+  return {
+    ...actualModule,
+    plainToInstance: jest.fn(),
+  };
+});
+jest.mock('class-validator', () => {
+  const actualModule = jest.requireActual('class-validator');
+  return {
+    ...actualModule,
+    validateOrReject: jest.fn(),
+  };
+});
 
 describe('SignaturesController', () => {
   let controller: SignersController;
@@ -73,6 +91,10 @@ describe('SignaturesController', () => {
     };
   });
 
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe('getSignaturesByTransactionId', () => {
     it('should return an array of signatures', async () => {
       const result = [signer];
@@ -98,12 +120,69 @@ describe('SignaturesController', () => {
     it('should return an array of signatures', async () => {
       const result = [signer];
       const body = {
+        transactionId: 1,
         signatureMap: new SignatureMap(),
       };
 
-      signersService.uploadSignatureMap.mockResolvedValue(result);
+      signersService.uploadSignatureMaps.mockResolvedValue(result);
 
-      expect(await controller.uploadSignatureMap(1, body, user)).toEqual(result);
+      expect(await controller.uploadSignatureMap(body, user)).toEqual(result);
+    });
+  });
+
+
+  describe('uploadSignatureMap', () => {
+    it('should transform, validate and upload signature map for a single object', async () => {
+      const dtoInput = {
+        transactionId: 1,
+        signatureMap: new SignatureMap(),
+      };
+      const transformedDto = { transformed: 'value' };
+
+      // Mock plainToInstance to return a transformed object
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      // Stub validateOrReject to resolve
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      const expectedResult = [{ id: 1 }];
+      (signersService.uploadSignatureMaps as jest.Mock).mockResolvedValue(expectedResult);
+
+      const result = await controller.uploadSignatureMap(dtoInput, user);
+
+      expect(plainToInstance).toHaveBeenCalledWith(UploadSignatureMapDto, dtoInput);
+      expect(validateOrReject).toHaveBeenCalledWith(transformedDto);
+      expect(signersService.uploadSignatureMaps).toHaveBeenCalledWith([transformedDto], user);
+      expect(result).toEqual(expectedResult);
+    });
+
+    it('should transform, validate and upload signature maps for an array of objects', async () => {
+      const dtoInput = [
+        {
+          transactionId: 1,
+          signatureMap: new SignatureMap(),
+        },
+        {
+          transactionId: 2,
+          signatureMap: new SignatureMap(),
+        }
+      ];
+      const transformedDtos = [{ transformed: 'value1' }, { transformed: 'value2' }];
+
+      // For each call, return the corresponding transformed object
+      (plainToInstance as jest.Mock)
+        .mockReturnValueOnce(transformedDtos[0])
+        .mockReturnValueOnce(transformedDtos[1]);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      const expectedResult = [{ id: 1 }, { id: 2 }];
+      (signersService.uploadSignatureMaps as jest.Mock).mockResolvedValue(expectedResult);
+
+      const result = await controller.uploadSignatureMap(dtoInput, user);
+
+      expect(plainToInstance).toHaveBeenCalledTimes(2);
+      expect((plainToInstance as jest.Mock).mock.calls[0]).toEqual([UploadSignatureMapDto, dtoInput[0]]);
+      expect((plainToInstance as jest.Mock).mock.calls[1]).toEqual([UploadSignatureMapDto, dtoInput[1]]);
+      expect(validateOrReject).toHaveBeenCalledTimes(2);
+      expect(signersService.uploadSignatureMaps).toHaveBeenCalledWith(transformedDtos, user);
+      expect(result).toEqual(expectedResult);
     });
   });
 });

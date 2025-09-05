@@ -11,16 +11,6 @@ export default class NodeUpdateTransactionModel extends TransactionBaseModel<Nod
     return [];
   }
 
-  getSigningAccounts(): Set<string> {
-    const set = super.getSigningAccounts();
-
-    if (this.transaction.accountId != null) {
-      set.add(this.transaction.accountId.toString());
-    }
-
-    return set;
-  }
-
   getNodeId(): number | null {
     if (this.transaction.nodeId) {
       return this.transaction.nodeId.toNumber();

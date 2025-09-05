@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Server } from 'socket.io';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { mockDeep } from 'jest-mock-extended';
 
 import { AUTH_SERVICE, NotifyClientDto, BlacklistService } from '@app/common';
@@ -18,6 +19,7 @@ describe('WebsocketGateway', () => {
   let gateway: WebsocketGateway;
   const authService = mockDeep<ClientProxy>();
   const blacklistService = mockDeep<BlacklistService>();
+  const configService = mockDeep<ConfigService>();
   const authWebsocket: Partial<AuthWebsocket> = {
     user: {
       id: 1,
@@ -36,6 +38,10 @@ describe('WebsocketGateway', () => {
         {
           provide: BlacklistService,
           useValue: blacklistService,
+        },
+        {
+          provide: ConfigService,
+          useValue: configService,
         },
       ],
     }).compile();
@@ -110,30 +116,105 @@ describe('WebsocketGateway', () => {
   });
 
   describe('notifyClient', () => {
-    it('should emit message to client with content', () => {
+    it('should add a new message to the batcher', () => {
       const payload: NotifyClientDto = { message: 'Test message', content: 'Test content' };
+
+      const batcherAddSpy = jest.spyOn(gateway['batcher'], 'add');
 
       gateway.notifyClient(payload);
 
-      //@ts-expect-error - accessing private property for testing
-      expect(gateway.io.emit).toHaveBeenCalledWith(payload.message, {
-        content: payload.content,
-      });
+      expect(batcherAddSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: payload.message,
+          content: [payload.content],
+        }),
+      );
     });
   });
 
   describe('notifyUser', () => {
-    it('should emit message to user room with data', () => {
+    it('should add a new message to the batcher with a user group key', () => {
       const userId = 1;
       const message = 'Test message';
       const data = 'Test data';
 
+      const batcherAddSpy = jest.spyOn(gateway['batcher'], 'add');
+
       gateway.notifyUser(userId, message, data);
 
-      //@ts-expect-error - accessing private property for testing
-      expect(gateway.io.to).toHaveBeenCalledWith(roomKeys.USER_KEY(userId));
-      //@ts-expect-error - accessing private property for testing
-      expect(gateway.io.to(roomKeys.USER_KEY(userId)).emit).toHaveBeenCalledWith(message, { data });
+      expect(batcherAddSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: message,
+          content: [data],
+        }),
+        userId,
+      );
     });
   });
+
+  describe('processMessages', () => {
+    it('should emit messages to a specific user room when groupKey is provided', async () => {
+      const groupKey = 1;
+      const messages = [
+        { message: 'message1', content: ['content1'] },
+        { message: 'message1', content: ['content2'] },
+        { message: 'message2', content: ['content3'] },
+      ];
+
+      //@ts-expect-error - accessing private method for testing
+      await gateway.processMessages(groupKey, messages);
+
+      //@ts-expect-error - accessing private method for testing
+      expect(gateway.io.to).toHaveBeenCalledWith(roomKeys.USER_KEY(groupKey));
+      //@ts-expect-error - accessing private method for testing
+      expect(gateway.io.to(roomKeys.USER_KEY(groupKey)).emit).toHaveBeenCalledWith('message1', ['content1', 'content2']);
+      //@ts-expect-error - accessing private method for testing
+      expect(gateway.io.to(roomKeys.USER_KEY(groupKey)).emit).toHaveBeenCalledWith('message2', ['content3']);
+    });
+
+    it('should emit messages globally when groupKey is null', async () => {
+      const groupKey = null;
+      const messages = [
+        { message: 'message1', content: ['content1'] },
+        { message: 'message1', content: ['content2'] },
+        { message: 'message2', content: ['content3'] },
+      ];
+
+      //@ts-expect-error - accessing private method for testing
+      await gateway.processMessages(groupKey, messages);
+
+      //@ts-expect-error - accessing private method for testing
+      expect(gateway.io.emit).toHaveBeenCalledWith('message1', ['content1', 'content2']);
+      //@ts-expect-error - accessing private method for testing
+      expect(gateway.io.emit).toHaveBeenCalledWith('message2', ['content3']);
+    });
+  });
+
+  // describe('notifyClient', () => {
+  //   it('should emit message to client with content', () => {
+  //     const payload: NotifyClientDto = { message: 'Test message', content: 'Test content' };
+  //
+  //     gateway.notifyClient(payload);
+  //
+  //     //@ts-expect-error - accessing private property for testing
+  //     expect(gateway.io.emit).toHaveBeenCalledWith(payload.message, {
+  //       content: payload.content,
+  //     });
+  //   });
+  // });
+  //
+  // describe('notifyUser', () => {
+  //   it('should emit message to user room with data', () => {
+  //     const userId = 1;
+  //     const message = 'Test message';
+  //     const data = 'Test data';
+  //
+  //     gateway.notifyUser(userId, message, data);
+  //
+  //     //@ts-expect-error - accessing private property for testing
+  //     expect(gateway.io.to).toHaveBeenCalledWith(roomKeys.USER_KEY(userId));
+  //     //@ts-expect-error - accessing private property for testing
+  //     expect(gateway.io.to(roomKeys.USER_KEY(userId)).emit).toHaveBeenCalledWith(message, { data });
+  //   });
+  // });
 });

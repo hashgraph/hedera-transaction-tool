@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { ITransactionFull } from '@main/shared/interfaces';
+import type { ITransactionFull } from '@shared/interfaces';
 
-import { onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 
 import {
   Transaction,
@@ -12,7 +12,11 @@ import {
   PublicKey,
 } from '@hashgraph/sdk';
 
-import { getEndpointData, uint8ToHex } from '@renderer/utils';
+import {
+  getComponentServiceEndpoint,
+  getComponentServiceEndpoints,
+  uint8ToHex,
+} from '@renderer/utils';
 
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 
@@ -24,6 +28,17 @@ const props = defineProps<{
 
 /* State */
 const isKeyStructureModalShown = ref(false);
+
+/* Computed */
+const grpcWebProxyEndpoint = computed(() => {
+  if (
+    props.transaction instanceof NodeCreateTransaction ||
+    props.transaction instanceof NodeUpdateTransaction
+  ) {
+    return getComponentServiceEndpoint(props.transaction.grpcWebProxyEndpoint);
+  }
+  return null;
+});
 
 /* Hooks */
 onBeforeMount(async () => {
@@ -78,6 +93,14 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
         </p>
       </div>
 
+      <!-- Description -->
+      <div v-if="transaction.description" :class="commonColClass">
+        <h4 :class="detailItemLabelClass">Description</h4>
+        <p :class="detailItemValueClass" data-testid="p-node-details-description">
+          {{ transaction.description }}
+        </p>
+      </div>
+
       <!-- Admin Key -->
       <div v-if="transaction.adminKey" class="col-12 my-3">
         <h4 :class="detailItemLabelClass">Admin Key</h4>
@@ -99,6 +122,17 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
         </p>
       </div>
 
+      <!-- Decline Reward - Displayed in the reverse -->
+      <div
+        v-if="transaction instanceof NodeCreateTransaction || transaction.declineReward !== null"
+        class="col-12 my-3"
+      >
+        <h4 :class="detailItemLabelClass">Accept Node Rewards</h4>
+        <p :class="detailItemValueClass">
+          {{ transaction.declineReward ? 'No' : 'Yes' }}
+        </p>
+      </div>
+
       <!-- Gossip Endpoints -->
       <div
         v-if="transaction.gossipEndpoints && transaction.gossipEndpoints.length > 0"
@@ -115,7 +149,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           </thead>
           <tbody class="thin">
             <tr
-              v-for="(endpoint, index) of getEndpointData(transaction.gossipEndpoints)"
+              v-for="(endpoint, index) of getComponentServiceEndpoints(transaction.gossipEndpoints)"
               :key="index"
             >
               <td class="col text-start">{{ endpoint.ipAddressV4 }}</td>
@@ -142,7 +176,9 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           </thead>
           <tbody class="thin">
             <tr
-              v-for="(endpoint, index) of getEndpointData(transaction.serviceEndpoints)"
+              v-for="(endpoint, index) of getComponentServiceEndpoints(
+                transaction.serviceEndpoints,
+              )"
               :key="index"
             >
               <td class="col text-start">{{ endpoint.ipAddressV4 }}</td>
@@ -151,6 +187,12 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- gRPC Web Proxy Endpoint -->
+      <div v-if="grpcWebProxyEndpoint" class="col-12 my-3">
+        <h4 :class="detailItemLabelClass">gRPC Web Proxy Endpoint</h4>
+        <p>{{ grpcWebProxyEndpoint.domainName }}:{{ grpcWebProxyEndpoint.port }}</p>
       </div>
 
       <!-- Gossip CA Certificate -->

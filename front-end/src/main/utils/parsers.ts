@@ -1,5 +1,5 @@
-import { CommonNetwork } from '@main/shared/enums';
-import { Network } from '@main/shared/interfaces';
+import { CommonNetwork } from '@shared/enums';
+import { Network } from '@shared/interfaces';
 
 export function parseNetwork(value: string, defaultNetwork: Network): Network {
   value = value?.toLocaleLowerCase();

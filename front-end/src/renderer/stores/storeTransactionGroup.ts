@@ -1,8 +1,8 @@
-import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
+import type { TransactionApproverDto } from '@shared/interfaces';
 
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
-import { Key, KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
+import { KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
 import { getDrafts } from '@renderer/services/transactionDraftsService';
@@ -33,6 +33,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   /* State */
   const groupItems = ref<GroupItem[]>([]);
   const groupValidStart = ref(new Date());
+  const groupInitialValidStart = ref(new Date());
   const description = ref('');
   const sequential = ref(false);
   const modified = ref(false);
@@ -53,6 +54,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       } else {
         groupValidStart.value = new Date();
       }
+      groupInitialValidStart.value = group.groupValidStart
     }
 
     const items = await getGroupItems(id);
@@ -200,34 +202,23 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   function getRequiredKeys() {
     const keys = new Array<string>();
     for (const groupItem of groupItems.value) {
-      keys.concat(groupItem.keyList);
+      keys.push(...groupItem.keyList);
     }
     const keySet = new Set(keys);
-    const returningKeys = new Array<Key>();
-    for (const key of Array.from(keySet)) {
-      returningKeys.push(PublicKey.fromString(key));
-    }
+    const returningKeys = Array.from(keySet).map(key => PublicKey.fromString(key));
     return KeyList.from(returningKeys);
   }
 
   function hasObservers(seq: number) {
-    if (
-      groupItems.value[seq].observers === undefined ||
-      groupItems.value[seq].observers.length === 0
-    ) {
-      return false;
-    }
-    return true;
+    return !(
+      groupItems.value[seq].observers === undefined || groupItems.value[seq].observers.length === 0
+    );
   }
 
   function hasApprovers(seq: number) {
-    if (
-      groupItems.value[seq].approvers === undefined ||
-      groupItems.value[seq].approvers.length === 0
-    ) {
-      return false;
-    }
-    return true;
+    return !(
+      groupItems.value[seq].approvers === undefined || groupItems.value[seq].approvers.length === 0
+    );
   }
 
   function setModified() {
@@ -260,7 +251,13 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     });
     groupItems.value = [...groupItems.value];
 
-    setModified();
+    const now = new Date();
+    if (
+      newGroupValidStart !== groupInitialValidStart.value &&
+      (newGroupValidStart > now || groupInitialValidStart.value > now)
+    ) {
+      setModified();
+    }
   }
 
   // function getObservers() {

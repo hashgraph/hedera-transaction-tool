@@ -1,6 +1,6 @@
 import { Claim, Prisma } from '@prisma/client';
 
-import { USE_KEYCHAIN } from '@main/shared/constants';
+import { USE_KEYCHAIN } from '@shared/constants';
 
 import { getPrismaClient } from '@main/db/prisma';
 

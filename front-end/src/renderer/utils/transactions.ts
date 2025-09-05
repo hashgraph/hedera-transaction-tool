@@ -1,4 +1,4 @@
-import type { IDefaultNetworks, Network } from '@main/shared/interfaces';
+import type { IDefaultNetworks, Network } from '@shared/interfaces';
 import type { KeyPair, Transaction } from '@prisma/client';
 
 import {
@@ -10,11 +10,10 @@ import {
   Key,
 } from '@hashgraph/sdk';
 
-import { CommonNetwork } from '@main/shared/enums';
-import { TransactionStatus } from '@main/shared/interfaces';
+import { CommonNetwork } from '@shared/enums';
+import { TransactionStatus } from '@shared/interfaces';
 
 import { openExternal } from '@renderer/services/electronUtilsService';
-import { flattenKeyList } from '@renderer/services/keyPairService';
 
 export const getTransactionDate = (transaction: Transaction): string => {
   return new Timestamp(
@@ -86,17 +85,6 @@ export const getEntityIdFromTransactionReceipt = (
   return entity.toString();
 };
 
-export const getTransactionType = (transaction: Tx | Uint8Array) => {
-  if (transaction instanceof Uint8Array) {
-    transaction = Tx.fromBytes(transaction);
-  }
-
-  return transaction.constructor.name
-    .slice(transaction.constructor.name.startsWith('_') ? 1 : 0)
-    .split(/(?=[A-Z])/)
-    .join(' ');
-};
-
 /* Parses a transaction bytes string to a transaction */
 export const getTransactionFromBytes = <T extends Tx>(transactionBytes: string): T => {
   const bytesArray = transactionBytes.split(',').map(n => Number(n));
@@ -107,20 +95,10 @@ export const getTransactionFromBytes = <T extends Tx>(transactionBytes: string):
 export const getPropagationButtonLabel = (
   transactionKey: Key,
   userKeys: KeyPair[],
-  aciveOrganization: boolean,
+  activeOrganization: boolean,
 ): string => {
-  if (aciveOrganization) {
-    const userPublicKeys = userKeys.map(key => key.public_key);
-    const publicKeys = flattenKeyList(transactionKey);
-
-    const publicKeysRaw = publicKeys.map(pk => pk.toStringRaw());
-    const publicKeysDer = publicKeys.map(pk => pk.toStringRaw());
-
-    const userKeyRequired = userPublicKeys.some(userKey => {
-      return publicKeysRaw.includes(userKey) || publicKeysDer.includes(userKey);
-    });
-
-    return userKeyRequired ? 'Create' : 'Create and Share';
+  if (activeOrganization) {
+    return 'Create and Share';
   } else {
     return 'Sign & Execute';
   }
@@ -147,7 +125,10 @@ const TransactionStatusName = {
   [TransactionStatus.ARCHIVED]: 'Archived',
 };
 
-export const getTransactionStatusName = (status: TransactionStatus, uppercase: boolean = false): string => {
+export const getTransactionStatusName = (
+  status: TransactionStatus,
+  uppercase: boolean = false,
+): string => {
   const statusName = TransactionStatusName[status];
   return uppercase ? statusName.toUpperCase() : statusName;
 };

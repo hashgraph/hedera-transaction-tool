@@ -2,13 +2,13 @@ import type {
   INotificationReceiver,
   IUpdateNotificationPreferencesDto,
   IUpdateNotificationReceiver,
-} from '@main/shared/interfaces';
+} from '@shared/interfaces';
 
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
-import { NotificationType } from '@main/shared/interfaces';
-import { NOTIFICATIONS_INDICATORS_DELETE, NOTIFICATIONS_NEW } from '@main/shared/constants';
+import { NotificationType } from '@shared/interfaces';
+import { NOTIFICATIONS_INDICATORS_DELETE, NOTIFICATIONS_NEW } from '@shared/constants';
 
 import {
   getUserNotificationPreferences,
@@ -67,6 +67,8 @@ const useNotificationsStore = defineStore('notifications', () => {
     return counts;
   });
 
+  let notificationsQueue = Promise.resolve();
+
   /* Actions */
   async function setup() {
     await fetchPreferences();
@@ -110,32 +112,39 @@ const useNotificationsStore = defineStore('notifications', () => {
 
   /** Notifications **/
   async function fetchNotifications() {
-    if (!isUserLoggedIn(user.personal)) return;
+    notificationsQueue = notificationsQueue.then(async () => {
+      if (!isUserLoggedIn(user.personal)) return;
 
-    const severUrls = user.organizations.map(o => o.serverUrl);
-    const results = await Promise.allSettled(
-      user.organizations.map(o => getAllInAppNotifications(o.serverUrl, true)),
-    );
+      const severUrls = user.organizations.map(o => o.serverUrl);
+      const results = await Promise.allSettled(
+        user.organizations.map(o => getAllInAppNotifications(o.serverUrl, true)),
+      );
 
-    for (let i = 0; i < results.length; i++) {
-      const result = results[i];
-      result.status === 'fulfilled' && (notifications.value[severUrls[i]] = result.value);
-    }
-    notifications.value = { ...notifications.value };
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i];
+        result.status === 'fulfilled' && (notifications.value[severUrls[i]] = result.value);
+      }
+      notifications.value = { ...notifications.value };
+    });
+
+    await notificationsQueue;
   }
 
   function listenForUpdates() {
     const severUrls = user.organizations.map(o => o.serverUrl);
     for (const severUrl of severUrls) {
       ws.on(severUrl, NOTIFICATIONS_NEW, e => {
-        const notification: INotificationReceiver = e.data;
+        const newNotifications: INotificationReceiver[] = e;
 
-        notifications.value[severUrl] = [...notifications.value[severUrl], notification];
+        notifications.value[severUrl] = [...notifications.value[severUrl], ...newNotifications];
         notifications.value = { ...notifications.value };
       });
 
       ws.on(severUrl, NOTIFICATIONS_INDICATORS_DELETE, e => {
-        const notificationReceiverIds: number[] = e.data.notificationReceiverIds;
+        if (!Array.isArray(e)) {
+          e = [e];
+        }
+        const notificationReceiverIds = e.flatMap(item => item.notificationReceiverIds || []);
 
         notifications.value[severUrl] = notifications.value[severUrl].filter(
           nr => !notificationReceiverIds.includes(nr.id),
@@ -164,15 +173,9 @@ const useNotificationsStore = defineStore('notifications', () => {
       const notificationIds = networkFilteredNotifications
         .filter(nr => nr.notification.type === type)
         .map(nr => nr.id);
-      const dtos = notificationIds.map((): IUpdateNotificationReceiver => ({ isRead: true }));
 
-      await updateNotifications(notificationsKey, notificationIds, dtos);
-
-      notifications.value[notificationsKey] = notifications.value[notificationsKey].filter(
-        nr => !notificationIds.includes(nr.id),
-      );
+      await _updateNotifications(notificationsKey, notificationIds);
     }
-    notifications.value = { ...notifications.value };
   }
 
   async function markAsReadIds(notificationIds: number[]) {
@@ -183,16 +186,28 @@ const useNotificationsStore = defineStore('notifications', () => {
     const notificationsKey = user.selectedOrganization?.serverUrl || '';
     if (!notificationsKey) return;
 
-    await updateNotifications(
-      notificationsKey,
-      notificationIds,
-      notificationIds.map(() => ({ isRead: true })),
-    );
+    await _updateNotifications(notificationsKey, notificationIds);
+  }
 
-    notifications.value[notificationsKey] = notifications.value[notificationsKey].filter(
-      nr => !notificationIds.includes(nr.id),
-    );
-    notifications.value = { ...notifications.value };
+  async function _updateNotifications(notificationsKey: string, notificationIds: number[]) {
+    // Add the update to the queue
+    notificationsQueue = notificationsQueue.then(async () => {
+      const notificationsForKey = notifications.value[notificationsKey] || [];
+      const notificationsToUpdate: IUpdateNotificationReceiver[] = notificationIds
+        .filter(id => notificationsForKey.some(nr => nr.id === id))
+        .map(id => ({ id, isRead: true }));
+
+      if (notificationsToUpdate.length === 0) return;
+
+      await updateNotifications(notificationsKey, notificationsToUpdate);
+      notifications.value[notificationsKey] = notifications.value[notificationsKey].filter(
+        nr => !notificationIds.includes(nr.id),
+      );
+      notifications.value = { ...notifications.value };
+    });
+
+    // Wait for the current update to complete
+    await notificationsQueue;
   }
 
   ws.$onAction(ctx => {

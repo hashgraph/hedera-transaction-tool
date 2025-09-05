@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import type { IGroup } from '@renderer/services/organization';
-import { TransactionStatus } from '@main/shared/interfaces';
+import { TransactionStatus } from '@shared/interfaces';
 
 import { computed, onBeforeMount, ref, watch, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { Transaction } from '@hashgraph/sdk';
 
-import { historyTitle, TRANSACTION_ACTION } from '@main/shared/constants';
-import { TransactionTypeName } from '@main/shared/interfaces';
+import { historyTitle, TRANSACTION_ACTION } from '@shared/constants';
+import { TransactionTypeName } from '@shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
@@ -24,7 +24,7 @@ import {
   getApiGroupById,
   getUserShouldApprove,
   sendApproverChoice,
-  uploadSignatureMap,
+  uploadSignatures,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 
@@ -36,7 +36,6 @@ import {
   hexToUint8Array,
   isLoggedInOrganization,
   isUserLoggedIn,
-  publicRequiredToSign,
   usersPublicRequiredToSign,
 } from '@renderer/utils';
 
@@ -45,6 +44,8 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
+import { SignatureItem } from '@renderer/types';
+import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
 /* Stores */
 const user = useUserStore();
@@ -66,6 +67,7 @@ const group = ref<IGroup | null>(null);
 const shouldApprove = ref(false);
 const isConfirmModalShown = ref(false);
 const publicKeysRequiredToSign = ref<string[] | null>([]);
+const showSignAll = ref(true);
 const disableSignAll = ref(false);
 const isSigning = ref(false);
 const isApproving = ref(false);
@@ -97,25 +99,27 @@ async function handleFetchGroup(id: string | number) {
 
       if (group.value?.groupItems != undefined) {
         for (const item of group.value.groupItems) {
+          const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
+          const tx = Transaction.fromBytes(transactionBytes);
+
+          const isTransactionVersionMismatch = !areByteArraysEqual(tx.toBytes(), transactionBytes);
+          if (isTransactionVersionMismatch) {
+            toast.error('Transaction version mismatch. Cannot sign all.');
+            disableSignAll.value = true;
+            break;
+          }
+
           shouldApprove.value =
             shouldApprove.value ||
             (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id));
 
-          const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
-          const tx = Transaction.fromBytes(transactionBytes);
           const txId = item.transaction.id;
 
-          const { usersPublicKeys } = await publicRequiredToSign(
+          const usersPublicKeys = await usersPublicRequiredToSign(
             tx,
             user.selectedOrganization.userKeys,
             network.mirrorNodeBaseURL,
           );
-
-          const signedSigners = new Set([...tx._signerPublicKeys]);
-
-          const usersUnsigned = usersPublicKeys.length
-            ? usersPublicKeys.filter(pk => !signedSigners.has(pk))
-            : [];
 
           if (route.query.previousTab) {
             const previousTab = route.query.previousTab;
@@ -127,7 +131,7 @@ async function handleFetchGroup(id: string | number) {
             ) {
               unsignedSignersToCheck.value = {
                 ...unsignedSignersToCheck.value,
-                [txId]: usersUnsigned,
+                [txId]: usersPublicKeys,
               };
             }
           }
@@ -136,7 +140,8 @@ async function handleFetchGroup(id: string | number) {
             item.transaction.status !== TransactionStatus.CANCELED &&
             item.transaction.status !== TransactionStatus.EXPIRED
           ) {
-            publicKeysRequiredToSign.value = publicKeysRequiredToSign.value!.concat(usersUnsigned);
+            publicKeysRequiredToSign.value =
+              publicKeysRequiredToSign.value!.concat(usersPublicKeys);
           }
         }
       }
@@ -185,6 +190,7 @@ const handleSignGroup = async () => {
 
   try {
     isSigning.value = true;
+    const items: SignatureItem[] = [];
     if (group.value != undefined) {
       for (const groupItem of group.value.groupItems) {
         const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
@@ -200,18 +206,25 @@ const handleSignGroup = async () => {
           user.selectedOrganization.userKeys,
           network.mirrorNodeBaseURL,
         );
-        await uploadSignatureMap(
-          user.personal.id,
-          personalPassword,
-          user.selectedOrganization,
-          publicKeysRequired,
-          Transaction.fromBytes(transaction.toBytes()),
-          groupItem.transaction.id,
-        );
+        const item: SignatureItem = {
+          publicKeys: publicKeysRequired,
+          transaction,
+          transactionId: groupItem.transaction.id,
+        };
+        items.push(item);
       }
     }
+    await uploadSignatures(
+      user.personal.id,
+      personalPassword,
+      user.selectedOrganization,
+      null,
+      null,
+      null,
+      items,
+    );
     toast.success('Transactions signed successfully');
-    disableSignAll.value = true;
+    showSignAll.value = true;
   } catch {
     toast.error('Transactions not signed');
   } finally {
@@ -476,7 +489,7 @@ watchEffect(() => {
                   (isLoggedInOrganization(user.selectedOrganization) &&
                     publicKeysRequiredToSign &&
                     publicKeysRequiredToSign.length > 0 &&
-                    !disableSignAll)
+                    showSignAll)
                 "
               >
                 <div class="d-flex gap-4 mt-5">
@@ -508,7 +521,7 @@ watchEffect(() => {
                       isLoggedInOrganization(user.selectedOrganization) &&
                       publicKeysRequiredToSign &&
                       publicKeysRequiredToSign.length > 0 &&
-                      !disableSignAll
+                      showSignAll
                     "
                   >
                     <AppButton
@@ -518,6 +531,14 @@ watchEffect(() => {
                       loading-text="Signing..."
                       data-testid="button-sign-all-tx"
                       @click="handleSignGroup"
+                      :disabled="disableSignAll"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="top"
+                      :title="
+                        disableSignAll
+                          ? 'Cannot sign all due to transaction version mismatch.'
+                          : 'Sign all transactions.'
+                      "
                     >
                       Sign All
                     </AppButton>

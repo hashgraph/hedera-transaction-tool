@@ -7,7 +7,6 @@ const props = defineProps<{
   keys: string[];
   selectedKeys: string[];
   fileNames?: string[] | undefined;
-  migrating?: boolean;
 }>();
 
 /* Emits */

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HederaFile } from '@prisma/client';
-import type { ITransactionFull } from '@main/shared/interfaces';
+import type { ITransactionFull } from '@shared/interfaces';
 
 import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
 
@@ -12,7 +12,7 @@ import {
   FileAppendTransaction,
 } from '@hashgraph/sdk';
 
-import { TransactionStatus } from '@main/shared/interfaces';
+import { TransactionStatus } from '@shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';

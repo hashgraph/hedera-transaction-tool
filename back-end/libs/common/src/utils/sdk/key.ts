@@ -73,30 +73,33 @@ export function isPublicKeyInKeyList(publicKey: PublicKey | string, key: Key) {
 }
 
 /**
- * Given a list of public keys and a key list, returns a list of public keys that are in the key list.
+ * Given a list of public keys and a key list, return the smallest set
+ * of public keys that can satisfy the threshold of the key list.
  *
  * @param publicKeys
  * @param keyList
  */
 export function computeShortenedPublicKeyList(
-  publicKeys: string[],
+  publicKeys: Set<string>,
   keyList: KeyList,
 ): PublicKey[] | null {
   const result = [];
   const secondary = [];
   const threshold = keyList.threshold ? keyList.threshold : keyList.toArray().length;
 
-  /* Iterates through the key list, prioritizing PublicKeys over KeyLists */
+  // Iterates through the key list, prioritizing PublicKeys over KeyLists
   for (const key of keyList.toArray()) {
     if (key instanceof PublicKey) {
       const rawKey = key.toStringRaw();
-      if (publicKeys.includes(rawKey)) {
+      if (publicKeys.has(rawKey)) {
         result.push(key);
+        // If the result has reached the threshold, return it immediately
         if (result.length === threshold) {
           return result;
         }
       }
     } else if (key instanceof KeyList) {
+      // If the key is a KeyList, compute the shortened public key list recursively
       const resultingKeys = computeShortenedPublicKeyList(publicKeys, key);
       if (resultingKeys && resultingKeys.length > 0) {
         secondary.push(resultingKeys);
@@ -104,11 +107,31 @@ export function computeShortenedPublicKeyList(
     }
   }
 
-  /* If enough valid signatures were found from both key types, retrieve and merge the shortest arrays */
+  // If enough valid signatures were found from both key types, retrieve and merge the shortest arrays
   if (result.length + secondary.length >= threshold) {
     secondary.sort((a, b) => a.length - b.length);
     return result.concat(secondary.slice(0, threshold - result.length).flat());
   }
 
   return null;
+}
+
+export function areKeysEqual(key1: Key, key2: Key): boolean {
+  if (key1 instanceof PublicKey && key2 instanceof PublicKey) {
+    return key1.equals(key2);
+  } else if (key1 instanceof KeyList && key2 instanceof KeyList) {
+    if (key1.threshold !== key2.threshold) return false;
+    const keys1 = key1.toArray();
+    const keys2 = key2.toArray();
+    if (keys1.length !== keys2.length) return false;
+
+    const keys2Copy = [...keys2];
+    for (const key of keys1) {
+      const idx = keys2Copy.findIndex(k => areKeysEqual(key, k));
+      if (idx === -1) return false;
+      keys2Copy.splice(idx, 1);
+    }
+    return true;
+  }
+  return false;
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MigrateUserDataResult } from '@main/shared/interfaces/migration';
+import type { MigrateUserDataResult } from '@shared/interfaces/migration';
 
 import { onMounted } from 'vue';
 

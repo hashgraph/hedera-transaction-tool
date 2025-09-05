@@ -1,0 +1,9 @@
+{{ if and .Values.stackgres.enabled (hasKey .Values.stackgres.shardedCluster.coordinator.configurations "sgPoolingConfig") (hasKey .Values.stackgres.poolingConfig "coordinator") }}
+apiVersion: stackgres.io/v1
+kind: SGPoolingConfig
+metadata:
+  name: {{ .Values.stackgres.shardedCluster.coordinator.configurations.sgPoolingConfig }}
+  namespace: {{ .Release.Namespace }}
+spec:
+{{- .Values.stackgres.poolingConfig.coordinator | toYaml | nindent 2 }}
+{{- end -}}

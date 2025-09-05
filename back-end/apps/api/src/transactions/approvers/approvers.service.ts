@@ -627,12 +627,12 @@ export class ApproversService {
         ? NotificationType.TRANSACTION_APPROVED
         : NotificationType.TRANSACTION_APPROVAL_REJECTION,
       approvalChoiceReceivers,
-      '',
       transaction.id,
       false,
-      { network: transaction.mirrorNetwork },
+      { transactionId: transaction.transactionId, network: transaction.mirrorNetwork },
     );
     notifySyncIndicators(this.notificationsService, transaction.id, transaction.status, {
+      transactionId: transaction.transactionId,
       network: transaction.mirrorNetwork,
     });
 
@@ -693,6 +693,7 @@ export class ApproversService {
     if (!transaction) return;
 
     notifySyncIndicators(this.notificationsService, transactionId, transaction.status, {
+      transactionId: transaction.transactionId,
       network: transaction.mirrorNetwork,
     });
   }

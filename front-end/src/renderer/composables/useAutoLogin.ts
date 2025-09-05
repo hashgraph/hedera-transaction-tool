@@ -1,5 +1,7 @@
 import { onMounted } from 'vue';
 
+import { HTX_USER } from '@shared/constants';
+
 import useUserStore from '@renderer/stores/storeUser';
 
 import { getStaticUser, getUseKeychain } from '@renderer/services/safeStorageService';
@@ -30,7 +32,7 @@ export default function useAutoLogin() {
 
   return async () => {
     const { data: useKeychain } = await safeAwait(getUseKeychain());
-    const loggedUser = localStorage.getItem('htx_user');
+    const loggedUser = localStorage.getItem(HTX_USER);
 
     if (useKeychain) {
       await keychainLogin();

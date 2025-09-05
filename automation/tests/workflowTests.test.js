@@ -349,11 +349,11 @@ test.describe('Workflow tests', () => {
     await filePage.addFileToUnliked(fileId);
     await loginPage.waitForToastToDisappear();
 
-    const isFileCardVisible = await filePage.isFileCardVisible(fileId);
-    expect(isFileCardVisible).toBe(false);
+    const isFileCardHidden = await filePage.isFileCardHidden(fileId);
+    expect(isFileCardHidden).toBe(true);
 
-    const isSecondFileCardVisible = await filePage.isFileCardVisible(fileFromPage);
-    expect(isSecondFileCardVisible).toBe(false);
+    const isSecondFileCardHidden = await filePage.isFileCardHidden(fileFromPage);
+    expect(isSecondFileCardHidden).toBe(true);
   });
 
   test('Verify user can add an existing file to files card', async () => {
@@ -393,8 +393,8 @@ test.describe('Workflow tests', () => {
         const getAccountDetailsStaking = await detailsPage.getAccountDetailsStaking();
         expect(getAccountDetailsStaking).toBe('None');
 
-        const getAccountDetailsDeclineRewards = await detailsPage.getAccountDetailsDeclineRewards();
-        expect(getAccountDetailsDeclineRewards).toBe('No');
+        const getAccountDetailsAcceptRewards = await detailsPage.getAccountDetailsAcceptRewards();
+        expect(getAccountDetailsAcceptRewards).toBe('Yes');
 
         const getAccountDetailsReceiverSigRequired =
           await detailsPage.getAccountDetailsReceiverSigRequired();

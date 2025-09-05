@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { TransactionApproverDto } from '@main/shared/interfaces/organization/approvers';
-import type { TransactionCommonData } from '@renderer/utils/sdk';
+import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
+import { transactionsDataMatch, type TransactionCommonData } from '@renderer/utils/sdk';
 import {
   CustomRequest,
   type ExecutedData,
@@ -8,10 +8,11 @@ import {
 } from '@renderer/components/Transaction/TransactionProcessor';
 import type { CreateTransactionFunc } from '.';
 
-import { computed, reactive, ref, toRaw } from 'vue';
-import { Hbar, Transaction, KeyList } from '@hashgraph/sdk';
+import { computed, reactive, ref, toRaw, watch } from 'vue';
+import { Hbar, Transaction, KeyList, Timestamp } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -19,8 +20,8 @@ import useAccountId from '@renderer/composables/useAccountId';
 import useLoader from '@renderer/composables/useLoader';
 
 import {
+  computeSignatureKey,
   getErrorMessage,
-  getTransactionType,
   isAccountId,
   redirectToDetails,
   redirectToGroupDetails,
@@ -40,13 +41,13 @@ import TransactionProcessor, {
 import BaseDraftLoad from '@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.vue';
 import BaseGroupHandler from '@renderer/components/Transaction/Create/BaseTransaction/BaseGroupHandler.vue';
 import BaseApproversObserverData from '@renderer/components/Transaction/Create/BaseTransaction/BaseApproversObserverData.vue';
+import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 /* Props */
-const { createTransaction, preCreateAssert, transactionBaseKey, customRequest } = defineProps<{
+const { createTransaction, preCreateAssert, customRequest } = defineProps<{
   createTransaction: CreateTransactionFunc;
   preCreateAssert?: () => boolean | void;
   createDisabled?: boolean;
-  transactionBaseKey?: KeyList;
   customRequest?: CustomRequest;
 }>();
 
@@ -61,6 +62,7 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
@@ -91,24 +93,35 @@ const approvers = ref<TransactionApproverDto[]>([]);
 const isProcessed = ref(false);
 const groupActionTaken = ref(false);
 const memoError = ref(false);
-const initialTransactionData = ref('');
+const initialTransaction = ref<Transaction | null>(null);
 const initialDescription = ref('');
+const transactionKey = ref<KeyList>(new KeyList([]));
 
 /* Computed */
 const transaction = computed(() => createTransaction({ ...data } as TransactionCommonData));
 
-const transactionKey = computed(() => {
-  const keys = transactionBaseKey?.toArray() || [];
-  payerData.key.value && keys.push(payerData.key.value);
-  return new KeyList(keys);
-});
-
 const hasTransactionChanged = computed(() => {
-  if (!initialTransactionData.value) return false;
+  let result: boolean;
 
-  const currentTransactionData = transaction.value.toBytes().join(',');
+  const initialValidStart =
+    initialTransaction.value?.transactionId?.validStart ?? Timestamp.fromDate(Date.now());
+  const validStart = transaction.value.transactionId?.validStart;
+  const now = Timestamp.fromDate(new Date());
 
-  return currentTransactionData !== initialTransactionData.value;
+  if (validStart && initialTransaction.value) {
+    if (
+      initialValidStart.compare(validStart) !== 0 &&
+      (initialValidStart.compare(now) > 0 || validStart.compare(now) > 0)
+    ) {
+      result = true; // validStart was updated
+    } else {
+      // whether tx data match, excluding validStart
+      result = !transactionsDataMatch(initialTransaction.value as Transaction, transaction.value);
+    }
+  } else {
+    result = true; // transaction is new or does not have valid start set
+  }
+  return result;
 });
 
 const hasDescriptionChanged = computed(() => {
@@ -119,13 +132,12 @@ const hasDataChanged = computed(() => hasTransactionChanged.value || hasDescript
 
 /* Handlers */
 const handleDraftLoaded = async (transaction: Transaction) => {
-  const txBytes = transaction.toBytes().join(',');
+  initialTransaction.value = transaction;
 
   const txData = getTransactionCommonData(transaction) as TransactionCommonData;
   payerData.accountId.value = txData.payerId;
   Object.assign(data, txData);
 
-  initialTransactionData.value = txBytes;
   emit('draft-loaded', transaction);
 };
 
@@ -236,10 +248,19 @@ function basePreCreateAssert() {
   }
 }
 
+async function updateTransactionKey() {
+  const computedKeys = await computeSignatureKey(transaction.value, network.mirrorNodeBaseURL);
+  transactionKey.value = new KeyList(computedKeys.signatureKeys);
+}
+
+/* Watches */
+watch([() => payerData.key.value], updateTransactionKey, { immediate: true });
+
 /* Exposes */
 defineExpose({
   payerData,
   submit: handleCreate,
+  updateTransactionKey,
 });
 </script>
 <template>

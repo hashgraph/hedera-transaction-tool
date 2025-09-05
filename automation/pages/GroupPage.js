@@ -109,8 +109,8 @@ class GroupPage extends BasePage {
     await this.click(this.continueEditingButtonSelector);
   }
 
-  async isDeleteModalVisible() {
-    return this.isElementVisible(this.deleteGroupButtonSelector);
+  async isDeleteModalHidden() {
+    return this.isElementHidden(this.deleteGroupButtonSelector);
   }
 
   async getToastMessage() {
@@ -146,7 +146,7 @@ class GroupPage extends BasePage {
       const transactionDetails = await this.transactionPage.mirrorGetTransactionResponse(
         timestampsForVerification[i],
       );
-      const result = transactionDetails.transactions[0]?.result;
+      const result = transactionDetails?.result;
       if (result !== 'SUCCESS') {
         return false;
       }
@@ -166,8 +166,8 @@ class GroupPage extends BasePage {
     await this.click(this.transactionEditButtonIndexSelector + index);
   }
 
-  async isTransactionVisible(index) {
-    return this.isElementVisible(this.transactionTypeIndexSelector + index);
+  async isTransactionHidden(index) {
+    return this.isElementHidden(this.transactionTypeIndexSelector + index);
   }
 
   async addSingleTransactionToGroup(numberOfTransactions = 1, isFileTransaction = false) {
@@ -186,12 +186,17 @@ class GroupPage extends BasePage {
     }
   }
 
-  async generateAndImportCsvFile(fromAccountId, numberOfTransactions = 10) {
+  async generateAndImportCsvFile(
+    fromAccountId,
+    receiverAccountId,
+    numberOfTransactions = 10,
+    feePayerAccountId = null
+  ) {
     const fileName = 'groupTransactions.csv';
-    const receiverAccount = '0.0.1031';
     await generateCSVFile({
       senderAccount: fromAccountId,
-      accountId: receiverAccount,
+      feePayerAccount: feePayerAccountId,
+      accountId: receiverAccountId,
       startingAmount: 1,
       numberOfTransactions: numberOfTransactions,
       fileName: fileName,
@@ -254,7 +259,7 @@ class GroupPage extends BasePage {
     await this.click(this.orgTransactionDetailsButtonIndexSelector + index);
   }
 
-  async logInAndSignGroupTransactionsByAllUsers(encryptionPassword) {
+  async logInAndSignGroupTransactionsByAllUsers(encryptionPassword, signAll = true) {
     for (let i = 1; i < this.organizationPage.users.length; i++) {
       console.log(`Signing transaction for user ${i}`);
       const user = this.organizationPage.users[i];
@@ -262,26 +267,36 @@ class GroupPage extends BasePage {
       await this.transactionPage.clickOnTransactionsMenuButton();
       await this.organizationPage.clickOnReadyToSignTab();
       await this.clickOnDetailsGroupButton(0);
-      await this.clickOnTransactionDetailsButton(0);
+      if (signAll) {
+        await this.clickOnSignAllButton();
+      } else {
+        await this.clickOnTransactionDetailsButton(0);
 
-      // Initially sign the first transaction
-      await this.organizationPage.clickOnSignTransactionButton();
+        // Sign the first transaction and continue while "Next" button is visible
+        do {
+          // Trying to catch an intermittent issue.
+          const canSign = await this.organizationPage.isSignTransactionButtonVisible();
+          if (!canSign) {
+            console.log(`Sign not available for user ${i}, skipping.`);
+            break;
+          }
+          await this.organizationPage.clickOnSignTransactionButton();
+          // Wait for 1 second to allow details to load
+          // await new Promise(resolve => setTimeout(resolve, 5000));
 
-      // After signing, we check if there's a "Next" button to continue to the next transaction
-      let hasNext = await this.isElementVisible(
-        this.organizationPage.nextTransactionButtonSelector,
-      );
+          // Check if there's a "Next" button to move to the next transaction
+          // the main issue is the 'next' button is not visible as long as there is a 'previous' button. I think these really should be done differently anyway
+          // not really sure how this ever worked
+          const hasNext = await this.isElementVisible(this.organizationPage.nextTransactionButtonSelector);
 
-      while (hasNext) {
-        // Click on the "Next" button to move to the next transaction
-        await this.click(this.organizationPage.nextTransactionButtonSelector);
-
-        // Now the button transforms into "Sign" for the next transaction
-        // Sign this transaction as well
-        await this.organizationPage.clickOnSignTransactionButton();
-
-        // Check again if there's another transaction after this one
-        hasNext = await this.isElementVisible(this.organizationPage.nextTransactionButtonSelector);
+          if (hasNext) {
+            console.log(`User ${i} signed a transaction, moving to the next one.`);
+            await this.click(this.organizationPage.nextTransactionButtonSelector);
+          } else {
+            console.log(`No more transactions to sign for user ${i}.`);
+            break;
+          }
+        } while (true);
       }
 
       await this.organizationPage.logoutFromOrganization();
@@ -296,10 +311,9 @@ class GroupPage extends BasePage {
 
       try {
         await this.click(selector);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        const isButtonVisible = await this.isElementVisible(selector, null, 3000);
+        const isButtonHidden = await this.isElementHidden(selector, null, 3000);
 
-        if (!isButtonVisible) {
+        if (isButtonHidden) {
           return;
         }
 

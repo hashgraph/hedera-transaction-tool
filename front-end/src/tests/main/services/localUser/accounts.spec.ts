@@ -4,7 +4,7 @@ import { HederaAccount } from '@prisma/client';
 
 import prisma from '@main/db/__mocks__/prisma';
 
-import { CommonNetwork } from '@main/shared/enums';
+import { CommonNetwork } from '@shared/enums';
 
 import {
   addAccount,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Prisma } from '@prisma/client';
-import type { KeyPathWithName, IUserKeyWithMnemonic } from '@main/shared/interfaces';
+import type { KeyPathWithName, IUserKeyWithMnemonic } from '@shared/interfaces';
 import type { RecoveryPhrase } from '@renderer/types';
 
 import { ref, watch } from 'vue';
@@ -25,8 +25,8 @@ import DecryptKeys from '@renderer/components/KeyPair/ImportEncrypted/components
 
 /* Props */
 const props = defineProps<{
-  recoveryPhrase: RecoveryPhrase;
-  recoveryPhrasePassword: string;
+  recoveryPhrase?: RecoveryPhrase;
+  recoveryPhrasePassword?: string;
   selectedKeys?: KeyPathWithName[];
 }>();
 
@@ -62,6 +62,7 @@ const restoreOnEmpty = async (userKeysWithMnemonic: IUserKeyWithMnemonic[]) => {
 };
 
 const restoreExistingKeys = async () => {
+  if (!user.selectedOrganization || !props.recoveryPhrase) return;
   if (!isLoggedInOrganization(user.selectedOrganization))
     throw new Error('(BUG) Organization user id not set');
 
@@ -137,12 +138,12 @@ watch(decryptKeysRef, async () => {
 
   if (props.selectedKeys && props.selectedKeys.length > 0) {
     const selectedKeyPaths = props.selectedKeys.map(key => key.filepath);
-    await decryptKeysRef.value?.process(selectedKeyPaths, props.recoveryPhrase.words);
+    await decryptKeysRef.value?.process(selectedKeyPaths, props.recoveryPhrase?.words);
   } else {
     const keysPath = await getDataMigrationKeysPath();
     const encryptedKeyPaths = await searchEncryptedKeys([keysPath]);
 
-    await decryptKeysRef.value?.process(encryptedKeyPaths, props.recoveryPhrase.words);
+    await decryptKeysRef.value?.process(encryptedKeyPaths, props.recoveryPhrase?.words);
   }
 });
 </script>

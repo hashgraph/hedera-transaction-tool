@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
@@ -47,6 +47,7 @@ const accountData = useAccountId();
 /* State */
 const amount = ref<Hbar>(new Hbar(0));
 const isApprovedTransfer = ref(false);
+const amountExceedsBalance = ref(false);
 
 /* Handlers */
 const handleSubmit = () => {
@@ -96,8 +97,9 @@ watch([amount, accountData.isValid], async ([newAmount]) => {
     accountData.isValid.value &&
     accountData.accountInfo.value?.balance.toBigNumber().isLessThan(newAmount.toBigNumber())
   ) {
-    await nextTick();
-    amount.value = accountData.accountInfo.value?.balance as Hbar;
+    amountExceedsBalance.value = true;
+  } else {
+    amountExceedsBalance.value = false;
   }
 });
 </script>
@@ -128,6 +130,10 @@ watch([amount, accountData.isValid], async ([newAmount]) => {
       </div>
       <div class="form-group mt-4">
         <label class="form-label me-3">Amount {{ HbarUnit.Hbar._symbol }}</label>
+        <label v-if="amountExceedsBalance" class="form-label text-danger me-3"
+          ><span class="bi bi-exclamation-triangle-fill me-1"></span> Amount exceeds current
+          balance</label
+        >
         <label v-if="spender?.trim() && isApprovedTransfer" class="form-label text-secondary"
           >Allowance: {{ stringifyHbar(accountData.getSpenderAllowance(spender)) }}</label
         >

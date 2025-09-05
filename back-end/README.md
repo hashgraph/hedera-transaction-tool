@@ -50,6 +50,7 @@ There are `example.env` files in the following directories:
 ## 4. Create Email API Account
 
 An email api account enables you to set-up the notification system in the application. You will need to create a free tier Brevo account, or another provider of your choosing.
+Note that some providers require no username and password, such as Gmail's smtp-relay service. These values, therefore, are optional.
 
 1. Create a free tier [Brevo account](https://onboarding.brevo.com/account/register)
 2. Login to your account

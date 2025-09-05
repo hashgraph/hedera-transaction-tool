@@ -19,8 +19,9 @@ const isActive = (index: number) => {
 };
 
 const isCompleted = (index: number) => {
-  return index < props.activeIndex ||
-    (props.activeIndex === index && index === props.items.length - 1);
+  return (
+    index < props.activeIndex || (props.activeIndex === index && index === props.items.length - 1)
+  );
 };
 
 const getBubbleContent = (index: number, item: { bubbleIcon?: string; bubbleLabel?: string }) => {

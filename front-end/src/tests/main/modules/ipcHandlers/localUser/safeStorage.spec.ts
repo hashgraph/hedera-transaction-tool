@@ -2,7 +2,7 @@ import { mockDeep } from 'vitest-mock-extended';
 
 import { getIPCHandler, invokeIPCHandler } from '../../../_utils_';
 
-import { STATIC_USER, USE_KEYCHAIN } from '@main/shared/constants';
+import { STATIC_USER, USE_KEYCHAIN } from '@shared/constants';
 
 import registerSafeStorageHandlers from '@main/modules/ipcHandlers/localUser/safeStorage';
 

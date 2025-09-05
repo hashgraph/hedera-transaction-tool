@@ -25,6 +25,7 @@ export default defineConfig(({ command }) => {
       alias: {
         '@renderer': resolve('src/renderer'),
         '@main': resolve('src/main'),
+        '@shared': resolve('src/shared'),
       },
     },
     plugins: [
@@ -47,6 +48,7 @@ export default defineConfig(({ command }) => {
               alias: {
                 '@renderer': resolve('src/renderer'),
                 '@main': resolve('src/main'),
+                '@shared': resolve('src/shared'),
               },
             },
           },
@@ -65,6 +67,7 @@ export default defineConfig(({ command }) => {
             resolve: {
               alias: {
                 '@main': resolve('src/main'),
+                '@shared': resolve('src/shared'),
               },
             },
           },

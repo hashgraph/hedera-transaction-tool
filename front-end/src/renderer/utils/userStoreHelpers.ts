@@ -1,6 +1,6 @@
 import type { Ref } from 'vue';
 import type { KeyPair, Organization } from '@prisma/client';
-import type { IUserKey } from '@main/shared/interfaces';
+import type { IUserKey } from '@shared/interfaces';
 import type {
   ConnectedOrganization,
   LoggedInOrganization,
@@ -18,7 +18,7 @@ import type {
 import { Prisma } from '@prisma/client';
 import { Mnemonic } from '@hashgraph/sdk';
 
-import { SELECTED_NETWORK, SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@main/shared/constants';
+import { SELECTED_NETWORK, SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@shared/constants';
 
 import {
   getUserState,
@@ -310,14 +310,13 @@ export const getMnemonics = async (user: PersonalUser | null) => {
 
 /* Computations */
 export const getSecretHashesFromKeys = (keys: KeyPair[]): string[] => {
-  const secretHashes: string[] = [];
+  const secretHashes = new Set<string>();
 
   keys.forEach(key => {
-    if (key.secret_hash && !secretHashes.includes(key.secret_hash))
-      secretHashes.push(key.secret_hash);
+    if (key.secret_hash) secretHashes.add(key.secret_hash);
   });
 
-  return secretHashes;
+  return Array.from(secretHashes);
 };
 
 export const getKeysFromSecretHash = async (

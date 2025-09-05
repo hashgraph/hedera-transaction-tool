@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { HederaAccount } from '@prisma/client';
-import type { IAccountInfoParsed } from '@main/shared/interfaces';
+import type { IAccountInfoParsed } from '@shared/interfaces';
 import type { TransferHbarData } from '@renderer/utils/sdk';
 
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { Hbar, Transfer } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -12,7 +12,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
 import { getAll } from '@renderer/services/accountsService';
 
-import { isUserLoggedIn, stringifyHbar } from '@renderer/utils';
+import { getAccountIdWithChecksum, isUserLoggedIn, stringifyHbar } from '@renderer/utils';
 
 import TransferCard from '@renderer/components/TransferCard.vue';
 
@@ -43,6 +43,33 @@ const network = useNetworkStore();
 
 /* State */
 const linkedAccounts = ref<HederaAccount[]>([]);
+
+/* Computed */
+const transfersExceedingBalance = computed(() => {
+  const result = [];
+  for (const transfer of props.data.transfers) {
+    if (transfer.amount.isNegative()) {
+      const accountInfo = props.accountInfos[transfer.accountId.toString()];
+      if (
+        accountInfo &&
+        transfer.amount.negated().toBigNumber().isGreaterThan(accountInfo.balance.toBigNumber())
+      ) {
+        result.push(transfer);
+      }
+    }
+  }
+  return result;
+});
+
+const errorMessage = computed(() => {
+  let result: string | null;
+  if (transfersExceedingBalance.value.length > 0) {
+    result = `Insufficient balance for transfer`;
+  } else {
+    result = null;
+  }
+  return result;
+});
 
 /* Handlers */
 const handleAddTransfer = async (accountId: string, amount: Hbar, isApproved: boolean) => {
@@ -78,6 +105,10 @@ const handleReceiverRestButtonClick = (accountId: string, isApproved: boolean) =
 };
 
 /* Functions */
+const balanceExceeded = (transfer: Transfer): boolean => {
+  return transfersExceedingBalance.value.some(t => t.accountId === transfer.accountId);
+};
+
 const addTransfer = (accountId: string, amount: Hbar, isApproved: boolean) => {
   const newTransfer = new Transfer({
     accountId,
@@ -170,13 +201,18 @@ onMounted(async () => {
           <template v-for="(debit, i) in data.transfers" :key="debit.accountId">
             <div v-if="debit.amount.isNegative()" class="mt-3">
               <div class="row align-items-center px-3">
-                <div class="col-4 flex-centered justify-content-start flex-wrap overflow-hidden">
+                <div class="col-5 flex-centered justify-content-start flex-wrap overflow-hidden">
                   <template
-                    v-if="linkedAccounts.find(la => la.account_id === debit.accountId.toString())"
+                    v-if="
+                      (
+                        linkedAccounts.find(la => la.account_id === debit.accountId.toString())
+                          ?.nickname || ''
+                      ).length > 0
+                    "
                   >
                     <p v-if="debit.isApproved" class="text-small text-semi-bold me-2">Approved</p>
 
-                    <div class="flex-centered justify-content-start flex-wrap">
+                    <div class="d-flex align-items-baseline justify-content-start flex-wrap">
                       <p class="text-small text-semi-bold me-2">
                         {{
                           linkedAccounts.find(la => la.account_id === debit.accountId.toString())
@@ -184,7 +220,7 @@ onMounted(async () => {
                         }}
                       </p>
                       <p class="text-secondary text-micro overflow-hidden">
-                        {{ debit.accountId }}
+                        ({{ getAccountIdWithChecksum(debit.accountId.toString()) }})
                       </p>
                     </div>
                   </template>
@@ -194,16 +230,25 @@ onMounted(async () => {
                       class="text-secondary text-small overflow-hidden"
                       data-testid="p-debit-account"
                     >
-                      {{ debit.accountId }}
+                      {{ getAccountIdWithChecksum(debit.accountId.toString()) }}
                     </p>
                   </template>
                 </div>
-                <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
+                <div class="col-5 col-lg-6 text-end text-nowrap overflow-hidden">
                   <p
-                    class="text-secondary text-small text-bold overflow-hidden"
+                    class="text-danger text-small text-bold overflow-hidden"
+                    :class="{
+                      'text-danger': balanceExceeded(debit),
+                      'text-secondary': !balanceExceeded(debit),
+                    }"
                     data-testid="p-debit-amount"
                   >
-                    {{ stringifyHbar(debit.amount as Hbar) }}
+                    {{ stringifyHbar(debit.amount as Hbar)
+                    }}<span
+                      v-if="transfersExceedingBalance.length > 0"
+                      class="bi bi-exclamation-triangle-fill ms-2"
+                      :class="{ invisible: !balanceExceeded(debit) }"
+                    ></span>
                   </p>
                 </div>
                 <div class="col-2 col-lg-1 text-end">
@@ -217,6 +262,7 @@ onMounted(async () => {
             </div>
           </template>
         </div>
+        <p v-if="errorMessage" class="text-danger text-small text-end mt-3">{{ errorMessage }}</p>
       </div>
       <div class="col-1"></div>
       <div class="col-5 flex-1">
@@ -224,11 +270,16 @@ onMounted(async () => {
           <template v-for="(credit, i) in data.transfers" :key="credit.accountId">
             <div v-if="!credit.amount.isNegative()" class="mt-3">
               <div class="row align-items-center px-3">
-                <div class="col-4 flex-centered justify-content-start flex-wrap overflow-hidden">
+                <div class="col-5 flex-centered justify-content-start flex-wrap overflow-hidden">
                   <template
-                    v-if="linkedAccounts.find(la => la.account_id === credit.accountId.toString())"
+                    v-if="
+                      (
+                        linkedAccounts.find(la => la.account_id === credit.accountId.toString())
+                          ?.nickname || ''
+                      ).length > 0
+                    "
                   >
-                    <div class="flex-centered justify-content-start flex-wrap">
+                    <div class="d-flex align-items-baseline justify-content-start flex-wrap">
                       <p class="text-small text-semi-bold me-2">
                         {{
                           linkedAccounts.find(la => la.account_id === credit.accountId.toString())
@@ -236,7 +287,7 @@ onMounted(async () => {
                         }}
                       </p>
                       <p class="text-secondary text-micro overflow-hidden">
-                        {{ credit.accountId }}
+                        ({{ getAccountIdWithChecksum(credit.accountId.toString()) }})
                       </p>
                     </div>
                   </template>
@@ -245,11 +296,11 @@ onMounted(async () => {
                       class="text-secondary text-small overflow-hidden"
                       data-testid="p-credit-account"
                     >
-                      {{ credit.accountId }}
+                      {{ getAccountIdWithChecksum(credit.accountId.toString()) }}
                     </p>
                   </template>
                 </div>
-                <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
+                <div class="col-5 col-lg-6 text-end text-nowrap overflow-hidden">
                   <p
                     class="text-secondary text-small text-bold overflow-hidden"
                     data-testid="p-hbar-amount"

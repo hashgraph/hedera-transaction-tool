@@ -20,6 +20,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
 import KeyField from '@renderer/components/KeyField.vue';
+import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 
 /* Props */
 const props = defineProps<{
@@ -184,6 +185,18 @@ function getEndpointData(ipOrDomain: string, port: string) {
   };
 }
 
+function getGrpcWebProxyEndpoint(field: 'domainName' | 'port', value: string) {
+  emit('update:data', {
+    ...this.props.data,
+    grpcWebProxyEndpoint: {
+      ipAddressV4: '',
+      domainName:
+        field === 'domainName' ? value : this.props.data.grpcWebProxyEndpoint?.domainName || '',
+      port: field === 'port' ? value : this.props.data.grpcWebProxyEndpoint?.port || '',
+    },
+  });
+}
+
 function formatPort(event: Event, key: 'gossip' | 'service') {
   const portMapping = {
     gossip: gossipPort,
@@ -245,6 +258,38 @@ watch(
 
   <hr class="separator my-5" />
 
+  <div class="form-group col-8 col-xxxl-6">
+    <KeyField
+      label="Admin Key"
+      :model-key="data.adminKey"
+      @update:model-key="
+        emit('update:data', {
+          ...data,
+          adminKey: $event,
+        })
+      "
+      :is-required="required"
+    />
+  </div>
+
+  <div class="form-group mt-6">
+    <AppSwitch
+      :checked="!data.declineReward"
+      @update:checked="
+        emit('update:data', {
+          ...data,
+          declineReward: !$event,
+        })
+      "
+      size="md"
+      name="accept-reward"
+      label="Accept Node Rewards"
+      data-testid="switch-accept-reward"
+    />
+  </div>
+
+  <hr class="separator my-5" />
+
   <label class="form-label"
     >Gossip Endpoints <span v-if="required" class="text-danger">*</span></label
   >
@@ -300,6 +345,9 @@ watch(
       </div>
     </div>
 
+    <label class="form-label mt-6"
+      >Gossip Endpoints <span v-if="required" class="text-danger">*</span></label
+    >
     <div v-for="(endpoint, index) of data.gossipEndpoints" :key="index" class="row py-3">
       <div class="col-3 col-xxxl-3 d-flex align-items-center text-small">
         <div v-if="index === 0">Internal</div>
@@ -321,9 +369,8 @@ watch(
     </div>
   </div>
 
-  <hr class="separator my-5" />
-
-  <label class="form-label"
+  <!-- Service Endpoint -->
+  <label class="form-label mt-6"
     >Service Endpoints <span v-if="required" class="text-danger">*</span></label
   >
   <div class="row align-items-end">
@@ -388,6 +435,31 @@ watch(
       </div>
     </div>
   </div>
+  <!-- gRPC Web Endpoint -->
+  <div class="form-group mt-6">
+    <label class="form-label">gRPC Web Proxy Endpoint</label>
+    <div class="text-micro mb-3 text-muted">Fully Qualified Domain Name (FQDN) is required</div>
+    <div class="row align-items-end">
+      <div class="col-4 col-xxxl-3">
+        <label class="form-label">Domain</label>
+        <AppInput
+          :model-value="data.grpcWebProxyEndpoint?.domainName"
+          @update:model-value="getGrpcWebProxyEndpoint('domainName', $event)"
+          placeholder="Enter FQDN"
+          :filled="true"
+        />
+      </div>
+      <div class="col-4 col-xxxl-3">
+        <label class="form-label">Port</label>
+        <AppInput
+          :model-value="data.grpcWebProxyEndpoint?.port"
+          @update:model-value="getGrpcWebProxyEndpoint('port', $event)"
+          placeholder="Enter Port"
+          :filled="true"
+        />
+      </div>
+    </div>
+  </div>
 
   <hr class="separator my-5" />
 
@@ -443,21 +515,5 @@ watch(
   <div class="form-group mt-6 col-8 col-xxxl-6">
     <label class="form-label">Certificate Hash</label>
     <p class="overflow-auto">{{ uint8ToHex(data.certificateHash) }}</p>
-  </div>
-
-  <hr class="separator my-5" />
-
-  <div class="form-group col-8 col-xxxl-6">
-    <KeyField
-      label="Admin Key"
-      :model-key="data.adminKey"
-      @update:model-key="
-        emit('update:data', {
-          ...data,
-          adminKey: $event,
-        })
-      "
-      :is-required="required"
-    />
   </div>
 </template>

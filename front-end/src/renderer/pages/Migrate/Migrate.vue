@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import type { MigrateUserDataResult } from '@main/shared/interfaces/migration';
+import type { MigrateUserDataResult } from '@shared/interfaces/migration';
 import type { RecoveryPhrase } from '@renderer/types';
 import type { PersonalUser } from './components/SetupPersonal.vue';
 import { computed, ref } from 'vue';
 
-import { KeyPathWithName } from '@main/shared/interfaces';
+import { KeyPathWithName } from '@shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 import useSetDynamicLayout, { DEFAULT_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import { useRouter } from 'vue-router';
+
+import { SKIPPED_PERSONAL_SETUP } from '@shared/constants';
 
 import { resetDataLocal } from '@renderer/services/userService';
 import { getStaticUser } from '@renderer/services/safeStorageService';
@@ -23,6 +25,8 @@ import ImportUserData from './components/ImportUserData.vue';
 import BeginKeysImport from './components/BeginKeysImport.vue';
 import Summary from './components/Summary.vue';
 import SelectKeys from './components/SelectKeys.vue';
+import { buildSkipClaimKey, isLoggedInOrganization, safeAwait } from '@renderer/utils';
+import { add, getStoredClaim, update } from '@renderer/services/claimService';
 
 /* Types */
 type StepName = 'recoveryPhrase' | 'personal' | 'organization' | 'selectKeys' | 'summary';
@@ -96,32 +100,42 @@ const handleSetRecoveryPhrase = async (value: {
 const handleSetPersonalUser = async (value: PersonalUser) => {
   personalUser.value = value;
   await user.setAccountSetupStarted(true);
+  await handleSkipSetupAfterMigration();
   step.value = 'organization';
 };
 
-const handleSetOrganizationId = async (value: string) => {
+const handleSetOrganizationId = async (value: string | null) => {
   organizationId.value = value;
   await initializeUserStore();
   userInitialized.value = true;
-  step.value = 'selectKeys';
+  if (allUserKeysToRecover.value.length !== 0) {
+    step.value = 'selectKeys';
+  } else {
+    await handleSkipSetupAfterMigration();
+    step.value = 'summary';
+  }
 };
 
 const handleKeysImported = async (value: number) => {
   if (!personalUser.value) throw new Error('(BUG) Personal User not set');
-  await user.setAccountSetupStarted(false);
+  if (!value) {
+    await handleSkipSetupAfterMigration();
+  }
   keysImported.value = value;
   step.value = 'summary';
 };
 
 const handleSelectedKeys = (keysToRecover: KeyPathWithName[]) => {
   selectedKeysToRecover.value = keysToRecover;
+  if (keysToRecover.length === 0) {
+    step.value = 'summary';
+  }
 };
 
 /* Functions */
 const stepIs = (name: StepName) => step.value === name;
 
 const initializeUserStore = async () => {
-  if (!recoveryPhrase.value) throw new Error('(BUG) Recovery Phrase not set');
   if (!personalUser.value) throw new Error('(BUG) Personal User not set');
 
   if (personalUser.value.useKeychain) {
@@ -132,9 +146,37 @@ const initializeUserStore = async () => {
   }
   await user.refetchOrganizations();
 
-  await user.selectOrganization(user.organizations[0]);
-  await user.setRecoveryPhrase(recoveryPhrase.value.words);
+  if (user.organizations[0]) {
+    // before the org is selected, set the org to skip setup.
+    await handleSkipSetupAfterMigration();
+    await user.selectOrganization(user.organizations[0]);
+  }
+
+  if (recoveryPhrase.value) {
+    await user.setRecoveryPhrase(recoveryPhrase.value.words);
+  }
   personalUser.value.password && user.setPassword(personalUser.value.password);
+};
+
+const handleSkipSetupAfterMigration = async () => {
+  if (!personalUser.value) throw new Error('(BUG) Personal User not set');
+
+  // in order to set the skip setup BEFORE org is selected, user the user.organization[0]
+  const org = user.selectedOrganization || user.organizations[0];
+  if (!org) {
+    const { data } = await safeAwait(
+      getStoredClaim(personalUser.value.personalId, SKIPPED_PERSONAL_SETUP),
+    );
+    const addOrUpdate = data !== undefined ? update : add;
+    await addOrUpdate(personalUser.value.personalId, SKIPPED_PERSONAL_SETUP, 'true');
+    user.skippedSetup = true;
+  } else if (isLoggedInOrganization(org)) {
+    const claimKey = buildSkipClaimKey(org.serverUrl, org.userId);
+    const { data } = await safeAwait(getStoredClaim(user.personal.id, claimKey));
+    const addOrUpdate = data !== undefined ? update : add;
+    await addOrUpdate(user.personal.id, claimKey, 'true');
+    user.skippedSetup = true;
+  }
 };
 </script>
 <template>
@@ -143,7 +185,7 @@ const initializeUserStore = async () => {
       class="container-dark-border bg-modal-surface glow-dark-bg p-5"
       :class="{
         'custom-key-modal': stepIs('selectKeys'),
-        'col-12 col-md-10 col-lg-8': stepIs('summary')
+        'col-12 col-md-10 col-lg-8': stepIs('summary'),
       }"
     >
       <h4 class="text-title text-semi-bold text-center">{{ heading }}</h4>
@@ -164,7 +206,7 @@ const initializeUserStore = async () => {
         </template>
 
         <!-- Setup Personal User Step -->
-        <template v-if="stepIs('personal') && recoveryPhrase">
+        <template v-if="stepIs('personal')">
           <SetupPersonal
             :recovery-phrase="recoveryPhrase"
             @set-personal-user="handleSetPersonalUser"
@@ -173,27 +215,21 @@ const initializeUserStore = async () => {
         </template>
 
         <!-- Setup Organization Step -->
-        <template
-          v-if="stepIs('organization') && recoveryPhrase && recoveryPhrasePassword && personalUser"
-        >
+        <template v-if="stepIs('organization') && personalUser">
           <SetupOrganization
-            :recovery-phrase="recoveryPhrase"
             :personal-user="personalUser"
             @set-organization-id="handleSetOrganizationId"
             @migration:cancel="handleStopMigration"
           />
         </template>
 
+        <!-- Import User Data Step -->
+        <template v-if="userInitialized">
+          <ImportUserData @importedUserData="importedUserData = $event" />
+        </template>
+
         <!-- Select Keys Step -->
-        <template
-          v-if="
-            stepIs('selectKeys') &&
-            recoveryPhrase &&
-            recoveryPhrasePassword &&
-            personalUser &&
-            allUserKeysToRecover.length > 0
-          "
-        >
+        <template v-if="stepIs('selectKeys') && personalUser && allUserKeysToRecover.length > 0">
           <SelectKeys
             v-if="userInitialized"
             :keys-to-recover="allUserKeysToRecover"
@@ -202,7 +238,6 @@ const initializeUserStore = async () => {
           />
 
           <template v-if="selectedKeysToRecover.length > 0">
-            <ImportUserData @importedUserData="importedUserData = $event" />
             <BeginKeysImport
               :recovery-phrase="recoveryPhrase"
               :recovery-phrase-password="recoveryPhrasePassword"

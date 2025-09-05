@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { INodeInfoParsed } from '@main/shared/interfaces';
+import type { INodeInfoParsed } from '@shared/interfaces';
 import type { NodeUpdateData } from '@renderer/utils/sdk/createTransactions';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 
@@ -12,7 +12,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 import useNodeId from '@renderer/composables/useNodeId';
 
 import { createNodeUpdateTransaction } from '@renderer/utils/sdk/createTransactions';
-import { getNodeUpdateData, isAccountId } from '@renderer/utils';
+import { getComponentServiceEndpoint, getNodeUpdateData, isAccountId } from '@renderer/utils';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeUpdateFormData from '@renderer/components/Transaction/Create/NodeUpdate/NodeUpdateFormData.vue';
@@ -32,9 +32,11 @@ const data = reactive<NodeUpdateData>({
   description: '',
   gossipEndpoints: [],
   serviceEndpoints: [],
+  grpcWebProxyEndpoint: null,
   gossipCaCertificate: Uint8Array.from([]),
   certificateHash: Uint8Array.from([]),
   adminKey: null,
+  declineReward: false,
 });
 
 /* Computed */
@@ -103,19 +105,29 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.gossipEndpoints = [];
     data.serviceEndpoints = [];
     data.gossipCaCertificate = Uint8Array.from([]);
+    data.grpcWebProxyEndpoint = null;
     data.certificateHash = Uint8Array.from([]);
     data.adminKey = null;
+    data.declineReward = false;
   } else if (!route.query.draftId) {
     data.nodeAccountId = nodeInfo.node_account_id?.toString() || '';
     newNodeAccountData.accountId.value = data.nodeAccountId;
     data.description = nodeInfo.description || '';
     data.gossipEndpoints = [];
     data.serviceEndpoints = [];
+    data.grpcWebProxyEndpoint = getComponentServiceEndpoint(nodeInfo.grpc_web_proxy_endpoint);
     data.gossipCaCertificate = Uint8Array.from([]);
     data.certificateHash = Uint8Array.from([]);
     data.adminKey = nodeInfo.admin_key;
+    data.declineReward = nodeInfo.decline_reward;
   }
 });
+watch(
+  () => [data.nodeAccountId, data.adminKey, data.nodeId],
+  () => {
+    baseTransactionRef.value?.updateTransactionKey();
+  },
+);
 </script>
 <template>
   <BaseTransaction

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { HederaAccount } from '@prisma/client';
 
-import { onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 
-import { TransferTransaction, Transaction } from '@hashgraph/sdk';
+import { Transaction, Transfer, TransferTransaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -11,6 +11,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { getAll } from '@renderer/services/accountsService';
 
 import { getAccountIdWithChecksum, isUserLoggedIn, stringifyHbar } from '@renderer/utils';
+import { getAccountInfo } from '@renderer/services/mirrorNodeDataService.ts';
 
 /* Props */
 const props = defineProps<{
@@ -23,6 +24,19 @@ const network = useNetworkStore();
 
 /* State */
 const linkedAccounts = ref<HederaAccount[]>([]);
+const transfersExceedingBalance = ref<Transfer[]>([]);
+const transferParsingComplete = ref(false);
+
+/* Computed */
+const errorMessage = computed(() => {
+  let result: string | null;
+  if (transfersExceedingBalance.value.length > 0) {
+    result = `Insufficient balance for transfer`;
+  } else {
+    result = null;
+  }
+  return result;
+});
 
 /* Hooks */
 onBeforeMount(async () => {
@@ -31,6 +45,22 @@ onBeforeMount(async () => {
     throw new Error('Transaction is not Transfer Transaction');
   }
 
+  for (const transfer of props.transaction.hbarTransfersList) {
+    if (transfer.amount.isNegative()) {
+      const accountInfo = await getAccountInfo(
+        transfer.accountId.toString(),
+        network.mirrorNodeBaseURL,
+      );
+      if (
+        accountInfo &&
+        transfer.amount.negated().toBigNumber().isGreaterThan(accountInfo.balance.toBigNumber())
+      ) {
+        transfersExceedingBalance.value.push(transfer);
+      }
+    }
+  }
+  transferParsingComplete.value = true;
+
   linkedAccounts.value = await getAll({
     where: {
       user_id: user.personal.id,
@@ -38,11 +68,16 @@ onBeforeMount(async () => {
     },
   });
 });
+
+/* Functions */
+const balanceExceeded = (transfer: Transfer): boolean => {
+  return transfersExceedingBalance.value.some(t => t.accountId === transfer.accountId);
+};
 </script>
 <template>
   <div v-if="transaction instanceof TransferTransaction && true" class="mt-5">
     <!-- Hbar transfers -->
-    <div class="row">
+    <div v-if="transferParsingComplete" class="row">
       <div class="col-6">
         <div class="mt-3">
           <template v-for="debit in transaction.hbarTransfersList" :key="debit.accountId">
@@ -61,7 +96,7 @@ onBeforeMount(async () => {
                   >
                     <p v-if="debit.isApproved" class="text-small text-semi-bold me-2">Approved</p>
 
-                    <div class="flex-centered justify-content-start flex-wrap">
+                    <div class="d-flex align-items-baseline justify-content-start flex-wrap">
                       <p class="text-small text-semi-bold me-2">
                         {{
                           linkedAccounts.find(la => la.account_id === debit.accountId.toString())
@@ -84,18 +119,37 @@ onBeforeMount(async () => {
                   </template>
                 </div>
                 <div class="col-6 col-lg-7 text-end text-nowrap overflow-hidden">
-                  <p
-                    class="text-secondary text-small text-bold overflow-hidden"
-                    data-testid="p-transfer-from-amount-details"
-                  >
-                    {{ stringifyHbar(debit.amount) }}
-                  </p>
+                  <template v-if="balanceExceeded(debit)">
+                    <p
+                      class="text-danger text-small text-bold overflow-hidden"
+                      data-testid="p-transfer-from-amount-details"
+                    >
+                      {{ stringifyHbar(debit.amount)
+                      }}<span
+                        v-if="transfersExceedingBalance.length > 0"
+                        class="bi bi-exclamation-triangle-fill ms-2"
+                      ></span>
+                    </p>
+                  </template>
+                  <template v-else>
+                    <p
+                      class="text-secondary text-small text-bold overflow-hidden"
+                      data-testid="p-transfer-from-amount-details"
+                    >
+                      {{ stringifyHbar(debit.amount)
+                      }}<span
+                        v-if="transfersExceedingBalance.length > 0"
+                        class="invisible bi bi-exclamation-triangle-fill ms-2"
+                      ></span>
+                    </p>
+                  </template>
                 </div>
               </div>
               <hr class="separator" />
             </div>
           </template>
         </div>
+        <p v-if="errorMessage" class="text-danger text-small text-end mt-3">{{ errorMessage }}</p>
       </div>
       <div class="col-6">
         <div class="mt-3">
@@ -113,7 +167,7 @@ onBeforeMount(async () => {
                       ).length > 0
                     "
                   >
-                    <div class="flex-centered justify-content-start flex-wrap">
+                    <div class="d-flex align-items-baseline justify-content-start flex-wrap">
                       <p class="text-small text-semi-bold me-2">
                         {{
                           linkedAccounts.find(la => la.account_id === credit.accountId.toString())

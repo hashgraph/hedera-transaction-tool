@@ -3,65 +3,124 @@ import * as fs from 'fs';
 import * as fsp from 'fs/promises';
 
 import * as unzipper from 'unzipper';
+import { app } from 'electron';
 
-import { AbortableState } from '@main/services/localUser';
+/* Abort controller for public key search */
+let currentController: AbortController | null = null;
 
-/* Get file paths for given extensions */
-export const getFilePaths = async (searchPath: string, extensions: string[]) => {
-  const filePaths: string[] = [];
+export const searchFiles = async (
+  filePaths: string[],
+  extensions: string[],
+  processor: (filePath: string) => Promise<any>,
+) => {// Abort any previous search
+  if (currentController) currentController.abort();
 
-  const files = await fsp.readdir(searchPath);
+  currentController = new AbortController();
+  const abortSignal = currentController.signal;
 
-  for (const file of files) {
-    if (extensions.some(ext => file.endsWith(ext))) {
-      filePaths.push(path.join(searchPath, file));
+  const searchDir = path.join(app.getPath('temp'), `search_${Date.now()}`);
+  const unzipDirs: string[] = [];
+
+  await fsp.mkdir(searchDir, { recursive: true });
+
+  const cleanup = async () => {
+    const dirs = [searchDir, ...unzipDirs];
+    const results = await Promise.allSettled(dirs.map(dir => fsp.rm(dir, { recursive: true })));
+
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        console.log(`Delete search dirs error:`, result.reason);
+      }
     }
+  };
+
+  abortSignal.addEventListener('abort', cleanup);
+
+  async function recursiveSearch(filePath: string): Promise<any[]> {
+    if (abortSignal && abortSignal.aborted) return [];
+    try {
+      const stat = await fsp.stat(filePath);
+      const ext = path.extname(filePath);
+
+      if (stat.isDirectory()) {
+        const files = await fsp.readdir(filePath);
+        const results: any[] = [];
+        for (const file of files) {
+          results.push(...await recursiveSearch(path.join(filePath, file)));
+        }
+        return results;
+      } else if (stat.isFile() && ext === '.zip') {
+        const dist = path.join(app.getPath('temp'), `unzipped_${Date.now()}`);
+        unzipDirs.push(dist);
+        await unzipFile(filePath, dist, extensions, abortSignal);
+        return await recursiveSearch(dist);
+      } else if (stat.isFile() && extensions.includes(ext)) {
+        // Get a unique name and copy it into the searchDir to be processed
+        const fileDist = await getUniquePath(searchDir, path.basename(filePath));
+        await copyFile(filePath, fileDist, abortSignal);
+        // Wrap the result in array so the returned result will be added as is to the final results
+        try {
+          return [await processor(fileDist)];
+        } catch (error) {
+          await fsp.rm(fileDist);
+          console.log(`Error processing file ${fileDist}:`, error);
+          return [];
+        }
+      }
+    } catch (error) {
+      console.log(`Error processing ${filePath}:`, error);
+    }
+
+    return [];
   }
 
-  return filePaths;
-};
+  try {
+    const results: any[] = [];
+    for (const filePath of filePaths) {
+      results.push(...await recursiveSearch(filePath));
+    }
 
-/* Unzip the file to directory */
-export const unzip = async (
+    if (abortSignal && abortSignal.aborted) {
+      return [];
+    }
+
+    return results;
+  } finally {
+    abortSignal.removeEventListener('abort', cleanup);
+  }
+}
+
+export const abortFileSearch = () => {
+  if (currentController) currentController.abort();
+}
+
+const unzipFile = async (
   zipPath: string,
   dist: string,
   extensions: string[],
-  state?: AbortableState,
+  abortSignal?: AbortSignal,
 ) => {
   const macosx = '__MACOSX';
-
   await fsp.mkdir(dist, { recursive: true });
-
   const directory = await unzipper.Open.file(zipPath);
-
-  const pemFiles = directory.files
+  const files = directory.files
     .filter(f => !f.path.startsWith(macosx))
-    .filter(f => (extensions.length > 0 ? extensions.some(ext => f.path.endsWith(ext)) : true));
+    .filter(f => extensions.length > 0 ? extensions.some(ext => f.path.endsWith(ext)) : true);
 
-  for (const file of pemFiles) {
-    try {
-      if (state && state.aborted) return dist;
-
-      const fileName = path.basename(file.path);
-      const fileDist = await getUniquePath(dist, fileName);
-
-      await extractUnzipperFile(file, fileDist, state);
-    } catch (error) {
-      console.log(error);
-    }
+  for (const file of files) {
+    if (abortSignal?.aborted) return;
+    const fileName = path.basename(file.path);
+    const fileDist = path.join(dist, fileName);
+    await extractUnzipperFile(file, fileDist, abortSignal);
   }
+}
 
-  return dist;
-};
-
-/* Extract the file with stream */
-export const extractUnzipperFile = (file: unzipper.File, dist: string, state?: AbortableState) => {
+const extractUnzipperFile = (file: unzipper.File, dist: string, abortSignal?: AbortSignal) => {
   return new Promise((resolve, reject) => {
     const stream = file.stream();
-
     stream
       .on('data', () => {
-        if (state && state.aborted) {
+        if (abortSignal?.aborted) {
           stream.destroy();
           reject('File extraction aborted');
         }
@@ -70,15 +129,15 @@ export const extractUnzipperFile = (file: unzipper.File, dist: string, state?: A
       .on('close', () => resolve(dist))
       .on('error', reject);
   });
-};
+}
 
 /* Copy the file to directory with stream */
-export const copyFile = (filePath: string, fileDist: string, state?: AbortableState) => {
+export const copyFile = (filePath: string, fileDist: string, signal?: AbortSignal) => {
   return new Promise((resolve, reject) => {
     const readStream = fs.createReadStream(filePath);
 
     readStream.on('data', () => {
-      if (state && state.aborted) {
+      if (signal?.aborted) {
         readStream.destroy();
         reject('File copying aborted');
       }
@@ -91,25 +150,25 @@ export const copyFile = (filePath: string, fileDist: string, state?: AbortableSt
     writeStream.on('error', reject);
     writeStream.on('finish', () => resolve(fileDist));
   });
-};
+}
 
 /* Get unique path for file */
 export const getUniquePath = async (dist: string, fileName: string) => {
   let fileDist = path.join(dist, fileName);
-  let exists = true;
   let count = 1;
 
-  while (exists) {
+  while (true) {
     try {
       await fsp.access(fileDist, fs.constants.F_OK);
+      // File exists, generate a new name
+      const copyName = `copy_${count}_${fileName}`;
+      fileDist = path.join(dist, copyName);
+      count++;
     } catch {
-      exists = false;
+      // File does not exist
       break;
     }
-    fileName = `copy_${count}_${fileName}`;
-    fileDist = path.join(dist, fileName);
-    count++;
   }
 
   return fileDist;
-};
+}

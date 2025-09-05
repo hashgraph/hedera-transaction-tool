@@ -4,7 +4,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { Prisma } from '@prisma/client';
 import { PrivateKey } from '@hashgraph/sdk';
 
-import { ENCRYPTED_KEY_ALREADY_IMPORTED } from '@main/shared/constants';
+import { ENCRYPTED_KEY_ALREADY_IMPORTED } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -29,9 +29,9 @@ const props = defineProps<{
   show: boolean;
   keyPath: string | null;
   keysLeft: number;
-  mnemonic: string[] | null;
-  mnemonicHash: string | null;
-  indexesFromMnemonic: number[];
+  mnemonic?: string[] | null;
+  mnemonicHash?: string | null;
+  indexesFromMnemonic?: number[];
   defaultPassword?: string;
 }>();
 
@@ -261,9 +261,8 @@ watch(
           >
           <div class="flex-between-centered gap-4">
             <AppButton
-              color="secondary"
               type="button"
-              class="min-w-unset"
+              class="btn btn-link min-w-unset"
               :disabled="decrypting"
               @click="handleSkip"
               >Skip</AppButton
