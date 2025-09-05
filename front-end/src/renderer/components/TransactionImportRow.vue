@@ -2,7 +2,8 @@
 /* Props */
 import { computed } from 'vue';
 import type { TransactionSearchResult } from '@main/services/localUser';
-import { hexToUint8Array } from '@renderer/utils';
+import { getAllData, hexToUint8Array } from '@renderer/utils';
+import { txTypeLabelMapping } from '@renderer/components/Transaction/Create/txTypeComponentMapping.ts';
 import { Transaction } from '@hashgraph/sdk';
 
 const props = defineProps<{
@@ -16,46 +17,71 @@ const decodedTransaction = computed(() => {
   let result: Transaction | null;
   const bytes = hexToUint8Array(props.transaction.transactionBytes);
   try {
-    result = Transaction.fromBytes(bytes)
-  } catch(error) {
-    console.log("error=" + error)
+    result = Transaction.fromBytes(bytes);
+  } catch (error) {
+    console.log('error=' + error);
     result = null;
   }
   return result;
 });
 
 const transactionId = computed(() => {
-  return decodedTransaction.value?.transactionId?.toString() ?? null
+  return decodedTransaction.value?.transactionId?.toString() ?? null;
+});
+
+const validStart = computed(() => {
+  return decodedTransaction.value?.transactionId?.validStart?.toDate() ?? null;
+});
+
+const formattedValidStart = computed(() => {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  });
+  return validStart.value !== null ? dtf.format(validStart.value) : null
+})
+
+const allData = computed(() => {
+  return decodedTransaction.value !== null ? getAllData(decodedTransaction.value) : null;
+});
+
+const transactionType = computed(() => {
+  const txType = allData.value?.transactionType ?? null;
+  return txType !== null ? txTypeLabelMapping[txType] : null;
+});
+
+const author = computed(() => {
+  return props.transaction.transactionTxt?.Author ?? null;
 });
 
 const network = computed(() => {
-  const nodeList = props.transaction.transactionCsva?.nodes.list ?? []
-  return nodeList.length >= 1 ? nodeList[0].network : null
-})
-
-const validStart = computed(() => {
-   return decodedTransaction.value?.transactionId?.validStart?.toDate() ?? null
+  const nodeList = props.transaction.transactionCsva?.nodes.list ?? [];
+  return nodeList.length >= 1 ? nodeList[0].network : null;
 });
 
 const status = computed(() => {
   let result: string | null;
-  if (decodedTransaction.value === null || transactionId.value === null || validStart.value === null) {
+  if (
+    decodedTransaction.value === null ||
+    transactionId.value === null ||
+    validStart.value === null
+  ) {
     result = 'Failed to decode transaction';
   } else if (props.transaction.transactionCsva === null) {
-    result = '.csva file is missing or invalid';
+    result = 'Missing or invalid .csva file';
   } else if (props.transaction.transactionTxt === null) {
-    result = '.txt file is missing or invalid';
+    result = 'Missing or invalid .txt file';
   } else {
-    const dtf = new Intl.DateTimeFormat("en-US", {
-      dateStyle: "short",
-      timeStyle: "short",
-    })
-    const duration = 3000; // 3s
-    const expiryDate = validStart.value.getTime() + duration;
+    const dtf = new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    });
+    const validSeconds = decodedTransaction.value.transactionValidDuration
+    const expiryDate = validStart.value.getTime() + validSeconds * 1000;
     if (expiryDate < Date.now()) {
-      result = "Expired on " + dtf.format(expiryDate)
+      result = 'Expired on ' + dtf.format(expiryDate);
     } else {
-      result = "Valid start on " + dtf.format(validStart.value)
+      result = null
     }
   }
   return result;
@@ -69,15 +95,27 @@ function basename(filePath: string): string {
 
 <template>
   <div class="overflow-x-auto">
-    <strong>{{ nickName }}</strong>
+    <strong>
+      <span>{{ nickName }}</span>
+      <span v-if="transactionType"> - {{ transactionType }}</span>
+    </strong>
     <p class="text-muted small">
       <template v-if="transactionId !== null">
         <span class="text-numeric">{{ transactionId }}</span> -
       </template>
       <template v-if="network !== null">
-        <span class="text-numeric">{{ network }}</span> -
+        <span>{{ network }}</span> -
       </template>
-      <span>{{ status }}</span>
+      <template v-if="formattedValidStart !== null">
+        <span>Valid on {{ formattedValidStart }}</span> -
+      </template>
+      <template v-if="author !== null">
+        <span>{{ author }}</span>
+      </template>
+    </p>
+    <p class="text-muted small" v-if="status">
+      <i class="bi bi-exclamation-triangle-fill"/>
+      <span style="padding-inline: 6px">{{ status }}</span>
     </p>
   </div>
 </template>
