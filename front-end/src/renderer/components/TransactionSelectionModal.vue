@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
-import { transactionTypeKeys } from '@renderer/components/Transaction/Create/txTypeComponentMapping';
+import {
+  transactionTypeKeys,
+  txTypeLabelMapping,
+} from '@renderer/components/Transaction/Create/txTypeComponentMapping';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 
@@ -23,45 +26,45 @@ const transactionGroups = computed(() => {
   const groups = [
     {
       groupTitle: 'Account',
-      items: [
-        { label: 'Create Account', name: transactionTypeKeys.createAccount },
-        { label: 'Update Account', name: transactionTypeKeys.updateAccount },
-        { label: 'Delete Account', name: transactionTypeKeys.deleteAccount },
-        { label: 'Transfer Tokens', name: transactionTypeKeys.transfer },
-        { label: 'Approve Allowance', name: transactionTypeKeys.approveAllowance },
+      transactionTypes: [
+        transactionTypeKeys.createAccount,
+        transactionTypeKeys.updateAccount,
+        transactionTypeKeys.deleteAccount,
+        transactionTypeKeys.transfer,
+        transactionTypeKeys.approveAllowance,
       ],
     },
     {
       groupTitle: 'File',
-      items: [
-        { label: 'Create File', name: transactionTypeKeys.createFile },
-        { label: 'Update File', name: transactionTypeKeys.updateFile },
-        { label: 'Read File', name: transactionTypeKeys.readFile },
-        { label: 'Append to File', name: transactionTypeKeys.appendToFile },
-        // { label: 'Delete File', name: transactionTypeKeys.deleteFile },
+      transactionTypes: [
+        transactionTypeKeys.createFile,
+        transactionTypeKeys.updateFile,
+        transactionTypeKeys.readFile,
+        transactionTypeKeys.appendToFile,
+        // transactionTypeKeys.deleteFile,
       ],
     },
-    // { groupTitle: 'Token Service', items: [] },
-    // { groupTitle: 'Smart Contract Service', items: [] },
+    // { groupTitle: 'Token Service', transactionTypes: [] },
+    // { groupTitle: 'Smart Contract Service', transactionTypes: [] },
     {
       groupTitle: 'Node',
-      items: [
-        { label: 'Freeze', name: transactionTypeKeys.freeze },
-        { label: 'Node Create', name: transactionTypeKeys.nodeCreate },
-        { label: 'Node Delete', name: transactionTypeKeys.nodeDelete },
-        { label: 'Node Update', name: transactionTypeKeys.nodeUpdate },
+      transactionTypes: [
+        transactionTypeKeys.freeze,
+        transactionTypeKeys.nodeCreate,
+        transactionTypeKeys.nodeDelete,
+        transactionTypeKeys.nodeUpdate,
       ],
     },
     {
       groupTitle: 'System',
-      items: [
-        { label: 'System Delete', name: transactionTypeKeys.systemDelete },
-        { label: 'System Undelete', name: transactionTypeKeys.systemUndelete },
+      transactionTypes: [
+        transactionTypeKeys.systemDelete,
+        transactionTypeKeys.systemUndelete,
       ],
     },
-    // { groupTitle: 'Token Service', items: [] },
-    // { groupTitle: 'Schedule Service', items: [] },
-    // { groupTitle: 'Freeze Service', items: [] },
+    // { groupTitle: 'Token Service', transactionTypes: [] },
+    // { groupTitle: 'Schedule Service', transactionTypes: [] },
+    // { groupTitle: 'Freeze Service', transactionTypes: [] },
   ];
 
   return groups;
@@ -104,19 +107,19 @@ watch(
         </div>
         <div class="col-7">
           <div class="border-start ps-2">
-            <template v-for="item in transactionGroups[activeGroupIndex].items" :key="item.name">
+            <template v-for="t in transactionGroups[activeGroupIndex].transactionTypes" :key="t">
               <a
-                :data-testid="`menu-sub-link-${item.name.toLowerCase()}`"
+                :data-testid="`menu-sub-link-${t.toLowerCase()}`"
                 class="link-menu cursor-pointer"
                 @click="
                   $router.push({
                     name: 'createTransaction',
-                    params: { type: item.name },
+                    params: { type: t },
                     query: { group: `${group}` },
                   })
                 "
               >
-                {{ item.label }}
+                {{ txTypeLabelMapping[t] }}
               </a>
             </template>
           </div>

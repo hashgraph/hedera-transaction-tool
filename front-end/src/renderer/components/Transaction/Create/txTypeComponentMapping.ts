@@ -51,4 +51,22 @@ const txTypeComponentMapping = {
   [transactionTypeKeys.systemUndelete]: SystemUndelete,
 };
 
+export const txTypeLabelMapping = {
+  [transactionTypeKeys.createFile]: "Create File",
+  [transactionTypeKeys.readFile]: "Read File",
+  [transactionTypeKeys.updateFile]: "Update File",
+  [transactionTypeKeys.appendToFile]: "Append to File",
+  [transactionTypeKeys.createAccount]: "Create Account",
+  [transactionTypeKeys.updateAccount]: "Update Account",
+  [transactionTypeKeys.deleteAccount]: "Delete Account",
+  [transactionTypeKeys.transfer]: "Transfer Tokens",
+  [transactionTypeKeys.approveAllowance]: "Approve Allowance",
+  [transactionTypeKeys.freeze]: "Freeze",
+  [transactionTypeKeys.nodeCreate]: "Node Create",
+  [transactionTypeKeys.nodeDelete]: "Node Delete",
+  [transactionTypeKeys.nodeUpdate]: "Node Update",
+  [transactionTypeKeys.systemDelete]: "System Delete",
+  [transactionTypeKeys.systemUndelete]: "System Undelete",
+}
+
 export default txTypeComponentMapping;
