@@ -9,6 +9,7 @@ import {
   signTransaction,
   getTransactionsCount,
   getTransaction,
+  searchTransactions,
 } from '@main/services/localUser';
 import { createIPCChannel, renameFunc } from '@main/utils/electronInfra';
 
@@ -25,5 +26,6 @@ export default () => {
     renameFunc(getTransaction, 'getTransaction'),
     renameFunc(getTransactionsCount, 'getTransactionsCount'),
     renameFunc(encodeSpecialFile, 'encodeSpecialFile'),
+    renameFunc(searchTransactions, 'searchTransactions'),
   ]);
 };
