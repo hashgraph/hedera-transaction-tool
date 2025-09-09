@@ -44,11 +44,12 @@ import BaseApproversObserverData from '@renderer/components/Transaction/Create/B
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 /* Props */
-const { createTransaction, preCreateAssert, customRequest } = defineProps<{
+const { createTransaction, preCreateAssert, customRequest, gotUserEdit } = defineProps<{
   createTransaction: CreateTransactionFunc;
   preCreateAssert?: () => boolean | void;
   createDisabled?: boolean;
   customRequest?: CustomRequest;
+  gotUserEdit?: boolean;
 }>();
 
 /* Emits */
@@ -79,6 +80,7 @@ const description = ref('');
 const submitManually = ref(false);
 const reminder = ref<number | null>(null);
 const isDraftSaved = ref(false);
+const isDraftEdited = ref(gotUserEdit ?? false);
 
 const data = reactive<TransactionCommonData>({
   payerId: '',
@@ -100,6 +102,16 @@ const transactionKey = ref<KeyList>(new KeyList([]));
 /* Computed */
 const transaction = computed(() => createTransaction({ ...data } as TransactionCommonData));
 
+watch(
+  () => gotUserEdit,
+  () => {
+    if (gotUserEdit) {
+      isDraftEdited.value = true;
+    }
+  },
+  { immediate: true },
+);
+
 const hasTransactionChanged = computed(() => {
   let result: boolean;
 
@@ -118,8 +130,10 @@ const hasTransactionChanged = computed(() => {
       // whether tx data match, excluding validStart
       result = !transactionsDataMatch(initialTransaction.value as Transaction, transaction.value);
     }
+  } else if (initialTransaction.value === null && !isDraftEdited.value) {
+    result = false; // transaction is new and there was no user interaction yet
   } else {
-    result = true; // transaction is new or does not have valid start set
+    result = true;
   }
   return result;
 });
@@ -213,6 +227,11 @@ const handleGroupAction = (action: 'add' | 'edit', path?: string) => {
   );
 };
 
+const handleUpdatePayerId = (payerId: string) => {
+  payerData.accountId.value = payerId;
+  data.payerId = payerId;
+};
+
 function handleFetchedDescription(fetchedDescription: string) {
   description.value = fetchedDescription;
   initialDescription.value = fetchedDescription;
@@ -299,9 +318,10 @@ defineExpose({
         <TransactionIdControls
           class="mt-6"
           :payer-id="payerData.accountId.value"
-          @update:payer-id="((payerData.accountId.value = $event), (data.payerId = $event))"
+          @update:payer-id="handleUpdatePayerId"
           v-model:valid-start="data.validStart"
           v-model:max-transaction-fee="data.maxTransactionFee as Hbar"
+          @user-edit="isDraftEdited = true"
         />
 
         <div class="row mt-6">
@@ -311,6 +331,7 @@ defineExpose({
               @input="handleInputValidation"
               data-testid="input-transaction-memo"
               v-model="data.transactionMemo"
+              @update:model-value="isDraftEdited = true"
               :filled="true"
               maxlength="100"
               placeholder="Enter Transaction Memo"
@@ -323,7 +344,12 @@ defineExpose({
 
         <slot name="default" />
 
-        <BaseApproversObserverData v-model:observers="observers" v-model:approvers="approvers" />
+        <BaseApproversObserverData
+          v-model:observers="observers"
+          v-model:approvers="approvers"
+          @update:approvers="isDraftEdited = true"
+          @update:observers="isDraftEdited = true"
+        />
       </div>
     </form>
 

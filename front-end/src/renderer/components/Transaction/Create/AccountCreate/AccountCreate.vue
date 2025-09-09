@@ -45,6 +45,8 @@ const data = reactive<AccountCreateData>({
 });
 const nickname = ref('');
 
+const gotUserEdit = ref(false)
+
 /* Computed */
 const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
@@ -64,10 +66,13 @@ const createDisabled = computed(() => {
 
 /* Handlers */
 const handleDraftLoaded = (transaction: Transaction) => {
-  handleUpdateData(getAccountCreateData(transaction));
+  handleUpdateData(getAccountCreateData(transaction), false);
 };
 
-const handleUpdateData = (newData: AccountCreateData) => {
+const handleUpdateData = (newData: AccountCreateData, userEdit = true) => {
+  if (userEdit ) {
+    gotUserEdit.value = true
+  }
   Object.assign(data, newData);
 };
 
@@ -132,6 +137,7 @@ watch(
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
+    :got-user-edit="gotUserEdit"
     @executed:success="handleExecutedSuccess"
     @draft-loaded="handleDraftLoaded"
   >
@@ -142,6 +148,7 @@ watch(
           <div>
             <AppInput
               v-model="nickname"
+              @update:model-value="gotUserEdit = true"
               :filled="true"
               data-testid="input-nickname"
               placeholder="Enter Account Nickname"

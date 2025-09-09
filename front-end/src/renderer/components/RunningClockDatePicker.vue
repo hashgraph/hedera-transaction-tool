@@ -16,10 +16,17 @@ const props = defineProps<
 /* Emits */
 const emit = defineEmits<{
   (event: 'update:modelValue', value: Date): void;
+  (event: 'userEdit'): void;
 }>();
 
 /* State */
 const intervalId = ref<ReturnType<typeof setInterval> | null>(null);
+
+/* Handlers */
+const handleUpdateValue = (v: Date) => {
+  emit('update:modelValue', v);
+  emit('userEdit');
+}
 
 /* Functions */
 function startInterval() {
@@ -47,7 +54,7 @@ onUnmounted(() => {
 <template>
   <AppDatePicker
     :model-value="modelValue"
-    @update:model-value="emit('update:modelValue', $event)"
+    @update:model-value="handleUpdateValue"
     :minDate="minDate"
     :maxDate="maxDate"
     :clearable="false"

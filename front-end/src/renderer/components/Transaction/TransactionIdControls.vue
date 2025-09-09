@@ -27,7 +27,12 @@ const props = defineProps<{
 }>();
 
 /* Emits */
-const emit = defineEmits(['update:payerId', 'update:validStart', 'update:maxTransactionFee']);
+const emit = defineEmits([
+  'update:payerId',
+  'update:validStart',
+  'update:maxTransactionFee',
+  'userEdit',
+]);
 
 /* Stores */
 const user = useUserStore();
@@ -43,10 +48,16 @@ const localValidStart = ref<Date>(props.validStart);
 const handlePayerChange = (payerId: string) => {
   emit('update:payerId', payerId || '');
   account.accountId.value = payerId || '';
+  emit('userEdit');
 };
 
 function handleUpdateValidStart(v: Date) {
   emit('update:validStart', v);
+}
+
+function handleUpdateMaxTransactionFee(v: Hbar) {
+  emit('update:maxTransactionFee', v);
+  emit('userEdit');
 }
 
 /* Hooks */
@@ -135,6 +146,7 @@ const columnClass = 'col-4 col-xxxl-3';
       <RunningClockDatePicker
         :model-value="validStart"
         @update:model-value="handleUpdateValidStart"
+        @user-edit="emit('userEdit')"
         :now-button-visible="true"
         data-testid="date-picker-valid-start"
       />
@@ -143,7 +155,7 @@ const columnClass = 'col-4 col-xxxl-3';
       <label class="form-label">Max Transaction Fee {{ HbarUnit.Hbar._symbol }}</label>
       <AppHbarInput
         :model-value="maxTransactionFee"
-        @update:model-value="v => $emit('update:maxTransactionFee', v)"
+        @update:model-value="handleUpdateMaxTransactionFee"
         :filled="true"
         placeholder="Enter Max Transaction Fee"
         data-testid="input-max-transaction-fee"
