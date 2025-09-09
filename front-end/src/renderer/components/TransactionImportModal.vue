@@ -19,6 +19,7 @@ const show = defineModel<boolean>('show', { required: true });
 
 /* State */
 const selectedResults = ref<TransactionSearchResult[]>([]);
+const importing = ref(false);
 
 /* Computed */
 const isAllSelected = computed(() => {
@@ -41,7 +42,13 @@ const handleSelectAll = (checked: boolean) => {
 };
 
 const handleSubmit = async () => {
-  show.value = false;
+  importing.value = true;
+  try {
+    await importSelectedResults();
+  } finally {
+    importing.value = false;
+    show.value = false;
+  }
 };
 
 /* Functions */
@@ -62,6 +69,12 @@ const filterCandidates = (candidates: TransactionSearchResult[]) => {
     } catch {}
   }
   return result;
+}
+
+
+const importSelectedResults = async (): Promise<void> => {
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  await sleep(3000);
 }
 
 /* Watchers */
@@ -114,6 +127,8 @@ watch(
           <AppButton
             data-testid="button-import-files-public"
             :disabled="selectedResults.length === 0"
+            :loading="importing"
+            loading-text="Importing…"
             type="submit"
             color="primary"
             >Import</AppButton
