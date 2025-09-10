@@ -1113,6 +1113,11 @@
 }
 
 /* Misc */
+ .small-badge {
+   font-size: 0.7rem;
+   padding: 0.35em 0.45em;
+ }
+
 .key-threshhold-bg,
 .badge-bg {
   background-color: var(--#{$prefix}container-threshhold-key);

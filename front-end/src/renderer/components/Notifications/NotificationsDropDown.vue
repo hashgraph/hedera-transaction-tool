@@ -44,9 +44,10 @@ watch(totalCount, newCount => {
       <template v-if="totalCount > 0">
         <span
           class="position-absolute badge rounded-pill bg-danger"
+          :class="{ 'small-badge': totalCount > 9 }"
           data-testid="notification-indicator"
           :style="{ left: 'unset', right: '0%', top: '0%' }"
-          >{{ totalCount }}</span>
+          >{{ totalCount > 9 ? '9+' : totalCount }}</span>
       </template>
     </div>
 
