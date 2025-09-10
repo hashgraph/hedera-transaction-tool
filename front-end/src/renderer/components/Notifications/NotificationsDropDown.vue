@@ -50,7 +50,7 @@ watch(totalCount, newCount => {
       </template>
     </div>
 
-    <div class="dropdown-menu overflow-hidden" :style="{ width: '300px' }">
+    <div class="dropdown-menu overflow-hidden" :style="{ width: '320px' }">
       <ul class="overflow-auto" :style="{ maxHeight: '45vh' }">
         <template v-if="totalCount === 0">
           <li class="dropdown-item text-small text-center user-select-none">No notifications</li>
