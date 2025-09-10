@@ -39,7 +39,7 @@ watch(totalCount, newCount => {
         data-testid="button-notifications"
         :class="{ ringing: isRinging }"
       >
-        <i class="bi bi-bell-fill text-secondary text-subheader fs-4"></i>
+        <i class="bi bi-bell-fill text-secondary text-subheader fs-2"></i>
       </span>
       <template v-if="totalCount > 0">
         <span
