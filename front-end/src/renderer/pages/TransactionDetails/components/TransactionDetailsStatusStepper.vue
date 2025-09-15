@@ -111,8 +111,6 @@ const createErrorItem = (title: string, name: string) => {
   };
 };
 
-/* Misc */
-const detailItemLabelClass = 'text-micro text-semi-bold text-dark-blue';
 </script>
 <template>
   <h2 class="text-title text-bold">Transaction Status</h2>
