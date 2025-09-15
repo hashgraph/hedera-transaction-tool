@@ -154,7 +154,7 @@ async function handleSubmit() {
 
 /* Hooks */
 onBeforeRouteLeave(async to => {
-  redirectPath.value = to.path;
+  redirectPath.value = to.fullPath;
   if (to.name?.toString().toLocaleLowerCase().includes('login')) return true;
   if (shouldWarnForUnsaved.value && wantToDeleteModalShown.value === false) {
     wantToDeleteModalShown.value = true;
