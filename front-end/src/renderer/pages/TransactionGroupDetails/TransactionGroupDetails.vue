@@ -44,7 +44,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
-import { SignatureItem } from '@renderer/types';
+import { type SignatureItem } from '@renderer/types';
 import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
 /* Stores */
@@ -218,9 +218,9 @@ const handleSignGroup = async () => {
       user.personal.id,
       personalPassword,
       user.selectedOrganization,
-      null,
-      null,
-      null,
+      undefined,
+      undefined,
+      undefined,
       items,
     );
     toast.success('Transactions signed successfully');
@@ -284,7 +284,7 @@ const handleApproveAll = async (approved: boolean, showModal?: boolean) => {
       toast.success(`Transactions ${approved ? 'approved' : 'rejected'} successfully`);
 
       if (!approved) {
-        router.push({
+        await router.push({
           name: 'transactions',
           query: {
             tab: historyTitle,
