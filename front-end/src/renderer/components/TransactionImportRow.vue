@@ -90,8 +90,8 @@ function basename(filePath: string): string {
       <span v-if="transactionStatus"> - {{ transactionStatus }}</span>
     </strong>
     <p class="text-muted small">
-      <span v-if="transactionType !== null">{{ transactionType }} -</span>
-      <span v-if="formattedValidStart !== null">Valid on {{ formattedValidStart }}</span> -
+      <span v-if="transactionType !== null">{{ transactionType }} - </span>
+      <span v-if="formattedValidStart !== null">Valid on {{ formattedValidStart }} - </span>
       <span v-if="creatorEmail !== null">{{ creatorEmail }}</span>
     </p>
     <p class="text-muted small" v-if="status">
