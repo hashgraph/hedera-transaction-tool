@@ -150,8 +150,12 @@ watch(
         </div>
       </div>
     </template>
-    <template #default>
-      <AccountCreateFormData :data="data as AccountCreateData" @update:data="handleUpdateData" />
+    <template #default="{ onLoaded }">
+      <AccountCreateFormData
+        :data="data as AccountCreateData"
+        @loaded="onLoaded"
+        @update:data="handleUpdateData"
+      />
     </template>
   </BaseTransaction>
 </template>

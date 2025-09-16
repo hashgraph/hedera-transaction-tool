@@ -232,6 +232,12 @@ function handleInputValidation(e: Event) {
     memoError.value = true;
   }
 }
+function handleLoaded() {
+  if (!initialTransaction.value) {
+    initialTransaction.value = transaction.value;
+  }
+}
+
 
 /* Functions */
 function basePreCreateAssert() {
@@ -321,8 +327,7 @@ defineExpose({
 
         <hr class="separator my-5" />
 
-        <slot name="default" />
-
+        <slot name="default" :onLoaded="handleLoaded" />
         <BaseApproversObserverData v-model:observers="observers" v-model:approvers="approvers" />
       </div>
     </form>

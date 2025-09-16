@@ -8,6 +8,7 @@ import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AccountIdInput from '@renderer/components/AccountIdInput.vue';
 import KeyField from '@renderer/components/KeyField.vue';
+import { onMounted, nextTick } from 'vue';
 
 /* Props */
 const props = defineProps<{
@@ -19,6 +20,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'update:data', data: AccountData): void;
   (event: 'update:multiple-accounts-data', data: AccountUpdateDataMultiple): void;
+  (event: 'loaded'): void;
 }>();
 
 /* Stores */
@@ -77,6 +79,11 @@ const handleUpdateKey = (key: Key) => {
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
+
+onMounted(async () => {
+  await nextTick();
+  emit('loaded');
+});
 </script>
 <template>
   <div class="row mt-6">
