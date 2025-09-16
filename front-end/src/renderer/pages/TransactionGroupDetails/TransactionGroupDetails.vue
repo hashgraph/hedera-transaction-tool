@@ -163,7 +163,7 @@ const handleBack = () => {
   }
 };
 
-const handleSign = async (id: number) => {
+const handleDetails = async (id: number) => {
   const flatTransactions = group.value?.groupItems || [];
   const selectedTransactionIndex = flatTransactions.findIndex(t => t.transaction.id === id);
   const previousTransactionIds = flatTransactions
@@ -461,7 +461,7 @@ watchEffect(() => {
                                 <AppButton
                                   type="button"
                                   color="secondary"
-                                  @click.prevent="handleSign(groupItem.transaction.id)"
+                                  @click.prevent="handleDetails(groupItem.transaction.id)"
                                   :data-testid="`button-group-transaction-${index}`"
                                   ><span>Details</span>
                                 </AppButton>
