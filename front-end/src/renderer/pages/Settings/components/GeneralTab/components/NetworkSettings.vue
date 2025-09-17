@@ -136,7 +136,7 @@ onBeforeMount(() => {
     <div class="mt-4">
       <ButtonGroup
         :items="networkButtons"
-        :activeValue="isCustomActive ? 'custom' : networkStore.network"
+        :activeValue="isCustomActive || isCustomSettingsVisible ? 'custom' : networkStore.network"
         color="primary"
         @change="
           value => {
