@@ -39,18 +39,19 @@ watch(totalCount, newCount => {
         data-testid="button-notifications"
         :class="{ ringing: isRinging }"
       >
-        <i class="bi bi-bell-fill text-secondary text-subheader fs-4"></i>
+        <i class="bi bi-bell-fill text-secondary text-subheader fs-2"></i>
       </span>
       <template v-if="totalCount > 0">
         <span
-          class="indicator-circle position-absolute absolute-centered"
+          class="position-absolute badge rounded-pill bg-danger"
+          :class="{ 'small-badge': totalCount > 9 }"
           data-testid="notification-indicator"
-          :style="{ left: 'unset', right: '10%', top: '35%', width: '10px', height: '10px' }"
-        ></span>
+          :style="{ left: 'unset', right: '0%', top: '0%' }"
+          >{{ totalCount > 9 ? '9+' : totalCount }}</span>
       </template>
     </div>
 
-    <div class="dropdown-menu overflow-hidden" :style="{ width: '300px' }">
+    <div class="dropdown-menu overflow-hidden" :style="{ width: '320px' }">
       <ul class="overflow-auto" :style="{ maxHeight: '45vh' }">
         <template v-if="totalCount === 0">
           <li class="dropdown-item text-small text-center user-select-none">No notifications</li>
