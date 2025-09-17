@@ -82,6 +82,8 @@ const handleMirrorNodeBaseURLChange = async () => {
 
   mirrorNodeBaseURL.value = formatMirrorNodeBaseURL(value);
   forceSetMirrorNodeBaseURL(mirrorNodeBaseURL.value);
+  // Now that it has been updated locally, check if we need to update the network
+  if (mirrorNodeBaseURL.value === networkStore.network) return;
   await handleNetworkChange(mirrorNodeBaseURL.value);
 };
 
@@ -124,6 +126,7 @@ const applyCustomNetwork = async () => {
 onBeforeMount(() => {
   if (isCustomActive.value) {
     mirrorNodeBaseURL.value = networkStore.network;
+    isCustomSettingsVisible.value = true;
   }
 });
 </script>
@@ -133,7 +136,7 @@ onBeforeMount(() => {
     <div class="mt-4">
       <ButtonGroup
         :items="networkButtons"
-        :activeValue="isCustomSettingsVisible ? 'custom' : networkStore.network"
+        :activeValue="isCustomActive ? 'custom' : networkStore.network"
         color="primary"
         @change="
           value => {
