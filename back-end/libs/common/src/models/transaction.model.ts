@@ -117,6 +117,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
         //a threshold before added them to the signature keys.
         //In the case of account id being changed, both the old key and the new key are required
         // to sign the transaction. So they can be added like this.
+        //NOTE: this is different than node adminKey
         const nodeAccountId = this.getNodeAccountId(nodeInfo);
         if (nodeAccountId) {
           const { key } = parseAccountInfo(

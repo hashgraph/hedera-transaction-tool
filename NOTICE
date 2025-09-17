@@ -462,7 +462,7 @@ Copyright Kamil Mysliwiec. All Rights Reserved.
 This product includes software (@nestjs/cli@10.4.9) developed at
 (https://github.com/nestjs/nest-cli).
 
-The Initial Developer of @nestjs/common@10.4.15,
+The Initial Developer of @nestjs/common@10.4.16,
 is Kamil Mysliwiec (https://github.com/nestjs/nest).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
@@ -664,7 +664,7 @@ The Initial Developer of @rollup/pluginutils@4.2.1,
 is Rich Harris (https://github.com/rollup/plugins).
 Copyright Rich Harris. All Rights Reserved.
 
-The Initial Developer of @rollup/rollup-darwin-arm64@4.32.1,
+The Initial Developer of @rollup/rollup-darwin-arm64@4.40.1,
 is Lukas Taegert-Atkinson (https://github.com/rollup/rollup).
 Copyright Lukas Taegert-Atkinson. All Rights Reserved.
 
@@ -2890,7 +2890,7 @@ Copyright Nathan Rajlich. All Rights Reserved.
 This product includes software (postcss-selector-parser@6.1.2) developed at
 (https://github.com/postcss/postcss-selector-parser).
 
-The Initial Developer of postcss@8.5.1,
+The Initial Developer of postcss@8.5.3,
 is Andrey Sitnik (https://github.com/postcss/postcss).
 Copyright Andrey Sitnik. All Rights Reserved.
 
@@ -3569,7 +3569,7 @@ The Initial Developer of vite-plugin-vue-inspector@5.3.1,
 is webfansplz (https://github.com/webfansplz/vite-plugin-vue-inspector).
 Copyright webfansplz. All Rights Reserved.
 
-The Initial Developer of vite@6.0.11,
+The Initial Developer of vite@6.1.6,
 is Evan You (https://github.com/vitejs/vite).
 Copyright Evan You. All Rights Reserved.
 
