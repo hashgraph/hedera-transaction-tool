@@ -521,7 +521,7 @@ onMounted(async () => {
                           (accountData.accountInfo.value?.balance as Hbar) || new Hbar(0),
                         )
                       }}
-                      <span class="text-pink">({{ hbarDollarAmount }})</span>
+                      <span v-if="network.currentRate" class="text-pink">({{ hbarDollarAmount }})</span>
                     </p>
                   </div>
                 </div>
