@@ -172,11 +172,6 @@ onBeforeRouteLeave(async to => {
     return false;
   }
 
-  if (!props.skip && isFromScratch.value && !(await draftExists(transactionBytes))) {
-    isActionModalShown.value = true;
-    return false;
-  }
-
   if (!props.skip && isActionModalShown.value === false && props.hasDataChanged) {
     isActionModalShown.value = true;
     return false;

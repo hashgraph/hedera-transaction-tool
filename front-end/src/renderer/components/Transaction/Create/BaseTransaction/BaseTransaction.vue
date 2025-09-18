@@ -1,15 +1,21 @@
 <script setup lang="ts">
 import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
-import { transactionsDataMatch, type TransactionCommonData } from '@renderer/utils/sdk';
 import {
+  getTransactionCommonData,
+  type TransactionCommonData,
+  transactionsDataMatch,
+  validate100CharInput,
+} from '@renderer/utils/sdk';
+import TransactionProcessor, {
   CustomRequest,
   type ExecutedData,
   type ExecutedSuccessData,
+  TransactionRequest,
 } from '@renderer/components/Transaction/TransactionProcessor';
 import type { CreateTransactionFunc } from '.';
 
-import { computed, reactive, ref, toRaw, watch } from 'vue';
-import { Hbar, Transaction, KeyList, Timestamp } from '@hashgraph/sdk';
+import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue';
+import { Hbar, KeyList, Timestamp, Transaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -26,7 +32,6 @@ import {
   redirectToDetails,
   redirectToGroupDetails,
 } from '@renderer/utils';
-import { getTransactionCommonData, validate100CharInput } from '@renderer/utils/sdk';
 import { getPropagationButtonLabel } from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -35,9 +40,6 @@ import BaseTransactionModal from '@renderer/components/Transaction/Create/BaseTr
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionInfoControls from '@renderer/components/Transaction/TransactionInfoControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
-import TransactionProcessor, {
-  TransactionRequest,
-} from '@renderer/components/Transaction/TransactionProcessor';
 import BaseDraftLoad from '@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.vue';
 import BaseGroupHandler from '@renderer/components/Transaction/Create/BaseTransaction/BaseGroupHandler.vue';
 import BaseApproversObserverData from '@renderer/components/Transaction/Create/BaseTransaction/BaseApproversObserverData.vue';
@@ -103,12 +105,11 @@ const transaction = computed(() => createTransaction({ ...data } as TransactionC
 const hasTransactionChanged = computed(() => {
   let result: boolean;
 
-  const initialValidStart =
-    initialTransaction.value?.transactionId?.validStart ?? Timestamp.fromDate(Date.now());
-  const validStart = transaction.value.transactionId?.validStart;
   const now = Timestamp.fromDate(new Date());
+  const initialValidStart = initialTransaction.value?.transactionId?.validStart ?? now;
+  const validStart = transaction.value.transactionId?.validStart ?? now;
 
-  if (validStart && initialTransaction.value) {
+  if (initialTransaction.value) {
     if (
       initialValidStart.compare(validStart) !== 0 &&
       (initialValidStart.compare(now) > 0 || validStart.compare(now) > 0)
@@ -119,7 +120,7 @@ const hasTransactionChanged = computed(() => {
       result = !transactionsDataMatch(initialTransaction.value as Transaction, transaction.value);
     }
   } else {
-    result = true; // transaction is new or does not have valid start set
+    result = true; // initialTransaction is not yet initialized
   }
   return result;
 });
@@ -252,6 +253,15 @@ async function updateTransactionKey() {
   const computedKeys = await computeSignatureKey(transaction.value, network.mirrorNodeBaseURL);
   transactionKey.value = new KeyList(computedKeys.signatureKeys);
 }
+
+/* Hooks */
+onMounted(async () => {
+  // make sure the transaction is fully initialized before taking snapshot when creating from scratch
+  await new Promise(resolve => setTimeout(resolve, 500));
+  if (initialTransaction.value === null) {
+    initialTransaction.value = transaction.value;
+  } // else the existing draft has already been read from storage
+});
 
 /* Watches */
 watch([() => payerData.key.value], updateTransactionKey, { immediate: true });
