@@ -155,6 +155,9 @@ async function handleFetchGroup(id: string | number) {
     } catch (error) {
       router.back();
       throw error;
+    } finally {
+      signingItemSeq.value = -1;
+      isSigningAll.value = false;
     }
   } else {
     console.log('not logged into org');
@@ -230,8 +233,6 @@ const handleSignGroupItem = async (groupItem: IGroupItem) => {
     toast.success('Transaction signed successfully');
   } catch (error) {
     toast.error('Transaction not signed:' + JSON.stringify(error));
-  } finally {
-    signingItemSeq.value = -1;
   }
 };
 
@@ -284,8 +285,6 @@ const handleSignAll = async () => {
     showSignAll.value = true;
   } catch {
     toast.error('Transactions not signed');
-  } finally {
-    isSigningAll.value = false;
   }
 };
 
