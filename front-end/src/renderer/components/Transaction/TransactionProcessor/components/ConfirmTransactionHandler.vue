@@ -120,9 +120,10 @@ defineExpose({
           >
             <p>Max Transaction Fee</p>
             <p class="" data-testid="p-max-tx-fee">
-              {{ stringifyHbar(transaction.maxTransactionFee) }} ({{
-                getDollarAmount(network.currentRate, transaction.maxTransactionFee.toBigNumber())
-              }})
+              {{ stringifyHbar(transaction.maxTransactionFee) }}
+              <span v-if="network.currentRate" class="text-pink">
+                ({{ getDollarAmount(network.currentRate, transaction.maxTransactionFee.toBigNumber()) }})
+              </span>
             </p>
           </div>
         </div>
@@ -163,9 +164,10 @@ defineExpose({
           <div v-if="request.maxTransactionFee" class="d-flex justify-content-between p-3 mt-3">
             <p>Max Transaction Fee</p>
             <p class="" data-testid="p-max-tx-fee">
-              {{ stringifyHbar(request.maxTransactionFee) }} ({{
-                getDollarAmount(network.currentRate, request.maxTransactionFee.toBigNumber())
-              }})
+              {{ stringifyHbar(request.maxTransactionFee) }}
+              <span v-if="network.currentRate" class="text-pink">
+                ({{ getDollarAmount(network.currentRate, request.maxTransactionFee.toBigNumber()) }})
+              </span>
             </p>
           </div>
         </div>

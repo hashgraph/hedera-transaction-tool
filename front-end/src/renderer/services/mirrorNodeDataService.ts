@@ -216,7 +216,8 @@ export const getExchangeRateSet = async (mirrorNodeLink: string, controller?: Ab
 
     return exchangeRateSet;
   } catch {
-    throw new Error('Failed to fetch exchange rate');
+    console.log('Failed to fetch exchange rate');
+    return null;
   }
 };
 
