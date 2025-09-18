@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { IGroup } from '@renderer/services/organization';
-import { TransactionStatus } from '@shared/interfaces';
+import { type IGroupItem, TransactionStatus } from '@shared/interfaces';
 
 import { computed, onBeforeMount, ref, watch, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -70,6 +70,7 @@ const publicKeysRequiredToSign = ref<string[] | null>([]);
 const showSignAll = ref(true);
 const disableSignAll = ref(false);
 const isSigningAll = ref(false);
+const signingItemSeq = ref(-1);
 const isApproving = ref(false);
 const unsignedSignersToCheck = ref<Record<string, string[]>>({});
 const tooltipRef = ref<HTMLElement[]>([]);
@@ -181,6 +182,56 @@ const handleDetails = async (id: number) => {
     redirectToDetails(router, id, true, false, true);
   } else {
     redirectToDetails(router, id, true);
+  }
+};
+
+const handleSignGroupItem = async (groupItem: IGroupItem) => {
+  if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in organization');
+  }
+
+  const personalPassword = getPassword(handleSignGroupItem.bind(null, groupItem), {
+    subHeading: 'Enter your application password to decrypt your private key',
+  });
+  if (passwordModalOpened(personalPassword)) return;
+
+  try {
+    signingItemSeq.value = groupItem.seq;
+    const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
+    const transaction = Transaction.fromBytes(transactionBytes);
+    if (
+      groupItem.transaction.status === TransactionStatus.CANCELED ||
+      groupItem.transaction.status === TransactionStatus.EXPIRED
+    ) {
+      return Promise.resolve();
+    }
+    const publicKeysRequired = await usersPublicRequiredToSign(
+      transaction,
+      user.selectedOrganization.userKeys,
+      network.mirrorNodeBaseURL,
+    );
+    const item: SignatureItem = {
+      publicKeys: publicKeysRequired,
+      transaction,
+      transactionId: groupItem.transaction.id,
+    };
+    const items: SignatureItem[] = [item];
+
+    await uploadSignatures(
+      user.personal.id,
+      personalPassword,
+      user.selectedOrganization,
+      undefined,
+      undefined,
+      undefined,
+      items,
+    );
+
+    toast.success('Transaction signed successfully');
+  } catch (error) {
+    toast.error('Transaction not signed:' + JSON.stringify(error));
+  } finally {
+    signingItemSeq.value = -1;
   }
 };
 
@@ -464,13 +515,28 @@ watchEffect(() => {
                                 }}
                               </td>
                               <td class="text-center">
-                                <AppButton
-                                  type="button"
-                                  color="secondary"
-                                  @click.prevent="handleDetails(groupItem.transaction.id)"
-                                  :data-testid="`button-group-transaction-${index}`"
-                                  ><span>Details</span>
-                                </AppButton>
+                                <div class="d-flex justify-content-center flex-wrap gap-3">
+                                  <AppButton
+                                    :loading="signingItemSeq === groupItem.seq"
+                                    loading-text="Signing..."
+                                    type="button"
+                                    color="primary"
+                                    @click.prevent="handleSignGroupItem(groupItem)"
+                                    :data-testid="`sign-group-item-${index}`"
+                                    :disabled="
+                                      groupItem.transaction.status !==
+                                      TransactionStatus.WAITING_FOR_SIGNATURES
+                                    "
+                                    ><span>Sign</span>
+                                  </AppButton>
+                                  <AppButton
+                                    type="button"
+                                    color="secondary"
+                                    @click.prevent="handleDetails(groupItem.transaction.id)"
+                                    :data-testid="`button-group-transaction-${index}`"
+                                    ><span>Details</span>
+                                  </AppButton>
+                                </div>
                               </td>
                             </tr>
                           </template>
