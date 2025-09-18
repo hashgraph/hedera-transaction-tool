@@ -375,6 +375,25 @@ function setGetTransactionsFunction() {
   }, false);
 }
 
+function statusIconClass(status: TransactionStatus) {
+  let result: string;
+  switch (status) {
+    case TransactionStatus.WAITING_FOR_EXECUTION:
+      result = 'bi-check-lg text-success';
+      break;
+    case TransactionStatus.EXPIRED:
+    case TransactionStatus.CANCELED:
+      result = 'bi-x-lg text-danger';
+      break;
+    case TransactionStatus.EXECUTED:
+      result = 'bi-check-circle text-success';
+      break;
+    default:
+      result = '';
+  }
+  return result;
+}
+
 /* Hooks */
 onBeforeMount(async () => {
   const id = router.currentRoute.value.params.id;
@@ -483,9 +502,7 @@ watchEffect(() => {
                                       unsignedSignersToCheck[groupItem.transaction.id] &&
                                       unsignedSignersToCheck[groupItem.transaction.id].length ===
                                         0) ||
-                                    (route.query.previousTab === 'inProgress' &&
-                                      groupItem.transaction.status ===
-                                        TransactionStatus.WAITING_FOR_EXECUTION)
+                                    (route.query.previousTab === 'inProgress')
                                   "
                                   data-bs-toggle="tooltip"
                                   data-bs-custom-class="wide-tooltip"
@@ -493,7 +510,8 @@ watchEffect(() => {
                                   data-bs-placement="top"
                                   :title="tooltipText"
                                   ref="tooltipRef"
-                                  class="bi bi-check-lg text-success"
+                                  class="bi"
+                                  :class="statusIconClass(groupItem.transaction.status)"
                                 ></span>
                               </td>
                               <td
