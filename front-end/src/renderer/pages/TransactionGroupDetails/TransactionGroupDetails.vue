@@ -231,8 +231,9 @@ const handleSignGroupItem = async (groupItem: IGroupItem) => {
     );
 
     toast.success('Transaction signed successfully');
-  } catch (error) {
-    toast.error('Transaction not signed:' + JSON.stringify(error));
+  } catch {
+    signingItemSeq.value = -1;
+    toast.error('Transaction not signed');
   }
 };
 
@@ -284,6 +285,7 @@ const handleSignAll = async () => {
     toast.success('Transactions signed successfully');
     showSignAll.value = true;
   } catch {
+    isSigningAll.value = false;
     toast.error('Transactions not signed');
   }
 };
@@ -501,7 +503,7 @@ watchEffect(() => {
                                       unsignedSignersToCheck[groupItem.transaction.id] &&
                                       unsignedSignersToCheck[groupItem.transaction.id].length ===
                                         0) ||
-                                    (route.query.previousTab === 'inProgress')
+                                    route.query.previousTab === 'inProgress'
                                   "
                                   data-bs-toggle="tooltip"
                                   data-bs-custom-class="wide-tooltip"
@@ -538,7 +540,7 @@ watchEffect(() => {
                                     loading-text="Signing..."
                                     type="button"
                                     color="primary"
-                                    @click.prevent="handleSignGroupItem(groupItem)"
+                                    @click.prevent="handleSignGroupItem(groupItem as IGroupItem)"
                                     :data-testid="`sign-group-item-${index}`"
                                     :disabled="
                                       groupItem.transaction.status !==
