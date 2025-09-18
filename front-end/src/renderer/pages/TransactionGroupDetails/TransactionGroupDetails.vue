@@ -69,7 +69,7 @@ const isConfirmModalShown = ref(false);
 const publicKeysRequiredToSign = ref<string[] | null>([]);
 const showSignAll = ref(true);
 const disableSignAll = ref(false);
-const isSigning = ref(false);
+const isSigningAll = ref(false);
 const isApproving = ref(false);
 const unsignedSignersToCheck = ref<Record<string, string[]>>({});
 const tooltipRef = ref<HTMLElement[]>([]);
@@ -89,6 +89,12 @@ const tooltipText = computed(() => {
     }
   }
   return '';
+});
+
+const isSigningComplete = computed(() => {
+  return !group.value?.groupItems.some(
+    item => item.transaction.status === TransactionStatus.WAITING_FOR_SIGNATURES,
+  );
 });
 
 /* Handlers */
@@ -178,18 +184,18 @@ const handleDetails = async (id: number) => {
   }
 };
 
-const handleSignGroup = async () => {
+const handleSignAll = async () => {
   if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in organization');
   }
 
-  const personalPassword = getPassword(handleSignGroup, {
+  const personalPassword = getPassword(handleSignAll, {
     subHeading: 'Enter your application password to decrypt your private key',
   });
   if (passwordModalOpened(personalPassword)) return;
 
   try {
-    isSigning.value = true;
+    isSigningAll.value = true;
     const items: SignatureItem[] = [];
     if (group.value != undefined) {
       for (const groupItem of group.value.groupItems) {
@@ -228,7 +234,7 @@ const handleSignGroup = async () => {
   } catch {
     toast.error('Transactions not signed');
   } finally {
-    isSigning.value = false;
+    isSigningAll.value = false;
   }
 };
 
@@ -527,11 +533,11 @@ watchEffect(() => {
                     <AppButton
                       color="primary"
                       type="button"
-                      :loading="isSigning"
+                      :loading="isSigningAll"
                       loading-text="Signing..."
                       data-testid="button-sign-all-tx"
-                      @click="handleSignGroup"
-                      :disabled="disableSignAll"
+                      @click="handleSignAll"
+                      :disabled="disableSignAll || isSigningComplete"
                       data-bs-toggle="tooltip"
                       data-bs-placement="top"
                       :title="
