@@ -128,9 +128,14 @@ export class SignersService {
         const userKey = user.keys.find(key => key.publicKey === publicKey.toStringRaw());
         if (!userKey) throw new BadRequestException(ErrorCodes.PNY);
 
+        const transactionSigner = await this.dataSource.manager.findOneBy(TransactionSigner, {id: transactionId, userKeyId: userKey.id});
         sdkTransaction = sdkTransaction.addSignature(publicKey, map);
-        userKeys.push(userKey);
+        if (!transactionSigner) {
+          userKeys.push(userKey);
+        }
       }
+
+      const isSameBytes = Buffer.from(sdkTransaction.toBytes()).equals(transaction.transactionBytes);
 
       /* Start a database transaction */
       const queryRunner = this.dataSource.createQueryRunner();
@@ -138,13 +143,15 @@ export class SignersService {
       await queryRunner.startTransaction();
 
       try {
-        await this.dataSource.manager.update(
-          Transaction,
-          {id: transactionId},
-          {
-            transactionBytes: sdkTransaction.toBytes(),
-          },
-        );
+        if (!isSameBytes) {
+          await this.dataSource.manager.update(
+            Transaction,
+            {id: transactionId},
+            {
+              transactionBytes: sdkTransaction.toBytes(),
+            },
+          );
+        }
 
         for (const userKey of userKeys) {
           const signer = this.repo.create({
@@ -163,6 +170,9 @@ export class SignersService {
         await queryRunner.release();
         throw new BadRequestException(ErrorCodes.FST);
       }
+
+      //If no change, don't emit events
+      if (isSameBytes && userKeys.length === 0) continue;
 
       emitUpdateTransactionStatus(this.chainService, transactionId);
       notifyTransactionAction(this.notificationService);
