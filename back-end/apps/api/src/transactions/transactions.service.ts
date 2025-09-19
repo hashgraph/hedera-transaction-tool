@@ -48,9 +48,12 @@ import {
   notifyGeneral,
   SchedulerService,
   getTransactionSignReminderKey,
+  safe,
+  validateSignature,
+  emitUpdateTransactionStatus,
 } from '@app/common';
 
-import { CreateTransactionDto } from './dto';
+import { CreateTransactionDto, UploadSignatureMapDto, SignatureImportResultDto } from './dto';
 
 import { ApproversService } from './approvers';
 
@@ -408,6 +411,67 @@ export class TransactionsService {
     notifyTransactionAction(this.notificationsService);
 
     return transaction;
+  }
+
+  async importSignatures(
+    dto: UploadSignatureMapDto[],
+    user: User,
+  ): Promise<SignatureImportResultDto[]> {
+    const results = new Set<SignatureImportResultDto>();
+    for (const { transactionId, signatureMap: map } of dto) {
+      const transaction = await this.entityManager.findOneBy(Transaction, { id: transactionId });
+      try {
+        /* Verify that the transaction exists */
+        if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
+
+        /* Checks if the transaction is canceled */
+        if (
+          transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES &&
+          transaction.status !== TransactionStatus.WAITING_FOR_EXECUTION
+        )
+          throw new BadRequestException(ErrorCodes.TNRS);
+
+        /* Checks if the transaction is expired */
+        const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
+        if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
+
+        /* Validates the signatures */
+        const { data: publicKeys, error } = safe<PublicKey[]>(
+          validateSignature.bind(this, sdkTransaction, map),
+        );
+        if (error) throw new BadRequestException(ErrorCodes.ISNMPN);
+
+        for (const publicKey of publicKeys) {
+          const userKey = user.keys.find(key => key.publicKey === publicKey.toStringRaw());
+          if (!userKey) throw new BadRequestException(ErrorCodes.PNY);
+
+          sdkTransaction.addSignature(publicKey, map);
+        }
+
+        await this.entityManager.update(
+          Transaction,
+          { id: transactionId },
+          { transactionBytes: sdkTransaction.toBytes() },
+        );
+
+        results.add({ transactionId });
+        emitUpdateTransactionStatus(this.chainService, transactionId);
+        notifyTransactionAction(this.notificationsService);
+        notifySyncIndicators(this.notificationsService, transactionId, transaction.status, {
+          transactionId: transaction.transactionId,
+          network: transaction.mirrorNetwork,
+        });
+      } catch (error) {
+        results.add({
+          transactionId,
+          error:
+            error instanceof BadRequestException
+              ? error.message
+              : 'An unexpected error occurred while importing the signatures',
+        });
+      }
+    }
+    return [...results];
   }
 
   /* Remove the transaction for the given transaction id. */
