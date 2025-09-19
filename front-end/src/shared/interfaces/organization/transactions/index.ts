@@ -97,3 +97,8 @@ export interface IGroup {
 }
 
 export type IDefaultNetworks = 'mainnet' | 'testnet' | 'previewnet' | 'local-node';
+
+export interface SignatureImportResultDto {
+  transactionId: number;
+  error?: string;
+}

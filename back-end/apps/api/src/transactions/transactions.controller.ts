@@ -3,13 +3,19 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   ParseIntPipe,
   Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import {
   Filtering,
@@ -21,6 +27,7 @@ import {
   Serialize,
   Sorting,
   SortingParams,
+  transformAndValidateDto,
   withPaginatedResponse,
 } from '@app/common';
 
@@ -34,9 +41,11 @@ import { TransactionsService } from './transactions.service';
 
 import {
   CreateTransactionDto,
+  SignatureImportResultDto,
   TransactionDto,
   TransactionFullDto,
   TransactionToSignDto,
+  UploadSignatureMapDto,
 } from './dto';
 
 @ApiTags('Transactions')
@@ -63,6 +72,35 @@ export class TransactionsController {
     @GetUser() user,
   ): Promise<Transaction> {
     return this.transactionsService.createTransaction(body, user);
+  }
+
+  /* Import signatures from another transaction */
+  @ApiOperation({
+    summary: 'Import signatures',
+    description:
+      'Import all signatures for the specified transactions. No signature entities will be created.',
+  })
+  @ApiBody({
+    type: UploadSignatureMapDto, // Or create a specific DTO for import if needed
+  })
+  @ApiResponse({
+    status: 201,
+    type: [SignatureImportResultDto],
+  })
+  @Post('/signatures/import')
+  @HttpCode(201)
+  @Serialize(SignatureImportResultDto)
+  async importSignatures(
+    @Body() body: UploadSignatureMapDto[] | UploadSignatureMapDto,
+    @GetUser() user: User,
+  ): Promise<SignatureImportResultDto[]> {
+    const transformedSignatureMaps = await transformAndValidateDto(
+      UploadSignatureMapDto,
+      body
+    );
+
+    // Delegate to service to perform the import
+    return this.transactionsService.importSignatures(transformedSignatureMaps, user);
   }
 
   /* Get all transactions visible by the user */

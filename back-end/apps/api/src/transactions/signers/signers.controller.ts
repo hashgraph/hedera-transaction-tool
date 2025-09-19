@@ -15,6 +15,7 @@ import {
   Pagination,
   PaginationParams,
   Serialize,
+  transformAndValidateDto,
   withPaginatedResponse,
 } from '@app/common';
 import { TransactionSigner, User } from '@entities';
@@ -30,8 +31,6 @@ import {
 } from '../dto';
 
 import { SignersService } from './signers.service';
-import { validateOrReject } from 'class-validator';
-import { plainToInstance } from 'class-transformer';
 
 @ApiTags('Transaction Signers')
 @Controller('transactions/:transactionId?/signers')
@@ -96,16 +95,7 @@ export class SignersController {
     @Body() body: UploadSignatureMapDto | UploadSignatureMapDto[],
     @GetUser() user: User,
   ): Promise<TransactionSigner[]> {
-    const signatureMaps = Array.isArray(body) ? body : [body];
-
-    // Transform and validate each item in the array
-    const transformedSignatureMaps = signatureMaps.map((map) =>
-      plainToInstance(UploadSignatureMapDto, map)
-    );
-
-    await Promise.all(
-      transformedSignatureMaps.map((map) => validateOrReject(map))
-    );
+    const transformedSignatureMaps = await transformAndValidateDto(UploadSignatureMapDto, body);
 
     return this.signaturesService.uploadSignatureMaps(transformedSignatureMaps, user);
   }
