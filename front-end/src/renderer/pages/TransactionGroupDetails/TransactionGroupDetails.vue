@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { IGroup } from '@renderer/services/organization';
-import { TransactionStatus } from '@shared/interfaces';
+import { type IGroupItem, TransactionStatus } from '@shared/interfaces';
 
 import { computed, onBeforeMount, ref, watch, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -44,7 +44,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
-import { SignatureItem } from '@renderer/types';
+import { type SignatureItem } from '@renderer/types';
 import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
 /* Stores */
@@ -69,7 +69,8 @@ const isConfirmModalShown = ref(false);
 const publicKeysRequiredToSign = ref<string[] | null>([]);
 const showSignAll = ref(true);
 const disableSignAll = ref(false);
-const isSigning = ref(false);
+const isSigningAll = ref(false);
+const signingItemSeq = ref(-1);
 const isApproving = ref(false);
 const unsignedSignersToCheck = ref<Record<string, string[]>>({});
 const tooltipRef = ref<HTMLElement[]>([]);
@@ -89,6 +90,12 @@ const tooltipText = computed(() => {
     }
   }
   return '';
+});
+
+const isSigningComplete = computed(() => {
+  return !group.value?.groupItems.some(
+    item => item.transaction.status === TransactionStatus.WAITING_FOR_SIGNATURES,
+  );
 });
 
 /* Handlers */
@@ -148,6 +155,9 @@ async function handleFetchGroup(id: string | number) {
     } catch (error) {
       router.back();
       throw error;
+    } finally {
+      signingItemSeq.value = -1;
+      isSigningAll.value = false;
     }
   } else {
     console.log('not logged into org');
@@ -163,7 +173,7 @@ const handleBack = () => {
   }
 };
 
-const handleSign = async (id: number) => {
+const handleDetails = async (id: number) => {
   const flatTransactions = group.value?.groupItems || [];
   const selectedTransactionIndex = flatTransactions.findIndex(t => t.transaction.id === id);
   const previousTransactionIds = flatTransactions
@@ -178,18 +188,67 @@ const handleSign = async (id: number) => {
   }
 };
 
-const handleSignGroup = async () => {
+const handleSignGroupItem = async (groupItem: IGroupItem) => {
   if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in organization');
   }
 
-  const personalPassword = getPassword(handleSignGroup, {
+  const personalPassword = getPassword(handleSignGroupItem.bind(null, groupItem), {
     subHeading: 'Enter your application password to decrypt your private key',
   });
   if (passwordModalOpened(personalPassword)) return;
 
   try {
-    isSigning.value = true;
+    signingItemSeq.value = groupItem.seq;
+    const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
+    const transaction = Transaction.fromBytes(transactionBytes);
+    if (
+      groupItem.transaction.status === TransactionStatus.CANCELED ||
+      groupItem.transaction.status === TransactionStatus.EXPIRED
+    ) {
+      return Promise.resolve();
+    }
+    const publicKeysRequired = await usersPublicRequiredToSign(
+      transaction,
+      user.selectedOrganization.userKeys,
+      network.mirrorNodeBaseURL,
+    );
+    const item: SignatureItem = {
+      publicKeys: publicKeysRequired,
+      transaction,
+      transactionId: groupItem.transaction.id,
+    };
+    const items: SignatureItem[] = [item];
+
+    await uploadSignatures(
+      user.personal.id,
+      personalPassword,
+      user.selectedOrganization,
+      undefined,
+      undefined,
+      undefined,
+      items,
+    );
+
+    toast.success('Transaction signed successfully');
+  } catch {
+    signingItemSeq.value = -1;
+    toast.error('Transaction not signed');
+  }
+};
+
+const handleSignAll = async () => {
+  if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in organization');
+  }
+
+  const personalPassword = getPassword(handleSignAll, {
+    subHeading: 'Enter your application password to decrypt your private key',
+  });
+  if (passwordModalOpened(personalPassword)) return;
+
+  try {
+    isSigningAll.value = true;
     const items: SignatureItem[] = [];
     if (group.value != undefined) {
       for (const groupItem of group.value.groupItems) {
@@ -218,17 +277,16 @@ const handleSignGroup = async () => {
       user.personal.id,
       personalPassword,
       user.selectedOrganization,
-      null,
-      null,
-      null,
+      undefined,
+      undefined,
+      undefined,
       items,
     );
     toast.success('Transactions signed successfully');
     showSignAll.value = true;
   } catch {
+    isSigningAll.value = false;
     toast.error('Transactions not signed');
-  } finally {
-    isSigning.value = false;
   }
 };
 
@@ -284,7 +342,7 @@ const handleApproveAll = async (approved: boolean, showModal?: boolean) => {
       toast.success(`Transactions ${approved ? 'approved' : 'rejected'} successfully`);
 
       if (!approved) {
-        router.push({
+        await router.push({
           name: 'transactions',
           query: {
             tab: historyTitle,
@@ -316,6 +374,25 @@ function setGetTransactionsFunction() {
       totalItems: transactions?.length || 0,
     };
   }, false);
+}
+
+function statusIconClass(status: TransactionStatus) {
+  let result: string;
+  switch (status) {
+    case TransactionStatus.WAITING_FOR_EXECUTION:
+      result = 'bi-check-lg text-success';
+      break;
+    case TransactionStatus.EXPIRED:
+    case TransactionStatus.CANCELED:
+      result = 'bi-x-lg text-danger';
+      break;
+    case TransactionStatus.EXECUTED:
+      result = 'bi-check-circle text-success';
+      break;
+    default:
+      result = '';
+  }
+  return result;
 }
 
 /* Hooks */
@@ -426,9 +503,7 @@ watchEffect(() => {
                                       unsignedSignersToCheck[groupItem.transaction.id] &&
                                       unsignedSignersToCheck[groupItem.transaction.id].length ===
                                         0) ||
-                                    (route.query.previousTab === 'inProgress' &&
-                                      groupItem.transaction.status ===
-                                        TransactionStatus.WAITING_FOR_EXECUTION)
+                                    route.query.previousTab === 'inProgress'
                                   "
                                   data-bs-toggle="tooltip"
                                   data-bs-custom-class="wide-tooltip"
@@ -436,7 +511,8 @@ watchEffect(() => {
                                   data-bs-placement="top"
                                   :title="tooltipText"
                                   ref="tooltipRef"
-                                  class="bi bi-check-lg text-success"
+                                  class="bi"
+                                  :class="statusIconClass(groupItem.transaction.status)"
                                 ></span>
                               </td>
                               <td
@@ -458,13 +534,28 @@ watchEffect(() => {
                                 }}
                               </td>
                               <td class="text-center">
-                                <AppButton
-                                  type="button"
-                                  color="secondary"
-                                  @click.prevent="handleSign(groupItem.transaction.id)"
-                                  :data-testid="`button-group-transaction-${index}`"
-                                  ><span>Details</span>
-                                </AppButton>
+                                <div class="d-flex justify-content-center flex-wrap gap-3">
+                                  <AppButton
+                                    :loading="signingItemSeq === groupItem.seq"
+                                    loading-text="Signing..."
+                                    type="button"
+                                    color="primary"
+                                    @click.prevent="handleSignGroupItem(groupItem as IGroupItem)"
+                                    :data-testid="`sign-group-item-${index}`"
+                                    :disabled="
+                                      groupItem.transaction.status !==
+                                      TransactionStatus.WAITING_FOR_SIGNATURES
+                                    "
+                                    ><span>Sign</span>
+                                  </AppButton>
+                                  <AppButton
+                                    type="button"
+                                    color="secondary"
+                                    @click.prevent="handleDetails(groupItem.transaction.id)"
+                                    :data-testid="`button-group-transaction-${index}`"
+                                    ><span>Details</span>
+                                  </AppButton>
+                                </div>
                               </td>
                             </tr>
                           </template>
@@ -527,11 +618,11 @@ watchEffect(() => {
                     <AppButton
                       color="primary"
                       type="button"
-                      :loading="isSigning"
+                      :loading="isSigningAll"
                       loading-text="Signing..."
                       data-testid="button-sign-all-tx"
-                      @click="handleSignGroup"
-                      :disabled="disableSignAll"
+                      @click="handleSignAll"
+                      :disabled="disableSignAll || isSigningComplete"
                       data-bs-toggle="tooltip"
                       data-bs-placement="top"
                       :title="
