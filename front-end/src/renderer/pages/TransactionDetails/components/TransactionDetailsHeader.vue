@@ -519,6 +519,14 @@ const handleExport = async () => {
     throw new Error('(BUG) Transaction is not available');
   }
 
+  assertUserLoggedIn(user.personal);
+
+  /* Verifies the user has entered his password */
+  const personalPassword = getPassword(handleExport, {
+    subHeading: 'Enter your application password to export the transaction',
+  });
+  if (passwordModalOpened(personalPassword)) return;
+
   // Load the last export format the user selected, if applicable
   const enabledFormats = EXPORT_FORMATS.filter(f => f.enabled);
   const defaultFormat = getLastExportExtension() || (enabledFormats[0] || EXPORT_FORMATS[0]).extensions[0];
@@ -565,6 +573,8 @@ const handleExport = async () => {
       bytes,
       filePath,
     );
+
+    toast.success('Transaction exported successfully');
   } else if (ext === 'tx') {
     // Remove all signatures, 'unfreeze' it, then set nodes. This gives us the 'base' transaction.
     const nodeAccountIds = props.sdkTransaction._nodeAccountIds;
@@ -575,11 +585,16 @@ const handleExport = async () => {
     // If not frozen, it doesn't appear to set something correctly, the JavaSDK cannot deserialize it properly.
     mainTransaction.freeze();
 
-    const bytes = mainTransaction.toBytes();
-    await saveFileToPath(
-      bytes,
-      filePath,
-    );
+    if (user.publicKeys.length === 0) {
+      throw new Error('User must have at least one key pair to sign the transaction');
+    }
+    const publicKey = user.publicKeys[0]; // get the first key pair's public key
+
+    const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
+    const privateKey = getPrivateKey(publicKey, privateKeyRaw);
+
+    const bytes = (await mainTransaction.sign(privateKey)).toBytes();
+    await saveFileToPath(bytes, filePath);
 
     // now create txt
     const author = props.organizationTransaction.creatorEmail;
@@ -647,6 +662,8 @@ const handleExport = async () => {
       metadata,
       csvaFilePath,
     );
+
+    toast.success('Transaction exported successfully');
   }
 };
 
