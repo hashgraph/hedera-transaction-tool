@@ -16,7 +16,6 @@ import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
-import { useMediaQuery } from '@vueuse/core';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
@@ -125,7 +124,6 @@ const nextTransaction = useNextTransactionStore();
 /* Composables */
 const router = useRouter();
 const toast = useToast();
-const isLargeScreen = useMediaQuery('(min-width: 992px)');
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
@@ -532,7 +530,7 @@ const handleExport = async () => {
   const defaultFormat = getLastExportExtension() || (enabledFormats[0] || EXPORT_FORMATS[0]).extensions[0];
 
   // Move the default format to the top
-  enabledFormats.sort((a, b) => (a.extensions[0] === defaultFormat ? -1 : 1));
+  enabledFormats.sort((a/*, b*/) => (a.extensions[0] === defaultFormat ? -1 : 1));
 
   // Show the save dialog to the user, allowing them to choose the file name and location
 

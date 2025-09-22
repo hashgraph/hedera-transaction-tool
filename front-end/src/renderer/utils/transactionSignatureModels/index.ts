@@ -18,6 +18,8 @@ export * from './transaction-factory';
 export * from './transaction.model';
 export * from './transfer-transaction.model';
 
+export const COUNCIL_ACCOUNTS = ['0.0.2', '0.0.50', '0.0.55'];
+
 export const computeSignatureKey = async (transaction: SDKTransaction, mirrorNodeLink: string) => {
   const transactionModel = TransactionFactory.fromTransaction(transaction);
 

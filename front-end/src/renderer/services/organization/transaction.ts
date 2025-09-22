@@ -5,10 +5,11 @@ import type {
   ITransactionFull,
   Network,
   PaginatedResourceDto,
+  SignatureImportResultDto,
 } from '@shared/interfaces';
 import type { ITransactionApprover, TransactionApproverDto } from '@shared/interfaces';
 
-import { Transaction } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import { ObserverRole, TransactionStatus } from '@shared/interfaces';
 
@@ -81,7 +82,7 @@ export const uploadSignatures = async (
   userPassword: string | null,
   organization: LoggedInOrganization & Organization,
   publicKeys?: string[],
-  transaction?: Transaction,
+  transaction?: SDKTransaction,
   transactionId?: number,
   items?: SignatureItem[],
 ) => {
@@ -122,6 +123,26 @@ export const uploadSignatures = async (
     );
   }, 'Failed upload signatures');
 };
+
+export const importSignatures = async (
+  organization: LoggedInOrganization & Organization,
+  transaction: SDKTransaction[] | SDKTransaction,
+): Promise<SignatureImportResultDto[]> => {
+  const formattedMaps = [];
+  const transactions = Array.isArray(transaction) ? transaction : [transaction];
+  for (const tx of transactions) {
+    formattedMaps.push({
+      transactionId: tx.transactionId,
+      signatureMap: formatSignatureMap(tx.getSignatures()),
+    });
+  }
+  return commonRequestHandler(async () => {
+    await axiosWithCredentials.post(
+      `${organization.serverUrl}/${controller}/signatures/import`,
+      formattedMaps,
+    );
+  }, 'Failed to import signatures');
+}
 
 /* Get transactions to sign */
 export const getTransactionsToSign = async (
@@ -181,8 +202,8 @@ export const getTransactionApprovers = async (
 
 /* Get if user should approve a transaction */
 export const getUserShouldApprove = async (
-  serverUrl: string,
-  transactionId: number,
+  serverUrl: string, // eslint-disable-line @typescript-eslint/no-unused-vars
+  transactionId: number, // eslint-disable-line @typescript-eslint/no-unused-vars
 ): Promise<boolean> =>
   commonRequestHandler(async () => {
     //TODO Approve is not implemented yet, and doing it this way is not correct

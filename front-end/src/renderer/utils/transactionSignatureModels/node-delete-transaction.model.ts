@@ -1,6 +1,7 @@
 import { NodeDeleteTransaction } from '@hashgraph/sdk';
 
 import { TransactionBaseModel } from './transaction.model';
+import { COUNCIL_ACCOUNTS } from './index';
 
 export default class NodeDeleteTransactionModel extends TransactionBaseModel<NodeDeleteTransaction> {
   getNodeId(): number | null {

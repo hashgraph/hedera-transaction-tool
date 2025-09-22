@@ -117,21 +117,6 @@ describe('SignaturesController', () => {
   });
 
   describe('uploadSignatureMap', () => {
-    it('should return an array of signatures', async () => {
-      const result = [signer];
-      const body = {
-        transactionId: 1,
-        signatureMap: new SignatureMap(),
-      };
-
-      signersService.uploadSignatureMaps.mockResolvedValue(result);
-
-      expect(await controller.uploadSignatureMap(body, user)).toEqual(result);
-    });
-  });
-
-
-  describe('uploadSignatureMap', () => {
     it('should transform, validate and upload signature map for a single object', async () => {
       const dtoInput = {
         transactionId: 1,

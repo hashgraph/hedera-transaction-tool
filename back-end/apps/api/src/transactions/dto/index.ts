@@ -5,6 +5,7 @@ export * from './create-transaction-approver.dto';
 export * from './create-transaction-group.dto';
 export * from './create-transaction-group-item.dto';
 export * from './create-transaction-observers.dto';
+export * from './signature-import-result.dto';
 export * from './transaction.dto';
 export * from './transaction-approver.dto';
 export * from './transaction-group.dto';
