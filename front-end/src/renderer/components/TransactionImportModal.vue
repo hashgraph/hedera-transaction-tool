@@ -1,10 +1,13 @@
 <script setup lang="ts">
+
 import { computed, ref, watch } from 'vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionImportRow from '@renderer/components/TransactionImportRow.vue';
 import { type V1ImportCandidate, type V1ImportFilterResult } from '@shared/interfaces';
+import { PublicKey, Transaction } from '@hashgraph/sdk';
+import { hexToUint8Array } from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{
@@ -31,7 +34,9 @@ const handleCheckboxChecked = (candidate: V1ImportCandidate, checked: boolean) =
   if (checked) {
     selectedCandidates.value.push(candidate);
   } else {
-    selectedCandidates.value = selectedCandidates.value.filter(c => c.filePath !== candidate.filePath);
+    selectedCandidates.value = selectedCandidates.value.filter(
+      c => c.filePath !== candidate.filePath,
+    );
   }
 };
 
@@ -52,10 +57,41 @@ const handleSubmit = async () => {
 /* Functions */
 
 const importSelectedCandidates = async (): Promise<void> => {
-  console.log("selectedCandidates = " + JSON.stringify(selectedCandidates.value, null, 2));
-  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-  await sleep(3000);
+  const failedCandidates: V1ImportCandidate[] = [];
+  for (const candidate of selectedCandidates.value) {
+    try {
+      const transaction = makeImportableTransaction(candidate);
+      console.log("Will add transaction " + transaction.transactionId + " to backend")
+    } catch {
+      failedCandidates.push(candidate);
+    }
+  }
+  const failureCount = failedCandidates.length;
+  const successCount = selectedCandidates.value.length - failureCount;
+  console.log("successCount = " + successCount);
+  console.log("failedCount = " + failureCount);
 };
+
+const makeImportableTransaction = (candidate: V1ImportCandidate): Transaction => {
+  const bytes = hexToUint8Array(candidate.transactionBytes);
+  const result = Transaction.fromBytes(bytes);
+  const signaturesByKey = new Map<string, Uint8Array[]>; // publicKey -> signature[]
+  for (const nodeAccountId of Object.keys(candidate.nodeSignatures)) {
+    const signatureSet = candidate.nodeSignatures[nodeAccountId];
+    for (const publicKey of Object.keys(signatureSet)) {
+      const signatures = signaturesByKey.get(publicKey) ?? [];
+      const newSignature = hexToUint8Array(signatureSet[publicKey]);
+      signaturesByKey.set(publicKey, signatures.concat([newSignature]));
+    }
+  }
+  for (const [publicKey, signatures] of signaturesByKey) {
+    const publicKeyObj = PublicKey.fromString(publicKey);
+    if (signatures.length > 0) {
+      result._addSignatureLegacy(publicKeyObj, signatures);
+    }
+  }
+  return result
+}
 
 /* Watchers */
 
