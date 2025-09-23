@@ -20,6 +20,7 @@ import dataMigration from './dataMigration';
 import sdk from './sdk';
 import mnemonic from './mnemonic';
 import publicKeyMapping from './publicKeyMapping';
+import importV1 from './importV1';
 
 export default {
   ...updateAPI,
@@ -44,4 +45,5 @@ export default {
   ...sdk,
   ...mnemonic,
   ...publicKeyMapping,
+  ...importV1
 };
