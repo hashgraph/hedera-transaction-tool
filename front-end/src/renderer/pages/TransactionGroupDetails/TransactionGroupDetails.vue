@@ -154,7 +154,6 @@ async function handleFetchGroup(id: string | number) {
   }
 }
 
-/* Handlers */
 const handleBack = () => {
   if (!history.state?.back?.startsWith('/transactions')) {
     router.push({ name: 'transactions' });
@@ -299,6 +298,11 @@ const handleApproveAll = async (approved: boolean, showModal?: boolean) => {
   await callback();
 };
 
+const handleExportGroup = async () => {
+  toast.error('Not implemented')
+}
+
+/* Functions */
 const subscribeToTransactionAction = () => {
   if (!user.selectedOrganization?.serverUrl) return;
   ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
@@ -353,12 +357,22 @@ watchEffect(() => {
 <template>
   <div class="p-5">
     <div class="flex-column-100">
-      <div class="d-flex align-items-center">
-        <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
-          <i class="bi bi-arrow-left"></i>
-        </AppButton>
+      <div class="flex-centered justify-content-between flex-wrap gap-4">
+        <div class="d-flex align-items-center">
+          <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
+            <i class="bi bi-arrow-left"></i>
+          </AppButton>
 
-        <h2 class="text-title text-bold">Transaction Group Details</h2>
+          <h2 class="text-title text-bold">Transaction Group Details</h2>
+        </div>
+
+        <AppButton
+          type="button"
+          color="secondary"
+          @click.prevent="handleExportGroup"
+          data-testid="button-export-group"
+        ><span>Export</span>
+        </AppButton>
       </div>
 
       <Transition name="fade" mode="out-in">
