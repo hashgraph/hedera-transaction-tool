@@ -1,3 +1,5 @@
+import { SignatureMap } from '@hashgraph/sdk';
+
 import type { ITransactionApprover } from '../approvers';
 import type { ITransactionObserverUserId } from '../observers';
 import type { ITransactionSignerUserKey } from '../signers';
@@ -97,6 +99,12 @@ export interface IGroup {
 }
 
 export type IDefaultNetworks = 'mainnet' | 'testnet' | 'previewnet' | 'local-node';
+
+/** Request/Response DTOs */
+export interface ISignatureImport {
+  transactionId: number; // ID of the transaction to which the signatures belong. In a bulk transaction (File Append with multiple transactions inside), this ID refers to the parent transaction.
+  signatureMap: SignatureMap;
+}
 
 export interface SignatureImportResultDto {
   transactionId: number;
