@@ -1,13 +1,15 @@
 import type { Organization } from '@prisma/client';
 import type { LoggedInOrganization, SignatureItem } from '@renderer/types';
 import type {
+  ISignatureImport,
   ITransaction,
+  ITransactionApprover,
+  TransactionApproverDto,
   ITransactionFull,
   Network,
   PaginatedResourceDto,
   SignatureImportResultDto,
 } from '@shared/interfaces';
-import type { ITransactionApprover, TransactionApproverDto } from '@shared/interfaces';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
@@ -124,16 +126,22 @@ export const uploadSignatures = async (
   }, 'Failed upload signatures');
 };
 
+/**
+ * Imports signatures for a transaction.
+ *
+ * @param organization
+ * @param signatureImport
+ */
 export const importSignatures = async (
   organization: LoggedInOrganization & Organization,
-  transaction: SDKTransaction[] | SDKTransaction,
+  signatureImport: ISignatureImport[] | ISignatureImport,
 ): Promise<SignatureImportResultDto[]> => {
   const formattedMaps = [];
-  const transactions = Array.isArray(transaction) ? transaction : [transaction];
-  for (const tx of transactions) {
+  const imports = Array.isArray(signatureImport) ? signatureImport : [signatureImport];
+  for (const signatureImport of imports) {
     formattedMaps.push({
-      transactionId: tx.transactionId,
-      signatureMap: formatSignatureMap(tx.getSignatures()),
+      transactionId: signatureImport.transactionId,
+      signatureMap: formatSignatureMap(signatureImport.signatureMap),
     });
   }
   return commonRequestHandler(async () => {
