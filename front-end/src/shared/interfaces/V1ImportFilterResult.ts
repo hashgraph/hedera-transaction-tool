@@ -1,7 +1,12 @@
 
 export interface V1ImportFilterResult {
-  candidatePaths: Record<string, { transactionBytes: string; nodeSignatures: V1ImportSignatureSet; }>;
+  candidates: V1ImportCandidate[];
   ignoredPaths: string[];
 }
-
-type V1ImportSignatureSet = Record<string, Record<string, string>>
+export interface V1ImportCandidate {
+  filePath: string;
+  transactionId: string;
+  transactionBytes: string;
+  nodeSignatures: V1ImportSignatureSet;
+}
+export type V1ImportSignatureSet = Record<string, Record<string, string>>

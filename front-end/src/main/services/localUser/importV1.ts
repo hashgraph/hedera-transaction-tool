@@ -1,12 +1,56 @@
-import type { V1ImportFilterResult } from '@shared/interfaces';
+import { Transaction } from '@hashgraph/sdk';
+import * as unzipper from 'unzipper';
+import * as path from 'path';
+import { extractUnzipperFileToBuffer } from '@main/utils/files';
+import { V1ImportCandidate, V1ImportFilterResult } from '@shared/interfaces';
 
 export async function filterForImportV1(filePaths: string[]): Promise<V1ImportFilterResult> {
   const result: V1ImportFilterResult = {
-    candidatePaths: {},
-    ignoredPaths: filePaths
+    candidates: [],
+    ignoredPaths: [],
+  };
+
+  for (const filePath of filePaths) {
+    const candidate = await filterCandidate(filePath);
+    if (candidate !== null) {
+      result.candidates.push(candidate);
+    } else {
+      result.ignoredPaths.push(filePath);
+    }
   }
 
-  console.log("filePaths=" + JSON.stringify(filePaths, null, 2));
+  return Promise.resolve(result);
+}
 
+async function filterCandidate(filePath: string): Promise<V1ImportCandidate | null> {
+  let result: V1ImportCandidate | null;
+  try {
+    const zipDirectory = await unzipper.Open.file(filePath);
+    const txFile = zipDirectory.files.find(f => path.extname(f.path) === '.tx');
+    const jsonFile = zipDirectory.files.find(f => path.extname(f.path) === '.json');
+    if (txFile && jsonFile) {
+      const txBytes = await extractUnzipperFileToBuffer(txFile);
+      const tx = Transaction.fromBytes(txBytes);
+      const transactionId = tx.transactionId
+      if (transactionId !== null) {
+        const txHex = txBytes.toString('hex');
+        const jsonBytes = await extractUnzipperFileToBuffer(jsonFile);
+        const jsonText = jsonBytes.toString()
+        const jsonObj = JSON.parse(jsonText);
+        result = {
+          filePath: filePath,
+          transactionId: transactionId.toString(),
+          transactionBytes: txHex,
+          nodeSignatures: jsonObj,
+        };
+      } else {
+        result = null
+      }
+    } else {
+      result = null;
+    }
+  } catch {
+    result = null;
+  }
   return Promise.resolve(result);
 }
