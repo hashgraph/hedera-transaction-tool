@@ -4,7 +4,7 @@ import { ipcRenderer } from 'electron';
 
 export default {
   importV1: {
-    filterForImportV1: (filePaths: string[]): Promise<V1ImportFilterResult[]> =>
+    filterForImportV1: (filePaths: string[]): Promise<V1ImportFilterResult> =>
       ipcRenderer.invoke('importV1:filterForImportV1', filePaths),
   },
 };
