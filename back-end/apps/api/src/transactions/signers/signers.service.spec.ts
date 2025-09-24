@@ -214,7 +214,7 @@ describe('SignaturesService', () => {
       dataSource.createQueryRunner.mockReturnValueOnce(queryRunner);
 
       await service.uploadSignatureMaps(
-        [{ transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
         user,
       );
 
@@ -270,7 +270,7 @@ describe('SignaturesService', () => {
       dataSource.createQueryRunner.mockReturnValueOnce(queryRunner);
 
       await service.uploadSignatureMaps(
-        [{ transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
         user,
       );
 
@@ -328,7 +328,7 @@ describe('SignaturesService', () => {
       dataSource.createQueryRunner.mockReturnValueOnce(queryRunner);
 
       await service.uploadSignatureMaps(
-        [{ transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
         user,
       );
 
@@ -386,7 +386,7 @@ describe('SignaturesService', () => {
       dataSource.createQueryRunner.mockReturnValueOnce(queryRunner);
 
       await service.uploadSignatureMaps(
-        [{ transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
         user,
       );
 
@@ -419,7 +419,7 @@ describe('SignaturesService', () => {
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([2]);
 
       await expect(
-        service.uploadSignatureMaps([{ transactionId, signatureMap }], user),
+        service.uploadSignatureMaps([{ id: transactionId, signatureMap }], user),
       ).rejects.toThrow(ErrorCodes.PNY);
       expectNotifyNotCalled();
     });
@@ -430,7 +430,7 @@ describe('SignaturesService', () => {
       dataSource.manager.findOneBy.mockResolvedValueOnce(null);
 
       await expect(
-        service.uploadSignatureMaps([{ transactionId, signatureMap }], user),
+        service.uploadSignatureMaps([{ id: transactionId, signatureMap }], user),
       ).rejects.toThrow(ErrorCodes.TNF);
       expectNotifyNotCalled();
     });
@@ -449,7 +449,7 @@ describe('SignaturesService', () => {
       jest.mocked(isExpired).mockReturnValue(true);
 
       await expect(
-        service.uploadSignatureMaps([{ transactionId, signatureMap }], user),
+        service.uploadSignatureMaps([{ id: transactionId, signatureMap }], user),
       ).rejects.toThrow(ErrorCodes.TE);
       expectNotifyNotCalled();
     });
@@ -468,7 +468,7 @@ describe('SignaturesService', () => {
       jest.mocked(isExpired).mockReturnValue(false);
 
       await expect(
-        service.uploadSignatureMaps([{ transactionId, signatureMap }], user),
+        service.uploadSignatureMaps([{ id: transactionId, signatureMap }], user),
       ).rejects.toThrow(ErrorCodes.TNRS);
       expectNotifyNotCalled();
     });
@@ -490,7 +490,7 @@ describe('SignaturesService', () => {
       });
 
       await expect(
-        service.uploadSignatureMaps([{ transactionId, signatureMap }], user),
+        service.uploadSignatureMaps([{ id: transactionId, signatureMap }], user),
       ).rejects.toThrow(ErrorCodes.ISNMPN);
       expectNotifyNotCalled();
     });
@@ -526,7 +526,7 @@ describe('SignaturesService', () => {
       await expect(
         service.uploadSignatureMaps(
           [{
-            transactionId,
+            id: transactionId,
             signatureMap: sdkTransaction.getSignatures()
           }],
           user,

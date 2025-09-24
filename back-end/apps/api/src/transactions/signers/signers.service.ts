@@ -101,9 +101,9 @@ export class SignersService {
     user: User,
   ): Promise<TransactionSigner[]> {
     const signers = new Set<TransactionSigner>();
-    for (const { transactionId, signatureMap: map } of dto) {
+    for (const { id, signatureMap: map } of dto) {
       /* Verify that the transaction exists */
-      const transaction = await this.dataSource.manager.findOneBy(Transaction, {id: transactionId});
+      const transaction = await this.dataSource.manager.findOneBy(Transaction, { id });
       if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
       /* Checks if the transaction is canceled */
@@ -128,7 +128,7 @@ export class SignersService {
         const userKey = user.keys.find(key => key.publicKey === publicKey.toStringRaw());
         if (!userKey) throw new BadRequestException(ErrorCodes.PNY);
 
-        const transactionSigner = await this.dataSource.manager.findOneBy(TransactionSigner, {id: transactionId, userKeyId: userKey.id});
+        const transactionSigner = await this.dataSource.manager.findOneBy(TransactionSigner, { id, userKeyId: userKey.id });
         sdkTransaction = sdkTransaction.addSignature(publicKey, map);
         if (!transactionSigner) {
           userKeys.push(userKey);
@@ -146,7 +146,7 @@ export class SignersService {
         if (!isSameBytes) {
           await this.dataSource.manager.update(
             Transaction,
-            {id: transactionId},
+            { id },
             {
               transactionBytes: sdkTransaction.toBytes(),
             },
@@ -174,9 +174,9 @@ export class SignersService {
       //If no change, don't emit events
       if (isSameBytes && userKeys.length === 0) continue;
 
-      emitUpdateTransactionStatus(this.chainService, transactionId);
+      emitUpdateTransactionStatus(this.chainService, id);
       notifyTransactionAction(this.notificationService);
-      notifySyncIndicators(this.notificationService, transactionId, transaction.status, {
+      notifySyncIndicators(this.notificationService, id, transaction.status, {
         transactionId: transaction.transactionId,
         network: transaction.mirrorNetwork,
       });

@@ -113,7 +113,7 @@ export const uploadSignatures = async (
 
     const signatureMap = getSignatureMapForPublicKeys(publicKeys, transaction);
     formattedMaps.push({
-      transactionId: transactionId,
+      id: transactionId,
       signatureMap: formatSignatureMap(signatureMap),
     });
   }
@@ -140,7 +140,7 @@ export const importSignatures = async (
   const imports = Array.isArray(signatureImport) ? signatureImport : [signatureImport];
   for (const signatureImport of imports) {
     formattedMaps.push({
-      transactionId: signatureImport.transactionId,
+      id: signatureImport.id,
       signatureMap: formatSignatureMap(signatureImport.signatureMap),
     });
   }

@@ -119,7 +119,7 @@ describe('SignaturesController', () => {
   describe('uploadSignatureMap', () => {
     it('should transform, validate and upload signature map for a single object', async () => {
       const dtoInput = {
-        transactionId: 1,
+        id: 1,
         signatureMap: new SignatureMap(),
       };
       const transformedDto = { transformed: 'value' };
@@ -142,11 +142,11 @@ describe('SignaturesController', () => {
     it('should transform, validate and upload signature maps for an array of objects', async () => {
       const dtoInput = [
         {
-          transactionId: 1,
+          id: 1,
           signatureMap: new SignatureMap(),
         },
         {
-          transactionId: 2,
+          id: 2,
           signatureMap: new SignatureMap(),
         }
       ];

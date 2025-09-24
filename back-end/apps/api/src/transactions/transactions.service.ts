@@ -418,8 +418,8 @@ export class TransactionsService {
     user: User,
   ): Promise<SignatureImportResultDto[]> {
     const results = new Set<SignatureImportResultDto>();
-    for (const { transactionId, signatureMap: map } of dto) {
-      const transaction = await this.entityManager.findOneBy(Transaction, { id: transactionId });
+    for (const { id, signatureMap: map } of dto) {
+      const transaction = await this.entityManager.findOneBy(Transaction, { id });
       try {
         /* Verify that the transaction exists */
         if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
@@ -450,20 +450,20 @@ export class TransactionsService {
 
         await this.entityManager.update(
           Transaction,
-          { id: transactionId },
+          { id },
           { transactionBytes: sdkTransaction.toBytes() },
         );
 
-        results.add({ transactionId });
-        emitUpdateTransactionStatus(this.chainService, transactionId);
+        results.add({ id });
+        emitUpdateTransactionStatus(this.chainService, id);
         notifyTransactionAction(this.notificationsService);
-        notifySyncIndicators(this.notificationsService, transactionId, transaction.status, {
+        notifySyncIndicators(this.notificationsService, id, transaction.status, {
           transactionId: transaction.transactionId,
           network: transaction.mirrorNetwork,
         });
       } catch (error) {
         results.add({
-          transactionId,
+          id,
           error:
             error instanceof BadRequestException
               ? error.message

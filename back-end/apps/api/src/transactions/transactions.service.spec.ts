@@ -668,10 +668,10 @@ describe('TransactionsService', () => {
       entityManager.update.mockResolvedValue(undefined);
 
       const result = await service.importSignatures(
-        [{ transactionId: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
         userWithKeys
       );
-      expect(result).toEqual([{ transactionId: transactionId }]);
+      expect(result).toEqual([{ id: transactionId }]);
       expect(emitUpdateTransactionStatus).toHaveBeenCalledWith(chainService, transactionId);
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
       expect(notifySyncIndicators).toHaveBeenCalledWith(
@@ -689,7 +689,7 @@ describe('TransactionsService', () => {
       entityManager.findOneBy.mockResolvedValue(null);
 
       const result = await service.importSignatures(
-        [{ transactionId: transactionId, signatureMap: new SignatureMap() }],
+        [{ id: transactionId, signatureMap: new SignatureMap() }],
         userWithKeys
       );
       expect(result[0].error).toContain(ErrorCodes.TNF);
@@ -707,7 +707,7 @@ describe('TransactionsService', () => {
       entityManager.findOneBy.mockResolvedValue(transaction);
 
       const result = await service.importSignatures(
-        [{ transactionId: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
         userWithKeys
       );
       expect(result[0].error).toContain(ErrorCodes.TNRS);
@@ -726,11 +726,11 @@ describe('TransactionsService', () => {
       jest.mocked(isExpired).mockReturnValue(true);
 
       const result = await service.importSignatures(
-        [{ transactionId: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
         userWithKeys
       );
       expect(result[0]).toMatchObject({
-        transactionId: transactionId,
+        id: transactionId,
         error: ErrorCodes.TE,
       });
     });
@@ -750,11 +750,11 @@ describe('TransactionsService', () => {
       });
 
       const result = await service.importSignatures(
-        [{ transactionId: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
         userWithKeys
       );
       expect(result[0]).toMatchObject({
-        transactionId: transactionId,
+        id: transactionId,
         error: ErrorCodes.ISNMPN,
       });
     });
@@ -776,11 +776,11 @@ describe('TransactionsService', () => {
       entityManager.update.mockRejectedValue(new Error('fail'));
 
       const result = await service.importSignatures(
-        [{ transactionId: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
         userWithKeys
       );
       expect(result[0]).toMatchObject({
-        transactionId: transactionId,
+        id: transactionId,
         error: 'An unexpected error occurred while importing the signatures',
       });
     });
