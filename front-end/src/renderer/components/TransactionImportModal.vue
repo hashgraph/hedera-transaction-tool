@@ -9,9 +9,9 @@ import {
   type V1ImportCandidate,
   type V1ImportFilterResult,
 } from '@shared/interfaces';
-import { SignatureMap, TransactionId } from '@hashgraph/sdk';
+import { TransactionId } from '@hashgraph/sdk';
 import { makeSignatureMap } from '@renderer/utils/signatureTools.ts';
-import { getTransactionById } from '@renderer/services/organization';
+import { getTransactionById, importSignatures } from '@renderer/services/organization';
 import useUserStore from '@renderer/stores/storeUser.ts';
 
 /* Props */
@@ -75,24 +75,22 @@ const importSelectedCandidates = async (): Promise<void> => {
   }
 
   const importFailures: string[] = [];
+  const serverUrl = user.selectedOrganization!.serverUrl;
   for (const [transactionId, candidates] of candidatesByTX) {
-    try {
-      const signatureMap = makeSignatureMap(candidates);
-      await importSignatureMap(transactionId, signatureMap);
-    } catch {
-      importFailures.push(transactionId);
+    const transaction = transactionMap.value.get(transactionId);
+    if (transaction) {
+      try {
+        const signatureMap = makeSignatureMap(candidates).toJSON();
+        await importSignatures(serverUrl, transaction.id, signatureMap);
+      } catch {
+        importFailures.push(transactionId);
+      }
     }
   }
 
   if (importFailures.length > 0) {
     console.log('Import failed for the following transaction: ' + JSON.stringify(importFailures));
   }
-};
-
-const importSignatureMap = async (transactionId: string, signatureMap: SignatureMap) => {
-  console.log('SignatureMap for ' + transactionId);
-  console.log('============');
-  console.log(JSON.stringify(signatureMap, null, 2));
 };
 
 const candidatesDidChange = async (newValue: V1ImportCandidate[]) => {
@@ -107,8 +105,8 @@ const candidatesDidChange = async (newValue: V1ImportCandidate[]) => {
           const transactionId = TransactionId.fromString(candidate.transactionId);
           const t = await getTransactionById(serverUrl, transactionId);
           transactionMap.value.set(candidate.transactionId, t);
-        } catch(error) {
-          console.log("error=" + error)
+        } catch (error) {
+          console.log('error=' + error);
         }
       }
     }
@@ -124,9 +122,9 @@ const candidatesDidChange = async (newValue: V1ImportCandidate[]) => {
   }
 };
 
-const findBackendInfo = (candidate: V1ImportCandidate): ITransactionFull|null => {
-  return transactionMap.value.get(candidate.transactionId) ?? null
-}
+const findBackendInfo = (candidate: V1ImportCandidate): ITransactionFull | null => {
+  return transactionMap.value.get(candidate.transactionId) ?? null;
+};
 
 /* Watchers */
 
@@ -164,7 +162,10 @@ watch(() => props.filterResult.candidates, candidatesDidChange, { immediate: tru
                 :data-testid="`checkbox-key-${index}`"
                 :disabled="findBackendInfo(candidate) == null"
               />
-              <TransactionImportRow :candidate="candidate" :backend-info="findBackendInfo(candidate)"/>
+              <TransactionImportRow
+                :candidate="candidate"
+                :backend-info="findBackendInfo(candidate)"
+              />
             </li>
           </ul>
         </div>
