@@ -2,7 +2,7 @@ import { BadRequestException, Inject, Injectable, UnauthorizedException } from '
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 
-import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { PublicKey, Transaction as SDKTransaction, TransactionId } from '@hashgraph/sdk';
 
 import {
   Repository,
@@ -70,11 +70,38 @@ export class TransactionsService {
   ) {}
 
   /* Get the transaction for the provided id in the DATABASE */
-  async getTransactionById(id: number): Promise<Transaction> {
+  /* id can be number (ie internal id) or string (ie payerId@timestamp */
+  async getTransactionById(id: number|TransactionId): Promise<Transaction> {
     if (!id) return null;
 
     const transaction = await this.repo.findOne({
-      where: { id },
+      where:  typeof id == "number" ? { id } : { transactionId: id.toString() },
+      relations: ['creatorKey', 'creatorKey.user', 'observers', 'comments', 'groupItem'],
+    });
+
+    if (!transaction) return null;
+
+    transaction.signers = await this.entityManager.find(TransactionSigner, {
+      where: {
+        transaction: {
+          id: transaction.id,
+        },
+      },
+      relations: {
+        userKey: true,
+      },
+      withDeleted: true,
+    });
+
+    return transaction;
+  }
+
+  /* Get the transaction for the provided sdk transaction id (payerId&seconds.nanos) in the DATABASE */
+  async getTransactionBySdkId(transactionId: string): Promise<Transaction> {
+    if (!transactionId) return null;
+
+    const transaction = await this.repo.findOne({
+      where: { transactionId },
       relations: ['creatorKey', 'creatorKey.user', 'observers', 'comments', 'groupItem'],
     });
 
@@ -584,7 +611,7 @@ export class TransactionsService {
   }
 
   /* Get the transaction with the provided id if user has access */
-  async getTransactionWithVerifiedAccess(transactionId: number, user: User) {
+  async getTransactionWithVerifiedAccess(transactionId: number|TransactionId, user: User) {
     const transaction = await this.getTransactionById(transactionId);
 
     await this.attachTransactionApprovers(transaction);
