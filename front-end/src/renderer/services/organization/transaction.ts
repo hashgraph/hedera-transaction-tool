@@ -8,7 +8,7 @@ import type {
 } from '@shared/interfaces';
 import type { ITransactionApprover, TransactionApproverDto } from '@shared/interfaces';
 
-import { Transaction } from '@hashgraph/sdk';
+import { Transaction, type TransactionId } from '@hashgraph/sdk';
 
 import { ObserverRole, TransactionStatus } from '@shared/interfaces';
 
@@ -217,10 +217,10 @@ export const getUserShouldApprove = async (
 /* Get the count of the transactions to sign */
 export const getTransactionById = async (
   serverUrl: string,
-  id: number,
+  id: number|TransactionId,
 ): Promise<ITransactionFull> =>
   commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.get(`${serverUrl}/${controller}/${id}`, {
+    const { data } = await axiosWithCredentials.get(`${serverUrl}/${controller}/${id.toString()}`, {
       withCredentials: true,
     });
 
