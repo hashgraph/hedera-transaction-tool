@@ -1,8 +1,9 @@
 import { Expose } from 'class-transformer';
 
 export class SignatureImportResultDto {
+  // The database ID of the transaction
   @Expose()
-  transactionId: number;
+  id: number;
 
   @Expose()
   error?: string;

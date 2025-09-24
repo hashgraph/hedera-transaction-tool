@@ -102,11 +102,11 @@ export type IDefaultNetworks = 'mainnet' | 'testnet' | 'previewnet' | 'local-nod
 
 /** Request/Response DTOs */
 export interface ISignatureImport {
-  transactionId: number; // ID of the transaction to which the signatures belong. In a bulk transaction (File Append with multiple transactions inside), this ID refers to the parent transaction.
+  id: number; // Database ID of the transaction to which the signatures belong. In a bulk transaction (File Append with multiple transactions inside), this ID refers to the parent transaction.
   signatureMap: SignatureMap;
 }
 
 export interface SignatureImportResultDto {
-  transactionId: number;
+  id: number; // The database ID of the transaction
   error?: string;
 }
