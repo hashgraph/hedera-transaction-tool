@@ -4,9 +4,15 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionImportRow from '@renderer/components/TransactionImportRow.vue';
-import { type V1ImportCandidate, type V1ImportFilterResult } from '@shared/interfaces';
-import { SignatureMap } from '@hashgraph/sdk';
+import {
+  type ITransactionFull,
+  type V1ImportCandidate,
+  type V1ImportFilterResult,
+} from '@shared/interfaces';
+import { SignatureMap, TransactionId } from '@hashgraph/sdk';
 import { makeSignatureMap } from '@renderer/utils/signatureTools.ts';
+import { getTransactionById } from '@renderer/services/organization';
+import useUserStore from '@renderer/stores/storeUser.ts';
 
 /* Props */
 const props = defineProps<{
@@ -18,7 +24,9 @@ const show = defineModel<boolean>('show', { required: true });
 
 /* State */
 const selectedCandidates = ref<V1ImportCandidate[]>([]);
+const transactionMap = ref<Map<string, ITransactionFull>>(new Map()); // transactionId -> ITransactionFull
 const importing = ref(false);
+const user = useUserStore();
 
 /* Computed */
 const isAllSelected = computed(() => {
@@ -87,15 +95,42 @@ const importSignatureMap = async (transactionId: string, signatureMap: Signature
   console.log(JSON.stringify(signatureMap, null, 2));
 };
 
+const candidatesDidChange = async (newValue: V1ImportCandidate[]) => {
+  const serverUrl = user.selectedOrganization?.serverUrl;
+
+  // 1) Retrieves transaction info from backend
+  transactionMap.value.clear();
+  if (serverUrl) {
+    for (const candidate of newValue) {
+      if (transactionMap.value.get(candidate.transactionId) === undefined) {
+        try {
+          const transactionId = TransactionId.fromString(candidate.transactionId);
+          const t = await getTransactionById(serverUrl, transactionId);
+          transactionMap.value.set(candidate.transactionId, t);
+        } catch(error) {
+          console.log("error=" + error)
+        }
+      }
+    }
+  }
+
+  // 2) Initializes selectedCandidates
+  // => only transactions existing in back-end are pre-selected
+  selectedCandidates.value = [];
+  for (const candidate of props.filterResult.candidates) {
+    if (transactionMap.value.get(candidate.transactionId) !== undefined) {
+      selectedCandidates.value.push(candidate);
+    }
+  }
+};
+
+const findBackendInfo = (candidate: V1ImportCandidate): ITransactionFull|null => {
+  return transactionMap.value.get(candidate.transactionId) ?? null
+}
+
 /* Watchers */
 
-watch(
-  () => props.filterResult.candidates,
-  (candidates: V1ImportCandidate[]) => {
-    selectedCandidates.value = candidates;
-  },
-  { immediate: true },
-);
+watch(() => props.filterResult.candidates, candidatesDidChange, { immediate: true });
 </script>
 
 <template>
@@ -127,8 +162,9 @@ watch(
                 :name="`checkbox-key-${index}`"
                 class="cursor-pointer"
                 :data-testid="`checkbox-key-${index}`"
+                :disabled="findBackendInfo(candidate) == null"
               />
-              <TransactionImportRow :candidate="candidate" />
+              <TransactionImportRow :candidate="candidate" :backend-info="findBackendInfo(candidate)"/>
             </li>
           </ul>
         </div>

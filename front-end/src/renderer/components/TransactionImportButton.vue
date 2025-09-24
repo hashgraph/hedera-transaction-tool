@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { showOpenDialog } from '@renderer/services/electronUtilsService.ts';
 import { filterForImportV1 } from '@renderer/services/importV1.ts';
 import type { V1ImportFilterResult } from '@shared/interfaces';
 import TransactionImportModal from '@renderer/components/TransactionImportModal.vue';
+import { isLoggedInOrganization } from '@renderer/utils';
+import useUserStore from '@renderer/stores/storeUser.ts';
 
 /* State */
 const emptyFilterResult: V1ImportFilterResult = { candidates: [], ignoredPaths: [] };
@@ -17,14 +19,14 @@ async function handleImport() {
     'Import From Transaction Tool V1',
     'Select',
     [{ name: '.zip', extensions: ['zip'] }],
-    ['openFile', 'openDirectory', 'multiSelections'],
+    ['openFile' /*, 'openDirectory' */, 'multiSelections'],
     'Select ZIP files created by TT V1',
   );
 
   if (result.canceled) return;
 
   filterResult.value = await filterForImportV1(result.filePaths);
-  isImportModalVisible.value = true
+  isImportModalVisible.value = true;
 }
 </script>
 

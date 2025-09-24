@@ -2,11 +2,12 @@
 import { computed } from 'vue';
 import { Transaction, TransactionId } from '@hashgraph/sdk';
 import { hexToUint8Array } from '@renderer/utils';
-import type { V1ImportCandidate } from '@shared/interfaces';
+import type { ITransactionFull, V1ImportCandidate } from '@shared/interfaces';
 
 /* Props */
 const props = defineProps<{
   candidate: V1ImportCandidate;
+  backendInfo: ITransactionFull|null;
 }>();
 
 /* Computed */
@@ -55,6 +56,8 @@ const status = computed(() => {
   let result: string | null;
   if (transaction.value === null) {
     result = 'Failed to decode transaction';
+  } else if (props.backendInfo === null) {
+    result = 'This transaction does not exist in organization or you don\'t have access to it'
   } else {
     result = null;
   }
