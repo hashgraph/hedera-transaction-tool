@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { showOpenDialog } from '@renderer/services/electronUtilsService.ts';
 import { filterForImportV1 } from '@renderer/services/importV1.ts';
 import type { V1ImportFilterResult } from '@shared/interfaces';
 import TransactionImportModal from '@renderer/components/TransactionImportModal.vue';
-import { isLoggedInOrganization } from '@renderer/utils';
-import useUserStore from '@renderer/stores/storeUser.ts';
 
 /* State */
 const emptyFilterResult: V1ImportFilterResult = { candidates: [], ignoredPaths: [] };
