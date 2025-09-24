@@ -123,6 +123,21 @@ export const uploadSignatures = async (
   }, 'Failed upload signatures');
 };
 
+/* Import signatures from TTv1 */
+export const importSignatures = async (
+  serverUrl: string,
+  transactionId: number, // Backend transaction id
+  signatureMap: Record<string, Record<string, Record<string, string>>>,
+  // node account id / transactionId / publicKey => signature
+): Promise<{transactionId: number, error?: string }> => {
+  return await commonRequestHandler(async () => {
+    return await axiosWithCredentials.post(
+      `${serverUrl}/import/signatures`,
+      {transactionId, signatureMap},
+    );
+  }, 'Failed upload signatures');
+};
+
 /* Get transactions to sign */
 export const getTransactionsToSign = async (
   serverUrl: string,
