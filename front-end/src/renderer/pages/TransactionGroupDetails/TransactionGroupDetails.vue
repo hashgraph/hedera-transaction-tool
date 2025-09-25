@@ -66,7 +66,7 @@ const createTooltips = useCreateTooltips();
 const group = ref<IGroup | null>(null);
 const shouldApprove = ref(false);
 const isConfirmModalShown = ref(false);
-const publicKeysRequiredToSign = ref<string[] | null>([]);
+const publicKeysRequiredToSign = ref<string[]>([]);
 const showSignAll = ref(true);
 const disableSignAll = ref(false);
 const isSigningAll = ref(false);
@@ -142,7 +142,7 @@ async function handleFetchGroup(id: string | number) {
             item.transaction.status !== TransactionStatus.EXPIRED
           ) {
             publicKeysRequiredToSign.value =
-              publicKeysRequiredToSign.value!.concat(usersPublicKeys);
+              publicKeysRequiredToSign.value.concat(usersPublicKeys);
           }
         }
       }
@@ -572,7 +572,6 @@ watchEffect(() => {
                 v-if="
                   shouldApprove ||
                   (isLoggedInOrganization(user.selectedOrganization) &&
-                    publicKeysRequiredToSign &&
                     publicKeysRequiredToSign.length > 0 &&
                     showSignAll)
                 "
@@ -604,7 +603,6 @@ watchEffect(() => {
                   <template
                     v-if="
                       isLoggedInOrganization(user.selectedOrganization) &&
-                      publicKeysRequiredToSign &&
                       publicKeysRequiredToSign.length > 0 &&
                       showSignAll
                     "
