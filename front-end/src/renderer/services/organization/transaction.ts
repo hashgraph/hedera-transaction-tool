@@ -1,4 +1,5 @@
 import type { Organization } from '@prisma/client';
+import type { TransactionId } from '@hashgraph/sdk';
 import type { LoggedInOrganization, SignatureItem } from '@renderer/types';
 import type {
   ISignatureImport,
@@ -231,10 +232,10 @@ export const getUserShouldApprove = async (
 /* Get the count of the transactions to sign */
 export const getTransactionById = async (
   serverUrl: string,
-  id: number,
+  id: number|TransactionId,
 ): Promise<ITransactionFull> =>
   commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.get(`${serverUrl}/${controller}/${id}`, {
+    const { data } = await axiosWithCredentials.get(`${serverUrl}/${controller}/${id.toString()}`, {
       withCredentials: true,
     });
 
