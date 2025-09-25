@@ -391,6 +391,14 @@ function statusIconClass(status: TransactionStatus) {
   return result;
 }
 
+function isSignatureNeededForItem(item: IGroupItem): boolean {
+  return (
+    item.transaction.status === TransactionStatus.WAITING_FOR_SIGNATURES &&
+    unsignedSignersToCheck.value[item.transaction.id] &&
+    unsignedSignersToCheck.value[item.transaction.id].length > 0
+  );
+}
+
 /* Hooks */
 onBeforeMount(async () => {
   const id = router.currentRoute.value.params.id;
@@ -538,10 +546,7 @@ watchEffect(() => {
                                     color="primary"
                                     @click.prevent="handleSignGroupItem(groupItem)"
                                     :data-testid="`sign-group-item-${index}`"
-                                    :disabled="
-                                      groupItem.transaction.status !==
-                                      TransactionStatus.WAITING_FOR_SIGNATURES
-                                    "
+                                    :disabled="!isSignatureNeededForItem(groupItem)"
                                     ><span>Sign</span>
                                   </AppButton>
                                   <AppButton
