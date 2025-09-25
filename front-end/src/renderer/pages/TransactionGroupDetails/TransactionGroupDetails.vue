@@ -92,12 +92,6 @@ const tooltipText = computed(() => {
   return '';
 });
 
-const isSigningComplete = computed(() => {
-  return !group.value?.groupItems.some(
-    item => item.transaction.status === TransactionStatus.WAITING_FOR_SIGNATURES,
-  );
-});
-
 /* Handlers */
 async function handleFetchGroup(id: string | number) {
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
@@ -622,7 +616,7 @@ watchEffect(() => {
                       loading-text="Signing..."
                       data-testid="button-sign-all-tx"
                       @click="handleSignAll"
-                      :disabled="disableSignAll || isSigningComplete"
+                      :disabled="disableSignAll"
                       data-bs-toggle="tooltip"
                       data-bs-placement="top"
                       :title="
