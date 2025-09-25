@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ITransaction } from '@shared/interfaces';
 
-import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
+import { computed, onBeforeMount, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 
 import { Transaction } from '@hashgraph/sdk';
 
@@ -25,6 +25,7 @@ import {
   hexToUint8Array,
   redirectToDetails,
   isLoggedInOrganization,
+  getDateStringExtended,
 } from '@renderer/utils';
 import {
   getTransactionDateExtended,
@@ -63,6 +64,9 @@ const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
 const isLoading = ref(true);
+const contextMenuVisible = ref(false);
+const contextMenuX = ref(0);
+const contextMenuY = ref(0);
 
 const sort = reactive<{
   field: keyof ITransaction;
@@ -170,11 +174,29 @@ const subscribeToTransactionAction = () => {
   });
 };
 
+const showContextMenu = (event: MouseEvent) => {
+  contextMenuVisible.value = true;
+  contextMenuX.value = event.clientX;
+  contextMenuY.value = event.clientY;
+};
+
+const hideContextMenu = () => {
+  contextMenuVisible.value = false;
+};
+
 /* Hooks */
 onBeforeMount(async () => {
   subscribeToTransactionAction();
   setGetTransactionsFunction();
   await fetchTransactions();
+});
+
+onMounted(() => {
+  document.addEventListener('click', hideContextMenu);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', hideContextMenu);
 });
 
 /* Watchers */
@@ -206,7 +228,7 @@ watch(
         <table class="table-custom">
           <thead>
             <tr>
-              <th>
+              <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
                   @click="
@@ -224,7 +246,7 @@ watch(
                   ></i>
                 </div>
               </th>
-              <th>
+              <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
                   @click="handleSort('type', sort.field === 'type' ? getOpositeDirection() : 'asc')"
@@ -237,7 +259,7 @@ watch(
                   ></i>
                 </div>
               </th>
-              <th>
+              <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
                   @click="
@@ -250,6 +272,24 @@ watch(
                   <span>Valid Start</span>
                   <i
                     v-if="sort.field === 'validStart'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
+                </div>
+              </th>
+              <th @contextmenu.prevent="showContextMenu">
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
+                      'updatedAt',
+                      sort.field === 'updatedAt' ? getOpositeDirection() : 'asc',
+                    )
+                  "
+                >
+                  <span>Date Modified</span>
+                  <i
+                    v-if="sort.field === 'updatedAt'"
                     class="bi text-title"
                     :class="[generatedClass]"
                   ></i>
@@ -282,6 +322,13 @@ watch(
                       : 'N/A'
                   }}
                 </td>
+                <td :data-testid="`td-transaction-date-modified-ready-execution-${index}`">
+                  {{
+                    tx.transaction instanceof Transaction
+                      ? getDateStringExtended(new Date(tx.transactionRaw.updatedAt))
+                      : 'N/A'
+                  }}
+                </td>
                 <td class="text-center">
                   <AppButton
                     @click="handleDetails(tx.transactionRaw.id)"
@@ -304,6 +351,18 @@ watch(
             </tr>
           </tfoot>
         </table>
+        <!-- Context menu -->
+        <div
+          v-if="contextMenuVisible"
+          class="dropdown"
+          :style="{ position: 'fixed', top: contextMenuY + 'px', left: contextMenuX + 'px', zIndex: 1000 }"
+          @click.stop
+        >
+          <ul class="dropdown-menu show mt-3">
+            <li class="dropdown-item cursor-pointer" @click="handleSort('createdAt', 'desc'); hideContextMenu()">Sort by Newest</li>
+            <li class="dropdown-item cursor-pointer" @click="handleSort('createdAt', 'asc'); hideContextMenu()">Sort by Oldest</li>
+          </ul>
+        </div>
       </template>
       <template v-else>
         <div class="flex-column-100 flex-centered">
