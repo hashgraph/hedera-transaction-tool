@@ -37,6 +37,7 @@ import {
   isLoggedInOrganization,
   isUserLoggedIn,
   usersPublicRequiredToSign,
+  assertUserLoggedIn,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -45,7 +46,10 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import { SignatureItem } from '@renderer/types';
-import { areByteArraysEqual } from '@shared/utils/byteUtils';
+import { areByteArraysEqual, javaFormatArrayHashCode } from '@shared/utils/byteUtils';
+import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
+import { format } from 'date-fns';
+import JSZip from 'jszip';
 
 /* Stores */
 const user = useUserStore();
@@ -154,7 +158,6 @@ async function handleFetchGroup(id: string | number) {
   }
 }
 
-/* Handlers */
 const handleBack = () => {
   if (!history.state?.back?.startsWith('/transactions')) {
     router.push({ name: 'transactions' });
@@ -299,6 +302,86 @@ const handleApproveAll = async (approved: boolean, showModal?: boolean) => {
   await callback();
 };
 
+const handleExportGroup = async () => {
+  // This currently only exports to TTv1 format
+  assertUserLoggedIn(user.personal);
+
+  /* Verifies the user has entered his password */
+  const personalPassword = getPassword(handleExportGroup, {
+    subHeading: 'Enter your application password to export the transaction group',
+  });
+  if (passwordModalOpened(personalPassword)) return;
+
+  if (user.publicKeys.length === 0) {
+    throw new Error(
+      'Exporting in the .tx format requires a signature. User must have at least one key pair to sign the transaction.',
+    );
+  }
+  const publicKey = user.publicKeys[0]; // get the first key pair's public key
+
+  const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
+  const privateKey = getPrivateKey(publicKey, privateKeyRaw);
+
+  if (group.value != undefined) {
+    const zip = new JSZip(); // Prepare a new ZIP archive
+
+    for (const item of group.value.groupItems) {
+      // create .tx file contents
+      const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
+      const tx = Transaction.fromBytes(transactionBytes);
+      const signedBytes = (await tx.sign(privateKey)).toBytes();
+
+      // Use TTv1 file name format:  `${epochSeconds}_${accountId}_${hash}.tx`
+      const validStart = tx.transactionId!.validStart;
+      const accountId = tx.transactionId!.accountId!.toString();
+      const hash = javaFormatArrayHashCode(transactionBytes);
+      const baseName = `${validStart!.seconds}_${accountId}_${hash}`;
+
+      const filePath = `${baseName}.tx`;
+      zip.file(filePath, signedBytes); // Add .tx file content to ZIP
+
+      // create .txt file contents
+      const author = item.transaction.creatorEmail; // TODO: find out why this is undefined
+      const contents = item.transaction.description || '';
+      const timestamp = new Date(item.transaction.createdAt);
+      const formattedTimestamp = format(timestamp, 'yyyy-MM-dd HH:mm:ss');
+
+      const exportJson = JSON.stringify({
+        Author: author,
+        Contents: contents,
+        Timestamp: formattedTimestamp,
+      });
+
+      const txtFilePath = `${baseName}.txt`;
+      zip.file(txtFilePath, exportJson); // Add .txt  file content to ZIP
+    }
+    // Generate the ZIP file in-memory as a Uint8Array
+    const zipContent = await zip.generateAsync({ type: 'uint8array' });
+
+    // Generate the ZIP file name
+    const baseName = `${group.value.description.substring(0, 25) || 'transaction-group'}`;
+
+    // Save the ZIP file to disk
+    const { filePath, canceled } = await showSaveDialog(
+      `${baseName}.zip`,
+      'Export transaction group',
+      'Export',
+      [{ name: 'Transaction Tool v1 ZIP archive', extensions: ['.zip'] }],
+      'Select the file to export the transaction group to:',
+    );
+    if (canceled || !filePath) {
+      return;
+    }
+
+    // write the zip file to disk
+    await saveFileToPath(zipContent, filePath);
+    // console.log(`ZIP file created at: ${filePath}`);
+
+    toast.success('Transaction exported successfully');
+  }
+};
+
+/* Functions */
 const subscribeToTransactionAction = () => {
   if (!user.selectedOrganization?.serverUrl) return;
   ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
@@ -353,12 +436,22 @@ watchEffect(() => {
 <template>
   <div class="p-5">
     <div class="flex-column-100">
-      <div class="d-flex align-items-center">
-        <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
-          <i class="bi bi-arrow-left"></i>
-        </AppButton>
+      <div class="flex-centered justify-content-between flex-wrap gap-4">
+        <div class="d-flex align-items-center">
+          <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
+            <i class="bi bi-arrow-left"></i>
+          </AppButton>
 
-        <h2 class="text-title text-bold">Transaction Group Details</h2>
+          <h2 class="text-title text-bold">Transaction Group Details</h2>
+        </div>
+
+        <AppButton
+          type="button"
+          color="secondary"
+          @click.prevent="handleExportGroup"
+          data-testid="button-export-group"
+          ><span>Export</span>
+        </AppButton>
       </div>
 
       <Transition name="fade" mode="out-in">
