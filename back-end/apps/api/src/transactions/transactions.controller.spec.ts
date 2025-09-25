@@ -5,7 +5,7 @@ import { EntityManager } from 'typeorm';
 import { plainToInstance } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
 
-import { SignatureMap } from '@hashgraph/sdk';
+import { SignatureMap, TransactionId } from '@hashgraph/sdk';
 
 import { BlacklistService, guardMock, Pagination } from '@app/common';
 import { Transaction, TransactionStatus, TransactionType, User, UserStatus } from '@entities';
@@ -401,6 +401,12 @@ describe('TransactionsController', () => {
       transactionService.getTransactionWithVerifiedAccess.mockResolvedValue(transaction);
 
       expect(await controller.getTransaction(user, 1)).toBe(transaction);
+    });
+
+    it('should return a transaction by transactionId', async () => {
+      transactionService.getTransactionWithVerifiedAccess.mockResolvedValue(transaction);
+
+      expect(await controller.getTransaction(user, TransactionId.fromString('0.0.2673708@1764367157.000000000'))).toBe(transaction);
     });
   });
 });

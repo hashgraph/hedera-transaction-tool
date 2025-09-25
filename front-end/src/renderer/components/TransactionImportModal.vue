@@ -64,7 +64,7 @@ const handleSubmit = async () => {
 /* Functions */
 
 const importSelectedCandidates = async (): Promise<void> => {
-  const candidatesByTX = new Map<string, V1ImportCandidate[]>(); // trasnaction -> candidate[]
+  const candidatesByTX = new Map<string, V1ImportCandidate[]>(); // transaction -> candidate[]
   for (const candidate of selectedCandidates.value) {
     const candidates = candidatesByTX.get(candidate.transactionId);
     if (candidates) {
@@ -75,13 +75,13 @@ const importSelectedCandidates = async (): Promise<void> => {
   }
 
   const importFailures: string[] = [];
-  const serverUrl = user.selectedOrganization!.serverUrl;
   for (const [transactionId, candidates] of candidatesByTX) {
     const transaction = transactionMap.value.get(transactionId);
     if (transaction) {
       try {
-        const signatureMap = makeSignatureMap(candidates).toJSON();
-        await importSignatures(serverUrl, transaction.id, signatureMap);
+        const signatureMap = makeSignatureMap(candidates);
+        const results = await importSignatures(user.selectedOrganization, { id: transaction.id, signatureMap });
+        //TODO need to display results in some manner
       } catch {
         importFailures.push(transactionId);
       }

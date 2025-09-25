@@ -1,5 +1,5 @@
 import { AccountId, PublicKey, SignatureMap, TransactionId } from '@hashgraph/sdk';
-import { hexToUint8Array } from '@renderer/utils/index.ts';
+import { base64ToUint8Array } from '@renderer/utils/index.ts';
 import type { V1ImportCandidate } from '@shared/interfaces';
 
 
@@ -19,7 +19,7 @@ export const makeSignatureMap = (candidates: V1ImportCandidate[]): SignatureMap 
             nodeAccountIdObj,
             transactionId,
             PublicKey.fromString(publicKey),
-            hexToUint8Array(signature)
+            base64ToUint8Array(signature)
           )
         }
       }

@@ -100,6 +100,15 @@ export const hexToUint8Array = (hexString: string) => {
   );
 };
 
+export const base64ToUint8Array = (base64String: string) => {
+  const binaryString = atob(base64String);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
 export const encodeString = (str: string) => {
   return new TextEncoder().encode(str);
 };
