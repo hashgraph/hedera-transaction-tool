@@ -7,6 +7,7 @@ import TransactionImportRow from '@renderer/components/TransactionImportRow.vue'
 import {
   type ISignatureImport,
   type ITransactionFull,
+  type SignatureImportResultDto,
   type V1ImportCandidate,
   type V1ImportFilterResult,
 } from '@shared/interfaces';
@@ -15,7 +16,8 @@ import { makeSignatureMap } from '@renderer/utils/signatureTools.ts';
 import { getTransactionById, importSignatures } from '@renderer/services/organization';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import { assertIsLoggedInOrganization } from '@renderer/utils';
-import { useToast } from 'vue-toast-notification';
+import { type ToastProps, useToast } from 'vue-toast-notification';
+import { ErrorCodes, ErrorMessages } from '@shared/constants';
 
 /* Props */
 const props = defineProps<{
@@ -102,42 +104,68 @@ const importSelectedCandidates = async (): Promise<void> => {
   // 3) sends to backend
   const importResults = await importSignatures(user.selectedOrganization, importInputs);
 
-  // 4) extract accepted transactions
+  // 4) extracts error results
   const allTransactions = Array.from(transactionMap.value.values());
-  const acceptedTransactionIds: string[] = [];
+  const errorResults = new Map<string, SignatureImportResultDto>(); // transactionId -> SignatureImportResultDto
+  const successResults = new Map<string, SignatureImportResultDto>(); // transactionId -> SignatureImportResultDto
   for (const r of importResults) {
     const tx = allTransactions.find((t: ITransactionFull) => t.id === r.id)!;
     if (r.error) {
-      console.log("Import failed for " + tx.transactionId);
-      console.log("error=" + r.error)
-      rejectedTransactionIds.push(tx.transactionId);
+      errorResults.set(tx.transactionId, r);
+      console.log('Import failed for ' + tx.transactionId);
+      console.log('error=' + r.error);
+      if (r.error in ErrorCodes) {
+        console.log('ErrorCodes=' + ErrorMessages[r.error as unknown as ErrorCodes]);
+      }
     } else {
-      acceptedTransactionIds.push(tx.transactionId);
+      successResults.set(tx.transactionId, r);
     }
   }
 
   // 5) User feedback
-  const totalCount = candidatesByTX.size
   const rejectedCount = rejectedTransactionIds.length;
-  const acceptedCount = acceptedTransactionIds.length;
-  if (rejectedCount > 0) {
-    if (acceptedCount === 0) {
-      if (rejectedCount === 1) {
-        toast.error("Import of transaction " + rejectedTransactionIds[0] + " has failed");
-      } else {
-        toast.error("Import of all " + rejectedCount + " transactions has failed")
-      }
+  const errorCount = errorResults.size;
+  const successCount = successResults.size;
+  const totalCount = rejectedCount + errorCount + successCount; // === candidatesByTX.size;
+  const dismissFlag: ToastProps = { duration: 0, dismissible: true };
+  if (totalCount == 1) {
+    if (errorCount == 1) {
+      const [transactionId, result] = errorResults.entries().next().value!;
+      const errorMessage = formatError(result);
+      toast.error('Failed to import transaction ' + transactionId + '\n[' + errorMessage + ']', dismissFlag);
+    } else if (rejectedCount == 1) {
+      const transactionId = rejectedTransactionIds[0];
+      toast.error('Transaction ' + transactionId + ' does not exist or is not accessible', dismissFlag);
     } else {
-      toast.warning(acceptedCount + " of " + totalCount + " transactions have been imported")
+      // successCount == 1
+      const [transactionId] = successResults.entries().next().value!;
+      toast.success('Imported transaction ' + transactionId + ' successfully.');
     }
   } else {
-    if (acceptedCount == 1) {
-      const transactionId = acceptedTransactionIds[0]
-      toast.success("Transaction " + transactionId + " has been imported");
-    } else {
-      toast.success("All " + acceptedCount + " transactions have been imported");
+    if (successCount >= 1) {
+      toast.success('Imported ' + successCount + ' transaction(s) successfully.', );
+    }
+    if (errorCount >= 1) {
+      toast.error('Failed to import ' + errorCount + ' transaction(s)', dismissFlag);
+    }
+    if (rejectedCount >= 1) {
+      toast.error('Rejected ' + rejectedCount + ' transaction(s)', dismissFlag);
     }
   }
+};
+
+const formatError = (r: SignatureImportResultDto): string => {
+  let result: string;
+  if (r.error) {
+    if (r.error in ErrorCodes) {
+      result = ErrorMessages[r.error as ErrorCodes];
+    } else {
+      result = r.error.toString();
+    }
+  } else {
+    result = 'OK';
+  }
+  return result;
 };
 
 const candidatesDidChange = async (newValue: V1ImportCandidate[]) => {
