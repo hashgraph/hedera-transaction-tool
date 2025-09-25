@@ -377,8 +377,10 @@ function statusIconClass(status: TransactionStatus) {
       result = 'bi-check-lg text-success';
       break;
     case TransactionStatus.EXPIRED:
-    case TransactionStatus.CANCELED:
       result = 'bi-x-lg text-danger';
+      break;
+    case TransactionStatus.CANCELED:
+      result = 'bi-x-circle text-danger';
       break;
     case TransactionStatus.EXECUTED:
       result = 'bi-check-circle text-success';
