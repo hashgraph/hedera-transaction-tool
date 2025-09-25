@@ -6,8 +6,10 @@ export class TransactionIdPipe implements PipeTransform<string, Promise<Transact
   transform(value: string): Promise<TransactionId | number> {
     let result: TransactionId | number;
 
-    result = parseInt(value);
-    if (isNaN(result)) {
+    const isIntString = /^\d+$/.test(value);
+    if (isIntString) {
+      result = parseInt(value);
+    } else {
       try {
         result = TransactionId.fromString(value);
       } catch {

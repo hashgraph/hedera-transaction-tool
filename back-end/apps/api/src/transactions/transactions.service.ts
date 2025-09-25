@@ -448,8 +448,10 @@ export class TransactionsService {
     for (const { id, signatureMap: map } of dto) {
       const transaction = await this.entityManager.findOneBy(Transaction, { id });
       try {
-        /* Verify that the transaction exists */
-        if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
+        /* Verify that the transaction exists and access is verified */
+        if (!transaction || !(await this.verifyAccess(transaction, user))) {
+          throw new UnauthorizedException("You don't have permission to view this transaction");
+        }
 
         /* Checks if the transaction is canceled */
         if (
@@ -469,9 +471,6 @@ export class TransactionsService {
         if (error) throw new BadRequestException(ErrorCodes.ISNMPN);
 
         for (const publicKey of publicKeys) {
-          const userKey = user.keys.find(key => key.publicKey === publicKey.toStringRaw());
-          if (!userKey) throw new BadRequestException(ErrorCodes.PNY);
-
           sdkTransaction.addSignature(publicKey, map);
         }
 
