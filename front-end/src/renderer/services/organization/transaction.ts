@@ -146,10 +146,11 @@ export const importSignatures = async (
     });
   }
   return commonRequestHandler(async () => {
-    await axiosWithCredentials.post(
+    const { data } = await axiosWithCredentials.post(
       `${organization.serverUrl}/${controller}/signatures/import`,
       formattedMaps,
     );
+    return data
   }, 'Failed to import signatures');
 }
 
