@@ -5,6 +5,7 @@ import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionImportRow from '@renderer/components/TransactionImportRow.vue';
 import {
+  type ISignatureImport,
   type ITransactionFull,
   type V1ImportCandidate,
   type V1ImportFilterResult,
@@ -13,6 +14,8 @@ import { TransactionId } from '@hashgraph/sdk';
 import { makeSignatureMap } from '@renderer/utils/signatureTools.ts';
 import { getTransactionById, importSignatures } from '@renderer/services/organization';
 import useUserStore from '@renderer/stores/storeUser.ts';
+import { assertIsLoggedInOrganization } from '@renderer/utils';
+import { useToast } from 'vue-toast-notification';
 
 /* Props */
 const props = defineProps<{
@@ -27,6 +30,7 @@ const selectedCandidates = ref<V1ImportCandidate[]>([]);
 const transactionMap = ref<Map<string, ITransactionFull>>(new Map()); // transactionId -> ITransactionFull
 const importing = ref(false);
 const user = useUserStore();
+const toast = useToast();
 
 /* Computed */
 const isAllSelected = computed(() => {
@@ -64,7 +68,10 @@ const handleSubmit = async () => {
 /* Functions */
 
 const importSelectedCandidates = async (): Promise<void> => {
-  const candidatesByTX = new Map<string, V1ImportCandidate[]>(); // transaction -> candidate[]
+  assertIsLoggedInOrganization(user.selectedOrganization);
+
+  // 1) groups candidate by transaction id
+  const candidatesByTX = new Map<string, V1ImportCandidate[]>(); // transactionId -> candidate[]
   for (const candidate of selectedCandidates.value) {
     const candidates = candidatesByTX.get(candidate.transactionId);
     if (candidates) {
@@ -74,22 +81,62 @@ const importSelectedCandidates = async (): Promise<void> => {
     }
   }
 
-  const importFailures: string[] = [];
+  // 2) creates ISignatureImport
+  const rejectedTransactionIds: string[] = [];
+  const importInputs: ISignatureImport[] = [];
   for (const [transactionId, candidates] of candidatesByTX) {
     const transaction = transactionMap.value.get(transactionId);
     if (transaction) {
       try {
         const signatureMap = makeSignatureMap(candidates);
-        const results = await importSignatures(user.selectedOrganization, { id: transaction.id, signatureMap });
-        //TODO need to display results in some manner
+        importInputs.push({
+          id: transaction.id,
+          signatureMap,
+        });
       } catch {
-        importFailures.push(transactionId);
+        rejectedTransactionIds.push(transactionId);
       }
     }
   }
 
-  if (importFailures.length > 0) {
-    console.log('Import failed for the following transaction: ' + JSON.stringify(importFailures));
+  // 3) sends to backend
+  const importResults = await importSignatures(user.selectedOrganization, importInputs);
+
+  // 4) extract accepted transactions
+  const allTransactions = Array.from(transactionMap.value.values());
+  const acceptedTransactionIds: string[] = [];
+  for (const r of importResults) {
+    const tx = allTransactions.find((t: ITransactionFull) => t.id === r.id)!;
+    if (r.error) {
+      console.log("Import failed for " + tx.transactionId);
+      console.log("error=" + r.error)
+      rejectedTransactionIds.push(tx.transactionId);
+    } else {
+      acceptedTransactionIds.push(tx.transactionId);
+    }
+  }
+
+  // 5) User feedback
+  const totalCount = candidatesByTX.size
+  const rejectedCount = rejectedTransactionIds.length;
+  const acceptedCount = acceptedTransactionIds.length;
+  if (rejectedCount > 0) {
+    if (acceptedCount === 0) {
+      if (rejectedCount === 1) {
+        toast.error("Import of transaction " + rejectedTransactionIds[0] + " has failed");
+      } else {
+        toast.error("Import of all " + rejectedCount + " transactions has failed")
+      }
+    } else {
+      toast.warning(acceptedCount + " of " + totalCount + " transactions have been imported")
+    }
+  } else {
+    if (acceptedCount == 1) {
+      const transactionId = acceptedTransactionIds[0]
+      toast.success("Transaction " + transactionId + " has been imported");
+    } else {
+      toast.success("All " + acceptedCount + " transactions have been imported");
+    }
   }
 };
 
