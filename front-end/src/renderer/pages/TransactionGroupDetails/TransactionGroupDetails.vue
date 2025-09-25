@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { IGroup } from '@renderer/services/organization';
-import { type IGroupItem, TransactionStatus } from '@shared/interfaces';
+import type { IGroup, IGroupItem } from '@renderer/services/organization';
+import { TransactionStatus } from '@shared/interfaces';
 
 import { computed, onBeforeMount, ref, watch, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -540,7 +540,7 @@ watchEffect(() => {
                                     loading-text="Signing..."
                                     type="button"
                                     color="primary"
-                                    @click.prevent="handleSignGroupItem(groupItem as IGroupItem)"
+                                    @click.prevent="handleSignGroupItem(groupItem)"
                                     :data-testid="`sign-group-item-${index}`"
                                     :disabled="
                                       groupItem.transaction.status !==
