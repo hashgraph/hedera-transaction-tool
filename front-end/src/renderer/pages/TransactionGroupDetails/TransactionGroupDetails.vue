@@ -141,10 +141,12 @@ async function handleFetchGroup(id: string | number) {
             item.transaction.status !== TransactionStatus.CANCELED &&
             item.transaction.status !== TransactionStatus.EXPIRED
           ) {
-            publicKeysRequiredToSign.value =
-              publicKeysRequiredToSign.value.concat(usersPublicKeys);
+            publicKeysRequiredToSign.value = publicKeysRequiredToSign.value.concat(usersPublicKeys);
           }
         }
+        // console.log('handleFetchGroup --------------------------------');
+        // console.log('publicKeysRequiredToSign: ', JSON.stringify(publicKeysRequiredToSign.value));
+        // console.log('unsignedSignersToCheck: ', JSON.stringify(unsignedSignersToCheck.value));
       }
     } catch (error) {
       router.back();
@@ -467,8 +469,8 @@ watchEffect(() => {
                   <table class="table-custom">
                     <thead>
                       <tr>
-                        <th v-if="route.query.previousTab" class="ps-3 pe-1"></th>
-                        <th :class="route.query.previousTab ? 'ps-1' : ''">
+                        <th></th>
+                        <th>
                           <div>
                             <span>Transaction ID</span>
                           </div>
@@ -493,22 +495,9 @@ watchEffect(() => {
                         <Transition name="fade" mode="out-in">
                           <template v-if="groupItem">
                             <tr>
-                              <td
-                                v-if="
-                                  route.query &&
-                                  route.query.previousTab &&
-                                  groupItem.transaction.status
-                                "
-                                class="pe-0 ps-3"
-                              >
+                              <td class="pe-0 ps-3">
                                 <span
-                                  v-if="
-                                    (route.query.previousTab !== 'inProgress' &&
-                                      unsignedSignersToCheck[groupItem.transaction.id] &&
-                                      unsignedSignersToCheck[groupItem.transaction.id].length ===
-                                        0) ||
-                                    route.query.previousTab === 'inProgress'
-                                  "
+                                  v-if="groupItem.transaction.status"
                                   data-bs-toggle="tooltip"
                                   data-bs-custom-class="wide-tooltip"
                                   data-bs-trigger="hover"
@@ -519,12 +508,7 @@ watchEffect(() => {
                                   :class="statusIconClass(groupItem.transaction.status)"
                                 ></span>
                               </td>
-                              <td
-                                data-testid="td-group-transaction-id"
-                                :class="
-                                  Object.keys(unsignedSignersToCheck).length > 0 ? 'ps-2 pe-0' : ''
-                                "
-                              >
+                              <td data-testid="td-group-transaction-id">
                                 {{ groupItem.transaction.transactionId }}
                               </td>
                               <td>
