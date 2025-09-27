@@ -26,7 +26,7 @@ import {
   redirectToDetails,
   redirectToGroupDetails,
   isLoggedInOrganization,
-  getDateStringExtended,
+  getDateStringExtended, getTransactionGroupUpdatedAt,
 } from '@renderer/utils';
 import {
   getTransactionDateExtended,
@@ -61,7 +61,7 @@ const transactions = ref<
     }[]
   >
 >(new Map());
-const groups = ref<IGroup[]>([]);
+const groups = ref<Map<number, IGroup[]>>(new Map());
 const notifiedTransactionIds = ref<number[]>([]);
 const totalItems = ref(0);
 const currentPage = ref(1);
@@ -186,11 +186,11 @@ async function fetchTransactions() {
     setNotifiedTransactions();
 
     if (groupIds.length > 0) {
-      const fetchedGroups: IGroup[] = [];
+      const fetchedGroups: Map<number, IGroup[]> = new Map();
       for (const id of groupIds) {
         if (user.selectedOrganization?.serverUrl) {
           const group = await getApiGroupById(user.selectedOrganization.serverUrl, id);
-          fetchedGroups.push(group);
+          fetchedGroups.set(id, group);
         }
       }
       groups.value = fetchedGroups;
@@ -364,11 +364,25 @@ watch(
                   <td>
                     <i class="bi bi-stack" />
                   </td>
-                  <td>{{ groups[group[0] - 1]?.description || groups.find((g: Record<any, any>) => g.id === group[0])?.description }}</td>
+                  <td>{{ groups.get(group[0])?.description }}</td>
                   <td>
                     {{
                       group[1][0].transaction instanceof Transaction
                         ? getTransactionDateExtended(group[1][0].transaction)
+                        : 'N/A'
+                    }}
+                  </td>
+                  <td>
+                    {{
+                      groups.get(group[0])
+                        ? getDateStringExtended(getTransactionGroupUpdatedAt(groups.get(group[0])))
+                        : 'N/A'
+                    }}
+                  </td>
+                  <td>
+                    {{
+                      groups.get(group[0])
+                        ? getDateStringExtended(getTransactionGroupUpdatedAt(groups.get(group[0])))
                         : 'N/A'
                     }}
                   </td>
