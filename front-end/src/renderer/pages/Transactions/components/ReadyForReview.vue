@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { IGroup, ITransaction } from '@shared/interfaces';
 
-import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
+import { computed, onBeforeMount, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 
 import { Transaction } from '@hashgraph/sdk';
 
@@ -26,6 +26,7 @@ import {
   redirectToDetails,
   redirectToGroupDetails,
   isLoggedInOrganization,
+  getDateStringExtended, getTransactionGroupUpdatedAt,
 } from '@renderer/utils';
 import {
   getTransactionDateExtended,
@@ -60,12 +61,15 @@ const transactions = ref<
     }[]
   >
 >(new Map());
-const groups = ref<IGroup[]>([]);
+const groups = ref<Map<number, IGroup[]>>(new Map());
 const notifiedTransactionIds = ref<number[]>([]);
 const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
 const isLoading = ref(true);
+const contextMenuVisible = ref(false);
+const contextMenuX = ref(0);
+const contextMenuY = ref(0);
 
 const sort = reactive<{
   field: keyof ITransaction;
@@ -182,11 +186,11 @@ async function fetchTransactions() {
     setNotifiedTransactions();
 
     if (groupIds.length > 0) {
-      const fetchedGroups: IGroup[] = [];
+      const fetchedGroups: Map<number, IGroup[]> = new Map();
       for (const id of groupIds) {
         if (user.selectedOrganization?.serverUrl) {
           const group = await getApiGroupById(user.selectedOrganization.serverUrl, id);
-          fetchedGroups.push(group);
+          fetchedGroups.set(id, group);
         }
       }
       groups.value = fetchedGroups;
@@ -227,11 +231,29 @@ const subscribeToTransactionAction = () => {
   });
 };
 
+const showContextMenu = (event: MouseEvent) => {
+  contextMenuVisible.value = true;
+  contextMenuX.value = event.clientX;
+  contextMenuY.value = event.clientY;
+};
+
+const hideContextMenu = () => {
+  contextMenuVisible.value = false;
+};
+
 /* Hooks */
 onBeforeMount(async () => {
   subscribeToTransactionAction();
   setGetTransactionsFunction();
   await fetchTransactions();
+});
+
+onMounted(() => {
+  document.addEventListener('click', hideContextMenu);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', hideContextMenu);
 });
 
 /* Watchers */
@@ -263,7 +285,7 @@ watch(
         <table class="table-custom">
           <thead>
             <tr>
-              <th>
+              <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
                   @click="
@@ -281,7 +303,7 @@ watch(
                   ></i>
                 </div>
               </th>
-              <th>
+              <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
                   @click="handleSort('type', sort.field === 'type' ? getOppositeDirection() : 'asc')"
@@ -294,7 +316,7 @@ watch(
                   ></i>
                 </div>
               </th>
-              <th>
+              <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
                   @click="
@@ -312,6 +334,24 @@ watch(
                   ></i>
                 </div>
               </th>
+              <th @contextmenu.prevent="showContextMenu">
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
+                      'updatedAt',
+                      sort.field === 'updatedAt' ? getOpositeDirection() : 'asc',
+                    )
+                  "
+                >
+                  <span>Date Modified</span>
+                  <i
+                    v-if="sort.field === 'updatedAt'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
+                </div>
+              </th>
               <th class="text-center">
                 <span>Actions</span>
               </th>
@@ -324,11 +364,25 @@ watch(
                   <td>
                     <i class="bi bi-stack" />
                   </td>
-                  <td>{{ groups[group[0] - 1]?.description || groups.find((g: Record<any, any>) => g.id === group[0])?.description }}</td>
+                  <td>{{ groups.get(group[0])?.description }}</td>
                   <td>
                     {{
                       group[1][0].transaction instanceof Transaction
                         ? getTransactionDateExtended(group[1][0].transaction)
+                        : 'N/A'
+                    }}
+                  </td>
+                  <td>
+                    {{
+                      groups.get(group[0])
+                        ? getDateStringExtended(getTransactionGroupUpdatedAt(groups.get(group[0])))
+                        : 'N/A'
+                    }}
+                  </td>
+                  <td>
+                    {{
+                      groups.get(group[0])
+                        ? getDateStringExtended(getTransactionGroupUpdatedAt(groups.get(group[0])))
                         : 'N/A'
                     }}
                   </td>
@@ -367,6 +421,13 @@ watch(
                           : 'N/A'
                       }}
                     </td>
+                    <td :data-testid="`td-review-transaction-date-modified-${index}`">
+                      {{
+                        tx.transaction instanceof Transaction
+                          ? getDateStringExtended(new Date(tx.transactionRaw.updatedAt))
+                          : 'N/A'
+                      }}
+                    </td>
                     <td class="text-center">
                       <AppButton
                         @click="handleApprove(tx.transactionRaw.id)"
@@ -390,6 +451,18 @@ watch(
             </tr>
           </tfoot>
         </table>
+        <!-- Context menu -->
+        <div
+          v-if="contextMenuVisible"
+          class="dropdown"
+          :style="{ position: 'fixed', top: contextMenuY + 'px', left: contextMenuX + 'px', zIndex: 1000 }"
+          @click.stop
+        >
+          <ul class="dropdown-menu show mt-3">
+            <li class="dropdown-item cursor-pointer" @click="handleSort('createdAt', 'desc'); hideContextMenu()">Sort by Newest</li>
+            <li class="dropdown-item cursor-pointer" @click="handleSort('createdAt', 'asc'); hideContextMenu()">Sort by Oldest</li>
+          </ul>
+        </div>
       </template>
       <template v-else>
         <div class="flex-column-100 flex-centered">
