@@ -118,7 +118,6 @@ export class Transaction {
   @Column({ nullable: true })
   executedAt?: Date;
 
-  @ApiHideProperty()
   @UpdateDateColumn()
   updatedAt: Date;
 
