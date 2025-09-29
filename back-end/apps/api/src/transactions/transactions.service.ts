@@ -491,7 +491,7 @@ export class TransactionsService {
         results.add({
           id,
           error:
-            error instanceof BadRequestException
+            (error instanceof BadRequestException || error instanceof UnauthorizedException)
               ? error.message
               : 'An unexpected error occurred while importing the signatures',
         });
