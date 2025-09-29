@@ -446,7 +446,11 @@ export class TransactionsService {
   ): Promise<SignatureImportResultDto[]> {
     const results = new Set<SignatureImportResultDto>();
     for (const { id, signatureMap: map } of dto) {
-      const transaction = await this.entityManager.findOneBy(Transaction, { id });
+      const transaction = await this.repo.findOne({
+        where:  { id },
+        relations: ['creatorKey', 'approvers', 'signers', 'observers'], // Required by verifyAccess()
+      });
+
       try {
         /* Verify that the transaction exists and access is verified */
         if (!transaction || !(await this.verifyAccess(transaction, user))) {
