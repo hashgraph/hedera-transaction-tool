@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import type { IGroup } from '@renderer/services/organization';
-import { TransactionStatus } from '@shared/interfaces';
+import {
+  generateTransactionExportContent, generateTransactionExportFileName,
+  getTransactionById,
+  type IGroup,
+} from '@renderer/services/organization';
+import { type IGroupItem, type ITransactionFull, TransactionStatus } from '@shared/interfaces';
 
 import { computed, onBeforeMount, ref, watch, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -325,45 +329,30 @@ const handleExportGroup = async () => {
   if (group.value != undefined) {
     const zip = new JSZip(); // Prepare a new ZIP archive
 
-    for (const item of group.value.groupItems) {
-      // create .tx file contents
-      const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
-      const tx = Transaction.fromBytes(transactionBytes);
-      const signedBytes = (await tx.sign(privateKey)).toBytes();
+    for (const item of group.value.groupItems as IGroupItem[]) {
+      const orgTransaction: ITransactionFull = await getTransactionById(
+        user.selectedOrganization?.serverUrl || '',
+        Number(item.transactionId),
+      );
 
-      // Use TTv1 file name format:  `${epochSeconds}_${accountId}_${hash}.tx`
-      const validStart = tx.transactionId!.validStart;
-      const accountId = tx.transactionId!.accountId!.toString();
-      const hash = javaFormatArrayHashCode(transactionBytes);
-      const baseName = `${validStart!.seconds}_${accountId}_${hash}`;
+      const baseName = generateTransactionExportFileName(orgTransaction)
+      const { signedBytes, jsonContent } = await generateTransactionExportContent(
+        orgTransaction,
+        privateKey,
+      );
 
-      const filePath = `${baseName}.tx`;
-      zip.file(filePath, signedBytes); // Add .tx file content to ZIP
-
-      // create .txt file contents
-      const author = item.transaction.creatorEmail; // TODO: find out why this is undefined
-      const contents = item.transaction.description || '';
-      const timestamp = new Date(item.transaction.createdAt);
-      const formattedTimestamp = format(timestamp, 'yyyy-MM-dd HH:mm:ss');
-
-      const exportJson = JSON.stringify({
-        Author: author,
-        Contents: contents,
-        Timestamp: formattedTimestamp,
-      });
-
-      const txtFilePath = `${baseName}.txt`;
-      zip.file(txtFilePath, exportJson); // Add .txt  file content to ZIP
+      zip.file(`${baseName}.tx`, signedBytes); // Add .tx file content to ZIP
+      zip.file(`${baseName}.txt`, jsonContent); // Add .txt  file content to ZIP
     }
     // Generate the ZIP file in-memory as a Uint8Array
     const zipContent = await zip.generateAsync({ type: 'uint8array' });
 
     // Generate the ZIP file name
-    const baseName = `${group.value.description.substring(0, 25) || 'transaction-group'}`;
+    const zipBaseName = `${group.value.description.substring(0, 25) || 'transaction-group'}`;
 
     // Save the ZIP file to disk
     const { filePath, canceled } = await showSaveDialog(
-      `${baseName}.zip`,
+      `${zipBaseName}.zip`,
       'Export transaction group',
       'Export',
       [{ name: 'Transaction Tool v1 ZIP archive', extensions: ['.zip'] }],
@@ -375,7 +364,6 @@ const handleExportGroup = async () => {
 
     // write the zip file to disk
     await saveFileToPath(zipContent, filePath);
-    // console.log(`ZIP file created at: ${filePath}`);
 
     toast.success('Transaction exported successfully');
   }
