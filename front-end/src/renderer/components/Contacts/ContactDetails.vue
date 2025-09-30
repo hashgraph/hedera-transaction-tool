@@ -17,7 +17,7 @@ import { signUp } from '@renderer/services/organization';
 
 import {
   extractIdentifier,
-  formatPublickeyContactList,
+  formatPublicKeyContactList,
   getErrorMessage,
   getPublicKeyMapping,
   isLoggedInOrganization,
@@ -139,7 +139,7 @@ const handleContactChange = async () => {
 const handleFetchMapping = async () => {
   const contactPublicKeys = props.contact.userKeys.map(key => key.publicKey);
   const formatPromises = contactPublicKeys.map(async key => {
-    return { [key]: await formatPublickeyContactList(key) };
+    return { [key]: await formatPublicKeyContactList(key) };
   });
 
   const results: Record<string, string>[] = await Promise.all(formatPromises);

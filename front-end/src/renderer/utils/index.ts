@@ -260,7 +260,7 @@ export const splitMultipleAccounts = (input: string, client: Client): string[] =
   return result;
 };
 
-export const formatPublickey = async (publicKey: string) => {
+export const formatPublicKey = async (publicKey: string) => {
   const mapping = await getPublicKeyMapping(publicKey);
   if (mapping && mapping.nickname) {
     return `${mapping.nickname} (${mapping.public_key})`;
@@ -290,7 +290,7 @@ export const findIdentifier = async (publicKey: string) => {
   return null;
 };
 
-export const formatPublickeyContactList = async (publicKey: string) => {
+export const formatPublicKeyContactList = async (publicKey: string) => {
   const mapping = await getPublicKeyMapping(publicKey);
   if (mapping) {
     return `${mapping.nickname} (${mapping.public_key})`;

@@ -1,6 +1,12 @@
 import { mockDeep } from 'jest-mock-extended';
 import { EntityManager } from 'typeorm';
-import { KeyList, AccountCreateTransaction, PrivateKey } from '@hashgraph/sdk';
+import {
+  KeyList,
+  AccountCreateTransaction,
+  PrivateKey,
+  Transaction as SDKTransaction,
+  TransactionId, AccountId,
+} from '@hashgraph/sdk';
 
 import { MirrorNodeService, computeSignatureKey, flattenKeyList } from '@app/common';
 
@@ -16,7 +22,10 @@ describe('keysRequiredToSign', () => {
   beforeEach(() => {
     jest.resetAllMocks();
 
-    const accountCreateTx = new AccountCreateTransaction();
+    const accountCreateTx = new AccountCreateTransaction()
+      .setTransactionId(TransactionId.generate('0.0.2'))
+      .setNodeAccountIds([AccountId.fromString('0.0.3')])
+      .freeze();
     transaction = { id: 1, transactionBytes: accountCreateTx.toBytes(), network: 'testnet' };
   });
 
@@ -30,7 +39,6 @@ describe('keysRequiredToSign', () => {
     const keys = [{ id: 1, publicKey: pk.publicKey.toStringRaw() }];
     const keyList = new KeyList([pk.publicKey]);
 
-    entityManager.find.mockResolvedValueOnce([]);
     entityManager.find.mockResolvedValueOnce(keys);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(keyList);
     jest.mocked(flattenKeyList).mockReturnValueOnce([pk.publicKey]);
@@ -43,10 +51,9 @@ describe('keysRequiredToSign', () => {
     const pk = PrivateKey.generateED25519();
     const keys = [{ id: 1, publicKey: pk.publicKey.toStringRaw() }];
     const keyList = new KeyList([pk.publicKey]);
+    const signedTransaction = await SDKTransaction.fromBytes(transaction.transactionBytes).freeze().sign(pk);
+    transaction.transactionBytes = signedTransaction.toBytes();
 
-    entityManager.find.mockResolvedValueOnce([
-      { userKey: { id: 1, publicKey: pk.publicKey.toStringRaw() } },
-    ]);
     entityManager.find.mockResolvedValueOnce(keys);
     jest.mocked(computeSignatureKey).mockResolvedValueOnce(keyList);
     jest.mocked(flattenKeyList).mockReturnValueOnce([pk.publicKey]);

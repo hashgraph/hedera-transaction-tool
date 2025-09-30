@@ -446,15 +446,15 @@ export class TransactionsService {
   ): Promise<SignatureImportResultDto[]> {
     const results = new Set<SignatureImportResultDto>();
     for (const { id, signatureMap: map } of dto) {
-      const transaction = await this.repo.findOne({
-        where:  { id },
-        relations: ['creatorKey', 'approvers', 'signers', 'observers'], // Required by verifyAccess()
+      const transaction = await this.entityManager.findOne(Transaction, {
+        where: { id },
+        relations: ['creatorKey', 'approvers', 'signers', 'observers'],
       });
 
       try {
         /* Verify that the transaction exists and access is verified */
         if (!transaction || !(await this.verifyAccess(transaction, user))) {
-          throw new UnauthorizedException("You don't have permission to view this transaction");
+          throw new BadRequestException(ErrorCodes.TNF);
         }
 
         /* Checks if the transaction is canceled */
