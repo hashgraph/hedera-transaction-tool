@@ -1,6 +1,9 @@
-import type { ITransaction } from '@shared/interfaces';
+import type { ITransaction, ITransactionFull } from '@shared/interfaces';
 
-import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
+import { axiosWithCredentials, commonRequestHandler, hexToUint8Array } from '@renderer/utils';
+import { type PrivateKey, Transaction } from '@hashgraph/sdk';
+import { javaFormatArrayHashCode } from '@shared/utils/byteUtils.ts';
+import { format } from 'date-fns';
 
 export interface ApiGroupItem {
   seq: number;
@@ -67,4 +70,44 @@ export const getApiGroupById = async (serverUrl: string, id: number) => {
 
     return data;
   }, 'Failed to get transaction groups');
+};
+
+export const generateTransactionExportContent = async (
+  orgTransaction: ITransactionFull,
+  key: PrivateKey,
+) => {
+  const transactionBytes = hexToUint8Array(orgTransaction.transactionBytes);
+  const sdkTransaction = Transaction.fromBytes(transactionBytes);
+
+  // create .tx file contents
+  const signedBytes = (await sdkTransaction.sign(key)).toBytes();
+
+  // create .txt file contents
+  const author = orgTransaction.creatorEmail;
+  const contents = orgTransaction.description || '';
+  const timestamp = new Date(orgTransaction.createdAt);
+  const formattedTimestamp = format(timestamp, 'yyyy-MM-dd HH:mm:ss');
+
+  const jsonContent = JSON.stringify({
+    Author: author,
+    Contents: contents,
+    Timestamp: formattedTimestamp,
+  });
+
+  return Promise.resolve({
+    signedBytes,
+    jsonContent,
+  });
+};
+
+export const generateTransactionExportFileName = (orgTransaction: ITransactionFull) => {
+  const transactionBytes = hexToUint8Array(orgTransaction.transactionBytes);
+  const sdkTransaction = Transaction.fromBytes(transactionBytes);
+
+  // Use TTv1 file name format:  `${epochSeconds}_${accountId}_${hash}.tx`
+  const validStart = sdkTransaction!.transactionId!.validStart;
+  const accountId = sdkTransaction.transactionId!.accountId!.toString();
+  const hash = javaFormatArrayHashCode(transactionBytes);
+
+  return `${validStart!.seconds}_${accountId}_${hash}`;
 };
