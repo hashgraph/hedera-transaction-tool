@@ -74,36 +74,30 @@ const createTooltips = useCreateTooltips();
 const group = ref<IGroup | null>(null);
 const shouldApprove = ref(false);
 const isConfirmModalShown = ref(false);
-const publicKeysRequiredToSign = ref<string[] | null>([]);
-const showSignAll = ref(true);
+const publicKeysRequiredToSign = ref<string[]>([]);
 const disableSignAll = ref(false);
-const isSigning = ref(false);
+const isSigningAll = ref(false);
+const signingItemSeq = ref(-1);
 const isApproving = ref(false);
 const unsignedSignersToCheck = ref<Record<string, string[]>>({});
 const tooltipRef = ref<HTMLElement[]>([]);
 
 /* Computed */
-const tooltipText = computed(() => {
-  if (route.query.previousTab) {
-    const previousTab = route.query.previousTab;
-    if (
-      previousTab === 'readyToSign' ||
-      previousTab === 'transactionDetails' ||
-      previousTab === 'createGroup'
-    ) {
-      return 'You have successfully signed the transaction!';
-    } else if (previousTab === 'inProgress') {
-      return 'Transaction is signed by all required signers!';
-    }
-  }
-  return '';
+const showSignAll = computed(() => {
+  return (
+    isLoggedInOrganization(user.selectedOrganization) && publicKeysRequiredToSign.value.length > 0
+  );
 });
 
 /* Handlers */
 async function handleFetchGroup(id: string | number) {
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
     try {
+      const updatedPublicKeysRequiredToSign: string[] = [];
+      const updatedUnsignedSignersToCheck: Record<string, string[]> = {};
+
       group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
+      disableSignAll.value = false;
 
       if (group.value?.groupItems != undefined) {
         for (const item of group.value.groupItems) {
@@ -129,33 +123,33 @@ async function handleFetchGroup(id: string | number) {
             network.mirrorNodeBaseURL,
           );
 
-          if (route.query.previousTab) {
-            const previousTab = route.query.previousTab;
-            if (
-              (previousTab === 'readyToSign' ||
-                previousTab === 'transactionDetails' ||
-                previousTab === 'createGroup') &&
-              usersPublicKeys.length > 0
-            ) {
-              unsignedSignersToCheck.value = {
-                ...unsignedSignersToCheck.value,
-                [txId]: usersPublicKeys,
-              };
-            }
-          }
-
           if (
             item.transaction.status !== TransactionStatus.CANCELED &&
-            item.transaction.status !== TransactionStatus.EXPIRED
+            item.transaction.status !== TransactionStatus.EXPIRED &&
+            usersPublicKeys.length > 0
           ) {
-            publicKeysRequiredToSign.value =
-              publicKeysRequiredToSign.value!.concat(usersPublicKeys);
+            updatedUnsignedSignersToCheck[txId] = usersPublicKeys;
+            usersPublicKeys.forEach(key => {
+              if (!updatedPublicKeysRequiredToSign.includes(key)) {
+                updatedPublicKeysRequiredToSign.push(key);
+              }
+            });
           }
         }
       }
+
+      unsignedSignersToCheck.value = updatedUnsignedSignersToCheck;
+      publicKeysRequiredToSign.value = updatedPublicKeysRequiredToSign;
+
+      // bootstrap tooltips needs to be recreated when the items' status might have changed
+      // since their title is not updated
+      createTooltips();
     } catch (error) {
       router.back();
       throw error;
+    } finally {
+      signingItemSeq.value = -1;
+      isSigningAll.value = false;
     }
   } else {
     console.log('not logged into org');
@@ -170,7 +164,7 @@ const handleBack = () => {
   }
 };
 
-const handleSign = async (id: number) => {
+const handleDetails = async (id: number) => {
   const flatTransactions = group.value?.groupItems || [];
   const selectedTransactionIndex = flatTransactions.findIndex(t => t.transaction.id === id);
   const previousTransactionIds = flatTransactions
@@ -185,18 +179,67 @@ const handleSign = async (id: number) => {
   }
 };
 
-const handleSignGroup = async () => {
+const handleSignGroupItem = async (groupItem: IGroupItem) => {
   if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in organization');
   }
 
-  const personalPassword = getPassword(handleSignGroup, {
+  const personalPassword = getPassword(handleSignGroupItem.bind(null, groupItem), {
     subHeading: 'Enter your application password to decrypt your private key',
   });
   if (passwordModalOpened(personalPassword)) return;
 
   try {
-    isSigning.value = true;
+    signingItemSeq.value = groupItem.seq;
+    const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
+    const transaction = Transaction.fromBytes(transactionBytes);
+    if (
+      groupItem.transaction.status === TransactionStatus.CANCELED ||
+      groupItem.transaction.status === TransactionStatus.EXPIRED
+    ) {
+      return Promise.resolve();
+    }
+    const publicKeysRequired = await usersPublicRequiredToSign(
+      transaction,
+      user.selectedOrganization.userKeys,
+      network.mirrorNodeBaseURL,
+    );
+    const item: SignatureItem = {
+      publicKeys: publicKeysRequired,
+      transaction,
+      transactionId: groupItem.transaction.id,
+    };
+    const items: SignatureItem[] = [item];
+
+    await uploadSignatures(
+      user.personal.id,
+      personalPassword,
+      user.selectedOrganization,
+      undefined,
+      undefined,
+      undefined,
+      items,
+    );
+
+    toast.success('Transaction signed successfully');
+  } catch {
+    signingItemSeq.value = -1;
+    toast.error('Transaction not signed');
+  }
+};
+
+const handleSignAll = async () => {
+  if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in organization');
+  }
+
+  const personalPassword = getPassword(handleSignAll, {
+    subHeading: 'Enter your application password to decrypt your private key',
+  });
+  if (passwordModalOpened(personalPassword)) return;
+
+  try {
+    isSigningAll.value = true;
     const items: SignatureItem[] = [];
     if (group.value != undefined) {
       for (const groupItem of group.value.groupItems) {
@@ -231,11 +274,9 @@ const handleSignGroup = async () => {
       items,
     );
     toast.success('Transactions signed successfully');
-    showSignAll.value = true;
   } catch {
+    isSigningAll.value = false;
     toast.error('Transactions not signed');
-  } finally {
-    isSigning.value = false;
   }
 };
 
@@ -391,6 +432,62 @@ function setGetTransactionsFunction() {
   }, false);
 }
 
+function statusIconClass(status: TransactionStatus): string {
+  let result: string;
+  switch (status) {
+    case TransactionStatus.CANCELED:
+    case TransactionStatus.EXPIRED:
+      result = 'bi-x-lg text-danger';
+      break;
+    case TransactionStatus.REJECTED:
+    case TransactionStatus.FAILED:
+      result = 'bi-x-circle text-danger';
+      break;
+    case TransactionStatus.WAITING_FOR_EXECUTION:
+      result = 'bi-check-lg text-success';
+      break;
+    case TransactionStatus.EXECUTED:
+    case TransactionStatus.ARCHIVED:
+      result = 'bi-check-circle text-success';
+      break;
+    case TransactionStatus.WAITING_FOR_SIGNATURES:
+    default:
+      result = '';
+  }
+  return result;
+}
+
+function tooltipText(status: TransactionStatus): string {
+  let result: string;
+  switch (status) {
+    case TransactionStatus.CANCELED:
+      result = 'Transaction has been canceled';
+      break;
+    case TransactionStatus.EXPIRED:
+      result = 'Transaction has expired';
+      break;
+    case TransactionStatus.REJECTED:
+      result = 'Transaction has beed rejected by the network';
+      break;
+    case TransactionStatus.FAILED:
+      result = 'Transaction has failed';
+      break;
+    case TransactionStatus.WAITING_FOR_EXECUTION:
+      result = 'Transaction is signed by all required signers';
+      break;
+    case TransactionStatus.EXECUTED:
+      result = 'Transaction was succesfully executed';
+      break;
+    case TransactionStatus.ARCHIVED:
+      result = 'Transaction was archived';
+      break;
+    case TransactionStatus.WAITING_FOR_SIGNATURES:
+    default:
+      result = '';
+  }
+  return result;
+}
+
 /* Hooks */
 onBeforeMount(async () => {
   const id = router.currentRoute.value.params.id;
@@ -469,8 +566,8 @@ watchEffect(() => {
                   <table class="table-custom">
                     <thead>
                       <tr>
-                        <th v-if="route.query.previousTab" class="ps-3 pe-1"></th>
-                        <th :class="route.query.previousTab ? 'ps-1' : ''">
+                        <th></th>
+                        <th>
                           <div>
                             <span>Transaction ID</span>
                           </div>
@@ -495,39 +592,20 @@ watchEffect(() => {
                         <Transition name="fade" mode="out-in">
                           <template v-if="groupItem">
                             <tr>
-                              <td
-                                v-if="
-                                  route.query &&
-                                  route.query.previousTab &&
-                                  groupItem.transaction.status
-                                "
-                                class="pe-0 ps-3"
-                              >
+                              <td class="pe-0 ps-3">
                                 <span
-                                  v-if="
-                                    (route.query.previousTab !== 'inProgress' &&
-                                      unsignedSignersToCheck[groupItem.transaction.id] &&
-                                      unsignedSignersToCheck[groupItem.transaction.id].length ===
-                                        0) ||
-                                    (route.query.previousTab === 'inProgress' &&
-                                      groupItem.transaction.status ===
-                                        TransactionStatus.WAITING_FOR_EXECUTION)
-                                  "
+                                  v-if="groupItem.transaction.status"
                                   data-bs-toggle="tooltip"
                                   data-bs-custom-class="wide-tooltip"
                                   data-bs-trigger="hover"
                                   data-bs-placement="top"
-                                  :title="tooltipText"
+                                  :title="tooltipText(groupItem.transaction.status)"
                                   ref="tooltipRef"
-                                  class="bi bi-check-lg text-success"
+                                  class="bi fs-5"
+                                  :class="statusIconClass(groupItem.transaction.status)"
                                 ></span>
                               </td>
-                              <td
-                                data-testid="td-group-transaction-id"
-                                :class="
-                                  Object.keys(unsignedSignersToCheck).length > 0 ? 'ps-2 pe-0' : ''
-                                "
-                              >
+                              <td data-testid="td-group-transaction-id">
                                 {{ groupItem.transaction.transactionId }}
                               </td>
                               <td>
@@ -541,13 +619,30 @@ watchEffect(() => {
                                 }}
                               </td>
                               <td class="text-center">
-                                <AppButton
-                                  type="button"
-                                  color="secondary"
-                                  @click.prevent="handleSign(groupItem.transaction.id)"
-                                  :data-testid="`button-group-transaction-${index}`"
-                                  ><span>Details</span>
-                                </AppButton>
+                                <div class="d-flex justify-content-center flex-wrap gap-3">
+                                  <AppButton
+                                    :loading="signingItemSeq === groupItem.seq"
+                                    loading-text="Signing..."
+                                    type="button"
+                                    color="primary"
+                                    @click.prevent="handleSignGroupItem(groupItem)"
+                                    :data-testid="`sign-group-item-${index}`"
+                                    :disabled="
+                                      unsignedSignersToCheck[groupItem.transaction.id] ===
+                                        undefined ||
+                                      groupItem.transaction.status !==
+                                        TransactionStatus.WAITING_FOR_SIGNATURES
+                                    "
+                                    ><span>Sign</span>
+                                  </AppButton>
+                                  <AppButton
+                                    type="button"
+                                    color="secondary"
+                                    @click.prevent="handleDetails(groupItem.transaction.id)"
+                                    :data-testid="`button-group-transaction-${index}`"
+                                    ><span>Details</span>
+                                  </AppButton>
+                                </div>
                               </td>
                             </tr>
                           </template>
@@ -566,15 +661,7 @@ watchEffect(() => {
             </Transition>
 
             <Transition name="fade" mode="out-in">
-              <template
-                v-if="
-                  shouldApprove ||
-                  (isLoggedInOrganization(user.selectedOrganization) &&
-                    publicKeysRequiredToSign &&
-                    publicKeysRequiredToSign.length > 0 &&
-                    showSignAll)
-                "
-              >
+              <template v-if="shouldApprove || showSignAll">
                 <div class="d-flex gap-4 mt-5">
                   <!-- Approval Actions -->
                   <template v-if="shouldApprove">
@@ -599,21 +686,14 @@ watchEffect(() => {
                   </template>
 
                   <!-- Sign All Button -->
-                  <template
-                    v-if="
-                      isLoggedInOrganization(user.selectedOrganization) &&
-                      publicKeysRequiredToSign &&
-                      publicKeysRequiredToSign.length > 0 &&
-                      showSignAll
-                    "
-                  >
+                  <template v-if="showSignAll">
                     <AppButton
                       color="primary"
                       type="button"
-                      :loading="isSigning"
+                      :loading="isSigningAll"
                       loading-text="Signing..."
                       data-testid="button-sign-all-tx"
-                      @click="handleSignGroup"
+                      @click="handleSignAll"
                       :disabled="disableSignAll"
                       data-bs-toggle="tooltip"
                       data-bs-placement="top"
