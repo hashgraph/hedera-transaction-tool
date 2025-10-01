@@ -1,37 +1,41 @@
 <script setup lang="ts">
-import {
-  generateTransactionExportContent,
-  generateTransactionExportFileName,
-  getTransactionById,
-  type IGroup,
-} from '@renderer/services/organization';
-import { type IGroupItem, type ITransactionFull, TransactionStatus } from '@shared/interfaces';
+import type { IGroup } from '@renderer/services/organization';
+import type { IGroupItem, ITransactionFull } from '@shared/interfaces';
+import type { SignatureItem } from '@renderer/types';
 
 import { computed, onBeforeMount, ref, watch, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { Transaction } from '@hashgraph/sdk';
+import { useToast } from 'vue-toast-notification';
 
+import { Transaction } from '@hashgraph/sdk';
+import JSZip from 'jszip';
+
+import { TransactionStatus, TransactionTypeName } from '@shared/interfaces';
 import { historyTitle, TRANSACTION_ACTION } from '@shared/constants';
-import { TransactionTypeName } from '@shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
-import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
+import { areByteArraysEqual } from '@shared/utils/byteUtils';
+
 import {
+  generateTransactionExportContent,
+  generateTransactionExportFileName,
+  getTransactionById,
   getApiGroupById,
   getUserShouldApprove,
   sendApproverChoice,
   uploadSignatures,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
+import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
 
 import {
   getDateStringExtended,
@@ -50,10 +54,6 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
-import { type SignatureItem } from '@renderer/types';
-import { areByteArraysEqual } from '@shared/utils/byteUtils';
-import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
-import JSZip from 'jszip';
 
 /* Stores */
 const user = useUserStore();

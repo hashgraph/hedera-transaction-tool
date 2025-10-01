@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@shared/interfaces';
-import { TransactionStatus } from '@shared/interfaces';
+
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { encode } from 'msgpackr';
+import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toast-notification';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { encode } from 'msgpackr';
 
 import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
@@ -15,8 +17,6 @@ import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
-import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import {
@@ -52,6 +52,8 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
+
+import { TransactionStatus } from '@shared/interfaces';
 
 /* Types */
 type ActionButton =
