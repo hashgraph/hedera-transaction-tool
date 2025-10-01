@@ -31,7 +31,7 @@ async function handleImport() {
 <template>
   <AppButton
     color="primary"
-    data-testid="button-create-new"
+    data-testid="button-transaction-page-import"
     data-bs-toggle="dropdown"
     @click="handleImport"
   >
