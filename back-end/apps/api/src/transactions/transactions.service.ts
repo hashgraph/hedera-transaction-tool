@@ -70,7 +70,7 @@ export class TransactionsService {
   ) {}
 
   /* Get the transaction for the provided id in the DATABASE */
-  /* id can be number (ie internal id) or string (ie payerId@timestamp */
+  /* id can be number (ie internal id) or string (ie payerId@timestamp) */
   async getTransactionById(id: number|TransactionId): Promise<Transaction> {
     if (!id) return null;
 
@@ -469,7 +469,7 @@ export class TransactionsService {
         results.add({
           id,
           error:
-            (error instanceof BadRequestException || error instanceof UnauthorizedException)
+            (error instanceof BadRequestException)
               ? error.message
               : 'An unexpected error occurred while importing the signatures',
         });
@@ -588,7 +588,7 @@ export class TransactionsService {
   }
 
   /* Get the transaction with the provided id if user has access */
-  async getTransactionWithVerifiedAccess(transactionId: number|TransactionId, user: User) {
+  async getTransactionWithVerifiedAccess(transactionId: number | TransactionId, user: User) {
     const transaction = await this.getTransactionById(transactionId);
 
     await this.attachTransactionApprovers(transaction);

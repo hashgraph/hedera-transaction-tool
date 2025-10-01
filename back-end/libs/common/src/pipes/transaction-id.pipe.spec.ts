@@ -1,5 +1,6 @@
-import { TransactionIdPipe } from '@app/common/pipes/transaction-id.pipe';
 import { TransactionId } from '@hashgraph/sdk';
+
+import { TransactionIdPipe } from '@app/common/pipes/transaction-id.pipe';
 
 describe('TransactionIdPipe', () => {
   let pipe: TransactionIdPipe;

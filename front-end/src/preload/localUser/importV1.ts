@@ -1,6 +1,6 @@
-import type { V1ImportFilterResult } from '@shared/interfaces';
-
 import { ipcRenderer } from 'electron';
+
+import type { V1ImportFilterResult } from '@shared/interfaces';
 
 export default {
   importV1: {

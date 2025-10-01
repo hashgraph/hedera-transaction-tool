@@ -233,7 +233,7 @@ export const getUserShouldApprove = async (
 /* Get the count of the transactions to sign */
 export const getTransactionById = async (
   serverUrl: string,
-  id: number|TransactionId,
+  id: number | TransactionId,
 ): Promise<ITransactionFull> =>
   commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.get(`${serverUrl}/${controller}/${id.toString()}`, {
