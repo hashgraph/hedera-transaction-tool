@@ -77,8 +77,7 @@ const tooltipRef = ref<HTMLElement[]>([]);
 /* Computed */
 const showSignAll = computed(() => {
   return (
-    isLoggedInOrganization(user.selectedOrganization) &&
-    publicKeysRequiredToSign.value.length > 0
+    isLoggedInOrganization(user.selectedOrganization) && publicKeysRequiredToSign.value.length > 0
   );
 });
 
@@ -87,7 +86,7 @@ async function handleFetchGroup(id: string | number) {
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
     try {
       const updatedPublicKeysRequiredToSign: string[] = [];
-      const updatedUnsignedSignersToCheck: Record<string, string[]> = {}
+      const updatedUnsignedSignersToCheck: Record<string, string[]> = {};
 
       group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
       disableSignAll.value = false;
@@ -121,7 +120,7 @@ async function handleFetchGroup(id: string | number) {
             item.transaction.status !== TransactionStatus.EXPIRED &&
             usersPublicKeys.length > 0
           ) {
-            updatedUnsignedSignersToCheck[txId] = usersPublicKeys
+            updatedUnsignedSignersToCheck[txId] = usersPublicKeys;
             usersPublicKeys.forEach(key => {
               if (!updatedPublicKeysRequiredToSign.includes(key)) {
                 updatedPublicKeysRequiredToSign.push(key);
@@ -133,6 +132,10 @@ async function handleFetchGroup(id: string | number) {
 
       unsignedSignersToCheck.value = updatedUnsignedSignersToCheck;
       publicKeysRequiredToSign.value = updatedPublicKeysRequiredToSign;
+
+      // bootstrap tooltips needs to be recreated when the items' status might have changed
+      // since their title is not updated
+      createTooltips();
     } catch (error) {
       router.back();
       throw error;
