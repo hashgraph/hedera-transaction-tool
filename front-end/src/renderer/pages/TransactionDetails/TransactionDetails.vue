@@ -84,9 +84,7 @@ const transactionSpecificLabel = computed(() => {
 });
 
 const signersPublicKeys = computed(() => {
-  if (!orgTransaction.value || !orgTransaction.value.signers) return [];
-
-  return orgTransaction.value.signers.map(signer => signer.userKey.publicKey);
+  return [...sdkTransaction.value._signerPublicKeys];
 });
 
 const creator = computed(() => {
