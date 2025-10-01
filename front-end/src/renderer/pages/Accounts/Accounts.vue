@@ -18,7 +18,7 @@ import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
 import {
   extractIdentifier,
-  formatPublickey,
+  formatPublicKey,
   getAccountIdWithChecksum,
   getFormattedDateFromTimestamp,
   isUserLoggedIn,
@@ -200,7 +200,7 @@ watch(
   () => accountData.key.value,
   async newKey => {
     if (newKey instanceof PublicKey && true) {
-      formattedPublicKey.value = await formatPublickey(newKey.toStringRaw());
+      formattedPublicKey.value = await formatPublicKey(newKey.toStringRaw());
     }
   },
 );

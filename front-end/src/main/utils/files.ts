@@ -131,6 +131,26 @@ const extractUnzipperFile = (file: unzipper.File, dist: string, abortSignal?: Ab
   });
 }
 
+export const extractUnzipperFileToBuffer = (file: unzipper.File, abortSignal?: AbortSignal): Promise<Buffer> => {
+  return new Promise((resolve, reject) => {
+    const result: Buffer[] = [];
+    const stream = file.stream();
+    stream
+      .on('data', (d: Buffer) => {
+        if (abortSignal?.aborted) {
+          stream.destroy();
+          reject('File extraction aborted');
+        } else {
+          result.push(d);
+        }
+      })
+      .on('end', () => resolve(Buffer.concat(result)))
+      .on('error', reject);
+  });
+}
+
+
+
 /* Copy the file to directory with stream */
 export const copyFile = (filePath: string, fileDist: string, signal?: AbortSignal) => {
   return new Promise((resolve, reject) => {
