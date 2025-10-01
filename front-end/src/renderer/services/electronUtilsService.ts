@@ -84,20 +84,12 @@ export const showSaveDialog = async (
 /* Save a prename file */
 export const saveFileToPath = async (
   data: Uint8Array | string,
-  name: string,
-  title: string,
-  buttonLabel: string,
-  filters: FileFilter[],
-  message: string,
+  name: string
 ): Promise<void> => {
   try {
     return await window.electronAPI.local.utils.saveFileToPath(
       data,
-      name,
-      title,
-      buttonLabel,
-      filters,
-      message,
+      name
     );
   } catch {
     throw new Error('Failed to open the dialog');

@@ -1,29 +1,30 @@
 <script setup lang="ts">
 import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@shared/interfaces';
-import { TransactionStatus } from '@shared/interfaces';
+
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { format } from 'date-fns';
-import { encode } from 'msgpackr';
+import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toast-notification';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { encode } from 'msgpackr';
 
-import { areByteArraysEqual, javaFormatArrayHashCode } from '@shared/utils/byteUtils';
+import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
-import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import {
   archiveTransaction,
   cancelTransaction,
   executeTransaction,
+  generateTransactionExportContent,
+  generateTransactionExportFileName,
   getUserShouldApprove,
   remindSigners,
   sendApproverChoice,
@@ -51,6 +52,8 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
+
+import { TransactionStatus } from '@shared/interfaces';
 
 /* Types */
 type ActionButton =
@@ -513,7 +516,7 @@ const handleNext = () => {
 };
 
 const handleExport = async () => {
-  if (!props.sdkTransaction) {
+  if (!props.sdkTransaction || !props.organizationTransaction) {
     throw new Error('(BUG) Transaction is not available');
   }
 
@@ -527,24 +530,18 @@ const handleExport = async () => {
 
   // Load the last export format the user selected, if applicable
   const enabledFormats = EXPORT_FORMATS.filter(f => f.enabled);
-  const defaultFormat = getLastExportExtension() || (enabledFormats[0] || EXPORT_FORMATS[0]).extensions[0];
+  const defaultFormat =
+    getLastExportExtension() || (enabledFormats[0] || EXPORT_FORMATS[0]).extensions[0];
 
   // Move the default format to the top
-  enabledFormats.sort((a/*, b*/) => (a.extensions[0] === defaultFormat ? -1 : 1));
+  enabledFormats.sort((a /*, b*/) => (a.extensions[0] === defaultFormat ? -1 : 1));
+
+  // Generate the default base name for the file
+  const baseName = generateTransactionExportFileName(props.organizationTransaction);
 
   // Show the save dialog to the user, allowing them to choose the file name and location
-
-  // Continue to use the same format as TTv1, for now.
-  // The default format based on TTv1 is as follows:
-  // `${epochSeconds}_${accountId}_${hash}.tx`
-  const validStart = props.sdkTransaction.transactionId.validStart;
-  const accountId = props.sdkTransaction.transactionId.accountId.toString();
-
-  const hash = javaFormatArrayHashCode(props.sdkTransaction.toBytes());
-  const defaultName = `${validStart.seconds}_${accountId}_${hash}`;
-
   const { filePath, canceled } = await showSaveDialog(
-    `${defaultName || 'transaction'}`,
+    `${baseName || 'transaction'}`,
     'Export transaction',
     'Export',
     enabledFormats,
@@ -567,45 +564,27 @@ const handleExport = async () => {
     // TTv2 is the new format, which includes the entire transaction, comments, and any other
     // metadata that might be relevant.
     const bytes = encode(props.organizationTransaction);
-    await saveFileToPath(
-      bytes,
-      filePath,
-    );
+    await saveFileToPath(bytes, filePath);
 
     toast.success('Transaction exported successfully');
   } else if (ext === 'tx') {
-    // Remove all signatures, 'unfreeze' it, then set nodes. This gives us the 'base' transaction.
-    const mainTransaction = SDKTransaction.fromBytes(props.sdkTransaction.toBytes());
-
     if (user.publicKeys.length === 0) {
-      throw new Error('Exporting in the .tx format requires a signature. User must have at least one key pair to sign the transaction.');
+      throw new Error(
+        'Exporting in the .tx format requires a signature. User must have at least one key pair to sign the transaction.',
+      );
     }
     const publicKey = user.publicKeys[0]; // get the first key pair's public key
-
     const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
     const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
-    const bytes = (await mainTransaction.sign(privateKey)).toBytes();
-    await saveFileToPath(bytes, filePath);
-
-    // now create txt
-    const author = props.organizationTransaction.creatorEmail;
-    const contents = props.organizationTransaction.description || '';
-    const timestamp = new Date(props.organizationTransaction.createdAt);
-    const formattedTimestamp = format(timestamp, 'yyyy-MM-dd HH:mm:ss');
-
-    const exportJson = JSON.stringify({
-      Author: author,
-      Contents: contents,
-      Timestamp: formattedTimestamp,
-    });
-
-    const txtFilePath = filePath.replace(/\.[^/.]+$/, '.txt');
-
-    await saveFileToPath(
-      exportJson,
-      txtFilePath,
+    const { signedBytes, jsonContent } = await generateTransactionExportContent(
+      props.organizationTransaction,
+      privateKey,
     );
+
+    await saveFileToPath(signedBytes, filePath);
+    const txtFilePath = filePath.replace(/\.[^/.]+$/, '.txt');
+    await saveFileToPath(jsonContent, txtFilePath);
 
     // If the CSVA file is created, then TTv1 will attempt to recreate
     // each inner transaction value by value, not by bytes.
@@ -672,9 +651,9 @@ const handleAction = async (value: ActionButton) => {
   } else if (value === sign) {
     await handleSign();
   } else if (value === next) {
-    await handleNext();
+    handleNext();
   } else if (value === previous) {
-    await handlePrevious();
+    handlePrevious();
   } else if (value === cancel) {
     await handleCancel(true);
   } else if (value === archive) {
