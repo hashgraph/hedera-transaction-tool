@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
-  generateTransactionExportContent, generateTransactionExportFileName,
+  generateTransactionExportContent,
+  generateTransactionExportFileName,
   getTransactionById,
   type IGroup,
 } from '@renderer/services/organization';
@@ -49,10 +50,9 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
-import { SignatureItem } from '@renderer/types';
-import { areByteArraysEqual, javaFormatArrayHashCode } from '@shared/utils/byteUtils';
+import { type SignatureItem } from '@renderer/types';
+import { areByteArraysEqual } from '@shared/utils/byteUtils';
 import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
-import { format } from 'date-fns';
 import JSZip from 'jszip';
 
 /* Stores */
@@ -225,9 +225,9 @@ const handleSignGroup = async () => {
       user.personal.id,
       personalPassword,
       user.selectedOrganization,
-      null,
-      null,
-      null,
+      undefined,
+      undefined,
+      undefined,
       items,
     );
     toast.success('Transactions signed successfully');
@@ -291,7 +291,7 @@ const handleApproveAll = async (approved: boolean, showModal?: boolean) => {
       toast.success(`Transactions ${approved ? 'approved' : 'rejected'} successfully`);
 
       if (!approved) {
-        router.push({
+        await router.push({
           name: 'transactions',
           query: {
             tab: historyTitle,
@@ -335,12 +335,12 @@ const handleExportGroup = async () => {
         Number(item.transactionId),
       );
 
-      const baseName = generateTransactionExportFileName(orgTransaction)
+      const baseName = generateTransactionExportFileName(orgTransaction);
 
       const { signedBytes, jsonContent } = await generateTransactionExportContent(
         orgTransaction,
         privateKey,
-        group.value.description
+        group.value.description,
       );
 
       zip.file(`${baseName}.tx`, signedBytes); // Add .tx file content to ZIP
