@@ -15,7 +15,7 @@ import {
   isPublicKey,
   decodeKeyList,
   encodeKey,
-  formatPublickey,
+  formatPublicKey,
   extractIdentifier,
 } from '@renderer/utils';
 import * as ush from '@renderer/utils/userStoreHelpers';
@@ -144,7 +144,7 @@ watch(
   () => props.modelKey,
   async newKey => {
     if (newKey && newKey instanceof PublicKey && true) {
-      const formatted = await formatPublickey(newKey.toStringRaw());
+      const formatted = await formatPublicKey(newKey.toStringRaw());
       formattedKey.value = formatted;
       identifier.value = extractIdentifier(formatted)?.identifier;
     }

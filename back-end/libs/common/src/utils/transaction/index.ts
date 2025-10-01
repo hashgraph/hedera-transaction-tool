@@ -8,7 +8,7 @@ import {
   computeSignatureKey,
   flattenKeyList,
 } from '@app/common';
-import { User, Transaction, UserKey, TransactionSigner } from '@entities';
+import { User, Transaction, UserKey } from '@entities';
 
 export const keysRequiredToSign = async (
   transaction: Transaction,
@@ -18,30 +18,18 @@ export const keysRequiredToSign = async (
 ): Promise<UserKey[]> => {
   if (!transaction) return [];
 
-  const signatures = await entityManager.find(TransactionSigner, {
-    where: {
-      transaction: {
-        id: transaction.id,
-      },
-    },
-    relations: {
-      userKey: true,
-    },
-    withDeleted: true,
-  });
-
-  // list of just public keys that have already signed the transaction
-  const signerKeys = signatures.map(s => s.userKey.publicKey);
-
   /* Deserialize the transaction */
   const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
+
+  // list of just public keys that have already signed the transaction
+  const signerKeys = sdkTransaction._signerPublicKeys;
 
   const signature = await computeSignatureKey(sdkTransaction, mirrorNodeService, transaction.mirrorNetwork);
   // flatten the key list to an array of public keys
   // and filter out any keys that have already signed the transaction
   const flatPublicKeys = flattenKeyList(signature)
     .map(pk => pk.toStringRaw())
-    .filter(pk => !signerKeys.includes(pk));
+    .filter(pk => !signerKeys.has(pk));
 
   if (flatPublicKeys.length === 0) return [];
 

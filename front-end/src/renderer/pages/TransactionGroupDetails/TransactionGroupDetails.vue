@@ -1,32 +1,41 @@
 <script setup lang="ts">
-import type { IGroup, IGroupItem } from '@renderer/services/organization';
-import { TransactionStatus } from '@shared/interfaces';
+import type { IGroup } from '@renderer/services/organization';
+import type { IGroupItem, ITransactionFull } from '@shared/interfaces';
+import type { SignatureItem } from '@renderer/types';
 
 import { computed, onBeforeMount, ref, watch, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { Transaction } from '@hashgraph/sdk';
+import { useToast } from 'vue-toast-notification';
 
+import { Transaction } from '@hashgraph/sdk';
+import JSZip from 'jszip';
+
+import { TransactionStatus, TransactionTypeName } from '@shared/interfaces';
 import { historyTitle, TRANSACTION_ACTION } from '@shared/constants';
-import { TransactionTypeName } from '@shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
-import { useToast } from 'vue-toast-notification';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
+import { areByteArraysEqual } from '@shared/utils/byteUtils';
+
 import {
+  generateTransactionExportContent,
+  generateTransactionExportFileName,
+  getTransactionById,
   getApiGroupById,
   getUserShouldApprove,
   sendApproverChoice,
   uploadSignatures,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
+import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
 
 import {
   getDateStringExtended,
@@ -37,6 +46,7 @@ import {
   isLoggedInOrganization,
   isUserLoggedIn,
   usersPublicRequiredToSign,
+  assertUserLoggedIn,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -44,8 +54,6 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
-import { type SignatureItem } from '@renderer/types';
-import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
 /* Stores */
 const user = useUserStore();
@@ -148,7 +156,6 @@ async function handleFetchGroup(id: string | number) {
   }
 }
 
-/* Handlers */
 const handleBack = () => {
   if (!history.state?.back?.startsWith('/transactions')) {
     router.push({ name: 'transactions' });
@@ -340,6 +347,72 @@ const handleApproveAll = async (approved: boolean, showModal?: boolean) => {
   await callback();
 };
 
+const handleExportGroup = async () => {
+  // This currently only exports to TTv1 format
+  assertUserLoggedIn(user.personal);
+
+  /* Verifies the user has entered his password */
+  const personalPassword = getPassword(handleExportGroup, {
+    subHeading: 'Enter your application password to export the transaction group',
+  });
+  if (passwordModalOpened(personalPassword)) return;
+
+  if (user.publicKeys.length === 0) {
+    throw new Error(
+      'Exporting in the .tx format requires a signature. User must have at least one key pair to sign the transaction.',
+    );
+  }
+  const publicKey = user.publicKeys[0]; // get the first key pair's public key
+
+  const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
+  const privateKey = getPrivateKey(publicKey, privateKeyRaw);
+
+  if (group.value != undefined) {
+    const zip = new JSZip(); // Prepare a new ZIP archive
+
+    for (const item of group.value.groupItems as IGroupItem[]) {
+      const orgTransaction: ITransactionFull = await getTransactionById(
+        user.selectedOrganization?.serverUrl || '',
+        Number(item.transactionId),
+      );
+
+      const baseName = generateTransactionExportFileName(orgTransaction);
+
+      const { signedBytes, jsonContent } = await generateTransactionExportContent(
+        orgTransaction,
+        privateKey,
+        group.value.description,
+      );
+
+      zip.file(`${baseName}.tx`, signedBytes); // Add .tx file content to ZIP
+      zip.file(`${baseName}.txt`, jsonContent); // Add .txt  file content to ZIP
+    }
+    // Generate the ZIP file in-memory as a Uint8Array
+    const zipContent = await zip.generateAsync({ type: 'uint8array' });
+
+    // Generate the ZIP file name
+    const zipBaseName = `${group.value.description.substring(0, 25) || 'transaction-group'}`;
+
+    // Save the ZIP file to disk
+    const { filePath, canceled } = await showSaveDialog(
+      `${zipBaseName}.zip`,
+      'Export transaction group',
+      'Export',
+      [{ name: 'Transaction Tool v1 ZIP archive', extensions: ['.zip'] }],
+      'Select the file to export the transaction group to:',
+    );
+    if (canceled || !filePath) {
+      return;
+    }
+
+    // write the zip file to disk
+    await saveFileToPath(zipContent, filePath);
+
+    toast.success('Transaction exported successfully');
+  }
+};
+
+/* Functions */
 const subscribeToTransactionAction = () => {
   if (!user.selectedOrganization?.serverUrl) return;
   ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
@@ -450,12 +523,22 @@ watchEffect(() => {
 <template>
   <div class="p-5">
     <div class="flex-column-100">
-      <div class="d-flex align-items-center">
-        <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
-          <i class="bi bi-arrow-left"></i>
-        </AppButton>
+      <div class="flex-centered justify-content-between flex-wrap gap-4">
+        <div class="d-flex align-items-center">
+          <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
+            <i class="bi bi-arrow-left"></i>
+          </AppButton>
 
-        <h2 class="text-title text-bold">Transaction Group Details</h2>
+          <h2 class="text-title text-bold">Transaction Group Details</h2>
+        </div>
+
+        <AppButton
+          type="button"
+          color="secondary"
+          @click.prevent="handleExportGroup"
+          data-testid="button-export-group"
+          ><span>Export</span>
+        </AppButton>
       </div>
 
       <Transition name="fade" mode="out-in">

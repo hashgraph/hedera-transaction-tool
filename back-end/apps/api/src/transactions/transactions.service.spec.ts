@@ -659,11 +659,14 @@ describe('TransactionsService', () => {
       };
       await sdkTransaction.sign(privateKey);
 
-      entityManager.findOneBy.mockResolvedValue(transaction);
+      entityManager.findOne.mockResolvedValue(transaction);
 
       jest.mocked(safe).mockReturnValue({
         data: [privateKey.publicKey],
       });
+
+      // Any value will do here, this just shows the user has access to the transaction
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
 
       entityManager.update.mockResolvedValue(undefined);
 
@@ -686,7 +689,7 @@ describe('TransactionsService', () => {
     });
 
     it('should return error if transaction not found', async () => {
-      entityManager.findOneBy.mockResolvedValue(null);
+      entityManager.findOne.mockResolvedValue(null);
 
       const result = await service.importSignatures(
         [{ id: transactionId, signatureMap: new SignatureMap() }],
@@ -704,7 +707,7 @@ describe('TransactionsService', () => {
       };
       await sdkTransaction.sign(privateKey);
 
-      entityManager.findOneBy.mockResolvedValue(transaction);
+      entityManager.findOne.mockResolvedValue(transaction);
 
       const result = await service.importSignatures(
         [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
@@ -722,7 +725,11 @@ describe('TransactionsService', () => {
       };
       await sdkTransaction.sign(privateKey);
 
-      entityManager.findOneBy.mockResolvedValue(transaction);
+      entityManager.findOne.mockResolvedValue(transaction);
+
+      // Any value will do here, this just shows the user has access to the transaction
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+
       jest.mocked(isExpired).mockReturnValue(true);
 
       const result = await service.importSignatures(
@@ -743,7 +750,10 @@ describe('TransactionsService', () => {
         mirrorNetwork: 'testnet',
       };
       await sdkTransaction.sign(privateKey);
-      entityManager.findOneBy.mockResolvedValue(transaction);
+      entityManager.findOne.mockResolvedValue(transaction);
+
+      // Any value will do here, this just shows the user has access to the transaction
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
 
       jest.mocked(safe).mockImplementationOnce(() => {
         return { error: 'error' };
@@ -767,7 +777,10 @@ describe('TransactionsService', () => {
         mirrorNetwork: 'testnet',
       };
       await sdkTransaction.sign(privateKey);
-      entityManager.findOneBy.mockResolvedValue(transaction);
+      entityManager.findOne.mockResolvedValue(transaction);
+
+      // Any value will do here, this just shows the user has access to the transaction
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
 
       jest.mocked(safe).mockReturnValue({
         data: [privateKey.publicKey],

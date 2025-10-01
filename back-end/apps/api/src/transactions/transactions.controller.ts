@@ -17,6 +17,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { TransactionId } from '@hashgraph/sdk';
+
 import {
   Filtering,
   FilteringParams,
@@ -47,6 +49,7 @@ import {
   TransactionToSignDto,
   UploadSignatureMapDto,
 } from './dto';
+import { TransactionIdPipe } from '@app/common/pipes/transaction-id.pipe';
 
 @ApiTags('Transactions')
 @Controller('transactions')
@@ -291,7 +294,7 @@ export class TransactionsController {
   @Serialize(TransactionFullDto)
   async getTransaction(
     @GetUser() user,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', TransactionIdPipe) id: number | TransactionId,
   ): Promise<Transaction> {
     return this.transactionsService.getTransactionWithVerifiedAccess(id, user);
   }

@@ -2,7 +2,7 @@ import { BadRequestException, Inject, Injectable, UnauthorizedException } from '
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 
-import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { PublicKey, Transaction as SDKTransaction, TransactionId } from '@hashgraph/sdk';
 
 import {
   Repository,
@@ -70,11 +70,12 @@ export class TransactionsService {
   ) {}
 
   /* Get the transaction for the provided id in the DATABASE */
-  async getTransactionById(id: number): Promise<Transaction> {
+  /* id can be number (ie internal id) or string (ie payerId@timestamp) */
+  async getTransactionById(id: number|TransactionId): Promise<Transaction> {
     if (!id) return null;
 
     const transaction = await this.repo.findOne({
-      where: { id },
+      where:  typeof id == "number" ? { id } : { transactionId: id.toString() },
       relations: ['creatorKey', 'creatorKey.user', 'observers', 'comments', 'groupItem'],
     });
 
@@ -419,10 +420,16 @@ export class TransactionsService {
   ): Promise<SignatureImportResultDto[]> {
     const results = new Set<SignatureImportResultDto>();
     for (const { id, signatureMap: map } of dto) {
-      const transaction = await this.entityManager.findOneBy(Transaction, { id });
+      const transaction = await this.entityManager.findOne(Transaction, {
+        where: { id },
+        relations: ['creatorKey', 'approvers', 'signers', 'observers'],
+      });
+
       try {
-        /* Verify that the transaction exists */
-        if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
+        /* Verify that the transaction exists and access is verified */
+        if (!transaction || !(await this.verifyAccess(transaction, user))) {
+          throw new BadRequestException(ErrorCodes.TNF);
+        }
 
         /* Checks if the transaction is canceled */
         if (
@@ -442,9 +449,6 @@ export class TransactionsService {
         if (error) throw new BadRequestException(ErrorCodes.ISNMPN);
 
         for (const publicKey of publicKeys) {
-          const userKey = user.keys.find(key => key.publicKey === publicKey.toStringRaw());
-          if (!userKey) throw new BadRequestException(ErrorCodes.PNY);
-
           sdkTransaction.addSignature(publicKey, map);
         }
 
@@ -465,7 +469,7 @@ export class TransactionsService {
         results.add({
           id,
           error:
-            error instanceof BadRequestException
+            (error instanceof BadRequestException)
               ? error.message
               : 'An unexpected error occurred while importing the signatures',
         });
@@ -584,7 +588,7 @@ export class TransactionsService {
   }
 
   /* Get the transaction with the provided id if user has access */
-  async getTransactionWithVerifiedAccess(transactionId: number, user: User) {
+  async getTransactionWithVerifiedAccess(transactionId: number | TransactionId, user: User) {
     const transaction = await this.getTransactionById(transactionId);
 
     await this.attachTransactionApprovers(transaction);
@@ -635,9 +639,9 @@ export class TransactionsService {
     return (
       userKeysToSign.length !== 0 ||
       transaction.creatorKey?.userId === user.id ||
-      transaction.observers.some(o => o.userId === user.id) ||
-      transaction.signers.some(s => s.userKey?.userId === user.id) ||
-      transaction.approvers.some(a => a.userId === user.id)
+      transaction.observers?.some(o => o.userId === user.id) ||
+      transaction.signers?.some(s => s.userKey?.userId === user.id) ||
+      transaction.approvers?.some(a => a.userId === user.id)
     );
   }
 
