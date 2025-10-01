@@ -336,9 +336,11 @@ const handleExportGroup = async () => {
       );
 
       const baseName = generateTransactionExportFileName(orgTransaction)
+
       const { signedBytes, jsonContent } = await generateTransactionExportContent(
         orgTransaction,
         privateKey,
+        group.value.description
       );
 
       zip.file(`${baseName}.tx`, signedBytes); // Add .tx file content to ZIP

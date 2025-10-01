@@ -75,6 +75,7 @@ export const getApiGroupById = async (serverUrl: string, id: number) => {
 export const generateTransactionExportContent = async (
   orgTransaction: ITransactionFull,
   key: PrivateKey,
+  defaultDescription?: string
 ) => {
   const transactionBytes = hexToUint8Array(orgTransaction.transactionBytes);
   const sdkTransaction = Transaction.fromBytes(transactionBytes);
@@ -84,7 +85,7 @@ export const generateTransactionExportContent = async (
 
   // create .txt file contents
   const author = orgTransaction.creatorEmail;
-  const contents = orgTransaction.description || '';
+  const contents = orgTransaction.description || defaultDescription || '';
   const timestamp = new Date(orgTransaction.createdAt);
   const formattedTimestamp = format(timestamp, 'yyyy-MM-dd HH:mm:ss');
 
