@@ -96,32 +96,6 @@ export class TransactionsService {
     return transaction;
   }
 
-  /* Get the transaction for the provided sdk transaction id (payerId&seconds.nanos) in the DATABASE */
-  async getTransactionBySdkId(transactionId: string): Promise<Transaction> {
-    if (!transactionId) return null;
-
-    const transaction = await this.repo.findOne({
-      where: { transactionId },
-      relations: ['creatorKey', 'creatorKey.user', 'observers', 'comments', 'groupItem'],
-    });
-
-    if (!transaction) return null;
-
-    transaction.signers = await this.entityManager.find(TransactionSigner, {
-      where: {
-        transaction: {
-          id: transaction.id,
-        },
-      },
-      relations: {
-        userKey: true,
-      },
-      withDeleted: true,
-    });
-
-    return transaction;
-  }
-
   /* Get the transactions visible by the user */
   async getTransactions(
     user: User,
