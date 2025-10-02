@@ -61,7 +61,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
         const accountInfo = await getAccountInfo(feePayerAccountId.toString(), mirrorNodeLink);
         if (accountInfo?.key) {
           signatureKeys.push(accountInfo.key);
-          payerKey[feePayerAccountId] = accountInfo.key;
+          payerKey[feePayerAccountId.toString()] = accountInfo.key;
           currentKeyList.push(accountInfo.key);
         }
       } catch (error) {
