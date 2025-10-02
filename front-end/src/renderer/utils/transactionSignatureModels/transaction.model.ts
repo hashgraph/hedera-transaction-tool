@@ -117,7 +117,8 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
         //NOTE: this is different than node adminKey
         const nodeAccountId = nodeInfo ? this.getNodeAccountId(nodeInfo) : null;
         if (nodeAccountId) {
-          const { key } = await getAccountInfo(nodeAccountId, mirrorNodeLink);
+          const nodeAccountInfo = await getAccountInfo(nodeAccountId, mirrorNodeLink);
+          const key = nodeAccountInfo?.key;
           if (key && !hasKey(key)) {
             signatureKeys.push(key);
             nodeAdminKeys[nodeId] = key;
