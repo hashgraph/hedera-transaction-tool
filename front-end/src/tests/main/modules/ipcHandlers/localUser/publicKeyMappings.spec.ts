@@ -1,17 +1,15 @@
 import { mockDeep } from 'vitest-mock-extended';
-import { getIPCHandler, invokeIPCHandler, invokeIPCListener } from '../../../_utils_';
+import { getIPCHandler, invokeIPCHandler } from '../../../_utils_';
 
 import registerPublicKeyMappingsHandlers from '@main/modules/ipcHandlers/localUser/publicKeyMappings';
 import {
-  getFileStreamEventEmitterPublic,
-  searchPublicKeysAbort,
-  PublicKeySearcher,
-  PublicAbortable,
   getPublicKeys,
   addPublicKey,
   getPublicKey,
   updatePublicKeyNickname,
   deletePublicKey,
+  searchPublicKeys,
+  abortPublicKeySearch,
 } from '@main/services/localUser/publicKeyMapping';
 
 vi.mock('@main/services/localUser/publicKeyMapping', () => mockDeep());
@@ -23,7 +21,15 @@ describe('IPC handlers PublicKeyMappings', () => {
   });
 
   test('Should register handlers for each event', () => {
-    const events = ['getAll', 'add', 'get', 'updateNickname', 'delete', 'searchPublicKeys'];
+    const events = [
+      'getAll',
+      'add',
+      'get',
+      'updateNickname',
+      'delete',
+      'searchPublicKeys',
+      'searchPublicKeys:abort',
+    ];
     expect(events.every(util => getIPCHandler(`publicKeyMapping:${util}`))).toBe(true);
   });
 
@@ -34,24 +40,17 @@ describe('IPC handlers PublicKeyMappings', () => {
       { publicKey: 'publicKey2', nickname: 'file2' },
     ];
 
-    const searcherMock = {
-      search: vi.fn().mockResolvedValue(searchResult),
-    };
-    vi.mocked(PublicKeySearcher).mockImplementation(() => searcherMock as any);
+    vi.mocked(searchPublicKeys).mockResolvedValue(searchResult);
 
-    await invokeIPCHandler('publicKeyMapping:searchPublicKeys', filePaths);
-    expect(PublicKeySearcher).toHaveBeenCalledWith(expect.any(PublicAbortable));
-    expect(searcherMock.search).toHaveBeenCalledWith(filePaths);
+    const result = await invokeIPCHandler('publicKeyMapping:searchPublicKeys', filePaths);
+
+    expect(searchPublicKeys).toHaveBeenCalledWith(filePaths);
+    expect(result).toEqual(searchResult);
   });
 
-  test('Should set up searchPublicKeys:abort handler', () => {
-    const eventEmitterMock = {
-      emit: vi.fn(),
-    };
-    vi.mocked(getFileStreamEventEmitterPublic).mockReturnValue(eventEmitterMock as any);
-
-    invokeIPCListener('publicKeyMapping:searchPublicKeys:abort');
-    expect(eventEmitterMock.emit).toHaveBeenCalledWith(searchPublicKeysAbort);
+  test('Should abort the public keys search', () => {
+    invokeIPCHandler('publicKeyMapping:searchPublicKeys:abort');
+    expect(abortPublicKeySearch).toHaveBeenCalled();
   });
 
   test('Should set up getAll handler', async () => {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watchEffect } from 'vue';
 import { PublicKey } from '@hashgraph/sdk';
-import { extractIdentifier, formatPublickey } from '@renderer/utils';
+import { extractIdentifier, formatPublicKey } from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{
@@ -19,7 +19,7 @@ const value = computed(() => {
 
 watchEffect(async () => {
   if (value.value) {
-    formattedPublicKey.value = await formatPublickey(value.value);
+    formattedPublicKey.value = await formatPublicKey(value.value);
   }
 });
 </script>

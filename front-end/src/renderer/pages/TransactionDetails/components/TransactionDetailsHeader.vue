@@ -1,30 +1,30 @@
 <script setup lang="ts">
 import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@shared/interfaces';
-import { TransactionStatus } from '@shared/interfaces';
+
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { format } from 'date-fns';
+import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toast-notification';
+
+import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 import { encode } from 'msgpackr';
 
-import { Long, Transaction as SDKTransaction } from '@hashgraph/sdk';
-
-import { areByteArraysEqual, javaFormatArrayHashCode } from '@shared/utils/byteUtils';
+import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
-import { useMediaQuery } from '@vueuse/core';
-import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import {
   archiveTransaction,
   cancelTransaction,
   executeTransaction,
+  generateTransactionExportContent,
+  generateTransactionExportFileName,
   getUserShouldApprove,
   remindSigners,
   sendApproverChoice,
@@ -52,6 +52,8 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
+
+import { TransactionStatus } from '@shared/interfaces';
 
 /* Types */
 type ActionButton =
@@ -125,7 +127,6 @@ const nextTransaction = useNextTransactionStore();
 /* Composables */
 const router = useRouter();
 const toast = useToast();
-const isLargeScreen = useMediaQuery('(min-width: 992px)');
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
@@ -515,30 +516,32 @@ const handleNext = () => {
 };
 
 const handleExport = async () => {
-  if (!props.sdkTransaction) {
+  if (!props.sdkTransaction || !props.organizationTransaction) {
     throw new Error('(BUG) Transaction is not available');
   }
 
+  assertUserLoggedIn(user.personal);
+
+  /* Verifies the user has entered his password */
+  const personalPassword = getPassword(handleExport, {
+    subHeading: 'Enter your application password to export the transaction',
+  });
+  if (passwordModalOpened(personalPassword)) return;
+
   // Load the last export format the user selected, if applicable
   const enabledFormats = EXPORT_FORMATS.filter(f => f.enabled);
-  const defaultFormat = getLastExportExtension() || (enabledFormats[0] || EXPORT_FORMATS[0]).extensions[0];
+  const defaultFormat =
+    getLastExportExtension() || (enabledFormats[0] || EXPORT_FORMATS[0]).extensions[0];
 
   // Move the default format to the top
-  enabledFormats.sort((a, b) => (a.extensions[0] === defaultFormat ? -1 : 1));
+  enabledFormats.sort((a /*, b*/) => (a.extensions[0] === defaultFormat ? -1 : 1));
+
+  // Generate the default base name for the file
+  const baseName = generateTransactionExportFileName(props.organizationTransaction);
 
   // Show the save dialog to the user, allowing them to choose the file name and location
-
-  // Continue to use the same format as TTv1, for now.
-  // The default format based on TTv1 is as follows:
-  // `${epochSeconds}_${accountId}_${hash}.tx`
-  const validStart = props.sdkTransaction.transactionId.validStart;
-  const accountId = props.sdkTransaction.transactionId.accountId.toString();
-
-  const hash = javaFormatArrayHashCode(props.sdkTransaction.toBytes());
-  const defaultName = `${validStart.seconds}_${accountId}_${hash}`;
-
   const { filePath, canceled } = await showSaveDialog(
-    `${defaultName || 'transaction'}`,
+    `${baseName || 'transaction'}`,
     'Export transaction',
     'Export',
     enabledFormats,
@@ -561,92 +564,82 @@ const handleExport = async () => {
     // TTv2 is the new format, which includes the entire transaction, comments, and any other
     // metadata that might be relevant.
     const bytes = encode(props.organizationTransaction);
-    await saveFileToPath(
-      bytes,
-      filePath,
-    );
+    await saveFileToPath(bytes, filePath);
+
+    toast.success('Transaction exported successfully');
   } else if (ext === 'tx') {
-    // Remove all signatures, 'unfreeze' it, then set nodes. This gives us the 'base' transaction.
-    const nodeAccountIds = props.sdkTransaction._nodeAccountIds;
-    const mainTransaction = SDKTransaction.fromBytes(props.sdkTransaction.toBytes());
-    mainTransaction.removeAllSignatures();
-    mainTransaction._signedTransactions.clear();
-    mainTransaction.setNodeAccountIds([nodeAccountIds.get(0)]);
-    // If not frozen, it doesn't appear to set something correctly, the JavaSDK cannot deserialize it properly.
-    mainTransaction.freeze();
+    if (user.publicKeys.length === 0) {
+      throw new Error(
+        'Exporting in the .tx format requires a signature. User must have at least one key pair to sign the transaction.',
+      );
+    }
+    const publicKey = user.publicKeys[0]; // get the first key pair's public key
+    const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
+    const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
-    const bytes = mainTransaction.toBytes();
-    await saveFileToPath(
-      bytes,
-      filePath,
+    const { signedBytes, jsonContent } = await generateTransactionExportContent(
+      props.organizationTransaction,
+      privateKey,
     );
 
-    // now create txt
-    const author = props.organizationTransaction.creatorEmail;
-    const contents = props.organizationTransaction.description || '';
-    const timestamp = new Date(props.organizationTransaction.createdAt);
-    const formattedTimestamp = format(timestamp, 'yyyy-MM-dd HH:mm:ss');
-
-    const exportJson = JSON.stringify({
-      Author: author,
-      Contents: contents,
-      Timestamp: formattedTimestamp,
-    });
-
+    await saveFileToPath(signedBytes, filePath);
     const txtFilePath = filePath.replace(/\.[^/.]+$/, '.txt');
+    await saveFileToPath(jsonContent, txtFilePath);
 
-    await saveFileToPath(
-      exportJson,
-      txtFilePath,
-    );
+    // If the CSVA file is created, then TTv1 will attempt to recreate
+    // each inner transaction value by value, not by bytes.
+    // This means that the first transaction signed will work correctly,
+    // but any other transactions will have different bytes than expected. Do not create the CSVA
+    // This code can be removed once testing is finished
+    // const accountNums: number[] = [];
+    // const list: Array<{ realmNum: number; shardNum: number; accountNum: number; network: string }> = [];
+    //
+    // for (let i = 0; i < nodeAccountIds.length; i++) {
+    //   const id = nodeAccountIds.get(i);
+    //   accountNums.push(id.num ?? 0);
+    //   list.push({
+    //     realmNum: id.realm?.toString() ?? 0,
+    //     shardNum: id.shard?.toString() ?? 0,
+    //     accountNum: id.num?.toString() ?? 0,
+    //     network: network.network,
+    //   });
+    // }
+    //
+    // // Build input string (e.g. "3-5,7")
+    // const sorted = accountNums.sort((a, b) => a - b);
+    // const ranges: string[] = [];
+    // let start = sorted[0], end = sorted[0];
+    // function addRange(start: Long, end: Long) {
+    //   ranges.push(start.equals(end) ? `${start.toString()}` : `${start.toString()}-${end.toString()}`);
+    // }
+    // for (let i = 1; i < sorted.length; i++) {
+    //   if (sorted[i].equals(end.add(1))) {
+    //     end = sorted[i];
+    //   } else {
+    //     addRange(start, end);
+    //     start = sorted[i];
+    //     end = sorted[i];
+    //   }
+    // }
+    // addRange(start, end);
+    // const input = ranges.join(',');
+    //
+    // const metadata = JSON.stringify({
+    //   nodes: {
+    //     input,
+    //     list,
+    //   }
+    // });
+    //
+    // const csvaFilePath = filePath.replace(/\.[^/.]+$/, '.csva');
+    //
+    // // now create csva
+    // await saveFileToPath(
+    //   metadata,
+    //   csvaFilePath,
+    // );
 
-    const accountNums: number[] = [];
-    const list: Array<{ realmNum: number; shardNum: number; accountNum: number; network: string }> = [];
-
-    for (let i = 0; i < nodeAccountIds.length; i++) {
-      const id = nodeAccountIds.get(i);
-      accountNums.push(id.num ?? 0);
-      list.push({
-        realmNum: id.realm?.toString() ?? 0,
-        shardNum: id.shard?.toString() ?? 0,
-        accountNum: id.num?.toString() ?? 0,
-        network: network.network, // or use your variable
-      });
-    }
-
-    // Build input string (e.g. "3-5,7")
-    const sorted = accountNums.sort((a, b) => a - b);
-    const ranges: string[] = [];
-    let start = sorted[0], end = sorted[0];
-    function addRange(start: Long, end: Long) {
-      ranges.push(start.equals(end) ? `${start.toString()}` : `${start.toString()}-${end.toString()}`);
-    }
-    for (let i = 1; i < sorted.length; i++) {
-      if (sorted[i].equals(end.add(1))) {
-        end = sorted[i];
-      } else {
-        addRange(start, end);
-        start = sorted[i];
-        end = sorted[i];
-      }
-    }
-    addRange(start, end);
-    const input = ranges.join(',');
-
-    const metadata = JSON.stringify({
-      nodes: {
-        input,
-        list,
-      }
-    });
-
-    const csvaFilePath = filePath.replace(/\.[^/.]+$/, '.csva');
-
-    // now create csva
-    await saveFileToPath(
-      metadata,
-      csvaFilePath,
-    );
+    toast.success('Transaction exported successfully');
   }
 };
 
@@ -658,9 +651,9 @@ const handleAction = async (value: ActionButton) => {
   } else if (value === sign) {
     await handleSign();
   } else if (value === next) {
-    await handleNext();
+    handleNext();
   } else if (value === previous) {
-    await handlePrevious();
+    handlePrevious();
   } else if (value === cancel) {
     await handleCancel(true);
   } else if (value === archive) {

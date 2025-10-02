@@ -33,6 +33,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   /* State */
   const groupItems = ref<GroupItem[]>([]);
   const groupValidStart = ref(new Date());
+  const groupInitialValidStart = ref(new Date());
   const description = ref('');
   const sequential = ref(false);
   const modified = ref(false);
@@ -53,6 +54,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       } else {
         groupValidStart.value = new Date();
       }
+      groupInitialValidStart.value = group.groupValidStart
     }
 
     const items = await getGroupItems(id);
@@ -249,7 +251,13 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     });
     groupItems.value = [...groupItems.value];
 
-    setModified();
+    const now = new Date();
+    if (
+      newGroupValidStart !== groupInitialValidStart.value &&
+      (newGroupValidStart > now || groupInitialValidStart.value > now)
+    ) {
+      setModified();
+    }
   }
 
   // function getObservers() {

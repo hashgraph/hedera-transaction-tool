@@ -1,15 +1,9 @@
 import { mockDeep } from 'vitest-mock-extended';
 
-import { getIPCHandler, invokeIPCHandler, invokeIPCListener } from '../../../_utils_';
+import { getIPCHandler, invokeIPCHandler } from '../../../_utils_';
 
 import registerEncryptedKeysHandlers from '@main/modules/ipcHandlers/localUser/encryptedKeys';
-import {
-  getFileStreamEventEmitter,
-  searchEncryptedKeysAbort,
-  EncryptedKeysSearcher,
-  Abortable,
-  decryptPrivateKeyFromPath,
-} from '@main/services/localUser';
+import { decryptPrivateKeyFromPath, searchEncryptedKeys, abortEncryptedKeySearch } from '@main/services/localUser';
 
 vi.mock('@main/services/localUser', () => mockDeep());
 
@@ -20,7 +14,7 @@ describe('IPC handlers EncryptedKeys', () => {
   });
 
   test('Should register handlers for each event', () => {
-    const events = ['searchEncryptedKeys', 'decryptEncryptedKey'];
+    const events = ['searchEncryptedKeys', 'searchEncryptedKeys:abort', 'decryptEncryptedKey'];
     expect(events.every(util => getIPCHandler(`encryptedKeys:${util}`))).toBe(true);
   });
 
@@ -28,24 +22,17 @@ describe('IPC handlers EncryptedKeys', () => {
     const filePaths = ['/path/to/file1.pem', '/path/to/file2.pem'];
     const searchResult = ['result1', 'result2'];
 
-    const searcherMock = {
-      search: vi.fn().mockResolvedValue(searchResult),
-    };
-    vi.mocked(EncryptedKeysSearcher).mockImplementation(() => searcherMock as any);
+    vi.mocked(searchEncryptedKeys).mockResolvedValue(searchResult);
 
-    await invokeIPCHandler('encryptedKeys:searchEncryptedKeys', filePaths);
-    expect(EncryptedKeysSearcher).toHaveBeenCalledWith(expect.any(Abortable), ['.pem']);
-    expect(searcherMock.search).toHaveBeenCalledWith(filePaths);
+    const result = await invokeIPCHandler('encryptedKeys:searchEncryptedKeys', filePaths);
+
+    expect(searchEncryptedKeys).toHaveBeenCalledWith(filePaths);
+    expect(result).toEqual(searchResult);
   });
 
-  test('Should set up searchEncryptedKeys:abort handler', () => {
-    const eventEmitterMock = {
-      emit: vi.fn(),
-    };
-    vi.mocked(getFileStreamEventEmitter).mockReturnValue(eventEmitterMock as any);
-
-    invokeIPCListener('encryptedKeys:searchEncryptedKeys:abort');
-    expect(eventEmitterMock.emit).toHaveBeenCalledWith(searchEncryptedKeysAbort);
+  test('Should abort the encrypted keys search', () => {
+    invokeIPCHandler('encryptedKeys:searchEncryptedKeys:abort');
+    expect(abortEncryptedKeySearch).toHaveBeenCalled();
   });
 
   test('Should set up decryptEncryptedKey handler', async () => {

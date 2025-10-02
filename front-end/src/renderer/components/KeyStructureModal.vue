@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeMount, ref } from 'vue';
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
-import { formatPublickey } from '@renderer/utils';
+import { formatPublicKey } from '@renderer/utils';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import KeyStructure from '@renderer/components/KeyStructure.vue';
@@ -24,7 +24,7 @@ const handleShowUpdate = (show: boolean) => emit('update:show', show);
 /* Lifecycle hooks */
 onBeforeMount(async () => {
   if (props.accountKey && props.accountKey instanceof PublicKey && true) {
-    formattedKey.value = await formatPublickey(props.accountKey.toStringRaw());
+    formattedKey.value = await formatPublicKey(props.accountKey.toStringRaw());
   }
 });
 </script>

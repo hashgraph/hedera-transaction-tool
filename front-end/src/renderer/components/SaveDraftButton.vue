@@ -19,9 +19,6 @@ const emit = defineEmits<{
 
 /* Props */
 const props = defineProps<{
-  handleSaveDraft?: () => void;
-  handleDraftAdded?: (id: string) => void;
-  handleDraftUpdated?: (id: string) => void;
   getTransaction?: () => Transaction;
   description: string;
   isExecuted: boolean;
@@ -67,8 +64,7 @@ const handleDraft = async () => {
 
 /* Functions */
 async function sendAddDraft(userId: string, transactionBytes: Uint8Array) {
-  const { id } = await addDraft(userId, transactionBytes, props.description);
-  props.handleDraftAdded && props.handleDraftAdded(id);
+  await addDraft(userId, transactionBytes, props.description);
   router.push('/transactions?tab=Drafts');
   toast.success('Draft saved');
 }
@@ -92,7 +88,7 @@ function getTransactionBytes() {
       color="secondary"
       type="button"
       data-testid="button-save-draft"
-      @click="() => (handleSaveDraft ? handleSaveDraft() : handleDraft())"
+      @click="() => handleDraft()"
       v-bind="$attrs"
       ><i class="bi bi-save"></i>
       {{ Boolean(route.query.draftId) ? 'Update Draft' : 'Save Draft' }}</AppButton

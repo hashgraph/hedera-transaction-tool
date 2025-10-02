@@ -1,4 +1,4 @@
-import type { IDefaultNetworks, Network } from '@shared/interfaces';
+import type { IDefaultNetworks, IGroup, Network } from '@shared/interfaces';
 import type { KeyPair, Transaction } from '@prisma/client';
 
 import {
@@ -132,3 +132,17 @@ export const getTransactionStatusName = (
   const statusName = TransactionStatusName[status];
   return uppercase ? statusName.toUpperCase() : statusName;
 };
+
+/**
+ * Find and return the most recent updatedAt timestamp from the group items in the given group
+ * @param group
+ */
+export const getTransactionGroupUpdatedAt = (group: IGroup) => {
+  return new Date(
+    Math.max(
+      ...group.groupItems.map(item => {
+        return new Date(item.transaction.updatedAt).getTime();
+      }),
+    ),
+  );
+}

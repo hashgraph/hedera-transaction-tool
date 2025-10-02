@@ -18,6 +18,8 @@ import {
   TransactionId,
   Timestamp,
   Client,
+  PrivateKey,
+  SignatureMap,
 } from '@hashgraph/sdk';
 
 import {
@@ -26,6 +28,8 @@ import {
   ErrorCodes,
   CHAIN_SERVICE,
   SchedulerService,
+  safe,
+  emitUpdateTransactionStatus,
 } from '@app/common';
 import {
   attachKeys,
@@ -620,6 +624,178 @@ describe('TransactionsService', () => {
       await expect(service.createTransaction(dto, user as User)).rejects.toThrow(ErrorCodes.TOS);
 
       client.close();
+    });
+  });
+
+  describe('importSignatures', () => {
+    let sdkTransaction: AccountCreateTransaction;
+
+    const transactionId = 3;
+    const privateKey = PrivateKey.generateECDSA();
+
+    const userWithKeys = {
+      ...user,
+      keys: [
+        { id: 1, publicKey: privateKey.publicKey.toStringRaw(), mnemonicHash: 'hash' },
+      ],
+    } as User;
+
+    beforeEach(async () => {
+      sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
+
+      jest.resetAllMocks();
+    });
+
+    it('should import signatures successfully', async () => {
+      const transaction = {
+        id: transactionId,
+        transactionId: sdkTransaction.transactionId.toString(),
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      await sdkTransaction.sign(privateKey);
+
+      entityManager.findOne.mockResolvedValue(transaction);
+
+      jest.mocked(safe).mockReturnValue({
+        data: [privateKey.publicKey],
+      });
+
+      // Any value will do here, this just shows the user has access to the transaction
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+
+      entityManager.update.mockResolvedValue(undefined);
+
+      const result = await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys
+      );
+      expect(result).toEqual([{ id: transactionId }]);
+      expect(emitUpdateTransactionStatus).toHaveBeenCalledWith(chainService, transactionId);
+      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+      expect(notifySyncIndicators).toHaveBeenCalledWith(
+        notificationsService,
+        transactionId,
+        transaction.status,
+        {
+          transactionId: sdkTransaction.transactionId.toString(),
+          network: transaction.mirrorNetwork,
+        }
+      );
+    });
+
+    it('should return error if transaction not found', async () => {
+      entityManager.findOne.mockResolvedValue(null);
+
+      const result = await service.importSignatures(
+        [{ id: transactionId, signatureMap: new SignatureMap() }],
+        userWithKeys
+      );
+      expect(result[0].error).toContain(ErrorCodes.TNF);
+    });
+
+    it('should return error if transaction status is not valid', async () => {
+      const transaction = {
+        id: transactionId,
+        status: TransactionStatus.CANCELED,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      await sdkTransaction.sign(privateKey);
+
+      entityManager.findOne.mockResolvedValue(transaction);
+
+      const result = await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys
+      );
+      expect(result[0].error).toContain(ErrorCodes.TNRS);
+    });
+
+    it('should return error if transaction is expired', async () => {
+      const transaction = {
+        id: transactionId,
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      await sdkTransaction.sign(privateKey);
+
+      entityManager.findOne.mockResolvedValue(transaction);
+
+      // Any value will do here, this just shows the user has access to the transaction
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+
+      jest.mocked(isExpired).mockReturnValue(true);
+
+      const result = await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys
+      );
+      expect(result[0]).toMatchObject({
+        id: transactionId,
+        error: ErrorCodes.TE,
+      });
+    });
+
+    it('should return error if signature validation fails', async () => {
+      const transaction = {
+        id: transactionId,
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      await sdkTransaction.sign(privateKey);
+      entityManager.findOne.mockResolvedValue(transaction);
+
+      // Any value will do here, this just shows the user has access to the transaction
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+
+      jest.mocked(safe).mockImplementationOnce(() => {
+        return { error: 'error' };
+      });
+
+      const result = await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys
+      );
+      expect(result[0]).toMatchObject({
+        id: transactionId,
+        error: ErrorCodes.ISNMPN,
+      });
+    });
+
+    it('should return error if entityManager.update throws', async () => {
+      const transaction = {
+        id: transactionId,
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      await sdkTransaction.sign(privateKey);
+      entityManager.findOne.mockResolvedValue(transaction);
+
+      // Any value will do here, this just shows the user has access to the transaction
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+
+      jest.mocked(safe).mockReturnValue({
+        data: [privateKey.publicKey],
+      });
+
+      entityManager.update.mockRejectedValue(new Error('fail'));
+
+      const result = await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys
+      );
+      expect(result[0]).toMatchObject({
+        id: transactionId,
+        error: 'An unexpected error occurred while importing the signatures',
+      });
     });
   });
 
