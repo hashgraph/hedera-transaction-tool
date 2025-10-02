@@ -41,7 +41,7 @@ import TransactionSelectionModal from '@renderer/components/TransactionSelection
 import TransactionGroupProcessor from '@renderer/components/Transaction/TransactionGroupProcessor.vue';
 import SaveTransactionGroupModal from '@renderer/components/modals/SaveTransactionGroupModal.vue';
 import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
-import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
+import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
@@ -240,6 +240,7 @@ async function handleOnFileChanged(e: Event) {
     let memo = '';
     let validStart: Date | null = null;
     const maxTransactionFee = ref<Hbar>(new Hbar(2));
+    const accountInfoCache = new AccountInfoCache();
 
     for (const row of rows) {
       const rowInfo =
@@ -255,7 +256,7 @@ async function handleOnFileChanged(e: Event) {
         case 'sender account':
           senderAccount = rowInfo[1];
           try {
-            await getAccountInfo(senderAccount, network.mirrorNodeBaseURL);
+            await accountInfoCache.fetch(senderAccount, network.mirrorNodeBaseURL);
           } catch (error) {
             toast.error(
               `Sender account ${senderAccount} does not exist on network. Review the CSV file.`,
@@ -267,7 +268,7 @@ async function handleOnFileChanged(e: Event) {
         case 'fee payer account':
           feePayer = rowInfo[1];
           try {
-            await getAccountInfo(feePayer, network.mirrorNodeBaseURL);
+            await accountInfoCache.fetch(feePayer, network.mirrorNodeBaseURL);
           } catch (error) {
             toast.error(
               `Fee payer account ${feePayer} does not exist on network. Review the CSV file.`,
@@ -310,7 +311,7 @@ async function handleOnFileChanged(e: Event) {
           feePayer = feePayer || senderAccount;
           const receiverAccount = rowInfo[0];
           try {
-            await getAccountInfo(receiverAccount, network.mirrorNodeBaseURL);
+            await accountInfoCache.fetch(receiverAccount, network.mirrorNodeBaseURL);
           } catch (error) {
             toast.error(
               `Receiver account ${receiverAccount} does not exist on network. Review the CSV file.`,
