@@ -212,13 +212,9 @@ async function createTestUsersBatch(usersData, client = null) {
 }
 
 //TODO this may be overkill for beforeEach and may be better suited for beforeAll/afterAll
-this wont actually work, because the backend is using the postgres, so I need to actually deploy a backend specifically for this testing
-so maybe I can create a script in automation that will deploy a backend and specificy the datbase name to be used, then it can
-sycnrhonize and everything? it'll only work if it stops any current backend running first'
-
-
-move this stuff to a separate branch, locally, and commit it locally
-then create branch for issue and move the test stuff there. then figure out solo and postgres
+// this wont actually work, because the backend is using the postgres, so I need to actually deploy a backend specifically for this testing
+// so maybe I can create a script in automation that will deploy a backend and specificy the datbase name to be used, then it can
+// sycnrhonize and everything? it'll only work if it stops any current backend running first'
 async function resetPostgresDbState() {
   // Step 1: Connect to the default 'postgres' database
   const adminClient = new Client({
