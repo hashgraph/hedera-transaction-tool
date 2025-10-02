@@ -11,10 +11,6 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     return this.transaction.toBytes();
   }
 
-  toBytesAsync(): Promise<Uint8Array> {
-    return this.transaction.toBytesAsync();
-  }
-
   getFeePayerAccountId(): AccountId | null {
     const payerId = this.transaction.transactionId?.accountId;
     if (payerId) {
