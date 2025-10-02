@@ -72,6 +72,7 @@ port_forward_postgres() {
 wait_for() {
     echo "\nWaiting for $2 $1 to be ready..."
     $KUBECTL wait --for=condition=available --timeout=5000s $1/$2
+    echo "\n$2 $1 is ready."
 }
 
 # Wait for postgres deployment

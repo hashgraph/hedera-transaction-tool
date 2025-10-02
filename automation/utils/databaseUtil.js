@@ -4,6 +4,7 @@ const path = require('path');
 const os = require('os');
 const { Client } = require('pg');
 const bcrypt = require('bcryptjs');
+const { execSync } = require('child_process');
 const dotenv = require('dotenv');
 
 // Load environment variables from .env file
@@ -210,33 +211,49 @@ async function createTestUsersBatch(usersData, client = null) {
   }
 }
 
-async function resetPostgresDbState() {
-  const client = await connectPostgresDatabase();
-  const tablesToReset = [
-    'notification_receiver',
-    'transaction_approver',
-    'transaction_comment',
-    'transaction_group_item',
-    'transaction_group',
-    'transaction_observer',
-    'transaction_signer',
-    'transaction',
-    'user_key',
-    'notification_preferences',
-    'user',
-  ];
+//TODO this may be overkill for beforeEach and may be better suited for beforeAll/afterAll
+this wont actually work, because the backend is using the postgres, so I need to actually deploy a backend specifically for this testing
+so maybe I can create a script in automation that will deploy a backend and specificy the datbase name to be used, then it can
+sycnrhonize and everything? it'll only work if it stops any current backend running first'
 
+
+move this stuff to a separate branch, locally, and commit it locally
+then create branch for issue and move the test stuff there. then figure out solo and postgres
+async function resetPostgresDbState() {
+  // Step 1: Connect to the default 'postgres' database
+  const adminClient = new Client({
+    host: process.env.POSTGRES_HOST,
+    port: process.env.POSTGRES_PORT,
+    user: process.env.POSTGRES_USERNAME,
+    password: process.env.POSTGRES_PASSWORD,
+    database: 'postgres',
+  });
+  await adminClient.connect();
+
+  // Step 2: Drop and create the 'automation' database
+  await adminClient.query('DROP DATABASE IF EXISTS automation;');
+  await adminClient.query('CREATE DATABASE automation;');
+  await adminClient.end();
+
+  //TODO This REQUIRES that postgres is installed locally (via brew or similar) and that the version installed is >= the version
+  //used in the backend
   try {
-    for (const table of tablesToReset) {
-      const query = `DELETE FROM "${table}";`;
-      await client.query(query);
-      console.log(`Deleted all records from ${table}`);
-    }
-  } catch (err) {
-    console.error('Error resetting PostgreSQL database:', err);
-  } finally {
-    await disconnectPostgresDatabase(client);
+    // 3. Dump schema from source database (e.g., 'postgres')
+    const dumpFile = '/tmp/schema.sql';
+    execSync(
+      `PGPASSWORD=${process.env.POSTGRES_PASSWORD} pg_dump -h ${process.env.POSTGRES_HOST} -U ${process.env.POSTGRES_USERNAME} -d postgres --schema-only > ${dumpFile}`
+    );
+
+    // 4. Load the schema into 'automation' database
+    execSync(
+      `PGPASSWORD=${process.env.POSTGRES_PASSWORD} psql -h ${process.env.POSTGRES_HOST} -U ${process.env.POSTGRES_USERNAME} -d automation -f ${dumpFile}`
+    );
+    fs.unlinkSync(dumpFile);
+  } catch (error) {
+    console.error('Error synchronizing schema:', error);
+    throw error;
   }
+  console.log('Automation database recreated and schema synchronized.');
 }
 
 module.exports = {
