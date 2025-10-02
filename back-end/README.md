@@ -13,8 +13,8 @@ Personal mode allows you to create, sign and submit transactions that requires o
 
 **Organizational User Mode**:
 The Transaction Tool application can be used without setting up the
-back end in personal mode. The backend is not required if you are not developing features in the Organization flow.
-To setup the front end application, Follow the complete setup process below..
+backend in personal mode. The backend is not required if you are not developing features in the Organization flow.
+To setup the frontend application, Follow the complete setup process below..
 
 # Prerequisites
 
@@ -78,7 +78,7 @@ Create `.env` files from the provided `example.env` templates in each of the fol
 - `scripts`
 - the root one
 
-The default values works for development.
+The default values work for development.
 
 ## 4. Email API Configuration
 
@@ -86,14 +86,14 @@ An email api account enables you to set-up the notification system in the applic
 
 > **Note:** some providers require no username and password, such as Gmail's smtp-relay service. These values, therefore, are optional.
 
-Create Brevo Account (Example):
+Example: Create Brevo Account:
 
 1. Create a free tier [Brevo account](https://onboarding.brevo.com/account/register)
 2. Log in to your account.
 3. Select the drop down menu on the top right of the page next to the notifications icon.
 4. Select on SMTP & API.
 5. Copy the SMTP key value.
-6. Enter the SMTP key in the apps/notifications/`.env`:
+6. Enter the SMTP key in the `apps/notifications/.env`:
 
 ```
    EMAIL_API_HOST=smtp-relay.brevo.com
@@ -200,9 +200,9 @@ The default ports are:
 
 | Type                           | Endpoint                                        |
 | ------------------------------ | ----------------------------------------------- |
-| API Service Endpoint           | [http://localhost](http://localhost) |
-| Notifications Service Endpoint | [http://localhost/notifications](https://localhost/notifications) |
-| PgAdmin                        | [http://localhost:5050](http://localhost:5050/) |
+| API Service Endpoint           | [https://localhost](https://localhost) |
+| Notifications Service Endpoint | [https://localhost/notifications](https://localhost/notifications) |
+| PgAdmin                        | [https://localhost:5050](https://localhost:5050) |
 
 ## Stopping the Deployment
 
@@ -238,14 +238,9 @@ Follow the prompts to:
 3. Enter a name for your local organization.
 4. Enter the local server URL: `https://localhost`
 
-## Tests
+## Testing
 
-- Unit/Integration Tests
-- E2E Tests
-
-### Unit/Integration
-
-Tests are run per service. Navigate to the service you want to test and run the test commands:
+Tests are run separately for each service. Navigate to the service you want to test and run the test commands:
 
 **API**
 
@@ -262,41 +257,6 @@ Tests are run per service. Navigate to the service you want to test and run the 
     cd apps/chain
     pnpm test:cov
 
-### E2E
-
-Ensure Docker is running and stop any running backend services.
-
-   ```bash
-   cd apps/api
-   pnpm test:e2e
-   ```
-**Important Notes:**
-
-> Testing containers for `Postgres`, `Redis`, `RabbitMQ` and `Hedera Localnet` will start automatically.
-
-> Stop the backend before running E2E tests
-
-> After running tests, restart the backend:
-
-   ```bash
-   docker compose up --force-recreate
-   ```
-    
-> To speed up Hedera Localnet startup:
-    
-   ```bash
-   pnpx hedera restart -d
-   ```
-
-### Resetting Local Postgres Data
-
-To reset your local PostgreSQL database:
-
-   ```bash
-   docker-compose down
-   rm -rf <back-end base directory>/pgdata
-   docker-compose up
-   ```
 
 # Troubleshooting
 
@@ -311,37 +271,38 @@ To reset your local PostgreSQL database:
      ```bash
      helm upgrade traefik traefik/traefik
      ```
-4. Docker Image Pull Errors
-If you encounter Cloudflare storage connection errors:
-   ```
-   error pulling image configuration: download failed after attempts=6: 
-   dialing docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage.com:443
-   ```
+3. Docker Image Pull Errors
+   
+  If you encounter Cloudflare storage connection errors:
+     ```
+     error pulling image configuration: download failed after attempts=6: 
+     dialing docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage.com:443
+     ```
 **Solution**: Use DockerHub Mirror
 
-1. Pull from mirror registry:
-
-   ```bash
-   docker pull mirror.gcr.io/library/node:22-alpine
-   ```
-   
-2.Tag the image:
-   
-   ```bash
-   docker tag mirror.gcr.io/library/node:22-alpine node:22-alpine
-   ```
-
-**Alternative**: Configure Docker Desktop Registry Mirrors
-
-   1. Open Docker Desktop → Settings → Docker Engine.
-   2. Add registry mirror configuration:
-      ```
-      json
-      {
-        "registry-mirrors": [
-          "https://your-mirror-url/"
-        ]
-      }
-      ```
-   3. Click Apply & Restart.
+  1. Pull from mirror registry:
+  
+     ```bash
+     docker pull mirror.gcr.io/library/node:22-alpine
+     ```
+     
+  2. Tag the image:
+     
+     ```bash
+     docker tag mirror.gcr.io/library/node:22-alpine node:22-alpine
+     ```
+  
+  **Alternative**: Configure Docker Desktop Registry Mirrors:
+  
+  1. Open Docker Desktop → Settings → Docker Engine.
+  2. Add registry mirror configuration:
+        
+        ```
+        {
+          "registry-mirrors": [
+            "https://your-mirror-url/"
+          ]
+        }
+        ```
+  3. Click Apply & Restart.
       
