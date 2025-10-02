@@ -1452,7 +1452,7 @@ The Initial Developer of copy-anything@3.0.5,
 is Luca Ban - Mesqueeb (https://github.com/mesqueeb/copy-anything).
 Copyright Luca Ban - Mesqueeb. All Rights Reserved.
 
-The Initial Developer of core-util-is@1.0.2,
+The Initial Developer of core-util-is@1.0.3,
 is Isaac Z. Schlueter (https://github.com/isaacs/core-util-is).
 Copyright Isaac Z. Schlueter. All Rights Reserved.
 
@@ -2081,6 +2081,9 @@ The Initial Developer of image-size@1.2.1,
 is netroy (https://github.com/image-size/image-size).
 Copyright netroy. All Rights Reserved.
 
+This product includes software (immediate@3.0.6) developed at
+(https://github.com/calvinmetcalf/immediate).
+
 The Initial Developer of immutable@4.3.7,
 is Lee Byron (https://github.com/immutable-js/immutable-js).
 Copyright Lee Byron. All Rights Reserved.
@@ -2328,6 +2331,10 @@ The Initial Developer of jsonfile@6.1.0,
 is JP Richardson (https://github.com/jprichardson/node-jsonfile).
 Copyright JP Richardson. All Rights Reserved.
 
+The Initial Developer of jszip@3.10.1,
+is Stuart Knightley (https://github.com/Stuk/jszip).
+Copyright Stuart Knightley. All Rights Reserved.
+
 The Initial Developer of jwt-decode@4.0.0,
 is Jose F. Romaniello (https://github.com/auth0/jwt-decode).
 Copyright Jose F. Romaniello. All Rights Reserved.
@@ -2355,6 +2362,9 @@ Copyright Sindre Sorhus. All Rights Reserved.
 The Initial Developer of levn@0.4.1,
 is George Zahariev (https://github.com/gkz/levn).
 Copyright George Zahariev. All Rights Reserved.
+
+This product includes software (lie@3.3.0) developed at
+(https://github.com/calvinmetcalf/lie).
 
 This product includes software (lighthouse-logger@1.4.2) developed at
 ().
@@ -2774,6 +2784,9 @@ The Initial Developer of package-json-from-dist@1.0.1,
 is Isaac Z. Schlueter (https://github.com/isaacs/package-json-from-dist).
 Copyright Isaac Z. Schlueter. All Rights Reserved.
 
+This product includes software (pako@1.0.11) developed at
+(https://github.com/nodeca/pako).
+
 The Initial Developer of parent-module@1.0.1,
 is Sindre Sorhus (https://github.com/sindresorhus/parent-module).
 Copyright Sindre Sorhus. All Rights Reserved.
@@ -3108,7 +3121,7 @@ The Initial Developer of rxjs@7.8.1,
 is Ben Lesh (https://github.com/reactivex/rxjs).
 Copyright Ben Lesh. All Rights Reserved.
 
-The Initial Developer of safe-buffer@5.2.1,
+The Initial Developer of safe-buffer@5.1.2,
 is Feross Aboukhadijeh (https://github.com/feross/safe-buffer).
 Copyright Feross Aboukhadijeh. All Rights Reserved.
 
@@ -3161,6 +3174,10 @@ Copyright Douglas Christopher Wilson. All Rights Reserved.
 The Initial Developer of set-blocking@2.0.0,
 is Ben Coe (https://github.com/yargs/set-blocking).
 Copyright Ben Coe. All Rights Reserved.
+
+The Initial Developer of setimmediate@1.0.5,
+is YuzuJS (https://github.com/YuzuJS/setImmediate).
+Copyright YuzuJS. All Rights Reserved.
 
 The Initial Developer of setprototypeof@1.2.0,
 is Wes Todd (https://github.com/wesleytodd/setprototypeof).
