@@ -1,6 +1,6 @@
 /* Buttons */
 .btn {
-  min-width: 156px;
+  min-width: 130px;
 }
 
 @each $type in map-keys($buttons) {
@@ -1113,6 +1113,11 @@
 }
 
 /* Misc */
+ .small-badge {
+   font-size: 0.7rem;
+   padding: 0.35em 0.45em;
+ }
+
 .key-threshhold-bg,
 .badge-bg {
   background-color: var(--#{$prefix}container-threshhold-key);

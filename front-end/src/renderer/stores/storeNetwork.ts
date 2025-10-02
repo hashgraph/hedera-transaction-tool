@@ -23,7 +23,7 @@ const useNetworkStore = defineStore('network', () => {
   /* Getters */
   const currentRate = computed(() => {
     if (!exchangeRateSet.value) {
-      throw new Error('Exchange rate set not found');
+      return null;
     }
 
     const timestamp = parseInt(exchangeRateSet.value.timestamp);

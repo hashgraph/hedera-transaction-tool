@@ -2,7 +2,7 @@ import { BadRequestException, Inject, Injectable, UnauthorizedException } from '
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 
-import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { PublicKey, Transaction as SDKTransaction, TransactionId } from '@hashgraph/sdk';
 
 import {
   Repository,
@@ -48,9 +48,12 @@ import {
   notifyGeneral,
   SchedulerService,
   getTransactionSignReminderKey,
+  safe,
+  validateSignature,
+  emitUpdateTransactionStatus,
 } from '@app/common';
 
-import { CreateTransactionDto } from './dto';
+import { CreateTransactionDto, UploadSignatureMapDto, SignatureImportResultDto } from './dto';
 
 import { ApproversService } from './approvers';
 
@@ -67,11 +70,12 @@ export class TransactionsService {
   ) {}
 
   /* Get the transaction for the provided id in the DATABASE */
-  async getTransactionById(id: number): Promise<Transaction> {
+  /* id can be number (ie internal id) or string (ie payerId@timestamp) */
+  async getTransactionById(id: number|TransactionId): Promise<Transaction> {
     if (!id) return null;
 
     const transaction = await this.repo.findOne({
-      where: { id },
+      where:  typeof id == "number" ? { id } : { transactionId: id.toString() },
       relations: ['creatorKey', 'creatorKey.user', 'observers', 'comments', 'groupItem'],
     });
 
@@ -410,6 +414,70 @@ export class TransactionsService {
     return transaction;
   }
 
+  async importSignatures(
+    dto: UploadSignatureMapDto[],
+    user: User,
+  ): Promise<SignatureImportResultDto[]> {
+    const results = new Set<SignatureImportResultDto>();
+    for (const { id, signatureMap: map } of dto) {
+      const transaction = await this.entityManager.findOne(Transaction, {
+        where: { id },
+        relations: ['creatorKey', 'approvers', 'signers', 'observers'],
+      });
+
+      try {
+        /* Verify that the transaction exists and access is verified */
+        if (!transaction || !(await this.verifyAccess(transaction, user))) {
+          throw new BadRequestException(ErrorCodes.TNF);
+        }
+
+        /* Checks if the transaction is canceled */
+        if (
+          transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES &&
+          transaction.status !== TransactionStatus.WAITING_FOR_EXECUTION
+        )
+          throw new BadRequestException(ErrorCodes.TNRS);
+
+        /* Checks if the transaction is expired */
+        const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
+        if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
+
+        /* Validates the signatures */
+        const { data: publicKeys, error } = safe<PublicKey[]>(
+          validateSignature.bind(this, sdkTransaction, map),
+        );
+        if (error) throw new BadRequestException(ErrorCodes.ISNMPN);
+
+        for (const publicKey of publicKeys) {
+          sdkTransaction.addSignature(publicKey, map);
+        }
+
+        await this.entityManager.update(
+          Transaction,
+          { id },
+          { transactionBytes: sdkTransaction.toBytes() },
+        );
+
+        results.add({ id });
+        emitUpdateTransactionStatus(this.chainService, id);
+        notifyTransactionAction(this.notificationsService);
+        notifySyncIndicators(this.notificationsService, id, transaction.status, {
+          transactionId: transaction.transactionId,
+          network: transaction.mirrorNetwork,
+        });
+      } catch (error) {
+        results.add({
+          id,
+          error:
+            (error instanceof BadRequestException)
+              ? error.message
+              : 'An unexpected error occurred while importing the signatures',
+        });
+      }
+    }
+    return [...results];
+  }
+
   /* Remove the transaction for the given transaction id. */
   async removeTransaction(id: number, user: User, softRemove: boolean = true): Promise<boolean> {
     const transaction = await this.getTransactionForCreator(id, user);
@@ -520,7 +588,7 @@ export class TransactionsService {
   }
 
   /* Get the transaction with the provided id if user has access */
-  async getTransactionWithVerifiedAccess(transactionId: number, user: User) {
+  async getTransactionWithVerifiedAccess(transactionId: number | TransactionId, user: User) {
     const transaction = await this.getTransactionById(transactionId);
 
     await this.attachTransactionApprovers(transaction);
@@ -571,9 +639,9 @@ export class TransactionsService {
     return (
       userKeysToSign.length !== 0 ||
       transaction.creatorKey?.userId === user.id ||
-      transaction.observers.some(o => o.userId === user.id) ||
-      transaction.signers.some(s => s.userKey?.userId === user.id) ||
-      transaction.approvers.some(a => a.userId === user.id)
+      transaction.observers?.some(o => o.userId === user.id) ||
+      transaction.signers?.some(s => s.userKey?.userId === user.id) ||
+      transaction.approvers?.some(a => a.userId === user.id)
     );
   }
 

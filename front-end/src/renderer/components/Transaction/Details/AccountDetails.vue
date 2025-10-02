@@ -29,7 +29,7 @@ import {
   safeAwait,
   getAccountNicknameFromId,
   getAccountIdWithChecksum,
-  formatPublickey,
+  formatPublicKey,
   extractIdentifier,
 } from '@renderer/utils';
 
@@ -140,7 +140,7 @@ onBeforeMount(async () => {
 
   await checkAndFetchTransactionInfo();
   if (props.transaction.key && props.transaction.key instanceof PublicKey && true) {
-    formattedKey.value = await formatPublickey(props.transaction.key.toStringRaw());
+    formattedKey.value = await formatPublicKey(props.transaction.key.toStringRaw());
   }
 });
 

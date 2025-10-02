@@ -10,7 +10,7 @@ export class UploadSignatureMapDto {
   })
   @IsDefined()
   @IsNumber()
-  transactionId: number;
+  id: number;
 
   @ApiProperty({
     type: 'object',

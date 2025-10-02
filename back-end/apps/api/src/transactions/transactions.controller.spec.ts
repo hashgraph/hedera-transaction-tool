@@ -2,6 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { mockDeep } from 'jest-mock-extended';
 import { EntityManager } from 'typeorm';
+import { plainToInstance } from 'class-transformer';
+import { validateOrReject } from 'class-validator';
+
+import { SignatureMap, TransactionId } from '@hashgraph/sdk';
 
 import { BlacklistService, guardMock, Pagination } from '@app/common';
 import { Transaction, TransactionStatus, TransactionType, User, UserStatus } from '@entities';
@@ -10,6 +14,22 @@ import { HasKeyGuard, VerifiedUserGuard } from '../guards';
 
 import { TransactionsController } from './transactions.controller';
 import { TransactionsService } from './transactions.service';
+import { UploadSignatureMapDto } from './dto';
+
+jest.mock('class-transformer', () => {
+  const actualModule = jest.requireActual('class-transformer');
+  return {
+    ...actualModule,
+    plainToInstance: jest.fn(),
+  };
+});
+jest.mock('class-validator', () => {
+  const actualModule = jest.requireActual('class-validator');
+  return {
+    ...actualModule,
+    validateOrReject: jest.fn(),
+  };
+});
 
 describe('TransactionsController', () => {
   let controller: TransactionsController;
@@ -114,6 +134,10 @@ describe('TransactionsController', () => {
     };
   });
 
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe('createTransaction', () => {
     it('should return a transaction', async () => {
       const dto = { ...transaction, creatorKeyId: 1 };
@@ -121,6 +145,61 @@ describe('TransactionsController', () => {
       transactionService.createTransaction.mockResolvedValue(transaction);
 
       expect(await controller.createTransaction(dto, user)).toBe(transaction);
+    });
+  });
+
+  describe('importSignatures', () => {
+    it('should transform, validate and import signature map for a single object', async () => {
+      const dtoInput = {
+        id: 1,
+        signatureMap: new SignatureMap(),
+      };
+      const transformedDto = { transformed: 'value' };
+
+      // Mock plainToInstance to return a transformed object
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      // Stub validateOrReject to resolve
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      const expectedResult = [{ id: 1 }];
+      (transactionService.importSignatures as jest.Mock).mockResolvedValue(expectedResult);
+
+      const result = await controller.importSignatures(dtoInput, user);
+
+      expect(plainToInstance).toHaveBeenCalledWith(UploadSignatureMapDto, dtoInput);
+      expect(validateOrReject).toHaveBeenCalledWith(transformedDto);
+      expect(transactionService.importSignatures).toHaveBeenCalledWith([transformedDto], user);
+      expect(result).toEqual(expectedResult);
+    });
+
+    it('should transform, validate and import signature maps for an array of objects', async () => {
+      const dtoInput = [
+        {
+          id: 1,
+          signatureMap: new SignatureMap(),
+        },
+        {
+          id: 2,
+          signatureMap: new SignatureMap(),
+        }
+      ];
+      const transformedDtos = [{ transformed: 'value1' }, { transformed: 'value2' }];
+
+      // For each call, return the corresponding transformed object
+      (plainToInstance as jest.Mock)
+        .mockReturnValueOnce(transformedDtos[0])
+        .mockReturnValueOnce(transformedDtos[1]);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      const expectedResult = [{ id: 1 }, { id: 2 }];
+      (transactionService.importSignatures as jest.Mock).mockResolvedValue(expectedResult);
+
+      const result = await controller.importSignatures(dtoInput, user);
+
+      expect(plainToInstance).toHaveBeenCalledTimes(2);
+      expect((plainToInstance as jest.Mock).mock.calls[0]).toEqual([UploadSignatureMapDto, dtoInput[0]]);
+      expect((plainToInstance as jest.Mock).mock.calls[1]).toEqual([UploadSignatureMapDto, dtoInput[1]]);
+      expect(validateOrReject).toHaveBeenCalledTimes(2);
+      expect(transactionService.importSignatures).toHaveBeenCalledWith(transformedDtos, user);
+      expect(result).toEqual(expectedResult);
     });
   });
 
@@ -322,6 +401,12 @@ describe('TransactionsController', () => {
       transactionService.getTransactionWithVerifiedAccess.mockResolvedValue(transaction);
 
       expect(await controller.getTransaction(user, 1)).toBe(transaction);
+    });
+
+    it('should return a transaction by transactionId', async () => {
+      transactionService.getTransactionWithVerifiedAccess.mockResolvedValue(transaction);
+
+      expect(await controller.getTransaction(user, TransactionId.fromString('0.0.2673708@1764367157.000000000'))).toBe(transaction);
     });
   });
 });

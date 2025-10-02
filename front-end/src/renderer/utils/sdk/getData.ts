@@ -434,3 +434,11 @@ export function getAllData(transaction: Transaction) {
   }
   return handler(transaction);
 }
+
+export function transactionsDataMatch(t1: Transaction, t2: Transaction): boolean {
+  const t1Data = getAllData(t1);
+  const t2Data = getAllData(t2);
+  t1Data.validStart = undefined
+  t2Data.validStart = undefined
+  return JSON.stringify(t1Data) === JSON.stringify(t2Data);
+}

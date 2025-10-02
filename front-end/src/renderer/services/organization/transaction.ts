@@ -1,14 +1,18 @@
 import type { Organization } from '@prisma/client';
+import type { TransactionId } from '@hashgraph/sdk';
 import type { LoggedInOrganization, SignatureItem } from '@renderer/types';
 import type {
+  ISignatureImport,
   ITransaction,
+  ITransactionApprover,
+  TransactionApproverDto,
   ITransactionFull,
   Network,
   PaginatedResourceDto,
+  SignatureImportResultDto,
 } from '@shared/interfaces';
-import type { ITransactionApprover, TransactionApproverDto } from '@shared/interfaces';
 
-import { Transaction } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import { ObserverRole, TransactionStatus } from '@shared/interfaces';
 
@@ -81,7 +85,7 @@ export const uploadSignatures = async (
   userPassword: string | null,
   organization: LoggedInOrganization & Organization,
   publicKeys?: string[],
-  transaction?: Transaction,
+  transaction?: SDKTransaction,
   transactionId?: number,
   items?: SignatureItem[],
 ) => {
@@ -110,7 +114,7 @@ export const uploadSignatures = async (
 
     const signatureMap = getSignatureMapForPublicKeys(publicKeys, transaction);
     formattedMaps.push({
-      transactionId: transactionId,
+      id: transactionId,
       signatureMap: formatSignatureMap(signatureMap),
     });
   }
@@ -122,6 +126,33 @@ export const uploadSignatures = async (
     );
   }, 'Failed upload signatures');
 };
+
+/**
+ * Imports signatures for a transaction.
+ *
+ * @param organization
+ * @param signatureImport
+ */
+export const importSignatures = async (
+  organization: LoggedInOrganization & Organization,
+  signatureImport: ISignatureImport[] | ISignatureImport,
+): Promise<SignatureImportResultDto[]> => {
+  const formattedMaps = [];
+  const imports = Array.isArray(signatureImport) ? signatureImport : [signatureImport];
+  for (const signatureImport of imports) {
+    formattedMaps.push({
+      id: signatureImport.id,
+      signatureMap: formatSignatureMap(signatureImport.signatureMap),
+    });
+  }
+  return commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.post(
+      `${organization.serverUrl}/${controller}/signatures/import`,
+      formattedMaps,
+    );
+    return data
+  }, 'Failed to import signatures');
+}
 
 /* Get transactions to sign */
 export const getTransactionsToSign = async (
@@ -181,8 +212,8 @@ export const getTransactionApprovers = async (
 
 /* Get if user should approve a transaction */
 export const getUserShouldApprove = async (
-  serverUrl: string,
-  transactionId: number,
+  serverUrl: string, // eslint-disable-line @typescript-eslint/no-unused-vars
+  transactionId: number, // eslint-disable-line @typescript-eslint/no-unused-vars
 ): Promise<boolean> =>
   commonRequestHandler(async () => {
     //TODO Approve is not implemented yet, and doing it this way is not correct
@@ -202,10 +233,10 @@ export const getUserShouldApprove = async (
 /* Get the count of the transactions to sign */
 export const getTransactionById = async (
   serverUrl: string,
-  id: number,
+  id: number | TransactionId,
 ): Promise<ITransactionFull> =>
   commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.get(`${serverUrl}/${controller}/${id}`, {
+    const { data } = await axiosWithCredentials.get(`${serverUrl}/${controller}/${id.toString()}`, {
       withCredentials: true,
     });
 
