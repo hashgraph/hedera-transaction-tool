@@ -54,6 +54,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
+import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -95,6 +96,7 @@ async function handleFetchGroup(id: string | number) {
     try {
       const updatedPublicKeysRequiredToSign: string[] = [];
       const updatedUnsignedSignersToCheck: Record<string, string[]> = {};
+      const accountInfoCache = new AccountInfoCache();
 
       group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
       disableSignAll.value = false;
@@ -121,6 +123,7 @@ async function handleFetchGroup(id: string | number) {
             tx,
             user.selectedOrganization.userKeys,
             network.mirrorNodeBaseURL,
+            accountInfoCache,
           );
 
           if (
@@ -203,6 +206,7 @@ const handleSignGroupItem = async (groupItem: IGroupItem) => {
       transaction,
       user.selectedOrganization.userKeys,
       network.mirrorNodeBaseURL,
+      new AccountInfoCache(),
     );
     const item: SignatureItem = {
       publicKeys: publicKeysRequired,
@@ -242,6 +246,7 @@ const handleSignAll = async () => {
     isSigningAll.value = true;
     const items: SignatureItem[] = [];
     if (group.value != undefined) {
+      const accountInfoCache = new AccountInfoCache();
       for (const groupItem of group.value.groupItems) {
         const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
         const transaction = Transaction.fromBytes(transactionBytes);
@@ -255,6 +260,7 @@ const handleSignAll = async () => {
           transaction,
           user.selectedOrganization.userKeys,
           network.mirrorNodeBaseURL,
+          accountInfoCache,
         );
         const item: SignatureItem = {
           publicKeys: publicKeysRequired,
