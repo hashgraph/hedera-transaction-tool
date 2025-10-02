@@ -11,10 +11,6 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     return this.transaction.toBytes();
   }
 
-  toBytesAsync(): Promise<Uint8Array> {
-    return this.transaction.toBytesAsync();
-  }
-
   getFeePayerAccountId(): AccountId | null {
     const payerId = this.transaction.transactionId?.accountId;
     if (payerId) {
@@ -63,9 +59,9 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     if (feePayerAccountId) {
       try {
         const accountInfo = await getAccountInfo(feePayerAccountId.toString(), mirrorNodeLink);
-        if (accountInfo.key) {
+        if (accountInfo?.key) {
           signatureKeys.push(accountInfo.key);
-          payerKey[feePayerAccountId] = accountInfo.key;
+          payerKey[feePayerAccountId.toString()] = accountInfo.key;
           currentKeyList.push(accountInfo.key);
         }
       } catch (error) {
@@ -77,7 +73,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     for (const accountId of accounts) {
       try {
         const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
-        if (accountInfo.key && !hasKey(accountInfo.key)) {
+        if (accountInfo?.key && !hasKey(accountInfo.key)) {
           signatureKeys.push(accountInfo.key);
           accountsKeys[accountId] = accountInfo.key;
           currentKeyList.push(accountInfo.key);
@@ -91,7 +87,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     for (const accountId of receiverAccounts) {
       try {
         const accountInfo = await getAccountInfo(accountId, mirrorNodeLink);
-        if (accountInfo.receiverSignatureRequired && accountInfo.key && !hasKey(accountInfo.key)) {
+        if (accountInfo?.receiverSignatureRequired && accountInfo?.key && !hasKey(accountInfo.key)) {
           signatureKeys.push(accountInfo.key);
           receiverAccountsKeys[accountId] = accountInfo.key;
           currentKeyList.push(accountInfo.key);
@@ -105,7 +101,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     try {
       if (!Number.isNaN(nodeId) && nodeId !== null) {
         const nodeInfo = await getNodeInfo(nodeId, mirrorNodeLink);
-        const adminKey = nodeInfo.admin_key;
+        const adminKey = nodeInfo?.admin_key;
         if (adminKey && !hasKey(adminKey)) {
           signatureKeys.push(adminKey);
           nodeAdminKeys[nodeId] = adminKey;
@@ -119,9 +115,10 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
         //In the case of account id being changed, both the old key and the new key are required
         // to sign the transaction. So they can be added like this.
         //NOTE: this is different than node adminKey
-        const nodeAccountId = this.getNodeAccountId(nodeInfo);
+        const nodeAccountId = nodeInfo ? this.getNodeAccountId(nodeInfo) : null;
         if (nodeAccountId) {
-          const { key } = await getAccountInfo(nodeAccountId, mirrorNodeLink);
+          const nodeAccountInfo = await getAccountInfo(nodeAccountId, mirrorNodeLink);
+          const key = nodeAccountInfo?.key;
           if (key && !hasKey(key)) {
             signatureKeys.push(key);
             nodeAdminKeys[nodeId] = key;
