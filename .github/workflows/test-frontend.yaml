@@ -133,7 +133,7 @@ jobs:
         run: |
           set -euo pipefail
           kind create cluster -n "${SOLO_CLUSTER_NAME}"
-          solo quick-start single deploy | tee solo-deploy.log
+          solo one-shot single deploy | tee solo-deploy.log
 
       - name: Check port forwarding
         run: |
