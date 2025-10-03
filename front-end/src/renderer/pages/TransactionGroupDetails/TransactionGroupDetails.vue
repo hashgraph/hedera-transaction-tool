@@ -79,7 +79,7 @@ const disableSignAll = ref(false);
 const isSigningAll = ref(false);
 const signingItemSeq = ref(-1);
 const isApproving = ref(false);
-const unsignedSignersToCheck = ref<Record<string, string[]>>({});
+const unsignedSignersToCheck = ref<Record<number, string[]>>({});
 const tooltipRef = ref<HTMLElement[]>([]);
 
 /* Computed */
@@ -94,7 +94,7 @@ async function handleFetchGroup(id: string | number) {
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
     try {
       const updatedPublicKeysRequiredToSign: string[] = [];
-      const updatedUnsignedSignersToCheck: Record<string, string[]> = {};
+      const updatedUnsignedSignersToCheck: Record<number, string[]> = {};
 
       group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
       disableSignAll.value = false;
