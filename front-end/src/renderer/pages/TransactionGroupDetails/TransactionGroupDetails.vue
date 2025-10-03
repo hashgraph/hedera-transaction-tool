@@ -147,9 +147,6 @@ async function handleFetchGroup(id: string | number) {
     } catch (error) {
       router.back();
       throw error;
-    } finally {
-      signingItemSeq.value = -1;
-      isSigningAll.value = false;
     }
   } else {
     console.log('not logged into org');
@@ -221,10 +218,22 @@ const handleSignGroupItem = async (groupItem: IGroupItem) => {
       items,
     );
 
+    const updatedTransaction: ITransactionFull = await getTransactionById(
+      user.selectedOrganization?.serverUrl || '',
+      groupItem.transactionId
+    );
+
+    const index = group.value!.groupItems.findIndex(
+      item => item.transaction.id === groupItem.transactionId,
+    );
+    group.value!.groupItems[index].transaction = updatedTransaction;
+    delete unsignedSignersToCheck.value[groupItem.transaction.id];
+
     toast.success('Transaction signed successfully');
   } catch {
-    signingItemSeq.value = -1;
     toast.error('Transaction not signed');
+  } finally {
+    signingItemSeq.value = -1;
   }
 };
 
@@ -263,20 +272,23 @@ const handleSignAll = async () => {
         };
         items.push(item);
       }
+      await uploadSignatures(
+        user.personal.id,
+        personalPassword,
+        user.selectedOrganization,
+        undefined,
+        undefined,
+        undefined,
+        items,
+      );
+
+      await handleFetchGroup(group.value!.id);
+      toast.success('Transactions signed successfully');
     }
-    await uploadSignatures(
-      user.personal.id,
-      personalPassword,
-      user.selectedOrganization,
-      undefined,
-      undefined,
-      undefined,
-      items,
-    );
-    toast.success('Transactions signed successfully');
   } catch {
-    isSigningAll.value = false;
     toast.error('Transactions not signed');
+  } finally {
+    isSigningAll.value = false;
   }
 };
 
