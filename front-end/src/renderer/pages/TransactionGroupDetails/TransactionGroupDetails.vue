@@ -74,7 +74,6 @@ const createTooltips = useCreateTooltips();
 const group = ref<IGroup | null>(null);
 const shouldApprove = ref(false);
 const isConfirmModalShown = ref(false);
-const publicKeysRequiredToSign = ref<string[]>([]);
 const disableSignAll = ref(false);
 const isSigningAll = ref(false);
 const signingItemSeq = ref(-1);
@@ -85,7 +84,7 @@ const tooltipRef = ref<HTMLElement[]>([]);
 /* Computed */
 const showSignAll = computed(() => {
   return (
-    isLoggedInOrganization(user.selectedOrganization) && publicKeysRequiredToSign.value.length > 0
+    isLoggedInOrganization(user.selectedOrganization) && Object.keys(unsignedSignersToCheck.value).length >= 1
   );
 });
 
@@ -93,7 +92,6 @@ const showSignAll = computed(() => {
 async function handleFetchGroup(id: string | number) {
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
     try {
-      const updatedPublicKeysRequiredToSign: string[] = [];
       const updatedUnsignedSignersToCheck: Record<number, string[]> = {};
 
       group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
@@ -129,17 +127,11 @@ async function handleFetchGroup(id: string | number) {
             usersPublicKeys.length > 0
           ) {
             updatedUnsignedSignersToCheck[txId] = usersPublicKeys;
-            usersPublicKeys.forEach(key => {
-              if (!updatedPublicKeysRequiredToSign.includes(key)) {
-                updatedPublicKeysRequiredToSign.push(key);
-              }
-            });
           }
         }
       }
 
       unsignedSignersToCheck.value = updatedUnsignedSignersToCheck;
-      publicKeysRequiredToSign.value = updatedPublicKeysRequiredToSign;
 
       // bootstrap tooltips needs to be recreated when the items' status might have changed
       // since their title is not updated
