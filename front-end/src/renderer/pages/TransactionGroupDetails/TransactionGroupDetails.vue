@@ -637,7 +637,7 @@ watchEffect(() => {
                                     loading-text="Signing..."
                                     type="button"
                                     color="primary"
-                                    @click.prevent="handleSignGroupItem(groupItem)"
+                                    @click.prevent="handleSignGroupItem(groupItem as IGroupItem)"
                                     :data-testid="`sign-group-item-${index}`"
                                     :disabled="
                                       unsignedSignersToCheck[groupItem.transaction.id] ===
