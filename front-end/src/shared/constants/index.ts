@@ -20,6 +20,7 @@ export const DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY = 'default_max_transaction_fe
 export const SELECTED_NETWORK = 'selected_network';
 export const LAST_SELECTED_ORGANIZATION = 'last_selected_organization';
 export const DEFAULT_ORGANIZATION_OPTION = 'default_organization_option';
+export const DATE_TIME_PREFERENCE = 'date_time_preference';
 export const USE_KEYCHAIN = 'use_keychain';
 export const UPDATE_LOCATION = 'update_location';
 export const ACCOUNT_SETUP_STARTED = 'account_setup_started';
