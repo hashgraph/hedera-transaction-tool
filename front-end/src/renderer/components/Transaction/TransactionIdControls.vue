@@ -9,6 +9,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRoute } from 'vue-router';
 
 import useAccountId from '@renderer/composables/useAccountId';
+import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
 
 import * as claim from '@renderer/services/claimService';
 
@@ -35,6 +36,7 @@ const user = useUserStore();
 /* Composables */
 const route = useRoute();
 const account = useAccountId();
+const { dateTimeSettingLabel } = useDateTimeSetting();
 
 /* State */
 const localValidStart = ref<Date>(props.validStart);
@@ -130,7 +132,8 @@ const columnClass = 'col-4 col-xxxl-3';
     </div>
     <div class="form-group" :class="[columnClass]">
       <label class="form-label"
-        >Valid Start <span class="text-muted text-italic">- Local time</span></label
+        >Valid Start
+        <span class="text-muted text-italic">{{ `- ${dateTimeSettingLabel}` }}</span></label
       >
       <RunningClockDatePicker
         :model-value="validStart"
