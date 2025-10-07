@@ -8,6 +8,7 @@ import { Prisma } from '@prisma/client';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useUserStore from '@renderer/stores/storeUser';
+import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
 
 import {
   getDraft,
@@ -53,6 +54,7 @@ const generatedClass = computed(() => {
 /* Composables */
 const router = useRouter();
 const toast = useToast();
+const { dateTimeSettingLabel } = useDateTimeSetting();
 
 /* Handlers */
 const handleSort = async (field: string, direction: string) => {
@@ -245,7 +247,7 @@ watch([currentPage, pageSize], async () => {
                     )
                   "
                 >
-                  <span>Date</span>
+                  <span>{{ `Date (${dateTimeSettingLabel})` }}</span>
                   <i
                     v-if="sortField === 'created_at'"
                     class="bi text-title"
