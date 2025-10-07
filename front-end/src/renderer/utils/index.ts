@@ -107,7 +107,7 @@ export const base64ToUint8Array = (base64String: string) => {
     bytes[i] = binaryString.charCodeAt(i);
   }
   return bytes;
-}
+};
 
 export const encodeString = (str: string) => {
   return new TextEncoder().encode(str);
@@ -119,6 +119,11 @@ export function stringToHex(str: string): string {
 
 export function hexToString(hex: string) {
   return decodeURIComponent(hex.replace(/\s+/g, '').replace(/[0-9a-f]{2}/g, '%$&'));
+}
+
+export enum DateTimeOptions {
+  UTC_TIME = 'utc-time',
+  LOCAL_TIME = 'local-time',
 }
 
 export const getDateStringExtended = (date: Date) => {
