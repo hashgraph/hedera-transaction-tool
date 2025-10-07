@@ -126,8 +126,28 @@ export enum DateTimeOptions {
   LOCAL_TIME = 'local-time',
 }
 
-export const getDateStringExtended = (date: Date) => {
-  return `${date.toDateString()} ${date.toLocaleTimeString()}`;
+export const getDateString = (date: Date, format: DateTimeOptions = DateTimeOptions.UTC_TIME) => {
+  return format === DateTimeOptions.UTC_TIME
+    ? date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+        timeZone: 'UTC', // Force UTC time
+      })
+    : date.toLocaleString();
+};
+
+export const getDateStringExtended = (
+  date: Date,
+  format: DateTimeOptions = DateTimeOptions.UTC_TIME,
+) => {
+  return format === DateTimeOptions.UTC_TIME
+    ? date.toUTCString()
+    : `${date.toDateString()} ${date.toLocaleTimeString()}`;
 };
 
 export const throwError = (errorMessage: string) => {
