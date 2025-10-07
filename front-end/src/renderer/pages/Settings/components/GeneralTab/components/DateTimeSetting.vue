@@ -1,16 +1,16 @@
 <script lang="ts" setup>
-import type { DateTimeOptions } from '@renderer/utils';
-
+import { DateTimeOptions } from '@renderer/composables/user/useDateTimeSetting.ts';
 import { onBeforeMount, ref } from 'vue';
 import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
 import AppSelect from '@renderer/components/ui/AppSelect.vue';
 
 /* Composables */
-const { DATE_TIME_OPTIONS, getDateTimeSetting, setDateTimeSetting } = useDateTimeSetting();
+const { DATE_TIME_OPTION_LABELS, getDateTimeSetting, setDateTimeSetting } = useDateTimeSetting();
 
 /* State */
 const currentSetting = ref<DateTimeOptions>();
 
+/* Handlers */
 const handleUpdateSetting = async (selection: DateTimeOptions | undefined) => {
   if (selection) {
     await setDateTimeSetting(selection);
@@ -30,7 +30,7 @@ onBeforeMount(async () => {
       <label class="form-label me-3">Date/Time Format</label>
       <AppSelect
         :color="'secondary'"
-        :items="DATE_TIME_OPTIONS"
+        :items="DATE_TIME_OPTION_LABELS"
         :value="currentSetting"
         button-class="w-100"
         toggle-text="Select Format"

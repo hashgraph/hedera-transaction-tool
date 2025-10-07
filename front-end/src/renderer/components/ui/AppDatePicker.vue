@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { DatePickerInstance, VueDatePickerProps } from '@vuepic/vue-datepicker';
 
-import { computed, onBeforeMount, ref } from 'vue';
-import { DateTimeOptions } from '@renderer/utils';
+import { computed, ref } from 'vue';
 
 import DatePicker from '@vuepic/vue-datepicker';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -24,21 +23,16 @@ const emit = defineEmits<{
 }>();
 
 /* Composables */
-const { getDateTimeSetting } = useDateTimeSetting();
+const { isUtcSelected } = useDateTimeSetting();
 
 /* State */
 const datePicker = ref<DatePickerInstance>(null);
-const dateTimeSetting = ref<DateTimeOptions>();
 
 /* Computed */
-const useUTC = computed(() => {
-  return dateTimeSetting.value === DateTimeOptions.UTC_TIME;
-});
-
 const inputValue = computed(() => {
   let result: string | Date | undefined;
   if (props.modelValue) {
-    result = useUTC.value ? new Date(props.modelValue!.toUTCString()) : props.modelValue;
+    result = isUtcSelected.value ? new Date(props.modelValue.toUTCString()) : props.modelValue;
   } else {
     result = undefined;
   }
@@ -58,17 +52,12 @@ function handleUpdate(value: string | Date) {
     emit('update:modelValue', value);
   }
 }
-
-/* Hooks */
-onBeforeMount(async () => {
-  dateTimeSetting.value = await getDateTimeSetting();
-});
 </script>
 <template>
   <DatePicker
     ref="datePicker"
     :model-value="inputValue"
-    :utc="useUTC ? 'preserve' : undefined"
+    :utc="isUtcSelected ? 'preserve' : undefined"
     :clearable="clearable"
     auto-apply
     partial-flow

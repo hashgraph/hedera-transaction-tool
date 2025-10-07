@@ -121,13 +121,8 @@ export function hexToString(hex: string) {
   return decodeURIComponent(hex.replace(/\s+/g, '').replace(/[0-9a-f]{2}/g, '%$&'));
 }
 
-export enum DateTimeOptions {
-  UTC_TIME = 'utc-time',
-  LOCAL_TIME = 'local-time',
-}
-
-export const getDateString = (date: Date, format: DateTimeOptions = DateTimeOptions.UTC_TIME) => {
-  return format === DateTimeOptions.UTC_TIME
+export function getDateString(date: Date, isUtcSelected = true) {
+  return isUtcSelected
     ? date.toLocaleString('en-US', {
         year: 'numeric',
         month: '2-digit',
@@ -139,16 +134,11 @@ export const getDateString = (date: Date, format: DateTimeOptions = DateTimeOpti
         timeZone: 'UTC', // Force UTC time
       })
     : date.toLocaleString();
-};
+}
 
-export const getDateStringExtended = (
-  date: Date,
-  format: DateTimeOptions = DateTimeOptions.UTC_TIME,
-) => {
-  return format === DateTimeOptions.UTC_TIME
-    ? date.toUTCString()
-    : `${date.toDateString()} ${date.toLocaleTimeString()}`;
-};
+export function getDateStringExtended(date: Date, isUtcSelected = true) {
+  return isUtcSelected ? date.toUTCString() : `${date.toDateString()} ${date.toLocaleTimeString()}`;
+}
 
 export const throwError = (errorMessage: string) => {
   throw new Error(errorMessage);

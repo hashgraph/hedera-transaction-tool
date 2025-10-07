@@ -1,7 +1,7 @@
 <script lang="ts" setup>
+import { computed } from 'vue';
+import { getDateString, getDateStringExtended } from '@renderer/utils';
 import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
-import { DateTimeOptions, getDateString, getDateStringExtended } from '@renderer/utils';
-import { computed, onBeforeMount, ref } from 'vue';
 
 /* Props */
 const props = withDefaults(
@@ -16,26 +16,18 @@ const props = withDefaults(
 );
 
 /* Composables */
-const { getDateTimeSetting } = useDateTimeSetting();
-
-/* State */
-const dateTimeSetting = ref<DateTimeOptions>();
+const { isUtcSelected } = useDateTimeSetting();
 
 /* Computed */
 const extendedDateString = computed(() => {
-  return props.date ? getDateStringExtended(props.date, dateTimeSetting.value) : '';
+  return props.date ? getDateStringExtended(props.date, isUtcSelected.value) : '';
 });
 const dateString = computed(() => {
-  return props.date ? getDateString(props.date, dateTimeSetting.value) : '';
-});
-
-/* Hooks */
-onBeforeMount(async () => {
-  dateTimeSetting.value = await getDateTimeSetting();
+  return props.date ? getDateString(props.date, isUtcSelected.value) : '';
 });
 </script>
 
 <template>
-    <span v-if="props.extended">{{ extendedDateString }}</span>
-    <span v-else>{{ dateString }}</span>
+  <span v-if="props.extended">{{ extendedDateString }}</span>
+  <span v-else>{{ dateString }}</span>
 </template>
