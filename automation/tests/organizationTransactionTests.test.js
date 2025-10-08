@@ -1,4 +1,8 @@
 const { test } = require('@playwright/test');
+const fs = require('fs').promises;
+const path = require('path');
+const { Transaction, PrivateKey } = require('@hashgraph/sdk');
+const JSZip = require('jszip');
 const {
   setupApp,
   closeApp,
@@ -15,12 +19,18 @@ const OrganizationPage = require('../pages/OrganizationPage');
 const SettingsPage = require('../pages/SettingsPage');
 const { resetDbState, resetPostgresDbState } = require('../utils/databaseUtil');
 const { disableNotificationsForTestUsers } = require('../utils/databaseQueries');
+const { signatureMapToV1Json } = require('../utils/transactionUtil');
 
 let app, window;
 let globalCredentials = { email: '', password: '' };
 let registrationPage, loginPage, transactionPage, organizationPage, settingsPage;
 let firstUser, secondUser, thirdUser;
 let complexKeyAccountId;
+let exportDir;
+
+process.on('exit', async () => {
+  await fs.rm(exportDir, { recursive: true, force: true });
+});
 
 test.describe('Organization Transaction tests', () => {
   test.beforeAll(async () => {
@@ -73,6 +83,27 @@ test.describe('Organization Transaction tests', () => {
     complexKeyAccountId = organizationPage.getComplexAccountId();
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
+
+    exportDir = '/tmp/transaction-output';
+    await app.evaluate(({ dialog }, { exportDir }) => {
+      dialog.showSaveDialog = async (...args) => {
+        console.log('Intercepted save dialog call', args);
+        // Simulate clicking "OK" with a chosen path
+        return {
+          canceled: false,
+          filePath: (exportDir + '/transaction.tx'),
+          overwrite: true,
+        };
+      };
+
+      dialog.showOpenDialog = async (...args) => {
+        console.log('Intercepted open dialog call', args);
+        // Simulate selecting a file (provide a path to a test .zip file)
+        return { canceled: false, filePaths: [exportDir + '/sig1.zip', exportDir + '/sig2.zip'] };
+      };
+    },
+    { exportDir }
+    );
   });
 
   test.beforeEach(async () => {
@@ -85,6 +116,7 @@ test.describe('Organization Transaction tests', () => {
 
   test.afterEach(async () => {
     await organizationPage.logoutFromOrganization();
+    await fs.rm(exportDir, { recursive: true, force: true });
   });
 
   test.afterAll(async () => {
@@ -510,6 +542,75 @@ test.describe('Organization Transaction tests', () => {
     const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId);
     expect(transactionDetails.transactionId).toBe(txId);
     expect(transactionDetails.transactionType).toBe('Account Delete Transaction');
+    expect(transactionDetails.validStart).toBeTruthy();
+    expect(transactionDetails.detailsButton).toBe(true);
+    expect(transactionDetails.status).toBe('SUCCESS');
+  });
+
+  //Add test for tx1 full flow - create account transaction in the not too distant future, then export it to temp file
+  // then need to somehow pretend to sign it in java, probably just cheat and have it sign it and save those as json as well
+  // then import those sigs and make sure they are attached to the transaction and execute it
+  test('Verify user can export and import transaction and signatures for TTv1->TTv2 compatibility', async () => {
+    test.slow();
+
+    await fs.mkdir(exportDir, { recursive: true });
+
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnCreateAccountTransaction();
+    await transactionPage.waitForPublicKeyToBeFilled();
+    await transactionPage.fillInPayerAccountId(complexKeyAccountId);
+    const { txId, validStart } = await organizationPage.processTransaction();
+
+    // export transaction
+    await transactionPage.clickOnExportTransactionButton('Export');
+
+    // Read the .tx file and sign it with required signatures, saving those signatures to json files in appropriate zips
+    const transactionPath = path.join(exportDir, 'transaction.tx');
+    const txBytes = await fs.readFile(transactionPath);
+    const tx = Transaction.fromBytes(txBytes);
+    const pk1 = PrivateKey.fromStringED25519(await organizationPage.getUser(1).privateKey);
+    const pk2 = PrivateKey.fromStringED25519(await organizationPage.getUser(2).privateKey);
+    const sig1 = signatureMapToV1Json(pk1.signTransaction(tx));
+    const sig2 = signatureMapToV1Json(pk2.signTransaction(tx));
+
+    const sig1JsonPath = path.join(exportDir, 'sig1.json');
+    const sig2JsonPath = path.join(exportDir, 'sig2.json');
+    await fs.writeFile(sig1JsonPath, sig1);
+    await fs.writeFile(sig2JsonPath, sig2);
+
+    // Read files for zipping
+    const sig1Json = await fs.readFile(sig1JsonPath);
+    const sig2Json = await fs.readFile(sig2JsonPath);
+
+    // Zip up the signatures
+    const zip1 = new JSZip();
+    zip1.file(path.basename(sig1JsonPath), sig1Json);
+    zip1.file(path.basename(transactionPath), txBytes);
+    const zip1Content = await zip1.generateAsync({ type: 'nodebuffer' });
+    await fs.writeFile(path.join(exportDir, 'sig1.zip'), zip1Content);
+
+    // Zip sig2.json + fake-output.tx
+    const zip2 = new JSZip();
+    zip2.file(path.basename(sig2JsonPath), sig2Json);
+    zip2.file(path.basename(transactionPath), txBytes);
+    const zip2Content = await zip2.generateAsync({ type: 'nodebuffer' });
+    await fs.writeFile(path.join(exportDir, 'sig2.zip'), zip2Content);
+
+    // Sign the transaction as the fee payer
+    await organizationPage.clickOnSignTransactionButton();
+
+    // import signatures
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.clickOnImportButton();
+    await transactionPage.clickOnConfirmImportButton();
+
+    // as the payer, sign the transaction, then make sure it executes successfully
+    await waitForValidStart(validStart);
+
+    await organizationPage.clickOnHistoryTab();
+    const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId);
+    expect(transactionDetails.transactionId).toBe(txId);
+    expect(transactionDetails.transactionType).toBe('Account Create Transaction');
     expect(transactionDetails.validStart).toBeTruthy();
     expect(transactionDetails.detailsButton).toBe(true);
     expect(transactionDetails.status).toBe('SUCCESS');

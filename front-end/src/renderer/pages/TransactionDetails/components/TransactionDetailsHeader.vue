@@ -789,6 +789,7 @@ watch(
               :items="dropDownItems"
               compact
               @select="handleDropDownItem($event as ActionButton)"
+              data-testid="button-more-dropdown-sm"
             />
             <AppDropDown
               class="d-none d-lg-block"
@@ -796,6 +797,7 @@ watch(
               :items="dropDownItems.slice(1)"
               compact
               @select="handleDropDownItem($event as ActionButton)"
+              data-testid="button-more-dropdown-lg"
             />
           </div>
         </template>

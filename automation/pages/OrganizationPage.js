@@ -193,7 +193,7 @@ class OrganizationPage extends BasePage {
       const email = generateRandomEmail();
       const password = generateRandomPassword();
       usersData.push({ email, password });
-      this.users.push({ email, password });
+      this.users.push({ email, password, privateKey: '' });
     }
 
     // Pass the batch of user data to the database utility function
@@ -228,13 +228,14 @@ class OrganizationPage extends BasePage {
 
         if (setPrivateKey) {
           await setupEnvironmentForTransactions(window, privateKey);
+          this.users[i].privateKey = privateKey;
         }
 
         await this.settingsPage.navigateToLogout();
         await this.click(this.logoutButtonSelector);
         await this.waitForElementToBeVisible(this.emailForOrganizationInputSelector);
       } else {
-        await this.generateAndStoreUserKey(user.email, encryptionPassword);
+        this.users[i].privateKey = await this.generateAndStoreUserKey(user.email, encryptionPassword);
       }
     }
   }
@@ -262,6 +263,8 @@ class OrganizationPage extends BasePage {
 
     // Insert the public key and encrypted private key into the key_pair table
     await insertKeyPair(publicKeyString, encryptedPrivateKey, mnemonicHash, userId);
+
+    return privateKeyString;
   }
 
   async recoverAccount(userIndex) {
