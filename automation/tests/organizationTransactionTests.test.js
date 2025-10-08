@@ -29,7 +29,9 @@ let complexKeyAccountId;
 let exportDir;
 
 process.on('exit', async () => {
-  await fs.rm(exportDir, { recursive: true, force: true });
+  if (exportDir) {
+    await fs.rm(exportDir, { recursive: true, force: true });
+  }
 });
 
 test.describe('Organization Transaction tests', () => {
@@ -84,26 +86,18 @@ test.describe('Organization Transaction tests', () => {
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
 
-    exportDir = '/tmp/transaction-output';
+    exportDir = path.join('/tmp', 'transaction-output');
     await app.evaluate(({ dialog }, { exportDir }) => {
-      dialog.showSaveDialog = async (...args) => {
-        console.log('Intercepted save dialog call', args);
-        // Simulate clicking "OK" with a chosen path
-        return {
-          canceled: false,
-          filePath: (exportDir + '/transaction.tx'),
-          overwrite: true,
-        };
-      };
-
-      dialog.showOpenDialog = async (...args) => {
-        console.log('Intercepted open dialog call', args);
-        // Simulate selecting a file (provide a path to a test .zip file)
-        return { canceled: false, filePaths: [exportDir + '/sig1.zip', exportDir + '/sig2.zip'] };
-      };
-    },
-    { exportDir }
-    );
+      dialog.showSaveDialog = async () => ({
+        canceled: false,
+        filePath: path.join(exportDir, 'transaction.tx'),
+        overwrite: true,
+      });
+      dialog.showOpenDialog = async () => ({
+        canceled: false,
+        filePaths: [path.join(exportDir, 'sig1.zip'), path.join(exportDir, 'sig2.zip')],
+      });
+    }, { exportDir });
   });
 
   test.beforeEach(async () => {
@@ -116,7 +110,9 @@ test.describe('Organization Transaction tests', () => {
 
   test.afterEach(async () => {
     await organizationPage.logoutFromOrganization();
-    await fs.rm(exportDir, { recursive: true, force: true });
+    if (exportDir) {
+      await fs.rm(exportDir, { recursive: true, force: true });
+    }
   });
 
   test.afterAll(async () => {
@@ -547,14 +543,13 @@ test.describe('Organization Transaction tests', () => {
     expect(transactionDetails.status).toBe('SUCCESS');
   });
 
-  //Add test for tx1 full flow - create account transaction in the not too distant future, then export it to temp file
-  // then need to somehow pretend to sign it in java, probably just cheat and have it sign it and save those as json as well
-  // then import those sigs and make sure they are attached to the transaction and execute it
   test('Verify user can export and import transaction and signatures for TTv1->TTv2 compatibility', async () => {
     test.slow();
 
+    // Ensure export directory exists
     await fs.mkdir(exportDir, { recursive: true });
 
+    // Create transaction to export
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnCreateAccountTransaction();
     await transactionPage.waitForPublicKeyToBeFilled();
@@ -564,8 +559,14 @@ test.describe('Organization Transaction tests', () => {
     // export transaction
     await transactionPage.clickOnExportTransactionButton('Export');
 
-    // Read the .tx file and sign it with required signatures, saving those signatures to json files in appropriate zips
+    // File paths
     const transactionPath = path.join(exportDir, 'transaction.tx');
+    const sig1JsonPath = path.join(exportDir, 'sig1.json');
+    const sig2JsonPath = path.join(exportDir, 'sig2.json');
+    const sig1ZipPath = path.join(exportDir, 'sig1.zip');
+    const sig2ZipPath = path.join(exportDir, 'sig2.zip');
+
+    // Read the .tx file and sign it with required signatures, saving those signatures to json files in appropriate zips
     const txBytes = await fs.readFile(transactionPath);
     const tx = Transaction.fromBytes(txBytes);
     const pk1 = PrivateKey.fromStringED25519(await organizationPage.getUser(1).privateKey);
@@ -573,8 +574,6 @@ test.describe('Organization Transaction tests', () => {
     const sig1 = signatureMapToV1Json(pk1.signTransaction(tx));
     const sig2 = signatureMapToV1Json(pk2.signTransaction(tx));
 
-    const sig1JsonPath = path.join(exportDir, 'sig1.json');
-    const sig2JsonPath = path.join(exportDir, 'sig2.json');
     await fs.writeFile(sig1JsonPath, sig1);
     await fs.writeFile(sig2JsonPath, sig2);
 
@@ -587,14 +586,14 @@ test.describe('Organization Transaction tests', () => {
     zip1.file(path.basename(sig1JsonPath), sig1Json);
     zip1.file(path.basename(transactionPath), txBytes);
     const zip1Content = await zip1.generateAsync({ type: 'nodebuffer' });
-    await fs.writeFile(path.join(exportDir, 'sig1.zip'), zip1Content);
+    await fs.writeFile(sig1ZipPath, zip1Content);
 
     // Zip sig2.json + fake-output.tx
     const zip2 = new JSZip();
     zip2.file(path.basename(sig2JsonPath), sig2Json);
     zip2.file(path.basename(transactionPath), txBytes);
     const zip2Content = await zip2.generateAsync({ type: 'nodebuffer' });
-    await fs.writeFile(path.join(exportDir, 'sig2.zip'), zip2Content);
+    await fs.writeFile(sig2ZipPath, zip2Content);
 
     // Sign the transaction as the fee payer
     await organizationPage.clickOnSignTransactionButton();
@@ -604,9 +603,10 @@ test.describe('Organization Transaction tests', () => {
     await transactionPage.clickOnImportButton();
     await transactionPage.clickOnConfirmImportButton();
 
-    // as the payer, sign the transaction, then make sure it executes successfully
+    // Wait for the transaction to execute
     await waitForValidStart(validStart);
 
+    // Verify transaction is in history with SUCCESS status
     await organizationPage.clickOnHistoryTab();
     const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId);
     expect(transactionDetails.transactionId).toBe(txId);
