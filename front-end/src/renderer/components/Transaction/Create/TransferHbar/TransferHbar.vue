@@ -106,7 +106,7 @@ const handleDraftLoaded = async (transaction: Transaction) => {
   const accountInfoCache = new AccountInfoCache();
   for (const accountId of data.transfers.map(t => t.accountId.toString())) {
     if (!accountInfos.value[accountId]) {
-      const info = await accountInfoCache.fetch(accountId, network.mirrorNodeBaseURL)
+      const info = await accountInfoCache.fetch(accountId, network.mirrorNodeBaseURL);
       if (info) {
         accountInfos.value[accountId] = info;
       }

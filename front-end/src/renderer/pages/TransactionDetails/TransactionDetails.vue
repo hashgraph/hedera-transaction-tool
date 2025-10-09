@@ -144,7 +144,7 @@ async function fetchTransaction(id: string | number) {
     signatureKeyObject.value = await computeSignatureKey(
       sdkTransaction.value,
       network.mirrorNodeBaseURL,
-      new AccountInfoCache()
+      new AccountInfoCache(),
     );
   }
 

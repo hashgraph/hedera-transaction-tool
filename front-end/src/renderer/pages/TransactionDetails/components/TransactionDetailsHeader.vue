@@ -2,7 +2,6 @@
 import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@shared/interfaces';
 
-
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -296,7 +295,7 @@ const handleSign = async () => {
       props.sdkTransaction,
       user.selectedOrganization.userKeys,
       network.mirrorNodeBaseURL,
-      new AccountInfoCache()
+      new AccountInfoCache(),
     );
 
     const restoredRequiredKeys = [];

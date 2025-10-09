@@ -251,7 +251,11 @@ function basePreCreateAssert() {
 }
 
 async function updateTransactionKey() {
-  const computedKeys = await computeSignatureKey(transaction.value, network.mirrorNodeBaseURL, new AccountInfoCache());
+  const computedKeys = await computeSignatureKey(
+    transaction.value,
+    network.mirrorNodeBaseURL,
+    new AccountInfoCache(),
+  );
   transactionKey.value = new KeyList(computedKeys.signatureKeys);
 }
 
