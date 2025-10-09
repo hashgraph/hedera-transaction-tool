@@ -21,7 +21,11 @@ export * from './transfer-transaction.model';
 
 export const COUNCIL_ACCOUNTS = ['0.0.2', '0.0.50', '0.0.55'];
 
-export const computeSignatureKey = async (transaction: SDKTransaction, mirrorNodeLink: string, accountInfoCache: AccountInfoCache) => {
+export const computeSignatureKey = async (
+  transaction: SDKTransaction,
+  mirrorNodeLink: string,
+  accountInfoCache: AccountInfoCache,
+) => {
   const transactionModel = TransactionFactory.fromTransaction(transaction);
 
   return await transactionModel.computeSignatureKey(mirrorNodeLink, accountInfoCache);
@@ -32,7 +36,7 @@ export const usersPublicRequiredToSign = async (
   transaction: SDKTransaction,
   userKeys: IUserKey[],
   mirrorNodeLink: string,
-  accountInfoCache: AccountInfoCache
+  accountInfoCache: AccountInfoCache,
 ): Promise<string[]> => {
   const publicKeysRequired: Set<string> = new Set<string>();
 

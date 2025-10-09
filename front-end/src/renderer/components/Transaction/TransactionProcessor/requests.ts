@@ -131,7 +131,7 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
     const withoutChecksum = this.accountIds.map(acc => AccountId.fromString(acc).toString());
     for (const account of withoutChecksum) {
       if (!this.accountInfoMap.has(account)) {
-        const data = await accountInfoCache.fetch(account, mirrorNodeBaseURL)
+        const data = await accountInfoCache.fetch(account, mirrorNodeBaseURL);
         if (data) {
           this.accountInfoMap.set(account, data);
         }
@@ -152,7 +152,7 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
     if (this.payerId && !this.accountIsPayer) {
       const payerWithoutChecksum = AccountId.fromString(this.payerId).toString();
       if (!this.accountInfoMap.has(payerWithoutChecksum)) {
-        const payerInfo = await accountInfoCache.fetch(payerWithoutChecksum, mirrorNodeBaseURL)
+        const payerInfo = await accountInfoCache.fetch(payerWithoutChecksum, mirrorNodeBaseURL);
         if (payerInfo) {
           this.accountInfoMap.set(payerWithoutChecksum, payerInfo);
         }

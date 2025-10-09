@@ -92,11 +92,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     for (const accountId of receiverAccounts) {
       try {
         const accountInfo = await accountInfoCache.fetch(accountId, mirrorNodeLink);
-        if (
-          accountInfo?.receiverSignatureRequired &&
-          accountInfo?.key &&
-          !hasKey(accountInfo.key)
-        ) {
+        if (accountInfo?.receiverSignatureRequired && accountInfo?.key && !hasKey(accountInfo.key)) {
           signatureKeys.push(accountInfo.key);
           receiverAccountsKeys[accountId] = accountInfo.key;
           currentKeyList.push(accountInfo.key);
@@ -126,10 +122,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
         //NOTE: this is different than node adminKey
         const nodeAccountId = nodeInfo ? this.getNodeAccountId(nodeInfo) : null;
         if (nodeAccountId) {
-          const nodeAccountInfo = await accountInfoCache.fetch(
-            nodeAccountId,
-            mirrorNodeLink,
-          );
+          const nodeAccountInfo = await accountInfoCache.fetch(nodeAccountId, mirrorNodeLink);
           const key = nodeAccountInfo?.key;
           if (key && !hasKey(key)) {
             signatureKeys.push(key);
