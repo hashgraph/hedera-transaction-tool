@@ -3,7 +3,7 @@ const { launchHederaTransactionTool } = require('./electronAppLauncher');
 const { migrationDataExists } = require('./oldTool.js');
 const LoginPage = require('../pages/LoginPage.js');
 const SettingsPage = require('../pages/SettingsPage');
-const fs = require('fs').promises;
+const fsp = require('fs').promises;
 const path = require('path');
 const _ = require('lodash');
 const Diff = require('deep-diff');
@@ -152,12 +152,12 @@ async function waitForValidStart(dateTimeString, bufferSeconds = 15) {
  * @param interval
  * @returns {Promise<void>}
  */
-async function waitForFile(filePath, timeout = 5000, interval = 100) {
+async function waitAndReadFile(filePath, timeout = 5000, interval = 100) {
   const start = Date.now();
   while (Date.now() - start < timeout) {
     try {
-      await fs.access(filePath);
-      return;
+      await fsp.access(filePath);
+      return await fsp.readFile(filePath);
     } catch {
       await new Promise(res => setTimeout(res, interval));
     }
@@ -171,14 +171,14 @@ async function waitForFile(filePath, timeout = 5000, interval = 100) {
  */
 async function cleanupBinFiles(directory) {
   try {
-    const files = await fs.readdir(directory);
+    const files = await fsp.readdir(directory);
     const deletePromises = files.map(async file => {
       const filePath = path.join(directory, file);
-      const fileStat = await fs.stat(filePath);
+      const fileStat = await fsp.stat(filePath);
 
       if (fileStat.isFile() && path.extname(file) === '.bin') {
         try {
-          await fs.unlink(filePath);
+          await fsp.unlink(filePath);
           console.log(`Deleted file: ${filePath}`);
         } catch (err) {
           console.error(`Failed to delete file ${filePath}: ${err.message}`);
@@ -296,7 +296,7 @@ module.exports = {
   formatTransactionId,
   calculateTimeout,
   waitForValidStart,
-  waitForFile,
+  waitAndReadFile,
   cleanupBinFiles,
   compareJsonFiles,
   parsePropertiesContent,

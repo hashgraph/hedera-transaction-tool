@@ -648,6 +648,12 @@ class TransactionPage extends BasePage {
     }
   }
 
+  async importV1Signatures() {
+    await this.clickOnTransactionsMenuButton();
+    await this.clickOnImportButton();
+    await this.clickOnConfirmImportButton();
+  }
+
   async clickOnReceiverSigRequiredSwitch() {
     await this.toggleSwitch(this.receiverSigRequiredSwitchSelector);
   }

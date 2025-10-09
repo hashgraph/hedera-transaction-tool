@@ -10,7 +10,7 @@ const {
   generateRandomPassword,
   setupEnvironmentForTransactions,
   waitForValidStart,
-  waitForFile,
+  waitAndReadFile,
 } = require('../utils/util');
 const RegistrationPage = require('../pages/RegistrationPage.js');
 const { expect } = require('playwright/test');
@@ -535,45 +535,45 @@ test.describe('Organization Transaction tests', () => {
     expect(transactionDetails.status).toBe('SUCCESS');
   });
 
-  test('Verify user can export and import transaction and a large number of signatures for TTv1->TTv2 compatibility', async () => {
-    test.slow();
-    const exportDir = path.join('/tmp', 'transaction-output');
-    // Remove the directory if it exists
-    await fsp.rm(exportDir, { recursive: true, force: true });
-    // Recreate the directory
-    await fsp.mkdir(exportDir, { recursive: true });
+  test.describe('TTv1->TTv2 signature import/export compatibility', () => {
+    let exportDir, savePath, transactionPath;
 
-    try {
-      // File paths
-      const savePath = path.join(exportDir, 'transaction.tx');
-      const transactionPath = path.join(exportDir, 'transaction.tx');
+    test.beforeEach(async () => {
+      exportDir = path.join('/tmp', 'transaction-output');
+      savePath = path.join(exportDir, 'transaction.tx');
+      transactionPath = path.join(exportDir, 'transaction.tx');
+      await fsp.rm(exportDir, { recursive: true, force: true });
+      await fsp.mkdir(exportDir, { recursive: true });
+
+      await app.evaluate(({ dialog }, { savePath }) => {
+        dialog._savePath = savePath;
+      }, { savePath });
+    });
+
+    test.afterEach(async () => {
+      if (exportDir) {
+        await fsp.rm(exportDir, { recursive: true, force: true });
+      }
+    });
+
+    test('Verify user can export and import transaction and a large number of signatures for TTv1->TTv2 compatibility', async () => {
+      test.slow();
 
       // Create 73 more users, a total of 76
-      await organizationPage.createUsers(73);
-      await organizationPage.setUpUsers(globalCredentials.password, 3, 75);
+      await organizationPage.createAdditionalUsers(73, globalCredentials.password);
 
       // Create an account with a complex key for users[1-75]
       const newAccountId = await organizationPage.createComplexKeyAccountForUsers(75);
 
       // Create transaction to export
       await transactionPage.clickOnTransactionsMenuButton();
-      await transactionPage.clickOnCreateNewTransactionButton();
-      await transactionPage.clickOnCreateAccountTransaction();
-      await transactionPage.waitForPublicKeyToBeFilled();
-      //This may be taking too long?
-      // await transactionPage.fillInValidDuration('1');
-      await transactionPage.fillInPayerAccountId(newAccountId);
-      const { txId, validStart } = await organizationPage.processTransaction();
+      const { txId, validStart } = await organizationPage.createAccountWithFeePayerId(newAccountId);
 
       // export transaction
-      await app.evaluate(({ dialog }, { savePath }) => {
-        dialog._savePath = savePath;
-      }, { savePath });
       await transactionPage.clickOnExportTransactionButton('Export');
 
       // Read the .tx file and sign it with required signatures, saving those signatures to json files in appropriate zips
-      await waitForFile(transactionPath, 5000);
-      const txBytes = await fsp.readFile(transactionPath);
+      const txBytes = await waitAndReadFile(transactionPath, 5000);
       const tx = Transaction.fromBytes(txBytes);
 
       const openPaths = [];
@@ -596,9 +596,7 @@ test.describe('Organization Transaction tests', () => {
       await app.evaluate(({ dialog }, { openPaths }) => {
         dialog._openPaths = openPaths;
       }, { openPaths });
-      await transactionPage.clickOnTransactionsMenuButton();
-      await transactionPage.clickOnImportButton();
-      await transactionPage.clickOnConfirmImportButton();
+      await transactionPage.importV1Signatures();
 
       // Wait for the transaction to execute
       await waitForValidStart(validStart);
@@ -611,74 +609,48 @@ test.describe('Organization Transaction tests', () => {
       expect(transactionDetails.validStart).toBeTruthy();
       expect(transactionDetails.detailsButton).toBe(true);
       expect(transactionDetails.status).toBe('SUCCESS');
-    } finally {
-      if (exportDir) {
-        await fsp.rm(exportDir, { recursive: true, force: true });
-      }
-    }
-  });
+    });
 
-  //try to add sig that is not needed
-  test('Verify user cannot import superfluous signatures from TTv1 format', async () => {
-    test.slow();
+    test('Verify user can import superfluous signatures from TTv1 format', async () => {
+      test.slow();
 
-    const exportDir = path.join('/tmp', 'transaction-output');
-    // Remove the directory if it exists
-    await fsp.rm(exportDir, { recursive: true, force: true });
-    // Recreate the directory
-    await fsp.mkdir(exportDir, { recursive: true });
-
-    try {
-      // File paths
-      const savePath = path.join(exportDir, 'transaction.tx');
-      const transactionPath = path.join(exportDir, 'transaction.tx');
-
-      // Create 73 more users, a total of 76
-      await organizationPage.createUsers(1);
-      await organizationPage.setUpUsers(globalCredentials.password, 3, 3);
+      await organizationPage.createAdditionalUsers(1, globalCredentials.password);
 
       // Create transaction to export
-      await transactionPage.clickOnCreateNewTransactionButton();
-      await transactionPage.clickOnCreateAccountTransaction();
-      await transactionPage.waitForPublicKeyToBeFilled();
-      await transactionPage.fillInPayerAccountId(complexKeyAccountId);
-      const { txId, validStart } = await organizationPage.processTransaction();
+      const { txId, validStart } = await organizationPage.createAccountWithFeePayerId(complexKeyAccountId);
 
       // export transaction
-      await app.evaluate(({ dialog }, { savePath }) => {
-        dialog._savePath = savePath;
-      }, { savePath });
       await transactionPage.clickOnExportTransactionButton('Export');
 
       // Read the .tx file and sign it with required signatures, saving those signatures to json files in appropriate zips
-      await waitForFile(transactionPath, 5000);
-      const txBytes = await fsp.readFile(transactionPath);
+      const txBytes = await waitAndReadFile(transactionPath, 5000);
       const tx = Transaction.fromBytes(txBytes);
 
-      const sigJsonPath = path.join(exportDir, 'sig4.json');
-      const sigZipPath = path.join(exportDir, 'sig4.zip');
-      const pk = PrivateKey.fromStringED25519(await organizationPage.getUser(3).privateKey);
-      const sig = signatureMapToV1Json(pk.signTransaction(tx));
+      // Start with 1, user 0 will sign after
+      const openPaths = [];
+      for (let i = 1; i < 4; i++) {
+        const sigJsonPath = path.join(exportDir, `sig${i}.json`);
+        const sigZipPath = path.join(exportDir, `sig${i}.zip`);
+        const pk = PrivateKey.fromStringED25519(await organizationPage.getUser(i).privateKey);
+        const sig = signatureMapToV1Json(pk.signTransaction(tx));
 
-      // Zip up the signatures
-      const zip = new JSZip();
-      zip.file(path.basename(sigJsonPath), Buffer.from(sig) );
-      zip.file(path.basename(transactionPath), txBytes);
-      const zipContent = await zip.generateAsync({ type: 'nodebuffer' });
-      await fsp.writeFile(sigZipPath, zipContent);
-      const openPaths = [sigZipPath];
+        // Zip up the signatures
+        const zip = new JSZip();
+        zip.file(path.basename(sigJsonPath), Buffer.from(sig) );
+        zip.file(path.basename(transactionPath), txBytes);
+        const zipContent = await zip.generateAsync({ type: 'nodebuffer' });
+        await fsp.writeFile(sigZipPath, zipContent);
+        openPaths.push(sigZipPath);
+      }
 
-      // // Sign the transaction as the fee payer
-      //probably just want to have all users sign the transaction
-      // await organizationPage.clickOnSignTransactionButton();
+      // Sign the transaction as the fee payer
+      await organizationPage.clickOnSignTransactionButton();
 
       // import signatures
       await app.evaluate(({ dialog }, { openPaths }) => {
         dialog._openPaths = openPaths;
       }, { openPaths });
-      await transactionPage.clickOnTransactionsMenuButton();
-      await transactionPage.clickOnImportButton();
-      await transactionPage.clickOnConfirmImportButton();
+      await transactionPage.importV1Signatures();
 
       // Wait for the transaction to execute
       await waitForValidStart(validStart);
@@ -691,47 +663,21 @@ test.describe('Organization Transaction tests', () => {
       expect(transactionDetails.validStart).toBeTruthy();
       expect(transactionDetails.detailsButton).toBe(true);
       expect(transactionDetails.status).toBe('SUCCESS');
-    } finally {
-      if (exportDir) {
-        await fsp.rm(exportDir, { recursive: true, force: true });
-      }
-    }
-  });
+    });
 
-  test('Verify user cannot import signatures without visibility of transaction from TTv1 format', async () => {
-    test.slow();
+    test('Verify user cannot import signatures without visibility of transaction from TTv1 format', async () => {
+      test.slow();
 
-    const exportDir = path.join('/tmp', 'transaction-output');
-    // Remove the directory if it exists
-    await fsp.rm(exportDir, { recursive: true, force: true });
-    // Recreate the directory
-    await fsp.mkdir(exportDir, { recursive: true });
-
-    try {
-      // File paths
-      const savePath = path.join(exportDir, 'transaction.tx');
-      const transactionPath = path.join(exportDir, 'transaction.tx');
-
-      // Create 73 more users, a total of 76
-      await organizationPage.createUsers(1);
-      await organizationPage.setUpUsers(globalCredentials.password, 3, 3);
+      await organizationPage.createAdditionalUsers(1, globalCredentials.password);
 
       // Create transaction to export
-      await transactionPage.clickOnCreateNewTransactionButton();
-      await transactionPage.clickOnCreateAccountTransaction();
-      await transactionPage.waitForPublicKeyToBeFilled();
-      await transactionPage.fillInPayerAccountId(complexKeyAccountId);
-      await organizationPage.processTransaction();
+      await organizationPage.createAccountWithFeePayerId(complexKeyAccountId);
 
       // export transaction
-      await app.evaluate(({ dialog }, { savePath }) => {
-        dialog._savePath = savePath;
-      }, { savePath });
       await transactionPage.clickOnExportTransactionButton('Export');
 
       // Read the .tx file and sign it with required signatures, saving those signatures to json files in appropriate zips
-      await waitForFile(transactionPath, 5000);
-      const txBytes = await fsp.readFile(transactionPath);
+      const txBytes = await waitAndReadFile(transactionPath, 5000);
       const tx = Transaction.fromBytes(txBytes);
 
       const openPaths = [];
@@ -772,10 +718,6 @@ test.describe('Organization Transaction tests', () => {
       //close modal so test can finish
       // Press Escape to close modal, allowing test to finish
       await window.keyboard.press('Escape');
-    } finally {
-      if (exportDir) {
-        await fsp.rm(exportDir, { recursive: true, force: true });
-      }
-    }
+    });
   });
 });

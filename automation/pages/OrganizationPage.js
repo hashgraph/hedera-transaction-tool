@@ -243,6 +243,11 @@ class OrganizationPage extends BasePage {
     }
   }
 
+  async createAdditionalUsers(numNewUsers, encryptionPassword) {
+    await this.createUsers(numNewUsers);
+    await this.setUpUsers(encryptionPassword, this.users.length - numNewUsers, this.users.length - 1);
+  }
+
   async generateAndStoreUserKey(email, password) {
     // Generate a 24-word mnemonic phrase
     const mnemonic = await Mnemonic.generate();
@@ -804,6 +809,14 @@ class OrganizationPage extends BasePage {
       selectedObservers: numberOfObservers === 1 ? selectedObservers[0] : selectedObservers,
       validStart,
     };
+  }
+
+  async createAccountWithFeePayerId(feePayerId) {
+    await this.transactionPage.clickOnCreateNewTransactionButton();
+    await this.transactionPage.clickOnCreateAccountTransaction();
+    await this.transactionPage.waitForPublicKeyToBeFilled();
+    await this.transactionPage.fillInPayerAccountId(feePayerId);
+    return await this.processTransaction();
   }
 
   async clickOnSignTransactionButton() {
