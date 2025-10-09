@@ -11,7 +11,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { getAll } from '@renderer/services/accountsService';
 
 import { getAccountIdWithChecksum, isUserLoggedIn, stringifyHbar } from '@renderer/utils';
-import { getAccountInfo } from '@renderer/services/mirrorNodeDataService.ts';
+import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -45,9 +45,10 @@ onBeforeMount(async () => {
     throw new Error('Transaction is not Transfer Transaction');
   }
 
+  const accountInfoCache = new AccountInfoCache();
   for (const transfer of props.transaction.hbarTransfersList) {
     if (transfer.amount.isNegative()) {
-      const accountInfo = await getAccountInfo(
+      const accountInfo = await accountInfoCache.fetch(
         transfer.accountId.toString(),
         network.mirrorNodeBaseURL,
       );
