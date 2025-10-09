@@ -1,5 +1,5 @@
 const { test } = require('@playwright/test');
-const fs = require('fs').promises;
+const fsp = require('fs').promises;
 const path = require('path');
 const { Transaction, PrivateKey } = require('@hashgraph/sdk');
 const JSZip = require('jszip');
@@ -10,6 +10,7 @@ const {
   generateRandomPassword,
   setupEnvironmentForTransactions,
   waitForValidStart,
+  waitForFile,
 } = require('../utils/util');
 const RegistrationPage = require('../pages/RegistrationPage.js');
 const { expect } = require('playwright/test');
@@ -26,13 +27,6 @@ let globalCredentials = { email: '', password: '' };
 let registrationPage, loginPage, transactionPage, organizationPage, settingsPage;
 let firstUser, secondUser, thirdUser;
 let complexKeyAccountId;
-let exportDir;
-
-process.on('exit', async () => {
-  if (exportDir) {
-    await fs.rm(exportDir, { recursive: true, force: true });
-  }
-});
 
 test.describe('Organization Transaction tests', () => {
   test.beforeAll(async () => {
@@ -65,7 +59,7 @@ test.describe('Organization Transaction tests', () => {
 
     // Setup Organization
     await organizationPage.setupOrganization();
-    await organizationPage.setUpUsers(window, globalCredentials.password);
+    await organizationPage.setUpInitialUsers(window, globalCredentials.password);
 
     // Disable notifications for test users
     await disableNotificationsForTestUsers();
@@ -86,18 +80,19 @@ test.describe('Organization Transaction tests', () => {
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
 
-    exportDir = path.join('/tmp', 'transaction-output');
-    await app.evaluate(({ dialog }, { exportDir }) => {
+    await app.evaluate(({ dialog }) => {
+      dialog._savePath = null;
+      dialog._openPaths = null;
+
       dialog.showSaveDialog = async () => ({
         canceled: false,
-        filePath: path.join(exportDir, 'transaction.tx'),
-        overwrite: true,
+        filePath: dialog._savePath,
       });
       dialog.showOpenDialog = async () => ({
         canceled: false,
-        filePaths: [path.join(exportDir, 'sig1.zip'), path.join(exportDir, 'sig2.zip')],
+        filePaths: dialog._openPaths,
       });
-    }, { exportDir });
+    });
   });
 
   test.beforeEach(async () => {
@@ -110,9 +105,6 @@ test.describe('Organization Transaction tests', () => {
 
   test.afterEach(async () => {
     await organizationPage.logoutFromOrganization();
-    if (exportDir) {
-      await fs.rm(exportDir, { recursive: true, force: true });
-    }
   });
 
   test.afterAll(async () => {
@@ -543,76 +535,247 @@ test.describe('Organization Transaction tests', () => {
     expect(transactionDetails.status).toBe('SUCCESS');
   });
 
-  test('Verify user can export and import transaction and signatures for TTv1->TTv2 compatibility', async () => {
+  test('Verify user can export and import transaction and a large number of signatures for TTv1->TTv2 compatibility', async () => {
+    test.slow();
+    const exportDir = path.join('/tmp', 'transaction-output');
+    // Remove the directory if it exists
+    await fsp.rm(exportDir, { recursive: true, force: true });
+    // Recreate the directory
+    await fsp.mkdir(exportDir, { recursive: true });
+
+    try {
+      // File paths
+      const savePath = path.join(exportDir, 'transaction.tx');
+      const transactionPath = path.join(exportDir, 'transaction.tx');
+
+      // Create 73 more users, a total of 76
+      await organizationPage.createUsers(73);
+      await organizationPage.setUpUsers(globalCredentials.password, 3, 75);
+
+      // Create an account with a complex key for users[1-75]
+      const newAccountId = await organizationPage.createComplexKeyAccountForUsers(75);
+
+      // Create transaction to export
+      await transactionPage.clickOnTransactionsMenuButton();
+      await transactionPage.clickOnCreateNewTransactionButton();
+      await transactionPage.clickOnCreateAccountTransaction();
+      await transactionPage.waitForPublicKeyToBeFilled();
+      //This may be taking too long?
+      // await transactionPage.fillInValidDuration('1');
+      await transactionPage.fillInPayerAccountId(newAccountId);
+      const { txId, validStart } = await organizationPage.processTransaction();
+
+      // export transaction
+      await app.evaluate(({ dialog }, { savePath }) => {
+        dialog._savePath = savePath;
+      }, { savePath });
+      await transactionPage.clickOnExportTransactionButton('Export');
+
+      // Read the .tx file and sign it with required signatures, saving those signatures to json files in appropriate zips
+      await waitForFile(transactionPath, 5000);
+      const txBytes = await fsp.readFile(transactionPath);
+      const tx = Transaction.fromBytes(txBytes);
+
+      const openPaths = [];
+      for (let i = 1; i < 76; i++) {
+        const sigJsonPath = path.join(exportDir, `sig${i}.json`);
+        const sigZipPath = path.join(exportDir, `sig${i}.zip`);
+        const pk = PrivateKey.fromStringED25519(await organizationPage.getUser(i).privateKey);
+        const sig = signatureMapToV1Json(pk.signTransaction(tx));
+
+        // Zip up the signatures
+        const zip = new JSZip();
+        zip.file(path.basename(sigJsonPath), Buffer.from(sig) );
+        zip.file(path.basename(transactionPath), txBytes);
+        const zipContent = await zip.generateAsync({ type: 'nodebuffer' });
+        await fsp.writeFile(sigZipPath, zipContent);
+        openPaths.push(sigZipPath);
+      }
+
+      // import signatures
+      await app.evaluate(({ dialog }, { openPaths }) => {
+        dialog._openPaths = openPaths;
+      }, { openPaths });
+      await transactionPage.clickOnTransactionsMenuButton();
+      await transactionPage.clickOnImportButton();
+      await transactionPage.clickOnConfirmImportButton();
+
+      // Wait for the transaction to execute
+      await waitForValidStart(validStart);
+
+      // Verify transaction is in history with SUCCESS status
+      await organizationPage.clickOnHistoryTab();
+      const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId);
+      expect(transactionDetails.transactionId).toBe(txId);
+      expect(transactionDetails.transactionType).toBe('Account Create Transaction');
+      expect(transactionDetails.validStart).toBeTruthy();
+      expect(transactionDetails.detailsButton).toBe(true);
+      expect(transactionDetails.status).toBe('SUCCESS');
+    } finally {
+      if (exportDir) {
+        await fsp.rm(exportDir, { recursive: true, force: true });
+      }
+    }
+  });
+
+  //try to add sig that is not needed
+  test('Verify user cannot import superfluous signatures from TTv1 format', async () => {
     test.slow();
 
-    // Ensure export directory exists
-    await fs.mkdir(exportDir, { recursive: true });
+    const exportDir = path.join('/tmp', 'transaction-output');
+    // Remove the directory if it exists
+    await fsp.rm(exportDir, { recursive: true, force: true });
+    // Recreate the directory
+    await fsp.mkdir(exportDir, { recursive: true });
 
-    // Create transaction to export
-    await transactionPage.clickOnCreateNewTransactionButton();
-    await transactionPage.clickOnCreateAccountTransaction();
-    await transactionPage.waitForPublicKeyToBeFilled();
-    await transactionPage.fillInPayerAccountId(complexKeyAccountId);
-    const { txId, validStart } = await organizationPage.processTransaction();
+    try {
+      // File paths
+      const savePath = path.join(exportDir, 'transaction.tx');
+      const transactionPath = path.join(exportDir, 'transaction.tx');
 
-    // export transaction
-    await transactionPage.clickOnExportTransactionButton('Export');
+      // Create 73 more users, a total of 76
+      await organizationPage.createUsers(1);
+      await organizationPage.setUpUsers(globalCredentials.password, 3, 3);
 
-    // File paths
-    const transactionPath = path.join(exportDir, 'transaction.tx');
-    const sig1JsonPath = path.join(exportDir, 'sig1.json');
-    const sig2JsonPath = path.join(exportDir, 'sig2.json');
-    const sig1ZipPath = path.join(exportDir, 'sig1.zip');
-    const sig2ZipPath = path.join(exportDir, 'sig2.zip');
+      // Create transaction to export
+      await transactionPage.clickOnCreateNewTransactionButton();
+      await transactionPage.clickOnCreateAccountTransaction();
+      await transactionPage.waitForPublicKeyToBeFilled();
+      await transactionPage.fillInPayerAccountId(complexKeyAccountId);
+      const { txId, validStart } = await organizationPage.processTransaction();
 
-    // Read the .tx file and sign it with required signatures, saving those signatures to json files in appropriate zips
-    const txBytes = await fs.readFile(transactionPath);
-    const tx = Transaction.fromBytes(txBytes);
-    const pk1 = PrivateKey.fromStringED25519(await organizationPage.getUser(1).privateKey);
-    const pk2 = PrivateKey.fromStringED25519(await organizationPage.getUser(2).privateKey);
-    const sig1 = signatureMapToV1Json(pk1.signTransaction(tx));
-    const sig2 = signatureMapToV1Json(pk2.signTransaction(tx));
+      // export transaction
+      await app.evaluate(({ dialog }, { savePath }) => {
+        dialog._savePath = savePath;
+      }, { savePath });
+      await transactionPage.clickOnExportTransactionButton('Export');
 
-    await fs.writeFile(sig1JsonPath, sig1);
-    await fs.writeFile(sig2JsonPath, sig2);
+      // Read the .tx file and sign it with required signatures, saving those signatures to json files in appropriate zips
+      await waitForFile(transactionPath, 5000);
+      const txBytes = await fsp.readFile(transactionPath);
+      const tx = Transaction.fromBytes(txBytes);
 
-    // Read files for zipping
-    const sig1Json = await fs.readFile(sig1JsonPath);
-    const sig2Json = await fs.readFile(sig2JsonPath);
+      const sigJsonPath = path.join(exportDir, 'sig4.json');
+      const sigZipPath = path.join(exportDir, 'sig4.zip');
+      const pk = PrivateKey.fromStringED25519(await organizationPage.getUser(3).privateKey);
+      const sig = signatureMapToV1Json(pk.signTransaction(tx));
 
-    // Zip up the signatures
-    const zip1 = new JSZip();
-    zip1.file(path.basename(sig1JsonPath), sig1Json);
-    zip1.file(path.basename(transactionPath), txBytes);
-    const zip1Content = await zip1.generateAsync({ type: 'nodebuffer' });
-    await fs.writeFile(sig1ZipPath, zip1Content);
+      // Zip up the signatures
+      const zip = new JSZip();
+      zip.file(path.basename(sigJsonPath), Buffer.from(sig) );
+      zip.file(path.basename(transactionPath), txBytes);
+      const zipContent = await zip.generateAsync({ type: 'nodebuffer' });
+      await fsp.writeFile(sigZipPath, zipContent);
+      const openPaths = [sigZipPath];
 
-    // Zip sig2.json + fake-output.tx
-    const zip2 = new JSZip();
-    zip2.file(path.basename(sig2JsonPath), sig2Json);
-    zip2.file(path.basename(transactionPath), txBytes);
-    const zip2Content = await zip2.generateAsync({ type: 'nodebuffer' });
-    await fs.writeFile(sig2ZipPath, zip2Content);
+      // // Sign the transaction as the fee payer
+      //probably just want to have all users sign the transaction
+      // await organizationPage.clickOnSignTransactionButton();
 
-    // Sign the transaction as the fee payer
-    await organizationPage.clickOnSignTransactionButton();
+      // import signatures
+      await app.evaluate(({ dialog }, { openPaths }) => {
+        dialog._openPaths = openPaths;
+      }, { openPaths });
+      await transactionPage.clickOnTransactionsMenuButton();
+      await transactionPage.clickOnImportButton();
+      await transactionPage.clickOnConfirmImportButton();
 
-    // import signatures
-    await transactionPage.clickOnTransactionsMenuButton();
-    await transactionPage.clickOnImportButton();
-    await transactionPage.clickOnConfirmImportButton();
+      // Wait for the transaction to execute
+      await waitForValidStart(validStart);
 
-    // Wait for the transaction to execute
-    await waitForValidStart(validStart);
+      // Verify transaction is in history with SUCCESS status
+      await organizationPage.clickOnHistoryTab();
+      const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId);
+      expect(transactionDetails.transactionId).toBe(txId);
+      expect(transactionDetails.transactionType).toBe('Account Create Transaction');
+      expect(transactionDetails.validStart).toBeTruthy();
+      expect(transactionDetails.detailsButton).toBe(true);
+      expect(transactionDetails.status).toBe('SUCCESS');
+    } finally {
+      if (exportDir) {
+        await fsp.rm(exportDir, { recursive: true, force: true });
+      }
+    }
+  });
 
-    // Verify transaction is in history with SUCCESS status
-    await organizationPage.clickOnHistoryTab();
-    const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId);
-    expect(transactionDetails.transactionId).toBe(txId);
-    expect(transactionDetails.transactionType).toBe('Account Create Transaction');
-    expect(transactionDetails.validStart).toBeTruthy();
-    expect(transactionDetails.detailsButton).toBe(true);
-    expect(transactionDetails.status).toBe('SUCCESS');
+  test('Verify user cannot import signatures without visibility of transaction from TTv1 format', async () => {
+    test.slow();
+
+    const exportDir = path.join('/tmp', 'transaction-output');
+    // Remove the directory if it exists
+    await fsp.rm(exportDir, { recursive: true, force: true });
+    // Recreate the directory
+    await fsp.mkdir(exportDir, { recursive: true });
+
+    try {
+      // File paths
+      const savePath = path.join(exportDir, 'transaction.tx');
+      const transactionPath = path.join(exportDir, 'transaction.tx');
+
+      // Create 73 more users, a total of 76
+      await organizationPage.createUsers(1);
+      await organizationPage.setUpUsers(globalCredentials.password, 3, 3);
+
+      // Create transaction to export
+      await transactionPage.clickOnCreateNewTransactionButton();
+      await transactionPage.clickOnCreateAccountTransaction();
+      await transactionPage.waitForPublicKeyToBeFilled();
+      await transactionPage.fillInPayerAccountId(complexKeyAccountId);
+      await organizationPage.processTransaction();
+
+      // export transaction
+      await app.evaluate(({ dialog }, { savePath }) => {
+        dialog._savePath = savePath;
+      }, { savePath });
+      await transactionPage.clickOnExportTransactionButton('Export');
+
+      // Read the .tx file and sign it with required signatures, saving those signatures to json files in appropriate zips
+      await waitForFile(transactionPath, 5000);
+      const txBytes = await fsp.readFile(transactionPath);
+      const tx = Transaction.fromBytes(txBytes);
+
+      const openPaths = [];
+      for (let i = 0; i < 3; i++) {
+        const sigJsonPath = path.join(exportDir, `sig${i}.json`);
+        const sigZipPath = path.join(exportDir, `sig${i}.zip`);
+        const pk = PrivateKey.fromStringED25519(await organizationPage.getUser(i).privateKey);
+        const sig = signatureMapToV1Json(pk.signTransaction(tx));
+
+        // Zip up the signatures
+        const zip = new JSZip();
+        zip.file(path.basename(sigJsonPath), Buffer.from(sig) );
+        zip.file(path.basename(transactionPath), txBytes);
+        const zipContent = await zip.generateAsync({ type: 'nodebuffer' });
+        await fsp.writeFile(sigZipPath, zipContent);
+        openPaths.push(sigZipPath);
+      }
+
+      //switch users
+      await transactionPage.clickOnTransactionsMenuButton();
+      await organizationPage.logoutFromOrganization();
+
+      const fourthUser = organizationPage.getUser(3);
+      await organizationPage.signInOrganization(
+        fourthUser.email,
+        fourthUser.password,
+        globalCredentials.password,
+      );
+
+      // import signatures
+      await app.evaluate(({ dialog }, { openPaths }) => {
+        dialog._openPaths = openPaths;
+      }, { openPaths });
+      await transactionPage.clickOnTransactionsMenuButton();
+      await transactionPage.clickOnImportButton();
+      //expect import button is disabled
+      expect(await transactionPage.isConfirmImportButtonDisabled()).toBe(true);
+      //close modal so test can finish
+      // Press Escape to close modal, allowing test to finish
+      await window.keyboard.press('Escape');
+    } finally {
+      if (exportDir) {
+        await fsp.rm(exportDir, { recursive: true, force: true });
+      }
+    }
   });
 });

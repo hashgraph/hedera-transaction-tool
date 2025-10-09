@@ -146,6 +146,26 @@ async function waitForValidStart(dateTimeString, bufferSeconds = 15) {
 }
 
 /**
+ * Waits for a file to exist within a specified timeout period.
+ * @param filePath
+ * @param timeout
+ * @param interval
+ * @returns {Promise<void>}
+ */
+async function waitForFile(filePath, timeout = 5000, interval = 100) {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    try {
+      await fs.access(filePath);
+      return;
+    } catch {
+      await new Promise(res => setTimeout(res, interval));
+    }
+  }
+  throw new Error(`File not found: ${filePath}`);
+}
+
+/**
  * Asynchronously deletes all .bin files in the specified directory.
  * @param {string} directory - The path to the directory where .bin files will be deleted.
  */
@@ -276,6 +296,7 @@ module.exports = {
   formatTransactionId,
   calculateTimeout,
   waitForValidStart,
+  waitForFile,
   cleanupBinFiles,
   compareJsonFiles,
   parsePropertiesContent,

@@ -235,6 +235,10 @@ class TransactionPage extends BasePage {
     await this.click(this.confirmImportButtonSelector);
   }
 
+  async isConfirmImportButtonDisabled() {
+    return await this.isDisabled(this.confirmImportButtonSelector);
+  }
+
   async clickOnCreateAccountTransaction() {
     await this.click(this.createAccountSublinkSelector);
   }
