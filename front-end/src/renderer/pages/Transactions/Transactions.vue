@@ -17,7 +17,6 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
 
-import { useRouter } from 'vue-router';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { getTransactionsToSign } from '@renderer/services/organization';
@@ -43,7 +42,6 @@ const network = useNetworkStore();
 const notifications = useNotificationsStore();
 
 /* Composables */
-const router = useRouter();
 const withLoader = useLoader();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
@@ -133,25 +131,13 @@ function setTabItems() {
   }
 }
 
-function setQueryTab(title: string) {
-  const query = router.currentRoute.value.query;
-  if (query.tab === title) return;
-  router.replace({ query: { ...query, tab: title } });
-}
-
 async function syncTab(forceCheckSign = false) {
   setTabItems();
 
   await withLoader(
     async () => {
-      const tab = router.currentRoute.value.query.tab?.toString();
-
-      if (tab) {
-        const newIndex = tabItems.value.findIndex(t => t.title === tab);
-        activeTabIndex.value = newIndex >= 0 ? newIndex : activeTabIndex.value;
-      } else {
-        await changeTabIfReadyToSign();
-      }
+      const newIndex = tabItems.value.findIndex(t => t.title === activeTabTitle.value);
+      activeTabIndex.value = newIndex >= 0 ? newIndex : activeTabIndex.value;
 
       if (forceCheckSign) await changeTabIfReadyToSign();
     },
@@ -174,9 +160,7 @@ async function changeTabIfReadyToSign() {
   );
 
   if (totalItems > 0 && activeTabTitle.value !== readyToSignTitle) {
-    setQueryTab(readyToSignTitle);
-  } else {
-    setQueryTab(activeTabTitle.value);
+    activeTabIndex.value = tabItems.value.findIndex(t => t.title === readyToSignTitle);
   }
 }
 
@@ -188,7 +172,6 @@ watch(
   () => user.selectedOrganization,
   async () => await syncTab(true),
 );
-watch(activeTabTitle, setQueryTab);
 </script>
 
 <template>
