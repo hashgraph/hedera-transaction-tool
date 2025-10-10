@@ -44,6 +44,7 @@ import BaseDraftLoad from '@renderer/components/Transaction/Create/BaseTransacti
 import BaseGroupHandler from '@renderer/components/Transaction/Create/BaseTransaction/BaseGroupHandler.vue';
 import BaseApproversObserverData from '@renderer/components/Transaction/Create/BaseTransaction/BaseApproversObserverData.vue';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
+import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
 
 /* Props */
 const { createTransaction, preCreateAssert, customRequest } = defineProps<{
@@ -250,7 +251,11 @@ function basePreCreateAssert() {
 }
 
 async function updateTransactionKey() {
-  const computedKeys = await computeSignatureKey(transaction.value, network.mirrorNodeBaseURL);
+  const computedKeys = await computeSignatureKey(
+    transaction.value,
+    network.mirrorNodeBaseURL,
+    new AccountInfoCache(),
+  );
   transactionKey.value = new KeyList(computedKeys.signatureKeys);
 }
 

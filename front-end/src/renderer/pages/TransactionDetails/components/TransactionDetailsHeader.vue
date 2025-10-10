@@ -2,7 +2,6 @@
 import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@shared/interfaces';
 
-
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -54,6 +53,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 
 import { TransactionStatus } from '@shared/interfaces';
+import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
 
 /* Types */
 type ActionButton =
@@ -295,6 +295,7 @@ const handleSign = async () => {
       props.sdkTransaction,
       user.selectedOrganization.userKeys,
       network.mirrorNodeBaseURL,
+      new AccountInfoCache(),
     );
 
     const restoredRequiredKeys = [];
