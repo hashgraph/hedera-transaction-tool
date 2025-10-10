@@ -475,6 +475,8 @@ export const getServiceEndpoint = (serviceEndpoint: ComponentServiceEndpoint | n
     }
     return serviceEndpoint;
   }
+
+  return null;
 };
 
 const setNodeData = (
