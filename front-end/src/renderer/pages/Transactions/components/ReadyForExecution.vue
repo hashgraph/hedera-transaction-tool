@@ -25,18 +25,18 @@ import {
   hexToUint8Array,
   redirectToDetails,
   isLoggedInOrganization,
-  getDateStringExtended,
 } from '@renderer/utils';
 import {
-  getTransactionDateExtended,
   getTransactionId,
   getTransactionType,
+  getTransactionValidStart,
 } from '@renderer/utils/sdk/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
+import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -316,18 +316,18 @@ watch(
                   }}</span>
                 </td>
                 <td :data-testid="`td-transaction-valid-start-ready-execution-${index}`">
-                  {{
-                    tx.transaction instanceof Transaction
-                      ? getTransactionDateExtended(tx.transaction)
-                      : 'N/A'
-                  }}
+                  <DateTimeString
+                    v-if="tx.transaction instanceof Transaction"
+                    :date="getTransactionValidStart(tx.transaction)"
+                  />
+                  <span v-else>N/A</span>
                 </td>
                 <td :data-testid="`td-transaction-date-modified-ready-execution-${index}`">
-                  {{
-                    tx.transaction instanceof Transaction
-                      ? getDateStringExtended(new Date(tx.transactionRaw.updatedAt))
-                      : 'N/A'
-                  }}
+                  <DateTimeString
+                    v-if="tx.transaction instanceof Transaction"
+                    :date="new Date(tx.transactionRaw.updatedAt)"
+                  />
+                  <span v-else>N/A</span>
                 </td>
                 <td class="text-center">
                   <AppButton

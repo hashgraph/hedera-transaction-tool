@@ -3,8 +3,10 @@ import { onBeforeMount, ref } from 'vue';
 
 import { Transaction, FreezeTransaction } from '@hashgraph/sdk';
 
-import { getDateStringExtended, uint8ToHex } from '@renderer/utils';
+import { uint8ToHex } from '@renderer/utils';
 import { getFreezeTypeString } from '@renderer/utils/sdk/transactions';
+
+import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 
 /* Props */
 const props = defineProps<{
@@ -44,7 +46,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     <div v-if="transaction.startTimestamp" :class="commonColClass">
       <h4 :class="detailItemLabelClass">Start Time</h4>
       <p :class="detailItemValueClass">
-        {{ getDateStringExtended(transaction.startTimestamp.toDate()) }}
+        <DateTimeString :date="transaction.startTimestamp.toDate()"/>
       </p>
     </div>
 

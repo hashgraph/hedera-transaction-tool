@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
+
 import type { SystemData, SystemDeleteData } from '@renderer/utils/sdk';
 
 import { getMinimumExpirationTime, getMaximumExpirationTime } from '@renderer/utils';
@@ -16,6 +18,9 @@ const emit = defineEmits<{
   (event: 'update:data', data: SystemDeleteData): void;
 }>();
 
+/* Composables */
+const { dateTimeSettingLabel } = useDateTimeSetting();
+
 /* Handlers */
 const handleSystemDataUpdate = (data: SystemData) => {
   emit('update:data', {
@@ -30,7 +35,7 @@ const handleSystemDataUpdate = (data: SystemData) => {
   <div class="row mt-6">
     <div class="form-group col-4 col-xxxl-3">
       <label class="form-label"
-        >Expiration <span class="text-muted text-italic">- Local time</span>
+        >Expiration <span class="text-muted text-italic">{{ `- ${dateTimeSettingLabel}` }}</span>
         <span class="text-danger">*</span></label
       >
       <AppDatePicker

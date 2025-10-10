@@ -28,7 +28,6 @@ import {
   getTransactionId,
   getStatusFromCode,
   getNotifiedTransactions,
-  getDateStringExtended,
   hexToUint8Array,
   redirectToDetails,
   isLoggedInOrganization,
@@ -41,6 +40,7 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import TransactionsFilter from '@renderer/components/Filter/TransactionsFilter.vue';
+import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -422,7 +422,7 @@ watch(
                   </td>
                   <td :data-testid="`td-transaction-createdAt-${index}`">
                     <span class="text-small text-secondary">
-                      {{ getDateStringExtended(transaction.created_at) }}
+                      <DateTimeString :date="transaction.created_at"/>
                     </span>
                   </td>
                   <td class="text-center">
@@ -478,9 +478,9 @@ watch(
                   </td>
                   <td :data-testid="`td-transaction-createdAt-${index}`">
                     <span class="text-small text-secondary">
-                      {{
-                        getDateStringExtended(new Date(transactionData.transactionRaw.createdAt))
-                      }}
+                      <DateTimeString
+                        :date="new Date(transactionData.transactionRaw.createdAt)"
+                      />
                     </span>
                   </td>
                   <td>
@@ -488,13 +488,11 @@ watch(
                       :data-testid="`td-transaction-executedAt-${index}`"
                       class="text-small text-secondary"
                     >
-                      {{
-                        transactionData.transactionRaw.executedAt
-                          ? getDateStringExtended(
-                              new Date(transactionData.transactionRaw.executedAt),
-                            )
-                          : 'N/A'
-                      }}
+                      <DateTimeString
+                        v-if="transactionData.transactionRaw.executedAt"
+                        :date="new Date(transactionData.transactionRaw.executedAt)"
+                      />
+                      <span v-else>N/A</span>
                     </span>
                   </td>
                   <td class="text-center">

@@ -107,7 +107,7 @@ export const base64ToUint8Array = (base64String: string) => {
     bytes[i] = binaryString.charCodeAt(i);
   }
   return bytes;
-}
+};
 
 export const encodeString = (str: string) => {
   return new TextEncoder().encode(str);
@@ -121,9 +121,24 @@ export function hexToString(hex: string) {
   return decodeURIComponent(hex.replace(/\s+/g, '').replace(/[0-9a-f]{2}/g, '%$&'));
 }
 
-export const getDateStringExtended = (date: Date) => {
-  return `${date.toDateString()} ${date.toLocaleTimeString()}`;
-};
+export function getDateString(date: Date, isUtcSelected = true) {
+  return isUtcSelected
+    ? date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+        timeZone: 'UTC', // Force UTC time
+      })
+    : date.toLocaleString();
+}
+
+export function getDateStringExtended(date: Date, isUtcSelected = true) {
+  return isUtcSelected ? date.toUTCString() : `${date.toDateString()} ${date.toLocaleTimeString()}`;
+}
 
 export const throwError = (errorMessage: string) => {
   throw new Error(errorMessage);

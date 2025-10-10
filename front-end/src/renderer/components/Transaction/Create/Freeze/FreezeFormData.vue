@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
+
 import type { FreezeData } from '@renderer/utils/sdk';
 
 import { formatAccountId } from '@renderer/utils';
@@ -15,6 +17,9 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'update:data', data: FreezeData): void;
 }>();
+
+/* Composables */
+const { dateTimeSettingLabel } = useDateTimeSetting();
 
 /* Handlers */
 function handleOnBlur() {
@@ -58,7 +63,7 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
   >
     <div class="form-group" :class="[columnClass]">
       <label class="form-label"
-        >Start <span class="text-muted text-italic">- Local time</span
+        >Start <span class="text-muted text-italic">{{ `- ${dateTimeSettingLabel}` }}</span
         ><span class="text-danger">*</span></label
       >
       <RunningClockDatePicker
