@@ -586,59 +586,6 @@ const handleExport = async () => {
     const txtFilePath = filePath.replace(/\.[^/.]+$/, '.txt');
     await saveFileToPath(jsonContent, txtFilePath);
 
-    // If the CSVA file is created, then TTv1 will attempt to recreate
-    // each inner transaction value by value, not by bytes.
-    // This means that the first transaction signed will work correctly,
-    // but any other transactions will have different bytes than expected. Do not create the CSVA
-    // This code can be removed once testing is finished
-    // const accountNums: number[] = [];
-    // const list: Array<{ realmNum: number; shardNum: number; accountNum: number; network: string }> = [];
-    //
-    // for (let i = 0; i < nodeAccountIds.length; i++) {
-    //   const id = nodeAccountIds.get(i);
-    //   accountNums.push(id.num ?? 0);
-    //   list.push({
-    //     realmNum: id.realm?.toString() ?? 0,
-    //     shardNum: id.shard?.toString() ?? 0,
-    //     accountNum: id.num?.toString() ?? 0,
-    //     network: network.network,
-    //   });
-    // }
-    //
-    // // Build input string (e.g. "3-5,7")
-    // const sorted = accountNums.sort((a, b) => a - b);
-    // const ranges: string[] = [];
-    // let start = sorted[0], end = sorted[0];
-    // function addRange(start: Long, end: Long) {
-    //   ranges.push(start.equals(end) ? `${start.toString()}` : `${start.toString()}-${end.toString()}`);
-    // }
-    // for (let i = 1; i < sorted.length; i++) {
-    //   if (sorted[i].equals(end.add(1))) {
-    //     end = sorted[i];
-    //   } else {
-    //     addRange(start, end);
-    //     start = sorted[i];
-    //     end = sorted[i];
-    //   }
-    // }
-    // addRange(start, end);
-    // const input = ranges.join(',');
-    //
-    // const metadata = JSON.stringify({
-    //   nodes: {
-    //     input,
-    //     list,
-    //   }
-    // });
-    //
-    // const csvaFilePath = filePath.replace(/\.[^/.]+$/, '.csva');
-    //
-    // // now create csva
-    // await saveFileToPath(
-    //   metadata,
-    //   csvaFilePath,
-    // );
-
     toast.success('Transaction exported successfully');
   }
 };
@@ -789,6 +736,7 @@ watch(
               :items="dropDownItems"
               compact
               @select="handleDropDownItem($event as ActionButton)"
+              data-testid="button-more-dropdown-sm"
             />
             <AppDropDown
               class="d-none d-lg-block"
@@ -796,6 +744,7 @@ watch(
               :items="dropDownItems.slice(1)"
               compact
               @select="handleDropDownItem($event as ActionButton)"
+              data-testid="button-more-dropdown-lg"
             />
           </div>
         </template>

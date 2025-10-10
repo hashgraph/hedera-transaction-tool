@@ -59,7 +59,7 @@ test.describe('Organization Group Tx tests', () => {
 
     // Setup Organization
     await organizationPage.setupOrganization();
-    await organizationPage.setUpUsers(window, globalCredentials.password);
+    await organizationPage.setUpInitialUsers(window, globalCredentials.password);
 
     // Disable notifications for test users
     await disableNotificationsForTestUsers();
