@@ -99,6 +99,9 @@ class TransactionPage extends BasePage {
   singleTransactionButtonSelector = 'span-single-transaction';
   uploadFileButtonSelector = '#append-transaction-file[type="file"]';
   insertAccountIdButtonSelector = 'button-insert-account-id';
+  moreDropdownButtonSelector = 'button-more-dropdown-lg';
+  importButtonSelector = 'button-transaction-page-import';
+  confirmImportButtonSelector = 'button-import-files-public';
 
   //Other
   confirmTransactionModalSelector = 'modal-confirm-transaction';
@@ -222,6 +225,18 @@ class TransactionPage extends BasePage {
   async clickOnCreateNewTransactionButton() {
     await this.click(this.createNewTransactionButtonSelector);
     await this.clickOnSingleTransactionButton();
+  }
+
+  async clickOnImportButton() {
+    await this.click(this.importButtonSelector);
+  }
+
+  async clickOnConfirmImportButton() {
+    await this.click(this.confirmImportButtonSelector);
+  }
+
+  async isConfirmImportButtonDisabled() {
+    return await this.isDisabled(this.confirmImportButtonSelector);
   }
 
   async clickOnCreateAccountTransaction() {
@@ -633,6 +648,12 @@ class TransactionPage extends BasePage {
     }
   }
 
+  async importV1Signatures() {
+    await this.clickOnTransactionsMenuButton();
+    await this.clickOnImportButton();
+    await this.clickOnConfirmImportButton();
+  }
+
   async clickOnReceiverSigRequiredSwitch() {
     await this.toggleSwitch(this.receiverSigRequiredSwitchSelector);
   }
@@ -709,6 +730,12 @@ class TransactionPage extends BasePage {
 
   async clickOnCloseButtonForCompletedTransaction() {
     await this.click(this.closeCompletedTxButtonSelector);
+  }
+
+  async clickOnExportTransactionButton(index) {
+    await this.window.waitForSelector(`[data-testid="${this.moreDropdownButtonSelector}"]`, { state: 'visible' }, 2000);
+    await this.click(this.moreDropdownButtonSelector);
+    await this.click(`${this.moreDropdownButtonSelector}-item-${index}`, null, 5000);
   }
 
   async clickOnCancelTransaction() {

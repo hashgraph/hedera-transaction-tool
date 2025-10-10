@@ -3,7 +3,7 @@ const { launchHederaTransactionTool } = require('./electronAppLauncher');
 const { migrationDataExists } = require('./oldTool.js');
 const LoginPage = require('../pages/LoginPage.js');
 const SettingsPage = require('../pages/SettingsPage');
-const fs = require('fs').promises;
+const fsp = require('fs').promises;
 const path = require('path');
 const _ = require('lodash');
 const Diff = require('deep-diff');
@@ -146,19 +146,39 @@ async function waitForValidStart(dateTimeString, bufferSeconds = 15) {
 }
 
 /**
+ * Waits for a file to exist within a specified timeout period.
+ * @param filePath
+ * @param timeout
+ * @param interval
+ * @returns {Promise<void>}
+ */
+async function waitAndReadFile(filePath, timeout = 5000, interval = 100) {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    try {
+      await fsp.access(filePath);
+      return await fsp.readFile(filePath);
+    } catch {
+      await new Promise(res => setTimeout(res, interval));
+    }
+  }
+  throw new Error(`File not found: ${filePath}`);
+}
+
+/**
  * Asynchronously deletes all .bin files in the specified directory.
  * @param {string} directory - The path to the directory where .bin files will be deleted.
  */
 async function cleanupBinFiles(directory) {
   try {
-    const files = await fs.readdir(directory);
+    const files = await fsp.readdir(directory);
     const deletePromises = files.map(async file => {
       const filePath = path.join(directory, file);
-      const fileStat = await fs.stat(filePath);
+      const fileStat = await fsp.stat(filePath);
 
       if (fileStat.isFile() && path.extname(file) === '.bin') {
         try {
-          await fs.unlink(filePath);
+          await fsp.unlink(filePath);
           console.log(`Deleted file: ${filePath}`);
         } catch (err) {
           console.error(`Failed to delete file ${filePath}: ${err.message}`);
@@ -276,6 +296,7 @@ module.exports = {
   formatTransactionId,
   calculateTimeout,
   waitForValidStart,
+  waitAndReadFile,
   cleanupBinFiles,
   compareJsonFiles,
   parsePropertiesContent,

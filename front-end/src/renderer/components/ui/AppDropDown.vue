@@ -89,7 +89,7 @@ watch(
         <li
           class="dropdown-item cursor-pointer text-body"
           @click="handleSelect(item.value)"
-          :data-testid="`dropdown-item-${item.value}`"
+          :data-testid="`${dataTestid}-item-${item.value}`"
         >
           <span class="text-small">{{ item.label }}</span>
         </li>
