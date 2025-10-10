@@ -60,7 +60,7 @@ const formattedPublicKey = ref('');
 
 /* Computed */
 const hbarDollarAmount = computed(() => {
-  if (!accountData.accountInfo.value) {
+  if (!accountData.accountInfo.value || !network.currentRate) {
     return 0;
   }
 
