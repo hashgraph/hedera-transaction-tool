@@ -79,8 +79,8 @@ const handleStopMigration = async () => {
 };
 
 const handleSetRecoveryPhrase = async (value: {
-  recoveryPhrase: RecoveryPhrase;
-  recoveryPhrasePassword: string;
+  recoveryPhrase: RecoveryPhrase|null;
+  recoveryPhrasePassword: string|null;
 }) => {
   recoveryPhrase.value = value.recoveryPhrase;
   recoveryPhrasePassword.value = value.recoveryPhrasePassword;

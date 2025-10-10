@@ -14,7 +14,7 @@ import DecryptRecoveryPhraseForm from './DecryptRecoveryPhraseForm.vue';
 const emit = defineEmits<{
   (
     event: 'setRecoveryPhrase',
-    value: { recoveryPhrase: RecoveryPhrase; recoveryPhrasePassword: string },
+    value: { recoveryPhrase: RecoveryPhrase|null; recoveryPhrasePassword: string|null },
   ): void;
   (event: 'stopMigration'): void;
 }>();
