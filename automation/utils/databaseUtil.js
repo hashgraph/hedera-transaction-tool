@@ -186,21 +186,18 @@ async function createTestUsersBatch(usersData, client = null) {
   }
 
   try {
-    const queries = [];
-    for (const { email, password } of usersData) {
+    const values = [];
+    const placeholders = [];
+    for (let i = 0; i < usersData.length; i++) {
+      const { email, password } = usersData[i];
       const salt = await bcrypt.genSalt();
       const hashedPassword = await bcrypt.hash(password, salt);
-      const query = {
-        text: `INSERT INTO "user" (email, password, status) VALUES ($1, $2, $3) RETURNING id;`,
-        values: [email, hashedPassword, 'NONE'],
-      };
-      queries.push(localClient.query(query.text, query.values));
+      values.push(email, hashedPassword, 'NONE');
+      placeholders.push(`($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`);
     }
-
-    const results = await Promise.all(queries);
-    results.forEach((res, index) => {
-      console.log(`User ${index + 1} created with ID: ${res.rows[0].id}`);
-    });
+    const queryText = `INSERT INTO "user" (email, password, status) VALUES ${placeholders.join(', ')} RETURNING id;`;
+    const res = await localClient.query(queryText, values);
+    console.log('Created users with IDs:', res.rows.map(row => row.id));
   } catch (err) {
     console.error('Error creating test users:', err);
   } finally {

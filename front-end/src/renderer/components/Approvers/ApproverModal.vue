@@ -189,7 +189,7 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
               color="primary"
               class="ms-3"
               :disabled="currentApproverInvalid"
-              data-testid="button-complex-key-done"
+              data-testid="button-approver-modal-done"
               >Done</AppButton
             >
           </div>
