@@ -294,6 +294,11 @@ async function sendSignedTransactionsToOrganization() {
   });
   if (passwordModalOpened(personalPassword)) return;
 
+  /* Verifies the user has at least one key pair */
+  if (user.keyPairs.length == 0) {
+    throw new Error("You don't have any key pair. Please add one and retry.");
+  }
+
   /* Verifies there is actual transaction to process */
   if (!transactionGroup.groupItems[0].transactionBytes) throw new Error('No Transactions provided');
 
