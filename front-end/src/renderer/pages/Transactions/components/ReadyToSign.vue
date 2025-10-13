@@ -61,7 +61,7 @@ const transactions = ref<
     }[]
   >
 >(new Map());
-const groups = ref<Map<number, IGroup[]>>(new Map());
+const groups = ref<Map<number, IGroup>>(new Map());
 const notifiedTransactionIds = ref<number[]>([]);
 const totalItems = ref(0);
 const currentPage = ref(1);
@@ -212,7 +212,7 @@ async function fetchTransactions() {
     setNotifiedTransactions();
 
     if (groupIds.length > 0) {
-      const fetchedGroups: Map<number, IGroup[]> = new Map();
+      const fetchedGroups: Map<number, IGroup> = new Map();
       for (const id of groupIds) {
         if (user.selectedOrganization?.serverUrl) {
           const group = await getApiGroupById(user.selectedOrganization.serverUrl, id);
@@ -402,7 +402,7 @@ watch(
                     <span v-else>N/A</span>
                   </td>
                   <td>
-                    <DateTimeString v-if="groups.get(group[0])" :date="getTransactionGroupUpdatedAt(groups.get(group[0]))"/>
+                    <DateTimeString v-if="groups.get(group[0])" :date="getTransactionGroupUpdatedAt(groups.get(group[0])!)"/>
                     <span v-else>N/A</span>
                   </td>
                   <td class="text-center">
