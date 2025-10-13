@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ITransactionFull, TransactionStatus } from '@shared/interfaces';
+import { type ITransactionFull, TransactionStatus } from '@shared/interfaces';
 
 import { computed } from 'vue';
 
