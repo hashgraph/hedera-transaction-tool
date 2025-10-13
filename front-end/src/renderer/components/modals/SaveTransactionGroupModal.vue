@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import { onBeforeRouteLeave, useRouter } from 'vue-router';
+import { onBeforeRouteLeave, type RouteLocationRaw, useRouter } from 'vue-router';
 
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import { draftsTitle } from '@shared/constants';
 
 /* Props */
 const props = defineProps<{ saveTransactionGroup: () => void }>();
@@ -20,28 +21,31 @@ const router = useRouter();
 
 /* State */
 const show = ref(false);
-const routeTo = ref<string | null>(null);
+const routeTo = ref<RouteLocationRaw | null>(null);
 
 /* Handlers */
 async function handleDiscard() {
   transactionGroup.clearGroup();
-  router.push({ path: routeTo.value || '/transactions' });
+  await router.push(routeTo.value ?? { name: 'transactions', query: { tab: draftsTitle } });
 }
 
 async function handleSaveGroup() {
   await props.saveTransactionGroup();
-  await router.push({ path: routeTo.value || '/transactions' });
+  await router.push(routeTo.value ?? { name: 'transactions', query: { tab: draftsTitle } });
 }
 
 /* Hooks */
 onBeforeRouteLeave(async to => {
-  if (to.fullPath.startsWith('/create-transaction/')) {
+  if (to.name === 'createTransaction') {
     return true;
   }
 
   if (transactionGroup.isModified()) {
     show.value = true;
-    routeTo.value = to.path;
+    routeTo.value =
+      to.name === 'transactions'
+        ? { name: 'transactions', query: { tab: draftsTitle } }
+        : { ...to };
     return false;
   } else {
     transactionGroup.clearGroup();

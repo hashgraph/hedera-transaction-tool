@@ -42,6 +42,7 @@ import TransactionGroupProcessor from '@renderer/components/Transaction/Transact
 import SaveTransactionGroupModal from '@renderer/components/modals/SaveTransactionGroupModal.vue';
 import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
 import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
+import { draftsTitle } from '@shared/constants';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
@@ -92,7 +93,7 @@ async function saveTransactionGroup() {
 }
 async function handleSaveGroup() {
   await saveTransactionGroup();
-  router.push('transactions');
+  await router.push({ name: 'transactions', query: { tab: draftsTitle } });
 }
 
 function descriptionUpdated() {
@@ -135,8 +136,8 @@ function handleEditGroupItem(index: number, type: string) {
   });
 }
 
-function handleBack() {
-  router.push('transactions');
+async function handleBack() {
+  await router.push({ name: 'transactions', query: { tab: draftsTitle } });
 }
 
 async function handleDelete() {
@@ -144,7 +145,7 @@ async function handleDelete() {
     await deleteGroup(route.query.id.toString());
   }
   transactionGroup.clearGroup();
-  router.push('transactions');
+  await router.push({ name: 'transactions', query: { tab: draftsTitle } });
 }
 
 const handleLoadGroup = async () => {
