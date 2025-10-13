@@ -15,6 +15,7 @@ export default class AccountUpdateTransactionModel extends TransactionBaseModel<
   getNewKeys(): Key[] {
     if (
       this.transaction.key != null &&
+      this.transaction.accountId != null &&
       !this.shouldWaiveSigningRequirements(this.transaction.accountId)
     ) {
       return [this.transaction.key];
@@ -47,7 +48,7 @@ export default class AccountUpdateTransactionModel extends TransactionBaseModel<
     );
   }
 
-  private isPrivilegedFeePayer(feePayer?: AccountId): boolean {
+  private isPrivilegedFeePayer(feePayer: AccountId|null): boolean {
     return (
       feePayer != null &&
       (feePayer.equals(this.TREASURY_ACCOUNT) || feePayer.equals(this.ADMIN_ACCOUNT))
