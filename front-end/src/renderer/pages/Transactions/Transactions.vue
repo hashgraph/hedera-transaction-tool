@@ -150,10 +150,10 @@ async function syncTab(forceCheckSign = false) {
         const newIndex = tabItems.value.findIndex(t => t.title === tab);
         activeTabIndex.value = newIndex >= 0 ? newIndex : activeTabIndex.value;
       } else {
-        await changeTabIfReadyToSign();
+        await changeTabIfReadyForAction();
       }
 
-      if (forceCheckSign) await changeTabIfReadyToSign();
+      if (forceCheckSign) await changeTabIfReadyForAction();
     },
     'Failed to sync tab',
     10000,
@@ -161,7 +161,7 @@ async function syncTab(forceCheckSign = false) {
   );
 }
 
-async function changeTabIfReadyToSign() {
+async function changeTabIfReadyForAction() {
   if (!isLoggedInOrganization(user.selectedOrganization)) return;
   if (user.selectedOrganization.isPasswordTemporary) return;
 
