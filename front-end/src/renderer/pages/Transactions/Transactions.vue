@@ -20,7 +20,7 @@ import useNotificationsStore from '@renderer/stores/storeNotifications';
 import { useRouter } from 'vue-router';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
-import { getTransactionsToSign } from '@renderer/services/organization';
+import { getTransactionsToApprove } from '@renderer/services/organization';
 
 import { isLoggedInOrganization, isOrganizationActive } from '@renderer/utils';
 
@@ -150,10 +150,10 @@ async function syncTab(forceCheckSign = false) {
         const newIndex = tabItems.value.findIndex(t => t.title === tab);
         activeTabIndex.value = newIndex >= 0 ? newIndex : activeTabIndex.value;
       } else {
-        await changeTabIfReadyToSign();
+        await changeTabIfReadyForAction();
       }
 
-      if (forceCheckSign) await changeTabIfReadyToSign();
+      if (forceCheckSign) await changeTabIfReadyForAction();
     },
     'Failed to sync tab',
     10000,
@@ -161,11 +161,11 @@ async function syncTab(forceCheckSign = false) {
   );
 }
 
-async function changeTabIfReadyToSign() {
+async function changeTabIfReadyForAction() {
   if (!isLoggedInOrganization(user.selectedOrganization)) return;
   if (user.selectedOrganization.isPasswordTemporary) return;
 
-  const { totalItems } = await getTransactionsToSign(
+  const { totalItems } = await getTransactionsToApprove(
     user.selectedOrganization.serverUrl,
     network.network,
     1,
@@ -173,7 +173,9 @@ async function changeTabIfReadyToSign() {
     [],
   );
 
-  if (totalItems > 0 && activeTabTitle.value !== readyToSignTitle) {
+  if (totalItems > 0 && activeTabTitle.value !== readyForReviewTitle) {
+    setQueryTab(readyForReviewTitle);
+  } else if (activeTabTitle.value !== readyToSignTitle) {
     setQueryTab(readyToSignTitle);
   } else {
     setQueryTab(activeTabTitle.value);
@@ -221,10 +223,9 @@ watch(activeTabTitle, setQueryTab);
           </ul>
         </div>
         <div>
-          <TransactionImportButton/>
+          <TransactionImportButton />
         </div>
       </div>
-
     </div>
 
     <div class="position-relative flex-column-100 overflow-hidden mt-4">
