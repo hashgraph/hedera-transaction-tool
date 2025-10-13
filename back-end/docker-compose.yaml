@@ -55,7 +55,7 @@ services:
       - POSTGRES_PASSWORD
     container_name: postgres
     volumes:
-      - ./pgdata:/var/lib/postgresql/data
+      - ./pgdata:/var/lib/postgresql
     # for development, allow postgres to be accessible
     ports:
       - '5432:5432'
