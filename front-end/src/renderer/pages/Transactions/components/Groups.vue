@@ -21,6 +21,7 @@ import {
   deleteGroup,
 } from '@renderer/services/transactionGroupsService';
 import EmptyTransactionGroup from '@renderer/components/EmptyTransactionGroup.vue';
+import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 
 /* Store */
 const user = useUserStore();
@@ -182,7 +183,7 @@ watch([currentPage, pageSize], async () => {
                 <td>{{ i + 1 }}</td>
                 <td>
                   <span class="text-secondary">
-                    {{ group.created_at.toLocaleString() }}
+                    <DateTimeString :date="group.created_at" :extended="false" />
                   </span>
                 </td>
                 <td>

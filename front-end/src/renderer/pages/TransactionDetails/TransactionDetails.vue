@@ -24,13 +24,11 @@ import { getApiGroupById, getTransactionById } from '@renderer/services/organiza
 import { getTransaction } from '@renderer/services/transactionService';
 
 import {
-  getTransactionDateExtended,
   getTransactionId,
   getTransactionPayerId,
-  getTransactionType,
+  getTransactionType, getTransactionValidStart,
 } from '@renderer/utils/sdk/transactions';
 import {
-  getDateStringExtended,
   getUInt8ArrayFromBytesString,
   KEEP_NEXT_QUERY_KEY,
   openTransactionInHashscan,
@@ -51,6 +49,7 @@ import txTypeComponentMapping from '@renderer/components/Transaction/Details/txT
 import TransactionDetailsHeader from './components/TransactionDetailsHeader.vue';
 import TransactionDetailsStatusStepper from './components/TransactionDetailsStatusStepper.vue';
 import { getGroup } from '@renderer/services/transactionGroupsService';
+import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -84,7 +83,7 @@ const transactionSpecificLabel = computed(() => {
 });
 
 const signersPublicKeys = computed(() => {
-  return [...sdkTransaction.value._signerPublicKeys];
+  return sdkTransaction.value ? [...sdkTransaction.value._signerPublicKeys] : [];
 });
 
 const creator = computed(() => {
@@ -323,13 +322,13 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Created at</h4>
                   <p :class="detailItemValueClass" data-testid="p-transaction-details-created-at">
-                    {{
-                      getDateStringExtended(
+                    <DateTimeString
+                      :date="
                         new Date(
                           orgTransaction?.createdAt || localTransaction?.created_at || Date.now(),
-                        ),
-                      )
-                    }}
+                        )
+                      "
+                    />
                   </p>
                 </div>
 
@@ -340,13 +339,13 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 >
                   <h4 :class="detailItemLabelClass">Executed at</h4>
                   <p :class="detailItemValueClass" data-testid="p-transaction-details-executed_at">
-                    {{
-                      getDateStringExtended(
+                    <DateTimeString
+                      :date="
                         new Date(
                           orgTransaction?.executedAt || localTransaction?.executed_at || Date.now(),
-                        ),
-                      )
-                    }}
+                        )
+                      "
+                    />
                   </p>
                 </div>
               </div>
@@ -402,7 +401,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Valid Start</h4>
                   <p :class="detailItemValueClass" data-testid="p-transaction-details-valid-start">
-                    {{ getTransactionDateExtended(sdkTransaction) }}
+                    <DateTimeString :date="getTransactionValidStart(sdkTransaction)"/>
                   </p>
                 </div>
 

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
+
 import type { FileData } from '@renderer/utils';
 
 import { isHederaSpecialFileId } from '@shared/hederaSpecialFiles';
@@ -21,6 +23,9 @@ defineProps<{
 defineEmits<{
   (event: 'update:data', data: FileData): void;
 }>();
+
+/* Composables */
+const { dateTimeSettingLabel } = useDateTimeSetting();
 </script>
 <template>
   <div class="row">
@@ -62,7 +67,8 @@ defineEmits<{
   <div class="row mt-6">
     <div class="form-group col-4 col-xxxl-3">
       <label class="form-label"
-        >Expiration <span class="text-muted text-italic">- Local time</span></label
+        >Expiration
+        <span class="text-muted text-italic">{{ `- ${dateTimeSettingLabel}` }}</span></label
       >
       <AppDatePicker
         :model-value="data.expirationTime ? data.expirationTime : undefined"

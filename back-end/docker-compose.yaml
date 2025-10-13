@@ -22,6 +22,7 @@ services:
       - '3001:3000'
     volumes:
       - .:/usr/src/app
+    restart: always
   chain:
     build:
       context: .
@@ -32,6 +33,7 @@ services:
       - ./apps/chain/.env
     volumes:
       - .:/usr/src/app
+    restart: always
   notifications:
     build:
       context: .
@@ -44,10 +46,12 @@ services:
       - '3020:3020'
     volumes:
       - .:/usr/src/app
+    restart: always
   rabbitmq:
     image: rabbitmq
     ports:
       - 5672:5672
+    restart: always
   database:
     image: postgres
     restart: always
@@ -79,6 +83,7 @@ services:
       - 6380:6379
     volumes:
       - redis:/data
+    restart: always
 volumes:
   redis:
     driver: local

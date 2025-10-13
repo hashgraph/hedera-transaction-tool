@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ITransactionFull, TransactionStatus } from '@shared/interfaces';
+import type { ITransactionFull } from '@shared/interfaces';
 
 import { computed } from 'vue';
+
+import { TransactionStatus } from '@shared/interfaces';
 
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
 

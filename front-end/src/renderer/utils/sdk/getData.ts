@@ -240,7 +240,8 @@ export const getComponentServiceEndpoint = (
 export const getComponentServiceEndpoints = (
   serviceEndpoints: ServiceEndpoint[],
 ): ComponentServiceEndpoint[] => {
-  return serviceEndpoints.map(getComponentServiceEndpoint);
+  const result =  serviceEndpoints.map(getComponentServiceEndpoint);
+  return result.filter((i) => i !== null)
 };
 
 export function getNodeData(transaction: Transaction): NodeData {

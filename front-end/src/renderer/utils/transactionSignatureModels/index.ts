@@ -28,7 +28,7 @@ export const computeSignatureKey = async (transaction: SDKTransaction, mirrorNod
 
 /* Returns only users PK required to sign */
 export const usersPublicRequiredToSign = async (
-  transaction: Transaction,
+  transaction: SDKTransaction,
   userKeys: IUserKey[],
   mirrorNodeLink: string,
 ): Promise<string[]> => {

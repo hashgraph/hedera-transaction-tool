@@ -38,7 +38,6 @@ import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
 
 import {
-  getDateStringExtended,
   getPrivateKey,
   getTransactionBodySignatureWithoutNodeAccountId,
   redirectToDetails,
@@ -54,6 +53,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
+import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -618,9 +618,7 @@ watchEffect(() => {
                                 }}</span>
                               </td>
                               <td data-testid="td-group-valid-start-time">
-                                {{
-                                  getDateStringExtended(new Date(groupItem.transaction.validStart))
-                                }}
+                                <DateTimeString :date="new Date(groupItem.transaction.validStart)"/>
                               </td>
                               <td class="text-center">
                                 <div class="d-flex justify-content-center flex-wrap gap-3">

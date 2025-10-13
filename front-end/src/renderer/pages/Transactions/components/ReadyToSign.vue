@@ -25,18 +25,19 @@ import {
   redirectToDetails,
   redirectToGroupDetails,
   isLoggedInOrganization,
-  getDateStringExtended, getTransactionGroupUpdatedAt,
+  getTransactionGroupUpdatedAt,
 } from '@renderer/utils';
 import {
-  getTransactionDateExtended,
   getTransactionId,
   getTransactionType,
+  getTransactionValidStart,
 } from '@renderer/utils/sdk/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
+import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -397,18 +398,12 @@ watch(
                     {{ groups.get(group[0])?.description }}
                   </td>
                   <td>
-                    {{
-                      group[1][0].transaction instanceof Transaction
-                        ? getTransactionDateExtended(group[1][0].transaction)
-                        : 'N/A'
-                    }}
+                    <DateTimeString v-if="group[1][0].transaction instanceof Transaction" :date="getTransactionValidStart(group[1][0].transaction)"/>
+                    <span v-else>N/A</span>
                   </td>
                   <td>
-                    {{
-                      groups.get(group[0])
-                        ? getDateStringExtended(getTransactionGroupUpdatedAt(groups.get(group[0])))
-                        : 'N/A'
-                    }}
+                    <DateTimeString v-if="groups.get(group[0])" :date="getTransactionGroupUpdatedAt(groups.get(group[0]))"/>
+                    <span v-else>N/A</span>
                   </td>
                   <td class="text-center">
                     <AppButton
@@ -440,18 +435,18 @@ watch(
                       }}</span>
                     </td>
                     <td :data-testid="`td-transaction-valid-start-for-sign-${index}`">
-                      {{
-                        tx.transaction instanceof Transaction
-                          ? getTransactionDateExtended(tx.transaction)
-                          : 'N/A'
-                      }}
+                      <DateTimeString
+                        v-if="tx.transaction instanceof Transaction"
+                        :date="getTransactionValidStart(tx.transaction)"
+                      />
+                      <span v-else>N/A</span>
                     </td>
                     <td :data-testid="`td-transaction-date-modified-for-sign-${index}`">
-                      {{
-                        tx.transaction instanceof Transaction
-                          ? getDateStringExtended(new Date(tx.transactionRaw.updatedAt))
-                          : 'N/A'
-                      }}
+                      <DateTimeString
+                        v-if="tx.transaction instanceof Transaction"
+                        :date="new Date(tx.transactionRaw.updatedAt)"
+                      />
+                      <span v-else>N/A</span>
                     </td>
                     <td class="text-center">
                       <AppButton

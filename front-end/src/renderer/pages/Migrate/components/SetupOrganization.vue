@@ -19,7 +19,7 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'setOrganizationId', value: string): void;
+  (event: 'setOrganizationId', value: string | null): void;
   (event: 'migration:cancel'): void;
 }>();
 

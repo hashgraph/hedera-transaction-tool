@@ -18,6 +18,7 @@ import { useToast } from 'vue-toast-notification';
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
+import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
 
 import { deleteGroup } from '@renderer/services/transactionGroupsService';
 
@@ -53,6 +54,7 @@ const toast = useToast();
 const payerData = useAccountId();
 const network = useNetworkStore();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
+const { dateTimeSettingLabel } = useDateTimeSetting();
 
 /* State */
 const groupDescription = ref('');
@@ -517,7 +519,9 @@ onBeforeRouteLeave(async to => {
           <div class="d-flex justify-content-between align-items-center mb-5">
             <div>
               <label class="form-label"
-                >Group Valid Start <span class="text-muted text-italic">- Local time</span></label
+                >Group Valid Start<span class="text-muted text-italic">{{
+                  `- ${dateTimeSettingLabel}`
+                }}</span></label
               >
               <RunningClockDatePicker
                 :model-value="transactionGroup.groupValidStart"
