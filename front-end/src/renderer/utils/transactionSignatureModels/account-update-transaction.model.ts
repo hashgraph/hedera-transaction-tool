@@ -48,7 +48,7 @@ export default class AccountUpdateTransactionModel extends TransactionBaseModel<
     );
   }
 
-  private isPrivilegedFeePayer(feePayer: AccountId|null): boolean {
+  private isPrivilegedFeePayer(feePayer: AccountId | null): boolean {
     return (
       feePayer != null &&
       (feePayer.equals(this.TREASURY_ACCOUNT) || feePayer.equals(this.ADMIN_ACCOUNT))
