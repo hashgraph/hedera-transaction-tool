@@ -197,19 +197,6 @@ export const getTransactionsToApprove = async (
     return data;
   }, 'Failed to get transactions to approve');
 
-/* Get transaction to approvers */
-export const getTransactionApprovers = async (
-  serverUrl: string,
-  transactionId: number,
-): Promise<ITransactionApprover[]> =>
-  commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.get(
-      `${serverUrl}/${controller}/${transactionId}/approvers`,
-    );
-
-    return data;
-  }, 'Failed to get transaction approvers');
-
 /* Get if user should approve a transaction */
 export const getUserShouldApprove = async (
   serverUrl: string, // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -299,38 +286,6 @@ export const addObservers = async (serverUrl: string, transactionId: number, use
     return data;
   }, 'Failed to add observers to transaction');
 
-/* Removes an observer */
-export const removeObserver = async (
-  serverUrl: string,
-  transactionId: number,
-  observerId: number,
-) =>
-  commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.delete(
-      `${serverUrl}/${controller}/${transactionId}/observers/${observerId}`,
-    );
-
-    return data;
-  }, 'Failed to remove observer');
-
-/* Updates an observer */
-export const updateObserverRole = async (
-  serverUrl: string,
-  transactionId: number,
-  observerId: number,
-  role: ObserverRole,
-) =>
-  commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.patch(
-      `${serverUrl}/${controller}/${transactionId}/observers/${observerId}`,
-      {
-        role,
-      },
-    );
-
-    return data;
-  }, 'Failed to update observer role');
-
 /* Adds approvers */
 export const addApprovers = async (
   serverUrl: string,
@@ -347,20 +302,6 @@ export const addApprovers = async (
 
     return data;
   }, 'Failed to add approvers to transaction');
-
-/* Removes an approver */
-export const removeApprover = async (
-  serverUrl: string,
-  transactionId: number,
-  approverId: number,
-) =>
-  commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.delete(
-      `${serverUrl}/${controller}/${transactionId}/approvers/${approverId}`,
-    );
-
-    return data;
-  }, 'Failed to remove approver');
 
 /* Sends approver's choice */
 export const sendApproverChoice = async (
