@@ -62,7 +62,7 @@ async function process(keyPaths: string[], words?: string[] | null) {
   reset();
 
   allKeyPaths.value = keyPaths;
-  mnemonic.value = words;
+  mnemonic.value = words ?? [];
   mnemomicHash.value = words ? await hashData(getRecoveryPhraseHashValue(words), true) : null;
 
   if (words) {
