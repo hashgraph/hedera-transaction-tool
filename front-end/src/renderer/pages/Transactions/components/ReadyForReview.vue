@@ -340,7 +340,7 @@ watch(
                   @click="
                     handleSort(
                       'updatedAt',
-                      sort.field === 'updatedAt' ? getOpositeDirection() : 'asc',
+                      sort.field === 'updatedAt' ? getOppositeDirection() : 'asc',
                     )
                   "
                 >
