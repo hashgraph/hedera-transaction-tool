@@ -62,7 +62,7 @@ const transactions = ref<
     }[]
   >
 >(new Map());
-const groups = ref<Map<number, IGroup[]>>(new Map());
+const groups = ref<Map<number, IGroup>>(new Map());
 const notifiedTransactionIds = ref<number[]>([]);
 const totalItems = ref(0);
 const currentPage = ref(1);
@@ -187,7 +187,7 @@ async function fetchTransactions() {
     setNotifiedTransactions();
 
     if (groupIds.length > 0) {
-      const fetchedGroups: Map<number, IGroup[]> = new Map();
+      const fetchedGroups: Map<number, IGroup> = new Map();
       for (const id of groupIds) {
         if (user.selectedOrganization?.serverUrl) {
           const group = await getApiGroupById(user.selectedOrganization.serverUrl, id);
@@ -359,28 +359,28 @@ watch(
             </tr>
           </thead>
           <tbody>
-            <template v-for="group of transactions" :key="group[0]">
-              <template v-if="group[0] != -1">
+            <template v-for="[groupId, groupTransactions] of transactions" :key="groupId">
+              <template v-if="groupId != -1">
                 <tr>
                   <td>
                     <i class="bi bi-stack" />
                   </td>
-                  <td>{{ groups.get(group[0])?.description }}</td>
+                  <td>{{ groups.get(groupId)?.description }}</td>
                   <td>
-                    <DateTimeString v-if="group[1][0].transaction instanceof Transaction" :date="getTransactionValidStart(group[1][0].transaction)" />
+                    <DateTimeString v-if="groupTransactions[0].transaction instanceof Transaction" :date="getTransactionValidStart(groupTransactions[0].transaction)" />
                     <span v-else>N/A</span>
                   </td>
                   <td>
-                    <DateTimeString v-if="groups.get(group[0])" :date="getTransactionGroupUpdatedAt(groups.get(group[0]))" />
+                    <DateTimeString v-if="groups.get(groupId)" :date="getTransactionGroupUpdatedAt(groups.get(groupId)!)" />
                     <span v-else>N/A</span>
                   </td>
                   <td>
-                    <DateTimeString v-if="groups.get(group[0])" :date="getTransactionGroupUpdatedAt(groups.get(group[0]))" />
+                    <DateTimeString v-if="groups.get(groupId)" :date="getTransactionGroupUpdatedAt(groups.get(groupId)!)" />
                     <span v-else>N/A</span>
                   </td>
                   <td class="text-center">
                     <AppButton
-                      @click="redirectToGroupDetails($router, group[0])"
+                      @click="redirectToGroupDetails($router, groupId)"
                       color="secondary"
                       class="min-w-unset"
                       >Details</AppButton
@@ -390,7 +390,7 @@ watch(
               </template>
 
               <template v-else>
-                <template v-for="(tx, index) in group[1]" :key="tx.transactionRaw.id">
+                <template v-for="(tx, index) in groupTransactions" :key="tx.transactionRaw.id">
                   <tr :class="{ highlight: notifiedTransactionIds.includes(tx.transactionRaw.id) }">
                     <td :data-testid="`td-review-transaction-id-${index}`">
                       {{
