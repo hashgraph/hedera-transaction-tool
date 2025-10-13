@@ -84,7 +84,7 @@ const transactionSpecificLabel = computed(() => {
 });
 
 const signersPublicKeys = computed(() => {
-  return [...sdkTransaction.value._signerPublicKeys];
+  return sdkTransaction.value ? [...sdkTransaction.value._signerPublicKeys] : [];
 });
 
 const creator = computed(() => {
