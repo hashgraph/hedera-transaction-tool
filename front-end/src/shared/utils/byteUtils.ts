@@ -6,7 +6,7 @@ export function areByteArraysEqual(a: Uint8Array, b: Uint8Array): boolean {
   return true;
 }
 
-export function javaFormatArrayHashCode(bytes) {
+export function javaFormatArrayHashCode(bytes: Uint8Array) {
   let result = 1;
   for (let i = 0; i < bytes.length; i++) {
     result = (31 * result + (bytes[i] & 0xFF)) | 0; // force 32-bit signed int
