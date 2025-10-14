@@ -5,7 +5,6 @@ import { computed, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
 import { deleteKey } from '@renderer/services/organization';
@@ -41,7 +40,6 @@ const emit = defineEmits<{
 const user = useUserStore();
 
 /* Composables */
-const router = useRouter();
 const toast = useToast();
 
 /* State */
@@ -132,10 +130,6 @@ const handleDelete = async () => {
     await user.refetchUserState();
     await user.refetchKeys();
     user.refetchAccounts();
-
-    if (user.shouldSetupAccount) {
-      router.push({ name: 'accountSetup' });
-    }
   } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to delete key pair'));
   } finally {
