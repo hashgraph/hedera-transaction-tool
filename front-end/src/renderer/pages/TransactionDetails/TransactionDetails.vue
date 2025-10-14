@@ -26,7 +26,8 @@ import { getTransaction } from '@renderer/services/transactionService';
 import {
   getTransactionId,
   getTransactionPayerId,
-  getTransactionType, getTransactionValidStart,
+  getTransactionType,
+  getTransactionValidStart,
 } from '@renderer/utils/sdk/transactions';
 import {
   getUInt8ArrayFromBytesString,
@@ -341,9 +342,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                   <p :class="detailItemValueClass" data-testid="p-transaction-details-executed_at">
                     <DateTimeString
                       :date="
-                        new Date(
-                          orgTransaction?.executedAt || localTransaction?.executed_at || Date.now(),
-                        )
+                        new Date(orgTransaction?.executedAt || localTransaction!.executed_at * 1000)
                       "
                     />
                   </p>
