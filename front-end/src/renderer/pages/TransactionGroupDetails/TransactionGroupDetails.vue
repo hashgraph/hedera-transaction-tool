@@ -74,18 +74,17 @@ const createTooltips = useCreateTooltips();
 const group = ref<IGroup | null>(null);
 const shouldApprove = ref(false);
 const isConfirmModalShown = ref(false);
-const publicKeysRequiredToSign = ref<string[]>([]);
 const disableSignAll = ref(false);
 const isSigningAll = ref(false);
 const signingItemSeq = ref(-1);
 const isApproving = ref(false);
-const unsignedSignersToCheck = ref<Record<string, string[]>>({});
+const unsignedSignersToCheck = ref<Record<number, string[]>>({});
 const tooltipRef = ref<HTMLElement[]>([]);
 
 /* Computed */
 const showSignAll = computed(() => {
   return (
-    isLoggedInOrganization(user.selectedOrganization) && publicKeysRequiredToSign.value.length > 0
+    isLoggedInOrganization(user.selectedOrganization) && Object.keys(unsignedSignersToCheck.value).length >= 1
   );
 });
 
@@ -93,8 +92,7 @@ const showSignAll = computed(() => {
 async function handleFetchGroup(id: string | number) {
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
     try {
-      const updatedPublicKeysRequiredToSign: string[] = [];
-      const updatedUnsignedSignersToCheck: Record<string, string[]> = {};
+      const updatedUnsignedSignersToCheck: Record<number, string[]> = {};
 
       group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
       disableSignAll.value = false;
@@ -129,17 +127,11 @@ async function handleFetchGroup(id: string | number) {
             usersPublicKeys.length > 0
           ) {
             updatedUnsignedSignersToCheck[txId] = usersPublicKeys;
-            usersPublicKeys.forEach(key => {
-              if (!updatedPublicKeysRequiredToSign.includes(key)) {
-                updatedPublicKeysRequiredToSign.push(key);
-              }
-            });
           }
         }
       }
 
       unsignedSignersToCheck.value = updatedUnsignedSignersToCheck;
-      publicKeysRequiredToSign.value = updatedPublicKeysRequiredToSign;
 
       // bootstrap tooltips needs to be recreated when the items' status might have changed
       // since their title is not updated
@@ -147,9 +139,6 @@ async function handleFetchGroup(id: string | number) {
     } catch (error) {
       router.back();
       throw error;
-    } finally {
-      signingItemSeq.value = -1;
-      isSigningAll.value = false;
     }
   } else {
     console.log('not logged into org');
@@ -221,10 +210,22 @@ const handleSignGroupItem = async (groupItem: IGroupItem) => {
       items,
     );
 
+    const updatedTransaction: ITransactionFull = await getTransactionById(
+      user.selectedOrganization?.serverUrl || '',
+      groupItem.transactionId
+    );
+
+    const index = group.value!.groupItems.findIndex(
+      item => item.transaction.id === groupItem.transactionId,
+    );
+    group.value!.groupItems[index].transaction = updatedTransaction;
+    delete unsignedSignersToCheck.value[groupItem.transaction.id];
+
     toast.success('Transaction signed successfully');
   } catch {
-    signingItemSeq.value = -1;
     toast.error('Transaction not signed');
+  } finally {
+    signingItemSeq.value = -1;
   }
 };
 
@@ -263,20 +264,23 @@ const handleSignAll = async () => {
         };
         items.push(item);
       }
+      await uploadSignatures(
+        user.personal.id,
+        personalPassword,
+        user.selectedOrganization,
+        undefined,
+        undefined,
+        undefined,
+        items,
+      );
+
+      await handleFetchGroup(group.value!.id);
+      toast.success('Transactions signed successfully');
     }
-    await uploadSignatures(
-      user.personal.id,
-      personalPassword,
-      user.selectedOrganization,
-      undefined,
-      undefined,
-      undefined,
-      items,
-    );
-    toast.success('Transactions signed successfully');
   } catch {
-    isSigningAll.value = false;
     toast.error('Transactions not signed');
+  } finally {
+    isSigningAll.value = false;
   }
 };
 
@@ -623,7 +627,7 @@ watchEffect(() => {
                                     loading-text="Signing..."
                                     type="button"
                                     color="primary"
-                                    @click.prevent="handleSignGroupItem(groupItem)"
+                                    @click.prevent="handleSignGroupItem(groupItem as IGroupItem)"
                                     :data-testid="`sign-group-item-${index}`"
                                     :disabled="
                                       unsignedSignersToCheck[groupItem.transaction.id] ===
