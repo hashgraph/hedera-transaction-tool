@@ -31,6 +31,7 @@ to run the tests.
 
    ```bash
    pnpm install
+   pnpm approve-builds # if required by pnpm install
    ```
 
 4. **Configure the environment variables** by creating a `.env` file in the root of the project and setting the path to
