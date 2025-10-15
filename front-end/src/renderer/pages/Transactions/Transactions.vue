@@ -70,10 +70,6 @@ const networkFilteredNotifications = computed(() => {
   );
 });
 
-const fallbackTabTitle = computed(() => {
-  return isOrganizationActive(user.selectedOrganization) ? readyToSignTitle : draftsTitle;
-});
-
 const activeTabs = computed(() => {
   let rawTabItems: TabItem[];
   if (isOrganizationActive(user.selectedOrganization)) {
@@ -150,16 +146,19 @@ async function findPrimaryTabTitle(): Promise<string> {
      - after application startup
      - after user selected another organization
 
-     Organization  Primary tab
-     ------------- -----------
-     Personal      'Drafts'
-     Org           'Ready for Review' if some transactions are available for approval
-                   'Ready to Sign' else
-
+      Organization | Primary tab
+     --------------|-------------------------------------------------------------------
+      Personal     | 'History'
+     --------------|-------------------------------------------------------------------
+      Org          | if some transactions are available for approval
+                   |        'Ready for Review'
+                   | else
+                   |        'Ready to Sign' else
+     --------------|-------------------------------------------------------------------
    */
 
-  if (!isLoggedInOrganization(user.selectedOrganization)) return fallbackTabTitle.value;
-  if (user.selectedOrganization.isPasswordTemporary) return fallbackTabTitle.value;
+  if (!isLoggedInOrganization(user.selectedOrganization)) return historyTitle;
+  if (user.selectedOrganization.isPasswordTemporary) return historyTitle;
 
   const { totalItems } = await getTransactionsToApprove(
     user.selectedOrganization.serverUrl,
@@ -169,7 +168,7 @@ async function findPrimaryTabTitle(): Promise<string> {
     [],
   );
 
-  return totalItems > 0 ? readyForReviewTitle : fallbackTabTitle.value;
+  return totalItems > 0 ? readyForReviewTitle : readyToSignTitle;
 }
 
 async function handleTabSelection(newSelectedTabIndex: number) {
