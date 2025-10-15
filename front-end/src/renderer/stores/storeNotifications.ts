@@ -141,9 +141,8 @@ const useNotificationsStore = defineStore('notifications', () => {
       });
 
       ws.on(severUrl, NOTIFICATIONS_INDICATORS_DELETE, e => {
-        // TODO: find what is the type of e and check if code below is required
-        const args: {notificationReceiverIds: number}[] = Array.isArray(e) ? e : [e]
-        const notificationReceiverIds = args.flatMap(item => item.notificationReceiverIds || []);
+        const deleteNotifications: {notificationReceiverIds: number}[] = e;
+        const notificationReceiverIds = deleteNotifications.flatMap(item => item.notificationReceiverIds || []);
 
         notifications.value[severUrl] = notifications.value[severUrl].filter(
           nr => !notificationReceiverIds.includes(nr.id),
