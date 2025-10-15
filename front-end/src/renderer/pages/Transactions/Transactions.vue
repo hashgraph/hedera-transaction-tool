@@ -17,6 +17,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
 
+import { useRouter } from 'vue-router';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { getTransactionsToApprove } from '@renderer/services/organization';
@@ -42,6 +43,7 @@ const network = useNetworkStore();
 const notifications = useNotificationsStore();
 
 /* Composables */
+const router = useRouter();
 const withLoader = useLoader();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
@@ -57,8 +59,6 @@ const organizationTabs: TabItem[] = [
 const sharedTabs: TabItem[] = [{ title: draftsTitle }, { title: historyTitle }];
 const notificationsKey = ref(user.selectedOrganization?.serverUrl || '');
 
-const activeTabIndex = ref(1);
-const tabItems = ref<TabItem[]>(sharedTabs);
 const isTransactionSelectionModalShown = ref(false);
 
 /* Computed */
@@ -70,8 +70,17 @@ const networkFilteredNotifications = computed(() => {
   );
 });
 
+const fallbackTabTitle = computed(() => {
+  return isOrganizationActive(user.selectedOrganization) ? readyToSignTitle : draftsTitle;
+})
+
 const activeTabs = computed(() => {
-  const rawTabItems = tabItems.value;
+  let rawTabItems: TabItem[];
+  if (isOrganizationActive(user.selectedOrganization)) {
+    rawTabItems = [...organizationTabs];
+  } else {
+    rawTabItems = [...sharedTabs];
+  }
 
   const readyToApproveNotifications =
     networkFilteredNotifications.value?.filter(
@@ -115,41 +124,28 @@ const activeTabs = computed(() => {
 
   return rawTabItems;
 });
-const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title);
+
+const selectedTabTitle = computed(() => {
+  const tabParam = router.currentRoute.value.query.tab;
+  return typeof tabParam == 'string' ? tabParam : null;
+});
+
+const selectedTabIndex = computed(() => {
+  const result = activeTabs.value.findIndex(tabItem => tabItem.title === selectedTabTitle.value);
+  return result != -1 ? result : null;
+});
 
 /* Function */
-function setTabItems() {
-  if (isOrganizationActive(user.selectedOrganization)) {
-    const currentTabTitle = activeTabTitle.value;
-    tabItems.value = [...organizationTabs];
-    const newIndex = tabItems.value.findIndex(tab => tab.title === currentTabTitle);
-    activeTabIndex.value = newIndex >= 0 ? newIndex : 0;
-  } else {
-    const newIndex = sharedTabs.findIndex(tab => tab.title === activeTabTitle.value);
-    activeTabIndex.value = newIndex >= 0 ? newIndex : 0;
-    tabItems.value = [...sharedTabs];
-  }
+
+async function setQueryTab(title: string) {
+  const query = router.currentRoute.value.query;
+  if (query.tab === title) return;
+  await router.replace({ query: { ...query, tab: title } });
 }
 
-async function syncTab(forceCheckSign = false) {
-  setTabItems();
-
-  await withLoader(
-    async () => {
-      const newIndex = tabItems.value.findIndex(t => t.title === activeTabTitle.value);
-      activeTabIndex.value = newIndex >= 0 ? newIndex : activeTabIndex.value;
-
-      if (forceCheckSign) await changeTabIfReadyForAction();
-    },
-    'Failed to sync tab',
-    10000,
-    false,
-  );
-}
-
-async function changeTabIfReadyForAction() {
-  if (!isLoggedInOrganization(user.selectedOrganization)) return;
-  if (user.selectedOrganization.isPasswordTemporary) return;
+async function findPrimaryTabTitle(): Promise<string> {
+  if (!isLoggedInOrganization(user.selectedOrganization)) return fallbackTabTitle.value;
+  if (user.selectedOrganization.isPasswordTemporary) return fallbackTabTitle.value;
 
   const { totalItems } = await getTransactionsToApprove(
     user.selectedOrganization.serverUrl,
@@ -159,21 +155,36 @@ async function changeTabIfReadyForAction() {
     [],
   );
 
-  if (totalItems > 0 && activeTabTitle.value !== readyForReviewTitle) {
-    setQueryTab(readyForReviewTitle);
-  } else if (activeTabTitle.value !== readyToSignTitle) {
-    activeTabIndex.value = tabItems.value.findIndex(t => t.title === readyToSignTitle);
+  return totalItems > 0 ? readyForReviewTitle : fallbackTabTitle.value;
+}
+
+async function handleTabSelection(newSelectedTabIndex: number) {
+  if (newSelectedTabIndex != selectedTabIndex.value) {
+    await setQueryTab(activeTabs.value[newSelectedTabIndex].title);
+    // => triggers unmount() + remount()
   }
 }
 
-/* Hooks */
-onBeforeMount(syncTab);
+async function organizationDidChange() {
+  await withLoader(async () => {
+    const newFallbackTab = await findPrimaryTabTitle();
+    if (newFallbackTab !== selectedTabTitle.value) {
+      await setQueryTab(newFallbackTab);
+      // => triggers unmount() + remount()
+    }
+  });
+}
 
-/* Watchers */
-watch(
-  () => user.selectedOrganization,
-  async () => await syncTab(true),
-);
+/* Hooks */
+onBeforeMount(async () => {
+  if (selectedTabTitle.value === null) {
+    // tab title is not set in current route => we set it with the primary title
+    await setQueryTab(await findPrimaryTabTitle());
+    // => triggers unmount() + remount()
+  } else {
+    watch(() => user.selectedOrganization, organizationDidChange);
+  }
+});
 </script>
 
 <template>
@@ -184,7 +195,7 @@ watch(
       <div class="flex-centered gap-4">
         <div class="dropdown">
           <AppButton color="primary" data-testid="button-create-new" data-bs-toggle="dropdown"
-            ><i class="bi bi-plus-lg"></i> <span>Create New</span></AppButton
+          ><i class="bi bi-plus-lg"></i> <span>Create New</span></AppButton
           >
           <ul class="dropdown-menu mt-3">
             <li
@@ -192,7 +203,7 @@ watch(
               @click="isTransactionSelectionModalShown = true"
             >
               <span class="text-small text-bold" data-testid="span-single-transaction"
-                >Transaction</span
+              >Transaction</span
               >
             </li>
             <li
@@ -200,7 +211,7 @@ watch(
               @click="$router.push('create-transaction-group')"
             >
               <span class="text-small text-bold" data-testid="span-group-transaction"
-                >Transaction Group</span
+              >Transaction Group</span
               >
             </li>
           </ul>
@@ -213,14 +224,19 @@ watch(
 
     <div class="position-relative flex-column-100 overflow-hidden mt-4">
       <div class="mb-3">
-        <AppTabs :items="activeTabs" v-model:active-index="activeTabIndex"></AppTabs>
+        <AppTabs
+          v-if="selectedTabIndex !== null"
+          :items="activeTabs"
+          :active-index="selectedTabIndex"
+          @update:active-index="handleTabSelection"
+        ></AppTabs>
       </div>
-      <template v-if="activeTabTitle === readyForReviewTitle"><ReadyForReview /></template>
-      <template v-if="activeTabTitle === readyToSignTitle"> <ReadyToSign /> </template>
-      <template v-if="activeTabTitle === inProgressTitle"><InProgress /></template>
-      <template v-if="activeTabTitle === readyForExecutionTitle"><ReadyForExecution /></template>
-      <template v-if="activeTabTitle === draftsTitle"><Drafts /></template>
-      <template v-if="activeTabTitle === historyTitle"><History /></template>
+      <template v-if="selectedTabTitle === readyForReviewTitle"><ReadyForReview /></template>
+      <template v-if="selectedTabTitle === readyToSignTitle"> <ReadyToSign /> </template>
+      <template v-if="selectedTabTitle === inProgressTitle"><InProgress /></template>
+      <template v-if="selectedTabTitle === readyForExecutionTitle"><ReadyForExecution /></template>
+      <template v-if="selectedTabTitle === draftsTitle"><Drafts /></template>
+      <template v-if="selectedTabTitle === historyTitle"><History /></template>
     </div>
 
     <TransactionSelectionModal
