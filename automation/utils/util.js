@@ -59,6 +59,8 @@ async function setupEnvironmentForTransactions(window, privateKey = process.env.
     await settingsPage.clickOnED25519ImportButton();
   } else if (env.toUpperCase() === 'TESTNET') {
     const settingsPage = new SettingsPage(window);
+    await settingsPage.clickOnSettingsButton();
+    await settingsPage.clickOnTestnetTab();
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnECDSADropDown();

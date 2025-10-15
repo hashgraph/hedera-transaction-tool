@@ -185,6 +185,10 @@ class SettingsPage extends BasePage {
     await this.click(this.localNodeTabButtonSelector);
   }
 
+  async clickOnTestnetTab() {
+    await this.click(this.testnetTabButtonSelector);
+  }
+
   async clickOnCustomNodeTab() {
     await this.click(this.customNodeTabButtonSelector);
   }
