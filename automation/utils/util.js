@@ -59,6 +59,18 @@ async function setupEnvironmentForTransactions(window, privateKey = process.env.
     await settingsPage.clickOnED25519ImportButton();
   } else if (env.toUpperCase() === 'TESTNET') {
     const settingsPage = new SettingsPage(window);
+    await settingsPage.clickOnSettingsButton();
+    await settingsPage.clickOnTestnetTab();
+    await settingsPage.clickOnKeysTab();
+    await settingsPage.clickOnImportButton();
+    await settingsPage.clickOnECDSADropDown();
+    await settingsPage.fillInECDSAPrivateKey(privateKey);
+    await settingsPage.fillInECDSANickname('Payer Account');
+    await settingsPage.clickOnECDSAImportButton();
+  } else if (env.toUpperCase() === 'PREVIEWNET') {
+    const settingsPage = new SettingsPage(window);
+    await settingsPage.clickOnSettingsButton();
+    await settingsPage.clickOnPreviewnetTab();
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnECDSADropDown();
