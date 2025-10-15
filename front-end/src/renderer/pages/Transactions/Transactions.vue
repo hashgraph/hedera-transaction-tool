@@ -72,7 +72,7 @@ const networkFilteredNotifications = computed(() => {
 
 const fallbackTabTitle = computed(() => {
   return isOrganizationActive(user.selectedOrganization) ? readyToSignTitle : draftsTitle;
-})
+});
 
 const activeTabs = computed(() => {
   let rawTabItems: TabItem[];
@@ -137,13 +137,27 @@ const selectedTabIndex = computed(() => {
 
 /* Function */
 
-async function setQueryTab(title: string) {
+async function setQueryTabAndRemount(title: string) {
   const query = router.currentRoute.value.query;
   if (query.tab === title) return;
   await router.replace({ query: { ...query, tab: title } });
+  // Triggers unmount() + remount()
 }
 
 async function findPrimaryTabTitle(): Promise<string> {
+  /*
+     Primary tab is the one that is displayed when:
+     - after application startup
+     - after user selected another organization
+
+     Organization  Primary tab
+     ------------- -----------
+     Personal      'Drafts'
+     Org           'Ready for Review' if some transactions are available for approval
+                   'Ready to Sign' else
+
+   */
+
   if (!isLoggedInOrganization(user.selectedOrganization)) return fallbackTabTitle.value;
   if (user.selectedOrganization.isPasswordTemporary) return fallbackTabTitle.value;
 
@@ -160,17 +174,15 @@ async function findPrimaryTabTitle(): Promise<string> {
 
 async function handleTabSelection(newSelectedTabIndex: number) {
   if (newSelectedTabIndex != selectedTabIndex.value) {
-    await setQueryTab(activeTabs.value[newSelectedTabIndex].title);
-    // => triggers unmount() + remount()
+    await setQueryTabAndRemount(activeTabs.value[newSelectedTabIndex].title);
   }
 }
 
 async function organizationDidChange() {
   await withLoader(async () => {
-    const newFallbackTab = await findPrimaryTabTitle();
-    if (newFallbackTab !== selectedTabTitle.value) {
-      await setQueryTab(newFallbackTab);
-      // => triggers unmount() + remount()
+    const newPrimaryTabTitle = await findPrimaryTabTitle();
+    if (newPrimaryTabTitle !== selectedTabTitle.value) {
+      await setQueryTabAndRemount(newPrimaryTabTitle);
     }
   });
 }
@@ -179,8 +191,7 @@ async function organizationDidChange() {
 onBeforeMount(async () => {
   if (selectedTabTitle.value === null) {
     // tab title is not set in current route => we set it with the primary title
-    await setQueryTab(await findPrimaryTabTitle());
-    // => triggers unmount() + remount()
+    await setQueryTabAndRemount(await findPrimaryTabTitle());
   } else {
     watch(() => user.selectedOrganization, organizationDidChange);
   }
@@ -195,7 +206,7 @@ onBeforeMount(async () => {
       <div class="flex-centered gap-4">
         <div class="dropdown">
           <AppButton color="primary" data-testid="button-create-new" data-bs-toggle="dropdown"
-          ><i class="bi bi-plus-lg"></i> <span>Create New</span></AppButton
+            ><i class="bi bi-plus-lg"></i> <span>Create New</span></AppButton
           >
           <ul class="dropdown-menu mt-3">
             <li
@@ -203,7 +214,7 @@ onBeforeMount(async () => {
               @click="isTransactionSelectionModalShown = true"
             >
               <span class="text-small text-bold" data-testid="span-single-transaction"
-              >Transaction</span
+                >Transaction</span
               >
             </li>
             <li
@@ -211,7 +222,7 @@ onBeforeMount(async () => {
               @click="$router.push('create-transaction-group')"
             >
               <span class="text-small text-bold" data-testid="span-group-transaction"
-              >Transaction Group</span
+                >Transaction Group</span
               >
             </li>
           </ul>
