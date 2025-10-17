@@ -33,6 +33,7 @@ import {
   getUserShouldApprove,
   sendApproverChoice,
   uploadSignatures,
+  cancelTransaction,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
@@ -54,12 +55,14 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
+import useContactsStore from '@renderer/stores/storeContacts.ts';
 
 /* Stores */
 const user = useUserStore();
 const network = useNetwork();
 const wsStore = useWebsocketConnection();
 const nextTransaction = useNextTransactionStore();
+const contacts = useContactsStore();
 
 /* Composables */
 const router = useRouter();
@@ -73,19 +76,49 @@ const createTooltips = useCreateTooltips();
 /* State */
 const group = ref<IGroup | null>(null);
 const shouldApprove = ref(false);
-const isConfirmModalShown = ref(false);
 const disableSignAll = ref(false);
 const isSigningAll = ref(false);
+const isCancelingAll = ref(false);
 const signingItemSeq = ref(-1);
 const isApproving = ref(false);
 const unsignedSignersToCheck = ref<Record<number, string[]>>({});
 const tooltipRef = ref<HTMLElement[]>([]);
+const isConfirmModalShown = ref(false);
+const confirmModalTitle = ref('');
+const confirmModalText = ref('');
+const confirmCallback = ref<((...args: any[]) => void) | null>(null);
 
 /* Computed */
 const showSignAll = computed(() => {
   return (
     isLoggedInOrganization(user.selectedOrganization) && Object.keys(unsignedSignersToCheck.value).length >= 1
   );
+});
+
+const isCreator = computed(() => {
+  const creator = contacts.contacts.find(contact =>
+    contact.userKeys.some(k => k.id === group.value?.groupItems[0].transaction.creatorKeyId),
+  );
+  return (
+    isLoggedInOrganization(user.selectedOrganization) &&
+    creator &&
+    creator.user.id === user.selectedOrganization.userId
+  );
+});
+
+const groupIsInProgress = computed(() => {
+  let result = false;
+  for (const item of group.value?.groupItems ?? []) {
+    if (isTransactionInProgress(item.transaction as ITransactionFull)) {
+      result = true;
+      break;
+    }
+  }
+  return result;
+});
+
+const showCancelAll = computed(() => {
+  return isCreator.value && groupIsInProgress.value;
 });
 
 /* Handlers */
@@ -229,12 +262,56 @@ const handleSignGroupItem = async (groupItem: IGroupItem) => {
   }
 };
 
-const handleSignAll = async () => {
+const handleCancelAll = async (showModal = false) => {
+  if (showModal) {
+    isConfirmModalShown.value = true;
+    confirmModalTitle.value = 'Cancel all transactions?';
+    confirmModalText.value = 'Are you sure you want to cancel all transactions?';
+    confirmCallback.value = handleCancelAll;
+    return;
+  }
+
+  isConfirmModalShown.value = false;
+
   if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in organization');
   }
 
-  const personalPassword = getPassword(handleSignAll, {
+  try {
+    isCancelingAll.value = true;
+    if (group.value != undefined) {
+      for (const groupItem of group.value.groupItems) {
+        if (isTransactionInProgress(groupItem.transaction as ITransactionFull)) {
+          await cancelTransaction(user.selectedOrganization.serverUrl, groupItem.transaction.id);
+        }
+      }
+    }
+
+    await handleFetchGroup(group.value!.id);
+    toast.success('Transactions canceled successfully');
+  } catch {
+    toast.error('Transactions not canceled');
+  } finally {
+    isCancelingAll.value = false;
+  }
+};
+
+const handleSignAll = async (showModal = false) => {
+  if (showModal) {
+    isConfirmModalShown.value = true;
+    confirmModalTitle.value = 'Sign all transactions?';
+    confirmModalText.value = 'Are you sure you want to sign all transactions?';
+    confirmCallback.value = handleSignAll;
+    return;
+  }
+
+  isConfirmModalShown.value = false;
+
+  if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in organization');
+  }
+
+  const personalPassword = getPassword(handleSignAll.bind(null, showModal), {
     subHeading: 'Enter your application password to decrypt your private key',
   });
   if (passwordModalOpened(personalPassword)) return;
@@ -284,9 +361,12 @@ const handleSignAll = async () => {
   }
 };
 
-const handleApproveAll = async (approved: boolean, showModal?: boolean) => {
+const handleApproveAll = async (showModal = false, approved = false ) => {
   if (!approved && showModal) {
     isConfirmModalShown.value = true;
+    confirmModalTitle.value = 'Reject all Transactions?';
+    confirmModalText.value = 'Are you sure you want to reject all transactions?';
+    confirmCallback.value = handleApproveAll;
     return;
   }
 
@@ -417,6 +497,14 @@ const handleExportGroup = async () => {
 };
 
 /* Functions */
+const isTransactionInProgress = (transaction: ITransactionFull) => {
+  return [
+    TransactionStatus.NEW,
+    TransactionStatus.WAITING_FOR_EXECUTION,
+    TransactionStatus.WAITING_FOR_SIGNATURES,
+  ].includes(transaction.status);
+};
+
 const subscribeToTransactionAction = () => {
   if (!user.selectedOrganization?.serverUrl) return;
   ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
@@ -663,7 +751,7 @@ watchEffect(() => {
             </Transition>
 
             <Transition name="fade" mode="out-in">
-              <template v-if="shouldApprove || showSignAll">
+              <template v-if="shouldApprove || showSignAll || showCancelAll">
                 <div class="d-flex gap-4 mt-5">
                   <!-- Approval Actions -->
                   <template v-if="shouldApprove">
@@ -672,7 +760,7 @@ watchEffect(() => {
                       type="button"
                       :loading="isApproving"
                       loading-text="Rejecting..."
-                      @click="handleApproveAll(false, true)"
+                      @click="handleApproveAll(true, false)"
                     >
                       Reject All
                     </AppButton>
@@ -681,33 +769,48 @@ watchEffect(() => {
                       type="button"
                       :loading="isApproving"
                       loading-text="Approving..."
-                      @click="handleApproveAll(true, true)"
+                      @click="handleApproveAll(false, true)"
                     >
                       Approve All
                     </AppButton>
                   </template>
 
                   <!-- Sign All Button -->
-                  <template v-if="showSignAll">
-                    <AppButton
-                      color="primary"
-                      type="button"
-                      :loading="isSigningAll"
-                      loading-text="Signing..."
-                      data-testid="button-sign-all-tx"
-                      @click="handleSignAll"
-                      :disabled="disableSignAll"
-                      data-bs-toggle="tooltip"
-                      data-bs-placement="top"
-                      :title="
-                        disableSignAll
-                          ? 'Cannot sign all due to transaction version mismatch.'
-                          : 'Sign all transactions.'
-                      "
-                    >
-                      Sign All
-                    </AppButton>
-                  </template>
+                  <AppButton
+                    v-if="showSignAll"
+                    :disabled="disableSignAll"
+                    :loading="isSigningAll"
+                    :title="
+                      disableSignAll
+                        ? 'Cannot sign all due to transaction version mismatch'
+                        : 'Sign all transactions'
+                    "
+                    color="primary"
+                    data-bs-placement="top"
+                    data-bs-toggle="tooltip"
+                    data-testid="button-sign-all-tx"
+                    loading-text="Signing..."
+                    type="button"
+                    @click="handleSignAll(true)"
+                  >
+                    Sign All
+                  </AppButton>
+
+                  <!-- Cancel All Button -->
+                  <AppButton
+                    v-if="showCancelAll"
+                    :loading="isCancelingAll"
+                    color="secondary"
+                    data-bs-placement="top"
+                    data-bs-toggle="tooltip"
+                    data-testid="button-cancel-all-tx"
+                    loading-text="Canceling..."
+                    title="Cancel all transactions"
+                    type="button"
+                    @click="handleCancelAll(true)"
+                  >
+                    Cancel All
+                  </AppButton>
                 </div>
               </template>
             </Transition>
@@ -721,10 +824,8 @@ watchEffect(() => {
                 <div class="text-center">
                   <AppCustomIcon :name="'questionMark'" style="height: 160px" />
                 </div>
-                <h3 class="text-center text-title text-bold mt-4">Reject Transaction?</h3>
-                <p class="text-center text-small text-secondary mt-4">
-                  Are you sure you want to reject the transaction
-                </p>
+                <h3 class="text-center text-title text-bold mt-4">{{ confirmModalTitle }}</h3>
+                <p class="text-center text-small text-secondary mt-4">{{ confirmModalText }}</p>
                 <hr class="separator my-5" />
                 <div class="flex-between-centered gap-4">
                   <AppButton color="borderless" @click="isConfirmModalShown = false"
@@ -733,8 +834,8 @@ watchEffect(() => {
                   <AppButton
                     color="primary"
                     data-testid="button-confirm-change-password"
-                    @click="handleApproveAll(false)"
-                    >Reject</AppButton
+                    @click="confirmCallback && confirmCallback(false)"
+                    >Confirm</AppButton
                   >
                 </div>
               </div>
