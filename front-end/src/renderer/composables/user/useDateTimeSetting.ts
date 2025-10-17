@@ -15,16 +15,12 @@ export enum DateTimeOptions {
 export default function useDateTimeSetting() {
   const DEFAULT_OPTION = DateTimeOptions.UTC_TIME;
 
-  const DATE_TIME_OPTION_LABELS = [
-    { value: DateTimeOptions.UTC_TIME, label: 'UTC Time' },
-    { value: DateTimeOptions.LOCAL_TIME, label: 'Local Time' },
-  ];
-
   /* Stores */
   const user = useUserStore();
 
   /* States */
   const dateTimeSetting = ref<DateTimeOptions | null>(null);
+  const timeZoneName = ref<string | null>(null);
 
   /* Computed */
   const isUtcSelected = computed(() => {
@@ -35,9 +31,20 @@ export default function useDateTimeSetting() {
     return isUtcSelected.value ? 'UTC Time' : 'Local Time';
   });
 
+  const DATE_TIME_OPTION_LABELS = computed(() => [
+    { value: DateTimeOptions.UTC_TIME, label: 'UTC Time' },
+    {
+      value: DateTimeOptions.LOCAL_TIME,
+      label: `Local Time (${timeZoneName.value})`,
+    },
+  ]);
+
   /* Hooks */
   onBeforeMount(async () => {
     dateTimeSetting.value = await getDateTimeSetting();
+    const formatter = new Intl.DateTimeFormat(undefined, { timeZoneName: 'long' });
+    const parts = formatter.formatToParts(new Date());
+    timeZoneName.value = parts.find(part => part.type === 'timeZoneName')?.value ?? null;
   });
 
   async function getDateTimeSetting(): Promise<DateTimeOptions> {

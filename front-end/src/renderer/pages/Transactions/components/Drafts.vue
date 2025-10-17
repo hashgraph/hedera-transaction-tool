@@ -8,7 +8,6 @@ import { Prisma } from '@prisma/client';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useUserStore from '@renderer/stores/storeUser';
-import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
 
 import {
   getDraft,
@@ -54,7 +53,6 @@ const generatedClass = computed(() => {
 /* Composables */
 const router = useRouter();
 const toast = useToast();
-const { dateTimeSettingLabel } = useDateTimeSetting();
 
 /* Handlers */
 const handleSort = async (field: string, direction: string) => {
@@ -247,7 +245,7 @@ watch([currentPage, pageSize], async () => {
                     )
                   "
                 >
-                  <span>{{ `Date (${dateTimeSettingLabel})` }}</span>
+                  <span>Date</span>
                   <i
                     v-if="sortField === 'created_at'"
                     class="bi text-title"
@@ -296,7 +294,7 @@ watch([currentPage, pageSize], async () => {
               <tr>
                 <td>
                   <span class="text-secondary" :data-testid="'span-draft-tx-date-' + i">
-                    <DateTimeString :date="draft.created_at" :extended="false" />
+                    <DateTimeString :date="draft.created_at" />
                   </span>
                 </td>
                 <td>

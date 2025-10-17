@@ -137,7 +137,18 @@ export function getDateString(date: Date, isUtcSelected = true) {
 }
 
 export function getDateStringExtended(date: Date, isUtcSelected = true) {
-  return isUtcSelected ? date.toUTCString() : `${date.toDateString()} ${date.toLocaleTimeString()}`;
+
+  const formatter = new Intl.DateTimeFormat(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    timeZoneName: 'short',
+  });
+
+  return isUtcSelected
+    ? date.toUTCString()
+    : `${date.toDateString()} ${formatter.format(date)}`;
 }
 
 export const throwError = (errorMessage: string) => {
