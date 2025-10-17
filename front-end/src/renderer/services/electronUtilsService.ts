@@ -1,4 +1,4 @@
-import type { FileFilter, OpenDialogReturnValue } from 'electron';
+import type { FileFilter, OpenDialogReturnValue, SaveDialogReturnValue } from 'electron';
 
 import { commonIPCHandler } from '@renderer/utils';
 
@@ -67,7 +67,7 @@ export const showSaveDialog = async (
   buttonLabel: string,
   filters: FileFilter[],
   message: string,
-): Promise<OpenDialogReturnValue> => {
+): Promise<SaveDialogReturnValue> => {
   try {
     return await window.electronAPI.local.utils.showSaveDialog(
       name,

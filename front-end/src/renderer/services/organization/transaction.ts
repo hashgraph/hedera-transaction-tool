@@ -1,25 +1,23 @@
 import type { Organization } from '@prisma/client';
 import type { TransactionId } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 import type { LoggedInOrganization, SignatureItem } from '@renderer/types';
 import type {
   ISignatureImport,
   ITransaction,
-  ITransactionApprover,
-  TransactionApproverDto,
   ITransactionFull,
   Network,
   PaginatedResourceDto,
   SignatureImportResultDto,
+  TransactionApproverDto,
 } from '@shared/interfaces';
-
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
-
-import { ObserverRole, TransactionStatus } from '@shared/interfaces';
+import { TransactionStatus } from '@shared/interfaces';
 
 import {
   axiosWithCredentials,
   commonRequestHandler,
   formatSignatureMap,
+  type FormattedMap,
   getPrivateKey,
   getSignatureMapForPublicKeys,
 } from '@renderer/utils';
@@ -89,7 +87,7 @@ export const uploadSignatures = async (
   transactionId?: number,
   items?: SignatureItem[],
 ) => {
-  const formattedMaps = [];
+  const formattedMaps: { id: number; signatureMap: FormattedMap }[] = [];
 
   if (!items) {
     if (!publicKeys || !transaction || !transactionId) {
@@ -137,7 +135,7 @@ export const importSignatures = async (
   organization: LoggedInOrganization & Organization,
   signatureImport: ISignatureImport[] | ISignatureImport,
 ): Promise<SignatureImportResultDto[]> => {
-  const formattedMaps = [];
+  const formattedMaps: { id: number; signatureMap: FormattedMap }[] = [];
   const imports = Array.isArray(signatureImport) ? signatureImport : [signatureImport];
   for (const signatureImport of imports) {
     formattedMaps.push({
@@ -150,9 +148,9 @@ export const importSignatures = async (
       `${organization.serverUrl}/${controller}/signatures/import`,
       formattedMaps,
     );
-    return data
+    return data;
   }, 'Failed to import signatures');
-}
+};
 
 /* Get transactions to sign */
 export const getTransactionsToSign = async (

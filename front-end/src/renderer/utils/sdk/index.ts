@@ -428,10 +428,12 @@ export const getSignatureMapForPublicKeys = (publicKeys: string[], transaction: 
   return signatureMap;
 };
 
+export type FormattedMap = {
+  [nodeAccountId: string]: { [transactionId: string]: { [publicKey: string]: string } };
+}
+
 export const formatSignatureMap = (signatureMap: SignatureMap) => {
-  const result: {
-    [nodeAccountId: string]: { [transactionId: string]: { [publicKey: string]: string } };
-  } = {};
+  const result: FormattedMap = {};
   for (const [nodeAccountId, transactions] of signatureMap._map) {
     result[nodeAccountId] = {};
     for (const [transactionId, signatures] of transactions._map) {

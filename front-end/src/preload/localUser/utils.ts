@@ -1,4 +1,4 @@
-import type { FileFilter, OpenDialogReturnValue } from 'electron';
+import type { FileFilter, OpenDialogReturnValue, SaveDialogReturnValue } from 'electron';
 import { ipcRenderer } from 'electron';
 
 export default {
@@ -28,7 +28,7 @@ export default {
       buttonLabel: string,
       filters: FileFilter[],
       message: string,
-    ): Promise<OpenDialogReturnValue> =>
+    ): Promise<SaveDialogReturnValue> =>
       ipcRenderer.invoke('utils:showSaveDialog', name, title, buttonLabel, filters, message),
     saveFileToPath: (
       data: Uint8Array | string,
