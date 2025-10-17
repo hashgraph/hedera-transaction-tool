@@ -4,9 +4,9 @@ import { proto } from '@hashgraph/proto';
 import {
   AccountId,
   ExchangeRates,
-  FeeComponents,
-  FeeData,
-  FeeSchedule,
+  type FeeComponents,
+  type FeeData,
+  type FeeSchedule,
   FeeSchedules,
   Long,
 } from '@hashgraph/sdk';

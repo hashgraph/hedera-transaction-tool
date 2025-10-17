@@ -554,7 +554,7 @@ const handleExport = async () => {
 
   // Save selected format to local storage
   const ext = filePath.split('.').pop();
-  if (!EXPORT_FORMATS.find(f => f.extensions[0] === ext)) {
+  if (!ext || !EXPORT_FORMATS.find(f => f.extensions[0] === ext)) {
     throw new Error(`Unsupported file extension: ${ext}`);
   }
   setLastExportExtension(ext);
