@@ -520,7 +520,7 @@ onBeforeRouteLeave(async to => {
             <div>
               <label class="form-label"
                 >Group Valid Start<span class="text-muted text-italic">{{
-                  `- ${dateTimeSettingLabel}`
+                  ` - ${dateTimeSettingLabel}`
                 }}</span></label
               >
               <RunningClockDatePicker
