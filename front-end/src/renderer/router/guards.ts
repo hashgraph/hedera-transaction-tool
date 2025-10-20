@@ -18,7 +18,7 @@ const excludedPreviousPaths = [
 export function addGuards(router: Router) {
   const user = useUserStore();
 
-  router.beforeEach(to => {
+  router.beforeEach((to, from) => {
     const userIsLoggedIn = user.personal?.isLoggedIn;
     const userIsLoggedInOrganization = isLoggedInOrganization(user.selectedOrganization);
     const userIsAdmin =
@@ -59,8 +59,12 @@ export function addGuards(router: Router) {
       router.previousPath = to.path;
     }
 
+    if (from.name === 'transactions') {
+      router.previousTab = from.query.tab as string;
+    }
+
     if (!to.meta.withoutAuth && userIsLoggedIn === false) {
-      router.push({ name: 'login' });
+      return({ name: 'login' });
     }
 
     return true;
