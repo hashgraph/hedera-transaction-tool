@@ -136,7 +136,12 @@ function handleEditGroupItem(index: number, type: string) {
 }
 
 function handleBack() {
-  router.push('transactions');
+  router.push({
+    name: 'transactions',
+    query: {
+      tab: router.previousTab
+    }
+  } );
 }
 
 async function handleDelete() {
