@@ -50,6 +50,7 @@ import txTypeComponentMapping from '@renderer/components/Transaction/Details/txT
 import TransactionDetailsHeader from './components/TransactionDetailsHeader.vue';
 import TransactionDetailsStatusStepper from './components/TransactionDetailsStatusStepper.vue';
 import { getGroup } from '@renderer/services/transactionGroupsService';
+import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 
 /* Stores */
@@ -143,6 +144,7 @@ async function fetchTransaction(id: string | number) {
     signatureKeyObject.value = await computeSignatureKey(
       sdkTransaction.value,
       network.mirrorNodeBaseURL,
+      new AccountInfoCache(),
     );
   }
 

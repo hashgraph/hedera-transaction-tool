@@ -4,7 +4,7 @@ import type { AccountUpdateDataMultiple } from '@renderer/utils';
 
 import { AccountId, KeyList } from '@hashgraph/sdk';
 
-import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
+import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
 
 /* Default Request */
 export class BaseRequest {
@@ -127,10 +127,11 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
   async deriveRequestKey(mirrorNodeBaseURL: string) {
     const keyList = new KeyList();
 
+    const accountInfoCache = new AccountInfoCache();
     const withoutChecksum = this.accountIds.map(acc => AccountId.fromString(acc).toString());
     for (const account of withoutChecksum) {
       if (!this.accountInfoMap.has(account)) {
-        const data = await getAccountInfo(account, mirrorNodeBaseURL);
+        const data = await accountInfoCache.fetch(account, mirrorNodeBaseURL);
         if (data) {
           this.accountInfoMap.set(account, data);
         }
@@ -151,7 +152,7 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
     if (this.payerId && !this.accountIsPayer) {
       const payerWithoutChecksum = AccountId.fromString(this.payerId).toString();
       if (!this.accountInfoMap.has(payerWithoutChecksum)) {
-        const payerInfo = await getAccountInfo(payerWithoutChecksum, mirrorNodeBaseURL);
+        const payerInfo = await accountInfoCache.fetch(payerWithoutChecksum, mirrorNodeBaseURL);
         if (payerInfo) {
           this.accountInfoMap.set(payerWithoutChecksum, payerInfo);
         }
@@ -163,21 +164,5 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
     }
 
     this.requestKey = keyList;
-  }
-
-  getAccountIdTransactionKey(accountId: string) {
-    const keyList = new KeyList([this.key]);
-    const accountInfo = this.accountInfoMap.get(accountId);
-
-    if (accountInfo) {
-      accountInfo.key && keyList.push(accountInfo.key);
-
-      if (!this.accountIsPayer && this.payerId) {
-        const payerInfo = this.accountInfoMap.get(this.payerId);
-        payerInfo?.key && keyList.push(payerInfo.key);
-      }
-    }
-
-    return keyList;
   }
 }
