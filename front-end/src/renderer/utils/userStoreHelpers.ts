@@ -26,7 +26,7 @@ import {
   updateKey as updateOrganizationKey,
   uploadKey,
 } from '@renderer/services/organization';
-import { getAccountIds, getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService';
+import { getAccountIds } from '@renderer/services/mirrorNodeDataService';
 import {
   storeKeyPair as storeKey,
   getKeyPairs,
@@ -229,35 +229,6 @@ export const getLocalKeyPairs = async (
   });
 
   return keyPairs;
-};
-
-export const getPublicKeysToAccounts = async (keyPairs: KeyPair[], mirrorNodeBaseURL: string) => {
-  const publicKeyToAccounts: PublicKeyAccounts[] = [];
-
-  const results = await Promise.allSettled(
-    keyPairs.map(kp => getAccountsByPublicKey(mirrorNodeBaseURL, kp.public_key)),
-  );
-
-  results.forEach((result, i) => {
-    if (result.status === 'fulfilled') {
-      const keyPair = keyPairs[i];
-
-      const publicKeyPair = publicKeyToAccounts.findIndex(
-        pkToAcc => pkToAcc.publicKey === keyPair.public_key,
-      );
-
-      if (publicKeyPair >= 0) {
-        publicKeyToAccounts[publicKeyPair].accounts = result.value;
-      } else {
-        publicKeyToAccounts.push({
-          publicKey: keyPair.public_key,
-          accounts: result.value,
-        });
-      }
-    }
-  });
-
-  return publicKeyToAccounts;
 };
 
 export const getPublicKeyToAccounts = async (
