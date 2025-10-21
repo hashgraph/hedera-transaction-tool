@@ -29,6 +29,7 @@ import {
   getPropagationButtonLabel,
   isLoggedInOrganization,
   redirectToGroupDetails,
+  redirectToPreviousTransactionsTab,
 } from '@renderer/utils';
 import { createTransactionId } from '@renderer/utils/sdk';
 
@@ -92,7 +93,7 @@ async function saveTransactionGroup() {
 }
 async function handleSaveGroup() {
   await saveTransactionGroup();
-  router.push('transactions');
+  await redirectToPreviousTransactionsTab(router);
 }
 
 function descriptionUpdated() {
@@ -136,7 +137,12 @@ function handleEditGroupItem(index: number, type: string) {
 }
 
 function handleBack() {
-  router.push('transactions');
+  router.push({
+    name: 'transactions',
+    query: {
+      tab: router.previousTab
+    }
+  } );
 }
 
 async function handleDelete() {
@@ -144,7 +150,7 @@ async function handleDelete() {
     await deleteGroup(route.query.id.toString());
   }
   transactionGroup.clearGroup();
-  router.push('transactions');
+  await redirectToPreviousTransactionsTab(router);
 }
 
 const handleLoadGroup = async () => {
@@ -194,7 +200,7 @@ function handleExecuted(id: string) {
   if (user.selectedOrganization) {
     redirectToGroupDetails(router, id);
   } else {
-    router.push({ name: 'transactions' });
+    redirectToPreviousTransactionsTab(router);
   }
 }
 
@@ -205,7 +211,7 @@ function handleSubmit(id: number) {
 
 function handleClose() {
   transactionGroup.clearGroup();
-  router.push({ name: 'transactions' });
+  redirectToPreviousTransactionsTab(router);
 }
 
 function handleOnImportClick() {
