@@ -24,7 +24,7 @@
     "publish": "npm run build && electron-builder -m -p 'onTagOrDraft'",
     "test:main": "vitest --config src/tests/vitest.config.main.ts --passWithNoTests",
     "test:main:coverage": "vitest --config src/tests/vitest.config.main.ts --coverage.enabled --coverage.include=src/main",
-    "generate:database": "prisma generate"
+    "generate:database": "prisma generate --no-hints"
   },
   "dependencies": {
     "@electron-toolkit/utils": "3.0.0",
