@@ -26,7 +26,7 @@ const emit = defineEmits<{
 const { isUtcSelected } = useDateTimeSetting();
 
 /* State */
-const datePicker = ref<DatePickerInstance>(null);
+const datePicker = ref<DatePickerInstance|null>(null);
 
 /* Computed */
 const inputValue = computed(() => {
