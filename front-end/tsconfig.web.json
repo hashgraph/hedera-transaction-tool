@@ -17,6 +17,7 @@
       "@renderer/*": ["src/renderer/*"],
       "@main/*": ["src/main/*"],
       "@shared/*": ["src/shared/*"],
+      "@prisma/*": ["node_modules/.prisma/*"],
       "long": ["node_modules/long"]
     }
   }
