@@ -6,6 +6,7 @@
     "src/renderer/env.d.ts",
     "src/renderer/**/*",
     "src/renderer/**/*.vue",
+    "src/preload/**/*.ts",
     "src/tests/renderer"
   ],
   "compilerOptions": {
