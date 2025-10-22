@@ -706,7 +706,6 @@ watch(
               :loading-text="loadingStates[visibleButtons[0]] || ''"
               :data-testid="buttonsDataTestIds[visibleButtons[0]]"
               type="submit"
-              class="me-3"
               >{{ visibleButtons[0] }}
             </AppButton>
           </div>
@@ -722,7 +721,6 @@ watch(
               :loading-text="loadingStates[visibleButtons[1]] || ''"
               :data-testid="buttonsDataTestIds[visibleButtons[1]]"
               type="submit"
-              class="me-3"
               >{{ visibleButtons[1] }}
             </AppButton>
           </div>
@@ -758,7 +756,6 @@ watch(
               :loading-text="loadingStates[visibleButtons[1]] || ''"
               :data-testid="buttonsDataTestIds[visibleButtons[1]]"
               type="submit"
-              class="me-3"
               >{{ visibleButtons[1] }}
             </AppButton>
           </div>

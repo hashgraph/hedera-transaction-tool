@@ -3,7 +3,7 @@ import type { IGroup } from '@renderer/services/organization';
 import type { IGroupItem, ITransactionFull } from '@shared/interfaces';
 import type { SignatureItem } from '@renderer/types';
 
-import { computed, onBeforeMount, ref, watch, watchEffect } from 'vue';
+import { computed, onBeforeMount, reactive, ref, watch, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
@@ -33,6 +33,7 @@ import {
   getUserShouldApprove,
   sendApproverChoice,
   uploadSignatures,
+  cancelTransaction,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
@@ -55,12 +56,34 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
+import useContactsStore from '@renderer/stores/storeContacts.ts';
+import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
+
+/* Types */
+type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
+
+/* Misc */
+const reject: ActionButton = 'Reject All';
+const approve: ActionButton = 'Approve All';
+const sign: ActionButton = 'Sign All';
+const cancel: ActionButton = 'Cancel All';
+const exportName: ActionButton = 'Export';
+
+const primaryButtons: ActionButton[] = [reject, approve, sign];
+const buttonsDataTestIds: { [key: string]: string } = {
+  [reject]: 'button-reject-group',
+  [approve]: 'button-approve-group',
+  [sign]: 'button-sign-group',
+  [cancel]: 'button-cancel-group',
+  [exportName]: 'button-export-group',
+};
 
 /* Stores */
 const user = useUserStore();
 const network = useNetwork();
 const wsStore = useWebsocketConnection();
 const nextTransaction = useNextTransactionStore();
+const contacts = useContactsStore();
 
 /* Composables */
 const router = useRouter();
@@ -74,30 +97,86 @@ const createTooltips = useCreateTooltips();
 /* State */
 const group = ref<IGroup | null>(null);
 const shouldApprove = ref(false);
-const isConfirmModalShown = ref(false);
-const disableSignAll = ref(false);
-const isSigningAll = ref(false);
+const isVersionMismatch = ref(false);
 const signingItemSeq = ref(-1);
-const isApproving = ref(false);
 const unsignedSignersToCheck = ref<Record<number, string[]>>({});
 const tooltipRef = ref<HTMLElement[]>([]);
+const isConfirmModalShown = ref(false);
+const confirmModalTitle = ref('');
+const confirmModalText = ref('');
+const confirmCallback = ref<((...args: any[]) => void) | null>(null);
+
+const fullyLoaded = ref(false);
+const loadingStates = reactive<{ [key: string]: string | null }>({
+  [reject]: null,
+  [approve]: null,
+  [sign]: null,
+  [cancel]: null,
+});
 
 /* Computed */
-const showSignAll = computed(() => {
+const canSignAll = computed(() => {
   return (
-    isLoggedInOrganization(user.selectedOrganization) && Object.keys(unsignedSignersToCheck.value).length >= 1
+     isLoggedInOrganization(user.selectedOrganization)
+     && !isVersionMismatch.value
+     && Object.keys(unsignedSignersToCheck.value).length >= 1
   );
 });
 
+const isCreator = computed(() => {
+  const creator = contacts.contacts.find(contact =>
+    contact.userKeys.some(k => k.id === group.value?.groupItems[0].transaction.creatorKeyId),
+  );
+  return (
+    isLoggedInOrganization(user.selectedOrganization) &&
+    creator &&
+    creator.user.id === user.selectedOrganization.userId
+  );
+});
+
+const groupIsInProgress = computed(() => {
+  let result = false;
+  for (const item of group.value?.groupItems ?? []) {
+    if (isTransactionInProgress(item.transaction as ITransactionFull)) {
+      result = true;
+      break;
+    }
+  }
+  return result;
+});
+
+const canCancelAll = computed(() => {
+  return isCreator.value && groupIsInProgress.value;
+});
+
+const visibleButtons = computed(() => {
+  const buttons: ActionButton[] = [];
+
+  if (!fullyLoaded.value) return buttons;
+
+  /* The order is important REJECT, APPROVE, SIGN, CANCEL, EXPORT */
+  shouldApprove.value && buttons.push(reject, approve);
+  canSignAll.value && !shouldApprove.value && buttons.push(sign);
+  canCancelAll.value && buttons.push(cancel);
+  buttons.push(exportName);
+
+  return buttons;
+});
+
+const dropDownItems = computed(() =>
+  visibleButtons.value.slice(1).map(item => ({ label: item, value: item })),
+);
+
 /* Handlers */
 async function handleFetchGroup(id: string | number) {
+  fullyLoaded.value = false;
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
     try {
       const updatedUnsignedSignersToCheck: Record<number, string[]> = {};
       const accountInfoCache = new AccountInfoCache();
 
       group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
-      disableSignAll.value = false;
+      isVersionMismatch.value = false;
 
       if (group.value?.groupItems != undefined) {
         for (const item of group.value.groupItems) {
@@ -107,7 +186,7 @@ async function handleFetchGroup(id: string | number) {
           const isTransactionVersionMismatch = !areByteArraysEqual(tx.toBytes(), transactionBytes);
           if (isTransactionVersionMismatch) {
             toast.error('Transaction version mismatch. Cannot sign all.');
-            disableSignAll.value = true;
+            isVersionMismatch.value = true;
             break;
           }
 
@@ -132,6 +211,7 @@ async function handleFetchGroup(id: string | number) {
             updatedUnsignedSignersToCheck[txId] = usersPublicKeys;
           }
         }
+        fullyLoaded.value = true;
       }
 
       unsignedSignersToCheck.value = updatedUnsignedSignersToCheck;
@@ -233,18 +313,62 @@ const handleSignGroupItem = async (groupItem: IGroupItem) => {
   }
 };
 
-const handleSignAll = async () => {
+const handleCancelAll = async (showModal = false) => {
+  if (showModal) {
+    isConfirmModalShown.value = true;
+    confirmModalTitle.value = 'Cancel all transactions?';
+    confirmModalText.value = 'Are you sure you want to cancel all transactions?';
+    confirmCallback.value = handleCancelAll;
+    return;
+  }
+
+  isConfirmModalShown.value = false;
+
   if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in organization');
   }
 
-  const personalPassword = getPassword(handleSignAll, {
+  try {
+    loadingStates[cancel] = 'Canceling...'
+    if (group.value != undefined) {
+      for (const groupItem of group.value.groupItems) {
+        if (isTransactionInProgress(groupItem.transaction as ITransactionFull)) {
+          await cancelTransaction(user.selectedOrganization.serverUrl, groupItem.transaction.id);
+        }
+      }
+    }
+
+    await handleFetchGroup(group.value!.id);
+    toast.success('Transactions canceled successfully');
+  } catch {
+    toast.error('Transactions not canceled');
+  } finally {
+    loadingStates[cancel] = null;
+  }
+};
+
+const handleSignAll = async (showModal = false) => {
+  if (showModal) {
+    isConfirmModalShown.value = true;
+    confirmModalTitle.value = 'Sign all transactions?';
+    confirmModalText.value = 'Are you sure you want to sign all transactions?';
+    confirmCallback.value = handleSignAll;
+    return;
+  }
+
+  isConfirmModalShown.value = false;
+
+  if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
+    throw new Error('User is not logged in organization');
+  }
+
+  const personalPassword = getPassword(handleSignAll.bind(null, showModal), {
     subHeading: 'Enter your application password to decrypt your private key',
   });
   if (passwordModalOpened(personalPassword)) return;
 
   try {
-    isSigningAll.value = true;
+    loadingStates[sign] = 'Signing...'
     const items: SignatureItem[] = [];
     if (group.value != undefined) {
       const accountInfoCache = new AccountInfoCache();
@@ -286,13 +410,16 @@ const handleSignAll = async () => {
   } catch {
     toast.error('Transactions not signed');
   } finally {
-    isSigningAll.value = false;
+    loadingStates[sign] = null;
   }
 };
 
-const handleApproveAll = async (approved: boolean, showModal?: boolean) => {
+const handleApproveAll = async (showModal = false, approved = false ) => {
   if (!approved && showModal) {
     isConfirmModalShown.value = true;
+    confirmModalTitle.value = 'Reject all Transactions?';
+    confirmModalText.value = 'Are you sure you want to reject all transactions?';
+    confirmCallback.value = handleApproveAll;
     return;
   }
 
@@ -307,7 +434,7 @@ const handleApproveAll = async (approved: boolean, showModal?: boolean) => {
     if (passwordModalOpened(personalPassword)) return;
 
     try {
-      isApproving.value = true;
+      loadingStates[approve] = 'Approving...'
 
       const publicKey = user.selectedOrganization.userKeys[0].publicKey;
       const privateKeyRaw = await decryptPrivateKey(
@@ -350,7 +477,7 @@ const handleApproveAll = async (approved: boolean, showModal?: boolean) => {
         });
       }
     } finally {
-      isApproving.value = false;
+      loadingStates[approve] = null;
     }
   };
 
@@ -422,7 +549,68 @@ const handleExportGroup = async () => {
   }
 };
 
+const handleAction = async (value: ActionButton) => {
+  if (value === reject) {
+    await handleApproveAll(true, false);
+  } else if (value === approve) {
+    await handleApproveAll(true, true);
+  } else if (value === sign) {
+    await handleSignAll(true);
+  } else if (value === cancel) {
+    await handleCancelAll(true);
+  } else if (value === exportName) {
+    await handleExportGroup();
+  }
+};
+
+const handleSubmit = async (e: Event) => {
+  const buttonContent = (e as SubmitEvent).submitter?.textContent || '';
+  await handleAction(buttonContent as ActionButton);
+};
+
+const handleDropDownItem = async (value: ActionButton) => handleAction(value);
+
+/* Hooks */
+onBeforeMount(async () => {
+  const id = router.currentRoute.value.params.id;
+  if (!id) {
+    router.back();
+    return;
+  }
+
+  subscribeToTransactionAction();
+  await handleFetchGroup(Array.isArray(id) ? id[0] : id);
+  setGetTransactionsFunction();
+});
+
+/* Watchers */
+wsStore.$onAction(ctx => {
+  if (ctx.name !== 'setup') return;
+  ctx.after(() => subscribeToTransactionAction());
+});
+
+watch(
+  () => user.selectedOrganization,
+  () => {
+    router.back();
+  },
+);
+
+watchEffect(() => {
+  if (tooltipRef.value && tooltipRef.value.length > 0) {
+    createTooltips();
+  }
+});
+
 /* Functions */
+const isTransactionInProgress = (transaction: ITransactionFull) => {
+  return [
+    TransactionStatus.NEW,
+    TransactionStatus.WAITING_FOR_EXECUTION,
+    TransactionStatus.WAITING_FOR_SIGNATURES,
+  ].includes(transaction.status);
+};
+
 const subscribeToTransactionAction = () => {
   if (!user.selectedOrganization?.serverUrl) return;
   ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
@@ -497,41 +685,9 @@ function tooltipText(status: TransactionStatus): string {
   }
   return result;
 }
-
-/* Hooks */
-onBeforeMount(async () => {
-  const id = router.currentRoute.value.params.id;
-  if (!id) {
-    router.back();
-    return;
-  }
-
-  subscribeToTransactionAction();
-  await handleFetchGroup(Array.isArray(id) ? id[0] : id);
-  setGetTransactionsFunction();
-});
-
-/* Watchers */
-wsStore.$onAction(ctx => {
-  if (ctx.name !== 'setup') return;
-  ctx.after(() => subscribeToTransactionAction());
-});
-
-watch(
-  () => user.selectedOrganization,
-  () => {
-    router.back();
-  },
-);
-
-watchEffect(() => {
-  if (tooltipRef.value && tooltipRef.value.length > 0) {
-    createTooltips();
-  }
-});
 </script>
 <template>
-  <div class="p-5">
+  <form @submit.prevent="handleSubmit" class="p-5">
     <div class="flex-column-100">
       <div class="flex-centered justify-content-between flex-wrap gap-4">
         <div class="d-flex align-items-center">
@@ -542,18 +698,77 @@ watchEffect(() => {
           <h2 class="text-title text-bold">Transaction Group Details</h2>
         </div>
 
-        <AppButton
-          type="button"
-          color="secondary"
-          @click.prevent="handleExportGroup"
-          data-testid="button-export-group"
-          ><span>Export</span>
-        </AppButton>
+        <div class="flex-centered gap-4">
+          <Transition name="fade" mode="out-in">
+            <template v-if="visibleButtons.length > 0">
+              <div>
+                <AppButton
+                  :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
+                  :loading="Boolean(loadingStates[visibleButtons[0]])"
+                  :loading-text="loadingStates[visibleButtons[0]] || ''"
+                  :data-testid="buttonsDataTestIds[visibleButtons[0]]"
+                  type="submit"
+                  >{{ visibleButtons[0] }}
+                </AppButton>
+              </div>
+            </template>
+          </Transition>
+
+          <Transition name="fade" mode="out-in">
+            <template v-if="visibleButtons.length > 1">
+              <div class="d-none d-lg-block">
+                <AppButton
+                  :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
+                  :loading="Boolean(loadingStates[visibleButtons[1]])"
+                  :loading-text="loadingStates[visibleButtons[1]] || ''"
+                  :data-testid="buttonsDataTestIds[visibleButtons[1]]"
+                  type="submit"
+                  >{{ visibleButtons[1] }}
+                </AppButton>
+              </div>
+            </template>
+          </Transition>
+
+          <Transition name="fade" mode="out-in">
+            <template v-if="visibleButtons.length > 2">
+              <div>
+                <AppDropDown
+                  class="d-lg-none"
+                  :color="'secondary'"
+                  :items="dropDownItems"
+                  compact
+                  @select="handleDropDownItem($event as ActionButton)"
+                  data-testid="button-more-dropdown-sm"
+                />
+                <AppDropDown
+                  class="d-none d-lg-block"
+                  :color="'secondary'"
+                  :items="dropDownItems.slice(1)"
+                  compact
+                  @select="handleDropDownItem($event as ActionButton)"
+                  data-testid="button-more-dropdown-lg"
+                />
+              </div>
+            </template>
+            <template v-else-if="visibleButtons.length === 2">
+              <div class="d-lg-none">
+                <AppButton
+                  :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
+                  :loading="Boolean(loadingStates[visibleButtons[1]])"
+                  :loading-text="loadingStates[visibleButtons[1]] || ''"
+                  :data-testid="buttonsDataTestIds[visibleButtons[1]]"
+                  type="submit"
+                  >{{ visibleButtons[1] }}
+                </AppButton>
+              </div>
+            </template>
+          </Transition>
+        </div>
       </div>
 
       <Transition name="fade" mode="out-in">
         <template v-if="group">
-          <div class="fill-remaining flex-column-100 mt-4">
+          <div class="fill-remaining flex-column-100 mt-5">
             <div class="d-flex">
               <div class="col-6 flex-1">
                 <label class="form-label">Transaction Group Description</label>
@@ -627,7 +842,7 @@ watchEffect(() => {
                                 <DateTimeString :date="new Date(groupItem.transaction.validStart)"/>
                               </td>
                               <td class="text-center">
-                                <div class="d-flex justify-content-center flex-wrap gap-3">
+                                <div class="d-flex justify-content-center flex-wrap gap-4">
                                   <AppButton
                                     :loading="signingItemSeq === groupItem.seq"
                                     loading-text="Signing..."
@@ -668,56 +883,6 @@ watchEffect(() => {
               </template>
             </Transition>
 
-            <Transition name="fade" mode="out-in">
-              <template v-if="shouldApprove || showSignAll">
-                <div class="d-flex gap-4 mt-5">
-                  <!-- Approval Actions -->
-                  <template v-if="shouldApprove">
-                    <AppButton
-                      color="secondary"
-                      type="button"
-                      :loading="isApproving"
-                      loading-text="Rejecting..."
-                      @click="handleApproveAll(false, true)"
-                    >
-                      Reject All
-                    </AppButton>
-                    <AppButton
-                      color="primary"
-                      type="button"
-                      :loading="isApproving"
-                      loading-text="Approving..."
-                      @click="handleApproveAll(true, true)"
-                    >
-                      Approve All
-                    </AppButton>
-                  </template>
-
-                  <!-- Sign All Button -->
-                  <template v-if="showSignAll">
-                    <AppButton
-                      color="primary"
-                      type="button"
-                      :loading="isSigningAll"
-                      loading-text="Signing..."
-                      data-testid="button-sign-all-tx"
-                      @click="handleSignAll"
-                      :disabled="disableSignAll"
-                      data-bs-toggle="tooltip"
-                      data-bs-placement="top"
-                      :title="
-                        disableSignAll
-                          ? 'Cannot sign all due to transaction version mismatch.'
-                          : 'Sign all transactions.'
-                      "
-                    >
-                      Sign All
-                    </AppButton>
-                  </template>
-                </div>
-              </template>
-            </Transition>
-
             <AppModal v-model:show="isConfirmModalShown" class="common-modal">
               <div class="p-4">
                 <i
@@ -727,10 +892,8 @@ watchEffect(() => {
                 <div class="text-center">
                   <AppCustomIcon :name="'questionMark'" style="height: 160px" />
                 </div>
-                <h3 class="text-center text-title text-bold mt-4">Reject Transaction?</h3>
-                <p class="text-center text-small text-secondary mt-4">
-                  Are you sure you want to reject the transaction
-                </p>
+                <h3 class="text-center text-title text-bold mt-4">{{ confirmModalTitle }}</h3>
+                <p class="text-center text-small text-secondary mt-4">{{ confirmModalText }}</p>
                 <hr class="separator my-5" />
                 <div class="flex-between-centered gap-4">
                   <AppButton color="borderless" @click="isConfirmModalShown = false"
@@ -739,8 +902,8 @@ watchEffect(() => {
                   <AppButton
                     color="primary"
                     data-testid="button-confirm-change-password"
-                    @click="handleApproveAll(false)"
-                    >Reject</AppButton
+                    @click="confirmCallback && confirmCallback(false)"
+                    >Confirm</AppButton
                   >
                 </div>
               </div>
@@ -754,5 +917,5 @@ watchEffect(() => {
         </template>
       </Transition>
     </div>
-  </div>
+  </form>
 </template>
