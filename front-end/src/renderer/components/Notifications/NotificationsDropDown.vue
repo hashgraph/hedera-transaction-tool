@@ -32,7 +32,7 @@ watch(totalCount, newCount => {
 });
 </script>
 <template>
-  <div class="dropdown">
+  <div class="dropdown ms-2">
     <div class="position-relative" data-bs-toggle="dropdown">
       <span
         class="container-icon p-0 m-3"

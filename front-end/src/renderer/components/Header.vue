@@ -45,7 +45,7 @@ onUpdated(createTooltips);
       <span class="container-icon">
         <i class="text-icon-main bi bi-three-dots-vertical"></i>
       </span> -->
-      <div class="me-5 position-relative">
+      <div class="me-4 position-relative">
         <RouterLink
           class="text-bold text-small text-decoration-none"
           to="/settings/general"
