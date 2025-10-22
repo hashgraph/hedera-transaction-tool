@@ -1,3 +1,5 @@
+/// <reference types="pino" />
+
 import type { Network, NetworkExchangeRateSetResponse } from '@shared/interfaces';
 
 import { computed, ref } from 'vue';
