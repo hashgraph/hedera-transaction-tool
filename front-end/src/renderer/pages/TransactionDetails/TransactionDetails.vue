@@ -251,7 +251,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
             </div>
           </template>
           <template v-else>
-            <div class="fill-remaining mt-5 pe-4">
+            <div class="fill-remaining mt-5">
               <div class="row flex-wrap">
                 <!-- Description -->
                 <div class="col-11">
