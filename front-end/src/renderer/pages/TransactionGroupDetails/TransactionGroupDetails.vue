@@ -708,7 +708,6 @@ function tooltipText(status: TransactionStatus): string {
                   :loading-text="loadingStates[visibleButtons[0]] || ''"
                   :data-testid="buttonsDataTestIds[visibleButtons[0]]"
                   type="submit"
-                  class="me-3"
                   >{{ visibleButtons[0] }}
                 </AppButton>
               </div>
@@ -724,7 +723,6 @@ function tooltipText(status: TransactionStatus): string {
                   :loading-text="loadingStates[visibleButtons[1]] || ''"
                   :data-testid="buttonsDataTestIds[visibleButtons[1]]"
                   type="submit"
-                  class="me-3"
                   >{{ visibleButtons[1] }}
                 </AppButton>
               </div>
@@ -760,7 +758,6 @@ function tooltipText(status: TransactionStatus): string {
                   :loading-text="loadingStates[visibleButtons[1]] || ''"
                   :data-testid="buttonsDataTestIds[visibleButtons[1]]"
                   type="submit"
-                  class="me-3"
                   >{{ visibleButtons[1] }}
                 </AppButton>
               </div>
@@ -845,7 +842,7 @@ function tooltipText(status: TransactionStatus): string {
                                 <DateTimeString :date="new Date(groupItem.transaction.validStart)"/>
                               </td>
                               <td class="text-center">
-                                <div class="d-flex justify-content-center flex-wrap gap-3">
+                                <div class="d-flex justify-content-center flex-wrap gap-4">
                                   <AppButton
                                     :loading="signingItemSeq === groupItem.seq"
                                     loading-text="Signing..."
