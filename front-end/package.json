@@ -16,7 +16,7 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "start": "vite preview",
     "dev": "vite",
-    "build": "npm run generate:database && vue-tsc --noEmit -p tsconfig.web.json --composite false && vite build",
+    "build": "npm run generate:database && vue-tsc --noEmit -p tsconfig.web.json && vite build",
     "postinstall": "electron-builder install-app-deps && prisma generate && node ../notice-gen/index.js",
     "build:win": "npm run build && electron-builder --win --config",
     "build:mac": "npm run build && electron-builder --mac",
