@@ -647,6 +647,7 @@ watch(
         SDKTransaction.fromBytes(hexToUint8Array(transaction.transactionBytes)),
         user.selectedOrganization.userKeys,
         network.mirrorNodeBaseURL,
+        new AccountInfoCache(),
       ),
       getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id),
     ]);
