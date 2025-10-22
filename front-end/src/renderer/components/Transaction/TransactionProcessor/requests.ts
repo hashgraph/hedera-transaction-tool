@@ -165,4 +165,20 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
 
     this.requestKey = keyList;
   }
+
+  getAccountIdTransactionKey(accountId: string) {
+    const keyList = new KeyList([this.key]);
+    const accountInfo = this.accountInfoMap.get(accountId);
+
+    if (accountInfo) {
+      accountInfo.key && keyList.push(accountInfo.key);
+
+      if (!this.accountIsPayer && this.payerId) {
+        const payerInfo = this.accountInfoMap.get(this.payerId);
+        payerInfo?.key && keyList.push(payerInfo.key);
+      }
+    }
+
+    return keyList;
+  }
 }
