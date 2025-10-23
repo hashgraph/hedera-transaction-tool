@@ -55,7 +55,6 @@ export class TransactionRequest extends BaseRequest {
 
 /* Custom processor requests */
 export class CustomRequest extends BaseRequest {
-  requestKey: Key | null;
   displayName: string;
   payerId?: string;
   baseValidStart?: Date;
@@ -79,7 +78,7 @@ export class CustomRequest extends BaseRequest {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async deriveRequestKey(mirrorNodeBaseURL: string) {
+  async deriveRequestKey(_mirrorNodeBaseURL: string) {
     throw new Error('Not implemented');
   }
 }
@@ -124,7 +123,7 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
     });
   }
 
-  async deriveRequestKey(mirrorNodeBaseURL: string) {
+  override async deriveRequestKey(mirrorNodeBaseURL: string) {
     const keyList = new KeyList();
 
     const accountInfoCache = new AccountInfoCache();

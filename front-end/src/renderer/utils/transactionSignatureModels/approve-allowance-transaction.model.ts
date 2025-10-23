@@ -3,7 +3,7 @@ import { AccountAllowanceApproveTransaction } from '@hashgraph/sdk';
 import { TransactionBaseModel } from './transaction.model';
 
 export default class AccountAllowanceApproveTransactionModel extends TransactionBaseModel<AccountAllowanceApproveTransaction> {
-  getSigningAccounts(): Set<string> {
+  override getSigningAccounts(): Set<string> {
     const set = super.getSigningAccounts();
 
     this.transaction.hbarApprovals.forEach(value => {
