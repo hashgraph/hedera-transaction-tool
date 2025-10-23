@@ -15,6 +15,7 @@ import { NOTIFICATIONS_SERVICE } from '@app/common';
           options: {
             urls: [configService.getOrThrow<string>('RABBITMQ_URI')],
             queue: NOTIFICATIONS_SERVICE,
+            noAssert: true,
           },
         }),
         inject: [ConfigService],

@@ -55,6 +55,13 @@ function connectMicroservices(app: NestExpressApplication) {
     options: {
       urls: [configService.getOrThrow<string>('RABBITMQ_URI')],
       queue: API_SERVICE,
+      queueOptions: {
+        durable: true,
+        arguments: {
+          'x-queue-type': 'quorum',
+        },
+      },
+      noAck: false,
     },
   });
 }
