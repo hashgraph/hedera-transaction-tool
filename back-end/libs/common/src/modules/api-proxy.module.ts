@@ -15,6 +15,7 @@ import { API_SERVICE } from '@app/common';
           options: {
             urls: [configService.getOrThrow<string>('RABBITMQ_URI')],
             queue: API_SERVICE,
+            noAssert: true,
           },
         }),
         inject: [ConfigService],
