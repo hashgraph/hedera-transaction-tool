@@ -76,7 +76,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     >
       <h4 :class="detailItemLabelClass">Node ID</h4>
       <p :class="detailItemValueClass" data-testid="p-node-details-node-id">
-        {{ transaction.nodeId.toString() }}
+        {{ transaction.nodeId?.toString() ?? "" }}
       </p>
     </div>
 

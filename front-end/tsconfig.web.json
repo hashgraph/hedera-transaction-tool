@@ -6,6 +6,7 @@
     "src/renderer/env.d.ts",
     "src/renderer/**/*",
     "src/renderer/**/*.vue",
+    "src/preload/**/*.ts",
     "src/tests/renderer"
   ],
   "compilerOptions": {
@@ -15,7 +16,9 @@
     "paths": {
       "@renderer/*": ["src/renderer/*"],
       "@main/*": ["src/main/*"],
-      "@shared/*": ["src/shared/*"]
+      "@shared/*": ["src/shared/*"],
+      "@prisma/*": ["node_modules/.prisma/*"],
+      "long": ["node_modules/long"]
     }
   }
 }
