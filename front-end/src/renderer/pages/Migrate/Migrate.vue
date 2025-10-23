@@ -72,7 +72,7 @@ const heading = computed(() => {
 
 /* Handlers */
 const handleStopMigration = async () => {
-  await user.setAccountSetupStarted(false);
+  user.setAccountSetupStarted(false);
   await resetDataLocal();
   user.logout();
   router.push({ name: 'login' });
@@ -99,7 +99,7 @@ const handleSetRecoveryPhrase = async (value: {
 
 const handleSetPersonalUser = async (value: PersonalUser) => {
   personalUser.value = value;
-  await user.setAccountSetupStarted(true);
+  user.setAccountSetupStarted(true);
   await handleSkipSetupAfterMigration();
   step.value = 'organization';
 };
