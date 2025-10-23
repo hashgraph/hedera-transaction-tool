@@ -12,7 +12,7 @@ export default class AccountUpdateTransactionModel extends TransactionBaseModel<
   // New key is required:
   // https://docs.hedera.com/hedera/sdks-and-apis/sdks/accounts-and-hbar/update-an-account
   // UNLESS waived.
-  getNewKeys(): Key[] {
+  override getNewKeys(): Key[] {
     if (
       this.transaction.key != null &&
       this.transaction.accountId != null &&
@@ -26,7 +26,7 @@ export default class AccountUpdateTransactionModel extends TransactionBaseModel<
   // According to documentation, if account is between 3 and 1000 inclusive,
   // the key is not required IF the fee payer is 2 or 50. In all other cases, the key is required.
   // https://github.com/hiero-ledger/hiero-consensus-node/blob/main/hedera-node/docs/privileged-transactions.md#waived-signing-requirements-for-crypto-updates
-  getSigningAccounts(): Set<string> {
+  override getSigningAccounts(): Set<string> {
     const set = super.getSigningAccounts();
     const accountId = this.transaction.accountId;
     if (accountId != null && !this.shouldWaiveSigningRequirements(accountId)) {

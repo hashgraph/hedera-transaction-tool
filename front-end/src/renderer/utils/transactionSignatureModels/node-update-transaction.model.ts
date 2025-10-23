@@ -3,7 +3,7 @@ import { NodeUpdateTransaction } from '@hashgraph/sdk';
 import { TransactionBaseModel } from './transaction.model';
 
 export default class NodeUpdateTransactionModel extends TransactionBaseModel<NodeUpdateTransaction> {
-  getNewKeys() {
+  override getNewKeys() {
     if (this.transaction.adminKey != null) {
       return [this.transaction.adminKey];
     }
@@ -11,7 +11,7 @@ export default class NodeUpdateTransactionModel extends TransactionBaseModel<Nod
     return [];
   }
 
-  getNodeId(): number | null {
+  override getNodeId(): number | null {
     if (this.transaction.nodeId) {
       return this.transaction.nodeId.toNumber();
     }

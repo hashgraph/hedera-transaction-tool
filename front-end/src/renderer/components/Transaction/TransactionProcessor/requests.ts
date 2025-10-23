@@ -55,7 +55,6 @@ export class TransactionRequest extends BaseRequest {
 
 /* Custom processor requests */
 export class CustomRequest extends BaseRequest {
-  requestKey: Key | null;
   displayName: string;
   payerId?: string;
   baseValidStart?: Date;
@@ -124,7 +123,7 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
     });
   }
 
-  async deriveRequestKey(mirrorNodeBaseURL: string) {
+  override async deriveRequestKey(mirrorNodeBaseURL: string) {
     const keyList = new KeyList();
 
     const accountInfoCache = new AccountInfoCache();

@@ -23,6 +23,7 @@
 
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true
   }
 }

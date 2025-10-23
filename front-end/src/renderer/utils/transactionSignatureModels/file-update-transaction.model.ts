@@ -16,7 +16,7 @@ export default class FileUpdateTransactionModel extends TransactionBaseModel<Fil
   //   return signingAccounts;
   // }
 
-  getNewKeys() {
+  override getNewKeys() {
     // If system file, return empty array
     // any key would be purely ornamental
     // https://github.com/hiero-ledger/hiero-consensus-node/blob/main/hedera-node/docs/privileged-transactions.md#waived-signing-requirements
