@@ -19,6 +19,10 @@
       "@shared/*": ["src/shared/*"],
       "@prisma/*": ["node_modules/.prisma/*"],
       "long": ["node_modules/long"]
-    }
+    },
+
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "noFallthroughCasesInSwitch": true
   }
 }
