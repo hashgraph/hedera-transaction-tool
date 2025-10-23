@@ -64,7 +64,7 @@ const handleNext = async () => {
     try {
       nextLoadingText.value = 'Saving...';
       await keyPairsComponent.value?.handleSave();
-      await user.setAccountSetupStarted(false);
+      user.setAccountSetupStarted(false);
     } finally {
       nextLoadingText.value = null;
     }
