@@ -36,8 +36,8 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     return null;
   }
 
-  getNodeAccountId(nodeInfo: INodeInfoParsed): string | null {
-    // eslint-disable-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getNodeAccountId(_nodeInfo: INodeInfoParsed): string | null {
     return null;
   }
 

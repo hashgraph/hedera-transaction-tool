@@ -78,7 +78,7 @@ export class CustomRequest extends BaseRequest {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async deriveRequestKey(mirrorNodeBaseURL: string) {
+  async deriveRequestKey(_mirrorNodeBaseURL: string) {
     throw new Error('Not implemented');
   }
 }
