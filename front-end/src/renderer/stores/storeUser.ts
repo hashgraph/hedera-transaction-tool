@@ -23,6 +23,7 @@ import { safeAwait } from '@renderer/utils';
 import * as ush from '@renderer/utils/userStoreHelpers';
 
 import useNetworkStore from './storeNetwork';
+import { AccountByPublicKeyCache } from '@renderer/cache/AccountByPublicKeyCache.ts';
 
 const useUserStore = defineStore('user', () => {
   /* Stores */
@@ -30,6 +31,9 @@ const useUserStore = defineStore('user', () => {
 
   /* Composables */
   const afterOrganizationSelection = useAfterOrganizationSelection();
+
+  /* Injected */
+  const accountByKeyCache = AccountByPublicKeyCache.inject();
 
   /* State */
   /** Keys */
@@ -128,6 +132,7 @@ const useUserStore = defineStore('user', () => {
       publicKeyToAccounts.value,
       keyPairs.value,
       network.mirrorNodeBaseURL,
+      accountByKeyCache,
     );
   };
 
