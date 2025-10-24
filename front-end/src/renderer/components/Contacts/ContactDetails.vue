@@ -12,7 +12,6 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 
 import { addContact, updateContact } from '@renderer/services/contactsService';
-import { getAccountsByPublicKeysParallel } from '@renderer/services/mirrorNodeDataService';
 import { signUp } from '@renderer/services/organization';
 
 import {
@@ -29,6 +28,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import ContactDetailsAssociatedAccounts from '@renderer/components/Contacts/ContactDetailsAssociatedAccounts.vue';
 import ContactDetailsLinkedAccounts from '@renderer/components/Contacts/ContactDetailsLinkedAccounts.vue';
 import RenamePublicKeyModal from '@renderer/pages/Settings/components/PublicKeysTab/components/RenamePublicKeyModal.vue';
+import { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
 
 /* Modals */
 const linkedAccounts = defineModel<HederaAccount[]>('linkedAccounts');
@@ -45,6 +45,9 @@ const toast = useToast();
 const user = useUserStore();
 const network = useNetworkStore();
 const contacts = useContactsStore();
+
+/* Injected */
+const accountByPublicKeyCache = AccountByPublicKeyCache.inject();
 
 /* State */
 const isNicknameInputShown = ref(false);
@@ -76,8 +79,7 @@ const handleStartNicknameEdit = () => {
 };
 
 const handleStartKeyNicknameEdit = async (publicKey: string) => {
-  const mapping = await getPublicKeyMapping(publicKey);
-  publicKeyMappingToEdit.value = mapping;
+  publicKeyMappingToEdit.value = await getPublicKeyMapping(publicKey);
   publicKeyToEdit.value = publicKey;
   isUpdateNicknameModalShown.value = true;
 };
@@ -112,9 +114,9 @@ const handleChangeNickname = async () => {
 };
 
 const handleAccountsLookup = async () => {
-  publicKeyToAccounts.value = await getAccountsByPublicKeysParallel(
-    network.mirrorNodeBaseURL,
+  publicKeyToAccounts.value = await accountByPublicKeyCache.batchLookup(
     props.contact.userKeys.map(key => key.publicKey),
+    network.mirrorNodeBaseURL,
   );
 };
 
