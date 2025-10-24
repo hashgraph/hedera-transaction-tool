@@ -89,33 +89,6 @@ export const getAccountsByPublicKey = async (
   }
 };
 
-/* Get accounts by public keys */
-export const getAccountsByPublicKeysParallel = async (
-  mirrorNodeURL: string,
-  publicKeys: string[],
-): Promise<{ [key: string]: AccountInfo[] }> => {
-  const uniquePublicKeys = Array.from(new Set<string>(publicKeys));
-
-  try {
-    const publicKeyToAccounts: { [key: string]: AccountInfo[] } = {};
-
-    const results = await Promise.allSettled(
-      uniquePublicKeys.map(pk => getAccountsByPublicKey(mirrorNodeURL, pk)),
-    );
-
-    results.forEach((result, i) => {
-      if (result.status === 'fulfilled') {
-        publicKeyToAccounts[uniquePublicKeys[i]] = result.value;
-      }
-    });
-
-    return publicKeyToAccounts;
-  } catch (error) {
-    console.log(error);
-    return {};
-  }
-};
-
 /* Gets the account information by account id */
 export const getAccountInfo = async (
   accountId: string,
