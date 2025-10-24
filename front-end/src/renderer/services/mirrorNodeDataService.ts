@@ -37,29 +37,6 @@ import {
 const withAPIPrefix = (url: string) => `${url}/api/v1`;
 
 /* Get users account id by a public key */
-export const getAccountIds = async (
-  mirrorNodeURL: string,
-  publicKey: string,
-  nextUrl: string | null,
-) => {
-  try {
-    const { data } = await axios.get<AccountsResponse>(
-      nextUrl ||
-        `${withAPIPrefix(mirrorNodeURL)}/accounts/?account.publickey=${publicKey}&limit=100&order=asc`,
-    );
-    return {
-      accounts: data.accounts,
-      nextUrl: data.links?.next
-        ? `${withAPIPrefix(mirrorNodeURL)}${data.links.next.slice(data.links.next.indexOf('/accounts'))}`
-        : null,
-    };
-  } catch (error) {
-    console.log(error);
-    return { accounts: [], nextUrl: null };
-  }
-};
-
-/* Get users account id by a public key */
 export const getAccountsByPublicKey = async (
   mirrorNodeURL: string,
   publicKey: string,

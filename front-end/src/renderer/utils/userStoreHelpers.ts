@@ -26,7 +26,6 @@ import {
   updateKey as updateOrganizationKey,
   uploadKey,
 } from '@renderer/services/organization';
-import { getAccountIds } from '@renderer/services/mirrorNodeDataService';
 import {
   storeKeyPair as storeKey,
   getKeyPairs,
@@ -49,6 +48,7 @@ import { get as getStoredMnemonics } from '@renderer/services/mnemonicService';
 import { safeAwait } from './safeAwait';
 import { getErrorMessage, throwError } from '.';
 import * as pks from '@renderer/services/publicKeyMappingService';
+import type { AccountByPublicKeyCache } from '@renderer/cache/AccountByPublicKeyCache.ts';
 
 /* Flags */
 export function assertUserLoggedIn(user: PersonalUser | null): asserts user is LoggedInUser {
@@ -235,30 +235,25 @@ export const getPublicKeyToAccounts = async (
   publicKeyToAccounts: PublicKeyAccounts[],
   keyPairs: KeyPair[],
   mirrorNodeBaseURL: string,
+  accountByKeyCache: AccountByPublicKeyCache,
 ) => {
   for (const { public_key } of keyPairs) {
-    let next: string | null = null;
+    //@ts-ignore - data cannot infer type
+    const { data } = await safeAwait(accountByKeyCache.lookup(public_key, mirrorNodeBaseURL));
+    if (data) {
+      const publicKeyPair = publicKeyToAccounts.findIndex(
+        pkToAcc => pkToAcc.publicKey === public_key,
+      );
 
-    do {
-      //@ts-ignore - data cannot infer type
-      const { data } = await safeAwait(getAccountIds(mirrorNodeBaseURL, public_key, next));
-      if (data) {
-        next = data.nextUrl;
-
-        const publicKeyPair = publicKeyToAccounts.findIndex(
-          pkToAcc => pkToAcc.publicKey === public_key,
-        );
-
-        if (publicKeyPair >= 0) {
-          publicKeyToAccounts[publicKeyPair].accounts?.push(...(data.accounts || []));
-        } else {
-          publicKeyToAccounts.push({
-            publicKey: public_key,
-            accounts: data.accounts || [],
-          });
-        }
+      if (publicKeyPair >= 0) {
+        publicKeyToAccounts[publicKeyPair].accounts?.push(...(data || []));
+      } else {
+        publicKeyToAccounts.push({
+          publicKey: public_key,
+          accounts: data || [],
+        });
       }
-    } while (next);
+    }
   }
 
   return [...publicKeyToAccounts];
