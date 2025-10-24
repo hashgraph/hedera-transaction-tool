@@ -1,5 +1,5 @@
 import { Controller } from '@nestjs/common';
-import { EventPattern, Payload } from '@nestjs/microservices';
+import { Ctx, EventPattern, Payload, RmqContext } from '@nestjs/microservices';
 
 import { Acked, NOTIFY_EMAIL, NotifyEmailDto } from '@app/common';
 
@@ -11,7 +11,7 @@ export class EmailController {
 
   @EventPattern(NOTIFY_EMAIL)
   @Acked()
-  async notifyEmail(@Payload() payload: NotifyEmailDto) {
+  async notifyEmail(@Payload() payload: NotifyEmailDto, @Ctx() context: RmqContext) {
     await this.emailService.notifyEmail(payload);
   }
 }

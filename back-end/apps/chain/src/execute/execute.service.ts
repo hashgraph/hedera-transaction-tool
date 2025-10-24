@@ -43,7 +43,7 @@ export class ExecuteService {
   async executeTransaction(transaction: ExecuteTransactionDto) {
     /* Gets the SDK transaction */
     const sdkTransaction = await this.getValidatedSDKTransaction(transaction);
-    return this._executeTransaction(transaction, sdkTransaction);
+    return await this._executeTransaction(transaction, sdkTransaction);
   }
 
   @MurLock(15000, 'transactionGroup.id + "_group"')
