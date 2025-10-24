@@ -2,7 +2,7 @@ import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 import { Controller } from '@nestjs/common';
 
-import { GET_PORT, NOTIFY_CLIENT, NotifyClientDto } from '@app/common';
+import { Acked, GET_PORT, NOTIFY_CLIENT, NotifyClientDto } from '@app/common';
 
 import { WebsocketGateway } from './websocket.gateway';
 
@@ -13,10 +13,10 @@ export class WebsocketController {
     private readonly configService: ConfigService,
   ) {}
 
-  //TODO Need to make sure that Rabbitmq is sending this out to all of them, not just one
   @EventPattern(NOTIFY_CLIENT)
+  @Acked()
   async notifyClient(@Payload() payload: NotifyClientDto) {
-    return this.websocketGateway.notifyClient(payload);
+    await this.websocketGateway.notifyClient(payload);
   }
 
   @MessagePattern(GET_PORT)

@@ -2,11 +2,12 @@ import { Controller } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
 
 import {
+  Acked,
   NOTIFY_GENERAL,
   NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
-  SYNC_INDICATORS,
   NotifyForTransactionDto,
   NotifyGeneralDto,
+  SYNC_INDICATORS,
   SyncIndicatorsDto,
 } from '@app/common';
 
@@ -17,16 +18,19 @@ export class ReceiverController {
   constructor(private readonly receiverService: ReceiverService) {}
 
   @EventPattern(NOTIFY_GENERAL)
+  @Acked()
   async notifyGeneral(@Payload() payload: NotifyGeneralDto) {
-    return this.receiverService.notifyGeneral(payload);
+    await this.receiverService.notifyGeneral(payload);
   }
 
   @EventPattern(NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES)
+  @Acked()
   async notifyTransactionSigners(@Payload() payload: NotifyForTransactionDto) {
-    return this.receiverService.notifyTransactionRequiredSigners(payload);
+    await this.receiverService.notifyTransactionRequiredSigners(payload);
   }
 
   @EventPattern(SYNC_INDICATORS)
+  @Acked()
   async syncIndicators(@Payload() payload: SyncIndicatorsDto) {
     await this.receiverService.syncIndicators(payload);
   }
