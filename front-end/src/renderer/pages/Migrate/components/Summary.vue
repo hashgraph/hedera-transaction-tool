@@ -113,7 +113,7 @@ onBeforeUnmount(() => {
         data-testid="p-migration-summary-imported-keys"
       />
 
-      <template v-if="importedUserData?.publicKeysImported > 0">
+      <template v-if="importedUserData && importedUserData.publicKeysImported > 0">
         <SummaryItem
           class="mt-4"
           label="Imported Public Keys"
@@ -123,7 +123,7 @@ onBeforeUnmount(() => {
       </template>
 
       <SummaryItem
-        v-if="importedUserData?.accountsImported"
+        v-if="importedUserData && importedUserData.accountsImported"
         class="mt-4"
         label="Imported Accounts"
         :value="importedUserData.accountsImported.toString()"
@@ -147,7 +147,7 @@ onBeforeUnmount(() => {
       />
 
       <SummaryItem
-        v-if="user.recoveryPhrase?.words.length > 0"
+        v-if="user.recoveryPhrase && user.recoveryPhrase?.words.length > 0"
         class="mt-4"
         label="Recovery Phrase"
         value=""

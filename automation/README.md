@@ -31,6 +31,7 @@ to run the tests.
 
    ```bash
    pnpm install
+   pnpm approve-builds # if required by pnpm install
    ```
 
 4. **Configure the environment variables** by creating a `.env` file in the root of the project and setting the path to
@@ -49,11 +50,12 @@ to run the tests.
    POSTGRES_PASSWORD: Password for your PostgreSQL database
    ```
 
-   Replace `ENVIRONMENT` with variable that can be set to `TESTNET` or `LOCALNET`.
+   Replace `ENVIRONMENT` with variable that can be set to `TESTNET`, `PREVIEWNET` or `LOCALNET`.
 
    Depending on the environment selected:
 
    - TESTNET: Use your ECDSA private keys.
+   - PREVIEWNET: Use your ECDSA private keys.
    - LOCALNET: Use your ED25519 private keys.
 
 ## Running Tests

@@ -193,50 +193,59 @@ class OrganizationPage extends BasePage {
       const email = generateRandomEmail();
       const password = generateRandomPassword();
       usersData.push({ email, password });
-      this.users.push({ email, password });
+      this.users.push({ email, password, privateKey: '' });
     }
 
     // Pass the batch of user data to the database utility function
     await createTestUsersBatch(usersData);
   }
 
-  async setUpUsers(window, encryptionPassword, setPrivateKey = true) {
-    for (let i = 0; i < this.users.length; i++) {
-      const user = this.users[i];
-      const privateKey = process.env.PRIVATE_KEY;
+  async setUpInitialUsers(window, encryptionPassword, setPrivateKey = true) {
+    const user = this.users[0];
+    const privateKey = process.env.PRIVATE_KEY;
 
-      if (i === 0) {
-        // Full setup for the first user (index 0) who is payer
-        await this.signInOrganization(user.email, user.password, encryptionPassword);
+    // Full setup for the first user (index 0) who is payer
+    await this.signInOrganization(user.email, user.password, encryptionPassword);
 
-        await this.waitForElementToBeVisible(this.registrationPage.createNewTabSelector);
-        await this.registrationPage.clickOnCreateNewTab();
-        await this.registrationPage.clickOnUnderstandCheckbox();
-        await this.registrationPage.clickOnGenerateButton();
+    await this.waitForElementToBeVisible(this.registrationPage.createNewTabSelector);
+    await this.registrationPage.clickOnCreateNewTab();
+    await this.registrationPage.clickOnUnderstandCheckbox();
+    await this.registrationPage.clickOnGenerateButton();
 
-        await this.captureRecoveryPhraseWordsForUser(i);
-        await this.registrationPage.clickOnUnderstandCheckbox();
-        await this.registrationPage.clickOnVerifyButton();
+    await this.captureRecoveryPhraseWordsForUser(0);
+    await this.registrationPage.clickOnUnderstandCheckbox();
+    await this.registrationPage.clickOnVerifyButton();
 
-        await this.fillAllMissingRecoveryPhraseWordsForUser(i);
-        await this.registrationPage.clickOnNextButton();
+    await this.fillAllMissingRecoveryPhraseWordsForUser(0);
+    await this.registrationPage.clickOnNextButton();
 
-        await this.registrationPage.waitForElementToDisappear(
-          this.registrationPage.toastMessageSelector,
-        );
-        await this.registrationPage.clickOnFinalNextButtonWithRetry();
+    await this.registrationPage.waitForElementToDisappear(
+      this.registrationPage.toastMessageSelector,
+    );
+    await this.registrationPage.clickOnFinalNextButtonWithRetry();
 
-        if (setPrivateKey) {
-          await setupEnvironmentForTransactions(window, privateKey);
-        }
-
-        await this.settingsPage.navigateToLogout();
-        await this.click(this.logoutButtonSelector);
-        await this.waitForElementToBeVisible(this.emailForOrganizationInputSelector);
-      } else {
-        await this.generateAndStoreUserKey(user.email, encryptionPassword);
-      }
+    if (setPrivateKey) {
+      await setupEnvironmentForTransactions(window, privateKey);
+      this.users[0].privateKey = privateKey;
     }
+
+    await this.settingsPage.navigateToLogout();
+    await this.click(this.logoutButtonSelector);
+    await this.waitForElementToBeVisible(this.emailForOrganizationInputSelector);
+
+    await this.setUpUsers(encryptionPassword, 1, this.users.length - 1);
+  }
+
+  async setUpUsers(encryptionPassword, startIndex, endIndex) {
+    for (let i = startIndex; i <= endIndex; i++) {
+      const user = this.users[i];
+      this.users[i].privateKey = await this.generateAndStoreUserKey(user.email, encryptionPassword);
+    }
+  }
+
+  async createAdditionalUsers(numNewUsers, encryptionPassword) {
+    await this.createUsers(numNewUsers);
+    await this.setUpUsers(encryptionPassword, this.users.length - numNewUsers, this.users.length - 1);
   }
 
   async generateAndStoreUserKey(email, password) {
@@ -262,6 +271,8 @@ class OrganizationPage extends BasePage {
 
     // Insert the public key and encrypted private key into the key_pair table
     await insertKeyPair(publicKeyString, encryptedPrivateKey, mnemonicHash, userId);
+
+    return privateKeyString;
   }
 
   async recoverAccount(userIndex) {
@@ -604,6 +615,56 @@ class OrganizationPage extends BasePage {
     this.complexAccountId.push(transactionResponse?.entity_id);
   }
 
+  async createComplexKeyAccountForUsers(numberOfUsers = 9, groupSize = 3) {
+    await this.transactionPage.clickOnTransactionsMenuButton();
+    await this.transactionPage.clickOnCreateNewTransactionButton();
+    await this.transactionPage.clickOnCreateAccountTransaction();
+    await this.transactionPage.fillInInitialFunds('100');
+    await this.transactionPage.clickOnComplexTab();
+    await this.transactionPage.clickOnCreateNewComplexKeyButton();
+
+    const groupCount = Math.ceil(numberOfUsers / groupSize);
+
+    // Add group thresholds and public keys
+    for (let groupIdx = 0; groupIdx < groupCount; groupIdx++) {
+      const groupDepth = `0-${groupIdx}`;
+      await this.transactionPage.addThresholdKeyAtDepth('0');
+      // await this.transactionPage.addThresholdKeyAtDepth(groupDepth);
+
+      // Add 3 public keys to this group threshold
+      for (let j = 0; j < groupSize; j++) {
+        const userIdx = groupIdx * groupSize + j;
+        if (userIdx >= numberOfUsers) break;
+        const publicKey = await this.getFirstPublicKeyByEmail(this.users[userIdx+1].email);
+        await this.transactionPage.addPublicKeyAtDepth(`${groupDepth}`, publicKey);
+      }
+
+      // Set group threshold to 1 of 3
+      await this.selectOptionByValue(
+        this.transactionPage.selectThresholdValueByIndex + groupDepth,
+        '1'
+      );
+    }
+
+    //This should be a parameter
+    // Set base threshold to ceil(groupCount / 2) of groupCount
+    await this.selectOptionByValue(
+      this.transactionPage.selectThresholdValueByIndex + '0',
+      Math.ceil(groupCount / 2).toString()
+    );
+
+    await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
+    await this.transactionPage.clickOnSignAndSubmitButton();
+    await this.transactionPage.clickSignTransactionButton();
+    const transactionId = await this.getTransactionDetailsId();
+    await this.clickOnSignTransactionButton();
+    const validStart = await this.getValidStart();
+    await waitForValidStart(validStart);
+    const transactionResponse =
+      await this.transactionPage.mirrorGetTransactionResponse(transactionId);
+    return transactionResponse?.entity_id;
+  }
+
   async logInAndSignTransactionByAllUsers(encryptionPassword, txId) {
     for (let i = 1; i < this.users.length; i++) {
       console.log(`Signing transaction for user ${i}`);
@@ -748,6 +809,14 @@ class OrganizationPage extends BasePage {
       selectedObservers: numberOfObservers === 1 ? selectedObservers[0] : selectedObservers,
       validStart,
     };
+  }
+
+  async createAccountWithFeePayerId(feePayerId) {
+    await this.transactionPage.clickOnCreateNewTransactionButton();
+    await this.transactionPage.clickOnCreateAccountTransaction();
+    await this.transactionPage.waitForPublicKeyToBeFilled();
+    await this.transactionPage.fillInPayerAccountId(feePayerId);
+    return await this.processTransaction();
   }
 
   async clickOnSignTransactionButton() {

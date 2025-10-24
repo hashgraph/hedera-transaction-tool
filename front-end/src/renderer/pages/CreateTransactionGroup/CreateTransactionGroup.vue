@@ -18,6 +18,7 @@ import { useToast } from 'vue-toast-notification';
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
+import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
 
 import { deleteGroup } from '@renderer/services/transactionGroupsService';
 
@@ -28,6 +29,7 @@ import {
   getPropagationButtonLabel,
   isLoggedInOrganization,
   redirectToGroupDetails,
+  redirectToPreviousTransactionsTab,
 } from '@renderer/utils';
 import { createTransactionId } from '@renderer/utils/sdk';
 
@@ -40,7 +42,7 @@ import TransactionSelectionModal from '@renderer/components/TransactionSelection
 import TransactionGroupProcessor from '@renderer/components/Transaction/TransactionGroupProcessor.vue';
 import SaveTransactionGroupModal from '@renderer/components/modals/SaveTransactionGroupModal.vue';
 import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
-import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
+import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
@@ -53,6 +55,7 @@ const toast = useToast();
 const payerData = useAccountId();
 const network = useNetworkStore();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
+const { dateTimeSettingLabel } = useDateTimeSetting();
 
 /* State */
 const groupDescription = ref('');
@@ -90,7 +93,7 @@ async function saveTransactionGroup() {
 }
 async function handleSaveGroup() {
   await saveTransactionGroup();
-  router.push('transactions');
+  await redirectToPreviousTransactionsTab(router);
 }
 
 function descriptionUpdated() {
@@ -134,7 +137,12 @@ function handleEditGroupItem(index: number, type: string) {
 }
 
 function handleBack() {
-  router.push('transactions');
+  router.push({
+    name: 'transactions',
+    query: {
+      tab: router.previousTab
+    }
+  } );
 }
 
 async function handleDelete() {
@@ -142,7 +150,7 @@ async function handleDelete() {
     await deleteGroup(route.query.id.toString());
   }
   transactionGroup.clearGroup();
-  router.push('transactions');
+  await redirectToPreviousTransactionsTab(router);
 }
 
 const handleLoadGroup = async () => {
@@ -192,7 +200,7 @@ function handleExecuted(id: string) {
   if (user.selectedOrganization) {
     redirectToGroupDetails(router, id);
   } else {
-    router.push({ name: 'transactions' });
+    redirectToPreviousTransactionsTab(router);
   }
 }
 
@@ -203,7 +211,7 @@ function handleSubmit(id: number) {
 
 function handleClose() {
   transactionGroup.clearGroup();
-  router.push({ name: 'transactions' });
+  redirectToPreviousTransactionsTab(router);
 }
 
 function handleOnImportClick() {
@@ -238,6 +246,7 @@ async function handleOnFileChanged(e: Event) {
     let memo = '';
     let validStart: Date | null = null;
     const maxTransactionFee = ref<Hbar>(new Hbar(2));
+    const accountInfoCache = new AccountInfoCache();
 
     for (const row of rows) {
       const rowInfo =
@@ -253,7 +262,7 @@ async function handleOnFileChanged(e: Event) {
         case 'sender account':
           senderAccount = rowInfo[1];
           try {
-            await getAccountInfo(senderAccount, network.mirrorNodeBaseURL);
+            await accountInfoCache.fetch(senderAccount, network.mirrorNodeBaseURL);
           } catch (error) {
             toast.error(
               `Sender account ${senderAccount} does not exist on network. Review the CSV file.`,
@@ -265,7 +274,7 @@ async function handleOnFileChanged(e: Event) {
         case 'fee payer account':
           feePayer = rowInfo[1];
           try {
-            await getAccountInfo(feePayer, network.mirrorNodeBaseURL);
+            await accountInfoCache.fetch(feePayer, network.mirrorNodeBaseURL);
           } catch (error) {
             toast.error(
               `Fee payer account ${feePayer} does not exist on network. Review the CSV file.`,
@@ -308,7 +317,7 @@ async function handleOnFileChanged(e: Event) {
           feePayer = feePayer || senderAccount;
           const receiverAccount = rowInfo[0];
           try {
-            await getAccountInfo(receiverAccount, network.mirrorNodeBaseURL);
+            await accountInfoCache.fetch(receiverAccount, network.mirrorNodeBaseURL);
           } catch (error) {
             toast.error(
               `Receiver account ${receiverAccount} does not exist on network. Review the CSV file.`,
@@ -517,7 +526,9 @@ onBeforeRouteLeave(async to => {
           <div class="d-flex justify-content-between align-items-center mb-5">
             <div>
               <label class="form-label"
-                >Group Valid Start <span class="text-muted text-italic">- Local time</span></label
+                >Group Valid Start<span class="text-muted text-italic">{{
+                  ` - ${dateTimeSettingLabel}`
+                }}</span></label
               >
               <RunningClockDatePicker
                 :model-value="transactionGroup.groupValidStart"

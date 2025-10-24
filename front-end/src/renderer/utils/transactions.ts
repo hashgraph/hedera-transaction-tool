@@ -93,8 +93,8 @@ export const getTransactionFromBytes = <T extends Tx>(transactionBytes: string):
 
 /* Gets the label for the transaction propagation button */
 export const getPropagationButtonLabel = (
-  transactionKey: Key,
-  userKeys: KeyPair[],
+  _transactionKey: Key,
+  _userKeys: KeyPair[],
   activeOrganization: boolean,
 ): string => {
   if (activeOrganization) {

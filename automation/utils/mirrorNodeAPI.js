@@ -4,9 +4,15 @@ const { formatTransactionId } = require('./util');
 
 const getBaseURL = () => {
   const env = process.env.ENVIRONMENT;
-  return env.toUpperCase() === 'LOCALNET'
-    ? 'http://localhost:5551/api/v1'
-    : 'https://testnet.mirrornode.hedera.com/api/v1';
+  switch(env.toUpperCase()) {
+    case 'TESTNET':
+      return 'https://testnet.mirrornode.hedera.com/api/v1'
+    case 'PREVIEWNET':
+      return 'https://previewnet.mirrornode.hedera.com/api/v1'
+    case 'LOCALNET':
+    default:
+      return 'http://localhost:8081/api/v1'
+  }
 };
 
 const apiCall = async (endpoint, params) => {

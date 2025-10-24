@@ -3,7 +3,7 @@ import { TransferTransaction } from '@hashgraph/sdk';
 import { TransactionBaseModel } from './transaction.model';
 
 export default class TransferTransactionModel extends TransactionBaseModel<TransferTransaction> {
-  getSigningAccounts(): Set<string> {
+  override getSigningAccounts(): Set<string> {
     // Get the Fee Payer
     const accounts = super.getSigningAccounts();
 
@@ -16,7 +16,7 @@ export default class TransferTransactionModel extends TransactionBaseModel<Trans
     return accounts;
   }
 
-  getReceiverAccounts(): Set<string> {
+  override getReceiverAccounts(): Set<string> {
     const accounts = new Set<string>();
 
     for (const transfer of this.transaction.hbarTransfersList) {

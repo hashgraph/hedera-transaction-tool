@@ -20,7 +20,14 @@ export function setupApp(app: NestExpressApplication, addLogger: boolean = true)
       whitelist: true,
       transform: true,
       exceptionFactory(errors: ValidationError[]) {
-        console.error('Validation failed:', JSON.stringify(errors, null, 2));
+        console.error(
+          'Validation failed:',
+          errors.map((error) => ({
+            property: error.property,
+            type: error.target?.constructor?.name || 'Unknown', // Logs the type being validated
+            valueKeys: error.value ? Object.keys(error.value) : [], // Logs the keys of the value
+          })),
+        );
         return new BadRequestException(ErrorCodes.IB);
       },
     }),
@@ -55,6 +62,13 @@ function connectMicroservices(app: NestExpressApplication) {
     options: {
       urls: [configService.getOrThrow<string>('RABBITMQ_URI')],
       queue: API_SERVICE,
+      queueOptions: {
+        durable: true,
+        arguments: {
+          'x-queue-type': 'quorum',
+        },
+      },
+      noAck: false,
     },
   });
 }

@@ -216,7 +216,7 @@ const useUserStore = defineStore('user', () => {
   );
 
   watchEffect(async () => {
-    const userId = personal.value?.id;
+    const userId = personal.value && 'id' in personal.value ? personal.value.id : undefined;
     const setupStarted = accountSetupStarted.value;
     if (userId) {
       if (setupStarted) {

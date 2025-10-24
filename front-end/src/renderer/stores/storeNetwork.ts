@@ -1,3 +1,5 @@
+/// <reference types="pino" />
+
 import type { Network, NetworkExchangeRateSetResponse } from '@shared/interfaces';
 
 import { computed, ref } from 'vue';
@@ -84,7 +86,7 @@ const useNetworkStore = defineStore('network', () => {
       [CommonNetwork.MAINNET]: 'https://mainnet-public.mirrornode.hedera.com',
       [CommonNetwork.TESTNET]: 'https://testnet.mirrornode.hedera.com',
       [CommonNetwork.PREVIEWNET]: 'https://previewnet.mirrornode.hedera.com',
-      [CommonNetwork.LOCAL_NODE]: 'http://localhost:5551',
+      [CommonNetwork.LOCAL_NODE]: 'http://localhost:8081',
     };
 
     if (!networkLink[network]) {

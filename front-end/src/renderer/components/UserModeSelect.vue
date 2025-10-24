@@ -80,9 +80,8 @@ const handleAddOrganization = async (organization: Organization) => {
   if (isOrganizationActive(user.selectedOrganization)) {
     selectedMode.value = organization.id;
 
-    const organizationNickname =
+    dropDownValue.value =
       user.organizations.find(org => org.id === organization.id)?.nickname || '';
-    dropDownValue.value = organizationNickname;
   }
 };
 
@@ -114,9 +113,8 @@ watch(
       if (current.length > prev.length) {
         selectedMode.value = lastAddedOrganization.id;
 
-        const organizationNickname =
+        dropDownValue.value =
           user.organizations.find(org => org.id === lastAddedOrganization.id)?.nickname || '';
-        dropDownValue.value = organizationNickname;
       } else {
         selectedMode.value = user.selectedOrganization.id;
 
@@ -180,7 +178,7 @@ watch(() => user.selectedOrganization, initialize);
     </div>
 
     <AppButton
-      class="ms-3 min-w-unset ws-no-wrap text-title"
+      class="ms-4 min-w-unset ws-no-wrap text-title"
       color="secondary"
       size="small"
       @click="handleAddOrganizationButtonClick"

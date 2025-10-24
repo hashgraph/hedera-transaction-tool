@@ -29,6 +29,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
+import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 
 /* Store */
 const user = useUserStore();
@@ -293,7 +294,7 @@ watch([currentPage, pageSize], async () => {
               <tr>
                 <td>
                   <span class="text-secondary" :data-testid="'span-draft-tx-date-' + i">
-                    {{ draft.created_at.toLocaleString() }}
+                    <DateTimeString :date="draft.created_at" />
                   </span>
                 </td>
                 <td>

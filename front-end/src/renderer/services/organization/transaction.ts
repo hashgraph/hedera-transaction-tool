@@ -1,25 +1,23 @@
 import type { Organization } from '@prisma/client';
 import type { TransactionId } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 import type { LoggedInOrganization, SignatureItem } from '@renderer/types';
 import type {
   ISignatureImport,
   ITransaction,
-  ITransactionApprover,
-  TransactionApproverDto,
   ITransactionFull,
   Network,
   PaginatedResourceDto,
   SignatureImportResultDto,
+  TransactionApproverDto,
 } from '@shared/interfaces';
-
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
-
-import { ObserverRole, TransactionStatus } from '@shared/interfaces';
+import { TransactionStatus } from '@shared/interfaces';
 
 import {
   axiosWithCredentials,
   commonRequestHandler,
   formatSignatureMap,
+  type FormattedMap,
   getPrivateKey,
   getSignatureMapForPublicKeys,
 } from '@renderer/utils';
@@ -89,7 +87,7 @@ export const uploadSignatures = async (
   transactionId?: number,
   items?: SignatureItem[],
 ) => {
-  const formattedMaps = [];
+  const formattedMaps: { id: number; signatureMap: FormattedMap }[] = [];
 
   if (!items) {
     if (!publicKeys || !transaction || !transactionId) {
@@ -137,7 +135,7 @@ export const importSignatures = async (
   organization: LoggedInOrganization & Organization,
   signatureImport: ISignatureImport[] | ISignatureImport,
 ): Promise<SignatureImportResultDto[]> => {
-  const formattedMaps = [];
+  const formattedMaps: { id: number; signatureMap: FormattedMap }[] = [];
   const imports = Array.isArray(signatureImport) ? signatureImport : [signatureImport];
   for (const signatureImport of imports) {
     formattedMaps.push({
@@ -150,9 +148,9 @@ export const importSignatures = async (
       `${organization.serverUrl}/${controller}/signatures/import`,
       formattedMaps,
     );
-    return data
+    return data;
   }, 'Failed to import signatures');
-}
+};
 
 /* Get transactions to sign */
 export const getTransactionsToSign = async (
@@ -197,23 +195,10 @@ export const getTransactionsToApprove = async (
     return data;
   }, 'Failed to get transactions to approve');
 
-/* Get transaction to approvers */
-export const getTransactionApprovers = async (
-  serverUrl: string,
-  transactionId: number,
-): Promise<ITransactionApprover[]> =>
-  commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.get(
-      `${serverUrl}/${controller}/${transactionId}/approvers`,
-    );
-
-    return data;
-  }, 'Failed to get transaction approvers');
-
 /* Get if user should approve a transaction */
 export const getUserShouldApprove = async (
-  serverUrl: string, // eslint-disable-line @typescript-eslint/no-unused-vars
-  transactionId: number, // eslint-disable-line @typescript-eslint/no-unused-vars
+  _serverUrl: string, // eslint-disable-line @typescript-eslint/no-unused-vars
+  _transactionId: number, // eslint-disable-line @typescript-eslint/no-unused-vars
 ): Promise<boolean> =>
   commonRequestHandler(async () => {
     //TODO Approve is not implemented yet, and doing it this way is not correct
@@ -299,38 +284,6 @@ export const addObservers = async (serverUrl: string, transactionId: number, use
     return data;
   }, 'Failed to add observers to transaction');
 
-/* Removes an observer */
-export const removeObserver = async (
-  serverUrl: string,
-  transactionId: number,
-  observerId: number,
-) =>
-  commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.delete(
-      `${serverUrl}/${controller}/${transactionId}/observers/${observerId}`,
-    );
-
-    return data;
-  }, 'Failed to remove observer');
-
-/* Updates an observer */
-export const updateObserverRole = async (
-  serverUrl: string,
-  transactionId: number,
-  observerId: number,
-  role: ObserverRole,
-) =>
-  commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.patch(
-      `${serverUrl}/${controller}/${transactionId}/observers/${observerId}`,
-      {
-        role,
-      },
-    );
-
-    return data;
-  }, 'Failed to update observer role');
-
 /* Adds approvers */
 export const addApprovers = async (
   serverUrl: string,
@@ -347,20 +300,6 @@ export const addApprovers = async (
 
     return data;
   }, 'Failed to add approvers to transaction');
-
-/* Removes an approver */
-export const removeApprover = async (
-  serverUrl: string,
-  transactionId: number,
-  approverId: number,
-) =>
-  commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.delete(
-      `${serverUrl}/${controller}/${transactionId}/approvers/${approverId}`,
-    );
-
-    return data;
-  }, 'Failed to remove approver');
 
 /* Sends approver's choice */
 export const sendApproverChoice = async (

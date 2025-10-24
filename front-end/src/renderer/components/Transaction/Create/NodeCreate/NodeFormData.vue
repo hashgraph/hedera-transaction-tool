@@ -40,8 +40,8 @@ const publicKeyHash = ref('');
 const hash = ref('');
 const grpcCertificate = ref('');
 const gossipCaCertificateText = ref('');
-const gossipFile = useTemplateRef('gossipFile');
-const grpcFile = useTemplateRef('grpcFile');
+const gossipFile = useTemplateRef<HTMLInputElement>('gossipFile');
+const grpcFile = useTemplateRef<HTMLInputElement>('grpcFile');
 const nodeDescriptionError = ref(false);
 
 const validIp =
@@ -187,12 +187,12 @@ function getEndpointData(ipOrDomain: string, port: string) {
 
 function getGrpcWebProxyEndpoint(field: 'domainName' | 'port', value: string) {
   emit('update:data', {
-    ...this.props.data,
+    ...props.data,
     grpcWebProxyEndpoint: {
       ipAddressV4: '',
       domainName:
-        field === 'domainName' ? value : this.props.data.grpcWebProxyEndpoint?.domainName || '',
-      port: field === 'port' ? value : this.props.data.grpcWebProxyEndpoint?.port || '',
+        field === 'domainName' ? value : props.data.grpcWebProxyEndpoint?.domainName || '',
+      port: field === 'port' ? value : props.data.grpcWebProxyEndpoint?.port || '',
     },
   });
 }
@@ -443,7 +443,7 @@ watch(
       <div class="col-4 col-xxxl-3">
         <label class="form-label">Domain</label>
         <AppInput
-          :model-value="data.grpcWebProxyEndpoint?.domainName"
+          :model-value="data.grpcWebProxyEndpoint?.domainName ?? undefined"
           @update:model-value="getGrpcWebProxyEndpoint('domainName', $event)"
           placeholder="Enter FQDN"
           :filled="true"

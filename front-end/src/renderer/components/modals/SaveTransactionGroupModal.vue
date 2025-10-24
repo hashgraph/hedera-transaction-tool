@@ -25,12 +25,12 @@ const routeTo = ref<string | null>(null);
 /* Handlers */
 async function handleDiscard() {
   transactionGroup.clearGroup();
-  router.push({ path: routeTo.value || '/transactions' });
+  await router.push(routeTo.value || '/transactions');
 }
 
 async function handleSaveGroup() {
   await props.saveTransactionGroup();
-  await router.push({ path: routeTo.value || '/transactions' });
+  await router.push(routeTo.value || '/transactions');
 }
 
 /* Hooks */
@@ -41,7 +41,7 @@ onBeforeRouteLeave(async to => {
 
   if (transactionGroup.isModified()) {
     show.value = true;
-    routeTo.value = to.path;
+    routeTo.value = to.fullPath;
     return false;
   } else {
     transactionGroup.clearGroup();

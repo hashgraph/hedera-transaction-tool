@@ -90,12 +90,13 @@ async function decrypt() {
   error.value = null;
 
   try {
+    const indexesFromMnemonic = props.indexesFromMnemonic ?? []
     key = {
       fileName: fileName.value,
       ...(await decryptEncryptedKey(
         props.keyPath,
         decryptPassword.value,
-        hashCode.value ? [...props.indexesFromMnemonic] : null,
+        hashCode.value ? [...indexesFromMnemonic] : null,
         hashCode.value,
       )),
     };

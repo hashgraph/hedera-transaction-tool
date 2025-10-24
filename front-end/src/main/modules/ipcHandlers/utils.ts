@@ -126,7 +126,7 @@ export default () => {
   ipcMain.handle(
     createChannelName('showSaveDialog'),
     async (
-      e,
+      _e,
       name: string,
       title: string,
       buttonLabel: string,

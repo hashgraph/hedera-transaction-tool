@@ -72,15 +72,15 @@ const heading = computed(() => {
 
 /* Handlers */
 const handleStopMigration = async () => {
-  await user.setAccountSetupStarted(false);
+  user.setAccountSetupStarted(false);
   await resetDataLocal();
   user.logout();
   router.push({ name: 'login' });
 };
 
 const handleSetRecoveryPhrase = async (value: {
-  recoveryPhrase: RecoveryPhrase;
-  recoveryPhrasePassword: string;
+  recoveryPhrase: RecoveryPhrase | null;
+  recoveryPhrasePassword: string | null;
 }) => {
   recoveryPhrase.value = value.recoveryPhrase;
   recoveryPhrasePassword.value = value.recoveryPhrasePassword;
@@ -99,7 +99,7 @@ const handleSetRecoveryPhrase = async (value: {
 
 const handleSetPersonalUser = async (value: PersonalUser) => {
   personalUser.value = value;
-  await user.setAccountSetupStarted(true);
+  user.setAccountSetupStarted(true);
   await handleSkipSetupAfterMigration();
   step.value = 'organization';
 };
@@ -170,7 +170,7 @@ const handleSkipSetupAfterMigration = async () => {
     const addOrUpdate = data !== undefined ? update : add;
     await addOrUpdate(personalUser.value.personalId, SKIPPED_PERSONAL_SETUP, 'true');
     user.skippedSetup = true;
-  } else if (isLoggedInOrganization(org)) {
+  } else if (isLoggedInOrganization(org) && user.personal && 'id' in user.personal) {
     const claimKey = buildSkipClaimKey(org.serverUrl, org.userId);
     const { data } = await safeAwait(getStoredClaim(user.personal.id, claimKey));
     const addOrUpdate = data !== undefined ? update : add;
@@ -208,7 +208,7 @@ const handleSkipSetupAfterMigration = async () => {
         <!-- Setup Personal User Step -->
         <template v-if="stepIs('personal')">
           <SetupPersonal
-            :recovery-phrase="recoveryPhrase"
+            :recovery-phrase="recoveryPhrase ?? undefined"
             @set-personal-user="handleSetPersonalUser"
             @migration:cancel="handleStopMigration"
           />
@@ -239,8 +239,8 @@ const handleSkipSetupAfterMigration = async () => {
 
           <template v-if="selectedKeysToRecover.length > 0">
             <BeginKeysImport
-              :recovery-phrase="recoveryPhrase"
-              :recovery-phrase-password="recoveryPhrasePassword"
+              :recovery-phrase="recoveryPhrase ?? undefined"
+              :recovery-phrase-password="recoveryPhrasePassword ?? undefined"
               :selected-keys="selectedKeysToRecover"
               @keys-imported="handleKeysImported"
             />

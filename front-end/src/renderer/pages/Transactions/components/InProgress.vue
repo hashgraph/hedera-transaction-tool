@@ -19,22 +19,23 @@ import useDisposableWs from '@renderer/composables/useDisposableWs';
 import { getApiGroupById, getTransactionsForUser } from '@renderer/services/organization';
 
 import {
-  getTransactionDateExtended,
   getTransactionId,
   getTransactionType,
+  getTransactionValidStart,
 } from '@renderer/utils/sdk/transactions';
 import {
   redirectToDetails,
   redirectToGroupDetails,
   isLoggedInOrganization,
   hexToUint8Array,
-  getDateStringExtended, getTransactionGroupUpdatedAt,
+  getTransactionGroupUpdatedAt,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
+import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -56,7 +57,7 @@ const transactions = ref<
     }[]
   >
 >(new Map());
-const groups = ref<Map<number, IGroup[]>>(new Map());
+const groups = ref<Map<number, IGroup>>(new Map());
 const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
@@ -144,7 +145,7 @@ async function fetchTransactions() {
     }
 
     if (groupIds.length > 0) {
-      const fetchedGroups: Map<number, IGroup[]> = new Map();
+      const fetchedGroups: Map<number, IGroup> = new Map();
       for (const id of groupIds) {
         if (user.selectedOrganization?.serverUrl) {
           const group = await getApiGroupById(user.selectedOrganization.serverUrl, id);
@@ -310,30 +311,30 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
             </tr>
           </thead>
           <tbody>
-            <template v-for="group of transactions" :key="group[0]">
-              <template v-if="group[0] != -1">
+            <template v-for="[groupId, groupTransactions] of transactions" :key="groupId">
+              <template v-if="groupId != -1">
                 <tr>
                   <td>
                     <i class="bi bi-stack" />
                   </td>
-                  <td>{{ groups.get(group[0])?.description }}</td>
+                  <td>{{ groups.get(groupId)?.description }}</td>
                   <td>
-                    {{
-                      group[1][0].transaction instanceof Transaction
-                        ? getTransactionDateExtended(group[1][0].transaction)
-                        : 'N/A'
-                    }}
+                    <DateTimeString
+                      v-if="groupTransactions[0].transaction instanceof Transaction"
+                      :date="getTransactionValidStart(groupTransactions[0].transaction)"
+                    />
+                    <span v-else>N/A</span>
                   </td>
                   <td>
-                    {{
-                      groups.get(group[0])
-                        ? getDateStringExtended(getTransactionGroupUpdatedAt(groups.get(group[0])))
-                        : 'N/A'
-                    }}
+                    <DateTimeString
+                      v-if="groups.get(groupId)"
+                      :date="getTransactionGroupUpdatedAt(groups.get(groupId)!)"
+                    />
+                    <span v-else>N/A</span>
                   </td>
                   <td class="text-center">
                     <AppButton
-                      @click="redirectToGroupDetails($router, group[0], false, 'inProgress')"
+                      @click="redirectToGroupDetails($router, groupId, false, 'inProgress')"
                       color="secondary"
                     >
                       Details
@@ -343,7 +344,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
               </template>
 
               <template v-else>
-                <template v-for="(tx, index) of group[1]" :key="tx.transactionRaw.id">
+                <template v-for="(tx, index) of groupTransactions" :key="tx.transactionRaw.id">
                   <tr>
                     <td :data-testid="`td-transaction-id-in-progress-${index}`">
                       {{
@@ -360,18 +361,18 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                       }}</span>
                     </td>
                     <td :data-testid="`td-transaction-valid-start-in-progress-${index}`">
-                      {{
-                        tx.transaction instanceof Transaction
-                          ? getTransactionDateExtended(tx.transaction)
-                          : 'N/A'
-                      }}
+                      <DateTimeString
+                        v-if="tx.transaction instanceof Transaction"
+                        :date="getTransactionValidStart(tx.transaction)"
+                      />
+                      <span v-else>N/A</span>
                     </td>
                     <td :data-testid="`td-transaction-date-modified-in-progress-${index}`">
-                      {{
-                        tx.transaction instanceof Transaction
-                          ? getDateStringExtended(new Date(tx.transactionRaw.updatedAt))
-                          : 'N/A'
-                      }}
+                      <DateTimeString
+                        v-if="tx.transaction instanceof Transaction"
+                        :date="new Date(tx.transactionRaw.updatedAt)"
+                      />
+                      <span v-else>N/A</span>
                     </td>
                     <td class="text-center">
                       <AppButton

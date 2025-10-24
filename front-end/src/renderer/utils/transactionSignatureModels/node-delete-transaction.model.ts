@@ -4,7 +4,7 @@ import { TransactionBaseModel } from './transaction.model';
 import { COUNCIL_ACCOUNTS } from './index';
 
 export default class NodeDeleteTransactionModel extends TransactionBaseModel<NodeDeleteTransaction> {
-  getNodeId(): number | null {
+  override getNodeId(): number | null {
     // if fee payer is council_accounts,
     // it will already be added to the required list
     // and the admin key is not required

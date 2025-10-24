@@ -9,7 +9,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { addDraft, getDraft, updateDraft } from '@renderer/services/transactionDraftsService';
 
-import { getTransactionFromBytes, isUserLoggedIn } from '@renderer/utils';
+import { getTransactionFromBytes, isUserLoggedIn, redirectToPreviousTransactionsTab } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 
@@ -51,11 +51,13 @@ const handleDraft = async () => {
         });
         emit('draft-saved');
         toast.success('Draft updated');
-        router.push('/transactions?tab=Drafts');
+        await redirectToPreviousTransactionsTab(router)
       }
     } else {
-      await sendAddDraft(user.personal.id, transactionBytes);
+      await addDraft(user.personal.id, transactionBytes, props.description);
       emit('draft-saved');
+      toast.success('Draft saved');
+      await redirectToPreviousTransactionsTab(router)
     }
   } catch (error) {
     console.log(error);
@@ -63,12 +65,6 @@ const handleDraft = async () => {
 };
 
 /* Functions */
-async function sendAddDraft(userId: string, transactionBytes: Uint8Array) {
-  await addDraft(userId, transactionBytes, props.description);
-  router.push('/transactions?tab=Drafts');
-  toast.success('Draft saved');
-}
-
 function getTransactionBytes() {
   if (!props.getTransaction) return;
   const transaction = props.getTransaction();

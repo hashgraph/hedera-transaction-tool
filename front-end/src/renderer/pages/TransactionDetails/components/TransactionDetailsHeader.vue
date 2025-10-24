@@ -2,7 +2,6 @@
 import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@shared/interfaces';
 
-
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -54,6 +53,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 
 import { TransactionStatus } from '@shared/interfaces';
+import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
 
 /* Types */
 type ActionButton =
@@ -295,6 +295,7 @@ const handleSign = async () => {
       props.sdkTransaction,
       user.selectedOrganization.userKeys,
       network.mirrorNodeBaseURL,
+      new AccountInfoCache(),
     );
 
     const restoredRequiredKeys = [];
@@ -554,7 +555,7 @@ const handleExport = async () => {
 
   // Save selected format to local storage
   const ext = filePath.split('.').pop();
-  if (!EXPORT_FORMATS.find(f => f.extensions[0] === ext)) {
+  if (!ext || !EXPORT_FORMATS.find(f => f.extensions[0] === ext)) {
     throw new Error(`Unsupported file extension: ${ext}`);
   }
   setLastExportExtension(ext);
@@ -585,59 +586,6 @@ const handleExport = async () => {
     await saveFileToPath(signedBytes, filePath);
     const txtFilePath = filePath.replace(/\.[^/.]+$/, '.txt');
     await saveFileToPath(jsonContent, txtFilePath);
-
-    // If the CSVA file is created, then TTv1 will attempt to recreate
-    // each inner transaction value by value, not by bytes.
-    // This means that the first transaction signed will work correctly,
-    // but any other transactions will have different bytes than expected. Do not create the CSVA
-    // This code can be removed once testing is finished
-    // const accountNums: number[] = [];
-    // const list: Array<{ realmNum: number; shardNum: number; accountNum: number; network: string }> = [];
-    //
-    // for (let i = 0; i < nodeAccountIds.length; i++) {
-    //   const id = nodeAccountIds.get(i);
-    //   accountNums.push(id.num ?? 0);
-    //   list.push({
-    //     realmNum: id.realm?.toString() ?? 0,
-    //     shardNum: id.shard?.toString() ?? 0,
-    //     accountNum: id.num?.toString() ?? 0,
-    //     network: network.network,
-    //   });
-    // }
-    //
-    // // Build input string (e.g. "3-5,7")
-    // const sorted = accountNums.sort((a, b) => a - b);
-    // const ranges: string[] = [];
-    // let start = sorted[0], end = sorted[0];
-    // function addRange(start: Long, end: Long) {
-    //   ranges.push(start.equals(end) ? `${start.toString()}` : `${start.toString()}-${end.toString()}`);
-    // }
-    // for (let i = 1; i < sorted.length; i++) {
-    //   if (sorted[i].equals(end.add(1))) {
-    //     end = sorted[i];
-    //   } else {
-    //     addRange(start, end);
-    //     start = sorted[i];
-    //     end = sorted[i];
-    //   }
-    // }
-    // addRange(start, end);
-    // const input = ranges.join(',');
-    //
-    // const metadata = JSON.stringify({
-    //   nodes: {
-    //     input,
-    //     list,
-    //   }
-    // });
-    //
-    // const csvaFilePath = filePath.replace(/\.[^/.]+$/, '.csva');
-    //
-    // // now create csva
-    // await saveFileToPath(
-    //   metadata,
-    //   csvaFilePath,
-    // );
 
     toast.success('Transaction exported successfully');
   }
@@ -699,6 +647,7 @@ watch(
         SDKTransaction.fromBytes(hexToUint8Array(transaction.transactionBytes)),
         user.selectedOrganization.userKeys,
         network.mirrorNodeBaseURL,
+        new AccountInfoCache(),
       ),
       getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id),
     ]);
@@ -757,7 +706,6 @@ watch(
               :loading-text="loadingStates[visibleButtons[0]] || ''"
               :data-testid="buttonsDataTestIds[visibleButtons[0]]"
               type="submit"
-              class="me-3"
               >{{ visibleButtons[0] }}
             </AppButton>
           </div>
@@ -773,7 +721,6 @@ watch(
               :loading-text="loadingStates[visibleButtons[1]] || ''"
               :data-testid="buttonsDataTestIds[visibleButtons[1]]"
               type="submit"
-              class="me-3"
               >{{ visibleButtons[1] }}
             </AppButton>
           </div>
@@ -789,6 +736,7 @@ watch(
               :items="dropDownItems"
               compact
               @select="handleDropDownItem($event as ActionButton)"
+              data-testid="button-more-dropdown-sm"
             />
             <AppDropDown
               class="d-none d-lg-block"
@@ -796,6 +744,7 @@ watch(
               :items="dropDownItems.slice(1)"
               compact
               @select="handleDropDownItem($event as ActionButton)"
+              data-testid="button-more-dropdown-lg"
             />
           </div>
         </template>
@@ -807,7 +756,6 @@ watch(
               :loading-text="loadingStates[visibleButtons[1]] || ''"
               :data-testid="buttonsDataTestIds[visibleButtons[1]]"
               type="submit"
-              class="me-3"
               >{{ visibleButtons[1] }}
             </AppButton>
           </div>

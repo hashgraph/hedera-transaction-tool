@@ -34,25 +34,12 @@ import { MEMO_MAX_LENGTH } from '@shared/constants';
 import { isAccountId, isContractId, isFileId } from '../validator';
 import { compareKeys } from '.';
 
-export type TransactionData = TransactionCommonData & TransactionSpecificData;
-
 export type TransactionCommonData = {
   payerId: string;
   validStart: Date;
   maxTransactionFee: Hbar;
   transactionMemo: string;
 };
-
-export type TransactionSpecificData =
-  | AccountCreateData
-  | AccountUpdateData
-  | AccountDeleteData
-  | ApproveHbarAllowanceData
-  | FileCreateData
-  | FileUpdateData
-  | FileAppendData
-  | FreezeData
-  | TransferHbarData;
 
 export type AccountData = {
   receiverSignatureRequired: boolean;
@@ -475,6 +462,8 @@ export const getServiceEndpoint = (serviceEndpoint: ComponentServiceEndpoint | n
     }
     return serviceEndpoint;
   }
+
+  return null;
 };
 
 const setNodeData = (
@@ -505,7 +494,7 @@ const setNodeData = (
     transaction.setServiceEndpoints(txServiceEndpoints);
   }
 
-  if (oldData?.grpcWebProxyEndpoint != data.grpcWebProxyEndpoint) {
+  if (oldData?.grpc_web_proxy_endpoint != data.grpcWebProxyEndpoint && txGrpcWebProxyEndpoint) {
     transaction.setGrpcWebProxyEndpoint(txGrpcWebProxyEndpoint);
   }
 

@@ -24,13 +24,12 @@ import { getApiGroupById, getTransactionById } from '@renderer/services/organiza
 import { getTransaction } from '@renderer/services/transactionService';
 
 import {
-  getTransactionDateExtended,
   getTransactionId,
   getTransactionPayerId,
   getTransactionType,
+  getTransactionValidStart,
 } from '@renderer/utils/sdk/transactions';
 import {
-  getDateStringExtended,
   getUInt8ArrayFromBytesString,
   KEEP_NEXT_QUERY_KEY,
   openTransactionInHashscan,
@@ -51,6 +50,8 @@ import txTypeComponentMapping from '@renderer/components/Transaction/Details/txT
 import TransactionDetailsHeader from './components/TransactionDetailsHeader.vue';
 import TransactionDetailsStatusStepper from './components/TransactionDetailsStatusStepper.vue';
 import { getGroup } from '@renderer/services/transactionGroupsService';
+import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
+import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -84,7 +85,7 @@ const transactionSpecificLabel = computed(() => {
 });
 
 const signersPublicKeys = computed(() => {
-  return [...sdkTransaction.value._signerPublicKeys];
+  return sdkTransaction.value ? [...sdkTransaction.value._signerPublicKeys] : [];
 });
 
 const creator = computed(() => {
@@ -143,6 +144,7 @@ async function fetchTransaction(id: string | number) {
     signatureKeyObject.value = await computeSignatureKey(
       sdkTransaction.value,
       network.mirrorNodeBaseURL,
+      new AccountInfoCache(),
     );
   }
 
@@ -249,7 +251,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
             </div>
           </template>
           <template v-else>
-            <div class="fill-remaining mt-5 pe-4">
+            <div class="fill-remaining mt-5">
               <div class="row flex-wrap">
                 <!-- Description -->
                 <div class="col-11">
@@ -323,13 +325,13 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Created at</h4>
                   <p :class="detailItemValueClass" data-testid="p-transaction-details-created-at">
-                    {{
-                      getDateStringExtended(
+                    <DateTimeString
+                      :date="
                         new Date(
                           orgTransaction?.createdAt || localTransaction?.created_at || Date.now(),
-                        ),
-                      )
-                    }}
+                        )
+                      "
+                    />
                   </p>
                 </div>
 
@@ -340,13 +342,11 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 >
                   <h4 :class="detailItemLabelClass">Executed at</h4>
                   <p :class="detailItemValueClass" data-testid="p-transaction-details-executed_at">
-                    {{
-                      getDateStringExtended(
-                        new Date(
-                          orgTransaction?.executedAt || localTransaction?.executed_at || Date.now(),
-                        ),
-                      )
-                    }}
+                    <DateTimeString
+                      :date="
+                        new Date(orgTransaction?.executedAt || localTransaction!.executed_at * 1000)
+                      "
+                    />
                   </p>
                 </div>
               </div>
@@ -402,7 +402,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Valid Start</h4>
                   <p :class="detailItemValueClass" data-testid="p-transaction-details-valid-start">
-                    {{ getTransactionDateExtended(sdkTransaction) }}
+                    <DateTimeString :date="getTransactionValidStart(sdkTransaction)"/>
                   </p>
                 </div>
 
