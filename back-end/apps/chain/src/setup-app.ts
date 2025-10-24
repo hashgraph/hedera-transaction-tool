@@ -35,6 +35,7 @@ function connectMicroservices(app: INestApplication) {
         },
       },
       noAck: false,
+      prefetchCount: 1,
     },
   });
 }

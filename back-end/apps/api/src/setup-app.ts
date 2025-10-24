@@ -62,6 +62,7 @@ function connectMicroservices(app: NestExpressApplication) {
         },
       },
       noAck: false,
+      prefetchCount: 1,
     },
   });
 }
