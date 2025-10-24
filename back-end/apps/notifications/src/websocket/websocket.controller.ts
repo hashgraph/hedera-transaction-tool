@@ -1,4 +1,4 @@
-import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
+import { Ctx, EventPattern, MessagePattern, Payload, RmqContext } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 import { Controller } from '@nestjs/common';
 
@@ -15,7 +15,7 @@ export class WebsocketController {
 
   @EventPattern(NOTIFY_CLIENT)
   @Acked()
-  async notifyClient(@Payload() payload: NotifyClientDto) {
+  async notifyClient(@Payload() payload: NotifyClientDto, @Ctx() context: RmqContext) {
     await this.websocketGateway.notifyClient(payload);
   }
 
