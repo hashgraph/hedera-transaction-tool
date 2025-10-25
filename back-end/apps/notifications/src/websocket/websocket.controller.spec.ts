@@ -5,13 +5,20 @@ import { mockDeep } from 'jest-mock-extended';
 import { WebsocketController } from './websocket.controller';
 import { WebsocketGateway } from './websocket.gateway';
 import { NotifyClientDto } from '@app/common';
+import { RmqContext } from '@nestjs/microservices';
 
 describe('WebsocketController', () => {
   let controller: WebsocketController;
   const gateway = mockDeep<WebsocketGateway>();
   const configService = mockDeep<ConfigService>();
 
+  const mockCtx = {
+    getChannelRef: () => ({ ack: jest.fn() }),
+    getMessage: () => ({ properties: { headers: {} } }),
+  } as unknown as RmqContext;
+
   beforeEach(async () => {
+    jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       controllers: [WebsocketController],
       providers: [
@@ -36,7 +43,7 @@ describe('WebsocketController', () => {
   it('should notify the connected client', async () => {
     const payload: NotifyClientDto = { message: 'Test message', content: 'Test content' };
 
-    await controller.notifyClient(payload);
+    await controller.notifyClient(payload, mockCtx);
 
     expect(gateway.notifyClient).toHaveBeenCalledWith(payload);
   });
