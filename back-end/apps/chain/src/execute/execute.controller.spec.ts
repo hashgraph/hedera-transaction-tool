@@ -6,12 +6,28 @@ import { ExecuteTransactionDto } from '@app/common';
 
 import { ExecuteController } from './execute.controller';
 import { ExecuteService } from './execute.service';
+import { RmqContext } from '@nestjs/microservices';
+
+// jest.mock('@app/common', () => {
+//   const actual = jest.requireActual('@app/common');
+//   return {
+//     ...actual,
+//     Acked: () => () => {}, // mock decorator as a no-op
+//   };
+// });
 
 describe('ExecuteControllerController', () => {
   let controller: ExecuteController;
   const executeService = mockDeep<ExecuteService>();
 
+  const mockCtx = {
+    getChannelRef: () => ({ ack: jest.fn() }),
+    getMessage: () => ({ properties: { headers: {} } }),
+  } as unknown as RmqContext;
+
   beforeEach(async () => {
+    jest.clearAllMocks();
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ExecuteController],
       providers: [
@@ -38,7 +54,7 @@ describe('ExecuteControllerController', () => {
       status: TransactionStatus.WAITING_FOR_EXECUTION,
     };
 
-    await controller.executeTransaction(payload);
+    await controller.executeTransaction(payload, mockCtx);
 
     expect(executeService.executeTransaction).toHaveBeenCalledWith(payload);
   });
@@ -53,11 +69,13 @@ describe('ExecuteControllerController', () => {
       status: TransactionStatus.WAITING_FOR_EXECUTION,
     };
 
-    await controller.executeTransaction(payload);
+    await controller.executeTransaction(payload, mockCtx);
 
-    expect(executeService.executeTransaction).toHaveBeenCalledWith({
-      ...payload,
-      transactionBytes: Buffer.from('abc', 'hex'),
-    });
+    expect(executeService.executeTransaction).toHaveBeenCalledWith(
+      {
+        ...payload,
+        transactionBytes: Buffer.from('abc', 'hex'),
+      },
+    );
   });
 });
