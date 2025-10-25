@@ -38,7 +38,14 @@ import {
   Status,
 } from '@hashgraph/sdk';
 
-jest.mock('@app/common');
+jest.mock('@app/common', () => {
+  const actual = jest.requireActual('@app/common');
+  return {
+    ...actual,
+    Acked: () => () => {}, // mock decorator as a no-op
+  };
+});
+jest.mock('@app/common/utils');
 jest.mock('@nestjs/schedule', () => {
   const original = jest.requireActual('@nestjs/schedule');
   return {

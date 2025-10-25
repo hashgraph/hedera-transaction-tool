@@ -6,12 +6,19 @@ import { NotificationType, TransactionStatus } from '@entities';
 
 import { ReceiverController } from './receiver.controller';
 import { ReceiverService } from './receiver.service';
+import { RmqContext } from '@nestjs/microservices';
 
 describe('Receiver Controller', () => {
   let controller: ReceiverController;
   const receiverService = mockDeep<ReceiverService>();
 
+  const mockCtx = {
+    getChannelRef: () => ({ ack: jest.fn() }),
+    getMessage: () => ({ properties: { headers: {} } }),
+  } as unknown as RmqContext;
+
   beforeEach(async () => {
+    jest.clearAllMocks();
     const app: TestingModule = await Test.createTestingModule({
       controllers: [ReceiverController],
       providers: [
@@ -39,7 +46,7 @@ describe('Receiver Controller', () => {
       additionalData: { network: 'testnet' },
     };
 
-    await controller.notifyGeneral(dto);
+    await controller.notifyGeneral(dto, mockCtx);
 
     expect(receiverService.notifyGeneral).toHaveBeenCalledWith(dto);
   });
@@ -50,7 +57,7 @@ describe('Receiver Controller', () => {
       additionalData: { network: 'testnet' },
     };
 
-    await controller.notifyTransactionSigners(dto);
+    await controller.notifyTransactionSigners(dto, mockCtx);
 
     expect(receiverService.notifyTransactionRequiredSigners).toHaveBeenCalledWith(dto);
   });
@@ -62,7 +69,7 @@ describe('Receiver Controller', () => {
       additionalData: { network: 'testnet' },
     };
 
-    await controller.syncIndicators(dto);
+    await controller.syncIndicators(dto, mockCtx);
 
     expect(receiverService.syncIndicators).toHaveBeenCalledWith(dto);
   });

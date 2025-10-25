@@ -5,12 +5,19 @@ import { NotifyEmailDto } from '@app/common';
 
 import { EmailController } from './email.controller';
 import { EmailService } from './email.service';
+import { RmqContext } from '@nestjs/microservices';
 
 describe('EmailController', () => {
   let controller: EmailController;
   const emailService = mockDeep<EmailService>();
 
+  const mockCtx = {
+    getChannelRef: () => ({ ack: jest.fn() }),
+    getMessage: () => ({ properties: { headers: {} } }),
+  } as unknown as RmqContext;
+
   beforeEach(async () => {
+    jest.clearAllMocks();
     const app: TestingModule = await Test.createTestingModule({
       controllers: [EmailController],
       providers: [
@@ -35,7 +42,7 @@ describe('EmailController', () => {
       text: 'Test text',
     };
 
-    await controller.notifyEmail(dto);
+    await controller.notifyEmail(dto, mockCtx);
 
     expect(emailService.notifyEmail).toHaveBeenCalledWith(dto);
   });

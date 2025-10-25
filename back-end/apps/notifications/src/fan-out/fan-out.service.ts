@@ -72,7 +72,7 @@ export class FanOutService {
   }
 
   async fanOutIndicatorsDelete(userIdToNotificationReceiversId: { [userId: number]: number[] }) {
-    this.inAppProcessorService.processNotificationDelete(userIdToNotificationReceiversId);
+    await this.inAppProcessorService.processNotificationDelete(userIdToNotificationReceiversId);
   }
 
   private async categorizeReceivers(notification: Notification, receivers: NotificationReceiver[]) {
@@ -148,7 +148,7 @@ export class FanOutService {
       if (this.inAppBlacklistTypes.includes(notification.type)) {
         await this.updateIsInAppNotified(notification.id, userIds, null);
       } else {
-        this.inAppProcessorService.processNewNotification(notification, receivers);
+        await this.inAppProcessorService.processNewNotification(notification, receivers);
         await this.updateIsInAppNotified(notification.id, userIds, true);
       }
     }

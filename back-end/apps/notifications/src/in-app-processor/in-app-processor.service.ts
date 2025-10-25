@@ -12,7 +12,7 @@ import { WebsocketGateway } from '../websocket/websocket.gateway';
 export class InAppProcessorService {
   constructor(private readonly websocket: WebsocketGateway) {}
 
-  processNewNotification(notification: Notification, receivers: NotificationReceiver[]) {
+  async processNewNotification(notification: Notification, receivers: NotificationReceiver[]) {
     if (!receivers || receivers.length === 0) return;
 
     const userIds = receivers.map(r => r.userId);
@@ -28,16 +28,16 @@ export class InAppProcessorService {
         exposeUnsetFields: false,
       });
 
-      this.websocket.notifyUser(user, NOTIFICATIONS_NEW, dto);
+      await this.websocket.notifyUser(user, NOTIFICATIONS_NEW, dto);
     }
   }
 
-  processNotificationDelete(userIdToNotificationReceiversId: { [userId: number]: number[] }) {
+  async processNotificationDelete(userIdToNotificationReceiversId: { [userId: number]: number[] }) {
     const userIds = Object.keys(userIdToNotificationReceiversId).map(Number);
 
     for (const user of userIds) {
       const notificationReceiverIds = userIdToNotificationReceiversId[user];
-      this.websocket.notifyUser(user, NOTIFICATIONS_INDICATORS_DELETE, {
+      await this.websocket.notifyUser(user, NOTIFICATIONS_INDICATORS_DELETE, {
         notificationReceiverIds,
       });
     }

@@ -1,12 +1,13 @@
 import { Controller } from '@nestjs/common';
-import { EventPattern, Payload } from '@nestjs/microservices';
+import { Ctx, EventPattern, Payload, RmqContext } from '@nestjs/microservices';
 
 import {
+  Acked,
   NOTIFY_GENERAL,
   NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
-  SYNC_INDICATORS,
   NotifyForTransactionDto,
   NotifyGeneralDto,
+  SYNC_INDICATORS,
   SyncIndicatorsDto,
 } from '@app/common';
 
@@ -17,17 +18,20 @@ export class ReceiverController {
   constructor(private readonly receiverService: ReceiverService) {}
 
   @EventPattern(NOTIFY_GENERAL)
-  async notifyGeneral(@Payload() payload: NotifyGeneralDto) {
-    return this.receiverService.notifyGeneral(payload);
+  @Acked()
+  async notifyGeneral(@Payload() payload: NotifyGeneralDto, @Ctx() context: RmqContext) {
+    await this.receiverService.notifyGeneral(payload);
   }
 
   @EventPattern(NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES)
-  async notifyTransactionSigners(@Payload() payload: NotifyForTransactionDto) {
-    return this.receiverService.notifyTransactionRequiredSigners(payload);
+  @Acked()
+  async notifyTransactionSigners(@Payload() payload: NotifyForTransactionDto, @Ctx() context: RmqContext) {
+    await this.receiverService.notifyTransactionRequiredSigners(payload);
   }
 
   @EventPattern(SYNC_INDICATORS)
-  async syncIndicators(@Payload() payload: SyncIndicatorsDto) {
+  @Acked()
+  async syncIndicators(@Payload() payload: SyncIndicatorsDto, @Ctx() context: RmqContext) {
     await this.receiverService.syncIndicators(payload);
   }
 }

@@ -1,7 +1,7 @@
 import { Controller } from '@nestjs/common';
-import { EventPattern, Payload } from '@nestjs/microservices';
+import { Ctx, EventPattern, Payload, RmqContext } from '@nestjs/microservices';
 
-import { decode, EXECUTE_TRANSACTION, ExecuteTransactionDto } from '@app/common';
+import { Acked, decode, EXECUTE_TRANSACTION, ExecuteTransactionDto } from '@app/common';
 
 import { ExecuteService } from './execute.service';
 
@@ -10,11 +10,12 @@ export class ExecuteController {
   constructor(private readonly executeService: ExecuteService) {}
 
   @EventPattern(EXECUTE_TRANSACTION)
-  async executeTransaction(@Payload() payload: ExecuteTransactionDto) {
+  @Acked()
+  async executeTransaction(@Payload() payload: ExecuteTransactionDto, @Ctx() context: RmqContext) {
     if (typeof payload.transactionBytes === 'string') {
       payload.transactionBytes = decode(payload.transactionBytes);
     }
 
-    return this.executeService.executeTransaction(payload);
+    await this.executeService.executeTransaction(payload);
   }
 }

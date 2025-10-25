@@ -93,7 +93,7 @@ describe('In App Processor Service', () => {
         },
       ];
 
-      service.processNewNotification(notification, receivers);
+      await service.processNewNotification(notification, receivers);
 
       expect(websocketGateway.notifyUser).toHaveBeenCalledTimes(2);
       expect(websocketGateway.notifyUser).toHaveBeenCalledWith(1, NOTIFICATIONS_NEW, {
@@ -149,7 +149,7 @@ describe('In App Processor Service', () => {
         2: [3, 4],
       };
 
-      service.processNotificationDelete(userIdToNotificationReceiversId);
+      await service.processNotificationDelete(userIdToNotificationReceiversId);
 
       expect(websocketGateway.notifyUser).toHaveBeenCalledTimes(2);
       expect(websocketGateway.notifyUser).toHaveBeenCalledWith(1, NOTIFICATIONS_INDICATORS_DELETE, {
