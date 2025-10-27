@@ -58,6 +58,7 @@ import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.t
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import useContactsStore from '@renderer/stores/storeContacts.ts';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
+import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
@@ -96,6 +97,7 @@ const createTooltips = useCreateTooltips();
 
 /* Injected */
 const accountByIdCache = AccountByIdCache.inject()
+const nodeByIdCache = NodeByIdCache.inject();
 
 /* State */
 const group = ref<IGroup | null>(null);
@@ -203,6 +205,7 @@ async function handleFetchGroup(id: string | number) {
             user.selectedOrganization.userKeys,
             network.mirrorNodeBaseURL,
             accountByIdCache,
+            nodeByIdCache,
           );
 
           if (
@@ -278,6 +281,7 @@ const handleSignGroupItem = async (groupItem: IGroupItem) => {
       user.selectedOrganization.userKeys,
       network.mirrorNodeBaseURL,
       accountByIdCache,
+      nodeByIdCache,
     );
     const item: SignatureItem = {
       publicKeys: publicKeysRequired,
@@ -387,6 +391,7 @@ const handleSignAll = async (showModal = false) => {
           user.selectedOrganization.userKeys,
           network.mirrorNodeBaseURL,
           accountByIdCache,
+          nodeByIdCache,
         );
         const item: SignatureItem = {
           publicKeys: publicKeysRequired,

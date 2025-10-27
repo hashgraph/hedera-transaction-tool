@@ -1,9 +1,9 @@
 import { AccountId, Key, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
-import { getNodeInfo } from '@renderer/services/mirrorNodeDataService';
 import { compareKeys } from '../sdk';
 import type { INodeInfoParsed } from '@shared/interfaces';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 
 export abstract class TransactionBaseModel<T extends SDKTransaction> {
   constructor(protected transaction: T) {}
@@ -41,7 +41,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     return null;
   }
 
-  async computeSignatureKey(mirrorNodeLink: string, accountInfoCache: AccountByIdCache) {
+  async computeSignatureKey(mirrorNodeLink: string, accountInfoCache: AccountByIdCache, nodeInfoCache: NodeByIdCache) {
     const feePayerAccountId = this.getFeePayerAccountId();
     const accounts = this.getSigningAccounts();
     const receiverAccounts = this.getReceiverAccounts();
@@ -105,7 +105,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     /* Check if user has a key included in the node admin key */
     try {
       if (!Number.isNaN(nodeId) && nodeId !== null) {
-        const nodeInfo = await getNodeInfo(nodeId, mirrorNodeLink);
+        const nodeInfo = await nodeInfoCache.lookup(nodeId, mirrorNodeLink);
         const adminKey = nodeInfo?.admin_key;
         if (adminKey && !hasKey(adminKey)) {
           signatureKeys.push(adminKey);

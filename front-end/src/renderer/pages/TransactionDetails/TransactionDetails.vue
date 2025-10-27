@@ -52,6 +52,7 @@ import TransactionDetailsStatusStepper from './components/TransactionDetailsStat
 import { getGroup } from '@renderer/services/transactionGroupsService';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
+import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -68,6 +69,7 @@ const route = useRoute();
 
 /* Injected */
 const accountByIdCache = AccountByIdCache.inject()
+const nodeByIdCache = NodeByIdCache.inject()
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);
@@ -148,6 +150,7 @@ async function fetchTransaction(id: string | number) {
       sdkTransaction.value,
       network.mirrorNodeBaseURL,
       accountByIdCache,
+      nodeByIdCache,
     );
   }
 
