@@ -1,18 +1,21 @@
 export abstract class EntityCache<K extends string | number, E> {
-  public static readonly FRESH_DURATION = 500; // ms
-  public static readonly YOUNG_DURATION = 60000; // ms
   private readonly records = new Map<string, EntityRecord<E>>();
 
   //
   // Public
   //
 
+  public constructor(
+    public readonly freshDuration: number = 500, // ms
+    public readonly youngDuration: number = 60000, // ms
+  ) {}
+
   public async lookup(key: K, mirrorNodeUrl: string, forceLoad = false): Promise<E> {
     let result: Promise<E>;
 
     const recordKey = this.makeRecordKey(key, mirrorNodeUrl);
     const currentRecord = this.records.get(recordKey);
-    if (currentRecord && currentRecord.isFresh(forceLoad)) {
+    if (currentRecord && currentRecord.isFresh(forceLoad, this)) {
       console.log(this.constructor.name + " hit for " + key);
       result = currentRecord.promise;
     } else {
@@ -79,12 +82,12 @@ class EntityRecord<E> {
     this.time = Date.now();
   }
 
-  isFresh(forceLoad: boolean): boolean {
+  isFresh(forceLoad: boolean, cache: EntityCache<any, E>): boolean {
     let result: boolean;
     if (forceLoad) {
-      result = this.age() < EntityCache.FRESH_DURATION; // ms
+      result = this.age() < cache.freshDuration; // ms
     } else {
-      result = this.age() < EntityCache.FRESH_DURATION + EntityCache.YOUNG_DURATION; // ms
+      result = this.age() < cache.freshDuration + cache.youngDuration; // ms
     }
     return result;
   }

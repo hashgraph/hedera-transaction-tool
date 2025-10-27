@@ -6,10 +6,15 @@ import axios from 'axios';
 
 export class TransactionByIdCache extends EntityCache<string, TransactionByIdResponse | null> {
   private static readonly injectKey = Symbol();
+  private static readonly LENGTHY = 10 * 3600_000;
 
   //
   // Public
   //
+
+  public constructor() {
+    super(TransactionByIdCache.LENGTHY, TransactionByIdCache.LENGTHY); // transactions are immutable data so we load them one time
+  }
 
   public static provide(): void {
     provide(TransactionByIdCache.injectKey, new TransactionByIdCache());
