@@ -85,7 +85,7 @@ async function fetchTransactionInfo(payer: string, seconds: string, nanos: strin
     ),
   );
 
-  if (data && data.transactions.length > 0) {
+  if (data?.transactions && data.transactions.length > 0) {
     entityId.value = data.transactions[0].entity_id || null;
   }
 }

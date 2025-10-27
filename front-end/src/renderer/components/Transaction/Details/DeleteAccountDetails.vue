@@ -43,7 +43,7 @@ async function fetchTransactionInfo(payer: string, seconds: string, nanos: strin
     ),
   );
 
-  if (data) {
+  if (data?.transactions) {
     if (data.transactions.length > 0 && props.transaction instanceof AccountDeleteTransaction) {
       const deletedAccountId = props.transaction.accountId?.toString();
       const amount =

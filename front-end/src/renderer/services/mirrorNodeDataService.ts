@@ -3,7 +3,7 @@ import type {
   IAccountInfoParsed,
   CryptoAllowance,
   NetworkExchangeRateSetResponse,
-  Transaction,
+  TransactionByIdResponse,
   AccountsResponse,
   NetworkNode,
   NetworkNodesResponse,
@@ -179,7 +179,7 @@ export const getTransactionInfo = async (
   mirrorNodeLink: string,
   controller?: AbortController,
 ) => {
-  const { data } = await axios.get<{ transactions: Transaction[] }>(
+  const { data } = await axios.get<TransactionByIdResponse>(
     `${withAPIPrefix(mirrorNodeLink)}/transactions/${transactionId}`,
     {
       signal: controller?.signal,
