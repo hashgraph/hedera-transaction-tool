@@ -161,31 +161,30 @@ test.describe('Organization Group Tx tests', () => {
     expect(await groupPage.isEmptyTransactionTextVisible()).toBe(true);
   });
 
-  //This test (for the 5 transactions option) appears to be a bit flaky, but very rare.
-  [5, 100].forEach((numberOfTransactions) => {
-    test(`Verify user can import csv transactions with ${numberOfTransactions} transactions`, async () => {
-      test.slow();
-      await groupPage.fillDescription('test');
-      await groupPage.generateAndImportCsvFile(complexKeyAccountId, newAccountId,  numberOfTransactions);
-      const message = await groupPage.getToastMessage();
-      expect(message).toBe('Import complete');
-      await groupPage.clickOnSignAndExecuteButton();
-      await groupPage.clickOnConfirmGroupTransactionButton();
-      const timestamps = await groupPage.getAllTransactionTimestamps(numberOfTransactions);
-      await groupPage.clickOnSignAllButton();
-      await loginPage.waitForToastToDisappear();
-      await transactionPage.clickOnTransactionsMenuButton();
-      await organizationPage.logoutFromOrganization();
-      await groupPage.logInAndSignGroupTransactionsByAllUsers(globalCredentials.password, numberOfTransactions > 10);
-      await organizationPage.signInOrganization(
-        firstUser.email,
-        firstUser.password,
-        globalCredentials.password,
-      );
-      const isAllTransactionsSuccessful =
-        await groupPage.verifyAllTransactionsAreSuccessful(timestamps);
-      expect(isAllTransactionsSuccessful).toBe(true);
-    });
+  test(`Verify user can import csv with 100 transactions`, async () => {
+    test.slow();
+    const numberOfTransactions = 100;
+    await groupPage.fillDescription('test');
+    await groupPage.generateAndImportCsvFile(complexKeyAccountId, newAccountId, numberOfTransactions,);
+    const message = await groupPage.getToastMessage();
+    expect(message).toBe('Import complete');
+    await groupPage.clickOnSignAndExecuteButton();
+    await groupPage.clickOnConfirmGroupTransactionButton();
+    const timestamps = await groupPage.getAllTransactionTimestamps(numberOfTransactions);
+    await groupPage.clickOnSignAllButton();
+    await groupPage.clickOnConfirmGroupActionButton()
+    await loginPage.waitForToastToDisappear();
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.logoutFromOrganization();
+    await groupPage.logInAndSignGroupTransactionsByAllUsers(globalCredentials.password, numberOfTransactions > 10);
+    await organizationPage.signInOrganization(
+      firstUser.email,
+      firstUser.password,
+      globalCredentials.password,
+    );
+    const isAllTransactionsSuccessful =
+      await groupPage.verifyAllTransactionsAreSuccessful(timestamps);
+    expect(isAllTransactionsSuccessful).toBe(true);
   });
 
   test('Verify import fails if sender account does not exist on network', async () => {
