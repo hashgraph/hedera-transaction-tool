@@ -15,7 +15,7 @@ export abstract class EntityCache<K extends string | number, E> {
 
     const recordKey = this.makeRecordKey(key, mirrorNodeUrl);
     const currentRecord = this.records.get(recordKey);
-    if (currentRecord && currentRecord.isFresh(forceLoad, this)) {
+    if (currentRecord && currentRecord.isUsable(forceLoad, this)) {
       // console.log(this.constructor.name + ' hit for ' + key);
       result = currentRecord.promise;
     } else {
@@ -82,7 +82,7 @@ class EntityRecord<E> {
     this.time = Date.now();
   }
 
-  isFresh(forceLoad: boolean, cache: EntityCache<any, E>): boolean {
+  isUsable(forceLoad: boolean, cache: EntityCache<any, E>): boolean {
     let result: boolean;
     if (forceLoad) {
       result = this.age() < EntityCache.FRESH_DURATION; // ms
