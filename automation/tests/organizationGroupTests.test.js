@@ -147,6 +147,20 @@ test.describe('Organization Group Tx tests', () => {
     expect(secondResult).toBe('SUCCESS');
   });
 
+  test('Verify user can cancel all items in a transaction group', async () => {
+    test.slow();
+    await groupPage.addOrgAllowanceTransactionToGroup(2, complexKeyAccountId, '10');
+
+    await groupPage.clickOnSignAndExecuteButton();
+    await groupPage.clickOnConfirmGroupTransactionButton();
+    await groupPage.clickOnCancelAllButton();
+    await groupPage.clickOnConfirmGroupActionButton()
+    await loginPage.waitForToastToDisappear();
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.clickOnReadyToSignTab()
+    expect(await groupPage.isEmptyTransactionTextVisible()).toBe(true);
+  });
+
   //This test (for the 5 transactions option) appears to be a bit flaky, but very rare.
   [5, 100].forEach((numberOfTransactions) => {
     test(`Verify user can import csv transactions with ${numberOfTransactions} transactions`, async () => {
