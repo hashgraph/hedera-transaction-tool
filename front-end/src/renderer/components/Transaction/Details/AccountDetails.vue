@@ -19,7 +19,6 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useToast } from 'vue-toast-notification';
 
-import { getTransactionInfo } from '@renderer/services/mirrorNodeDataService';
 import { add, getAll } from '@renderer/services/accountsService';
 
 import {
@@ -35,6 +34,7 @@ import {
 
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -48,6 +48,9 @@ const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
+
+/* Injected */
+const transactionByIdCache = TransactionByIdCache.inject();
 
 /* State */
 const isKeyStructureModalShown = ref(false);
@@ -78,11 +81,7 @@ const handleLinkEntity = async () => {
 /* Functions */
 async function fetchTransactionInfo(payer: string, seconds: string, nanos: string) {
   const { data } = await safeAwait(
-    getTransactionInfo(
-      `${payer}-${seconds}-${nanos}`,
-      network.mirrorNodeBaseURL,
-      controller.value || undefined,
-    ),
+    transactionByIdCache.lookup(`${payer}-${seconds}-${nanos}`, network.mirrorNodeBaseURL),
   );
 
   if (data?.transactions && data.transactions.length > 0) {
@@ -139,7 +138,7 @@ onBeforeMount(async () => {
   }
 
   await checkAndFetchTransactionInfo();
-  if (props.transaction.key && props.transaction.key instanceof PublicKey && true) {
+  if (props.transaction.key && props.transaction.key instanceof PublicKey) {
     formattedKey.value = await formatPublicKey(props.transaction.key.toStringRaw());
   }
 });
@@ -163,8 +162,7 @@ watchEffect(async () => {
   if (props.transaction) {
     const tx = props.transaction as AccountUpdateTransaction;
     if (tx.accountId) {
-      const txNick = await getAccountNicknameFromId(tx.accountId.toString());
-      txNickname.value = txNick;
+      txNickname.value = await getAccountNicknameFromId(tx.accountId.toString());
     }
   }
 });
