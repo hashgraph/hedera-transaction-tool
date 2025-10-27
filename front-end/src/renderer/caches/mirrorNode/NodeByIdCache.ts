@@ -6,14 +6,13 @@ import { getNodeInfo } from '@renderer/services/mirrorNodeDataService.ts';
 
 export class NodeByIdCache extends EntityCache<number, INodeInfoParsed | null> {
   private static readonly injectKey = Symbol();
-  private static readonly LENGTHY = 2 * 3600_000;
 
   //
   // Public
   //
 
   public constructor() {
-    super(NodeByIdCache.LENGTHY, NodeByIdCache.LENGTHY); // node info change infrequently so we keep them long time
+    super(500, 3600_000); // node info change infrequently so we keep them long time
   }
 
   public static provide(): void {
