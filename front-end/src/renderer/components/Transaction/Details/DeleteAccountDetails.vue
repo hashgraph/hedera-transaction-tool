@@ -8,14 +8,13 @@ import { TransactionStatus } from '@shared/interfaces';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { getTransactionInfo } from '@renderer/services/mirrorNodeDataService';
-
 import {
   getAccountIdWithChecksum,
   getAccountNicknameFromId,
   safeAwait,
   stringifyHbar,
 } from '@renderer/utils';
+import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -25,6 +24,9 @@ const props = defineProps<{
 
 /* Stores */
 const network = useNetworkStore();
+
+/* Injected */
+const transactionByIdCache = TransactionByIdCache.inject();
 
 /* State */
 const controller = ref<AbortController | null>(null);
@@ -36,11 +38,7 @@ const nicknames = ref<
 /* Functions */
 async function fetchTransactionInfo(payer: string, seconds: string, nanos: string) {
   const { data } = await safeAwait(
-    getTransactionInfo(
-      `${payer}-${seconds}-${nanos}`,
-      network.mirrorNodeBaseURL,
-      controller.value || undefined,
-    ),
+    transactionByIdCache.lookup(`${payer}-${seconds}-${nanos}`, network.mirrorNodeBaseURL),
   );
 
   if (data?.transactions) {
