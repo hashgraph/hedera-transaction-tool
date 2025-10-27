@@ -8,14 +8,6 @@ import { ExecuteController } from './execute.controller';
 import { ExecuteService } from './execute.service';
 import { RmqContext } from '@nestjs/microservices';
 
-// jest.mock('@app/common', () => {
-//   const actual = jest.requireActual('@app/common');
-//   return {
-//     ...actual,
-//     Acked: () => () => {}, // mock decorator as a no-op
-//   };
-// });
-
 describe('ExecuteControllerController', () => {
   let controller: ExecuteController;
   const executeService = mockDeep<ExecuteService>();
