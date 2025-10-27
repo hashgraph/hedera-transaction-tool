@@ -22,6 +22,7 @@ import GlobalAppProcesses from '@renderer/components/GlobalAppProcesses';
 import { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
+import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -60,6 +61,7 @@ provideDynamicLayout(dynamicLayout);
 AccountByIdCache.provide();
 AccountByPublicKeyCache.provide();
 TransactionByIdCache.provide();
+NodeByIdCache.provide();
 </script>
 <template>
   <AppHeader
