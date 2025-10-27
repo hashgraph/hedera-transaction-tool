@@ -21,6 +21,7 @@ import GlobalModalLoader from '@renderer/components/GlobalModalLoader.vue';
 import GlobalAppProcesses from '@renderer/components/GlobalAppProcesses';
 import { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -58,6 +59,7 @@ provideGlobalModalLoaderlRef(globalModalLoaderRef);
 provideDynamicLayout(dynamicLayout);
 AccountByIdCache.provide();
 AccountByPublicKeyCache.provide();
+TransactionByIdCache.provide();
 </script>
 <template>
   <AppHeader
