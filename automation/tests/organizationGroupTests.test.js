@@ -123,6 +123,7 @@ test.describe('Organization Group Tx tests', () => {
     const secondTxId = await groupPage.getTransactionTimestamp(1);
     await groupPage.clickOnConfirmGroupTransactionButton();
     await groupPage.clickOnSignAllButton();
+    await groupPage.clickOnConfirmGroupActionButton()
     await loginPage.waitForToastToDisappear();
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();

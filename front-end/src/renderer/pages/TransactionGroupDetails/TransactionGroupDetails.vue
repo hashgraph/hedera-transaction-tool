@@ -902,12 +902,15 @@ function tooltipText(status: TransactionStatus): string {
                 <p class="text-center text-small text-secondary mt-4">{{ confirmModalText }}</p>
                 <hr class="separator my-5" />
                 <div class="flex-between-centered gap-4">
-                  <AppButton color="borderless" @click="isConfirmModalShown = false"
+                  <AppButton
+                    color="borderless"
+                    data-testid="button-cancel-group-action"
+                    @click="isConfirmModalShown = false"
                     >Cancel</AppButton
                   >
                   <AppButton
                     color="primary"
-                    data-testid="button-confirm-change-password"
+                    data-testid="button-confirm-group-action"
                     @click="confirmCallback && confirmCallback(false)"
                     >Confirm</AppButton
                   >

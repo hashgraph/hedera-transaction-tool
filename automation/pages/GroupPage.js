@@ -269,6 +269,7 @@ class GroupPage extends BasePage {
       await this.clickOnDetailsGroupButton(0);
       if (signAll) {
         await this.clickOnSignAllButton();
+        await this.clickOnConfirmGroupActionButton()
       } else {
         await this.clickOnTransactionDetailsButton(0);
 
@@ -303,24 +304,12 @@ class GroupPage extends BasePage {
     }
   }
 
-  async clickOnSignAllButton(retries = 3, retryDelay = 1000) {
-    const selector = this.organizationPage.signAllTransactionsButtonSelector;
+  async clickOnSignAllButton() {
+    await this.click(this.organizationPage.signAllTransactionsButtonSelector);
+  }
 
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      console.log(`Attempt ${attempt}/${retries} to click "Sign All" button.`);
-
-      try {
-        await this.click(selector);
-        const isButtonHidden = await this.isElementHidden(selector, null, 3000);
-
-        if (isButtonHidden) {
-          return;
-        }
-
-      } catch (error) {
-        console.error(`Attempt #${attempt} to click "Sign All" button failed: ${error.message}`);
-      }
-    }
+  async clickOnConfirmGroupActionButton() {
+    await this.click(this.organizationPage.confirmGroupActionButtonSelector);
   }
 }
 
