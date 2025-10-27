@@ -130,12 +130,12 @@ describe('TransactionStatusService', () => {
     transactionRepo.find.mockResolvedValue(transactions);
 
     jest.spyOn(service, 'updateTransactions');
-    jest.spyOn(service, 'getValidStartNowMinus180Seconds');
+    jest.spyOn(service, 'getThreeMinutesBefore');
 
     await service.handleInitialTransactionStatusUpdate();
 
     expect(service.updateTransactions).toHaveBeenCalled();
-    expect(service.getValidStartNowMinus180Seconds).toHaveBeenCalled();
+    expect(service.getThreeMinutesBefore).toHaveBeenCalled();
   });
 
   it('should call prepareAndExecute for transactions that are waiting for execution in initial cron', async () => {
@@ -147,7 +147,7 @@ describe('TransactionStatusService', () => {
     ];
 
     jest.spyOn(service, 'updateTransactions').mockResolvedValueOnce(transactions as Transaction[]);
-    jest.spyOn(service, 'getValidStartNowMinus180Seconds').mockImplementationOnce(jest.fn());
+    jest.spyOn(service, 'getThreeMinutesBefore').mockImplementationOnce(jest.fn());
     jest.spyOn(service, 'prepareTransactions').mockImplementationOnce(jest.fn());
 
     await service.handleInitialTransactionStatusUpdate();
@@ -233,13 +233,13 @@ describe('TransactionStatusService', () => {
     transactionRepo.find.mockResolvedValue(transactions);
 
     jest.spyOn(service, 'updateTransactions');
-    jest.spyOn(service, 'getValidStartNowMinus180Seconds');
+    jest.spyOn(service, 'getThreeMinutesBefore');
     jest.spyOn(service, 'getThreeMinutesLater');
 
     await service.handleTransactionsBetweenNowAndAfterThreeMinutes();
 
     expect(service.updateTransactions).toHaveBeenCalled();
-    expect(service.getValidStartNowMinus180Seconds).toHaveBeenCalled();
+    expect(service.getThreeMinutesBefore).toHaveBeenCalled();
     expect(service.getThreeMinutesLater).toHaveBeenCalled();
   });
 
@@ -252,7 +252,7 @@ describe('TransactionStatusService', () => {
     ];
 
     jest.spyOn(service, 'updateTransactions').mockResolvedValueOnce(transactions as Transaction[]);
-    jest.spyOn(service, 'getValidStartNowMinus180Seconds').mockImplementationOnce(jest.fn());
+    jest.spyOn(service, 'getThreeMinutesBefore').mockImplementationOnce(jest.fn());
     jest.spyOn(service, 'prepareTransactions').mockImplementationOnce(jest.fn());
 
     await service.handleTransactionsBetweenNowAndAfterThreeMinutes();
