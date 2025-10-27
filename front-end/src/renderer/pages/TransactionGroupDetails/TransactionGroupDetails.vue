@@ -54,7 +54,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
-import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import useContactsStore from '@renderer/stores/storeContacts.ts';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
@@ -93,6 +93,9 @@ const ws = useDisposableWs();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 const createTooltips = useCreateTooltips();
+
+/* Injected */
+const accountByIdCache = AccountByIdCache.inject()
 
 /* State */
 const group = ref<IGroup | null>(null);
@@ -173,7 +176,6 @@ async function handleFetchGroup(id: string | number) {
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
     try {
       const updatedUnsignedSignersToCheck: Record<number, string[]> = {};
-      const accountInfoCache = new AccountInfoCache();
 
       group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
       isVersionMismatch.value = false;
@@ -200,7 +202,7 @@ async function handleFetchGroup(id: string | number) {
             tx,
             user.selectedOrganization.userKeys,
             network.mirrorNodeBaseURL,
-            accountInfoCache,
+            accountByIdCache,
           );
 
           if (
@@ -275,7 +277,7 @@ const handleSignGroupItem = async (groupItem: IGroupItem) => {
       transaction,
       user.selectedOrganization.userKeys,
       network.mirrorNodeBaseURL,
-      new AccountInfoCache(),
+      accountByIdCache,
     );
     const item: SignatureItem = {
       publicKeys: publicKeysRequired,
@@ -371,7 +373,6 @@ const handleSignAll = async (showModal = false) => {
     loadingStates[sign] = 'Signing...'
     const items: SignatureItem[] = [];
     if (group.value != undefined) {
-      const accountInfoCache = new AccountInfoCache();
       for (const groupItem of group.value.groupItems) {
         const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
         const transaction = Transaction.fromBytes(transactionBytes);
@@ -385,7 +386,7 @@ const handleSignAll = async (showModal = false) => {
           transaction,
           user.selectedOrganization.userKeys,
           network.mirrorNodeBaseURL,
-          accountInfoCache,
+          accountByIdCache,
         );
         const item: SignatureItem = {
           publicKeys: publicKeysRequired,

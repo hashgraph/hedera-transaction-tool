@@ -4,7 +4,7 @@ import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import TransactionFactory from './transaction-factory';
 import { flattenKeyList } from '../../services/keyPairService';
-import type { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
+import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 
 export * from './account-create-transaction.model';
 export * from './account-update-transaction.model';
@@ -24,7 +24,7 @@ export const COUNCIL_ACCOUNTS = ['0.0.2', '0.0.50', '0.0.55'];
 export const computeSignatureKey = async (
   transaction: SDKTransaction,
   mirrorNodeLink: string,
-  accountInfoCache: AccountInfoCache,
+  accountInfoCache: AccountByIdCache,
 ) => {
   const transactionModel = TransactionFactory.fromTransaction(transaction);
 
@@ -36,7 +36,7 @@ export const usersPublicRequiredToSign = async (
   transaction: SDKTransaction,
   userKeys: IUserKey[],
   mirrorNodeLink: string,
-  accountInfoCache: AccountInfoCache,
+  accountInfoCache: AccountByIdCache,
 ): Promise<string[]> => {
   const publicKeysRequired: Set<string> = new Set<string>();
 
