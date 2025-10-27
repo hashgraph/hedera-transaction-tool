@@ -1,4 +1,5 @@
 export abstract class EntityCache<K extends string | number, E> {
+  public static readonly FRESH_DURATION = 500; // ms
   private readonly records = new Map<string, EntityRecord<E>>();
 
   //
@@ -6,7 +7,6 @@ export abstract class EntityCache<K extends string | number, E> {
   //
 
   public constructor(
-    public readonly freshDuration: number = 500, // ms
     public readonly youngDuration: number = 60000, // ms
   ) {}
 
@@ -16,14 +16,14 @@ export abstract class EntityCache<K extends string | number, E> {
     const recordKey = this.makeRecordKey(key, mirrorNodeUrl);
     const currentRecord = this.records.get(recordKey);
     if (currentRecord && currentRecord.isFresh(forceLoad, this)) {
-      console.log(this.constructor.name + " hit for " + key);
+      // console.log(this.constructor.name + ' hit for ' + key);
       result = currentRecord.promise;
     } else {
-      if (currentRecord) {
-        console.log(this.constructor.name + " reload for " + key);
-      } else {
-        console.log(this.constructor.name + " miss for " + key);
-      }
+      // if (currentRecord) {
+      //   console.log(this.constructor.name + ' reload for ' + key);
+      // } else {
+      //   console.log(this.constructor.name + ' miss for ' + key);
+      // }
       const newPromise = this.load(key, mirrorNodeUrl);
       this.mutate(key, mirrorNodeUrl, newPromise);
       result = newPromise;
@@ -85,9 +85,9 @@ class EntityRecord<E> {
   isFresh(forceLoad: boolean, cache: EntityCache<any, E>): boolean {
     let result: boolean;
     if (forceLoad) {
-      result = this.age() < cache.freshDuration; // ms
+      result = this.age() < EntityCache.FRESH_DURATION; // ms
     } else {
-      result = this.age() < cache.freshDuration + cache.youngDuration; // ms
+      result = this.age() < EntityCache.FRESH_DURATION + cache.youngDuration; // ms
     }
     return result;
   }
