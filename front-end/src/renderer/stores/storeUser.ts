@@ -23,7 +23,7 @@ import { safeAwait } from '@renderer/utils';
 import * as ush from '@renderer/utils/userStoreHelpers';
 
 import useNetworkStore from './storeNetwork';
-import { AccountByPublicKeyCache } from '@renderer/cache/AccountByPublicKeyCache.ts';
+import { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
 
 const useUserStore = defineStore('user', () => {
   /* Stores */

@@ -48,7 +48,7 @@ import { get as getStoredMnemonics } from '@renderer/services/mnemonicService';
 import { safeAwait } from './safeAwait';
 import { getErrorMessage, throwError } from '.';
 import * as pks from '@renderer/services/publicKeyMappingService';
-import type { AccountByPublicKeyCache } from '@renderer/cache/AccountByPublicKeyCache.ts';
+import type { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
 
 /* Flags */
 export function assertUserLoggedIn(user: PersonalUser | null): asserts user is LoggedInUser {
