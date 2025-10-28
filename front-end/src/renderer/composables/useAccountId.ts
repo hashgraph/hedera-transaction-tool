@@ -6,10 +6,11 @@ import { AccountId, Client, Hbar } from '@hashgraph/sdk';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { openExternal } from '@renderer/services/electronUtilsService';
-import { getAccountAllowances, getAccountInfo } from '@renderer/services/mirrorNodeDataService';
+import { getAccountAllowances } from '@renderer/services/mirrorNodeDataService';
 import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { stringifyHbar } from '@renderer/utils';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 
 export default function useAccountId() {
   /* Stores */
@@ -25,6 +26,9 @@ export default function useAccountId() {
 
   /* Computed */
   const isValid = computed(() => Boolean(accountInfo.value));
+
+  /* Injected */
+  const accountByIdCache = AccountByIdCache.inject();
 
   const accountIdFormatted = computed(() => {
     if (!isValid.value) {
@@ -76,10 +80,9 @@ export default function useAccountId() {
       AccountId.fromString(baseId);
 
       accountInfoController.value = new AbortController();
-      const accountInfoRes = await getAccountInfo(
+      const accountInfoRes = await accountByIdCache.lookup(
         baseId,
-        networkStore.mirrorNodeBaseURL,
-        accountInfoController.value,
+        networkStore.mirrorNodeBaseURL
       );
 
       allowancesController.value = new AbortController();

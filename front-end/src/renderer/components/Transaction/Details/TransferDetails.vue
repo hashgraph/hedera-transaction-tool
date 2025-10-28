@@ -11,7 +11,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { getAll } from '@renderer/services/accountsService';
 
 import { getAccountIdWithChecksum, isUserLoggedIn, stringifyHbar } from '@renderer/utils';
-import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -21,6 +21,9 @@ const props = defineProps<{
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+
+/* Injected */
+const accountByIdCache = AccountByIdCache.inject()
 
 /* State */
 const linkedAccounts = ref<HederaAccount[]>([]);
@@ -45,10 +48,9 @@ onBeforeMount(async () => {
     throw new Error('Transaction is not Transfer Transaction');
   }
 
-  const accountInfoCache = new AccountInfoCache();
   for (const transfer of props.transaction.hbarTransfersList) {
     if (transfer.amount.isNegative()) {
-      const accountInfo = await accountInfoCache.fetch(
+      const accountInfo = await accountByIdCache.lookup(
         transfer.accountId.toString(),
         network.mirrorNodeBaseURL,
       );

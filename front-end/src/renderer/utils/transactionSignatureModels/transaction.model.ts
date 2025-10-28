@@ -1,9 +1,9 @@
 import { AccountId, Key, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
-import { getNodeInfo } from '@renderer/services/mirrorNodeDataService';
 import { compareKeys } from '../sdk';
 import type { INodeInfoParsed } from '@shared/interfaces';
-import type { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
+import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 
 export abstract class TransactionBaseModel<T extends SDKTransaction> {
   constructor(protected transaction: T) {}
@@ -41,7 +41,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     return null;
   }
 
-  async computeSignatureKey(mirrorNodeLink: string, accountInfoCache: AccountInfoCache) {
+  async computeSignatureKey(mirrorNodeLink: string, accountInfoCache: AccountByIdCache, nodeInfoCache: NodeByIdCache) {
     const feePayerAccountId = this.getFeePayerAccountId();
     const accounts = this.getSigningAccounts();
     const receiverAccounts = this.getReceiverAccounts();
@@ -60,7 +60,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
 
     if (feePayerAccountId) {
       try {
-        const accountInfo = await accountInfoCache.fetch(
+        const accountInfo = await accountInfoCache.lookup(
           feePayerAccountId.toString(),
           mirrorNodeLink,
         );
@@ -77,7 +77,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     /* Get the keys of the account ids to the signature key list */
     for (const accountId of accounts) {
       try {
-        const accountInfo = await accountInfoCache.fetch(accountId, mirrorNodeLink);
+        const accountInfo = await accountInfoCache.lookup(accountId, mirrorNodeLink);
         if (accountInfo?.key && !hasKey(accountInfo.key)) {
           signatureKeys.push(accountInfo.key);
           accountsKeys[accountId] = accountInfo.key;
@@ -91,7 +91,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     /* Check if there are a receiver accounts that require signature, if so add them */
     for (const accountId of receiverAccounts) {
       try {
-        const accountInfo = await accountInfoCache.fetch(accountId, mirrorNodeLink);
+        const accountInfo = await accountInfoCache.lookup(accountId, mirrorNodeLink);
         if (accountInfo?.receiverSignatureRequired && accountInfo?.key && !hasKey(accountInfo.key)) {
           signatureKeys.push(accountInfo.key);
           receiverAccountsKeys[accountId] = accountInfo.key;
@@ -105,7 +105,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     /* Check if user has a key included in the node admin key */
     try {
       if (!Number.isNaN(nodeId) && nodeId !== null) {
-        const nodeInfo = await getNodeInfo(nodeId, mirrorNodeLink);
+        const nodeInfo = await nodeInfoCache.lookup(nodeId, mirrorNodeLink);
         const adminKey = nodeInfo?.admin_key;
         if (adminKey && !hasKey(adminKey)) {
           signatureKeys.push(adminKey);
@@ -122,7 +122,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
         //NOTE: this is different than node adminKey
         const nodeAccountId = nodeInfo ? this.getNodeAccountId(nodeInfo) : null;
         if (nodeAccountId) {
-          const nodeAccountInfo = await accountInfoCache.fetch(nodeAccountId, mirrorNodeLink);
+          const nodeAccountInfo = await accountInfoCache.lookup(nodeAccountId, mirrorNodeLink);
           const key = nodeAccountInfo?.key;
           if (key && !hasKey(key)) {
             signatureKeys.push(key);

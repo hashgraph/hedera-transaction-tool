@@ -8,7 +8,7 @@ import { Hbar, Key, KeyList, Transaction } from '@hashgraph/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 
 import { createTransferHbarTransaction, getTransferHbarData } from '@renderer/utils/sdk';
 
@@ -19,6 +19,9 @@ import useUserStore from '@renderer/stores/storeUser.ts';
 /* Stores */
 const network = useNetworkStore();
 const user = useUserStore();
+
+/* Injected */
+const accountByIdCache = AccountByIdCache.inject();
 
 /* State */
 const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
@@ -103,10 +106,9 @@ const anyTransfersExceedingBalance = computed(() => {
 /* Handlers */
 const handleDraftLoaded = async (transaction: Transaction) => {
   handleUpdateData(getTransferHbarData(transaction));
-  const accountInfoCache = new AccountInfoCache();
   for (const accountId of data.transfers.map(t => t.accountId.toString())) {
     if (!accountInfos.value[accountId]) {
-      const info = await accountInfoCache.fetch(accountId, network.mirrorNodeBaseURL);
+      const info = await accountByIdCache.lookup(accountId, network.mirrorNodeBaseURL);
       if (info) {
         accountInfos.value[accountId] = info;
       }

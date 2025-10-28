@@ -4,7 +4,7 @@ import { computed, ref, watch } from 'vue';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { getNodeInfo } from '@renderer/services/mirrorNodeDataService';
+import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 
 import useAccountId from './useAccountId';
 
@@ -14,6 +14,9 @@ export default function useNodeId() {
 
   /* Composables */
   const accountData = useAccountId();
+
+  /* Injected */
+  const nodeByIdCache = NodeByIdCache.inject();
 
   /* State */
   const nodeId = ref<number | null>(null);
@@ -39,7 +42,7 @@ export default function useNodeId() {
       }
 
       nodeInfoController.value = new AbortController();
-      const nodeInfoRes = await getNodeInfo(parsedNodeId, networkStore.mirrorNodeBaseURL);
+      const nodeInfoRes = await nodeByIdCache.lookup(parsedNodeId, networkStore.mirrorNodeBaseURL, true);
 
       nodeInfo.value = nodeInfoRes;
 

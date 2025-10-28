@@ -44,7 +44,8 @@ import BaseDraftLoad from '@renderer/components/Transaction/Create/BaseTransacti
 import BaseGroupHandler from '@renderer/components/Transaction/Create/BaseTransaction/BaseGroupHandler.vue';
 import BaseApproversObserverData from '@renderer/components/Transaction/Create/BaseTransaction/BaseApproversObserverData.vue';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
-import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 
 /* Props */
 const { createTransaction, preCreateAssert, customRequest } = defineProps<{
@@ -72,6 +73,10 @@ const toast = useToast();
 const router = useRouter();
 const payerData = useAccountId();
 const withLoader = useLoader();
+
+/* Injected */
+const accountByIdCache = AccountByIdCache.inject();
+const nodeByIdCache = NodeByIdCache.inject();
 
 /* State */
 const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
@@ -254,7 +259,8 @@ async function updateTransactionKey() {
   const computedKeys = await computeSignatureKey(
     transaction.value,
     network.mirrorNodeBaseURL,
-    new AccountInfoCache(),
+    accountByIdCache,
+    nodeByIdCache
   );
   transactionKey.value = new KeyList(computedKeys.signatureKeys);
 }
