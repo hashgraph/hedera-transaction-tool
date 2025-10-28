@@ -149,7 +149,7 @@ test.describe('Organization Group Tx tests', () => {
 
   test('Verify user can cancel all items in a transaction group', async () => {
     test.slow();
-    await groupPage.addOrgAllowanceTransactionToGroup(2, complexKeyAccountId, '10');
+    await groupPage.addSingleTransactionToGroup(2);
 
     await groupPage.clickOnSignAndExecuteButton();
     await groupPage.clickOnConfirmGroupTransactionButton();
