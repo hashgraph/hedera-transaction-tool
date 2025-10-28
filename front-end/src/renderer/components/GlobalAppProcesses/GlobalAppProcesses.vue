@@ -47,12 +47,12 @@ const handleImportantModalReady = async () => {
 const handleBeginMigrationReadyState = async () => {
   await withLoader(tryAutoLogin);
 
+  await user.refetchOrganizations();
   const redirect = await redirectIfRequiredKeysToMigrate();
   if (!redirect) {
     await withLoader(selectDefaultOrganization);
   }
 
-  await user.refetchOrganizations();
   await setupStores();
 };
 
