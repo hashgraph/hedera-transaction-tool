@@ -161,9 +161,19 @@ test.describe('Organization Group Tx tests', () => {
     expect(await groupPage.isEmptyTransactionTextVisible()).toBe(true);
   });
 
+  test(`Verify user can import csv with 5 transactions`, async () => {
+    test.slow();
+    const isAllTransactionsSuccessful = await executeGroupFromCsvFile(5, false)
+    expect(isAllTransactionsSuccessful).toBe(true);
+  });
+
   test(`Verify user can import csv with 100 transactions`, async () => {
     test.slow();
-    const numberOfTransactions = 100;
+    const isAllTransactionsSuccessful = await executeGroupFromCsvFile(100, true)
+    expect(isAllTransactionsSuccessful).toBe(true);
+  });
+
+  const executeGroupFromCsvFile = async (numberOfTransactions, signAll) => {
     await groupPage.fillDescription('test');
     await groupPage.generateAndImportCsvFile(complexKeyAccountId, newAccountId, numberOfTransactions,);
     const message = await groupPage.getToastMessage();
@@ -176,16 +186,10 @@ test.describe('Organization Group Tx tests', () => {
     await loginPage.waitForToastToDisappear();
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
-    await groupPage.logInAndSignGroupTransactionsByAllUsers(globalCredentials.password, numberOfTransactions > 10);
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
-    const isAllTransactionsSuccessful =
-      await groupPage.verifyAllTransactionsAreSuccessful(timestamps);
-    expect(isAllTransactionsSuccessful).toBe(true);
-  });
+    await groupPage.logInAndSignGroupTransactionsByAllUsers(globalCredentials.password, signAll);
+    await organizationPage.signInOrganization(firstUser.email, firstUser.password, globalCredentials.password);
+    return groupPage.verifyAllTransactionsAreSuccessful(timestamps);
+  }
 
   test('Verify import fails if sender account does not exist on network', async () => {
     test.slow();
