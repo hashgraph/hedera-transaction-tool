@@ -218,7 +218,7 @@ describe('SignaturesService', () => {
         user,
       );
 
-      expect(dataSource.manager.update).toHaveBeenCalledWith(
+      expect(queryRunner.manager.update).toHaveBeenCalledWith(
         Transaction,
         { id: transactionId },
         expect.anything(),
@@ -274,7 +274,7 @@ describe('SignaturesService', () => {
         user,
       );
 
-      expect(dataSource.manager.update).not.toHaveBeenCalled();
+      expect(queryRunner.manager.update).not.toHaveBeenCalled();
       expect(signersRepo.create).toHaveBeenCalledWith({
         user,
         transaction,
@@ -318,7 +318,8 @@ describe('SignaturesService', () => {
       }
 
       dataSource.manager.findOneBy
-        .mockResolvedValueOnce(transaction)
+        .mockResolvedValueOnce(transaction);
+      dataSource.manager.findOne
         .mockResolvedValueOnce(signer);
       jest.mocked(isExpired).mockReturnValue(false);
       jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
@@ -332,7 +333,7 @@ describe('SignaturesService', () => {
         user,
       );
 
-      expect(dataSource.manager.update).toHaveBeenCalledWith(
+      expect(queryRunner.manager.update).toHaveBeenCalledWith(
         Transaction,
         { id: transactionId },
         expect.anything(),
@@ -376,7 +377,8 @@ describe('SignaturesService', () => {
       }
 
       dataSource.manager.findOneBy
-        .mockResolvedValueOnce(transaction)
+        .mockResolvedValueOnce(transaction);
+      dataSource.manager.findOne
         .mockResolvedValueOnce(signer);
       jest.mocked(isExpired).mockReturnValue(false);
       jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
@@ -390,7 +392,7 @@ describe('SignaturesService', () => {
         user,
       );
 
-      expect(dataSource.manager.update).not.toHaveBeenCalled();
+      expect(queryRunner.manager.update).not.toHaveBeenCalled();
       expect(signersRepo.create).not.toHaveBeenCalled();
       expect(emitUpdateTransactionStatus).not.toHaveBeenCalled();
       expect(notifyTransactionAction).not.toHaveBeenCalled();
@@ -518,10 +520,10 @@ describe('SignaturesService', () => {
       jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([publicKeyId]);
 
-      dataSource.manager.update.mockRejectedValueOnce(new Error());
-
-      const queryRunner = mock<QueryRunner>();
+      const queryRunner = mockDeep<QueryRunner>();
       dataSource.createQueryRunner.mockReturnValueOnce(queryRunner);
+
+      queryRunner.manager.update.mockRejectedValueOnce(new Error());
 
       await expect(
         service.uploadSignatureMaps(

@@ -33,7 +33,7 @@ export class SignersService {
   ) {}
 
   /* Get the signature for the given signature id */
-  getSignatureById(id: number): Promise<TransactionSigner> {
+  getSignatureById(id: number): Promise<TransactionSigner | null> {
     if (!id) {
       return null;
     }
@@ -128,7 +128,12 @@ export class SignersService {
         const userKey = user.keys.find(key => key.publicKey === publicKey.toStringRaw());
         if (!userKey) throw new BadRequestException(ErrorCodes.PNY);
 
-        const transactionSigner = await this.dataSource.manager.findOneBy(TransactionSigner, { id, userKeyId: userKey.id });
+        const transactionSigner = await this.dataSource.manager.findOne(TransactionSigner, {
+          where: {
+            transactionId: id,
+            userKeyId: userKey.id,
+          },
+        });
         sdkTransaction = sdkTransaction.addSignature(publicKey, map);
         if (!transactionSigner) {
           userKeys.push(userKey);
@@ -144,7 +149,7 @@ export class SignersService {
 
       try {
         if (!isSameBytes) {
-          await this.dataSource.manager.update(
+          await queryRunner.manager.update(
             Transaction,
             { id },
             {
@@ -164,11 +169,11 @@ export class SignersService {
         }
         /* Commit the database transaction */
         await queryRunner.commitTransaction();
-        await queryRunner.release();
       } catch {
         await queryRunner.rollbackTransaction();
-        await queryRunner.release();
         throw new BadRequestException(ErrorCodes.FST);
+      } finally {
+        await queryRunner.release();
       }
 
       //If no change, don't emit events

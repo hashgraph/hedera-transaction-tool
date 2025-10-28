@@ -181,7 +181,7 @@ export class ReceiverService {
 
     /* Fan out deletion message */
     if (notificationReceiversToDelete.length > 0) {
-      this.fanOutIndicatorsDelete(notificationReceiversToDelete);
+      await this.fanOutIndicatorsDelete(notificationReceiversToDelete);
     }
 
     /* Notify if new indicator */
@@ -256,7 +256,7 @@ export class ReceiverService {
   }
 
   /* Fan out deletion message */
-  private fanOutIndicatorsDelete(notificationReceivers: NotificationReceiver[]) {
+  private async fanOutIndicatorsDelete(notificationReceivers: NotificationReceiver[]) {
     if (!Array.isArray(notificationReceivers) || notificationReceivers.length === 0) return;
 
     const userIdToNotificationReceiversId: {
@@ -268,7 +268,7 @@ export class ReceiverService {
       acc[nr.userId].push(nr.id);
       return acc;
     }, {});
-    this.fanOutService.fanOutIndicatorsDelete(userIdToNotificationReceiversId);
+    await this.fanOutService.fanOutIndicatorsDelete(userIdToNotificationReceiversId);
   }
 
   /* Create notification */

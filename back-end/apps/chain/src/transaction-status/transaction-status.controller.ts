@@ -1,7 +1,7 @@
 import { Controller } from '@nestjs/common';
-import { EventPattern, Payload } from '@nestjs/microservices';
+import { Ctx, EventPattern, Payload, RmqContext } from '@nestjs/microservices';
 
-import { UPDATE_TRANSACTION_STATUS, UpdateTransactionStatusDto } from '@app/common';
+import { Acked, UPDATE_TRANSACTION_STATUS, UpdateTransactionStatusDto } from '@app/common';
 
 import { TransactionStatusService } from './transaction-status.service';
 
@@ -10,7 +10,8 @@ export class TransactionStatusController {
   constructor(private readonly transactionStatusService: TransactionStatusService) {}
 
   @EventPattern(UPDATE_TRANSACTION_STATUS)
-  async updateTransactionStatus(@Payload() payload: UpdateTransactionStatusDto) {
-    return this.transactionStatusService.updateTransactionStatus(payload);
+  @Acked()
+  async updateTransactionStatus(@Payload() payload: UpdateTransactionStatusDto, @Ctx() context: RmqContext) {
+    await this.transactionStatusService.updateTransactionStatus(payload);
   }
 }
