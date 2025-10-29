@@ -123,6 +123,7 @@ test.describe('Organization Group Tx tests', () => {
     const secondTxId = await groupPage.getTransactionTimestamp(1);
     await groupPage.clickOnConfirmGroupTransactionButton();
     await groupPage.clickOnSignAllButton();
+    await groupPage.clickOnConfirmGroupActionButton()
     await loginPage.waitForToastToDisappear();
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
@@ -146,32 +147,49 @@ test.describe('Organization Group Tx tests', () => {
     expect(secondResult).toBe('SUCCESS');
   });
 
-  //This test (for the 5 transactions option) appears to be a bit flaky, but very rare.
-  [5, 100].forEach((numberOfTransactions) => {
-    test(`Verify user can import csv transactions with ${numberOfTransactions} transactions`, async () => {
-      test.slow();
-      await groupPage.fillDescription('test');
-      await groupPage.generateAndImportCsvFile(complexKeyAccountId, newAccountId,  numberOfTransactions);
-      const message = await groupPage.getToastMessage();
-      expect(message).toBe('Import complete');
-      await groupPage.clickOnSignAndExecuteButton();
-      await groupPage.clickOnConfirmGroupTransactionButton();
-      const timestamps = await groupPage.getAllTransactionTimestamps(numberOfTransactions);
-      await groupPage.clickOnSignAllButton();
-      await loginPage.waitForToastToDisappear();
-      await transactionPage.clickOnTransactionsMenuButton();
-      await organizationPage.logoutFromOrganization();
-      await groupPage.logInAndSignGroupTransactionsByAllUsers(globalCredentials.password, numberOfTransactions > 10);
-      await organizationPage.signInOrganization(
-        firstUser.email,
-        firstUser.password,
-        globalCredentials.password,
-      );
-      const isAllTransactionsSuccessful =
-        await groupPage.verifyAllTransactionsAreSuccessful(timestamps);
-      expect(isAllTransactionsSuccessful).toBe(true);
-    });
+  test('Verify user can cancel all items in a transaction group', async () => {
+    test.slow();
+    await groupPage.addSingleTransactionToGroup(2);
+
+    await groupPage.clickOnSignAndExecuteButton();
+    await groupPage.clickOnConfirmGroupTransactionButton();
+    await groupPage.clickOnCancelAllButton();
+    await groupPage.clickOnConfirmGroupActionButton()
+    await loginPage.waitForToastToDisappear();
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.clickOnReadyToSignTab()
+    expect(await groupPage.isEmptyTransactionTextVisible()).toBe(true);
   });
+
+  test(`Verify user can import csv with 5 transactions`, async () => {
+    test.slow();
+    const isAllTransactionsSuccessful = await executeGroupFromCsvFile(5, false)
+    expect(isAllTransactionsSuccessful).toBe(true);
+  });
+
+  test(`Verify user can import csv with 100 transactions`, async () => {
+    test.slow();
+    const isAllTransactionsSuccessful = await executeGroupFromCsvFile(100, true)
+    expect(isAllTransactionsSuccessful).toBe(true);
+  });
+
+  const executeGroupFromCsvFile = async (numberOfTransactions, signAll) => {
+    await groupPage.fillDescription('test');
+    await groupPage.generateAndImportCsvFile(complexKeyAccountId, newAccountId, numberOfTransactions,);
+    const message = await groupPage.getToastMessage();
+    expect(message).toBe('Import complete');
+    await groupPage.clickOnSignAndExecuteButton();
+    await groupPage.clickOnConfirmGroupTransactionButton();
+    const timestamps = await groupPage.getAllTransactionTimestamps(numberOfTransactions);
+    await groupPage.clickOnSignAllButton();
+    await groupPage.clickOnConfirmGroupActionButton()
+    await loginPage.waitForToastToDisappear();
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.logoutFromOrganization();
+    await groupPage.logInAndSignGroupTransactionsByAllUsers(globalCredentials.password, signAll);
+    await organizationPage.signInOrganization(firstUser.email, firstUser.password, globalCredentials.password);
+    return groupPage.verifyAllTransactionsAreSuccessful(timestamps);
+  }
 
   test('Verify import fails if sender account does not exist on network', async () => {
     test.slow();

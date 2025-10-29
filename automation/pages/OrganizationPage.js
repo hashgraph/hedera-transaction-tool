@@ -85,8 +85,16 @@ class OrganizationPage extends BasePage {
   hoursOverlayButtonSelector = 'button[data-test-id="hours-toggle-overlay-btn-0"]';
   signTransactionButtonSelector = 'button-sign-org-transaction';
   nextTransactionButtonSelector = 'button-next-org-transaction';
-  signAllTransactionsButtonSelector = 'button-sign-all-tx';
   cancelAddingOrganizationButtonSelector = 'button-cancel-adding-org';
+
+
+  rejectAllTransactionsButtonSelector = 'button-reject-group';
+  approveAllTransactionsButtonSelector = 'button-approve-group';
+  signAllTransactionsButtonSelector = 'button-sign-group';
+  cancelAllTransactionsButtonSelector = 'button-cancel-group';
+  exportAllTransactionsButtonSelector = 'button-export-group';
+  confirmGroupActionButtonSelector = 'button-confirm-group-action';
+  cancelGroupActionButtonSelector = 'button-cancel-group-action';
 
   // Inputs
   organizationNicknameInputSelector = 'input-organization-nickname';
@@ -1125,6 +1133,7 @@ class OrganizationPage extends BasePage {
       txId = txIdArray[txIdArray.length - 1]; // Get the last item in the array
       validStart = validStartArray[0];
       await this.clickOnSignAllTransactionsButton();
+      await this.clickOnConfirmGroupActionButton();
     } else {
       // Standard transaction processing
       ({ txId, validStart } = await this.processTransaction(isSignRequiredFromCreator));
@@ -1238,6 +1247,10 @@ class OrganizationPage extends BasePage {
 
   async clickOnSignAllTransactionsButton() {
     await this.click(this.signAllTransactionsButtonSelector);
+  }
+
+  async clickOnConfirmGroupActionButton() {
+    await this.click(this.confirmGroupActionButtonSelector);
   }
 
   async getReadyForSignTransactionIdByIndex(index) {
