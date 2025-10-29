@@ -1133,6 +1133,7 @@ class OrganizationPage extends BasePage {
       txId = txIdArray[txIdArray.length - 1]; // Get the last item in the array
       validStart = validStartArray[0];
       await this.clickOnSignAllTransactionsButton();
+      await this.clickOnConfirmGroupActionButton();
     } else {
       // Standard transaction processing
       ({ txId, validStart } = await this.processTransaction(isSignRequiredFromCreator));
@@ -1246,6 +1247,10 @@ class OrganizationPage extends BasePage {
 
   async clickOnSignAllTransactionsButton() {
     await this.click(this.signAllTransactionsButtonSelector);
+  }
+
+  async clickOnConfirmGroupActionButton() {
+    await this.click(this.confirmGroupActionButtonSelector);
   }
 
   async getReadyForSignTransactionIdByIndex(index) {

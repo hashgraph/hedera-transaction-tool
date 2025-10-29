@@ -305,7 +305,7 @@ class GroupPage extends BasePage {
   }
 
   async clickOnSignAllButton() {
-    await this.click(this.organizationPage.signAllTransactionsButtonSelector);
+    await this.organizationPage.clickOnSignAllTransactionsButton();
   }
 
   async clickOnCancelAllButton() {
@@ -313,7 +313,7 @@ class GroupPage extends BasePage {
   }
 
   async clickOnConfirmGroupActionButton() {
-    await this.click(this.organizationPage.confirmGroupActionButtonSelector);
+    await this.organizationPage.clickOnConfirmGroupActionButton();
   }
 }
 

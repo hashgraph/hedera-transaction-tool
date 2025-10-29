@@ -26,7 +26,7 @@ import {
 } from '@entities';
 
 import { TransactionStatusService } from './transaction-status.service';
-import { ExecuteService } from '../execute/execute.service';
+import { ExecuteService } from '../execute';
 import {
   AccountCreateTransaction,
   AccountId,
@@ -670,7 +670,14 @@ describe('TransactionStatusService', () => {
     beforeEach(async () => {
       jest.setTimeout(10_000);
       jest.resetAllMocks();
-      const validStart = new Date(Date.now());
+
+      //Fix the System time so that the Date.now() calls in collateGroupAndExecute use this
+      //same time. This will allow tests to not be flaky due to time issues.
+      const fixedNow = Date.now();
+      jest.useFakeTimers();
+      jest.setSystemTime(fixedNow);
+
+      const validStart = new Date(fixedNow);
       for (let i = 0; i < 10; i++) {
         const transaction = new AccountCreateTransaction()
           .setNodeAccountIds([new AccountId(3)])
@@ -709,7 +716,6 @@ describe('TransactionStatusService', () => {
       timeToValidStart =
         mockTransactionGroup.groupItems[0].transaction.validStart.getTime() - Date.now();
 
-      jest.useFakeTimers();
       jest.spyOn(global, 'setTimeout');
       jest.spyOn(schedulerRegistry, 'doesExist').mockReturnValue(false);
       jest.spyOn(schedulerRegistry, 'addTimeout');
@@ -934,7 +940,14 @@ describe('TransactionStatusService', () => {
 
     beforeEach(async () => {
       jest.resetAllMocks();
-      const validStart = new Date(Date.now() + 1000);
+
+      //Fix the System time so that the Date.now() calls in collateAndExecute use this
+      //same time. This will allow tests to not be flaky due to time issues.
+      const fixedNow = Date.now();
+      jest.useFakeTimers();
+      jest.setSystemTime(fixedNow);
+
+      const validStart = new Date(fixedNow + 1000);
       transaction = new AccountCreateTransaction()
         .setNodeAccountIds([new AccountId(3)])
         .setTransactionId(
@@ -951,7 +964,6 @@ describe('TransactionStatusService', () => {
 
       timeToValidStart = mockTransaction.validStart.getTime() - Date.now();
 
-      jest.useFakeTimers();
       jest.spyOn(global, 'setTimeout');
       jest.spyOn(schedulerRegistry, 'doesExist').mockReturnValue(false);
       jest.spyOn(schedulerRegistry, 'addTimeout');
@@ -1064,7 +1076,6 @@ describe('TransactionStatusService', () => {
   });
 
   describe('addGroupExecutionTimeout', () => {
-    const transactions: SDKTransaction[] = [];
     let mockTransactionGroup: TransactionGroup;
     let name: string;
     let timeToValidStart: number;
@@ -1072,19 +1083,6 @@ describe('TransactionStatusService', () => {
     beforeEach(async () => {
       jest.resetAllMocks();
       const validStart = new Date(Date.now());
-      for (let i = 0; i < 10; i++) {
-        const transaction = new AccountCreateTransaction()
-          .setNodeAccountIds([new AccountId(3)])
-          .setTransactionId(
-            TransactionId.withValidStart(
-              new AccountId(3),
-              Timestamp.fromDate(new Date(validStart.getTime() + i * 1000)),
-            ),
-          )
-          .setTransactionMemo('Test Transaction')
-          .freeze();
-        transactions.push(transaction);
-      }
       mockTransactionGroup = {
         id: 1,
         description: 'Test Group',
