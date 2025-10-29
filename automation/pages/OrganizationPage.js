@@ -85,7 +85,8 @@ class OrganizationPage extends BasePage {
   hoursOverlayButtonSelector = 'button[data-test-id="hours-toggle-overlay-btn-0"]';
   signTransactionButtonSelector = 'button-sign-org-transaction';
   nextTransactionButtonSelector = 'button-next-org-transaction';
-  signAllTransactionsButtonSelector = 'button-sign-all-tx';
+  signAllTransactionsButtonSelector = 'button-sign-group';
+  confirmSignAllTransactionsButtonSelector = 'button-confirm-sign-all';
   cancelAddingOrganizationButtonSelector = 'button-cancel-adding-org';
 
   // Inputs
@@ -1238,6 +1239,7 @@ class OrganizationPage extends BasePage {
 
   async clickOnSignAllTransactionsButton() {
     await this.click(this.signAllTransactionsButtonSelector);
+    await this.click(this.confirmSignAllTransactionsButtonSelector);
   }
 
   async getReadyForSignTransactionIdByIndex(index) {

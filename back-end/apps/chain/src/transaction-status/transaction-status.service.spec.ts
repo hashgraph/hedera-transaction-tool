@@ -566,7 +566,7 @@ describe('TransactionStatusService', () => {
       expect(service.collateAndExecute).not.toHaveBeenCalled();
     });
 
-    it('should call collateGroupAndExecute for each transaction group with status WAITING_FOR_EXECUTION', async () => {
+    it('should call collateGroupAndExecute for each atomic or sequential transaction group with status WAITING_FOR_EXECUTION', async () => {
       const transactionGroups = [
         {
           id: 1,
@@ -574,6 +574,11 @@ describe('TransactionStatusService', () => {
           validStart: new Date(),
           groupItem: {
             groupId: 1,
+            group: {
+              id: 1,
+              atomic: false,
+              sequential: true,
+            }
           },
         } as Transaction,
         {
@@ -587,6 +592,24 @@ describe('TransactionStatusService', () => {
           validStart: new Date(),
           groupItem: {
             groupId: 2,
+            group: {
+              id: 2,
+              atomic: false,
+              sequential: true,
+            }
+          },
+        } as Transaction,
+        {
+          id: 4,
+          status: TransactionStatus.WAITING_FOR_EXECUTION,
+          validStart: new Date(),
+          groupItem: {
+            groupId: 3,
+            group: {
+              id: 3,
+              atomic: false,
+              sequential: false,
+            }
           },
         } as Transaction,
       ];
@@ -633,6 +656,11 @@ describe('TransactionStatusService', () => {
           validStart: new Date(),
           groupItem: {
             groupId: 1,
+            group: {
+              id: 1,
+              atomic: false,
+              sequential: true,
+            }
           },
         } as Transaction,
         {
@@ -641,6 +669,11 @@ describe('TransactionStatusService', () => {
           validStart: new Date(),
           groupItem: {
             groupId: 1,
+            group: {
+              id: 1,
+              atomic: false,
+              sequential: true,
+            }
           },
         } as Transaction,
       ];

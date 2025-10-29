@@ -901,7 +901,7 @@ function tooltipText(status: TransactionStatus): string {
                   >
                   <AppButton
                     color="primary"
-                    data-testid="button-confirm-change-password"
+                    data-testid="button-confirm-sign-all"
                     @click="confirmCallback && confirmCallback(false)"
                     >Confirm</AppButton
                   >

@@ -122,7 +122,7 @@ test.describe('Organization Group Tx tests', () => {
     const txId = await groupPage.getTransactionTimestamp(0);
     const secondTxId = await groupPage.getTransactionTimestamp(1);
     await groupPage.clickOnConfirmGroupTransactionButton();
-    await groupPage.clickOnSignAllButton();
+    await organizationPage.clickOnSignAllTransactionsButton();
     await loginPage.waitForToastToDisappear();
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
@@ -157,7 +157,7 @@ test.describe('Organization Group Tx tests', () => {
       await groupPage.clickOnSignAndExecuteButton();
       await groupPage.clickOnConfirmGroupTransactionButton();
       const timestamps = await groupPage.getAllTransactionTimestamps(numberOfTransactions);
-      await groupPage.clickOnSignAllButton();
+      await organizationPage.clickOnSignAllTransactionsButton();
       await loginPage.waitForToastToDisappear();
       await transactionPage.clickOnTransactionsMenuButton();
       await organizationPage.logoutFromOrganization();

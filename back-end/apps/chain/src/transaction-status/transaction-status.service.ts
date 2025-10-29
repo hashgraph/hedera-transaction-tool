@@ -140,6 +140,8 @@ export class TransactionStatusService {
 
   /* Checks if the signers are enough to sign the transactions and update their statuses */
   async updateTransactions(from: Date, to?: Date) {
+    //Get the transaction, creatorKey, groupItem, and group. We need the group info upfront
+    //in order to determine if the group needs to be processed together
     const transactions = await this.transactionRepo.find({
       where: {
         status: In([
@@ -150,7 +152,9 @@ export class TransactionStatusService {
       },
       relations: {
         creatorKey: true,
-        groupItem: true,
+        groupItem: {
+          group: true,
+        },
       },
       order: {
         validStart: 'ASC',
@@ -265,6 +269,8 @@ export class TransactionStatusService {
         if (transaction.groupItem && (transaction.groupItem.group.atomic || transaction.groupItem.group.sequential)) {
           if (!processedGroupIds.has(transaction.groupItem.groupId)) {
             processedGroupIds.add(transaction.groupItem.groupId);
+            // Now that we are sure this transaction group needs to be processed together, get it
+            // and being the processing
             const transactionGroup = await this.transactionGroupRepo.findOne({
               where: { id: transaction.groupItem.groupId },
               relations: {
