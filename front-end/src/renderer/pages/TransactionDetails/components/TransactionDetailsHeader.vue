@@ -204,8 +204,7 @@ const canExecute = computed(() => {
   return (
     status === TransactionStatus.WAITING_FOR_EXECUTION &&
     isManual &&
-    isCreator.value &&
-    transactionIsInProgress.value
+    isCreator.value
   );
 });
 
@@ -214,8 +213,7 @@ const canRemind = computed(() => {
 
   return (
     status === TransactionStatus.WAITING_FOR_SIGNATURES &&
-    isCreator.value &&
-    transactionIsInProgress.value
+    isCreator.value
   );
 });
 
