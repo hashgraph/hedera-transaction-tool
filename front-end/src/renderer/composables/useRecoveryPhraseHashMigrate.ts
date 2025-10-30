@@ -164,6 +164,7 @@ export default function useRecoveryPhraseHashMigrate() {
 
   return {
     getRequiredKeysToMigrate,
+    tryMigrateOrganizationKeys,
     getKeysToUpdateForRecoveryPhrase,
     redirectIfRequiredKeysToMigrate,
     updateKeyPairsHash,
