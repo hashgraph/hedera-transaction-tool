@@ -111,10 +111,10 @@ const handleOpenDeleteAllKeysModal = () => (isDeleteAllModalShown.value = true);
 const handleKeysDeleted = async () => {
   await user.refetchUserState();
   await user.refetchKeys();
-  user.refetchAccounts();
+  await user.refetchAccounts();
 
   if (user.shouldSetupAccount) {
-    router.push({ name: 'accountSetup' });
+    await router.push({ name: 'accountSetup' });
   }
 };
 
