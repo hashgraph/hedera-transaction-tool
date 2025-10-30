@@ -231,7 +231,7 @@ test.describe('Organization Transaction tests', () => {
     const { txId, validStart } = await organizationPage.updateAccount(
       complexKeyAccountId,
       'update',
-      3000,
+      10000,
       true,
     );
     await transactionPage.clickOnTransactionsMenuButton();
