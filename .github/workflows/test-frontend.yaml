@@ -23,7 +23,7 @@ concurrency:
 jobs:
   build:
     name: Build | Front-end
-    runs-on: transaction-tools-linux-medium
+    runs-on: ubuntu-latest 
 
     steps:
       - name: Harden Runner
