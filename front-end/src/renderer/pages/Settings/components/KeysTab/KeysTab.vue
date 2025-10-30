@@ -181,13 +181,13 @@ const handleRestoreMissingKey = (keyPair: { id: number; publicKey: string; index
   }
 };
 
-const handleAccountString = (publicKey: string) => {
+const handleAccountString = (publicKey: string): string | null => {
   const account = user.publicKeyToAccounts.find(acc => acc.publicKey === publicKey)?.accounts[0]
     ?.account;
   if (account) {
-    const idWithChecksum = getAccountIdWithChecksum(account);
-    return idWithChecksum;
+    return getAccountIdWithChecksum(account);
   }
+  return null;
 };
 
 /* Functions */
@@ -317,7 +317,7 @@ watch([selectedTab, selectedRecoveryPhrase], () => {
                     ].includes(network.network),
                   }"
                 >
-                  {{ handleAccountString(keyPair.public_key) }}
+                  {{ handleAccountString(keyPair.public_key) ?? 'N/A'}}
                 </span>
                 <span v-else>N/A</span>
               </td>
@@ -432,7 +432,7 @@ watch([selectedTab, selectedRecoveryPhrase], () => {
                       ].includes(network.network),
                     }"
                   >
-                    {{ handleAccountString(keyPair.publicKey) }}</span
+                    {{ handleAccountString(keyPair.publicKey) ?? 'N/A'}}</span
                   >
                   <span v-else>N/A</span>
                 </td>

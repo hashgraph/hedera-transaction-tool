@@ -3,7 +3,7 @@ import type { CreateTransactionFunc } from '@renderer/components/Transaction/Cre
 import type { FileAppendData } from '@renderer/utils/sdk';
 
 import { computed, onMounted, reactive, ref } from 'vue';
-import { Key, KeyList, Transaction } from '@hashgraph/sdk';
+import { Key, Transaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -45,12 +45,6 @@ const createDisabled = computed(
   () => (!isLoggedInOrganization(user.selectedOrganization) && !signatureKey.value) || !data.fileId,
 );
 
-const transactionKey = computed(() => {
-  const keys: Key[] = [];
-  signatureKey.value && keys.push(signatureKey.value);
-  return new KeyList(keys);
-});
-
 /* Handlers */
 const handleDraftLoaded = (transaction: Transaction) => {
   handleUpdateData(getFileAppendTransactionData(transaction));
@@ -84,7 +78,6 @@ onMounted(() => {
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
-    :transaction-base-key="transactionKey"
     @draft-loaded="handleDraftLoaded"
   >
     <FileAppendFormData

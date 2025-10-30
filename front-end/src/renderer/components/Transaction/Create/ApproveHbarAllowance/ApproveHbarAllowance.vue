@@ -4,7 +4,7 @@ import type { CreateTransactionFunc } from '@renderer/components/Transaction/Cre
 import type { ApproveHbarAllowanceData } from '@renderer/utils/sdk';
 
 import { computed, reactive, ref, watch } from 'vue';
-import { Hbar, Key, KeyList, Transaction } from '@hashgraph/sdk';
+import { Hbar, Transaction } from '@hashgraph/sdk';
 
 import useAccountId from '@renderer/composables/useAccountId';
 
@@ -41,12 +41,6 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
 
 const createDisabled = computed(() => !spenderData.key.value || !ownerData.key.value);
 
-const transactionKey = computed(() => {
-  const keys: Key[] = [];
-  ownerData.key.value && keys.push(ownerData.key.value);
-  return new KeyList(keys);
-});
-
 /* Handlers */
 const handleDraftLoaded = (transaction: Transaction) => {
   handleUpdateData(getApproveHbarAllowanceTransactionData(transaction));
@@ -82,7 +76,6 @@ watch(
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
-    :transaction-base-key="transactionKey"
     @draft-loaded="handleDraftLoaded"
   >
     <ApproveHbarAllowanceFormData

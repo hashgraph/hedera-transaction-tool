@@ -41,7 +41,7 @@ const restoredKey = ref<{ privateKey: string; publicKey: string; mnemonicHash: s
 );
 
 /* Handlers */
-const handleRestoreKey = async () => {
+const handleRestoreKey = async (): Promise<true | void> => {
   if (!user.recoveryPhrase) {
     throw new Error('Recovery phrase not found');
   }
