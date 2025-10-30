@@ -432,7 +432,7 @@ onBeforeRouteLeave(async to => {
 });
 </script>
 <template>
-  <div class="p-5" v-focus-first-input>
+  <div class="p-5">
     <div class="flex-column-100 overflow-hidden">
       <div class="d-flex align-items-center">
         <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">

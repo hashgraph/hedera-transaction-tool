@@ -183,7 +183,7 @@ onMounted(async () => {
 const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
-  <div class="flex-column-100 overflow-hidden" v-focus-first-input>
+  <div class="flex-column-100 overflow-hidden">
     <form @submit.prevent="handleSubmit" class="flex-column-100">
       <TransactionHeaderControls
         heading-text="Read File Query"

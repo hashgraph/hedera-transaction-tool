@@ -71,7 +71,7 @@ function handleOnBlur() {
 }
 </script>
 <template>
-  <div class="p-5" v-focus-first-input>
+  <div class="p-5">
     <AppButton
       color="primary"
       class="d-flex align-items-center justify-content-center"

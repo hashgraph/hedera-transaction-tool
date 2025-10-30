@@ -105,7 +105,7 @@ const handleSaveKey = async () => {
 </script>
 
 <template>
-  <form class="w-100" @submit.prevent="handleSaveKey" v-focus-first-input>
+  <form class="w-100" @submit.prevent="handleSaveKey">
     <h1 class="text-display text-bold text-center">Enter Key Nickname</h1>
     <p class="text-main mt-5 text-center">
       You can optionally enter a nickname for the private key generated at {{ index }} to reference
