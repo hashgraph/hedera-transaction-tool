@@ -30,16 +30,16 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
     });
 });
 
-// Start time is required if freeze type is FreezeOnly, FreezeUpgrade, or TelemetryUpgrade
-// FileId and FileHash are required if freeze type is PrepareUpgrade, FreezeUpgrade, or TelemetryUpgrade
+// Start time is required if freeze type is FreezeOnly, FreezeUpgrade, or TelemetryUpgrade (not yet supported)
+// FileId and FileHash are required if freeze type is PrepareUpgrade, FreezeUpgrade, or TelemetryUpgrade (not yet supported)
 const createDisabled = computed(() => {
   const missingFileInfo =
     !isAccountId(data.fileId) ||
     typeof data.fileHash !== 'string' ||
     data.fileHash.trim() === '';
 
-  const needsFileInfo = data.freezeType === 2 || data.freezeType === 3 || data.freezeType === 5;
-  const needsStartTimestamp = data.freezeType === 1 || data.freezeType === 3 || data.freezeType === 5;
+  const needsFileInfo = data.freezeType === 2 || data.freezeType === 3;
+  const needsStartTimestamp = data.freezeType === 1 || data.freezeType === 3;
 
   return (
     data.freezeType === -1 ||
