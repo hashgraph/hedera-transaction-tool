@@ -4,7 +4,7 @@ import type { CreateTransactionFunc } from '@renderer/components/Transaction/Cre
 import type { TransferHbarData } from '@renderer/utils/sdk';
 
 import { computed, reactive, ref, watch } from 'vue';
-import { Hbar, Key, KeyList, Transaction } from '@hashgraph/sdk';
+import { Hbar, Transaction } from '@hashgraph/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
@@ -49,29 +49,6 @@ const createDisabled = computed(() => {
     totalBalanceAdjustments.value === 0 ||
     (user.selectedOrganization === null && anyTransfersExceedingBalance.value)
   );
-});
-
-const transactionKey = computed(() => {
-  const keys: Key[] = [];
-  const addedKeysForAccountIds: string[] = [];
-  for (const transfer of data.transfers) {
-    if (!transfer.isApproved) {
-      const accountId = transfer.accountId.toString();
-
-      const key = accountInfos.value[accountId]?.key;
-      const receiverSigRequired = accountInfos.value[accountId]?.receiverSignatureRequired;
-
-      if (
-        key &&
-        !addedKeysForAccountIds.includes(accountId) &&
-        (transfer.amount.isNegative() || (!transfer.amount.isNegative() && receiverSigRequired))
-      ) {
-        keys.push(key);
-        addedKeysForAccountIds.push(accountId);
-      }
-    }
-  }
-  return new KeyList(keys);
 });
 
 const totalBalance = computed(() => {
@@ -149,7 +126,6 @@ watch(
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
-    :transaction-base-key="transactionKey"
     @draft-loaded="handleDraftLoaded"
   >
     <TransferHbarFormData

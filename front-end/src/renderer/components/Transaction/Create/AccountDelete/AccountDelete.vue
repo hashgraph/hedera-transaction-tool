@@ -4,7 +4,7 @@ import type { CreateTransactionFunc } from '@renderer/components/Transaction/Cre
 import type { AccountDeleteData } from '@renderer/utils/sdk';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { Key, KeyList, Transaction } from '@hashgraph/sdk';
+import { Transaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -54,18 +54,6 @@ const createDisabled = computed(() => {
     accountData.accountInfo.value?.deleted ||
     transferAccountData.accountInfo.value?.deleted
   );
-});
-
-const transactionKey = computed(() => {
-  const keys: Key[] = [];
-  accountData.key.value && keys.push(accountData.key.value);
-  if (
-    transferAccountData.accountInfo?.value?.receiverSignatureRequired &&
-    transferAccountData.key?.value
-  ) {
-    transferAccountData.key.value && keys.push(transferAccountData.key.value);
-  }
-  return new KeyList(keys);
 });
 
 /* Handlers */
@@ -132,7 +120,6 @@ watch(
 <template>
   <BaseTransaction
     ref="baseTransactionRef"
-    :transaction-base-key="transactionKey"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"

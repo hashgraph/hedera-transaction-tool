@@ -4,7 +4,7 @@ import type { CreateTransactionFunc } from '@renderer/components/Transaction/Cre
 import type { AccountUpdateData, AccountUpdateDataMultiple } from '@renderer/utils/sdk';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { AccountId, Key, KeyList, Transaction } from '@hashgraph/sdk';
+import { AccountId, Transaction } from '@hashgraph/sdk';
 
 import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
@@ -57,13 +57,6 @@ const createDisabled = computed(() => {
     (data.stakeType === 'Account' && !isAccountId(data.stakedAccountId)) ||
     (data.stakeType === 'Node' && data.stakedNodeId === null)
   );
-});
-
-const transactionKey = computed(() => {
-  const keys: Key[] = [];
-  accountData.key.value && keys.push(accountData.key.value);
-  data.ownerKey && keys.push(data.ownerKey);
-  return new KeyList(keys);
 });
 
 const customRequest = computed(() => {
@@ -149,7 +142,6 @@ watch(
 <template>
   <BaseTransaction
     ref="baseTransactionRef"
-    :transaction-base-key="transactionKey"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
