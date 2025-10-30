@@ -260,7 +260,7 @@ async function updateTransactionKey() {
     transaction.value,
     network.mirrorNodeBaseURL,
     accountByIdCache,
-    nodeByIdCache
+    nodeByIdCache,
   );
   transactionKey.value = new KeyList(computedKeys.signatureKeys);
 }
@@ -285,7 +285,7 @@ defineExpose({
 });
 </script>
 <template>
-  <div class="flex-column-100 overflow-hidden" v-focus-first-input>
+  <div class="flex-column-100 overflow-hidden">
     <form @submit.prevent="handleCreate" class="flex-column-100">
       <TransactionHeaderControls
         v-model:submit-manually="submitManually"

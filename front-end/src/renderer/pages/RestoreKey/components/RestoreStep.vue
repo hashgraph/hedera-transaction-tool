@@ -129,7 +129,7 @@ watch(index, () => (inputIndexInvalid.value = false));
 </script>
 
 <template>
-  <form class="w-100" @submit.prevent="handleRestoreKey" v-focus-first-input>
+  <form class="w-100" @submit.prevent="handleRestoreKey">
     <h1 class="text-display text-bold text-center">Provide Index of Key</h1>
     <p class="text-main mt-5 text-center">
       Enter the index of the private key you want to generate from the recovery phrase

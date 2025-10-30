@@ -83,7 +83,7 @@ export const updateNickname = async (keyPairId: string, nickname: string) =>
   }, 'Failed to update nickname');
 
 /* Update mnemonic hash of a key pair */
-export const updateMnemonicHash = async (keyPairId: string, mnemonicHash: string) =>
+export const updateMnemonicHash = async (keyPairId: string, mnemonicHash: string | null) =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.keyPairs.updateMnemonicHash(keyPairId, mnemonicHash);
   }, 'Failed to update recovery phrase hash');
