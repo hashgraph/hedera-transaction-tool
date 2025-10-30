@@ -17,6 +17,7 @@ export default function useDefaultOrganization() {
       const { data } = await safeAwait(getStoredClaim(user.personal.id, key));
       return data;
     }
+    return undefined;
   };
 
   const getSelected = async () => {

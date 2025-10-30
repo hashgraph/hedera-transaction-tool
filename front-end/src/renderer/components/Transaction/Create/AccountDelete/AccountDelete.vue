@@ -98,7 +98,7 @@ const handleExecuted = async () => {
 };
 
 /* Functions */
-const preCreateAssert = () => {
+const preCreateAssert = (): boolean | void => {
   if (!isAccountId(accountData.accountId.value) || !accountData.key.value) {
     throw Error('Invalid Account ID');
   }
