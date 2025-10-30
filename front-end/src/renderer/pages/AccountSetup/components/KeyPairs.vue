@@ -246,7 +246,7 @@ defineExpose({
 });
 </script>
 <template>
-  <div class="fill-remaining mt-5" v-focus-first-input>
+  <div class="fill-remaining mt-5">
     <div class="form-group mt-5">
       <label class="form-label">Nickname <span class="fw-normal">- Optional</span></label>
       <AppInput

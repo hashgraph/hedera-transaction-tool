@@ -154,7 +154,6 @@ watch(newPassword, pass => {
     v-if="
       (isUserLoggedIn(user.personal) && !user.personal.useKeychain) || user.selectedOrganization
     "
-    v-focus-first-input
   >
     <form class="w-50 p-4 border rounded" @submit.prevent="isConfirmModalShown = true">
       <h3 class="text-main">Password</h3>
