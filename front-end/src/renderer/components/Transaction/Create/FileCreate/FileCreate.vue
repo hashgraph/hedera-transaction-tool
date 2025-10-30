@@ -5,7 +5,7 @@ import type { CreateTransactionFunc } from '@renderer/components/Transaction/Cre
 import type { FileCreateData } from '@renderer/utils/sdk';
 
 import { computed, reactive, ref, watch } from 'vue';
-import { Key, KeyList, Transaction } from '@hashgraph/sdk';
+import { Transaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -55,12 +55,6 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
 });
 
 const createDisabled = computed(() => !data.ownerKey);
-
-const transactionKey = computed(() => {
-  const keys: Key[] = [];
-  data.ownerKey && keys.push(data.ownerKey);
-  return new KeyList(keys);
-});
 
 /* Handlers */
 const handleDraftLoaded = (transaction: Transaction) => {
@@ -134,7 +128,6 @@ watch(
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
-    :transaction-base-key="transactionKey"
     @draft-loaded="handleDraftLoaded"
     @executed:success="handleExecutedSuccess"
   >

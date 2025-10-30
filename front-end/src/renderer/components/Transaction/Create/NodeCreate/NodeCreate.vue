@@ -3,7 +3,7 @@ import type { CreateTransactionFunc } from '@renderer/components/Transaction/Cre
 import type { NodeData } from '@renderer/utils/sdk/createTransactions';
 
 import { computed, reactive, ref, watch } from 'vue';
-import { Key, KeyList, Transaction } from '@hashgraph/sdk';
+import { Transaction } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -47,12 +47,6 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
 
 const createDisabled = computed(() => {
   return !data.adminKey;
-});
-
-const transactionKey = computed(() => {
-  const keys: Key[] = [];
-  data.adminKey && keys.push(data.adminKey);
-  return new KeyList(keys);
 });
 
 /* Handlers */
@@ -110,7 +104,6 @@ watch(
     ref="baseTransactionRef"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
-    :transaction-base-key="transactionKey"
     :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"
     @draft-loaded="handleDraftLoaded"
