@@ -3,7 +3,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 
-import { In, Between, MoreThan, Repository, LessThanOrEqual } from 'typeorm';
+import { In, Between, MoreThan, Repository, LessThan } from 'typeorm';
 import { Status, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
@@ -42,7 +42,7 @@ export class TransactionStatusService {
   })
   async handleInitialTransactionStatusUpdate() {
     /* Valid start now minus 180 seconds */
-    const transactions = await this.updateTransactions(this.getValidStartNowMinus180Seconds());
+    const transactions = await this.updateTransactions(this.getThreeMinutesBefore());
 
     await this.prepareTransactions(transactions);
   }
@@ -87,13 +87,13 @@ export class TransactionStatusService {
     await this.updateTransactions(this.getThreeMinutesLater(), this.getTenMinutesLater());
   }
 
-  /* For transactions with valid start, started 3 minutes */
+  /* For transactions with valid start between currently valid and 3 minutes */
   @Cron(CronExpression.EVERY_10_SECONDS, {
     name: 'status_update_between_now_and_three_minutes',
   })
   async handleTransactionsBetweenNowAndAfterThreeMinutes() {
     const transactions = await this.updateTransactions(
-      this.getValidStartNowMinus180Seconds(),
+      this.getThreeMinutesBefore(),
       this.getThreeMinutesLater(),
     );
 
@@ -114,7 +114,7 @@ export class TransactionStatusService {
             TransactionStatus.WAITING_FOR_EXECUTION,
             TransactionStatus.WAITING_FOR_SIGNATURES,
           ]),
-          validStart: LessThanOrEqual(this.getValidStartExpired()),
+          validStart: LessThan(this.getThreeMinutesBefore()),
         },
         select: { id: true, mirrorNetwork: true },
       });
@@ -140,6 +140,8 @@ export class TransactionStatusService {
 
   /* Checks if the signers are enough to sign the transactions and update their statuses */
   async updateTransactions(from: Date, to?: Date) {
+    //Get the transaction, creatorKey, groupItem, and group. We need the group info upfront
+    //in order to determine if the group needs to be processed together
     const transactions = await this.transactionRepo.find({
       where: {
         status: In([
@@ -150,7 +152,9 @@ export class TransactionStatusService {
       },
       relations: {
         creatorKey: true,
-        groupItem: true,
+        groupItem: {
+          group: true,
+        },
       },
       order: {
         validStart: 'ASC',
@@ -262,9 +266,11 @@ export class TransactionStatusService {
       const waitingForExecution = transaction.status === TransactionStatus.WAITING_FOR_EXECUTION;
 
       if (waitingForExecution && this.isValidStartExecutable(transaction.validStart)) {
-        if (transaction.groupItem) {
+        if (transaction.groupItem && (transaction.groupItem.group.atomic || transaction.groupItem.group.sequential)) {
           if (!processedGroupIds.has(transaction.groupItem.groupId)) {
             processedGroupIds.add(transaction.groupItem.groupId);
+            // Now that we are sure this transaction group needs to be processed together, get it
+            // and being the processing
             const transactionGroup = await this.transactionGroupRepo.findOne({
               where: { id: transaction.groupItem.groupId },
               relations: {
@@ -462,16 +468,14 @@ export class TransactionStatusService {
     return new Date(Date.now() + 3 * 60 * 1_000);
   }
 
-  getValidStartNowMinus180Seconds() {
-    return new Date(new Date().getTime() - 180 * 1_000);
-  }
-
-  getValidStartExpired() {
-    return new Date(new Date().getTime() - 181 * 1_000);
+  getThreeMinutesBefore() {
+    return new Date(new Date().getTime() - 3 * 60 * 1_000);
   }
 
   isValidStartExecutable(validStart: Date) {
+    const threeMinutesBefore = this.getThreeMinutesBefore().getTime();
+    const now = Date.now();
     const time = validStart.getTime();
-    return time < Date.now() && time + 180 * 1_000 > Date.now();
+    return time >= threeMinutesBefore && time <= now;
   }
 }

@@ -130,12 +130,12 @@ describe('TransactionStatusService', () => {
     transactionRepo.find.mockResolvedValue(transactions);
 
     jest.spyOn(service, 'updateTransactions');
-    jest.spyOn(service, 'getValidStartNowMinus180Seconds');
+    jest.spyOn(service, 'getThreeMinutesBefore');
 
     await service.handleInitialTransactionStatusUpdate();
 
     expect(service.updateTransactions).toHaveBeenCalled();
-    expect(service.getValidStartNowMinus180Seconds).toHaveBeenCalled();
+    expect(service.getThreeMinutesBefore).toHaveBeenCalled();
   });
 
   it('should call prepareAndExecute for transactions that are waiting for execution in initial cron', async () => {
@@ -147,7 +147,7 @@ describe('TransactionStatusService', () => {
     ];
 
     jest.spyOn(service, 'updateTransactions').mockResolvedValueOnce(transactions as Transaction[]);
-    jest.spyOn(service, 'getValidStartNowMinus180Seconds').mockImplementationOnce(jest.fn());
+    jest.spyOn(service, 'getThreeMinutesBefore').mockImplementationOnce(jest.fn());
     jest.spyOn(service, 'prepareTransactions').mockImplementationOnce(jest.fn());
 
     await service.handleInitialTransactionStatusUpdate();
@@ -233,13 +233,13 @@ describe('TransactionStatusService', () => {
     transactionRepo.find.mockResolvedValue(transactions);
 
     jest.spyOn(service, 'updateTransactions');
-    jest.spyOn(service, 'getValidStartNowMinus180Seconds');
+    jest.spyOn(service, 'getThreeMinutesBefore');
     jest.spyOn(service, 'getThreeMinutesLater');
 
     await service.handleTransactionsBetweenNowAndAfterThreeMinutes();
 
     expect(service.updateTransactions).toHaveBeenCalled();
-    expect(service.getValidStartNowMinus180Seconds).toHaveBeenCalled();
+    expect(service.getThreeMinutesBefore).toHaveBeenCalled();
     expect(service.getThreeMinutesLater).toHaveBeenCalled();
   });
 
@@ -252,7 +252,7 @@ describe('TransactionStatusService', () => {
     ];
 
     jest.spyOn(service, 'updateTransactions').mockResolvedValueOnce(transactions as Transaction[]);
-    jest.spyOn(service, 'getValidStartNowMinus180Seconds').mockImplementationOnce(jest.fn());
+    jest.spyOn(service, 'getThreeMinutesBefore').mockImplementationOnce(jest.fn());
     jest.spyOn(service, 'prepareTransactions').mockImplementationOnce(jest.fn());
 
     await service.handleTransactionsBetweenNowAndAfterThreeMinutes();
@@ -573,7 +573,7 @@ describe('TransactionStatusService', () => {
       expect(service.collateAndExecute).not.toHaveBeenCalled();
     });
 
-    it('should call collateGroupAndExecute for each transaction group with status WAITING_FOR_EXECUTION', async () => {
+    it('should call collateGroupAndExecute for each atomic or sequential transaction group with status WAITING_FOR_EXECUTION', async () => {
       const transactionGroups = [
         {
           id: 1,
@@ -581,6 +581,11 @@ describe('TransactionStatusService', () => {
           validStart: new Date(),
           groupItem: {
             groupId: 1,
+            group: {
+              id: 1,
+              atomic: false,
+              sequential: true,
+            }
           },
         } as Transaction,
         {
@@ -594,6 +599,24 @@ describe('TransactionStatusService', () => {
           validStart: new Date(),
           groupItem: {
             groupId: 2,
+            group: {
+              id: 2,
+              atomic: false,
+              sequential: true,
+            }
+          },
+        } as Transaction,
+        {
+          id: 4,
+          status: TransactionStatus.WAITING_FOR_EXECUTION,
+          validStart: new Date(),
+          groupItem: {
+            groupId: 3,
+            group: {
+              id: 3,
+              atomic: false,
+              sequential: false,
+            }
           },
         } as Transaction,
       ];
@@ -640,6 +663,11 @@ describe('TransactionStatusService', () => {
           validStart: new Date(),
           groupItem: {
             groupId: 1,
+            group: {
+              id: 1,
+              atomic: false,
+              sequential: true,
+            }
           },
         } as Transaction,
         {
@@ -648,6 +676,11 @@ describe('TransactionStatusService', () => {
           validStart: new Date(),
           groupItem: {
             groupId: 1,
+            group: {
+              id: 1,
+              atomic: false,
+              sequential: true,
+            }
           },
         } as Transaction,
       ];
