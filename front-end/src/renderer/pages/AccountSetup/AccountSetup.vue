@@ -55,7 +55,7 @@ const handleBack = () => {
 
 const handleNext = async () => {
   const requiredParts = accountSetupRequiredParts(user.selectedOrganization, user.keyPairs);
-  if (requiredParts.length === 0) router.push({ name: 'transactions' });
+  if (requiredParts.length === 0) await router.push({ name: 'transactions' });
 
   step.value.previous = step.value.current;
   const currentIndex = stepperItems.value.findIndex(i => i.name === step.value.current);
@@ -112,7 +112,7 @@ onBeforeRouteLeave(async () => {
   try {
     await user.refetchUserState();
   } catch {
-    user.selectOrganization(null);
+    await user.selectOrganization(null);
   }
 
   if (isLoggedInOrganization(user.selectedOrganization) && isUserLoggedIn(user.personal)) {

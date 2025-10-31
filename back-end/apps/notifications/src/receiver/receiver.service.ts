@@ -234,7 +234,7 @@ export class ReceiverService {
       }
 
       /* Fan out deletion message */
-      this.fanOutIndicatorsDelete(notificationReceiversToDelete);
+      await this.fanOutIndicatorsDelete(notificationReceiversToDelete);
     } catch (error) {
       console.log(error);
     }
