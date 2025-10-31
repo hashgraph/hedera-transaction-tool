@@ -208,7 +208,7 @@ async function fetchDrafts() {
     totalItems.value = await getGroupsCount(user.personal.id);
     groups.value = await getGroups(createFindGroupArgs());
     list.value = [...drafts.value, ...groups.value];
-    handleSort(sortField.value, sortDirection.value);
+    await handleSort(sortField.value, sortDirection.value);
   } finally {
     isLoading.value = false;
   }

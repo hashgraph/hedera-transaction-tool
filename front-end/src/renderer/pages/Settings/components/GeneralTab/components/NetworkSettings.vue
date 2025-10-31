@@ -76,12 +76,12 @@ const handleMirrorNodeBaseURLChange = async () => {
   const value = mirrorNodeInputRef.value.inputRef.value;
 
   if (!value.trim()) {
-    forceSetMirrorNodeBaseURL(mirrorNodeBaseURL.value);
+    await forceSetMirrorNodeBaseURL(mirrorNodeBaseURL.value);
     return;
   }
 
   mirrorNodeBaseURL.value = formatMirrorNodeBaseURL(value);
-  forceSetMirrorNodeBaseURL(mirrorNodeBaseURL.value);
+  await forceSetMirrorNodeBaseURL(mirrorNodeBaseURL.value);
   // Now that it has been updated locally, check if we need to update the network
   if (mirrorNodeBaseURL.value === networkStore.network) return;
   await handleNetworkChange(mirrorNodeBaseURL.value);

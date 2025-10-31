@@ -103,7 +103,7 @@ async function end() {
   await user.refetchKeys();
   await user.refetchAccounts();
   await user.refetchUserState();
-  safeAwait(contacts.fetch());
+  await safeAwait(contacts.fetch());
 }
 
 function reset() {

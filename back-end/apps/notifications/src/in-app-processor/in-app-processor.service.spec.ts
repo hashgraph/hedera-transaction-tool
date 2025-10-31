@@ -132,7 +132,7 @@ describe('In App Processor Service', () => {
         notificationReceivers: [],
       };
 
-      service.processNewNotification(notification, []);
+      await service.processNewNotification(notification, []);
 
       expect(websocketGateway.notifyUser).not.toHaveBeenCalled();
     });

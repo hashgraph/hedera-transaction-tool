@@ -403,7 +403,7 @@ export class TransactionsService {
 
     if (dto.reminderMillisecondsBefore) {
       const remindAt = new Date(transaction.validStart.getTime() - dto.reminderMillisecondsBefore);
-      this.schedulerService.addReminder(getTransactionSignReminderKey(transaction.id), remindAt);
+      await this.schedulerService.addReminder(getTransactionSignReminderKey(transaction.id), remindAt);
     }
     notifyWaitingForSignatures(this.notificationsService, transaction.id, {
       transactionId: transaction.transactionId,
