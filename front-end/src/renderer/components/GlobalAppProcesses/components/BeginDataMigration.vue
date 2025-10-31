@@ -18,7 +18,6 @@ const show = ref(false);
 /* Emits */
 const emit = defineEmits<{
   (event: 'ready'): void;
-  (event: 'ready:not'): void;
   (event: 'migrate:start'): void;
 }>();
 
@@ -47,7 +46,6 @@ const checkShouldChoose = async () => {
 
 const initialize = async () => {
   show.value = await checkShouldChoose();
-  if (show.value) emit('ready:not');
   if (!show.value) emit('ready');
 };
 
