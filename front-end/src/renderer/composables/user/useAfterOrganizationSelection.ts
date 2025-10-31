@@ -94,7 +94,7 @@ export default function useAfterOrganizationSelection() {
     await handleNavigation();
 
     setupStores();
-    user.refetchAccounts();
+    await user.refetchAccounts();
   };
 
   return afterOrganizationSelection;
