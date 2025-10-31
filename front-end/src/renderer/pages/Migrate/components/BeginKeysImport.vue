@@ -75,8 +75,9 @@ const restoreExistingKeys = async () => {
     const userKey = userKeysWithMnemonic[i];
 
     /**
-     * Restore key if it has a mnemonic hash and is the same as imported
-     * If keys from multiple mnemonic phrases are present, they will be deleted as the system supports only one mnemonic phrase
+     * Restore the key if its mnemonic hash matches the currently imported recovery phrase.
+     * Do not restore if the key is already present in `user.keyPairs`.
+     * Multiple mnemonic phrases are supported; keys from other mnemonic phrases are not deleted.
      */
     if (userKeyHasMnemonic(userKey)) {
       const { data: matchedHash } = await safeAwait(
