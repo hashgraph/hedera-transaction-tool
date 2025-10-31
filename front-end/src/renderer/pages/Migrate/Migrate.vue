@@ -75,7 +75,7 @@ const handleStopMigration = async () => {
   user.setAccountSetupStarted(false);
   await resetDataLocal();
   user.logout();
-  router.push({ name: 'login' });
+  await router.push({ name: 'login' });
 };
 
 const handleSetRecoveryPhrase = async (value: {

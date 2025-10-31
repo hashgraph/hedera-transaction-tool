@@ -110,7 +110,7 @@ const handleSingleTransaction = async () => {
           description: props.description,
         });
         toast.success('Draft updated');
-        router.push(redirectPath.value);
+        await router.push(redirectPath.value);
       }
     } else {
       await sendAddDraft(user.personal.id, transactionBytes);
@@ -122,7 +122,7 @@ const handleSingleTransaction = async () => {
 
 async function sendAddDraft(userId: string, transactionBytes: Uint8Array) {
   await addDraft(userId, transactionBytes, props.description);
-  router.push(redirectPath.value);
+  await router.push(redirectPath.value);
   toast.success('Draft saved');
 }
 
