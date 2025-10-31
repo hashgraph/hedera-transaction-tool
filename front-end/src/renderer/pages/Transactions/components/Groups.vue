@@ -78,7 +78,7 @@ const handleDeleteGroup = async (id: string) => {
 const handleContinueGroup = async (id: string) => {
   const group = await getGroup(id);
 
-  router.push({
+  await router.push({
     name: 'createTransactionGroup',
     query: {
       id: group?.id,
@@ -123,7 +123,7 @@ async function fetchGroups() {
   try {
     totalItems.value = await getGroupsCount(user.personal.id);
     groups.value = await getGroups(createFindArgs());
-    handleSort(sort.field, sort.direction);
+    await handleSort(sort.field, sort.direction);
   } finally {
     isLoading.value = false;
   }

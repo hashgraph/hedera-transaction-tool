@@ -131,7 +131,7 @@ const handleContinueDraft = async (draft: TransactionDraft | TransactionGroup) =
   if ((draft as TransactionDraft).type) {
     const fetchedDraft = await getDraft(draft.id);
 
-    router.push({
+    await router.push({
       name: 'createTransaction',
       params: {
         type: fetchedDraft.type.replace(/\s/g, ''),
@@ -143,7 +143,7 @@ const handleContinueDraft = async (draft: TransactionDraft | TransactionGroup) =
   } else {
     const group = await getGroup(draft.id);
 
-    router.push({
+    await router.push({
       name: 'createTransactionGroup',
       query: {
         id: group?.id,
@@ -208,7 +208,7 @@ async function fetchDrafts() {
     totalItems.value = await getGroupsCount(user.personal.id);
     groups.value = await getGroups(createFindGroupArgs());
     list.value = [...drafts.value, ...groups.value];
-    handleSort(sortField.value, sortDirection.value);
+    await handleSort(sortField.value, sortDirection.value);
   } finally {
     isLoading.value = false;
   }

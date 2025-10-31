@@ -156,7 +156,7 @@ const useUserStore = defineStore('user', () => {
   ) => {
     await ush.storeKeyPair(keyPair, mnemonic, password, encrypted);
     await refetchKeys();
-    refetchAccounts();
+    await refetchAccounts();
   };
 
   const storePublicKeyMapping = async (publicKey: string, nickname: string) => {

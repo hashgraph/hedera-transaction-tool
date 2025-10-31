@@ -601,7 +601,7 @@ export class ApproversService {
 
     /* Update the approver with the signature */
     await this.dataSource.transaction(async transactionalEntityManager => {
-      transactionalEntityManager
+      await transactionalEntityManager
         .createQueryBuilder()
         .update(TransactionApprover)
         .set({

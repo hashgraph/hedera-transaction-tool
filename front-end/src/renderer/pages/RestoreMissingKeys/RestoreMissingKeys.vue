@@ -141,7 +141,7 @@ const storeKeys = async (
   if (restoredKeys > 0) {
     toast.success('Key Pairs restored');
   }
-  router.push({ name: 'settingsKeys' });
+  await router.push({ name: 'settingsKeys' });
 };
 
 /* Hooks */

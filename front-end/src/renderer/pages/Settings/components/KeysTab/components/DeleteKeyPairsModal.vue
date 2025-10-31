@@ -129,7 +129,7 @@ const handleDelete = async () => {
 
     await user.refetchUserState();
     await user.refetchKeys();
-    user.refetchAccounts();
+    await user.refetchAccounts();
   } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to delete key pair'));
   } finally {
