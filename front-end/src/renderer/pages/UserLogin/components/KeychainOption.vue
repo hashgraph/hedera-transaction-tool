@@ -32,7 +32,7 @@ const handleUseKeychain = async () => {
   user.setAccountSetupStarted(true);
   await user.login(staticUser.id, staticUser.email, true);
   await user.refetchOrganizations();
-  setupStores();
+  await setupStores();
 };
 
 /* Hooks */
