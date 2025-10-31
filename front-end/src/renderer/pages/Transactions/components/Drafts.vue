@@ -131,7 +131,7 @@ const handleContinueDraft = async (draft: TransactionDraft | TransactionGroup) =
   if ((draft as TransactionDraft).type) {
     const fetchedDraft = await getDraft(draft.id);
 
-    router.push({
+    await router.push({
       name: 'createTransaction',
       params: {
         type: fetchedDraft.type.replace(/\s/g, ''),
@@ -143,7 +143,7 @@ const handleContinueDraft = async (draft: TransactionDraft | TransactionGroup) =
   } else {
     const group = await getGroup(draft.id);
 
-    router.push({
+    await router.push({
       name: 'createTransactionGroup',
       query: {
         id: group?.id,
