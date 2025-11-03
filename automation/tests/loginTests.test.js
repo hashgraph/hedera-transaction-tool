@@ -20,6 +20,9 @@ test.describe('Login tests', () => {
   test.beforeAll(async () => {
     await resetDbState();
     ({ app, window } = await setupApp());
+    expect(app).toBeDefined();
+    expect(window).toBeDefined();
+
     loginPage = new LoginPage(window);
     await loginPage.logout();
     registrationPage = new RegistrationPage(window);
