@@ -1078,6 +1078,12 @@
         margin: 0;
       }
     }
+
+    .autocomplete-item-separator {
+      height: 1px;
+      background-color: #ccc;
+      margin: 4px 0;
+    }
   }
 }
 
