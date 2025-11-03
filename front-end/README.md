@@ -15,8 +15,8 @@ and is at your own risk.
     node -v
     ```
 
-- [**pnpm**](https://pnpm.io/installation) 
-  - Required version: `>= 9.13.1`
+- [**pnpm**](https://pnpm.io/installation)
+  - Required version: `>= 10.1.0`
   - Installation of `pnpm`(if not already installed):
     
     ```bash
@@ -52,18 +52,20 @@ cd hedera-transaction-tool/front-end
 
 ```bash
 pnpm install
+pnpm approve-builds # Approve builds for all packages
+pnpm rebuild
 ```
 
-## 3. Generate Prisma client library
-
-```bash
-pnpm generate:database
-```
-
-## 4. Start developing
+## 3. Start developing
 
 ```bash
 pnpm dev
+```
+
+## 4. After changing Prima schema
+
+```bash
+pnpm generate:database
 ```
 
 ## 5. Build for distribution
