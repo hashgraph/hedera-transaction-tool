@@ -12,6 +12,10 @@ async function setupApp() {
   console.log(asciiArt); // Display ASCII art as the app starts
   const app = await launchHederaTransactionTool();
   const window = await app.firstWindow();
+  expect(app).toBeDefined();
+  expect(app).not.toBeNull();
+  expect(window).toBeDefined();
+  expect(window).not.toBeNull();
   const loginPage = new LoginPage(window);
 
   await window.evaluate(() => {
@@ -21,13 +25,17 @@ async function setupApp() {
 
   expect(window).not.toBeNull();
   await loginPage.closeImportantNoteModal();
+  console.log("importantNodeModal closed");
   const canMigrate = migrationDataExists(app);
+  console.log("canMigrate=" + canMigrate);
   if (canMigrate) {
     await loginPage.closeMigrationModal();
+    console.log("migrationModal closed");
   }
   if (process.platform === 'darwin') {
     await loginPage.closeKeyChainModal();
-  }
+    console.log("keyChainModal closed");
+}
 
   return { app, window };
 }
