@@ -11,9 +11,14 @@ const Diff = require('deep-diff');
 async function setupApp() {
   console.log(asciiArt); // Display ASCII art as the app starts
   const app = await launchHederaTransactionTool();
-  const window = await app.firstWindow();
+  if (app) {
+    console.log("APP HAS STARTED")
+  } else {
+    console.log("APP HAS **NOT** STARTED")
+  }
   expect(app).toBeDefined();
   expect(app).not.toBeNull();
+  const window = await app.firstWindow();
   expect(window).toBeDefined();
   expect(window).not.toBeNull();
   const loginPage = new LoginPage(window);
@@ -50,7 +55,7 @@ async function resetAppState(window, app) {
 }
 
 async function closeApp(app) {
-  await app.close();
+  if (app) await app.close();
 }
 
 async function setupEnvironmentForTransactions(window, privateKey = process.env.PRIVATE_KEY) {
