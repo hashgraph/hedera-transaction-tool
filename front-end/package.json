@@ -17,7 +17,7 @@
     "start": "vite preview",
     "dev": "vite",
     "build": "pnpm run generate:database && vue-tsc --noEmit -p tsconfig.web.json && vite build",
-    "postinstall": "electron-builder install-app-deps && prisma generate && node ../notice-gen/index.js",
+    "postinstall": "electron-builder install-app-deps && prisma generate --no-hints && node ../notice-gen/index.js",
     "build:win": "pnpm run build && electron-builder --win --config",
     "build:mac": "pnpm run build && electron-builder --mac",
     "build:linux": "pnpm run build && electron-builder --linux --config",
