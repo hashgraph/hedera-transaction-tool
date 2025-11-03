@@ -110,7 +110,7 @@ async function getDependencies(cwd) {
   try {
     const projectNames = await getProjectNames();
     const { stdout } = await execPromise(
-      `npx ${licenseCheckerPackage} --json --excludePackages '${projectNames.join(
+      `pnpx ${licenseCheckerPackage} --json --excludePackages '${projectNames.join(
         ';'
       )}'`,
       { cwd }
