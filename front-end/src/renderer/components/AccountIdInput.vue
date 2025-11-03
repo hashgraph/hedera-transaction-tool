@@ -10,6 +10,7 @@ import { getAll } from '@renderer/services/accountsService';
 
 import { formatAccountId, getAccountIdWithChecksum, isUserLoggedIn } from '@renderer/utils';
 
+import { ITEM_SEPARATOR } from '@renderer/components/ui/AppAutoComplete.vue';
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 
 /* Props */
@@ -32,12 +33,19 @@ const network = useNetworkStore();
 const accountIds = ref<HederaAccount[]>([]);
 
 /* Computed */
-const formattedAccountIds = computed(() =>
-  (
-    props.items ||
-    accountIds.value.map(a => a.account_id).concat(user.publicKeysToAccountsFlattened)
-  ).map(id => getAccountIdWithChecksum(id)),
-);
+const formattedAccountIds = computed(() => {
+  let result: string[];
+  if (props.items) {
+    result = props.items;
+  } else {
+    const linkedAccounts = accountIds.value.map(a => a.account_id);
+    const ownedAccounts = user.publicKeysToAccountsFlattened
+    result = linkedAccounts
+      .concat(ITEM_SEPARATOR)
+      .concat(ownedAccounts.sort());
+  }
+  return result.map(id => getAccountIdWithChecksum(id));
+});
 
 const accountValue = computed(() => {
   const allIds = formattedAccountIds.value.map(id => id.split('-')[0]);
