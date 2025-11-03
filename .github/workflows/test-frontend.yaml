@@ -106,42 +106,6 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: automation
 
-      - name: Setup Kind
-        uses: helm/kind-action@a1b0e391336a6ee6713a0583f8c6240d70863de3 # v1.12.0
-        with:
-          install_only: true
-          node_image: kindest/node:v1.31.4@sha256:2cb39f7295fe7eafee0842b1052a599a4fb0f8bcf3f83d96c7f4864c357c6c30
-          version: v0.26.0
-          kubectl_version: v1.31.4
-          verbosity: 3
-          wait: 120s
-
-      - name: Install Solo CLI
-        run: |
-          set -euo pipefail
-          npm install -g @hashgraph/solo
-          solo --version
-          kind --version
-
-      - name: Deploy Solo
-        id: solo_deploy
-        env:
-          SOLO_CLUSTER_NAME: solo
-          SOLO_NAMESPACE: solo
-          SOLO_CLUSTER_SETUP_NAMESPACE: solo-cluster
-          SOLO_DEPLOYMENT: solo-deployment
-        run: |
-          set -euo pipefail
-          kind create cluster -n "${SOLO_CLUSTER_NAME}"
-          solo one-shot single deploy | tee solo-deploy.log
-
-      - name: Check port forwarding
-        run: |
-          ps -ef | grep port-forward
-          env
-          curl -fsS http://localhost:8080/api/v1/network/nodes
-          curl -fsS http://localhost:8081/api/v1/network/nodes
-
       - name: Restore Build Artifacts
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
