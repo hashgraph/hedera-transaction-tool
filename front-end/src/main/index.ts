@@ -18,7 +18,7 @@ let mainWindow: BrowserWindow | null;
 
 initLogger();
 
-run();
+await run();
 
 async function run() {
   await initDatabase();
