@@ -20,7 +20,96 @@ initLogger();
 
 console.log("AFTER initLogger()")
 
-run();
+run().then(async () => {
+
+  attachAppEvents();
+  console.log("AFTER attachAppEvents()")
+  setupDeepLink();
+  console.log("AFTER setupDeepLink()")
+
+  function attachAppEvents() {
+    app.on('ready', async () => {
+      await initMainWindow();
+
+      if (!is.dev) {
+        session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+          callback({
+            responseHeaders: {
+              ...details.responseHeaders,
+              'Content-Security-Policy': ["script-src 'self'"],
+            },
+          });
+        });
+      }
+
+      app.on('activate', async function () {
+        if (mainWindow === null) {
+          await initMainWindow();
+        }
+      });
+    });
+
+    app.on('browser-window-created', (_, window) => {
+      optimizer.watchWindowShortcuts(window);
+    });
+
+    app.on('window-all-closed', function () {
+      if (process.platform !== 'darwin') app.quit();
+    });
+
+    let deleteRetires = 0;
+    app.on('before-quit', async function (e) {
+      mainWindow?.close();
+
+      if (deleteRetires === 0) {
+        e.preventDefault();
+
+        deleteRetires++;
+        await safeAwait(deleteAllTempFolders());
+
+        app.quit();
+      }
+    });
+
+    app.on('open-url', (event, url) => {
+      if (mainWindow === null) return;
+      handleDeepLink(mainWindow, event, url);
+    });
+  }
+
+  async function initMainWindow() {
+    mainWindow = await restoreOrCreateWindow();
+    console.log("AFTER restoreOrCreateWindow()")
+
+    createMenu();
+    console.log("AFTER createMenu()")
+
+    mainWindow.on('closed', () => {
+      mainWindow = null;
+    });
+  }
+
+  function setupDeepLink() {
+    if (process.defaultApp) {
+      if (process.argv.length >= 2) {
+        app.setAsDefaultProtocolClient(PROTOCOL_NAME, process.execPath, [
+          path.resolve(process.argv[1]),
+        ]);
+      }
+    } else {
+      app.setAsDefaultProtocolClient(PROTOCOL_NAME);
+    }
+  }
+
+  process.on('message', msg => {
+    if (msg === 'electron-vite&type=hot-reload') {
+      for (const win of BrowserWindow.getAllWindows()) {
+        // Hot reload preload scripts
+        win.webContents.reload();
+      }
+    }
+  });
+});
 
 async function run() {
   await initDatabase();
@@ -29,91 +118,3 @@ async function run() {
   registerIpcListeners();
   console.log("AFTER registerIpcListeners()")
 }
-
-attachAppEvents();
-console.log("AFTER attachAppEvents()")
-setupDeepLink();
-console.log("AFTER setupDeepLink()")
-
-function attachAppEvents() {
-  app.on('ready', async () => {
-    await initMainWindow();
-
-    if (!is.dev) {
-      session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-        callback({
-          responseHeaders: {
-            ...details.responseHeaders,
-            'Content-Security-Policy': ["script-src 'self'"],
-          },
-        });
-      });
-    }
-
-    app.on('activate', async function () {
-      if (mainWindow === null) {
-        await initMainWindow();
-      }
-    });
-  });
-
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window);
-  });
-
-  app.on('window-all-closed', function () {
-    if (process.platform !== 'darwin') app.quit();
-  });
-
-  let deleteRetires = 0;
-  app.on('before-quit', async function (e) {
-    mainWindow?.close();
-
-    if (deleteRetires === 0) {
-      e.preventDefault();
-
-      deleteRetires++;
-      await safeAwait(deleteAllTempFolders());
-
-      app.quit();
-    }
-  });
-
-  app.on('open-url', (event, url) => {
-    if (mainWindow === null) return;
-    handleDeepLink(mainWindow, event, url);
-  });
-}
-
-async function initMainWindow() {
-  mainWindow = await restoreOrCreateWindow();
-  console.log("AFTER restoreOrCreateWindow()")
-
-  createMenu();
-  console.log("AFTER createMenu()")
-
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
-}
-
-function setupDeepLink() {
-  if (process.defaultApp) {
-    if (process.argv.length >= 2) {
-      app.setAsDefaultProtocolClient(PROTOCOL_NAME, process.execPath, [
-        path.resolve(process.argv[1]),
-      ]);
-    }
-  } else {
-    app.setAsDefaultProtocolClient(PROTOCOL_NAME);
-  }
-}
-
-process.on('message', msg => {
-  if (msg === 'electron-vite&type=hot-reload') {
-    for (const win of BrowserWindow.getAllWindows()) {
-      // Hot reload preload scripts
-      win.webContents.reload();
-    }
-  }
-});

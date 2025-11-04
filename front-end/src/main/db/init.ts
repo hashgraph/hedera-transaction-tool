@@ -36,7 +36,7 @@ export default async function initDatabase() {
 
   let failed = false;
 
-  await BEGIN.run();
+  BEGIN.run();
   for (let i = 0; i < migrations.length; i++) {
     const migration = migrations[i];
 
