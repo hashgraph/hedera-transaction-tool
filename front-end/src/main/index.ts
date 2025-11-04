@@ -18,16 +18,22 @@ let mainWindow: BrowserWindow | null;
 
 initLogger();
 
-await run();
+console.log("AFTER initLogger()")
+
+run();
 
 async function run() {
   await initDatabase();
+  console.log("AFTER initDatabase()")
 
   registerIpcListeners();
+  console.log("AFTER registerIpcListeners()")
 }
 
 attachAppEvents();
+console.log("AFTER attachAppEvents()")
 setupDeepLink();
+console.log("AFTER setupDeepLink()")
 
 function attachAppEvents() {
   app.on('ready', async () => {
@@ -81,8 +87,10 @@ function attachAppEvents() {
 
 async function initMainWindow() {
   mainWindow = await restoreOrCreateWindow();
+  console.log("AFTER restoreOrCreateWindow()")
 
   createMenu();
+  console.log("AFTER createMenu()")
 
   mainWindow.on('closed', () => {
     mainWindow = null;
