@@ -40,8 +40,8 @@ const formattedAccountIds = computed(() => {
   } else {
     const linkedAccounts = accountIds.value.map(a => a.account_id);
     const ownedAccounts = user.publicKeysToAccountsFlattened
-    result = linkedAccounts
-      .concat(ITEM_SEPARATOR)
+    result = linkedAccounts.sort()
+      .concat(linkedAccounts.length > 0 && ownedAccounts.length > 0 ? [ITEM_SEPARATOR] : [])
       .concat(ownedAccounts.sort());
   }
   return result.map(id => getAccountIdWithChecksum(id));
