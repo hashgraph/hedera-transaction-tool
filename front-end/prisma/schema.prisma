@@ -1,5 +1,6 @@
 generator client {
   provider      = "prisma-client-js"
+  output        = "../node_modules/.prisma/client"
   binaryTargets = ["native", "darwin-arm64", "darwin"]
 }
 
@@ -157,11 +158,11 @@ model Contact {
 }
 
 model TransactionGroup {
-  id          String   @id @default(uuid())
-  description String
-  atomic      Boolean
-  created_at  DateTime @default(now())
-  groupValidStart DateTime  @default(now())
+  id              String   @id @default(uuid())
+  description     String
+  atomic          Boolean
+  created_at      DateTime @default(now())
+  groupValidStart DateTime @default(now())
 
   GroupItem GroupItem[]
 }
@@ -203,4 +204,3 @@ model PublicKeyMapping {
   public_key String @unique
   nickname   String
 }
-
