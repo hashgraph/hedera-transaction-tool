@@ -913,9 +913,7 @@ class OrganizationPage extends BasePage {
     await this.fill(this.transactionPage.transferFromAccountIdInputSelector, fromAccountId);
     await this.transactionPage.fillInTransferAmountFromAccount(amount);
 
-    const payerAccountId = await this.getTextFromInputField(
-      this.transactionPage.payerDropdownSelector,
-    );
+    const payerAccountId = await this.transactionPage.getPayerAccountId();
     await this.transactionPage.fillInTransferToAccountId(payerAccountId);
 
     await this.transactionPage.clickOnAddTransferFromButton();
@@ -940,7 +938,7 @@ class OrganizationPage extends BasePage {
     await this.transactionPage.fillInAllowanceOwner(ownerAccountId);
     await this.transactionPage.fillInAllowanceAmount(amount);
     await this.transactionPage.fillInSpenderAccountId(
-      await this.getTextFromInputField(this.transactionPage.payerDropdownSelector),
+      await this.transactionPage.getPayerAccountId(),
     );
 
     return await this.processTransaction(isSignRequiredFromCreator);
@@ -952,7 +950,7 @@ class OrganizationPage extends BasePage {
     );
     await this.setDateTimeAheadBy(timeForExecution);
     await this.transactionPage.fillInTransferAccountIdNormally(
-      await this.getTextFromInputField(this.transactionPage.payerDropdownSelector),
+      await this.transactionPage.getPayerAccountId(),
     );
     await this.transactionPage.fillInDeletedAccountId(complexAccountId);
     this.complexAccountId = [];

@@ -21,6 +21,7 @@ class TransactionPage extends BasePage {
   /* Selectors */
 
   //Inputs
+  payerAccountInputSelector = 'input-payer-account';
   initialBalanceInputSelector = 'input-initial-balance-amount';
   maxAutoAssociationsInputSelector = 'input-max-auto-token-associations';
   accountMemoInputSelector = 'input-account-memo';
@@ -71,7 +72,6 @@ class TransactionPage extends BasePage {
   appendFileSublinkSelector = 'menu-sub-link-fileappendtransaction';
   saveDraftButtonSelector = 'button-save-draft';
   signAndSubmitButtonSelector = 'button-header-create';
-  payerDropdownSelector = 'dropdown-payer';
   singleTabSelector = 'tab-single';
   complexTabSelector = 'tab-complex';
   receiverSigRequiredSwitchSelector = 'switch-receiver-sig-required';
@@ -144,7 +144,7 @@ class TransactionPage extends BasePage {
       this.isElementVisible(this.singleTabSelector),
       this.isElementVisible(this.complexTabSelector),
       this.isElementVisible(this.signAndSubmitButtonSelector),
-      this.isElementVisible(this.payerDropdownSelector),
+      this.isElementVisible(this.payerAccountInputSelector),
       this.isElementVisible(this.initialBalanceInputSelector),
       this.isElementVisible(this.maxAutoAssociationsInputSelector),
       this.isElementVisible(this.accountMemoInputSelector),
@@ -853,7 +853,7 @@ class TransactionPage extends BasePage {
   }
 
   async getPayerAccountId() {
-    const payerID = await this.getTextFromInputField(this.payerDropdownSelector);
+    const payerID = await this.getTextFromInputField(this.payerAccountInputSelector);
     return getCleanAccountId(payerID);
   }
 
@@ -1222,7 +1222,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInPayerAccountId(accountId) {
-    await this.fill(this.payerDropdownSelector, accountId);
+    await this.fill(this.payerAccountInputSelector, accountId);
   }
 
   async fillInComplexAccountID(accountId) {
