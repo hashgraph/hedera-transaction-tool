@@ -19,6 +19,7 @@ async function setupApp() {
   expect(app).toBeDefined();
   expect(app).not.toBeNull();
   const window = await app.firstWindow();
+  console.log("WINDOW.FIRSTWINDOW() OK")
   expect(window).toBeDefined();
   expect(window).not.toBeNull();
   const loginPage = new LoginPage(window);
@@ -27,10 +28,11 @@ async function setupApp() {
     window.localStorage.clear();
     // window.localStorage.setItem('important-note-accepted', 'true');
   });
+  console.log("WINDOW.EVALUATE() OK")
 
   expect(window).not.toBeNull();
   await loginPage.closeImportantNoteModal();
-  console.log("importantNodeModal closed");
+  console.log("importantNodeModal CLOSED");
   const canMigrate = migrationDataExists(app);
   console.log("canMigrate=" + canMigrate);
   if (canMigrate) {
