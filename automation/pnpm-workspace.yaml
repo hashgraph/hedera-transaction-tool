@@ -1,10 +1,7 @@
 packages:
-  - apps/*
+  - .
 
 onlyBuiltDependencies:
-  - '@nestjs/core'
   - argon2
-  - cpu-features
   - protobufjs
   - sqlite3
-  - ssh2
