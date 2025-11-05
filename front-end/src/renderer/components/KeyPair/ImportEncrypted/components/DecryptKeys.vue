@@ -101,9 +101,9 @@ async function end() {
   }
 
   await user.refetchKeys();
-  user.refetchAccounts();
+  await user.refetchAccounts();
   await user.refetchUserState();
-  safeAwait(contacts.fetch());
+  await safeAwait(contacts.fetch());
 }
 
 function reset() {
