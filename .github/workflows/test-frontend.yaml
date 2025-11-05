@@ -69,14 +69,19 @@ jobs:
         test-suite:
           - name: Registration
             command: RegistrationTests
+            soloRequired: true
           - name: Login
             command: LoginTests
+            soloRequired: false
           - name: Settings
             command: SettingsTests
+            soloRequired: true
           - name: Transactions
             command: TransactionTests
+            soloRequired: true
           - name: Workflow
             command: WorkflowTests
+            soloRequired: true
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
@@ -107,6 +112,7 @@ jobs:
         working-directory: automation
 
       - name: Setup Kind
+        if: ${{ matrix.test-suite.soloRequired }}
         uses: helm/kind-action@a1b0e391336a6ee6713a0583f8c6240d70863de3 # v1.12.0
         with:
           install_only: true
@@ -117,6 +123,7 @@ jobs:
           wait: 120s
 
       - name: Install Solo CLI
+        if: ${{ matrix.test-suite.soloRequired }}
         run: |
           set -euo pipefail
           npm install -g @hashgraph/solo
@@ -124,6 +131,7 @@ jobs:
           kind --version
 
       - name: Deploy Solo
+        if: ${{ matrix.test-suite.soloRequired }}
         id: solo_deploy
         env:
           SOLO_CLUSTER_NAME: solo
@@ -136,6 +144,7 @@ jobs:
           solo one-shot single deploy | tee solo-deploy.log
 
       - name: Check port forwarding
+        if: ${{ matrix.test-suite.soloRequired }}
         run: |
           ps -ef | grep port-forward
           env
