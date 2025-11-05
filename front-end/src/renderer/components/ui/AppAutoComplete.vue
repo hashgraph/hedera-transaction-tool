@@ -1,3 +1,6 @@
+<script lang="ts">
+export const ITEM_SEPARATOR = '-';
+</script>
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue';
 
@@ -173,6 +176,10 @@ const handleMove = () => {
 };
 
 /* Functions */
+function isSeparator(item: string): boolean {
+  return item === ITEM_SEPARATOR;
+}
+
 function setValue(value: string) {
   modelValue.value = value;
 }
@@ -350,12 +357,20 @@ watchEffect(() => {
       :class="{ 'd-none': filteredItems.length === 0 }"
     >
       <div>
-        <template v-for="(item, i) in filteredItems" :key="item">
+        <template v-for="(item, i) in filteredItems">
+          <!-- Check if the item is a separator -->
           <div
+            v-if="isSeparator(item)"
+            class="autocomplete-item-separator"
+            :key="'separator-' + i"
+          ></div>
+          <div
+            v-else
             class="autocomplete-item-custom"
             :class="{
               selected: i === selectedIndex,
             }"
+            :key="item"
             @click="handleSelectItem($event, item)"
             :ref="el => setItemRef(el as HTMLElement, i)"
           >

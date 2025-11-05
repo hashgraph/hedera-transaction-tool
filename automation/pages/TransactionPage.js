@@ -21,6 +21,7 @@ class TransactionPage extends BasePage {
   /* Selectors */
 
   //Inputs
+  payerAccountInputSelector = 'input-payer-account';
   initialBalanceInputSelector = 'input-initial-balance-amount';
   maxAutoAssociationsInputSelector = 'input-max-auto-token-associations';
   accountMemoInputSelector = 'input-account-memo';
@@ -71,7 +72,6 @@ class TransactionPage extends BasePage {
   appendFileSublinkSelector = 'menu-sub-link-fileappendtransaction';
   saveDraftButtonSelector = 'button-save-draft';
   signAndSubmitButtonSelector = 'button-header-create';
-  payerDropdownSelector = 'dropdown-payer';
   singleTabSelector = 'tab-single';
   complexTabSelector = 'tab-complex';
   receiverSigRequiredSwitchSelector = 'switch-receiver-sig-required';
@@ -144,7 +144,7 @@ class TransactionPage extends BasePage {
       this.isElementVisible(this.singleTabSelector),
       this.isElementVisible(this.complexTabSelector),
       this.isElementVisible(this.signAndSubmitButtonSelector),
-      this.isElementVisible(this.payerDropdownSelector),
+      this.isElementVisible(this.payerAccountInputSelector),
       this.isElementVisible(this.initialBalanceInputSelector),
       this.isElementVisible(this.maxAutoAssociationsInputSelector),
       this.isElementVisible(this.accountMemoInputSelector),
@@ -476,7 +476,8 @@ class TransactionPage extends BasePage {
     await this.clickOnTransactionsMenuButton();
     await this.clickOnCreateNewTransactionButton();
     await this.clickOnDeleteAccountTransaction();
-    await this.fillInTransferAccountId();
+    const payerID = await this.getPayerAccountId();
+    await this.fillInTransferAccountIdNormally(payerID);
     await this.fillInDeletedAccountId(accountId);
     await this.clickOnSignAndSubmitButton();
     await this.clickOnConfirmDeleteAccountButton();
@@ -842,26 +843,18 @@ class TransactionPage extends BasePage {
   }
 
   async fillInTransferAccountId() {
-    const allAccountIdsText = await this.getTextWithRetry(this.payerDropdownSelector);
-    const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
-    console.log('First Account ID:', firstAccountId);
-    const cleanAccountId = getCleanAccountId(firstAccountId);
-    await this.fillAndVerify(this.transferAccountInputSelector, cleanAccountId);
-    return firstAccountId;
+    const payerID = await this.getPayerAccountId();
+    await this.fillAndVerify(this.transferAccountInputSelector, payerID);
+    return payerID;
   }
 
   async fillInTransferAccountIdNormally(accountId) {
     await this.fill(this.transferAccountInputSelector, accountId);
   }
 
-  async getFirstAccountIdFromText(allAccountIds) {
-    const accountIdsArray = allAccountIds.trim().split(' ');
-    return accountIdsArray[0];
-  }
-
   async getPayerAccountId() {
-    const allAccountIdsText = await this.getText(this.payerDropdownSelector);
-    return await this.getFirstAccountIdFromText(allAccountIdsText);
+    const payerID = await this.getTextFromInputField(this.payerAccountInputSelector);
+    return getCleanAccountId(payerID);
   }
 
   async addAccountsToList(accountId) {
@@ -960,10 +953,9 @@ class TransactionPage extends BasePage {
   }
 
   async fillInTransferFromAccountId() {
-    const allAccountIdsText = await this.getText(this.payerDropdownSelector);
-    const firstAccountId = await this.getFirstAccountIdFromText(allAccountIdsText);
-    await this.fill(this.transferFromAccountIdInputSelector, firstAccountId);
-    return firstAccountId;
+    const payerID = await this.getPayerAccountId();
+    await this.fill(this.transferFromAccountIdInputSelector, payerID);
+    return payerID;
   }
 
   async fillInTransferAmountFromAccount(amount) {
@@ -999,12 +991,9 @@ class TransactionPage extends BasePage {
   }
 
   async fillInAllowanceOwnerAccount() {
-    const allAccountIdsText = await this.getText(this.payerDropdownSelector);
-    const firstAccountId = getCleanAccountId(
-      await this.getFirstAccountIdFromText(allAccountIdsText),
-    );
-    await this.fill(this.allowanceOwnerAccountSelector, firstAccountId);
-    return firstAccountId;
+    const payerID = await this.getPayerAccountId();
+    await this.fill(this.allowanceOwnerAccountSelector, payerID);
+    return payerID;
   }
 
   async fillInAllowanceOwner(accountId) {
@@ -1233,13 +1222,7 @@ class TransactionPage extends BasePage {
   }
 
   async fillInPayerAccountId(accountId) {
-    const element = await this.getElement(this.payerDropdownSelector);
-    const type = await element.evaluate(node=> node.tagName.toLowerCase());
-    if (type === 'input') {
-      await this.fill(this.payerDropdownSelector, accountId);
-    } else if (type === 'select') {
-      await this.selectOptionByValue(this.payerDropdownSelector, accountId);
-    }
+    await this.fill(this.payerAccountInputSelector, accountId);
   }
 
   async fillInComplexAccountID(accountId) {

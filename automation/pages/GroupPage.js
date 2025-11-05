@@ -217,7 +217,7 @@ class GroupPage extends BasePage {
       await this.transactionPage.fillInAllowanceOwner(allowanceOwner);
       await this.transactionPage.fillInAllowanceAmount(amount);
       await this.transactionPage.fillInSpenderAccountId(
-        await this.getTextFromInputField(this.transactionPage.payerDropdownSelector),
+        await this.transactionPage.getPayerAccountId(),
         this.addToGroupButtonSelector,
       );
 

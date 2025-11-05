@@ -17,7 +17,6 @@ import { isUserLoggedIn, stringifyHbar } from '@renderer/utils';
 
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdInput from '@renderer/components/AccountIdInput.vue';
-import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
 
 /* Props */
@@ -113,22 +112,13 @@ const columnClass = 'col-4 col-xxxl-3';
             : '-'
         }}</label
       >
-      <template v-if="!user.selectedOrganization">
-        <AccountIdsSelect
-          :account-id="payerId || ''"
-          @update:account-id="handlePayerChange"
-          :select-default="true"
-        />
-      </template>
-      <template v-else>
         <AccountIdInput
           :modelValue="payerId"
           @update:modelValue="handlePayerChange"
           :filled="true"
           placeholder="Enter Payer ID"
-          data-testid="dropdown-payer"
+          data-testid="input-payer-account"
         />
-      </template>
     </div>
     <div class="form-group" :class="[columnClass]">
       <label class="form-label"
