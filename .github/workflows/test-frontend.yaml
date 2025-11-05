@@ -69,13 +69,13 @@ jobs:
         test-suite:
           - name: Registration
             command: RegistrationTests
-            soloRequired: true
+            soloRequired: false
           - name: Login
             command: LoginTests
             soloRequired: false
           - name: Settings
             command: SettingsTests
-            soloRequired: true
+            soloRequired: false
           - name: Transactions
             command: TransactionTests
             soloRequired: true
