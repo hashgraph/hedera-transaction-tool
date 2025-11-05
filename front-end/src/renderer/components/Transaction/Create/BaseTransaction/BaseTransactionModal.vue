@@ -122,8 +122,8 @@ const handleSingleTransaction = async () => {
 
 async function sendAddDraft(userId: string, transactionBytes: Uint8Array) {
   await addDraft(userId, transactionBytes, props.description);
-  await router.push(redirectPath.value);
   toast.success('Draft saved');
+  await router.push(redirectPath.value);
 }
 
 async function handleDiscard() {
