@@ -81,11 +81,11 @@ const isPrimaryButtonDisabled = computed(() => {
 /* Handlers */
 const handleSubmit = async () => {
   if (!shouldEnterToken.value && !shouldSetNewPassword.value) {
-    handleEmailEnter();
+    await handleEmailEnter();
   } else if (!shouldSetNewPassword.value) {
-    handleTokenEnter();
+    await handleTokenEnter();
   } else if (shouldSetNewPassword.value) {
-    handleNewPassword();
+    await handleNewPassword();
   }
 };
 

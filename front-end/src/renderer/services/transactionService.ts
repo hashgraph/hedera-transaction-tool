@@ -45,7 +45,7 @@ export const getTransactionSignatures = async (
               ? PrivateKey.fromStringECDSA(`${startsWithHex ? '' : '0x'}${privateKeyString}`)
               : PrivateKey.fromStringED25519(privateKeyString);
 
-          transaction.sign(privateKey);
+          await transaction.sign(privateKey);
 
           publicKeys.push(keyPair.public_key);
         }

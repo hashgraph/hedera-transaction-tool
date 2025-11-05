@@ -219,8 +219,8 @@ const handleSave = async () => {
   if (storedCount > 0) {
     toast.success(`Key Pair${storedCount > 1 ? 's' : ''} saved successfully`);
   }
-  router.push({ name: 'settingsKeys' });
   await user.refetchUserState();
+  await router.push({ name: 'settingsKeys' });
 };
 
 /* Hooks */

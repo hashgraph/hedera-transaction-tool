@@ -173,7 +173,7 @@ export function useGroupedNotifications() {
       case NotificationType.TRANSACTION_APPROVAL_REJECTION:
         return async () => {
           await selectOrganization();
-          notificationsStore.markAsRead(notification.type);
+          await notificationsStore.markAsRead(notification.type);
         };
       case NotificationType.USER_REGISTERED:
         return async () => {

@@ -29,7 +29,7 @@ const cachedExternalKeys = ref([...externalKeys.value]);
 
 const handleSearch = async () => {
   if (loadingText.value === SEARCHING_TEXT) {
-    handleAbort();
+    await handleAbort();
     return;
   }
 
