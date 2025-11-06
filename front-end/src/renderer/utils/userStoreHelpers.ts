@@ -504,8 +504,6 @@ export const updateConnectedOrganizations = async (
   const organizations = await getOrganizations();
   organizationsRef.value = organizations.map(org => ({ ...org, isLoading: true }));
 
-  const connectedOrganizations: ConnectedOrganization[] = [];
-
   const result = await Promise.allSettled(
     organizations.map(async (organization, index) => {
       const connectedOrg = await getConnectedOrganization(organization, user);
@@ -517,8 +515,6 @@ export const updateConnectedOrganizations = async (
   );
 
   result.forEach(res => res.status === 'rejected' && console.log(res.reason));
-
-  return connectedOrganizations;
 };
 
 export const getOrganizationJwtTokens = async (
