@@ -6,8 +6,6 @@ import { DataSource, Repository } from 'typeorm';
 import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
-  CHAIN_SERVICE,
-  emitUpdateTransactionStatus,
   isExpired,
   notifySyncIndicators,
   notifyTransactionAction,
@@ -17,8 +15,18 @@ import {
   validateSignature,
   ErrorCodes,
   safe,
+  MirrorNodeService,
+  UpdateTransactionStatusDto,
+  processTransactionStatus,
+  notifyStatusChange,
 } from '@app/common';
-import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
+import {
+  Transaction,
+  TransactionSigner,
+  TransactionStatus,
+  User,
+  UserKey,
+} from '@entities';
 
 import { UploadSignatureMapDto } from '../dto';
 
@@ -27,9 +35,11 @@ export class SignersService {
   constructor(
     @InjectRepository(TransactionSigner)
     private repo: Repository<TransactionSigner>,
+    @InjectRepository(Transaction)
+    private txRepo: Repository<Transaction>,
     @InjectDataSource() private dataSource: DataSource,
-    @Inject(CHAIN_SERVICE) private readonly chainService: ClientProxy,
     @Inject(NOTIFICATIONS_SERVICE) private readonly notificationService: ClientProxy,
+    private readonly mirrorNodeService: MirrorNodeService,
   ) {}
 
   /* Get the signature for the given signature id */
@@ -179,7 +189,8 @@ export class SignersService {
       //If no change, don't emit events
       if (isSameBytes && userKeys.length === 0) continue;
 
-      emitUpdateTransactionStatus(this.chainService, id);
+      await this.updateTransactionStatus({ id });
+
       notifyTransactionAction(this.notificationService);
       notifySyncIndicators(this.notificationService, id, transaction.status, {
         transactionId: transaction.transactionId,
@@ -187,5 +198,22 @@ export class SignersService {
       });
     }
     return [...signers];
+  }
+
+  /* Checks if the signers are enough to sign the transaction and update its status */
+  async updateTransactionStatus({ id }: UpdateTransactionStatusDto) {
+    const transaction = await this.txRepo.findOne({
+      where: { id },
+      relations: {
+        creatorKey: true,
+      },
+    });
+
+    const newStatus = await processTransactionStatus(this.txRepo, this.mirrorNodeService, transaction);
+
+    if (!newStatus) return;
+
+    notifyStatusChange(this.notificationService, transaction, newStatus);
+    notifyTransactionAction(this.notificationService);
   }
 }
