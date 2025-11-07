@@ -1,14 +1,21 @@
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
-import { EntityManager, In } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 
 import {
   MirrorNodeService,
   attachKeys,
   computeSignatureKey,
   flattenKeyList,
+  notifySyncIndicators,
+  NotifyGeneralDto,
+  NOTIFY_GENERAL,
+  notifyWaitingForSignatures,
+  hasValidSignatureKey,
+  smartCollate,
 } from '@app/common';
-import { User, Transaction, UserKey } from '@entities';
+import { User, Transaction, UserKey, TransactionStatus, NotificationType } from '@entities';
+import { ClientProxy } from '@nestjs/microservices';
 
 export const keysRequiredToSign = async (
   transaction: Transaction,
@@ -80,3 +87,67 @@ export const getNetwork = (transaction: Transaction) => {
     : network.charAt(0).toUpperCase() + network.slice(1).toLowerCase();
   return networkString;
 };
+
+/* Checks if the signers are enough to sign the transaction and update its status */
+export async function processTransactionStatus(
+  transactionRepo: Repository<Transaction>,
+  mirrorNodeService: MirrorNodeService,
+  transaction: Transaction,
+): Promise<TransactionStatus | undefined> {
+  /* Returns if the transaction is null */
+  if (!transaction) return;
+
+  /* Gets the SDK transaction from the transaction body */
+  const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
+
+  /* Gets the signature key */
+  const signatureKey = await computeSignatureKey(
+    sdkTransaction,
+    mirrorNodeService,
+    transaction.mirrorNetwork,
+  );
+
+  /* Checks if the transaction has a valid signature */
+  const isAbleToSign = hasValidSignatureKey([...sdkTransaction._signerPublicKeys], signatureKey);
+
+  let newStatus = TransactionStatus.WAITING_FOR_SIGNATURES;
+
+  if (isAbleToSign) {
+    const sdkTransaction = await smartCollate(transaction, mirrorNodeService);
+
+    if (sdkTransaction !== null) {
+      newStatus = TransactionStatus.WAITING_FOR_EXECUTION;
+    }
+  }
+
+  if (transaction.status !== newStatus) {
+    await transactionRepo.update({ id: transaction.id }, { status: newStatus });
+    return newStatus;
+  }
+}
+
+export function notifyStatusChange(
+  notificationsService: ClientProxy,
+  transaction: Transaction,
+  newStatus: TransactionStatus
+) {
+  notifySyncIndicators(notificationsService, transaction.id, newStatus, {
+    network: transaction.mirrorNetwork,
+  });
+  if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
+    notificationsService.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
+      entityId: transaction.id,
+      type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+      actorId: null,
+      userIds: [transaction.creatorKey?.userId],
+      additionalData: { transactionId: transaction.transactionId, network: transaction.mirrorNetwork },
+    });
+  }
+
+  if (newStatus === TransactionStatus.WAITING_FOR_SIGNATURES) {
+    notifyWaitingForSignatures(notificationsService, transaction.id, {
+      transactionId: transaction.transactionId,
+      network: transaction.mirrorNetwork,
+    });
+  }
+}
