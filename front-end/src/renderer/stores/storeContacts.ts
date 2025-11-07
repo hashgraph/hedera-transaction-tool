@@ -1,6 +1,6 @@
 import type { Contact, IUserKey } from '@shared/interfaces';
 
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 
 import { PublicKey } from '@hashgraph/sdk';
@@ -11,12 +11,14 @@ import { getAllUserKeys, getUserKeys, getUsers } from '@renderer/services/organi
 import { getOrganizationContacts } from '@renderer/services/contactsService';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import type { ConnectedOrganization, LoggedInOrganization, LoggedInUser } from '@renderer/types';
 
 const useContactsStore = defineStore('contacts', () => {
   const user = useUserStore();
 
   /* State */
   const contacts = ref<Contact[]>([]);
+  const fetching = ref(false);
 
   /* Computed */
   const publicKeys = computed(() => {
@@ -33,44 +35,27 @@ const useContactsStore = defineStore('contacts', () => {
 
     return publicKeys;
   });
+  const loggedOrganization = computed(() => {
+    let result: ConnectedOrganization | null;
+    if (
+      isUserLoggedIn(user.personal) &&
+      isLoggedInOrganization(user.selectedOrganization) &&
+      !user.selectedOrganization.isPasswordTemporary
+    ) {
+      result = user.selectedOrganization;
+    } else {
+      result = null;
+    }
+    return result;
+  });
 
   /* Actions */
   async function fetch() {
-    if (!isUserLoggedIn(user.personal)) return;
-
-    if (isLoggedInOrganization(user.selectedOrganization)) {
-      if (user.selectedOrganization.isPasswordTemporary) return;
-
-      const serverUrl = user.selectedOrganization.serverUrl;
-      const users = await getUsers(serverUrl);
-
-      const orgContacts = await getOrganizationContacts(
-        user.personal.id,
-        user.selectedOrganization?.id,
-        user.selectedOrganization?.userId,
-      );
-      const newContacts: Contact[] = [];
-
-      const allKeys = await getAllUserKeys(serverUrl);
-      const userToKeys = new Map<number, IUserKey[]>();
-      allKeys.forEach(k => {
-        if (!userToKeys.has(k.userId)) userToKeys.set(k.userId, []);
-        userToKeys.get(k.userId)?.push(k);
-      });
-
-      users.forEach(u => {
-        const keys = userToKeys.get(u.id) || [];
-        newContacts.push({
-          user: u,
-          userKeys: keys,
-          nickname: orgContacts.find(c => c.organization_user_id === u.id)?.nickname || '',
-          nicknameId: orgContacts.find(c => c.organization_user_id === u.id)?.id || null,
-        });
-      });
-
-      contacts.value = newContacts;
-    } else {
-      contacts.value = [];
+    fetching.value = true;
+    try {
+      contacts.value = await loadContacts(user.personal as LoggedInUser, loggedOrganization.value);
+    } finally {
+      fetching.value = false;
     }
   }
 
@@ -99,9 +84,12 @@ const useContactsStore = defineStore('contacts', () => {
     return contacts.value.find(c => c.user.id === userId)?.nickname || '';
   }
 
+  /* Watch */
+  watch(loggedOrganization, () => fetch(), { immediate: true });
   return {
     contacts,
     publicKeys,
+    fetching,
     fetch,
     fetchUserKeys,
     getContact,
@@ -109,5 +97,45 @@ const useContactsStore = defineStore('contacts', () => {
     getNickname,
   };
 });
+
+async function loadContacts(
+  user: LoggedInUser,
+  organization: (ConnectedOrganization & LoggedInOrganization) | null,
+): Promise<Contact[]> {
+  let result: Contact[];
+
+  if (organization !== null) {
+    const serverUrl = organization.serverUrl;
+    const users = await getUsers(serverUrl);
+
+    const orgContacts = await getOrganizationContacts(
+      user.id,
+      organization.id,
+      organization.userId,
+    );
+    result = [];
+
+    const allKeys = await getAllUserKeys(serverUrl);
+    const userToKeys = new Map<number, IUserKey[]>();
+    allKeys.forEach(k => {
+      if (!userToKeys.has(k.userId)) userToKeys.set(k.userId, []);
+      userToKeys.get(k.userId)?.push(k);
+    });
+
+    users.forEach(u => {
+      const keys = userToKeys.get(u.id) || [];
+      result.push({
+        user: u,
+        userKeys: keys,
+        nickname: orgContacts.find(c => c.organization_user_id === u.id)?.nickname || '',
+        nicknameId: orgContacts.find(c => c.organization_user_id === u.id)?.id || null,
+      });
+    });
+  } else {
+    result = [];
+  }
+
+  return Promise.resolve(result);
+}
 
 export default useContactsStore;
