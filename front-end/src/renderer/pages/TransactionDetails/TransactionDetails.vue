@@ -246,6 +246,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           :local-transaction="localTransaction"
           :next-id="nextId"
           :previous-id="prevId"
+          :on-action="fetchTransaction"
         />
 
         <Transition name="fade" mode="out-in">
