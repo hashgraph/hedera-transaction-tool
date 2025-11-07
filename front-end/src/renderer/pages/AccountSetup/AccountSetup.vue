@@ -54,9 +54,6 @@ const handleBack = () => {
 };
 
 const handleNext = async () => {
-  const requiredParts = accountSetupRequiredParts(user.selectedOrganization, user.keyPairs);
-  if (requiredParts.length === 0) router.push({ name: 'transactions' }).then();
-
   step.value.previous = step.value.current;
   const currentIndex = stepperItems.value.findIndex(i => i.name === step.value.current);
 
@@ -67,6 +64,7 @@ const handleNext = async () => {
       user.setAccountSetupStarted(false);
     } finally {
       nextLoadingText.value = null;
+      await router.push({ name: 'transactions' });
     }
   } else {
     step.value.current =
