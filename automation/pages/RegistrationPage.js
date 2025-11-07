@@ -34,7 +34,7 @@ class RegistrationPage extends BasePage {
   nextButtonSelector = 'button-verify-next-generate';
   nextButtonImportSelector = 'button-next-import';
   finalNextButtonSelector = 'button-next';
-  settingsButtonSelector = 'a[href="/settings/general"].link-menu.mt-2.active';
+  settingsButtonSelector = 'a[href="/settings/general"].link-menu.mt-2';
   clearButtonSelector = 'button-clear';
   generateAgainButtonSelector = 'button-generate-again';
   showPrivateKeyButtonSelector = 'button-show-private-key';
