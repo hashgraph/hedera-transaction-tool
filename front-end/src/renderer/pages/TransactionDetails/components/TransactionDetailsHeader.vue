@@ -117,7 +117,7 @@ const props = defineProps<{
   sdkTransaction: SDKTransaction | null;
   nextId: number | string | null;
   previousId: number | string | null;
-  onAction: () => void;
+  onAction: () => Promise<void>;
 }>();
 
 /* Stores */
