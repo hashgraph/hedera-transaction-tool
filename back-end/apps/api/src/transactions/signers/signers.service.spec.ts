@@ -13,7 +13,14 @@ import {
   AccountId,
   TransactionId,
 } from '@hashgraph/sdk';
-import { CHAIN_SERVICE, ErrorCodes, MirrorNodeService, NOTIFICATIONS_SERVICE } from '@app/common';
+import {
+  CHAIN_SERVICE,
+  ErrorCodes,
+  MirrorNodeService,
+  NOTIFICATIONS_SERVICE,
+  notifyStatusChange,
+  processTransactionStatus,
+} from '@app/common';
 import {
   emitUpdateTransactionStatus,
   isExpired,
@@ -211,9 +218,12 @@ describe('SignaturesService', () => {
 
       await sdkTransaction.sign(privateKey);
       dataSource.manager.findOneBy.mockResolvedValueOnce(transaction);
+      jest.spyOn(transactionsRepo, 'findOne').mockResolvedValueOnce(transaction as Transaction);
       jest.mocked(isExpired).mockReturnValue(false);
       jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([publicKeyId]);
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([publicKeyId]);
+      jest.mocked(processTransactionStatus).mockResolvedValue(TransactionStatus.WAITING_FOR_EXECUTION)
 
       const queryRunner = mockDeep<QueryRunner>();
       dataSource.createQueryRunner.mockReturnValueOnce(queryRunner);
@@ -234,6 +244,11 @@ describe('SignaturesService', () => {
         userKey: user.keys[0],
       });
 
+      expect(notifyStatusChange).toHaveBeenCalledWith(
+        notificationService,
+        transaction,
+        TransactionStatus.WAITING_FOR_EXECUTION,
+      );
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationService);
       expect(notifySyncIndicators).toHaveBeenCalledWith(
         notificationService,
@@ -266,6 +281,7 @@ describe('SignaturesService', () => {
 
       dataSource.manager.findOneBy
         .mockResolvedValueOnce(transaction);
+      jest.spyOn(transactionsRepo, 'findOne').mockResolvedValueOnce(transaction as Transaction);
       jest.mocked(isExpired).mockReturnValue(false);
       jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([publicKeyId]);
@@ -324,6 +340,7 @@ describe('SignaturesService', () => {
         .mockResolvedValueOnce(transaction);
       dataSource.manager.findOne
         .mockResolvedValueOnce(signer);
+      jest.spyOn(transactionsRepo, 'findOne').mockResolvedValueOnce(transaction as Transaction);
       jest.mocked(isExpired).mockReturnValue(false);
       jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([publicKeyId]);
