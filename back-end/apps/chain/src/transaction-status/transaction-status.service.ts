@@ -4,22 +4,19 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 
 import { In, Between, MoreThan, Repository, LessThan } from 'typeorm';
-import { Status, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Status } from '@hashgraph/sdk';
 
 import {
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
-  NOTIFY_GENERAL,
-  NotifyGeneralDto,
-  hasValidSignatureKey,
-  computeSignatureKey,
   smartCollate,
   notifyTransactionAction,
   notifySyncIndicators,
-  notifyWaitingForSignatures,
   UpdateTransactionStatusDto,
+  processTransactionStatus,
+  notifyStatusChange,
 } from '@app/common';
-import { NotificationType, Transaction, TransactionGroup, TransactionStatus } from '@entities';
+import { Transaction, TransactionGroup, TransactionStatus } from '@entities';
 
 import { ExecuteService } from '../execute';
 
@@ -165,11 +162,11 @@ export class TransactionStatusService {
 
     for (const transaction of transactions) {
       try {
-        const newStatus = await this._updateTransactionStatus(transaction);
+        const newStatus = await processTransactionStatus(this.transactionRepo, this.mirrorNodeService, transaction);
 
         if (!newStatus) continue;
 
-        this.emitNotificationEvents(transaction, newStatus);
+        notifyStatusChange(this.notificationsService, transaction, newStatus);
 
         atLeastOneUpdated = true;
       } catch (error) {
@@ -193,70 +190,12 @@ export class TransactionStatusService {
       },
     });
 
-    const newStatus = await this._updateTransactionStatus(transaction);
+    const newStatus = await processTransactionStatus(this.transactionRepo, this.mirrorNodeService, transaction);
 
     if (!newStatus) return;
 
-    this.emitNotificationEvents(transaction, newStatus);
+    notifyStatusChange(this.notificationsService, transaction, newStatus);
     notifyTransactionAction(this.notificationsService);
-  }
-
-  private async _updateTransactionStatus(
-    transaction: Transaction,
-  ): Promise<TransactionStatus | undefined> {
-    /* Returns if the transaction is null */
-    if (!transaction) return;
-
-    /* Gets the SDK transaction from the transaction body */
-    const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
-
-    /* Gets the signature key */
-    const signatureKey = await computeSignatureKey(
-      sdkTransaction,
-      this.mirrorNodeService,
-      transaction.mirrorNetwork,
-    );
-
-    /* Checks if the transaction has valid signature */
-    const isAbleToSign = hasValidSignatureKey([...sdkTransaction._signerPublicKeys], signatureKey);
-
-    let newStatus = TransactionStatus.WAITING_FOR_SIGNATURES;
-
-    if (isAbleToSign) {
-      const sdkTransaction = await smartCollate(transaction, this.mirrorNodeService);
-
-      if (sdkTransaction !== null) {
-        newStatus = TransactionStatus.WAITING_FOR_EXECUTION;
-      }
-    }
-
-    /* In case the status wasn't already WAITING_FOR_SIGNATURES */
-    if (transaction.status !== newStatus) {
-      await this.transactionRepo.update({ id: transaction.id }, { status: newStatus });
-      return newStatus;
-    }
-  }
-
-  private emitNotificationEvents(transaction: Transaction, newStatus: TransactionStatus) {
-    notifySyncIndicators(this.notificationsService, transaction.id, newStatus, {
-      network: transaction.mirrorNetwork,
-    });
-    if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
-      this.notificationsService.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
-        entityId: transaction.id,
-        type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
-        actorId: null,
-        userIds: [transaction.creatorKey?.userId],
-        additionalData: { transactionId: transaction.transactionId, network: transaction.mirrorNetwork },
-      });
-    }
-
-    if (newStatus === TransactionStatus.WAITING_FOR_SIGNATURES) {
-      notifyWaitingForSignatures(this.notificationsService, transaction.id, {
-        transactionId: transaction.transactionId,
-        network: transaction.mirrorNetwork,
-      });
-    }
   }
 
   async prepareTransactions(transactions: Transaction[]) {
@@ -339,7 +278,7 @@ export class TransactionStatusService {
                 statusCode: Status.TransactionOversize._code,
               },
             );
-            this.emitNotificationEvents(groupItem.transaction, TransactionStatus.FAILED);
+            notifyStatusChange(this.notificationsService, groupItem.transaction, TransactionStatus.FAILED);
           }
           return;
         }
@@ -381,7 +320,7 @@ export class TransactionStatusService {
               statusCode: Status.TransactionOversize._code,
             },
           );
-          this.emitNotificationEvents(transaction, TransactionStatus.FAILED);
+          notifyStatusChange(this.notificationsService, transaction, TransactionStatus.FAILED);
           return;
         }
 

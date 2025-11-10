@@ -117,6 +117,7 @@ const props = defineProps<{
   sdkTransaction: SDKTransaction | null;
   nextId: number | string | null;
   previousId: number | string | null;
+  onAction: () => Promise<void>;
 }>();
 
 /* Stores */
@@ -332,6 +333,7 @@ const handleSign = async () => {
         SDKTransaction.fromBytes(props.sdkTransaction.toBytes()),
         props.organizationTransaction.id,
       );
+      await props.onAction();
       toast.success('Transaction signed successfully');
     }
   } catch (error) {
@@ -394,6 +396,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
         signature,
         approved,
       );
+      await props.onAction();
       toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
 
       if (!approved) {
@@ -473,6 +476,7 @@ const handleTransactionAction = async (
     confirmModalLoadingText.value = loadingText;
     isConfirmModalLoadingState.value = true;
     await actionFunction(user.selectedOrganization.serverUrl, props.organizationTransaction.id);
+    await props.onAction();
     toast.success(successMessage);
   } catch (error) {
     isConfirmModalShown.value = false;
