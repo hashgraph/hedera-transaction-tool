@@ -36,6 +36,7 @@ describe('SignaturesService', () => {
   let service: SignersService;
 
   const signersRepo = mockDeep<Repository<TransactionSigner>>();
+  const transactionsRepo = mockDeep<Repository<Transaction>>();
   const dataSource = mockDeep<DataSource>();
   const chainService = mock<ClientProxy>();
   const notificationService = mock<ClientProxy>();
@@ -61,6 +62,10 @@ describe('SignaturesService', () => {
         {
           provide: getRepositoryToken(TransactionSigner),
           useValue: signersRepo,
+        },
+        {
+          provide: getRepositoryToken(Transaction),
+          useValue: transactionsRepo,
         },
         {
           provide: DataSource,
@@ -229,7 +234,6 @@ describe('SignaturesService', () => {
         userKey: user.keys[0],
       });
 
-      expect(emitUpdateTransactionStatus).toHaveBeenCalledWith(chainService, transactionId);
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationService);
       expect(notifySyncIndicators).toHaveBeenCalledWith(
         notificationService,
@@ -281,7 +285,6 @@ describe('SignaturesService', () => {
         userKey: user.keys[0],
       });
 
-      expect(emitUpdateTransactionStatus).toHaveBeenCalledWith(chainService, transactionId);
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationService);
       expect(notifySyncIndicators).toHaveBeenCalledWith(
         notificationService,
@@ -340,7 +343,6 @@ describe('SignaturesService', () => {
       );
 
       expect(signersRepo.create).not.toHaveBeenCalled();
-      expect(emitUpdateTransactionStatus).toHaveBeenCalledWith(chainService, transactionId);
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationService);
       expect(notifySyncIndicators).toHaveBeenCalledWith(
         notificationService,
