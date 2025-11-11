@@ -9,7 +9,7 @@ import { getErrorMessage } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -44,7 +44,7 @@ const handleImportPublicKey = async () => {
 
     toast.success(`Public key and nickname imported successfully`, successToastOptions);
   } catch (error) {
-    toast.error(getErrorMessage(error, `Failed to import public key`));
+    toast.error(getErrorMessage(error, `Failed to import public key`), errorToastOptions);
   }
 };
 

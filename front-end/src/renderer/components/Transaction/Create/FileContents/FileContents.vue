@@ -30,7 +30,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -85,7 +85,7 @@ const readFile = async () => {
 
     await updateLocalFileInfo(contentBytes, privateKey, keyPair.type);
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to execute query'));
+    toast.error(getErrorMessage(error, 'Failed to execute query'), errorToastOptions);
   } finally {
     network.client._operator = null;
     isLoading.value = false;
@@ -151,7 +151,7 @@ const updateLocalFileInfo = async (content: string, privateKey: string, privateK
       toast.success(`File ${fileId.value} linked`, successToastOptions);
     }
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to add/update file info'));
+    toast.error(getErrorMessage(error, 'Failed to add/update file info'), errorToastOptions);
   }
 };
 

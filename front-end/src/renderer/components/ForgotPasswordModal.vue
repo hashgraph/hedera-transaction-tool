@@ -23,7 +23,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import OTPInput from '@renderer/components/OTPInput.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -100,7 +100,7 @@ async function handleEmailEnter() {
     shouldEnterToken.value = true;
     setTimeout(() => otpInputRef.value?.focus(), 100);
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to request password reset'));
+    toast.error(getErrorMessage(error, 'Failed to request password reset'), errorToastOptions);
   }
 }
 
@@ -119,7 +119,7 @@ async function handleTokenEnter() {
     shouldEnterToken.value = false;
     shouldSetNewPassword.value = true;
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to verify OTP'));
+    toast.error(getErrorMessage(error, 'Failed to verify OTP'), errorToastOptions);
   }
 }
 
@@ -161,7 +161,7 @@ async function handleNewPassword() {
 
     toast.success('Password changed successfully', successToastOptions);
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to set new password'));
+    toast.error(getErrorMessage(error, 'Failed to set new password'), errorToastOptions);
   }
 }
 

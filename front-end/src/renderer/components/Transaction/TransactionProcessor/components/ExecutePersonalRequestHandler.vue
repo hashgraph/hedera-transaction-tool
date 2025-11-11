@@ -20,7 +20,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Emits */
 const emit = defineEmits<{
@@ -102,7 +102,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     status = data.status;
 
     emit('transaction:executed', false, null, null);
-    toast.error(data.message);
+    toast.error(data.message, errorToastOptions);
   } finally {
     isExecuting.value = false;
   }

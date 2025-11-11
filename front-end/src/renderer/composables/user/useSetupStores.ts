@@ -1,6 +1,7 @@
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 
 import { useToast } from 'vue-toast-notification';
+import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 
 export default function useSetupStores() {
   /* Stores */
@@ -18,7 +19,7 @@ export default function useSetupStores() {
             : typeof r.reason === 'string'
               ? r.reason
               : 'An unknown error occurred';
-        toast.error(errorMessage);
+        toast.error(errorMessage, errorToastOptions);
       }
     });
   };

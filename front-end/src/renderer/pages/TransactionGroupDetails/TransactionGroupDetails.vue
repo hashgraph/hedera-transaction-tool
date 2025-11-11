@@ -59,7 +59,7 @@ import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import useContactsStore from '@renderer/stores/storeContacts.ts';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
@@ -97,7 +97,7 @@ const { getPassword, passwordModalOpened } = usePersonalPassword();
 const createTooltips = useCreateTooltips();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject()
+const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
 
 /* State */
@@ -123,9 +123,9 @@ const loadingStates = reactive<{ [key: string]: string | null }>({
 /* Computed */
 const canSignAll = computed(() => {
   return (
-     isLoggedInOrganization(user.selectedOrganization)
-     && !isVersionMismatch.value
-     && Object.keys(unsignedSignersToCheck.value).length >= 1
+    isLoggedInOrganization(user.selectedOrganization) &&
+    !isVersionMismatch.value &&
+    Object.keys(unsignedSignersToCheck.value).length >= 1
   );
 });
 
@@ -190,7 +190,7 @@ async function handleFetchGroup(id: string | number) {
 
           const isTransactionVersionMismatch = !areByteArraysEqual(tx.toBytes(), transactionBytes);
           if (isTransactionVersionMismatch) {
-            toast.error('Transaction version mismatch. Cannot sign all.');
+            toast.error('Transaction version mismatch. Cannot sign all.', errorToastOptions);
             isVersionMismatch.value = true;
             break;
           }
@@ -303,7 +303,7 @@ const handleSignGroupItem = async (groupItem: IGroupItem) => {
 
     const updatedTransaction: ITransactionFull = await getTransactionById(
       user.selectedOrganization?.serverUrl || '',
-      groupItem.transactionId
+      groupItem.transactionId,
     );
 
     const index = group.value!.groupItems.findIndex(
@@ -314,7 +314,7 @@ const handleSignGroupItem = async (groupItem: IGroupItem) => {
 
     toast.success('Transaction signed successfully', successToastOptions);
   } catch {
-    toast.error('Transaction not signed');
+    toast.error('Transaction not signed', errorToastOptions);
   } finally {
     signingItemSeq.value = -1;
   }
@@ -336,7 +336,7 @@ const handleCancelAll = async (showModal = false) => {
   }
 
   try {
-    loadingStates[cancel] = 'Canceling...'
+    loadingStates[cancel] = 'Canceling...';
     if (group.value != undefined) {
       for (const groupItem of group.value.groupItems) {
         if (isTransactionInProgress(groupItem.transaction as ITransactionFull)) {
@@ -348,7 +348,7 @@ const handleCancelAll = async (showModal = false) => {
     await handleFetchGroup(group.value!.id);
     toast.success('Transactions canceled successfully', successToastOptions);
   } catch {
-    toast.error('Transactions not canceled');
+    toast.error('Transactions not canceled', errorToastOptions);
   } finally {
     loadingStates[cancel] = null;
   }
@@ -375,7 +375,7 @@ const handleSignAll = async (showModal = false) => {
   if (passwordModalOpened(personalPassword)) return;
 
   try {
-    loadingStates[sign] = 'Signing...'
+    loadingStates[sign] = 'Signing...';
     const items: SignatureItem[] = [];
     if (group.value != undefined) {
       for (const groupItem of group.value.groupItems) {
@@ -415,13 +415,13 @@ const handleSignAll = async (showModal = false) => {
       toast.success('Transactions signed successfully', successToastOptions);
     }
   } catch {
-    toast.error('Transactions not signed');
+    toast.error('Transactions not signed', errorToastOptions);
   } finally {
     loadingStates[sign] = null;
   }
 };
 
-const handleApproveAll = async (showModal = false, approved = false ) => {
+const handleApproveAll = async (showModal = false, approved = false) => {
   if (!approved && showModal) {
     isConfirmModalShown.value = true;
     confirmModalTitle.value = 'Reject all Transactions?';
@@ -441,7 +441,7 @@ const handleApproveAll = async (showModal = false, approved = false ) => {
     if (passwordModalOpened(personalPassword)) return;
 
     try {
-      loadingStates[approve] = 'Approving...'
+      loadingStates[approve] = 'Approving...';
 
       const publicKey = user.selectedOrganization.userKeys[0].publicKey;
       const privateKeyRaw = await decryptPrivateKey(
@@ -473,7 +473,10 @@ const handleApproveAll = async (showModal = false, approved = false ) => {
           }
         }
       }
-      toast.success(`Transactions ${approved ? 'approved' : 'rejected'} successfully`, successToastOptions);
+      toast.success(
+        `Transactions ${approved ? 'approved' : 'rejected'} successfully`,
+        successToastOptions,
+      );
 
       if (!approved) {
         await router.push({
@@ -846,7 +849,9 @@ function tooltipText(status: TransactionStatus): string {
                                 }}</span>
                               </td>
                               <td data-testid="td-group-valid-start-time">
-                                <DateTimeString :date="new Date(groupItem.transaction.validStart)"/>
+                                <DateTimeString
+                                  :date="new Date(groupItem.transaction.validStart)"
+                                />
                               </td>
                               <td class="text-center">
                                 <div class="d-flex justify-content-center flex-wrap gap-4">

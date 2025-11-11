@@ -22,7 +22,7 @@ import {
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -43,7 +43,7 @@ const handleLinkAccount = async () => {
     accountData.accountId.value.includes('-') &&
     !validateAccountIdChecksum(accountData.accountId.value)
   ) {
-    toast.error('Invalid checksum for the entered Account ID.');
+    toast.error('Invalid checksum for the entered Account ID.', errorToastOptions);
     return;
   }
   if (accountData.isValid.value) {
@@ -62,7 +62,7 @@ const handleLinkAccount = async () => {
       toast.success('Account linked successfully!', successToastOptions);
       await router.push({ name: 'accounts' });
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Account link failed'));
+      toast.error(getErrorMessage(error, 'Account link failed'), errorToastOptions);
     }
   }
 };
@@ -82,7 +82,7 @@ const handleBlur = () => {
 };
 </script>
 <template>
-  <div class="p-5" >
+  <div class="p-5">
     <div class="d-flex align-items-center">
       <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="$router.back()">
         <i class="bi bi-arrow-left"></i>

@@ -11,7 +11,7 @@ import { useToast } from 'vue-toast-notification';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import PublicKeysBox from './PublicKeysBox.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -57,11 +57,11 @@ const handleSubmit = async () => {
     await Promise.allSettled(newKeys.map(k => user.storePublicKeyMapping(k.publicKey, k.nickname)));
 
     if (skippedKeys === selectedKeys.value.length) {
-      toast.error('All selected keys are already imported in your list');
+      toast.error('All selected keys are already imported in your list', errorToastOptions);
     } else if (skippedKeys > 0) {
       toast.success(
         `${skippedKeys} of the selected keys were already in your list. The rest were imported successfully.`,
-        successToastOptions
+        successToastOptions,
       );
     } else {
       toast.success(`Public key(s) imported successfully`, successToastOptions);
@@ -69,7 +69,7 @@ const handleSubmit = async () => {
 
     handleClose(false);
   } catch (error) {
-    toast.error(getErrorMessage(error, `Failed to import public key(s)`));
+    toast.error(getErrorMessage(error, `Failed to import public key(s)`), errorToastOptions);
   }
 };
 

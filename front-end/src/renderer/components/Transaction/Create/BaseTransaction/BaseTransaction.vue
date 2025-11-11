@@ -46,7 +46,7 @@ import BaseApproversObserverData from '@renderer/components/Transaction/Create/B
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const { createTransaction, preCreateAssert, customRequest } = defineProps<{
@@ -236,7 +236,7 @@ function handleInputValidation(e: Event) {
     validate100CharInput(target.value, 'Transaction Memo');
     memoError.value = false;
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Invalid Transaction Memo'));
+    toast.error(getErrorMessage(error, 'Invalid Transaction Memo'), errorToastOptions);
     memoError.value = true;
   }
 }

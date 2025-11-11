@@ -21,7 +21,7 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -65,7 +65,10 @@ const handleLinkAccount = async () => {
     }
 
     if (failedEmails.length > 0) {
-      toast.error(`Failed to sign up users with emails: ${failedEmails.join(', ')}`);
+      toast.error(
+        `Failed to sign up users with emails: ${failedEmails.join(', ')}`,
+        errorToastOptions,
+      );
     } else {
       toast.success('All users signed up successfully', successToastOptions);
     }
@@ -90,7 +93,7 @@ const handleLinkAccount = async () => {
       }
     } catch (error) {
       console.error(error);
-      toast.error('Failed to sign up user');
+      toast.error('Failed to sign up user', errorToastOptions);
     }
   }
   router.back();

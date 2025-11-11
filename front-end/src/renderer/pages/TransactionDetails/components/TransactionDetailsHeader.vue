@@ -55,7 +55,7 @@ import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import { TransactionStatus } from '@shared/interfaces';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Types */
 type ActionButton =
@@ -133,8 +133,8 @@ const toast = useToast();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject()
-const nodeByIdCache = NodeByIdCache.inject()
+const accountByIdCache = AccountByIdCache.inject();
+const nodeByIdCache = NodeByIdCache.inject();
 
 /* State */
 const isConfirmModalShown = ref(false);
@@ -190,7 +190,7 @@ const canSign = computed(() => {
   if (!isLoggedInOrganization(user.selectedOrganization)) return false;
 
   if (isTransactionVersionMismatch.value) {
-    toast.error('Transaction version mismatch. Cannot sign.');
+    toast.error('Transaction version mismatch. Cannot sign.', errorToastOptions);
     return false;
   }
 
@@ -203,20 +203,13 @@ const canExecute = computed(() => {
   const status = props.organizationTransaction?.status;
   const isManual = props.organizationTransaction?.isManual;
 
-  return (
-    status === TransactionStatus.WAITING_FOR_EXECUTION &&
-    isManual &&
-    isCreator.value
-  );
+  return status === TransactionStatus.WAITING_FOR_EXECUTION && isManual && isCreator.value;
 });
 
 const canRemind = computed(() => {
   const status = props.organizationTransaction?.status;
 
-  return (
-    status === TransactionStatus.WAITING_FOR_SIGNATURES &&
-    isCreator.value
-  );
+  return status === TransactionStatus.WAITING_FOR_SIGNATURES && isCreator.value;
 });
 
 const canArchive = computed(() => {
@@ -301,7 +294,7 @@ const handleSign = async () => {
       user.selectedOrganization.userKeys,
       network.mirrorNodeBaseURL,
       accountByIdCache,
-      nodeByIdCache
+      nodeByIdCache,
     );
 
     const restoredRequiredKeys = [];
@@ -322,6 +315,7 @@ const handleSign = async () => {
         `You need to restore the following public keys to fully sign the transaction: ${requiredNonRestoredKeys.join(
           ', ',
         )}`,
+        errorToastOptions,
       );
     }
 
@@ -338,7 +332,7 @@ const handleSign = async () => {
       toast.success('Transaction signed successfully', successToastOptions);
     }
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to sign transaction'));
+    toast.error(getErrorMessage(error, 'Failed to sign transaction'), errorToastOptions);
   } finally {
     loadingStates[sign] = null;
   }
@@ -398,7 +392,10 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
         approved,
       );
       await props.onAction();
-      toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`, successToastOptions);
+      toast.success(
+        `Transaction ${approved ? 'approved' : 'rejected'} successfully`,
+        successToastOptions,
+      );
 
       if (!approved) {
         router.back();
@@ -670,7 +667,7 @@ watch(
     results.forEach(
       r =>
         r.status === 'rejected' &&
-        toast.error(getErrorMessage(r.reason, 'Failed to load transaction details')),
+        toast.error(getErrorMessage(r.reason, 'Failed to load transaction details'), errorToastOptions),
     );
   },
 );

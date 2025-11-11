@@ -22,7 +22,7 @@ import {
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -62,7 +62,7 @@ const handleLinkFile = async () => {
       toast.success('File linked successfully!', successToastOptions);
       await router.push({ name: 'files' });
     } catch (error) {
-      toast.error(getErrorMessage(error, 'File link failed'));
+      toast.error(getErrorMessage(error, 'File link failed'), errorToastOptions);
     }
   }
 };

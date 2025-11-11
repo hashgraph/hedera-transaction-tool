@@ -16,7 +16,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import { healthCheck } from '@renderer/services/organization';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -63,7 +63,7 @@ const handleAdd = async () => {
     emit('added', organization);
     emit('update:show', false);
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to add organization'));
+    toast.error(getErrorMessage(error, 'Failed to add organization'), errorToastOptions);
   }
 };
 

@@ -31,7 +31,7 @@ import DeleteKeyPairsModal from './components/DeleteKeyPairsModal.vue';
 import { RESTORE_MISSING_KEYS } from '@renderer/router';
 import ImportExternalPrivateKeyModal from '@renderer/components/ImportExternalPrivateKeyModal.vue';
 import { KeyType } from '@renderer/types';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -217,7 +217,7 @@ const decrypt = async () => {
       });
     }
   } catch {
-    toast.error('Failed to decrypt private key');
+    toast.error('Failed to decrypt private key', errorToastOptions);
   }
 };
 
@@ -318,7 +318,7 @@ watch([selectedTab, selectedRecoveryPhrase], () => {
                     ].includes(network.network),
                   }"
                 >
-                  {{ handleAccountString(keyPair.public_key) ?? 'N/A'}}
+                  {{ handleAccountString(keyPair.public_key) ?? 'N/A' }}
                 </span>
                 <span v-else>N/A</span>
               </td>
@@ -433,7 +433,7 @@ watch([selectedTab, selectedRecoveryPhrase], () => {
                       ].includes(network.network),
                     }"
                   >
-                    {{ handleAccountString(keyPair.publicKey) ?? 'N/A'}}</span
+                    {{ handleAccountString(keyPair.publicKey) ?? 'N/A' }}</span
                   >
                   <span v-else>N/A</span>
                 </td>

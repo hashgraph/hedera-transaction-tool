@@ -117,7 +117,7 @@ const handleApprove = async (id: number) => {
 //     }
 //     toast.success('Transactions signed successfully', successToastOptions);
 //   } catch {
-//     toast.error('Transactions not approved');
+//     toast.error('Transactions not approved', errorToastOptions);
 //   }
 // };
 

@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import type { ToastProps } from 'vue-toast-notification';
 import { useToast } from 'vue-toast-notification';
 import { computed, ref, watch } from 'vue';
 import { TransactionId } from '@hashgraph/sdk';
-
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
@@ -21,7 +19,7 @@ import { getTransactionById, importSignatures } from '@renderer/services/organiz
 import useUserStore from '@renderer/stores/storeUser.ts';
 import { assertIsLoggedInOrganization } from '@renderer/utils';
 import { ErrorCodes, ErrorMessages } from '@shared/constants';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -131,29 +129,40 @@ const importSelectedCandidates = async (): Promise<void> => {
   const errorCount = errorResults.size;
   const successCount = successResults.size;
   const totalCount = rejectedCount + errorCount + successCount; // === candidatesByTX.size;
-  const dismissFlag: ToastProps = { duration: 0, dismissible: true };
   if (totalCount == 1) {
     if (errorCount == 1) {
       const [transactionId, result] = errorResults.entries().next().value!;
       const errorMessage = formatError(result);
-      toast.error('Failed to import transaction ' + transactionId + '\n[' + errorMessage + ']', dismissFlag);
+      toast.error(
+        'Failed to import transaction ' + transactionId + '\n[' + errorMessage + ']',
+        errorToastOptions,
+      );
     } else if (rejectedCount == 1) {
       const transactionId = rejectedTransactionIds[0];
-      toast.error('Transaction ' + transactionId + ' does not exist or is not accessible', dismissFlag);
+      toast.error(
+        'Transaction ' + transactionId + ' does not exist or is not accessible',
+        errorToastOptions,
+      );
     } else {
       // successCount == 1
       const [transactionId] = successResults.entries().next().value!;
-      toast.success('Imported transaction ' + transactionId + ' successfully.', successToastOptions);
+      toast.success(
+        'Imported transaction ' + transactionId + ' successfully.',
+        successToastOptions,
+      );
     }
   } else {
     if (successCount >= 1) {
-      toast.success('Imported ' + successCount + ' transaction(s) successfully.', successToastOptions);
+      toast.success(
+        'Imported ' + successCount + ' transaction(s) successfully.',
+        successToastOptions,
+      );
     }
     if (errorCount >= 1) {
-      toast.error('Failed to import ' + errorCount + ' transaction(s)', dismissFlag);
+      toast.error('Failed to import ' + errorCount + ' transaction(s)', errorToastOptions);
     }
     if (rejectedCount >= 1) {
-      toast.error('Rejected ' + rejectedCount + ' transaction(s)', dismissFlag);
+      toast.error('Rejected ' + rejectedCount + ' transaction(s)', errorToastOptions);
     }
   }
 };

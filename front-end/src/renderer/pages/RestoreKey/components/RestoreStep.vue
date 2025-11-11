@@ -16,6 +16,7 @@ import {
   isLoggedInOrganization,
 } from '@renderer/utils';
 import { useToast } from 'vue-toast-notification';
+import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Emits */
 const emit = defineEmits<{
@@ -87,7 +88,7 @@ const handleRestoreKey = async (): Promise<true | void> => {
 
     emit('next', restoredKey.value, Number(index.value));
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to restore private key'));
+    toast.error(getErrorMessage(error, 'Failed to restore private key'), errorToastOptions);
   } finally {
     loadingText.value = null;
   }

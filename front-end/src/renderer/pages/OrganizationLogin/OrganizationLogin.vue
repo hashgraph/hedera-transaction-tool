@@ -26,7 +26,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import ForgotPasswordModal from '@renderer/components/ForgotPasswordModal.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -103,7 +103,7 @@ const handleLogin = async () => {
       false,
     );
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to sign in'));
+    toast.error(getErrorMessage(error, 'Failed to sign in'), errorToastOptions);
     inputEmailInvalid.value = true;
     inputPasswordInvalid.value = true;
   } finally {

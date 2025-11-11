@@ -19,7 +19,7 @@ import {
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -95,7 +95,7 @@ const handleChangePassword = async () => {
 
       toast.success('Password changed successfully', successToastOptions);
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to change password'));
+      toast.error(getErrorMessage(error, 'Failed to change password'), errorToastOptions);
     } finally {
       isLoading.value = false;
     }
