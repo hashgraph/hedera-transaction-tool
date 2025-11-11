@@ -30,6 +30,7 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Store */
 const user = useUserStore();
@@ -124,7 +125,7 @@ const handleDeleteDraft = async (draft: TransactionDraft | TransactionGroup) => 
 
   await fetchDrafts();
 
-  toast.success(toastMessage);
+  toast.success(toastMessage, successToastOptions);
 };
 
 const handleContinueDraft = async (draft: TransactionDraft | TransactionGroup) => {

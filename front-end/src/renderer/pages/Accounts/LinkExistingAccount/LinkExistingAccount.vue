@@ -22,6 +22,7 @@ import {
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -58,7 +59,7 @@ const handleLinkAccount = async () => {
         nickname.value,
       );
 
-      toast.success('Account linked successfully!');
+      toast.success('Account linked successfully!', successToastOptions);
       await router.push({ name: 'accounts' });
     } catch (error) {
       toast.error(getErrorMessage(error, 'Account link failed'));

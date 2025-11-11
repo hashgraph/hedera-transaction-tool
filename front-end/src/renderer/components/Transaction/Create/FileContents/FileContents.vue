@@ -30,6 +30,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -76,7 +77,7 @@ const readFile = async () => {
 
     const response = await readContent(privateKey, keyPair.type);
 
-    toast.success('File content read');
+    toast.success('File content read', successToastOptions);
 
     const contentBytes = (
       isHederaSpecialFileId(fileId.value) ? encodeString(response) : response
@@ -136,7 +137,7 @@ const updateLocalFileInfo = async (content: string, privateKey: string, privateK
         lastRefreshed: new Date(),
       });
 
-      toast.success('Stored file info updated');
+      toast.success('Stored file info updated', successToastOptions);
     } else {
       await add({
         user_id: user.personal.id,
@@ -147,7 +148,7 @@ const updateLocalFileInfo = async (content: string, privateKey: string, privateK
         lastRefreshed: new Date(),
       });
 
-      toast.success(`File ${fileId.value} linked`);
+      toast.success(`File ${fileId.value} linked`, successToastOptions);
     }
   } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to add/update file info'));

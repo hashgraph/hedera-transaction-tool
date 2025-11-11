@@ -12,6 +12,7 @@ import { getNicknameById } from '@renderer/utils';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Store */
 const user = useUserStore();
@@ -57,7 +58,7 @@ const handleUpdate = async () => {
 
   if (success) {
     handleShow(false);
-    toast.success('Nickname updated successfully');
+    toast.success('Nickname updated successfully', successToastOptions);
   }
 };
 

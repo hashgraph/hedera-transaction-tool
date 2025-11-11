@@ -20,6 +20,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Emits */
 const emit = defineEmits<{
@@ -94,7 +95,7 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     await draft.deleteIfNotTemplate();
 
     if (unmounted.value) {
-      toast.success('Transaction executed');
+      toast.success('Transaction executed', successToastOptions);
     }
   } catch (err: any) {
     const data = JSON.parse(err.message);

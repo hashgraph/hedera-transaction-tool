@@ -15,6 +15,7 @@ import { getErrorMessage, isLoggedInOrganization, safeAwait } from '@renderer/ut
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -125,7 +126,7 @@ const handleDelete = async () => {
       }
     }
 
-    toast.success('Private key(s) deleted successfully', { position: 'bottom-right' });
+    toast.success('Private key(s) deleted successfully', successToastOptions);
 
     await user.refetchUserState();
     await user.refetchKeys();

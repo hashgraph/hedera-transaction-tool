@@ -11,6 +11,7 @@ import { assertUserLoggedIn } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{ show: boolean; recoveryPhraseHash: string }>();
@@ -41,7 +42,7 @@ const handleUpdate = async () => {
 
     await recoveryPhraseNickname.set(props.recoveryPhraseHash, nickname.value);
 
-    toast.success('Nickname updated successfully');
+    toast.success('Nickname updated successfully', successToastOptions);
 
     emit('update:show', false);
     emit('updated');

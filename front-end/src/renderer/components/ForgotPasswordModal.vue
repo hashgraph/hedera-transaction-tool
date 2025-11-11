@@ -23,6 +23,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import OTPInput from '@renderer/components/OTPInput.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -158,7 +159,7 @@ async function handleNewPassword() {
 
     emit('update:show', false);
 
-    toast.success('Password changed successfully');
+    toast.success('Password changed successfully', successToastOptions);
   } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to set new password'));
   }

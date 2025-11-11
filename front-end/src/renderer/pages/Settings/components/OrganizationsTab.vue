@@ -15,6 +15,7 @@ import { assertUserLoggedIn, toggleAuthTokenInSessionStorage } from '@renderer/u
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -37,7 +38,7 @@ const handleDeleteConnection = async (organizationId: string) => {
   toggleAuthTokenInSessionStorage(serverUrl, '', true);
   await user.selectOrganization(null);
   await user.deleteOrganization(organizationId);
-  toast.success('Connection deleted successfully');
+  toast.success('Connection deleted successfully', successToastOptions);
 };
 
 const handleStartNicknameEdit = (index: number) => {

@@ -11,6 +11,7 @@ import { useToast } from 'vue-toast-notification';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import PublicKeysBox from './PublicKeysBox.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -60,9 +61,10 @@ const handleSubmit = async () => {
     } else if (skippedKeys > 0) {
       toast.success(
         `${skippedKeys} of the selected keys were already in your list. The rest were imported successfully.`,
+        successToastOptions
       );
     } else {
-      toast.success(`Public key(s) imported successfully`);
+      toast.success(`Public key(s) imported successfully`, successToastOptions);
     }
 
     handleClose(false);

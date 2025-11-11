@@ -11,6 +11,7 @@ import { getErrorMessage } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Composables */
 const toast = useToast();
@@ -31,7 +32,7 @@ const handleAddOrganization = async () => {
         key: newOrganizationServerPublicKey.value,
       });
 
-      toast.success('Organization added successfully');
+      toast.success('Organization added successfully', successToastOptions);
     } catch (error) {
       toast.error(getErrorMessage(error, 'Failed to add organization'));
     }

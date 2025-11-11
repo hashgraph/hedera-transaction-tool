@@ -16,6 +16,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import { healthCheck } from '@renderer/services/organization';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -58,7 +59,7 @@ const handleAdd = async () => {
       serverUrl: serverUrl.value,
       key: '',
     });
-    toast.success('Organization Added');
+    toast.success('Organization Added', successToastOptions);
     emit('added', organization);
     emit('update:show', false);
   } catch (error) {

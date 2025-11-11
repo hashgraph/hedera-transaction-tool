@@ -28,6 +28,7 @@ import {
 } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -217,7 +218,7 @@ const handleSave = async () => {
   }
 
   if (storedCount > 0) {
-    toast.success(`Key Pair${storedCount > 1 ? 's' : ''} saved successfully`);
+    toast.success(`Key Pair${storedCount > 1 ? 's' : ''} saved successfully`, successToastOptions);
   }
   await user.refetchUserState();
   await router.push({ name: 'settingsKeys' });

@@ -44,6 +44,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -217,7 +218,7 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
     // }
 
     if (unmounted.value) {
-      toast.success('Transaction executed');
+      toast.success('Transaction executed', successToastOptions);
     }
   } catch (error) {
     const data = JSON.parse(getErrorMessage(error, 'Transaction execution failed'));
@@ -347,7 +348,7 @@ async function sendSignedTransactionsToOrganization() {
 
   const group: IGroup = await getApiGroupById(user.selectedOrganization.serverUrl, id);
 
-  toast.success('Transaction submitted successfully');
+  toast.success('Transaction submitted successfully', successToastOptions);
 
   for (const groupItem of group.groupItems) {
     const results = await Promise.allSettled([

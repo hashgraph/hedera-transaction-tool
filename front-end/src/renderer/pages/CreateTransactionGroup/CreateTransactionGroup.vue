@@ -43,6 +43,7 @@ import TransactionGroupProcessor from '@renderer/components/Transaction/Transact
 import SaveTransactionGroupModal from '@renderer/components/modals/SaveTransactionGroupModal.vue';
 import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
@@ -370,7 +371,7 @@ async function handleOnFileChanged(e: Event) {
         }
       }
     }
-    toast.success('Import complete');
+    toast.success('Import complete', successToastOptions);
   } catch (error) {
     toast.error('Failed to import CSV file');
     console.log(error);

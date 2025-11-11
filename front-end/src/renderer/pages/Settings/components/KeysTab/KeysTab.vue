@@ -31,6 +31,7 @@ import DeleteKeyPairsModal from './components/DeleteKeyPairsModal.vue';
 import { RESTORE_MISSING_KEYS } from '@renderer/router';
 import ImportExternalPrivateKeyModal from '@renderer/components/ImportExternalPrivateKeyModal.vue';
 import { KeyType } from '@renderer/types';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -131,7 +132,7 @@ const handleHideDecryptedKey = (publicKey: string) => {
 
 const handleCopy = (text: string, message: string) => {
   navigator.clipboard.writeText(text);
-  toast.success(message);
+  toast.success(message, successToastOptions);
 };
 
 const handleSelectAll = () => {

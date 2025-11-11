@@ -8,6 +8,7 @@ import { resetDataLocal } from '@renderer/services/userService';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 defineProps<{ show: boolean }>();
@@ -29,7 +30,7 @@ const handleResetData = async () => {
   await resetDataLocal();
   user.logout();
 
-  toast.success('User data has been reset');
+  toast.success('User data has been reset', successToastOptions);
 
   emit('update:show', false);
   emit('data:reset');

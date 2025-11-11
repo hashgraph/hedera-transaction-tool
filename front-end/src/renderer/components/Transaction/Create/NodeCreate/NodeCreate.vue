@@ -14,6 +14,7 @@ import { createNodeCreateTransaction } from '@renderer/utils/sdk/createTransacti
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeFormData from '@renderer/components/Transaction/Create/NodeCreate/NodeFormData.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -63,7 +64,7 @@ const handleExecutedSuccess = async () => {
     throw new Error('User is not logged in');
   }
 
-  toast.success(`Node ${data.nodeAccountId} Created`);
+  toast.success(`Node ${data.nodeAccountId} Created`, successToastOptions);
 };
 
 /* Functions */

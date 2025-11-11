@@ -26,6 +26,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import ForgotPasswordModal from '@renderer/components/ForgotPasswordModal.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -85,7 +86,7 @@ const handleLogin = async () => {
     );
     await user.refetchOrganizationTokens();
 
-    toast.success('Successfully signed in');
+    toast.success('Successfully signed in', successToastOptions);
 
     loading.value = false;
 

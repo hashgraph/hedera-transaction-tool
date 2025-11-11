@@ -59,6 +59,7 @@ import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import useContactsStore from '@renderer/stores/storeContacts.ts';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
@@ -311,7 +312,7 @@ const handleSignGroupItem = async (groupItem: IGroupItem) => {
     group.value!.groupItems[index].transaction = updatedTransaction;
     delete unsignedSignersToCheck.value[groupItem.transaction.id];
 
-    toast.success('Transaction signed successfully');
+    toast.success('Transaction signed successfully', successToastOptions);
   } catch {
     toast.error('Transaction not signed');
   } finally {
@@ -345,7 +346,7 @@ const handleCancelAll = async (showModal = false) => {
     }
 
     await handleFetchGroup(group.value!.id);
-    toast.success('Transactions canceled successfully');
+    toast.success('Transactions canceled successfully', successToastOptions);
   } catch {
     toast.error('Transactions not canceled');
   } finally {
@@ -411,7 +412,7 @@ const handleSignAll = async (showModal = false) => {
       );
 
       await handleFetchGroup(group.value!.id);
-      toast.success('Transactions signed successfully');
+      toast.success('Transactions signed successfully', successToastOptions);
     }
   } catch {
     toast.error('Transactions not signed');
@@ -472,7 +473,7 @@ const handleApproveAll = async (showModal = false, approved = false ) => {
           }
         }
       }
-      toast.success(`Transactions ${approved ? 'approved' : 'rejected'} successfully`);
+      toast.success(`Transactions ${approved ? 'approved' : 'rejected'} successfully`, successToastOptions);
 
       if (!approved) {
         await router.push({
@@ -551,7 +552,7 @@ const handleExportGroup = async () => {
     // write the zip file to disk
     await saveFileToPath(zipContent, filePath);
 
-    toast.success('Transaction exported successfully');
+    toast.success('Transaction exported successfully', successToastOptions);
   }
 };
 

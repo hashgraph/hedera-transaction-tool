@@ -21,6 +21,7 @@ import { getTransactionById, importSignatures } from '@renderer/services/organiz
 import useUserStore from '@renderer/stores/storeUser.ts';
 import { assertIsLoggedInOrganization } from '@renderer/utils';
 import { ErrorCodes, ErrorMessages } from '@shared/constants';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -142,11 +143,11 @@ const importSelectedCandidates = async (): Promise<void> => {
     } else {
       // successCount == 1
       const [transactionId] = successResults.entries().next().value!;
-      toast.success('Imported transaction ' + transactionId + ' successfully.');
+      toast.success('Imported transaction ' + transactionId + ' successfully.', successToastOptions);
     }
   } else {
     if (successCount >= 1) {
-      toast.success('Imported ' + successCount + ' transaction(s) successfully.', );
+      toast.success('Imported ' + successCount + ' transaction(s) successfully.', successToastOptions);
     }
     if (errorCount >= 1) {
       toast.error('Failed to import ' + errorCount + ' transaction(s)', dismissFlag);

@@ -55,6 +55,7 @@ import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import { TransactionStatus } from '@shared/interfaces';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Types */
 type ActionButton =
@@ -334,7 +335,7 @@ const handleSign = async () => {
         props.organizationTransaction.id,
       );
       await props.onAction();
-      toast.success('Transaction signed successfully');
+      toast.success('Transaction signed successfully', successToastOptions);
     }
   } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to sign transaction'));
@@ -397,7 +398,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
         approved,
       );
       await props.onAction();
-      toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
+      toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`, successToastOptions);
 
       if (!approved) {
         router.back();
@@ -477,7 +478,7 @@ const handleTransactionAction = async (
     isConfirmModalLoadingState.value = true;
     await actionFunction(user.selectedOrganization.serverUrl, props.organizationTransaction.id);
     await props.onAction();
-    toast.success(successMessage);
+    toast.success(successMessage, successToastOptions);
   } catch (error) {
     isConfirmModalShown.value = false;
     throw error;
@@ -575,7 +576,7 @@ const handleExport = async () => {
     const bytes = encode(props.organizationTransaction);
     await saveFileToPath(bytes, filePath);
 
-    toast.success('Transaction exported successfully');
+    toast.success('Transaction exported successfully', successToastOptions);
   } else if (ext === 'tx') {
     if (user.publicKeys.length === 0) {
       throw new Error(
@@ -595,7 +596,7 @@ const handleExport = async () => {
     const txtFilePath = filePath.replace(/\.[^/.]+$/, '.txt');
     await saveFileToPath(jsonContent, txtFilePath);
 
-    toast.success('Transaction exported successfully');
+    toast.success('Transaction exported successfully', successToastOptions);
   }
 };
 

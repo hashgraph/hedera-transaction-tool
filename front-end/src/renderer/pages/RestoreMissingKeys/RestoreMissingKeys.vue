@@ -20,6 +20,7 @@ import {
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import Import from '@renderer/components/RecoveryPhrase/Import.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -139,7 +140,7 @@ const storeKeys = async (
   await user.refetchUserState();
 
   if (restoredKeys > 0) {
-    toast.success('Key Pairs restored');
+    toast.success('Key Pairs restored', successToastOptions);
   }
   await router.push({ name: 'settingsKeys' });
 };

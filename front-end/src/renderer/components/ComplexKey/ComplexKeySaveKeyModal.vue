@@ -16,6 +16,7 @@ import { encodeKey, isUserLoggedIn } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -47,7 +48,7 @@ const handleSaveKeyList = async () => {
   const keyListBytes = encodeKey(props.keyList);
   const newKey = await addComplexKey(user.personal.id, keyListBytes, nickname.value);
 
-  toast.success('Key list saved successfully');
+  toast.success('Key list saved successfully', successToastOptions);
 
   props.onComplexKeySave(newKey);
 };

@@ -13,6 +13,7 @@ import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import SummaryItem from './SummaryItem.vue';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 defineProps<{
@@ -48,7 +49,7 @@ const handleCopy = (event: ClipboardEvent) => {
       const strippedText = selectedText.replace(/\d+\.\s*/g, ', ');
       event.clipboardData?.setData('text/plain', strippedText);
       event.preventDefault();
-      toast.success('Selected text copied to clipboard');
+      toast.success('Selected text copied to clipboard', successToastOptions);
     }
   }
 };
@@ -57,7 +58,7 @@ const handleCopy = (event: ClipboardEvent) => {
 const copyRecoveryPhrase = () => {
   const recoveryPhrase = user.recoveryPhrase?.words.join(', ') || '';
   navigator.clipboard.writeText(recoveryPhrase).then(() => {
-    toast.success('Recovery phrase copied to clipboard');
+    toast.success('Recovery phrase copied to clipboard', successToastOptions);
   });
 };
 
