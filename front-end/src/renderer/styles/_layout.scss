@@ -96,7 +96,7 @@ input[type='file'] {
   min-height: calc(100vh - 80px);
 
   &.logged-in:not(&.should-setup-account) {
-    margin-left: 260px;
+    margin-left: 210px;
   }
 }
 
@@ -104,7 +104,7 @@ input[type='file'] {
   position: fixed;
   left: 0;
   height: calc(100% - 80px);
-  width: 260px;
+  width: 210px;
   padding: 8px 24px;
   display: flex;
   flex-direction: column;
