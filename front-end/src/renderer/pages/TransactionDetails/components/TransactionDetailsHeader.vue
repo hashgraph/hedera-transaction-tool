@@ -55,6 +55,7 @@ import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import { TransactionStatus } from '@shared/interfaces';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Types */
 type ActionButton =
@@ -117,6 +118,7 @@ const props = defineProps<{
   sdkTransaction: SDKTransaction | null;
   nextId: number | string | null;
   previousId: number | string | null;
+  onAction: () => Promise<void>;
 }>();
 
 /* Stores */
@@ -131,8 +133,8 @@ const toast = useToast();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject()
-const nodeByIdCache = NodeByIdCache.inject()
+const accountByIdCache = AccountByIdCache.inject();
+const nodeByIdCache = NodeByIdCache.inject();
 
 /* State */
 const isConfirmModalShown = ref(false);
@@ -188,7 +190,7 @@ const canSign = computed(() => {
   if (!isLoggedInOrganization(user.selectedOrganization)) return false;
 
   if (isTransactionVersionMismatch.value) {
-    toast.error('Transaction version mismatch. Cannot sign.');
+    toast.error('Transaction version mismatch. Cannot sign.', errorToastOptions);
     return false;
   }
 
@@ -201,20 +203,13 @@ const canExecute = computed(() => {
   const status = props.organizationTransaction?.status;
   const isManual = props.organizationTransaction?.isManual;
 
-  return (
-    status === TransactionStatus.WAITING_FOR_EXECUTION &&
-    isManual &&
-    isCreator.value
-  );
+  return status === TransactionStatus.WAITING_FOR_EXECUTION && isManual && isCreator.value;
 });
 
 const canRemind = computed(() => {
   const status = props.organizationTransaction?.status;
 
-  return (
-    status === TransactionStatus.WAITING_FOR_SIGNATURES &&
-    isCreator.value
-  );
+  return status === TransactionStatus.WAITING_FOR_SIGNATURES && isCreator.value;
 });
 
 const canArchive = computed(() => {
@@ -299,7 +294,7 @@ const handleSign = async () => {
       user.selectedOrganization.userKeys,
       network.mirrorNodeBaseURL,
       accountByIdCache,
-      nodeByIdCache
+      nodeByIdCache,
     );
 
     const restoredRequiredKeys = [];
@@ -320,6 +315,7 @@ const handleSign = async () => {
         `You need to restore the following public keys to fully sign the transaction: ${requiredNonRestoredKeys.join(
           ', ',
         )}`,
+        errorToastOptions,
       );
     }
 
@@ -332,10 +328,11 @@ const handleSign = async () => {
         SDKTransaction.fromBytes(props.sdkTransaction.toBytes()),
         props.organizationTransaction.id,
       );
-      toast.success('Transaction signed successfully');
+      await props.onAction();
+      toast.success('Transaction signed successfully', successToastOptions);
     }
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to sign transaction'));
+    toast.error(getErrorMessage(error, 'Failed to sign transaction'), errorToastOptions);
   } finally {
     loadingStates[sign] = null;
   }
@@ -394,7 +391,11 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
         signature,
         approved,
       );
-      toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
+      await props.onAction();
+      toast.success(
+        `Transaction ${approved ? 'approved' : 'rejected'} successfully`,
+        successToastOptions,
+      );
 
       if (!approved) {
         router.back();
@@ -473,7 +474,8 @@ const handleTransactionAction = async (
     confirmModalLoadingText.value = loadingText;
     isConfirmModalLoadingState.value = true;
     await actionFunction(user.selectedOrganization.serverUrl, props.organizationTransaction.id);
-    toast.success(successMessage);
+    await props.onAction();
+    toast.success(successMessage, successToastOptions);
   } catch (error) {
     isConfirmModalShown.value = false;
     throw error;
@@ -571,7 +573,7 @@ const handleExport = async () => {
     const bytes = encode(props.organizationTransaction);
     await saveFileToPath(bytes, filePath);
 
-    toast.success('Transaction exported successfully');
+    toast.success('Transaction exported successfully', successToastOptions);
   } else if (ext === 'tx') {
     if (user.publicKeys.length === 0) {
       throw new Error(
@@ -591,7 +593,7 @@ const handleExport = async () => {
     const txtFilePath = filePath.replace(/\.[^/.]+$/, '.txt');
     await saveFileToPath(jsonContent, txtFilePath);
 
-    toast.success('Transaction exported successfully');
+    toast.success('Transaction exported successfully', successToastOptions);
   }
 };
 
@@ -665,7 +667,7 @@ watch(
     results.forEach(
       r =>
         r.status === 'rejected' &&
-        toast.error(getErrorMessage(r.reason, 'Failed to load transaction details')),
+        toast.error(getErrorMessage(r.reason, 'Failed to load transaction details'), errorToastOptions),
     );
   },
 );

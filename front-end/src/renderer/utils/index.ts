@@ -1,7 +1,7 @@
 import type { AccountInfo } from '@shared/interfaces';
 import type { HederaAccount } from '@prisma/client';
 
-import { AccountId, Client, Hbar, HbarUnit } from '@hashgraph/sdk';
+import { AccountId, Client, Hbar, HbarUnit, Long } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -222,15 +222,18 @@ export const getAccountIdWithChecksum = (accountId: string): string => {
   }
 };
 
-export function stringifyHbarWithFont(hbar: Hbar, fontClass: string): string {
-  const tinybars = hbar.toTinybars().isNegative() ? hbar.toTinybars().negate() : hbar.toTinybars();
-  const isHbar = tinybars >= Hbar.fromTinybars(1_000_000).toTinybars();
-  const symbol = isHbar ? HbarUnit.Hbar._symbol : HbarUnit.Tinybar._symbol;
-  const amountString = isHbar
-    ? hbar.to(HbarUnit.Hbar).toString()
-    : hbar.to(HbarUnit.Tinybar).toString();
+const TINYBAR_THRESHOLD = 1_000_000;
 
-  return `${amountString} <span class="${fontClass}">${symbol}</span>`;
+export function stringifyHbarWithFont(hbar: Hbar, fontClass: string): string {
+  const amount = hbar.isNegative() ? hbar.toTinybars().negate() : hbar.toTinybars();
+  const showTinybars = amount.lessThan(Long.fromNumber(TINYBAR_THRESHOLD));
+
+  const displayAmount = showTinybars
+    ? amount.toString()
+    : Hbar.fromTinybars(amount).toBigNumber().toString();
+  const displayUnit = showTinybars ? HbarUnit.Tinybar._symbol : HbarUnit.Hbar._symbol;
+
+  return `${displayAmount} <span class="${fontClass}">${displayUnit}</span>`;
 }
 
 export const splitMultipleAccounts = (input: string, client: Client): string[] => {

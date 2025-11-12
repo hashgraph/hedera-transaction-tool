@@ -27,6 +27,7 @@ import { isUserLoggedIn, getFormattedDateFromTimestamp, safeAwait } from '@rende
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -68,7 +69,7 @@ const handleLinkEntity = async () => {
     },
   });
 
-  toast.success(`File ${entityId.value} linked`);
+  toast.success(`File ${entityId.value} linked`, successToastOptions);
 };
 
 /* Functions */

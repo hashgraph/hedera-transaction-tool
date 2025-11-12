@@ -4,7 +4,7 @@ import type {
   IUpdateNotificationReceiver,
 } from '@shared/interfaces';
 
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 
 import { NotificationType } from '@shared/interfaces';
@@ -22,6 +22,7 @@ import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 import useUserStore from './storeUser';
 import useWebsocketConnection from './storeWebsocketConnection';
 import useNetworkStore from './storeNetwork';
+import type { ConnectedOrganization } from '@renderer/types';
 
 const useNotificationsStore = defineStore('notifications', () => {
   /* Stores */
@@ -66,22 +67,32 @@ const useNotificationsStore = defineStore('notifications', () => {
     }
     return counts;
   });
+  const loggedInOrganization = computed((): ConnectedOrganization | null => {
+    let result: ConnectedOrganization | null;
+    if (isUserLoggedIn(user.personal) && isLoggedInOrganization(user.selectedOrganization)) {
+      result = user.selectedOrganization;
+    } else {
+      result = null;
+    }
+    return result;
+  });
+  const organizationServerUrls = computed(() => {
+    let result: string[];
+    if (isUserLoggedIn(user.personal)) {
+      result = user.organizations.map(o => o.serverUrl);
+    } else {
+      result = [];
+    }
+    return result;
+  });
 
   let notificationsQueue = Promise.resolve();
 
-  /* Actions */
-  async function setup() {
-    await fetchPreferences();
-    await fetchNotifications();
-  }
-
   /** Preferences **/
   async function fetchPreferences() {
-    if (!isUserLoggedIn(user.personal)) return;
-
-    if (isLoggedInOrganization(user.selectedOrganization)) {
+    if (loggedInOrganization.value !== null) {
       const userPreferences = await getUserNotificationPreferences(
-        user.selectedOrganization?.serverUrl,
+        loggedInOrganization.value.serverUrl,
       );
 
       const newPreferences = { ...notificationsPreferences.value };
@@ -95,12 +106,12 @@ const useNotificationsStore = defineStore('notifications', () => {
   }
 
   async function updatePreferences(data: IUpdateNotificationPreferencesDto) {
-    if (!isLoggedInOrganization(user.selectedOrganization)) {
+    if (loggedInOrganization.value === null) {
       throw new Error('No organization selected');
     }
 
     const newPreferences = await updateUserNotificationPreferences(
-      user.selectedOrganization.serverUrl,
+      loggedInOrganization.value.serverUrl,
       data,
     );
 
@@ -113,9 +124,7 @@ const useNotificationsStore = defineStore('notifications', () => {
   /** Notifications **/
   async function fetchNotifications() {
     notificationsQueue = notificationsQueue.then(async () => {
-      if (!isUserLoggedIn(user.personal)) return;
-
-      const severUrls = user.organizations.map(o => o.serverUrl);
+      const severUrls = organizationServerUrls.value;
       const results = await Promise.allSettled(
         user.organizations.map(o => getAllInAppNotifications(o.serverUrl, true)),
       );
@@ -214,12 +223,13 @@ const useNotificationsStore = defineStore('notifications', () => {
     }
   });
 
+  /* Watchers */
+  watch(loggedInOrganization, async () => await fetchPreferences(), { immediate: true });
+  watch(organizationServerUrls, async () => await fetchNotifications(), { immediate: true });
+
   return {
     notificationsPreferences,
     notifications,
-    setup,
-    fetchPreferences,
-    fetchNotifications,
     updatePreferences,
     markAsRead,
     markAsReadIds,

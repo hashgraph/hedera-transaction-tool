@@ -27,17 +27,15 @@ export const redirectToDetails = (
   });
 };
 
-export const redirectToGroupDetails = (
+export const redirectToGroupDetails = async (
   router: Router,
   id: string | number,
-  replace = false,
   previousTab?: string,
 ) => {
-  router.push({
+  await router.push({
     name: 'transactionGroupDetails',
     params: { id },
-    query: previousTab ? { previousTab } : undefined,
-    replace,
+    query: previousTab ? { previousTab } : {},
   });
 };
 
@@ -49,7 +47,7 @@ export const redirectToPreviousTransactionsTab = async (router: Router) => {
   await router.push({
     name: 'transactions',
     query: {
-      tab: router.previousTab
-    }
+      tab: router.previousTab,
+    },
   });
-}
+};

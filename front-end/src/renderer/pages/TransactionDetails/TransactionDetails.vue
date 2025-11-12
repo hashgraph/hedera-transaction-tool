@@ -102,7 +102,8 @@ const creator = computed(() => {
 });
 
 /* Functions */
-async function fetchTransaction(id: string | number) {
+async function fetchTransaction() {
+  const id = formattedId.value!;
   let transactionBytes: Uint8Array;
   try {
     if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
@@ -160,21 +161,25 @@ async function fetchTransaction(id: string | number) {
 const subscribeToTransactionAction = () => {
   if (!user.selectedOrganization?.serverUrl) return;
   ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
-    const id = router.currentRoute.value.params.id;
-    const formattedId = Array.isArray(id) ? id[0] : id;
-    await fetchTransaction(formattedId);
+    await fetchTransaction();
+    const id = formattedId.value!;
     nextId.value = await nextTransaction.getNext(
-      isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
+      isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
     );
     prevId.value = await nextTransaction.getPrevious(
-      isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
+      isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
     );
   });
 };
 
+const formattedId = computed(() => {
+  const id = router.currentRoute.value.params.id;
+  return id ? (Array.isArray(id) ? id[0] : id) : null;
+})
+
 /* Hooks */
 onBeforeMount(async () => {
-  const id = router.currentRoute.value.params.id;
+  const id = formattedId.value;
 
   if (!id) {
     router.back();
@@ -185,15 +190,14 @@ onBeforeMount(async () => {
   if (!keepNextTransaction) nextTransaction.reset();
 
   subscribeToTransactionAction();
-  const formattedId = Array.isArray(id) ? id[0] : id;
 
   const result = await Promise.all([
-    fetchTransaction(formattedId),
+    fetchTransaction(),
     nextTransaction.getNext(
-      isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
+      isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
     ),
     nextTransaction.getPrevious(
-      isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
+      isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
     ),
   ]);
   nextId.value = result[1];
@@ -242,6 +246,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           :local-transaction="localTransaction"
           :next-id="nextId"
           :previous-id="prevId"
+          :on-action="fetchTransaction"
         />
 
         <Transition name="fade" mode="out-in">

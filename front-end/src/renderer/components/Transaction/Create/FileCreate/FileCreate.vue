@@ -24,6 +24,7 @@ import {
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import FileCreateFormData from './FileCreateFormData.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -95,7 +96,7 @@ const handleExecutedSuccess = async ({ receipt }: ExecutedSuccessData) => {
   };
 
   await add(file);
-  toast.success(`File ${newFileId} linked`);
+  toast.success(`File ${newFileId} linked`, successToastOptions);
 };
 
 /* Functions */

@@ -19,6 +19,7 @@ import { useRouter } from 'vue-router';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const { restoredKey, mnemonicHashNickname, index } = defineProps<{
@@ -94,10 +95,10 @@ const handleSaveKey = async () => {
     user.recoveryPhrase = null;
     await user.refetchUserState();
 
-    toast.success('Key pair saved');
+    toast.success('Key pair saved', successToastOptions);
     await router.push({ name: 'settingsKeys' });
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to store private key'));
+    toast.error(getErrorMessage(error, 'Failed to store private key'), errorToastOptions);
   } finally {
     loadingText.value = null;
   }

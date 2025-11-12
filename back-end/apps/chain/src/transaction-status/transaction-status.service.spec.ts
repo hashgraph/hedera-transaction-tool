@@ -10,15 +10,13 @@ import {
   computeSignatureKey,
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
-  NOTIFY_GENERAL,
   smartCollate,
   notifySyncIndicators,
   notifyTransactionAction,
-  notifyWaitingForSignatures,
-  getNetwork,
+  processTransactionStatus,
+  notifyStatusChange,
 } from '@app/common';
 import {
-  NotificationType,
   Transaction,
   TransactionGroup,
   TransactionGroupItem,
@@ -322,70 +320,26 @@ describe('TransactionStatusService', () => {
       jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
+      jest.mocked(processTransactionStatus).mockResolvedValueOnce(TransactionStatus.WAITING_FOR_EXECUTION)
+      jest.mocked(processTransactionStatus).mockResolvedValueOnce(TransactionStatus.WAITING_FOR_SIGNATURES)
 
       await service.updateTransactions(new Date(), new Date());
 
-      expect(transactionRepo.update).toHaveBeenNthCalledWith(
-        1,
-        {
-          id: transactions[0].id,
-        },
-        {
-          status: TransactionStatus.WAITING_FOR_EXECUTION,
-        },
-      );
-      expect(transactionRepo.update).toHaveBeenNthCalledWith(
-        2,
-        {
-          id: transactions[1].id,
-        },
-        {
-          status: TransactionStatus.WAITING_FOR_SIGNATURES,
-        },
-      );
+      expect(notifyStatusChange).toHaveBeenCalledTimes(2);
 
-      expect(notifySyncIndicators).toHaveBeenCalledWith(
-        notificationsService,
-        transactions[0].id,
-        TransactionStatus.WAITING_FOR_EXECUTION,
-        { network: transactions[0].mirrorNetwork },
-      );
-      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_GENERAL, {
-        entityId: transactions[0].id,
-        type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
-        actorId: null,
-        userIds: [transactions[0].creatorKey?.userId],
-        additionalData: {
-          network: transactions[0].mirrorNetwork,
-          transactionId: "0.0.1",
-        },
-      });
-      expect(notifySyncIndicators).toHaveBeenNthCalledWith(
+      expect(notifyStatusChange).toHaveBeenNthCalledWith(
         1,
         notificationsService,
-        transactions[0].id,
+        transactions[0],
         TransactionStatus.WAITING_FOR_EXECUTION,
-        {
-          network: transactions[0].mirrorNetwork,
-        }
-      );
-      expect(notifySyncIndicators).toHaveBeenNthCalledWith(
+      )
+      expect(notifyStatusChange).toHaveBeenNthCalledWith(
         2,
         notificationsService,
-        transactions[1].id,
+        transactions[1],
         TransactionStatus.WAITING_FOR_SIGNATURES,
-        {
-          network: transactions[1].mirrorNetwork,
-        }
-      );
-      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(
-        notificationsService,
-        transactions[1].id,
-        {
-          network: transactions[1].mirrorNetwork,
-          transactionId: "0.0.2",
-        },
-      );
+      )
+
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
       expect(notifyTransactionAction).toHaveBeenCalledTimes(1);
     });
@@ -443,58 +397,19 @@ describe('TransactionStatusService', () => {
 
       jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
+      jest.mocked(processTransactionStatus).mockResolvedValueOnce(TransactionStatus.WAITING_FOR_EXECUTION)
 
       await service.updateTransactionStatus({ id: transaction.id });
 
-      const networkString = getNetwork(transaction as Transaction);
+      expect(notifyStatusChange).toHaveBeenCalledTimes(1);
 
-      expect(transactionRepo.update).toHaveBeenNthCalledWith(
+      expect(notifyStatusChange).toHaveBeenNthCalledWith(
         1,
-        {
-          id: 1,
-        },
-        {
-          status: TransactionStatus.WAITING_FOR_EXECUTION,
-        },
-      );
-      expect(notifySyncIndicators).toHaveBeenCalledWith(
         notificationsService,
-        transaction.id,
+        transaction,
         TransactionStatus.WAITING_FOR_EXECUTION,
-        { network: transaction.mirrorNetwork },
-      );
-      expect(notificationsService.emit).toHaveBeenCalledWith(NOTIFY_GENERAL, {
-        entityId: transaction.id,
-        type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
-        actorId: null,
-        userIds: [transaction.creatorKey?.userId],
-        additionalData: {
-          network: transaction.mirrorNetwork,
-          transactionId: transaction.transactionId
-        },
-      });
+      )
       expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
-    });
-
-    it('should not emit notifications event if no transactions updated', async () => {
-      const transaction = {
-        id: 1,
-        status: TransactionStatus.WAITING_FOR_EXECUTION,
-        transactionBytes: new AccountCreateTransaction().toBytes(),
-      };
-
-      transactionRepo.findOne.mockResolvedValue(transaction as Transaction);
-
-      jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
-      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
-      jest.mocked(smartCollate).mockReturnValueOnce(null);
-      jest.spyOn(transactionRepo, 'update').mockRejectedValueOnce(new Error('Error'));
-
-      await expect(service.updateTransactionStatus({ id: transaction.id })).rejects.toThrow(
-        'Error',
-      );
-
-      expectNotifyNotCalled();
     });
 
     it('should return if transaction does not exist', async () => {
