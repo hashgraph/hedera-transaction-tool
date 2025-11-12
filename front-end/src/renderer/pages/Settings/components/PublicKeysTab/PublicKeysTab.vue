@@ -11,6 +11,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import DeletePublicKeyMappingModal from './components/DeletePublicKeyMappingModal.vue';
 import RenamePublicKeyModal from './components/RenamePublicKeyModal.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -41,7 +42,7 @@ const handleStartNicknameEdit = (publicKeyMapping: PublicKeyMapping) => {
 
 const handleCopy = (text: string, message: string) => {
   navigator.clipboard.writeText(text);
-  toast.success(message);
+  toast.success(message, successToastOptions);
 };
 
 const handleSelectAll = () => {

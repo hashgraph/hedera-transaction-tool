@@ -581,6 +581,20 @@
   }
 }
 
+.v-toast {
+  &__item--warning {
+    background-color: var(--#{$prefix}toast-bg-color-warning) !important;
+    color: var(--#{$prefix}toast-color-warning) !important;
+  }
+}
+
+.v-toast {
+  &__item--error {
+    background-color: var(--#{$prefix}toast-bg-color-error) !important;
+    color: var(--#{$prefix}toast-color-error) !important;
+  }
+}
+
 /* Tables */
 .table-custom {
   border-collapse: separate;

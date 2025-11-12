@@ -19,6 +19,7 @@ import Import from '@renderer/components/RecoveryPhrase/Import.vue';
 import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
 import DeleteAllKeysRequiringHashMigrationModal from '@renderer/components/modals/DeleteAllKeysRequiringHashMigrationModal.vue';
 import { updateIndex, updateMnemonicHash } from '@renderer/services/keyPairService.ts';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -98,7 +99,7 @@ const handleContinue = async () => {
     updateKeyPairsHash(keysToUpdate.value, user.recoveryPhrase.hash),
   );
   if (!error) {
-    toast.success('Recovery phrase hash updated successfully');
+    toast.success('Recovery phrase hash updated successfully', successToastOptions);
     await router.push({ name: 'transactions' });
   }
   loadingText.value = null;

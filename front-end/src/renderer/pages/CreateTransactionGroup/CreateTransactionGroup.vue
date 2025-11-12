@@ -43,6 +43,7 @@ import TransactionGroupProcessor from '@renderer/components/Transaction/Transact
 import SaveTransactionGroupModal from '@renderer/components/modals/SaveTransactionGroupModal.vue';
 import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
@@ -58,7 +59,7 @@ useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { dateTimeSettingLabel } = useDateTimeSetting();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject()
+const accountByIdCache = AccountByIdCache.inject();
 
 /* State */
 const groupDescription = ref('');
@@ -143,9 +144,9 @@ function handleBack() {
   router.push({
     name: 'transactions',
     query: {
-      tab: router.previousTab
-    }
-  } );
+      tab: router.previousTab,
+    },
+  });
 }
 
 async function handleDelete() {
@@ -178,7 +179,7 @@ const handleLoadGroup = async () => {
 
 async function handleSignSubmit() {
   if (groupDescription.value.trim() === '') {
-    toast.error('Group Description Required');
+    toast.error('Group Description Required', errorToastOptions);
     return;
   }
 
@@ -194,7 +195,7 @@ async function handleSignSubmit() {
     await transactionGroupProcessor.value?.process(requiredKey);
   } catch (error) {
     updateValidStarts.value = true;
-    toast.error(getErrorMessage(error, 'Failed to create transaction'));
+    toast.error(getErrorMessage(error, 'Failed to create transaction'), errorToastOptions);
   }
 }
 
@@ -268,6 +269,7 @@ async function handleOnFileChanged(e: Event) {
           } catch (error) {
             toast.error(
               `Sender account ${senderAccount} does not exist on network. Review the CSV file.`,
+              errorToastOptions,
             );
             console.log(error);
             return;
@@ -280,6 +282,7 @@ async function handleOnFileChanged(e: Event) {
           } catch (error) {
             toast.error(
               `Fee payer account ${feePayer} does not exist on network. Review the CSV file.`,
+              errorToastOptions,
             );
             console.log(error);
             return;
@@ -323,6 +326,7 @@ async function handleOnFileChanged(e: Event) {
           } catch (error) {
             toast.error(
               `Receiver account ${receiverAccount} does not exist on network. Review the CSV file.`,
+              errorToastOptions,
             );
             console.log(error);
             transactionGroup.clearGroup();
@@ -370,9 +374,9 @@ async function handleOnFileChanged(e: Event) {
         }
       }
     }
-    toast.success('Import complete');
+    toast.success('Import complete', successToastOptions);
   } catch (error) {
-    toast.error('Failed to import CSV file');
+    toast.error('Failed to import CSV file', errorToastOptions);
     console.log(error);
   } finally {
     if (file.value != null) {

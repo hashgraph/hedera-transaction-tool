@@ -11,6 +11,7 @@ import { getErrorMessage } from '@renderer/utils';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 /* Store */
 const user = useUserStore();
 
@@ -43,15 +44,15 @@ const handleUpdate = async () => {
         props.publicKeyMapping.public_key,
         newNickname.value,
       );
-      toast.success('Nickname updated successfully');
+      toast.success('Nickname updated successfully', successToastOptions);
     } else if (props.publicKey) {
       await user.storePublicKeyMapping(props.publicKey, newNickname.value);
-      toast.success('Nickname set successfully');
+      toast.success('Nickname set successfully', successToastOptions);
     }
     emit('change');
     handleShow(false);
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to rename public key mapping'));
+    toast.error(getErrorMessage(error, 'Failed to rename public key mapping'), errorToastOptions);
   } finally {
     isUpdating.value = false;
   }

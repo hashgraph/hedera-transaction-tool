@@ -21,6 +21,7 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -64,9 +65,12 @@ const handleLinkAccount = async () => {
     }
 
     if (failedEmails.length > 0) {
-      toast.error(`Failed to sign up users with emails: ${failedEmails.join(', ')}`);
+      toast.error(
+        `Failed to sign up users with emails: ${failedEmails.join(', ')}`,
+        errorToastOptions,
+      );
     } else {
-      toast.success('All users signed up successfully');
+      toast.success('All users signed up successfully', successToastOptions);
     }
   } else {
     if (!isEmail(email.value)) throw new Error('Invalid email');
@@ -76,7 +80,7 @@ const handleLinkAccount = async () => {
 
       const id = await signUpUser(email.value);
 
-      toast.success('User signed up successfully');
+      toast.success('User signed up successfully', successToastOptions);
 
       if (nickname.value.trim().length > 0) {
         await addContact({
@@ -89,7 +93,7 @@ const handleLinkAccount = async () => {
       }
     } catch (error) {
       console.error(error);
-      toast.error('Failed to sign up user');
+      toast.error('Failed to sign up user', errorToastOptions);
     }
   }
   router.back();

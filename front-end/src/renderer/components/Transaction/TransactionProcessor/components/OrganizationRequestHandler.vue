@@ -20,6 +20,7 @@ import {
   getPrivateKey,
   uint8ToHex,
 } from '@renderer/utils';
+import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -85,7 +86,7 @@ async function handle(req: Processable) {
 
     results.forEach(result => {
       if (result.status === 'rejected') {
-        toast.error(result.reason.message);
+        toast.error(result.reason.message, errorToastOptions);
       }
     });
 

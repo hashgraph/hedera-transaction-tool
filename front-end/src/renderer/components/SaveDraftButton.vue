@@ -12,6 +12,7 @@ import { addDraft, getDraft, updateDraft } from '@renderer/services/transactionD
 import { getTransactionFromBytes, isUserLoggedIn, redirectToPreviousTransactionsTab } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 const emit = defineEmits<{
   (event: 'draft-saved'): void;
@@ -50,13 +51,13 @@ const handleDraft = async () => {
           description: props.description,
         });
         emit('draft-saved');
-        toast.success('Draft updated');
+        toast.success('Draft updated', successToastOptions);
         await redirectToPreviousTransactionsTab(router)
       }
     } else {
       await addDraft(user.personal.id, transactionBytes, props.description);
       emit('draft-saved');
-      toast.success('Draft saved');
+      toast.success('Draft saved', successToastOptions);
       await redirectToPreviousTransactionsTab(router)
     }
   } catch (error) {

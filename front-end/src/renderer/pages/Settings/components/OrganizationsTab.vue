@@ -15,6 +15,7 @@ import { assertUserLoggedIn, toggleAuthTokenInSessionStorage } from '@renderer/u
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -37,7 +38,7 @@ const handleDeleteConnection = async (organizationId: string) => {
   toggleAuthTokenInSessionStorage(serverUrl, '', true);
   await user.selectOrganization(null);
   await user.deleteOrganization(organizationId);
-  toast.success('Connection deleted successfully');
+  toast.success('Connection deleted successfully', successToastOptions);
 };
 
 const handleStartNicknameEdit = (index: number) => {
@@ -65,9 +66,9 @@ const handleChangeNickname = async (e: Event) => {
   const nickname = (e.target as HTMLInputElement)?.value?.trim() || '';
 
   if (nickname.length === 0) {
-    toast.error('Nickname cannot be empty');
+    toast.error('Nickname cannot be empty', errorToastOptions);
   } else if (user.organizations.some(org => org.nickname === nickname)) {
-    toast.error('Nickname already exists');
+    toast.error('Nickname already exists', errorToastOptions);
   } else {
     await updateOrganization(user.organizations[index].id, { nickname });
     user.organizations[index].nickname = nickname;

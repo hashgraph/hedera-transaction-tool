@@ -14,6 +14,7 @@ import { getNodeDeleteData } from '@renderer/utils';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeDeleteFormData from '@renderer/components/Transaction/Create/NodeDelete/NodeDeleteFormData.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Composables */
 const toast = useToast();
@@ -51,7 +52,7 @@ const handleUpdateData = (newData: NodeDeleteData) => {
 };
 
 const handleExecutedSuccess = async () => {
-  toast.success(`Node ${data.nodeId} Deleted`);
+  toast.success(`Node ${data.nodeId} Deleted`, successToastOptions);
 };
 
 /* Functions */

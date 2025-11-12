@@ -422,7 +422,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
           <Button
             size="small"
             class="ms-3"
-            onClick={() => toast.success('Success')}
+            onClick={() => toast.success('Success', successToastOptions)}
             type="primary"
           >
             Open toast success
@@ -430,7 +430,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
           <Button
             size="small"
             class="ms-3"
-            onClick={() => toast.error('Danger')}
+            onClick={() => toast.error('Danger', errorToastOptions)}
             type="primary"
           >
             Open toast danger

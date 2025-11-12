@@ -14,6 +14,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppPublicKeyInput from '@renderer/components/ui/AppPublicKeyInput.vue';
 import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/ComplexKeyAddPublicKeyModal.vue';
 import ComplexKeySelectAccountModal from '@renderer/components/ComplexKey/ComplexKeySelectAccountModal.vue';
+import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -47,7 +48,7 @@ const handleSelectAccount = (key: Key) => {
   const keys = new KeyList(props.keyList.toArray().filter(key => key instanceof PublicKey));
 
   if (key instanceof PublicKey && isPublicKeyInKeyList(key, keys)) {
-    toast.error('Public key already exists in the key list');
+    toast.error('Public key already exists in the key list', errorToastOptions);
   } else {
     const keys = props.keyList.toArray();
     keys.push(key);
@@ -66,7 +67,7 @@ const handleAddPublicKey = (publicKeys: PublicKey[]) => {
     if (!isPublicKeyInKeyList(publicKey, publicKeysInKeyList)) {
       keys.push(publicKey);
     } else {
-      toast.error(`${publicKey.toStringRaw()} already exists in the key list`);
+      toast.error(`${publicKey.toStringRaw()} already exists in the key list`, errorToastOptions);
     }
   }
 

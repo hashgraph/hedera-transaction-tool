@@ -28,6 +28,7 @@ import {
 } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -99,7 +100,10 @@ const addKeyToRestored = async (index: number, mnemonicHash: string, veirificati
       keys.value.push(key);
     }
   } catch (error) {
-    toast.error(getErrorMessage(error, `Restoring key at index: ${index} failed`));
+    toast.error(
+      getErrorMessage(error, `Restoring key at index: ${index} failed`),
+      errorToastOptions,
+    );
   }
 };
 
@@ -134,7 +138,7 @@ const restoreForOrganization = async (organization: ConnectedOrganization) => {
   }
 
   for (const error of restoredKeys.failedRestoreMessages) {
-    toast.error(error);
+    toast.error(error, errorToastOptions);
   }
 
   if (restoredKeys.keys.length === 0) {
@@ -212,12 +216,12 @@ const handleSave = async () => {
       }
       storedCount++;
     } catch (error) {
-      toast.error(getErrorMessage(error, `Failed to store key pair: ${key.publicKey}`));
+      toast.error(getErrorMessage(error, `Failed to store key pair: ${key.publicKey}`), errorToastOptions);
     }
   }
 
   if (storedCount > 0) {
-    toast.success(`Key Pair${storedCount > 1 ? 's' : ''} saved successfully`);
+    toast.success(`Key Pair${storedCount > 1 ? 's' : ''} saved successfully`, successToastOptions);
   }
   await user.refetchUserState();
   await router.push({ name: 'settingsKeys' });
