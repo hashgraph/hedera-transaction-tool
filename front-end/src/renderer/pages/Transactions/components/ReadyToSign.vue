@@ -104,7 +104,7 @@ const handleGroupDetails = async (id: number) => {
 
   await notifications.markAsReadIds(notificationIds);
 
-  redirectToGroupDetails(router, id, false, 'readyToSign')
+  await redirectToGroupDetails(router, id, 'readyToSign');
 };
 
 const handleSingleDetails = async (id: number) => {

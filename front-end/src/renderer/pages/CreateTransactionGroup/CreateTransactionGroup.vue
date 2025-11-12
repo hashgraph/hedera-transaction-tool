@@ -201,7 +201,7 @@ async function handleSignSubmit() {
 function handleExecuted(id: string) {
   transactionGroup.clearGroup();
   if (user.selectedOrganization) {
-    redirectToGroupDetails(router, id);
+    redirectToGroupDetails(router, id).then();
   } else {
     redirectToPreviousTransactionsTab(router);
   }
@@ -209,7 +209,7 @@ function handleExecuted(id: string) {
 
 function handleSubmit(id: number) {
   transactionGroup.clearGroup();
-  redirectToGroupDetails(router, id);
+  redirectToGroupDetails(router, id).then();
 }
 
 function handleClose() {

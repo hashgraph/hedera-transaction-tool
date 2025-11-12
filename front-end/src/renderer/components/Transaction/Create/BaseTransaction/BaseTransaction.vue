@@ -196,7 +196,7 @@ const handleSubmit = (id: number, body: string) => {
 
 const handleGroupSubmit = (id: number) => {
   isProcessed.value = true;
-  redirectToGroupDetails(router, id);
+  redirectToGroupDetails(router, id).then();
   emit('group:submitted', id);
 };
 
