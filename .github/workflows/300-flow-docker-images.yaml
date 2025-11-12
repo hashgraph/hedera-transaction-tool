@@ -1,16 +1,16 @@
-name: Create and publish Transaction Tool Docker images
+name: '300: [FLOW] Docker Images'
 
 on:
-    push:
-        tags:
-          - 'v*'
-    workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
 
 permissions:
-    contents: read
-    packages: write
-    attestations: write
-    id-token: write
+  contents: read
+  packages: write
+  attestations: write
+  id-token: write
 
 env:
   REGISTRY: ghcr.io
