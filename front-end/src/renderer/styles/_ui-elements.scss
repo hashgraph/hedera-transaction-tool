@@ -63,7 +63,7 @@
   background-color: var(--#{$prefix}btn-group-container-bg-color);
   border-radius: 10px;
   padding: 8px;
-  box-shadow: 1px 1px 1px 0px #00000012 inset;
+  box-shadow: 1px 1px 1px 0 #00000012 inset;
 }
 
 .btn-group {
@@ -603,7 +603,6 @@
 
   td,
   th {
-    padding: 8px 16px;
     white-space: nowrap;
 
     &:first-of-type {
@@ -631,12 +630,23 @@
     background-color: var(--#{$prefix}card-primary-bg-color);
     font-size: 12px;
     font-weight: 400;
+    padding: 8px;
   }
 
   td {
     background-color: var(--#{$prefix}card-primary-bg-color);
     font-size: 14px;
-    padding: 16px;
+    padding: 16px 8px;
+  }
+
+  th:first-child,
+  td:first-child {
+    padding-left: 16px;
+  }
+
+  th:last-child,
+  td:last-child {
+    padding-right: 16px;
   }
 
   thead {
@@ -1081,7 +1091,7 @@
     }
 
     .autocomplete-item-custom {
-      margin: 5px 0px;
+      margin: 5px 0;
       padding: 5px 12px;
 
       cursor: pointer;
