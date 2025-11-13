@@ -62,6 +62,7 @@ import useContactsStore from '@renderer/stores/storeContacts.ts';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
@@ -825,8 +826,8 @@ function tooltipText(status: TransactionStatus): string {
                               </td>
                               <td>
                                 <span class="text-bold">{{
-                                  TransactionTypeName[groupItem.transaction.type]
-                                }}</span>
+                                    formatTransactionType(TransactionTypeName[groupItem.transaction.type], false, true,)
+                                  }}</span>
                               </td>
                               <td data-testid="td-group-valid-start-time">
                                 <DateTimeString
