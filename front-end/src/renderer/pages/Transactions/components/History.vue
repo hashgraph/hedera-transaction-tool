@@ -430,7 +430,6 @@ watch(
                       :data-testid="`button-transaction-details-${index}`"
                       @click="handleDetails(transaction.id)"
                       color="secondary"
-                      class="min-w-unset"
                       >Details</AppButton
                     >
                   </td>
@@ -500,7 +499,6 @@ watch(
                       :data-testid="`button-transaction-details-${index}`"
                       @click="handleDetails(transactionData.transactionRaw.id)"
                       color="secondary"
-                      class="min-w-unset"
                       >Details</AppButton
                     >
                   </td>

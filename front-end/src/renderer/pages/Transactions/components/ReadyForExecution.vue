@@ -334,7 +334,6 @@ watch(
                     @click="handleDetails(tx.transactionRaw.id)"
                     :data-testid="`button-transaction-ready-execution-details-${index}`"
                     color="secondary"
-                    class="min-w-unset"
                     >Details</AppButton
                   >
                 </td>

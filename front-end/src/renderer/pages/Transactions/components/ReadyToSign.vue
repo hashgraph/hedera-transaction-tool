@@ -487,7 +487,6 @@ watch(
                     @click="handleSign(tx.transactionRaw.id)"
                     :data-testid="`button-transaction-sign-${index}`"
                     color="secondary"
-                    class="min-w-unset"
                     >Sign</AppButton
                   >
                 </td>
