@@ -45,6 +45,23 @@ export const getTransactionPayerId = (transaction: Transaction) =>
 export const getTransactionValidStart = (transaction: Transaction) =>
   transaction.transactionId?.validStart?.toDate() || null;
 
+export const formatTransactionType = (
+  type: string,
+  short = false,
+  removeTransaction = false,
+): string => {
+  let result = type
+  if (removeTransaction) {
+    // Remove ' Transaction' only if it appears at the end
+    result = type.replace(/ Transaction$/, '');
+  }
+  if (short) {
+    // Remove all whitespace characters
+    result = type.replace(/\s+/g, '');
+  }
+  return result;
+};
+
 export const getTransactionType = (
   transaction: Transaction | Uint8Array,
   short = false,
@@ -88,65 +105,9 @@ export const getTransactionType = (
     transactionType = 'System Delete Transaction';
   } else if (transaction instanceof SystemUndeleteTransaction) {
     transactionType = 'System Undelete Transaction';
-    // } else if (transaction instanceof ContractCallTransaction) {
-    //   transactionType = 'ContractCallTransaction';
-    // } else if (transaction instanceof ContractCreateTransaction) {
-    //   transactionType = 'ContractCreateTransaction';
-    // } else if (transaction instanceof ContractDeleteTransaction) {
-    //   transactionType = 'ContractDeleteTransaction';
-    // } else if (transaction instanceof ContractUpdateTransaction) {
-    //   transactionType = 'ContractUpdateTransaction';
-    // } else if (transaction instanceof ScheduleCreateTransaction) {
-    //   transactionType = 'ScheduleCreateTransaction';
-    // } else if (transaction instanceof ScheduleDeleteTransaction) {
-    //   transactionType = 'ScheduleDeleteTransaction';
-    // } else if (transaction instanceof ScheduleSignTransaction) {
-    //   transactionType = 'ScheduleSignTransaction';
-    // } else if (transaction instanceof TokenAssociateTransaction) {
-    //   transactionType = 'TokenAssociateTransaction';
-    // } else if (transaction instanceof TokenBurnTransaction) {
-    //   transactionType = 'TokenBurnTransaction';
-    // } else if (transaction instanceof TokenCreateTransaction) {
-    //   transactionType = 'TokenCreateTransaction';
-    // } else if (transaction instanceof TokenDeleteTransaction) {
-    //   transactionType = 'TokenDeleteTransaction';
-    // } else if (transaction instanceof TokenFeeScheduleUpdateTransaction) {
-    //   transactionType = 'TokenFeeScheduleUpdateTransaction';
-    // } else if (transaction instanceof TokenFreezeTransaction) {
-    //   transactionType = 'TokenFreezeTransaction';
-    // } else if (transaction instanceof TokenGrantKycTransaction) {
-    //   transactionType = 'TokenGrantKycTransaction';
-    // } else if (transaction instanceof TokenMintTransaction) {
-    //   transactionType = 'TokenMintTransaction';
-    // } else if (transaction instanceof TokenPauseTransaction) {
-    //   transactionType = 'TokenPauseTransaction';
-    // } else if (transaction instanceof TokenRevokeKycTransaction) {
-    //   transactionType = 'TokenRevokeKycTransaction';
-    // } else if (transaction instanceof TokenUnfreezeTransaction) {
-    //   transactionType = 'TokenUnfreezeTransaction';
-    // } else if (transaction instanceof TokenUnpauseTransaction) {
-    //   transactionType = 'TokenUnpauseTransaction';
-    // } else if (transaction instanceof TokenUpdateTransaction) {
-    //   transactionType = 'TokenUpdateTransaction';
-    // } else if (transaction instanceof TopicCreateTransaction) {
-    //   transactionType = 'TopicCreateTransaction';
-    // } else if (transaction instanceof TopicDeleteTransaction) {
-    //   transactionType = 'TopicDeleteTransaction';
-    // } else if (transaction instanceof TopicMessageSubmitTransaction) {
-    //   transactionType = 'TopicMessageSubmitTransaction';
-    // } else if (transaction instanceof TopicUpdateTransaction) {
-    //   transactionType = 'TopicUpdateTransaction';
   }
 
-  if (removeTransaction) {
-    // Remove ' Transaction' only if it appears at the end
-    transactionType = transactionType.replace(/ Transaction$/, '');
-  }
-  if (short) {
-    // Remove all whitespace characters
-    transactionType = transactionType.replace(/\s+/g, '');
-  }
-  return transactionType;
+  return formatTransactionType(transactionType, short, removeTransaction);
 };
 
 export const getFreezeTypeString = (freezeType: FreezeType) => {
