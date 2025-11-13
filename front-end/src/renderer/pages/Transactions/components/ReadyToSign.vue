@@ -430,7 +430,7 @@ watch(
                     <td :data-testid="`td-transaction-type-for-sign-${index}`">
                       <span class="text-bold">{{
                         tx.transaction instanceof Transaction
-                          ? getTransactionType(tx.transaction)
+                          ? getTransactionType(tx.transaction, false, true)
                           : 'N/A'
                       }}</span>
                     </td>

@@ -311,7 +311,7 @@ watch(
                 <td :data-testid="`td-transaction-type-ready-execution-${index}`">
                   <span class="text-bold">{{
                     tx.transaction instanceof Transaction
-                      ? getTransactionType(tx.transaction)
+                      ? getTransactionType(tx.transaction, false, true)
                       : 'N/A'
                   }}</span>
                 </td>

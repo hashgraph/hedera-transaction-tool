@@ -356,7 +356,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                     <td :data-testid="`td-transaction-type-in-progress-${index}`">
                       <span class="text-bold">{{
                         tx.transaction instanceof Transaction
-                          ? getTransactionType(tx.transaction)
+                          ? getTransactionType(tx.transaction, false, true)
                           : 'N/A'
                       }}</span>
                     </td>

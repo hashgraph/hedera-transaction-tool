@@ -454,7 +454,7 @@ watch(
                   </td>
                   <td :data-testid="`td-transaction-type-${index}`">
                     <span class="text-bold">{{
-                      sdkTransactionUtils.getTransactionType(transactionData.transaction)
+                      sdkTransactionUtils.getTransactionType(transactionData.transaction, false, true)
                     }}</span>
                   </td>
                   <td :data-testid="`td-transaction-status-${index}`">

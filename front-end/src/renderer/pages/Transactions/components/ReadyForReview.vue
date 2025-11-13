@@ -402,7 +402,7 @@ watch(
                     <td :data-testid="`td-review-transaction-type-${index}`">
                       <span class="text-bold">{{
                         tx.transaction instanceof Transaction
-                          ? getTransactionType(tx.transaction)
+                          ? getTransactionType(tx.transaction, false, true)
                           : 'N/A'
                       }}</span>
                     </td>
