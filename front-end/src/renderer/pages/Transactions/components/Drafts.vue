@@ -114,7 +114,7 @@ const handleUpdateIsTemplate = async (e: Event, draft: TransactionDraft | Transa
 };
 
 const handleDeleteDraft = async (draft: TransactionDraft | TransactionGroup) => {
-  let toastMessage = '';
+  let toastMessage: string;
   if ((draft as TransactionDraft).type) {
     await deleteDraft(draft.id);
     toastMessage = 'Draft successfully deleted';

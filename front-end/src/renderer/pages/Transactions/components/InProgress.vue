@@ -413,7 +413,6 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                     @click="handleDetails(tx.transactionRaw.id)"
                     :data-testid="`button-transaction-in-progress-details-${index}`"
                     color="secondary"
-                    class="min-w-unset"
                     >Details</AppButton
                   >
                 </td>

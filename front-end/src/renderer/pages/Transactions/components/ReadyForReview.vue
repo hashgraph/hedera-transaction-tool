@@ -382,7 +382,6 @@ watch(
                     <AppButton
                       @click="redirectToGroupDetails($router, groupId)"
                       color="secondary"
-                      class="min-w-unset"
                       >Details</AppButton
                     >
                   </td>
