@@ -140,7 +140,7 @@ async function fetchTransactions() {
       }
 
       if (transaction.groupItem?.groupId && !groupIds.includes(transaction.groupItem?.groupId)) {
-      groupIds.push(transaction.groupItem.groupId);
+        groupIds.push(transaction.groupItem.groupId);
       }
     }
 
@@ -322,6 +322,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                     <DateTimeString
                       v-if="groupTransactions[0].transaction instanceof Transaction"
                       :date="getTransactionValidStart(groupTransactions[0].transaction)"
+                      :extended="false"
                     />
                     <span v-else>N/A</span>
                   </td>
@@ -329,6 +330,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                     <DateTimeString
                       v-if="groups.get(groupId)"
                       :date="getTransactionGroupUpdatedAt(groups.get(groupId)!)"
+                      :extended="false"
                     />
                     <span v-else>N/A</span>
                   </td>
@@ -356,7 +358,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                     <td :data-testid="`td-transaction-type-in-progress-${index}`">
                       <span class="text-bold">{{
                         tx.transaction instanceof Transaction
-                          ? getTransactionType(tx.transaction)
+                          ? getTransactionType(tx.transaction, false, true)
                           : 'N/A'
                       }}</span>
                     </td>
@@ -364,6 +366,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
                         :date="getTransactionValidStart(tx.transaction)"
+                        :extended="false"
                       />
                       <span v-else>N/A</span>
                     </td>
@@ -371,6 +374,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
                         :date="new Date(tx.transactionRaw.updatedAt)"
+                        :extended="false"
                       />
                       <span v-else>N/A</span>
                     </td>
@@ -413,7 +417,6 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                     @click="handleDetails(tx.transactionRaw.id)"
                     :data-testid="`button-transaction-in-progress-details-${index}`"
                     color="secondary"
-                    class="min-w-unset"
                     >Details</AppButton
                   >
                 </td>

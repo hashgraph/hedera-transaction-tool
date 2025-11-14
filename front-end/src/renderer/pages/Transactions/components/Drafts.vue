@@ -31,6 +31,7 @@ import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
 
 /* Store */
 const user = useUserStore();
@@ -114,7 +115,7 @@ const handleUpdateIsTemplate = async (e: Event, draft: TransactionDraft | Transa
 };
 
 const handleDeleteDraft = async (draft: TransactionDraft | TransactionGroup) => {
-  let toastMessage = '';
+  let toastMessage: string;
   if ((draft as TransactionDraft).type) {
     await deleteDraft(draft.id);
     toastMessage = 'Draft successfully deleted';
@@ -246,7 +247,7 @@ watch([currentPage, pageSize], async () => {
                     )
                   "
                 >
-                  <span>Date</span>
+                  <span>Date Created</span>
                   <i
                     v-if="sortField === 'created_at'"
                     class="bi text-title"
@@ -295,13 +296,13 @@ watch([currentPage, pageSize], async () => {
               <tr>
                 <td>
                   <span class="text-secondary" :data-testid="'span-draft-tx-date-' + i">
-                    <DateTimeString :date="draft.created_at" />
+                    <DateTimeString :date="draft.created_at" :extended="false" />
                   </span>
                 </td>
                 <td>
                   <span class="text-bold" :data-testid="'span-draft-tx-type-' + i">{{
                     (draft as TransactionDraft).type
-                      ? (draft as TransactionDraft).type
+                      ? formatTransactionType((draft as TransactionDraft).type, false, true)
                       : (draft as TransactionGroup).description
                   }}</span>
                 </td>

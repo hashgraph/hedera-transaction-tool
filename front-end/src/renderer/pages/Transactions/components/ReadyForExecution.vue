@@ -311,7 +311,7 @@ watch(
                 <td :data-testid="`td-transaction-type-ready-execution-${index}`">
                   <span class="text-bold">{{
                     tx.transaction instanceof Transaction
-                      ? getTransactionType(tx.transaction)
+                      ? getTransactionType(tx.transaction, false, true)
                       : 'N/A'
                   }}</span>
                 </td>
@@ -319,6 +319,7 @@ watch(
                   <DateTimeString
                     v-if="tx.transaction instanceof Transaction"
                     :date="getTransactionValidStart(tx.transaction)"
+                    :extended="false"
                   />
                   <span v-else>N/A</span>
                 </td>
@@ -326,6 +327,7 @@ watch(
                   <DateTimeString
                     v-if="tx.transaction instanceof Transaction"
                     :date="new Date(tx.transactionRaw.updatedAt)"
+                    :extended="false"
                   />
                   <span v-else>N/A</span>
                 </td>
@@ -334,7 +336,6 @@ watch(
                     @click="handleDetails(tx.transactionRaw.id)"
                     :data-testid="`button-transaction-ready-execution-details-${index}`"
                     color="secondary"
-                    class="min-w-unset"
                     >Details</AppButton
                   >
                 </td>
