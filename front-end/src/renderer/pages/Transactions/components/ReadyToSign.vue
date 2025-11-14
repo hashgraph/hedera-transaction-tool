@@ -398,11 +398,19 @@ watch(
                     {{ groups.get(group[0])?.description }}
                   </td>
                   <td>
-                    <DateTimeString v-if="group[1][0].transaction instanceof Transaction" :date="getTransactionValidStart(group[1][0].transaction)"/>
+                    <DateTimeString
+                      v-if="group[1][0].transaction instanceof Transaction"
+                      :date="getTransactionValidStart(group[1][0].transaction)"
+                      :extended="false"
+                    />
                     <span v-else>N/A</span>
                   </td>
                   <td>
-                    <DateTimeString v-if="groups.get(group[0])" :date="getTransactionGroupUpdatedAt(groups.get(group[0])!)"/>
+                    <DateTimeString
+                      v-if="groups.get(group[0])"
+                      :date="getTransactionGroupUpdatedAt(groups.get(group[0])!)"
+                      :extended="false"
+                    />
                     <span v-else>N/A</span>
                   </td>
                   <td class="text-center">
@@ -438,6 +446,7 @@ watch(
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
                         :date="getTransactionValidStart(tx.transaction)"
+                        :extended="false"
                       />
                       <span v-else>N/A</span>
                     </td>
@@ -445,6 +454,7 @@ watch(
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
                         :date="new Date(tx.transactionRaw.updatedAt)"
+                        :extended="false"
                       />
                       <span v-else>N/A</span>
                     </td>

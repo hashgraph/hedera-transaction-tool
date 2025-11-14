@@ -246,7 +246,7 @@ watch([currentPage, pageSize], async () => {
                     )
                   "
                 >
-                  <span>Date</span>
+                  <span>Date Created</span>
                   <i
                     v-if="sortField === 'created_at'"
                     class="bi text-title"
@@ -295,7 +295,7 @@ watch([currentPage, pageSize], async () => {
               <tr>
                 <td>
                   <span class="text-secondary" :data-testid="'span-draft-tx-date-' + i">
-                    <DateTimeString :date="draft.created_at" />
+                    <DateTimeString :date="draft.created_at" :extended="false" />
                   </span>
                 </td>
                 <td>

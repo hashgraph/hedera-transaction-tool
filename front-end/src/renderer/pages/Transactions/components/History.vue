@@ -422,7 +422,7 @@ watch(
                   </td>
                   <td :data-testid="`td-transaction-createdAt-${index}`">
                     <span class="text-small text-secondary">
-                      <DateTimeString :date="transaction.created_at"/>
+                      <DateTimeString :date="transaction.created_at" :extended="false" />
                     </span>
                   </td>
                   <td class="text-center">
@@ -479,6 +479,7 @@ watch(
                     <span class="text-small text-secondary">
                       <DateTimeString
                         :date="new Date(transactionData.transactionRaw.createdAt)"
+                        :extended="false"
                       />
                     </span>
                   </td>
@@ -490,6 +491,7 @@ watch(
                       <DateTimeString
                         v-if="transactionData.transactionRaw.executedAt"
                         :date="new Date(transactionData.transactionRaw.executedAt)"
+                        :extended="false"
                       />
                       <span v-else>N/A</span>
                     </span>
