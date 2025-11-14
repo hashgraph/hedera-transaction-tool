@@ -180,7 +180,7 @@ async function fetchTransactions() {
       }
 
       if (transaction.groupItem?.groupId && !groupIds.includes(transaction.groupItem?.groupId)) {
-      groupIds.push(transaction.groupItem.groupId);
+        groupIds.push(transaction.groupItem.groupId);
       }
     }
 
@@ -367,15 +367,19 @@ watch(
                   </td>
                   <td>{{ groups.get(groupId)?.description }}</td>
                   <td>
-                    <DateTimeString v-if="groupTransactions[0].transaction instanceof Transaction" :date="getTransactionValidStart(groupTransactions[0].transaction)" />
+                    <DateTimeString
+                      v-if="groupTransactions[0].transaction instanceof Transaction"
+                      :date="getTransactionValidStart(groupTransactions[0].transaction)"
+                      :extended="false"
+                    />
                     <span v-else>N/A</span>
                   </td>
                   <td>
-                    <DateTimeString v-if="groups.get(groupId)" :date="getTransactionGroupUpdatedAt(groups.get(groupId)!)" />
-                    <span v-else>N/A</span>
-                  </td>
-                  <td>
-                    <DateTimeString v-if="groups.get(groupId)" :date="getTransactionGroupUpdatedAt(groups.get(groupId)!)" />
+                    <DateTimeString
+                      v-if="groups.get(groupId)"
+                      :date="getTransactionGroupUpdatedAt(groups.get(groupId)!)"
+                      :extended="false"
+                    />
                     <span v-else>N/A</span>
                   </td>
                   <td class="text-center">
@@ -406,11 +410,19 @@ watch(
                       }}</span>
                     </td>
                     <td :data-testid="`td-review-transaction-valid-start-${index}`">
-                      <DateTimeString v-if="tx.transaction instanceof Transaction" :date="getTransactionValidStart(tx.transaction)" />
+                      <DateTimeString
+                        v-if="tx.transaction instanceof Transaction"
+                        :date="getTransactionValidStart(tx.transaction)"
+                        :extended="false"
+                      />
                       <span v-else>N/A</span>
                     </td>
                     <td :data-testid="`td-review-transaction-date-modified-${index}`">
-                      <DateTimeString v-if="tx.transaction instanceof Transaction" :date="new Date(tx.transactionRaw.updatedAt)" />
+                      <DateTimeString
+                        v-if="tx.transaction instanceof Transaction"
+                        :date="new Date(tx.transactionRaw.updatedAt)"
+                        :extended="false"
+                      />
                       <span v-else>N/A</span>
                     </td>
                     <td class="text-center">
