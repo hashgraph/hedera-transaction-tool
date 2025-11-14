@@ -31,6 +31,7 @@ import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
 
 /* Store */
 const user = useUserStore();
@@ -301,7 +302,7 @@ watch([currentPage, pageSize], async () => {
                 <td>
                   <span class="text-bold" :data-testid="'span-draft-tx-type-' + i">{{
                     (draft as TransactionDraft).type
-                      ? (draft as TransactionDraft).type
+                      ? formatTransactionType((draft as TransactionDraft).type, false, true)
                       : (draft as TransactionGroup).description
                   }}</span>
                 </td>

@@ -433,7 +433,7 @@ test.describe('Transaction tests', () => {
     expect(draftDate).toBeTruthy();
 
     const draftType = await transactionPage.getFirstDraftType();
-    expect(draftType).toBe('Account Create Transaction');
+    expect(draftType).toBe('Account Create');
 
     const isTemplateCheckboxVisible =
       await transactionPage.getFirstDraftIsTemplateCheckboxVisible();
