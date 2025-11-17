@@ -171,7 +171,7 @@ jobs:
           OPERATOR_KEY: ${{ secrets.OPERATOR_KEY }}
           ENVIRONMENT: LOCALNET
 
-        run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }}
+        run: DEBUG=pw:api xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }}
         working-directory: automation
 
   unit-test:
