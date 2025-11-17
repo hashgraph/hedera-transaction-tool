@@ -1,4 +1,4 @@
-const { test } = require('@playwright/test');
+const { test, expect } = require('playwright/test');
 const {
   setupApp,
   closeApp,
@@ -6,7 +6,6 @@ const {
   generateRandomPassword,
 } = require('../utils/util');
 const RegistrationPage = require('../pages/RegistrationPage.js');
-const { expect } = require('playwright/test');
 const { resetDbState } = require('../utils/databaseUtil');
 
 let app, window;

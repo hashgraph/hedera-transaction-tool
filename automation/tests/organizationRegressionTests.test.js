@@ -1,4 +1,4 @@
-const { test } = require('@playwright/test');
+const { test, expect } = require('playwright/test');
 const {
   setupApp,
   closeApp,
@@ -9,7 +9,6 @@ const {
   waitForValidStart,
 } = require('../utils/util');
 const RegistrationPage = require('../pages/RegistrationPage.js');
-const { expect } = require('playwright/test');
 const LoginPage = require('../pages/LoginPage');
 const TransactionPage = require('../pages/TransactionPage');
 const OrganizationPage = require('../pages/OrganizationPage');
