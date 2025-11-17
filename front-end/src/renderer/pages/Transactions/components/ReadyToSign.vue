@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import type { IGroup, ITransaction } from '@shared/interfaces';
+import {
+  type IGroup,
+  type ITransaction,
+  NotificationType,
+  TransactionStatus,
+} from '@shared/interfaces';
 
 import { computed, onBeforeMount, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 
 import { Transaction } from '@hashgraph/sdk';
 
-import { NotificationType } from '@shared/interfaces';
 import { TRANSACTION_ACTION } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -17,15 +21,21 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 
-import { getApiGroupById, getTransactionsToSign } from '@renderer/services/organization';
+import {
+  getApiGroupById,
+  getTransactionById,
+  getTransactionsToSign,
+} from '@renderer/services/organization';
 
 import {
+  assertIsLoggedInOrganization,
   getNotifiedTransactions,
+  getTransactionGroupUpdatedAt,
   hexToUint8Array,
+  isLoggedInOrganization,
   redirectToDetails,
   redirectToGroupDetails,
-  isLoggedInOrganization,
-  getTransactionGroupUpdatedAt,
+  signSingleTransaction,
 } from '@renderer/utils';
 import {
   getTransactionId,
@@ -38,6 +48,17 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword.ts';
+import { useToast } from 'vue-toast-notification';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+
+interface TransactionDescriptor {
+  transactionRaw: ITransaction;
+  transaction: Transaction;
+  keysToSign: number[];
+}
 
 /* Stores */
 const user = useUserStore();
@@ -48,17 +69,19 @@ const nextTransaction = useNextTransactionStore();
 
 /* Composables */
 const router = useRouter();
+const toast = useToast();
 const ws = useDisposableWs();
+const { getPassword, passwordModalOpened } = usePersonalPassword();
+
+/* Injected */
+const accountByIdCache = AccountByIdCache.inject();
+const nodeByIdCache = NodeByIdCache.inject();
 
 /* State */
 const transactions = ref<
   Map<
-    number,
-    {
-      transactionRaw: ITransaction;
-      transaction: Transaction;
-      keysToSign: number[];
-    }[]
+    number, // group id, -1 if not a group
+    TransactionDescriptor[] // transactions of that group, or set of single transactions
   >
 >(new Map());
 const groups = ref<Map<number, IGroup>>(new Map());
@@ -79,6 +102,8 @@ const sort = reactive<{
   direction: 'desc',
 });
 
+const signingItemSeq = ref(-1);
+
 /* Computed */
 const generatedClass = computed(() => {
   return sort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
@@ -94,12 +119,16 @@ const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') 
 
 const handleGroupDetails = async (id: number) => {
   const group = groups.value.get(id);
-  if(!group) return;
+  if (!group) return;
 
   const transactionIds = group.groupItems.map(g => g.transactionId);
   const serverKey = user.selectedOrganization?.serverUrl || '';
   const notificationIds = notifications.notifications[serverKey]
-    ?.filter(n => n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN && transactionIds.includes(n.notification.entityId || -1))
+    ?.filter(
+      n =>
+        n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN &&
+        transactionIds.includes(n.notification.entityId || -1),
+    )
     .map(n => n.id);
 
   await notifications.markAsReadIds(notificationIds);
@@ -118,9 +147,11 @@ const handleSingleDetails = async (id: number) => {
   nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
 
   const serverKey = user.selectedOrganization?.serverUrl || '';
-  const notificationId = notifications.notifications[serverKey]
-    ?.find(n => n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN && n.notification.entityId === id)
-    ?.id;
+  const notificationId = notifications.notifications[serverKey]?.find(
+    n =>
+      n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN &&
+      n.notification.entityId === id,
+  )?.id;
 
   if (notificationId) {
     await notifications.markAsReadIds([notificationId]);
@@ -299,6 +330,49 @@ watch(
     setNotifiedTransactions();
   },
 );
+
+const signingEnabled = (index: number) => {
+  const singleTransactions = transactions.value.get(-1);
+  return (
+    singleTransactions &&
+    index < singleTransactions.length &&
+    singleTransactions[index].transactionRaw.status === TransactionStatus.WAITING_FOR_SIGNATURES &&
+    singleTransactions[index].keysToSign.length > 0
+  );
+};
+
+const handleSignSingle = async (index: number) => {
+  const personalPassword = getPassword(handleSignSingle.bind(null, index), {
+    subHeading: 'Enter your application password to decrypt your private key',
+  });
+  if (passwordModalOpened(personalPassword)) return;
+  assertIsLoggedInOrganization(user.selectedOrganization);
+
+  const singleTransactions = transactions.value.get(-1);
+  const tx = singleTransactions![index] as TransactionDescriptor;
+
+  try {
+    signingItemSeq.value = index;
+    await signSingleTransaction(
+      tx.transactionRaw.id,
+      tx.transaction,
+      personalPassword,
+      accountByIdCache,
+      nodeByIdCache,
+    );
+    tx.transactionRaw = await getTransactionById(
+      user.selectedOrganization?.serverUrl || '',
+      tx.transactionRaw.id,
+    );
+    tx.transaction = Transaction.fromBytes(hexToUint8Array(tx.transactionRaw.transactionBytes));
+
+    toast.success('Transaction signed successfully', successToastOptions);
+  } catch {
+    toast.error('Transaction not signed');
+  } finally {
+    signingItemSeq.value = -1;
+  }
+};
 </script>
 
 <template>
@@ -459,49 +533,29 @@ watch(
                       <span v-else>N/A</span>
                     </td>
                     <td class="text-center">
+                      <div class="d-flex justify-content-center flex-wrap gap-4">
+                      <AppButton
+                        :data-testid="`sign-transaction-${index}`"
+                        :disabled="!signingEnabled(index)"
+                        :loading="signingItemSeq === index"
+                        loading-text="Sign"
+                        color="primary"
+                        type="button"
+                        @click.prevent="handleSignSingle(index)"
+                      ><span>Sign</span>
+                      </AppButton>
                       <AppButton
                         @click="handleSingleDetails(tx.transactionRaw.id)"
                         :data-testid="`button-transaction-sign-${index}`"
                         color="secondary"
                         >Details</AppButton
                       >
+                      </div>
                     </td>
                   </tr>
                 </template>
               </template>
             </template>
-
-            <!-- <template v-for="[groupId, tx] of transactions.entries()" :key="tx">
-              <tr v-if="groupId == -1">
-                <td>
-                  {{
-                    tx.transaction instanceof Transaction ? getTransactionId(tx.transaction) : 'N/A'
-                  }}
-                </td>
-                <td :data-testid="`td-transaction-type-for-sign-${index}`">
-                  <span class="text-bold">{{
-                    tx.transaction instanceof Transaction
-                      ? getTransactionType(tx.transaction)
-                      : 'N/A'
-                  }}</span>
-                </td>
-                <td :data-testid="`td-transaction-valid-start-for-sign-${index}`">
-                  {{
-                    tx.transaction instanceof Transaction
-                      ? getTransactionDateExtended(tx.transaction)
-                      : 'N/A'
-                  }}
-                </td>
-                <td class="text-center">
-                  <AppButton
-                    @click="handleSign(tx.transactionRaw.id)"
-                    :data-testid="`button-transaction-sign-${index}`"
-                    color="secondary"
-                    >Sign</AppButton
-                  >
-                </td>
-              </tr>
-            </template> -->
           </tbody>
           <tfoot class="d-table-caption">
             <tr class="d-inline">
