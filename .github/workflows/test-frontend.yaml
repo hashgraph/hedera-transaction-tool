@@ -43,7 +43,7 @@ jobs:
             front-end/pnpm-lock.yaml
 
       - name: Install pnpm
-        run: npm install -g pnpm@9.15.3
+        run: npm install -g pnpm@10.15.1
 
       - name: Install front-end Dependencies
         run: pnpm install --frozen-lockfile
