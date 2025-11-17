@@ -15,8 +15,8 @@ importers:
         specifier: 2.66.0
         version: 2.66.0(bn.js@5.2.1)(react-native@0.79.2(@babel/core@7.27.1)(react@19.1.0))
       '@playwright/test':
-        specifier: 1.50.0
-        version: 1.50.0
+        specifier: 1.56.1
+        version: 1.56.1
       argon2:
         specifier: 0.41.1
         version: 0.41.1
@@ -54,11 +54,11 @@ importers:
         specifier: 8.13.1
         version: 8.13.1
       playwright:
-        specifier: 1.50.0
-        version: 1.50.0
+        specifier: 1.56.1
+        version: 1.56.1
       playwright-core:
-        specifier: 1.50.0
-        version: 1.50.0
+        specifier: 1.56.1
+        version: 1.56.1
       prettier:
         specifier: 3.4.2
         version: 3.4.2
@@ -394,8 +394,8 @@ packages:
     resolution: {integrity: sha512-m7X9U6BG2+J+R1lSOdCiITLLrxm+cWlNI3HUFA92oLO77ObGNzaKdh8pMLqdZcshtkKuV84olNNXDfMc4FezBQ==}
     engines: {node: '>=10'}
 
-  '@playwright/test@1.50.0':
-    resolution: {integrity: sha512-ZGNXbt+d65EGjBORQHuYKj+XhCewlwpnSd/EDuLPZGSiEWmgOJB5RmMCCYGy5aMfTs9wx61RivfDKi8H/hcMvw==}
+  '@playwright/test@1.56.1':
+    resolution: {integrity: sha512-vSMYtL/zOcFpvJCW71Q/OEGQb7KYBPAdKh35WNSkaZA75JlAO8ED8UN6GUNTm3drWomcbcqRPFqQbLae8yBTdg==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -1616,13 +1616,13 @@ packages:
     resolution: {integrity: sha512-TfySrs/5nm8fQJDcBDuUng3VOUKsd7S+zqvbOTiGXHfxX4wK31ard+hoNuvkicM/2YFzlpDgABOevKSsB4G/FA==}
     engines: {node: '>= 6'}
 
-  playwright-core@1.50.0:
-    resolution: {integrity: sha512-CXkSSlr4JaZs2tZHI40DsZUN/NIwgaUPsyLuOAaIZp2CyF2sN5MM5NJsyB188lFSSozFxQ5fPT4qM+f0tH/6wQ==}
+  playwright-core@1.56.1:
+    resolution: {integrity: sha512-hutraynyn31F+Bifme+Ps9Vq59hKuUCz7H1kDOcBs+2oGguKkWTU50bBWrtz34OUWmIwpBTWDxaRPXrIXkgvmQ==}
     engines: {node: '>=18'}
     hasBin: true
 
-  playwright@1.50.0:
-    resolution: {integrity: sha512-+GinGfGTrd2IfX1TA4N2gNmeIksSb+IAe589ZH+FlmpV3MYTx6+buChGIuDLQwrGNCw2lWibqV50fU510N7S+w==}
+  playwright@1.56.1:
+    resolution: {integrity: sha512-aFi5B0WovBHTEvpM3DzXTUaeN6eN0qWnTkKx4NQaH4Wvcmc153PdaY2UBdSYKaGYw+UyWXSVyxDUg5DoPEttjw==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -2579,9 +2579,9 @@ snapshots:
 
   '@phc/format@1.0.0': {}
 
-  '@playwright/test@1.50.0':
+  '@playwright/test@1.56.1':
     dependencies:
-      playwright: 1.50.0
+      playwright: 1.56.1
 
   '@protobufjs/aspromise@1.1.2': {}
 
@@ -4008,11 +4008,11 @@ snapshots:
 
   pirates@4.0.7: {}
 
-  playwright-core@1.50.0: {}
+  playwright-core@1.56.1: {}
 
-  playwright@1.50.0:
+  playwright@1.56.1:
     dependencies:
-      playwright-core: 1.50.0
+      playwright-core: 1.56.1
     optionalDependencies:
       fsevents: 2.3.2
 
