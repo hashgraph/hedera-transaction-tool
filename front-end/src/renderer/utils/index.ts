@@ -1,16 +1,26 @@
 import type { AccountInfo } from '@shared/interfaces';
 import type { HederaAccount } from '@prisma/client';
 
-import { AccountId, Client, Hbar, HbarUnit, Long } from '@hashgraph/sdk';
+import { AccountId, Client, Hbar, HbarUnit, Long, Transaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getOne } from '@renderer/services/accountsService';
-import { getPublicKeyOwner } from '@renderer/services/organization';
+import { getPublicKeyOwner, uploadSignatures } from '@renderer/services/organization';
 
-import { getPublicKeyMapping, isUserLoggedIn } from './userStoreHelpers';
+import {
+  assertIsLoggedInOrganization,
+  assertUserLoggedIn,
+  getPublicKeyMapping,
+  isUserLoggedIn,
+} from './userStoreHelpers';
 import { isAccountId } from './validator';
+import { usersPublicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
+import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
+import { useToast } from 'vue-toast-notification';
 
 export * from './dom';
 export * from './sdk';
@@ -224,7 +234,7 @@ export const getAccountIdWithChecksum = (accountId: string): string => {
 
 const TINYBAR_THRESHOLD = 1_000_000;
 
-export function stringifyHbarWithFont(hbar: Hbar, fontClass: string): string {
+export function stringifyHbarWithFont(hbar: Hbar, fontClass='text-bold text-secondary'): string {
   const amount = hbar.isNegative() ? hbar.toTinybars().negate() : hbar.toTinybars();
   const showTinybars = amount.lessThan(Long.fromNumber(TINYBAR_THRESHOLD));
 
@@ -234,6 +244,65 @@ export function stringifyHbarWithFont(hbar: Hbar, fontClass: string): string {
   const displayUnit = showTinybars ? HbarUnit.Tinybar._symbol : HbarUnit.Hbar._symbol;
 
   return `${displayAmount} <span class="${fontClass}">${displayUnit}</span>`;
+}
+
+export async function signSingleTransaction(
+  id: number,
+  transaction: Transaction,
+  password: string | null,
+  accountInfoCache: AccountByIdCache,
+  nodeInfoCache: NodeByIdCache,
+): Promise<boolean> {
+  const user = useUserStore();
+  const network = useNetworkStore();
+  const toast = useToast();
+  assertUserLoggedIn(user.personal);
+  assertIsLoggedInOrganization(user.selectedOrganization);
+
+  const publicKeysRequired = await usersPublicRequiredToSign(
+    transaction,
+    user.selectedOrganization.userKeys,
+    network.mirrorNodeBaseURL,
+    accountInfoCache,
+    nodeInfoCache,
+  );
+
+  const restoredRequiredKeys = [];
+  const nonRestoredRequiredKeys = [];
+
+  // Separate keys into restored and non-restored, where restored indicates that the
+  // key is locally present.
+  for (const requiredKey of publicKeysRequired) {
+    if (user.keyPairs.some(k => k.public_key === requiredKey)) {
+      restoredRequiredKeys.push(requiredKey);
+    } else {
+      nonRestoredRequiredKeys.push(requiredKey);
+    }
+  }
+
+  let signed: boolean;
+  if (nonRestoredRequiredKeys.length > 0) {
+    toast.error(
+      `You need to restore the following public keys to fully sign the transaction: ${nonRestoredRequiredKeys.join(
+        ', ',
+      )}`,
+      errorToastOptions,
+    );
+    signed = false;
+  } else if (restoredRequiredKeys.length > 0) {
+    await uploadSignatures(
+      user.personal.id,
+      password,
+      user.selectedOrganization,
+      publicKeysRequired,
+      transaction,
+      id,
+    );
+    signed = true;
+  } else {
+    signed = false;
+  }
+  return signed;
 }
 
 export const splitMultipleAccounts = (input: string, client: Client): string[] => {

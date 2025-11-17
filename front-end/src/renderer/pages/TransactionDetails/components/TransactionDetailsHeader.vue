@@ -27,7 +27,6 @@ import {
   getUserShouldApprove,
   remindSigners,
   sendApproverChoice,
-  uploadSignatures,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService';
@@ -44,6 +43,7 @@ import {
   isLoggedInOrganization,
   redirectToDetails,
   setLastExportExtension,
+  signSingleTransaction,
   usersPublicRequiredToSign,
 } from '@renderer/utils';
 
@@ -137,6 +137,7 @@ const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
 
 /* State */
+const isTransactionVersionMismatch = ref(false);
 const isConfirmModalShown = ref(false);
 const confirmModalTitle = ref('');
 const confirmModalText = ref('');
@@ -196,7 +197,10 @@ const canSign = computed(() => {
 
   const userShouldSign = publicKeysRequiredToSign.value.length > 0;
 
-  return userShouldSign && transactionIsInProgress.value;
+  return (
+    userShouldSign &&
+    props.organizationTransaction.status === TransactionStatus.WAITING_FOR_SIGNATURES
+  );
 });
 
 const canExecute = computed(() => {
@@ -250,17 +254,6 @@ const isTransactionFailed = computed(() => {
   return props.organizationTransaction?.status === TransactionStatus.FAILED;
 });
 
-const isTransactionVersionMismatch = computed(() => {
-  if (!props.sdkTransaction || !props.organizationTransaction) return false;
-
-  // The sdkTransaction has already been deserialized from bytes, serialize back into bytes
-  // and compare to the organizations transaction bytes.
-  return !areByteArraysEqual(
-    props.sdkTransaction.toBytes(),
-    hexToUint8Array(props.organizationTransaction.transactionBytes),
-  );
-});
-
 /* Handlers */
 const handleBack = () => {
   if (
@@ -289,47 +282,20 @@ const handleSign = async () => {
   try {
     loadingStates[sign] = 'Signing...';
 
-    const publicKeysRequired = await usersPublicRequiredToSign(
+    const signed = await signSingleTransaction(
+      props.organizationTransaction.id,
       props.sdkTransaction,
-      user.selectedOrganization.userKeys,
-      network.mirrorNodeBaseURL,
+      personalPassword,
       accountByIdCache,
       nodeByIdCache,
     );
 
-    const restoredRequiredKeys = [];
-    const requiredNonRestoredKeys = [];
-
-    // Separate keys into restored and non-restored, where restored indicates that the
-    // key is locally present.
-    for (const requiredKey of publicKeysRequired) {
-      if (user.keyPairs.some(k => k.public_key === requiredKey)) {
-        restoredRequiredKeys.push(requiredKey);
-      } else {
-        requiredNonRestoredKeys.push(requiredKey);
-      }
-    }
-
-    if (requiredNonRestoredKeys.length > 0) {
-      toast.error(
-        `You need to restore the following public keys to fully sign the transaction: ${requiredNonRestoredKeys.join(
-          ', ',
-        )}`,
-        errorToastOptions,
-      );
-    }
-
-    if (restoredRequiredKeys.length > 0) {
-      await uploadSignatures(
-        user.personal.id,
-        personalPassword,
-        user.selectedOrganization,
-        restoredRequiredKeys,
-        SDKTransaction.fromBytes(props.sdkTransaction.toBytes()),
-        props.organizationTransaction.id,
-      );
+    if (signed) {
       await props.onAction();
+      updateTransactionVersionMismatch();
       toast.success('Transaction signed successfully', successToastOptions);
+    } else {
+      toast.error('Failed to sign transaction', errorToastOptions);
     }
   } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to sign transaction'), errorToastOptions);
@@ -627,8 +593,26 @@ const handleSubmit = async (e: Event) => {
 
 const handleDropDownItem = async (value: ActionButton) => handleAction(value);
 
+/* Functions */
+
+const updateTransactionVersionMismatch = (): void => {
+  let mismatch: boolean;
+  if (!props.sdkTransaction || !props.organizationTransaction) {
+    mismatch = false;
+  } else {
+    // The sdkTransaction has already been deserialized from bytes, serialize back into bytes
+    // and compare to the organizations transaction bytes.
+    mismatch = !areByteArraysEqual(
+      props.sdkTransaction.toBytes(),
+      hexToUint8Array(props.organizationTransaction.transactionBytes),
+    );
+  }
+  isTransactionVersionMismatch.value = mismatch;
+};
+
 /* Hooks */
 onMounted(() => {
+  updateTransactionVersionMismatch();
   if (!isLoggedInOrganization(user.selectedOrganization)) {
     fullyLoaded.value = true;
   }
