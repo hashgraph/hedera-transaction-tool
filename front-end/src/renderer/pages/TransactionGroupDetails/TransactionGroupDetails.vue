@@ -838,7 +838,7 @@ function tooltipText(status: TransactionStatus): string {
                                 <div class="d-flex justify-content-center flex-wrap gap-4">
                                   <AppButton
                                     :loading="signingItemSeq === groupItem.seq"
-                                    loading-text="Signing..."
+                                    loading-text="Sign"
                                     type="button"
                                     color="primary"
                                     @click.prevent="handleSignGroupItem(groupItem as IGroupItem)"
