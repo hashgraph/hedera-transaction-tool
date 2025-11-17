@@ -47,6 +47,8 @@ import {
   isUserLoggedIn,
   usersPublicRequiredToSign,
   assertUserLoggedIn,
+  signSingleTransaction,
+  getErrorMessage,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -174,66 +176,6 @@ const dropDownItems = computed(() =>
 );
 
 /* Handlers */
-async function handleFetchGroup(id: string | number) {
-  fullyLoaded.value = false;
-  if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
-    try {
-      const updatedUnsignedSignersToCheck: Record<number, string[]> = {};
-
-      group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
-      isVersionMismatch.value = false;
-
-      if (group.value?.groupItems != undefined) {
-        for (const item of group.value.groupItems) {
-          const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
-          const tx = Transaction.fromBytes(transactionBytes);
-
-          const isTransactionVersionMismatch = !areByteArraysEqual(tx.toBytes(), transactionBytes);
-          if (isTransactionVersionMismatch) {
-            toast.error('Transaction version mismatch. Cannot sign all.', errorToastOptions);
-            isVersionMismatch.value = true;
-            break;
-          }
-
-          shouldApprove.value =
-            shouldApprove.value ||
-            (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id));
-
-          const txId = item.transaction.id;
-
-          const usersPublicKeys = await usersPublicRequiredToSign(
-            tx,
-            user.selectedOrganization.userKeys,
-            network.mirrorNodeBaseURL,
-            accountByIdCache,
-            nodeByIdCache,
-          );
-
-          if (
-            item.transaction.status !== TransactionStatus.CANCELED &&
-            item.transaction.status !== TransactionStatus.EXPIRED &&
-            usersPublicKeys.length > 0
-          ) {
-            updatedUnsignedSignersToCheck[txId] = usersPublicKeys;
-          }
-        }
-        fullyLoaded.value = true;
-      }
-
-      unsignedSignersToCheck.value = updatedUnsignedSignersToCheck;
-
-      // bootstrap tooltips needs to be recreated when the items' status might have changed
-      // since their title is not updated
-      createTooltips();
-    } catch (error) {
-      router.back();
-      throw error;
-    }
-  } else {
-    console.log('not logged into org');
-  }
-}
-
 const handleBack = () => {
   if (!history.state?.back?.startsWith('/transactions')) {
     router.push({ name: 'transactions' });
@@ -258,10 +200,6 @@ const handleDetails = async (id: number) => {
 };
 
 const handleSignGroupItem = async (groupItem: IGroupItem) => {
-  if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in organization');
-  }
-
   const personalPassword = getPassword(handleSignGroupItem.bind(null, groupItem), {
     subHeading: 'Enter your application password to decrypt your private key',
   });
@@ -271,50 +209,32 @@ const handleSignGroupItem = async (groupItem: IGroupItem) => {
     signingItemSeq.value = groupItem.seq;
     const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
     const transaction = Transaction.fromBytes(transactionBytes);
-    if (
-      groupItem.transaction.status === TransactionStatus.CANCELED ||
-      groupItem.transaction.status === TransactionStatus.EXPIRED
-    ) {
-      return Promise.resolve();
-    }
-    const publicKeysRequired = await usersPublicRequiredToSign(
+
+    const signed = await signSingleTransaction(
+      groupItem.transaction.id,
       transaction,
-      user.selectedOrganization.userKeys,
-      network.mirrorNodeBaseURL,
+      personalPassword,
       accountByIdCache,
       nodeByIdCache,
     );
-    const item: SignatureItem = {
-      publicKeys: publicKeysRequired,
-      transaction,
-      transactionId: groupItem.transaction.id,
-    };
-    const items: SignatureItem[] = [item];
 
-    await uploadSignatures(
-      user.personal.id,
-      personalPassword,
-      user.selectedOrganization,
-      undefined,
-      undefined,
-      undefined,
-      items,
-    );
+    if (signed) {
+      const updatedTransaction: ITransactionFull = await getTransactionById(
+        user.selectedOrganization?.serverUrl || '',
+        groupItem.transactionId,
+      );
 
-    const updatedTransaction: ITransactionFull = await getTransactionById(
-      user.selectedOrganization?.serverUrl || '',
-      groupItem.transactionId,
-    );
-
-    const index = group.value!.groupItems.findIndex(
-      item => item.transaction.id === groupItem.transactionId,
-    );
-    group.value!.groupItems[index].transaction = updatedTransaction;
-    delete unsignedSignersToCheck.value[groupItem.transaction.id];
-
-    toast.success('Transaction signed successfully', successToastOptions);
-  } catch {
-    toast.error('Transaction not signed', errorToastOptions);
+      const index = group.value!.groupItems.findIndex(
+        item => item.transaction.id === groupItem.transactionId,
+      );
+      group.value!.groupItems[index].transaction = updatedTransaction;
+      delete unsignedSignersToCheck.value[groupItem.transaction.id];
+      toast.success('Transaction signed successfully', successToastOptions);
+    } else {
+      toast.error('Failed to sign transaction', errorToastOptions);
+    }
+  } catch (error) {
+    toast.error(getErrorMessage(error, 'Failed to sign transaction'), errorToastOptions);
   } finally {
     signingItemSeq.value = -1;
   }
@@ -345,7 +265,7 @@ const handleCancelAll = async (showModal = false) => {
       }
     }
 
-    await handleFetchGroup(group.value!.id);
+    await fetchGroup(group.value!.id);
     toast.success('Transactions canceled successfully', successToastOptions);
   } catch {
     toast.error('Transactions not canceled', errorToastOptions);
@@ -411,7 +331,7 @@ const handleSignAll = async (showModal = false) => {
         items,
       );
 
-      await handleFetchGroup(group.value!.id);
+      await fetchGroup(group.value!.id);
       toast.success('Transactions signed successfully', successToastOptions);
     }
   } catch {
@@ -589,7 +509,7 @@ onBeforeMount(async () => {
   }
 
   subscribeToTransactionAction();
-  await handleFetchGroup(Array.isArray(id) ? id[0] : id);
+  await fetchGroup(Array.isArray(id) ? id[0] : id);
   setGetTransactionsFunction();
 });
 
@@ -613,6 +533,66 @@ watchEffect(() => {
 });
 
 /* Functions */
+async function fetchGroup(id: string | number) {
+  fullyLoaded.value = false;
+  if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
+    try {
+      const updatedUnsignedSignersToCheck: Record<number, string[]> = {};
+
+      group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
+      isVersionMismatch.value = false;
+
+      if (group.value?.groupItems != undefined) {
+        for (const item of group.value.groupItems) {
+          const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
+          const tx = Transaction.fromBytes(transactionBytes);
+
+          const isTransactionVersionMismatch = !areByteArraysEqual(tx.toBytes(), transactionBytes);
+          if (isTransactionVersionMismatch) {
+            toast.error('Transaction version mismatch. Cannot sign all.', errorToastOptions);
+            isVersionMismatch.value = true;
+            break;
+          }
+
+          shouldApprove.value =
+            shouldApprove.value ||
+            (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id));
+
+          const txId = item.transaction.id;
+
+          const usersPublicKeys = await usersPublicRequiredToSign(
+            tx,
+            user.selectedOrganization.userKeys,
+            network.mirrorNodeBaseURL,
+            accountByIdCache,
+            nodeByIdCache,
+          );
+
+          if (
+            item.transaction.status !== TransactionStatus.CANCELED &&
+            item.transaction.status !== TransactionStatus.EXPIRED &&
+            usersPublicKeys.length > 0
+          ) {
+            updatedUnsignedSignersToCheck[txId] = usersPublicKeys;
+          }
+        }
+        fullyLoaded.value = true;
+      }
+
+      unsignedSignersToCheck.value = updatedUnsignedSignersToCheck;
+
+      // bootstrap tooltips needs to be recreated when the items' status might have changed
+      // since their title is not updated
+      createTooltips();
+    } catch (error) {
+      router.back();
+      throw error;
+    }
+  } else {
+    console.log('not logged into org');
+  }
+}
+
 const isTransactionInProgress = (transaction: ITransactionFull) => {
   return [
     TransactionStatus.NEW,
@@ -625,7 +605,7 @@ const subscribeToTransactionAction = () => {
   if (!user.selectedOrganization?.serverUrl) return;
   ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
     const id = router.currentRoute.value.params.id;
-    await handleFetchGroup(Array.isArray(id) ? id[0] : id);
+    await fetchGroup(Array.isArray(id) ? id[0] : id);
     setGetTransactionsFunction();
   });
 };
