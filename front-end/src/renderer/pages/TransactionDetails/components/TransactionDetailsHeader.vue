@@ -137,6 +137,7 @@ const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
 
 /* State */
+const isTransactionVersionMismatch = ref(false);
 const isConfirmModalShown = ref(false);
 const confirmModalTitle = ref('');
 const confirmModalText = ref('');
@@ -250,17 +251,6 @@ const isTransactionFailed = computed(() => {
   return props.organizationTransaction?.status === TransactionStatus.FAILED;
 });
 
-const isTransactionVersionMismatch = computed(() => {
-  if (!props.sdkTransaction || !props.organizationTransaction) return false;
-
-  // The sdkTransaction has already been deserialized from bytes, serialize back into bytes
-  // and compare to the organizations transaction bytes.
-  return !areByteArraysEqual(
-    props.sdkTransaction.toBytes(),
-    hexToUint8Array(props.organizationTransaction.transactionBytes),
-  );
-});
-
 /* Handlers */
 const handleBack = () => {
   if (
@@ -329,6 +319,7 @@ const handleSign = async () => {
         props.organizationTransaction.id,
       );
       await props.onAction();
+      updateTransactionVersionMismatch();
       toast.success('Transaction signed successfully', successToastOptions);
     }
   } catch (error) {
@@ -627,8 +618,26 @@ const handleSubmit = async (e: Event) => {
 
 const handleDropDownItem = async (value: ActionButton) => handleAction(value);
 
+/* Functions */
+
+const updateTransactionVersionMismatch = (): void => {
+  let mismatch: boolean;
+  if (!props.sdkTransaction || !props.organizationTransaction) {
+    mismatch = false;
+  } else {
+    // The sdkTransaction has already been deserialized from bytes, serialize back into bytes
+    // and compare to the organizations transaction bytes.
+    mismatch = !areByteArraysEqual(
+      props.sdkTransaction.toBytes(),
+      hexToUint8Array(props.organizationTransaction.transactionBytes),
+    );
+  }
+  isTransactionVersionMismatch.value = mismatch;
+};
+
 /* Hooks */
 onMounted(() => {
+  updateTransactionVersionMismatch();
   if (!isLoggedInOrganization(user.selectedOrganization)) {
     fullyLoaded.value = true;
   }
