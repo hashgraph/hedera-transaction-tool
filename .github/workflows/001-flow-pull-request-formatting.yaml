@@ -43,7 +43,6 @@ jobs:
   assignee-check:
     name: Assignee Check
     runs-on: network-node-linux-medium
-
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2

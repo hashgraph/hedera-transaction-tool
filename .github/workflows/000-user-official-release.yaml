@@ -26,7 +26,6 @@ jobs:
     name: Publish Official Release of Hedera Transaction Tool
     # MacOS runner for future compatibility (when frontend builds get added to semantic release)
     runs-on: macos-latest
-
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
@@ -43,7 +42,7 @@ jobs:
 
       - name: Import GPG Key
         id: gpg
-        uses: crazy-max/ghaction-import-gpg@01dd5d3ca463c7f10f7f4f7b4f177225ac661ee4 # v6.1.0
+        uses: step-security/ghaction-import-gpg@69c854a83c7f79463f8bdf46772ab09826c560cd # v6.3.1
         with:
           git_commit_gpgsign: true
           git_user_signingkey: true
