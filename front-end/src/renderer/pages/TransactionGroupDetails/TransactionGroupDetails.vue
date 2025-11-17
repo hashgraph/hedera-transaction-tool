@@ -174,66 +174,6 @@ const dropDownItems = computed(() =>
 );
 
 /* Handlers */
-async function handleFetchGroup(id: string | number) {
-  fullyLoaded.value = false;
-  if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
-    try {
-      const updatedUnsignedSignersToCheck: Record<number, string[]> = {};
-
-      group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
-      isVersionMismatch.value = false;
-
-      if (group.value?.groupItems != undefined) {
-        for (const item of group.value.groupItems) {
-          const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
-          const tx = Transaction.fromBytes(transactionBytes);
-
-          const isTransactionVersionMismatch = !areByteArraysEqual(tx.toBytes(), transactionBytes);
-          if (isTransactionVersionMismatch) {
-            toast.error('Transaction version mismatch. Cannot sign all.', errorToastOptions);
-            isVersionMismatch.value = true;
-            break;
-          }
-
-          shouldApprove.value =
-            shouldApprove.value ||
-            (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id));
-
-          const txId = item.transaction.id;
-
-          const usersPublicKeys = await usersPublicRequiredToSign(
-            tx,
-            user.selectedOrganization.userKeys,
-            network.mirrorNodeBaseURL,
-            accountByIdCache,
-            nodeByIdCache,
-          );
-
-          if (
-            item.transaction.status !== TransactionStatus.CANCELED &&
-            item.transaction.status !== TransactionStatus.EXPIRED &&
-            usersPublicKeys.length > 0
-          ) {
-            updatedUnsignedSignersToCheck[txId] = usersPublicKeys;
-          }
-        }
-        fullyLoaded.value = true;
-      }
-
-      unsignedSignersToCheck.value = updatedUnsignedSignersToCheck;
-
-      // bootstrap tooltips needs to be recreated when the items' status might have changed
-      // since their title is not updated
-      createTooltips();
-    } catch (error) {
-      router.back();
-      throw error;
-    }
-  } else {
-    console.log('not logged into org');
-  }
-}
-
 const handleBack = () => {
   if (!history.state?.back?.startsWith('/transactions')) {
     router.push({ name: 'transactions' });
@@ -345,7 +285,7 @@ const handleCancelAll = async (showModal = false) => {
       }
     }
 
-    await handleFetchGroup(group.value!.id);
+    await fetchGroup(group.value!.id);
     toast.success('Transactions canceled successfully', successToastOptions);
   } catch {
     toast.error('Transactions not canceled', errorToastOptions);
@@ -411,7 +351,7 @@ const handleSignAll = async (showModal = false) => {
         items,
       );
 
-      await handleFetchGroup(group.value!.id);
+      await fetchGroup(group.value!.id);
       toast.success('Transactions signed successfully', successToastOptions);
     }
   } catch {
@@ -589,7 +529,7 @@ onBeforeMount(async () => {
   }
 
   subscribeToTransactionAction();
-  await handleFetchGroup(Array.isArray(id) ? id[0] : id);
+  await fetchGroup(Array.isArray(id) ? id[0] : id);
   setGetTransactionsFunction();
 });
 
@@ -613,6 +553,66 @@ watchEffect(() => {
 });
 
 /* Functions */
+async function fetchGroup(id: string | number) {
+  fullyLoaded.value = false;
+  if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
+    try {
+      const updatedUnsignedSignersToCheck: Record<number, string[]> = {};
+
+      group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
+      isVersionMismatch.value = false;
+
+      if (group.value?.groupItems != undefined) {
+        for (const item of group.value.groupItems) {
+          const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
+          const tx = Transaction.fromBytes(transactionBytes);
+
+          const isTransactionVersionMismatch = !areByteArraysEqual(tx.toBytes(), transactionBytes);
+          if (isTransactionVersionMismatch) {
+            toast.error('Transaction version mismatch. Cannot sign all.', errorToastOptions);
+            isVersionMismatch.value = true;
+            break;
+          }
+
+          shouldApprove.value =
+            shouldApprove.value ||
+            (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id));
+
+          const txId = item.transaction.id;
+
+          const usersPublicKeys = await usersPublicRequiredToSign(
+            tx,
+            user.selectedOrganization.userKeys,
+            network.mirrorNodeBaseURL,
+            accountByIdCache,
+            nodeByIdCache,
+          );
+
+          if (
+            item.transaction.status !== TransactionStatus.CANCELED &&
+            item.transaction.status !== TransactionStatus.EXPIRED &&
+            usersPublicKeys.length > 0
+          ) {
+            updatedUnsignedSignersToCheck[txId] = usersPublicKeys;
+          }
+        }
+        fullyLoaded.value = true;
+      }
+
+      unsignedSignersToCheck.value = updatedUnsignedSignersToCheck;
+
+      // bootstrap tooltips needs to be recreated when the items' status might have changed
+      // since their title is not updated
+      createTooltips();
+    } catch (error) {
+      router.back();
+      throw error;
+    }
+  } else {
+    console.log('not logged into org');
+  }
+}
+
 const isTransactionInProgress = (transaction: ITransactionFull) => {
   return [
     TransactionStatus.NEW,
@@ -625,7 +625,7 @@ const subscribeToTransactionAction = () => {
   if (!user.selectedOrganization?.serverUrl) return;
   ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
     const id = router.currentRoute.value.params.id;
-    await handleFetchGroup(Array.isArray(id) ? id[0] : id);
+    await fetchGroup(Array.isArray(id) ? id[0] : id);
     setGetTransactionsFunction();
   });
 };
