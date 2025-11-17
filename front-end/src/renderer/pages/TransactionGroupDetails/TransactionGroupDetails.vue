@@ -47,6 +47,8 @@ import {
   isUserLoggedIn,
   usersPublicRequiredToSign,
   assertUserLoggedIn,
+  signSingleTransaction,
+  getErrorMessage,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -198,10 +200,6 @@ const handleDetails = async (id: number) => {
 };
 
 const handleSignGroupItem = async (groupItem: IGroupItem) => {
-  if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in organization');
-  }
-
   const personalPassword = getPassword(handleSignGroupItem.bind(null, groupItem), {
     subHeading: 'Enter your application password to decrypt your private key',
   });
@@ -211,50 +209,32 @@ const handleSignGroupItem = async (groupItem: IGroupItem) => {
     signingItemSeq.value = groupItem.seq;
     const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
     const transaction = Transaction.fromBytes(transactionBytes);
-    if (
-      groupItem.transaction.status === TransactionStatus.CANCELED ||
-      groupItem.transaction.status === TransactionStatus.EXPIRED
-    ) {
-      return Promise.resolve();
-    }
-    const publicKeysRequired = await usersPublicRequiredToSign(
+
+    const signed = await signSingleTransaction(
+      groupItem.transaction.id,
       transaction,
-      user.selectedOrganization.userKeys,
-      network.mirrorNodeBaseURL,
+      personalPassword,
       accountByIdCache,
       nodeByIdCache,
     );
-    const item: SignatureItem = {
-      publicKeys: publicKeysRequired,
-      transaction,
-      transactionId: groupItem.transaction.id,
-    };
-    const items: SignatureItem[] = [item];
 
-    await uploadSignatures(
-      user.personal.id,
-      personalPassword,
-      user.selectedOrganization,
-      undefined,
-      undefined,
-      undefined,
-      items,
-    );
+    if (signed) {
+      const updatedTransaction: ITransactionFull = await getTransactionById(
+        user.selectedOrganization?.serverUrl || '',
+        groupItem.transactionId,
+      );
 
-    const updatedTransaction: ITransactionFull = await getTransactionById(
-      user.selectedOrganization?.serverUrl || '',
-      groupItem.transactionId,
-    );
-
-    const index = group.value!.groupItems.findIndex(
-      item => item.transaction.id === groupItem.transactionId,
-    );
-    group.value!.groupItems[index].transaction = updatedTransaction;
-    delete unsignedSignersToCheck.value[groupItem.transaction.id];
-
-    toast.success('Transaction signed successfully', successToastOptions);
-  } catch {
-    toast.error('Transaction not signed', errorToastOptions);
+      const index = group.value!.groupItems.findIndex(
+        item => item.transaction.id === groupItem.transactionId,
+      );
+      group.value!.groupItems[index].transaction = updatedTransaction;
+      delete unsignedSignersToCheck.value[groupItem.transaction.id];
+      toast.success('Transaction signed successfully', successToastOptions);
+    } else {
+      toast.error('Failed to sign transaction', errorToastOptions);
+    }
+  } catch (error) {
+    toast.error(getErrorMessage(error, 'Failed to sign transaction'), errorToastOptions);
   } finally {
     signingItemSeq.value = -1;
   }
