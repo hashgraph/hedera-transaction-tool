@@ -66,6 +66,11 @@ jobs:
         with:
           version: "v3.12.3"
 
+      - name: Install Docker
+        run: |
+          brew install docker
+          colima start
+
       - name: Log in to the Container registry
         uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # 3.5.0
         with:
