@@ -1,4 +1,4 @@
-const { test } = require('@playwright/test');
+const { test, expect } = require('playwright/test');
 const {
   setupApp,
   closeApp,
@@ -7,7 +7,6 @@ const {
 } = require('../utils/util');
 const { getPrivateKey, generateEd25519KeyPair } = require('../utils/keyUtil');
 const RegistrationPage = require('../pages/RegistrationPage.js');
-const { expect } = require('playwright/test');
 const LoginPage = require('../pages/LoginPage');
 const SettingsPage = require('../pages/SettingsPage');
 const TransactionPage = require('../pages/TransactionPage');

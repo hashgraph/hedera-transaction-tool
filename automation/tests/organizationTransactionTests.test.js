@@ -1,4 +1,4 @@
-const { test } = require('@playwright/test');
+const { test, expect } = require('playwright/test');
 const fsp = require('fs').promises;
 const path = require('path');
 const { Transaction, PrivateKey } = require('@hashgraph/sdk');
@@ -13,7 +13,6 @@ const {
   waitAndReadFile,
 } = require('../utils/util');
 const RegistrationPage = require('../pages/RegistrationPage.js');
-const { expect } = require('playwright/test');
 const LoginPage = require('../pages/LoginPage');
 const TransactionPage = require('../pages/TransactionPage');
 const OrganizationPage = require('../pages/OrganizationPage');

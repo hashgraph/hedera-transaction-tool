@@ -1,4 +1,4 @@
-const { expect } = require('@playwright/test');
+const { expect } = require('playwright/test');
 const { launchHederaTransactionTool } = require('./electronAppLauncher');
 const { migrationDataExists } = require('./oldTool.js');
 const LoginPage = require('../pages/LoginPage.js');

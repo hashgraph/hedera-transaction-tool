@@ -1,5 +1,4 @@
-const { test } = require('@playwright/test');
-const { expect } = require('playwright/test');
+const { test, expect } = require('playwright/test');
 const RegistrationPage = require('../pages/RegistrationPage.js');
 const LoginPage = require('../pages/LoginPage');
 const TransactionPage = require('../pages/TransactionPage');
