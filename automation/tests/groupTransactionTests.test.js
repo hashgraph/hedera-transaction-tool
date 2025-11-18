@@ -105,7 +105,7 @@ test.describe('Group transaction tests', () => {
   test('Verify description is mandatory for saving group transaction', async () => {
     await groupPage.clickOnSaveGroupButton();
 
-    const toastText = await groupPage.getToastMessage();
+    const toastText = await groupPage.getToastMessage(true);
     expect(toastText).toContain('Please enter a group description');
   });
 

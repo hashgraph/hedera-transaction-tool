@@ -404,8 +404,12 @@ class RegistrationPage extends BasePage {
     return await this.isElementVisible(this.clearButtonSelector);
   }
 
-  async getToastMessage() {
-    return await this.getText(this.toastMessageSelector, null, 25000);
+  async getToastMessage(dismissToast = false) {
+    const message  = await this.getText(this.toastMessageSelector, null, 25000);
+    if (dismissToast) {
+      await this.click(this.toastMessageSelector);
+    }
+    return message;
   }
 
   async clickOnGenerateAgainButton() {

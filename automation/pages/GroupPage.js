@@ -113,8 +113,12 @@ class GroupPage extends BasePage {
     return this.isElementHidden(this.deleteGroupButtonSelector);
   }
 
-  async getToastMessage() {
-    return await this.getText(this.toastMessageSelector, null, 5000);
+  async getToastMessage(dismissToast = false) {
+    const message  = await this.getText(this.toastMessageSelector, null, 5000);
+    if (dismissToast) {
+      await this.click(this.toastMessageSelector);
+    }
+    return message;
   }
 
   async clickAddToGroupButton() {
