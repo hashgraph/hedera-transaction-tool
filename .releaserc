@@ -55,7 +55,7 @@
     ],
     [
       "@semantic-release/exec",
-      { "cmd": "helm push transaction-tool-${nextRelease.version}.tgz oci://ghcr.io/hashgraph/transaction-tool" }
+      { "cmd": "helm push hedera-transaction-tool-${nextRelease.version}.tgz oci://ghcr.io/hashgraph" }
     ],
     [
       "@semantic-release/github",
