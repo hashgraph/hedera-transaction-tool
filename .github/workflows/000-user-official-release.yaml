@@ -15,7 +15,11 @@ defaults:
     shell: bash
 
 permissions:
+  id-token: write
+  packages: write
   contents: read
+  pull-requests: read
+  issues: read
 
 env:
   REGISTRY: ghcr.io
@@ -68,7 +72,7 @@ jobs:
 
       - name: Log in to the Container registry
         run: |
-          echo "${{ secrets.GH_ACCESS_TOKEN }}" | helm registry login ${{ env.REGISTRY }} --username ${{ github.actor }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.REGISTRY }} --username ${{ github.actor }} --password-stdin
 
       - name: Install Semantic Release
         if: ${{ github.event_name == 'workflow_dispatch' && !cancelled() && !failure() }}
