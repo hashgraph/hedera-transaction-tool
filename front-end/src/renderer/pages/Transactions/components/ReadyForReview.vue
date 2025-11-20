@@ -320,6 +320,19 @@ watch(
               <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
+                  @click="handleSort('description', sort.field === 'description' ? getOppositeDirection() : 'asc')"
+                >
+                  <span>Description</span>
+                  <i
+                    v-if="sort.field === 'description'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
+                </div>
+              </th>
+              <th @contextmenu.prevent="showContextMenu">
+                <div
+                  class="table-sort-link"
                   @click="
                     handleSort(
                       'validStart',
@@ -365,6 +378,7 @@ watch(
                   <td>
                     <i class="bi bi-stack" />
                   </td>
+                  <td>Group</td>
                   <td>{{ groups.get(groupId)?.description }}</td>
                   <td>
                     <DateTimeString
@@ -407,10 +421,17 @@ watch(
                     </td>
                     <td :data-testid="`td-review-transaction-type-${index}`">
                       <span class="text-bold">{{
-                        tx.transaction instanceof Transaction
-                          ? getTransactionType(tx.transaction, false, true)
-                          : 'N/A'
-                      }}</span>
+                          tx.transaction instanceof Transaction
+                            ? getTransactionType(tx.transaction, false, true)
+                            : 'N/A'
+                        }}</span>
+                    </td>
+                    <td :data-testid="`td-review-transaction-description-${index}`">
+                      <span class="text-two-line-ellipsis">{{
+                          tx.transaction instanceof Transaction
+                            ? tx.transactionRaw.description
+                            : 'N/A'
+                        }}</span>
                     </td>
                     <td :data-testid="`td-review-transaction-valid-start-${index}`">
                       <DateTimeString
@@ -474,3 +495,16 @@ watch(
     </template>
   </div>
 </template>
+<style scoped>
+.text-two-line-ellipsis {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
+  min-width: 6rem;
+}
+</style>
