@@ -280,7 +280,7 @@ const handleSign = async () => {
   if (passwordModalOpened(personalPassword)) return;
 
   try {
-    loadingStates[sign] = 'Signing...';
+    loadingStates[sign] = 'Signing…';
 
     const signed = await signSingleTransaction(
       props.organizationTransaction.id,
@@ -310,7 +310,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
     confirmModalText.value = 'Are you sure you want to reject the transaction?';
     confirmModalButtonText.value = 'Reject';
     confirmCallback.value = () => handleApprove(false);
-    confirmModalLoadingText.value = 'Rejecting...';
+    confirmModalLoadingText.value = 'Rejecting…';
     isConfirmModalShown.value = true;
     return;
   }
@@ -330,9 +330,9 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
 
     try {
       if (approved) {
-        loadingStates[approve] = 'Approving...';
+        loadingStates[approve] = 'Approving…';
       } else {
-        loadingStates[reject] = 'Rejecting...';
+        loadingStates[reject] = 'Rejecting…';
         isConfirmModalLoadingState.value = true;
       }
 
@@ -394,7 +394,7 @@ const handleTransactionAction = async (
       title: 'Cancel Transaction?',
       text: 'Are you sure you want to cancel the transaction?',
       buttonText: 'Confirm',
-      loadingText: 'Canceling...',
+      loadingText: 'Canceling…',
       successMessage: 'Transaction canceled successfully',
       actionFunction: cancelTransaction,
     },
@@ -402,7 +402,7 @@ const handleTransactionAction = async (
       title: 'Archive Transaction?',
       text: 'Are you sure you want to archive the transaction? The required signers will not be able to sign it anymore.',
       buttonText: 'Confirm',
-      loadingText: 'Archiving...',
+      loadingText: 'Archiving…',
       successMessage: 'Transaction archived successfully',
       actionFunction: archiveTransaction,
     },
@@ -410,7 +410,7 @@ const handleTransactionAction = async (
       title: 'Submit Transaction?',
       text: 'The transaction will be scheduled to execute at the specified time and processed automatically.',
       buttonText: 'Confirm',
-      loadingText: 'Submitting...',
+      loadingText: 'Submitting…',
       successMessage: 'Transaction sent for execution successfully',
       actionFunction: executeTransaction,
     },
@@ -418,7 +418,7 @@ const handleTransactionAction = async (
       title: 'Remind Signers?',
       text: 'All signers that have not yet signed will be sent a notification.',
       buttonText: 'Confirm',
-      loadingText: 'Sending...',
+      loadingText: 'Sending…',
       successMessage: 'Signers reminded successfully',
       actionFunction: remindSigners,
     },

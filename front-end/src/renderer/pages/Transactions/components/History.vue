@@ -422,7 +422,7 @@ watch(
                   </td>
                   <td :data-testid="`td-transaction-createdAt-${index}`">
                     <span class="text-small text-secondary">
-                      <DateTimeString :date="transaction.created_at"/>
+                      <DateTimeString :date="transaction.created_at" :extended="false" />
                     </span>
                   </td>
                   <td class="text-center">
@@ -430,7 +430,6 @@ watch(
                       :data-testid="`button-transaction-details-${index}`"
                       @click="handleDetails(transaction.id)"
                       color="secondary"
-                      class="min-w-unset"
                       >Details</AppButton
                     >
                   </td>
@@ -454,7 +453,7 @@ watch(
                   </td>
                   <td :data-testid="`td-transaction-type-${index}`">
                     <span class="text-bold">{{
-                      sdkTransactionUtils.getTransactionType(transactionData.transaction)
+                      sdkTransactionUtils.getTransactionType(transactionData.transaction, false, true)
                     }}</span>
                   </td>
                   <td :data-testid="`td-transaction-status-${index}`">
@@ -480,6 +479,7 @@ watch(
                     <span class="text-small text-secondary">
                       <DateTimeString
                         :date="new Date(transactionData.transactionRaw.createdAt)"
+                        :extended="false"
                       />
                     </span>
                   </td>
@@ -491,6 +491,7 @@ watch(
                       <DateTimeString
                         v-if="transactionData.transactionRaw.executedAt"
                         :date="new Date(transactionData.transactionRaw.executedAt)"
+                        :extended="false"
                       />
                       <span v-else>N/A</span>
                     </span>
@@ -500,7 +501,6 @@ watch(
                       :data-testid="`button-transaction-details-${index}`"
                       @click="handleDetails(transactionData.transactionRaw.id)"
                       color="secondary"
-                      class="min-w-unset"
                       >Details</AppButton
                     >
                   </td>
