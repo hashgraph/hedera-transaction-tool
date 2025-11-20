@@ -533,7 +533,7 @@ const handleSignSingle = async (index: number) => {
                       <span v-else>N/A</span>
                     </td>
                     <td class="text-center">
-                      <div class="d-flex justify-content-center flex-wrap gap-4">
+                      <div class="d-flex justify-content-center gap-4">
                       <AppButton
                         :data-testid="`sign-transaction-${index}`"
                         :disabled="!signingEnabled(index)"
