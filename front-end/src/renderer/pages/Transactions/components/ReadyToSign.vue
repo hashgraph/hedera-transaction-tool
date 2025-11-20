@@ -424,6 +424,24 @@ const handleSignSingle = async (index: number) => {
                   class="table-sort-link"
                   @click="
                     handleSort(
+                      'description',
+                      sort.field === 'description' ? getOpositeDirection() : 'asc',
+                    )
+                  "
+                >
+                  <span>Description</span>
+                  <i
+                    v-if="sort.field === 'description'"
+                    :class="[generatedClass]"
+                    class="bi text-title"
+                  ></i>
+                </div>
+              </th>
+              <th @contextmenu.prevent="showContextMenu">
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
                       'validStart',
                       sort.field === 'validStart' ? getOpositeDirection() : 'asc',
                     )
@@ -472,8 +490,11 @@ const handleSignSingle = async (index: number) => {
                   <td>
                     <i class="bi bi-stack" />
                   </td>
+                  <td class="text-bold">Group</td>
                   <td>
-                    {{ groups.get(group[0])?.description }}
+                    <span class="text-two-line-ellipsis">{{
+                      groups.get(group[0])?.description
+                    }}</span>
                   </td>
                   <td>
                     <DateTimeString
@@ -494,13 +515,22 @@ const handleSignSingle = async (index: number) => {
                     <span v-else>N/A</span>
                   </td>
                   <td class="text-center">
-                    <AppButton
-                      @click="handleGroupDetails(group[0])"
-                      color="secondary"
-                      :data-testid="`button-group-details-${index}`"
-                    >
-                      Details
-                    </AppButton>
+                    <div class="d-flex justify-content-center gap-4">
+                      <AppButton
+                        :data-testid="`button-group-sign-${index}`"
+                        color="primary"
+                        @click="toast.info('Sign All not implemented')"
+                      >
+                        Sign All
+                      </AppButton>
+                      <AppButton
+                        :data-testid="`button-group-details-${index}`"
+                        color="secondary"
+                        @click="handleGroupDetails(group[0])"
+                      >
+                        Details
+                      </AppButton>
+                    </div>
                   </td>
                 </tr>
               </template>
@@ -523,6 +553,11 @@ const handleSignSingle = async (index: number) => {
                         tx.transaction instanceof Transaction
                           ? getTransactionType(tx.transaction, false, true)
                           : 'N/A'
+                      }}</span>
+                    </td>
+                    <td :data-testid="`td-transaction-description-for-sign-${index}`">
+                      <span class="text-two-line-ellipsis">{{
+                        tx.transactionRaw.description
                       }}</span>
                     </td>
                     <td :data-testid="`td-transaction-valid-start-for-sign-${index}`">
@@ -599,3 +634,16 @@ const handleSignSingle = async (index: number) => {
     </template>
   </div>
 </template>
+<style scoped>
+.text-two-line-ellipsis {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
+  min-width: 6rem;
+}
+</style>
