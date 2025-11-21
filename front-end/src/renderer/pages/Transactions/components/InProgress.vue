@@ -304,6 +304,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                   ></i>
                 </div>
               </th>
+<!--
               <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
@@ -322,6 +323,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                   ></i>
                 </div>
               </th>
+-->
               <th class="text-center">
                 <span>Actions</span>
               </th>
@@ -349,6 +351,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                     />
                     <span v-else>N/A</span>
                   </td>
+<!--
                   <td>
                     <DateTimeString
                       v-if="groups.get(groupId)"
@@ -358,6 +361,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                     />
                     <span v-else>N/A</span>
                   </td>
+-->
                   <td class="text-center">
                     <AppButton
                       @click="redirectToGroupDetails($router, groupId, 'inProgress')"
@@ -401,6 +405,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                       />
                       <span v-else>N/A</span>
                     </td>
+<!--
                     <td :data-testid="`td-transaction-date-modified-in-progress-${index}`">
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
@@ -410,6 +415,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                       />
                       <span v-else>N/A</span>
                     </td>
+-->
                     <td class="text-center">
                       <AppButton
                         @click="handleDetails(tx.transactionRaw.id)"
