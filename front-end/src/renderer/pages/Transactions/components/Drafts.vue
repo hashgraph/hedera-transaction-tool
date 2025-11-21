@@ -320,7 +320,7 @@ watch([currentPage, pageSize], async () => {
                     }}</span>
                 </td>
                 <td>
-                  <span class="text-two-line-ellipsis" :data-testid="'span-draft-tx-type-' + i">{{
+                  <span class="text-wrap-two-line-ellipsis" :data-testid="'span-draft-tx-type-' + i">{{
                       (draft as TransactionDraft).type
                         ? (draft as TransactionDraft).description
                         : (draft as TransactionGroup).description
@@ -378,16 +378,3 @@ watch([currentPage, pageSize], async () => {
     </template>
   </div>
 </template>
-<style scoped>
-.text-two-line-ellipsis {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;
-  word-break: break-word;
-  min-width: 6rem;
-}
-</style>

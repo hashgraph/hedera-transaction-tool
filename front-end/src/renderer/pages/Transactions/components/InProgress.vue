@@ -336,7 +336,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                   </td>
                   <td class="text-bold">Group</td>
                   <td>
-                    <span class="text-two-line-ellipsis">{{
+                    <span class="text-wrap-two-line-ellipsis">{{
                       groups.get(groupId)?.description
                     }}</span>
                   </td>
@@ -388,7 +388,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                       }}</span>
                     </td>
                     <td :data-testid="`td-transaction-description-in-progress-${index}`">
-                      <span class="text-two-line-ellipsis">{{
+                      <span class="text-wrap-two-line-ellipsis">{{
                         tx.transactionRaw.description
                       }}</span>
                     </td>

@@ -433,7 +433,7 @@ watch(
                     <span class="text-bold">{{ transaction.type }}</span>
                   </td>
                   <td :data-testid="`td-transaction-description-${index}`">
-                    <span class="text-two-line-ellipsis">{{ transaction.description }}</span>
+                    <span class="text-wrap-two-line-ellipsis">{{ transaction.description }}</span>
                   </td>
                   <td :data-testid="`td-transaction-status-${index}`">
                     <span
@@ -482,7 +482,7 @@ watch(
                     }}</span>
                   </td>
                   <td :data-testid="`td-transaction-description-${index}`">
-                    <span class="text-two-line-ellipsis">{{
+                    <span class="text-wrap-two-line-ellipsis">{{
                       transactionData.transactionRaw.description
                     }}</span>
                   </td>
@@ -559,16 +559,3 @@ watch(
     </template>
   </div>
 </template>
-<style scoped>
-.text-two-line-ellipsis {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;
-  word-break: break-word;
-  min-width: 6rem;
-}
-</style>

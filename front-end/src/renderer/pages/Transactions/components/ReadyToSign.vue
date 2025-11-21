@@ -492,7 +492,7 @@ const handleSignSingle = async (index: number) => {
                   </td>
                   <td class="text-bold">Group</td>
                   <td>
-                    <span class="text-two-line-ellipsis">{{
+                    <span class="text-wrap-two-line-ellipsis">{{
                       groups.get(group[0])?.description
                     }}</span>
                   </td>
@@ -556,7 +556,7 @@ const handleSignSingle = async (index: number) => {
                       }}</span>
                     </td>
                     <td :data-testid="`td-transaction-description-for-sign-${index}`">
-                      <span class="text-two-line-ellipsis">{{
+                      <span class="text-wrap-two-line-ellipsis">{{
                         tx.transactionRaw.description
                       }}</span>
                     </td>
@@ -634,16 +634,3 @@ const handleSignSingle = async (index: number) => {
     </template>
   </div>
 </template>
-<style scoped>
-.text-two-line-ellipsis {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;
-  word-break: break-word;
-  min-width: 6rem;
-}
-</style>

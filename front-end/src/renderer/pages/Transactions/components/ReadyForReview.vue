@@ -427,7 +427,7 @@ watch(
                         }}</span>
                     </td>
                     <td :data-testid="`td-review-transaction-description-${index}`">
-                      <span class="text-two-line-ellipsis">{{
+                      <span class="text-wrap-two-line-ellipsis">{{
                           tx.transaction instanceof Transaction
                             ? tx.transactionRaw.description
                             : 'N/A'
@@ -495,16 +495,3 @@ watch(
     </template>
   </div>
 </template>
-<style scoped>
-.text-two-line-ellipsis {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;
-  word-break: break-word;
-  min-width: 6rem;
-}
-</style>

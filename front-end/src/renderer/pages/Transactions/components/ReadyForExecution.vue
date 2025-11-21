@@ -334,7 +334,7 @@ watch(
                   }}</span>
                 </td>
                 <td :data-testid="`td-transaction-description-ready-execution-${index}`">
-                  <span class="text-two-line-ellipsis">{{ tx.transactionRaw.description }}</span>
+                  <span class="text-wrap-two-line-ellipsis">{{ tx.transactionRaw.description }}</span>
                 </td>
                 <td :data-testid="`td-transaction-valid-start-ready-execution-${index}`">
                   <DateTimeString
@@ -417,16 +417,3 @@ watch(
     </template>
   </div>
 </template>
-<style scoped>
-.text-two-line-ellipsis {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;
-  word-break: break-word;
-  min-width: 6rem;
-}
-</style>
