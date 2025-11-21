@@ -123,6 +123,7 @@ class TransactionPage extends BasePage {
   accountIdPrefixSelector = 'p-account-id-';
   draftDetailsDateIndexSelector = 'span-draft-tx-date-';
   draftDetailsTypeIndexSelector = 'span-draft-tx-type-';
+  draftDetailsDescriptionIndexSelector = 'span-draft-tx-description-';
   draftDetailsIsTemplateCheckboxSelector = 'checkbox-is-template-';
 
   // Method to close the 'Save Draft' modal if it appears
@@ -1126,6 +1127,10 @@ class TransactionPage extends BasePage {
 
   async getFirstDraftType() {
     return await this.getText(this.draftDetailsTypeIndexSelector + '0');
+  }
+
+  async getFirstDraftDescription() {
+    return await this.getText(this.draftDetailsDescriptionIndexSelector + '0');
   }
 
   async getFirstDraftIsTemplateCheckboxVisible() {
