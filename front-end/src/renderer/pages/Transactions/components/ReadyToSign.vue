@@ -479,7 +479,8 @@ const handleSignSingle = async (index: number) => {
                     <DateTimeString
                       v-if="group[1][0].transaction instanceof Transaction"
                       :date="getTransactionValidStart(group[1][0].transaction)"
-                      :extended="false"
+                      compact
+                      wrap
                     />
                     <span v-else>N/A</span>
                   </td>
@@ -487,7 +488,8 @@ const handleSignSingle = async (index: number) => {
                     <DateTimeString
                       v-if="groups.get(group[0])"
                       :date="getTransactionGroupUpdatedAt(groups.get(group[0])!)"
-                      :extended="false"
+                      compact
+                      wrap
                     />
                     <span v-else>N/A</span>
                   </td>
@@ -527,7 +529,8 @@ const handleSignSingle = async (index: number) => {
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
                         :date="getTransactionValidStart(tx.transaction)"
-                        :extended="false"
+                        compact
+                        wrap
                       />
                       <span v-else>N/A</span>
                     </td>
@@ -535,7 +538,8 @@ const handleSignSingle = async (index: number) => {
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
                         :date="new Date(tx.transactionRaw.updatedAt)"
-                        :extended="false"
+                        compact
+                        wrap
                       />
                       <span v-else>N/A</span>
                     </td>

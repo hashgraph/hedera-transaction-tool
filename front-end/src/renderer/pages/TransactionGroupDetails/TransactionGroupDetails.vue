@@ -832,6 +832,8 @@ function tooltipText(status: TransactionStatus): string {
                               <td data-testid="td-group-valid-start-time">
                                 <DateTimeString
                                   :date="new Date(groupItem.transaction.validStart)"
+                                  compact
+                                  wrap
                                 />
                               </td>
                               <td class="text-center">

@@ -370,7 +370,8 @@ watch(
                     <DateTimeString
                       v-if="groupTransactions[0].transaction instanceof Transaction"
                       :date="getTransactionValidStart(groupTransactions[0].transaction)"
-                      :extended="false"
+                      compact
+                      wrap
                     />
                     <span v-else>N/A</span>
                   </td>
@@ -378,7 +379,8 @@ watch(
                     <DateTimeString
                       v-if="groups.get(groupId)"
                       :date="getTransactionGroupUpdatedAt(groups.get(groupId)!)"
-                      :extended="false"
+                      compact
+                      wrap
                     />
                     <span v-else>N/A</span>
                   </td>
@@ -414,7 +416,8 @@ watch(
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
                         :date="getTransactionValidStart(tx.transaction)"
-                        :extended="false"
+                        compact
+                        wrap
                       />
                       <span v-else>N/A</span>
                     </td>
@@ -422,7 +425,8 @@ watch(
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
                         :date="new Date(tx.transactionRaw.updatedAt)"
-                        :extended="false"
+                        compact
+                        wrap
                       />
                       <span v-else>N/A</span>
                     </td>
