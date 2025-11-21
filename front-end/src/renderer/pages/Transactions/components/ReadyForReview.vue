@@ -348,6 +348,7 @@ watch(
                   ></i>
                 </div>
               </th>
+<!--
               <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
@@ -366,6 +367,7 @@ watch(
                   ></i>
                 </div>
               </th>
+-->
               <th class="text-center">
                 <span>Actions</span>
               </th>
@@ -389,6 +391,7 @@ watch(
                     />
                     <span v-else>N/A</span>
                   </td>
+<!--
                   <td>
                     <DateTimeString
                       v-if="groups.get(groupId)"
@@ -398,6 +401,7 @@ watch(
                     />
                     <span v-else>N/A</span>
                   </td>
+-->
                   <td class="text-center">
                     <AppButton
                       @click="redirectToGroupDetails($router, groupId)"
@@ -442,6 +446,7 @@ watch(
                       />
                       <span v-else>N/A</span>
                     </td>
+<!--
                     <td :data-testid="`td-review-transaction-date-modified-${index}`">
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
@@ -451,6 +456,7 @@ watch(
                       />
                       <span v-else>N/A</span>
                     </td>
+-->
                     <td class="text-center">
                       <AppButton
                         @click="handleApprove(tx.transactionRaw.id)"
