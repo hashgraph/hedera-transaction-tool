@@ -25,7 +25,6 @@ import { getHistoryTransactions } from '@renderer/services/organization';
 
 import {
   getTransactionStatus,
-  getTransactionId,
   getStatusFromCode,
   getNotifiedTransactions,
   hexToUint8Array,
@@ -41,6 +40,7 @@ import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import TransactionsFilter from '@renderer/components/Filter/TransactionsFilter.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
+import TransactionId from '@renderer/components/ui/TransactionId.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -408,7 +408,7 @@ watch(
               >
                 <tr>
                   <td :data-testid="`td-transaction-id-${index}`">
-                    {{ getTransactionId(transaction) }}
+                    <TransactionId :transaction-id="transaction.transaction_id" wrap />
                   </td>
                   <td :data-testid="`td-transaction-type-${index}`">
                     <span class="text-bold">{{ transaction.type }}</span>
@@ -449,7 +449,10 @@ watch(
                   :id="transactionData.transactionRaw.id.toString()"
                 >
                   <td :data-testid="`td-transaction-id-${index}`">
-                    {{ sdkTransactionUtils.getTransactionId(transactionData.transaction) }}
+                    <TransactionId
+                      :transaction-id="transactionData.transaction.transactionId"
+                      wrap
+                    />
                   </td>
                   <td :data-testid="`td-transaction-type-${index}`">
                     <span class="text-bold">{{

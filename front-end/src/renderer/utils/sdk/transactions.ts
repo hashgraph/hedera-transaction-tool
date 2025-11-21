@@ -30,15 +30,6 @@ export const getTransactionDateExtended = (transaction: Transaction) => {
   return getDateStringExtended(validStart.toDate());
 };
 
-export const getTransactionId = (transaction: Transaction) => {
-  if (!transaction.transactionId?.accountId || !transaction.transactionId?.validStart) {
-    return null;
-  }
-
-  // return `${transaction.transactionId.accountId.toString()}@${transaction.transactionId.validStart.seconds.toString()}`;
-  return transaction.transactionId?.toString();
-};
-
 export const getTransactionPayerId = (transaction: Transaction) =>
   transaction.transactionId?.accountId?.toString() || null;
 

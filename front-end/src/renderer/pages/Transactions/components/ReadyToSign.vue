@@ -38,7 +38,6 @@ import {
   signSingleTransaction,
 } from '@renderer/utils';
 import {
-  getTransactionId,
   getTransactionType,
   getTransactionValidStart,
 } from '@renderer/utils/sdk/transactions';
@@ -53,6 +52,7 @@ import { useToast } from 'vue-toast-notification';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import TransactionId from '@renderer/components/ui/TransactionId.vue';
 
 interface TransactionDescriptor {
   transactionRaw: ITransaction;
@@ -509,11 +509,12 @@ const handleSignSingle = async (index: number) => {
                 <template v-for="(tx, index) in group[1]" :key="tx.transactionRaw.id">
                   <tr :class="{ highlight: notifiedTransactionIds.includes(tx.transactionRaw.id) }">
                     <td :data-testid="`td-transaction-id-for-sign-${index}`">
-                      {{
-                        tx.transaction instanceof Transaction
-                          ? getTransactionId(tx.transaction)
-                          : 'N/A'
-                      }}
+                      <TransactionId
+                        v-if="tx.transaction instanceof Transaction"
+                        :transaction-id="tx.transaction.transactionId"
+                        wrap
+                      />
+                      <span v-else>N/A</span>
                     </td>
                     <td :data-testid="`td-transaction-type-for-sign-${index}`">
                       <span class="text-bold">{{

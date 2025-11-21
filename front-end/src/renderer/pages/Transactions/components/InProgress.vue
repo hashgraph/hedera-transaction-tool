@@ -19,7 +19,6 @@ import useDisposableWs from '@renderer/composables/useDisposableWs';
 import { getApiGroupById, getTransactionsForUser } from '@renderer/services/organization';
 
 import {
-  getTransactionId,
   getTransactionType,
   getTransactionValidStart,
 } from '@renderer/utils/sdk/transactions';
@@ -36,6 +35,7 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
+import TransactionId from '@renderer/components/ui/TransactionId.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -349,11 +349,12 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                 <template v-for="(tx, index) of groupTransactions" :key="tx.transactionRaw.id">
                   <tr>
                     <td :data-testid="`td-transaction-id-in-progress-${index}`">
-                      {{
-                        tx.transaction instanceof Transaction
-                          ? getTransactionId(tx.transaction)
-                          : 'N/A'
-                      }}
+                      <TransactionId
+                        v-if="tx.transaction instanceof Transaction"
+                        :transaction-id="tx.transaction.transactionId"
+                        wrap
+                      />
+                      <span v-else>N/A</span>
                     </td>
                     <td :data-testid="`td-transaction-type-in-progress-${index}`">
                       <span class="text-bold">{{
@@ -390,38 +391,6 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                 </template>
               </template>
             </template>
-
-            <!-- <template v-for="tx in transactions" :key="tx.transactionRaw.id">
-              <tr>
-                <td :data-testid="`td-transaction-id-in-progress-${index}`">
-                  {{
-                    tx.transaction instanceof Transaction ? getTransactionId(tx.transaction) : 'N/A'
-                  }}
-                </td>
-                <td :data-testid="`td-transaction-type-in-progress-${index}`">
-                  <span class="text-bold">{{
-                    tx.transaction instanceof Transaction
-                      ? getTransactionType(tx.transaction)
-                      : 'N/A'
-                  }}</span>
-                </td>
-                <td :data-testid="`td-transaction-valid-start-in-progress-${index}`">
-                  {{
-                    tx.transaction instanceof Transaction
-                      ? getTransactionDateExtended(tx.transaction)
-                      : 'N/A'
-                  }}
-                </td>
-                <td class="text-center">
-                  <AppButton
-                    @click="handleDetails(tx.transactionRaw.id)"
-                    :data-testid="`button-transaction-in-progress-details-${index}`"
-                    color="secondary"
-                    >Details</AppButton
-                  >
-                </td>
-              </tr>
-            </template> -->
           </tbody>
           <tfoot class="d-table-caption">
             <tr class="d-inline">

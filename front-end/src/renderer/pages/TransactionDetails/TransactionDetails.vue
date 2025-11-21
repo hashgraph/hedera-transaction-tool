@@ -24,7 +24,6 @@ import { getApiGroupById, getTransactionById } from '@renderer/services/organiza
 import { getTransaction } from '@renderer/services/transactionService';
 
 import {
-  getTransactionId,
   getTransactionPayerId,
   getTransactionType,
   getTransactionValidStart,
@@ -53,6 +52,7 @@ import { getGroup } from '@renderer/services/transactionGroupsService';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import TransactionId from '@renderer/components/ui/TransactionId.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -68,8 +68,8 @@ useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const route = useRoute();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject()
-const nodeByIdCache = NodeByIdCache.inject()
+const accountByIdCache = AccountByIdCache.inject();
+const nodeByIdCache = NodeByIdCache.inject();
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);
@@ -175,7 +175,7 @@ const subscribeToTransactionAction = () => {
 const formattedId = computed(() => {
   const id = router.currentRoute.value.params.id;
   return id ? (Array.isArray(id) ? id[0] : id) : null;
-})
+});
 
 /* Hooks */
 onBeforeMount(async () => {
@@ -405,7 +405,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Transaction ID</h4>
                   <p :class="detailItemValueClass" data-testid="p-transaction-details-id">
-                    {{ getTransactionId(sdkTransaction) }}
+                    <TransactionId :transaction-id="sdkTransaction.transactionId" />
                   </p>
                 </div>
 
