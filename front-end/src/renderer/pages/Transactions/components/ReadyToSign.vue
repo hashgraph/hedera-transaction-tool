@@ -455,6 +455,7 @@ const handleSignSingle = async (index: number) => {
                   ></i>
                 </div>
               </th>
+<!--
               <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
@@ -473,6 +474,7 @@ const handleSignSingle = async (index: number) => {
                   ></i>
                 </div>
               </th>
+-->
               <th class="text-center">
                 <span>Actions</span>
               </th>
@@ -505,6 +507,7 @@ const handleSignSingle = async (index: number) => {
                     />
                     <span v-else>N/A</span>
                   </td>
+<!--
                   <td>
                     <DateTimeString
                       v-if="groups.get(group[0])"
@@ -514,6 +517,7 @@ const handleSignSingle = async (index: number) => {
                     />
                     <span v-else>N/A</span>
                   </td>
+-->
                   <td class="text-center">
                     <div class="d-flex justify-content-center gap-4">
                       <AppButton
@@ -570,6 +574,7 @@ const handleSignSingle = async (index: number) => {
                       />
                       <span v-else>N/A</span>
                     </td>
+<!--
                     <td :data-testid="`td-transaction-date-modified-for-sign-${index}`">
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
@@ -579,6 +584,7 @@ const handleSignSingle = async (index: number) => {
                       />
                       <span v-else>N/A</span>
                     </td>
+-->
                     <td class="text-center">
                       <div class="d-flex justify-content-center gap-4">
                         <AppButton
