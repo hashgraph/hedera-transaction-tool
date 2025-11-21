@@ -296,7 +296,7 @@ watch([currentPage, pageSize], async () => {
               <tr>
                 <td>
                   <span class="text-secondary" :data-testid="'span-draft-tx-date-' + i">
-                    <DateTimeString :date="draft.created_at" :extended="false" />
+                    <DateTimeString :date="draft.created_at" compact wrap />
                   </span>
                 </td>
                 <td>

@@ -322,7 +322,8 @@ watch(
                   <DateTimeString
                     v-if="tx.transaction instanceof Transaction"
                     :date="getTransactionValidStart(tx.transaction)"
-                    :extended="false"
+                    compact
+                    wrap
                   />
                   <span v-else>N/A</span>
                 </td>
@@ -330,7 +331,8 @@ watch(
                   <DateTimeString
                     v-if="tx.transaction instanceof Transaction"
                     :date="new Date(tx.transactionRaw.updatedAt)"
-                    :extended="false"
+                    compact
+                    wrap
                   />
                   <span v-else>N/A</span>
                 </td>

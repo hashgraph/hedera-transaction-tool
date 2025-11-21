@@ -184,7 +184,7 @@ watch([currentPage, pageSize], async () => {
                 <td>{{ i + 1 }}</td>
                 <td>
                   <span class="text-secondary">
-                    <DateTimeString :date="group.created_at" :extended="false" />
+                    <DateTimeString :date="group.created_at" compact wrap />
                   </span>
                 </td>
                 <td>
