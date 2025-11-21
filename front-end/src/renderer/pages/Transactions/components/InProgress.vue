@@ -18,10 +18,7 @@ import useDisposableWs from '@renderer/composables/useDisposableWs';
 
 import { getApiGroupById, getTransactionsForUser } from '@renderer/services/organization';
 
-import {
-  getTransactionType,
-  getTransactionValidStart,
-} from '@renderer/utils/sdk/transactions';
+import { getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions';
 import {
   redirectToDetails,
   redirectToGroupDetails,
@@ -259,13 +256,33 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
               <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
-                  @click="handleSort('type', sort.field === 'type' ? getOppositeDirection() : 'asc')"
+                  @click="
+                    handleSort('type', sort.field === 'type' ? getOppositeDirection() : 'asc')
+                  "
                 >
                   <span>Transaction Type</span>
                   <i
                     v-if="sort.field === 'type'"
                     class="bi text-title"
                     :class="[generatedClass]"
+                  ></i>
+                </div>
+              </th>
+              <th @contextmenu.prevent="showContextMenu">
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
+                      'description',
+                      sort.field === 'description' ? getOppositeDirection() : 'asc',
+                    )
+                  "
+                >
+                  <span>Description</span>
+                  <i
+                    v-if="sort.field === 'description'"
+                    :class="[generatedClass]"
+                    class="bi text-title"
                   ></i>
                 </div>
               </th>
@@ -317,7 +334,12 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                   <td>
                     <i class="bi bi-stack" />
                   </td>
-                  <td>{{ groups.get(groupId)?.description }}</td>
+                  <td class="text-bold">Group</td>
+                  <td>
+                    <span class="text-two-line-ellipsis">{{
+                      groups.get(groupId)?.description
+                    }}</span>
+                  </td>
                   <td>
                     <DateTimeString
                       v-if="groupTransactions[0].transaction instanceof Transaction"
@@ -365,6 +387,11 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                           : 'N/A'
                       }}</span>
                     </td>
+                    <td :data-testid="`td-transaction-description-in-progress-${index}`">
+                      <span class="text-two-line-ellipsis">{{
+                        tx.transactionRaw.description
+                      }}</span>
+                    </td>
                     <td :data-testid="`td-transaction-valid-start-in-progress-${index}`">
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
@@ -410,12 +437,33 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
         <div
           v-if="contextMenuVisible"
           class="dropdown"
-          :style="{ position: 'fixed', top: contextMenuY + 'px', left: contextMenuX + 'px', zIndex: 1000 }"
+          :style="{
+            position: 'fixed',
+            top: contextMenuY + 'px',
+            left: contextMenuX + 'px',
+            zIndex: 1000,
+          }"
           @click.stop
         >
           <ul class="dropdown-menu show mt-3">
-            <li class="dropdown-item cursor-pointer" @click="handleSort('createdAt', 'desc'); hideContextMenu()">Sort by Newest</li>
-            <li class="dropdown-item cursor-pointer" @click="handleSort('createdAt', 'asc'); hideContextMenu()">Sort by Oldest</li>
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="
+                handleSort('createdAt', 'desc');
+                hideContextMenu();
+              "
+            >
+              Sort by Newest
+            </li>
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="
+                handleSort('createdAt', 'asc');
+                hideContextMenu();
+              "
+            >
+              Sort by Oldest
+            </li>
           </ul>
         </div>
       </template>
