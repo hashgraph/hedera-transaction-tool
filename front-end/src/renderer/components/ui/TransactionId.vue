@@ -6,7 +6,7 @@ import { TransactionId } from '@hashgraph/sdk';
 const props = withDefaults(
   defineProps<{
     transactionId: TransactionId | string | null;
-    wrap?: boolean;
+    wrap: boolean;
   }>(),
   {
     wrap: false,
