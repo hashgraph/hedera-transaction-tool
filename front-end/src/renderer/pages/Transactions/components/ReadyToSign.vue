@@ -80,7 +80,7 @@ const nodeByIdCache = NodeByIdCache.inject();
 /* State */
 const transactions = ref<
   Map<
-    number, // group id, -1 if not a group
+    number, // group id, or -1 for the pseudo group containing all single transactions
     TransactionDescriptor[] // transactions of that group, or set of single transactions
   >
 >(new Map());
@@ -102,7 +102,7 @@ const sort = reactive<{
   direction: 'desc',
 });
 
-const signingItemSeq = ref(-1);
+const signingItems = ref<boolean[]>([]); // is signing in progress for a single transaction
 
 /* Computed */
 const generatedClass = computed(() => {
@@ -230,7 +230,6 @@ async function fetchTransactions() {
       if (currentGroup > -1 && !groupIds.includes(currentGroup)) {
         groupIds.push(currentGroup);
       }
-
     }
 
     const notificationsKey = user.selectedOrganization?.serverUrl || '';
@@ -253,6 +252,9 @@ async function fetchTransactions() {
       groups.value = fetchedGroups;
     }
   } finally {
+    const nbOfSingleTransactions = transactions.value.get(-1)?.length ?? 0;
+    signingItems.value = Array(nbOfSingleTransactions).fill(false);
+
     isLoading.value = false;
   }
 }
@@ -334,6 +336,7 @@ watch(
 const signingEnabled = (index: number) => {
   const singleTransactions = transactions.value.get(-1);
   return (
+    !signingItems.value[index] &&
     singleTransactions &&
     index < singleTransactions.length &&
     singleTransactions[index].transactionRaw.status === TransactionStatus.WAITING_FOR_SIGNATURES &&
@@ -352,7 +355,7 @@ const handleSignSingle = async (index: number) => {
   const tx = singleTransactions![index] as TransactionDescriptor;
 
   try {
-    signingItemSeq.value = index;
+    signingItems.value[index] = true;
     await signSingleTransaction(
       tx.transactionRaw.id,
       tx.transaction,
@@ -370,7 +373,7 @@ const handleSignSingle = async (index: number) => {
   } catch {
     toast.error('Transaction not signed');
   } finally {
-    signingItemSeq.value = -1;
+    signingItems.value[index] = false;
   }
 };
 </script>
@@ -460,6 +463,7 @@ const handleSignSingle = async (index: number) => {
           <tbody>
             <template v-for="(group, index) of transactions" :key="group[0]">
               <template v-if="group[0] != -1">
+                <!-- This raw represents a Transaction Group -->
                 <tr
                   :class="{
                     highlight: groupHasNotifications(group[0]),
@@ -500,6 +504,8 @@ const handleSignSingle = async (index: number) => {
               </template>
 
               <template v-else>
+                <!-- This is the pseudo group containing all single transactions -->
+                <!-- One raw per transaction -->
                 <template v-for="(tx, index) in group[1]" :key="tx.transactionRaw.id">
                   <tr :class="{ highlight: notifiedTransactionIds.includes(tx.transactionRaw.id) }">
                     <td :data-testid="`td-transaction-id-for-sign-${index}`">
@@ -534,22 +540,22 @@ const handleSignSingle = async (index: number) => {
                     </td>
                     <td class="text-center">
                       <div class="d-flex justify-content-center gap-4">
-                      <AppButton
-                        :data-testid="`sign-transaction-${index}`"
-                        :disabled="!signingEnabled(index)"
-                        :loading="signingItemSeq === index"
-                        loading-text="Sign"
-                        color="primary"
-                        type="button"
-                        @click.prevent="handleSignSingle(index)"
-                      ><span>Sign</span>
-                      </AppButton>
-                      <AppButton
-                        @click="handleSingleDetails(tx.transactionRaw.id)"
-                        :data-testid="`button-transaction-sign-${index}`"
-                        color="secondary"
-                        >Details</AppButton
-                      >
+                        <AppButton
+                          :data-testid="`sign-transaction-${index}`"
+                          :disabled="!signingEnabled(index)"
+                          :loading="signingItems[index]"
+                          loading-text="Sign"
+                          color="primary"
+                          type="button"
+                          @click.prevent="handleSignSingle(index)"
+                          ><span>Sign</span>
+                        </AppButton>
+                        <AppButton
+                          @click="handleSingleDetails(tx.transactionRaw.id)"
+                          :data-testid="`button-transaction-sign-${index}`"
+                          color="secondary"
+                          >Details</AppButton
+                        >
                       </div>
                     </td>
                   </tr>
