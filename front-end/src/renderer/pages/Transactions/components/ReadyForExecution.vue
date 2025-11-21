@@ -26,10 +26,7 @@ import {
   redirectToDetails,
   isLoggedInOrganization,
 } from '@renderer/utils';
-import {
-  getTransactionType,
-  getTransactionValidStart,
-} from '@renderer/utils/sdk/transactions';
+import { getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -264,6 +261,24 @@ watch(
                   class="table-sort-link"
                   @click="
                     handleSort(
+                      'description',
+                      sort.field === 'description' ? getOpositeDirection() : 'asc',
+                    )
+                  "
+                >
+                  <span>Description</span>
+                  <i
+                    v-if="sort.field === 'description'"
+                    :class="[generatedClass]"
+                    class="bi text-title"
+                  ></i>
+                </div>
+              </th>
+              <th @contextmenu.prevent="showContextMenu">
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
                       'validStart',
                       sort.field === 'validStart' ? getOpositeDirection() : 'asc',
                     )
@@ -318,6 +333,9 @@ watch(
                       : 'N/A'
                   }}</span>
                 </td>
+                <td :data-testid="`td-transaction-description-ready-execution-${index}`">
+                  <span class="text-two-line-ellipsis">{{ tx.transactionRaw.description }}</span>
+                </td>
                 <td :data-testid="`td-transaction-valid-start-ready-execution-${index}`">
                   <DateTimeString
                     v-if="tx.transaction instanceof Transaction"
@@ -361,12 +379,33 @@ watch(
         <div
           v-if="contextMenuVisible"
           class="dropdown"
-          :style="{ position: 'fixed', top: contextMenuY + 'px', left: contextMenuX + 'px', zIndex: 1000 }"
+          :style="{
+            position: 'fixed',
+            top: contextMenuY + 'px',
+            left: contextMenuX + 'px',
+            zIndex: 1000,
+          }"
           @click.stop
         >
           <ul class="dropdown-menu show mt-3">
-            <li class="dropdown-item cursor-pointer" @click="handleSort('createdAt', 'desc'); hideContextMenu()">Sort by Newest</li>
-            <li class="dropdown-item cursor-pointer" @click="handleSort('createdAt', 'asc'); hideContextMenu()">Sort by Oldest</li>
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="
+                handleSort('createdAt', 'desc');
+                hideContextMenu();
+              "
+            >
+              Sort by Newest
+            </li>
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="
+                handleSort('createdAt', 'asc');
+                hideContextMenu();
+              "
+            >
+              Sort by Oldest
+            </li>
           </ul>
         </div>
       </template>
@@ -378,3 +417,16 @@ watch(
     </template>
   </div>
 </template>
+<style scoped>
+.text-two-line-ellipsis {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
+  min-width: 6rem;
+}
+</style>
