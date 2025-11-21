@@ -320,7 +320,7 @@ watch([currentPage, pageSize], async () => {
                     }}</span>
                 </td>
                 <td>
-                  <span class="text-wrap-two-line-ellipsis" :data-testid="'span-draft-tx-type-' + i">{{
+                  <span class="text-wrap-two-line-ellipsis" :data-testid="'span-draft-tx-description-' + i">{{
                       (draft as TransactionDraft).type
                         ? (draft as TransactionDraft).description
                         : (draft as TransactionGroup).description
