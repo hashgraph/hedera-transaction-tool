@@ -27,7 +27,6 @@ import {
   isLoggedInOrganization,
 } from '@renderer/utils';
 import {
-  getTransactionId,
   getTransactionType,
   getTransactionValidStart,
 } from '@renderer/utils/sdk/transactions';
@@ -37,6 +36,7 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
+import TransactionId from '@renderer/components/ui/TransactionId.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -304,9 +304,12 @@ watch(
             <template v-for="(tx, index) in transactions" :key="tx.transactionRaw.id">
               <tr :class="{ highlight: notifiedTransactionIds.includes(tx.transactionRaw.id) }">
                 <td :data-testid="`td-transaction-id-ready-execution-${index}`">
-                  {{
-                    tx.transaction instanceof Transaction ? getTransactionId(tx.transaction) : 'N/A'
-                  }}
+                  <TransactionId
+                    v-if="tx.transaction instanceof Transaction"
+                    :transaction-id="tx.transaction.transactionId"
+                    wrap
+                  />
+                  <span v-else>N/A</span>
                 </td>
                 <td :data-testid="`td-transaction-type-ready-execution-${index}`">
                   <span class="text-bold">{{
