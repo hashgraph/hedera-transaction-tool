@@ -376,7 +376,7 @@ watch(
                   ></i>
                 </div>
               </th>
-              <th>
+              <th v-if="!user.selectedOrganization">
                 <div
                   class="table-sort-link"
                   @click="
@@ -505,6 +505,7 @@ watch(
                       }}</span
                     >
                   </td>
+<!--
                   <td :data-testid="`td-transaction-createdAt-${index}`">
                     <span class="text-small text-secondary">
                       <DateTimeString
@@ -514,6 +515,7 @@ watch(
                       />
                     </span>
                   </td>
+-->
                   <td>
                     <span
                       :data-testid="`td-transaction-executedAt-${index}`"
