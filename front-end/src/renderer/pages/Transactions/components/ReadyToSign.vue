@@ -30,7 +30,6 @@ import {
 import {
   assertIsLoggedInOrganization,
   getNotifiedTransactions,
-  getTransactionGroupUpdatedAt,
   hexToUint8Array,
   isLoggedInOrganization,
   redirectToDetails,
