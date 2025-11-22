@@ -22,9 +22,11 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+import useContactsStore from '@renderer/stores/storeContacts.ts';
 
 /* Stores */
 const user = useUserStore();
+const contacts = useContactsStore();
 
 /* Composables */
 const router = useRouter();
@@ -63,6 +65,7 @@ const handleLinkAccount = async () => {
         failedEmails.push(email);
       }
     }
+    await contacts.fetch();
 
     if (failedEmails.length > 0) {
       toast.error(
@@ -90,6 +93,7 @@ const handleLinkAccount = async () => {
           organization_user_id_owner: user.selectedOrganization.userId,
           nickname: nickname.value,
         });
+        await contacts.fetch();
       }
     } catch (error) {
       console.error(error);
