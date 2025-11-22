@@ -26,7 +26,6 @@ import {
   redirectToDetails,
   redirectToGroupDetails,
   isLoggedInOrganization,
-  getTransactionGroupUpdatedAt,
 } from '@renderer/utils';
 import {
   getTransactionType,

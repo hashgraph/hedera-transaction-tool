@@ -24,7 +24,6 @@ import {
   redirectToGroupDetails,
   isLoggedInOrganization,
   hexToUint8Array,
-  getTransactionGroupUpdatedAt,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
