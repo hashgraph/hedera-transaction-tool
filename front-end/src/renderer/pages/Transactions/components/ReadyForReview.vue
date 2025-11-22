@@ -26,7 +26,6 @@ import {
   redirectToDetails,
   redirectToGroupDetails,
   isLoggedInOrganization,
-  getTransactionGroupUpdatedAt,
 } from '@renderer/utils';
 import {
   getTransactionType,
@@ -320,6 +319,19 @@ watch(
               <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
+                  @click="handleSort('description', sort.field === 'description' ? getOppositeDirection() : 'asc')"
+                >
+                  <span>Description</span>
+                  <i
+                    v-if="sort.field === 'description'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
+                </div>
+              </th>
+              <th @contextmenu.prevent="showContextMenu">
+                <div
+                  class="table-sort-link"
                   @click="
                     handleSort(
                       'validStart',
@@ -335,6 +347,7 @@ watch(
                   ></i>
                 </div>
               </th>
+<!--
               <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
@@ -353,6 +366,7 @@ watch(
                   ></i>
                 </div>
               </th>
+-->
               <th class="text-center">
                 <span>Actions</span>
               </th>
@@ -365,6 +379,7 @@ watch(
                   <td>
                     <i class="bi bi-stack" />
                   </td>
+                  <td>Group</td>
                   <td>{{ groups.get(groupId)?.description }}</td>
                   <td>
                     <DateTimeString
@@ -375,6 +390,7 @@ watch(
                     />
                     <span v-else>N/A</span>
                   </td>
+<!--
                   <td>
                     <DateTimeString
                       v-if="groups.get(groupId)"
@@ -384,6 +400,7 @@ watch(
                     />
                     <span v-else>N/A</span>
                   </td>
+-->
                   <td class="text-center">
                     <AppButton
                       @click="redirectToGroupDetails($router, groupId)"
@@ -407,10 +424,17 @@ watch(
                     </td>
                     <td :data-testid="`td-review-transaction-type-${index}`">
                       <span class="text-bold">{{
-                        tx.transaction instanceof Transaction
-                          ? getTransactionType(tx.transaction, false, true)
-                          : 'N/A'
-                      }}</span>
+                          tx.transaction instanceof Transaction
+                            ? getTransactionType(tx.transaction, false, true)
+                            : 'N/A'
+                        }}</span>
+                    </td>
+                    <td :data-testid="`td-review-transaction-description-${index}`">
+                      <span class="text-wrap-two-line-ellipsis">{{
+                          tx.transaction instanceof Transaction
+                            ? tx.transactionRaw.description
+                            : 'N/A'
+                        }}</span>
                     </td>
                     <td :data-testid="`td-review-transaction-valid-start-${index}`">
                       <DateTimeString
@@ -421,6 +445,7 @@ watch(
                       />
                       <span v-else>N/A</span>
                     </td>
+<!--
                     <td :data-testid="`td-review-transaction-date-modified-${index}`">
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
@@ -430,6 +455,7 @@ watch(
                       />
                       <span v-else>N/A</span>
                     </td>
+-->
                     <td class="text-center">
                       <AppButton
                         @click="handleApprove(tx.transactionRaw.id)"

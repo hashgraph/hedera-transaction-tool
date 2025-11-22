@@ -20,6 +20,7 @@ class DetailsPage extends BasePage {
   transactionCreatedAtIndexSelector = 'td-transaction-createdAt-';
   transactionStatusIndexSelector = 'td-transaction-status-';
   transactionTypeIndexSelector = 'td-transaction-type-';
+  transactionDescriptionIndexSelector = 'td-transaction-description-';
   transactionIdIndexSelector = 'td-transaction-id-';
   transactionDetailsCreatedAtSelector = 'p-transaction-details-created-at';
   transactionDetailsExecutedAtSelector = 'p-transaction-details-executed_at';
@@ -62,6 +63,10 @@ class DetailsPage extends BasePage {
 
   async getFirstTransactionType() {
     return await this.getText(this.transactionTypeIndexSelector + '0');
+  }
+
+  async getFirstTransactionDescription() {
+    return await this.getText(this.transactionDescriptionIndexSelector + '0');
   }
 
   async getFirstTransactionId() {
@@ -180,12 +185,17 @@ class DetailsPage extends BasePage {
     return await this.getText(this.fileDetailsFileIdSelector);
   }
 
-  async assertTransactionDisplayed(expectedId, expectedType) {
+  async assertTransactionDisplayed(expectedId, expectedType, expectedDescription=null) {
     const transactionId = await this.getFirstTransactionId();
     expect(expectedId.toString()).toContain(transactionId);
 
     const transactionType = await this.getFirstTransactionType();
     expect(transactionType).toBe(expectedType);
+
+    if (expectedDescription) {
+      const transactionDescription = await this.getFirstTransactionDescription();
+      expect(transactionDescription).toBe(expectedDescription);
+    }
 
     const transactionStatus = await this.getFirstTransactionStatus();
     expect(transactionStatus).toBe('SUCCESS');
