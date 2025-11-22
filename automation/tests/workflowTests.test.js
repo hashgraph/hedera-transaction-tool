@@ -371,9 +371,10 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify account create tx is displayed in history page', async () => {
-    const { newTransactionId } = await transactionPage.createNewAccount();
+    const txDescription = 'test account create tx description';
+    const { newTransactionId } = await transactionPage.createNewAccount( {description: txDescription});
     await transactionPage.clickOnTransactionsMenuButton();
-    await detailsPage.assertTransactionDisplayed(newTransactionId, 'Account Create Transaction');
+    await detailsPage.assertTransactionDisplayed(newTransactionId, 'Account Create Transaction', txDescription);
   });
 
   test('Verify transaction details are displayed for account tx ', async () => {
