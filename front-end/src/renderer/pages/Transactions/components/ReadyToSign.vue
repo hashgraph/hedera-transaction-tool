@@ -517,6 +517,7 @@ const handleSignSingle = async (index: number) => {
                   <td class="text-center">
                     <div class="d-flex justify-content-center gap-4">
                       <AppButton
+                        style="visibility: hidden"
                         :data-testid="`button-group-sign-${index}`"
                         color="primary"
                         @click="toast.info('Sign All not implemented')"
