@@ -107,7 +107,7 @@ const nodeByIdCache = NodeByIdCache.inject();
 const group = ref<IGroup | null>(null);
 const shouldApprove = ref(false);
 const isVersionMismatch = ref(false);
-const signingItemSeq = ref(-1);
+const signingItems = ref<boolean[]>([]); // is signing in progress for a group item
 const unsignedSignersToCheck = ref<Record<number, string[]>>({});
 const tooltipRef = ref<HTMLElement[]>([]);
 const isConfirmModalShown = ref(false);
@@ -207,7 +207,7 @@ const handleSignGroupItem = async (groupItem: IGroupItem) => {
   if (passwordModalOpened(personalPassword)) return;
 
   try {
-    signingItemSeq.value = groupItem.seq;
+    signingItems.value[groupItem.seq] = true;
     const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
     const transaction = Transaction.fromBytes(transactionBytes);
 
@@ -237,7 +237,7 @@ const handleSignGroupItem = async (groupItem: IGroupItem) => {
   } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to sign transaction'), errorToastOptions);
   } finally {
-    signingItemSeq.value = -1;
+    signingItems.value[groupItem.seq] = false;
   }
 };
 
@@ -577,6 +577,7 @@ async function fetchGroup(id: string | number) {
             updatedUnsignedSignersToCheck[txId] = usersPublicKeys;
           }
         }
+        signingItems.value = Array(group.value.groupItems.length).fill(false);
         fullyLoaded.value = true;
       }
 
@@ -676,6 +677,13 @@ function tooltipText(status: TransactionStatus): string {
   }
   return result;
 }
+const canSignItem = (item: IGroupItem) => {
+  return (
+    !signingItems.value[item.seq] &&
+    unsignedSignersToCheck.value[item.transaction.id] &&
+    item.transaction.status === TransactionStatus.WAITING_FOR_SIGNATURES
+  );
+};
 </script>
 <template>
   <form @submit.prevent="handleSubmit" class="p-5">
@@ -826,8 +834,12 @@ function tooltipText(status: TransactionStatus): string {
                               </td>
                               <td>
                                 <span class="text-bold">{{
-                                    formatTransactionType(TransactionTypeName[groupItem.transaction.type], false, true,)
-                                  }}</span>
+                                  formatTransactionType(
+                                    TransactionTypeName[groupItem.transaction.type],
+                                    false,
+                                    true,
+                                  )
+                                }}</span>
                               </td>
                               <td data-testid="td-group-valid-start-time">
                                 <DateTimeString
@@ -839,18 +851,13 @@ function tooltipText(status: TransactionStatus): string {
                               <td class="text-center">
                                 <div class="d-flex justify-content-center flex-wrap gap-4">
                                   <AppButton
-                                    :loading="signingItemSeq === groupItem.seq"
+                                    :disabled="!canSignItem(groupItem as IGroupItem)"
                                     loading-text="Sign"
                                     type="button"
                                     color="primary"
                                     @click.prevent="handleSignGroupItem(groupItem as IGroupItem)"
                                     :data-testid="`sign-group-item-${index}`"
-                                    :disabled="
-                                      unsignedSignersToCheck[groupItem.transaction.id] ===
-                                        undefined ||
-                                      groupItem.transaction.status !==
-                                        TransactionStatus.WAITING_FOR_SIGNATURES
-                                    "
+                                    :loading="signingItems[groupItem.seq]"
                                     ><span>Sign</span>
                                   </AppButton>
                                   <AppButton
