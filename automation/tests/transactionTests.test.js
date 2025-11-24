@@ -427,6 +427,7 @@ test.describe('Transaction tests', () => {
   test('Verify user can save draft and is visible in the draft page', async () => {
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnCreateAccountTransaction();
+    await transactionPage.fillInDescription('test create tx description');
     await transactionPage.saveDraft();
 
     const draftDate = await transactionPage.getFirstDraftDate();
@@ -434,6 +435,9 @@ test.describe('Transaction tests', () => {
 
     const draftType = await transactionPage.getFirstDraftType();
     expect(draftType).toBe('Account Create');
+
+    const description = await transactionPage.getFirstDraftDescription();
+    expect(description).toBe('test create tx description');
 
     const isTemplateCheckboxVisible =
       await transactionPage.getFirstDraftIsTemplateCheckboxVisible();

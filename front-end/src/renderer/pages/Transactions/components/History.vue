@@ -343,6 +343,25 @@ watch(
                   class="table-sort-link"
                   @click="
                     handleSort(
+                      'description',
+                      localSort.field === 'description' ? getOpositeDirection() : 'asc',
+                      'description',
+                    )
+                  "
+                >
+                  <span>Description</span>
+                  <i
+                    v-if="localSort.field === 'description'"
+                    :class="[generatedClass]"
+                    class="bi text-title"
+                  ></i>
+                </div>
+              </th>
+              <th>
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
                       'status_code',
                       localSort.field === 'status_code' ? getOpositeDirection() : 'asc',
                       'statusCode',
@@ -413,6 +432,9 @@ watch(
                   <td :data-testid="`td-transaction-type-${index}`">
                     <span class="text-bold">{{ transaction.type }}</span>
                   </td>
+                  <td :data-testid="`td-transaction-description-${index}`">
+                    <span class="text-wrap-two-line-ellipsis">{{ transaction.description }}</span>
+                  </td>
                   <td :data-testid="`td-transaction-status-${index}`">
                     <span
                       class="badge bg-success text-break"
@@ -457,6 +479,11 @@ watch(
                   <td :data-testid="`td-transaction-type-${index}`">
                     <span class="text-bold">{{
                       sdkTransactionUtils.getTransactionType(transactionData.transaction, false, true)
+                    }}</span>
+                  </td>
+                  <td :data-testid="`td-transaction-description-${index}`">
+                    <span class="text-wrap-two-line-ellipsis">{{
+                      transactionData.transactionRaw.description
                     }}</span>
                   </td>
                   <td :data-testid="`td-transaction-status-${index}`">

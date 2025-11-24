@@ -270,6 +270,19 @@ watch([currentPage, pageSize], async () => {
               </th>
               <th>
                 <div
+                  class="table-sort-link"
+                  @click="handleSort('description', sortField === 'description' ? getOpositeDirection() : 'asc')"
+                >
+                  <span>Description</span>
+                  <i
+                    v-if="sortField === 'description'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
+                </div>
+              </th>
+              <th>
+                <div
                   class="table-sort-link justify-content-center"
                   @click="
                     handleSort(
@@ -301,10 +314,17 @@ watch([currentPage, pageSize], async () => {
                 </td>
                 <td>
                   <span class="text-bold" :data-testid="'span-draft-tx-type-' + i">{{
-                    (draft as TransactionDraft).type
-                      ? formatTransactionType((draft as TransactionDraft).type, false, true)
-                      : (draft as TransactionGroup).description
-                  }}</span>
+                      (draft as TransactionDraft).type
+                        ? formatTransactionType((draft as TransactionDraft).type, false, true)
+                        : 'Group'
+                    }}</span>
+                </td>
+                <td>
+                  <span class="text-wrap-two-line-ellipsis" :data-testid="'span-draft-tx-description-' + i">{{
+                      (draft as TransactionDraft).type
+                        ? (draft as TransactionDraft).description
+                        : (draft as TransactionGroup).description
+                    }}</span>
                 </td>
                 <td class="text-center">
                   <input
