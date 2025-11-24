@@ -254,6 +254,10 @@ const isTransactionFailed = computed(() => {
   return props.organizationTransaction?.status === TransactionStatus.FAILED;
 });
 
+const isManualFlagVisible = computed(() => {
+  return props.organizationTransaction?.isManual && transactionIsInProgress.value;
+});
+
 /* Handlers */
 const handleBack = () => {
   if (
@@ -684,6 +688,7 @@ watch(
         <span v-else-if="isTransactionVersionMismatch" class="badge bg-danger text-break ms-2">
           Transaction Version Mismatch
         </span>
+        <span v-else-if="isManualFlagVisible" class="badge bg-info text-break ms-2">Manual</span>
       </h2>
     </div>
 
