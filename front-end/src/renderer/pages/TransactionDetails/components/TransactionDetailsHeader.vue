@@ -254,6 +254,16 @@ const isTransactionFailed = computed(() => {
   return props.organizationTransaction?.status === TransactionStatus.FAILED;
 });
 
+const isManualFlagVisible = computed(() => {
+  return props.organizationTransaction?.isManual && isTransactionNotYetSubmitted.value
+})
+
+const isTransactionNotYetSubmitted = computed(() => {
+  return props.organizationTransaction?.status === TransactionStatus.NEW
+    || props.organizationTransaction?.status === TransactionStatus.WAITING_FOR_SIGNATURES
+    || props.organizationTransaction?.status === TransactionStatus.WAITING_FOR_EXECUTION;
+});
+
 /* Handlers */
 const handleBack = () => {
   if (
@@ -683,6 +693,9 @@ watch(
         </span>
         <span v-else-if="isTransactionVersionMismatch" class="badge bg-danger text-break ms-2">
           Transaction Version Mismatch
+        </span>
+        <span v-else-if="isManualFlagVisible" class="badge bg-info text-break ms-2">
+          Manual
         </span>
       </h2>
     </div>
