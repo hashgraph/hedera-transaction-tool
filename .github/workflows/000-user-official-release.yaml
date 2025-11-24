@@ -24,7 +24,6 @@ permissions:
 env:
   REGISTRY: ghcr.io
 
-
 jobs:
   publish:
     name: Publish Official Release of Hedera Transaction Tool
