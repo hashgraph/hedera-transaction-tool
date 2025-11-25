@@ -292,7 +292,7 @@ watch(
                   ></i>
                 </div>
               </th>
-<!--
+              <!--
               <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
@@ -334,10 +334,21 @@ watch(
                       ? getTransactionType(tx.transaction, false, true)
                       : 'N/A'
                   }}</span>
+                  <span v-if="tx.transactionRaw.isManual" class="badge bg-info ms-3">Manual</span>
                 </td>
                 <td :data-testid="`td-transaction-description-ready-execution-${index}`">
-                  <span class="text-wrap-two-line-ellipsis">{{ tx.transactionRaw.description }}</span>
+                  <span class="text-wrap-two-line-ellipsis">{{
+                    tx.transactionRaw.description
+                  }}</span>
                 </td>
+<!--
+                <td
+                  :data-testid="`td-transaction-manual-ready-execution-${index}`"
+                  class="text-center"
+                >
+                  <span v-if="tx.transactionRaw.isManual" class="badge bg-info">Manual</span>
+                </td>
+-->
                 <td :data-testid="`td-transaction-valid-start-ready-execution-${index}`">
                   <DateTimeString
                     v-if="tx.transaction instanceof Transaction"
@@ -347,7 +358,7 @@ watch(
                   />
                   <span v-else>N/A</span>
                 </td>
-<!--
+                <!--
                 <td :data-testid="`td-transaction-date-modified-ready-execution-${index}`">
                   <DateTimeString
                     v-if="tx.transaction instanceof Transaction"
