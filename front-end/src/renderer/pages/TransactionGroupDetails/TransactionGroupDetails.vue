@@ -47,8 +47,9 @@ import {
   isUserLoggedIn,
   usersPublicRequiredToSign,
   assertUserLoggedIn,
-  signSingleTransaction,
+  signTransactions,
   getErrorMessage,
+  assertIsLoggedInOrganization,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -208,12 +209,9 @@ const handleSignGroupItem = async (groupItem: IGroupItem) => {
 
   try {
     signingItems.value[groupItem.seq] = true;
-    const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
-    const transaction = Transaction.fromBytes(transactionBytes);
 
-    const signed = await signSingleTransaction(
-      groupItem.transaction.id,
-      transaction,
+    const signed = await signTransactions(
+      [groupItem.transaction],
       personalPassword,
       accountByIdCache,
       nodeByIdCache,
@@ -283,57 +281,31 @@ const handleSignAll = async (showModal = false) => {
     confirmCallback.value = handleSignAll;
     return;
   }
-
   isConfirmModalShown.value = false;
-
-  if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in organization');
-  }
 
   const personalPassword = getPassword(handleSignAll.bind(null, showModal), {
     subHeading: 'Enter your application password to decrypt your private key',
   });
   if (passwordModalOpened(personalPassword)) return;
+  assertIsLoggedInOrganization(user.selectedOrganization);
 
   try {
     loadingStates[sign] = 'Signing...';
-    const items: SignatureItem[] = [];
-    if (group.value != undefined) {
-      for (const groupItem of group.value.groupItems) {
-        const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
-        const transaction = Transaction.fromBytes(transactionBytes);
-        if (
-          groupItem.transaction.status === TransactionStatus.CANCELED ||
-          groupItem.transaction.status === TransactionStatus.EXPIRED
-        ) {
-          continue;
-        }
-        const publicKeysRequired = await usersPublicRequiredToSign(
-          transaction,
-          user.selectedOrganization.userKeys,
-          network.mirrorNodeBaseURL,
-          accountByIdCache,
-          nodeByIdCache,
-        );
-        const item: SignatureItem = {
-          publicKeys: publicKeysRequired,
-          transaction,
-          transactionId: groupItem.transaction.id,
-        };
-        items.push(item);
-      }
-      await uploadSignatures(
-        user.personal.id,
-        personalPassword,
-        user.selectedOrganization,
-        undefined,
-        undefined,
-        undefined,
-        items,
-      );
 
-      await fetchGroup(group.value!.id);
+    let itemsToSign = group.value?.groupItems.map(item => item.transaction) ?? [];
+    itemsToSign = itemsToSign.filter(item => item.status === TransactionStatus.WAITING_FOR_SIGNATURES);
+    const signed = await signTransactions(
+      itemsToSign,
+      personalPassword,
+      accountByIdCache,
+      nodeByIdCache,
+    );
+    await fetchGroup(group.value!.id);
+
+    if (signed) {
       toast.success('Transactions signed successfully', successToastOptions);
+    } else {
+      toast.error('Transactions not signed', errorToastOptions);
     }
   } catch {
     toast.error('Transactions not signed', errorToastOptions);
