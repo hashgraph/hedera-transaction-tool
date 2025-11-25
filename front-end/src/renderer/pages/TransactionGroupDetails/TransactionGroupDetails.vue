@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { IGroup } from '@renderer/services/organization';
 import type { IGroupItem, ITransactionFull } from '@shared/interfaces';
-import type { SignatureItem } from '@renderer/types';
 
 import { computed, onBeforeMount, reactive, ref, watch, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -32,7 +31,6 @@ import {
   getApiGroupById,
   getUserShouldApprove,
   sendApproverChoice,
-  uploadSignatures,
   cancelTransaction,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
