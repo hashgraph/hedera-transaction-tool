@@ -21,10 +21,7 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 
-import {
-  getApiGroupById,
-  getTransactionsToSign,
-} from '@renderer/services/organization';
+import { getApiGroupById, getTransactionsToSign } from '@renderer/services/organization';
 
 import {
   assertIsLoggedInOrganization,
@@ -48,6 +45,8 @@ import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.t
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 interface TransactionDescriptor {
   transactionRaw: ITransaction;
@@ -100,6 +99,11 @@ const sort = reactive<{
 const signingItems = ref<number[]>([]); // indexes of single transactions in progress of signing
 const signingGroup = ref<number[]>([]); // indexes of groups in progress of signing
 
+const isConfirmModalShown = ref(false);
+const confirmModalTitle = ref('');
+const confirmModalText = ref('');
+const confirmCallback = ref<((...args: any[]) => void) | null>(null);
+
 /* Computed */
 const generatedClass = computed(() => {
   return sort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
@@ -113,8 +117,17 @@ const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') 
   await fetchTransactions();
 };
 
-const handleSignGroup = async (id: number) => {
-  const personalPassword = getPassword(handleSignGroup.bind(null, id), {
+const handleSignGroup = async (id: number, showModal = false) => {
+  if (showModal) {
+    isConfirmModalShown.value = true;
+    confirmModalTitle.value = 'Sign all transactions?';
+    confirmModalText.value = 'Are you sure you want to sign all the transactions of this group?';
+    confirmCallback.value = handleSignGroup.bind(null, id, false);
+    return;
+  }
+  isConfirmModalShown.value = false;
+
+  const personalPassword = getPassword(handleSignGroup.bind(null, id, false), {
     subHeading: 'Enter your application password to decrypt your private key',
   });
   if (passwordModalOpened(personalPassword)) return;
@@ -481,7 +494,7 @@ const signingEnabled = (index: number) => {
                   ></i>
                 </div>
               </th>
-<!--
+              <!--
               <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
@@ -533,7 +546,7 @@ const signingEnabled = (index: number) => {
                     />
                     <span v-else>N/A</span>
                   </td>
-<!--
+                  <!--
                   <td>
                     <DateTimeString
                       v-if="groups.get(group[0])"
@@ -553,7 +566,7 @@ const signingEnabled = (index: number) => {
                         loading-text="Sign All"
                         color="primary"
                         type="button"
-                        @click.prevent="handleSignGroup(group[0])"
+                        @click.prevent="handleSignGroup(group[0], true)"
                       >
                         Sign All
                       </AppButton>
@@ -604,7 +617,7 @@ const signingEnabled = (index: number) => {
                       />
                       <span v-else>N/A</span>
                     </td>
-<!--
+                    <!--
                     <td :data-testid="`td-transaction-date-modified-for-sign-${index}`">
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
@@ -632,7 +645,7 @@ const signingEnabled = (index: number) => {
                           :data-testid="`button-transaction-sign-${index}`"
                           color="secondary"
                           type="button"
-                        >Details</AppButton
+                          >Details</AppButton
                         >
                       </div>
                     </td>
@@ -655,12 +668,33 @@ const signingEnabled = (index: number) => {
         <div
           v-if="contextMenuVisible"
           class="dropdown"
-          :style="{ position: 'fixed', top: contextMenuY + 'px', left: contextMenuX + 'px', zIndex: 1000 }"
+          :style="{
+            position: 'fixed',
+            top: contextMenuY + 'px',
+            left: contextMenuX + 'px',
+            zIndex: 1000,
+          }"
           @click.stop
         >
           <ul class="dropdown-menu show mt-3">
-            <li class="dropdown-item cursor-pointer" @click="handleSort('createdAt', 'desc'); hideContextMenu()">Sort by Newest</li>
-            <li class="dropdown-item cursor-pointer" @click="handleSort('createdAt', 'asc'); hideContextMenu()">Sort by Oldest</li>
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="
+                handleSort('createdAt', 'desc');
+                hideContextMenu();
+              "
+            >
+              Sort by Newest
+            </li>
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="
+                handleSort('createdAt', 'asc');
+                hideContextMenu();
+              "
+            >
+              Sort by Oldest
+            </li>
           </ul>
         </div>
       </template>
@@ -671,4 +705,29 @@ const signingEnabled = (index: number) => {
       </template>
     </template>
   </div>
+  <AppModal v-model:show="isConfirmModalShown" class="common-modal">
+    <div class="p-4">
+      <i class="bi bi-x-lg d-inline-block cursor-pointer" @click="isConfirmModalShown = false"></i>
+      <div class="text-center">
+        <AppCustomIcon :name="'questionMark'" style="height: 160px" />
+      </div>
+      <h3 class="text-center text-title text-bold mt-4">{{ confirmModalTitle }}</h3>
+      <p class="text-center text-small text-secondary mt-4">{{ confirmModalText }}</p>
+      <hr class="separator my-5" />
+      <div class="flex-between-centered gap-4">
+        <AppButton
+          color="borderless"
+          data-testid="button-cancel-group-action"
+          @click="isConfirmModalShown = false"
+          >Cancel</AppButton
+        >
+        <AppButton
+          color="primary"
+          data-testid="button-confirm-group-action"
+          @click="confirmCallback && confirmCallback(false)"
+          >Confirm</AppButton
+        >
+      </div>
+    </div>
+  </AppModal>
 </template>
