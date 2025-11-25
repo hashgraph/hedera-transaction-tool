@@ -23,7 +23,6 @@ import useDisposableWs from '@renderer/composables/useDisposableWs';
 
 import {
   getApiGroupById,
-  getTransactionById,
   getTransactionsToSign,
 } from '@renderer/services/organization';
 
@@ -34,12 +33,9 @@ import {
   isLoggedInOrganization,
   redirectToDetails,
   redirectToGroupDetails,
-  signSingleTransaction,
+  signTransactions,
 } from '@renderer/utils';
-import {
-  getTransactionType,
-  getTransactionValidStart,
-} from '@renderer/utils/sdk/transactions';
+import { getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -50,7 +46,7 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword.ts';
 import { useToast } from 'vue-toast-notification';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 
 interface TransactionDescriptor {
@@ -101,7 +97,8 @@ const sort = reactive<{
   direction: 'desc',
 });
 
-const signingItems = ref<boolean[]>([]); // is signing in progress for a single transaction
+const signingItems = ref<number[]>([]); // indexes of single transactions in progress of signing
+const signingGroup = ref<number[]>([]); // indexes of groups in progress of signing
 
 /* Computed */
 const generatedClass = computed(() => {
@@ -114,6 +111,72 @@ const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') 
   sort.direction = direction;
   setGetTransactionsFunction();
   await fetchTransactions();
+};
+
+const handleSignGroup = async (id: number) => {
+  const personalPassword = getPassword(handleSignGroup.bind(null, id), {
+    subHeading: 'Enter your application password to decrypt your private key',
+  });
+  if (passwordModalOpened(personalPassword)) return;
+  assertIsLoggedInOrganization(user.selectedOrganization);
+
+  try {
+    signingGroup.value.push(id);
+
+    const groupContent = transactions.value.get(id) as TransactionDescriptor[];
+    const itemsToSign = groupContent?.map(t => t.transactionRaw) ?? [];
+    const signed = await signTransactions(
+      itemsToSign,
+      personalPassword,
+      accountByIdCache,
+      nodeByIdCache,
+    );
+    await fetchTransactions();
+
+    if (signed) {
+      toast.success('Transaction group signed successfully', successToastOptions);
+    } else {
+      toast.error('Transaction group not signed', errorToastOptions);
+    }
+  } catch {
+    toast.error('Transaction group not signed', errorToastOptions);
+  } finally {
+    signingGroup.value = signingGroup.value.filter(g => g !== id);
+  }
+};
+
+const handleSignSingle = async (index: number) => {
+  const personalPassword = getPassword(handleSignSingle.bind(null, index), {
+    subHeading: 'Enter your application password to decrypt your private key',
+  });
+  if (passwordModalOpened(personalPassword)) return;
+  assertIsLoggedInOrganization(user.selectedOrganization);
+
+  const singleTransactions = transactions.value.get(-1);
+  const tx = singleTransactions![index] as TransactionDescriptor;
+
+  try {
+    signingItems.value.push(index);
+
+    const itemsToSign = [tx.transactionRaw];
+    const signed = await signTransactions(
+      itemsToSign,
+      personalPassword,
+      accountByIdCache,
+      nodeByIdCache,
+    );
+
+    await fetchTransactions();
+    if (signed) {
+      toast.success('Transaction signed successfully', successToastOptions);
+    } else {
+      toast.error('Transaction not signed', errorToastOptions);
+    }
+  } catch {
+    toast.error('Transaction not signed', errorToastOptions);
+  } finally {
+    signingItems.value = signingItems.value.filter(i => i !== index);
+  }
 };
 
 const handleGroupDetails = async (id: number) => {
@@ -251,9 +314,6 @@ async function fetchTransactions() {
       groups.value = fetchedGroups;
     }
   } finally {
-    const nbOfSingleTransactions = transactions.value.get(-1)?.length ?? 0;
-    signingItems.value = Array(nbOfSingleTransactions).fill(false);
-
     isLoading.value = false;
   }
 }
@@ -335,45 +395,12 @@ watch(
 const signingEnabled = (index: number) => {
   const singleTransactions = transactions.value.get(-1);
   return (
-    !signingItems.value[index] &&
+    !signingItems.value.includes(index) &&
     singleTransactions &&
     index < singleTransactions.length &&
     singleTransactions[index].transactionRaw.status === TransactionStatus.WAITING_FOR_SIGNATURES &&
     singleTransactions[index].keysToSign.length > 0
   );
-};
-
-const handleSignSingle = async (index: number) => {
-  const personalPassword = getPassword(handleSignSingle.bind(null, index), {
-    subHeading: 'Enter your application password to decrypt your private key',
-  });
-  if (passwordModalOpened(personalPassword)) return;
-  assertIsLoggedInOrganization(user.selectedOrganization);
-
-  const singleTransactions = transactions.value.get(-1);
-  const tx = singleTransactions![index] as TransactionDescriptor;
-
-  try {
-    signingItems.value[index] = true;
-    await signSingleTransaction(
-      tx.transactionRaw.id,
-      tx.transaction,
-      personalPassword,
-      accountByIdCache,
-      nodeByIdCache,
-    );
-    tx.transactionRaw = await getTransactionById(
-      user.selectedOrganization?.serverUrl || '',
-      tx.transactionRaw.id,
-    );
-    tx.transaction = Transaction.fromBytes(hexToUint8Array(tx.transactionRaw.transactionBytes));
-
-    toast.success('Transaction signed successfully', successToastOptions);
-  } catch {
-    toast.error('Transaction not signed');
-  } finally {
-    signingItems.value[index] = false;
-  }
 };
 </script>
 
@@ -520,16 +547,20 @@ const handleSignSingle = async (index: number) => {
                   <td class="text-center">
                     <div class="d-flex justify-content-center gap-4">
                       <AppButton
-                        style="visibility: hidden"
                         :data-testid="`button-group-sign-${index}`"
+                        :disabled="signingGroup.includes(group[0])"
+                        :loading="signingGroup.includes(group[0])"
+                        loading-text="Sign All"
                         color="primary"
-                        @click="toast.info('Sign All not implemented')"
+                        type="button"
+                        @click.prevent="handleSignGroup(group[0])"
                       >
                         Sign All
                       </AppButton>
                       <AppButton
                         :data-testid="`button-group-details-${index}`"
                         color="secondary"
+                        type="button"
                         @click="handleGroupDetails(group[0])"
                       >
                         Details
@@ -589,7 +620,7 @@ const handleSignSingle = async (index: number) => {
                         <AppButton
                           :data-testid="`sign-transaction-${index}`"
                           :disabled="!signingEnabled(index)"
-                          :loading="signingItems[index]"
+                          :loading="signingItems.includes(index)"
                           loading-text="Sign"
                           color="primary"
                           type="button"
@@ -600,7 +631,8 @@ const handleSignSingle = async (index: number) => {
                           @click="handleSingleDetails(tx.transactionRaw.id)"
                           :data-testid="`button-transaction-sign-${index}`"
                           color="secondary"
-                          >Details</AppButton
+                          type="button"
+                        >Details</AppButton
                         >
                       </div>
                     </td>
