@@ -27,8 +27,8 @@ spec:
               value: 'api-service'
             - name: AUTH_PORT
               value: '3001'
-            - name: RABBITMQ_URI
-              value: 'amqp://rabbitmq-service:5672'
+            - name: NATS_URL
+              value: 'nats://nats:4222'
             - name: EMAIL_API_HOST
               valueFrom:
                 secretKeyRef:

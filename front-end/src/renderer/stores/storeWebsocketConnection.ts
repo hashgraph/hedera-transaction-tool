@@ -50,8 +50,11 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
 
     const newSocket = io(url, {
       path: '/ws',
-      auth: {
-        token: `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`,
+      // Use a function so token is fetched on EVERY connection attempt, in case the token has been updated
+      auth: (cb) => {
+        cb({
+          token: `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`,
+        });
       },
       transports: ['websocket', 'polling'],
       withCredentials: true,

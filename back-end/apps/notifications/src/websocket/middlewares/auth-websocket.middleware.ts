@@ -1,6 +1,7 @@
 import { ClientProxy } from '@nestjs/microservices';
 import { Socket } from 'socket.io';
 import { firstValueFrom } from 'rxjs';
+import { timeout } from 'rxjs/operators';
 
 import { BlacklistService } from '@app/common';
 import { User } from '@entities';
@@ -19,44 +20,122 @@ export type SocketIOMiddleware = {
 export const AuthWebsocketMiddleware = (
   apiService: ClientProxy,
   blacklistService: BlacklistService,
+  windowSeconds: number = 60,
+  maxAttempts: number = 5,
 ): SocketIOMiddleware => {
+  // In-memory rate limiting
+  const attempts = new Map<string, { count: number; resetAt: number }>();
+
+  // Cleanup expired entries every minute
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, record] of attempts.entries()) {
+      if (now > record.resetAt) {
+        attempts.delete(ip);
+      }
+    }
+  }, 60_000);
+
+  const trackAttempt = (ip: string): boolean => {
+    const now = Date.now();
+    const record = attempts.get(ip);
+
+    if (!record || now > record.resetAt) {
+      attempts.set(ip, { count: 1, resetAt: now + windowSeconds * 1000 });
+      return false;
+    }
+
+    record.count++;
+    return record.count > maxAttempts;
+  };
+
+  const resetAttempts = (ip: string): void => {
+    attempts.delete(ip);
+  };
+
   return async (socket: AuthWebsocket, next) => {
+    const ip = socket.handshake.address;
+
     try {
       /* Get the JWT from the header */
       const { token } = socket.handshake.auth;
 
       if (!token) {
-        next({ name: 'Unauthorized', message: 'Unauthorized' });
-        return;
+        const isRateLimited = trackAttempt(ip);
+        if (isRateLimited) {
+          socket.disconnect(true);
+          return next(new Error('Too many failed authentication attempts'));
+        }
+        socket.disconnect(true);
+        return next(new Error('Unauthorized'));
       }
 
       const jwt = (Array.isArray(token) ? token[0] : token).split(' ')[1];
 
       if (!jwt) {
-        next({ name: 'Unauthorized', message: 'Unauthorized' });
-        return;
+        const isRateLimited = trackAttempt(ip);
+        if (isRateLimited) {
+          socket.disconnect(true);
+          return next(new Error('Too many failed authentication attempts'));
+        }
+        socket.disconnect(true);
+        return next(new Error('Unauthorized'));
       }
 
       const isBlacklisted = await blacklistService.isTokenBlacklisted(jwt);
       if (isBlacklisted) {
-        next({ name: 'Unauthorized', message: 'Unauthorized' });
-        return;
+        const isRateLimited = trackAttempt(ip);
+        if (isRateLimited) {
+          socket.disconnect(true);
+          return next(new Error('Too many failed authentication attempts'));
+        }
+        socket.disconnect(true);
+        return next(new Error('Unauthorized'));
       }
 
       /* Request authentication of the jwt from the API service. */
       const response = apiService.send<User>('authenticate-websocket-token', {
         jwt,
-      });
+      }).pipe(
+        timeout(2000)
+      );
       const user = await firstValueFrom(response);
 
-      if (user) {
-        socket.user = user;
-        next();
-      } else {
-        next({ name: 'Unauthorized', message: 'Unauthorized' });
+      if (!user) {
+        const isRateLimited = trackAttempt(ip);
+        if (isRateLimited) {
+          socket.disconnect(true);
+          return next(new Error('Too many failed authentication attempts'));
+        }
+        socket.disconnect(true);
+        return next(new Error('Unauthorized'));
       }
-    } catch {
-      next({ name: 'Unauthorized', message: 'Unauthorized' });
+
+      // Success - reset rate limit counter
+      resetAttempts(ip);
+      socket.user = user;
+      next();
+    } catch (err) {
+      const e = err as any;
+
+      if (e?.name === 'TimeoutError' ||
+        e?.code === 'ECONNREFUSED' ||
+        e?.code === 'NO_RESPONDERS' ||
+        e?.message?.includes('No responders')) {
+        socket.disconnect(true);
+        next(new Error('Auth service unavailable'));
+      } else {
+        // Rate limit other auth failures
+        const isRateLimited = trackAttempt(ip);
+        if (isRateLimited) {
+          socket.disconnect(true);
+          return next(new Error('Too many failed authentication attempts'));
+        }
+
+        console.error('AuthWebsocketMiddleware error:', err);
+        socket.disconnect(true);
+        next(new Error('Unauthorized'));
+      }
     }
   };
 };

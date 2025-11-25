@@ -91,6 +91,7 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
     for (const [message, content] of groupedMessages.entries()) {
       if (groupKey) {
+        // Emit to specific user room, if the room doesn't exist, silent no-op
         this.io.to(roomKeys.USER_KEY(groupKey)).emit(message, content);
       } else {
         this.io.emit(message, content);
