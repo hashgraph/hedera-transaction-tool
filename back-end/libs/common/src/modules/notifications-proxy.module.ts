@@ -11,11 +11,9 @@ import { NOTIFICATIONS_SERVICE } from '@app/common';
       {
         name: NOTIFICATIONS_SERVICE,
         useFactory: (configService: ConfigService) => ({
-          transport: Transport.RMQ,
+          transport: Transport.NATS,
           options: {
-            urls: [configService.getOrThrow<string>('RABBITMQ_URI')],
-            queue: NOTIFICATIONS_SERVICE,
-            noAssert: true,
+            servers: [configService.getOrThrow<string>('NATS_URL')],
           },
         }),
         inject: [ConfigService],

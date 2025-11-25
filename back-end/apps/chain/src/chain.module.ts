@@ -10,6 +10,7 @@ import {
   LoggerModule,
   HealthModule,
   NotificationsProxyModule,
+  NatsReconnectService,
 } from '@app/common';
 
 import getEnvFilePaths from './config/envFilePaths';
@@ -27,7 +28,7 @@ export const config = ConfigModule.forRoot({
     POSTGRES_USERNAME: Joi.string().required(),
     POSTGRES_PASSWORD: Joi.string().required(),
     POSTGRES_SYNCHRONIZE: Joi.boolean().required(),
-    RABBITMQ_URI: Joi.string().required(),
+    NATS_URL: Joi.string().required(),
     REDIS_URL: Joi.string().required(),
     REDIS_DEFAULT_TTL_MS: Joi.number().optional(),
   }),
@@ -44,6 +45,6 @@ export const config = ConfigModule.forRoot({
     HealthModule,
     NotificationsProxyModule,
   ],
-  providers: [LoggerMiddleware],
+  providers: [LoggerMiddleware, NatsReconnectService],
 })
 export class ChainModule {}

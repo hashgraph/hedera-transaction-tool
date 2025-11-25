@@ -25,6 +25,35 @@ delete_service() {
     $KUBECTL delete services "$1"
 }
 
+# Ensure NATS Helm repo is present and up-to-date
+assert_nats_helm_repo() {
+    echo "\nChecking NATS Helm repo..."
+    if [ $($HELM repo list | tail -n +2 | grep -ic "nats") -eq 0 ]; then
+        echo "\nAdding NATS Helm repo..."
+        $HELM repo add nats https://nats-io.github.io/k8s/helm/charts
+    else
+        echo "\nUpdating NATS Helm repo..."
+        $HELM repo update nats
+    fi
+}
+
+# Install NATS with JetStream enabled (uninstall existing release first)
+assert_nats_release() {
+    echo "\nInstalling NATS release with JetStream enabled..."
+
+    if [ $($HELM list | tail -n +2 | grep -ic "nats") -gt 0 ]; then
+        $HELM uninstall nats
+    fi
+
+    # In a normal install, we might want exporter and reloader
+    # For a full dev, we want all of them, I think.
+    $HELM install nats nats/nats \
+            --set jetstream.enabled=true \
+            --set natsBox.enabled=false \
+            --set exporter.enabled=false \
+            --set reloader.enabled=false
+}
+
 # Check traefik helm repo
 assert_traefik_helm_repo() {
     echo "\nChecking Traefik Helm repo..."
@@ -71,7 +100,18 @@ port_forward_postgres() {
 # Wait for deployment
 wait_for() {
     echo "\nWaiting for $2 $1 to be ready..."
-    $KUBECTL wait --for=condition=available --timeout=5000s $1/$2
+    if [ "$1" = "statefulset" ]; then
+        # For StatefulSets, wait for pods to be ready
+        $KUBECTL wait --for=condition=ready pod -l app.kubernetes.io/name=$2 --timeout=180s
+    else
+        # For Deployments, use condition=available
+        $KUBECTL wait --for=condition=available --timeout=180s $1/$2
+    fi
+}
+
+# Wait for postgres deployment
+wait_for_nats() {
+    wait_for "statefulset" "nats"
 }
 
 # Wait for postgres deployment
@@ -84,11 +124,9 @@ deploy_all() {
     echo "\nDeploying Kubernetes deployments...\n"
     deploy "postgres-deployment"
     deploy "redis-deployment"
-    deploy "rabbitmq-deployment"
 
     wait_for "deployment" "postgres-deployment"
     wait_for "deployment" "redis-deployment"
-    wait_for "deployment" "rabbitmq-deployment"
 
     deploy "api-deployment"
     deploy "chain-deployment"
@@ -99,7 +137,6 @@ stop_all() {
     echo "\nStopping Kubernetes deployments...\n"
     delete_deployment "postgres-deployment"
     delete_deployment "redis-deployment"
-    delete_deployment "rabbitmq-deployment"
     delete_deployment "api-deployment"
     delete_deployment "chain-deployment"
     delete_deployment "notifications-deployment"
@@ -108,10 +145,10 @@ stop_all() {
     delete_service "api-http-service"
     delete_service "notifications-service"
     delete_service "postgres-service"
-    delete_service "rabbitmq-service"
     delete_service "redis-service"
 
     $KUBECTL delete ingresses back-end
 
+    $HELM uninstall nats
     $HELM uninstall traefik
 }

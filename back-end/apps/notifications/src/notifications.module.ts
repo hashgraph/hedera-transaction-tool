@@ -11,6 +11,7 @@ import {
   HealthModule,
   DatabaseModule,
   SchedulerModule,
+  NatsReconnectService,
 } from '@app/common';
 
 import getEnvFilePaths from './config/envFilePaths';
@@ -26,7 +27,7 @@ export const config = ConfigModule.forRoot({
     HTTP_PORT: Joi.number().required(),
     AUTH_HOST: Joi.string().required(),
     AUTH_PORT: Joi.number().required(),
-    RABBITMQ_URI: Joi.string().required(),
+    NATS_URL: Joi.string().required(),
     EMAIL_API_HOST: Joi.string().required(),
     EMAIL_API_PORT: Joi.string().required(),
     EMAIL_API_SECURE: Joi.boolean().required(),
@@ -57,6 +58,6 @@ export const config = ConfigModule.forRoot({
     HealthModule,
     SchedulerModule.register({ isGlobal: true }),
   ],
-  providers: [LoggerMiddleware],
+  providers: [LoggerMiddleware, NatsReconnectService],
 })
 export class NotificationsModule {}

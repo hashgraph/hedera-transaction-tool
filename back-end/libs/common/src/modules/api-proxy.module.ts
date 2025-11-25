@@ -11,11 +11,9 @@ import { API_SERVICE } from '@app/common';
       {
         name: API_SERVICE,
         useFactory: (configService: ConfigService) => ({
-          transport: Transport.RMQ,
+          transport: Transport.NATS,
           options: {
-            urls: [configService.getOrThrow<string>('RABBITMQ_URI')],
-            queue: API_SERVICE,
-            noAssert: true,
+            servers: [configService.getOrThrow<string>('NATS_URL')],
           },
         }),
         inject: [ConfigService],

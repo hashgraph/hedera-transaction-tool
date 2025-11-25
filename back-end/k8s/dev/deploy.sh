@@ -66,6 +66,15 @@ clean() {
 # Invoke the clean function on the following signals
 trap clean SIGINT SIGQUIT SIGTERM
 
+# Asserts that NATS Helm repo is installed
+assert_nats_helm_repo
+
+# Asserts the NATS release is installed
+assert_nats_release
+
+# Waits for the Traefik deployment to be ready
+wait_for_nats
+
 # Deploy Kubernetes deployments
 deploy_all
 

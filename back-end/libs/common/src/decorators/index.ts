@@ -1,4 +1,3 @@
-export * from './ack.decorator';
 export * from './is-signature-map.decorator';
 export * from './pagination-params.decorator';
 export * from './sorting-params.decorator';
