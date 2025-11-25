@@ -7,7 +7,7 @@ import { json } from 'express';
 
 import { version } from '../package.json';
 
-import { API_SERVICE, ErrorCodes, LoggerMiddleware } from '@app/common';
+import { ErrorCodes, LoggerMiddleware } from '@app/common';
 
 import { NotFoundExceptionFilter } from './filters/not-found-exception.filter';
 import { BadRequestExceptionFilter } from './filters/bad-request-exception.filter';
@@ -55,21 +55,6 @@ function connectMicroservices(app: NestExpressApplication) {
     options: {
       host: '0.0.0.0',
       port: configService.getOrThrow<string>('TCP_PORT'),
-    },
-  });
-  app.connectMicroservice({
-    transport: Transport.RMQ,
-    options: {
-      urls: [configService.getOrThrow<string>('RABBITMQ_URI')],
-      queue: API_SERVICE,
-      queueOptions: {
-        durable: true,
-        arguments: {
-          'x-queue-type': 'quorum',
-        },
-      },
-      noAck: false,
-      prefetchCount: 1,
     },
   });
 }

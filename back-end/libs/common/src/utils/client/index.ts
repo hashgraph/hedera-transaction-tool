@@ -14,6 +14,7 @@ import {
   SyncIndicatorsDto,
   ExecuteTransactionDto,
   NOTIFY_GENERAL,
+  NOTIFY_GENERAL_FANOUT,
 } from '@app/common';
 import { NotificationAdditionalData, NotificationType, TransactionStatus } from '@entities';
 
@@ -22,10 +23,6 @@ export const emitUpdateTransactionStatus = (client: ClientProxy, id: number) => 
   client.emit<undefined, UpdateTransactionStatusDto>(UPDATE_TRANSACTION_STATUS, {
     id,
   });
-};
-
-export const emitExecuteTransaction = (client: ClientProxy, dto: ExecuteTransactionDto) => {
-  client.emit<undefined, ExecuteTransactionDto>(EXECUTE_TRANSACTION, dto);
 };
 
 /* Notifications */
@@ -41,12 +38,18 @@ export const notifyWaitingForSignatures = (
   transactionId: number,
   additionalData?: NotificationAdditionalData,
 ) => {
+  // Queue this email notification
   client.emit<undefined, NotifyForTransactionDto>(NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES, {
     transactionId,
     additionalData,
   });
+
+  // Update sync indicators
+  notifySyncIndicators(client, transactionId, TransactionStatus.WAITING_FOR_SIGNATURES, additionalData);
 };
 
+
+//this uses the status (new status?)
 export const notifySyncIndicators = (
   client: ClientProxy,
   transactionId: number,
@@ -60,6 +63,30 @@ export const notifySyncIndicators = (
   });
 };
 
+// Temp, first pass. Determine which stream to use:
+const emailBlacklistTypes = [
+  NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
+  NotificationType.TRANSACTION_INDICATOR_APPROVE,
+  NotificationType.TRANSACTION_INDICATOR_SIGN,
+  NotificationType.TRANSACTION_INDICATOR_EXECUTED,
+  NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+  NotificationType.TRANSACTION_INDICATOR_CANCELLED,
+  NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
+  NotificationType.TRANSACTION_EXPIRED,
+  NotificationType.USER_REGISTERED,
+];
+
+const inAppBlacklistTypes = [
+  NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+  NotificationType.TRANSACTION_EXECUTED,
+  NotificationType.TRANSACTION_CANCELLED,
+  NotificationType.TRANSACTION_EXPIRED,
+  NotificationType.TRANSACTION_CREATED,
+  NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
+];
+
+//TODO there are a few that do appear to need the notification type, as they aren't directly
+//related to transaction status, like remind singers, user registered etc.
 export const notifyGeneral = (
   client: ClientProxy,
   type: NotificationType,
@@ -68,11 +95,22 @@ export const notifyGeneral = (
   recreateReceivers?: boolean,
   additionalData?: NotificationAdditionalData,
 ) => {
-  client.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
-    type,
-    userIds,
-    entityId,
-    recreateReceivers,
-    additionalData,
-  });
+  if (!emailBlacklistTypes.includes(type)) {
+    client.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
+      type,
+      userIds,
+      entityId,
+      recreateReceivers,
+      additionalData,
+    });
+  }
+  if (!inAppBlacklistTypes.includes(type)) {
+    client.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL_FANOUT, {
+      type,
+      userIds,
+      entityId,
+      recreateReceivers,
+      additionalData,
+    });
+  }
 };
