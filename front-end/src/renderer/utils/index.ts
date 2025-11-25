@@ -321,65 +321,6 @@ export async function signTransactions(
   return signed;
 }
 
-export async function signSingleTransaction(
-  id: number,
-  transaction: Transaction,
-  password: string | null,
-  accountInfoCache: AccountByIdCache,
-  nodeInfoCache: NodeByIdCache,
-): Promise<boolean> {
-  const user = useUserStore();
-  const network = useNetworkStore();
-  const toast = useToast();
-  assertUserLoggedIn(user.personal);
-  assertIsLoggedInOrganization(user.selectedOrganization);
-
-  const publicKeysRequired = await usersPublicRequiredToSign(
-    transaction,
-    user.selectedOrganization.userKeys,
-    network.mirrorNodeBaseURL,
-    accountInfoCache,
-    nodeInfoCache,
-  );
-
-  const restoredRequiredKeys = [];
-  const nonRestoredRequiredKeys = [];
-
-  // Separate keys into restored and non-restored, where restored indicates that the
-  // key is locally present.
-  for (const requiredKey of publicKeysRequired) {
-    if (user.keyPairs.some(k => k.public_key === requiredKey)) {
-      restoredRequiredKeys.push(requiredKey);
-    } else {
-      nonRestoredRequiredKeys.push(requiredKey);
-    }
-  }
-
-  let signed: boolean;
-  if (nonRestoredRequiredKeys.length > 0) {
-    toast.error(
-      `You need to restore the following public keys to fully sign the transaction: ${nonRestoredRequiredKeys.join(
-        ', ',
-      )}`,
-      errorToastOptions,
-    );
-    signed = false;
-  } else if (restoredRequiredKeys.length > 0) {
-    await uploadSignatures(
-      user.personal.id,
-      password,
-      user.selectedOrganization,
-      publicKeysRequired,
-      transaction,
-      id,
-    );
-    signed = true;
-  } else {
-    signed = false;
-  }
-  return signed;
-}
-
 export const splitMultipleAccounts = (input: string, client: Client): string[] => {
   input = input.trim();
 
