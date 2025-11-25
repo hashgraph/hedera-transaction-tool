@@ -4,6 +4,6 @@
     "declaration": false,
     "outDir": "../../dist/apps/api"
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../../../middle-end/src/**/*"],
   "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
 }
