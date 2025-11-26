@@ -21,11 +21,7 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 
-import {
-  getApiGroupById,
-  getTransactionById,
-  getTransactionsToSign,
-} from '@renderer/services/organization';
+import { getApiGroupById, getTransactionsToSign } from '@renderer/services/organization';
 
 import {
   assertIsLoggedInOrganization,
@@ -34,12 +30,9 @@ import {
   isLoggedInOrganization,
   redirectToDetails,
   redirectToGroupDetails,
-  signSingleTransaction,
+  signTransactions,
 } from '@renderer/utils';
-import {
-  getTransactionType,
-  getTransactionValidStart,
-} from '@renderer/utils/sdk/transactions';
+import { getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -50,8 +43,10 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword.ts';
 import { useToast } from 'vue-toast-notification';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
+import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 interface TransactionDescriptor {
   transactionRaw: ITransaction;
@@ -101,7 +96,13 @@ const sort = reactive<{
   direction: 'desc',
 });
 
-const signingItems = ref<boolean[]>([]); // is signing in progress for a single transaction
+const signingItems = ref<number[]>([]); // indexes of single transactions in progress of signing
+const signingGroup = ref<number[]>([]); // indexes of groups in progress of signing
+
+const isConfirmModalShown = ref(false);
+const confirmModalTitle = ref('');
+const confirmModalText = ref('');
+const confirmCallback = ref<((...args: any[]) => void) | null>(null);
 
 /* Computed */
 const generatedClass = computed(() => {
@@ -114,6 +115,81 @@ const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') 
   sort.direction = direction;
   setGetTransactionsFunction();
   await fetchTransactions();
+};
+
+const handleSignGroup = async (id: number, showModal = false) => {
+  if (showModal) {
+    isConfirmModalShown.value = true;
+    confirmModalTitle.value = 'Sign all transactions?';
+    confirmModalText.value = 'Are you sure you want to sign all the transactions of this group?';
+    confirmCallback.value = handleSignGroup.bind(null, id, false);
+    return;
+  }
+  isConfirmModalShown.value = false;
+
+  const personalPassword = getPassword(handleSignGroup.bind(null, id, false), {
+    subHeading: 'Enter your application password to decrypt your private key',
+  });
+  if (passwordModalOpened(personalPassword)) return;
+  assertIsLoggedInOrganization(user.selectedOrganization);
+
+  try {
+    signingGroup.value.push(id);
+
+    const groupContent = transactions.value.get(id) as TransactionDescriptor[];
+    const itemsToSign = groupContent?.map(t => t.transactionRaw) ?? [];
+    const signed = await signTransactions(
+      itemsToSign,
+      personalPassword,
+      accountByIdCache,
+      nodeByIdCache,
+    );
+    await fetchTransactions();
+
+    if (signed) {
+      toast.success('Transaction group signed successfully', successToastOptions);
+    } else {
+      toast.error('Transaction group not signed', errorToastOptions);
+    }
+  } catch {
+    toast.error('Transaction group not signed', errorToastOptions);
+  } finally {
+    signingGroup.value = signingGroup.value.filter(g => g !== id);
+  }
+};
+
+const handleSignSingle = async (index: number) => {
+  const personalPassword = getPassword(handleSignSingle.bind(null, index), {
+    subHeading: 'Enter your application password to decrypt your private key',
+  });
+  if (passwordModalOpened(personalPassword)) return;
+  assertIsLoggedInOrganization(user.selectedOrganization);
+
+  const singleTransactions = transactions.value.get(-1);
+  const tx = singleTransactions![index] as TransactionDescriptor;
+
+  try {
+    signingItems.value.push(index);
+
+    const itemsToSign = [tx.transactionRaw];
+    const signed = await signTransactions(
+      itemsToSign,
+      personalPassword,
+      accountByIdCache,
+      nodeByIdCache,
+    );
+
+    await fetchTransactions();
+    if (signed) {
+      toast.success('Transaction signed successfully', successToastOptions);
+    } else {
+      toast.error('Transaction not signed', errorToastOptions);
+    }
+  } catch {
+    toast.error('Transaction not signed', errorToastOptions);
+  } finally {
+    signingItems.value = signingItems.value.filter(i => i !== index);
+  }
 };
 
 const handleGroupDetails = async (id: number) => {
@@ -251,9 +327,6 @@ async function fetchTransactions() {
       groups.value = fetchedGroups;
     }
   } finally {
-    const nbOfSingleTransactions = transactions.value.get(-1)?.length ?? 0;
-    signingItems.value = Array(nbOfSingleTransactions).fill(false);
-
     isLoading.value = false;
   }
 }
@@ -335,45 +408,12 @@ watch(
 const signingEnabled = (index: number) => {
   const singleTransactions = transactions.value.get(-1);
   return (
-    !signingItems.value[index] &&
+    !signingItems.value.includes(index) &&
     singleTransactions &&
     index < singleTransactions.length &&
     singleTransactions[index].transactionRaw.status === TransactionStatus.WAITING_FOR_SIGNATURES &&
     singleTransactions[index].keysToSign.length > 0
   );
-};
-
-const handleSignSingle = async (index: number) => {
-  const personalPassword = getPassword(handleSignSingle.bind(null, index), {
-    subHeading: 'Enter your application password to decrypt your private key',
-  });
-  if (passwordModalOpened(personalPassword)) return;
-  assertIsLoggedInOrganization(user.selectedOrganization);
-
-  const singleTransactions = transactions.value.get(-1);
-  const tx = singleTransactions![index] as TransactionDescriptor;
-
-  try {
-    signingItems.value[index] = true;
-    await signSingleTransaction(
-      tx.transactionRaw.id,
-      tx.transaction,
-      personalPassword,
-      accountByIdCache,
-      nodeByIdCache,
-    );
-    tx.transactionRaw = await getTransactionById(
-      user.selectedOrganization?.serverUrl || '',
-      tx.transactionRaw.id,
-    );
-    tx.transaction = Transaction.fromBytes(hexToUint8Array(tx.transactionRaw.transactionBytes));
-
-    toast.success('Transaction signed successfully', successToastOptions);
-  } catch {
-    toast.error('Transaction not signed');
-  } finally {
-    signingItems.value[index] = false;
-  }
 };
 </script>
 
@@ -454,7 +494,7 @@ const handleSignSingle = async (index: number) => {
                   ></i>
                 </div>
               </th>
-<!--
+              <!--
               <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
@@ -506,7 +546,7 @@ const handleSignSingle = async (index: number) => {
                     />
                     <span v-else>N/A</span>
                   </td>
-<!--
+                  <!--
                   <td>
                     <DateTimeString
                       v-if="groups.get(group[0])"
@@ -520,16 +560,20 @@ const handleSignSingle = async (index: number) => {
                   <td class="text-center">
                     <div class="d-flex justify-content-center gap-4">
                       <AppButton
-                        style="visibility: hidden"
                         :data-testid="`button-group-sign-${index}`"
+                        :disabled="signingGroup.includes(group[0])"
+                        :loading="signingGroup.includes(group[0])"
+                        loading-text="Sign All"
                         color="primary"
-                        @click="toast.info('Sign All not implemented')"
+                        type="button"
+                        @click.prevent="handleSignGroup(group[0], true)"
                       >
                         Sign All
                       </AppButton>
                       <AppButton
                         :data-testid="`button-group-details-${index}`"
                         color="secondary"
+                        type="button"
                         @click="handleGroupDetails(group[0])"
                       >
                         Details
@@ -573,7 +617,7 @@ const handleSignSingle = async (index: number) => {
                       />
                       <span v-else>N/A</span>
                     </td>
-<!--
+                    <!--
                     <td :data-testid="`td-transaction-date-modified-for-sign-${index}`">
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
@@ -589,7 +633,7 @@ const handleSignSingle = async (index: number) => {
                         <AppButton
                           :data-testid="`sign-transaction-${index}`"
                           :disabled="!signingEnabled(index)"
-                          :loading="signingItems[index]"
+                          :loading="signingItems.includes(index)"
                           loading-text="Sign"
                           color="primary"
                           type="button"
@@ -600,6 +644,7 @@ const handleSignSingle = async (index: number) => {
                           @click="handleSingleDetails(tx.transactionRaw.id)"
                           :data-testid="`button-transaction-sign-${index}`"
                           color="secondary"
+                          type="button"
                           >Details</AppButton
                         >
                       </div>
@@ -623,12 +668,33 @@ const handleSignSingle = async (index: number) => {
         <div
           v-if="contextMenuVisible"
           class="dropdown"
-          :style="{ position: 'fixed', top: contextMenuY + 'px', left: contextMenuX + 'px', zIndex: 1000 }"
+          :style="{
+            position: 'fixed',
+            top: contextMenuY + 'px',
+            left: contextMenuX + 'px',
+            zIndex: 1000,
+          }"
           @click.stop
         >
           <ul class="dropdown-menu show mt-3">
-            <li class="dropdown-item cursor-pointer" @click="handleSort('createdAt', 'desc'); hideContextMenu()">Sort by Newest</li>
-            <li class="dropdown-item cursor-pointer" @click="handleSort('createdAt', 'asc'); hideContextMenu()">Sort by Oldest</li>
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="
+                handleSort('createdAt', 'desc');
+                hideContextMenu();
+              "
+            >
+              Sort by Newest
+            </li>
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="
+                handleSort('createdAt', 'asc');
+                hideContextMenu();
+              "
+            >
+              Sort by Oldest
+            </li>
           </ul>
         </div>
       </template>
@@ -639,4 +705,29 @@ const handleSignSingle = async (index: number) => {
       </template>
     </template>
   </div>
+  <AppModal v-model:show="isConfirmModalShown" class="common-modal">
+    <div class="p-4">
+      <i class="bi bi-x-lg d-inline-block cursor-pointer" @click="isConfirmModalShown = false"></i>
+      <div class="text-center">
+        <AppCustomIcon :name="'questionMark'" style="height: 160px" />
+      </div>
+      <h3 class="text-center text-title text-bold mt-4">{{ confirmModalTitle }}</h3>
+      <p class="text-center text-small text-secondary mt-4">{{ confirmModalText }}</p>
+      <hr class="separator my-5" />
+      <div class="flex-between-centered gap-4">
+        <AppButton
+          color="borderless"
+          data-testid="button-cancel-group-action"
+          @click="isConfirmModalShown = false"
+          >Cancel</AppButton
+        >
+        <AppButton
+          color="primary"
+          data-testid="button-confirm-group-action"
+          @click="confirmCallback && confirmCallback(false)"
+          >Confirm</AppButton
+        >
+      </div>
+    </div>
+  </AppModal>
 </template>

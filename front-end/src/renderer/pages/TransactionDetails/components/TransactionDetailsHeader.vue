@@ -43,7 +43,7 @@ import {
   isLoggedInOrganization,
   redirectToDetails,
   setLastExportExtension,
-  signSingleTransaction,
+  signTransactions,
   usersPublicRequiredToSign,
 } from '@renderer/utils';
 
@@ -286,17 +286,16 @@ const handleSign = async () => {
   try {
     loadingStates[sign] = 'Signing…';
 
-    const signed = await signSingleTransaction(
-      props.organizationTransaction.id,
-      props.sdkTransaction,
+    const signed = await signTransactions(
+      [props.organizationTransaction],
       personalPassword,
       accountByIdCache,
       nodeByIdCache,
     );
+    await props.onAction();
+    updateTransactionVersionMismatch();
 
     if (signed) {
-      await props.onAction();
-      updateTransactionVersionMismatch();
       toast.success('Transaction signed successfully', successToastOptions);
     } else {
       toast.error('Failed to sign transaction', errorToastOptions);
