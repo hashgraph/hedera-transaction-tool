@@ -51,8 +51,7 @@ import {
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
-import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
@@ -855,34 +854,13 @@ const canSignItem = (item: IGroupItem) => {
               </template>
             </Transition>
 
-            <AppModal v-model:show="isConfirmModalShown" class="common-modal">
-              <div class="p-4">
-                <i
-                  class="bi bi-x-lg d-inline-block cursor-pointer"
-                  @click="isConfirmModalShown = false"
-                ></i>
-                <div class="text-center">
-                  <AppCustomIcon :name="'questionMark'" style="height: 160px" />
-                </div>
-                <h3 class="text-center text-title text-bold mt-4">{{ confirmModalTitle }}</h3>
-                <p class="text-center text-small text-secondary mt-4">{{ confirmModalText }}</p>
-                <hr class="separator my-5" />
-                <div class="flex-between-centered gap-4">
-                  <AppButton
-                    color="borderless"
-                    data-testid="button-cancel-group-action"
-                    @click="isConfirmModalShown = false"
-                    >Cancel</AppButton
-                  >
-                  <AppButton
-                    color="primary"
-                    data-testid="button-confirm-group-action"
-                    @click="confirmCallback && confirmCallback(false)"
-                    >Confirm</AppButton
-                  >
-                </div>
-              </div>
-            </AppModal>
+            <AppConfirmModal
+              v-model:show="isConfirmModalShown"
+              :title="confirmModalTitle"
+              :text="confirmModalText"
+              :callback="confirmCallback"
+            />
+
           </div>
         </template>
         <template v-else>

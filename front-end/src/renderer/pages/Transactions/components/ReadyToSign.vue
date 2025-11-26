@@ -45,8 +45,7 @@ import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.t
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
-import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 
 interface TransactionDescriptor {
   transactionRaw: ITransaction;
@@ -99,6 +98,7 @@ const sort = reactive<{
 const signingItems = ref<number[]>([]); // indexes of single transactions in progress of signing
 const signingGroup = ref<number[]>([]); // indexes of groups in progress of signing
 
+const isConfirmModalMandatory= ref(false);
 const isConfirmModalShown = ref(false);
 const confirmModalTitle = ref('');
 const confirmModalText = ref('');
@@ -119,6 +119,7 @@ const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') 
 
 const handleSignGroup = async (id: number, showModal = false) => {
   if (showModal) {
+    isConfirmModalMandatory.value = true;
     isConfirmModalShown.value = true;
     confirmModalTitle.value = 'Sign all transactions?';
     confirmModalText.value = 'Are you sure you want to sign all the transactions of this group?';
@@ -158,8 +159,18 @@ const handleSignGroup = async (id: number, showModal = false) => {
   }
 };
 
-const handleSignSingle = async (index: number) => {
-  const personalPassword = getPassword(handleSignSingle.bind(null, index), {
+const handleSignSingle = async (index: number, showModal = false) => {
+  if (showModal) {
+    isConfirmModalMandatory.value = false;
+    isConfirmModalShown.value = true;
+    confirmModalTitle.value = 'Sign transaction?';
+    confirmModalText.value = 'Are you sure you want to this transaction?';
+    confirmCallback.value = handleSignSingle.bind(null, index, false);
+    return;
+  }
+  isConfirmModalShown.value = false;
+
+  const personalPassword = getPassword(handleSignSingle.bind(null, index, false), {
     subHeading: 'Enter your application password to decrypt your private key',
   });
   if (passwordModalOpened(personalPassword)) return;
@@ -637,7 +648,7 @@ const signingEnabled = (index: number) => {
                           loading-text="Sign"
                           color="primary"
                           type="button"
-                          @click.prevent="handleSignSingle(index)"
+                          @click.prevent="handleSignSingle(index, true)"
                           ><span>Sign</span>
                         </AppButton>
                         <AppButton
@@ -705,29 +716,12 @@ const signingEnabled = (index: number) => {
       </template>
     </template>
   </div>
-  <AppModal v-model:show="isConfirmModalShown" class="common-modal">
-    <div class="p-4">
-      <i class="bi bi-x-lg d-inline-block cursor-pointer" @click="isConfirmModalShown = false"></i>
-      <div class="text-center">
-        <AppCustomIcon :name="'questionMark'" style="height: 160px" />
-      </div>
-      <h3 class="text-center text-title text-bold mt-4">{{ confirmModalTitle }}</h3>
-      <p class="text-center text-small text-secondary mt-4">{{ confirmModalText }}</p>
-      <hr class="separator my-5" />
-      <div class="flex-between-centered gap-4">
-        <AppButton
-          color="borderless"
-          data-testid="button-cancel-group-action"
-          @click="isConfirmModalShown = false"
-          >Cancel</AppButton
-        >
-        <AppButton
-          color="primary"
-          data-testid="button-confirm-group-action"
-          @click="confirmCallback && confirmCallback(false)"
-          >Confirm</AppButton
-        >
-      </div>
-    </div>
-  </AppModal>
+
+  <AppConfirmModal
+    :title="confirmModalTitle"
+    :text="confirmModalText"
+    :callback="confirmCallback"
+    :mandatory="isConfirmModalMandatory"
+    v-model:show="isConfirmModalShown"/>
+
 </template>
