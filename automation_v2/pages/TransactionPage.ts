@@ -22,13 +22,21 @@ export interface CreateAccountOptions {
 }
 
 export class TransactionPage extends BasePage {
-  generatedPublicKeys: string[] = []; // Store generated public keys
-  generatedAccounts: string[] = []; // Store generated accounts from create account transaction
-  generatedFiles: Record<string, { text: string; publicKey: string }> = {}; // Store generated files from create file transaction with key-value pairs
-  //Inputs
-  payerAccountInputSelector = 'input-payer-account';
+  private readonly generatedPublicKeys: string[]; // Store generated public keys
+  public generatedAccounts: string[]; // Store generated accounts from create account transaction
+  private readonly generatedFiles: Record<string, { text: string; publicKey: string }>; // Store generated files from create file transaction with key-value pairs
+
+  constructor(window: Page) {
+    super(window);
+    this.generatedPublicKeys = [];
+    this.generatedAccounts = [];
+    this.generatedFiles = {};
+  }
 
   /* Selectors */
+
+  //Inputs
+  payerAccountInputSelector = 'input-payer-account';
   initialBalanceInputSelector = 'input-initial-balance-amount';
   maxAutoAssociationsInputSelector = 'input-max-auto-token-associations';
   accountMemoInputSelector = 'input-account-memo';
@@ -128,10 +136,6 @@ export class TransactionPage extends BasePage {
   draftDetailsTypeIndexSelector = 'span-draft-tx-type-';
   draftDetailsDescriptionIndexSelector = 'span-draft-tx-description-';
   draftDetailsIsTemplateCheckboxSelector = 'checkbox-is-template-';
-
-  constructor(window: Page) {
-    super(window);
-  }
 
   // Method to close the 'Save Draft' modal if it appears
   async closeDraftModal() {
