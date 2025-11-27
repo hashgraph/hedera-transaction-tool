@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { getTransactionTypeFromClass } from '@renderer/utils/sdk/transactions.ts';
+import { getTransactionTypeFromBackendType } from '@renderer/utils/sdk/transactions.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -31,7 +31,7 @@ const hasNotifications = computed(() => {
 const transactionType = computed(() => {
   let result: string;
   if (props.node.transactionType) {
-    result = getTransactionTypeFromClass(props.node.transactionType);
+    result = getTransactionTypeFromBackendType(props.node.transactionType, false, true);
   } else {
     result = 'Group';
   }
@@ -39,8 +39,8 @@ const transactionType = computed(() => {
 });
 
 const validStartDate = computed(() => {
-  return new Date(props.node.validStart)
-})
+  return new Date(props.node.validStart);
+});
 
 /* Handlers */
 const handleDetails = async () => {
@@ -65,10 +65,12 @@ const handleDetails = async () => {
     </td>
 
     <!-- Column #2 -->
-    <td class="text-bold">{{ props.node.description }}</td>
+    <td class="text-bold">{{ transactionType }}</td>
 
     <!-- Column #3 -->
-    <td class="text-bold">{{ transactionType }}</td>
+    <td>
+      <span class="text-wrap-two-line-ellipsis">{{ props.node.description }}</span>
+    </td>
 
     <!-- Column #4 -->
     <td>
