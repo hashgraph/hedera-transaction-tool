@@ -53,6 +53,51 @@ export const formatTransactionType = (
   return result;
 };
 
+export const getTransactionTypeFromClass = (
+  transactionClass: string,
+  short = false,
+  removeTransaction = false,
+) => {
+
+  let transactionType = 'Unknown Transaction Type';
+
+  if (transactionClass ===  'AccountCreateTransaction') {
+    transactionType = 'Account Create Transaction';
+  } else if (transactionClass ===  'AccountUpdateTransaction') {
+    transactionType = 'Account Update Transaction';
+  } else if (transactionClass ===  'AccountDeleteTransaction') {
+    transactionType = 'Account Delete Transaction';
+  } else if (transactionClass ===  'TransferTransaction') {
+    transactionType = 'Transfer Transaction';
+  } else if (transactionClass ===  'AccountAllowanceApproveTransaction') {
+    transactionType = 'Account Allowance Approve Transaction';
+  } else if (transactionClass ===  'FileCreateTransaction') {
+    transactionType = 'File Create Transaction';
+  } else if (transactionClass ===  'FileUpdateTransaction') {
+    transactionType = 'File Update Transaction';
+  } else if (transactionClass ===  'FileAppendTransaction') {
+    transactionType = 'File Append Transaction';
+  } else if (transactionClass ===  'FileDeleteTransaction') {
+    transactionType = 'File Delete Transaction';
+  } else if (transactionClass ===  'FileContentsQuery') {
+    transactionType = 'Read File Query';
+  } else if (transactionClass ===  'FreezeTransaction') {
+    transactionType = 'Freeze Transaction';
+  } else if (transactionClass === 'NodeCreateTransaction') {
+    transactionType = 'Node Create Transaction';
+  } else if (transactionClass === 'NodeUpdateTransaction') {
+    transactionType = 'Node Update Transaction';
+  } else if (transactionClass === 'NodeDeleteTransaction') {
+    transactionType = 'Node Delete Transaction';
+  } else if (transactionClass === 'SystemDeleteTransaction') {
+    transactionType = 'System Delete Transaction';
+  } else if (transactionClass === 'SystemUndeleteTransaction') {
+    transactionType = 'System Undelete Transaction';
+  }
+
+  return formatTransactionType(transactionType, short, removeTransaction);
+};
+
 export const getTransactionType = (
   transaction: Transaction | Uint8Array,
   short = false,
