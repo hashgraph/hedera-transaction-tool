@@ -1,24 +1,13 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import {
-  PaginatedResourceDto,
-  Pagination,
-  PaginationParams,
-  Serialize,
-  Sorting,
-  SortingParams,
-  withPaginatedResponse,
-} from '@app/common';
+import { Serialize } from '@app/common';
 import { User } from '@entities';
 
 import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../../guards';
 import { TransactionNodeDto } from '../dto';
 import { GetUser } from '../../decorators';
-import {
-  TransactionNodeCollection,
-  transactionNodeProperties,
-} from '../dto/ITransactionNode';
+import { TransactionNodeCollection } from '../dto/ITransactionNode';
 import { EnumValidationPipe } from '@app/common/pipes';
 import { TransactionNodesService } from './transaction-nodes.service';
 
@@ -39,15 +28,14 @@ export class TransactionNodesController {
   })
   @ApiResponse({
     status: 200,
+    type: [TransactionNodeDto],
   })
+  @Serialize(TransactionNodeDto)
   @Get()
-  @Serialize(withPaginatedResponse(TransactionNodeDto))
   getTransactionNodes(
     @GetUser() user: User,
-    @Param('collection', TransactionNodeCollectionPipe) collection: TransactionNodeCollection,
-    @PaginationParams() paginationParams: Pagination,
-    @SortingParams(transactionNodeProperties) sort?: Sorting[],
-  ): Promise<PaginatedResourceDto<TransactionNodeDto>> {
-    return this.transactionNodesService.getTransactionNodes(user, collection, paginationParams, sort);
+    @Query('collection', TransactionNodeCollectionPipe) collection: TransactionNodeCollection,
+  ): Promise<TransactionNodeDto[]> {
+    return this.transactionNodesService.getTransactionNodes(user, collection);
   }
 }

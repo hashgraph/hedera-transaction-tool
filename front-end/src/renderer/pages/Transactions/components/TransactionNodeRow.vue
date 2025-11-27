@@ -38,6 +38,10 @@ const transactionType = computed(() => {
   return result;
 });
 
+const validStartDate = computed(() => {
+  return new Date(props.node.validStart)
+})
+
 /* Handlers */
 const handleDetails = async () => {
   if (props.node.transactionId) {
@@ -68,7 +72,7 @@ const handleDetails = async () => {
 
     <!-- Column #4 -->
     <td>
-      <DateTimeString :date="props.node.validStart" compact wrap />
+      <DateTimeString :date="validStartDate" compact wrap />
     </td>
 
     <!-- Column #5 -->

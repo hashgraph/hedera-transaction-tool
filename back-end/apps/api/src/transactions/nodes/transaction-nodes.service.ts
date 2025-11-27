@@ -1,11 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Transaction, TransactionStatus, User } from '@entities';
-import {
-  Filtering,
-  PaginatedResourceDto,
-  Pagination,
-  Sorting,
-} from '@app/common';
+import { Filtering, Pagination } from '@app/common';
 import { TransactionNodeDto } from '../dto';
 import { TransactionNodeCollection } from '../dto/ITransactionNode';
 import { TransactionsService } from '../transactions.service';
@@ -28,9 +23,7 @@ export class TransactionNodesService {
   async getTransactionNodes(
     user: User,
     collection: TransactionNodeCollection,
-    pagination: Pagination,
-    sorting?: Sorting[],
-  ): Promise<PaginatedResourceDto<TransactionNodeDto>> {
+  ): Promise<TransactionNodeDto[]> {
     let transactions: Transaction[];
     switch (collection) {
       case TransactionNodeCollection.READY_FOR_REVIEW: {
@@ -90,7 +83,7 @@ export class TransactionNodesService {
     }
 
     // Makes transaction nodes
-    const nodes: TransactionNodeDto[] = [];
+    const result: TransactionNodeDto[] = [];
     for (const [groupId, transactions] of transactionsByGroup) {
       if (groupId === -1) {
         // transactions contains the single transactions
@@ -99,12 +92,12 @@ export class TransactionNodesService {
           node.transactionId = t.id;
           node.groupId = undefined;
           node.description = t.description;
-          node.validStart = t.validStart;
-          node.updatedAt = t.updatedAt;
+          node.validStart = t.validStart.toISOString();
+          node.updatedAt = t.updatedAt.toISOString();
           node.sdkTransactionId = t.transactionId;
           node.transactionType = t.type;
           node.groupItemCount = undefined;
-          nodes.push(node);
+          result.push(node);
         }
       } else {
         const group = await this.transactionGroupsService.getTransactionGroup(user, groupId);
@@ -112,26 +105,14 @@ export class TransactionNodesService {
         node.transactionId = undefined;
         node.groupId = groupId;
         node.description = group.description;
-        node.validStart = minValidStart(transactions);
-        node.updatedAt = maxUpdatedAt(transactions);
+        node.validStart = minValidStart(transactions).toISOString();
+        node.updatedAt = maxUpdatedAt(transactions).toISOString();
         node.sdkTransactionId = undefined;
         node.transactionType = undefined;
         node.groupItemCount = transactions.length; // or group.items.length ?
-        nodes.push(node);
+        result.push(node);
       }
     }
-
-    // Sort and paginates
-    if (sorting) {
-      console.log("To be implemented");
-      // nodes.sort((n1, n2) => compareWithSorting(n1, n2, sorting));
-    }
-    const result: PaginatedResourceDto<TransactionNodeDto> = {
-      totalItems: nodes.length,
-      items: nodes.slice(pagination.offset, pagination.offset + pagination.limit),
-      page: 0,
-      size: pagination.size,
-    };
 
     return Promise.resolve(result);
   }
