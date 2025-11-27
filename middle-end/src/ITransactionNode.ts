@@ -1,10 +1,12 @@
-export interface ITransactionNode {
-  transactionId?: string;
-  groupId?: number;
-  description: string;
-  validStart: Date;
-  updatedAt: Date;
-  itemCount: number;
+export interface ITransactionNode {   //   Single   Group
+  transactionId?: number;             //      x
+  groupId?: number;                   //              x
+  description: string;                //      x       x
+  validStart: Date;                   //      x       x
+  updatedAt: Date;                    //      x       x
+  sdkTransactionId?: string;          //      x
+  transactionType?: string;           //      x
+  groupItemCount?: number;            //              x
 }
 
 export enum TransactionNodeCollection {
@@ -17,11 +19,9 @@ export enum TransactionNodeCollection {
 
 export const transactionNodeProperties: (keyof ITransactionNode)[] = [
   "transactionId",
-  "groupId",
   "description",
   "validStart",
   "updatedAt",
-  "itemCount",
 ];
 
 
@@ -34,6 +34,7 @@ export const transactionNodeProperties: (keyof ITransactionNode)[] = [
     description      | tx description     | group description    |
     validStart       | tx valid start     | min item valid start |
     updatedAt        | tx updated at      | max item updated at  |
-    itemCount        | 0                  | group item count     |
+    groupItemCount   | 0                  | group item count     |
+    sdkTransactionId | hiero tx id        | undefined            |
 
  */
