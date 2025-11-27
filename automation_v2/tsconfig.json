@@ -1,5 +1,6 @@
 {
   "include": [
+    "../front-end/src/**/*.ts",
     "pages/**/*.ts",
     "tests/**/*.ts",
     "utils/**/*.ts",
