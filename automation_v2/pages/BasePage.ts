@@ -29,10 +29,6 @@ export class BasePage {
    * @throws {Error} - If the selector is invalid.
    */
   getElement(selector: string, index: number|null = null): Locator {
-    if (typeof selector !== 'string') {
-      throw new Error(`Invalid selector: ${selector}`);
-    }
-
     let element: Locator;
     if (this.isCssSelector(selector)) {
       element = this.window.locator(selector);
@@ -470,7 +466,7 @@ export class BasePage {
         }
       }
 
-      result = texts.length > 0 ? texts[0] : null;
+      result = texts.length > 0 ? texts.join(',') : null;
     }
 
     return Promise.resolve(result);
