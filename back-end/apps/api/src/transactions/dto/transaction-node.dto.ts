@@ -3,7 +3,7 @@ import { ITransactionNode } from '../../../../../../middle-end/src/ITransactionN
 
 export class TransactionNodeDto implements ITransactionNode {
   @Expose()
-  transactionId?: string;
+  transactionId?: number;
 
   @Expose()
   groupId?: number;
@@ -18,5 +18,11 @@ export class TransactionNodeDto implements ITransactionNode {
   updatedAt: Date;
 
   @Expose()
-  itemCount: number;
+  sdkTransactionId?: string;
+
+  @Expose()
+  transactionType?: string;
+
+  @Expose()
+  groupItemCount: number;
 }

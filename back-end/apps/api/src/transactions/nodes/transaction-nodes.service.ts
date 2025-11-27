@@ -96,12 +96,14 @@ export class TransactionNodesService {
         // transactions contains the single transactions
         for (const t of transactions) {
           const node = new TransactionNodeDto();
-          node.transactionId = t.transactionId;
+          node.transactionId = t.id;
           node.groupId = undefined;
           node.description = t.description;
           node.validStart = t.validStart;
           node.updatedAt = t.updatedAt;
-          node.itemCount = 0;
+          node.sdkTransactionId = t.transactionId;
+          node.transactionType = t.type;
+          node.groupItemCount = undefined;
           nodes.push(node);
         }
       } else {
@@ -112,7 +114,9 @@ export class TransactionNodesService {
         node.description = group.description;
         node.validStart = minValidStart(transactions);
         node.updatedAt = maxUpdatedAt(transactions);
-        node.itemCount = transactions.length; // or group.items.length ?
+        node.sdkTransactionId = undefined;
+        node.transactionType = undefined;
+        node.groupItemCount = transactions.length; // or group.items.length ?
         nodes.push(node);
       }
     }
