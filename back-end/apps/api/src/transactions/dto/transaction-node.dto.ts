@@ -12,10 +12,10 @@ export class TransactionNodeDto implements ITransactionNode {
   description: string;
 
   @Expose()
-  validStart: Date;
+  validStart: string;
 
   @Expose()
-  updatedAt: Date;
+  updatedAt: string;
 
   @Expose()
   sdkTransactionId?: string;

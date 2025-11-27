@@ -2,8 +2,8 @@ export interface ITransactionNode {   //   Single   Group
   transactionId?: number;             //      x
   groupId?: number;                   //              x
   description: string;                //      x       x
-  validStart: Date;                   //      x       x
-  updatedAt: Date;                    //      x       x
+  validStart: string;                 //      x       x
+  updatedAt: string;                  //      x       x
   sdkTransactionId?: string;          //      x
   transactionType?: string;           //      x
   groupItemCount?: number;            //              x
@@ -16,13 +16,6 @@ export enum TransactionNodeCollection {
   IN_PROGRESS = "IN_PROGRESS",
   HISTORY = "HISTORY",
 }
-
-export const transactionNodeProperties: (keyof ITransactionNode)[] = [
-  "transactionId",
-  "description",
-  "validStart",
-  "updatedAt",
-];
 
 
 /*

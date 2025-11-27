@@ -34,11 +34,16 @@ const sort = ref<{
   field: 'validStart',
   direction: 'desc',
 });
-const totalItems = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
 
 /* Computed */
+const pageItems = computed(() => {
+  const startIndex = (currentPage.value - 1) * pageSize.value;
+  const endIndex = startIndex + pageSize.value;
+  return nodes.value.slice(startIndex, endIndex);
+})
+
 const loadErrorMessage = computed(() => {
   let result: string;
   switch (props.collection) {
@@ -62,18 +67,15 @@ const loadErrorMessage = computed(() => {
 });
 
 /* Functions */
-async function updateNodes(): Promise<void> {
+async function fetchNodes(): Promise<void> {
   if (isLoggedInOrganization(user.selectedOrganization)) {
     isLoading.value = true;
     try {
-      const r = await getTransactionNodes(
+      nodes.value = await getTransactionNodes(
         user.selectedOrganization.serverUrl,
         props.collection,
-        currentPage.value,
-        pageSize.value,
       );
-      nodes.value = r.items;
-      totalItems.value = r.totalItems;
+      sortNodes();
     } catch {
       toast.error(loadErrorMessage.value, errorToastOptions);
     } finally {
@@ -81,8 +83,11 @@ async function updateNodes(): Promise<void> {
     }
   } else {
     nodes.value = [];
-    totalItems.value = 0;
   }
+}
+
+function sortNodes(): void {
+
 }
 
 function resetPagination(): void {
@@ -92,10 +97,10 @@ function resetPagination(): void {
 /* Watchers */
 watch(sort, async () => {
   resetPagination();
-  await updateNodes();
+  sortNodes();
 });
 
-onMounted(updateNodes);
+onMounted(fetchNodes);
 </script>
 
 <template>
@@ -104,13 +109,13 @@ onMounted(updateNodes);
       <AppLoader class="h-100" />
     </template>
     <template v-else>
-      <template v-if="totalItems > 0">
+      <template v-if="nodes.length > 0">
         <table class="table-custom">
           <thead>
             <TransactionNodeHead v-model:sort="sort" :collection="props.collection" />
           </thead>
           <tbody>
-            <template v-for="(node, index) of nodes" :key="index">
+            <template v-for="(node, index) of pageItems" :key="index">
               <TransactionNodeRow :collection="props.collection" :node="node" :index="index" />
             </template>
           </tbody>
@@ -119,7 +124,7 @@ onMounted(updateNodes);
               <AppPager
                 v-model:current-page="currentPage"
                 v-model:per-page="pageSize"
-                :total-items="totalItems"
+                :total-items="nodes.length"
               />
             </tr>
           </tfoot>
