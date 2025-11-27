@@ -72,6 +72,9 @@ importers:
         specifier: 13.0.0
         version: 13.0.0
     devDependencies:
+      '@types/async-retry':
+        specifier: 1.4.5
+        version: 1.4.5
       '@types/bcrypt':
         specifier: 6.0.0
         version: 6.0.0
@@ -514,6 +517,9 @@ packages:
     resolution: {integrity: sha512-RbzJvlNzmRq5c3O09UipeuXno4tA1FE6ikOjxZK0tuxVv3412l64l5t1W5pj4+rJq9vpkm/kwiR07aZXnsKPxw==}
     engines: {node: '>= 6'}
 
+  '@types/async-retry@1.4.5':
+    resolution: {integrity: sha512-YrdjSD+yQv7h6d5Ip+PMxh3H6ZxKyQk0Ts+PvaNRInxneG9PFVZjFg77ILAN+N6qYf7g4giSJ1l+ZjQ1zeegvA==}
+
   '@types/babel__core@7.20.5':
     resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
 
@@ -552,6 +558,9 @@ packages:
 
   '@types/pg@8.15.6':
     resolution: {integrity: sha512-NoaMtzhxOrubeL/7UZuNTrejB4MPAJ0RpxZqXQf2qXuVlTPuG6Y8p4u9dKRaue4yjmC7ZhzVO2/Yyyn25znrPQ==}
+
+  '@types/retry@0.12.5':
+    resolution: {integrity: sha512-3xSjTp3v03X/lSQLkczaN9UIEwJMoMCA1+Nb5HfbJEQWogdeQIyVtTvxPXDQjZ5zws8rFQfVfRdz03ARihPJgw==}
 
   '@types/stack-utils@2.0.3':
     resolution: {integrity: sha512-9aEbYZ3TbYMznPdcdr3SmIrLXwC/AKZXQeCf9Pgao5CKb8CyHuEX5jzWPTkvregvhRJHcpRO6BFoGW9ycaOkYw==}
@@ -2758,6 +2767,10 @@ snapshots:
   '@tootallnate/once@1.1.2':
     optional: true
 
+  '@types/async-retry@1.4.5':
+    dependencies:
+      '@types/retry': 0.12.5
+
   '@types/babel__core@7.20.5':
     dependencies:
       '@babel/parser': 7.28.5
@@ -2810,6 +2823,8 @@ snapshots:
       '@types/node': 24.10.1
       pg-protocol: 1.10.3
       pg-types: 2.2.0
+
+  '@types/retry@0.12.5': {}
 
   '@types/stack-utils@2.0.3': {}
 

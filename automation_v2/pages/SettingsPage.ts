@@ -3,7 +3,7 @@ import { BasePage } from './BasePage.js';
 import { queryDatabase } from '../utils/databaseUtil.js';
 
 export class SettingsPage extends BasePage {
-  constructor(window: Page, private currentIndex = "1") {
+  constructor(window: Page, public currentIndex = "1") {
     super(window);
   }
 
