@@ -18,7 +18,7 @@ import { GetUser } from '../../decorators';
 import {
   TransactionNodeCollection,
   transactionNodeProperties,
-} from '../../../../../../middle-end/src/ITransactionNode';
+} from '../dto/ITransactionNode';
 import { EnumValidationPipe } from '@app/common/pipes';
 import { TransactionNodesService } from './transaction-nodes.service';
 
