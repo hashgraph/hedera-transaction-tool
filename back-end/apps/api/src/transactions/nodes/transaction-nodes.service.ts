@@ -7,7 +7,7 @@ import {
   Sorting,
 } from '@app/common';
 import { TransactionNodeDto } from '../dto';
-import { TransactionNodeCollection } from '../../../../../../middle-end/src/ITransactionNode';
+import { TransactionNodeCollection } from '../dto/ITransactionNode';
 import { TransactionsService } from '../transactions.service';
 import { TransactionGroupsService } from '../groups';
 

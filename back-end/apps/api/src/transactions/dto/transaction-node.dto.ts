@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { ITransactionNode } from '../../../../../../middle-end/src/ITransactionNode';
+import { ITransactionNode } from './ITransactionNode';
 
 export class TransactionNodeDto implements ITransactionNode {
   @Expose()
