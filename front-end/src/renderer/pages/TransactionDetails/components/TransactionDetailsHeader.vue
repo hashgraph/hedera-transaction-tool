@@ -48,8 +48,7 @@ import {
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 
 import { TransactionStatus } from '@shared/interfaces';
@@ -759,29 +758,11 @@ watch(
     </div>
   </form>
 
-  <AppModal v-model:show="isConfirmModalShown" class="common-modal">
-    <div class="p-4">
-      <i class="bi bi-x-lg d-inline-block cursor-pointer" @click="isConfirmModalShown = false"></i>
-      <div class="text-center">
-        <AppCustomIcon :name="'questionMark'" style="height: 160px" />
-      </div>
-      <h3 class="text-center text-title text-bold mt-4">{{ confirmModalTitle }}</h3>
-      <p class="text-center text-small text-secondary mt-4">
-        {{ confirmModalText }}
-      </p>
-      <hr class="separator my-5" />
-      <div class="flex-between-centered gap-4">
-        <AppButton color="borderless" @click="isConfirmModalShown = false">Cancel</AppButton>
-        <AppButton
-          color="primary"
-          data-testid="button-confirm-change-password"
-          @click="confirmCallback && confirmCallback()"
-          :disabled="isConfirmModalLoadingState"
-          :loading="isConfirmModalLoadingState"
-          :loading-text="confirmModalLoadingText"
-          >{{ confirmModalButtonText }}</AppButton
-        >
-      </div>
-    </div>
-  </AppModal>
+  <AppConfirmModal
+    v-model:show="isConfirmModalShown"
+    :callback="confirmCallback"
+    :text="confirmModalText"
+    :title="confirmModalTitle"
+  />
+
 </template>
