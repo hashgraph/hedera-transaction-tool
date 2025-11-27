@@ -1,18 +1,3 @@
-/*
-const { test, expect } = require('playwright/test');
-const {
-  setupApp,
-  closeApp,
-  generateRandomEmail,
-  generateRandomPassword,
-  setupEnvironmentForTransactions,
-} = require('../utils/util');
-const RegistrationPage = require('../pages/RegistrationPage.js');
-const LoginPage = require('../pages/LoginPage');
-const TransactionPage = require('../pages/TransactionPage');
-const { resetDbState } = require('../utils/databaseUtil');
-*/
-
 import { ElectronApplication, expect, Page, test } from '@playwright/test';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
