@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
-import useUserStore from '@renderer/stores/storeUser.ts';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
+import useFilterNotifications from '@renderer/composables/useFilterNotifications.ts';
 import { getTransactionTypeFromBackendType } from '@renderer/utils/sdk/transactions.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
@@ -14,7 +14,7 @@ import {
   type ITransactionNode,
   TransactionNodeCollection,
 } from '../../../../../../middle-end/src/ITransactionNode.ts';
-import { type INotificationReceiver, NotificationType } from '@shared/interfaces';
+import { NotificationType } from '@shared/interfaces';
 
 /* Props */
 const props = defineProps<{
@@ -30,39 +30,38 @@ const emit = defineEmits<{
 }>();
 
 /* Stores */
-const user = useUserStore();
 const notifications = useNotificationsStore();
 
 /* Composables */
 const router = useRouter();
 
 /* Computed */
-const associatedNotifications = computed(() => {
-  let result: INotificationReceiver[];
-
-  const serverKey = user.selectedOrganization?.serverUrl || '';
-  const serverNotifications = notifications.notifications[serverKey] ?? [];
-  if (props.node.transactionId) {
-    result = [];
-    for (const n of serverNotifications) {
-      if (
-        n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN &&
-        n.notification.entityId === props.node.transactionId
-      ) {
-        result.push(n);
-      }
-    }
-  } else if (props.node.groupId) {
-    result = []; // To be implemented
-  } else {
-    result = [];
+const hasNotifications = computed(() => {
+  return notificationMonitor.filteredNotifications.value.length > 0;
+});
+const filteringNotificationType = computed(() => {
+  let result: NotificationType | null;
+  switch (props.collection) {
+    case TransactionNodeCollection.READY_FOR_REVIEW:
+      result = NotificationType.TRANSACTION_INDICATOR_APPROVE;
+      break;
+    case TransactionNodeCollection.READY_TO_SIGN:
+      result = NotificationType.TRANSACTION_INDICATOR_SIGN;
+      break;
+    case TransactionNodeCollection.READY_FOR_EXECUTION:
+      result = NotificationType.TRANSACTION_INDICATOR_EXECUTABLE;
+      break;
+    case TransactionNodeCollection.IN_PROGRESS:
+    case TransactionNodeCollection.HISTORY:
+      result = null;
+      break;
   }
   return result;
 });
-
-const hasNotifications = computed(() => {
-  return associatedNotifications.value.length > 0;
-});
+const notificationMonitor = useFilterNotifications(
+  computed(() => props.node),
+  filteringNotificationType,
+);
 
 const transactionType = computed(() => {
   let result: string;
@@ -80,6 +79,9 @@ const validStartDate = computed(() => {
 
 /* Handlers */
 const handleDetails = async () => {
+  if (notificationMonitor.filteredNotificationIds.value.length > 0) {
+    await notifications.markAsReadIds(notificationMonitor.filteredNotificationIds.value);
+  }
   if (props.node.transactionId) {
     redirectToDetails(router, props.node.transactionId, true);
   } else if (props.node.groupId) {
