@@ -6,6 +6,7 @@ import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import SignSingleButton from '@renderer/pages/Transactions/components/SignSingleButton.vue';
+import SignGroupButton from '@renderer/pages/Transactions/components/SignGroupButton.vue';
 import { redirectToDetails, redirectToGroupDetails } from '@renderer/utils';
 import {
   type ITransactionNode,
@@ -84,6 +85,10 @@ const handleDetails = async () => {
           <SignSingleButton
             v-if="props.node.transactionId"
             :transactionId="props.node.transactionId"
+          />
+          <SignGroupButton
+            v-if="props.node.groupId"
+            :group-id="props.node.groupId"
           />
         </template>
         <AppButton
