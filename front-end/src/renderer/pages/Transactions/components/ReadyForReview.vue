@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { IGroup, ITransaction } from '@shared/interfaces';
+import type { ITransaction } from '@shared/interfaces';
 
 import { computed, onBeforeMount, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 
@@ -18,7 +18,11 @@ import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
-import { getApiGroupById, getTransactionsToApprove } from '@renderer/services/organization';
+import {
+  getApiGroupById,
+  getTransactionsToApprove,
+  type IGroup,
+} from '@renderer/services/organization';
 
 import {
   getNotifiedTransactions,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { IGroup, ITransaction } from '@shared/interfaces';
+import type { ITransaction } from '@shared/interfaces';
 
 import { computed, onBeforeMount, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 
@@ -16,7 +16,11 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 
-import { getApiGroupById, getTransactionsForUser } from '@renderer/services/organization';
+import {
+  getApiGroupById,
+  getTransactionsForUser,
+  type IGroup,
+} from '@renderer/services/organization';
 
 import { getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions';
 import {
