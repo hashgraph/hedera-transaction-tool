@@ -116,7 +116,13 @@ onMounted(fetchNodes);
           </thead>
           <tbody>
             <template v-for="(node, index) of pageItems" :key="index">
-              <TransactionNodeRow :collection="props.collection" :node="node" :index="index" />
+              <TransactionNodeRow
+                :collection="props.collection"
+                :node="node"
+                :index="index"
+                @transaction-signed="fetchNodes"
+                @transaction-group-signed="fetchNodes"
+              />
             </template>
           </tbody>
           <tfoot class="d-table-caption">
