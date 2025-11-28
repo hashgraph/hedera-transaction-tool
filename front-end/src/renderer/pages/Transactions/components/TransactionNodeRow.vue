@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
+import useUserStore from '@renderer/stores/storeUser.ts';
+import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import { getTransactionTypeFromBackendType } from '@renderer/utils/sdk/transactions.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
@@ -12,6 +14,7 @@ import {
   type ITransactionNode,
   TransactionNodeCollection,
 } from '../../../../../../middle-end/src/ITransactionNode.ts';
+import { type INotificationReceiver, NotificationType } from '@shared/interfaces';
 
 /* Props */
 const props = defineProps<{
@@ -26,13 +29,39 @@ const emit = defineEmits<{
   (event: 'transactionGroupSigned', groupId: number): void;
 }>();
 
+/* Stores */
+const user = useUserStore();
+const notifications = useNotificationsStore();
+
 /* Composables */
 const router = useRouter();
 
 /* Computed */
+const associatedNotifications = computed(() => {
+  let result: INotificationReceiver[];
+
+  const serverKey = user.selectedOrganization?.serverUrl || '';
+  const serverNotifications = notifications.notifications[serverKey] ?? [];
+  if (props.node.transactionId) {
+    result = [];
+    for (const n of serverNotifications) {
+      if (
+        n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN &&
+        n.notification.entityId === props.node.transactionId
+      ) {
+        result.push(n);
+      }
+    }
+  } else if (props.node.groupId) {
+    result = []; // To be implemented
+  } else {
+    result = [];
+  }
+  return result;
+});
+
 const hasNotifications = computed(() => {
-  // To be implemented
-  return false;
+  return associatedNotifications.value.length > 0;
 });
 
 const transactionType = computed(() => {
