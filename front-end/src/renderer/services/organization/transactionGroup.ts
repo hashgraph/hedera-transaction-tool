@@ -15,6 +15,7 @@ export interface ApiGroupItem {
 
 export interface IGroupItem {
   seq: number;
+  transactionId: number;
   transaction: ITransaction;
 }
 
@@ -24,7 +25,7 @@ export interface IGroup {
   atomic: boolean;
   sequential: boolean;
   createdAt: string;
-  groupValidStart: Date;
+  groupValidStart: string;
   groupItems: IGroupItem[];
 }
 
@@ -67,7 +68,7 @@ export const getApiGroups = async (serverUrl: string) => {
 /* Get transaction groups */
 export const getApiGroupById = async (serverUrl: string, id: number) => {
   return commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.get(`${serverUrl}/transaction-groups/${id}`, {
+    const { data } = await axiosWithCredentials.get<IGroup>(`${serverUrl}/transaction-groups/${id}`, {
       withCredentials: true,
     });
 
