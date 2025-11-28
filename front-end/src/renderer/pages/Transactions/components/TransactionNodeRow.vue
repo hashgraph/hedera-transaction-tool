@@ -5,7 +5,7 @@ import { getTransactionTypeFromBackendType } from '@renderer/utils/sdk/transacti
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import SignButton from '@renderer/pages/Transactions/components/SignButton.vue';
+import SignSingleButton from '@renderer/pages/Transactions/components/SignSingleButton.vue';
 import { redirectToDetails, redirectToGroupDetails } from '@renderer/utils';
 import {
   type ITransactionNode,
@@ -81,7 +81,10 @@ const handleDetails = async () => {
     <td class="text-center">
       <div class="d-flex justify-content-center gap-4">
         <template v-if="props.collection === TransactionNodeCollection.READY_TO_SIGN">
-          <SignButton :node="props.node" :index="props.index" />
+          <SignSingleButton
+            v-if="props.node.transactionId"
+            :transactionId="props.node.transactionId"
+          />
         </template>
         <AppButton
           :data-testid="`button-group-details-${index}`"
