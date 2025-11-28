@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { type ITransactionNode } from '../../../../../../middle-end/src/ITransactionNode.ts';
+import { TransactionNodeSortField } from '@renderer/utils/sortTransactionNodes.ts';
 
 type ITransactionNodeSort = {
-  field: keyof ITransactionNode;
+  field: TransactionNodeSortField;
   direction: 'asc' | 'desc';
 };
 
@@ -30,7 +30,7 @@ const showContextMenu = (event: MouseEvent) => {
   contextMenuY.value = event.clientY;
 };
 
-const handleSort = async (field: keyof ITransactionNode, direction: 'asc' | 'desc') => {
+const handleSort = async (field: TransactionNodeSortField, direction: 'asc' | 'desc') => {
   sort.value = { field, direction };
 };
 </script>
@@ -42,12 +42,15 @@ const handleSort = async (field: keyof ITransactionNode, direction: 'asc' | 'des
       <div
         class="table-sort-link"
         @click="
-          handleSort('transactionId', sort?.field === 'transactionId' ? oppositeDirection : 'asc')
+          handleSort(
+            TransactionNodeSortField.TRANSACTION_ID,
+            sort?.field === TransactionNodeSortField.TRANSACTION_ID ? oppositeDirection : 'asc',
+          )
         "
       >
         <span>Transaction ID</span>
         <i
-          v-if="sort?.field === 'transactionId'"
+          v-if="sort?.field === TransactionNodeSortField.TRANSACTION_ID"
           class="bi text-title"
           :class="[generatedClass]"
         ></i>
@@ -60,14 +63,14 @@ const handleSort = async (field: keyof ITransactionNode, direction: 'asc' | 'des
         class="table-sort-link"
         @click="
           handleSort(
-            'transactionType',
-            sort?.field === 'transactionType' ? oppositeDirection : 'asc',
+            TransactionNodeSortField.TRANSACTION_TYPE,
+            sort?.field === TransactionNodeSortField.TRANSACTION_TYPE ? oppositeDirection : 'asc',
           )
         "
       >
         <span>Transaction Type</span>
         <i
-          v-if="sort?.field === 'transactionType'"
+          v-if="sort?.field === TransactionNodeSortField.TRANSACTION_TYPE"
           class="bi text-title"
           :class="[generatedClass]"
         ></i>
@@ -79,11 +82,18 @@ const handleSort = async (field: keyof ITransactionNode, direction: 'asc' | 'des
       <div
         class="table-sort-link"
         @click="
-          handleSort('description', sort?.field === 'description' ? oppositeDirection : 'asc')
+          handleSort(
+            TransactionNodeSortField.DESCRIPTION,
+            sort?.field === TransactionNodeSortField.DESCRIPTION ? oppositeDirection : 'asc',
+          )
         "
       >
         <span>Description</span>
-        <i v-if="sort?.field === 'description'" :class="[generatedClass]" class="bi text-title"></i>
+        <i
+          v-if="sort?.field === TransactionNodeSortField.DESCRIPTION"
+          :class="[generatedClass]"
+          class="bi text-title"
+        ></i>
       </div>
     </th>
 
@@ -91,10 +101,19 @@ const handleSort = async (field: keyof ITransactionNode, direction: 'asc' | 'des
     <th @contextmenu.prevent="showContextMenu">
       <div
         class="table-sort-link"
-        @click="handleSort('validStart', sort?.field === 'validStart' ? oppositeDirection : 'asc')"
+        @click="
+          handleSort(
+            TransactionNodeSortField.VALID_START_DATE,
+            sort?.field === TransactionNodeSortField.VALID_START_DATE ? oppositeDirection : 'asc',
+          )
+        "
       >
         <span>Valid Start</span>
-        <i v-if="sort?.field === 'validStart'" class="bi text-title" :class="[generatedClass]"></i>
+        <i
+          v-if="sort?.field === TransactionNodeSortField.VALID_START_DATE"
+          class="bi text-title"
+          :class="[generatedClass]"
+        ></i>
       </div>
     </th>
 

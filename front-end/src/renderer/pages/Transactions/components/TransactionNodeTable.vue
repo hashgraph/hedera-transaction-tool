@@ -14,6 +14,10 @@ import useUserStore from '@renderer/stores/storeUser.ts';
 import { isLoggedInOrganization } from '@renderer/utils';
 import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 import { useToast } from 'vue-toast-notification';
+import {
+  sortTransactionNodes,
+  TransactionNodeSortField,
+} from '@renderer/utils/sortTransactionNodes.ts';
 
 /* Props */
 const props = defineProps<{
@@ -28,10 +32,10 @@ const toast = useToast();
 const nodes = ref<ITransactionNode[]>([]);
 const isLoading = ref(true);
 const sort = ref<{
-  field: keyof ITransactionNode;
+  field: TransactionNodeSortField;
   direction: 'asc' | 'desc';
 }>({
-  field: 'validStart',
+  field: TransactionNodeSortField.VALID_START_DATE,
   direction: 'desc',
 });
 const currentPage = ref(1);
@@ -42,7 +46,7 @@ const pageItems = computed(() => {
   const startIndex = (currentPage.value - 1) * pageSize.value;
   const endIndex = startIndex + pageSize.value;
   return nodes.value.slice(startIndex, endIndex);
-})
+});
 
 const loadErrorMessage = computed(() => {
   let result: string;
@@ -87,7 +91,10 @@ async function fetchNodes(): Promise<void> {
 }
 
 function sortNodes(): void {
-
+  sortTransactionNodes(nodes.value, sort.value.field);
+  if (sort.value.direction === 'desc') {
+    nodes.value.reverse();
+  }
 }
 
 function resetPagination(): void {

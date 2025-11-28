@@ -780,11 +780,7 @@ export const infiniteDuration = 31556888202959784;
 export const HTS_PRECOMPILE_CONTRACT_ID = '0.0.359';
 export const REDIRECT_FOR_TOKEN_FUNCTION_SIGHASH = '0x618dc65e';
 
-// ---------------------------------------------------------------------------------------------------------------------
-//                                                      Private
-// ---------------------------------------------------------------------------------------------------------------------
-
-function compareString(s1: string | null | undefined, s2: string | null | undefined): number {
+export function compareString(s1: string | null | undefined, s2: string | null | undefined): number {
   let result: number;
 
   if (s1 && s2) {
@@ -801,7 +797,7 @@ function compareString(s1: string | null | undefined, s2: string | null | undefi
   return result;
 }
 
-function compareNumber(n1: number | null | undefined, n2: number | null | undefined): number {
+export function compareNumber(n1: number | null | undefined, n2: number | null | undefined): number {
   let result: number;
 
   if (n1 && n2) {
