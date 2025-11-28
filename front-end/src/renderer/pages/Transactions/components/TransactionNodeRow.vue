@@ -20,6 +20,12 @@ const props = defineProps<{
   index: number;
 }>();
 
+/* Emits */
+const emit = defineEmits<{
+  (event: 'transactionSigned', transactionId: number): void;
+  (event: 'transactionGroupSigned', groupId: number): void;
+}>();
+
 /* Composables */
 const router = useRouter();
 
@@ -85,10 +91,12 @@ const handleDetails = async () => {
           <SignSingleButton
             v-if="props.node.transactionId"
             :transactionId="props.node.transactionId"
+            @transactionSigned="(tid: number) => emit('transactionSigned', tid)"
           />
           <SignGroupButton
             v-if="props.node.groupId"
             :group-id="props.node.groupId"
+            @transactionGroupSigned="(gid: number) => emit('transactionGroupSigned', gid)"
           />
         </template>
         <AppButton
