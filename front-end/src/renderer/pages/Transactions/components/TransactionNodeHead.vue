@@ -32,14 +32,7 @@ const showContextMenu = (event: MouseEvent) => {
 
 const handleSort = async (field: keyof ITransactionNode, direction: 'asc' | 'desc') => {
   sort.value = { field, direction };
-  resetPagination();
-  await updateNodes();
 };
-
-/* Functions */
-async function updateNodes(): Promise<void> {}
-
-function resetPagination(): void {}
 </script>
 
 <template>
