@@ -6,8 +6,10 @@ export enum TransactionNodeSortField {
   TRANSACTION_ID,
   TRANSACTION_TYPE,
   DESCRIPTION,
+  STATUS,
   VALID_START_DATE,
-  EXECUTION_DATE,
+  EXECUTED_AT_DATE,
+  CREATED_AT_DATE,
 }
 export function sortTransactionNodes(
   nodes: ITransactionNode[],
@@ -46,13 +48,31 @@ export function compareTransactionNodes(
         result = compareString(n1.validStart, n2.validStart);
       }
       break;
+    case TransactionNodeSortField.STATUS:
+      result = compareString(n1.status, n2.status);
+      if (result === 0) {
+        result = compareString(n1.validStart, n2.validStart);
+      }
+      break;
     case TransactionNodeSortField.VALID_START_DATE:
-    case TransactionNodeSortField.EXECUTION_DATE: // To be implemented
       result = compareString(n1.validStart, n2.validStart);
       if (result === 0) {
         result = compareString(n1.sdkTransactionId, n2.sdkTransactionId);
       }
       break;
+    case TransactionNodeSortField.CREATED_AT_DATE: // To be implemented
+      result = compareString(n1.createdAt, n2.createdAt);
+      if (result === 0) {
+        result = compareString(n1.sdkTransactionId, n2.sdkTransactionId);
+      }
+      break;
+    case TransactionNodeSortField.EXECUTED_AT_DATE: // To be implemented
+      result = compareString(n1.executedAt, n2.executedAt);
+      if (result === 0) {
+        result = compareString(n1.sdkTransactionId, n2.sdkTransactionId);
+      }
+      break;
+
   }
   return result;
 }

@@ -92,8 +92,12 @@ export class TransactionNodesService {
           node.transactionId = t.id;
           node.groupId = undefined;
           node.description = t.description;
+          node.createdAt = t.createdAt.toISOString();
           node.validStart = t.validStart.toISOString();
           node.updatedAt = t.updatedAt.toISOString();
+          node.executedAt = t.executedAt?.toISOString();
+          node.status = t.status;
+          node.statusCode = t.statusCode;
           node.sdkTransactionId = t.transactionId;
           node.transactionType = t.type;
           node.groupItemCount = undefined;
@@ -105,8 +109,10 @@ export class TransactionNodesService {
         node.transactionId = undefined;
         node.groupId = groupId;
         node.description = group.description;
+        node.createdAt = group.createdAt.toISOString();
         node.validStart = minValidStart(transactions).toISOString();
         node.updatedAt = maxUpdatedAt(transactions).toISOString();
+        node.executedAt = maxExecutedAt(transactions)?.toISOString();
         node.sdkTransactionId = undefined;
         node.transactionType = undefined;
         node.groupItemCount = transactions.length; // or group.items.length ?
@@ -118,10 +124,10 @@ export class TransactionNodesService {
   }
 }
 
-function minValidStart(transactions: Transaction[]): Date | null {
-  let result: Date | null;
+function minValidStart(transactions: Transaction[]): Date {
+  let result: Date;
   if (transactions.length === 0) {
-    result = null;
+    throw new Error('Group with no transactions');
   } else {
     result = transactions[0].validStart;
     for (const t of transactions) {
@@ -133,15 +139,30 @@ function minValidStart(transactions: Transaction[]): Date | null {
   return result;
 }
 
-function maxUpdatedAt(transactions: Transaction[]): Date | null {
-  let result: Date | null;
+function maxUpdatedAt(transactions: Transaction[]): Date {
+  let result: Date;
   if (transactions.length === 0) {
-    result = null;
+    throw new Error('Group with no transactions');
   } else {
     result = transactions[0].updatedAt;
     for (const t of transactions) {
       if (t.updatedAt > result) {
         result = t.updatedAt;
+      }
+    }
+  }
+  return result;
+}
+
+function maxExecutedAt(transactions: Transaction[]): Date | undefined {
+  let result: Date | undefined;
+  if (transactions.length === 0) {
+    throw new Error('Group with no transactions');
+  } else {
+    result = transactions[0].executedAt;
+    for (const t of transactions) {
+      if (t.executedAt > result) {
+        result = t.executedAt;
       }
     }
   }

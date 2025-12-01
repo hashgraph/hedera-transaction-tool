@@ -12,10 +12,22 @@ export class TransactionNodeDto implements ITransactionNode {
   description: string;
 
   @Expose()
+  createdAt: string;
+
+  @Expose()
   validStart: string;
 
   @Expose()
   updatedAt: string;
+
+  @Expose()
+  executedAt?: string;
+
+  @Expose()
+  status?: string;
+
+  @Expose()
+  statusCode?: number;
 
   @Expose()
   sdkTransactionId?: string;
@@ -24,5 +36,5 @@ export class TransactionNodeDto implements ITransactionNode {
   transactionType?: string;
 
   @Expose()
-  groupItemCount: number;
+  groupItemCount?: number;
 }
