@@ -34,10 +34,7 @@ const isLoading = ref(true);
 const sort = ref<{
   field: TransactionNodeSortField;
   direction: 'asc' | 'desc';
-}>({
-  field: TransactionNodeSortField.VALID_START_DATE,
-  direction: 'desc',
-});
+}>(initialSort());
 const currentPage = ref(1);
 const pageSize = ref(10);
 
@@ -71,6 +68,30 @@ const loadErrorMessage = computed(() => {
 });
 
 /* Functions */
+function initialSort() {
+  let result: {
+    field: TransactionNodeSortField;
+    direction: 'asc' | 'desc';
+  };
+  switch (props.collection) {
+    case TransactionNodeCollection.READY_FOR_REVIEW:
+    case TransactionNodeCollection.READY_TO_SIGN:
+    case TransactionNodeCollection.READY_FOR_EXECUTION:
+    case TransactionNodeCollection.IN_PROGRESS:
+      result = {
+        field: TransactionNodeSortField.VALID_START_DATE,
+        direction: 'asc',
+      };
+      break;
+    case TransactionNodeCollection.HISTORY:
+      result = {
+        field: TransactionNodeSortField.CREATED_AT_DATE,
+        direction: 'desc',
+      };
+      break;
+  }
+  return result;
+}
 async function fetchNodes(): Promise<void> {
   if (isLoggedInOrganization(user.selectedOrganization)) {
     isLoading.value = true;
@@ -102,10 +123,14 @@ function resetPagination(): void {
 }
 
 /* Watchers */
-watch(sort, async () => {
-  resetPagination();
-  sortNodes();
-});
+watch(
+  sort,
+  async () => {
+    resetPagination();
+    sortNodes();
+  },
+  { immediate: true },
+);
 
 onMounted(fetchNodes);
 </script>

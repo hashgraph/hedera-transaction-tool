@@ -9,12 +9,12 @@ import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import SignSingleButton from '@renderer/pages/Transactions/components/SignSingleButton.vue';
 import SignGroupButton from '@renderer/pages/Transactions/components/SignGroupButton.vue';
-import { redirectToDetails, redirectToGroupDetails } from '@renderer/utils';
+import { getStatusFromCode, redirectToDetails, redirectToGroupDetails } from '@renderer/utils';
 import {
   type ITransactionNode,
   TransactionNodeCollection,
 } from '../../../../../../middle-end/src/ITransactionNode.ts';
-import { NotificationType } from '@shared/interfaces';
+import { NotificationType, TransactionStatus } from '@shared/interfaces';
 
 /* Props */
 const props = defineProps<{
@@ -67,14 +67,49 @@ const transactionType = computed(() => {
   let result: string;
   if (props.node.transactionType) {
     result = getTransactionTypeFromBackendType(props.node.transactionType, false, true);
+  } else if (props.node.groupItemCount) {
+    result = 'Group (' + props.node.groupItemCount + ')';
   } else {
-    result = 'Group';
+    result = '?';
   }
   return result;
 });
 
+const createdAtDate = computed(() => {
+  return new Date(props.node.createdAt);
+});
+
 const validStartDate = computed(() => {
   return new Date(props.node.validStart);
+});
+
+const executedAtDate = computed(() => {
+  return props.node.executedAt ? new Date(props.node.executedAt) : undefined;
+});
+
+const status = computed(() => {
+  let result: string | undefined;
+  if (props.node.statusCode) {
+    // Transaction has been executed
+    result = getStatusFromCode(props.node.statusCode) ?? undefined;
+  } else if (props.node.status) {
+    result = props.node.status;
+  } else {
+    result = undefined;
+  }
+  return result;
+});
+
+const isDangerStatus = computed(() => {
+  let result: boolean;
+  if (props.node.statusCode) {
+    result = ![0, 22, 104].includes(props.node.statusCode);
+  } else if (props.node.status) {
+    result = props.node.status !== TransactionStatus.ARCHIVED;
+  } else {
+    result = false;
+  }
+  return result;
 });
 
 /* Handlers */
@@ -92,7 +127,7 @@ const handleDetails = async () => {
 
 <template>
   <tr :class="{ highlight: hasNotifications }">
-    <!-- Column #1 -->
+    <!-- Column #1 : Transaction Id -->
     <td :data-testid="`td-transaction-id-for-sign-${index}`">
       <TransactionId
         v-if="props.node.sdkTransactionId"
@@ -102,20 +137,48 @@ const handleDetails = async () => {
       <i v-else class="bi bi-stack" />
     </td>
 
-    <!-- Column #2 -->
+    <!-- Column #2 : Transaction Type / Group -->
     <td class="text-bold">{{ transactionType }}</td>
 
-    <!-- Column #3 -->
-    <td>
-      <span class="text-wrap-two-line-ellipsis">{{ props.node.description }}</span>
-    </td>
+    <template v-if="props.collection === TransactionNodeCollection.HISTORY">
+      <!-- Column #3 : Status -->
+      <td>
+        <span
+          v-if="status"
+          class="badge bg-success text-break"
+          :class="{
+            'bg-danger': isDangerStatus,
+          }"
+          >{{ status }}</span
+        >
+      </td>
 
-    <!-- Column #4 -->
-    <td>
-      <DateTimeString :date="validStartDate" compact wrap />
-    </td>
+      <!-- Column #4 : Created At-->
+      <td>
+        <DateTimeString :date="createdAtDate" compact wrap />
+      </td>
 
-    <!-- Column #5 -->
+      <!-- Column #5 : Executed At-->
+      <td>
+        <span :data-testid="`td-transaction-executedAt-${index}`" class="text-small text-secondary">
+          <DateTimeString v-if="executedAtDate" :date="executedAtDate" compact wrap />
+          <span v-else>N/A</span>
+        </span>
+      </td>
+    </template>
+    <template v-else>
+      <!-- Column #3 : Description -->
+      <td>
+        <span class="text-wrap-two-line-ellipsis">{{ props.node.description }}</span>
+      </td>
+
+      <!-- Column #4 : Valid Start -->
+      <td>
+        <DateTimeString :date="validStartDate" compact wrap />
+      </td>
+    </template>
+
+    <!-- Column #5 : Actions -->
     <td class="text-center">
       <div class="d-flex justify-content-center gap-4">
         <template v-if="props.collection === TransactionNodeCollection.READY_TO_SIGN">
