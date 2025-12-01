@@ -113,6 +113,8 @@ export class TransactionNodesService {
         node.validStart = minValidStart(transactions).toISOString();
         node.updatedAt = maxUpdatedAt(transactions).toISOString();
         node.executedAt = maxExecutedAt(transactions)?.toISOString();
+        node.status = calculateStatusForGroup(transactions);
+        node.statusCode = calculateStatusCodeForGroup(transactions);
         node.sdkTransactionId = undefined;
         node.transactionType = undefined;
         node.groupItemCount = transactions.length; // or group.items.length ?
@@ -166,5 +168,48 @@ function maxExecutedAt(transactions: Transaction[]): Date | undefined {
       }
     }
   }
+  return result;
+}
+
+function calculateStatusCodeForGroup(transactions: Transaction[]): number|undefined {
+  let result: number|undefined;
+
+  // Aggregates status codes for all transactions
+  const allStatusCodes = new Set<number>();
+  let undefinedStatusCodeCount = 0;
+  for (const t of transactions) {
+    if (t.statusCode) {
+      allStatusCodes.add(t.statusCode);
+    } else {
+      undefinedStatusCodeCount += 1;
+    }
+  }
+  if (allStatusCodes.size === 1 && undefinedStatusCodeCount === 0) {
+    // Easy : all transactions have the same status code
+    result = allStatusCodes.values().next().value
+  } else {
+    // We have a mix of status codes … to be refined later
+    result = undefined;
+  }
+
+  return result;
+}
+
+function calculateStatusForGroup(transactions: Transaction[]): string|undefined {
+  let result: string|undefined;
+
+  // Aggregates status for all transactions
+  const allStatuses = new Set<string>();
+  for (const t of transactions) {
+    allStatuses.add(t.status);
+  }
+  if (allStatuses.size === 1) {
+    // Easy : all transactions have the same status
+    result = allStatuses.values().next().value
+  } else {
+    // We have a mix of statuses … to be refined later
+    result = undefined;
+  }
+
   return result;
 }
