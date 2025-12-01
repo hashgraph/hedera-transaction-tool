@@ -703,7 +703,7 @@ test.describe('Transaction tests', () => {
     await transactionPage.deleteFirstDraft();
   });
 
-  test.skip('Verify draft transaction contains the saved info for append file tx', async () => {
+  test('Verify draft transaction contains the saved info for append file tx', async () => {
     await transactionPage.ensureFileExists('test');
     const fileId = await transactionPage.getFirsFileIdFromCache();
     await transactionPage.clickOnCreateNewTransactionButton();
