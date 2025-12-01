@@ -117,7 +117,7 @@ export class TransactionNodesService {
         node.statusCode = calculateStatusCodeForGroup(transactions);
         node.sdkTransactionId = undefined;
         node.transactionType = undefined;
-        node.groupItemCount = transactions.length; // or group.items.length ?
+        node.groupItemCount = group.groupItems.length;
         result.push(node);
       }
     }
