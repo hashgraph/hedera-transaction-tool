@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import {
-  type IGroup,
-  type ITransaction,
-  NotificationType,
-  TransactionStatus,
-} from '@shared/interfaces';
+import { type ITransaction, NotificationType, TransactionStatus } from '@shared/interfaces';
 
 import { computed, onBeforeMount, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 
@@ -21,7 +16,11 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 
-import { getApiGroupById, getTransactionsToSign } from '@renderer/services/organization';
+import {
+  getApiGroupById,
+  getTransactionsToSign,
+  type IGroup,
+} from '@renderer/services/organization';
 
 import {
   assertIsLoggedInOrganization,
