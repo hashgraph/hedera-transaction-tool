@@ -83,9 +83,29 @@ const handleSort = async (field: TransactionNodeSortField, direction: 'asc' | 'd
       </div>
     </th>
 
+    <!-- Header #3 : Description -->
+    <th @contextmenu.prevent="showContextMenu">
+      <div
+        class="table-sort-link"
+        @click="
+          handleSort(
+            TransactionNodeSortField.DESCRIPTION,
+            sort?.field === TransactionNodeSortField.DESCRIPTION ? oppositeDirection : 'asc',
+          )
+        "
+      >
+        <span>Description</span>
+        <i
+          v-if="sort?.field === TransactionNodeSortField.DESCRIPTION"
+          :class="[generatedClass]"
+          class="bi text-title"
+        ></i>
+      </div>
+    </th>
+
     <template v-if="props.collection === TransactionNodeCollection.HISTORY">
 
-      <!-- Header #3 : Status -->
+      <!-- Header #4 : Status -->
       <th @contextmenu.prevent="showContextMenu">
         <div
           class="table-sort-link"
@@ -101,26 +121,6 @@ const handleSort = async (field: TransactionNodeSortField, direction: 'asc' | 'd
             v-if="sort?.field === TransactionNodeSortField.STATUS"
             :class="[generatedClass]"
             class="bi text-title"
-          ></i>
-        </div>
-      </th>
-
-      <!-- Header #4 : Created At-->
-      <th @contextmenu.prevent="showContextMenu">
-        <div
-          class="table-sort-link"
-          @click="
-            handleSort(
-              TransactionNodeSortField.CREATED_AT_DATE,
-              sort?.field === TransactionNodeSortField.CREATED_AT_DATE ? oppositeDirection : 'asc',
-            )
-          "
-        >
-          <span>Created At</span>
-          <i
-            v-if="sort?.field === TransactionNodeSortField.CREATED_AT_DATE"
-            class="bi text-title"
-            :class="[generatedClass]"
           ></i>
         </div>
       </th>
@@ -147,26 +147,6 @@ const handleSort = async (field: TransactionNodeSortField, direction: 'asc' | 'd
     </template>
 
     <template v-else>
-
-      <!-- Header #3 : Description -->
-      <th @contextmenu.prevent="showContextMenu">
-        <div
-          class="table-sort-link"
-          @click="
-          handleSort(
-            TransactionNodeSortField.DESCRIPTION,
-            sort?.field === TransactionNodeSortField.DESCRIPTION ? oppositeDirection : 'asc',
-          )
-        "
-        >
-          <span>Description</span>
-          <i
-            v-if="sort?.field === TransactionNodeSortField.DESCRIPTION"
-            :class="[generatedClass]"
-            class="bi text-title"
-          ></i>
-        </div>
-      </th>
 
       <!-- Header #4 : Valid Start -->
       <th @contextmenu.prevent="showContextMenu">

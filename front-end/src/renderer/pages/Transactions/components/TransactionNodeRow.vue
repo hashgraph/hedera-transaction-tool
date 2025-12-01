@@ -75,10 +75,6 @@ const transactionType = computed(() => {
   return result;
 });
 
-const createdAtDate = computed(() => {
-  return new Date(props.node.createdAt);
-});
-
 const validStartDate = computed(() => {
   return new Date(props.node.validStart);
 });
@@ -140,8 +136,13 @@ const handleDetails = async () => {
     <!-- Column #2 : Transaction Type / Group -->
     <td class="text-bold">{{ transactionType }}</td>
 
+    <!-- Column #3 : Description -->
+    <td>
+      <span class="text-wrap-two-line-ellipsis">{{ props.node.description }}</span>
+    </td>
+
     <template v-if="props.collection === TransactionNodeCollection.HISTORY">
-      <!-- Column #3 : Status -->
+      <!-- Column #4 : Status -->
       <td>
         <span
           v-if="status"
@@ -153,11 +154,6 @@ const handleDetails = async () => {
         >
       </td>
 
-      <!-- Column #4 : Created At-->
-      <td>
-        <DateTimeString :date="createdAtDate" compact wrap />
-      </td>
-
       <!-- Column #5 : Executed At-->
       <td>
         <span :data-testid="`td-transaction-executedAt-${index}`" class="text-small text-secondary">
@@ -167,11 +163,6 @@ const handleDetails = async () => {
       </td>
     </template>
     <template v-else>
-      <!-- Column #3 : Description -->
-      <td>
-        <span class="text-wrap-two-line-ellipsis">{{ props.node.description }}</span>
-      </td>
-
       <!-- Column #4 : Valid Start -->
       <td>
         <DateTimeString :date="validStartDate" compact wrap />
