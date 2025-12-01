@@ -203,7 +203,7 @@ test.describe('Workflow tests', () => {
     expect(isAccountIdPrefilled).toContain(accountFromList);
   });
 
-  test.skip('Verify user can unlink accounts', async () => {
+  test('Verify user can unlink accounts', async () => {
     await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
     await transactionPage.clickOnTransactionsMenuButton();
@@ -217,8 +217,6 @@ test.describe('Workflow tests', () => {
     await loginPage.waitForToastToDisappear();
     await accountPage.clickOnRemoveMultipleButton();
     await accountPage.unlinkAccounts();
-    await accountPage.addAccountToUnliked(newAccountId ?? '');
-    await accountPage.addAccountToUnliked(accountFromList);
     const toastText = await registrationPage.getToastMessage();
     expect(toastText).toBe('Account Unlinked!');
   });
