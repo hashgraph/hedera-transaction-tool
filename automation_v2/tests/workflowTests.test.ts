@@ -416,27 +416,25 @@ test.describe('Workflow tests', () => {
     await detailsPage.assertTransactionDetails(
       newTransactionId ?? '',
       'Account Create Transaction',
-      async () => {
-        const getAccountDetailsKey = await detailsPage.getAccountDetailsKey();
-        expect(getAccountDetailsKey).toBeTruthy();
-
-        const getAccountDetailsStaking = await detailsPage.getAccountDetailsStaking();
-        expect(getAccountDetailsStaking).toBe('None');
-
-        const getAccountDetailsAcceptRewards = await detailsPage.getAccountDetailsAcceptRewards();
-        expect(getAccountDetailsAcceptRewards).toBe('Yes');
-
-        const getAccountDetailsReceiverSigRequired =
-          await detailsPage.getAccountDetailsReceiverSigRequired();
-        expect(getAccountDetailsReceiverSigRequired).toBe('No');
-
-        const getAccountDetailsInitialBalance = await detailsPage.getAccountDetailsInitBalance();
-        expect(getAccountDetailsInitialBalance).toBe('0 ℏ');
-
-        const getTransactionDescription = await detailsPage.getTransactionDescription();
-        expect(getTransactionDescription).toBe('testDescription');
-      },
     );
+    const getAccountDetailsKey = await detailsPage.getAccountDetailsKey();
+    expect(getAccountDetailsKey).toBeTruthy();
+
+    const getAccountDetailsStaking = await detailsPage.getAccountDetailsStaking();
+    expect(getAccountDetailsStaking).toBe('None');
+
+    const getAccountDetailsAcceptRewards = await detailsPage.getAccountDetailsAcceptRewards();
+    expect(getAccountDetailsAcceptRewards).toBe('Yes');
+
+    const getAccountDetailsReceiverSigRequired =
+      await detailsPage.getAccountDetailsReceiverSigRequired();
+    expect(getAccountDetailsReceiverSigRequired).toBe('No');
+
+    const getAccountDetailsInitialBalance = await detailsPage.getAccountDetailsInitBalance();
+    expect(getAccountDetailsInitialBalance).toBe('0 ℏ');
+
+    const getTransactionDescription = await detailsPage.getTransactionDescription();
+    expect(getTransactionDescription).toBe('testDescription');
   });
 
   test('Verify transaction details are displayed for account update tx ', async () => {
@@ -454,17 +452,15 @@ test.describe('Workflow tests', () => {
     await detailsPage.assertTransactionDetails(
       newTransactionId ?? '',
       'Account Update Transaction',
-      async () => {
-        const getTransactionMemo = await detailsPage.getTransactionDetailsMemo();
-        expect(getTransactionMemo).toBe('Transaction memo update');
-
-        const getAccountId = await detailsPage.getAccountUpdateDetailsId();
-        expect(getAccountId).toContain(accountFromList);
-
-        const getAccountMemoDetails = await detailsPage.getAccountDetailsMemo();
-        expect(getAccountMemoDetails).toBe(updatedMemoText);
-      },
     );
+    const getTransactionMemo = await detailsPage.getTransactionDetailsMemo();
+    expect(getTransactionMemo).toBe('Transaction memo update');
+
+    const getAccountId = await detailsPage.getAccountUpdateDetailsId();
+    expect(getAccountId).toContain(accountFromList);
+
+    const getAccountMemoDetails = await detailsPage.getAccountDetailsMemo();
+    expect(getAccountMemoDetails).toBe(updatedMemoText);
   });
 
   test('Verify account update tx is displayed in history page', async () => {
@@ -504,14 +500,12 @@ test.describe('Workflow tests', () => {
     await detailsPage.assertTransactionDetails(
       newTransactionId ?? '',
       'Account Delete Transaction',
-      async () => {
-        const getDeletedAccountId = await detailsPage.getDeletedAccountId();
-        expect(getDeletedAccountId).toContain(accountFromList);
-
-        const getTransferAccountId = await detailsPage.getAccountDeleteDetailsTransferId();
-        expect(getTransferAccountId).toBeTruthy();
-      },
     );
+    const getDeletedAccountId = await detailsPage.getDeletedAccountId();
+    expect(getDeletedAccountId).toContain(accountFromList);
+
+    const getTransferAccountId = await detailsPage.getAccountDeleteDetailsTransferId();
+    expect(getTransferAccountId).toBeTruthy();
   });
 
   test('Verify transfer tx is displayed in history page', async () => {
@@ -539,20 +533,18 @@ test.describe('Workflow tests', () => {
     await detailsPage.assertTransactionDetails(
       newTransactionId ?? '',
       'Transfer Transaction',
-      async () => {
-        const transferDetailsFromAccount = await detailsPage.getTransferDetailsFromAccount();
-        expect(transferDetailsFromAccount).toBeTruthy();
-
-        const transferDetailsFromAmount = await detailsPage.getTransferDetailsFromAmount();
-        expect(transferDetailsFromAmount).toContain('-' + amountToBeTransferred + ' ℏ');
-
-        const transferDetailsToAccount = await detailsPage.getTransferDetailsToAccount();
-        expect(transferDetailsToAccount).toContain(accountFromList);
-
-        const transferDetailsToAmount = await detailsPage.getTransferDetailsToAmount();
-        expect(transferDetailsToAmount).toContain(amountToBeTransferred + ' ℏ');
-      },
     );
+    const transferDetailsFromAccount = await detailsPage.getTransferDetailsFromAccount();
+    expect(transferDetailsFromAccount).toBeTruthy();
+
+    const transferDetailsFromAmount = await detailsPage.getTransferDetailsFromAmount();
+    expect(transferDetailsFromAmount).toContain('-' + amountToBeTransferred + ' ℏ');
+
+    const transferDetailsToAccount = await detailsPage.getTransferDetailsToAccount();
+    expect(transferDetailsToAccount).toContain(accountFromList);
+
+    const transferDetailsToAmount = await detailsPage.getTransferDetailsToAmount();
+    expect(transferDetailsToAmount).toContain(amountToBeTransferred + ' ℏ');
   });
 
   test('Verify approve allowance tx is displayed in history page', async () => {
@@ -583,17 +575,15 @@ test.describe('Workflow tests', () => {
     await detailsPage.assertTransactionDetails(
       newTransactionId ?? '',
       'Account Allowance Approve Transaction',
-      async () => {
-        const allowanceOwnerAccount = await detailsPage.getAllowanceDetailsOwnerAccount();
-        expect(allowanceOwnerAccount).toBeTruthy();
-
-        const allowanceSpenderAccount = await detailsPage.getAllowanceDetailsSpenderAccount();
-        expect(allowanceSpenderAccount).toContain(accountFromList);
-
-        const allowanceAmount = await detailsPage.getAllowanceDetailsAmount();
-        expect(allowanceAmount).toContain(amountToBeApproved + ' ℏ');
-      },
     );
+    const allowanceOwnerAccount = await detailsPage.getAllowanceDetailsOwnerAccount();
+    expect(allowanceOwnerAccount).toBeTruthy();
+
+    const allowanceSpenderAccount = await detailsPage.getAllowanceDetailsSpenderAccount();
+    expect(allowanceSpenderAccount).toContain(accountFromList);
+
+    const allowanceAmount = await detailsPage.getAllowanceDetailsAmount();
+    expect(allowanceAmount).toContain(amountToBeApproved + ' ℏ');
   });
 
   test('Verify file create tx is displayed in history page', async () => {
@@ -609,17 +599,15 @@ test.describe('Workflow tests', () => {
     await detailsPage.assertTransactionDetails(
       transactionId ?? '',
       'File Create Transaction',
-      async () => {
-        const isKeyButtonVisible = await detailsPage.isSeeKeyDetailsButtonVisible();
-        expect(isKeyButtonVisible).toBe(true);
-
-        const fileDetailsExpirationTime = await detailsPage.getFileDetailsExpirationTime();
-        expect(fileDetailsExpirationTime).toBeTruthy();
-
-        const isViewContentButtonVisible = await detailsPage.isViewContentsButtonVisible();
-        expect(isViewContentButtonVisible).toBe(true);
-      },
     );
+    const isKeyButtonVisible = await detailsPage.isSeeKeyDetailsButtonVisible();
+    expect(isKeyButtonVisible).toBe(true);
+
+    const fileDetailsExpirationTime = await detailsPage.getFileDetailsExpirationTime();
+    expect(fileDetailsExpirationTime).toBeTruthy();
+
+    const isViewContentButtonVisible = await detailsPage.isViewContentsButtonVisible();
+    expect(isViewContentButtonVisible).toBe(true);
   });
 
   test('Verify file update tx is displayed in history page', async () => {
@@ -641,14 +629,12 @@ test.describe('Workflow tests', () => {
     await detailsPage.assertTransactionDetails(
       transactionId ?? '',
       'File Update Transaction',
-      async () => {
-        const fileIdFromDetailsPage = await detailsPage.getFileDetailsFileId();
-        expect(fileId).toBe(fileIdFromDetailsPage);
-
-        const isViewContentButtonVisible = await detailsPage.isViewContentsButtonVisible();
-        expect(isViewContentButtonVisible).toBe(true);
-      },
     );
+    const fileIdFromDetailsPage = await detailsPage.getFileDetailsFileId();
+    expect(fileId).toBe(fileIdFromDetailsPage);
+
+    const isViewContentButtonVisible = await detailsPage.isViewContentsButtonVisible();
+    expect(isViewContentButtonVisible).toBe(true);
   });
 
   test('Verify file append tx is displayed in history page', async () => {
@@ -670,13 +656,11 @@ test.describe('Workflow tests', () => {
     await detailsPage.assertTransactionDetails(
       transactionId ?? '',
       'File Append Transaction',
-      async () => {
-        const fileIdFromDetailsPage = await detailsPage.getFileDetailsFileId();
-        expect(fileId).toBe(fileIdFromDetailsPage);
-
-        const isViewContentButtonVisible = await detailsPage.isViewContentsButtonVisible();
-        expect(isViewContentButtonVisible).toBe(true);
-      },
     );
+    const fileIdFromDetailsPage = await detailsPage.getFileDetailsFileId();
+    expect(fileId).toBe(fileIdFromDetailsPage);
+
+    const isViewContentButtonVisible = await detailsPage.isViewContentsButtonVisible();
+    expect(isViewContentButtonVisible).toBe(true);
   });
 });
