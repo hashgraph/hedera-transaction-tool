@@ -68,7 +68,13 @@ const transactionType = computed(() => {
   if (props.node.transactionType) {
     result = getTransactionTypeFromBackendType(props.node.transactionType, false, true);
   } else if (props.node.groupItemCount) {
-    result = 'Group (' + props.node.groupItemCount + ')';
+    const groupItemCount = props.node.groupItemCount;
+    const groupCollectedCount = props.node.groupCollectedCount ?? groupItemCount;
+    if (groupItemCount !== groupCollectedCount) {
+      result = 'Group (' + groupCollectedCount + ' of ' + groupItemCount + ')';
+    } else {
+      result = 'Group (' + props.node.groupItemCount + ')';
+    }
   } else {
     result = '?';
   }
