@@ -1,0 +1,8 @@
+packages:
+  - .
+
+onlyBuiltDependencies:
+  - argon2
+  - bcrypt
+  - protobufjs
+  - sqlite3
