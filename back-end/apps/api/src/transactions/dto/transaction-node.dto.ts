@@ -37,4 +37,7 @@ export class TransactionNodeDto implements ITransactionNode {
 
   @Expose()
   groupItemCount?: number;
+
+  @Expose()
+  groupCollectedCount?: number;
 }

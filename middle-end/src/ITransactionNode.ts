@@ -11,6 +11,7 @@ export interface ITransactionNode {   //   Single   Group
   sdkTransactionId?: string;          //      x
   transactionType?: string;           //      x
   groupItemCount?: number;            //              x
+  groupCollectedCount?: number;       //              x
 }
 
 export enum TransactionNodeCollection {

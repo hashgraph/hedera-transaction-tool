@@ -101,6 +101,7 @@ export class TransactionNodesService {
           node.sdkTransactionId = t.transactionId;
           node.transactionType = t.type;
           node.groupItemCount = undefined;
+          node.groupCollectedCount = undefined;
           result.push(node);
         }
       } else {
@@ -118,6 +119,7 @@ export class TransactionNodesService {
         node.sdkTransactionId = undefined;
         node.transactionType = undefined;
         node.groupItemCount = group.groupItems.length;
+        node.groupCollectedCount = transactions.length;
         result.push(node);
       }
     }
