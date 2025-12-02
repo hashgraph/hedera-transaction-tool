@@ -299,7 +299,7 @@ export class SettingsPage extends BasePage {
     await this.clickOnConfirmNicknameChangeButton();
   }
 
-  async navigateToLogout(resetFunction: () => Promise<void>): Promise<void> {
+  async navigateToLogout(resetFunction: (() => Promise<void>) | null = null): Promise<void> {
     const isSettingsButtonHidden = await this.isElementHidden(this.settingsButtonSelector);
     if (isSettingsButtonHidden) {
       console.log('Settings button is not visible, resetting the form');
