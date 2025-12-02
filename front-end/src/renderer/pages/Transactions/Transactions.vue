@@ -31,6 +31,7 @@ import useLoader from '@renderer/composables/useLoader';
 import TransactionImportButton from '@renderer/components/TransactionImportButton.vue';
 import { TransactionNodeCollection } from '../../../../../middle-end/src/ITransactionNode.ts';
 import TransactionNodeTable from '@renderer/pages/Transactions/components/TransactionNodeTable.vue';
+import History from '@renderer/pages/Transactions/components/History.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -250,7 +251,11 @@ onBeforeMount(async () => {
       </template>
       <template v-if="selectedTabTitle === draftsTitle"><Drafts /></template>
       <template v-if="selectedTabTitle === historyTitle">
-        <TransactionNodeTable :collection="TransactionNodeCollection.HISTORY" />
+        <TransactionNodeTable
+          v-if="user.selectedOrganization"
+          :collection="TransactionNodeCollection.HISTORY"
+        />
+        <History v-else />
       </template>
     </div>
 
