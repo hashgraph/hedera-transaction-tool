@@ -26,17 +26,14 @@ import {
   redirectToDetails,
   isLoggedInOrganization,
 } from '@renderer/utils';
-import {
-  getTransactionId,
-  getTransactionType,
-  getTransactionValidStart,
-} from '@renderer/utils/sdk/transactions';
+import { getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
+import TransactionId from '@renderer/components/ui/TransactionId.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -264,6 +261,24 @@ watch(
                   class="table-sort-link"
                   @click="
                     handleSort(
+                      'description',
+                      sort.field === 'description' ? getOpositeDirection() : 'asc',
+                    )
+                  "
+                >
+                  <span>Description</span>
+                  <i
+                    v-if="sort.field === 'description'"
+                    :class="[generatedClass]"
+                    class="bi text-title"
+                  ></i>
+                </div>
+              </th>
+              <th @contextmenu.prevent="showContextMenu">
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
                       'validStart',
                       sort.field === 'validStart' ? getOpositeDirection() : 'asc',
                     )
@@ -277,6 +292,7 @@ watch(
                   ></i>
                 </div>
               </th>
+              <!--
               <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
@@ -295,6 +311,7 @@ watch(
                   ></i>
                 </div>
               </th>
+-->
               <th class="text-center">
                 <span>Actions</span>
               </th>
@@ -304,37 +321,59 @@ watch(
             <template v-for="(tx, index) in transactions" :key="tx.transactionRaw.id">
               <tr :class="{ highlight: notifiedTransactionIds.includes(tx.transactionRaw.id) }">
                 <td :data-testid="`td-transaction-id-ready-execution-${index}`">
-                  {{
-                    tx.transaction instanceof Transaction ? getTransactionId(tx.transaction) : 'N/A'
-                  }}
+                  <TransactionId
+                    v-if="tx.transaction instanceof Transaction"
+                    :transaction-id="tx.transaction.transactionId"
+                    wrap
+                  />
+                  <span v-else>N/A</span>
                 </td>
                 <td :data-testid="`td-transaction-type-ready-execution-${index}`">
                   <span class="text-bold">{{
                     tx.transaction instanceof Transaction
-                      ? getTransactionType(tx.transaction)
+                      ? getTransactionType(tx.transaction, false, true)
                       : 'N/A'
                   }}</span>
+                  <span v-if="tx.transactionRaw.isManual" class="badge bg-info ms-3">Manual</span>
                 </td>
+                <td :data-testid="`td-transaction-description-ready-execution-${index}`">
+                  <span class="text-wrap-two-line-ellipsis">{{
+                    tx.transactionRaw.description
+                  }}</span>
+                </td>
+<!--
+                <td
+                  :data-testid="`td-transaction-manual-ready-execution-${index}`"
+                  class="text-center"
+                >
+                  <span v-if="tx.transactionRaw.isManual" class="badge bg-info">Manual</span>
+                </td>
+-->
                 <td :data-testid="`td-transaction-valid-start-ready-execution-${index}`">
                   <DateTimeString
                     v-if="tx.transaction instanceof Transaction"
                     :date="getTransactionValidStart(tx.transaction)"
+                    compact
+                    wrap
                   />
                   <span v-else>N/A</span>
                 </td>
+                <!--
                 <td :data-testid="`td-transaction-date-modified-ready-execution-${index}`">
                   <DateTimeString
                     v-if="tx.transaction instanceof Transaction"
                     :date="new Date(tx.transactionRaw.updatedAt)"
+                    compact
+                    wrap
                   />
                   <span v-else>N/A</span>
                 </td>
+-->
                 <td class="text-center">
                   <AppButton
                     @click="handleDetails(tx.transactionRaw.id)"
                     :data-testid="`button-transaction-ready-execution-details-${index}`"
                     color="secondary"
-                    class="min-w-unset"
                     >Details</AppButton
                   >
                 </td>
@@ -355,12 +394,33 @@ watch(
         <div
           v-if="contextMenuVisible"
           class="dropdown"
-          :style="{ position: 'fixed', top: contextMenuY + 'px', left: contextMenuX + 'px', zIndex: 1000 }"
+          :style="{
+            position: 'fixed',
+            top: contextMenuY + 'px',
+            left: contextMenuX + 'px',
+            zIndex: 1000,
+          }"
           @click.stop
         >
           <ul class="dropdown-menu show mt-3">
-            <li class="dropdown-item cursor-pointer" @click="handleSort('createdAt', 'desc'); hideContextMenu()">Sort by Newest</li>
-            <li class="dropdown-item cursor-pointer" @click="handleSort('createdAt', 'asc'); hideContextMenu()">Sort by Oldest</li>
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="
+                handleSort('createdAt', 'desc');
+                hideContextMenu();
+              "
+            >
+              Sort by Newest
+            </li>
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="
+                handleSort('createdAt', 'asc');
+                hideContextMenu();
+              "
+            >
+              Sort by Oldest
+            </li>
           </ul>
         </div>
       </template>

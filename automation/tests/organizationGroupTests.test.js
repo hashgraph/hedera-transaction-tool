@@ -1,5 +1,4 @@
-const { test } = require('@playwright/test');
-const { expect } = require('playwright/test');
+const { test, expect } = require('playwright/test');
 const RegistrationPage = require('../pages/RegistrationPage.js');
 const LoginPage = require('../pages/LoginPage');
 const TransactionPage = require('../pages/TransactionPage');
@@ -197,7 +196,7 @@ test.describe('Organization Group Tx tests', () => {
     // create a non-existing account Id
     const senderAccountId = incrementAccountId(newAccountId);
     await groupPage.generateAndImportCsvFile(senderAccountId, newAccountId, 5);
-    const message = await groupPage.getToastMessage();
+    const message = await groupPage.getToastMessage(true);
     expect(message).toBe(`Sender account ${senderAccountId} does not exist on network. Review the CSV file.`);
   });
 
@@ -206,7 +205,7 @@ test.describe('Organization Group Tx tests', () => {
     await groupPage.fillDescription('test');
     const feePayerAccountId = incrementAccountId(newAccountId);
     await groupPage.generateAndImportCsvFile(complexKeyAccountId, newAccountId, 5, feePayerAccountId);
-    const message = await groupPage.getToastMessage();
+    const message = await groupPage.getToastMessage(true);
     expect(message).toBe(`Fee payer account ${feePayerAccountId} does not exist on network. Review the CSV file.`);
   });
 
@@ -215,7 +214,7 @@ test.describe('Organization Group Tx tests', () => {
     await groupPage.fillDescription('test');
     const receiverAccountId = incrementAccountId(newAccountId);
     await groupPage.generateAndImportCsvFile(complexKeyAccountId, receiverAccountId, 5);
-    const message = await groupPage.getToastMessage();
+    const message = await groupPage.getToastMessage(true);
     expect(message).toBe(`Receiver account ${receiverAccountId} does not exist on network. Review the CSV file.`);
   });
 });

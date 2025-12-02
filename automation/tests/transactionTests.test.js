@@ -1,4 +1,4 @@
-const { test } = require('@playwright/test');
+const { test, expect } = require('playwright/test');
 const {
   setupApp,
   closeApp,
@@ -7,7 +7,6 @@ const {
   setupEnvironmentForTransactions,
 } = require('../utils/util');
 const RegistrationPage = require('../pages/RegistrationPage.js');
-const { expect } = require('playwright/test');
 const LoginPage = require('../pages/LoginPage');
 const TransactionPage = require('../pages/TransactionPage');
 const { resetDbState } = require('../utils/databaseUtil');
@@ -428,13 +427,17 @@ test.describe('Transaction tests', () => {
   test('Verify user can save draft and is visible in the draft page', async () => {
     await transactionPage.clickOnCreateNewTransactionButton();
     await transactionPage.clickOnCreateAccountTransaction();
+    await transactionPage.fillInDescription('test create tx description');
     await transactionPage.saveDraft();
 
     const draftDate = await transactionPage.getFirstDraftDate();
     expect(draftDate).toBeTruthy();
 
     const draftType = await transactionPage.getFirstDraftType();
-    expect(draftType).toBe('Account Create Transaction');
+    expect(draftType).toBe('Account Create');
+
+    const description = await transactionPage.getFirstDraftDescription();
+    expect(description).toBe('test create tx description');
 
     const isTemplateCheckboxVisible =
       await transactionPage.getFirstDraftIsTemplateCheckboxVisible();

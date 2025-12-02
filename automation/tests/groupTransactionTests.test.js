@@ -1,5 +1,4 @@
-const { test } = require('@playwright/test');
-const { expect } = require('playwright/test');
+const { test, expect } = require('playwright/test');
 const RegistrationPage = require('../pages/RegistrationPage.js');
 const LoginPage = require('../pages/LoginPage');
 const TransactionPage = require('../pages/TransactionPage');
@@ -106,7 +105,7 @@ test.describe('Group transaction tests', () => {
   test('Verify description is mandatory for saving group transaction', async () => {
     await groupPage.clickOnSaveGroupButton();
 
-    const toastText = await groupPage.getToastMessage();
+    const toastText = await groupPage.getToastMessage(true);
     expect(toastText).toContain('Please enter a group description');
   });
 

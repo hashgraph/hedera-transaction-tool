@@ -25,7 +25,6 @@ import { getHistoryTransactions } from '@renderer/services/organization';
 
 import {
   getTransactionStatus,
-  getTransactionId,
   getStatusFromCode,
   getNotifiedTransactions,
   hexToUint8Array,
@@ -41,6 +40,7 @@ import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import TransactionsFilter from '@renderer/components/Filter/TransactionsFilter.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
+import TransactionId from '@renderer/components/ui/TransactionId.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -343,6 +343,25 @@ watch(
                   class="table-sort-link"
                   @click="
                     handleSort(
+                      'description',
+                      localSort.field === 'description' ? getOpositeDirection() : 'asc',
+                      'description',
+                    )
+                  "
+                >
+                  <span>Description</span>
+                  <i
+                    v-if="localSort.field === 'description'"
+                    :class="[generatedClass]"
+                    class="bi text-title"
+                  ></i>
+                </div>
+              </th>
+              <th>
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
                       'status_code',
                       localSort.field === 'status_code' ? getOpositeDirection() : 'asc',
                       'statusCode',
@@ -357,7 +376,7 @@ watch(
                   ></i>
                 </div>
               </th>
-              <th>
+              <th v-if="!user.selectedOrganization">
                 <div
                   class="table-sort-link"
                   @click="
@@ -408,10 +427,13 @@ watch(
               >
                 <tr>
                   <td :data-testid="`td-transaction-id-${index}`">
-                    {{ getTransactionId(transaction) }}
+                    <TransactionId :transaction-id="transaction.transaction_id" wrap />
                   </td>
                   <td :data-testid="`td-transaction-type-${index}`">
                     <span class="text-bold">{{ transaction.type }}</span>
+                  </td>
+                  <td :data-testid="`td-transaction-description-${index}`">
+                    <span class="text-wrap-two-line-ellipsis">{{ transaction.description }}</span>
                   </td>
                   <td :data-testid="`td-transaction-status-${index}`">
                     <span
@@ -422,7 +444,7 @@ watch(
                   </td>
                   <td :data-testid="`td-transaction-createdAt-${index}`">
                     <span class="text-small text-secondary">
-                      <DateTimeString :date="transaction.created_at"/>
+                      <DateTimeString :date="transaction.created_at" compact wrap />
                     </span>
                   </td>
                   <td class="text-center">
@@ -430,7 +452,6 @@ watch(
                       :data-testid="`button-transaction-details-${index}`"
                       @click="handleDetails(transaction.id)"
                       color="secondary"
-                      class="min-w-unset"
                       >Details</AppButton
                     >
                   </td>
@@ -450,11 +471,19 @@ watch(
                   :id="transactionData.transactionRaw.id.toString()"
                 >
                   <td :data-testid="`td-transaction-id-${index}`">
-                    {{ sdkTransactionUtils.getTransactionId(transactionData.transaction) }}
+                    <TransactionId
+                      :transaction-id="transactionData.transaction.transactionId"
+                      wrap
+                    />
                   </td>
                   <td :data-testid="`td-transaction-type-${index}`">
                     <span class="text-bold">{{
-                      sdkTransactionUtils.getTransactionType(transactionData.transaction)
+                      sdkTransactionUtils.getTransactionType(transactionData.transaction, false, true)
+                    }}</span>
+                  </td>
+                  <td :data-testid="`td-transaction-description-${index}`">
+                    <span class="text-wrap-two-line-ellipsis">{{
+                      transactionData.transactionRaw.description
                     }}</span>
                   </td>
                   <td :data-testid="`td-transaction-status-${index}`">
@@ -476,13 +505,17 @@ watch(
                       }}</span
                     >
                   </td>
+<!--
                   <td :data-testid="`td-transaction-createdAt-${index}`">
                     <span class="text-small text-secondary">
                       <DateTimeString
                         :date="new Date(transactionData.transactionRaw.createdAt)"
+                        compact
+                        wrap
                       />
                     </span>
                   </td>
+-->
                   <td>
                     <span
                       :data-testid="`td-transaction-executedAt-${index}`"
@@ -491,6 +524,8 @@ watch(
                       <DateTimeString
                         v-if="transactionData.transactionRaw.executedAt"
                         :date="new Date(transactionData.transactionRaw.executedAt)"
+                        compact
+                        wrap
                       />
                       <span v-else>N/A</span>
                     </span>
@@ -500,7 +535,6 @@ watch(
                       :data-testid="`button-transaction-details-${index}`"
                       @click="handleDetails(transactionData.transactionRaw.id)"
                       color="secondary"
-                      class="min-w-unset"
                       >Details</AppButton
                     >
                   </td>

@@ -1,4 +1,4 @@
-const { test } = require('@playwright/test');
+const { test, expect } = require('playwright/test');
 const {
   setupApp,
   closeApp,
@@ -7,7 +7,6 @@ const {
   setupEnvironmentForTransactions,
 } = require('../utils/util');
 const RegistrationPage = require('../pages/RegistrationPage.js');
-const { expect } = require('playwright/test');
 const LoginPage = require('../pages/LoginPage');
 const TransactionPage = require('../pages/TransactionPage');
 const OrganizationPage = require('../pages/OrganizationPage');
@@ -88,7 +87,7 @@ test.describe('Organization Settings tests', () => {
   test('Verify error message when user adds non-existing organization', async () => {
     await loginPage.waitForToastToDisappear();
     await organizationPage.setupWrongOrganization();
-    const toastMessage = await registrationPage.getToastMessage();
+    const toastMessage = await registrationPage.getToastMessage(true);
     expect(toastMessage).toBe('Organization does not exist. Please check the server URL');
     await organizationPage.clickOnCancelAddingOrganizationButton();
   });

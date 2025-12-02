@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { IGroup } from '@renderer/services/organization';
 import type { IGroupItem, ITransactionFull } from '@shared/interfaces';
-import type { SignatureItem } from '@renderer/types';
 
 import { computed, onBeforeMount, reactive, ref, watch, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -32,7 +31,6 @@ import {
   getApiGroupById,
   getUserShouldApprove,
   sendApproverChoice,
-  uploadSignatures,
   cancelTransaction,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
@@ -47,11 +45,13 @@ import {
   isUserLoggedIn,
   usersPublicRequiredToSign,
   assertUserLoggedIn,
+  signTransactions,
+  getErrorMessage,
+  assertIsLoggedInOrganization,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
-import AppModal from '@renderer/components/ui/AppModal.vue';
+import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
@@ -60,6 +60,7 @@ import useContactsStore from '@renderer/stores/storeContacts.ts';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
@@ -104,7 +105,7 @@ const nodeByIdCache = NodeByIdCache.inject();
 const group = ref<IGroup | null>(null);
 const shouldApprove = ref(false);
 const isVersionMismatch = ref(false);
-const signingItemSeq = ref(-1);
+const signingItems = ref<boolean[]>([]); // is signing in progress for a group item
 const unsignedSignersToCheck = ref<Record<number, string[]>>({});
 const tooltipRef = ref<HTMLElement[]>([]);
 const isConfirmModalShown = ref(false);
@@ -174,66 +175,6 @@ const dropDownItems = computed(() =>
 );
 
 /* Handlers */
-async function handleFetchGroup(id: string | number) {
-  fullyLoaded.value = false;
-  if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
-    try {
-      const updatedUnsignedSignersToCheck: Record<number, string[]> = {};
-
-      group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
-      isVersionMismatch.value = false;
-
-      if (group.value?.groupItems != undefined) {
-        for (const item of group.value.groupItems) {
-          const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
-          const tx = Transaction.fromBytes(transactionBytes);
-
-          const isTransactionVersionMismatch = !areByteArraysEqual(tx.toBytes(), transactionBytes);
-          if (isTransactionVersionMismatch) {
-            toast.error('Transaction version mismatch. Cannot sign all.', errorToastOptions);
-            isVersionMismatch.value = true;
-            break;
-          }
-
-          shouldApprove.value =
-            shouldApprove.value ||
-            (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id));
-
-          const txId = item.transaction.id;
-
-          const usersPublicKeys = await usersPublicRequiredToSign(
-            tx,
-            user.selectedOrganization.userKeys,
-            network.mirrorNodeBaseURL,
-            accountByIdCache,
-            nodeByIdCache,
-          );
-
-          if (
-            item.transaction.status !== TransactionStatus.CANCELED &&
-            item.transaction.status !== TransactionStatus.EXPIRED &&
-            usersPublicKeys.length > 0
-          ) {
-            updatedUnsignedSignersToCheck[txId] = usersPublicKeys;
-          }
-        }
-        fullyLoaded.value = true;
-      }
-
-      unsignedSignersToCheck.value = updatedUnsignedSignersToCheck;
-
-      // bootstrap tooltips needs to be recreated when the items' status might have changed
-      // since their title is not updated
-      createTooltips();
-    } catch (error) {
-      router.back();
-      throw error;
-    }
-  } else {
-    console.log('not logged into org');
-  }
-}
-
 const handleBack = () => {
   if (!history.state?.back?.startsWith('/transactions')) {
     router.push({ name: 'transactions' });
@@ -258,65 +199,40 @@ const handleDetails = async (id: number) => {
 };
 
 const handleSignGroupItem = async (groupItem: IGroupItem) => {
-  if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in organization');
-  }
-
   const personalPassword = getPassword(handleSignGroupItem.bind(null, groupItem), {
     subHeading: 'Enter your application password to decrypt your private key',
   });
   if (passwordModalOpened(personalPassword)) return;
 
   try {
-    signingItemSeq.value = groupItem.seq;
-    const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
-    const transaction = Transaction.fromBytes(transactionBytes);
-    if (
-      groupItem.transaction.status === TransactionStatus.CANCELED ||
-      groupItem.transaction.status === TransactionStatus.EXPIRED
-    ) {
-      return Promise.resolve();
-    }
-    const publicKeysRequired = await usersPublicRequiredToSign(
-      transaction,
-      user.selectedOrganization.userKeys,
-      network.mirrorNodeBaseURL,
+    signingItems.value[groupItem.seq] = true;
+
+    const signed = await signTransactions(
+      [groupItem.transaction],
+      personalPassword,
       accountByIdCache,
       nodeByIdCache,
     );
-    const item: SignatureItem = {
-      publicKeys: publicKeysRequired,
-      transaction,
-      transactionId: groupItem.transaction.id,
-    };
-    const items: SignatureItem[] = [item];
 
-    await uploadSignatures(
-      user.personal.id,
-      personalPassword,
-      user.selectedOrganization,
-      undefined,
-      undefined,
-      undefined,
-      items,
-    );
+    if (signed) {
+      const updatedTransaction: ITransactionFull = await getTransactionById(
+        user.selectedOrganization?.serverUrl || '',
+        groupItem.transactionId,
+      );
 
-    const updatedTransaction: ITransactionFull = await getTransactionById(
-      user.selectedOrganization?.serverUrl || '',
-      groupItem.transactionId,
-    );
-
-    const index = group.value!.groupItems.findIndex(
-      item => item.transaction.id === groupItem.transactionId,
-    );
-    group.value!.groupItems[index].transaction = updatedTransaction;
-    delete unsignedSignersToCheck.value[groupItem.transaction.id];
-
-    toast.success('Transaction signed successfully', successToastOptions);
-  } catch {
-    toast.error('Transaction not signed', errorToastOptions);
+      const index = group.value!.groupItems.findIndex(
+        item => item.transaction.id === groupItem.transactionId,
+      );
+      group.value!.groupItems[index].transaction = updatedTransaction;
+      delete unsignedSignersToCheck.value[groupItem.transaction.id];
+      toast.success('Transaction signed successfully', successToastOptions);
+    } else {
+      toast.error('Failed to sign transaction', errorToastOptions);
+    }
+  } catch (error) {
+    toast.error(getErrorMessage(error, 'Failed to sign transaction'), errorToastOptions);
   } finally {
-    signingItemSeq.value = -1;
+    signingItems.value[groupItem.seq] = false;
   }
 };
 
@@ -345,7 +261,7 @@ const handleCancelAll = async (showModal = false) => {
       }
     }
 
-    await handleFetchGroup(group.value!.id);
+    await fetchGroup(group.value!.id);
     toast.success('Transactions canceled successfully', successToastOptions);
   } catch {
     toast.error('Transactions not canceled', errorToastOptions);
@@ -362,57 +278,31 @@ const handleSignAll = async (showModal = false) => {
     confirmCallback.value = handleSignAll;
     return;
   }
-
   isConfirmModalShown.value = false;
-
-  if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in organization');
-  }
 
   const personalPassword = getPassword(handleSignAll.bind(null, showModal), {
     subHeading: 'Enter your application password to decrypt your private key',
   });
   if (passwordModalOpened(personalPassword)) return;
+  assertIsLoggedInOrganization(user.selectedOrganization);
 
   try {
     loadingStates[sign] = 'Signing...';
-    const items: SignatureItem[] = [];
-    if (group.value != undefined) {
-      for (const groupItem of group.value.groupItems) {
-        const transactionBytes = hexToUint8Array(groupItem.transaction.transactionBytes);
-        const transaction = Transaction.fromBytes(transactionBytes);
-        if (
-          groupItem.transaction.status === TransactionStatus.CANCELED ||
-          groupItem.transaction.status === TransactionStatus.EXPIRED
-        ) {
-          continue;
-        }
-        const publicKeysRequired = await usersPublicRequiredToSign(
-          transaction,
-          user.selectedOrganization.userKeys,
-          network.mirrorNodeBaseURL,
-          accountByIdCache,
-          nodeByIdCache,
-        );
-        const item: SignatureItem = {
-          publicKeys: publicKeysRequired,
-          transaction,
-          transactionId: groupItem.transaction.id,
-        };
-        items.push(item);
-      }
-      await uploadSignatures(
-        user.personal.id,
-        personalPassword,
-        user.selectedOrganization,
-        undefined,
-        undefined,
-        undefined,
-        items,
-      );
 
-      await handleFetchGroup(group.value!.id);
+    let itemsToSign = group.value?.groupItems.map(item => item.transaction) ?? [];
+    itemsToSign = itemsToSign.filter(item => item.status === TransactionStatus.WAITING_FOR_SIGNATURES);
+    const signed = await signTransactions(
+      itemsToSign,
+      personalPassword,
+      accountByIdCache,
+      nodeByIdCache,
+    );
+    await fetchGroup(group.value!.id);
+
+    if (signed) {
       toast.success('Transactions signed successfully', successToastOptions);
+    } else {
+      toast.error('Transactions not signed', errorToastOptions);
     }
   } catch {
     toast.error('Transactions not signed', errorToastOptions);
@@ -589,7 +479,7 @@ onBeforeMount(async () => {
   }
 
   subscribeToTransactionAction();
-  await handleFetchGroup(Array.isArray(id) ? id[0] : id);
+  await fetchGroup(Array.isArray(id) ? id[0] : id);
   setGetTransactionsFunction();
 });
 
@@ -613,6 +503,67 @@ watchEffect(() => {
 });
 
 /* Functions */
+async function fetchGroup(id: string | number) {
+  fullyLoaded.value = false;
+  if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
+    try {
+      const updatedUnsignedSignersToCheck: Record<number, string[]> = {};
+
+      group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
+      isVersionMismatch.value = false;
+
+      if (group.value?.groupItems != undefined) {
+        for (const item of group.value.groupItems) {
+          const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
+          const tx = Transaction.fromBytes(transactionBytes);
+
+          const isTransactionVersionMismatch = !areByteArraysEqual(tx.toBytes(), transactionBytes);
+          if (isTransactionVersionMismatch) {
+            toast.error('Transaction version mismatch. Cannot sign all.', errorToastOptions);
+            isVersionMismatch.value = true;
+            break;
+          }
+
+          shouldApprove.value =
+            shouldApprove.value ||
+            (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id));
+
+          const txId = item.transaction.id;
+
+          const usersPublicKeys = await usersPublicRequiredToSign(
+            tx,
+            user.selectedOrganization.userKeys,
+            network.mirrorNodeBaseURL,
+            accountByIdCache,
+            nodeByIdCache,
+          );
+
+          if (
+            item.transaction.status !== TransactionStatus.CANCELED &&
+            item.transaction.status !== TransactionStatus.EXPIRED &&
+            usersPublicKeys.length > 0
+          ) {
+            updatedUnsignedSignersToCheck[txId] = usersPublicKeys;
+          }
+        }
+        signingItems.value = Array(group.value.groupItems.length).fill(false);
+        fullyLoaded.value = true;
+      }
+
+      unsignedSignersToCheck.value = updatedUnsignedSignersToCheck;
+
+      // bootstrap tooltips needs to be recreated when the items' status might have changed
+      // since their title is not updated
+      createTooltips();
+    } catch (error) {
+      router.back();
+      throw error;
+    }
+  } else {
+    console.log('not logged into org');
+  }
+}
+
 const isTransactionInProgress = (transaction: ITransactionFull) => {
   return [
     TransactionStatus.NEW,
@@ -625,7 +576,7 @@ const subscribeToTransactionAction = () => {
   if (!user.selectedOrganization?.serverUrl) return;
   ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
     const id = router.currentRoute.value.params.id;
-    await handleFetchGroup(Array.isArray(id) ? id[0] : id);
+    await fetchGroup(Array.isArray(id) ? id[0] : id);
     setGetTransactionsFunction();
   });
 };
@@ -695,6 +646,13 @@ function tooltipText(status: TransactionStatus): string {
   }
   return result;
 }
+const canSignItem = (item: IGroupItem) => {
+  return (
+    !signingItems.value[item.seq] &&
+    unsignedSignersToCheck.value[item.transaction.id] &&
+    item.transaction.status === TransactionStatus.WAITING_FOR_SIGNATURES
+  );
+};
 </script>
 <template>
   <form @submit.prevent="handleSubmit" class="p-5">
@@ -845,29 +803,30 @@ function tooltipText(status: TransactionStatus): string {
                               </td>
                               <td>
                                 <span class="text-bold">{{
-                                  TransactionTypeName[groupItem.transaction.type]
+                                  formatTransactionType(
+                                    TransactionTypeName[groupItem.transaction.type],
+                                    false,
+                                    true,
+                                  )
                                 }}</span>
                               </td>
                               <td data-testid="td-group-valid-start-time">
                                 <DateTimeString
                                   :date="new Date(groupItem.transaction.validStart)"
+                                  compact
+                                  wrap
                                 />
                               </td>
                               <td class="text-center">
                                 <div class="d-flex justify-content-center flex-wrap gap-4">
                                   <AppButton
-                                    :loading="signingItemSeq === groupItem.seq"
-                                    loading-text="Signing..."
+                                    :disabled="!canSignItem(groupItem as IGroupItem)"
+                                    loading-text="Sign"
                                     type="button"
                                     color="primary"
                                     @click.prevent="handleSignGroupItem(groupItem as IGroupItem)"
                                     :data-testid="`sign-group-item-${index}`"
-                                    :disabled="
-                                      unsignedSignersToCheck[groupItem.transaction.id] ===
-                                        undefined ||
-                                      groupItem.transaction.status !==
-                                        TransactionStatus.WAITING_FOR_SIGNATURES
-                                    "
+                                    :loading="signingItems[groupItem.seq]"
                                     ><span>Sign</span>
                                   </AppButton>
                                   <AppButton
@@ -895,34 +854,13 @@ function tooltipText(status: TransactionStatus): string {
               </template>
             </Transition>
 
-            <AppModal v-model:show="isConfirmModalShown" class="common-modal">
-              <div class="p-4">
-                <i
-                  class="bi bi-x-lg d-inline-block cursor-pointer"
-                  @click="isConfirmModalShown = false"
-                ></i>
-                <div class="text-center">
-                  <AppCustomIcon :name="'questionMark'" style="height: 160px" />
-                </div>
-                <h3 class="text-center text-title text-bold mt-4">{{ confirmModalTitle }}</h3>
-                <p class="text-center text-small text-secondary mt-4">{{ confirmModalText }}</p>
-                <hr class="separator my-5" />
-                <div class="flex-between-centered gap-4">
-                  <AppButton
-                    color="borderless"
-                    data-testid="button-cancel-group-action"
-                    @click="isConfirmModalShown = false"
-                    >Cancel</AppButton
-                  >
-                  <AppButton
-                    color="primary"
-                    data-testid="button-confirm-group-action"
-                    @click="confirmCallback && confirmCallback(false)"
-                    >Confirm</AppButton
-                  >
-                </div>
-              </div>
-            </AppModal>
+            <AppConfirmModal
+              v-model:show="isConfirmModalShown"
+              :title="confirmModalTitle"
+              :text="confirmModalText"
+              :callback="confirmCallback"
+            />
+
           </div>
         </template>
         <template v-else>

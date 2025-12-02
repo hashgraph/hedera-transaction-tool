@@ -1,4 +1,4 @@
-const { test } = require('@playwright/test');
+const { test, expect } = require('playwright/test');
 const {
   setupApp,
   closeApp,
@@ -7,7 +7,6 @@ const {
   setupEnvironmentForTransactions,
 } = require('../utils/util');
 const RegistrationPage = require('../pages/RegistrationPage.js');
-const { expect } = require('playwright/test');
 const LoginPage = require('../pages/LoginPage');
 const TransactionPage = require('../pages/TransactionPage');
 const AccountPage = require('../pages/AccountPage');
@@ -372,9 +371,10 @@ test.describe('Workflow tests', () => {
   });
 
   test('Verify account create tx is displayed in history page', async () => {
-    const { newTransactionId } = await transactionPage.createNewAccount();
+    const txDescription = 'test account create tx description';
+    const { newTransactionId } = await transactionPage.createNewAccount( {description: txDescription});
     await transactionPage.clickOnTransactionsMenuButton();
-    await detailsPage.assertTransactionDisplayed(newTransactionId, 'Account Create Transaction');
+    await detailsPage.assertTransactionDisplayed(newTransactionId, 'Account Create Transaction', txDescription);
   });
 
   test('Verify transaction details are displayed for account tx ', async () => {

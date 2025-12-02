@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import type { IGroup, ITransaction } from '@shared/interfaces';
+import { type ITransaction, NotificationType, TransactionStatus } from '@shared/interfaces';
 
 import { computed, onBeforeMount, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 
 import { Transaction } from '@hashgraph/sdk';
 
-import { NotificationType } from '@shared/interfaces';
 import { TRANSACTION_ACTION } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -17,27 +16,41 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 
-import { getApiGroupById, getTransactionsToSign } from '@renderer/services/organization';
+import {
+  getApiGroupById,
+  getTransactionsToSign,
+  type IGroup,
+} from '@renderer/services/organization';
 
 import {
+  assertIsLoggedInOrganization,
   getNotifiedTransactions,
   hexToUint8Array,
+  isLoggedInOrganization,
   redirectToDetails,
   redirectToGroupDetails,
-  isLoggedInOrganization,
-  getTransactionGroupUpdatedAt,
+  signTransactions,
 } from '@renderer/utils';
-import {
-  getTransactionId,
-  getTransactionType,
-  getTransactionValidStart,
-} from '@renderer/utils/sdk/transactions';
+import { getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword.ts';
+import { useToast } from 'vue-toast-notification';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+import TransactionId from '@renderer/components/ui/TransactionId.vue';
+import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
+
+interface TransactionDescriptor {
+  transactionRaw: ITransaction;
+  transaction: Transaction;
+  keysToSign: number[];
+}
 
 /* Stores */
 const user = useUserStore();
@@ -48,17 +61,19 @@ const nextTransaction = useNextTransactionStore();
 
 /* Composables */
 const router = useRouter();
+const toast = useToast();
 const ws = useDisposableWs();
+const { getPassword, passwordModalOpened } = usePersonalPassword();
+
+/* Injected */
+const accountByIdCache = AccountByIdCache.inject();
+const nodeByIdCache = NodeByIdCache.inject();
 
 /* State */
 const transactions = ref<
   Map<
-    number,
-    {
-      transactionRaw: ITransaction;
-      transaction: Transaction;
-      keysToSign: number[];
-    }[]
+    number, // group id, or -1 for the pseudo group containing all single transactions
+    TransactionDescriptor[] // transactions of that group, or set of single transactions
   >
 >(new Map());
 const groups = ref<Map<number, IGroup>>(new Map());
@@ -79,6 +94,15 @@ const sort = reactive<{
   direction: 'desc',
 });
 
+const signingItems = ref<number[]>([]); // indexes of single transactions in progress of signing
+const signingGroup = ref<number[]>([]); // indexes of groups in progress of signing
+
+const isConfirmModalMandatory= ref(false);
+const isConfirmModalShown = ref(false);
+const confirmModalTitle = ref('');
+const confirmModalText = ref('');
+const confirmCallback = ref<((...args: any[]) => void) | null>(null);
+
 /* Computed */
 const generatedClass = computed(() => {
   return sort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
@@ -92,14 +116,104 @@ const handleSort = async (field: keyof ITransaction, direction: 'asc' | 'desc') 
   await fetchTransactions();
 };
 
+const handleSignGroup = async (id: number, showModal = false) => {
+  if (showModal) {
+    isConfirmModalMandatory.value = true;
+    isConfirmModalShown.value = true;
+    confirmModalTitle.value = 'Sign all transactions?';
+    confirmModalText.value = 'Are you sure you want to sign all the transactions of this group?';
+    confirmCallback.value = handleSignGroup.bind(null, id, false);
+    return;
+  }
+  isConfirmModalShown.value = false;
+
+  const personalPassword = getPassword(handleSignGroup.bind(null, id, false), {
+    subHeading: 'Enter your application password to decrypt your private key',
+  });
+  if (passwordModalOpened(personalPassword)) return;
+  assertIsLoggedInOrganization(user.selectedOrganization);
+
+  try {
+    signingGroup.value.push(id);
+
+    const groupContent = transactions.value.get(id) as TransactionDescriptor[];
+    const itemsToSign = groupContent?.map(t => t.transactionRaw) ?? [];
+    const signed = await signTransactions(
+      itemsToSign,
+      personalPassword,
+      accountByIdCache,
+      nodeByIdCache,
+    );
+    await fetchTransactions();
+
+    if (signed) {
+      toast.success('Transaction group signed successfully', successToastOptions);
+    } else {
+      toast.error('Transaction group not signed', errorToastOptions);
+    }
+  } catch {
+    toast.error('Transaction group not signed', errorToastOptions);
+  } finally {
+    signingGroup.value = signingGroup.value.filter(g => g !== id);
+  }
+};
+
+const handleSignSingle = async (index: number, showModal = false) => {
+  if (showModal) {
+    isConfirmModalMandatory.value = false;
+    isConfirmModalShown.value = true;
+    confirmModalTitle.value = 'Sign transaction?';
+    confirmModalText.value = 'Are you sure you want to this transaction?';
+    confirmCallback.value = handleSignSingle.bind(null, index, false);
+    return;
+  }
+  isConfirmModalShown.value = false;
+
+  const personalPassword = getPassword(handleSignSingle.bind(null, index, false), {
+    subHeading: 'Enter your application password to decrypt your private key',
+  });
+  if (passwordModalOpened(personalPassword)) return;
+  assertIsLoggedInOrganization(user.selectedOrganization);
+
+  const singleTransactions = transactions.value.get(-1);
+  const tx = singleTransactions![index] as TransactionDescriptor;
+
+  try {
+    signingItems.value.push(index);
+
+    const itemsToSign = [tx.transactionRaw];
+    const signed = await signTransactions(
+      itemsToSign,
+      personalPassword,
+      accountByIdCache,
+      nodeByIdCache,
+    );
+
+    await fetchTransactions();
+    if (signed) {
+      toast.success('Transaction signed successfully', successToastOptions);
+    } else {
+      toast.error('Transaction not signed', errorToastOptions);
+    }
+  } catch {
+    toast.error('Transaction not signed', errorToastOptions);
+  } finally {
+    signingItems.value = signingItems.value.filter(i => i !== index);
+  }
+};
+
 const handleGroupDetails = async (id: number) => {
   const group = groups.value.get(id);
-  if(!group) return;
+  if (!group) return;
 
   const transactionIds = group.groupItems.map(g => g.transactionId);
   const serverKey = user.selectedOrganization?.serverUrl || '';
   const notificationIds = notifications.notifications[serverKey]
-    ?.filter(n => n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN && transactionIds.includes(n.notification.entityId || -1))
+    ?.filter(
+      n =>
+        n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN &&
+        transactionIds.includes(n.notification.entityId || -1),
+    )
     .map(n => n.id);
 
   await notifications.markAsReadIds(notificationIds);
@@ -118,9 +232,11 @@ const handleSingleDetails = async (id: number) => {
   nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
 
   const serverKey = user.selectedOrganization?.serverUrl || '';
-  const notificationId = notifications.notifications[serverKey]
-    ?.find(n => n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN && n.notification.entityId === id)
-    ?.id;
+  const notificationId = notifications.notifications[serverKey]?.find(
+    n =>
+      n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN &&
+      n.notification.entityId === id,
+  )?.id;
 
   if (notificationId) {
     await notifications.markAsReadIds([notificationId]);
@@ -199,7 +315,6 @@ async function fetchTransactions() {
       if (currentGroup > -1 && !groupIds.includes(currentGroup)) {
         groupIds.push(currentGroup);
       }
-
     }
 
     const notificationsKey = user.selectedOrganization?.serverUrl || '';
@@ -299,6 +414,17 @@ watch(
     setNotifiedTransactions();
   },
 );
+
+const signingEnabled = (index: number) => {
+  const singleTransactions = transactions.value.get(-1);
+  return (
+    !signingItems.value.includes(index) &&
+    singleTransactions &&
+    index < singleTransactions.length &&
+    singleTransactions[index].transactionRaw.status === TransactionStatus.WAITING_FOR_SIGNATURES &&
+    singleTransactions[index].keysToSign.length > 0
+  );
+};
 </script>
 
 <template>
@@ -347,6 +473,24 @@ watch(
                   class="table-sort-link"
                   @click="
                     handleSort(
+                      'description',
+                      sort.field === 'description' ? getOpositeDirection() : 'asc',
+                    )
+                  "
+                >
+                  <span>Description</span>
+                  <i
+                    v-if="sort.field === 'description'"
+                    :class="[generatedClass]"
+                    class="bi text-title"
+                  ></i>
+                </div>
+              </th>
+              <th @contextmenu.prevent="showContextMenu">
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
                       'validStart',
                       sort.field === 'validStart' ? getOpositeDirection() : 'asc',
                     )
@@ -360,6 +504,7 @@ watch(
                   ></i>
                 </div>
               </th>
+              <!--
               <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
@@ -378,6 +523,7 @@ watch(
                   ></i>
                 </div>
               </th>
+-->
               <th class="text-center">
                 <span>Actions</span>
               </th>
@@ -386,6 +532,7 @@ watch(
           <tbody>
             <template v-for="(group, index) of transactions" :key="group[0]">
               <template v-if="group[0] != -1">
+                <!-- This raw represents a Transaction Group -->
                 <tr
                   :class="{
                     highlight: groupHasNotifications(group[0]),
@@ -394,105 +541,128 @@ watch(
                   <td>
                     <i class="bi bi-stack" />
                   </td>
+                  <td class="text-bold">Group</td>
                   <td>
-                    {{ groups.get(group[0])?.description }}
+                    <span class="text-wrap-two-line-ellipsis">{{
+                      groups.get(group[0])?.description
+                    }}</span>
                   </td>
                   <td>
-                    <DateTimeString v-if="group[1][0].transaction instanceof Transaction" :date="getTransactionValidStart(group[1][0].transaction)"/>
+                    <DateTimeString
+                      v-if="group[1][0].transaction instanceof Transaction"
+                      :date="getTransactionValidStart(group[1][0].transaction)"
+                      compact
+                      wrap
+                    />
                     <span v-else>N/A</span>
                   </td>
+                  <!--
                   <td>
-                    <DateTimeString v-if="groups.get(group[0])" :date="getTransactionGroupUpdatedAt(groups.get(group[0])!)"/>
+                    <DateTimeString
+                      v-if="groups.get(group[0])"
+                      :date="getTransactionGroupUpdatedAt(groups.get(group[0])!)"
+                      compact
+                      wrap
+                    />
                     <span v-else>N/A</span>
                   </td>
+-->
                   <td class="text-center">
-                    <AppButton
-                      @click="handleGroupDetails(group[0])"
-                      color="secondary"
-                      :data-testid="`button-group-details-${index}`"
-                    >
-                      Details
-                    </AppButton>
+                    <div class="d-flex justify-content-center gap-4">
+                      <AppButton
+                        :data-testid="`button-group-sign-${index}`"
+                        :disabled="signingGroup.includes(group[0])"
+                        :loading="signingGroup.includes(group[0])"
+                        loading-text="Sign All"
+                        color="primary"
+                        type="button"
+                        @click.prevent="handleSignGroup(group[0], true)"
+                      >
+                        Sign All
+                      </AppButton>
+                      <AppButton
+                        :data-testid="`button-group-details-${index}`"
+                        color="secondary"
+                        type="button"
+                        @click="handleGroupDetails(group[0])"
+                      >
+                        Details
+                      </AppButton>
+                    </div>
                   </td>
                 </tr>
               </template>
 
               <template v-else>
+                <!-- This is the pseudo group containing all single transactions -->
+                <!-- One raw per transaction -->
                 <template v-for="(tx, index) in group[1]" :key="tx.transactionRaw.id">
                   <tr :class="{ highlight: notifiedTransactionIds.includes(tx.transactionRaw.id) }">
                     <td :data-testid="`td-transaction-id-for-sign-${index}`">
-                      {{
-                        tx.transaction instanceof Transaction
-                          ? getTransactionId(tx.transaction)
-                          : 'N/A'
-                      }}
+                      <TransactionId
+                        v-if="tx.transaction instanceof Transaction"
+                        :transaction-id="tx.transaction.transactionId"
+                        wrap
+                      />
+                      <span v-else>N/A</span>
                     </td>
                     <td :data-testid="`td-transaction-type-for-sign-${index}`">
                       <span class="text-bold">{{
                         tx.transaction instanceof Transaction
-                          ? getTransactionType(tx.transaction)
+                          ? getTransactionType(tx.transaction, false, true)
                           : 'N/A'
+                      }}</span>
+                    </td>
+                    <td :data-testid="`td-transaction-description-for-sign-${index}`">
+                      <span class="text-wrap-two-line-ellipsis">{{
+                        tx.transactionRaw.description
                       }}</span>
                     </td>
                     <td :data-testid="`td-transaction-valid-start-for-sign-${index}`">
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
                         :date="getTransactionValidStart(tx.transaction)"
+                        compact
+                        wrap
                       />
                       <span v-else>N/A</span>
                     </td>
+                    <!--
                     <td :data-testid="`td-transaction-date-modified-for-sign-${index}`">
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
                         :date="new Date(tx.transactionRaw.updatedAt)"
+                        compact
+                        wrap
                       />
                       <span v-else>N/A</span>
                     </td>
+-->
                     <td class="text-center">
-                      <AppButton
-                        @click="handleSingleDetails(tx.transactionRaw.id)"
-                        :data-testid="`button-transaction-sign-${index}`"
-                        color="secondary"
-                        >Details</AppButton
-                      >
+                      <div class="d-flex justify-content-center gap-4">
+                        <AppButton
+                          :data-testid="`sign-transaction-${index}`"
+                          :disabled="!signingEnabled(index)"
+                          :loading="signingItems.includes(index)"
+                          loading-text="Sign"
+                          color="primary"
+                          type="button"
+                          @click.prevent="handleSignSingle(index, true)"
+                          ><span>Sign</span>
+                        </AppButton>
+                        <AppButton
+                          @click="handleSingleDetails(tx.transactionRaw.id)"
+                          :data-testid="`button-transaction-sign-${index}`"
+                          color="secondary"
+                          type="button"
+                          >Details</AppButton
+                        >
+                      </div>
                     </td>
                   </tr>
                 </template>
               </template>
             </template>
-
-            <!-- <template v-for="[groupId, tx] of transactions.entries()" :key="tx">
-              <tr v-if="groupId == -1">
-                <td>
-                  {{
-                    tx.transaction instanceof Transaction ? getTransactionId(tx.transaction) : 'N/A'
-                  }}
-                </td>
-                <td :data-testid="`td-transaction-type-for-sign-${index}`">
-                  <span class="text-bold">{{
-                    tx.transaction instanceof Transaction
-                      ? getTransactionType(tx.transaction)
-                      : 'N/A'
-                  }}</span>
-                </td>
-                <td :data-testid="`td-transaction-valid-start-for-sign-${index}`">
-                  {{
-                    tx.transaction instanceof Transaction
-                      ? getTransactionDateExtended(tx.transaction)
-                      : 'N/A'
-                  }}
-                </td>
-                <td class="text-center">
-                  <AppButton
-                    @click="handleSign(tx.transactionRaw.id)"
-                    :data-testid="`button-transaction-sign-${index}`"
-                    color="secondary"
-                    class="min-w-unset"
-                    >Sign</AppButton
-                  >
-                </td>
-              </tr>
-            </template> -->
           </tbody>
           <tfoot class="d-table-caption">
             <tr class="d-inline">
@@ -508,12 +678,33 @@ watch(
         <div
           v-if="contextMenuVisible"
           class="dropdown"
-          :style="{ position: 'fixed', top: contextMenuY + 'px', left: contextMenuX + 'px', zIndex: 1000 }"
+          :style="{
+            position: 'fixed',
+            top: contextMenuY + 'px',
+            left: contextMenuX + 'px',
+            zIndex: 1000,
+          }"
           @click.stop
         >
           <ul class="dropdown-menu show mt-3">
-            <li class="dropdown-item cursor-pointer" @click="handleSort('createdAt', 'desc'); hideContextMenu()">Sort by Newest</li>
-            <li class="dropdown-item cursor-pointer" @click="handleSort('createdAt', 'asc'); hideContextMenu()">Sort by Oldest</li>
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="
+                handleSort('createdAt', 'desc');
+                hideContextMenu();
+              "
+            >
+              Sort by Newest
+            </li>
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="
+                handleSort('createdAt', 'asc');
+                hideContextMenu();
+              "
+            >
+              Sort by Oldest
+            </li>
           </ul>
         </div>
       </template>
@@ -524,4 +715,12 @@ watch(
       </template>
     </template>
   </div>
+
+  <AppConfirmModal
+    :title="confirmModalTitle"
+    :text="confirmModalText"
+    :callback="confirmCallback"
+    :mandatory="isConfirmModalMandatory"
+    v-model:show="isConfirmModalShown"/>
+
 </template>
