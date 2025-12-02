@@ -218,7 +218,7 @@ export async function cleanupBinFiles(directory: string) {
 export function compareJsonFiles(
   jsonData1: Record<string, unknown>,
   jsonData2: Record<string, unknown>,
-  keysToIgnore = [],
+  keysToIgnore: string[] = [],
 ) {
   // Remove keys to ignore from both JSON objects
   const jsonData1Cleaned = removeKeys(jsonData1, keysToIgnore);
