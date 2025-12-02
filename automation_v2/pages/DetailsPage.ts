@@ -181,7 +181,11 @@ export class DetailsPage extends BasePage {
     return await this.getText(this.fileDetailsFileIdSelector);
   }
 
-  async assertTransactionDisplayed(expectedId: string, expectedType: string, expectedDescription: string|null =null) {
+  async assertTransactionDisplayed(
+    expectedId: string,
+    expectedType: string,
+    expectedDescription: string | null = null,
+  ) {
     const transactionId = await this.getFirstTransactionId();
     expect(expectedId.toString()).toContain(transactionId);
 
@@ -203,7 +207,11 @@ export class DetailsPage extends BasePage {
     expect(isTransactionDetailsButtonVisible).toBe(true);
   }
 
-  async assertTransactionDetails(expectedId: string, expectedType: string, extraAssertions = () => {}) {
+  async assertTransactionDetails(
+    expectedId: string,
+    expectedType: string,
+    extraAssertions: (() => Promise<void>) | null = null,
+  ) {
     const transactionId = await this.getTransactionDetailsId();
     expect(expectedId.toString()).toContain(transactionId);
 
@@ -222,7 +230,9 @@ export class DetailsPage extends BasePage {
     const transactionFeePayer = await this.getTransactionDetailsFeePayer();
     expect(transactionFeePayer).toBeTruthy();
 
-    extraAssertions();
+    if (extraAssertions) {
+      await extraAssertions();
+    }
   }
 
   async getTransactionDescription() {
