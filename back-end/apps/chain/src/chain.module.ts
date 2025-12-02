@@ -9,14 +9,15 @@ import {
   LoggerMiddleware,
   LoggerModule,
   HealthModule,
-  NotificationsProxyModule,
-  NatsReconnectService,
+  NatsModule,
+  SchedulerModule,
 } from '@app/common';
 
 import getEnvFilePaths from './config/envFilePaths';
 
 import { ExecuteModule } from './execute';
 import { TransactionStatusModule } from './transaction-status/transaction-status.module';
+import { ReminderHandlerService } from './transaction-reminder';
 
 export const config = ConfigModule.forRoot({
   envFilePath: getEnvFilePaths(),
@@ -39,12 +40,13 @@ export const config = ConfigModule.forRoot({
     config,
     DatabaseModule,
     LoggerModule,
+    NatsModule.forRoot(),
     ScheduleModule.forRoot(),
+    SchedulerModule.register({ isGlobal: true }),
     ExecuteModule,
     TransactionStatusModule,
     HealthModule,
-    NotificationsProxyModule,
   ],
-  providers: [LoggerMiddleware, NatsReconnectService],
+  providers: [LoggerMiddleware, ReminderHandlerService],
 })
 export class ChainModule {}

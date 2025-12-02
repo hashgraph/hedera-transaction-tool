@@ -1,0 +1,30 @@
+jetstream:
+  enabled: true
+  fileStore:
+    pvc:
+      size: 1Gi
+
+config:
+  jetstream:
+    enabled: true
+    storeDir: /data/jetstream
+
+#  accounts:
+#    SYS:
+#      users:
+#        - user: sys
+#          password: syspassword
+#    APP:
+#      jetstream: enabled
+#      users:
+#        - user: natsadmin
+#          password: natsadminpassword
+
+natsBox:
+  enabled: true
+
+exporter:
+  enabled: false
+
+reloader:
+  enabled: false

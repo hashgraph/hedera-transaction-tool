@@ -75,8 +75,14 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
     await this.batcher.add(newMessage);
   }
 
-  async notifyUser(userId: number, message: string, data) {
-    const newMessage = new NotificationMessage(message, [data]);
+  // async notifyClients(userId{ message, content }: NotifyClientDto) {
+  //   const newMessage = new NotificationMessage(message, [content]);
+  //   await this.batcher.add(newMessage);
+  // }
+
+  async notifyUser(userId: number, message: string, data: any | any[]) {
+    const content = Array.isArray(data) ? data : [data];
+    const newMessage = new NotificationMessage(message, content);
     await this.batcher.add(newMessage, userId);
   }
 

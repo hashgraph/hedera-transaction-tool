@@ -1,325 +1,92 @@
+// typescript
 import { Test, TestingModule } from '@nestjs/testing';
-import { EntityManager, In } from 'typeorm';
-import { mockDeep } from 'jest-mock-extended';
-
-import {
-  Notification,
-  NotificationPreferences,
-  NotificationReceiver,
-  NotificationType,
-  User,
-  UserStatus,
-} from '@entities';
-
 import { FanOutService } from './fan-out.service';
+import { WebsocketGateway } from '../websocket/websocket.gateway';
+import { NOTIFICATIONS_NEW, NOTIFICATIONS_INDICATORS_DELETE, TRANSACTION_ACTION } from '@app/common';
 
-import { EmailService } from '../email/email.service';
-import { InAppProcessorService } from '../in-app-processor/in-app-processor.service';
-
-describe('Fan Out Service', () => {
+describe('FanOutService', () => {
   let service: FanOutService;
-  const entityManager = mockDeep<EntityManager>();
-  const emailService = mockDeep<EmailService>();
-  const inAppProcessorService = mockDeep<InAppProcessorService>();
+  const websocketMock = {
+    notifyUser: jest.fn().mockResolvedValue(undefined),
+    notifyClient: jest.fn().mockResolvedValue(undefined),
+  };
 
   beforeEach(async () => {
+    jest.resetAllMocks();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FanOutService,
-        {
-          provide: EntityManager,
-          useValue: entityManager,
-        },
-        {
-          provide: EmailService,
-          useValue: emailService,
-        },
-        {
-          provide: InAppProcessorService,
-          useValue: inAppProcessorService,
-        },
+        { provide: WebsocketGateway, useValue: websocketMock },
       ],
     }).compile();
 
     service = module.get<FanOutService>(FanOutService);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  it('processNewNotifications should convert receivers and call websocket.notifyUser per dto', async () => {
+    const dtos: any[] = [
+      {
+        userId: 123,
+        notificationReceivers: [
+          { id: 1, userId: 1, notificationId: 99, isRead: false, extra: 'x' },
+        ],
+      },
+      {
+        userId: 456,
+        notificationReceivers: [
+          { id: 2, userId: 2, notificationId: 100, isRead: true },
+          { id: 3, userId: 3, notificationId: 101, isRead: false },
+        ],
+      },
+    ];
+
+    await service.processNewNotifications(dtos);
+
+    expect((websocketMock.notifyUser as jest.Mock).mock.calls.length).toBe(2);
+    expect(websocketMock.notifyUser).toHaveBeenCalledWith(123, NOTIFICATIONS_NEW, expect.any(Array));
+    expect(websocketMock.notifyUser).toHaveBeenCalledWith(456, NOTIFICATIONS_NEW, expect.any(Array));
+
+    const firstCallReceivers = (websocketMock.notifyUser as jest.Mock).mock.calls[0][2];
+    expect(Array.isArray(firstCallReceivers)).toBe(true);
+    expect(firstCallReceivers.length).toBe(1);
+    // Only assert on properties that survive plainToInstance/excludeExtraneousValues
+    expect(firstCallReceivers[0]).toMatchObject({ id: 1 });
   });
 
-  const notification: Notification = {
-    id: 1,
-    type: NotificationType.TRANSACTION_EXECUTED,
-    actorId: null,
-    createdAt: new Date(),
-    notificationReceivers: [],
-  };
+  it('processDeleteNotifications should call websocket.notifyUser with indicator delete payload', async () => {
+    const deleteDtos: any[] = [
+      { userId: 55, notificationReceiverIds: [10, 11] },
+      { userId: 66, notificationReceiverIds: [20] },
+    ];
 
-  const user: User = {
-    id: 1,
-    email: 'test@test.com',
-    password: 'hash',
-    admin: false,
-    status: UserStatus.NONE,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    deletedAt: null,
-    keys: [],
-    signerForTransactions: [],
-    observableTransactions: [],
-    approvableTransactions: [],
-    comments: [],
-    issuedNotifications: [],
-    receivedNotifications: [],
-    notificationPreferences: [],
-  };
+    await service.processDeleteNotifications(deleteDtos);
 
-  const receivers: NotificationReceiver[] = [
-    {
-      id: 1,
-      notificationId: 1,
-      userId: 1,
-      isRead: false,
-      updatedAt: new Date(),
-      notification,
-      user: { ...user },
-    },
-  ];
-
-  describe('fanOutNew', () => {
-    beforeEach(() => {
-      jest.resetAllMocks();
-    });
-
-    it('should do nothing if there are no receivers', async () => {
-      const receivers: NotificationReceiver[] = [];
-
-      await service.fanOutNew(notification, receivers);
-      await service.fanOutNew(notification, undefined);
-      await service.fanOutNew(notification, null);
-      await service.fanOutNew(null, null);
-
-      expect(entityManager.find).not.toHaveBeenCalled();
-    });
-
-    it('should categorize receivers based on preferences', async () => {
-      const preferences: NotificationPreferences[] = [
-        { id: 1, userId: 1, email: true, inApp: false, user, type: notification.type },
-      ];
-
-      entityManager.find.mockResolvedValueOnce([user]);
-      entityManager.find.mockResolvedValueOnce(preferences);
-
-      await service.fanOutNew(notification, receivers);
-
-      expect(emailService.processEmail).toHaveBeenCalledWith(
-        [receivers[0].user.email],
-        notification,
-      );
-      expect(inAppProcessorService.processNewNotification).not.toHaveBeenCalled();
-      expect(entityManager.update).toHaveBeenCalledTimes(2); //1 to mark email sent as false, 1 to mark email sent as true
-      expect(entityManager.update).toHaveBeenNthCalledWith(
-        1,
-        NotificationReceiver,
-        {
-          notificationId: notification.id,
-          userId: In([receivers[0].id]),
-        },
-        {
-          isEmailSent: false,
-        },
-      );
-      expect(entityManager.update).toHaveBeenNthCalledWith(
-        2,
-        NotificationReceiver,
-        {
-          notificationId: notification.id,
-          userId: In([receivers[0].id]),
-        },
-        {
-          isEmailSent: true,
-        },
-      );
-    });
-
-    it('should add user to receivers if preference is not found', async () => {
-      const preferences: NotificationPreferences[] = [];
-
-      entityManager.find.mockResolvedValueOnce([user]);
-      entityManager.find.mockResolvedValueOnce(preferences);
-
-      await service.fanOutNew(notification, receivers);
-
-      expect(emailService.processEmail).toHaveBeenCalledWith(
-        [receivers[0].user.email],
-        notification,
-      );
-      expect(entityManager.update).toHaveBeenCalledTimes(4);
-      expect(entityManager.update).toHaveBeenCalledWith(
-        NotificationReceiver,
-        {
-          notificationId: notification.id,
-          userId: In([receivers[0].id]),
-        },
-        {
-          isEmailSent: false,
-        },
-      );
-      expect(entityManager.update).toHaveBeenCalledWith(
-        NotificationReceiver,
-        {
-          notificationId: notification.id,
-          userId: In([receivers[0].id]),
-        },
-        {
-          isEmailSent: true,
-        },
-      );
-    });
-
-    it('should filter out receivers that do not want email notifications', async () => {
-      const preferences: NotificationPreferences[] = [
-        { id: 1, userId: 1, email: false, inApp: true, user, type: notification.type },
-      ];
-
-      entityManager.find.mockResolvedValueOnce([user]);
-      entityManager.find.mockResolvedValueOnce(preferences);
-
-      await service.fanOutNew(notification, receivers);
-
-      expect(emailService.processEmail).not.toHaveBeenCalled();
-      expect(entityManager.update).toHaveBeenCalledTimes(2);
-      expect(entityManager.update).toHaveBeenNthCalledWith(
-        1,
-        NotificationReceiver,
-        {
-          notificationId: notification.id,
-          userId: In([receivers[0].userId]),
-        },
-        {
-          isInAppNotified: false,
-        },
-      );
-    });
-
-    it('should filter out receivers that do not want in-app notifications', async () => {
-      const preferences: NotificationPreferences[] = [
-        { id: 1, userId: 1, email: true, inApp: false, user, type: notification.type },
-      ];
-
-      entityManager.find.mockResolvedValueOnce([user]);
-      entityManager.find.mockResolvedValueOnce(preferences);
-
-      await service.fanOutNew(notification, receivers);
-
-      expect(emailService.processEmail).toHaveBeenCalledWith(
-        [receivers[0].user.email],
-        notification,
-      );
-      expect(entityManager.update).toHaveBeenCalledTimes(2);
-      expect(entityManager.update).toHaveBeenNthCalledWith(
-        1,
-        NotificationReceiver,
-        {
-          notificationId: notification.id,
-          userId: In([receivers[0].id]),
-        },
-        {
-          isEmailSent: false,
-        },
-      );
-      expect(entityManager.update).toHaveBeenNthCalledWith(
-        2,
-        NotificationReceiver,
-        {
-          notificationId: notification.id,
-          userId: In([receivers[0].id]),
-        },
-        {
-          isEmailSent: true,
-        },
-      );
-    });
-
-    it('should not mark isEmailSent as true if email processing fails', async () => {
-      const preferences: NotificationPreferences[] = [
-        { id: 1, userId: 1, email: true, inApp: false, user, type: notification.type },
-      ];
-
-      entityManager.find.mockResolvedValueOnce([user]);
-      entityManager.find.mockResolvedValueOnce(preferences);
-      emailService.processEmail.mockRejectedValueOnce(new Error('Email failed'));
-
-      await service.fanOutNew(notification, receivers);
-
-      expect(emailService.processEmail).toHaveBeenCalledWith(
-        [receivers[0].user.email],
-        notification,
-      );
-      expect(entityManager.update).not.toHaveBeenCalledWith(
-        NotificationReceiver,
-        {
-          notificationId: notification.id,
-          userId: In([receivers[0].id]),
-        },
-        {
-          isEmailSent: true,
-        },
-      );
-    });
-
-    it('should not mark isInAppNotified as true if in-app processing fails', async () => {
-      const preferences: NotificationPreferences[] = [
-        { id: 1, userId: 1, email: false, inApp: true, user, type: notification.type },
-      ];
-
-      entityManager.find.mockResolvedValueOnce([user]);
-      entityManager.find.mockResolvedValueOnce(preferences);
-      inAppProcessorService.processNewNotification.mockImplementationOnce(() => {
-        throw new Error('In-app failed');
-      });
-
-      await service.fanOutNew(notification, receivers);
-
-      expect(entityManager.update).not.toHaveBeenCalledWith(
-        NotificationReceiver,
-        { notificationId: notification.id, userId: In([receivers[0].userId]) },
-        { isInAppNotified: true },
-      );
-    });
-
-    it('should not send email if notification type is in blacklist', async () => {
-      const notification: Notification = {
-        id: 1,
-        type: NotificationType.TRANSACTION_INDICATOR_SIGN,
-        actorId: null,
-        createdAt: new Date(),
-        notificationReceivers: [],
-      };
-
-      const preferences: NotificationPreferences[] = [
-        { id: 1, userId: 1, email: true, inApp: true, user, type: notification.type },
-      ];
-
-      entityManager.find.mockResolvedValueOnce([user]);
-      entityManager.find.mockResolvedValueOnce(preferences);
-
-      await service.fanOutNew(notification, receivers);
-
-      expect(emailService.processEmail).not.toHaveBeenCalled();
-      expect(inAppProcessorService.processNewNotification).toHaveBeenCalledWith(
-        notification,
-        receivers,
-      );
-    });
+    expect((websocketMock.notifyUser as jest.Mock).mock.calls.length).toBe(2);
+    expect(websocketMock.notifyUser).toHaveBeenCalledWith(
+      55,
+      NOTIFICATIONS_INDICATORS_DELETE,
+      { notificationReceiverIds: [10, 11] },
+    );
+    expect(websocketMock.notifyUser).toHaveBeenCalledWith(
+      66,
+      NOTIFICATIONS_INDICATORS_DELETE,
+      { notificationReceiverIds: [20] },
+    );
   });
 
-  describe('fanOutIndicatorsDelete', () => {
-    it('should call inAppProcessorService.processNotificationDelete', () => {
-      service.fanOutIndicatorsDelete({ 1: [1] });
+  it('notifyClients should log and call websocket.notifyClient with TRANSACTION_ACTION', async () => {
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const dtos: any[] = [{}, {}];
 
-      expect(inAppProcessorService.processNotificationDelete).toHaveBeenCalledWith({ 1: [1] });
+    await service.notifyClients(dtos);
+
+    expect(consoleSpy).toHaveBeenCalledWith('Notify clients called in fan-out service');
+    expect(websocketMock.notifyClient).toHaveBeenCalledWith({
+      message: TRANSACTION_ACTION,
+      content: '',
     });
+
+    consoleSpy.mockRestore();
   });
 });
