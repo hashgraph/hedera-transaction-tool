@@ -7,21 +7,17 @@ import {
   attachKeys,
   computeSignatureKey,
   flattenKeyList,
-  notifySyncIndicators,
-  NotifyGeneralDto,
-  NOTIFY_GENERAL,
-  notifyWaitingForSignatures,
   hasValidSignatureKey,
   smartCollate,
 } from '@app/common';
-import { User, Transaction, UserKey, TransactionStatus, NotificationType } from '@entities';
-import { ClientProxy } from '@nestjs/microservices';
+import { User, Transaction, UserKey, TransactionStatus } from '@entities';
 
 export const keysRequiredToSign = async (
   transaction: Transaction,
   mirrorNodeService: MirrorNodeService,
   entityManager: EntityManager,
   userKeys?: UserKey[],
+  cache?: Map<string, UserKey>,
 ): Promise<UserKey[]> => {
   if (!transaction) return [];
 
@@ -49,11 +45,43 @@ export const keysRequiredToSign = async (
         flatPublicKeys.includes(publicKey.publicKey)
     );
   } else {
-    results = await entityManager.find(UserKey, {
-      where: {
-        publicKey: In(flatPublicKeys),
-      },
-    });
+    if (cache) {
+      const cachedKeys: Set<UserKey> = new Set();
+      const missingPublicKeys: Set<string> = new Set();
+
+      for (const publicKey of flatPublicKeys) {
+        const cached = cache.get(publicKey);
+        if (cached) {
+          cachedKeys.add(cached);
+        } else {
+          missingPublicKeys.add(publicKey);
+        }
+      }
+
+      let fetchedKeys: UserKey[] = [];
+      if (missingPublicKeys.size > 0) {
+        try {
+          fetchedKeys = await entityManager.find(UserKey, {
+            where: { publicKey: In([...missingPublicKeys]) },
+            relations: ['user'],
+          });
+          // Store fetched keys in cache
+          for (const key of fetchedKeys) {
+            cache.set(key.publicKey, key);
+          }
+        } catch (error) {
+          console.error('Error fetching missing user keys:', error);
+          throw error;
+        }
+      }
+
+      results = [...cachedKeys, ...fetchedKeys];
+    } else {
+      results = await entityManager.find(UserKey, {
+        where: { publicKey: In(flatPublicKeys) },
+        relations: ['user'],
+      });
+    }
   }
 
   return results;
@@ -76,16 +104,6 @@ export const userKeysRequiredToSign = async (
   );
 
   return userKeysRequiredToSign.map(k => k.id);
-};
-
-export const getNetwork = (transaction: Transaction) => {
-  const network = transaction.mirrorNetwork;
-  const defaultNetworks = ['mainnet', 'testnet', 'previewnet', 'local-node'];
-  const isCustom = !defaultNetworks.includes(network);
-  const networkString = isCustom
-    ? network
-    : network.charAt(0).toUpperCase() + network.slice(1).toLowerCase();
-  return networkString;
 };
 
 /* Checks if the signers are enough to sign the transaction and update its status */
@@ -123,31 +141,5 @@ export async function processTransactionStatus(
   if (transaction.status !== newStatus) {
     await transactionRepo.update({ id: transaction.id }, { status: newStatus });
     return newStatus;
-  }
-}
-
-export function notifyStatusChange(
-  notificationsService: ClientProxy,
-  transaction: Transaction,
-  newStatus: TransactionStatus
-) {
-  notifySyncIndicators(notificationsService, transaction.id, newStatus, {
-    network: transaction.mirrorNetwork,
-  });
-  if (newStatus === TransactionStatus.WAITING_FOR_EXECUTION) {
-    notificationsService.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
-      entityId: transaction.id,
-      type: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
-      actorId: null,
-      userIds: [transaction.creatorKey?.userId],
-      additionalData: { transactionId: transaction.transactionId, network: transaction.mirrorNetwork },
-    });
-  }
-
-  if (newStatus === TransactionStatus.WAITING_FOR_SIGNATURES) {
-    notifyWaitingForSignatures(notificationsService, transaction.id, {
-      transactionId: transaction.transactionId,
-      network: transaction.mirrorNetwork,
-    });
   }
 }

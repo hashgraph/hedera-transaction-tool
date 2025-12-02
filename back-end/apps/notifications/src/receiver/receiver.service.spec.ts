@@ -1,1128 +1,363 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { ReceiverService } from './receiver.service';
 import { EntityManager, In } from 'typeorm';
-import { mockDeep } from 'jest-mock-extended';
+
+import { MirrorNodeService } from '@app/common';
+import { NatsPublisherService } from '@app/common/nats/nats.publisher';
 
 import {
-  keysRequiredToSign,
-  MirrorNodeService,
-  NotifyForTransactionDto,
-  NotifyGeneralDto,
-} from '@app/common';
-import {
-  Notification,
   NotificationReceiver,
   NotificationType,
-  Role,
   Transaction,
-  TransactionApprover,
   TransactionStatus,
-  UserKey,
 } from '@entities';
 
-import { ReceiverService } from './receiver.service';
-import { FanOutService } from '../fan-out/fan-out.service';
+import {
+  emitDeleteNotifications,
+  emitEmailNotifications,
+  emitNewNotifications,
+} from './emit-notifications';
 
-jest.mock('@app/common');
-jest.mock('murlock', () => {
-  const original = jest.requireActual('murlock');
-  return {
-    ...original,
-    MurLock: function MurLock() {
-      return (target, propertyKey, descriptor) => {
-        return descriptor;
-      };
-    },
-  };
+import { keysRequiredToSign } from '@app/common';
+
+// ------------------ MOCKS -----------------------
+
+jest.mock('./emit-notifications', () => ({
+  emitDeleteNotifications: jest.fn(),
+  emitEmailNotifications: jest.fn(),
+  emitNewNotifications: jest.fn(),
+  emitNotifyClients: jest.fn(),
+}));
+
+jest.mock('@app/common', () => ({
+  ...jest.requireActual('@app/common'),
+  keysRequiredToSign: jest.fn(),
+}));
+
+const mockEntityManager = () => ({
+  find: jest.fn(),
+  findOne: jest.fn(),
+  save: jest.fn(),
+  update: jest.fn(),
+  delete: jest.fn(),
+  query: jest.fn(),
 });
+
+const mockMirror = () => ({
+  someMethod: jest.fn(),
+});
+
+const mockPublisher = () => ({
+  publish: jest.fn(),
+});
+
+// ------------------------------------------------
 
 describe('ReceiverService', () => {
   let service: ReceiverService;
-  const entityManager = mockDeep<EntityManager>();
-  const mirrorNodeService = mockDeep<MirrorNodeService>();
-  const fanOutService = mockDeep<FanOutService>();
-
-  const mockTransaction = () => {
-    const transactionMock = jest.fn(async passedFunction => {
-      return await passedFunction(entityManager);
-    });
-    entityManager.transaction.mockImplementation(transactionMock);
-  };
+  let em: ReturnType<typeof mockEntityManager>;
+  let mirror: ReturnType<typeof mockMirror>;
+  let publisher: ReturnType<typeof mockPublisher>;
 
   beforeEach(async () => {
-    jest.resetAllMocks();
-
-    const module: TestingModule = await Test.createTestingModule({
+    const module = await Test.createTestingModule({
       providers: [
         ReceiverService,
-        {
-          provide: EntityManager,
-          useValue: entityManager,
-        },
-        {
-          provide: MirrorNodeService,
-          useValue: mirrorNodeService,
-        },
-        {
-          provide: FanOutService,
-          useValue: fanOutService,
-        },
+        { provide: EntityManager, useFactory: mockEntityManager },
+        { provide: MirrorNodeService, useFactory: mockMirror },
+        { provide: NatsPublisherService, useFactory: mockPublisher },
       ],
     }).compile();
 
-    service = module.get<ReceiverService>(ReceiverService);
+    service = module.get(ReceiverService);
+    em = module.get(EntityManager);
+    mirror = module.get(MirrorNodeService);
+    publisher = module.get(NatsPublisherService);
+
+    jest.clearAllMocks();
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  // ------------------------------------------------------------------
+  //  BASIC LOOKUP TESTS
+  // ------------------------------------------------------------------
+
+  it('getInAppNotificationType returns correct mapping', () => {
+    const result = (service as any).getInAppNotificationType(
+      TransactionStatus.EXECUTED
+    );
+    expect(result).toBe(NotificationType.TRANSACTION_INDICATOR_EXECUTED);
   });
 
-  const getNotification = (): Notification => ({
-    id: 1,
-    type: NotificationType.TRANSACTION_CREATED,
-    entityId: 1,
-    actorId: null,
-    notificationReceivers: [],
-    createdAt: new Date(),
+  it('getEmailNotificationType returns correct mapping', () => {
+    const result = (service as any).getEmailNotificationType(
+      TransactionStatus.EXPIRED
+    );
+    expect(result).toBe(NotificationType.TRANSACTION_EXPIRED);
   });
 
-  const getNotificationReceivers = (): NotificationReceiver[] => [
-    {
-      id: 1,
-      userId: 1,
-      notificationId: 1,
-      isRead: false,
-      isEmailSent: null,
-      isInAppNotified: null,
-      updatedAt: new Date(),
-      notification: getNotification(),
-      user: null,
-    },
-    {
-      id: 2,
-      userId: 2,
-      notificationId: 1,
-      isRead: false,
-      isEmailSent: null,
-      isInAppNotified: null,
-      updatedAt: new Date(),
-      notification: getNotification(),
-      user: null,
-    },
-  ];
+  // ------------------------------------------------------------------
+  //  fetchTransactionsWithRelations
+  // ------------------------------------------------------------------
 
-  describe('fanOutIndicatorsDelete', () => {
-    beforeEach(() => {
-      jest.resetAllMocks();
-    });
+  it('fetchTransactionsWithRelations returns map of transactions', async () => {
+    const tx = { id: 1 };
+    em.find.mockResolvedValue([tx]);
 
-    it('should call fanOutIndicatorsDelete with correct params', () => {
-      const notificationReceivers: NotificationReceiver[] = [
-        {
-          id: 1,
-          userId: 1,
-          notificationId: 1,
-          isRead: false,
-          isEmailSent: null,
-          isInAppNotified: null,
-          updatedAt: new Date(),
-          notification: getNotification(),
-          user: null,
-        },
-        {
-          id: 2,
-          userId: 2,
-          notificationId: 1,
-          isRead: false,
-          isEmailSent: null,
-          isInAppNotified: null,
-          updatedAt: new Date(),
-          notification: getNotification(),
-          user: null,
-        },
-        {
-          id: 3,
-          userId: 1,
-          notificationId: 1,
-          isRead: false,
-          isEmailSent: null,
-          isInAppNotified: null,
-          updatedAt: new Date(),
-          notification: getNotification(),
-          user: null,
-        },
-      ];
+    const result = await (service as any).fetchTransactionsWithRelations([1], {});
 
-      //@ts-expect-error fanOutIndicatorsDelete is private
-      service.fanOutIndicatorsDelete(notificationReceivers);
-
-      const userIdToNotificationReceiversId = {
-        1: [1, 3],
-        2: [2],
-      };
-      expect(fanOutService.fanOutIndicatorsDelete).toHaveBeenCalledWith(
-        userIdToNotificationReceiversId,
-      );
-    });
+    expect(em.find).toHaveBeenCalledWith(Transaction, expect.any(Object));
+    expect(result.get(1)).toBe(tx);
   });
 
-  describe('createNotification', () => {
-    it('should create a notification', async () => {
-      const type = NotificationType.TRANSACTION_CREATED;
-      const entityId = 1;
-      const actorId = 1;
+  // ------------------------------------------------------------------
+  //  getApproversByTransactionIds
+  // ------------------------------------------------------------------
 
-      //@ts-expect-error createNotification is private
-      await service.createNotification(entityManager, type, entityId, actorId);
+  it('getApproversByTransactionIds groups approvers by transaction', async () => {
+    em.query.mockResolvedValue([
+      { id: 10, transactionId: 1, userId: 50 },
+      { id: 11, transactionId: 1, userId: 51 },
+      { id: 12, transactionId: 2, userId: 52 },
+    ]);
 
-      expect(entityManager.create).toHaveBeenCalledWith(Notification, {
-        type,
-        entityId,
-        actorId,
-        notificationReceivers: [],
-      });
-      expect(entityManager.save).toHaveBeenCalled();
-    });
+    const result = await (service as any).getApproversByTransactionIds(em, [1, 2]);
+
+    expect(result.get(1).length).toBe(2);
+    expect(result.get(2).length).toBe(1);
   });
 
-  describe('createReceivers', () => {
-    beforeEach(() => {
-      jest.resetAllMocks();
-      entityManager.create.mockImplementation((_, data) => data);
-    });
+  // ------------------------------------------------------------------
+  //  getUsersIdsRequiredToSign
+  // ------------------------------------------------------------------
 
-    it('should add receivers', async () => {
-      const notificationId = 1;
-      const userIds = [1, 2, 3];
+  it('getUsersIdsRequiredToSign uses keysRequiredToSign', async () => {
+    (keysRequiredToSign as jest.Mock).mockResolvedValue([
+      { userId: 10 },
+      { userId: 11 },
+    ]);
 
-      //@ts-expect-error createReceivers is private
-      await service.createReceivers(entityManager, notificationId, userIds, true);
+    const tx = { some: 'data' };
 
-      for (let i = 0; i < userIds.length; i++) {
-        expect(entityManager.create).toHaveBeenNthCalledWith(i + 1, NotificationReceiver, {
-          notificationId,
-          userId: userIds[i],
-          isRead: false,
-          isInAppNotified: true,
-          isEmailSent: null,
-        });
-      }
-      expect(entityManager.create).toHaveBeenCalledTimes(userIds.length);
-    });
+    const result = await (service as any).getUsersIdsRequiredToSign(em, tx);
 
-    it('should continue adding receivers if one fails', async () => {
-      const notificationId = 1;
-      const userIds = [1, 2, 3];
-
-      jest.spyOn(console, 'log').mockImplementationOnce(jest.fn());
-      entityManager.save.mockRejectedValueOnce(new Error('Failed to save'));
-
-      //@ts-expect-error createReceivers is private
-      const notificationReceivers = await service.createReceivers(
-        entityManager,
-        notificationId,
-        userIds,
-        true,
-      );
-
-      for (let i = 0; i < userIds.length; i++) {
-        expect(entityManager.create).toHaveBeenNthCalledWith(i + 1, NotificationReceiver, {
-          notificationId,
-          userId: userIds[i],
-          isRead: false,
-          isInAppNotified: true,
-          isEmailSent: null,
-        });
-      }
-      expect(entityManager.create).toHaveBeenCalledTimes(userIds.length);
-      expect(notificationReceivers).toEqual([
-        expect.objectContaining({ userId: 2 }),
-        expect.objectContaining({ userId: 3 }),
-      ]);
-    });
+    expect(keysRequiredToSign).toHaveBeenCalled();
+    expect(result).toEqual([10, 11]);
   });
 
-  describe('getIndicatorNotifications', () => {
-    it('should return indicator notifications', async () => {
-      const transactionId = 1;
-      const indicatorTypes = [
-        NotificationType.TRANSACTION_INDICATOR_APPROVE,
-        NotificationType.TRANSACTION_INDICATOR_REJECTED,
-        NotificationType.TRANSACTION_INDICATOR_SIGN,
-        NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
-        NotificationType.TRANSACTION_INDICATOR_EXECUTED,
-        NotificationType.TRANSACTION_INDICATOR_FAILED,
-        NotificationType.TRANSACTION_INDICATOR_CANCELLED,
-        NotificationType.TRANSACTION_INDICATOR_EXPIRED,
-        NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
-      ];
+  // ------------------------------------------------------------------
+  //  getTransactionParticipants
+  // ------------------------------------------------------------------
 
-      //@ts-expect-error getIndicatorNotifications is private
-      await service.getIndicatorNotifications(entityManager, transactionId);
+  it('getTransactionParticipants computes properly', async () => {
+    (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 100 }]);
 
-      expect(entityManager.find).toHaveBeenCalledWith(Notification, {
-        where: {
-          entityId: transactionId,
-          type: In(indicatorTypes),
-        },
-        relations: {
-          notificationReceivers: true,
-        },
-      });
-    });
-  });
-
-  describe('getTransactionParticipants', () => {
-    const now = new Date();
-
-    const transaction: Partial<Transaction> = {
-      id: 1,
+    const tx = {
+      creatorKey: { userId: 1 },
+      signers: [{ userId: 2 }],
+      observers: [{ userId: 3 }],
       status: TransactionStatus.WAITING_FOR_SIGNATURES,
-      transactionId: '0.0.215914@1618316800',
-      creatorKey: {
-        id: 1,
-        user: null,
-        userId: 1,
-        mnemonicHash: null,
-        publicKey: '',
-        index: null,
-        deletedAt: null,
-        approvedTransactions: [],
-        signedTransactions: [],
-        createdTransactions: [],
-      },
-      approvers: null,
-      observers: [
-        {
-          id: 2,
-          user: null,
-          userId: 2,
-          role: Role.FULL,
-          transaction: null,
-          transactionId: 1,
-          createdAt: now,
-        },
-      ],
-      signers: [
-        {
-          id: 1,
-          user: null,
-          userId: 8,
-          transaction: null,
-          transactionId: 1,
-          createdAt: now,
-          userKey: null,
-          userKeyId: 3,
-        },
-      ],
-      createdAt: now,
-      updatedAt: now,
-      deletedAt: null,
     };
-    const approvers: TransactionApprover[] = [
-      {
-        id: 1,
-        user: null,
-        userId: 1,
-        approved: null,
-        transaction: transaction as Transaction,
-        transactionId: 1,
-        approvers: [],
-        createdAt: now,
-        updatedAt: now,
-        deletedAt: null,
-      },
-      {
-        id: 2,
-        user: null,
-        userId: null,
-        listId: 1,
-        transaction: transaction as Transaction,
-        transactionId: 1,
-        approvers: [],
-        createdAt: now,
-        updatedAt: now,
-        deletedAt: null,
-      },
-      {
-        id: 3,
-        user: null,
-        userId: 5,
-        approved: true,
-        transaction: transaction as Transaction,
-        transactionId: 1,
-        approvers: [],
-        createdAt: now,
-        updatedAt: now,
-        deletedAt: null,
-      },
+
+    const approvers = [
+      { userId: 4, approved: null },
+      { userId: 5, approved: true },
     ];
-    const transactionId = 1;
-    const usersIdsRequiredToSign = [1, 2, 3];
 
-    it('should return transaction participants', async () => {
-      entityManager.findOne.mockResolvedValueOnce(transaction);
+    const result = await (service as any).getTransactionParticipants(
+      em,
+      tx,
+      approvers,
+      new Map()
+    );
 
-      const getApproversByTransactionId: jest.SpyInstance = jest.spyOn(
-        service,
-        //@ts-expect-error getApproversByTransactionId is private
-        'getApproversByTransactionId',
-      );
-      getApproversByTransactionId.mockResolvedValueOnce(approvers);
-
-      const getUsersIdsRequiredToSign: jest.SpyInstance = jest
-        //@ts-expect-error getUsersIdsRequiredToSign is private
-        .spyOn(service, 'getUsersIdsRequiredToSign');
-      getUsersIdsRequiredToSign.mockResolvedValueOnce(usersIdsRequiredToSign);
-
-      //@ts-expect-error getTransactionParticipants is private
-      const result = await service.getTransactionParticipants(entityManager, transactionId);
-
-      // expect(result).toEqual({
-      //   creatorId: 1,
-      //   signerUserIds: expect.arrayContaining([8]),
-      //   observerUserIds: expect.arrayContaining([2]),
-      //   approversUserIds: expect.arrayContaining([1, 5]),
-      //   requiredUserIds: expect.arrayContaining([1, 2, 3]),
-      //   approversGaveChoiceUserIds: expect.arrayContaining([5]),
-      //   approversShouldChooseUserIds: expect.arrayContaining([1]),
-      //   participants: expect.arrayContaining([1, 2, 3, 5, 8]),
-      // });
-      // expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
-      //   where: { id: transactionId },
-      //   relations: {
-      //     creatorKey: true,
-      //     observers: true,
-      //     signers: true,
-      //   },
-      // });
-      expect(result).toEqual({
-        approversUserIds: expect.arrayContaining([1, 5]),
-        requiredUserIds: expect.arrayContaining([1, 2, 3]),
-        approversGaveChoiceUserIds: expect.arrayContaining([5]),
-        approversShouldChooseUserIds: expect.arrayContaining([1]),
-        participants: expect.arrayContaining([1, 2, 3, 5]),
-        creatorId: 1,
-        observerUserIds: expect.arrayContaining([2]),
-        signerUserIds: expect.arrayContaining([8]),
-      });
-      expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
-        relations: {
-          creatorKey: true,
-          observers: true,
-          signers: true,
-        },
-        where: { id: transactionId },
-      });
-      expect(getApproversByTransactionId).toHaveBeenCalledWith(entityManager, transactionId);
-    });
-
-    it('should return empty approver should choose if expired', async () => {
-      const expiredTransaction = { ...transaction, status: TransactionStatus.EXPIRED };
-
-      entityManager.findOne.mockResolvedValueOnce(expiredTransaction);
-
-      const getApproversByTransactionId: jest.SpyInstance = jest.spyOn(
-        service,
-        //@ts-expect-error getApproversByTransactionId is private
-        'getApproversByTransactionId',
-      );
-      getApproversByTransactionId.mockResolvedValueOnce(approvers);
-
-      const getUsersIdsRequiredToSign: jest.SpyInstance = jest
-        //@ts-expect-error getUsersIdsRequiredToSign is private
-        .spyOn(service, 'getUsersIdsRequiredToSign');
-      getUsersIdsRequiredToSign.mockResolvedValueOnce(usersIdsRequiredToSign);
-
-      //@ts-expect-error getTransactionParticipants is private
-      const result = await service.getTransactionParticipants(entityManager, transactionId);
-
-      // expect(result).toEqual({
-      //   creatorId: 1,
-      //   signerUserIds: expect.arrayContaining([8]),
-      //   observerUserIds: expect.arrayContaining([2]),
-      //   approversUserIds: expect.arrayContaining([1, 5]),
-      //   requiredUserIds: expect.arrayContaining([1, 2, 3]),
-      //   approversGaveChoiceUserIds: expect.arrayContaining([5]),
-      //   approversShouldChooseUserIds: [],
-      //   participants: expect.arrayContaining([1, 2, 3, 5, 8]),
-      // });
-      // expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
-      //   where: { id: transactionId },
-      //   relations: {
-      //     creatorKey: true,
-      //     observers: true,
-      //     signers: true,
-      //   },
-      // });
-      expect(result).toEqual({
-        creatorId: 1,
-        observerUserIds: expect.arrayContaining([2]),
-        approversUserIds: expect.arrayContaining([1, 5]),
-        requiredUserIds: expect.arrayContaining([1, 2, 3]),
-        approversGaveChoiceUserIds: expect.arrayContaining([5]),
-        approversShouldChooseUserIds: [],
-        participants: expect.arrayContaining([1, 2, 3, 5]),
-        signerUserIds: expect.arrayContaining([8]),
-      });
-      expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
-        relations: {
-          creatorKey: true,
-          observers: true,
-          signers: true,
-        },
-        where: { id: transactionId },
-      });
-      expect(getApproversByTransactionId).toHaveBeenCalledWith(entityManager, transactionId);
-    });
+    expect(result.participants).toContain(1);
+    expect(result.participants).toContain(100);
   });
 
-  describe('getUsersIdsRequiredToSign', () => {
-    it('should return users ids required to sign', async () => {
-      const entityManager = mockDeep<EntityManager>();
-      const transaction: Partial<Transaction> = {};
+  // ------------------------------------------------------------------
+  //  getNotificationReceiverIds
+  // ------------------------------------------------------------------
 
-      const allKeys = [{ userId: 1 }, { userId: 2 }, { userId: 3 }, { userId: 1 }];
+  it('getNotificationReceiverIds: SIGNING -> required users only', async () => {
+    const parts = {
+      requiredUserIds: [99],
+      approversUserIds: [88],
+      observerUserIds: [77],
+      creatorId: 66,
+    };
 
-      jest.mocked(keysRequiredToSign).mockResolvedValueOnce(allKeys as UserKey[]);
+    jest.spyOn(service as any, 'getTransactionParticipants').mockResolvedValue(parts);
 
-      //@ts-expect-error getUsersIdsRequiredToSign is private
-      const result = await service.getUsersIdsRequiredToSign(
-        entityManager,
-        transaction as Transaction,
-      );
+    const tx = { status: TransactionStatus.WAITING_FOR_SIGNATURES };
 
-      expect(result).toEqual(expect.arrayContaining([1, 2, 3]));
-    });
+    const ids = await (service as any).getNotificationReceiverIds(
+      em,
+      tx,
+      NotificationType.TRANSACTION_INDICATOR_SIGN,
+      [],
+      new Map()
+    );
+
+    expect(ids).toEqual([99]);
   });
 
-  describe('getApproversByTransactionId', () => {
-    it('should query the database for approvers', async () => {
-      const transactionId = 1;
+  // ------------------------------------------------------------------
+  //  filterReceiversByPreferenceForType
+  // ------------------------------------------------------------------
 
-      //@ts-expect-error getApproversByTransactionId is private
-      await service.getApproversByTransactionId(entityManager, transactionId);
+  it('filterReceiversByPreferenceForType filters by user preferences', async () => {
+    em.find.mockResolvedValue([
+      { id: 1, notificationPreferences: [{ type: NotificationType.TRANSACTION_EXECUTED, inApp: false }] },
+      { id: 2, notificationPreferences: [{ type: NotificationType.TRANSACTION_EXECUTED, inApp: true }] },
+    ]);
 
-      expect(entityManager.query).toHaveBeenCalledWith(expect.any(String), [transactionId]);
-    });
+    const cache = new Map();
+    const ids = await (service as any).filterReceiversByPreferenceForType(
+      em,
+      NotificationType.TRANSACTION_EXECUTED,
+      new Set([1, 2]),
+      cache
+    );
 
-    it('should return empty array if invalid transaction id is provided', async () => {
-      const transactionId = null;
-
-      //@ts-expect-error getApproversByTransactionId is private
-      const result = await service.getApproversByTransactionId(entityManager, transactionId);
-
-      expect(result).toEqual([]);
-    });
+    expect(ids).toEqual([2]);
   });
 
-  describe('notifyGeneral', () => {
-    beforeEach(() => {
-      jest.resetAllMocks();
-      entityManager.create.mockImplementation((_, data) => data);
-      mockTransaction();
-    });
+  // ------------------------------------------------------------------
+  //  createNotificationReceivers
+  // ------------------------------------------------------------------
 
-    it('should create a custom notification', async () => {
-      const dto: NotifyGeneralDto = {
-        userIds: [1, 2],
-        type: NotificationType.TRANSACTION_CREATED,
-        entityId: 1,
-        actorId: null,
-      };
+  it('createNotificationReceivers saves proper rows', async () => {
+    em.save.mockResolvedValue([{ id: 500 }]);
 
-      const notification = getNotification();
-      //@ts-expect-error createNotification is private
-      jest.spyOn(service, 'createNotification').mockResolvedValueOnce(notification);
+    const notification = { id: 99, type: NotificationType.TRANSACTION_EXECUTED };
+    const receivers = await (service as any).createNotificationReceivers(em, notification, [1, 2]);
 
-      const notificationReceivers = getNotificationReceivers();
-      //@ts-expect-error createReceivers is private
-      jest.spyOn(service, 'createReceivers').mockResolvedValueOnce(notificationReceivers);
-
-      await service.notifyGeneral(dto);
-
-      expect(fanOutService.fanOutNew).toHaveBeenCalledWith(notification, notificationReceivers);
-    });
-
-    it('should use existing notification', async () => {
-      const notification = getNotification();
-
-      const dto: NotifyGeneralDto = {
-        userIds: [1, 2],
-        type: notification.type,
-        entityId: notification.entityId,
-        actorId: notification.actorId,
-      };
-
-      entityManager.findOne.mockResolvedValueOnce(notification);
-
-      //@ts-expect-error createNotification is private
-      const createNotification = jest.spyOn(service, 'createNotification');
-
-      await service.notifyGeneral(dto);
-
-      expect(createNotification).not.toHaveBeenCalled();
-      expect(fanOutService.fanOutNew).toHaveBeenCalledWith(notification, [
-        expect.objectContaining({ userId: 1 }),
-        expect.objectContaining({ userId: 2 }),
-      ]);
-    });
-
-    it('should not create a receiver if already exists', async () => {
-      const notification = getNotification();
-      const existingReceiver: NotificationReceiver = {
-        id: 1,
-        userId: 1,
-        notificationId: 1,
-        isRead: false,
-        isEmailSent: null,
-        isInAppNotified: null,
-        updatedAt: new Date(),
-        notification: notification,
-        user: null,
-      };
-      notification.notificationReceivers = [existingReceiver];
-
-      const userIds = [existingReceiver.userId, 2];
-
-      const dto: NotifyGeneralDto = {
-        userIds,
-        type: notification.type,
-        entityId: notification.entityId,
-        actorId: notification.actorId,
-      };
-
-      entityManager.findOne.mockResolvedValueOnce(notification);
-
-      //@ts-expect-error createNotification is private
-      const createNotification = jest.spyOn(service, 'createNotification');
-
-      //@ts-expect-error createReceivers is private
-      const createReceivers = jest.spyOn(service, 'createReceivers');
-
-      await service.notifyGeneral(dto);
-
-      expect(createNotification).not.toHaveBeenCalled();
-      expect(createReceivers).toHaveBeenCalledWith(entityManager, notification.id, [userIds[1]]);
-      expect(fanOutService.fanOutNew).toHaveBeenCalledWith(notification, [
-        expect.objectContaining({ userId: userIds[1] }),
-      ]);
-    });
-
-    it('should do nothing if no userIds provided', async () => {
-      const dto: NotifyGeneralDto = {
-        userIds: [],
-        type: NotificationType.TRANSACTION_CREATED,
-        entityId: 1,
-        actorId: null,
-      };
-
-      await service.notifyGeneral(dto);
-
-      expect(entityManager.transaction).not.toHaveBeenCalled();
-      expect(fanOutService.fanOutNew).not.toHaveBeenCalled();
-    });
+    expect(em.save).toHaveBeenCalled();
+    expect(receivers[0].id).toBe(500);
   });
 
-  describe('notifyTransactionRequiredSigners', () => {
-    beforeEach(() => {
-      jest.resetAllMocks();
-      entityManager.create.mockImplementation((_, data) => data);
+  // ------------------------------------------------------------------
+  //  deleteExistingIndicators
+  // ------------------------------------------------------------------
+
+  it('deleteExistingIndicators deletes notifications + receivers', async () => {
+    const nr = [{ id: 10, userId: 1 }];
+    em.find.mockResolvedValue([
+      { id: 100, notificationReceivers: nr },
+    ]);
+
+    em.delete.mockResolvedValue({});
+
+    const result = await (service as any).deleteExistingIndicators(em, {
+      id: 5,
     });
 
-    it('should throw an error if transaction not found', async () => {
-      entityManager.findOne.calledWith(Transaction, expect.anything()).mockResolvedValueOnce(null);
-
-      const dto: NotifyForTransactionDto = {
-        transactionId: 1,
-        additionalData: { network: 'testnet' },
-      };
-
-      await expect(service.notifyTransactionRequiredSigners(dto)).rejects.toThrow(
-        'Transaction not found',
-      );
-    });
-
-    it('should notify required signers without creator for a transaction', async () => {
-      const dto: NotifyForTransactionDto = {
-        transactionId: 1,
-        additionalData: { network: 'testnet' },
-      };
-
-      const creatorId = 1;
-      const usersIdsRequiredToSign = [creatorId, 2, 3];
-
-      const transaction: Partial<Transaction> = {
-        id: 1,
-        transactionId: '0.0.215914@1618316800',
-        creatorKey: {
-          id: 1,
-          user: null,
-          userId: creatorId,
-          mnemonicHash: null,
-          publicKey: '',
-          index: null,
-          deletedAt: null,
-          approvedTransactions: [],
-          signedTransactions: [],
-          createdTransactions: [],
-        },
-        mirrorNetwork: 'testnet',
-      };
-      entityManager.findOne
-        .calledWith(Transaction, expect.anything())
-        .mockResolvedValueOnce(transaction);
-
-      const getUsersIdsRequiredToSign: jest.SpyInstance = jest
-        //@ts-expect-error getUsersIdsRequiredToSign is private
-        .spyOn(service, 'getUsersIdsRequiredToSign');
-      getUsersIdsRequiredToSign.mockResolvedValueOnce(usersIdsRequiredToSign);
-
-      const notifyGeneral = jest.spyOn(service, 'notifyGeneral');
-      notifyGeneral.mockImplementationOnce(jest.fn());
-
-      const syncIndicators: jest.SpyInstance = jest.spyOn(service, 'syncIndicators');
-      syncIndicators.mockImplementationOnce(jest.fn());
-
-      await service.notifyTransactionRequiredSigners(dto);
-
-      expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
-        where: { id: dto.transactionId },
-        relations: { creatorKey: true },
-      });
-      expect(getUsersIdsRequiredToSign).toHaveBeenCalledWith(entityManager, transaction);
-      expect(notifyGeneral).toHaveBeenCalledWith({
-        userIds: usersIdsRequiredToSign.filter(id => id !== creatorId),
-        type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
-        entityId: 1,
-        actorId: null,
-        additionalData: { network: transaction.mirrorNetwork },
-      });
-      expect(syncIndicators).toHaveBeenCalledWith({
-        transactionId: 1,
-        transactionStatus: transaction.status,
-        additionalData: { network: transaction.mirrorNetwork },
-      });
-    });
+    expect(em.delete).toHaveBeenCalledTimes(2);
+    expect(result[0]).toEqual({ userId: 1, receiverId: 10 });
   });
 
-  describe('syncActionIndicators', () => {
-    beforeAll(() => {
-      jest.restoreAllMocks();
+  // ------------------------------------------------------------------
+  //  processNotificationType
+  // ------------------------------------------------------------------
+
+  it('processNotificationType creates new receivers if needed', async () => {
+    em.findOne.mockResolvedValue({
+      id: 10,
+      type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
+      notificationReceivers: [{ id: 700, userId: 1 }],
     });
+    em.find.mockResolvedValue([{ id: 700, userId: 1, isEmailSent: false }]);
 
-    beforeEach(() => {
-      jest.resetAllMocks();
-    });
+    jest
+      .spyOn(service as any, 'filterReceiversByPreferenceForType')
+      .mockResolvedValue([1, 2]); // user 2 is new
 
-    it('should create a new indicator notification if not exists', async () => {
-      const type = NotificationType.TRANSACTION_INDICATOR_APPROVE;
-      const notification = null;
-      const newNotification = getNotification();
-      const notificationReceivers = getNotificationReceivers();
-      const transactionId = 1;
-      const userIds = notificationReceivers.map(receiver => receiver.userId);
+    em.save.mockResolvedValue([{ id: 800, userId: 2 }]);
 
-      //@ts-expect-error createNotification is private
-      const createNotification: jest.SpyInstance = jest.spyOn(service, 'createNotification');
-      createNotification.mockResolvedValueOnce(newNotification);
+    const result = await (service as any).processNotificationType(
+      em,
+      55,
+      NotificationType.TRANSACTION_EXECUTED,
+      new Set([1, 2]),
+      new Map()
+    );
 
-      const fanOutIndicatorsDelete: jest.SpyInstance = jest.spyOn(
-        service,
-        //@ts-expect-error fanOutIndicatorsDelete is private
-        'fanOutIndicatorsDelete',
-      );
-
-      //@ts-expect-error createReceivers is private
-      const createReceivers: jest.SpyInstance = jest.spyOn(service, 'createReceivers');
-      createReceivers.mockResolvedValueOnce(notificationReceivers);
-
-      //@ts-expect-error syncActionIndicators is private
-      await service.syncActionIndicators(entityManager, type, notification, transactionId, userIds);
-
-      expect(fanOutIndicatorsDelete).toHaveBeenCalledWith([]);
-      expect(createReceivers).toHaveBeenCalledWith(entityManager, newNotification.id, userIds);
-      expect(fanOutService.fanOutNew).toHaveBeenCalledWith(newNotification, notificationReceivers);
-    });
-
-    it('should remove indicator notification for users that should not take action and send to ones that should', async () => {
-      const transactionId = 1;
-      const type = NotificationType.TRANSACTION_INDICATOR_APPROVE;
-
-      const notification = getNotification();
-      const notificationReceivers = getNotificationReceivers();
-
-      notification.notificationReceivers = notificationReceivers.slice(0, 1);
-
-      const fanOutIndicatorsDelete: jest.SpyInstance = jest.spyOn(
-        service,
-        //@ts-expect-error fanOutIndicatorsDelete is private
-        'fanOutIndicatorsDelete',
-      );
-
-      //@ts-expect-error createReceivers is private
-      const createReceivers: jest.SpyInstance = jest.spyOn(service, 'createReceivers');
-      createReceivers.mockResolvedValueOnce(notificationReceivers.slice(1));
-
-      //@ts-expect-error syncActionIndicators is private
-      await service.syncActionIndicators(entityManager, type, notification, transactionId, [
-        notificationReceivers[1].userId,
-      ]);
-
-      expect(entityManager.delete).toHaveBeenCalledWith(NotificationReceiver, {
-        id: In([notificationReceivers[0].id]),
-      });
-      expect(fanOutIndicatorsDelete).toHaveBeenCalledWith([notificationReceivers[0]]);
-      expect(createReceivers).toHaveBeenCalledWith(entityManager, notification.id, [
-        notificationReceivers[1].userId,
-      ]);
-      expect(fanOutService.fanOutNew).toHaveBeenCalledWith(
-        notification,
-        notificationReceivers.slice(1),
-      );
-    });
-
-    it('should send notification to new receivers even if deletion of previous receivers fails', async () => {
-      const transactionId = 1;
-      const type = NotificationType.TRANSACTION_INDICATOR_APPROVE;
-
-      const notification = getNotification();
-      const notificationReceivers = getNotificationReceivers();
-
-      notification.notificationReceivers = notificationReceivers.slice(0, 1);
-
-      jest.spyOn(console, 'log').mockImplementationOnce(jest.fn());
-      entityManager.delete.mockRejectedValueOnce(new Error('Failed to delete'));
-      const fanOutIndicatorsDelete: jest.SpyInstance = jest.spyOn(
-        service,
-        //@ts-expect-error fanOutIndicatorsDelete is private
-        'fanOutIndicatorsDelete',
-      );
-
-      //@ts-expect-error createReceivers is private
-      const createReceivers: jest.SpyInstance = jest.spyOn(service, 'createReceivers');
-      createReceivers.mockResolvedValueOnce(notificationReceivers.slice(1));
-
-      //@ts-expect-error syncActionIndicators is private
-      await service.syncActionIndicators(entityManager, type, notification, transactionId, [
-        notificationReceivers[1].userId,
-      ]);
-
-      expect(entityManager.delete).toHaveBeenCalledWith(NotificationReceiver, {
-        id: In([notificationReceivers[0].id]),
-      });
-      expect(fanOutIndicatorsDelete).not.toHaveBeenCalled();
-      expect(createReceivers).toHaveBeenCalledWith(entityManager, notification.id, [
-        notificationReceivers[1].userId,
-      ]);
-      expect(fanOutService.fanOutNew).toHaveBeenCalledWith(
-        notification,
-        notificationReceivers.slice(1),
-      );
-    });
+    expect(result.newReceivers.length).toBe(1);
+    expect(result.updatedReceivers.length).toBe(1);
   });
 
-  describe('syncIndicators', () => {
-    beforeAll(() => {
-      jest.restoreAllMocks();
-    });
+  // ------------------------------------------------------------------
+  //  processReminderEmail
+  // ------------------------------------------------------------------
 
-    beforeEach(() => {
-      jest.resetAllMocks();
-      mockTransaction();
-    });
+  it('processReminderEmail always creates a new notification', async () => {
+    const tx = { id: 1 };
 
-    it('should determine the correct new indicator type based on transaction status', async () => {
-      const transactionId = 1;
-      const participants = [3];
-      const additionalData = { network: 'testnet' };
+    em.save.mockResolvedValue({ id: 900 });
 
-      const actAssert = async (
-        transactionStatus: TransactionStatus,
-        // notifyType: NotificationType,
-      ) => {
-        const getTransactionParticipants: jest.SpyInstance = jest
-          //@ts-expect-error getTransactionParticipants is private
-          .spyOn(service, 'getTransactionParticipants');
-        getTransactionParticipants.mockResolvedValueOnce({
-          approversUserIds: [],
-          approversShouldChooseUserIds: [],
-          observerUserIds: [],
-          requiredUserIds: [],
-          participants,
-        });
+    jest.spyOn(service as any, 'filterReceiversByPreferenceForType').mockResolvedValue([10]);
+    jest.spyOn(service as any, 'createNotificationReceivers').mockResolvedValue([{ id: 901 }]);
 
-        //@ts-expect-error getIndicatorNotifications is private
-        jest.spyOn(service, 'getIndicatorNotifications').mockResolvedValueOnce([]);
+    const res = await (service as any).processReminderEmail(
+      em,
+      tx,
+      new Set([10]),
+      new Map()
+    );
 
-        jest.spyOn(service, 'notifyGeneral').mockImplementationOnce(jest.fn());
-
-        //@ts-expect-error getIndicatorNotifications is private
-        jest.spyOn(service, 'getIndicatorNotifications').mockResolvedValueOnce([]);
-
-        //@ts-expect-error syncActionIndicators is private
-        jest.spyOn(service, 'syncActionIndicators').mockResolvedValueOnce([]);
-
-        await service.syncIndicators({ transactionId, transactionStatus, additionalData });
-
-        expect(entityManager.delete).not.toHaveBeenCalled();
-        expect(fanOutService.fanOutIndicatorsDelete).not.toHaveBeenCalled();
-        //@ts-expect-error syncActionIndicators is private
-        expect(service.syncActionIndicators).toHaveBeenCalledWith(
-          entityManager,
-          NotificationType.TRANSACTION_INDICATOR_EXECUTED,
-          undefined,
-          transactionId,
-          [],
-          additionalData,
-        );
-      };
-
-      await actAssert(TransactionStatus.EXECUTED);
-      await actAssert(TransactionStatus.FAILED);
-      await actAssert(TransactionStatus.EXPIRED);
-      await actAssert(TransactionStatus.WAITING_FOR_EXECUTION);
-      await actAssert(TransactionStatus.ARCHIVED);
-    });
-
-    it('should delete previous notifications and do nothing more if there is not new indicator type', async () => {
-      const transactionId = 1;
-      const transactionStatus = TransactionStatus.CANCELED;
-      const additionalData = { network: 'testnet' };
-
-      const existingIndicatorNotifications = [
-        {
-          id: 1,
-          type: NotificationType.TRANSACTION_INDICATOR_APPROVE,
-          content: 'Approve',
-          entityId: transactionId,
-          actorId: null,
-          notificationReceivers: [
-            {
-              id: 1,
-              userId: 1,
-              notificationId: 1,
-              isRead: false,
-              isEmailSent: null,
-              isInAppNotified: null,
-              updatedAt: new Date(),
-              notification: null,
-              user: null,
-            },
-          ],
-          createdAt: new Date(),
-          additionalData,
-        },
-      ];
-      const getTransactionParticipants: jest.SpyInstance = jest
-        //@ts-expect-error getTransactionParticipants is private
-        .spyOn(service, 'getTransactionParticipants');
-      getTransactionParticipants.mockResolvedValueOnce({
-        approversUserIds: [],
-        approversShouldChooseUserIds: [],
-        observerUserIds: [],
-        requiredUserIds: [],
-        creatorId: [],
-      });
-
-      const getIndicatorNotifications: jest.SpyInstance = jest
-        //@ts-expect-error getIndicatorNotifications is private
-        .spyOn(service, 'getIndicatorNotifications');
-      getIndicatorNotifications.mockResolvedValue(existingIndicatorNotifications);
-
-      //@ts-expect-error getIndicatorNotifications is private
-      jest.spyOn(service, 'syncActionIndicators').mockImplementationOnce(jest.fn());
-
-      await service.syncIndicators({ transactionId, transactionStatus, additionalData });
-
-      expect(entityManager.transaction).toHaveBeenCalled();
-      expect(entityManager.delete).toHaveBeenCalledWith(Notification, {
-        id: In([1]),
-      });
-      expect(entityManager.delete).toHaveBeenCalledWith(NotificationReceiver, {
-        id: In([1]),
-      });
-      expect(fanOutService.fanOutIndicatorsDelete).toHaveBeenCalledWith({
-        1: [1],
-      });
-    });
-
-    it('should sync sign indicators if the new indicator type is sign', async () => {
-      const transactionId = 1;
-      const transactionStatus = TransactionStatus.WAITING_FOR_SIGNATURES;
-      const additionalData = { network: 'testnet' };
-
-      const participants = [3];
-      const oldIndicatorNotifications = [
-        {
-          id: 1,
-          type: NotificationType.TRANSACTION_INDICATOR_SIGN,
-          content: 'Sign',
-          entityId: transactionId,
-          actorId: null,
-          notificationReceivers: [],
-          createdAt: new Date(),
-          additionalData,
-        },
-      ];
-
-      const getTransactionParticipants: jest.SpyInstance = jest
-        //@ts-expect-error getTransactionParticipants is private
-        .spyOn(service, 'getTransactionParticipants');
-      getTransactionParticipants.mockResolvedValueOnce({
-        participants,
-        approversShouldChooseUserIds: [],
-        requiredUserIds: [32],
-      });
-
-      const getIndicatorNotifications: jest.SpyInstance = jest
-        //@ts-expect-error getIndicatorNotifications is private
-        .spyOn(service, 'getIndicatorNotifications');
-      getIndicatorNotifications.mockResolvedValueOnce(oldIndicatorNotifications);
-
-      jest.spyOn(service, 'notifyGeneral').mockImplementationOnce(jest.fn());
-
-      getIndicatorNotifications.mockResolvedValueOnce(oldIndicatorNotifications);
-
-      //@ts-expect-error syncActionIndicators is private
-      const syncActionIndicators: jest.SpyInstance = jest.spyOn(service, 'syncActionIndicators');
-      syncActionIndicators.mockImplementationOnce(jest.fn());
-      syncActionIndicators.mockImplementationOnce(jest.fn());
-
-      await service.syncIndicators({ transactionId, transactionStatus, additionalData });
-
-      expect(entityManager.delete).not.toHaveBeenCalled();
-      expect(fanOutService.fanOutIndicatorsDelete).not.toHaveBeenCalled();
-      expect(service.notifyGeneral).not.toHaveBeenCalled();
-      //@ts-expect-error syncActionIndicators is private
-      expect(service.syncActionIndicators).toHaveBeenCalledWith(
-        entityManager,
-        NotificationType.TRANSACTION_INDICATOR_SIGN,
-        oldIndicatorNotifications[0],
-        transactionId,
-        [32],
-        additionalData,
-      );
-      expect(syncActionIndicators).toHaveBeenCalledWith(
-        entityManager,
-        NotificationType.TRANSACTION_INDICATOR_SIGN,
-        {
-          actorId: null,
-          additionalData: { network: 'testnet' },
-          content: 'Sign',
-          createdAt: expect.any(Date),
-          entityId: 1,
-          id: 1,
-          notificationReceivers: [],
-          type: 'TRANSACTION_INDICATOR_SIGN',
-        },
-        transactionId,
-        expect.arrayContaining([32]),
-        additionalData,
-      );
-    });
-
-    it('should stop if no new indicator', async () => {
-      const transactionId = 1;
-      const transactionStatus = TransactionStatus.REJECTED;
-      const additionalData = { network: 'testnet' };
-
-      entityManager.transaction.mockResolvedValueOnce([]);
-
-      await service.syncIndicators({ transactionId, transactionStatus, additionalData });
-
-      expect(entityManager.delete).not.toHaveBeenCalled();
-      expect(fanOutService.fanOutIndicatorsDelete).not.toHaveBeenCalled();
-    });
+    expect(em.save).toHaveBeenCalled();
+    expect(res[0].id).toBe(901);
   });
 
-  describe('getIndicatorReceiverIds', () => {
-    beforeAll(() => {
-      jest.restoreAllMocks();
-    });
+  // ------------------------------------------------------------------
+  //  sendDeletionNotifications
+  // ------------------------------------------------------------------
 
-    beforeEach(() => {
-      jest.resetAllMocks();
-      mockTransaction();
-    });
+  it('sendDeletionNotifications emits deletion events', async () => {
+    await (service as any).sendDeletionNotifications({ 1: [100, 101] });
 
-    test.each([
-      NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
-      NotificationType.TRANSACTION_INDICATOR_EXECUTED,
-      NotificationType.TRANSACTION_INDICATOR_FAILED,
-      NotificationType.TRANSACTION_INDICATOR_EXPIRED,
-    ])('should return creator, approvers, observers and required users for %s', async (indicatorType) => {
-      const transactionId = 1;
-      const data = {
-        creatorId: 10,
-        approversUserIds: [20, 21],
-        observerUserIds: [30],
-        requiredUserIds: [40],
-        approversShouldChooseUserIds: [50],
-      };
-      //@ts-expect-error getTransactionParticipants is private
-      jest.spyOn(service, 'getTransactionParticipants').mockResolvedValueOnce(data);
-      const result = await service['getIndicatorReceiverIds'](transactionId, indicatorType);
-      expect(new Set(result)).toEqual(new Set([10, 20, 21, 30, 40]));
-    });
+    expect(emitDeleteNotifications).toHaveBeenCalled();
+  });
 
-    test('should return approversShouldChooseUserIds for TRANSACTION_INDICATOR_APPROVE', async () => {
-      const transactionId = 1;
-      const data = {
-        creatorId: 10,
-        approversUserIds: [20, 21],
-        observerUserIds: [30],
-        requiredUserIds: [40],
-        approversShouldChooseUserIds: [50, 51],
-      };
-      //@ts-expect-error getTransactionParticipants is private
-      jest.spyOn(service, 'getTransactionParticipants').mockResolvedValueOnce(data);
-      const result = await service['getIndicatorReceiverIds'](transactionId, NotificationType.TRANSACTION_INDICATOR_APPROVE);
-      expect(new Set(result)).toEqual(new Set([50, 51]));
-    });
+  // ------------------------------------------------------------------
+  //  sendInAppNotifications
+  // ------------------------------------------------------------------
 
-    test('should return creator, approvers and observers for TRANSACTION_INDICATOR_REJECTED', async () => {
-      const transactionId = 1;
-      const data = {
-        creatorId: 10,
-        approversUserIds: [20, 21],
-        observerUserIds: [30, 31],
-        requiredUserIds: [40],
-        approversShouldChooseUserIds: [50],
-      };
-      //@ts-expect-error getTransactionParticipants is private
-      jest.spyOn(service, 'getTransactionParticipants').mockResolvedValueOnce(data);
-      const result = await service['getIndicatorReceiverIds'](transactionId, NotificationType.TRANSACTION_INDICATOR_REJECTED);
-      expect(new Set(result)).toEqual(new Set([10, 20, 21, 30, 31]));
-    });
+  it('sendInAppNotifications updates in-app flags', async () => {
+    em.update.mockResolvedValue({});
 
-    test('should return approvers, observers and required users for TRANSACTION_INDICATOR_CANCELLED', async () => {
-      const transactionId = 1;
-      const data = {
-        creatorId: 10,
-        approversUserIds: [20, 21],
-        observerUserIds: [30],
-        requiredUserIds: [40, 41],
-        approversShouldChooseUserIds: [50],
-      };
-      //@ts-expect-error getTransactionParticipants is private
-      jest.spyOn(service, 'getTransactionParticipants').mockResolvedValueOnce(data);
-      const result = await service['getIndicatorReceiverIds'](transactionId, NotificationType.TRANSACTION_INDICATOR_CANCELLED);
-      expect(new Set(result)).toEqual(new Set([20, 21, 30, 40, 41]));
-    });
+    await (service as any).sendInAppNotifications(
+      { 1: [{ id: 10 }, { id: 11 }] },
+      [10, 11]
+    );
 
-    test('should return only required users for TRANSACTION_INDICATOR_SIGN', async () => {
-      const transactionId = 1;
-      const data = {
-        creatorId: 10,
-        approversUserIds: [20, 21],
-        observerUserIds: [30],
-        requiredUserIds: [40, 41, 42],
-        approversShouldChooseUserIds: [50],
-      };
-      //@ts-expect-error getTransactionParticipants is private
-      jest.spyOn(service, 'getTransactionParticipants').mockResolvedValueOnce(data);
-      const result = await service['getIndicatorReceiverIds'](transactionId, NotificationType.TRANSACTION_INDICATOR_SIGN);
-      expect(new Set(result)).toEqual(new Set([40, 41, 42]));
-    });
+    expect(emitNewNotifications).toHaveBeenCalled();
+    expect(em.update).toHaveBeenCalled();
+  });
+
+  // ------------------------------------------------------------------
+  //  sendEmailNotifications
+  // ------------------------------------------------------------------
+
+  it('sendEmailNotifications marks email sent', async () => {
+    em.update.mockResolvedValue({});
+
+    // emitEmailNotifications signature: (publisher, dtos, onSuccess, onError)
+    (emitEmailNotifications as jest.Mock).mockImplementation(
+      async (pub, dtos, onSuccess, onError) => {
+        await onSuccess();
+      }
+    );
+
+    await (service as any).sendEmailNotifications(
+      { 'test@example.com': [{ id: 1 }] },
+      [99]
+    );
+
+    expect(em.update).toHaveBeenCalledWith(
+      NotificationReceiver,
+      { id: In([99]) },
+      { isEmailSent: true }
+    );
   });
 });

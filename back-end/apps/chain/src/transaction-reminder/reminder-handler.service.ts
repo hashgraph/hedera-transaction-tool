@@ -5,22 +5,19 @@ import { MurLock } from 'murlock';
 
 import {
   parseTransactionSignKey,
-  keysRequiredToSign,
-  MirrorNodeService,
+  NatsPublisherService,
   SchedulerService,
-  getRemindSignersDTO,
+  emitTransactionRemindSigners,
 } from '@app/common';
 import { Notification, NotificationType, Transaction, TransactionStatus } from '@entities';
 
-import { ReceiverService } from '../receiver.service';
 
 @Injectable()
 export class ReminderHandlerService implements OnModuleInit {
   constructor(
     @InjectEntityManager() private entityManager: EntityManager,
-    private readonly mirrorNodeService: MirrorNodeService,
-    private readonly receiverService: ReceiverService,
     private readonly schedulerService: SchedulerService,
+    private readonly notificationsPublisher: NatsPublisherService,
   ) {}
 
   onModuleInit() {
@@ -61,18 +58,6 @@ export class ReminderHandlerService implements OnModuleInit {
       return;
     }
 
-    /* Get users required to sign */
-    const allKeys = await keysRequiredToSign(
-      transaction,
-      this.mirrorNodeService,
-      this.entityManager,
-    );
-    const userIds = allKeys
-      .map(k => k.userId)
-      .concat([transaction.creatorKey.userId])
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .filter(Boolean);
-
-    await this.receiverService.notifyGeneral(getRemindSignersDTO(transaction, userIds, false));
+    emitTransactionRemindSigners(this.notificationsPublisher, [{ entityId: transaction.id }]);
   }
 }

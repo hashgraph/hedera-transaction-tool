@@ -3,10 +3,17 @@ import { ConfigService } from '@nestjs/config';
 
 import * as nodemailer from 'nodemailer';
 
-import { generateEmailContent, NotificationTypeEmailSubjects, NotifyEmailDto } from '@app/common';
+import {
+  EmailDto,
+  generateEmailContent,
+  generateResetPasswordMessage,
+  generateUserRegisteredMessage,
+  NotificationTypeEmailSubjects,
+} from '@app/common';
 import { DebouncedNotificationBatcher } from '../utils';
 import { Notification } from '@entities';
 import { SendMailOptions } from 'nodemailer';
+import { EmailNotificationDto } from '../dtos';
 
 @Injectable()
 export class EmailService {
@@ -38,22 +45,68 @@ export class EmailService {
     return user && pass ? { auth: { user, pass } } : {};
   }
 
-  async notifyEmail({ email, subject, text }: NotifyEmailDto) {
-    // send mail with defined transport object
-    const info = await this.transporter.sendMail({
-      from: `"Transaction Tool" ${this.sender}`,
-      to: email, // list of receivers
-      subject: subject, // Subject line
-      text: text.replace(/<\/?[^>]+(>|$)/g, ''), // plain text fallback
-      html: text, // plain text body
-    });
-
-    console.log(`Message sent: ${info.messageId}`);
+  async processUserInviteNotifications(events: EmailDto[]) {
+    await this.sendTransactionalEmails(
+      events,
+      'Hedera Transaction Tool Registration',
+      generateUserRegisteredMessage,
+      'user invite',
+    );
   }
 
-  async processEmail(emails: string[], notification: Notification) {
-    for (const email of emails) {
-      await this.batcher.add(notification, email)
+  async processUserPasswordResetNotifications(events: EmailDto[]) {
+    await this.sendTransactionalEmails(
+      events,
+      'Password Reset Token',
+      generateResetPasswordMessage,
+      'password reset',
+    );
+  }
+
+  private async sendTransactionalEmails(
+    events: EmailDto[],
+    subject: string,
+    generateMessage: (payload: any) => string,
+    emailType: string, // For logging
+  ) {
+    if (events.length === 0) return;
+
+    for (const event of events) {
+      if (!event.email) {
+        console.error(`No email provided in event for ${emailType} notification`);
+        continue;
+      }
+
+      if (!event.additionalData) {
+        console.error(`No payload provided in event for ${emailType} notification`);
+        continue;
+      }
+
+      try {
+        const html = generateMessage(event.additionalData);
+
+        await this.transporter.sendMail({
+          from: `"Transaction Tool" ${this.sender}`,
+          to: event.email,
+          subject: subject,
+          text: html.replace(/<\/?[^>]+(>|$)/g, ''), // Plain text fallback
+          html: html,
+        });
+
+        console.log(`Sent ${emailType} email to ${event.email}`);
+      } catch (error) {
+        console.error(`Failed to send ${emailType} email to ${event.email}:`, error);
+      }
+    }
+
+    console.log(`Completed sending ${events.length} ${emailType} emails`);
+  }
+
+  async processEmails(emails: EmailNotificationDto[]) {
+    for (const { email, notifications } of emails) {
+      for (const notification of notifications) {
+        await this.batcher.add(notification, email);
+      }
     }
   }
 
@@ -65,6 +118,8 @@ export class EmailService {
       map.get(msg.type)!.push(msg);
       return map;
     }, new Map<string, Notification[]>());
+
+    console.log(`Processing email batch for ${groupKey} with ${notifications.length} notifications in ${groupedNotifications.size} groups.`);
 
     for (const [type, notifications] of groupedNotifications.entries()) {
       const mailOptions: SendMailOptions = {

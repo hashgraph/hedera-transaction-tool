@@ -1,13 +1,12 @@
-import { BadRequestException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
 import {
   asyncFilter,
+  emitTransactionUpdate,
   ErrorCodes,
-  NOTIFICATIONS_SERVICE,
-  notifyTransactionAction,
+  NatsPublisherService,
 } from '@app/common';
 import { TransactionGroup, TransactionGroupItem, User } from '@entities';
 
@@ -20,7 +19,7 @@ export class TransactionGroupsService {
   constructor(
     private readonly transactionsService: TransactionsService,
     @InjectDataSource() private dataSource: DataSource,
-    @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
+    private readonly notificationsPublisher: NatsPublisherService,
   ) {}
 
   getTransactionGroups(): Promise<TransactionGroup[]> {
@@ -34,25 +33,28 @@ export class TransactionGroupsService {
     const group = this.dataSource.manager.create(TransactionGroup, dto);
 
     await this.dataSource.transaction(async manager => {
-      const groupItems: TransactionGroupItem[] = [];
+      // Extract all transaction DTOs
+      const transactionDtos = dto.groupItems.map(item => item.transaction);
 
-      for (const groupItemDto of dto.groupItems) {
-        const transaction = await this.transactionsService.createTransaction(
-          groupItemDto.transaction,
-          user,
-        );
+      // Batch create all transactions
+      const transactions = await this.transactionsService.createTransactions(
+        transactionDtos,
+        user,
+      );
+
+      // Create group items with corresponding transactions
+      const groupItems = transactions.map((transaction, index) => {
+        const groupItemDto = dto.groupItems[index];
         const groupItem = manager.create(TransactionGroupItem, groupItemDto);
-
         groupItem.transaction = transaction;
         groupItem.group = group;
-        groupItems.push(await manager.save(TransactionGroupItem, groupItem));
-      }
+        return groupItem;
+      });
 
+      // Save everything
       await manager.save(TransactionGroup, group);
       await manager.save(TransactionGroupItem, groupItems);
     });
-
-    notifyTransactionAction(this.notificationsService);
 
     return group;
   }
@@ -108,7 +110,7 @@ export class TransactionGroupsService {
 
     await this.dataSource.manager.remove(TransactionGroup, group);
 
-    notifyTransactionAction(this.notificationsService);
+    emitTransactionUpdate(this.notificationsPublisher, groupItems.map(gi => ({ entityId: gi.transactionId })));
 
     return true;
   }

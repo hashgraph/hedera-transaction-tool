@@ -13,21 +13,6 @@ export * from './transaction-ready-for-execution';
 export * from './transaction-waiting-for-signatures';
 export * from './user-registered';
 
-export const generateNotificationContent = (notification: Notification) => {
-  switch (notification.type) {
-    case NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES:
-      return generateTransactionWaitingForSignaturesContent(notification);
-    case NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER:
-      return generateRemindSignersContent(notification);
-    case NotificationType.TRANSACTION_READY_FOR_EXECUTION:
-      return generateTransactionReadyForExecutionContent(notification);
-    case NotificationType.USER_REGISTERED:
-      return generateNotifyUserRegisteredContent(notification);
-    default:
-      throw new Error(`Unknown notification type: ${notification.type}`);
-  }
-}
-
 export const generateEmailContent = (type: string | NotificationType, ...notifications: Notification[]) => {
   console.log(`generateEmailContent: ${type}`);
   switch (type) {
@@ -39,6 +24,8 @@ export const generateEmailContent = (type: string | NotificationType, ...notific
       return generateTransactionReadyForExecutionContent(...notifications);
     case NotificationType.TRANSACTION_CANCELLED:
       return generateTransactionCancelledContent(...notifications);
+    case NotificationType.USER_REGISTERED:
+      return generateNotifyUserRegisteredContent(notifications);
     default:
       throw new Error(`Unknown email notification type: ${type}`);
   }

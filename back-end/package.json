@@ -58,6 +58,7 @@
     "ioredis": "5.4.2",
     "joi": "17.13.3",
     "murlock": "4.0.0",
+    "nats": "2.29.3",
     "nest-winston": "1.9.7",
     "pg": "8.13.1",
     "readline-sync": "1.4.10",

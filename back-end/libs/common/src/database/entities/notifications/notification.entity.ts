@@ -88,13 +88,14 @@ export const NOTIFICATION_CHANNELS: Record<NotificationType, {
     email: true,
     inApp: false,
   },
-  //TODO these next two should also trigger an inapp reminder
+  //This only sends a reminder email, it will reset in app notifications
   [NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER]: {
     email: true,
     inApp: false,
   },
+  //This one is being phased out, instead it resets the last notification sent
   [NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER_MANUAL]: {
-    email: true,
+    email: false,
     inApp: false,
   },
   [NotificationType.TRANSACTION_READY_FOR_EXECUTION]: {
@@ -105,7 +106,6 @@ export const NOTIFICATION_CHANNELS: Record<NotificationType, {
     email: true,
     inApp: false,
   },
-  //TODO should this one not be sent to email? it was blacklisted from both
   [NotificationType.TRANSACTION_EXPIRED]: {
     email: true,
     inApp: false,

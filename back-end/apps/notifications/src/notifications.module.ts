@@ -11,7 +11,7 @@ import {
   HealthModule,
   DatabaseModule,
   SchedulerModule,
-  NatsReconnectService,
+  NatsModule,
 } from '@app/common';
 
 import getEnvFilePaths from './config/envFilePaths';
@@ -56,8 +56,9 @@ export const config = ConfigModule.forRoot({
     ApiProxyModule,
     AuthProxyModule,
     HealthModule,
+    NatsModule.forRoot(),
     SchedulerModule.register({ isGlobal: true }),
   ],
-  providers: [LoggerMiddleware, NatsReconnectService],
+  providers: [LoggerMiddleware],
 })
 export class NotificationsModule {}

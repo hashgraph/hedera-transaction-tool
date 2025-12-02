@@ -104,6 +104,9 @@ importers:
       murlock:
         specifier: 4.0.0
         version: 4.0.0(@nestjs/common@10.4.16(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.4.15(@nestjs/common@10.4.16(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/microservices@10.4.15)(@nestjs/platform-express@10.4.15)(@nestjs/websockets@10.4.15)(encoding@0.1.13)(reflect-metadata@0.2.2)(rxjs@7.8.1))
+      nats:
+        specifier: 2.29.3
+        version: 2.29.3
       nest-winston:
         specifier: 1.9.7
         version: 1.9.7(@nestjs/common@10.4.16(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.1))(winston@3.17.0)
@@ -9710,7 +9713,6 @@ snapshots:
   nats@2.29.3:
     dependencies:
       nkeys.js: 1.1.0
-    optional: true
 
   natural-compare@1.4.0: {}
 
@@ -9727,7 +9729,6 @@ snapshots:
   nkeys.js@1.1.0:
     dependencies:
       tweetnacl: 1.0.3
-    optional: true
 
   node-abi@3.75.0:
     dependencies:
