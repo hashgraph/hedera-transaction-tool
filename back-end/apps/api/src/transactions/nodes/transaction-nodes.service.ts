@@ -52,7 +52,7 @@ export class TransactionNodesService {
         const filter: Filtering = {
           property: 'status',
           rule: 'eq',
-          value: TransactionStatus.WAITING_FOR_EXECUTION,
+          value: TransactionStatus.WAITING_FOR_SIGNATURES,
         };
         const p = await this.transactionsService.getTransactions(user, PAGINATION_ALL, undefined, [
           filter,
