@@ -1,7 +1,12 @@
 import { TransactionNodeCollection } from '../dto/ITransactionNode';
 import { mock, mockDeep } from 'jest-mock-extended';
 import { TransactionsService } from '../transactions.service';
-import { minValidStart, TransactionNodesService } from './transaction-nodes.service';
+import {
+  maxExecutedAt,
+  maxUpdatedAt,
+  minValidStart,
+  TransactionNodesService,
+} from './transaction-nodes.service';
 import {
   Transaction,
   TransactionGroup,
@@ -710,11 +715,11 @@ describe('TransactionNodesService', () => {
     });
 
     it('maxUpdatedAt() should throw error when receiving empty array', () => {
-      expect(() => minValidStart([])).toThrow(Error);
+      expect(() => maxUpdatedAt([])).toThrow(Error);
     });
 
     it('maxExecutedAt() should throw error when receiving empty array', () => {
-      expect(() => minValidStart([])).toThrow(Error);
+      expect(() => maxExecutedAt([])).toThrow(Error);
     });
   });
 });
