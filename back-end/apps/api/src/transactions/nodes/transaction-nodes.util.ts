@@ -10,16 +10,16 @@ export function compareTransactionNodes(n1: ITransactionNode, n2: ITransactionNo
 
 function compareNodesByGroupId(n1: ITransactionNode, n2: ITransactionNode): number {
   let result: number;
-  if (n1.groupId && n2.groupId) {
+  if (n1.groupId !== undefined && n2.groupId !== undefined) {
     if (n1.groupId !== n2.groupId) {
       result = n1.groupId < n2.groupId ? -1 : +1;
     } else {
       result = 0;
     }
-  } else if (n1.groupId) {
+  } else if (n1.groupId !== undefined) {
+    result = -1;
+  } else if (n2.groupId !== undefined) {
     result = +1;
-  } else if (n2.groupId) {
-    result = -1
   } else {
     result = 0;
   }
@@ -28,16 +28,16 @@ function compareNodesByGroupId(n1: ITransactionNode, n2: ITransactionNode): numb
 
 function compareNodesByTransactionId(n1: ITransactionNode, n2: ITransactionNode): number {
   let result: number;
-  if (n1.transactionId && n2.transactionId) {
+  if (n1.transactionId !== undefined && n2.transactionId !== undefined) {
     if (n1.transactionId !== n2.transactionId) {
       result = n1.transactionId < n2.transactionId ? -1 : +1;
     } else {
       result = 0;
     }
-  } else if (n1.transactionId) {
-    result = +1;
-  } else if (n2.transactionId) {
-    result = -1
+  } else if (n1.transactionId !== undefined) {
+    result = -1;
+  } else if (n2.transactionId !== undefined) {
+    result = +1
   } else {
     result = 0;
   }
