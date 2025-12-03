@@ -1,7 +1,7 @@
 import { TransactionNodeCollection } from '../dto/ITransactionNode';
 import { mock, mockDeep } from 'jest-mock-extended';
 import { TransactionsService } from '../transactions.service';
-import { TransactionNodesService } from './transaction-nodes.service';
+import { minValidStart, TransactionNodesService } from './transaction-nodes.service';
 import {
   Transaction,
   TransactionGroup,
@@ -488,9 +488,12 @@ describe('TransactionNodesService', () => {
     size: allTransactions.length,
   };
 
-  const getTransactionGroupMock = async (_user: User, groupId: number): Promise<TransactionGroup> => {
+  const getTransactionGroupMock = async (
+    _user: User,
+    groupId: number,
+  ): Promise<TransactionGroup> => {
     let result: TransactionGroup;
-    switch(groupId) {
+    switch (groupId) {
       case group1.id:
         result = group1;
         break;
@@ -501,10 +504,10 @@ describe('TransactionNodesService', () => {
         result = group3;
         break;
       default:
-        throw Error("Unexpected group id " + groupId);
+        throw Error('Unexpected group id ' + groupId);
     }
     return result;
-  }
+  };
 
   //
   // Nodes
@@ -585,8 +588,13 @@ describe('TransactionNodesService', () => {
   groupNode3.groupItemCount = 1;
   groupNode3.groupCollectedCount = 1;
 
-
-  const allNodes = [groupNode1, groupNode2, groupNode3, singleTransactionNode1, singleTransactionNode2];
+  const allNodes = [
+    groupNode1,
+    groupNode2,
+    groupNode3,
+    singleTransactionNode1,
+    singleTransactionNode2,
+  ];
 
   describe('getTransactionNodes()', () => {
     beforeEach(async () => {
@@ -692,6 +700,21 @@ describe('TransactionNodesService', () => {
       const r = await service.getTransactionNodes(user, TransactionNodeCollection.HISTORY);
 
       expect(r).toStrictEqual(allNodes);
+    });
+  });
+
+  describe('error report', () => {
+
+    it('minValidStart() should throw error when receiving empty array', () => {
+      expect(() => minValidStart([])).toThrow(Error);
+    });
+
+    it('maxUpdatedAt() should throw error when receiving empty array', () => {
+      expect(() => minValidStart([])).toThrow(Error);
+    });
+
+    it('maxExecutedAt() should throw error when receiving empty array', () => {
+      expect(() => minValidStart([])).toThrow(Error);
     });
   });
 });

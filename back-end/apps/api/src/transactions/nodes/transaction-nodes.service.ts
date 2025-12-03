@@ -133,11 +133,12 @@ export class TransactionNodesService {
   }
 }
 
-function minValidStart(transactions: Transaction[]): Date {
+export function minValidStart(transactions: Transaction[]): Date {
   let result: Date;
   if (transactions.length === 0) {
     throw new Error('Group with no transactions');
   } else {
+    // transactions contains at least one element
     result = transactions[0].validStart;
     for (const t of transactions) {
       if (t.validStart < result) {
@@ -148,7 +149,7 @@ function minValidStart(transactions: Transaction[]): Date {
   return result;
 }
 
-function maxUpdatedAt(transactions: Transaction[]): Date {
+export function maxUpdatedAt(transactions: Transaction[]): Date {
   let result: Date;
   if (transactions.length === 0) {
     throw new Error('Group with no transactions');
@@ -163,7 +164,7 @@ function maxUpdatedAt(transactions: Transaction[]): Date {
   return result;
 }
 
-function maxExecutedAt(transactions: Transaction[]): Date | undefined {
+export function maxExecutedAt(transactions: Transaction[]): Date | undefined {
   let result: Date | undefined;
   if (transactions.length === 0) {
     throw new Error('Group with no transactions');
