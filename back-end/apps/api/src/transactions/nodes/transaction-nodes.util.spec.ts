@@ -96,12 +96,12 @@ const malformedNode: ITransactionNode = {
 
 describe('Transaction Node Utils', () => {
   it('compareTransactionNodes()', () => {
-    expect(compareTransactionNodes(singleNode1, singleNode2)).toBe(+1);
-    expect(compareTransactionNodes(singleNode2, singleNode1)).toBe(-1);
+    expect(compareTransactionNodes(singleNode1, singleNode2)).toBe(-1);
+    expect(compareTransactionNodes(singleNode2, singleNode1)).toBe(+1);
     expect(compareTransactionNodes(singleNode1, singleNode1)).toBe(0);
 
-    expect(compareTransactionNodes(groupNode1, groupNode2)).toBe(+1);
-    expect(compareTransactionNodes(groupNode2, groupNode1)).toBe(-1);
+    expect(compareTransactionNodes(groupNode1, groupNode2)).toBe(-1);
+    expect(compareTransactionNodes(groupNode2, groupNode1)).toBe(+1);
     expect(compareTransactionNodes(groupNode1, groupNode1)).toBe(0);
 
     expect(compareTransactionNodes(groupNode1, singleNode1)).toBe(+1);
