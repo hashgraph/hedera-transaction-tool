@@ -331,8 +331,54 @@ describe('TransactionNodesService', () => {
     groupItem: null,
   };
 
+  const childTransactionDate5 = childTransactionDate4 + 4000;
+
+  const childTransaction5: Transaction = {
+    id: 4,
+    name: 'Test child transaction 5',
+    type: TransactionType.TRANSFER,
+    description: 'Test child  transaction description 5',
+    transactionId: '0.0.123@15648433.615112',
+    validStart: new Date(childTransactionDate5 + 3000),
+    transactionHash: '5a381df6a8s4f9e0asd8f46aw8e1f0asdd',
+    transactionBytes: Buffer.from(
+      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+    ),
+    unsignedTransactionBytes: Buffer.from(
+      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+    ),
+    signature: Buffer.from(
+      '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
+    ),
+    status: TransactionStatus.NEW,
+    statusCode: undefined,
+    mirrorNetwork: 'testnet',
+    isManual: false,
+    cutoffAt: new Date(childTransactionDate5),
+    createdAt: new Date(childTransactionDate5),
+    updatedAt: new Date(childTransactionDate5 + 2000),
+    deletedAt: null,
+    creatorKey: {
+      id: 1,
+      publicKey: 'publicKey',
+      mnemonicHash: 'mnemonicHash',
+      index: 1,
+      user: user,
+      userId: user.id,
+      deletedAt: null,
+      createdTransactions: [],
+      approvedTransactions: [],
+      signedTransactions: [],
+    },
+    signers: [],
+    approvers: [],
+    observers: [],
+    comments: [],
+    groupItem: null,
+  };
+
   //
-  // Group 1
+  // Group 1  { childTransaction1, childTransaction2 }
   //
 
   const group1: TransactionGroup = {
@@ -365,7 +411,7 @@ describe('TransactionNodesService', () => {
   group1.groupItems = [groupItem1_1, groupItem1_2];
 
   //
-  // Group 2
+  // Group 2 { childTransaction3, childTransaction4 }
   //
 
   const group2: TransactionGroup = {
@@ -398,6 +444,30 @@ describe('TransactionNodesService', () => {
   group2.groupItems = [groupItem2_1, groupItem2_2];
 
   //
+  // Group 3 { childTransaction5 }
+  //
+
+  const group3: TransactionGroup = {
+    id: 3,
+    description: 'Test group 3',
+    atomic: true,
+    sequential: true,
+    createdAt: new Date(),
+    groupItems: [],
+  };
+
+  const groupItem3_1: TransactionGroupItem = {
+    seq: 0,
+    transactionId: childTransaction5.id,
+    transaction: childTransaction5,
+    group: group3,
+    groupId: group3.id,
+  };
+  childTransaction5.groupItem = groupItem3_1;
+
+  group3.groupItems = [groupItem3_1];
+
+  //
   // All
   //
 
@@ -408,6 +478,7 @@ describe('TransactionNodesService', () => {
     childTransaction2,
     childTransaction4, // 4 before 3 to improve coverage
     childTransaction3,
+    childTransaction5,
   ];
 
   const allTransactionPage = {
@@ -425,6 +496,9 @@ describe('TransactionNodesService', () => {
         break;
       case group2.id:
         result = group2;
+        break;
+      case group3.id:
+        result = group3;
         break;
       default:
         throw Error("Unexpected group id " + groupId);
@@ -496,7 +570,23 @@ describe('TransactionNodesService', () => {
   groupNode2.groupItemCount = 2;
   groupNode2.groupCollectedCount = 2;
 
-  const allNodes = [groupNode1, groupNode2, singleTransactionNode1, singleTransactionNode2];
+  const groupNode3 = new TransactionNodeDto();
+  groupNode3.transactionId = undefined;
+  groupNode3.groupId = group3.id;
+  groupNode3.description = group3.description;
+  groupNode3.createdAt = group3.createdAt.toISOString();
+  groupNode3.validStart = childTransaction5.validStart.toISOString();
+  groupNode3.updatedAt = childTransaction5.updatedAt.toISOString();
+  groupNode3.executedAt = childTransaction5.executedAt?.toISOString();
+  groupNode3.status = childTransaction5.status;
+  groupNode3.statusCode = childTransaction5.statusCode;
+  groupNode3.sdkTransactionId = undefined;
+  groupNode3.transactionType = undefined;
+  groupNode3.groupItemCount = 1;
+  groupNode3.groupCollectedCount = 1;
+
+
+  const allNodes = [groupNode1, groupNode2, groupNode3, singleTransactionNode1, singleTransactionNode2];
 
   describe('getTransactionNodes()', () => {
     beforeEach(async () => {
