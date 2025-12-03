@@ -104,10 +104,10 @@ describe('Transaction Node Utils', () => {
     expect(compareTransactionNodes(groupNode2, groupNode1)).toBe(+1);
     expect(compareTransactionNodes(groupNode1, groupNode1)).toBe(0);
 
-    expect(compareTransactionNodes(groupNode1, singleNode1)).toBe(+1);
-    expect(compareTransactionNodes(singleNode1, groupNode1)).toBe(-1);
+    expect(compareTransactionNodes(groupNode1, singleNode1)).toBe(-1);
+    expect(compareTransactionNodes(singleNode1, groupNode1)).toBe(+1);
 
-    expect(compareTransactionNodes(singleNode1, malformedNode)).toBe(+1);
-    expect(compareTransactionNodes(malformedNode, singleNode1)).toBe(-1);
+    expect(compareTransactionNodes(singleNode1, malformedNode)).toBe(-1);
+    expect(compareTransactionNodes(malformedNode, singleNode1)).toBe(+1);
   });
 });
