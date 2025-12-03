@@ -12,7 +12,7 @@ function compareNodesByGroupId(n1: ITransactionNode, n2: ITransactionNode): numb
   let result: number;
   if (n1.groupId && n2.groupId) {
     if (n1.groupId !== n2.groupId) {
-      result = n1.groupId < n2.groupId ? +1 : -1;
+      result = n1.groupId < n2.groupId ? -1 : +1;
     } else {
       result = 0;
     }
@@ -30,7 +30,7 @@ function compareNodesByTransactionId(n1: ITransactionNode, n2: ITransactionNode)
   let result: number;
   if (n1.transactionId && n2.transactionId) {
     if (n1.transactionId !== n2.transactionId) {
-      result = n1.transactionId < n2.transactionId ? +1 : -1;
+      result = n1.transactionId < n2.transactionId ? -1 : +1;
     } else {
       result = 0;
     }
