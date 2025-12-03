@@ -5,6 +5,7 @@ import { TransactionNodeDto } from '../dto';
 import { TransactionNodeCollection } from '../dto/ITransactionNode';
 import { TransactionsService } from '../transactions.service';
 import { TransactionGroupsService } from '../groups';
+import { compareTransactionNodes } from './transaction-nodes.util';
 
 const PAGINATION_ALL: Pagination = {
   page: 0,
@@ -123,6 +124,10 @@ export class TransactionNodesService {
         result.push(node);
       }
     }
+
+    // We sort by node.transactionId / node.groupId
+    // => stable order will help in testing.
+    result.sort(compareTransactionNodes);
 
     return Promise.resolve(result);
   }
