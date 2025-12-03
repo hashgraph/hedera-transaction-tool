@@ -170,7 +170,7 @@ function maxExecutedAt(transactions: Transaction[]): Date | undefined {
   } else {
     result = transactions[0].executedAt;
     for (const t of transactions) {
-      if (t.executedAt > result) {
+      if (result === undefined || t.executedAt > result) {
         result = t.executedAt;
       }
     }

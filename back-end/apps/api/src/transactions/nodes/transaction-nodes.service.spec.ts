@@ -121,7 +121,7 @@ describe('TransactionNodesService', () => {
     signature: Buffer.from(
       '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
     ),
-    status: TransactionStatus.NEW,
+    status: TransactionStatus.EXECUTED, // different from singleTransaction1 to improve code coverage
     mirrorNetwork: 'testnet',
     isManual: false,
     cutoffAt: new Date(),
@@ -166,7 +166,8 @@ describe('TransactionNodesService', () => {
     signature: Buffer.from(
       '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
     ),
-    status: TransactionStatus.NEW,
+    status: TransactionStatus.EXECUTED,
+    statusCode: 22,
     mirrorNetwork: 'testnet',
     isManual: false,
     cutoffAt: new Date(childTransactionDate1),
@@ -211,7 +212,8 @@ describe('TransactionNodesService', () => {
     signature: Buffer.from(
       '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
     ),
-    status: TransactionStatus.NEW,
+    status: TransactionStatus.EXECUTED,
+    statusCode: 22,
     mirrorNetwork: 'testnet',
     isManual: false,
     cutoffAt: new Date(childTransactionDate2),
@@ -257,6 +259,7 @@ describe('TransactionNodesService', () => {
       '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
     ),
     status: TransactionStatus.EXECUTED,
+    statusCode: 22,
     mirrorNetwork: 'testnet',
     isManual: false,
     cutoffAt: new Date(childTransactionDate3),
@@ -301,7 +304,8 @@ describe('TransactionNodesService', () => {
     signature: Buffer.from(
       '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
     ),
-    status: TransactionStatus.EXECUTED,
+    status: TransactionStatus.FAILED,
+    statusCode: 42,
     mirrorNetwork: 'testnet',
     isManual: false,
     cutoffAt: new Date(childTransactionDate4),
@@ -485,8 +489,8 @@ describe('TransactionNodesService', () => {
   groupNode2.validStart = childTransaction3.validStart.toISOString();
   groupNode2.updatedAt = childTransaction4.updatedAt.toISOString();
   groupNode2.executedAt = childTransaction4.executedAt?.toISOString();
-  groupNode2.status = childTransaction3.status;
-  groupNode2.statusCode = childTransaction3.statusCode;
+  groupNode2.status = undefined;
+  groupNode2.statusCode = undefined;
   groupNode2.sdkTransactionId = undefined;
   groupNode2.transactionType = undefined;
   groupNode2.groupItemCount = 2;
