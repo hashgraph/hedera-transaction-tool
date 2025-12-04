@@ -141,7 +141,7 @@ export function minValidStart(transactions: Transaction[]): Date {
     // transactions contains at least one element
     result = transactions[0].validStart;
     for (const t of transactions) {
-      if (t.validStart < result) {
+      if (t.validStart.getTime() < result.getTime()) {
         result = t.validStart;
       }
     }
@@ -156,7 +156,7 @@ export function maxUpdatedAt(transactions: Transaction[]): Date {
   } else {
     result = transactions[0].updatedAt;
     for (const t of transactions) {
-      if (t.updatedAt > result) {
+      if (t.updatedAt.getTime() > result.getTime()) {
         result = t.updatedAt;
       }
     }
@@ -168,10 +168,13 @@ export function maxExecutedAt(transactions: Transaction[]): Date | undefined {
   let result: Date | undefined;
   if (transactions.length === 0) {
     throw new Error('Group with no transactions');
+  } else if (transactions.find((t) => t.executedAt === undefined)) {
+    // If one a transactions has undefined executedAt, we return undefined
+    result = undefined;
   } else {
-    result = transactions[0].executedAt;
+    result = undefined;
     for (const t of transactions) {
-      if (result === undefined || t.executedAt > result) {
+      if (result === undefined || t.executedAt!.getTime() > result.getTime()) {
         result = t.executedAt;
       }
     }
