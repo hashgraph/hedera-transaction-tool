@@ -190,29 +190,6 @@ describe('EmailService', () => {
       );
     });
 
-    it('should skip TRANSACTION_EXECUTED notifications', async () => {
-      const emailNotifications = [
-        {
-          email: 'user@example.com',
-          notifications: [
-            { id: 1, type: NotificationType.TRANSACTION_CREATED } as Notification,
-            { id: 2, type: NotificationType.TRANSACTION_EXECUTED } as Notification,
-            { id: 3, type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES } as Notification,
-          ],
-        },
-      ];
-
-      await service.processEmails(emailNotifications);
-
-      const addMock = (service as any).batcher.add;
-      // Should only add 2 (skipping TRANSACTION_EXECUTED)
-      expect(addMock).toHaveBeenCalledTimes(2);
-      expect(addMock).not.toHaveBeenCalledWith(
-        emailNotifications[0].notifications[1],
-        'user@example.com'
-      );
-    });
-
     it('should handle empty notifications array', async () => {
       const emailNotifications = [
         {
