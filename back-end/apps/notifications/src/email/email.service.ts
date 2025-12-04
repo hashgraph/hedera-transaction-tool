@@ -105,10 +105,7 @@ export class EmailService {
   async processEmails(emails: EmailNotificationDto[]) {
     for (const { email, notifications } of emails) {
       for (const notification of notifications) {
-        //Executed transaction email template is not fully implemented.
-        if (notification.type !== NotificationType.TRANSACTION_EXECUTED){
-          await this.batcher.add(notification, email);
-        }
+        await this.batcher.add(notification, email);
       }
     }
   }
