@@ -6,6 +6,7 @@ import * as Joi from 'joi';
 
 import {
   DatabaseModule,
+  ExecuteModule,
   LoggerMiddleware,
   LoggerModule,
   HealthModule,
@@ -15,9 +16,8 @@ import {
 
 import getEnvFilePaths from './config/envFilePaths';
 
-import { ExecuteModule } from './execute';
-import { TransactionStatusModule } from './transaction-status/transaction-status.module';
 import { ReminderHandlerService } from './transaction-reminder';
+import { TransactionSchedulerModule } from './transaction-scheduler';
 
 export const config = ConfigModule.forRoot({
   envFilePath: getEnvFilePaths(),
@@ -44,7 +44,7 @@ export const config = ConfigModule.forRoot({
     ScheduleModule.forRoot(),
     SchedulerModule.register({ isGlobal: true }),
     ExecuteModule,
-    TransactionStatusModule,
+    TransactionSchedulerModule,
     HealthModule,
   ],
   providers: [LoggerMiddleware, ReminderHandlerService],

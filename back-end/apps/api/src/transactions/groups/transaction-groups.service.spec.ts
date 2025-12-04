@@ -166,6 +166,45 @@ describe('TransactionGroupsService', () => {
       const result = await service.getTransactionGroup(user as User, 1);
       expect(result).toEqual(expectedGroup);
     });
+
+    it('calls attachTransactionSigners/Approvers for each group item and filters by verifyAccess', async () => {
+      const mockGroup = {
+        id: 1,
+        groupItems: [{ transaction: { id: 1 } }, { transaction: { id: 2 } }],
+      };
+      dataSource.manager.findOne.mockResolvedValue(mockGroup);
+
+      // Make asyncFilter actually invoke the provided callback so attach* functions are called
+      jest.mocked(asyncFilter).mockImplementationOnce(async (arr, cb) => {
+        const out: typeof arr = [];
+        for (const item of arr) {
+          // call the real callback used in the service
+          // eslint-disable-next-line @typescript-eslint/await-thenable
+          const keep = await cb(item);
+          if (keep) out.push(item);
+        }
+        return out;
+      });
+
+      // Ensure attach methods are present and resolvable
+      transactionsService.attachTransactionSigners.mockResolvedValue(undefined);
+      transactionsService.attachTransactionApprovers.mockResolvedValue(undefined);
+
+      // verifyAccess returns true for first item, false for second
+      transactionsService.verifyAccess
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false);
+
+      const result = await service.getTransactionGroup(user as User, 1);
+
+      expect(transactionsService.attachTransactionSigners).toHaveBeenCalledTimes(2);
+      expect(transactionsService.attachTransactionApprovers).toHaveBeenCalledTimes(2);
+      expect(transactionsService.verifyAccess).toHaveBeenCalledTimes(2);
+      expect(result).toEqual({
+        ...mockGroup,
+        groupItems: [{ transaction: { id: 1 } }],
+      });
+    });
   });
 
   describe('removeTransactionGroup', () => {

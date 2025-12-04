@@ -4,17 +4,34 @@ import { mockDeep } from 'jest-mock-extended';
 
 import {
   keysRequiredToSign,
-  MirrorNodeService,
   SchedulerService,
   parseTransactionSignKey,
   getRemindSignersDTO,
+  emitTransactionRemindSigners,
+  NatsPublisherService,
 } from '@app/common';
 import { Notification, NotificationType, Transaction, TransactionStatus, UserKey } from '@entities';
 
-import { ReceiverService } from '../receiver.service';
 import { ReminderHandlerService } from './reminder-handler.service';
 
-jest.mock('@app/common');
+jest.mock('@app/common', () => {
+  const original = jest.requireActual('@app/common');
+  return {
+    ...original,
+    NatsModule: {
+      forRoot: jest.fn().mockReturnValue({
+        module: class MockNatsModule {
+        },
+        providers: [],
+        exports: [],
+      }),
+    },
+    parseTransactionSignKey: jest.fn(original.parseTransactionSignKey) as unknown,
+    keysRequiredToSign: jest.fn(original.keysRequiredToSign) as unknown,
+    getRemindSignersDTO: jest.fn(original.getRemindSignersDTO) as unknown,
+    emitTransactionRemindSigners: jest.fn(original.emitTransactionRemindSigners) as unknown,
+  };
+});
 jest.mock('murlock', () => {
   const original = jest.requireActual('murlock');
   return {
@@ -29,9 +46,8 @@ jest.mock('murlock', () => {
 
 describe('ReminderHandlerService', () => {
   const entityManager = mockDeep<EntityManager>();
-  const mirrorNodeService = mockDeep<MirrorNodeService>();
-  const receiverService = mockDeep<ReceiverService>();
   const schedulerService = mockDeep<SchedulerService>();
+  const notificationsPublisher = mockDeep<NatsPublisherService>();
 
   let module: TestingModule;
   let service: ReminderHandlerService;
@@ -47,16 +63,12 @@ describe('ReminderHandlerService', () => {
           useValue: entityManager,
         },
         {
-          provide: MirrorNodeService,
-          useValue: mirrorNodeService,
-        },
-        {
-          provide: ReceiverService,
-          useValue: receiverService,
-        },
-        {
           provide: SchedulerService,
           useValue: schedulerService,
+        },
+        {
+          provide: NatsPublisherService,
+          useValue: notificationsPublisher,
         },
       ],
     }).compile();
@@ -98,7 +110,7 @@ describe('ReminderHandlerService', () => {
       await service.handleTransactionReminder(key);
 
       expect(entityManager.findOne).not.toHaveBeenCalled();
-      expect(receiverService.notifyGeneral).not.toHaveBeenCalled();
+      expect(emitTransactionRemindSigners).not.toHaveBeenCalled();
     });
 
     it('should not proceed if transaction is not found', async () => {
@@ -111,7 +123,7 @@ describe('ReminderHandlerService', () => {
         where: { id: transactionId },
         relations: { creatorKey: true },
       });
-      expect(receiverService.notifyGeneral).not.toHaveBeenCalled();
+      expect(emitTransactionRemindSigners).not.toHaveBeenCalled();
     });
 
     it('should not proceed if transaction is not waiting for signatures', async () => {
@@ -127,7 +139,7 @@ describe('ReminderHandlerService', () => {
         where: { id: transactionId },
         relations: { creatorKey: true },
       });
-      expect(receiverService.notifyGeneral).not.toHaveBeenCalled();
+      expect(emitTransactionRemindSigners).not.toHaveBeenCalled();
     });
 
     it('should not proceed if reminder notification already exists', async () => {
@@ -147,7 +159,7 @@ describe('ReminderHandlerService', () => {
           type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER,
         },
       });
-      expect(receiverService.notifyGeneral).not.toHaveBeenCalled();
+      expect(emitTransactionRemindSigners).not.toHaveBeenCalled();
     });
 
     it('should send reminder notification if conditions are met', async () => {
@@ -171,7 +183,7 @@ describe('ReminderHandlerService', () => {
           type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER,
         },
       });
-      expect(receiverService.notifyGeneral).toHaveBeenCalledWith('remind-signers-dto');
+      expect(emitTransactionRemindSigners).toHaveBeenCalled();
     });
   });
 });

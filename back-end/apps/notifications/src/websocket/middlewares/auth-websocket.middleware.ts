@@ -18,7 +18,7 @@ export type SocketIOMiddleware = {
  * occur before the connection is established.
  */
 export const AuthWebsocketMiddleware = (
-  apiService: ClientProxy,
+  authService: ClientProxy,
   blacklistService: BlacklistService,
   windowSeconds: number = 60,
   maxAttempts: number = 5,
@@ -94,7 +94,7 @@ export const AuthWebsocketMiddleware = (
       }
 
       /* Request authentication of the jwt from the API service. */
-      const response = apiService.send<User>('authenticate-websocket-token', {
+      const response = authService.send<User>('authenticate-websocket-token', {
         jwt,
       }).pipe(
         timeout(2000)

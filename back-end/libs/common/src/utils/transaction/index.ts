@@ -110,36 +110,58 @@ export const userKeysRequiredToSign = async (
 export async function processTransactionStatus(
   transactionRepo: Repository<Transaction>,
   mirrorNodeService: MirrorNodeService,
-  transaction: Transaction,
-): Promise<TransactionStatus | undefined> {
-  /* Returns if the transaction is null */
-  if (!transaction) return;
+  transactions: Transaction[],
+): Promise<Map<number, TransactionStatus>> {
+  const statusChanges = new Map<number, TransactionStatus>();
+  const updatesByStatus = new Map<TransactionStatus, number[]>();
 
-  /* Gets the SDK transaction from the transaction body */
-  const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
+  // Process all transactions and group updates as we go
+  for (const transaction of transactions) {
+    if (!transaction) continue;
 
-  /* Gets the signature key */
-  const signatureKey = await computeSignatureKey(
-    sdkTransaction,
-    mirrorNodeService,
-    transaction.mirrorNetwork,
-  );
+    const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
-  /* Checks if the transaction has a valid signature */
-  const isAbleToSign = hasValidSignatureKey([...sdkTransaction._signerPublicKeys], signatureKey);
+    const signatureKey = await computeSignatureKey(
+      sdkTransaction,
+      mirrorNodeService,
+      transaction.mirrorNetwork,
+    );
 
-  let newStatus = TransactionStatus.WAITING_FOR_SIGNATURES;
+    const isAbleToSign = hasValidSignatureKey(
+      [...sdkTransaction._signerPublicKeys],
+      signatureKey
+    );
 
-  if (isAbleToSign) {
-    const sdkTransaction = await smartCollate(transaction, mirrorNodeService);
+    let newStatus = TransactionStatus.WAITING_FOR_SIGNATURES;
 
-    if (sdkTransaction !== null) {
-      newStatus = TransactionStatus.WAITING_FOR_EXECUTION;
+    if (isAbleToSign) {
+      const collatedTx = await smartCollate(transaction, mirrorNodeService);
+
+      if (collatedTx !== null) {
+        newStatus = TransactionStatus.WAITING_FOR_EXECUTION;
+      }
+    }
+
+    if (transaction.status !== newStatus) {
+      // Track what changed (for return value)
+      statusChanges.set(transaction.id, newStatus);
+
+      // Group by status for bulk update
+      if (!updatesByStatus.has(newStatus)) {
+        updatesByStatus.set(newStatus, []);
+      }
+      updatesByStatus.get(newStatus)!.push(transaction.id);
     }
   }
 
-  if (transaction.status !== newStatus) {
-    await transactionRepo.update({ id: transaction.id }, { status: newStatus });
-    return newStatus;
+  // Execute one update per unique status
+  if (updatesByStatus.size > 0) {
+    await Promise.all(
+      Array.from(updatesByStatus.entries()).map(([status, ids]) =>
+        transactionRepo.update({ id: In(ids) }, { status })
+      )
+    );
   }
+
+  return statusChanges;
 }

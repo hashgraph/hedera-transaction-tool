@@ -1,4 +1,3 @@
-import { ClientProxy } from '@nestjs/microservices';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { mockDeep } from 'jest-mock-extended';
@@ -21,16 +20,15 @@ import {
   computeSignatureKey,
   getClientFromNetwork,
   getStatusCodeFromMessage,
+  ExecuteService,
   MirrorNodeService,
-  NOTIFICATIONS_SERVICE,
-  notifyTransactionAction,
   transactionIs,
+  NatsPublisherService,
+  emitTransactionStatusUpdate,
 } from '@app/common';
 import { Transaction, TransactionGroup, TransactionStatus } from '@entities';
 
-import { ExecuteService } from './execute.service';
-
-jest.mock('@app/common');
+jest.mock('@app/common/utils');
 jest.mock('murlock', () => {
   const original = jest.requireActual('murlock');
   return {
@@ -48,7 +46,7 @@ describe('ExecuteService', () => {
 
   const transactionRepo = mockDeep<Repository<Transaction>>();
   const transactionGroupRepo = mockDeep<Repository<TransactionGroup>>();
-  const notificationsService = mockDeep<ClientProxy>();
+  const notificationsPublisher = mockDeep<NatsPublisherService>();
   const mirrorNodeService = mockDeep<MirrorNodeService>();
 
   const getExecutableTransaction = (
@@ -135,8 +133,8 @@ describe('ExecuteService', () => {
           useValue: transactionRepo,
         },
         {
-          provide: NOTIFICATIONS_SERVICE,
-          useValue: notificationsService,
+          provide: NatsPublisherService,
+          useValue: notificationsPublisher,
         },
         {
           provide: MirrorNodeService,
@@ -263,7 +261,7 @@ describe('ExecuteService', () => {
         },
       );
       expect(client.close).toHaveBeenCalled();
-      expect(notifyTransactionAction).toHaveBeenCalled();
+      expect(emitTransactionStatusUpdate).toHaveBeenCalled();
     });
 
     it('should update the account info if the transaction is account update', async () => {
@@ -559,7 +557,7 @@ describe('ExecuteService', () => {
         );
       });
       expect(client.close).toHaveBeenCalled();
-      expect(notifyTransactionAction).toHaveBeenCalled();
+      expect(emitTransactionStatusUpdate).toHaveBeenCalled();
     });
 
     it('should throw error if failed to get validated transaction from the group', async () => {

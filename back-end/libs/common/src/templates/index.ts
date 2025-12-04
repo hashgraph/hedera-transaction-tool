@@ -3,12 +3,15 @@ import { generateNotifyUserRegisteredContent } from '@app/common/templates/user-
 import { generateTransactionReadyForExecutionContent } from '@app/common/templates/transaction-ready-for-execution';
 import { generateRemindSignersContent } from '@app/common/templates/remind-signers';
 import {
-  generateTransactionWaitingForSignaturesContent
+  generateTransactionWaitingForSignaturesContent,
 } from '@app/common/templates/transaction-waiting-for-signatures';
 import { generateTransactionCancelledContent } from '@app/common/templates/transaction-cancelled';
+import { generateTransactionExecutedContent } from '@app/common/templates/transaction-executed';
 
 export * from './remind-signers';
 export * from './reset-password';
+export * from './transaction-cancelled';
+export * from './transaction-executed';
 export * from './transaction-ready-for-execution';
 export * from './transaction-waiting-for-signatures';
 export * from './user-registered';
@@ -22,6 +25,8 @@ export const generateEmailContent = (type: string | NotificationType, ...notific
       return generateRemindSignersContent(...notifications);
     case NotificationType.TRANSACTION_READY_FOR_EXECUTION:
       return generateTransactionReadyForExecutionContent(...notifications);
+    case NotificationType.TRANSACTION_EXECUTED:
+      return generateTransactionExecutedContent(...notifications);
     case NotificationType.TRANSACTION_CANCELLED:
       return generateTransactionCancelledContent(...notifications);
     case NotificationType.USER_REGISTERED:

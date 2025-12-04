@@ -42,9 +42,9 @@ describe('FanOutConsumerService', () => {
     it('should return correct consumer config with unique durable name', () => {
       const config = service['getConsumerConfig']();
 
-      expect(config.streamName).toBe('NOTIFICATIONS_FANOUT');
-      expect(config.durableName).toMatch(/^FANOUT_CONSUMER_[a-f0-9-]+$/);
-      expect(config.filterSubject).toBe('notifications.fanout.>');
+      expect(config.streamName).toBe('NOTIFICATIONS_FAN_OUT');
+      expect(config.durableName).toMatch(/^FAN_OUT_CONSUMER_[a-f0-9-]+$/);
+      expect(config.filterSubject).toBe('notifications.fan-out.>');
     });
 
     it('should generate unique consumer names for different instances', () => {

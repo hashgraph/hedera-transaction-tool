@@ -4,7 +4,6 @@ import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
 
 import {
-  ApiProxyModule,
   AuthProxyModule,
   LoggerModule,
   LoggerMiddleware,
@@ -53,7 +52,6 @@ export const config = ConfigModule.forRoot({
     ReceiverModule,
     LoggerModule,
     WebsocketModule,
-    ApiProxyModule,
     AuthProxyModule,
     HealthModule,
     NatsModule.forRoot(),

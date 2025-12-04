@@ -488,25 +488,22 @@ describe('BaseNatsConsumerService', () => {
       expect(logSpy).toHaveBeenCalledWith('Shutting down consumer'); // assert the spy
     });
 
-    it('should handle errors during shutdown', async () => {
-      mockConsumer.consume.mockImplementation(async function* () {
-        throw new Error('Shutdown error');
-      } as any);
+    it('logs error when consumePromise rejects during shutdown', async () => {
+      const shutdownError = new Error('Shutdown failure');
 
+      // make consumePromise reject slightly later so awaiting it triggers the catch
+      service['consumePromise'] = new Promise((_, reject) => setTimeout(() => reject(shutdownError), 0));
+
+      const logSpy = jest.spyOn(service['logger'], 'log');
       const errorSpy = jest.spyOn(service['logger'], 'error');
-
-      await service.onModuleInit();
-      await new Promise(resolve => setTimeout(resolve, 50));
 
       await service.onModuleDestroy();
 
-      expect(errorSpy).toHaveBeenCalled();
+      expect(logSpy).toHaveBeenCalledWith('Shutting down consumer');
+      expect(errorSpy).toHaveBeenCalledWith('Error closing consumer', shutdownError);
 
-      const firstArg = (errorSpy as jest.Mock).mock.calls[0][0];
-      expect(
-        typeof firstArg === 'string' &&
-        (firstArg.includes('Error closing consumer') || firstArg.includes('Consumer loop error'))
-      ).toBe(true);
+      logSpy.mockRestore();
+      errorSpy.mockRestore();
     });
 
     it('should not throw if consumePromise does not exist', async () => {

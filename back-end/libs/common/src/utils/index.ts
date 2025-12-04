@@ -3,7 +3,6 @@ export * from './sdk';
 export * from './mirrorNode';
 export * from './model';
 export * from './typeORM';
-export * from './test';
 export * from './transaction';
 export * from './user';
 export * from './client';

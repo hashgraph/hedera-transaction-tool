@@ -41,7 +41,10 @@ describe('EmailConsumerService', () => {
       expect(config).toEqual({
         streamName: 'NOTIFICATIONS_QUEUE',
         durableName: 'email_queue_worker',
-        filterSubject: 'notifications.queue.email.>',
+        filterSubjects: [
+          'notifications.queue.email',
+          'notifications.queue.email.>',
+        ],
       });
     });
   });

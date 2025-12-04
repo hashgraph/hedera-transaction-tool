@@ -723,9 +723,9 @@ export class TransactionsService {
     return (
       userKeysToSign.length !== 0 ||
       transaction.creatorKey?.userId === user.id ||
-      transaction.observers?.some(o => o.userId === user.id) ||
-      transaction.signers?.some(s => s.userKey?.userId === user.id) ||
-      transaction.approvers?.some(a => a.userId === user.id)
+      !!transaction.observers?.some(o => o.userId === user.id) ||
+      !!transaction.signers?.some(s => s.userKey?.userId === user.id) ||
+      !!transaction.approvers?.some(a => a.userId === user.id)
     );
   }
 

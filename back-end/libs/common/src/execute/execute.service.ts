@@ -1,5 +1,4 @@
-import { ClientProxy } from '@nestjs/microservices';
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
@@ -11,19 +10,16 @@ import {
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
-import { Transaction, TransactionStatus } from '@entities';
+import { Transaction, TransactionGroup, TransactionStatus } from '@entities';
 
 import {
   computeSignatureKey,
-  ExecuteTransactionDto,
-  ExecuteTransactionGroupDto,
+  emitTransactionStatusUpdate,
   getClientFromNetwork,
   getStatusCodeFromMessage,
   hasValidSignatureKey,
   MirrorNodeService,
-  NOTIFICATIONS_SERVICE,
-  notifySyncIndicators,
-  notifyTransactionAction,
+  NatsPublisherService,
   sleep,
   TransactionExecutedDto,
   TransactionGroupExecutedDto,
@@ -34,31 +30,42 @@ import {
 export class ExecuteService {
   constructor(
     @InjectRepository(Transaction) private transactionsRepo: Repository<Transaction>,
-    @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
+    private readonly notificationsPublisher: NatsPublisherService,
     private readonly mirrorNodeService: MirrorNodeService,
-  ) {}
+  ) {
+  }
 
   /* Tries to execute a transaction */
   @MurLock(15000, 'transaction.id')
-  async executeTransaction(transaction: ExecuteTransactionDto) {
+  async executeTransaction(transaction: Transaction) {
     /* Gets the SDK transaction */
     const sdkTransaction = await this.getValidatedSDKTransaction(transaction);
-    return await this._executeTransaction(transaction, sdkTransaction);
+    const results = await this._executeTransaction(transaction, sdkTransaction);
+    emitTransactionStatusUpdate(
+      this.notificationsPublisher,
+      [{
+        entityId: transaction.id,
+        additionalData: {
+          network: transaction.mirrorNetwork,
+          transactionId: sdkTransaction.transactionId,
+          status: results.status,
+        }
+      }],
+    );
+    return results;
   }
 
   @MurLock(15000, 'transactionGroup.id + "_group"')
-  async executeTransactionGroup(transactionGroup: ExecuteTransactionGroupDto) {
-    const filteredTransactionGroup: ExecuteTransactionGroupDto = {
-      ...transactionGroup,
-      groupItems: transactionGroup.groupItems.filter(
-        tx => tx.transaction.status === TransactionStatus.WAITING_FOR_EXECUTION
-      ),
-    };
-    const transactions: { sdkTransaction: SDKTransaction; transaction: ExecuteTransactionDto }[] =
+  async executeTransactionGroup(transactionGroup: TransactionGroup) {
+    console.log('executing transactions');
+    transactionGroup.groupItems = transactionGroup.groupItems.filter(
+      tx => tx.transaction.status === TransactionStatus.WAITING_FOR_EXECUTION
+    );
+    const transactions: { sdkTransaction: SDKTransaction; transaction: Transaction }[] =
       [];
     // first we need to validate all the transactions, as they all need to be valid before we can execute any of them
-    for (const groupItemDto of filteredTransactionGroup.groupItems) {
-      const transaction = groupItemDto.transaction;
+    for (const groupItem of transactionGroup.groupItems) {
+      const transaction = groupItem.transaction;
       try {
         const sdkTransaction = await this.getValidatedSDKTransaction(transaction);
         transactions.push({ sdkTransaction, transaction });
@@ -89,11 +96,26 @@ export class ExecuteService {
       results.transactions.push(...(await Promise.all(executionPromises)));
     }
 
+    emitTransactionStatusUpdate(
+      this.notificationsPublisher,
+      transactions.map(({ sdkTransaction, transaction }, i) => {
+        const result = results.transactions[i];
+        return {
+          entityId: transaction.id,
+          additionalData: {
+            network: transaction.mirrorNetwork,
+            transactionId: sdkTransaction.transactionId?.toString?.() ?? String(sdkTransaction.transactionId),
+            status: result?.status,
+          },
+        };
+      }),
+    );
+
     return results;
   }
 
   private async _executeTransaction(
-    transaction: ExecuteTransactionDto,
+    transaction: Transaction,
     sdkTransaction: SDKTransaction,
   ) {
     /* Execute the transaction */
@@ -134,18 +156,13 @@ export class ExecuteService {
 
       client.close();
 
-      notifySyncIndicators(this.notificationsService, transaction.id, transactionStatus, {
-        network: transaction.mirrorNetwork,
-      });
-      notifyTransactionAction(this.notificationsService);
-
       this.sideEffect(sdkTransaction, transaction.mirrorNetwork);
     }
     return result;
   }
 
   private async getValidatedSDKTransaction(
-    transaction: ExecuteTransactionDto,
+    transaction: Transaction,
   ): Promise<SDKTransaction> {
     /* Throws an error if the transaction is not found or in incorrect state */
     if (!transaction) throw new Error('Transaction not found');
@@ -170,7 +187,7 @@ export class ExecuteService {
   }
 
   /* Throws if the transaction is not in a valid state */
-  private async validateTransactionStatus(transaction: ExecuteTransactionDto) {
+  private async validateTransactionStatus(transaction: Transaction) {
     const { status } = await this.transactionsRepo.findOne({
       where: { id: transaction.id },
       select: ['status'],

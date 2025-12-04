@@ -216,6 +216,22 @@ describe('TransactionsService', () => {
         page: defaultPagination.page,
         size: defaultPagination.size,
       });
+      // execute the Brackets callback so the arrow function inside `new Brackets(qb => ...)` actually runs
+      const bracketsArg = (queryBuilder.orWhere as jest.Mock).mock.calls[0][0];
+
+      // try several possible property names where TypeORM stores the callback
+      const maybeFn =
+        (bracketsArg as any).whereFactory ||
+        (bracketsArg as any)._whereFactory ||
+        (bracketsArg as any).whereFn ||
+        (bracketsArg as any).builderFactory;
+
+      // if found, call it with a fake qb that implements where/andWhere
+      if (typeof maybeFn === 'function') {
+        const fakeQb = { where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis() };
+        maybeFn.call(bracketsArg, fakeQb);
+        expect((fakeQb.andWhere as jest.Mock).mock.calls.length).toBeGreaterThan(0);
+      }
     });
   });
 
@@ -359,13 +375,19 @@ describe('TransactionsService', () => {
 
     it('should return transactions to approve for the user', async () => {
       const mockTransactions = [{ id: 1 }, { id: 2 }];
-      transactionsRepo.createQueryBuilder.mockImplementation(
-        () =>
-          ({
-            setFindOptions: jest.fn().mockReturnThis(),
-            where: jest.fn().mockReturnThis(),
-            getManyAndCount: jest.fn().mockResolvedValue([mockTransactions, 2]),
-          }) as unknown as SelectQueryBuilder<Transaction>,
+      const queryBuilder: Partial<SelectQueryBuilder<Transaction>> & {
+        setFindOptions: jest.Mock;
+        where: jest.Mock;
+        getManyAndCount: jest.Mock;
+      } = {
+        setFindOptions: jest.fn().mockReturnThis(),
+        // keep the same object returned so tests can read `queryBuilder.where.mock.calls`
+        where: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([mockTransactions, 2]),
+      };
+
+      transactionsRepo.createQueryBuilder.mockReturnValue(
+        queryBuilder as unknown as SelectQueryBuilder<Transaction>,
       );
 
       const result = await service.getTransactionsToApprove(user as User, {
@@ -376,6 +398,22 @@ describe('TransactionsService', () => {
       });
       expect(result.totalItems).toBe(2);
       expect(result.items).toHaveLength(2);
+      // execute the Brackets callback so the arrow function inside `new Brackets(qb => ...)` actually runs
+      const whereArg = (queryBuilder.where as jest.Mock).mock.calls[0][0];
+
+      // try several possible property names where TypeORM stores the callback
+      const maybeFn =
+        (whereArg as any).whereFactory ||
+        (whereArg as any)._whereFactory ||
+        (whereArg as any).whereFn ||
+        (whereArg as any).builderFactory ||
+        (whereArg as any).whereCallback;
+
+      if (typeof maybeFn === 'function') {
+        const fakeQb = { where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis() };
+        maybeFn.call(whereArg, fakeQb);
+        expect((fakeQb.andWhere as jest.Mock).mock.calls.length).toBeGreaterThan(0);
+      }
     });
   });
 
@@ -688,6 +726,72 @@ describe('TransactionsService', () => {
 
       client.close();
     });
+
+    it('should wrap unexpected errors with annotated BadRequestException', async () => {
+      const sdkTransaction = new AccountCreateTransaction().setTransactionId(
+        new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
+      );
+
+      const dto: CreateTransactionDto = {
+        name: 'Transaction X',
+        description: 'Description',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+
+      // ensure attachKeys populates keys so code reaches the try block
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
+      });
+
+      // return a valid client so the code enters the try block
+      const client = Client.forTestnet();
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+
+      // make signature & other validators pass so validation does not throw
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+
+      // force an unexpected error inside the try by making the repo check fail
+      transactionsRepo.find.mockRejectedValueOnce(new Error('unexpected failure'));
+
+      await expect(service.createTransaction(dto, user as User)).rejects.toThrow(
+        'An unexpected error occurred while creating transactions: unexpected failure',
+      );
+
+      client.close();
+    });
+
+    it('should throw if creator key not found', async () => {
+      // prepare a minimal SDK transaction so validate path runs
+      const sdkTransaction = new AccountCreateTransaction().setTransactionId(TransactionId.generate('0.0.1'));
+      const dto: CreateTransactionDto = {
+        mirrorNetwork: 'testnet',
+        creatorKeyId: 9999, // id that does not exist on the user
+        transactionBytes: sdkTransaction.toBytes(),
+        signature: Buffer.from('00'),
+        transactionId: sdkTransaction.transactionId.toString(),
+      } as any;
+
+      const client = Client.forTestnet();
+
+      // ensure attachKeys leaves the user with no keys so creatorKey is not found
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = [];
+      });
+
+      // return a valid client so createTransactions proceeds to validation
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+
+      await expect(service.createTransaction(dto as CreateTransactionDto, user as User)).rejects.toThrow(
+        `Creator key ${dto.creatorKeyId} not found`,
+      );
+
+      client.close();
+    });
   });
 
   describe('importSignatures', () => {
@@ -884,6 +988,125 @@ describe('TransactionsService', () => {
         id: transactionId,
         error: 'An unexpected error occurred while saving the signatures: Fail',
       });
+    });
+
+    it('should return error if user does not have verified access', async () => {
+      const transaction = {
+        id: transactionId,
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      await sdkTransaction.sign(privateKey);
+
+      entityManager.find.mockResolvedValue([transaction]);
+
+      // force verifyAccess to say the user has no access
+      jest.spyOn(service, 'verifyAccess').mockResolvedValueOnce(false);
+
+      const result = await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys,
+      );
+
+      expect(result[0]).toMatchObject({
+        id: transactionId,
+        error: expect.stringContaining(ErrorCodes.TNF),
+      });
+    });
+
+    it('should return generic error if safe throws unexpectedly', async () => {
+      const transaction = {
+        id: transactionId,
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      await sdkTransaction.sign(privateKey);
+
+      entityManager.find.mockResolvedValue([transaction]);
+
+      // user has access
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+
+      // simulate unexpected throw from safe()
+      jest.mocked(safe).mockImplementationOnce(() => {
+        throw new Error('boom');
+      });
+
+      const result = await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys,
+      );
+
+      expect(result[0]).toMatchObject({
+        id: transactionId,
+        error: 'An unexpected error occurred while importing the signatures',
+      });
+    });
+  });
+
+// typescript
+  describe('verifyAccess', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('should throw if no transaction provided', async () => {
+      await expect(service.verifyAccess(null, user as User)).rejects.toThrow(ErrorCodes.TNF);
+    });
+
+    it('should return true for history/executed statuses', async () => {
+      const tx = { status: TransactionStatus.EXECUTED } as Transaction;
+      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
+    });
+
+    it('should return true if user has keys to sign', async () => {
+      const tx = { status: TransactionStatus.WAITING_FOR_SIGNATURES } as Transaction;
+      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([1]);
+      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
+    });
+
+    it('should return true if user is creator', async () => {
+      const tx = {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        creatorKey: { userId: user.id },
+      } as Transaction;
+      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
+    });
+
+    it('should return true if user is observer', async () => {
+      const tx = {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        observers: [{ userId: user.id }],
+      } as Transaction;
+      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
+    });
+
+    it('should return true if user is signer', async () => {
+      const tx = {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        signers: [{ userKey: { userId: user.id } }],
+      } as unknown as Transaction;
+      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
+    });
+
+    it('should return true if user is approver', async () => {
+      const tx = {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        approvers: [{ userId: user.id }],
+      } as Transaction;
+      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
+    });
+
+    it('should return false if user has no access', async () => {
+      const tx = { status: TransactionStatus.WAITING_FOR_SIGNATURES } as Transaction;
+      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(false);
     });
   });
 

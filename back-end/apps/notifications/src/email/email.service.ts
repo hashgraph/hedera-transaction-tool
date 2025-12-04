@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import * as nodemailer from 'nodemailer';
+import { SendMailOptions } from 'nodemailer';
 
 import {
   EmailDto,
@@ -11,8 +12,7 @@ import {
   NotificationTypeEmailSubjects,
 } from '@app/common';
 import { DebouncedNotificationBatcher } from '../utils';
-import { Notification } from '@entities';
-import { SendMailOptions } from 'nodemailer';
+import { Notification, NotificationType } from '@entities';
 import { EmailNotificationDto } from '../dtos';
 
 @Injectable()
@@ -105,7 +105,10 @@ export class EmailService {
   async processEmails(emails: EmailNotificationDto[]) {
     for (const { email, notifications } of emails) {
       for (const notification of notifications) {
-        await this.batcher.add(notification, email);
+        //Executed transaction email template is not fully implemented.
+        if (notification.type !== NotificationType.TRANSACTION_EXECUTED){
+          await this.batcher.add(notification, email);
+        }
       }
     }
   }

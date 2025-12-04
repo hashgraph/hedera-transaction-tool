@@ -28,6 +28,8 @@ describe('WebsocketGateway', () => {
   };
 
   beforeEach(async () => {
+    jest.useFakeTimers();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WebsocketGateway,
@@ -55,6 +57,10 @@ describe('WebsocketGateway', () => {
       emit: jest.fn(),
       to: jest.fn().mockReturnThis(),
     };
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
   });
 
   it('should be defined', () => {
@@ -141,6 +147,24 @@ describe('WebsocketGateway', () => {
       const batcherAddSpy = jest.spyOn(gateway['batcher'], 'add');
 
       gateway.notifyUser(userId, message, data);
+
+      expect(batcherAddSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: message,
+          content: [data],
+        }),
+        userId,
+      );
+    });
+
+    it('should add a new message to the batcher with a user group key and array of data', () => {
+      const userId = 1;
+      const message = 'Test message';
+      const data = 'Test data';
+
+      const batcherAddSpy = jest.spyOn(gateway['batcher'], 'add');
+
+      gateway.notifyUser(userId, message, [data]);
 
       expect(batcherAddSpy).toHaveBeenCalledWith(
         expect.objectContaining({

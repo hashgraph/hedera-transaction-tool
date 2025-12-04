@@ -1,5 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 
@@ -8,24 +7,24 @@ import { Status } from '@hashgraph/sdk';
 
 import {
   MirrorNodeService,
-  NOTIFICATIONS_SERVICE,
+  ExecuteService,
   smartCollate,
-  notifyTransactionAction,
-  notifySyncIndicators,
-  UpdateTransactionStatusDto,
+  emitTransactionStatusUpdate,
   processTransactionStatus,
-  notifyStatusChange,
+  NatsPublisherService,
 } from '@app/common';
-import { Transaction, TransactionGroup, TransactionStatus } from '@entities';
-
-import { ExecuteService } from '../execute';
+import {
+  Transaction,
+  TransactionGroup,
+  TransactionStatus
+} from '@entities';
 
 @Injectable()
-export class TransactionStatusService {
+export class TransactionSchedulerService {
   constructor(
     @InjectRepository(Transaction) private transactionRepo: Repository<Transaction>,
     @InjectRepository(TransactionGroup) private transactionGroupRepo: Repository<TransactionGroup>,
-    @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
+    private readonly notificationsPublisher: NatsPublisherService,
     private schedulerRegistry: SchedulerRegistry,
     private readonly executeService: ExecuteService,
     private readonly mirrorNodeService: MirrorNodeService,
@@ -122,15 +121,16 @@ export class TransactionStatusService {
           { id: transaction.id },
           { status: TransactionStatus.EXPIRED },
         );
-
-        notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.EXPIRED, {
-          transactionId: transaction.transactionId,
-          network: transaction.mirrorNetwork,
-        });
       }
 
       if (transactions.length > 0) {
-        notifyTransactionAction(this.notificationsService);
+        emitTransactionStatusUpdate(this.notificationsPublisher, transactions.map(t => ({
+          entityId: t.id,
+          additionalData: {
+            transactionId: t.transactionId,
+            network: t.mirrorNetwork,
+          },
+        })));
       }
     });
   }
@@ -158,44 +158,14 @@ export class TransactionStatusService {
       },
     });
 
-    let atLeastOneUpdated = false;
+    const results = await processTransactionStatus(this.transactionRepo, this.mirrorNodeService, transactions);
 
-    for (const transaction of transactions) {
-      try {
-        const newStatus = await processTransactionStatus(this.transactionRepo, this.mirrorNodeService, transaction);
-
-        if (!newStatus) continue;
-
-        notifyStatusChange(this.notificationsService, transaction, newStatus);
-
-        atLeastOneUpdated = true;
-      } catch (error) {
-        console.log(error);
-      }
-    }
-
-    if (atLeastOneUpdated) {
-      notifyTransactionAction(this.notificationsService);
+    if (results.size > 0) {
+      const events = Array.from(results.keys(), id => ({ entityId: id }));
+      emitTransactionStatusUpdate(this.notificationsPublisher, events);
     }
 
     return transactions;
-  }
-
-  /* Checks if the signers are enough to sign the transaction and update its status */
-  async updateTransactionStatus({ id }: UpdateTransactionStatusDto) {
-    const transaction = await this.transactionRepo.findOne({
-      where: { id },
-      relations: {
-        creatorKey: true,
-      },
-    });
-
-    const newStatus = await processTransactionStatus(this.transactionRepo, this.mirrorNodeService, transaction);
-
-    if (!newStatus) return;
-
-    notifyStatusChange(this.notificationsService, transaction, newStatus);
-    notifyTransactionAction(this.notificationsService);
   }
 
   async prepareTransactions(transactions: Transaction[]) {
@@ -278,8 +248,12 @@ export class TransactionStatusService {
                 statusCode: Status.TransactionOversize._code,
               },
             );
-            notifyStatusChange(this.notificationsService, groupItem.transaction, TransactionStatus.FAILED);
           }
+
+          emitTransactionStatusUpdate(
+            this.notificationsPublisher,
+            transactionGroup.groupItems.map(gi => ({ entityId: gi.transaction.id })),
+          );
           return;
         }
 
@@ -320,7 +294,7 @@ export class TransactionStatusService {
               statusCode: Status.TransactionOversize._code,
             },
           );
-          notifyStatusChange(this.notificationsService, transaction, TransactionStatus.FAILED);
+          emitTransactionStatusUpdate(this.notificationsPublisher, [{ entityId: transaction.id }]);
           return;
         }
 

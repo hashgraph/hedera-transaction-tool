@@ -1,20 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ClientProxy } from '@nestjs/microservices';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { mockDeep } from 'jest-mock-extended';
 import { Repository } from 'typeorm';
 
 import {
-  hasValidSignatureKey,
   computeSignatureKey,
+  ExecuteService,
   MirrorNodeService,
-  NOTIFICATIONS_SERVICE,
   smartCollate,
-  notifySyncIndicators,
-  notifyTransactionAction,
+  NatsPublisherService,
+  emitTransactionStatusUpdate,
   processTransactionStatus,
-  notifyStatusChange,
 } from '@app/common';
 import {
   Transaction,
@@ -23,8 +20,7 @@ import {
   TransactionStatus,
 } from '@entities';
 
-import { TransactionStatusService } from './transaction-status.service';
-import { ExecuteService } from '../execute';
+import { TransactionSchedulerService } from './transaction-scheduler.service';
 import {
   AccountCreateTransaction,
   AccountId,
@@ -36,13 +32,6 @@ import {
   Status,
 } from '@hashgraph/sdk';
 
-jest.mock('@app/common', () => {
-  const actual = jest.requireActual('@app/common');
-  return {
-    ...actual,
-    Acked: () => () => {}, // mock decorator as a no-op
-  };
-});
 jest.mock('@app/common/utils');
 jest.mock('@nestjs/schedule', () => {
   const original = jest.requireActual('@nestjs/schedule');
@@ -61,17 +50,12 @@ jest.mock('@nestjs/schedule', () => {
   };
 });
 
-const expectNotifyNotCalled = () => {
-  expect(notifyTransactionAction).not.toHaveBeenCalled();
-  expect(notifySyncIndicators).not.toHaveBeenCalled();
-};
-
 describe('TransactionStatusService', () => {
-  let service: TransactionStatusService;
+  let service: TransactionSchedulerService;
 
   const transactionRepo = mockDeep<Repository<Transaction>>();
   const transactionGroupRepo = mockDeep<Repository<TransactionGroup>>();
-  const notificationsService = mockDeep<ClientProxy>();
+  const notificationsPublisher = mockDeep<NatsPublisherService>();
   const schedulerRegistry = mockDeep<SchedulerRegistry>();
   const executeService = mockDeep<ExecuteService>();
   const mirrorNodeService = mockDeep<MirrorNodeService>();
@@ -88,7 +72,7 @@ describe('TransactionStatusService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        TransactionStatusService,
+        TransactionSchedulerService,
         {
           provide: getRepositoryToken(Transaction),
           useValue: transactionRepo,
@@ -98,8 +82,8 @@ describe('TransactionStatusService', () => {
           useValue: transactionGroupRepo,
         },
         {
-          provide: NOTIFICATIONS_SERVICE,
-          useValue: notificationsService,
+          provide: NatsPublisherService,
+          useValue: notificationsPublisher,
         },
         {
           provide: SchedulerRegistry,
@@ -116,7 +100,7 @@ describe('TransactionStatusService', () => {
       ],
     }).compile();
 
-    service = module.get<TransactionStatusService>(TransactionStatusService);
+    service = module.get<TransactionSchedulerService>(TransactionSchedulerService);
   });
 
   it('should be defined', () => {
@@ -129,6 +113,8 @@ describe('TransactionStatusService', () => {
 
     jest.spyOn(service, 'updateTransactions');
     jest.spyOn(service, 'getThreeMinutesBefore');
+
+    jest.mocked(processTransactionStatus).mockResolvedValue(new Map());
 
     await service.handleInitialTransactionStatusUpdate();
 
@@ -160,6 +146,8 @@ describe('TransactionStatusService', () => {
     jest.spyOn(service, 'updateTransactions');
     jest.spyOn(service, 'getOneWeekLater');
 
+    jest.mocked(processTransactionStatus).mockResolvedValue(new Map());
+
     await service.handleTransactionsAfterOneWeek();
 
     expect(service.updateTransactions).toHaveBeenCalled();
@@ -173,6 +161,8 @@ describe('TransactionStatusService', () => {
     jest.spyOn(service, 'updateTransactions');
     jest.spyOn(service, 'getOneDayLater');
     jest.spyOn(service, 'getOneWeekLater');
+
+    jest.mocked(processTransactionStatus).mockResolvedValue(new Map());
 
     await service.handleTransactionsBetweenOneDayAndOneWeek();
 
@@ -189,6 +179,8 @@ describe('TransactionStatusService', () => {
     jest.spyOn(service, 'getOneHourLater');
     jest.spyOn(service, 'getOneDayLater');
 
+    jest.mocked(processTransactionStatus).mockResolvedValue(new Map());
+
     await service.handleTransactionsBetweenOneHourAndOneDay();
 
     expect(service.updateTransactions).toHaveBeenCalled();
@@ -203,6 +195,8 @@ describe('TransactionStatusService', () => {
     jest.spyOn(service, 'updateTransactions');
     jest.spyOn(service, 'getOneHourLater');
     jest.spyOn(service, 'getTenMinutesLater');
+
+    jest.mocked(processTransactionStatus).mockResolvedValue(new Map());
 
     await service.handleTransactionsBetweenTenMinutesAndOneHour();
 
@@ -219,6 +213,8 @@ describe('TransactionStatusService', () => {
     jest.spyOn(service, 'getThreeMinutesLater');
     jest.spyOn(service, 'getTenMinutesLater');
 
+    jest.mocked(processTransactionStatus).mockResolvedValue(new Map());
+
     await service.handleTransactionsBetweenThreeMinutesAndTenMinutes();
 
     expect(service.updateTransactions).toHaveBeenCalled();
@@ -233,6 +229,8 @@ describe('TransactionStatusService', () => {
     jest.spyOn(service, 'updateTransactions');
     jest.spyOn(service, 'getThreeMinutesBefore');
     jest.spyOn(service, 'getThreeMinutesLater');
+
+    jest.mocked(processTransactionStatus).mockResolvedValue(new Map());
 
     await service.handleTransactionsBetweenNowAndAfterThreeMinutes();
 
@@ -261,10 +259,12 @@ describe('TransactionStatusService', () => {
   it('should updates for expired transactions', async () => {
     mockTransaction();
 
+    const network = 'testnet';
+
     const expiredTransactions = [
-      { id: 1, status: TransactionStatus.NEW, mirrorNetwork: 'testnet' },
-      { id: 2, status: TransactionStatus.REJECTED, mirrorNetwork: 'testnet' },
-      { id: 3, status: TransactionStatus.WAITING_FOR_EXECUTION, mirrorNetwork: 'testnet' },
+      { id: 1, transactionId: '0.0.123456@123456798.0123', status: TransactionStatus.NEW, mirrorNetwork: network },
+      { id: 2, transactionId: '0.0.123456@123456798.0124', status: TransactionStatus.REJECTED, mirrorNetwork: network },
+      { id: 3, transactionId: '0.0.123456@123456798.0125', status: TransactionStatus.WAITING_FOR_EXECUTION, mirrorNetwork: network },
     ];
 
     transactionRepo.manager.find.mockResolvedValue(expiredTransactions as Transaction[]);
@@ -274,16 +274,19 @@ describe('TransactionStatusService', () => {
     expect(transactionRepo.manager.transaction).toHaveBeenCalled();
     expect(transactionRepo.manager.update).toHaveBeenCalled();
 
-    for (const transaction of expiredTransactions) {
-      expect(notifySyncIndicators).toHaveBeenCalledWith(
-        notificationsService,
-        transaction.id,
-        TransactionStatus.EXPIRED,
-        { network: transaction.mirrorNetwork },
-      );
-    }
-    expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
-    expect(notifySyncIndicators).toHaveBeenCalledTimes(3);
+    const expected = expiredTransactions.map(tx =>
+      expect.objectContaining({
+        entityId: tx.id,
+        additionalData: {
+          transactionId: tx.transactionId ?? '',
+          network: tx.mirrorNetwork,
+        },
+      }),
+    );
+    expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
+      notificationsPublisher,
+      expect.arrayContaining(expected),
+    );
   });
 
   describe('updateTransactions', () => {
@@ -317,31 +320,15 @@ describe('TransactionStatusService', () => {
 
       transactionRepo.find.mockResolvedValue(transactions as Transaction[]);
 
-      jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
-      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
-      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
-      jest.mocked(processTransactionStatus).mockResolvedValueOnce(TransactionStatus.WAITING_FOR_EXECUTION)
-      jest.mocked(processTransactionStatus).mockResolvedValueOnce(TransactionStatus.WAITING_FOR_SIGNATURES)
+      const resultMock = new Map<number, TransactionStatus>();
+      resultMock.set(1, TransactionStatus.WAITING_FOR_EXECUTION);
+      resultMock.set(2, TransactionStatus.WAITING_FOR_SIGNATURES);
+
+      jest.mocked(processTransactionStatus).mockResolvedValue(resultMock);
 
       await service.updateTransactions(new Date(), new Date());
 
-      expect(notifyStatusChange).toHaveBeenCalledTimes(2);
-
-      expect(notifyStatusChange).toHaveBeenNthCalledWith(
-        1,
-        notificationsService,
-        transactions[0],
-        TransactionStatus.WAITING_FOR_EXECUTION,
-      )
-      expect(notifyStatusChange).toHaveBeenNthCalledWith(
-        2,
-        notificationsService,
-        transactions[1],
-        TransactionStatus.WAITING_FOR_SIGNATURES,
-      )
-
-      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
-      expect(notifyTransactionAction).toHaveBeenCalledTimes(1);
+      expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(notificationsPublisher, [{ entityId: 1 }, { entityId: 2 }]);
     });
 
     it('should not emit notifications event if no transactions updated', async () => {
@@ -365,81 +352,117 @@ describe('TransactionStatusService', () => {
 
       transactionRepo.find.mockResolvedValue(transactions as Transaction[]);
 
-      jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
-      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
-      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
-      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
-      jest.spyOn(transactionRepo, 'update').mockRejectedValueOnce('Error');
+      jest.mocked(processTransactionStatus).mockResolvedValue(new Map<number, TransactionStatus>());
 
       await service.updateTransactions(new Date(), new Date());
 
-      expectNotifyNotCalled();
+      expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
     });
   });
 
-  describe('updateTransactionStatus', () => {
-    beforeEach(() => {
-      jest.resetAllMocks();
-    });
-
-    it('should correctly update transactions status', async () => {
-      const transaction = {
-        id: 1,
-        status: TransactionStatus.WAITING_FOR_SIGNATURES,
-        transactionBytes: new AccountCreateTransaction().toBytes(),
-        transactionId: '0.0.1',
-        creatorKey: {
-          userId: 23,
-        },
-        mirrorNetwork: 'testnet',
-      };
-      transactionRepo.findOne.mockResolvedValue(transaction as Transaction);
-
-      jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
-      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
-      jest.mocked(processTransactionStatus).mockResolvedValueOnce(TransactionStatus.WAITING_FOR_EXECUTION)
-
-      await service.updateTransactionStatus({ id: transaction.id });
-
-      expect(notifyStatusChange).toHaveBeenCalledTimes(1);
-
-      expect(notifyStatusChange).toHaveBeenNthCalledWith(
-        1,
-        notificationsService,
-        transaction,
-        TransactionStatus.WAITING_FOR_EXECUTION,
-      )
-      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
-    });
-
-    it('should return if transaction does not exist', async () => {
-      transactionRepo.findOne.mockResolvedValue(undefined);
-
-      await service.updateTransactionStatus({ id: 1 });
-
-      expect(transactionRepo.findOne).toHaveBeenCalled();
-      expect(transactionRepo.update).not.toHaveBeenCalled();
-      expectNotifyNotCalled();
-    });
-
-    it('should return if transaction status is the same', async () => {
-      const transaction = {
-        id: 1,
-        status: TransactionStatus.WAITING_FOR_EXECUTION,
-        transactionBytes: new AccountCreateTransaction().toBytes(),
-      };
-      transactionRepo.findOne.mockResolvedValue(transaction as Transaction);
-
-      jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
-      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
-
-      await service.updateTransactionStatus({ id: transaction.id });
-
-      expect(transactionRepo.findOne).toHaveBeenCalled();
-      expect(transactionRepo.update).not.toHaveBeenCalled();
-      expectNotifyNotCalled();
-    });
-  });
+  // describe('updateTransactionStatus', () => {
+  //   beforeEach(() => {
+  //     jest.resetAllMocks();
+  //   });
+  //
+  //   it('should correctly update transactions status', async () => {
+  //     const transaction = {
+  //       id: 1,
+  //       status: TransactionStatus.WAITING_FOR_SIGNATURES,
+  //       transactionBytes: new AccountCreateTransaction().toBytes(),
+  //       transactionId: '0.0.1',
+  //       creatorKey: {
+  //         userId: 23,
+  //       },
+  //       mirrorNetwork: 'testnet',
+  //     };
+  //     transactionRepo.findOne.mockResolvedValue(transaction as Transaction);
+  //
+  //     jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
+  //     jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
+  //
+  //     await service.updateTransactionStatus({ id: transaction.id });
+  //
+  //     const networkString = getNetwork(transaction as Transaction);
+  //
+  //     expect(transactionRepo.update).toHaveBeenNthCalledWith(
+  //       1,
+  //       {
+  //         id: 1,
+  //       },
+  //       {
+  //         status: TransactionStatus.WAITING_FOR_EXECUTION,
+  //       },
+  //     );
+  //     expect(notifySyncIndicators).toHaveBeenCalledWith(
+  //       notificationsService,
+  //       transaction.id,
+  //       TransactionStatus.WAITING_FOR_EXECUTION,
+  //       { network: transaction.mirrorNetwork },
+  //     );
+  //     expect(notifyGeneral).toHaveBeenCalledWith(
+  //       notificationsService,
+  //       NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+  //       [transaction.creatorKey?.userId],
+  //       transaction.id,
+  //       false,
+  //       {
+  //         network: transaction.mirrorNetwork,
+  //         transactionId: transaction.transactionId
+  //       },
+  //     );
+  //     expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+  //   });
+  //
+  //   it('should not emit notifications event if no transactions updated', async () => {
+  //     const transaction = {
+  //       id: 1,
+  //       status: TransactionStatus.WAITING_FOR_EXECUTION,
+  //       transactionBytes: new AccountCreateTransaction().toBytes(),
+  //     };
+  //
+  //     transactionRepo.findOne.mockResolvedValue(transaction as Transaction);
+  //
+  //     jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
+  //     jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
+  //     jest.mocked(smartCollate).mockReturnValueOnce(null);
+  //     jest.spyOn(transactionRepo, 'update').mockRejectedValueOnce(new Error('Error'));
+  //
+  //     await expect(service.updateTransactionStatus({ id: transaction.id })).rejects.toThrow(
+  //       'Error',
+  //     );
+  //
+  //     expectNotifyNotCalled();
+  //   });
+  //
+  //   it('should return if transaction does not exist', async () => {
+  //     transactionRepo.findOne.mockResolvedValue(undefined);
+  //
+  //     await service.updateTransactionStatus({ id: 1 });
+  //
+  //     expect(transactionRepo.findOne).toHaveBeenCalled();
+  //     expect(transactionRepo.update).not.toHaveBeenCalled();
+  //     expectNotifyNotCalled();
+  //   });
+  //
+  //   it('should return if transaction status is the same', async () => {
+  //     const transaction = {
+  //       id: 1,
+  //       status: TransactionStatus.WAITING_FOR_EXECUTION,
+  //       transactionBytes: new AccountCreateTransaction().toBytes(),
+  //     };
+  //     transactionRepo.findOne.mockResolvedValue(transaction as Transaction);
+  //
+  //     jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
+  //     jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
+  //
+  //     await service.updateTransactionStatus({ id: transaction.id });
+  //
+  //     expect(transactionRepo.findOne).toHaveBeenCalled();
+  //     expect(transactionRepo.update).not.toHaveBeenCalled();
+  //     expectNotifyNotCalled();
+  //   });
+  // });
 
   describe('prepareTransactions', () => {
     beforeEach(async () => {

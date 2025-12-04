@@ -10,12 +10,9 @@ import {
   TransactionGroup,
 } from '@app/common/database/entities';
 
-import { MirrorNodeModule } from '@app/common';
+import { ExecuteModule, MirrorNodeModule } from '@app/common';
 
-import { ExecuteModule } from '../execute';
-
-import { TransactionStatusService } from './transaction-status.service';
-import { TransactionStatusController } from './transaction-status.controller';
+import { TransactionSchedulerService } from './transaction-scheduler.service';
 
 @Module({
   imports: [
@@ -30,7 +27,6 @@ import { TransactionStatusController } from './transaction-status.controller';
     MirrorNodeModule,
     ExecuteModule,
   ],
-  providers: [TransactionStatusService],
-  controllers: [TransactionStatusController],
+  providers: [TransactionSchedulerService],
 })
-export class TransactionStatusModule {}
+export class TransactionSchedulerModule {}
