@@ -132,6 +132,7 @@ describe('TransactionNodesService', () => {
     cutoffAt: new Date(),
     createdAt: new Date(),
     updatedAt: new Date(),
+    executedAt: new Date(),
     deletedAt: null,
     creatorKey: {
       id: 1,
@@ -178,6 +179,7 @@ describe('TransactionNodesService', () => {
     cutoffAt: new Date(childTransactionDate1),
     createdAt: new Date(childTransactionDate1),
     updatedAt: new Date(childTransactionDate1 + 1000),
+    executedAt: new Date(childTransactionDate1 + 2100),
     deletedAt: null,
     creatorKey: {
       id: 1,
@@ -224,6 +226,7 @@ describe('TransactionNodesService', () => {
     cutoffAt: new Date(childTransactionDate2),
     createdAt: new Date(childTransactionDate2),
     updatedAt: new Date(childTransactionDate2 + 2000),
+    executedAt: new Date(childTransactionDate2 + 3100),
     deletedAt: null,
     creatorKey: {
       id: 1,
@@ -270,6 +273,7 @@ describe('TransactionNodesService', () => {
     cutoffAt: new Date(childTransactionDate3),
     createdAt: new Date(childTransactionDate3),
     updatedAt: new Date(childTransactionDate3 + 2000),
+    executedAt: new Date(childTransactionDate3 + 3100),
     deletedAt: null,
     creatorKey: {
       id: 1,
@@ -709,7 +713,6 @@ describe('TransactionNodesService', () => {
   });
 
   describe('error report', () => {
-
     it('minValidStart() should throw error when receiving empty array', () => {
       expect(() => minValidStart([])).toThrow(Error);
     });
@@ -720,6 +723,11 @@ describe('TransactionNodesService', () => {
 
     it('maxExecutedAt() should throw error when receiving empty array', () => {
       expect(() => maxExecutedAt([])).toThrow(Error);
+    });
+
+    it('maxExecutedAt() should return max execution date', () => {
+      const transactions: Transaction[] = [childTransaction1, childTransaction2];
+      expect(maxExecutedAt(transactions)).toBe(childTransaction2.executedAt);
     });
   });
 });
