@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ClientProxy } from '@nestjs/microservices';
 import { mock, mockDeep } from 'jest-mock-extended';
 import {
   Brackets,
@@ -23,30 +22,24 @@ import {
 } from '@hashgraph/sdk';
 
 import {
-  NOTIFICATIONS_SERVICE,
   MirrorNodeService,
   ErrorCodes,
-  CHAIN_SERVICE,
   SchedulerService,
   safe,
-  emitUpdateTransactionStatus,
+  NatsPublisherService,
+  emitTransactionStatusUpdate,
+  ExecuteService,
 } from '@app/common';
 import {
   attachKeys,
   getClientFromNetwork,
   isExpired,
   userKeysRequiredToSign,
-  notifyTransactionAction,
-  notifyWaitingForSignatures,
-  notifySyncIndicators,
   MirrorNetworkGRPC,
   isTransactionBodyOverMaxSize,
-  emitExecuteTransaction,
-  notifyGeneral,
   getTransactionSignReminderKey,
 } from '@app/common/utils';
 import {
-  NotificationType,
   Transaction,
   TransactionApprover,
   TransactionSigner,
@@ -66,11 +59,11 @@ describe('TransactionsService', () => {
   let service: TransactionsService;
 
   const transactionsRepo = mockDeep<Repository<Transaction>>();
-  const chainService = mock<ClientProxy>();
-  const notificationsService = mock<ClientProxy>();
+  const notificationsPublisher = mock<NatsPublisherService>();
   const approversService = mock<ApproversService>();
   const mirrorNodeService = mock<MirrorNodeService>();
   const schedulerService = mock<SchedulerService>();
+  const executeService = mockDeep<ExecuteService>();
   const entityManager = mockDeep<EntityManager>();
 
   const user: Partial<User> = {
@@ -102,12 +95,8 @@ describe('TransactionsService', () => {
           useValue: transactionsRepo,
         },
         {
-          provide: NOTIFICATIONS_SERVICE,
-          useValue: notificationsService,
-        },
-        {
-          provide: CHAIN_SERVICE,
-          useValue: chainService,
+          provide: NatsPublisherService,
+          useValue: notificationsPublisher,
         },
         {
           provide: ApproversService,
@@ -124,6 +113,10 @@ describe('TransactionsService', () => {
         {
           provide: SchedulerService,
           useValue: schedulerService,
+        },
+        {
+          provide: ExecuteService,
+          useValue: executeService,
         },
       ],
     }).compile();
@@ -402,10 +395,30 @@ describe('TransactionsService', () => {
   ];
 
   describe('createTransaction', () => {
+    const transactionEntityManger = mockDeep<EntityManager>();
+    let saveMock: jest.Mock<Promise<any>, any[]>;
+
     beforeEach(() => {
       jest.resetAllMocks();
       jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
         usr.keys = userKeys;
+      });
+
+      saveMock = jest.fn().mockImplementation(async (entityOrTarget: any, data?: any) => {
+        const items = Array.isArray(data) ? data : Array.isArray(entityOrTarget) ? entityOrTarget : [entityOrTarget];
+        items.forEach((d: any, i: number) => {
+          if (!d.id) d.id = i + 1;
+          if (!d.validStart) d.validStart = d.validStart ?? new Date();
+        });
+        return Array.isArray(data) ? items : items[0];
+      });
+      transactionEntityManger.save = saveMock as any;
+
+
+      entityManager.transaction.mockImplementation(async (arg1?: any, arg2?: any) => {
+        const cb = typeof arg1 === 'function' ? arg1 : typeof arg2 === 'function' ? arg2 : undefined;
+        if (!cb) throw new Error('No transaction callback provided in mock');
+        return cb(transactionEntityManger);
       });
     });
 
@@ -424,6 +437,8 @@ describe('TransactionsService', () => {
         reminderMillisecondsBefore: 60 * 1_000,
       };
 
+
+
       const client = Client.forTestnet();
 
       jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
@@ -432,30 +447,31 @@ describe('TransactionsService', () => {
       jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
       jest.mocked(isExpired).mockReturnValueOnce(false);
       jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
-      transactionsRepo.count.mockResolvedValueOnce(0);
+      transactionsRepo.find.mockResolvedValueOnce([]);
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
       transactionsRepo.create.mockImplementationOnce(
         (input: DeepPartial<Transaction>) => ({ ...input }) as Transaction,
       );
-      transactionsRepo.save.mockImplementationOnce(async (t: Transaction) => {
-        t.id = 1;
-        return t;
-      });
       jest.mocked(getTransactionSignReminderKey).mockReturnValueOnce('transaction:sign:1');
 
       await service.createTransaction(dto, user as User);
 
-      expect(transactionsRepo.save).toHaveBeenCalled();
-      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, 1, {
-        network: dto.mirrorNetwork,
-        transactionId: expect.any(String),
-      });
+      expect(saveMock).toHaveBeenCalled();
+      expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
+        notificationsPublisher,
+        [{
+          entityId: 1,
+          additionalData: {
+            transactionId: expect.any(String),
+            network: dto.mirrorNetwork,
+          },
+        }],
+      );
       expect(schedulerService.addReminder).toHaveBeenCalledWith(
         `transaction:sign:1`,
         expect.any(Date),
       );
-      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
 
       client.close();
     });
@@ -483,7 +499,7 @@ describe('TransactionsService', () => {
       jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
       jest.mocked(isExpired).mockReturnValueOnce(false);
       jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
-      transactionsRepo.count.mockResolvedValueOnce(0);
+      transactionsRepo.find.mockResolvedValueOnce([]);
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
       transactionsRepo.create.mockImplementationOnce(
@@ -496,14 +512,54 @@ describe('TransactionsService', () => {
 
       await service.createTransaction(dto, user as User);
 
-      expect(transactionsRepo.save).toHaveBeenCalledWith(
+      expect(transactionsRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ isManual: true }),
       );
-      expect(notifyWaitingForSignatures).toHaveBeenCalledWith(notificationsService, 1, {
-        network: dto.mirrorNetwork,
-        transactionId: expect.any(String),
+      expect(saveMock).toHaveBeenCalled();
+      expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
+        notificationsPublisher,
+        [{
+          entityId: 1,
+          additionalData: {
+            transactionId: expect.any(String),
+            network: dto.mirrorNetwork,
+          },
+        }],
+      );
+
+
+      client.close();
+    });
+
+    it('should throw if transaction already exists', async () => {
+      const sdkTransaction = new AccountCreateTransaction().setTransactionId(
+        new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
+      );
+
+      const dto: CreateTransactionDto = {
+        name: 'Transaction 1',
+        description: 'Description',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
       });
-      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+
+      transactionsRepo.find.mockResolvedValueOnce([{ transactionId: '0.0.1@123' } as any]);
+
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+
+      await expect(service.createTransaction(dto, user as User)).rejects.toThrow(/Transactions already exist/);
 
       client.close();
     });
@@ -537,6 +593,9 @@ describe('TransactionsService', () => {
         mirrorNetwork: 'testnet',
       };
 
+      const client = Client.forTestnet();
+
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
       jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
         usr.keys = userKeys;
       });
@@ -557,6 +616,9 @@ describe('TransactionsService', () => {
         mirrorNetwork: 'testnet',
       };
 
+      const client = Client.forTestnet();
+
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
       jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
         usr.keys = userKeys;
       });
@@ -588,7 +650,7 @@ describe('TransactionsService', () => {
       jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
       jest.mocked(isExpired).mockReturnValueOnce(false);
       jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
-      transactionsRepo.count.mockResolvedValueOnce(0);
+      transactionsRepo.find.mockResolvedValueOnce([]);
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
       transactionsRepo.save.mockRejectedValueOnce(new Error('Failed to save'));
@@ -614,6 +676,7 @@ describe('TransactionsService', () => {
 
       const client = Client.forTestnet();
 
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
       jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
         usr.keys = userKeys;
       });
@@ -659,7 +722,16 @@ describe('TransactionsService', () => {
       };
       await sdkTransaction.sign(privateKey);
 
-      entityManager.findOne.mockResolvedValue(transaction);
+      entityManager.find.mockResolvedValue([transaction]);
+      const executeMock = jest.fn().mockResolvedValue(undefined);
+      const qbMock = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        setParameters: jest.fn().mockReturnThis(),
+        execute: executeMock,
+      };
+      entityManager.createQueryBuilder.mockReturnValue(qbMock as unknown as any);
 
       jest.mocked(safe).mockReturnValue({
         data: [privateKey.publicKey],
@@ -674,22 +746,28 @@ describe('TransactionsService', () => {
         [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
         userWithKeys
       );
+
+      expect(qbMock.update).toHaveBeenCalledWith(Transaction);
+      expect(qbMock.set).toHaveBeenCalledWith({ transactionBytes: expect.any(Function) });
+      expect(qbMock.where).toHaveBeenCalledWith('id IN (:...ids)', { ids: expect.any(Array) });
+      expect(qbMock.setParameters).toHaveBeenCalledWith(expect.any(Object));
+      expect(executeMock).toHaveBeenCalled();
+
       expect(result).toEqual([{ id: transactionId }]);
-      expect(emitUpdateTransactionStatus).toHaveBeenCalledWith(chainService, transactionId);
-      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
-      expect(notifySyncIndicators).toHaveBeenCalledWith(
-        notificationsService,
-        transactionId,
-        transaction.status,
-        {
-          transactionId: sdkTransaction.transactionId.toString(),
-          network: transaction.mirrorNetwork,
-        }
+      expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
+        notificationsPublisher,
+        [{
+          entityId: transactionId,
+          additionalData: {
+            transactionId: sdkTransaction.transactionId.toString(),
+            network: transaction.mirrorNetwork,
+          },
+        }],
       );
     });
 
     it('should return error if transaction not found', async () => {
-      entityManager.findOne.mockResolvedValue(null);
+      entityManager.find.mockResolvedValue([]);
 
       const result = await service.importSignatures(
         [{ id: transactionId, signatureMap: new SignatureMap() }],
@@ -707,7 +785,7 @@ describe('TransactionsService', () => {
       };
       await sdkTransaction.sign(privateKey);
 
-      entityManager.findOne.mockResolvedValue(transaction);
+      entityManager.find.mockResolvedValue([transaction]);
 
       const result = await service.importSignatures(
         [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
@@ -725,7 +803,7 @@ describe('TransactionsService', () => {
       };
       await sdkTransaction.sign(privateKey);
 
-      entityManager.findOne.mockResolvedValue(transaction);
+      entityManager.find.mockResolvedValue([transaction]);
 
       // Any value will do here, this just shows the user has access to the transaction
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
@@ -750,7 +828,7 @@ describe('TransactionsService', () => {
         mirrorNetwork: 'testnet',
       };
       await sdkTransaction.sign(privateKey);
-      entityManager.findOne.mockResolvedValue(transaction);
+      entityManager.find.mockResolvedValue([transaction]);
 
       // Any value will do here, this just shows the user has access to the transaction
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
@@ -777,7 +855,7 @@ describe('TransactionsService', () => {
         mirrorNetwork: 'testnet',
       };
       await sdkTransaction.sign(privateKey);
-      entityManager.findOne.mockResolvedValue(transaction);
+      entityManager.find.mockResolvedValue([transaction]);
 
       // Any value will do here, this just shows the user has access to the transaction
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
@@ -786,21 +864,38 @@ describe('TransactionsService', () => {
         data: [privateKey.publicKey],
       });
 
-      entityManager.update.mockRejectedValue(new Error('fail'));
+      // mock query builder to reject on execute
+      const executeMock = jest.fn().mockRejectedValue(new Error('Fail'));
+      const qbMock = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        setParameters: jest.fn().mockReturnThis(),
+        execute: executeMock,
+      };
+      entityManager.createQueryBuilder.mockReturnValue(qbMock as unknown as any);
 
       const result = await service.importSignatures(
         [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
         userWithKeys
       );
+      expect(executeMock).toHaveBeenCalled();
       expect(result[0]).toMatchObject({
         id: transactionId,
-        error: 'An unexpected error occurred while importing the signatures',
+        error: 'An unexpected error occurred while saving the signatures: Fail',
       });
     });
   });
 
   describe('removeTransaction', () => {
-    const transaction = { id: 123, creatorKey: { userId: user.id }, mirrorNetwork: 'testnet' };
+    const transaction = {
+      id: 123,
+      transactionId: '0.0.12345@1232351234.0123',
+      creatorKey: {
+        userId: user.id
+      },
+      mirrorNetwork: 'testnet',
+    };
 
     beforeEach(() => {
       jest.resetAllMocks();
@@ -810,13 +905,16 @@ describe('TransactionsService', () => {
     });
 
     afterEach(() => {
-      expect(notifySyncIndicators).toHaveBeenCalledWith(
-        notificationsService,
-        transaction.id,
-        TransactionStatus.CANCELED,
-        { network: transaction.mirrorNetwork },
+      expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
+        notificationsPublisher,
+        [{
+          entityId: transaction.id,
+          additionalData: {
+            transactionId: expect.any(String),
+            network: transaction.mirrorNetwork,
+          },
+        }],
       );
-      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
 
     it('should soft remove the transaction', async () => {
@@ -853,6 +951,7 @@ describe('TransactionsService', () => {
     it('should update transaction status to CANCELED and return true', async () => {
       const transaction = {
         id: 123,
+        transactionId: '0.0.12345@1232351234.0123',
         creatorKey: { userId: 1 },
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         mirrorNetwork: 'testnet',
@@ -869,13 +968,16 @@ describe('TransactionsService', () => {
         { status: TransactionStatus.CANCELED },
       );
       expect(result).toBe(true);
-      expect(notifySyncIndicators).toHaveBeenCalledWith(
-        notificationsService,
-        transaction.id,
-        TransactionStatus.CANCELED,
-        { network: transaction.mirrorNetwork },
+      expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
+        notificationsPublisher,
+        [{
+          entityId: transaction.id,
+          additionalData: {
+            transactionId: expect.any(String),
+            network: transaction.mirrorNetwork,
+          },
+        }],
       );
-      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
 
     it('should emit notification to the notification service', async () => {
@@ -895,16 +997,15 @@ describe('TransactionsService', () => {
 
       await service.cancelTransaction(123, { id: 1 } as User);
 
-      expect(notifyGeneral).toHaveBeenCalledWith(
-        notificationsService,
-        NotificationType.TRANSACTION_CANCELLED,
-        expect.arrayContaining([2, 3]),
-        123,
-        false,
-        {
-          network: transaction.mirrorNetwork,
-          transactionId: transaction.transactionId,
-        },
+      expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
+        notificationsPublisher,
+        [{
+          entityId: transaction.id,
+          additionalData: {
+            transactionId: transaction.transactionId,
+            network: transaction.mirrorNetwork,
+          },
+        }],
       );
     });
   });
@@ -932,6 +1033,7 @@ describe('TransactionsService', () => {
     it('should update transaction status to ARCHIVED and return true', async () => {
       const transaction = {
         id: 123,
+        transactionId: '0.0.12345@1232351234.0123',
         creatorKey: { userId: 1 },
         isManual: true,
         status: TransactionStatus.WAITING_FOR_EXECUTION,
@@ -949,13 +1051,16 @@ describe('TransactionsService', () => {
         { status: TransactionStatus.ARCHIVED },
       );
       expect(result).toBe(true);
-      expect(notifySyncIndicators).toHaveBeenCalledWith(
-        notificationsService,
-        transaction.id,
-        TransactionStatus.ARCHIVED,
-        { network: transaction.mirrorNetwork },
+      expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
+        notificationsPublisher,
+        [{
+          entityId: transaction.id,
+          additionalData: {
+            transactionId: expect.any(String),
+            network: transaction.mirrorNetwork,
+          },
+        }],
       );
-      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
     });
   });
 
@@ -996,13 +1101,7 @@ describe('TransactionsService', () => {
       const result = await service.executeTransaction(123, user as User);
 
       expect(result).toBe(true);
-      expect(emitExecuteTransaction).toHaveBeenCalledWith(chainService, {
-        id: transaction.id,
-        status: transaction.status,
-        transactionBytes: transaction.transactionBytes.toString('hex'),
-        mirrorNetwork: transaction.mirrorNetwork,
-        validStart: transaction.validStart,
-      });
+      expect(executeService.executeTransaction).toHaveBeenCalledWith(transaction);
     });
 
     it('should update transaction.isManual to false if transaction is manual and transaction.validStart is not yet valid', async () => {

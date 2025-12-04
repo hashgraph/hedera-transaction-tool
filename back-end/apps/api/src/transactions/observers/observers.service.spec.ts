@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mock, mockDeep } from 'jest-mock-extended';
-import { ClientProxy } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 
@@ -13,8 +12,8 @@ import {
   User,
 } from '@entities';
 
-import { NOTIFICATIONS_SERVICE, MirrorNodeService, ErrorCodes } from '@app/common';
-import { userKeysRequiredToSign, notifyTransactionAction } from '@app/common/utils';
+import { MirrorNodeService, ErrorCodes, NatsPublisherService, emitTransactionUpdate } from '@app/common';
+import { userKeysRequiredToSign } from '@app/common/utils';
 
 import { ObserversService } from './observers.service';
 import { ApproversService } from '../approvers';
@@ -28,7 +27,7 @@ describe('ObserversService', () => {
   const entityManager = mockDeep<EntityManager>();
   const approversService = mock<ApproversService>();
   const mirrorNodeService = mock<MirrorNodeService>();
-  const notificationsService = mock<ClientProxy>();
+  const notificationsPublisher = mock<NatsPublisherService>();
 
   const user = {
     id: 1,
@@ -58,8 +57,8 @@ describe('ObserversService', () => {
           useValue: mirrorNodeService,
         },
         {
-          provide: NOTIFICATIONS_SERVICE,
-          useValue: notificationsService,
+          provide: NatsPublisherService,
+          useValue: notificationsPublisher,
         },
       ],
     }).compile();
@@ -270,7 +269,7 @@ describe('ObserversService', () => {
       expect(observersRepo.findOneBy).toHaveBeenCalledWith({ id: observerId });
       expect(observersRepo.save).toHaveBeenCalledWith(observer);
 
-      expect(notifyTransactionAction).toHaveBeenCalled();
+      expect(emitTransactionUpdate).toHaveBeenCalledWith(notificationsPublisher, [{ entityId: observer.transactionId }]);
     });
 
     it('should not update the transaction observer if not creator', async () => {
@@ -325,7 +324,7 @@ describe('ObserversService', () => {
       expect(observersRepo.findOneBy).toHaveBeenCalledWith({ id: observerId });
       expect(observersRepo.remove).toHaveBeenCalledWith(observer);
 
-      expect(notifyTransactionAction).toHaveBeenCalled();
+      expect(emitTransactionUpdate).toHaveBeenCalledWith(notificationsPublisher, [{ entityId: observer.transactionId }]);
     });
 
     it('should not remove the transaction observer if not creator', async () => {

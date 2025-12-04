@@ -116,7 +116,7 @@ describe('ApproversController', () => {
       const result = true;
 
       expect(await controller.removeTransactionApprover(user, 1, 1)).toBe(result);
-      expect(approversService.emitSyncIndicators).toHaveBeenCalled();
+      expect(approversService.removeTransactionApprover).toHaveBeenCalled();
     });
   });
 

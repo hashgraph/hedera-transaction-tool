@@ -521,7 +521,7 @@ export class ApproversService {
       });
 
       if (updated) {
-        emitTransactionUpdate(this.notificationsPublisher, [{ entityId: approver.transactionId  }]);
+        emitTransactionUpdate(this.notificationsPublisher, [{ entityId: transactionId }]);
       }
 
       return approver;

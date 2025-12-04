@@ -138,7 +138,16 @@ export class NotificationReceiverService {
       return;
     }
 
-    emitTransactionRemindSigners(this.notificationsPublisher, [{ entityId: transaction.id, additionalData: { transactionId: transaction.transactionId, network: transaction.mirrorNetwork } }]);
+    emitTransactionRemindSigners(
+      this.notificationsPublisher,
+      [{
+        entityId: transaction.id,
+        additionalData: {
+          transactionId: transaction.transactionId,
+          network: transaction.mirrorNetwork
+        }
+      }],
+    );
   }
 
   getFindOptionsForNotifications(
