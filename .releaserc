@@ -40,7 +40,7 @@
         "assets": [
           "charts/transaction-tool/Chart.yaml"
         ],
-        "message": "chore(release): ${nextRelease.version} [skip ci]\n\nSigned-off-by: swirlds-automation <hedera-eng-automation@swirldslabs.com>"
+        "message": "chore(release): ${nextRelease.version} \n\nSigned-off-by: swirlds-automation <hedera-eng-automation@swirldslabs.com>"
       }
     ]
   ],
@@ -96,9 +96,6 @@
       "name": "rc/*",
       "prerelease": "rc",
       "channel": "rc"
-    },
-    {
-      "name": "resd-455"
     }
   ]
 }
