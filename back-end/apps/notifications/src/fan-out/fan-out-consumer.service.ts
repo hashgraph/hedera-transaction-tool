@@ -12,7 +12,7 @@ import { randomUUID } from 'crypto';
 
 @Injectable()
 export class FanOutConsumerService extends BaseNatsConsumerService {
-  private readonly consumerName = `FANOUT_CONSUMER_${randomUUID()}`;
+  private readonly consumerName = `FAN_OUT_CONSUMER_${randomUUID()}`;
 
   constructor(
     natsService: NatsJetStreamService,
@@ -23,9 +23,9 @@ export class FanOutConsumerService extends BaseNatsConsumerService {
 
   protected getConsumerConfig(): ConsumerConfig {
     return {
-      streamName: 'NOTIFICATIONS_FANOUT',
+      streamName: 'NOTIFICATIONS_FAN_OUT',
       durableName: this.consumerName,
-      filterSubject: 'notifications.fanout.>',
+      filterSubject: 'notifications.fan-out.>',
     };
   }
 

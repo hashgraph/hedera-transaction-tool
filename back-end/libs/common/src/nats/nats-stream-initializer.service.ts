@@ -30,10 +30,10 @@ export class NatsStreamInitializerService implements OnModuleInit {
         discard: 'old',
       });
 
-      // Create NOTIFICATIONS_FANOUT stream
+      // Create NOTIFICATIONS_FAN_OUT stream
       await this.createOrUpdateStream(jsm, {
-        name: 'NOTIFICATIONS_FANOUT',
-        subjects: ['notifications.fanout.>'],
+        name: 'NOTIFICATIONS_FAN_OUT',
+        subjects: ['notifications.fan-out.>'],
         retention: RetentionPolicy.Limits,
         storage: StorageType.File,
         max_age: 5 * 60 * 1_000_000_000,

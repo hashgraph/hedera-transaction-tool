@@ -1,17 +1,16 @@
-/* Websocket patterns */
-export const NOTIFY_CLIENT = 'notifications.fanout.notify_client';
-export const GET_PORT = 'notifications.fanout.get_port';
+/* Public Queue Patterns */
+export const TRANSACTION_STATUS_UPDATE = 'notifications.queue.transaction.status-update';
+export const TRANSACTION_UPDATE = 'notifications.queue.transaction.update';
+export const TRANSACTION_REMIND_SIGNERS = 'notifications.queue.transaction.remind-signers';
+export const TRANSACTION_REMIND_SIGNERS_MANUAL = 'notifications.queue.transaction.remind-signers.manual';
+export const USER_INVITE = 'notifications.queue.email.invite';
+export const USER_REGISTERED = 'notifications.queue.user.registered';
+export const USER_PASSWORD_RESET = 'notifications.queue.email.password-reset';
 
-/* Email patterns */
-export const NOTIFY_EMAIL = 'notifications.queue.notify_email';
+/* Private FanOut Patterns */
+export const FAN_OUT_NEW_NOTIFICATIONS = 'notifications.fan-out.new';
+export const FAN_OUT_DELETE_NOTIFICATIONS = 'notifications.fan-out.delete';
+export const FAN_OUT_NOTIFY_CLIENTS = 'notifications.fan-out.notify';
 
-/* Notification patterns */
-export const NOTIFY_GENERAL = 'notifications.queue.notify_general';
-export const NOTIFY_GENERAL_FANOUT = 'notifications.fanout.notify_general';
-export const NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES =
-  'notifications.queue.notify_transaction_waiting_for_signatures';
-export const SYNC_INDICATORS = 'notifications.fanout.sync_indicators';
-
-/* Chain patterns */
-export const UPDATE_TRANSACTION_STATUS = 'chain.update_transaction_status';
-export const EXECUTE_TRANSACTION = 'chain.execute_transaction';
+/* Private Queue Patterns */
+export const EMAIL_NOTIFICATIONS = 'notifications.queue.email';

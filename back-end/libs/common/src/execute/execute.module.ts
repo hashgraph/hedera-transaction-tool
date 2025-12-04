@@ -16,9 +16,8 @@ import {
   UserKey,
 } from '@entities';
 
-import { MirrorNodeModule, RedisMurlockModule } from '@app/common';
+import { MirrorNodeModule, NatsModule, RedisMurlockModule } from '@app/common';
 
-import { ExecuteController } from './execute.controller';
 import { ExecuteService } from './execute.service';
 
 @Module({
@@ -39,8 +38,8 @@ import { ExecuteService } from './execute.service';
     ]),
     MirrorNodeModule,
     RedisMurlockModule,
+    NatsModule.forRoot(),
   ],
-  controllers: [ExecuteController],
   providers: [ExecuteService],
   exports: [ExecuteService],
 })
