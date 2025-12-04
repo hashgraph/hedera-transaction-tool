@@ -6,7 +6,6 @@ import {
   keysRequiredToSign,
   SchedulerService,
   parseTransactionSignKey,
-  getRemindSignersDTO,
   emitTransactionRemindSigners,
   NatsPublisherService,
 } from '@app/common';
@@ -169,7 +168,6 @@ describe('ReminderHandlerService', () => {
       jest
         .mocked(keysRequiredToSign)
         .mockResolvedValueOnce([{ userId: 1 } as UserKey, { userId: 2 } as UserKey]);
-      jest.mocked(getRemindSignersDTO).mockReturnValueOnce('remind-signers-dto' as any);
 
       await service.handleTransactionReminder(key);
 
