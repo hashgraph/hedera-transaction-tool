@@ -18,3 +18,4 @@ export * from './blacklist';
 export * from './scheduler';
 export * from './templates';
 export * from './execute';
+export * from './test';

@@ -7,7 +7,7 @@ import { validateOrReject } from 'class-validator';
 
 import { SignatureMap, TransactionId } from '@hashgraph/sdk';
 
-import { BlacklistService, Pagination } from '@app/common';
+import { BlacklistService, Pagination, guardMock } from '@app/common';
 import { Transaction, TransactionStatus, TransactionType, User, UserStatus } from '@entities';
 
 import { HasKeyGuard, VerifiedUserGuard } from '../guards';
@@ -15,7 +15,6 @@ import { HasKeyGuard, VerifiedUserGuard } from '../guards';
 import { TransactionsController } from './transactions.controller';
 import { TransactionsService } from './transactions.service';
 import { UploadSignatureMapDto } from './dto';
-import { guardMock } from '../../../../libs/common/test';
 
 jest.mock('class-transformer', () => {
   const actualModule = jest.requireActual('class-transformer');
