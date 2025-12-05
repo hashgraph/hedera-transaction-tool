@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { createTransport, Transporter } from 'nodemailer';
+import { createTransport, SendMailOptions, Transporter } from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { mockDeep } from 'jest-mock-extended';
 
@@ -8,7 +8,6 @@ import {
   generateEmailContent,
   generateResetPasswordMessage,
   generateUserRegisteredMessage,
-  NotificationTypeEmailSubjects,
 } from '@app/common';
 
 import { EmailService } from './email.service';
@@ -124,7 +123,7 @@ describe('EmailService', () => {
         ],
       }).compile();
 
-      const serviceInstance = module.get<EmailService>(EmailService);
+      module.get<EmailService>(EmailService);
 
       expect(createTransport).toHaveBeenCalledWith({
         host: 'smtp.example.com',
@@ -213,41 +212,34 @@ describe('EmailService', () => {
   });
 
   describe('processMessages', () => {
-    it('should group notifications by type and send emails', async () => {
+    it('should group notifications by type and send emails (handles a failure for one group)', async () => {
       const notifications: Notification[] = [
-        {
-          id: 1,
-          type: NotificationType.TRANSACTION_CREATED,
-        } as Notification,
-        {
-          id: 2,
-          type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
-        } as Notification,
-        {
-          id: 3,
-          type: NotificationType.TRANSACTION_CREATED,
-        } as Notification,
+        { id: 1, type: NotificationType.TRANSACTION_CREATED } as Notification,
+        { id: 2, type: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES } as Notification,
+        { id: 3, type: NotificationType.TRANSACTION_CREATED } as Notification,
       ];
 
-      transport.sendMail.mockResolvedValue({ messageId: 'test-message-1' });
+      // spy on sendWithRetry: fail the first group, succeed the second
+      const sendSpy = jest
+        .spyOn(service as any, 'sendWithRetry')
+        .mockImplementationOnce(async () => {
+          throw new Error('send failed');
+        })
+        .mockResolvedValueOnce({ messageId: 'ok' });
+
       (generateEmailContent as jest.Mock).mockReturnValue('Email content');
 
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
       await (service as any)['processMessages']('user@example.com', notifications);
 
-      // Should send 2 emails (one for each type)
-      expect(transport.sendMail).toHaveBeenCalledTimes(2);
-
-      // Verify first call (TRANSACTION_CREATED with 2 notifications)
-      expect(transport.sendMail).toHaveBeenCalledWith(
-        expect.objectContaining({
-          from: expect.stringContaining('Transaction Tool'),
-          to: 'user@example.com',
-          subject: NotificationTypeEmailSubjects[NotificationType.TRANSACTION_CREATED],
-          text: 'Email content',
-        })
+      expect(sendSpy).toHaveBeenCalledTimes(2);
+      // First failure should log an error mentioning the failing type
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to send email for type=TRANSACTION_CREATED'),
+        expect.any(Error)
       );
 
-      // Verify generateEmailContent was called with correct notifications
+      // generateEmailContent should still have been called for both groups
       expect(generateEmailContent).toHaveBeenCalledWith(
         NotificationType.TRANSACTION_CREATED,
         notifications[0],
@@ -257,6 +249,9 @@ describe('EmailService', () => {
         NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
         notifications[1]
       );
+
+      sendSpy.mockRestore();
+      errorSpy.mockRestore();
     });
 
     it('should handle single notification type', async () => {
@@ -265,12 +260,13 @@ describe('EmailService', () => {
         { id: 2, type: NotificationType.TRANSACTION_CREATED } as Notification,
       ];
 
-      transport.sendMail.mockResolvedValue({ messageId: 'test-message' });
+      // ensure the underlying retry returns immediately for this flow
+      jest.spyOn(service as any, 'sendWithRetry').mockResolvedValue({ messageId: 'test-message' });
       (generateEmailContent as jest.Mock).mockReturnValue('Content');
 
       await (service as any)['processMessages']('user@example.com', notifications);
 
-      expect(transport.sendMail).toHaveBeenCalledTimes(1);
+      expect((service as any).sendWithRetry).toHaveBeenCalledTimes(1);
       expect(generateEmailContent).toHaveBeenCalledWith(
         NotificationType.TRANSACTION_CREATED,
         notifications[0],
@@ -279,10 +275,69 @@ describe('EmailService', () => {
     });
 
     it('should handle empty notifications array', async () => {
+      const sendSpy = jest.spyOn(service as any, 'sendWithRetry').mockResolvedValue({ messageId: 'noop' } as any);
+
       await (service as any)['processMessages']('user@example.com', []);
 
-      expect(transport.sendMail).not.toHaveBeenCalled();
+      expect(sendSpy).not.toHaveBeenCalled();
       expect(generateEmailContent).not.toHaveBeenCalled();
+
+      sendSpy.mockRestore();
+    });
+  });
+
+  describe('sendWithRetry', () => {
+    const mailOptions: SendMailOptions = {
+      from: '"Transaction Tool" noreply@example.com',
+      to: 'user@example.com',
+      subject: 'subj',
+      text: 'body',
+    };
+
+    it('should return info when sendMail succeeds on first attempt', async () => {
+      const info = { messageId: 'msg-1' };
+      (transport.sendMail as jest.Mock).mockResolvedValueOnce(info);
+
+      const result = await (service as any).sendWithRetry(mailOptions, 3, 10, 1000, false);
+      expect(result).toBe(info);
+      expect(transport.sendMail).toHaveBeenCalledTimes(1);
+    });
+
+    it('should retry until success', async () => {
+      // reject twice then resolve
+      (transport.sendMail as jest.Mock)
+        .mockRejectedValueOnce(new Error('e1'))
+        .mockRejectedValueOnce(new Error('e2'))
+        .mockResolvedValueOnce({ messageId: 'msg-final' });
+
+      // avoid real delays: make setTimeout immediately invoke callback
+      const setTimeoutSpy = jest.spyOn(global, 'setTimeout').mockImplementation((cb: any) => {
+        cb();
+        return 1 as unknown as NodeJS.Timeout;
+      });
+
+      const result = await (service as any).sendWithRetry(mailOptions, 5, 1, 100, true);
+      expect(result).toEqual({ messageId: 'msg-final' });
+      expect(transport.sendMail).toHaveBeenCalledTimes(3);
+
+      setTimeoutSpy.mockRestore();
+    });
+
+    it('should throw after exhausting attempts', async () => {
+      (transport.sendMail as jest.Mock).mockRejectedValue(new Error('fatal'));
+
+      // avoid real delays
+      const setTimeoutSpy = jest.spyOn(global, 'setTimeout').mockImplementation((cb: any) => {
+        cb();
+        return 1 as unknown as NodeJS.Timeout;
+      });
+
+      await expect(
+        (service as any).sendWithRetry(mailOptions, 3, 1, 100, false)
+      ).rejects.toThrow('fatal');
+      expect(transport.sendMail).toHaveBeenCalledTimes(3);
+
+      setTimeoutSpy.mockRestore();
     });
   });
 
@@ -535,156 +590,3 @@ describe('EmailService', () => {
     });
   });
 });
-// import { Test, TestingModule } from '@nestjs/testing';
-// import { ConfigService } from '@nestjs/config';
-// import { createTransport, Transporter } from 'nodemailer';
-// import SMTPTransport from 'nodemailer/lib/smtp-transport';
-// import { mockDeep } from 'jest-mock-extended';
-//
-// import {
-//   generateEmailContent, generateResetPasswordMessage,
-//   generateUserRegisteredMessage,
-//   NotificationTypeEmailSubjects,
-// } from '@app/common';
-//
-// import { EmailService } from './email.service';
-// import { Notification } from '@entities';
-//
-// jest.mock('nodemailer');
-// jest.mock('@app/common', () => ({
-//   generateEmailContent: jest.fn(),
-//   generateUserRegisteredMessage: jest.fn(),
-//   generateResetPasswordMessage: jest.fn(),
-//   NotificationTypeEmailSubjects: {
-//     TYPE_A: 'Type A Subject',
-//     TYPE_B: 'Type B Subject'
-//   }
-// }));
-//
-// describe('Email Service', () => {
-//   let service: EmailService;
-//   const transport = {
-//     sendMail: jest.fn(),
-//   };
-//
-//   const configService = mockDeep<ConfigService>();
-//
-//   beforeEach(async () => {
-//     jest.resetAllMocks();
-//
-//     jest
-//       .mocked(createTransport)
-//       .mockReturnValue(transport as unknown as Transporter<SMTPTransport.SentMessageInfo>);
-//
-//     const module: TestingModule = await Test.createTestingModule({
-//       providers: [
-//         EmailService,
-//         {
-//           provide: ConfigService,
-//           useValue: configService,
-//         },
-//       ],
-//     }).compile();
-//
-//     service = module.get<EmailService>(EmailService);
-//     (service as any).batcher = {
-//       add: jest.fn().mockResolvedValue(undefined),
-//     };
-//   });
-//
-//   it('should be defined', () => {
-//     expect(service).toBeDefined();
-//   });
-//
-//   it('should call batcher.add for each email', async () => {
-//     const emails = ['user1@example.com', 'user2@example.com'];
-//     const notification = {id: 1, type: 'SOME_TYPE'} as unknown as Notification;
-//
-//     await service.processEmail(emails, notification);
-//
-//     const addMock = (service as any).batcher.add;
-//     expect(addMock).toHaveBeenCalledTimes(emails.length);
-//     emails.forEach(email =>
-//       expect(addMock).toHaveBeenCalledWith(notification, email),
-//     );
-//   });
-//
-//   it('should group notifications by type and send emails using processMessages', async () => {
-//     const notifications: Notification[] = [
-//       { id: 1, type: 'TYPE_A' as keyof typeof NotificationTypeEmailSubjects } as unknown as Notification,
-//       { id: 2, type: 'TYPE_B' as keyof typeof NotificationTypeEmailSubjects } as unknown as Notification,
-//       { id: 3, type: 'TYPE_A' as keyof typeof NotificationTypeEmailSubjects } as unknown as Notification,
-//     ];
-//     // Set up sendMail mock to resolve.
-//     transport.sendMail.mockResolvedValue({ messageId: 'test-message' });
-//
-//     (generateEmailContent as jest.Mock).mockReturnValue('mocked value');
-//
-//     await (service as any)['processMessages']('group@mail.com', notifications);
-//
-//     // Expect two calls: one for each notification type.
-//     expect(transport.sendMail).toHaveBeenCalledTimes(2);
-//
-//     // Optionally, verify parameters for one call.
-//     const callOptions = (transport.sendMail as jest.Mock).mock.calls[0][0];
-//     expect(callOptions.from).toContain('Transaction Tool');
-//     expect(callOptions.to).toEqual('group@mail.com');
-//     // The subject and text depend on your implementation.
-//     expect(callOptions.subject).toEqual(NotificationTypeEmailSubjects[callOptions.subject as keyof typeof NotificationTypeEmailSubjects] || callOptions.subject);
-//     expect(typeof callOptions.text).toBe('string');
-//   });
-//
-//   it('processUserInviteNotifications should call generator and sendMail for valid events', async () => {
-//     const events = [
-//       { email: 'invitee@example.com', additionalData: { name: 'Invitee' } } as any,
-//     ];
-//
-//     (generateUserRegisteredMessage as jest.Mock).mockReturnValue('<p>Welcome Invitee</p>');
-//     transport.sendMail.mockResolvedValueOnce({ messageId: 'invite-msg' });
-//
-//     await service.processUserInviteNotifications(events);
-//
-//     expect(generateUserRegisteredMessage).toHaveBeenCalledWith(events[0].additionalData);
-//     expect(transport.sendMail).toHaveBeenCalledWith(
-//       expect.objectContaining({
-//         to: events[0].email,
-//         subject: 'Hedera Transaction Tool Registration',
-//         html: '<p>Welcome Invitee</p>',
-//       }),
-//     );
-//   });
-//
-//   it('processUserPasswordResetNotifications should skip invalid events and log send failures', async () => {
-//     const events = [
-//       // missing email
-//       { additionalData: { token: 't1' } } as any,
-//       // missing additionalData
-//       { email: 'missingpayload@example.com' } as any,
-//       // valid but send fails for first, succeeds for second
-//       { email: 'fail@example.com', additionalData: { token: 't2' } } as any,
-//       { email: 'ok@example.com', additionalData: { token: 't3' } } as any,
-//     ];
-//
-//     (generateResetPasswordMessage as jest.Mock).mockReturnValue('<p>Reset</p>');
-//
-//     // first valid send fails, second succeeds
-//     transport.sendMail
-//       .mockRejectedValueOnce(new Error('send-failed'))
-//       .mockResolvedValueOnce({ messageId: 'ok-msg' });
-//
-//     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-//     await service.processUserPasswordResetNotifications(events);
-//
-//     // Should have logged missing email and missing payload
-//     expect(errorSpy.mock.calls.some(c => typeof c[0] === 'string' && c[0].includes('No email provided'))).toBe(true);
-//     expect(errorSpy.mock.calls.some(c => typeof c[0] === 'string' && c[0].includes('No payload provided'))).toBe(true);
-//
-//     // Should have attempted two sends (for two valid events)
-//     expect(transport.sendMail).toHaveBeenCalledTimes(2);
-//
-//     // Should have logged the failed send
-//     expect(errorSpy.mock.calls.some(c => typeof c[0] === 'string' && c[0].includes('Failed to send password reset email'))).toBe(true);
-//
-//     errorSpy.mockRestore();
-//   });
-// });

@@ -959,12 +959,68 @@ describe('ReceiverService', () => {
       expect((service as any).processNotificationType).toHaveBeenCalled();
     });
 
+    it('processSignerReminders manual path processes updated receivers from processNotificationType', async () => {
+      const transaction: any = {
+        id: 8,
+        creatorKey: { userId: 1 },
+        signers: [],
+        observers: [],
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        validStart: 0,
+        transactionId: 'tx8',
+        mirrorNetwork: 'mirror',
+      };
+
+      // fetchTransactionsWithRelations -> returns the transaction
+      em.find.mockResolvedValue([transaction]);
+
+      // approvers query returns empty array
+      em.query.mockResolvedValue([]);
+
+      // keysRequiredToSign returns a signer id
+      (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 10 }]);
+
+      // Prepare an updated receiver to be returned by processNotificationType
+      const updatedReceiver = { id: 700, userId: 10, notification: { id: 201 } } as any;
+
+      // For manual path: processNotificationType returns the updated receiver
+      (service as any).processNotificationType = jest.fn()
+        .mockResolvedValueOnce({
+          newReceivers: [],
+          updatedReceivers: [updatedReceiver],
+        })
+        .mockResolvedValueOnce({
+          newReceivers: [],
+          updatedReceivers: [],
+        });
+
+      // For automatic path ensure reminder email won't interfere
+      (service as any).processReminderEmail = jest.fn().mockResolvedValue([]);
+
+      // Spy on collectInAppNotifications to verify it receives the updated receiver
+      const collectSpy = jest.spyOn(service as any, 'collectInAppNotifications').mockImplementation(() => {});
+
+      // Invoke manual flow
+      await (service as any).processSignerReminders([{ entityId: 8 } as any], true);
+
+      expect((service as any).processNotificationType).toHaveBeenCalled();
+      expect(collectSpy).toHaveBeenCalledWith(
+        expect.any(Array), // newReceivers
+        expect.arrayContaining([expect.objectContaining({ id: 700, userId: 10 })]), // updatedReceivers contains our receiver
+        expect.any(Object), // inAppNotifications
+        expect.any(Array), // inAppReceiverIds
+      );
+
+      collectSpy.mockRestore();
+    });
+
     it('processSignerReminders skips when no signer keys are required (userIds.size === 0)', async () => {
       const transaction: any = { id: 8 };
       const ctx = {
         cache: new Map<number, any>(),
         keyCache: new Map<number, any>(),
         transactionMap: new Map([[8, transaction]]),
+        deletionNotifications: {},
         inAppNotifications: {},
         emailNotifications: {},
         inAppReceiverIds: [],
