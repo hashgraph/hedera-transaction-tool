@@ -311,7 +311,7 @@ describe('NotificationReceiverService', () => {
 
       expect(transactionsService.getTransactionForCreator).toHaveBeenCalledWith(1, user);
       expect(notificationsPublisher.publish).toHaveBeenCalledWith(
-        'notifications.queue.transaction.remind-signers',
+        'notifications.queue.transaction.remind-signers.manual',
         expect.arrayContaining([
           expect.objectContaining({
             entityId: transaction.id,

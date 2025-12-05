@@ -147,6 +147,7 @@ export class NotificationReceiverService {
           network: transaction.mirrorNetwork
         }
       }],
+      true,
     );
   }
 
