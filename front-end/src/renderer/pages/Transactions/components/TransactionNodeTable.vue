@@ -137,7 +137,7 @@ onMounted(fetchNodes);
 
 <template>
   <div class="fill-remaining overflow-x-auto">
-    <template v-if="nodes === null">
+    <template v-if="isLoading">
       <AppLoader class="h-100" />
     </template>
     <template v-else>
