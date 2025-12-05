@@ -168,7 +168,7 @@ export function maxExecutedAt(transactions: Transaction[]): Date | undefined {
   let result: Date | undefined;
   if (transactions.length === 0) {
     throw new Error('Group with no transactions');
-  } else if (transactions.find((t) => t.executedAt === undefined)) {
+  } else if (transactions.find((t) => !t.executedAt)) {
     // If one a transactions has undefined executedAt, we return undefined
     result = undefined;
   } else {
