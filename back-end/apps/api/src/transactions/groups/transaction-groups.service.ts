@@ -32,16 +32,16 @@ export class TransactionGroupsService {
   ): Promise<TransactionGroup> {
     const group = this.dataSource.manager.create(TransactionGroup, dto);
 
+    // Extract all transaction DTOs
+    const transactionDtos = dto.groupItems.map(item => item.transaction);
+
+    // Batch create all transactions
+    const transactions = await this.transactionsService.createTransactions(
+      transactionDtos,
+      user,
+    );
+
     await this.dataSource.transaction(async manager => {
-      // Extract all transaction DTOs
-      const transactionDtos = dto.groupItems.map(item => item.transaction);
-
-      // Batch create all transactions
-      const transactions = await this.transactionsService.createTransactions(
-        transactionDtos,
-        user,
-      );
-
       // Create group items with corresponding transactions
       const groupItems = transactions.map((transaction, index) => {
         const groupItemDto = dto.groupItems[index];
