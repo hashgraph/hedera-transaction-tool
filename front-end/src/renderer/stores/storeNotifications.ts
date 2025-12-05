@@ -144,20 +144,8 @@ const useNotificationsStore = defineStore('notifications', () => {
     for (const severUrl of severUrls) {
       ws.on(severUrl, NOTIFICATIONS_NEW, e => {
         const newNotifications: INotificationReceiver[] = e;
-        const existing = notifications.value[severUrl] ?? [];
 
-        // Build map from existing to allow O(1) id lookups and preserve order
-        const map = new Map<number, INotificationReceiver>();
-        for (const item of existing) map.set(item.id, item);
-
-        // For each incoming: remove old (if any) and add incoming so it ends up at the end
-        for (const incoming of newNotifications) {
-          if (map.has(incoming.id)) map.delete(incoming.id);
-          map.set(incoming.id, incoming);
-        }
-
-        // Replace array and parent object to trigger reactivity
-        notifications.value[severUrl] = Array.from(map.values());
+        notifications.value[severUrl] = [...notifications.value[severUrl], ...newNotifications];
         notifications.value = { ...notifications.value };
       });
 

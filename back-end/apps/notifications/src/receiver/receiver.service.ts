@@ -435,19 +435,6 @@ export class ReceiverService {
       cache,
     );
 
-    const existingUserIds = new Set(
-      notification.notificationReceivers.map(nr => nr.userId)
-    );
-
-    // Separate new receivers from existing ones
-    const newReceiverIds = receiverIds.filter(id => !existingUserIds.has(id));
-
-    const newReceivers = await this.createNotificationReceivers(
-      entityManager,
-      notification,
-      newReceiverIds,
-    );
-
     // Update existing receivers
     let updatedReceivers: NotificationReceiver[] = [];
 
@@ -460,18 +447,33 @@ export class ReceiverService {
         ? { isEmailSent: false }
         : { isRead: false, isInAppNotified: false };
 
+      const idsToUpdate = receiversToUpdate.map(nr => nr.id);
       await entityManager.update(
         NotificationReceiver,
-        { id: In(receiversToUpdate.map(nr => nr.id)) },
+        { id: In(idsToUpdate) },
         updateFields,
       );
 
       // Reload updated receivers with notification relation
+      // The notification relation is needed for sending
       updatedReceivers = await entityManager.find(NotificationReceiver, {
-        where: { id: In(receiversToUpdate.map(nr => nr.id)) },
+        where: { id: In(idsToUpdate) },
         relations: { notification: true },
       });
     }
+
+    const existingUserIds = new Set(
+      notification.notificationReceivers.map(nr => nr.userId)
+    );
+
+    // Separate new receivers from existing ones
+    const newReceiverIds = receiverIds.filter(id => !existingUserIds.has(id));
+
+    const newReceivers = await this.createNotificationReceivers(
+      entityManager,
+      notification,
+      newReceiverIds,
+    );
 
     return { newReceivers, updatedReceivers };
   }
@@ -747,17 +749,19 @@ export class ReceiverService {
 
   private async handleSignerReminderNotifications(
     entityManager: EntityManager,
-    syncType: NotificationType,
     transaction: Transaction,
     transactionId: number,
     userIds: Set<number>,
     cache: Map<number, User>,
     isManual: boolean,
+    deletionNotifications: { [userId: number]: number[] },
     inAppNotifications: { [userId: number]: NotificationReceiver[] },
     inAppReceiverIds: number[],
     emailNotifications: { [email: string]: Notification[] },
     emailReceiverIds: number[],
   ): Promise<void> {
+    const syncType = this.getInAppNotificationType(transaction.status);
+
     if (syncType) {
       const { newReceivers, updatedReceivers } = await this.processNotificationType(
         entityManager,
@@ -766,6 +770,13 @@ export class ReceiverService {
         userIds,
         cache,
       );
+
+      updatedReceivers.forEach(nr => {
+        if (!deletionNotifications[nr.userId]) {
+          deletionNotifications[nr.userId] = [];
+        }
+        deletionNotifications[nr.userId].push(nr.id);
+      });
 
       this.collectInAppNotifications(
         newReceivers,
@@ -1034,6 +1045,7 @@ export class ReceiverService {
       cache,
       keyCache,
       transactionMap,
+      deletionNotifications,
       inAppNotifications,
       emailNotifications,
       inAppReceiverIds,
@@ -1055,17 +1067,15 @@ export class ReceiverService {
 
       if (userIds.size === 0) continue;
 
-      const syncType = this.getInAppNotificationType(transaction.status);
-
       await this.entityManager.transaction(async entityManager => {
         await this.handleSignerReminderNotifications(
           entityManager,
-          syncType,
           transaction,
           transactionId,
           userIds,
           cache,
           isManual,
+          deletionNotifications,
           inAppNotifications,
           inAppReceiverIds,
           emailNotifications,
@@ -1074,6 +1084,7 @@ export class ReceiverService {
       });
     }
 
+    await this.sendDeletionNotifications(deletionNotifications);
     await this.sendInAppNotifications(inAppNotifications, inAppReceiverIds);
     await this.sendEmailNotifications(emailNotifications, emailReceiverIds);
   }
