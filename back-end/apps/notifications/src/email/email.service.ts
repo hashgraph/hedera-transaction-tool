@@ -12,7 +12,7 @@ import {
   NotificationTypeEmailSubjects,
 } from '@app/common';
 import { DebouncedNotificationBatcher } from '../utils';
-import { Notification, NotificationType } from '@entities';
+import { Notification } from '@entities';
 import { EmailNotificationDto } from '../dtos';
 
 @Injectable()
@@ -110,27 +110,62 @@ export class EmailService {
     }
   }
 
+  private async sendWithRetry(
+    mailOptions: SendMailOptions,
+    attempts = 5,
+    baseDelayMs = 1000,
+    maxDelayMs = 60000,
+    useJitter = true,
+  ) {
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      try {
+        const info = await this.transporter.sendMail(mailOptions);
+        console.log(`Message sent: ${info.messageId}`);
+        return info;
+      } catch (err: any) {
+        const last = attempt === attempts;
+        console.error(`sendMail attempt ${attempt} failed${last ? ' (final)' : ''}:`, err?.code ?? err);
+
+        if (last) throw err;
+
+        // exponential backoff: baseDelayMs * 2^(attempt-1), capped by maxDelayMs
+        let delay = Math.min(baseDelayMs * Math.pow(2, attempt - 1), maxDelayMs);
+
+        // optional jitter (0.5x - 1.5x)
+        if (useJitter) {
+          const jitterFactor = 0.5 + Math.random(); // range [0.5, 1.5)
+          delay = Math.floor(delay * jitterFactor);
+        }
+
+        console.log(`Retrying sendMail in ${delay}ms (attempt ${attempt + 1}/${attempts})`);
+        await new Promise((res) => setTimeout(res, delay));
+      }
+    }
+  }
+
   private async processMessages(groupKey: string, notifications: Notification[]) {
     const groupedNotifications = notifications.reduce((map, msg) => {
-      if (!map.has(msg.type)) {
-        map.set(msg.type, []);
-      }
+      if (!map.has(msg.type)) map.set(msg.type, []);
       map.get(msg.type)!.push(msg);
       return map;
     }, new Map<string, Notification[]>());
 
     console.log(`Processing email batch for ${groupKey} with ${notifications.length} notifications in ${groupedNotifications.size} groups.`);
 
-    for (const [type, notifications] of groupedNotifications.entries()) {
+    for (const [type, notifs] of groupedNotifications.entries()) {
       const mailOptions: SendMailOptions = {
         from: `"Transaction Tool" ${this.sender}`,
         to: groupKey,
         subject: NotificationTypeEmailSubjects[type],
-        text: generateEmailContent(type, ...notifications),
+        text: generateEmailContent(type, ...notifs),
       };
 
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log(`Message sent: ${info.messageId}`);
+      try {
+        await this.sendWithRetry(mailOptions);
+      } catch (err) {
+        console.error(`Failed to send email for type=${type} to ${groupKey}:`, err);
+        // continue to next group; consider re-queueing or alerting for persistent failures
+      }
     }
-  };
+  }
 }
