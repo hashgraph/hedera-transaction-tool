@@ -9,7 +9,7 @@ const config: Config = {
   },
   collectCoverageFrom: ['<rootDir>/libs/common/src/**/*.{!(module),}.(t|j)s'],
   testEnvironment: 'node',
-  roots: ['<rootDir>/libs/', '<rootDir>/test/'],
+  roots: ['<rootDir>/libs/', '<rootDir>/typeorm/test/'],
   moduleNameMapper: {
     '^@app/common(|/.*)$': '<rootDir>/libs/common/src/$1',
     '^@entities(|/.*)$': '<rootDir>/libs/common/src/database/entities/$1',

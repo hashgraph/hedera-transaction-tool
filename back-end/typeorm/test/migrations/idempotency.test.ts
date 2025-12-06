@@ -1,6 +1,6 @@
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import { DataSource } from 'typeorm';
-import { AppDataSource } from '../../typeorm/data-source';
+import { AppDataSource } from '../../data-source';
 
 describe('Migration Idempotency', () => {
   jest.setTimeout(60000);

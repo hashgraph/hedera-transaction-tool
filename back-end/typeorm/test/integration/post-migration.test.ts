@@ -1,5 +1,5 @@
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
-import { AppDataSource } from '../../typeorm/data-source';
+import { AppDataSource } from '../../data-source';
 
 describe('Post-Migration Database Validation', () => {
   jest.setTimeout(60000);
