@@ -34,6 +34,8 @@ jobs:
             command: chain
           - name: Notifications
             command: notifications
+          - name: Migration
+            command: ./test
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
@@ -61,7 +63,7 @@ jobs:
         working-directory: back-end
 
       - name: Run unit tests
-        run: pnpm --filter ${{ matrix.test-suite.command }} test:cov
+        run: pnpm --filter ${{ matrix.test-suite.command }}... test:cov
         working-directory: back-end
 
       - name: Upload coverage to Codecov
