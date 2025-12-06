@@ -45,13 +45,11 @@ assert_nats_release() {
         $HELM uninstall nats
     fi
 
+    local nats_values_yaml=$(realpath "$BASEDIR/deployments/nats-values.yaml")
+
     # In a normal install, we might want exporter and reloader
     # For a full dev, we want all of them, I think.
-    $HELM install nats nats/nats \
-            --set jetstream.enabled=true \
-            --set natsBox.enabled=false \
-            --set exporter.enabled=false \
-            --set reloader.enabled=false
+    $HELM install nats nats/nats -f "$nats_values_yaml"
 }
 
 # Check traefik helm repo
