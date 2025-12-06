@@ -21,9 +21,13 @@
     "create-admin": "npx ts-node ./scripts/create-admin.ts",
     "create-users": "npx ts-node ./scripts/add-users.ts",
     "deploy:dev": "sh ./k8s/dev/deploy.sh",
-    "test:libs": "jest --config ./jest.config.ts",
-    "test:all": "npm run test --workspace=apps/api && npm run test --workspace=apps/chain && npm run test --workspace=apps/notifications",
-    "test:cov:all": "npm run test:cov --workspace=apps/api && npm run test:cov --workspace=apps/chain && npm run test:cov --workspace=apps/notifications"
+    "test:base": "jest --config ./jest.config.ts",
+    "test:all": "npm run test:base && INCLUDE_LIBS=0 npm run test --workspace=apps/api && INCLUDE_LIBS=0  npm run test --workspace=apps/chain && INCLUDE_LIBS=0 npm run test --workspace=apps/notifications",
+    "test:cov:all": "npm run test:base -- --coverage && INCLUDE_LIBS=0 npm run test:cov --workspace=apps/api && INCLUDE_LIBS=0 npm run test:cov --workspace=apps/chain && INCLUDE_LIBS=0 npm run test:cov --workspace=apps/notifications",
+    "migration:generate": "pnpm typeorm migration:generate -d typeorm/data-source.ts",
+    "migration:create": "pnpm typeorm migration:create",
+    "migration:run": "pnpm typeorm migration:run -d typeorm/data-source.ts",
+    "migration:revert": "pnpm typeorm migration:revert -d typeorm/data-source.ts"
   },
   "dependencies": {
     "@hashgraph/proto": "2.19.0",

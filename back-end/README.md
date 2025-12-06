@@ -163,7 +163,7 @@ A helm chart is forthcoming. Until then, use the following commands once connect
     kubectl apply -f ./otp-secret.yaml
     kubectl apply -f ./email-api-secret.yaml
     ```
-6.  Deploy the services. Until migration is properly in place, the first time the api service is deployed, ensure that POSTGRES_SYNCHRONIZE is set to true in the yaml:
+6.  Deploy the services:
     ```
     kubectl apply -f ./api-deployment.yaml
     kubectl apply -f ./chain-deployment.yaml

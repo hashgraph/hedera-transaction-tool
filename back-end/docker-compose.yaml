@@ -15,20 +15,23 @@ services:
       context: .
       dockerfile: ./apps/api/Dockerfile
       target: development
-    command: npm run start:dev api
+    command: ["sh", "-c", "pnpm migration:run && pnpm start:dev api"]
     env_file:
       - ./apps/api/.env
     ports:
       - '3001:3000'
     volumes:
       - .:/usr/src/app
+    depends_on:
+      database:
+        condition: service_healthy
     restart: always
   chain:
     build:
       context: .
       dockerfile: ./apps/chain/Dockerfile
       target: development
-    command: npm run start:dev chain
+    command: pnpm run start:dev chain
     env_file:
       - ./apps/chain/.env
     volumes:
@@ -39,7 +42,7 @@ services:
       context: .
       dockerfile: ./apps/notifications/Dockerfile
       target: development
-    command: npm run start:dev notifications
+    command: pnpm run start:dev notifications
     env_file:
       - ./apps/notifications/.env
     ports:
@@ -65,6 +68,11 @@ services:
       - '5432:5432'
   #    expose:
   #      - '5432'
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   pgadmin:
     image: dpage/pgadmin4
     restart: always

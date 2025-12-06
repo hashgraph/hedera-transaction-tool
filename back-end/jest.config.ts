@@ -3,13 +3,13 @@ import type { Config } from 'jest';
 const config: Config = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: '.',
-  testRegex: '.*\\.spec\\.ts$',
+  testRegex: '.*\\.(spec|test)\\.ts$',
   transform: {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
   collectCoverageFrom: ['<rootDir>/libs/common/src/**/*.{!(module),}.(t|j)s'],
   testEnvironment: 'node',
-  roots: ['<rootDir>/libs/'],
+  roots: ['<rootDir>/libs/', '<rootDir>/test/'],
   moduleNameMapper: {
     '^@app/common(|/.*)$': '<rootDir>/libs/common/src/$1',
     '^@entities(|/.*)$': '<rootDir>/libs/common/src/database/entities/$1',

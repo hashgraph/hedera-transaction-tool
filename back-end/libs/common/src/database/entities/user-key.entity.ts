@@ -2,6 +2,7 @@ import {
   Column,
   DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -31,6 +32,7 @@ export class UserKey {
   index: number;
 
   @Column({ length: 128 })
+  @Index()
   publicKey: string;
 
   @DeleteDateColumn()

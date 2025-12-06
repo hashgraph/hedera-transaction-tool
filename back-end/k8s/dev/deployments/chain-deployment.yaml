@@ -6,7 +6,7 @@ metadata:
     name: chain-deployment
     app: htx-back-end
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       name: chain
@@ -35,7 +35,7 @@ spec:
             - name: POSTGRES_PASSWORD
               value: 'postgres'
             - name: POSTGRES_SYNCHRONIZE
-              value: 'true'
+              value: 'false'
             - name: POSTGRES_MAX_POOL_SIZE
               value: '2'
             - name: REDIS_URL
