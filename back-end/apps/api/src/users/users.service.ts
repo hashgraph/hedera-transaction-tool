@@ -5,20 +5,23 @@ import {
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
 
 import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
 
 import { ErrorCodes } from '@app/common';
-import { User, UserStatus } from '@entities';
+import { User, UserKey, UserStatus } from '@entities';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectRepository(User) private repo: Repository<User>) {}
+  constructor(
+    @InjectRepository(User) private repo: Repository<User>,
+    @InjectDataSource() private dataSource: DataSource,
+  ) {}
 
   /* Creates a user with a given email and password. */
   async createUser(email: string, password: string): Promise<User> {
@@ -117,14 +120,17 @@ export class UsersService {
   // Remove a user from the organization.
   // This is a soft delete, meaning the deletedTimestamp will be set.
   async removeUser(id: number): Promise<boolean> {
-    const user = await this.getUser({ id });
+    await this.dataSource.transaction(async (manager) => {
+      const userResult = await manager.softDelete(User, { id });
 
-    if (!user) {
-      throw new BadRequestException(ErrorCodes.UNF);
-    }
+      if (userResult.affected === 0) {
+        throw new BadRequestException(ErrorCodes.UNF);
+      }
 
-    await this.repo.softRemove(user);
+      await manager.softDelete(UserKey, { userId: id });
 
+      return userResult;
+    });
     return true;
   }
 

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { DataSource, FindOptionsWhere, Repository } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
 import { ErrorCodes } from '@app/common';
@@ -14,10 +14,18 @@ import { UsersService } from './users.service';
 jest.mock('bcryptjs');
 jest.mock('argon2');
 
+const makeTransactionManager = () => ({
+  softDelete: jest.fn().mockResolvedValue({ affected: 1 }),
+});
+
 describe('UsersService', () => {
   let service: UsersService;
 
   const userRepository = mockDeep<Repository<User>>();
+
+  const mockDataSource: Partial<DataSource> = {
+    transaction: jest.fn().mockImplementation(async (cb: any) => cb(makeTransactionManager())),
+  };
 
   const email = 'some@email.com';
   const password = 'password';
@@ -34,6 +42,10 @@ describe('UsersService', () => {
         {
           provide: getRepositoryToken(User),
           useValue: userRepository,
+        },
+        {
+          provide: DataSource,
+          useValue: mockDataSource,
         },
       ],
     }).compile();
@@ -189,18 +201,40 @@ describe('UsersService', () => {
     });
   });
 
-  it('should remove user', async () => {
-    userRepository.findOne.mockResolvedValue(user as User);
+  it('should soft delete user and its keys via dataSource.transaction', async () => {
+    // Prepare a manager mock whose softDelete resolves with affected = 1
+    const manager = {
+      softDelete: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
 
-    await service.removeUser(1);
+    // Mock dataSource.transaction to invoke the callback with our manager
+    const mockTransaction = jest.fn().mockImplementation(async (cb: any) => cb(manager));
+    (service as any).dataSource = { transaction: mockTransaction };
 
-    expect(userRepository.softRemove).toHaveBeenCalledWith(user);
+    const result = await service.removeUser(1);
+
+    expect(mockTransaction).toHaveBeenCalled();
+    expect(manager.softDelete).toHaveBeenCalledTimes(2);
+    // first softDelete deletes the User by id
+    expect(manager.softDelete).toHaveBeenNthCalledWith(1, User, { id: 1 });
+    // second softDelete deletes UserKey entries for the user
+    expect(manager.softDelete).toHaveBeenNthCalledWith(2, expect.anything(), { userId: 1 });
+    expect(result).toBe(true);
   });
 
-  it('should throw if the user is not found', async () => {
-    userRepository.findOne.mockResolvedValue(null);
+  it('should throw if the user is not found (softDelete affected = 0)', async () => {
+    const manager = {
+      softDelete: jest.fn().mockResolvedValue({ affected: 0 }),
+    };
+
+    const mockTransaction = jest.fn().mockImplementation(async (cb: any) => cb(manager));
+    (service as any).dataSource = { transaction: mockTransaction };
 
     await expect(service.removeUser(1)).rejects.toThrow(ErrorCodes.UNF);
+
+    expect(mockTransaction).toHaveBeenCalled();
+    expect(manager.softDelete).toHaveBeenCalledTimes(1);
+    expect(manager.softDelete).toHaveBeenCalledWith(User, { id: 1 });
   });
 
   it('should return the email of the user who owns the public key', async () => {
