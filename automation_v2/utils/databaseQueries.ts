@@ -595,7 +595,9 @@ export async function disableNotificationsForTestUsers(inApp = false) {
  * 'isRead' and 'isInAppNotified' if a notification is found, or null if not found.
  * @throws {Error} If there is an error executing the query.
  */
-export async function getLatestNotificationStatusByEmail(email: string) {
+export async function getLatestNotificationStatusByEmail(
+  email: string,
+): Promise<{ isRead: boolean; isInAppNotified: boolean } | null> {
   try {
     const userId = await getUserIdByEmail(email);
     if (!userId) {
