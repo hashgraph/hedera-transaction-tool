@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Transaction, TransactionStatus, User } from '@entities';
+import { Transaction, TransactionStatus, TransactionType, User } from '@entities';
 import { Filtering, Pagination } from '@app/common';
 import { TransactionNodeDto } from '../dto';
 import { TransactionNodeCollection } from '../dto/ITransactionNode';
@@ -24,6 +24,8 @@ export class TransactionNodesService {
   async getTransactionNodes(
     user: User,
     collection: TransactionNodeCollection,
+    statusFilter: TransactionStatus[],
+    transactionTypeFilter: TransactionType[],
   ): Promise<TransactionNodeDto[]> {
     let transactions: Transaction[];
     switch (collection) {
@@ -69,6 +71,16 @@ export class TransactionNodesService {
         transactions = p.items;
         break;
       }
+    }
+
+    // Filters
+    if (statusFilter.length > 0) {
+      transactions = transactions.filter((t: Transaction) => statusFilter.includes(t.status));
+    }
+    if (transactionTypeFilter.length > 0) {
+      transactions = transactions.filter((t: Transaction) =>
+        transactionTypeFilter.includes(t.type),
+      );
     }
 
     // Aggregates transactions by group
@@ -182,8 +194,8 @@ export function maxExecutedAt(transactions: Transaction[]): Date | undefined {
   return result;
 }
 
-function calculateStatusCodeForGroup(transactions: Transaction[]): number|undefined {
-  let result: number|undefined;
+function calculateStatusCodeForGroup(transactions: Transaction[]): number | undefined {
+  let result: number | undefined;
 
   // Aggregates status codes for all transactions
   const allStatusCodes = new Set<number>();
@@ -197,7 +209,7 @@ function calculateStatusCodeForGroup(transactions: Transaction[]): number|undefi
   }
   if (allStatusCodes.size === 1 && undefinedStatusCodeCount === 0) {
     // Easy : all transactions have the same status code
-    result = allStatusCodes.values().next().value
+    result = allStatusCodes.values().next().value;
   } else {
     // We have a mix of status codes … to be refined later
     result = undefined;
@@ -206,8 +218,8 @@ function calculateStatusCodeForGroup(transactions: Transaction[]): number|undefi
   return result;
 }
 
-function calculateStatusForGroup(transactions: Transaction[]): string|undefined {
-  let result: string|undefined;
+function calculateStatusForGroup(transactions: Transaction[]): string | undefined {
+  let result: string | undefined;
 
   // Aggregates status for all transactions
   const allStatuses = new Set<string>();
@@ -216,7 +228,7 @@ function calculateStatusForGroup(transactions: Transaction[]): string|undefined 
   }
   if (allStatuses.size === 1) {
     // Easy : all transactions have the same status
-    result = allStatuses.values().next().value
+    result = allStatuses.values().next().value;
   } else {
     // We have a mix of statuses … to be refined later
     result = undefined;
