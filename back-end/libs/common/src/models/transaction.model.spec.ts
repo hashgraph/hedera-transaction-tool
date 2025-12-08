@@ -9,7 +9,7 @@ import {
   parseNodeInfo,
 } from '@app/common';
 
-jest.mock('@app/common');
+jest.mock('@app/common/utils');
 
 describe('TransactionBaseModel.computeSignatureKey', () => {
   let mirrorNetwork: string;

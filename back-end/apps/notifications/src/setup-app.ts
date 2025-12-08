@@ -1,14 +1,11 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Transport } from '@nestjs/microservices';
 
-import { LoggerMiddleware, NOTIFICATIONS_SERVICE } from '@app/common';
+import { LoggerMiddleware, } from '@app/common';
 import { RedisIoAdapter } from './websocket/redis-io.adapter';
 
 export function setupApp(app: INestApplication, addLogger: boolean = true) {
   const configService = app.get(ConfigService);
-
-  connectMicroservices(app);
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -25,24 +22,4 @@ export function setupApp(app: INestApplication, addLogger: boolean = true) {
   redisIoAdapter.connectToRedis(configService.getOrThrow<string>('REDIS_URL'));
 
   app.useWebSocketAdapter(redisIoAdapter);
-}
-
-function connectMicroservices(app: INestApplication) {
-  const configService = app.get(ConfigService);
-
-  app.connectMicroservice({
-    transport: Transport.RMQ,
-    options: {
-      urls: [configService.getOrThrow<string>('RABBITMQ_URI')],
-      queue: NOTIFICATIONS_SERVICE,
-      queueOptions: {
-        durable: true,
-        arguments: {
-          'x-queue-type': 'quorum',
-        },
-      },
-      noAck: false,
-      prefetchCount: 1,
-    },
-  });
 }

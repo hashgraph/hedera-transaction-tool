@@ -137,11 +137,15 @@ test.describe('Settings tests', () => {
     await settingsPage.fillInNickname('testNickname' + settingsPage.currentIndex);
     await settingsPage.clickOnNicknameContinueButton();
 
-    const isKeyPairSavedInDatabase = await settingsPage.verifyKeysExistByIndexAndEmail(
-      globalCredentials.email,
-      currentIndex,
-    );
-    expect(isKeyPairSavedInDatabase).toBe(true);
+    // wait for the success toast so save has been triggered
+    await loginPage.waitForToastToDisappear();
+
+    // poll the DB until the key appears (helps on fast/CI runs)
+    await expect.poll(
+      async () =>
+        await settingsPage.verifyKeysExistByIndexAndEmail(globalCredentials.email, currentIndex),
+      { timeout: 5000, interval: 250 },
+    ).toBe(true);
 
     // key pair was successfully restored, so we increment the index
     await settingsPage.incrementIndex();

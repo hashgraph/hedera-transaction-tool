@@ -137,7 +137,8 @@ function calculateTimeout(totalUsers, timePerUser) {
  */
 async function waitForValidStart(dateTimeString, bufferSeconds = 15) {
   // Convert the dateTimeString to a Date object
-  const targetDate = new Date(dateTimeString);
+  // Assume that the string is in UTC format
+  const targetDate = new Date(dateTimeString + 'Z');
 
   // Get the current time
   const currentDate = new Date();

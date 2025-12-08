@@ -3,7 +3,8 @@ import { BadRequestException } from '@nestjs/common';
 import { AccountId, PublicKey, SignatureMap, TransactionId } from '@hashgraph/sdk';
 
 import { decode, ErrorCodes, isAccountId, isTransactionId } from '@app/common';
-import { Transform } from 'class-transformer';
+
+import { Transform, Expose } from 'class-transformer';
 
 export function IsSignatureMap() {
   const isObject = child => child && typeof child === 'object';
@@ -20,40 +21,51 @@ export function IsSignatureMap() {
     }
   };
 
-  return Transform(({ value }) => {
-    const signatureMap = new SignatureMap();
+  return function (target: any, propertyKey: string) {
+    // ONLY apply Transform - remove Type() completely
+    Transform(({ value, obj }) => {
+      // If already transformed, return as-is
+      if (value instanceof SignatureMap) {
+        return value;
+      }
 
-    if (!isObject(value)) {
-      throw new BadRequestException(ErrorCodes.ISNMP);
-    }
+      const signatureMap = new SignatureMap();
 
-    for (const nodeAccountId in value) {
-      const transactionIds = value[nodeAccountId];
+      if (!isObject(value)) {
+        throw new BadRequestException(ErrorCodes.ISNMP);
+      }
 
-      assertNodeAccountIdValid(nodeAccountId, transactionIds);
+      for (const nodeAccountId in value) {
+        const transactionIds = value[nodeAccountId];
 
-      for (const transactionId in transactionIds) {
-        const publicKeys = transactionIds[transactionId];
-        assertTransactionIdValid(transactionId, publicKeys);
+        assertNodeAccountIdValid(nodeAccountId, transactionIds);
 
-        for (const publicKey in publicKeys) {
-          const signature = publicKeys[publicKey];
-          const decodedSignature = new Uint8Array(decode(signature));
+        for (const transactionId in transactionIds) {
+          const publicKeys = transactionIds[transactionId];
+          assertTransactionIdValid(transactionId, publicKeys);
 
-          if (decodedSignature.length === 0) {
-            throw new BadRequestException(ErrorCodes.ISNMP);
+          for (const publicKey in publicKeys) {
+            const signature = publicKeys[publicKey];
+            const decodedSignature = new Uint8Array(decode(signature));
+
+            if (decodedSignature.length === 0) {
+              throw new BadRequestException(ErrorCodes.ISNMP);
+            }
+
+            signatureMap.addSignature(
+              AccountId.fromString(nodeAccountId),
+              TransactionId.fromString(transactionId),
+              PublicKey.fromString(publicKey),
+              decodedSignature,
+            );
           }
-
-          signatureMap.addSignature(
-            AccountId.fromString(nodeAccountId),
-            TransactionId.fromString(transactionId),
-            PublicKey.fromString(publicKey),
-            decodedSignature,
-          );
         }
       }
-    }
 
-    return signatureMap;
-  });
+      return signatureMap;
+    }, { toClassOnly: true })(target, propertyKey);
+
+    // IMPORTANT: Tell class-transformer to process this property
+    Expose()(target, propertyKey);
+  };
 }
