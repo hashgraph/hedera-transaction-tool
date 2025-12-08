@@ -4,21 +4,30 @@ import {
   type ITransactionNode,
   TransactionNodeCollection,
 } from '../../../../../middle-end/src/ITransactionNode';
-import { BackEndTransactionType, TransactionStatus } from '@shared/interfaces';
+import { BackEndTransactionType, type Network, TransactionStatus } from '@shared/interfaces';
 
 export const getTransactionNodes = async (
   serverUrl: string,
   collection: TransactionNodeCollection,
+  network: Network,
   statusFilter: TransactionStatus[],
   transactionTypeFilter: BackEndTransactionType[],
 ): Promise<ITransactionNode[]> =>
   commonRequestHandler(async () => {
-    const statusParam = statusFilter.length > 0 ? `&status=${statusFilter}` : '';
-    const transactionTypeParam =
-      transactionTypeFilter.length > 0 ? `&transactionType=${transactionTypeFilter}` : '';
-    const { data } = await axiosWithCredentials.get(
-      `${serverUrl}/transaction-nodes?collection=${collection}${statusParam}${transactionTypeParam}`,
-    );
+    type Params = {
+      collection: string;
+      network: string;
+      status?: string;
+      transactionType?: string;
+    };
+    const params: Params = { collection, network };
+    if (statusFilter.length > 0) {
+      params.status = `${statusFilter}`;
+    }
+    if (transactionTypeFilter.length > 0) {
+      params.transactionType = `${transactionTypeFilter}`;
+    }
+    const r = await axiosWithCredentials.get(`${serverUrl}/transaction-nodes`, { params });
 
-    return data;
+    return r.data;
   }, 'Failed to get transaction nodes');

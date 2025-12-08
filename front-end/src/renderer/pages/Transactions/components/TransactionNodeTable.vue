@@ -11,9 +11,10 @@ import {
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
+import useNetworkStore from '@renderer/stores/storeNetwork.ts';
+import { useToast } from 'vue-toast-notification';
 import { isLoggedInOrganization } from '@renderer/utils';
 import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
-import { useToast } from 'vue-toast-notification';
 import {
   sortTransactionNodes,
   TransactionNodeSortField,
@@ -28,6 +29,7 @@ const props = defineProps<{
 
 /* Stores */
 const user = useUserStore();
+const network = useNetworkStore();
 const toast = useToast();
 
 /* State */
@@ -103,6 +105,7 @@ async function fetchNodes(): Promise<void> {
       nodes.value = await getTransactionNodes(
         user.selectedOrganization.serverUrl,
         props.collection,
+        network.network,
         statusFilter.value,
         transactionTypeFilter.value,
       );

@@ -24,50 +24,65 @@ export class TransactionNodesService {
   async getTransactionNodes(
     user: User,
     collection: TransactionNodeCollection,
+    network: string,
     statusFilter: TransactionStatus[],
     transactionTypeFilter: TransactionType[],
   ): Promise<TransactionNodeDto[]> {
     let transactions: Transaction[];
+    const filter: Filtering = {
+      property: 'mirrorNetwork',
+      rule: 'eq',
+      value: network,
+    };
     switch (collection) {
       case TransactionNodeCollection.READY_FOR_REVIEW: {
-        const p = await this.transactionsService.getTransactionsToApprove(user, PAGINATION_ALL);
+        const p = await this.transactionsService.getTransactionsToApprove(
+          user,
+          PAGINATION_ALL,
+          undefined,
+          [filter],
+        );
         transactions = p.items;
         break;
       }
       case TransactionNodeCollection.READY_TO_SIGN: {
-        const r = await this.transactionsService.getTransactionsToSign(user, PAGINATION_ALL);
+        const r = await this.transactionsService.getTransactionsToSign(
+          user,
+          PAGINATION_ALL,
+          undefined,
+          [filter],
+        );
         transactions = r.items.map(v => v.transaction);
         break;
       }
       case TransactionNodeCollection.READY_FOR_EXECUTION: {
-        const filter: Filtering = {
+        const filterExecution: Filtering = {
           property: 'status',
           rule: 'eq',
           value: TransactionStatus.WAITING_FOR_EXECUTION,
         };
         const p = await this.transactionsService.getTransactions(user, PAGINATION_ALL, undefined, [
           filter,
+          filterExecution,
         ]);
         transactions = p.items;
         break;
       }
       case TransactionNodeCollection.IN_PROGRESS: {
-        const filter: Filtering = {
+        const filterProgress: Filtering = {
           property: 'status',
           rule: 'eq',
           value: TransactionStatus.WAITING_FOR_SIGNATURES,
         };
         const p = await this.transactionsService.getTransactions(user, PAGINATION_ALL, undefined, [
           filter,
+          filterProgress,
         ]);
         transactions = p.items;
         break;
       }
       case TransactionNodeCollection.HISTORY: {
-        const p = await this.transactionsService.getHistoryTransactions(
-          // user,
-          PAGINATION_ALL,
-        );
+        const p = await this.transactionsService.getHistoryTransactions(PAGINATION_ALL, [filter]);
         transactions = p.items;
         break;
       }
@@ -180,7 +195,7 @@ export function maxExecutedAt(transactions: Transaction[]): Date | undefined {
   let result: Date | undefined;
   if (transactions.length === 0) {
     throw new Error('Group with no transactions');
-  } else if (transactions.find((t) => !t.executedAt)) {
+  } else if (transactions.find(t => !t.executedAt)) {
     // If one a transactions has undefined executedAt, we return undefined
     result = undefined;
   } else {
