@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import StatusFieldV2 from '@renderer/components/Filter/v2/StatusFieldV2.vue';
-import TransactionTypeFilterV2 from '@renderer/components/Filter/v2/TransactionTypeFilterV2.vue';
+import TransactionTypeFieldV2 from '@renderer/components/Filter/v2/TransactionTypeFieldV2.vue';
 import { BackEndTransactionType, TransactionStatus } from '@shared/interfaces';
 
 /* Models */
@@ -13,6 +13,6 @@ const transactionTypeFilter = defineModel<BackEndTransactionType[]>('transaction
 <template>
   <div class="d-flex flex-wrap gap-4 text-small">
     <StatusFieldV2 v-model:status-filter="statusFilter" />
-    <TransactionTypeFilterV2 v-model:transaction-type-filter="transactionTypeFilter" />
+    <TransactionTypeFieldV2 v-model:transaction-type-filter="transactionTypeFilter" />
   </div>
 </template>
