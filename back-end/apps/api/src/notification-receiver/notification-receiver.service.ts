@@ -1,6 +1,5 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ClientProxy } from '@nestjs/microservices';
 import { FindManyOptions, FindOptionsOrder, FindOptionsWhere, In, Repository } from 'typeorm';
 
 import {
@@ -13,15 +12,12 @@ import {
 } from '@entities';
 
 import {
+  emitTransactionRemindSigners,
   ErrorCodes,
   Filtering,
   getOrder,
-  getRemindSignersDTO,
   getWhere,
-  keysRequiredToSign,
-  MirrorNodeService,
-  NOTIFICATIONS_SERVICE,
-  notifyGeneral,
+  NatsPublisherService,
   PaginatedResourceDto,
   Pagination,
   Sorting,
@@ -35,10 +31,8 @@ export class NotificationReceiverService {
   constructor(
     @InjectRepository(NotificationReceiver)
     private repo: Repository<NotificationReceiver>,
-    @Inject(NOTIFICATIONS_SERVICE)
-    private readonly notificationsService: ClientProxy,
+    private readonly notificationsPublisher: NatsPublisherService,
     private readonly transactionService: TransactionsService,
-    private readonly mirrorNodeService: MirrorNodeService,
   ) {}
 
   async getReceivedNotifications(
@@ -144,25 +138,16 @@ export class NotificationReceiverService {
       return;
     }
 
-    /* Get users required to sign */
-    const allKeys = await keysRequiredToSign(
-      transaction,
-      this.mirrorNodeService,
-      this.repo.manager,
-    );
-    const userIds = allKeys
-      .map(k => k.userId)
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .filter(Boolean);
-
-    const dto = getRemindSignersDTO(transaction, userIds, true, true);
-    notifyGeneral(
-      this.notificationsService,
-      dto.type,
-      userIds,
-      dto.entityId,
-      dto.recreateReceivers,
-      { transactionId: transaction.transactionId, network: transaction.mirrorNetwork },
+    emitTransactionRemindSigners(
+      this.notificationsPublisher,
+      [{
+        entityId: transaction.id,
+        additionalData: {
+          transactionId: transaction.transactionId,
+          network: transaction.mirrorNetwork
+        }
+      }],
+      true,
     );
   }
 

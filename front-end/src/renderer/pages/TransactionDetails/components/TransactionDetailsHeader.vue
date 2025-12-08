@@ -602,12 +602,11 @@ const updateTransactionVersionMismatch = (): void => {
   if (!props.sdkTransaction || !props.organizationTransaction) {
     mismatch = false;
   } else {
-    // The sdkTransaction has already been deserialized from bytes, serialize back into bytes
-    // and compare to the organizations transaction bytes.
-    mismatch = !areByteArraysEqual(
-      props.sdkTransaction.toBytes(),
-      hexToUint8Array(props.organizationTransaction.transactionBytes),
-    );
+    // As organizationTransaction and sdkTransaction are updated separately,
+    // we cannot compare the two values directly. After signatures, they may be different.
+    const bytes = hexToUint8Array(props.organizationTransaction.transactionBytes);
+    const transaction = SDKTransaction.fromBytes(bytes);
+    mismatch = !areByteArraysEqual(bytes, transaction.toBytes());
   }
   isTransactionVersionMismatch.value = mismatch;
 };

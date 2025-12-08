@@ -13,7 +13,7 @@ import { MirrorNodeService, computeSignatureKey, flattenKeyList } from '@app/com
 
 import { keysRequiredToSign, userKeysRequiredToSign } from '.';
 
-jest.mock('@app/common');
+jest.mock('@app/common/utils');
 
 describe('keysRequiredToSign', () => {
   let transaction;

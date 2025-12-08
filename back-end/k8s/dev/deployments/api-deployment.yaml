@@ -40,8 +40,8 @@ spec:
               value: '3000'
             - name: TCP_PORT
               value: '3001'
-            - name: RABBITMQ_URI
-              value: 'amqp://rabbitmq-service:5672'
+            - name: NATS_URL
+              value: 'nats://nats:4222'
             - name: POSTGRES_HOST
               value: 'postgres-service'
             - name: POSTGRES_PORT

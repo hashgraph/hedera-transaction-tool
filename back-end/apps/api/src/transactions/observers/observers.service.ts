@@ -1,5 +1,4 @@
-import { ClientProxy } from '@nestjs/microservices';
-import { BadRequestException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 
 import { EntityManager, Repository } from 'typeorm';
@@ -8,10 +7,10 @@ import { Role, Transaction, TransactionObserver, TransactionStatus, User } from 
 
 import {
   MirrorNodeService,
-  NOTIFICATIONS_SERVICE,
+  NatsPublisherService,
   userKeysRequiredToSign,
-  notifyTransactionAction,
   ErrorCodes,
+  emitTransactionUpdate,
 } from '@app/common';
 
 import { ApproversService } from '../approvers';
@@ -26,7 +25,7 @@ export class ObserversService {
     @InjectEntityManager() private entityManager: EntityManager,
     private readonly approversService: ApproversService,
     private readonly mirrorNodeService: MirrorNodeService,
-    @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
+    private readonly notificationsPublisher: NatsPublisherService,
   ) {}
 
   /* Create transaction observers for the given transaction id with the user ids */
@@ -61,7 +60,7 @@ export class ObserversService {
     try {
       const result = await this.repo.save(observers);
 
-      notifyTransactionAction(this.notificationsService);
+      emitTransactionUpdate(this.notificationsPublisher, [{ entityId: transactionId }]);
 
       return result;
     } catch (error) {
@@ -125,7 +124,7 @@ export class ObserversService {
 
     const result = await this.repo.save(observer);
 
-    notifyTransactionAction(this.notificationsService);
+    emitTransactionUpdate(this.notificationsPublisher, [{ entityId: observer.transactionId }]);
 
     return result;
   }
@@ -136,7 +135,7 @@ export class ObserversService {
 
     await this.repo.remove(observer);
 
-    notifyTransactionAction(this.notificationsService);
+    emitTransactionUpdate(this.notificationsPublisher, [{ entityId: observer.transactionId }]);
 
     return true;
   }
