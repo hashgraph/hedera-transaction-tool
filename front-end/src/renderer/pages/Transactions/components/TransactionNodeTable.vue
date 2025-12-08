@@ -18,6 +18,8 @@ import {
   sortTransactionNodes,
   TransactionNodeSortField,
 } from '@renderer/utils/sortTransactionNodes.ts';
+import { BackEndTransactionType, TransactionStatus } from '@shared/interfaces';
+import TransactionsFilterV2 from '@renderer/components/Filter/v2/TransactionsFilterV2.vue';
 
 /* Props */
 const props = defineProps<{
@@ -37,6 +39,8 @@ const sort = ref<{
 }>(initialSort());
 const currentPage = ref(1);
 const pageSize = ref(10);
+const statusFilter = ref<TransactionStatus[]>([]);
+const transactionTypeFilter = ref<BackEndTransactionType[]>([]);
 
 /* Computed */
 const pageItems = computed(() => {
@@ -99,7 +103,10 @@ async function fetchNodes(): Promise<void> {
       nodes.value = await getTransactionNodes(
         user.selectedOrganization.serverUrl,
         props.collection,
+        statusFilter.value,
+        transactionTypeFilter.value,
       );
+      resetPagination();
       sortNodes();
     } catch {
       toast.error(loadErrorMessage.value, errorToastOptions);
@@ -123,20 +130,24 @@ function resetPagination(): void {
 }
 
 /* Watchers */
-watch(
-  sort,
-  async () => {
+watch(sort, () => {
     resetPagination();
     sortNodes();
   },
-  { immediate: true },
 );
+watch([statusFilter, transactionTypeFilter], fetchNodes, { deep: true });
 
 onMounted(fetchNodes);
 </script>
 
 <template>
   <div class="fill-remaining overflow-x-auto">
+    <div v-if="props.collection === TransactionNodeCollection.HISTORY" class="mt-3 mb-3">
+      <TransactionsFilterV2
+        v-model:status-filter="statusFilter"
+        v-model:transaction-type-filter="transactionTypeFilter"
+      />
+    </div>
     <template v-if="isLoading">
       <AppLoader class="h-100" />
     </template>
