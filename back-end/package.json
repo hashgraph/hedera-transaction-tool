@@ -26,7 +26,6 @@
     "test:all": "INCLUDE_LIBS=0 pnpm --filter=api test && INCLUDE_LIBS=0 pnpm --filter=chain test && INCLUDE_LIBS=0 pnpm --filter=notifications test && pnpm test:libs && pnpm test:migrations",
     "test:cov:all": "pnpm --filter=api test:cov && pnpm --filter=chain test:cov && pnpm --filter=notifications test:cov",
     "migration:generate": "ts-node scripts/generate-migration.ts",
-    "migration:generate:existing": "pnpm typeorm migration:generate -d typeorm/data-source.ts",
     "migration:create": "pnpm typeorm migration:create",
     "migration:run": "pnpm typeorm migration:run -d typeorm/data-source.ts",
     "migration:revert": "pnpm typeorm migration:revert -d typeorm/data-source.ts"
