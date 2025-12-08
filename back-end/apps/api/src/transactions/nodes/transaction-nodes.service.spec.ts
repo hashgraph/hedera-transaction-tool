@@ -20,9 +20,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   CHAIN_SERVICE,
+  Filtering,
   MirrorNodeService,
   NOTIFICATIONS_SERVICE,
+  PaginatedResourceDto,
+  Pagination,
   SchedulerService,
+  Sorting,
 } from '@app/common';
 import { ApproversService } from '../approvers';
 import { EntityManager, Repository } from 'typeorm';
@@ -65,6 +69,9 @@ describe('TransactionNodesService', () => {
   //
   // Transactions
   //
+
+  const TEST_NETWORK = 'testnet';
+  const OTHER_NETWORK = 'previewnet';
 
   const singleTransaction1: Transaction = {
     id: 1,
@@ -127,7 +134,7 @@ describe('TransactionNodesService', () => {
       '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
     ),
     status: TransactionStatus.EXECUTED, // different from singleTransaction1 to improve code coverage
-    mirrorNetwork: 'testnet',
+    mirrorNetwork: TEST_NETWORK,
     isManual: false,
     cutoffAt: new Date(),
     createdAt: new Date(),
@@ -174,7 +181,7 @@ describe('TransactionNodesService', () => {
     ),
     status: TransactionStatus.EXECUTED,
     statusCode: 22,
-    mirrorNetwork: 'testnet',
+    mirrorNetwork: TEST_NETWORK,
     isManual: false,
     cutoffAt: new Date(childTransactionDate1),
     createdAt: new Date(childTransactionDate1),
@@ -221,7 +228,7 @@ describe('TransactionNodesService', () => {
     ),
     status: TransactionStatus.EXECUTED,
     statusCode: 22,
-    mirrorNetwork: 'testnet',
+    mirrorNetwork: TEST_NETWORK,
     isManual: false,
     cutoffAt: new Date(childTransactionDate2),
     createdAt: new Date(childTransactionDate2),
@@ -268,7 +275,7 @@ describe('TransactionNodesService', () => {
     ),
     status: TransactionStatus.EXECUTED,
     statusCode: 22,
-    mirrorNetwork: 'testnet',
+    mirrorNetwork: TEST_NETWORK,
     isManual: false,
     cutoffAt: new Date(childTransactionDate3),
     createdAt: new Date(childTransactionDate3),
@@ -315,7 +322,7 @@ describe('TransactionNodesService', () => {
     ),
     status: TransactionStatus.FAILED,
     statusCode: 42,
-    mirrorNetwork: 'testnet',
+    mirrorNetwork: TEST_NETWORK,
     isManual: false,
     cutoffAt: new Date(childTransactionDate4),
     createdAt: new Date(childTransactionDate4),
@@ -361,7 +368,7 @@ describe('TransactionNodesService', () => {
     ),
     status: TransactionStatus.NEW,
     statusCode: undefined,
-    mirrorNetwork: 'testnet',
+    mirrorNetwork: TEST_NETWORK,
     isManual: false,
     cutoffAt: new Date(childTransactionDate5),
     createdAt: new Date(childTransactionDate5),
@@ -658,7 +665,13 @@ describe('TransactionNodesService', () => {
       transactionsService.getTransactionsToApprove.mockResolvedValue(allTransactionPage);
       transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
 
-      const r = await service.getTransactionNodes(user, TransactionNodeCollection.READY_FOR_REVIEW);
+      const r = await service.getTransactionNodes(
+        user,
+        TransactionNodeCollection.READY_FOR_REVIEW,
+        TEST_NETWORK,
+        [],
+        [],
+      );
 
       expect(r).toStrictEqual(allNodes);
     });
@@ -676,7 +689,13 @@ describe('TransactionNodesService', () => {
       transactionsService.getTransactionsToSign.mockResolvedValue(result);
       transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
 
-      const r = await service.getTransactionNodes(user, TransactionNodeCollection.READY_TO_SIGN);
+      const r = await service.getTransactionNodes(
+        user,
+        TransactionNodeCollection.READY_TO_SIGN,
+        TEST_NETWORK,
+        [],
+        [],
+      );
 
       expect(r).toStrictEqual(allNodes);
     });
@@ -688,6 +707,9 @@ describe('TransactionNodesService', () => {
       const r = await service.getTransactionNodes(
         user,
         TransactionNodeCollection.READY_FOR_EXECUTION,
+        TEST_NETWORK,
+        [],
+        [],
       );
 
       expect(r).toStrictEqual(allNodes);
@@ -697,7 +719,13 @@ describe('TransactionNodesService', () => {
       transactionsService.getTransactions.mockResolvedValue(allTransactionPage);
       transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
 
-      const r = await service.getTransactionNodes(user, TransactionNodeCollection.IN_PROGRESS);
+      const r = await service.getTransactionNodes(
+        user,
+        TransactionNodeCollection.IN_PROGRESS,
+        TEST_NETWORK,
+        [],
+        [],
+      );
 
       expect(r).toStrictEqual(allNodes);
     });
@@ -706,9 +734,45 @@ describe('TransactionNodesService', () => {
       transactionsService.getHistoryTransactions.mockResolvedValue(allTransactionPage);
       transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
 
-      const r = await service.getTransactionNodes(user, TransactionNodeCollection.HISTORY);
+      const r = await service.getTransactionNodes(
+        user,
+        TransactionNodeCollection.HISTORY,
+        TEST_NETWORK,
+        [],
+        [],
+      );
 
       expect(r).toStrictEqual(allNodes);
+    });
+
+    it('status filtering is effective', async () => {
+      transactionsService.getHistoryTransactions.mockResolvedValue(allTransactionPage);
+      transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
+
+      const r = await service.getTransactionNodes(
+        user,
+        TransactionNodeCollection.HISTORY,
+        TEST_NETWORK,
+        [TransactionStatus.EXPIRED],
+        [],
+      );
+
+      expect(r).toStrictEqual([]);
+    });
+
+    it('transaction type filtering is effective', async () => {
+      transactionsService.getHistoryTransactions.mockResolvedValue(allTransactionPage);
+      transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
+
+      const r = await service.getTransactionNodes(
+        user,
+        TransactionNodeCollection.HISTORY,
+        TEST_NETWORK,
+        [],
+        [TransactionType.FILE_APPEND],
+      );
+
+      expect(r).toStrictEqual([]);
     });
   });
 

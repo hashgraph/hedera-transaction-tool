@@ -16,6 +16,7 @@ describe('TransactionNodesController', () => {
   const transactionNodesService = mockDeep<TransactionNodesService>();
   const entityManager = mockDeep<EntityManager>();
   const blacklistService = mockDeep<BlacklistService>();
+  const TEST_NETWORK = 'testnet';
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -87,9 +88,15 @@ describe('TransactionNodesController', () => {
 
       transactionNodesService.getTransactionNodes.mockResolvedValue(result);
 
-      expect(await controller.getTransactionNodes(user, TransactionNodeCollection.HISTORY)).toBe(
-        result,
-      );
+      expect(
+        await controller.getTransactionNodes(
+          user,
+          TransactionNodeCollection.HISTORY,
+          TEST_NETWORK,
+          [],
+          [],
+        ),
+      ).toBe(result);
     });
 
     it('should return an empty array if no transactions exist', async () => {
@@ -97,9 +104,15 @@ describe('TransactionNodesController', () => {
 
       transactionNodesService.getTransactionNodes.mockResolvedValue(result);
 
-      expect(await controller.getTransactionNodes(user, TransactionNodeCollection.HISTORY)).toEqual(
-        result,
-      );
+      expect(
+        await controller.getTransactionNodes(
+          user,
+          TransactionNodeCollection.HISTORY,
+          TEST_NETWORK,
+          [],
+          [],
+        ),
+      ).toEqual(result);
     });
   });
 });
