@@ -7,7 +7,7 @@ import TransactionNodeRow from '@renderer/pages/Transactions/components/Transact
 import {
   type ITransactionNode,
   TransactionNodeCollection,
-} from '../../../../../../middle-end/src/ITransactionNode.ts';
+} from '../../../../../../shared/src/ITransactionNode.ts';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';

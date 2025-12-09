@@ -13,7 +13,7 @@ import { getStatusFromCode, redirectToDetails, redirectToGroupDetails } from '@r
 import {
   type ITransactionNode,
   TransactionNodeCollection,
-} from '../../../../../../middle-end/src/ITransactionNode.ts';
+} from '../../../../../../shared/src/ITransactionNode.ts';
 import { NotificationType, TransactionStatus } from '@shared/interfaces';
 
 /* Props */

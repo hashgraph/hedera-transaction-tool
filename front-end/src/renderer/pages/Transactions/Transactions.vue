@@ -29,7 +29,7 @@ import TransactionSelectionModal from '@renderer/components/TransactionSelection
 import Drafts from './components/Drafts.vue';
 import useLoader from '@renderer/composables/useLoader';
 import TransactionImportButton from '@renderer/components/TransactionImportButton.vue';
-import { TransactionNodeCollection } from '../../../../../middle-end/src/ITransactionNode.ts';
+import { TransactionNodeCollection } from '../../../../../shared/src/ITransactionNode.ts';
 import TransactionNodeTable from '@renderer/pages/Transactions/components/TransactionNodeTable.vue';
 import History from '@renderer/pages/Transactions/components/History.vue';
 

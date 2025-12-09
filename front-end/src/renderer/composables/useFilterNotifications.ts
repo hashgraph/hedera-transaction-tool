@@ -1,6 +1,6 @@
 import { computed, onMounted, ref, type Ref, watch } from 'vue';
 import { type INotificationReceiver, NotificationType } from '@shared/interfaces';
-import type { ITransactionNode } from '../../../../middle-end/src/ITransactionNode.ts';
+import type { ITransactionNode } from '../../../../shared/src/ITransactionNode.ts';
 import type { ConnectedOrganization } from '@renderer/types';
 import { getTransactionById } from '@renderer/services/organization';
 import useUserStore from '@renderer/stores/storeUser.ts';

@@ -3,7 +3,7 @@ import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 import {
   type ITransactionNode,
   TransactionNodeCollection,
-} from '../../../../../middle-end/src/ITransactionNode';
+} from '../../../../../shared/src/ITransactionNode';
 import { BackEndTransactionType, type Network, TransactionStatus } from '@shared/interfaces';
 
 export const getTransactionNodes = async (

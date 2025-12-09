@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { TransactionNodeSortField } from '@renderer/utils/sortTransactionNodes.ts';
-import { TransactionNodeCollection } from '../../../../../../middle-end/src/ITransactionNode.ts';
+import { TransactionNodeCollection } from '../../../../../../shared/src/ITransactionNode.ts';
 
 type ITransactionNodeSort = {
   field: TransactionNodeSortField;

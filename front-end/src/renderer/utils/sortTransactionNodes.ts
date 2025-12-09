@@ -1,4 +1,4 @@
-import { type ITransactionNode } from '../../../../middle-end/src/ITransactionNode.ts';
+import { type ITransactionNode } from '../../../../shared/src/ITransactionNode.ts';
 import { getTransactionTypeFromBackendType } from '@renderer/utils/sdk/transactions.ts';
 import { compareString } from '@shared/interfaces';
 
