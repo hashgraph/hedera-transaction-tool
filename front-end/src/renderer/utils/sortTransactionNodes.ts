@@ -60,13 +60,13 @@ export function compareTransactionNodes(
         result = compareString(n1.sdkTransactionId, n2.sdkTransactionId);
       }
       break;
-    case TransactionNodeSortField.CREATED_AT_DATE: // To be implemented
+    case TransactionNodeSortField.CREATED_AT_DATE:
       result = compareString(n1.createdAt, n2.createdAt);
       if (result === 0) {
         result = compareString(n1.sdkTransactionId, n2.sdkTransactionId);
       }
       break;
-    case TransactionNodeSortField.EXECUTED_AT_DATE: // To be implemented
+    case TransactionNodeSortField.EXECUTED_AT_DATE:
       result = compareString(n1.executedAt, n2.executedAt);
       if (result === 0) {
         result = compareString(n1.sdkTransactionId, n2.sdkTransactionId);
