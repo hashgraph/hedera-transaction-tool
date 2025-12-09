@@ -25,6 +25,24 @@ delete_service() {
     $KUBECTL delete services "$1"
 }
 
+# Check and switch to correct context
+assert_k8s_context() {
+    local target_context="$1"
+    local current_context=$($KUBECTL config current-context 2>/dev/null)
+
+    if [ "$current_context" != "$target_context" ]; then
+        echo "\nSwitching from context '$current_context' to '$target_context'..."
+        $KUBECTL config use-context "$target_context"
+
+        if [ $? -ne 0 ]; then
+            echo "\nError: Failed to switch to context '$target_context'"
+            exit 1
+        fi
+    else
+        echo "\nAlready using context: $target_context"
+    fi
+}
+
 # Ensure NATS Helm repo is present and up-to-date
 assert_nats_helm_repo() {
     echo "\nChecking NATS Helm repo..."
@@ -119,6 +137,11 @@ wait_for_traefik() {
 
 # Deploy all
 deploy_all() {
+    # Only assert context if argument is provided
+    if [ -n "$1" ]; then
+        assert_k8s_context "$1"
+    fi
+
     echo "\nDeploying Kubernetes deployments...\n"
     deploy "postgres-deployment"
     deploy "redis-deployment"
