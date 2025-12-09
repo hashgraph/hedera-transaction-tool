@@ -1,6 +1,17 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 
+interface GenerateCSVFileOptions {
+  senderAccount?: string;
+  feePayerAccount?: string | null;
+  accountId?: string;
+  startingAmount?: number;
+  numberOfTransactions?: number;
+  fileName?: string;
+  date?: string;
+  senderTime?: string;
+}
+
 /**
  * Generates a CSV file with the specified configuration for transaction groups.
  *
@@ -13,6 +24,7 @@ import * as fs from 'node:fs';
  * @param {string} [date='9/4/24'] - The date to use for each transaction line.
  * @param {string} [senderTime='14:35'] - The sending time (static or configurable).
  */
+
 export async function generateCSVFile({
   senderAccount = '0.0.1031',
   feePayerAccount = null,
@@ -22,22 +34,16 @@ export async function generateCSVFile({
   fileName = 'output.csv',
   date = '9/4/24',
   senderTime = '14:35',
-} = {}) {
+}: GenerateCSVFileOptions = {}): Promise<string> {
   // Construct the CSV lines
   // Header lines
-  const lines = [
-    `Sender Account,${senderAccount},,`,
-    `Sending Time,${senderTime},,`,
-  ];
+  const lines = [`Sender Account,${senderAccount},,`, `Sending Time,${senderTime},,`];
 
   if (feePayerAccount) {
     lines.push(`Fee Payer Account,${feePayerAccount},,`);
   }
 
-  lines.push(
-    `Node IDs,,,`,
-    `AccountID,Amount,Start Date,memo`
-  );
+  lines.push(`Node IDs,,,`, `AccountID,Amount,Start Date,memo`);
 
   // Amounts increment by 1 each line
   for (let i = 0; i < numberOfTransactions; i++) {
@@ -60,4 +66,5 @@ export async function generateCSVFile({
   fs.writeFileSync(filePath, csvContent, 'utf8');
 
   console.log(`CSV file generated at: ${filePath}`);
+  return filePath;
 }

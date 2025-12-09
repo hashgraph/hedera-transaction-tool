@@ -142,15 +142,15 @@ out
 .DS_Store
 
 # Automation files
-automation/node_modules/
-automation/test-results/
-automation/playwright-report/
-automation/blob-report/
-automation/playwright/.cache/
-automation/.env
+automation_javascript/node_modules/
+automation_javascript/test-results/
+automation_javascript/playwright-report/
+automation_javascript/blob-report/
+automation_javascript/playwright/.cache/
+automation_javascript/.env
 automation/data/*.bin
 automation/data/*.csv
-automation/data/102.json
+automation_javascript/data/102.json
 
 # files with notes and scripts for manual data/image manipulation
 *.helper
