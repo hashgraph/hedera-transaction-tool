@@ -67,14 +67,16 @@ export default function useFilterNotifications(
     for (const n of candidateNotifications.value) {
       // We fetch info for associated transaction and check its groupId
       // TODO: fetch from a cache
-      try {
-        const transaction = await getTransactionById(serverUrl, n.notification.id);
-        if (transaction.groupItem.groupId === groupId) {
-          newCandidates.push(n);
+      if (n.notification.entityId) {
+        try {
+          const transaction = await getTransactionById(serverUrl, n.notification.entityId);
+          if (transaction.groupItem.groupId === groupId) {
+            newCandidates.push(n);
+          }
+        } catch {
+          // User has probably not access to this transaction
+          // => we ignore silently
         }
-      } catch {
-        // User has probably not access to this transaction
-        // => we ignore silently
       }
     }
     filteredNotifications.value = newCandidates;
