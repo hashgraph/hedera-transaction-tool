@@ -5,6 +5,7 @@ export default defineConfig({
   reporter: process.env.CI ? [['github'], ['list']] : 'list',
   reportSlowTests: null,
   retries: 0,
+  timeout: process.env.CI ? 30_000 : 3600_000,
   workers: 1,
 
   projects: [
