@@ -36,7 +36,7 @@ const showContextMenu = (event: MouseEvent) => {
   contextMenuY.value = event.clientY;
 };
 
-const handleSort = async (field: TransactionNodeSortField, direction: 'asc' | 'desc') => {
+const handleSort = (field: TransactionNodeSortField, direction: 'asc' | 'desc') => {
   sort.value = { field, direction };
 };
 </script>
