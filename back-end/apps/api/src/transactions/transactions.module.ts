@@ -14,7 +14,7 @@ import {
   NotificationReceiver,
 } from '@entities';
 
-import { ChainProxyModule, MirrorNodeModule } from '@app/common';
+import { ExecuteModule, MirrorNodeModule } from '@app/common';
 
 import { UserKeysModule } from '../user-keys/user-keys.module';
 import { TransactionGroupsController, TransactionGroupsService } from './groups';
@@ -38,7 +38,7 @@ import { ApproversController, ApproversService } from './approvers';
     ]),
     MirrorNodeModule,
     UserKeysModule,
-    ChainProxyModule,
+    ExecuteModule,
   ],
   controllers: [
     TransactionsController,

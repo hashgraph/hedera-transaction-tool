@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HealthController } from './health.controller';
+import { HealthController } from '@app/common';
 
 describe('HealthController', () => {
   let controller: HealthController;

@@ -20,13 +20,19 @@ describe('JwtAuthGuard', () => {
 
   it('should call super.canActivate if IGNORE_CONTROLLER_GUARD is false', () => {
     jest.spyOn(reflector, 'get').mockReturnValue(false);
-    jest.spyOn(JwtAuthGuard.prototype, 'canActivate').mockImplementation(() => true);
+
+    const parentProto = Object.getPrototypeOf(JwtAuthGuard.prototype) as any;
+    jest.spyOn(parentProto, 'canActivate').mockImplementation(() => true);
+
     expect(guard.canActivate(context)).toBe(true);
   });
 
   it('should deny access if super.canActivate returns false and IGNORE_CONTROLLER_GUARD is false', () => {
     jest.spyOn(reflector, 'get').mockReturnValue(false);
-    jest.spyOn(JwtAuthGuard.prototype, 'canActivate').mockImplementation(() => false);
+
+    const parentProto = Object.getPrototypeOf(JwtAuthGuard.prototype) as any;
+    jest.spyOn(parentProto, 'canActivate').mockImplementation(() => false);
+
     expect(guard.canActivate(context)).toBe(false);
   });
 });

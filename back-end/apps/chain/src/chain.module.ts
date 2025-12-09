@@ -6,16 +6,18 @@ import * as Joi from 'joi';
 
 import {
   DatabaseModule,
+  ExecuteModule,
   LoggerMiddleware,
   LoggerModule,
   HealthModule,
-  NotificationsProxyModule,
+  NatsModule,
+  SchedulerModule,
 } from '@app/common';
 
 import getEnvFilePaths from './config/envFilePaths';
 
-import { ExecuteModule } from './execute';
-import { TransactionStatusModule } from './transaction-status/transaction-status.module';
+import { ReminderHandlerService } from './transaction-reminder';
+import { TransactionSchedulerModule } from './transaction-scheduler';
 
 export const config = ConfigModule.forRoot({
   envFilePath: getEnvFilePaths(),
@@ -27,7 +29,7 @@ export const config = ConfigModule.forRoot({
     POSTGRES_USERNAME: Joi.string().required(),
     POSTGRES_PASSWORD: Joi.string().required(),
     POSTGRES_SYNCHRONIZE: Joi.boolean().required(),
-    RABBITMQ_URI: Joi.string().required(),
+    NATS_URL: Joi.string().required(),
     REDIS_URL: Joi.string().required(),
     REDIS_DEFAULT_TTL_MS: Joi.number().optional(),
   }),
@@ -38,12 +40,13 @@ export const config = ConfigModule.forRoot({
     config,
     DatabaseModule,
     LoggerModule,
+    NatsModule.forRoot(),
     ScheduleModule.forRoot(),
+    SchedulerModule.register({ isGlobal: true }),
     ExecuteModule,
-    TransactionStatusModule,
+    TransactionSchedulerModule,
     HealthModule,
-    NotificationsProxyModule,
   ],
-  providers: [LoggerMiddleware],
+  providers: [LoggerMiddleware, ReminderHandlerService],
 })
 export class ChainModule {}

@@ -1,118 +1,323 @@
-import { Test } from '@nestjs/testing';
+import { of, throwError } from 'rxjs';
 import { ClientProxy } from '@nestjs/microservices';
-import { of } from 'rxjs';
-import { Socket } from 'socket.io';
-import { mockDeep } from 'jest-mock-extended';
-
-import { BlacklistService } from '@app/common';
-
+import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
 import { AuthWebsocketMiddleware } from './auth-websocket.middleware';
+import { BlacklistService } from '@app/common';
+import { Socket } from 'socket.io';
 
-describe('AuthWebsocketMiddleware', () => {
-  let apiServiceMock: Partial<ClientProxy>;
-  let socketMock;
+describe('AuthWebsocketMiddleware (fixed)', () => {
+  let authServiceMock: DeepMockProxy<ClientProxy>;
+  let blacklistService: DeepMockProxy<BlacklistService>;
   let nextFunction: jest.Mock;
+  let middleware: ReturnType<typeof AuthWebsocketMiddleware>;
 
-  const blacklistService = mockDeep<BlacklistService>();
+  const defaultUser = { id: 'user1', name: 'Test User' };
 
-  beforeEach(async () => {
-    apiServiceMock = {
-      send: jest.fn().mockReturnValue(of({ id: 'user1', name: 'Test User' })),
-    };
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.resetAllMocks();
 
-    socketMock = {
-      handshake: {
-        auth: {
-          token: 'bearer jwtToken',
-        },
-      },
-      user: undefined,
-    };
+    // typed deep mock for ClientProxy — avoids TS2352 and no "as ClientProxy" casts needed
+    authServiceMock = mockDeep<ClientProxy>();
+    authServiceMock.send.mockReturnValue(of(defaultUser));
+
+    blacklistService = mockDeep<BlacklistService>();
+    blacklistService.isTokenBlacklisted.mockResolvedValue(false);
+
+    // create a fresh middleware instance per test so internal state (attempts map / interval) is isolated
+    middleware = AuthWebsocketMiddleware(authServiceMock, blacklistService);
 
     nextFunction = jest.fn();
-
-    await Test.createTestingModule({
-      providers: [],
-    }).compile();
   });
 
-  it('should authenticate and attach user to socket', async () => {
-    const middleware = AuthWebsocketMiddleware(apiServiceMock as ClientProxy, blacklistService);
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
 
-    await middleware(socketMock, nextFunction);
+  const makeSocket = (token: unknown, ip = '1.2.3.4') =>
+    ({
+      handshake: {
+        auth: { token },
+        address: ip,
+      },
+      disconnect: jest.fn(),
+      user: undefined,
+    } as unknown as Socket);
 
-    expect(apiServiceMock.send).toHaveBeenCalledWith('authenticate-websocket-token', {
-      jwt: 'jwtToken',
-    });
-    expect(socketMock.user).toBeDefined();
-    expect(socketMock.user.id).toEqual('user1');
+  it('authenticates and attaches user when token is a string', async () => {
+    const socket = makeSocket('bearer jwtToken');
+
+    await middleware(socket as any, nextFunction);
+
+    expect(authServiceMock.send).toHaveBeenCalledWith('authenticate-websocket-token', { jwt: 'jwtToken' });
+    expect((socket as any).user).toBeDefined();
+    expect((socket as any).user.id).toBe('user1');
     expect(nextFunction).toHaveBeenCalledWith();
   });
 
-  it('should authenticate and attach user to socket', async () => {
-    const middleware = AuthWebsocketMiddleware(apiServiceMock as ClientProxy, blacklistService);
+  it('authenticates when token is an array', async () => {
+    const socket = makeSocket(['bearer jwtToken']);
 
-    const socket = {
-      handshake: { auth: { token: ['bearer jwtToken'] } },
-    };
-    await middleware(socket as unknown as Socket, nextFunction);
+    await middleware(socket as any, nextFunction);
 
-    expect(apiServiceMock.send).toHaveBeenCalledWith('authenticate-websocket-token', {
-      jwt: 'jwtToken',
-    });
+    expect(authServiceMock.send).toHaveBeenCalledWith('authenticate-websocket-token', { jwt: 'jwtToken' });
     expect(nextFunction).toHaveBeenCalledWith();
   });
 
-  it('should call next with error if user is not authenticated', async () => {
-    apiServiceMock.send = jest.fn().mockReturnValue(of(null));
+  it('calls next with Unauthorized when api returns null (not authenticated)', async () => {
+    // ensure the auth service returns null for this test
+    authServiceMock.send.mockReturnValueOnce(of(null));
 
-    const middleware = AuthWebsocketMiddleware(apiServiceMock as ClientProxy, blacklistService);
+    const socket = makeSocket('bearer jwtToken');
 
-    await middleware({ handshake: { auth: {} } } as Socket, nextFunction);
+    await middleware(socket as any, nextFunction);
 
-    expect(nextFunction).toHaveBeenCalledWith({ name: 'Unauthorized', message: 'Unauthorized' });
+    const err = nextFunction.mock.calls[0][0];
+    expect(err).toBeInstanceOf(Error);
+    expect(err.message).toBe('Unauthorized');
+    expect(socket.disconnect).toHaveBeenCalledWith(true);
   });
 
-  it('should call next with error if user is not authenticated', async () => {
-    apiServiceMock.send = jest.fn().mockReturnValue(of(null));
+  it('calls next with Unauthorized when token missing or malformed', async () => {
+    const socket1 = makeSocket(undefined);
+    await middleware(socket1 as any, nextFunction);
+    let err = nextFunction.mock.calls[0][0];
+    expect(err.message).toBe('Unauthorized');
 
-    const middleware = AuthWebsocketMiddleware(apiServiceMock as ClientProxy, blacklistService);
-
-    await middleware(socketMock, nextFunction);
-
-    expect(nextFunction).toHaveBeenCalledWith({ name: 'Unauthorized', message: 'Unauthorized' });
+    nextFunction.mockClear();
+    const socket2 = makeSocket('bearer'); // missing jwt part
+    await middleware(socket2 as any, nextFunction);
+    err = nextFunction.mock.calls[0][0];
+    expect(err.message).toBe('Unauthorized');
   });
 
-  it('should call next with error on exception', async () => {
-    apiServiceMock.send = jest.fn().mockImplementation(() => {
+  it('calls next with Unauthorized when jwt is blacklisted', async () => {
+    blacklistService.isTokenBlacklisted.mockResolvedValue(true);
+    const socket = makeSocket('bearer jwtToken');
+
+    await middleware(socket as any, nextFunction);
+
+    const err = nextFunction.mock.calls[0][0];
+    expect(err.message).toBe('Unauthorized');
+    expect(socket.disconnect).toHaveBeenCalledWith(true);
+  });
+
+  it('handles apiService send throwing synchronously', async () => {
+    authServiceMock.send.mockImplementation(() => {
       throw new Error('Service error');
     });
 
-    const middleware = AuthWebsocketMiddleware(apiServiceMock as ClientProxy, blacklistService);
+    const socket = makeSocket('bearer jwtToken');
 
-    await middleware(socketMock, nextFunction);
+    await middleware(socket as any, nextFunction);
 
-    expect(nextFunction).toHaveBeenCalledWith({ name: 'Unauthorized', message: 'Unauthorized' });
+    const err = nextFunction.mock.calls[0][0];
+    expect(err.message).toBe('Unauthorized');
+    expect(socket.disconnect).toHaveBeenCalledWith(true);
   });
 
-  it('should call next with error if jwt is not provided', async () => {
-    const middleware = AuthWebsocketMiddleware(apiServiceMock as ClientProxy, blacklistService);
+  it('returns "Auth service unavailable" on TimeoutError', async () => {
+    const timeoutError = new Error('Timeout');
+    (timeoutError as any).name = 'TimeoutError';
 
-    await middleware(
-      { handshake: { auth: { token: 'bearer' } } } as unknown as Socket,
-      nextFunction,
-    );
+    // make the auth service observable emit the timeout error for this test
+    authServiceMock.send.mockReturnValueOnce(throwError(() => timeoutError));
 
-    expect(nextFunction).toHaveBeenCalledWith({ name: 'Unauthorized', message: 'Unauthorized' });
+    const socket = makeSocket('bearer jwtToken');
+
+    await middleware(socket as any, nextFunction);
+
+    const err = nextFunction.mock.calls[0][0];
+    expect(err.message).toBe('Auth service unavailable');
+    expect(socket.disconnect).toHaveBeenCalledWith(true);
   });
 
-  it('should call next with error if the jwt is blacklisted', async () => {
+  it('returns "Auth service unavailable" on ECONNREFUSED', async () => {
+    const connError = new Error('Connection refused') as any;
+    connError.code = 'ECONNREFUSED';
+
+    // Ensure the mocked service observable emits the connection error for this test
+    authServiceMock.send.mockReturnValueOnce(throwError(() => connError));
+
+    const socket = makeSocket('bearer jwtToken');
+
+    await middleware(socket as any, nextFunction);
+
+    const err = nextFunction.mock.calls[0][0];
+    expect(err.message).toBe('Auth service unavailable');
+  });
+
+  it('returns "Auth service unavailable" on NO_RESPONDERS', async () => {
+    const natsError = new Error('No responders available') as any;
+    natsError.code = 'NO_RESPONDERS';
+
+    // Ensure the mocked service observable emits the nats error for this test
+    authServiceMock.send.mockReturnValueOnce(throwError(() => natsError));
+
+    const socket = makeSocket('bearer jwtToken');
+
+    await middleware(socket as any, nextFunction);
+
+    const err = nextFunction.mock.calls[0][0];
+    expect(err.message).toBe('Auth service unavailable');
+  });
+
+  it('returns "Auth service unavailable" when error message contains "No responders"', async () => {
+    const errWithMsg = new Error('Something: No responders found');
+
+    // ensure the auth service observable emits the error for this test
+    authServiceMock.send.mockReturnValueOnce(throwError(() => errWithMsg));
+
+    const socket = makeSocket('bearer jwtToken');
+
+    await middleware(socket as any, nextFunction);
+
+    const err = nextFunction.mock.calls[0][0];
+    expect(err.message).toBe('Auth service unavailable');
+  });
+
+  it('returns Unauthorized on other errors and logs the error', async () => {
+    const genericError = new Error('Random failure');
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    // make the auth service observable emit a generic error for this test
+    authServiceMock.send.mockReturnValueOnce(throwError(() => genericError));
+
+    const socket = makeSocket('bearer jwtToken');
+
+    await middleware(socket as any, nextFunction);
+
+    const err = nextFunction.mock.calls[0][0];
+    expect(err.message).toBe('Unauthorized');
+    expect(consoleErrorSpy).toHaveBeenCalledWith('AuthWebsocketMiddleware error:', genericError);
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('rate-limits after repeated failures and returns "Too many failed authentication attempts"', async () => {
+    // create middleware with low maxAttempts for test (so 3rd failure exceeds it)
+    const shortMiddleware = AuthWebsocketMiddleware(authServiceMock, blacklistService, 60, 2);
+
+    const socket = makeSocket(undefined); // missing token
+
+    // first failure
+    await shortMiddleware(socket as any, nextFunction);
+    expect(nextFunction.mock.calls[0][0].message).toBe('Unauthorized');
+    nextFunction.mockClear();
+
+    // second failure -> still Unauthorized
+    await shortMiddleware(socket as any, nextFunction);
+    expect(nextFunction.mock.calls[0][0].message).toBe('Unauthorized');
+    nextFunction.mockClear();
+
+    // third failure -> should be rate limited
+    await shortMiddleware(socket as any, nextFunction);
+    const err = nextFunction.mock.calls[0][0];
+    expect(err.message).toBe('Too many failed authentication attempts');
+    expect(socket.disconnect).toHaveBeenCalledWith(true);
+  });
+
+  it('rate-limits when JWT is missing even if token exists', async () => {
+    const rlMiddleware = AuthWebsocketMiddleware(authServiceMock, blacklistService, 60, 1);
+    const socket = makeSocket('bearer'); // missing JWT part
+
+    await rlMiddleware(socket as any, nextFunction);
+    nextFunction.mockClear();
+
+    await rlMiddleware(socket as any, nextFunction);
+    const err = nextFunction.mock.calls[0][0];
+
+    expect(err.message).toBe('Too many failed authentication attempts');
+    expect(socket.disconnect).toHaveBeenCalledWith(true);
+  });
+
+  it('rate-limits when token is blacklisted repeatedly', async () => {
     blacklistService.isTokenBlacklisted.mockResolvedValue(true);
+    const rlMiddleware = AuthWebsocketMiddleware(authServiceMock, blacklistService, 60, 1);
 
-    const middleware = AuthWebsocketMiddleware(apiServiceMock as ClientProxy, blacklistService);
+    const socket = makeSocket('bearer jwtToken');
 
-    await middleware(socketMock, nextFunction);
+    await rlMiddleware(socket as any, nextFunction);
+    nextFunction.mockClear();
 
-    expect(nextFunction).toHaveBeenCalledWith({ name: 'Unauthorized', message: 'Unauthorized' });
+    await rlMiddleware(socket as any, nextFunction);
+    const err = nextFunction.mock.calls[0][0];
+
+    expect(err.message).toBe('Too many failed authentication attempts');
+  });
+
+  it('rate-limits when API returns null repeatedly', async () => {
+    const rlMiddleware = AuthWebsocketMiddleware(authServiceMock, blacklistService, 60, 1);
+    authServiceMock.send.mockReturnValue(of(null));
+
+    const socket = makeSocket('bearer jwtToken');
+
+    await rlMiddleware(socket as any, nextFunction);
+    nextFunction.mockClear();
+
+    await rlMiddleware(socket as any, nextFunction);
+    const err = nextFunction.mock.calls[0][0];
+
+    expect(err.message).toBe('Too many failed authentication attempts');
+  });
+
+  it('rate-limits on generic auth service errors', async () => {
+    const rlMiddleware = AuthWebsocketMiddleware(authServiceMock, blacklistService, 60, 1);
+    authServiceMock.send.mockReturnValue(throwError(() => new Error('Boom')));
+
+    const socket = makeSocket('bearer jwtToken');
+
+    await rlMiddleware(socket as any, nextFunction);
+    nextFunction.mockClear();
+
+    await rlMiddleware(socket as any, nextFunction);
+    const err = nextFunction.mock.calls[0][0];
+
+    expect(err.message).toBe('Too many failed authentication attempts');
+  });
+
+  it('resets attempts on successful authentication', async () => {
+    const badSocket = makeSocket(undefined);
+    // one failed attempt
+    await middleware(badSocket as any, nextFunction);
+    expect(nextFunction.mock.calls[0][0].message).toBe('Unauthorized');
+
+    // now a successful attempt with same IP
+    nextFunction.mockClear();
+    const goodSocket = makeSocket('bearer jwtToken');
+    await middleware(goodSocket as any, nextFunction);
+
+    expect(nextFunction).toHaveBeenCalledWith();
+    // After successful login, further bad attempts should start fresh (not immediately rate limited).
+    nextFunction.mockClear();
+    const badSocket2 = makeSocket(undefined);
+    await middleware(badSocket2 as any, nextFunction);
+    const err = nextFunction.mock.calls[0][0];
+    expect(err.message).toBe('Unauthorized'); // not "Too many failed authentication attempts"
+  });
+
+  it('cleans up expired rate-limit entries after interval', async () => {
+    // middleware with default windowSeconds = 60, maxAttempts = 5
+    const mw = AuthWebsocketMiddleware(authServiceMock, blacklistService);
+
+    const socket = makeSocket(undefined, '9.9.9.9');
+
+    // Trigger one failed attempt → puts IP in attempts map
+    await mw(socket as any, nextFunction);
+    nextFunction.mockClear();
+
+    // Fast-forward time beyond 60 seconds
+    jest.advanceTimersByTime(60_000 + 1);
+
+    // Give cleanup interval a tick
+    jest.runOnlyPendingTimers();
+
+    // Now force another failed attempt to confirm a *fresh* record is made
+    await mw(socket as any, nextFunction);
+
+    // If cleanup worked: nextFunction gets "Unauthorized" again from a fresh counter,
+    // NOT "Too many attempts"
+    expect(nextFunction.mock.calls[0][0].message).toBe('Unauthorized');
   });
 });

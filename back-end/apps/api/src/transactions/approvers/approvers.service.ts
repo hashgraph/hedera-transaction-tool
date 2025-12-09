@@ -1,5 +1,4 @@
-import { ClientProxy } from '@nestjs/microservices';
-import { BadRequestException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
 import {
@@ -15,17 +14,15 @@ import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
   attachKeys,
+  emitTransactionStatusUpdate,
+  emitTransactionUpdate,
   ErrorCodes,
   MirrorNodeService,
-  NOTIFICATIONS_SERVICE,
-  notifyGeneral,
-  notifySyncIndicators,
-  notifyTransactionAction,
+  NatsPublisherService,
   userKeysRequiredToSign,
   verifyTransactionBodyWithoutNodeAccountIdSignature,
 } from '@app/common';
 import {
-  NotificationType,
   Transaction,
   TransactionApprover,
   TransactionStatus,
@@ -62,7 +59,7 @@ export class ApproversService {
     private repo: Repository<TransactionApprover>,
     @InjectDataSource() private dataSource: DataSource,
     private readonly mirrorNodeService: MirrorNodeService,
-    @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
+    private readonly notificationsPublisher: NatsPublisherService,
   ) {}
 
   /* Get the approver by id */
@@ -230,7 +227,7 @@ export class ApproversService {
       [listId],
     );
 
-    notifyTransactionAction(this.notificationsService);
+    // notifyTransactionAction(this.notificationsService);
   }
 
   /* Create transaction approvers for the given transaction id with the user ids */
@@ -358,9 +355,7 @@ export class ApproversService {
         }
       });
 
-      notifyTransactionAction(this.notificationsService);
-
-      await this.emitSyncIndicators(transactionId);
+      emitTransactionStatusUpdate(this.notificationsPublisher, [{ entityId: transactionId  }]);
     } catch (error) {
       throw new BadRequestException(error.message);
     }
@@ -526,8 +521,7 @@ export class ApproversService {
       });
 
       if (updated) {
-        notifyTransactionAction(this.notificationsService);
-        await this.emitSyncIndicators(transactionId);
+        emitTransactionUpdate(this.notificationsPublisher, [{ entityId: transactionId }]);
       }
 
       return approver;
@@ -543,6 +537,8 @@ export class ApproversService {
     if (!approver) throw new BadRequestException(ErrorCodes.ANF);
 
     const result = await this.removeNode(approver.id);
+
+    emitTransactionStatusUpdate(this.notificationsPublisher, [{ entityId: approver.transactionId }]);
 
     return result;
   }
@@ -613,28 +609,13 @@ export class ApproversService {
         .execute();
     });
 
-    const approvalChoiceReceivers = [
-      ...new Set([
-        ...userApprovers.map(a => a.userId),
-        transaction.creatorKey.userId,
-        ...transaction.observers.map(o => o.userId),
-      ]),
-    ];
-    notifyTransactionAction(this.notificationsService);
-    notifyGeneral(
-      this.notificationsService,
-      dto.approved
-        ? NotificationType.TRANSACTION_APPROVED
-        : NotificationType.TRANSACTION_APPROVAL_REJECTION,
-      approvalChoiceReceivers,
-      transaction.id,
-      false,
-      { transactionId: transaction.transactionId, network: transaction.mirrorNetwork },
-    );
-    notifySyncIndicators(this.notificationsService, transaction.id, transaction.status, {
-      transactionId: transaction.transactionId,
-      network: transaction.mirrorNetwork,
-    });
+    const notificationEvent = [{ entityId: transaction.id }];
+
+    if (!dto.approved || userApprovers.every(a => a.approved)) {
+      emitTransactionStatusUpdate(this.notificationsPublisher, notificationEvent);
+    } else {
+      emitTransactionUpdate(this.notificationsPublisher, notificationEvent);
+    }
 
     return true;
   }
@@ -681,21 +662,7 @@ export class ApproversService {
     };
 
     const count = await (entityManager || this.repo).count(TransactionApprover, find);
-    return count > 0 && typeof approver.userId === 'number' ? true : false;
-  }
-
-  /* Emit sync indicators */
-  async emitSyncIndicators(transactionId: number) {
-    const transaction = await this.dataSource.manager.findOne(Transaction, {
-      where: { id: transactionId },
-    });
-
-    if (!transaction) return;
-
-    notifySyncIndicators(this.notificationsService, transactionId, transaction.status, {
-      transactionId: transaction.transactionId,
-      network: transaction.mirrorNetwork,
-    });
+    return count > 0 && typeof approver.userId === 'number';
   }
 
   /* Get the tree structure of the approvers */

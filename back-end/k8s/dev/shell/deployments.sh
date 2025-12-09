@@ -25,7 +25,6 @@ delete_service() {
     $KUBECTL delete services "$1"
 }
 
-# should pull name from .env
 # Check and switch to correct context
 assert_k8s_context() {
     local target_context="$1"

@@ -1,17 +1,16 @@
-import { ClientProxy } from '@nestjs/microservices';
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { mockDeep } from 'jest-mock-extended';
+import { mock, mockDeep } from 'jest-mock-extended';
 
-import { NOTIFICATIONS_SERVICE } from '@app/common';
-import { asyncFilter, notifyTransactionAction } from '@app/common/utils';
-import { TransactionGroup, User, UserStatus } from '@entities';
+import { asyncFilter, emitTransactionUpdate } from '@app/common/utils';
+import { Transaction, TransactionGroup, User, UserStatus } from '@entities';
 
 import { CreateTransactionGroupDto } from '../dto';
 
 import { TransactionGroupsService } from './transaction-groups.service';
 import { TransactionsService } from '../transactions.service';
+import { NatsPublisherService } from '@app/common';
 
 jest.mock('@app/common/utils');
 
@@ -20,7 +19,7 @@ describe('TransactionGroupsService', () => {
 
   const transactionsService = mockDeep<TransactionsService>();
   const dataSource = mockDeep<DataSource>();
-  const notificationsService = mockDeep<ClientProxy>();
+  const notificationsPublisher = mock<NatsPublisherService>();
 
   const user: Partial<User> = {
     id: 1,
@@ -55,8 +54,8 @@ describe('TransactionGroupsService', () => {
           useValue: dataSource,
         },
         {
-          provide: NOTIFICATIONS_SERVICE,
-          useValue: notificationsService,
+          provide: NatsPublisherService,
+          useValue: notificationsPublisher,
         },
       ],
     }).compile();
@@ -114,14 +113,16 @@ describe('TransactionGroupsService', () => {
       };
 
       dataSource.manager.create.mockImplementation((entity, data) => ({ ...data }));
+      transactionsService.createTransactions.mockImplementation(async (dtos, _) => {
+        return dtos.map((dto, index) => dto as unknown as Transaction);
+      });
 
       await service.createTransactionGroup(userWithKeys, dto);
 
       expect(dataSource.manager.create).toHaveBeenCalledWith(TransactionGroup, dto);
       expect(dataSource.manager.create).toHaveBeenCalledTimes(3);
-      expect(transactionsService.createTransaction).toHaveBeenCalledTimes(2);
-      expect(dataSource.manager.save).toHaveBeenCalledTimes(4);
-      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+      expect(transactionsService.createTransactions).toHaveBeenCalledTimes(1);
+      expect(dataSource.manager.save).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -165,6 +166,45 @@ describe('TransactionGroupsService', () => {
       const result = await service.getTransactionGroup(user as User, 1);
       expect(result).toEqual(expectedGroup);
     });
+
+    it('calls attachTransactionSigners/Approvers for each group item and filters by verifyAccess', async () => {
+      const mockGroup = {
+        id: 1,
+        groupItems: [{ transaction: { id: 1 } }, { transaction: { id: 2 } }],
+      };
+      dataSource.manager.findOne.mockResolvedValue(mockGroup);
+
+      // Make asyncFilter actually invoke the provided callback so attach* functions are called
+      jest.mocked(asyncFilter).mockImplementationOnce(async (arr, cb) => {
+        const out: typeof arr = [];
+        for (const item of arr) {
+          // call the real callback used in the service
+          // eslint-disable-next-line @typescript-eslint/await-thenable
+          const keep = await cb(item);
+          if (keep) out.push(item);
+        }
+        return out;
+      });
+
+      // Ensure attach methods are present and resolvable
+      transactionsService.attachTransactionSigners.mockResolvedValue(undefined);
+      transactionsService.attachTransactionApprovers.mockResolvedValue(undefined);
+
+      // verifyAccess returns true for first item, false for second
+      transactionsService.verifyAccess
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false);
+
+      const result = await service.getTransactionGroup(user as User, 1);
+
+      expect(transactionsService.attachTransactionSigners).toHaveBeenCalledTimes(2);
+      expect(transactionsService.attachTransactionApprovers).toHaveBeenCalledTimes(2);
+      expect(transactionsService.verifyAccess).toHaveBeenCalledTimes(2);
+      expect(result).toEqual({
+        ...mockGroup,
+        groupItems: [{ transaction: { id: 1 } }],
+      });
+    });
   });
 
   describe('removeTransactionGroup', () => {
@@ -200,7 +240,13 @@ describe('TransactionGroupsService', () => {
 
       expect(dataSource.manager.remove).toHaveBeenCalledTimes(3); // Twice for group items, once for the group
       expect(transactionsService.removeTransaction).toHaveBeenCalledTimes(mockGroupItems.length);
-      expect(notifyTransactionAction).toHaveBeenCalledWith(notificationsService);
+      expect(emitTransactionUpdate).toHaveBeenCalledWith(
+        notificationsPublisher,
+        expect.arrayContaining([
+          expect.objectContaining({ entityId: 101 }),
+          expect.objectContaining({ entityId: 102 }),
+        ]),
+      );
     });
   });
 });
