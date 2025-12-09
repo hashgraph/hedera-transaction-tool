@@ -156,7 +156,7 @@ export class TransactionNodesService {
     // => stable order will help in testing.
     result.sort(compareTransactionNodes);
 
-    return Promise.resolve(result);
+    return result;
   }
 }
 
