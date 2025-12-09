@@ -7,12 +7,21 @@ import { getTransactionGroupsForTransactionId } from '../utils/databaseQueries.j
 import { OrganizationPage } from './OrganizationPage.js';
 
 export class GroupPage extends BasePage {
+  organizationPage: OrganizationPage;
+  private readonly transactionPage: TransactionPage;
+
+  constructor(window: Page) {
+    super(window);
+    this.transactionPage = new TransactionPage(window);
+    this.organizationPage = new OrganizationPage(window);
+  }
+
+  /* Selectors */
+
   // Buttons
   saveGroupButtonSelector = 'button-save-group';
   signAndExecuteButtonSelector = 'button-sign-submit';
   addTransactionButtonSelector = 'button-add-transaction';
-
-  /* Selectors */
   transactionGroupButtonSelector = 'span-group-transaction';
   deleteGroupButtonSelector = 'button-delete-group-modal';
   continueEditingButtonSelector = 'button-continue-editing';
@@ -37,14 +46,6 @@ export class GroupPage extends BasePage {
   transactionDuplicateButtonIndexSelector = 'button-transaction-duplicate-';
   transactionEditButtonIndexSelector = 'button-transaction-edit-';
   orgTransactionDetailsButtonIndexSelector = 'button-group-transaction-';
-  private readonly transactionPage: TransactionPage;
-  private readonly organizationPage: OrganizationPage;
-
-  constructor(window: Page) {
-    super(window);
-    this.transactionPage = new TransactionPage(window);
-    this.organizationPage = new OrganizationPage(window);
-  }
 
   async closeModalIfVisible(selector: string) {
     const modalButton = this.window.getByTestId(selector);
@@ -139,12 +140,15 @@ export class GroupPage extends BasePage {
   async getAllTransactionTimestamps(numberOfTransactions: number) {
     const timestamps = [];
     for (let i = 0; i < numberOfTransactions; i++) {
-      timestamps.push(await this.getTransactionGroupDetailsId(i));
+      const timestamp = await this.getTransactionTimestamp(i);
+      if (timestamp !== null) {
+        timestamps.push(timestamp);
+      }
     }
     return timestamps;
   }
 
-  async verifyAllTransactionsAreSuccessful(timestampsForVerification: string) {
+  async verifyAllTransactionsAreSuccessful(timestampsForVerification: string[]) {
     for (let i = 0; i < timestampsForVerification.length; i++) {
       const transactionDetails = await this.transactionPage.mirrorGetTransactionResponse(
         timestampsForVerification[i],
@@ -192,8 +196,8 @@ export class GroupPage extends BasePage {
   async generateAndImportCsvFile(
     fromAccountId: string,
     receiverAccountId: string,
-    numberOfTransactions = 10,
-    feePayerAccountId = null,
+    numberOfTransactions: number = 10,
+    feePayerAccountId: string | null = null,
   ) {
     const fileName = 'groupTransactions.csv';
     await generateCSVFile({
@@ -254,7 +258,7 @@ export class GroupPage extends BasePage {
    * @param {string} transactionId - The ID of the transaction to check.
    * @returns {Promise<boolean>} A promise that resolves to true if transaction groups exist, otherwise false.
    */
-  async doTransactionGroupsExist(transactionId: string) {
+  async doTransactionGroupsExist(transactionId: string): Promise<boolean> {
     return !!(await getTransactionGroupsForTransactionId(transactionId));
   }
 

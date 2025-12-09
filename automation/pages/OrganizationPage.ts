@@ -45,7 +45,7 @@ interface TransactionDetails {
   validStart: string | null;
 }
 
-interface UserDetails {
+export interface UserDetails {
   email: string;
   password: string;
   privateKey: string;
@@ -57,7 +57,8 @@ export interface Credentials {
 }
 
 export class OrganizationPage extends BasePage {
-  readonly users: UserDetails[];
+  /* Selectors */
+
   // Buttons
   addNewOrganizationButtonSelector = 'button-add-new-organization';
   continueEncryptPasswordButtonSelector = 'button-continue-encrypt-password';
@@ -67,8 +68,6 @@ export class OrganizationPage extends BasePage {
   readyForReviewTabSelector = 'tab-1';
   readyToSignTabSelector = 'tab-2';
   inProgressTabSelector = 'tab-3';
-
-  /* Selectors */
   readyForExecutionTabSelector = 'tab-4';
   historyTabSelector = 'tab-5';
   deleteOrganizationButtonSelector = 'button-delete-connection';
@@ -137,13 +136,16 @@ export class OrganizationPage extends BasePage {
   userListIndexSelector = 'span-email-';
   // Elements
   notificationsIndicatorElement = 'notification-indicator';
+
+  users: UserDetails[];
+  complexAccountId: string[];
+  complexFileId: string[];
+  organizationRecoveryWords: Array<Array<string>>;
+  transactions: TransactionDetails[];
+
   private readonly registrationPage: RegistrationPage;
   private readonly settingsPage: SettingsPage;
   private readonly transactionPage: TransactionPage;
-  private readonly transactions: TransactionDetails[];
-  private readonly organizationRecoveryWords: Array<Array<string>>;
-  private complexAccountId: string[];
-  private readonly complexFileId: string[];
 
   constructor(window: Page) {
     super(window);
@@ -211,7 +213,7 @@ export class OrganizationPage extends BasePage {
    * @param {number} numUsers - The number of users to create
    */
 
-  async createUsers(numUsers = 1) {
+  async createUsers(numUsers: number = 1): Promise<void> {
     const usersData = [];
 
     for (let i = 0; i < numUsers; i++) {
@@ -1190,7 +1192,7 @@ export class OrganizationPage extends BasePage {
    * @param {string} fileId - The ID of the file to read and compare.
    * @returns {boolean} - Returns true if files are identical, or false if there are differences.
    */
-  async areFilesIdentical(fileId: string) {
+  async areFilesIdentical(fileId: string): Promise<boolean> {
     // Read the file content from the application
     const textFromField = await this.transactionPage.readFile(fileId);
     if (!textFromField || textFromField.trim() === '') {
@@ -1403,7 +1405,13 @@ export class OrganizationPage extends BasePage {
     }>,
     maxRetries = 10,
     retryDelay = 500,
-  ) {
+  ):Promise<{
+    transactionId: string | null;
+    transactionType: string | null;
+    validStart: string | null;
+    detailsButton: boolean;
+    [key: string]: any; // for additionalFields
+  } | null> {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const count = await this.countElements(transactionIdIndexSelector);
       for (let i = 0; i < count; i++) {
@@ -1468,7 +1476,13 @@ export class OrganizationPage extends BasePage {
     );
   }
 
-  async getHistoryTransactionDetails(transactionId: string) {
+  async getHistoryTransactionDetails(transactionId: string): Promise<{
+    transactionId: string | null;
+    transactionType: string | null;
+    validStart: string | null;
+    detailsButton: boolean;
+    [key: string]: any; // for additionalFields
+  } | null> {
     return await this.getTransactionDetails(
       transactionId,
       this.historyTransactionIdIndexSelector,
@@ -1589,7 +1603,7 @@ export class OrganizationPage extends BasePage {
    * @param {number} stageIndex - The index of the stage to verify.
    * @returns {Promise<boolean>} - True if the stage is completed, false if active.
    */
-  async isTransactionStageCompleted(stageIndex: number) {
+  async isTransactionStageCompleted(stageIndex: number): Promise<boolean> {
     const bubbleContent = await this.getInnerContent(this.stageBubbleIndexSelector + stageIndex);
     return bubbleContent.trim().includes('bi-check-lg');
   }
@@ -1632,7 +1646,7 @@ export class OrganizationPage extends BasePage {
     let notificationStatus = await getLatestNotificationStatusByEmail(secondUser.email);
 
     // If there's no notification or the latest is read, create a new one
-    if (!notificationStatus || notificationStatus.isRead === true) {
+    if (!notificationStatus || notificationStatus.isRead) {
       await this.createNotificationForUser(firstUser, secondUser, globalCredentials);
     }
     // If the notification exists and is unread, nothing more needs to be done

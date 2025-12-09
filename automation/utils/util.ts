@@ -6,7 +6,7 @@ import { LoginPage } from '../pages/LoginPage.js';
 import { SettingsPage } from '../pages/SettingsPage.js';
 import * as fsp from 'fs/promises';
 import * as path from 'path';
-import * as _ from 'lodash';
+import _ from 'lodash';
 import Diff from 'deep-diff';
 
 export async function setupApp() {
@@ -139,9 +139,10 @@ export function calculateTimeout(totalUsers: number, timePerUser: number): numbe
  * @param bufferSeconds - The buffer time in seconds to wait before the target time.
  * @returns {Promise<void>} - A promise that resolves after the wait time.
  */
-export async function waitForValidStart(dateTimeString: string, bufferSeconds = 15) {
+export async function waitForValidStart(dateTimeString: string, bufferSeconds = 15): Promise<void> {
   // Convert the dateTimeString to a Date object
-  const targetDate = new Date(dateTimeString);
+  // Assume that the string is in UTC format
+  const targetDate = new Date(dateTimeString + 'Z');
 
   // Get the current time
   const currentDate = new Date();
@@ -168,7 +169,7 @@ export async function waitForValidStart(dateTimeString: string, bufferSeconds = 
  * @param interval
  * @returns {Promise<void>}
  */
-export async function waitAndReadFile(filePath: string, timeout = 5000, interval = 100) {
+export async function waitAndReadFile(filePath: string, timeout = 5000, interval = 100): Promise<Buffer> {
   const start = Date.now();
   while (Date.now() - start < timeout) {
     try {
@@ -290,7 +291,7 @@ export function parsePropertiesContent(content: string): Record<string, unknown>
  * @returns {string} The clean account ID.
  * @throws {Error} If the provided input is not a valid non-empty string.
  */
-export function getCleanAccountId(accountIdWithChecksum: unknown) {
+export function getCleanAccountId(accountIdWithChecksum: unknown): string {
   if (!accountIdWithChecksum || typeof accountIdWithChecksum !== 'string') {
     throw new Error('Invalid accountIdWithChecksum provided');
   }
