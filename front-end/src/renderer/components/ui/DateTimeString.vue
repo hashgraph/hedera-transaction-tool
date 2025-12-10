@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
+import { formatDatePart, formatTimePart } from '@renderer/utils/dateTimeFormat.ts';
 
 /* Props */
 const props = withDefaults(
@@ -16,30 +17,6 @@ const props = withDefaults(
   },
 );
 
-const dateOptions = {
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-} as Intl.DateTimeFormatOptions;
-
-const timeOptions = {
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hour12: false,
-} as Intl.DateTimeFormatOptions;
-
-const extendedDateOptions = {
-  ...dateOptions,
-  weekday: 'short',
-  month: 'short',
-} as Intl.DateTimeFormatOptions;
-
-const extendedTimeOptions = {
-  ...timeOptions,
-  timeZoneName: 'short',
-} as Intl.DateTimeFormatOptions;
-
 /* Composables */
 const { isUtcSelected } = useDateTimeSetting();
 
@@ -47,12 +24,7 @@ const { isUtcSelected } = useDateTimeSetting();
 const datePart = computed(() => {
   let result: string;
   if (props.date) {
-    const options = props.compact ? dateOptions : extendedDateOptions;
-    const formatter = new Intl.DateTimeFormat(
-      undefined,
-      isUtcSelected.value ? { ...options, timeZone: 'UTC' } : options,
-    );
-    result = formatter.format(props.date);
+    result = formatDatePart(props.date, isUtcSelected.value, props.compact);
   } else {
     result = '';
   }
@@ -62,12 +34,7 @@ const datePart = computed(() => {
 const timePart = computed(() => {
   let result: string;
   if (props.date) {
-    const options = props.compact ? timeOptions : extendedTimeOptions;
-    const formatter = new Intl.DateTimeFormat(
-      undefined,
-      isUtcSelected.value ? { ...options, timeZone: 'UTC' } : options,
-    );
-    result = formatter.format(props.date);
+    result = formatTimePart(props.date, isUtcSelected.value, props.compact);
   } else {
     result = '';
   }
