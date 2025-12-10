@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TabItem } from '@renderer/components/ui/AppTabs.vue';
+import AppTabs from '@renderer/components/ui/AppTabs.vue';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
 
@@ -23,19 +24,14 @@ import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/use
 import { getTransactionsToApprove } from '@renderer/services/organization';
 
 import { isLoggedInOrganization, isOrganizationActive } from '@renderer/utils';
-
-import AppTabs from '@renderer/components/ui/AppTabs.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionSelectionModal from '@renderer/components/TransactionSelectionModal.vue';
-
-import History from './components/History.vue';
 import Drafts from './components/Drafts.vue';
-import ReadyToSign from './components/ReadyToSign.vue';
-import InProgress from './components/InProgress.vue';
-import ReadyForExecution from './components/ReadyForExecution.vue';
-import ReadyForReview from './components/ReadyForReview.vue';
 import useLoader from '@renderer/composables/useLoader';
 import TransactionImportButton from '@renderer/components/TransactionImportButton.vue';
+import { TransactionNodeCollection } from '../../../../../shared/src/ITransactionNode.ts';
+import TransactionNodeTable from '@renderer/pages/Transactions/components/TransactionNodeTable.vue';
+import History from '@renderer/pages/Transactions/components/History.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -241,12 +237,26 @@ onBeforeMount(async () => {
           @update:active-index="handleTabSelection"
         ></AppTabs>
       </div>
-      <template v-if="selectedTabTitle === readyForReviewTitle"><ReadyForReview /></template>
-      <template v-if="selectedTabTitle === readyToSignTitle"> <ReadyToSign /> </template>
-      <template v-if="selectedTabTitle === inProgressTitle"><InProgress /></template>
-      <template v-if="selectedTabTitle === readyForExecutionTitle"><ReadyForExecution /></template>
+      <template v-if="selectedTabTitle === readyForReviewTitle">
+        <TransactionNodeTable :collection="TransactionNodeCollection.READY_FOR_REVIEW" />
+      </template>
+      <template v-if="selectedTabTitle === readyToSignTitle">
+        <TransactionNodeTable :collection="TransactionNodeCollection.READY_TO_SIGN" />
+      </template>
+      <template v-if="selectedTabTitle === inProgressTitle">
+        <TransactionNodeTable :collection="TransactionNodeCollection.IN_PROGRESS" />
+      </template>
+      <template v-if="selectedTabTitle === readyForExecutionTitle">
+        <TransactionNodeTable :collection="TransactionNodeCollection.READY_FOR_EXECUTION" />
+      </template>
       <template v-if="selectedTabTitle === draftsTitle"><Drafts /></template>
-      <template v-if="selectedTabTitle === historyTitle"><History /></template>
+      <template v-if="selectedTabTitle === historyTitle">
+        <TransactionNodeTable
+          v-if="user.selectedOrganization"
+          :collection="TransactionNodeCollection.HISTORY"
+        />
+        <History v-else />
+      </template>
     </div>
 
     <TransactionSelectionModal
