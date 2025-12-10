@@ -1,11 +1,9 @@
-import { ElectronApplication, expect } from '@playwright/test';
+import { ElectronApplication, expect, Page } from '@playwright/test';
 import { launchHederaTransactionTool } from './electronAppLauncher.js';
 import { migrationDataExists } from './oldTools.js';
-import { Page } from '@playwright/test';
 import { LoginPage } from '../pages/LoginPage.js';
 import { SettingsPage } from '../pages/SettingsPage.js';
 import * as fsp from 'fs/promises';
-import * as path from 'path';
 import _ from 'lodash';
 import Diff from 'deep-diff';
 
@@ -169,7 +167,11 @@ export async function waitForValidStart(dateTimeString: string, bufferSeconds = 
  * @param interval
  * @returns {Promise<void>}
  */
-export async function waitAndReadFile(filePath: string, timeout = 5000, interval = 100): Promise<Buffer> {
+export async function waitAndReadFile(
+  filePath: string,
+  timeout = 5000,
+  interval = 100,
+): Promise<Buffer> {
   const start = Date.now();
   while (Date.now() - start < timeout) {
     try {
@@ -180,33 +182,6 @@ export async function waitAndReadFile(filePath: string, timeout = 5000, interval
     }
   }
   throw new Error(`File not found: ${filePath}`);
-}
-
-/**
- * Asynchronously deletes all .bin files in the specified directory.
- * @param {string} directory - The path to the directory where .bin files will be deleted.
- */
-export async function cleanupBinFiles(directory: string) {
-  try {
-    const files = await fsp.readdir(directory);
-    const deletePromises = files.map(async file => {
-      const filePath = path.join(directory, file);
-      const fileStat = await fsp.stat(filePath);
-
-      if (fileStat.isFile() && path.extname(file) === '.bin') {
-        try {
-          await fsp.unlink(filePath);
-          console.log(`Deleted file: ${filePath}`);
-        } catch (err: any) {
-          console.error(`Failed to delete file ${filePath}: ${err.message}`);
-        }
-      }
-    });
-    await Promise.all(deletePromises);
-    console.log('Cleanup completed.');
-  } catch (err: any) {
-    console.error(`Unable to read directory ${directory}: ${err.message}`);
-  }
 }
 
 /**

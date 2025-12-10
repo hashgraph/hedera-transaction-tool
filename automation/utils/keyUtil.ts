@@ -10,21 +10,21 @@ export function getPrivateKey() {
 }
 
 // Generates an ECDSA key pair
-export function generateECDSAKeyPair(curve = 'secp256k1') {
-  const { privateKey } = crypto.generateKeyPairSync('ec', {
-    namedCurve: curve,
-    publicKeyEncoding: {
-      type: 'spki',
-      format: 'pem',
-    },
-    privateKeyEncoding: {
-      type: 'pkcs8',
-      format: 'der',
-    },
-  });
-
-  return privateKey.toString('hex');
-}
+// export function generateECDSAKeyPair(curve = 'secp256k1') {
+//   const { privateKey } = crypto.generateKeyPairSync('ec', {
+//     namedCurve: curve,
+//     publicKeyEncoding: {
+//       type: 'spki',
+//       format: 'pem',
+//     },
+//     privateKeyEncoding: {
+//       type: 'pkcs8',
+//       format: 'der',
+//     },
+//   });
+//
+//   return privateKey.toString('hex');
+// }
 
 // Generates an Ed25519 key pair
 export function generateEd25519KeyPair() {

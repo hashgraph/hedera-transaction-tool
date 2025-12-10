@@ -40,33 +40,6 @@ export * from './transactionSignatureModels';
 export * from './autoFocus';
 export * from './localServices';
 
-export const getDateTimeLocalInputValue = (date: Date) => {
-  const tzo = -date.getTimezoneOffset();
-  const dif = tzo >= 0 ? '+' : '-';
-  const pad = function (num: number) {
-    return (num < 10 ? '0' : '') + num;
-  };
-
-  const formattedDate =
-    date.getFullYear() +
-    '-' +
-    pad(date.getMonth() + 1) +
-    '-' +
-    pad(date.getDate()) +
-    'T' +
-    pad(date.getHours()) +
-    ':' +
-    pad(date.getMinutes()) +
-    ':' +
-    pad(date.getSeconds()) +
-    dif +
-    pad(Math.floor(Math.abs(tzo) / 60)) +
-    ':' +
-    pad(Math.abs(tzo) % 60);
-
-  return formattedDate.slice(0, 19);
-};
-
 export const convertBytes = (
   bytes: number,
   options: { useBinaryUnits?: boolean; decimals?: number } = {},
@@ -123,29 +96,6 @@ export const base64ToUint8Array = (base64String: string) => {
 export const encodeString = (str: string) => {
   return new TextEncoder().encode(str);
 };
-
-export function stringToHex(str: string): string {
-  return Array.from(str, c => c.charCodeAt(0).toString(16)).join('');
-}
-
-export function hexToString(hex: string) {
-  return decodeURIComponent(hex.replace(/\s+/g, '').replace(/[0-9a-f]{2}/g, '%$&'));
-}
-
-export function getDateString(date: Date, isUtcSelected = true) {
-  return isUtcSelected
-    ? date.toLocaleString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-        timeZone: 'UTC', // Force UTC time
-      })
-    : date.toLocaleString();
-}
 
 export function getDateStringExtended(date: Date, isUtcSelected = true) {
 
@@ -462,19 +412,3 @@ export function sanitizeAccountId(value: string): string {
 
   return value;
 }
-
-export const getNetworkLabel = (network: string) => {
-  network = network.toLocaleLowerCase();
-  switch (network) {
-    case 'mainnet':
-      return 'Mainnet';
-    case 'testnet':
-      return 'Testnet';
-    case 'previewnet':
-      return 'Previewnet';
-    case 'local-node':
-      return 'Local Node';
-    default:
-      return 'Custom';
-  }
-};
