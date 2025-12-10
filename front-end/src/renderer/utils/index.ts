@@ -97,21 +97,6 @@ export const encodeString = (str: string) => {
   return new TextEncoder().encode(str);
 };
 
-export function getDateStringExtended(date: Date, isUtcSelected = true) {
-
-  const formatter = new Intl.DateTimeFormat(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-    timeZoneName: 'short',
-  });
-
-  return isUtcSelected
-    ? date.toUTCString()
-    : `${date.toDateString()} ${formatter.format(date)}`;
-}
-
 export const throwError = (errorMessage: string) => {
   throw new Error(errorMessage);
 };
