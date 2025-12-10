@@ -14,7 +14,7 @@ import {
   waitForValidStart,
 } from '../utils/util.js';
 import { disableNotificationsForTestUsers } from '../utils/databaseQueries.js';
-import { PrivateKey } from '@hashgraph/sdk';
+import { PrivateKey, Transaction } from '@hashgraph/sdk';
 import * as path from 'node:path';
 import * as fsp from 'fs/promises';
 import JSZip from 'jszip';
