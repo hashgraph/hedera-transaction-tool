@@ -19,6 +19,7 @@ import {
   TransferTransaction,
 } from '@hashgraph/sdk';
 import { getDateStringExtended } from '..';
+import { TransactionTypeName } from '@shared/interfaces';
 
 export const getTransactionDate = (transaction: Transaction) =>
   transaction.transactionId?.validStart?.toDate().toDateString() || null;
@@ -49,6 +50,21 @@ export const formatTransactionType = (
   if (short) {
     // Remove all whitespace characters
     result = type.replace(/\s+/g, '');
+  }
+  return result;
+};
+
+export const getTransactionTypeFromBackendType = (
+  backendTransactionType: string,
+  short = false,
+  removeTransaction = false,
+) => {
+  let result: string;
+  if (backendTransactionType in TransactionTypeName) {
+    const type = backendTransactionType as keyof typeof TransactionTypeName;
+    result = formatTransactionType(TransactionTypeName[type], short, removeTransaction);
+  } else {
+    result = 'Unknown Transaction Type';
   }
   return result;
 };
