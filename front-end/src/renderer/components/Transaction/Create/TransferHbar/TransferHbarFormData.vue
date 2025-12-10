@@ -9,7 +9,7 @@ import { Hbar, Transfer } from '@hashgraph/sdk';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { getAccountInfo } from '@renderer/services/mirrorNodeDataService';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { getAll } from '@renderer/services/accountsService';
 
 import { getAccountIdWithChecksum, isUserLoggedIn, stringifyHbar } from '@renderer/utils';
@@ -40,6 +40,9 @@ const emit = defineEmits<{
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+
+/* Injected */
+const accountByIdCache = AccountByIdCache.inject();
 
 /* State */
 const linkedAccounts = ref<HederaAccount[]>([]);
@@ -134,7 +137,7 @@ const refreshTransfers = (transfers?: Transfer[]) => {
 
 const ensureAccountInfoExists = async (accountId: string) => {
   if (!props.accountInfos[accountId]) {
-    const info = await getAccountInfo(accountId, network.mirrorNodeBaseURL);
+    const info = await accountByIdCache.lookup(accountId, network.mirrorNodeBaseURL);
     if (info) {
       emit('update:accountInfos', {
         ...props.accountInfos,

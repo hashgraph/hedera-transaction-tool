@@ -1,6 +1,6 @@
 {
   "name": "hedera-transaction-tool",
-  "version": "0.18.1",
+  "version": "0.20.0",
   "description": "Transaction tool application",
   "author": {
     "name": "Hedera",

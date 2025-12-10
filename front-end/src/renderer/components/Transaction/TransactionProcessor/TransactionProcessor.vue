@@ -18,6 +18,7 @@ import ExecutePersonalRequestHandler from './components/ExecutePersonalRequestHa
 import MultipleAccountUpdateRequestHandler from './components/MultipleAccountUpdateRequestHandler.vue';
 
 import { assertHandlerExists } from '.';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -55,13 +56,13 @@ const isLoading = ref(false);
 /* Handlers */
 const handleGroupSubmitSuccess = async (id: number) => {
   setConfirmModalShown(false);
-  toast.success('Transaction group submitted successfully');
+  toast.success('Transaction group submitted successfully', successToastOptions);
   props.onGroupSubmitted && (await props.onGroupSubmitted(id));
 };
 
 const handleSubmitSuccess = async (id: number, transactionBytes: string) => {
   setConfirmModalShown(false);
-  toast.success('Transaction submitted successfully');
+  toast.success('Transaction submitted successfully', successToastOptions);
   props.onSubmitted && (await props.onSubmitted(id, transactionBytes));
 };
 

@@ -19,6 +19,10 @@ import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
 import OrganizationStatusModal from '@renderer/components/Organization/OrganizationStatusModal.vue';
 import GlobalModalLoader from '@renderer/components/GlobalModalLoader.vue';
 import GlobalAppProcesses from '@renderer/components/GlobalAppProcesses';
+import { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
+import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -54,6 +58,10 @@ onMounted(async () => {
 provideUserModalRef(userPasswordModalRef);
 provideGlobalModalLoaderlRef(globalModalLoaderRef);
 provideDynamicLayout(dynamicLayout);
+AccountByIdCache.provide();
+AccountByPublicKeyCache.provide();
+TransactionByIdCache.provide();
+NodeByIdCache.provide();
 </script>
 <template>
   <AppHeader

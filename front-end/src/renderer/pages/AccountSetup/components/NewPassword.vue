@@ -3,7 +3,6 @@ import { computed, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useContactsStore from '@renderer/stores/storeContacts';
-import useNotificationsStore from '@renderer/stores/storeNotifications';
 
 import { useToast } from 'vue-toast-notification';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
@@ -20,6 +19,7 @@ import {
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -29,7 +29,6 @@ const props = defineProps<{
 /* Stores */
 const user = useUserStore();
 const contacts = useContactsStore();
-const notifications = useNotificationsStore();
 
 /* Composables */
 const toast = useToast();
@@ -91,13 +90,12 @@ const handleChangePassword = async () => {
 
       await user.refetchUserState();
       await contacts.fetch();
-      await notifications.fetchPreferences();
 
       props.handleContinue();
 
-      toast.success('Password changed successfully');
+      toast.success('Password changed successfully', successToastOptions);
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to change password'));
+      toast.error(getErrorMessage(error, 'Failed to change password'), errorToastOptions);
     } finally {
       isLoading.value = false;
     }

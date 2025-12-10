@@ -25,6 +25,7 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -94,9 +95,12 @@ const handleImportExternalKey = async () => {
 
     emit('update:show', false);
 
-    toast.success(`${props.keyType} private key imported successfully`);
+    toast.success(`${props.keyType} private key imported successfully`, successToastOptions);
   } catch (error) {
-    toast.error(getErrorMessage(error, `Failed to import ${props.keyType} private key`));
+    toast.error(
+      getErrorMessage(error, `Failed to import ${props.keyType} private key`),
+      errorToastOptions,
+    );
   }
 };
 

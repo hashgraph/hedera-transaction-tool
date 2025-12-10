@@ -47,11 +47,24 @@ services:
     volumes:
       - .:/usr/src/app
     restart: always
-  rabbitmq:
-    image: rabbitmq
+  nats:
+    image: nats:2.10
+    container_name: nats
+    command:
+      - "-js"                       # Enable JetStream
+      - "-sd=/data/jetstream"       # JetStream storeDir
     ports:
-      - 5672:5672
-    restart: always
+      - "4222:4222"                 # Client connections
+    volumes:
+      - nats:/data/jetstream
+    restart: unless-stopped
+  nats-box:
+    image: natsio/nats-box
+    container_name: nats-box
+    stdin_open: true
+    tty: true
+    depends_on:
+      - nats
   database:
     image: postgres
     restart: always
@@ -80,10 +93,12 @@ services:
     build: ./redis
     container_name: cache
     ports:
-      - 6380:6379
+      - '6380:6379'
     volumes:
       - redis:/data
     restart: always
 volumes:
   redis:
+    driver: local
+  nats:
     driver: local

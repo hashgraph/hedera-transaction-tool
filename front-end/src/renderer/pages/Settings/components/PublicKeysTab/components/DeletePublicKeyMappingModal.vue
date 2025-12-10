@@ -10,6 +10,7 @@ import { getErrorMessage } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -55,14 +56,17 @@ const handleDelete = async () => {
         try {
           await user.deletePublicKeyMapping(id);
         } catch (error) {
-          toast.error(getErrorMessage(error, 'Unable to delete one or more public key mapping(s)'));
+          toast.error(
+            getErrorMessage(error, 'Unable to delete one or more public key mapping(s)'),
+            errorToastOptions,
+          );
         }
       }
     }
 
-    toast.success('Public key mapping(s) deleted successfully', { position: 'bottom-right' });
+    toast.success('Public key mapping(s) deleted successfully', successToastOptions);
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to delete public key mapping(s)'));
+    toast.error(getErrorMessage(error, 'Failed to delete public key mapping(s)'), errorToastOptions);
   } finally {
     resetSelection();
     isDeletingKey.value = false;

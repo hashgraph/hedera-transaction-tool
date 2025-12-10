@@ -4,7 +4,7 @@ import type { NodeUpdateData } from '@renderer/utils/sdk/createTransactions';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 
 import { computed, reactive, ref, watch } from 'vue';
-import { Key, KeyList, NodeUpdateTransaction, Transaction } from '@hashgraph/sdk';
+import { NodeUpdateTransaction, Transaction } from '@hashgraph/sdk';
 
 import { useRoute } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
@@ -12,10 +12,11 @@ import useAccountId from '@renderer/composables/useAccountId';
 import useNodeId from '@renderer/composables/useNodeId';
 
 import { createNodeUpdateTransaction } from '@renderer/utils/sdk/createTransactions';
-import { getComponentServiceEndpoint, getNodeUpdateData, isAccountId } from '@renderer/utils';
+import { getComponentServiceEndpoint, getNodeUpdateData } from '@renderer/utils';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeUpdateFormData from '@renderer/components/Transaction/Create/NodeUpdate/NodeUpdateFormData.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Composables */
 const route = useRoute();
@@ -51,21 +52,6 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
     );
 });
 
-const transactionKey = computed(() => {
-  const keys: Key[] = [];
-
-  const oldAccountId = nodeData.nodeInfo?.value?.node_account_id?.toString()?.trim();
-  if (isAccountId(data.nodeAccountId) && oldAccountId !== data.nodeAccountId.trim()) {
-    nodeData.accountData.key.value && keys.push(nodeData.accountData.key.value);
-    newNodeAccountData.key.value && keys.push(newNodeAccountData.key.value);
-  }
-
-  data.adminKey && keys.push(data.adminKey);
-  nodeData.key.value && keys.push(nodeData.key.value);
-
-  return new KeyList(keys);
-});
-
 /* Handlers */
 const handleDraftLoaded = (transaction: Transaction) => {
   if (transaction instanceof NodeUpdateTransaction) {
@@ -86,7 +72,7 @@ const handleUpdateData = (newData: NodeUpdateData) => {
 };
 
 const handleExecutedSuccess = async () => {
-  toast.success(`Node ${data.nodeAccountId} Updated`);
+  toast.success(`Node ${data.nodeAccountId} Updated`, successToastOptions);
 };
 
 /* Functions */
@@ -134,7 +120,6 @@ watch(
     ref="baseTransactionRef"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
-    :transaction-base-key="transactionKey"
     @executed:success="handleExecutedSuccess"
     @draft-loaded="handleDraftLoaded"
   >

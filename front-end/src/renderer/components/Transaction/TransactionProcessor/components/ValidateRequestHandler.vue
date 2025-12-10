@@ -11,6 +11,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { assertUserLoggedIn, ableToSign, validateFileUpdateTransaction } from '@renderer/utils';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 
 /* Constants */
 const SIZE_BUFFER_BYTES = 200;
@@ -18,6 +19,9 @@ const SIZE_BUFFER_BYTES = 200;
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+
+/* Injected */
+const accountByIdCache = AccountByIdCache.inject()
 
 /* State */
 const nextHandler = ref<Handler | null>(null);
@@ -38,12 +42,12 @@ async function handle(request: Processable) {
 
     request.name = request.name || '';
     request.description = request.description || '';
-  } else if (request instanceof CustomRequest) {
+  } else {
     await validateCustomRequest(request);
   }
 
   if (nextHandler.value) {
-    await nextHandler.value.handle(request);
+    nextHandler.value.handle(request);
   }
 }
 
@@ -93,9 +97,9 @@ function validateBigFile(transaction: FileCreateTransaction) {
 }
 
 async function validateCustomRequest(request: CustomRequest) {
-  await request.deriveRequestKey(network.mirrorNodeBaseURL);
+  await request.deriveRequestKey(network.mirrorNodeBaseURL, accountByIdCache);
 
-  await validateSignableInPersonal(request);
+  validateSignableInPersonal(request);
 }
 
 /* Expose */

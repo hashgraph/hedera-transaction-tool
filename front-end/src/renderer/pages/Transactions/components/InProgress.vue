@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { IGroup, ITransaction } from '@shared/interfaces';
+import type { ITransaction } from '@shared/interfaces';
 
 import { computed, onBeforeMount, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 
@@ -16,19 +16,18 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 
-import { getApiGroupById, getTransactionsForUser } from '@renderer/services/organization';
-
 import {
-  getTransactionId,
-  getTransactionType,
-  getTransactionValidStart,
-} from '@renderer/utils/sdk/transactions';
+  getApiGroupById,
+  getTransactionsForUser,
+  type IGroup,
+} from '@renderer/services/organization';
+
+import { getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions';
 import {
   redirectToDetails,
   redirectToGroupDetails,
   isLoggedInOrganization,
   hexToUint8Array,
-  getTransactionGroupUpdatedAt,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -36,6 +35,7 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
+import TransactionId from '@renderer/components/ui/TransactionId.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -140,7 +140,7 @@ async function fetchTransactions() {
       }
 
       if (transaction.groupItem?.groupId && !groupIds.includes(transaction.groupItem?.groupId)) {
-      groupIds.push(transaction.groupItem.groupId);
+        groupIds.push(transaction.groupItem.groupId);
       }
     }
 
@@ -259,13 +259,33 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
               <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
-                  @click="handleSort('type', sort.field === 'type' ? getOppositeDirection() : 'asc')"
+                  @click="
+                    handleSort('type', sort.field === 'type' ? getOppositeDirection() : 'asc')
+                  "
                 >
                   <span>Transaction Type</span>
                   <i
                     v-if="sort.field === 'type'"
                     class="bi text-title"
                     :class="[generatedClass]"
+                  ></i>
+                </div>
+              </th>
+              <th @contextmenu.prevent="showContextMenu">
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
+                      'description',
+                      sort.field === 'description' ? getOppositeDirection() : 'asc',
+                    )
+                  "
+                >
+                  <span>Description</span>
+                  <i
+                    v-if="sort.field === 'description'"
+                    :class="[generatedClass]"
+                    class="bi text-title"
                   ></i>
                 </div>
               </th>
@@ -287,6 +307,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                   ></i>
                 </div>
               </th>
+<!--
               <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
@@ -305,6 +326,7 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                   ></i>
                 </div>
               </th>
+-->
               <th class="text-center">
                 <span>Actions</span>
               </th>
@@ -317,24 +339,35 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                   <td>
                     <i class="bi bi-stack" />
                   </td>
-                  <td>{{ groups.get(groupId)?.description }}</td>
+                  <td class="text-bold">Group</td>
+                  <td>
+                    <span class="text-wrap-two-line-ellipsis">{{
+                      groups.get(groupId)?.description
+                    }}</span>
+                  </td>
                   <td>
                     <DateTimeString
                       v-if="groupTransactions[0].transaction instanceof Transaction"
                       :date="getTransactionValidStart(groupTransactions[0].transaction)"
+                      compact
+                      wrap
                     />
                     <span v-else>N/A</span>
                   </td>
+<!--
                   <td>
                     <DateTimeString
                       v-if="groups.get(groupId)"
                       :date="getTransactionGroupUpdatedAt(groups.get(groupId)!)"
+                      compact
+                      wrap
                     />
                     <span v-else>N/A</span>
                   </td>
+-->
                   <td class="text-center">
                     <AppButton
-                      @click="redirectToGroupDetails($router, groupId, false, 'inProgress')"
+                      @click="redirectToGroupDetails($router, groupId, 'inProgress')"
                       color="secondary"
                     >
                       Details
@@ -347,33 +380,45 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                 <template v-for="(tx, index) of groupTransactions" :key="tx.transactionRaw.id">
                   <tr>
                     <td :data-testid="`td-transaction-id-in-progress-${index}`">
-                      {{
-                        tx.transaction instanceof Transaction
-                          ? getTransactionId(tx.transaction)
-                          : 'N/A'
-                      }}
+                      <TransactionId
+                        v-if="tx.transaction instanceof Transaction"
+                        :transaction-id="tx.transaction.transactionId"
+                        wrap
+                      />
+                      <span v-else>N/A</span>
                     </td>
                     <td :data-testid="`td-transaction-type-in-progress-${index}`">
                       <span class="text-bold">{{
                         tx.transaction instanceof Transaction
-                          ? getTransactionType(tx.transaction)
+                          ? getTransactionType(tx.transaction, false, true)
                           : 'N/A'
+                      }}</span>
+                    </td>
+                    <td :data-testid="`td-transaction-description-in-progress-${index}`">
+                      <span class="text-wrap-two-line-ellipsis">{{
+                        tx.transactionRaw.description
                       }}</span>
                     </td>
                     <td :data-testid="`td-transaction-valid-start-in-progress-${index}`">
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
                         :date="getTransactionValidStart(tx.transaction)"
+                        compact
+                        wrap
                       />
                       <span v-else>N/A</span>
                     </td>
+<!--
                     <td :data-testid="`td-transaction-date-modified-in-progress-${index}`">
                       <DateTimeString
                         v-if="tx.transaction instanceof Transaction"
                         :date="new Date(tx.transactionRaw.updatedAt)"
+                        compact
+                        wrap
                       />
                       <span v-else>N/A</span>
                     </td>
+-->
                     <td class="text-center">
                       <AppButton
                         @click="handleDetails(tx.transactionRaw.id)"
@@ -386,39 +431,6 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
                 </template>
               </template>
             </template>
-
-            <!-- <template v-for="tx in transactions" :key="tx.transactionRaw.id">
-              <tr>
-                <td :data-testid="`td-transaction-id-in-progress-${index}`">
-                  {{
-                    tx.transaction instanceof Transaction ? getTransactionId(tx.transaction) : 'N/A'
-                  }}
-                </td>
-                <td :data-testid="`td-transaction-type-in-progress-${index}`">
-                  <span class="text-bold">{{
-                    tx.transaction instanceof Transaction
-                      ? getTransactionType(tx.transaction)
-                      : 'N/A'
-                  }}</span>
-                </td>
-                <td :data-testid="`td-transaction-valid-start-in-progress-${index}`">
-                  {{
-                    tx.transaction instanceof Transaction
-                      ? getTransactionDateExtended(tx.transaction)
-                      : 'N/A'
-                  }}
-                </td>
-                <td class="text-center">
-                  <AppButton
-                    @click="handleDetails(tx.transactionRaw.id)"
-                    :data-testid="`button-transaction-in-progress-details-${index}`"
-                    color="secondary"
-                    class="min-w-unset"
-                    >Details</AppButton
-                  >
-                </td>
-              </tr>
-            </template> -->
           </tbody>
           <tfoot class="d-table-caption">
             <tr class="d-inline">
@@ -434,12 +446,33 @@ watch([currentPage, pageSize, () => user.selectedOrganization], async () => {
         <div
           v-if="contextMenuVisible"
           class="dropdown"
-          :style="{ position: 'fixed', top: contextMenuY + 'px', left: contextMenuX + 'px', zIndex: 1000 }"
+          :style="{
+            position: 'fixed',
+            top: contextMenuY + 'px',
+            left: contextMenuX + 'px',
+            zIndex: 1000,
+          }"
           @click.stop
         >
           <ul class="dropdown-menu show mt-3">
-            <li class="dropdown-item cursor-pointer" @click="handleSort('createdAt', 'desc'); hideContextMenu()">Sort by Newest</li>
-            <li class="dropdown-item cursor-pointer" @click="handleSort('createdAt', 'asc'); hideContextMenu()">Sort by Oldest</li>
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="
+                handleSort('createdAt', 'desc');
+                hideContextMenu();
+              "
+            >
+              Sort by Newest
+            </li>
+            <li
+              class="dropdown-item cursor-pointer"
+              @click="
+                handleSort('createdAt', 'asc');
+                hideContextMenu();
+              "
+            >
+              Sort by Oldest
+            </li>
           </ul>
         </div>
       </template>

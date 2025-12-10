@@ -20,6 +20,7 @@ import {
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import Import from '@renderer/components/RecoveryPhrase/Import.vue';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -72,7 +73,7 @@ const handleImportRecoveryPhrase = async () => {
     );
 
     for (const error of restoredKeys.failedRestoreMessages) {
-      toast.error(error);
+      toast.error(error, errorToastOptions);
     }
 
     if (restoredKeys.keys.length === 0) {
@@ -131,7 +132,7 @@ const storeKeys = async (
       );
       restoredKeys++;
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to store key pair'));
+      toast.error(getErrorMessage(error, 'Failed to store key pair'), errorToastOptions);
     }
   }
 
@@ -139,9 +140,9 @@ const storeKeys = async (
   await user.refetchUserState();
 
   if (restoredKeys > 0) {
-    toast.success('Key Pairs restored');
+    toast.success('Key Pairs restored', successToastOptions);
   }
-  router.push({ name: 'settingsKeys' });
+  await router.push({ name: 'settingsKeys' });
 };
 
 /* Hooks */

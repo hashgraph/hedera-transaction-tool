@@ -93,8 +93,8 @@ export default function useAfterOrganizationSelection() {
     await handleStates();
     await handleNavigation();
 
-    setupStores();
-    user.refetchAccounts();
+    await setupStores();
+    await user.refetchAccounts();
   };
 
   return afterOrganizationSelection;

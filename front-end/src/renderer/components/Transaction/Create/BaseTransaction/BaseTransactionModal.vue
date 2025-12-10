@@ -25,6 +25,7 @@ import { getTransactionFromBytes, isUserLoggedIn } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -109,8 +110,8 @@ const handleSingleTransaction = async () => {
           transactionBytes: transactionBytes.toString(),
           description: props.description,
         });
-        toast.success('Draft updated');
-        router.push(redirectPath.value);
+        toast.success('Draft updated', successToastOptions);
+        await router.push(redirectPath.value);
       }
     } else {
       await sendAddDraft(user.personal.id, transactionBytes);
@@ -122,8 +123,8 @@ const handleSingleTransaction = async () => {
 
 async function sendAddDraft(userId: string, transactionBytes: Uint8Array) {
   await addDraft(userId, transactionBytes, props.description);
-  router.push(redirectPath.value);
-  toast.success('Draft saved');
+  toast.success('Draft saved', successToastOptions);
+  await router.push(redirectPath.value);
 }
 
 async function handleDiscard() {

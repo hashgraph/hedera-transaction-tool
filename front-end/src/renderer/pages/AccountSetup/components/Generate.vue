@@ -22,6 +22,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppRecoveryPhraseWord from '@renderer/components/ui/AppRecoveryPhraseWord.vue';
 import RecoveryPhraseNicknameInput from '@renderer/components/RecoveryPhrase/RecoveryPhraseNicknameInput.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -94,7 +95,7 @@ const handleWordChange = (newWord: string, index: number) => {
 
 const handleCopyRecoveryPhrase = () => {
   navigator.clipboard.writeText(words.value.join(', '));
-  toast.success('Recovery phrase copied');
+  toast.success('Recovery phrase copied', successToastOptions);
 };
 
 const handleGenerate = async () => {

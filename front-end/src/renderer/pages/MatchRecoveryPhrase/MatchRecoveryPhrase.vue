@@ -9,6 +9,7 @@ import useMatchRecoveryPrase from '@renderer/composables/useMatchRecoveryPhrase'
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import Import from '@renderer/components/RecoveryPhrase/Import.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 const SEARCHING_TEXT = 'Abort Search';
 
@@ -29,7 +30,7 @@ const cachedExternalKeys = ref([...externalKeys.value]);
 
 const handleSearch = async () => {
   if (loadingText.value === SEARCHING_TEXT) {
-    handleAbort();
+    await handleAbort();
     return;
   }
 
@@ -50,7 +51,7 @@ const handleSearch = async () => {
         : totalRecovered.value === cachedExternalKeys.value.length
           ? 'All keys matched to recovery phrase'
           : `Matched ${currentSearchCount} keys to recovery phrase`;
-    toast.success(message);
+    toast.success(message, successToastOptions);
   } finally {
     loadingText.value = null;
 

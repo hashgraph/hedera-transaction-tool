@@ -17,7 +17,7 @@ import { TransactionApprover, User } from '@entities';
 
 import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../../guards';
 
-import { GetUser } from '../../decorators/get-user.decorator';
+import { GetUser } from '../../decorators';
 
 import { ApproversService } from './approvers.service';
 
@@ -107,7 +107,7 @@ export class ApproversController {
   ) {
     await this.approversService.getCreatorsTransaction(transactionId, user);
     await this.approversService.removeTransactionApprover(id);
-    await this.approversService.emitSyncIndicators(transactionId);
+    // await this.approversService.emitSyncIndicators(transactionId);
 
     return true;
   }

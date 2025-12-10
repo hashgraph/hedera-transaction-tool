@@ -20,13 +20,14 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { useToast } from 'vue-toast-notification';
 
 import { saveFile } from '@renderer/services/electronUtilsService';
-import { getTransactionInfo } from '@renderer/services/mirrorNodeDataService';
 import { add, getAll } from '@renderer/services/filesService';
 
 import { isUserLoggedIn, getFormattedDateFromTimestamp, safeAwait } from '@renderer/utils';
 
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -40,6 +41,9 @@ const network = useNetworkStore();
 
 /* Composables */
 const toast = useToast();
+
+/* Injected */
+const transactionByIdCache = TransactionByIdCache.inject();
 
 /* State */
 const isKeyStructureModalShown = ref(false);
@@ -65,20 +69,16 @@ const handleLinkEntity = async () => {
     },
   });
 
-  toast.success(`File ${entityId.value} linked`);
+  toast.success(`File ${entityId.value} linked`, successToastOptions);
 };
 
 /* Functions */
 async function fetchTransactionInfo(payer: string, seconds: string, nanos: string) {
   const { data } = await safeAwait(
-    getTransactionInfo(
-      `${payer}-${seconds}-${nanos}`,
-      network.mirrorNodeBaseURL,
-      controller.value || undefined,
-    ),
+    transactionByIdCache.lookup(`${payer}-${seconds}-${nanos}`, network.mirrorNodeBaseURL),
   );
 
-  if (data && data.transactions.length > 0) {
+  if (data?.transactions && data.transactions.length > 0) {
     entityId.value = data.transactions[0].entity_id || null;
   }
 }

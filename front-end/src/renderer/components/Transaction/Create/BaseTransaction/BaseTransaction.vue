@@ -44,7 +44,9 @@ import BaseDraftLoad from '@renderer/components/Transaction/Create/BaseTransacti
 import BaseGroupHandler from '@renderer/components/Transaction/Create/BaseTransaction/BaseGroupHandler.vue';
 import BaseApproversObserverData from '@renderer/components/Transaction/Create/BaseTransaction/BaseApproversObserverData.vue';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
-import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const { createTransaction, preCreateAssert, customRequest } = defineProps<{
@@ -72,6 +74,10 @@ const toast = useToast();
 const router = useRouter();
 const payerData = useAccountId();
 const withLoader = useLoader();
+
+/* Injected */
+const accountByIdCache = AccountByIdCache.inject();
+const nodeByIdCache = NodeByIdCache.inject();
 
 /* State */
 const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
@@ -177,7 +183,7 @@ const handleCreate = async () => {
 const handleExecuted = async ({ success, response, receipt }: ExecutedData) => {
   isProcessed.value = true;
   if (success && response && receipt) {
-    toast.success(`${getTransactionType(transaction.value)} Executed`);
+    toast.success(`${getTransactionType(transaction.value)} Executed`, successToastOptions);
     emit('executed:success', { success, response, receipt });
   }
   emit('executed', { success, response, receipt });
@@ -191,7 +197,7 @@ const handleSubmit = (id: number, body: string) => {
 
 const handleGroupSubmit = (id: number) => {
   isProcessed.value = true;
-  redirectToGroupDetails(router, id);
+  redirectToGroupDetails(router, id).then();
   emit('group:submitted', id);
 };
 
@@ -230,7 +236,7 @@ function handleInputValidation(e: Event) {
     validate100CharInput(target.value, 'Transaction Memo');
     memoError.value = false;
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Invalid Transaction Memo'));
+    toast.error(getErrorMessage(error, 'Invalid Transaction Memo'), errorToastOptions);
     memoError.value = true;
   }
 }
@@ -254,7 +260,8 @@ async function updateTransactionKey() {
   const computedKeys = await computeSignatureKey(
     transaction.value,
     network.mirrorNodeBaseURL,
-    new AccountInfoCache(),
+    accountByIdCache,
+    nodeByIdCache,
   );
   transactionKey.value = new KeyList(computedKeys.signatureKeys);
 }
@@ -279,7 +286,7 @@ defineExpose({
 });
 </script>
 <template>
-  <div class="flex-column-100 overflow-hidden" v-focus-first-input>
+  <div class="flex-column-100 overflow-hidden">
     <form @submit.prevent="handleCreate" class="flex-column-100">
       <TransactionHeaderControls
         v-model:submit-manually="submitManually"

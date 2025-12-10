@@ -20,6 +20,7 @@ import { createAccountCreateTransaction, getAccountCreateData } from '@renderer/
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AccountCreateFormData from '@renderer/components/Transaction/Create/AccountCreate/AccountCreateFormData.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -82,7 +83,7 @@ const handleExecutedSuccess = async ({ receipt }: ExecutedSuccessData) => {
     await user.refetchKeys();
     await user.refetchAccounts();
   }, 5000);
-  toast.success(`Account ${accountId} linked`);
+  toast.success(`Account ${accountId} linked`, successToastOptions);
 };
 
 /* Functions */

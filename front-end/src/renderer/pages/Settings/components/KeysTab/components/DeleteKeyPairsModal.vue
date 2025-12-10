@@ -15,6 +15,7 @@ import { getErrorMessage, isLoggedInOrganization, safeAwait } from '@renderer/ut
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -114,7 +115,10 @@ const handleDelete = async () => {
           await deleteKeyPair(keyPairId);
           await deleteOrganization(organizationKeyToDelete?.id || null);
         } catch (error) {
-          toast.error(getErrorMessage(error, 'Unable to delete one or more key pair(s)'));
+          toast.error(
+            getErrorMessage(error, 'Unable to delete one or more key pair(s)'),
+            errorToastOptions,
+          );
         }
       }
     }
@@ -125,13 +129,13 @@ const handleDelete = async () => {
       }
     }
 
-    toast.success('Private key(s) deleted successfully', { position: 'bottom-right' });
+    toast.success('Private key(s) deleted successfully', successToastOptions);
 
     await user.refetchUserState();
     await user.refetchKeys();
-    user.refetchAccounts();
+    await user.refetchAccounts();
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to delete key pair'));
+    toast.error(getErrorMessage(error, 'Failed to delete key pair'), errorToastOptions);
   } finally {
     resetSelection();
     isDeletingKey.value = false;

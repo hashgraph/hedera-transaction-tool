@@ -22,6 +22,7 @@ import {
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -58,10 +59,10 @@ const handleLinkFile = async () => {
 
       await add(file);
 
-      router.push({ name: 'files' });
-      toast.success('File linked successfully!');
+      toast.success('File linked successfully!', successToastOptions);
+      await router.push({ name: 'files' });
     } catch (error) {
-      toast.error(getErrorMessage(error, 'File link failed'));
+      toast.error(getErrorMessage(error, 'File link failed'), errorToastOptions);
     }
   }
 };
@@ -71,7 +72,7 @@ function handleOnBlur() {
 }
 </script>
 <template>
-  <div class="p-5" v-focus-first-input>
+  <div class="p-5">
     <AppButton
       color="primary"
       class="d-flex align-items-center justify-content-center"

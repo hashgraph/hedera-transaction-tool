@@ -27,7 +27,6 @@ import {
   getUserShouldApprove,
   remindSigners,
   sendApproverChoice,
-  uploadSignatures,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService';
@@ -44,16 +43,18 @@ import {
   isLoggedInOrganization,
   redirectToDetails,
   setLastExportExtension,
+  signTransactions,
   usersPublicRequiredToSign,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 
 import { TransactionStatus } from '@shared/interfaces';
-import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Types */
 type ActionButton =
@@ -116,6 +117,7 @@ const props = defineProps<{
   sdkTransaction: SDKTransaction | null;
   nextId: number | string | null;
   previousId: number | string | null;
+  onAction: () => Promise<void>;
 }>();
 
 /* Stores */
@@ -129,7 +131,12 @@ const router = useRouter();
 const toast = useToast();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
+/* Injected */
+const accountByIdCache = AccountByIdCache.inject();
+const nodeByIdCache = NodeByIdCache.inject();
+
 /* State */
+const isTransactionVersionMismatch = ref(false);
 const isConfirmModalShown = ref(false);
 const confirmModalTitle = ref('');
 const confirmModalText = ref('');
@@ -183,35 +190,29 @@ const canSign = computed(() => {
   if (!isLoggedInOrganization(user.selectedOrganization)) return false;
 
   if (isTransactionVersionMismatch.value) {
-    toast.error('Transaction version mismatch. Cannot sign.');
+    toast.error('Transaction version mismatch. Cannot sign.', errorToastOptions);
     return false;
   }
 
   const userShouldSign = publicKeysRequiredToSign.value.length > 0;
 
-  return userShouldSign && transactionIsInProgress.value;
+  return (
+    userShouldSign &&
+    props.organizationTransaction.status === TransactionStatus.WAITING_FOR_SIGNATURES
+  );
 });
 
 const canExecute = computed(() => {
   const status = props.organizationTransaction?.status;
   const isManual = props.organizationTransaction?.isManual;
 
-  return (
-    status === TransactionStatus.WAITING_FOR_EXECUTION &&
-    isManual &&
-    isCreator.value &&
-    transactionIsInProgress.value
-  );
+  return status === TransactionStatus.WAITING_FOR_EXECUTION && isManual && isCreator.value;
 });
 
 const canRemind = computed(() => {
   const status = props.organizationTransaction?.status;
 
-  return (
-    status === TransactionStatus.WAITING_FOR_SIGNATURES &&
-    isCreator.value &&
-    transactionIsInProgress.value
-  );
+  return status === TransactionStatus.WAITING_FOR_SIGNATURES && isCreator.value;
 });
 
 const canArchive = computed(() => {
@@ -252,15 +253,8 @@ const isTransactionFailed = computed(() => {
   return props.organizationTransaction?.status === TransactionStatus.FAILED;
 });
 
-const isTransactionVersionMismatch = computed(() => {
-  if (!props.sdkTransaction || !props.organizationTransaction) return false;
-
-  // The sdkTransaction has already been deserialized from bytes, serialize back into bytes
-  // and compare to the organizations transaction bytes.
-  return !areByteArraysEqual(
-    props.sdkTransaction.toBytes(),
-    hexToUint8Array(props.organizationTransaction.transactionBytes),
-  );
+const isManualFlagVisible = computed(() => {
+  return props.organizationTransaction?.isManual && transactionIsInProgress.value;
 });
 
 /* Handlers */
@@ -289,49 +283,24 @@ const handleSign = async () => {
   if (passwordModalOpened(personalPassword)) return;
 
   try {
-    loadingStates[sign] = 'Signing...';
+    loadingStates[sign] = 'Signing…';
 
-    const publicKeysRequired = await usersPublicRequiredToSign(
-      props.sdkTransaction,
-      user.selectedOrganization.userKeys,
-      network.mirrorNodeBaseURL,
-      new AccountInfoCache(),
+    const signed = await signTransactions(
+      [props.organizationTransaction],
+      personalPassword,
+      accountByIdCache,
+      nodeByIdCache,
     );
+    await props.onAction();
+    updateTransactionVersionMismatch();
 
-    const restoredRequiredKeys = [];
-    const requiredNonRestoredKeys = [];
-
-    // Separate keys into restored and non-restored, where restored indicates that the
-    // key is locally present.
-    for (const requiredKey of publicKeysRequired) {
-      if (user.keyPairs.some(k => k.public_key === requiredKey)) {
-        restoredRequiredKeys.push(requiredKey);
-      } else {
-        requiredNonRestoredKeys.push(requiredKey);
-      }
-    }
-
-    if (requiredNonRestoredKeys.length > 0) {
-      toast.error(
-        `You need to restore the following public keys to fully sign the transaction: ${requiredNonRestoredKeys.join(
-          ', ',
-        )}`,
-      );
-    }
-
-    if (restoredRequiredKeys.length > 0) {
-      await uploadSignatures(
-        user.personal.id,
-        personalPassword,
-        user.selectedOrganization,
-        restoredRequiredKeys,
-        SDKTransaction.fromBytes(props.sdkTransaction.toBytes()),
-        props.organizationTransaction.id,
-      );
-      toast.success('Transaction signed successfully');
+    if (signed) {
+      toast.success('Transaction signed successfully', successToastOptions);
+    } else {
+      toast.error('Failed to sign transaction', errorToastOptions);
     }
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to sign transaction'));
+    toast.error(getErrorMessage(error, 'Failed to sign transaction'), errorToastOptions);
   } finally {
     loadingStates[sign] = null;
   }
@@ -343,7 +312,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
     confirmModalText.value = 'Are you sure you want to reject the transaction?';
     confirmModalButtonText.value = 'Reject';
     confirmCallback.value = () => handleApprove(false);
-    confirmModalLoadingText.value = 'Rejecting...';
+    confirmModalLoadingText.value = 'Rejecting…';
     isConfirmModalShown.value = true;
     return;
   }
@@ -363,9 +332,9 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
 
     try {
       if (approved) {
-        loadingStates[approve] = 'Approving...';
+        loadingStates[approve] = 'Approving…';
       } else {
-        loadingStates[reject] = 'Rejecting...';
+        loadingStates[reject] = 'Rejecting…';
         isConfirmModalLoadingState.value = true;
       }
 
@@ -390,7 +359,11 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
         signature,
         approved,
       );
-      toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
+      await props.onAction();
+      toast.success(
+        `Transaction ${approved ? 'approved' : 'rejected'} successfully`,
+        successToastOptions,
+      );
 
       if (!approved) {
         router.back();
@@ -423,7 +396,7 @@ const handleTransactionAction = async (
       title: 'Cancel Transaction?',
       text: 'Are you sure you want to cancel the transaction?',
       buttonText: 'Confirm',
-      loadingText: 'Canceling...',
+      loadingText: 'Canceling…',
       successMessage: 'Transaction canceled successfully',
       actionFunction: cancelTransaction,
     },
@@ -431,7 +404,7 @@ const handleTransactionAction = async (
       title: 'Archive Transaction?',
       text: 'Are you sure you want to archive the transaction? The required signers will not be able to sign it anymore.',
       buttonText: 'Confirm',
-      loadingText: 'Archiving...',
+      loadingText: 'Archiving…',
       successMessage: 'Transaction archived successfully',
       actionFunction: archiveTransaction,
     },
@@ -439,7 +412,7 @@ const handleTransactionAction = async (
       title: 'Submit Transaction?',
       text: 'The transaction will be scheduled to execute at the specified time and processed automatically.',
       buttonText: 'Confirm',
-      loadingText: 'Submitting...',
+      loadingText: 'Submitting…',
       successMessage: 'Transaction sent for execution successfully',
       actionFunction: executeTransaction,
     },
@@ -447,7 +420,7 @@ const handleTransactionAction = async (
       title: 'Remind Signers?',
       text: 'All signers that have not yet signed will be sent a notification.',
       buttonText: 'Confirm',
-      loadingText: 'Sending...',
+      loadingText: 'Sending…',
       successMessage: 'Signers reminded successfully',
       actionFunction: remindSigners,
     },
@@ -469,7 +442,8 @@ const handleTransactionAction = async (
     confirmModalLoadingText.value = loadingText;
     isConfirmModalLoadingState.value = true;
     await actionFunction(user.selectedOrganization.serverUrl, props.organizationTransaction.id);
-    toast.success(successMessage);
+    await props.onAction();
+    toast.success(successMessage, successToastOptions);
   } catch (error) {
     isConfirmModalShown.value = false;
     throw error;
@@ -567,7 +541,7 @@ const handleExport = async () => {
     const bytes = encode(props.organizationTransaction);
     await saveFileToPath(bytes, filePath);
 
-    toast.success('Transaction exported successfully');
+    toast.success('Transaction exported successfully', successToastOptions);
   } else if (ext === 'tx') {
     if (user.publicKeys.length === 0) {
       throw new Error(
@@ -587,7 +561,7 @@ const handleExport = async () => {
     const txtFilePath = filePath.replace(/\.[^/.]+$/, '.txt');
     await saveFileToPath(jsonContent, txtFilePath);
 
-    toast.success('Transaction exported successfully');
+    toast.success('Transaction exported successfully', successToastOptions);
   }
 };
 
@@ -621,8 +595,25 @@ const handleSubmit = async (e: Event) => {
 
 const handleDropDownItem = async (value: ActionButton) => handleAction(value);
 
+/* Functions */
+
+const updateTransactionVersionMismatch = (): void => {
+  let mismatch: boolean;
+  if (!props.sdkTransaction || !props.organizationTransaction) {
+    mismatch = false;
+  } else {
+    // As organizationTransaction and sdkTransaction are updated separately,
+    // we cannot compare the two values directly. After signatures, they may be different.
+    const bytes = hexToUint8Array(props.organizationTransaction.transactionBytes);
+    const transaction = SDKTransaction.fromBytes(bytes);
+    mismatch = !areByteArraysEqual(bytes, transaction.toBytes());
+  }
+  isTransactionVersionMismatch.value = mismatch;
+};
+
 /* Hooks */
 onMounted(() => {
+  updateTransactionVersionMismatch();
   if (!isLoggedInOrganization(user.selectedOrganization)) {
     fullyLoaded.value = true;
   }
@@ -647,7 +638,8 @@ watch(
         SDKTransaction.fromBytes(hexToUint8Array(transaction.transactionBytes)),
         user.selectedOrganization.userKeys,
         network.mirrorNodeBaseURL,
-        new AccountInfoCache(),
+        accountByIdCache,
+        nodeByIdCache,
       ),
       getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id),
     ]);
@@ -660,7 +652,7 @@ watch(
     results.forEach(
       r =>
         r.status === 'rejected' &&
-        toast.error(getErrorMessage(r.reason, 'Failed to load transaction details')),
+        toast.error(getErrorMessage(r.reason, 'Failed to load transaction details'), errorToastOptions),
     );
   },
 );
@@ -693,6 +685,7 @@ watch(
         <span v-else-if="isTransactionVersionMismatch" class="badge bg-danger text-break ms-2">
           Transaction Version Mismatch
         </span>
+        <span v-else-if="isManualFlagVisible" class="badge bg-info text-break ms-2">Manual</span>
       </h2>
     </div>
 
@@ -764,29 +757,11 @@ watch(
     </div>
   </form>
 
-  <AppModal v-model:show="isConfirmModalShown" class="common-modal">
-    <div class="p-4">
-      <i class="bi bi-x-lg d-inline-block cursor-pointer" @click="isConfirmModalShown = false"></i>
-      <div class="text-center">
-        <AppCustomIcon :name="'questionMark'" style="height: 160px" />
-      </div>
-      <h3 class="text-center text-title text-bold mt-4">{{ confirmModalTitle }}</h3>
-      <p class="text-center text-small text-secondary mt-4">
-        {{ confirmModalText }}
-      </p>
-      <hr class="separator my-5" />
-      <div class="flex-between-centered gap-4">
-        <AppButton color="borderless" @click="isConfirmModalShown = false">Cancel</AppButton>
-        <AppButton
-          color="primary"
-          data-testid="button-confirm-change-password"
-          @click="confirmCallback && confirmCallback()"
-          :disabled="isConfirmModalLoadingState"
-          :loading="isConfirmModalLoadingState"
-          :loading-text="confirmModalLoadingText"
-          >{{ confirmModalButtonText }}</AppButton
-        >
-      </div>
-    </div>
-  </AppModal>
+  <AppConfirmModal
+    v-model:show="isConfirmModalShown"
+    :callback="confirmCallback"
+    :text="confirmModalText"
+    :title="confirmModalTitle"
+  />
+
 </template>

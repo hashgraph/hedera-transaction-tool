@@ -1,0 +1,15 @@
+packages:
+  - .
+
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - argon2
+  - bcrypt
+  - better-sqlite3
+  - electron
+  - esbuild
+  - msgpackr-extract
+  - prisma
+  - protobufjs
+  - vue-demi

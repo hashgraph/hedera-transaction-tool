@@ -3,7 +3,7 @@ import type { CreateTransactionFunc } from '@renderer/components/Transaction/Cre
 import type { NodeData } from '@renderer/utils/sdk/createTransactions';
 
 import { computed, reactive, ref, watch } from 'vue';
-import { Key, KeyList, Transaction } from '@hashgraph/sdk';
+import { Transaction } from '@hashgraph/sdk';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -14,6 +14,7 @@ import { createNodeCreateTransaction } from '@renderer/utils/sdk/createTransacti
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeFormData from '@renderer/components/Transaction/Create/NodeCreate/NodeFormData.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -49,12 +50,6 @@ const createDisabled = computed(() => {
   return !data.adminKey;
 });
 
-const transactionKey = computed(() => {
-  const keys: Key[] = [];
-  data.adminKey && keys.push(data.adminKey);
-  return new KeyList(keys);
-});
-
 /* Handlers */
 const handleDraftLoaded = (transaction: Transaction) => {
   handleUpdateData(getNodeData(transaction));
@@ -69,7 +64,7 @@ const handleExecutedSuccess = async () => {
     throw new Error('User is not logged in');
   }
 
-  toast.success(`Node ${data.nodeAccountId} Created`);
+  toast.success(`Node ${data.nodeAccountId} Created`, successToastOptions);
 };
 
 /* Functions */
@@ -110,7 +105,6 @@ watch(
     ref="baseTransactionRef"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
-    :transaction-base-key="transactionKey"
     :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"
     @draft-loaded="handleDraftLoaded"

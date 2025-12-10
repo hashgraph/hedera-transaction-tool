@@ -5,7 +5,7 @@ import type { CreateTransactionFunc } from '@renderer/components/Transaction/Cre
 import type { FileCreateData } from '@renderer/utils/sdk';
 
 import { computed, reactive, ref, watch } from 'vue';
-import { Key, KeyList, Transaction } from '@hashgraph/sdk';
+import { Transaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -24,6 +24,7 @@ import {
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import FileCreateFormData from './FileCreateFormData.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -55,12 +56,6 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
 });
 
 const createDisabled = computed(() => !data.ownerKey);
-
-const transactionKey = computed(() => {
-  const keys: Key[] = [];
-  data.ownerKey && keys.push(data.ownerKey);
-  return new KeyList(keys);
-});
 
 /* Handlers */
 const handleDraftLoaded = (transaction: Transaction) => {
@@ -101,7 +96,7 @@ const handleExecutedSuccess = async ({ receipt }: ExecutedSuccessData) => {
   };
 
   await add(file);
-  toast.success(`File ${newFileId} linked`);
+  toast.success(`File ${newFileId} linked`, successToastOptions);
 };
 
 /* Functions */
@@ -134,7 +129,6 @@ watch(
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
-    :transaction-base-key="transactionKey"
     @draft-loaded="handleDraftLoaded"
     @executed:success="handleExecutedSuccess"
   >

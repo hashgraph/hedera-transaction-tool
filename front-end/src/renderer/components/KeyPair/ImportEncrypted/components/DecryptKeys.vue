@@ -12,6 +12,7 @@ import { hashData } from '@renderer/services/electronUtilsService';
 import { getKeysFromSecretHash, getRecoveryPhraseHashValue, safeAwait } from '@renderer/utils';
 
 import DecryptKeyModal from '@renderer/components/KeyPair/ImportEncrypted/components/DecryptKeyModal.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 defineProps<{
@@ -97,13 +98,13 @@ async function end() {
   isDecryptKeyModalShown.value = false;
 
   if (storedCount.value > 0) {
-    toast.success('Keys imported successfully');
+    toast.success('Keys imported successfully', successToastOptions);
   }
 
   await user.refetchKeys();
-  user.refetchAccounts();
+  await user.refetchAccounts();
   await user.refetchUserState();
-  safeAwait(contacts.fetch());
+  await safeAwait(contacts.fetch());
 }
 
 function reset() {

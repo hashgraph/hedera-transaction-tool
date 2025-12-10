@@ -1,78 +1,59 @@
-import { ClientProxy } from '@nestjs/microservices';
-
 import {
-  EXECUTE_TRANSACTION,
-  NOTIFY_CLIENT,
-  NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES,
-  TRANSACTION_ACTION,
-  UPDATE_TRANSACTION_STATUS,
-  SYNC_INDICATORS,
-  NotifyClientDto,
-  NotifyForTransactionDto,
-  NotifyGeneralDto,
-  UpdateTransactionStatusDto,
-  SyncIndicatorsDto,
-  ExecuteTransactionDto,
-  NOTIFY_GENERAL,
+  NatsPublisherService,
+  NotificationEventDto,
+  TRANSACTION_STATUS_UPDATE,
+  TRANSACTION_UPDATE,
+  TRANSACTION_REMIND_SIGNERS_MANUAL,
+  TRANSACTION_REMIND_SIGNERS,
+  USER_REGISTERED,
+  USER_INVITE,
+  USER_PASSWORD_RESET,
+  EmailDto,
 } from '@app/common';
-import { NotificationAdditionalData, NotificationType, TransactionStatus } from '@entities';
 
-/* Chain */
-export const emitUpdateTransactionStatus = (client: ClientProxy, id: number) => {
-  client.emit<undefined, UpdateTransactionStatusDto>(UPDATE_TRANSACTION_STATUS, {
-    id,
-  });
-};
-
-export const emitExecuteTransaction = (client: ClientProxy, dto: ExecuteTransactionDto) => {
-  client.emit<undefined, ExecuteTransactionDto>(EXECUTE_TRANSACTION, dto);
-};
-
-/* Notifications */
-export const notifyTransactionAction = (client: ClientProxy) => {
-  client.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-    message: TRANSACTION_ACTION,
-    content: '',
-  });
-};
-
-export const notifyWaitingForSignatures = (
-  client: ClientProxy,
-  transactionId: number,
-  additionalData?: NotificationAdditionalData,
+//If it is to prevent an extra trip to the db, then need to decide if that is worth it or not
+export const emitTransactionStatusUpdate = (
+  publisher: NatsPublisherService,
+  dtos: NotificationEventDto[],
 ) => {
-  client.emit<undefined, NotifyForTransactionDto>(NOTIFY_TRANSACTION_WAITING_FOR_SIGNATURES, {
-    transactionId,
-    additionalData,
-  });
+  publisher.publish(TRANSACTION_STATUS_UPDATE, dtos);
 };
 
-export const notifySyncIndicators = (
-  client: ClientProxy,
-  transactionId: number,
-  transactionStatus: TransactionStatus,
-  additionalData?: NotificationAdditionalData,
+export const emitTransactionUpdate = (
+  publisher: NatsPublisherService,
+  dtos: NotificationEventDto[],
 ) => {
-  client.emit<undefined, SyncIndicatorsDto>(SYNC_INDICATORS, {
-    transactionId,
-    transactionStatus,
-    additionalData,
-  });
+  publisher.publish(TRANSACTION_UPDATE, dtos);
 };
 
-export const notifyGeneral = (
-  client: ClientProxy,
-  type: NotificationType,
-  userIds: number[],
-  entityId?: number,
-  recreateReceivers?: boolean,
-  additionalData?: NotificationAdditionalData,
+export const emitTransactionRemindSigners = (
+  publisher: NatsPublisherService,
+  dtos: NotificationEventDto[],
+  isManual = false,
 ) => {
-  client.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
-    type,
-    userIds,
-    entityId,
-    recreateReceivers,
-    additionalData,
-  });
+  publisher.publish(
+    isManual ? TRANSACTION_REMIND_SIGNERS_MANUAL : TRANSACTION_REMIND_SIGNERS,
+    dtos,
+  );
+};
+
+export const emitUserRegistrationEmail = (
+  publisher: NatsPublisherService,
+  dtos: EmailDto[],
+) => {
+  publisher.publish(USER_INVITE, dtos);
+};
+
+export const emitUserPasswordResetEmail = (
+  publisher: NatsPublisherService,
+  dtos: EmailDto[],
+) => {
+  publisher.publish(USER_PASSWORD_RESET, dtos);
+};
+
+export const emitUserStatusUpdateNotifications = (
+  publisher: NatsPublisherService,
+  dto: NotificationEventDto,
+) => {
+  publisher.publish(USER_REGISTERED, dto);
 };

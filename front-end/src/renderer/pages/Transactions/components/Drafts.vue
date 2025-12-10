@@ -30,6 +30,8 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
 
 /* Store */
 const user = useUserStore();
@@ -113,7 +115,7 @@ const handleUpdateIsTemplate = async (e: Event, draft: TransactionDraft | Transa
 };
 
 const handleDeleteDraft = async (draft: TransactionDraft | TransactionGroup) => {
-  let toastMessage = '';
+  let toastMessage: string;
   if ((draft as TransactionDraft).type) {
     await deleteDraft(draft.id);
     toastMessage = 'Draft successfully deleted';
@@ -124,14 +126,14 @@ const handleDeleteDraft = async (draft: TransactionDraft | TransactionGroup) => 
 
   await fetchDrafts();
 
-  toast.success(toastMessage);
+  toast.success(toastMessage, successToastOptions);
 };
 
 const handleContinueDraft = async (draft: TransactionDraft | TransactionGroup) => {
   if ((draft as TransactionDraft).type) {
     const fetchedDraft = await getDraft(draft.id);
 
-    router.push({
+    await router.push({
       name: 'createTransaction',
       params: {
         type: fetchedDraft.type.replace(/\s/g, ''),
@@ -143,7 +145,7 @@ const handleContinueDraft = async (draft: TransactionDraft | TransactionGroup) =
   } else {
     const group = await getGroup(draft.id);
 
-    router.push({
+    await router.push({
       name: 'createTransactionGroup',
       query: {
         id: group?.id,
@@ -208,7 +210,7 @@ async function fetchDrafts() {
     totalItems.value = await getGroupsCount(user.personal.id);
     groups.value = await getGroups(createFindGroupArgs());
     list.value = [...drafts.value, ...groups.value];
-    handleSort(sortField.value, sortDirection.value);
+    await handleSort(sortField.value, sortDirection.value);
   } finally {
     isLoading.value = false;
   }
@@ -245,7 +247,7 @@ watch([currentPage, pageSize], async () => {
                     )
                   "
                 >
-                  <span>Date</span>
+                  <span>Date Created</span>
                   <i
                     v-if="sortField === 'created_at'"
                     class="bi text-title"
@@ -261,6 +263,19 @@ watch([currentPage, pageSize], async () => {
                   <span>Transaction Type</span>
                   <i
                     v-if="sortField === 'type'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
+                </div>
+              </th>
+              <th>
+                <div
+                  class="table-sort-link"
+                  @click="handleSort('description', sortField === 'description' ? getOpositeDirection() : 'asc')"
+                >
+                  <span>Description</span>
+                  <i
+                    v-if="sortField === 'description'"
                     class="bi text-title"
                     :class="[generatedClass]"
                   ></i>
@@ -294,15 +309,22 @@ watch([currentPage, pageSize], async () => {
               <tr>
                 <td>
                   <span class="text-secondary" :data-testid="'span-draft-tx-date-' + i">
-                    <DateTimeString :date="draft.created_at" />
+                    <DateTimeString :date="draft.created_at" compact wrap />
                   </span>
                 </td>
                 <td>
                   <span class="text-bold" :data-testid="'span-draft-tx-type-' + i">{{
-                    (draft as TransactionDraft).type
-                      ? (draft as TransactionDraft).type
-                      : (draft as TransactionGroup).description
-                  }}</span>
+                      (draft as TransactionDraft).type
+                        ? formatTransactionType((draft as TransactionDraft).type, false, true)
+                        : 'Group'
+                    }}</span>
+                </td>
+                <td>
+                  <span class="text-wrap-two-line-ellipsis" :data-testid="'span-draft-tx-description-' + i">{{
+                      (draft as TransactionDraft).type
+                        ? (draft as TransactionDraft).description
+                        : (draft as TransactionGroup).description
+                    }}</span>
                 </td>
                 <td class="text-center">
                   <input

@@ -4,11 +4,11 @@ import type { CreateTransactionFunc } from '@renderer/components/Transaction/Cre
 import type { TransferHbarData } from '@renderer/utils/sdk';
 
 import { computed, reactive, ref, watch } from 'vue';
-import { Hbar, Key, KeyList, Transaction } from '@hashgraph/sdk';
+import { Hbar, Transaction } from '@hashgraph/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 
 import { createTransferHbarTransaction, getTransferHbarData } from '@renderer/utils/sdk';
 
@@ -19,6 +19,9 @@ import useUserStore from '@renderer/stores/storeUser.ts';
 /* Stores */
 const network = useNetworkStore();
 const user = useUserStore();
+
+/* Injected */
+const accountByIdCache = AccountByIdCache.inject();
 
 /* State */
 const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
@@ -46,29 +49,6 @@ const createDisabled = computed(() => {
     totalBalanceAdjustments.value === 0 ||
     (user.selectedOrganization === null && anyTransfersExceedingBalance.value)
   );
-});
-
-const transactionKey = computed(() => {
-  const keys: Key[] = [];
-  const addedKeysForAccountIds: string[] = [];
-  for (const transfer of data.transfers) {
-    if (!transfer.isApproved) {
-      const accountId = transfer.accountId.toString();
-
-      const key = accountInfos.value[accountId]?.key;
-      const receiverSigRequired = accountInfos.value[accountId]?.receiverSignatureRequired;
-
-      if (
-        key &&
-        !addedKeysForAccountIds.includes(accountId) &&
-        (transfer.amount.isNegative() || (!transfer.amount.isNegative() && receiverSigRequired))
-      ) {
-        keys.push(key);
-        addedKeysForAccountIds.push(accountId);
-      }
-    }
-  }
-  return new KeyList(keys);
 });
 
 const totalBalance = computed(() => {
@@ -103,10 +83,9 @@ const anyTransfersExceedingBalance = computed(() => {
 /* Handlers */
 const handleDraftLoaded = async (transaction: Transaction) => {
   handleUpdateData(getTransferHbarData(transaction));
-  const accountInfoCache = new AccountInfoCache();
   for (const accountId of data.transfers.map(t => t.accountId.toString())) {
     if (!accountInfos.value[accountId]) {
-      const info = await accountInfoCache.fetch(accountId, network.mirrorNodeBaseURL);
+      const info = await accountByIdCache.lookup(accountId, network.mirrorNodeBaseURL);
       if (info) {
         accountInfos.value[accountId] = info;
       }
@@ -147,7 +126,6 @@ watch(
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
-    :transaction-base-key="transactionKey"
     @draft-loaded="handleDraftLoaded"
   >
     <TransferHbarFormData

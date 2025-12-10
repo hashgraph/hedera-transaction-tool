@@ -3,7 +3,7 @@ import type {
   IAccountInfoParsed,
   CryptoAllowance,
   NetworkExchangeRateSetResponse,
-  Transaction,
+  TransactionByIdResponse,
   AccountsResponse,
   NetworkNode,
   NetworkNodesResponse,
@@ -37,29 +37,6 @@ import {
 const withAPIPrefix = (url: string) => `${url}/api/v1`;
 
 /* Get users account id by a public key */
-export const getAccountIds = async (
-  mirrorNodeURL: string,
-  publicKey: string,
-  nextUrl: string | null,
-) => {
-  try {
-    const { data } = await axios.get<AccountsResponse>(
-      nextUrl ||
-        `${withAPIPrefix(mirrorNodeURL)}/accounts/?account.publickey=${publicKey}&limit=100&order=asc`,
-    );
-    return {
-      accounts: data.accounts,
-      nextUrl: data.links?.next
-        ? `${withAPIPrefix(mirrorNodeURL)}${data.links.next.slice(data.links.next.indexOf('/accounts'))}`
-        : null,
-    };
-  } catch (error) {
-    console.log(error);
-    return { accounts: [], nextUrl: null };
-  }
-};
-
-/* Get users account id by a public key */
 export const getAccountsByPublicKey = async (
   mirrorNodeURL: string,
   publicKey: string,
@@ -86,33 +63,6 @@ export const getAccountsByPublicKey = async (
   } catch (error) {
     console.log(error);
     return accounts;
-  }
-};
-
-/* Get accounts by public keys */
-export const getAccountsByPublicKeysParallel = async (
-  mirrorNodeURL: string,
-  publicKeys: string[],
-): Promise<{ [key: string]: AccountInfo[] }> => {
-  const uniquePublicKeys = Array.from(new Set<string>(publicKeys));
-
-  try {
-    const publicKeyToAccounts: { [key: string]: AccountInfo[] } = {};
-
-    const results = await Promise.allSettled(
-      uniquePublicKeys.map(pk => getAccountsByPublicKey(mirrorNodeURL, pk)),
-    );
-
-    results.forEach((result, i) => {
-      if (result.status === 'fulfilled') {
-        publicKeyToAccounts[uniquePublicKeys[i]] = result.value;
-      }
-    });
-
-    return publicKeyToAccounts;
-  } catch (error) {
-    console.log(error);
-    return {};
   }
 };
 
@@ -229,7 +179,7 @@ export const getTransactionInfo = async (
   mirrorNodeLink: string,
   controller?: AbortController,
 ) => {
-  const { data } = await axios.get<{ transactions: Transaction[] }>(
+  const { data } = await axios.get<TransactionByIdResponse>(
     `${withAPIPrefix(mirrorNodeLink)}/transactions/${transactionId}`,
     {
       signal: controller?.signal,

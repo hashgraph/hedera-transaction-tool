@@ -109,7 +109,7 @@ watchEffect(() => {
 </script>
 <template>
   <div>
-    <div class="row flex-wrap g-12px mx-0" v-focus-first-input>
+    <div class="row flex-wrap g-12px mx-0">
       <template v-for="(word, index) in words || []" :key="index">
         <AppRecoveryPhraseWord
           ref="inputRefs"

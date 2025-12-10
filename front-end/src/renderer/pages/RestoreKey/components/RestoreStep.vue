@@ -16,6 +16,7 @@ import {
   isLoggedInOrganization,
 } from '@renderer/utils';
 import { useToast } from 'vue-toast-notification';
+import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Emits */
 const emit = defineEmits<{
@@ -41,7 +42,7 @@ const restoredKey = ref<{ privateKey: string; publicKey: string; mnemonicHash: s
 );
 
 /* Handlers */
-const handleRestoreKey = async () => {
+const handleRestoreKey = async (): Promise<true | void> => {
   if (!user.recoveryPhrase) {
     throw new Error('Recovery phrase not found');
   }
@@ -87,7 +88,7 @@ const handleRestoreKey = async () => {
 
     emit('next', restoredKey.value, Number(index.value));
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to restore private key'));
+    toast.error(getErrorMessage(error, 'Failed to restore private key'), errorToastOptions);
   } finally {
     loadingText.value = null;
   }
@@ -129,7 +130,7 @@ watch(index, () => (inputIndexInvalid.value = false));
 </script>
 
 <template>
-  <form class="w-100" @submit.prevent="handleRestoreKey" v-focus-first-input>
+  <form class="w-100" @submit.prevent="handleRestoreKey">
     <h1 class="text-display text-bold text-center">Provide Index of Key</h1>
     <p class="text-main mt-5 text-center">
       Enter the index of the private key you want to generate from the recovery phrase

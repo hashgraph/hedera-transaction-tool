@@ -1,13 +1,11 @@
 import {
   BadRequestException,
-  Inject,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { ClientProxy } from '@nestjs/microservices';
 
 import { totp } from 'otplib';
 import * as bcrypt from 'bcryptjs';
@@ -15,15 +13,12 @@ import * as argon2 from 'argon2';
 
 import {
   ErrorCodes,
-  generateUserRegisteredMessage,
-  generateResetPasswordMessage,
-  NOTIFICATIONS_SERVICE,
-  NOTIFY_EMAIL,
-  NOTIFY_GENERAL,
-  NotifyEmailDto,
-  NotifyGeneralDto,
+  emitUserRegistrationEmail,
+  emitUserPasswordResetEmail,
+  emitUserStatusUpdateNotifications,
+  NatsPublisherService,
 } from '@app/common';
-import { NotificationType, User, UserStatus } from '@entities';
+import { User, UserStatus } from '@entities';
 
 import { JwtPayload, OtpPayload } from '../interfaces';
 
@@ -43,10 +38,10 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
-    @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
+    private readonly notificationsPublisher: NatsPublisherService,
   ) {}
 
-  /* Register a new user by admins and send him an email with the temporary password */
+  /* Register a new user by admins and send an email with the temporary password */
   async signUpByAdmin(dto: SignUpUserDto, url: string): Promise<User> {
     const tempPassword = this.generatePassword();
 
@@ -60,11 +55,7 @@ export class AuthService {
       user = await this.usersService.createUser(dto.email, tempPassword);
     }
 
-    this.notificationsService.emit<undefined, NotifyEmailDto>(NOTIFY_EMAIL, {
-      subject: 'Hedera Transaction Tool Registration',
-      email: user.email,
-      text: generateUserRegisteredMessage(url, tempPassword),
-    });
+    emitUserRegistrationEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { url, tempPassword } }])
 
     return user;
   }
@@ -89,13 +80,7 @@ export class AuthService {
     if (!correct) throw new BadRequestException(ErrorCodes.INOP);
 
     if (user.status === UserStatus.NEW && user.keys.length === 0) {
-      const admins = await this.usersService.getAdmins();
-      this.notificationsService.emit<undefined, NotifyGeneralDto>(NOTIFY_GENERAL, {
-        type: NotificationType.USER_REGISTERED,
-        userIds: admins.map(admin => admin.id),
-        additionalData: { username: user.email },
-        entityId: user.id,
-      });
+      emitUserStatusUpdateNotifications(this.notificationsPublisher, { entityId: user.id, additionalData: { username: user.email } });
     }
 
     await this.usersService.setPassword(user, newPassword);
@@ -110,11 +95,7 @@ export class AuthService {
     const secret = this.getOtpSecret(user.email);
     const otp = totp.generate(secret);
 
-    this.notificationsService.emit<undefined, NotifyEmailDto>(NOTIFY_EMAIL, {
-      email: user.email,
-      subject: 'Password Reset token',
-      text: generateResetPasswordMessage(otp),
-    });
+    emitUserPasswordResetEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { otp } }]);
 
     const token = this.getOtpToken({ email: user.email, verified: false });
     return { token };

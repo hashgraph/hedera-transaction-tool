@@ -9,6 +9,7 @@ import { useToast } from 'vue-toast-notification';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import UserSelectModal from '@renderer/components/Organization/UserSelectModal.vue';
+import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -40,7 +41,7 @@ const handleThresholdChange = (e: Event) => {
 
 const handleUserSelect = (userIds: number[]) => {
   if (props.approver.approvers?.some(approver => approver.userId === userIds[0])) {
-    toast.error('User already exists in the list');
+    toast.error('User already exists in the list', errorToastOptions);
   } else {
     const newApprovers = [...(props.approver.approvers || []).concat([{ userId: userIds[0] }])];
     const newThreshold = getThreshold(props.approver.threshold, newApprovers);

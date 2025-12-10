@@ -24,7 +24,6 @@ import { getApiGroupById, getTransactionById } from '@renderer/services/organiza
 import { getTransaction } from '@renderer/services/transactionService';
 
 import {
-  getTransactionId,
   getTransactionPayerId,
   getTransactionType,
   getTransactionValidStart,
@@ -50,8 +49,10 @@ import txTypeComponentMapping from '@renderer/components/Transaction/Details/txT
 import TransactionDetailsHeader from './components/TransactionDetailsHeader.vue';
 import TransactionDetailsStatusStepper from './components/TransactionDetailsStatusStepper.vue';
 import { getGroup } from '@renderer/services/transactionGroupsService';
-import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
+import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import TransactionId from '@renderer/components/ui/TransactionId.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -65,6 +66,10 @@ const router = useRouter();
 const ws = useDisposableWs();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const route = useRoute();
+
+/* Injected */
+const accountByIdCache = AccountByIdCache.inject();
+const nodeByIdCache = NodeByIdCache.inject();
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);
@@ -97,7 +102,8 @@ const creator = computed(() => {
 });
 
 /* Functions */
-async function fetchTransaction(id: string | number) {
+async function fetchTransaction() {
+  const id = formattedId.value!;
   let transactionBytes: Uint8Array;
   try {
     if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
@@ -144,7 +150,8 @@ async function fetchTransaction(id: string | number) {
     signatureKeyObject.value = await computeSignatureKey(
       sdkTransaction.value,
       network.mirrorNodeBaseURL,
-      new AccountInfoCache(),
+      accountByIdCache,
+      nodeByIdCache,
     );
   }
 
@@ -154,21 +161,25 @@ async function fetchTransaction(id: string | number) {
 const subscribeToTransactionAction = () => {
   if (!user.selectedOrganization?.serverUrl) return;
   ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
-    const id = router.currentRoute.value.params.id;
-    const formattedId = Array.isArray(id) ? id[0] : id;
-    await fetchTransaction(formattedId);
+    await fetchTransaction();
+    const id = formattedId.value!;
     nextId.value = await nextTransaction.getNext(
-      isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
+      isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
     );
     prevId.value = await nextTransaction.getPrevious(
-      isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
+      isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
     );
   });
 };
 
+const formattedId = computed(() => {
+  const id = router.currentRoute.value.params.id;
+  return id ? (Array.isArray(id) ? id[0] : id) : null;
+});
+
 /* Hooks */
 onBeforeMount(async () => {
-  const id = router.currentRoute.value.params.id;
+  const id = formattedId.value;
 
   if (!id) {
     router.back();
@@ -179,15 +190,14 @@ onBeforeMount(async () => {
   if (!keepNextTransaction) nextTransaction.reset();
 
   subscribeToTransactionAction();
-  const formattedId = Array.isArray(id) ? id[0] : id;
 
   const result = await Promise.all([
-    fetchTransaction(formattedId),
+    fetchTransaction(),
     nextTransaction.getNext(
-      isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
+      isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
     ),
     nextTransaction.getPrevious(
-      isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
+      isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
     ),
   ]);
   nextId.value = result[1];
@@ -236,6 +246,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           :local-transaction="localTransaction"
           :next-id="nextId"
           :previous-id="prevId"
+          :on-action="fetchTransaction"
         />
 
         <Transition name="fade" mode="out-in">
@@ -394,7 +405,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Transaction ID</h4>
                   <p :class="detailItemValueClass" data-testid="p-transaction-details-id">
-                    {{ getTransactionId(sdkTransaction) }}
+                    <TransactionId :transaction-id="sdkTransaction.transactionId" />
                   </p>
                 </div>
 

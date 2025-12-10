@@ -30,6 +30,7 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import ContactDetails from '@renderer/components/Contacts/ContactDetails.vue';
 import DeleteContactModal from '@renderer/components/Contacts/DeleteContactModal.vue';
 import ElevateContactModal from '@renderer/components/Contacts/ElevateContactModal.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -44,12 +45,10 @@ useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { oldNotifications } = useMarkNotifications([NotificationType.USER_REGISTERED]);
 
 /* State */
-const fetching = ref(false);
 const selectedId = ref<number | null>(null);
 const isDeleteContactModalShown = ref(false);
 const isElevateToAdminModalShown = ref(false);
 const linkedAccounts = ref<HederaAccount[]>([]);
-const notifiedUserIds = ref<number[]>([]);
 
 /* Computed */
 const contact = computed<Contact | null>(
@@ -69,20 +68,26 @@ const contactList = computed(() =>
     }),
 );
 
+const notifiedUserIds = computed(() => {
+  const notificationsKey = user.selectedOrganization?.serverUrl || '';
+  const result = [];
+  for (const notification of notifications.notifications[notificationsKey]?.concat(
+    oldNotifications.value,
+  ) || []) {
+    if (
+      notification.notification.type === NotificationType.USER_REGISTERED &&
+      notification.notification.entityId
+    ) {
+      result.push(notification.notification.entityId);
+    }
+  }
+  return result;
+});
+
 /* Handlers */
 async function handleSelectContact(id: number) {
   selectedId.value = id;
 }
-
-const handleFetchContacts = async () => {
-  try {
-    fetching.value = true;
-    await contacts.fetch();
-    setNotifiedUsers();
-  } finally {
-    fetching.value = false;
-  }
-};
 
 async function handleRemove() {
   assertUserLoggedIn(user.personal);
@@ -93,9 +98,9 @@ async function handleRemove() {
     contact.value.nicknameId && (await removeContact(user.personal.id, contact.value.nicknameId));
   }
 
-  toast.success('User removed successfully');
+  toast.success('User removed successfully', successToastOptions);
   selectedId.value = null;
-  await handleFetchContacts();
+  await contacts.fetch();
 }
 
 async function handleElevate() {
@@ -108,31 +113,13 @@ async function handleElevate() {
 
   await elevateUserToAdmin(user.selectedOrganization.serverUrl, contact.value.user.id);
 
-  toast.success('User elevate to admin successfully');
+  toast.success('User elevate to admin successfully', successToastOptions);
   selectedId.value = null;
-  await handleFetchContacts();
-}
-
-function setNotifiedUsers() {
-  const notificationsKey = user.selectedOrganization?.serverUrl || '';
-  const newNotifiedUserIds = [];
-  for (const notification of notifications.notifications[notificationsKey]?.concat(
-    oldNotifications.value,
-  ) || []) {
-    if (
-      notification.notification.type === NotificationType.USER_REGISTERED &&
-      notification.notification.entityId
-    ) {
-      newNotifiedUserIds.push(notification.notification.entityId);
-    }
-  }
-  notifiedUserIds.value = newNotifiedUserIds;
+  await contacts.fetch();
 }
 
 /* Hooks */
 onBeforeMount(async () => {
-  await handleFetchContacts();
-
   if (isUserLoggedIn(user.personal)) {
     linkedAccounts.value = await getAll({
       where: {
@@ -177,7 +164,7 @@ onBeforeMount(async () => {
           </template>
 
           <div class="fill-remaining pe-3">
-            <template v-if="fetching">
+            <template v-if="contacts.fetching">
               <div class="mt-5">
                 <AppLoader />
               </div>

@@ -14,6 +14,7 @@ import { isLoggedInOrganization } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 defineProps<{ show: boolean }>();
@@ -59,7 +60,7 @@ const handleDelete = async () => {
       await deleteKeyPair(localKeyPair.id);
     }
 
-    toast.success('Key pairs has been deleted');
+    toast.success('Key pairs has been deleted', successToastOptions);
 
     emit('update:show', false);
     emit('keys:deleted');

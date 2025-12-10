@@ -1,5 +1,5 @@
 Apache License
-Version 2.0, January 2004 
+Version 2.0, January 2004
 http://www.apache.org/licenses/
 
 NOTICE file for the Hedera Transaction Tool project.
@@ -988,7 +988,7 @@ The Initial Developer of @vue/tsconfig@0.7.0,
 is Haoqun Jiang (https://github.com/vuejs/tsconfig).
 Copyright Haoqun Jiang. All Rights Reserved.
 
-The Initial Developer of @vuepic/vue-datepicker@10.0.0,
+The Initial Developer of @vuepic/vue-datepicker@11.0.2,
 is Vuepic (https://github.com/Vuepic/vue-datepicker).
 Copyright Vuepic. All Rights Reserved.
 
@@ -2635,6 +2635,10 @@ Copyright Andrey Sitnik. All Rights Reserved.
 The Initial Developer of napi-build-utils@2.0.0,
 is Jim Schlight (https://github.com/inspiredware/napi-build-utils).
 Copyright Jim Schlight. All Rights Reserved.
+
+The Initial Developer of nats@2.29.3,
+is The NATS Authors (https://github.com/nats-io/nats.node).
+Copyright The NATS Authors. All Rights Reserved.
 
 The Initial Developer of natural-compare@1.4.0,
 is Lauri Rooden (https://github.com/litejs/natural-compare-lite).

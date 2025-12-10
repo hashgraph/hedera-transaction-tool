@@ -4,7 +4,7 @@ import type { AccountUpdateDataMultiple } from '@renderer/utils';
 
 import { AccountId, KeyList } from '@hashgraph/sdk';
 
-import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
+import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 
 /* Default Request */
 export class BaseRequest {
@@ -78,7 +78,7 @@ export class CustomRequest extends BaseRequest {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async deriveRequestKey(_mirrorNodeBaseURL: string) {
+  async deriveRequestKey(_mirrorNodeBaseURL: string, _accountInfoCache: AccountByIdCache) {
     throw new Error('Not implemented');
   }
 }
@@ -123,14 +123,13 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
     });
   }
 
-  override async deriveRequestKey(mirrorNodeBaseURL: string) {
+  override async deriveRequestKey(mirrorNodeBaseURL: string, accountInfoCache: AccountByIdCache) {
     const keyList = new KeyList();
 
-    const accountInfoCache = new AccountInfoCache();
     const withoutChecksum = this.accountIds.map(acc => AccountId.fromString(acc).toString());
     for (const account of withoutChecksum) {
       if (!this.accountInfoMap.has(account)) {
-        const data = await accountInfoCache.fetch(account, mirrorNodeBaseURL);
+        const data = await accountInfoCache.lookup(account, mirrorNodeBaseURL);
         if (data) {
           this.accountInfoMap.set(account, data);
         }
@@ -151,7 +150,7 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
     if (this.payerId && !this.accountIsPayer) {
       const payerWithoutChecksum = AccountId.fromString(this.payerId).toString();
       if (!this.accountInfoMap.has(payerWithoutChecksum)) {
-        const payerInfo = await accountInfoCache.fetch(payerWithoutChecksum, mirrorNodeBaseURL);
+        const payerInfo = await accountInfoCache.lookup(payerWithoutChecksum, mirrorNodeBaseURL);
         if (payerInfo) {
           this.accountInfoMap.set(payerWithoutChecksum, payerInfo);
         }

@@ -7,6 +7,7 @@ import { formatAccountId } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
+import { computed } from 'vue';
 
 /* Props */
 const props = defineProps<{
@@ -21,6 +22,10 @@ const emit = defineEmits<{
 /* Composables */
 const { dateTimeSettingLabel } = useDateTimeSetting();
 
+/* Computed */
+const isStartTimeRequired = computed(() => props.data.freezeType === 1 || props.data.freezeType === 3)
+const isFileInfoRequired = computed(() => props.data.freezeType === 2 || props.data.freezeType === 3);
+
 /* Handlers */
 function handleOnBlur() {
   emit('update:data', { ...props.data, fileId: formatAccountId(props.data.fileId) });
@@ -28,9 +33,6 @@ function handleOnBlur() {
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
-const startTimeVisibleAtFreezeType = [1, 3];
-const fileIdVisibleAtFreezeType = [2, 3];
-const fileHashimeVisibleAtFreezeType = [2, 3];
 </script>
 <template>
   <div class="row">
@@ -58,7 +60,7 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
   </div>
 
   <div
-    v-if="startTimeVisibleAtFreezeType.includes(data.freezeType)"
+    v-if="isStartTimeRequired"
     class="row align-items-end mt-6"
   >
     <div class="form-group" :class="[columnClass]">
@@ -81,9 +83,9 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
     </div>
   </div>
 
-  <div v-if="fileIdVisibleAtFreezeType.includes(data.freezeType)" class="row align-items-end mt-6">
+  <div v-if="isFileInfoRequired" class="row align-items-end mt-6">
     <div class="form-group" :class="[columnClass]">
-      <label class="form-label">File ID</label>
+      <label class="form-label">File ID<span class="text-danger">*</span></label>
       <AppInput
         :model-value="data.fileId"
         @update:model-value="
@@ -99,12 +101,9 @@ const fileHashimeVisibleAtFreezeType = [2, 3];
     </div>
   </div>
 
-  <div
-    v-if="fileHashimeVisibleAtFreezeType.includes(data.freezeType)"
-    class="row align-items-end mt-6"
-  >
+  <div v-if="isFileInfoRequired" class="row align-items-end mt-6">
     <div class="form-group col-8 col-xxxl-6">
-      <label class="form-label">File Hash</label>
+      <label class="form-label">File Hash<span class="text-danger">*</span></label>
       <AppInput
         :model-value="data.fileHash"
         @update:model-value="

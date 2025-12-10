@@ -12,12 +12,14 @@ import useSetDynamicLayout, {
 } from '@renderer/composables/useSetDynamicLayout';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 
-import { safeAwait } from '@renderer/utils';
+import { isLoggedInOrganization, safeAwait } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import Import from '@renderer/components/RecoveryPhrase/Import.vue';
 import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
 import DeleteAllKeysRequiringHashMigrationModal from '@renderer/components/modals/DeleteAllKeysRequiringHashMigrationModal.vue';
+import { updateIndex, updateMnemonicHash } from '@renderer/services/keyPairService.ts';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -26,7 +28,12 @@ const user = useUserStore();
 useSetDynamicLayout(ACCOUNT_SETUP_LAYOUT);
 const toast = useToast();
 const router = useRouter();
-const { getKeysToUpdateForRecoveryPhrase, updateKeyPairsHash } = useRecoveryPhraseHashMigrate();
+const {
+  getKeysToUpdateForRecoveryPhrase,
+  updateKeyPairsHash,
+  getRequiredKeysToMigrate,
+  tryMigrateOrganizationKeys,
+} = useRecoveryPhraseHashMigrate();
 
 /* State */
 const keysToUpdate = ref<KeyPair[]>([]);
@@ -39,6 +46,18 @@ const isDeleteAllModalShown = ref<boolean>(false);
 /* Handlers */
 const handleSkip = async () => {
   await user.setRecoveryPhrase(null);
+
+  let keysToMigrate = await getRequiredKeysToMigrate();
+  if (isLoggedInOrganization(user.selectedOrganization) && keysToMigrate.length > 0) {
+    await safeAwait(tryMigrateOrganizationKeys(keysToMigrate));
+    keysToMigrate = await getRequiredKeysToMigrate();
+  }
+  for (const key of keysToMigrate) {
+    await updateMnemonicHash(key.id, null);
+    await updateIndex(key.id, -1);
+  }
+  await user.refetchKeys();
+
   await router.push({ name: 'transactions' });
 };
 
@@ -80,7 +99,7 @@ const handleContinue = async () => {
     updateKeyPairsHash(keysToUpdate.value, user.recoveryPhrase.hash),
   );
   if (!error) {
-    toast.success('Recovery phrase hash updated successfully');
+    toast.success('Recovery phrase hash updated successfully', successToastOptions);
     await router.push({ name: 'transactions' });
   }
   loadingText.value = null;
@@ -93,10 +112,10 @@ const handleOpenDeleteAllKeysModal = () => (isDeleteAllModalShown.value = true);
 const handleKeysDeleted = async () => {
   await user.refetchUserState();
   await user.refetchKeys();
-  user.refetchAccounts();
+  await user.refetchAccounts();
 
   if (user.shouldSetupAccount) {
-    router.push({ name: 'accountSetup' });
+    await router.push({ name: 'accountSetup' });
   }
 };
 

@@ -42,7 +42,8 @@ import TransactionSelectionModal from '@renderer/components/TransactionSelection
 import TransactionGroupProcessor from '@renderer/components/Transaction/TransactionGroupProcessor.vue';
 import SaveTransactionGroupModal from '@renderer/components/modals/SaveTransactionGroupModal.vue';
 import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
-import { AccountInfoCache } from '@renderer/utils/accountInfoCache.ts';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
@@ -56,6 +57,9 @@ const payerData = useAccountId();
 const network = useNetworkStore();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { dateTimeSettingLabel } = useDateTimeSetting();
+
+/* Injected */
+const accountByIdCache = AccountByIdCache.inject();
 
 /* State */
 const groupDescription = ref('');
@@ -140,9 +144,9 @@ function handleBack() {
   router.push({
     name: 'transactions',
     query: {
-      tab: router.previousTab
-    }
-  } );
+      tab: router.previousTab,
+    },
+  });
 }
 
 async function handleDelete() {
@@ -175,7 +179,7 @@ const handleLoadGroup = async () => {
 
 async function handleSignSubmit() {
   if (groupDescription.value.trim() === '') {
-    toast.error('Group Description Required');
+    toast.error('Group Description Required', errorToastOptions);
     return;
   }
 
@@ -191,14 +195,14 @@ async function handleSignSubmit() {
     await transactionGroupProcessor.value?.process(requiredKey);
   } catch (error) {
     updateValidStarts.value = true;
-    toast.error(getErrorMessage(error, 'Failed to create transaction'));
+    toast.error(getErrorMessage(error, 'Failed to create transaction'), errorToastOptions);
   }
 }
 
 function handleExecuted(id: string) {
   transactionGroup.clearGroup();
   if (user.selectedOrganization) {
-    redirectToGroupDetails(router, id);
+    redirectToGroupDetails(router, id).then();
   } else {
     redirectToPreviousTransactionsTab(router);
   }
@@ -206,7 +210,7 @@ function handleExecuted(id: string) {
 
 function handleSubmit(id: number) {
   transactionGroup.clearGroup();
-  redirectToGroupDetails(router, id);
+  redirectToGroupDetails(router, id).then();
 }
 
 function handleClose() {
@@ -246,7 +250,6 @@ async function handleOnFileChanged(e: Event) {
     let memo = '';
     let validStart: Date | null = null;
     const maxTransactionFee = ref<Hbar>(new Hbar(2));
-    const accountInfoCache = new AccountInfoCache();
 
     for (const row of rows) {
       const rowInfo =
@@ -262,10 +265,11 @@ async function handleOnFileChanged(e: Event) {
         case 'sender account':
           senderAccount = rowInfo[1];
           try {
-            await accountInfoCache.fetch(senderAccount, network.mirrorNodeBaseURL);
+            await accountByIdCache.lookup(senderAccount, network.mirrorNodeBaseURL);
           } catch (error) {
             toast.error(
               `Sender account ${senderAccount} does not exist on network. Review the CSV file.`,
+              errorToastOptions,
             );
             console.log(error);
             return;
@@ -274,10 +278,11 @@ async function handleOnFileChanged(e: Event) {
         case 'fee payer account':
           feePayer = rowInfo[1];
           try {
-            await accountInfoCache.fetch(feePayer, network.mirrorNodeBaseURL);
+            await accountByIdCache.lookup(feePayer, network.mirrorNodeBaseURL);
           } catch (error) {
             toast.error(
               `Fee payer account ${feePayer} does not exist on network. Review the CSV file.`,
+              errorToastOptions,
             );
             console.log(error);
             return;
@@ -317,10 +322,11 @@ async function handleOnFileChanged(e: Event) {
           feePayer = feePayer || senderAccount;
           const receiverAccount = rowInfo[0];
           try {
-            await accountInfoCache.fetch(receiverAccount, network.mirrorNodeBaseURL);
+            await accountByIdCache.lookup(receiverAccount, network.mirrorNodeBaseURL);
           } catch (error) {
             toast.error(
               `Receiver account ${receiverAccount} does not exist on network. Review the CSV file.`,
+              errorToastOptions,
             );
             console.log(error);
             transactionGroup.clearGroup();
@@ -368,9 +374,9 @@ async function handleOnFileChanged(e: Event) {
         }
       }
     }
-    toast.success('Import complete');
+    toast.success('Import complete', successToastOptions);
   } catch (error) {
-    toast.error('Failed to import CSV file');
+    toast.error('Failed to import CSV file', errorToastOptions);
     console.log(error);
   } finally {
     if (file.value != null) {
@@ -430,7 +436,7 @@ onBeforeRouteLeave(async to => {
 });
 </script>
 <template>
-  <div class="p-5" v-focus-first-input>
+  <div class="p-5">
     <div class="flex-column-100 overflow-hidden">
       <div class="d-flex align-items-center">
         <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">

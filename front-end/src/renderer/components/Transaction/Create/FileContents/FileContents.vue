@@ -30,6 +30,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -76,7 +77,7 @@ const readFile = async () => {
 
     const response = await readContent(privateKey, keyPair.type);
 
-    toast.success('File content read');
+    toast.success('File content read', successToastOptions);
 
     const contentBytes = (
       isHederaSpecialFileId(fileId.value) ? encodeString(response) : response
@@ -84,7 +85,7 @@ const readFile = async () => {
 
     await updateLocalFileInfo(contentBytes, privateKey, keyPair.type);
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to execute query'));
+    toast.error(getErrorMessage(error, 'Failed to execute query'), errorToastOptions);
   } finally {
     network.client._operator = null;
     isLoading.value = false;
@@ -136,7 +137,7 @@ const updateLocalFileInfo = async (content: string, privateKey: string, privateK
         lastRefreshed: new Date(),
       });
 
-      toast.success('Stored file info updated');
+      toast.success('Stored file info updated', successToastOptions);
     } else {
       await add({
         user_id: user.personal.id,
@@ -147,10 +148,10 @@ const updateLocalFileInfo = async (content: string, privateKey: string, privateK
         lastRefreshed: new Date(),
       });
 
-      toast.success(`File ${fileId.value} linked`);
+      toast.success(`File ${fileId.value} linked`, successToastOptions);
     }
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to add/update file info'));
+    toast.error(getErrorMessage(error, 'Failed to add/update file info'), errorToastOptions);
   }
 };
 
@@ -183,7 +184,7 @@ onMounted(async () => {
 const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
-  <div class="flex-column-100 overflow-hidden" v-focus-first-input>
+  <div class="flex-column-100 overflow-hidden">
     <form @submit.prevent="handleSubmit" class="flex-column-100">
       <TransactionHeaderControls
         heading-text="Read File Query"

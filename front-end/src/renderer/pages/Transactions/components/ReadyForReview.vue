@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { IGroup, ITransaction } from '@shared/interfaces';
+import type { ITransaction } from '@shared/interfaces';
 
 import { computed, onBeforeMount, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 
@@ -18,7 +18,11 @@ import { useRouter } from 'vue-router';
 import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
-import { getApiGroupById, getTransactionsToApprove } from '@renderer/services/organization';
+import {
+  getApiGroupById,
+  getTransactionsToApprove,
+  type IGroup,
+} from '@renderer/services/organization';
 
 import {
   getNotifiedTransactions,
@@ -26,10 +30,8 @@ import {
   redirectToDetails,
   redirectToGroupDetails,
   isLoggedInOrganization,
-  getTransactionGroupUpdatedAt,
 } from '@renderer/utils';
 import {
-  getTransactionId,
   getTransactionType,
   getTransactionValidStart,
 } from '@renderer/utils/sdk/transactions';
@@ -39,6 +41,7 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
+import TransactionId from '@renderer/components/ui/TransactionId.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -115,9 +118,9 @@ const handleApprove = async (id: number) => {
 //         }
 //       }
 //     }
-//     toast.success('Transactions signed successfully');
+//     toast.success('Transactions signed successfully', successToastOptions);
 //   } catch {
-//     toast.error('Transactions not approved');
+//     toast.error('Transactions not approved', errorToastOptions);
 //   }
 // };
 
@@ -180,7 +183,7 @@ async function fetchTransactions() {
       }
 
       if (transaction.groupItem?.groupId && !groupIds.includes(transaction.groupItem?.groupId)) {
-      groupIds.push(transaction.groupItem.groupId);
+        groupIds.push(transaction.groupItem.groupId);
       }
     }
 
@@ -320,6 +323,19 @@ watch(
               <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
+                  @click="handleSort('description', sort.field === 'description' ? getOppositeDirection() : 'asc')"
+                >
+                  <span>Description</span>
+                  <i
+                    v-if="sort.field === 'description'"
+                    class="bi text-title"
+                    :class="[generatedClass]"
+                  ></i>
+                </div>
+              </th>
+              <th @contextmenu.prevent="showContextMenu">
+                <div
+                  class="table-sort-link"
                   @click="
                     handleSort(
                       'validStart',
@@ -335,6 +351,7 @@ watch(
                   ></i>
                 </div>
               </th>
+<!--
               <th @contextmenu.prevent="showContextMenu">
                 <div
                   class="table-sort-link"
@@ -353,6 +370,7 @@ watch(
                   ></i>
                 </div>
               </th>
+-->
               <th class="text-center">
                 <span>Actions</span>
               </th>
@@ -365,24 +383,32 @@ watch(
                   <td>
                     <i class="bi bi-stack" />
                   </td>
+                  <td>Group</td>
                   <td>{{ groups.get(groupId)?.description }}</td>
                   <td>
-                    <DateTimeString v-if="groupTransactions[0].transaction instanceof Transaction" :date="getTransactionValidStart(groupTransactions[0].transaction)" />
+                    <DateTimeString
+                      v-if="groupTransactions[0].transaction instanceof Transaction"
+                      :date="getTransactionValidStart(groupTransactions[0].transaction)"
+                      compact
+                      wrap
+                    />
                     <span v-else>N/A</span>
                   </td>
+<!--
                   <td>
-                    <DateTimeString v-if="groups.get(groupId)" :date="getTransactionGroupUpdatedAt(groups.get(groupId)!)" />
+                    <DateTimeString
+                      v-if="groups.get(groupId)"
+                      :date="getTransactionGroupUpdatedAt(groups.get(groupId)!)"
+                      compact
+                      wrap
+                    />
                     <span v-else>N/A</span>
                   </td>
-                  <td>
-                    <DateTimeString v-if="groups.get(groupId)" :date="getTransactionGroupUpdatedAt(groups.get(groupId)!)" />
-                    <span v-else>N/A</span>
-                  </td>
+-->
                   <td class="text-center">
                     <AppButton
                       @click="redirectToGroupDetails($router, groupId)"
                       color="secondary"
-                      class="min-w-unset"
                       >Details</AppButton
                     >
                   </td>
@@ -393,27 +419,47 @@ watch(
                 <template v-for="(tx, index) in groupTransactions" :key="tx.transactionRaw.id">
                   <tr :class="{ highlight: notifiedTransactionIds.includes(tx.transactionRaw.id) }">
                     <td :data-testid="`td-review-transaction-id-${index}`">
-                      {{
-                        tx.transaction instanceof Transaction
-                          ? getTransactionId(tx.transaction)
-                          : 'N/A'
-                      }}
+                      <TransactionId
+                        v-if="tx.transaction instanceof Transaction"
+                        :transaction-id="tx.transaction.transactionId"
+                        wrap
+                      />
+                      <span v-else>N/A</span>
                     </td>
                     <td :data-testid="`td-review-transaction-type-${index}`">
                       <span class="text-bold">{{
-                        tx.transaction instanceof Transaction
-                          ? getTransactionType(tx.transaction)
-                          : 'N/A'
-                      }}</span>
+                          tx.transaction instanceof Transaction
+                            ? getTransactionType(tx.transaction, false, true)
+                            : 'N/A'
+                        }}</span>
+                    </td>
+                    <td :data-testid="`td-review-transaction-description-${index}`">
+                      <span class="text-wrap-two-line-ellipsis">{{
+                          tx.transaction instanceof Transaction
+                            ? tx.transactionRaw.description
+                            : 'N/A'
+                        }}</span>
                     </td>
                     <td :data-testid="`td-review-transaction-valid-start-${index}`">
-                      <DateTimeString v-if="tx.transaction instanceof Transaction" :date="getTransactionValidStart(tx.transaction)" />
+                      <DateTimeString
+                        v-if="tx.transaction instanceof Transaction"
+                        :date="getTransactionValidStart(tx.transaction)"
+                        compact
+                        wrap
+                      />
                       <span v-else>N/A</span>
                     </td>
+<!--
                     <td :data-testid="`td-review-transaction-date-modified-${index}`">
-                      <DateTimeString v-if="tx.transaction instanceof Transaction" :date="new Date(tx.transactionRaw.updatedAt)" />
+                      <DateTimeString
+                        v-if="tx.transaction instanceof Transaction"
+                        :date="new Date(tx.transactionRaw.updatedAt)"
+                        compact
+                        wrap
+                      />
                       <span v-else>N/A</span>
                     </td>
+-->
                     <td class="text-center">
                       <AppButton
                         @click="handleApprove(tx.transactionRaw.id)"
