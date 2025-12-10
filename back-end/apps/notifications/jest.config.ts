@@ -1,18 +1,22 @@
 import type { Config } from 'jest';
 
+const includeLibs = process.env.INCLUDE_LIBS !== '0';
+
 const config: Config = {
   moduleFileExtensions: ['js', 'json', 'ts'],
-  rootDir: '../../',
+  // keep config local to the app folder
+  rootDir: '.',
   testRegex: '.*\\.spec\\.ts$',
   transform: {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
-  collectCoverageFrom: ['<rootDir>/apps/notifications/src/**/*.{!(module),}.(t|j)s'],
+  collectCoverageFrom: ['<rootDir>/src/**/*.{!(module),}.(t|j)s'],
   testEnvironment: 'node',
-  roots: ['<rootDir>/libs/', '<rootDir>/apps/notifications'],
+  // include libs only when INCLUDE_LIBS !== '0'
+  roots: includeLibs ? ['<rootDir>/../../libs/', '<rootDir>/src'] : ['<rootDir>/src'],
   moduleNameMapper: {
-    '^@app/common(|/.*)$': '<rootDir>/libs/common/src/$1',
-    '^@entities(|/.*)$': '<rootDir>/libs/common/src/database/entities/$1',
+    '^@app/common(|/.*)$': '<rootDir>/../../libs/common/src/$1',
+    '^@entities(|/.*)$': '<rootDir>/../../libs/common/src/database/entities/$1',
   },
 };
 

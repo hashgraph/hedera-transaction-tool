@@ -69,7 +69,14 @@ async function main() {
 
   /* Exit */
   console.log(pc.redBright('\nExiting...'));
-  process.exit(0);
+  try {
+    await dataSource.destroy();
+    console.log(pc.cyan('Disconnected from database'));
+    process.exit(0);
+  } catch (err) {
+    console.error(pc.red('Error while disconnecting from database:'), err);
+    process.exit(1);
+  }
 }
 
 main();
