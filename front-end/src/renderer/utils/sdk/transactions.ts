@@ -18,18 +18,7 @@ import {
   Transaction,
   TransferTransaction,
 } from '@hashgraph/sdk';
-import { getDateStringExtended } from '..';
 import { TransactionTypeName } from '@shared/interfaces';
-
-export const getTransactionDate = (transaction: Transaction) =>
-  transaction.transactionId?.validStart?.toDate().toDateString() || null;
-
-export const getTransactionDateExtended = (transaction: Transaction) => {
-  const validStart = transaction.transactionId?.validStart;
-  if (!validStart) return null;
-
-  return getDateStringExtended(validStart.toDate());
-};
 
 export const getTransactionPayerId = (transaction: Transaction) =>
   transaction.transactionId?.accountId?.toString() || null;
@@ -42,7 +31,7 @@ export const formatTransactionType = (
   short = false,
   removeTransaction = false,
 ): string => {
-  let result = type
+  let result = type;
   if (removeTransaction) {
     // Remove ' Transaction' only if it appears at the end
     result = type.replace(/ Transaction$/, '');
