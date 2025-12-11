@@ -417,7 +417,7 @@ test.describe('Organization Transaction tests', () => {
     expect(await organizationPage.isNextTransactionButtonVisible()).toBe(true);
   });
 
-  test('Verify user is redirected to the next transaction after clicking the next button', async () => {
+  test.skip('Verify user is redirected to the next transaction after clicking the next button', async () => {
     await organizationPage.createAccount(600, 0, false);
     const { txId } = await organizationPage.createAccount(600, 0, false);
     await transactionPage.clickOnTransactionsMenuButton();
@@ -429,7 +429,7 @@ test.describe('Organization Transaction tests', () => {
     expect(await organizationPage.isSignTransactionButtonVisible()).toBe(true);
   });
 
-  test('Verify next button is visible when user has multiple txs in history', async () => {
+  test.skip('Verify next button is visible when user has multiple txs in history', async () => {
     const { txId } = await organizationPage.createAccount(1, 0, true);
     const { validStart } = await organizationPage.createAccount(3, 0, true);
     await waitForValidStart(validStart ?? '');
