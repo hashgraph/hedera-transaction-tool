@@ -175,6 +175,8 @@ test.describe('Organization Transaction tests', () => {
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnSubmitSignButtonByTransactionId(txId ?? '');
 
+    await organizationPage.clickOnReadyForExecutionDetailsButtonByTransactionId(txId ?? '');
+
     const isStageOneCompleted = await organizationPage.isTransactionStageCompleted(0);
     expect(isStageOneCompleted).toBe(true);
 
