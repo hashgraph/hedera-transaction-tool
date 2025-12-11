@@ -130,7 +130,7 @@ const handleDetails = async () => {
 <template>
   <tr :class="{ highlight: hasNotifications }">
     <!-- Column #1 : Transaction Id -->
-    <td :data-testid="`td-transaction-id-for-sign-${index}`">
+    <td :data-testid="`td-transaction-node-transaction-id-${index}`">
       <TransactionId
         v-if="props.node.sdkTransactionId"
         :transaction-id="props.node.sdkTransactionId"
@@ -140,7 +140,9 @@ const handleDetails = async () => {
     </td>
 
     <!-- Column #2 : Transaction Type / Group -->
-    <td class="text-bold">{{ transactionType }}</td>
+    <td :data-testid="`td-transaction-node-transaction-type-${index}`" class="text-bold">
+      {{ transactionType }}
+    </td>
 
     <!-- Column #3 : Description -->
     <td>
@@ -149,7 +151,7 @@ const handleDetails = async () => {
 
     <template v-if="props.collection === TransactionNodeCollection.HISTORY">
       <!-- Column #4 : Status -->
-      <td>
+      <td :data-testid="`td-transaction-node-transaction-status-${index}`">
         <span
           v-if="status"
           class="badge bg-success text-break"
@@ -161,8 +163,8 @@ const handleDetails = async () => {
       </td>
 
       <!-- Column #5 : Executed At-->
-      <td>
-        <span :data-testid="`td-transaction-executedAt-${index}`" class="text-small text-secondary">
+      <td :data-testid="`td-transaction-node-transaction-executed-at-${index}`">
+        <span class="text-small text-secondary">
           <DateTimeString v-if="executedAtDate" :date="executedAtDate" compact wrap />
           <span v-else>N/A</span>
         </span>
@@ -170,7 +172,7 @@ const handleDetails = async () => {
     </template>
     <template v-else>
       <!-- Column #4 : Valid Start -->
-      <td>
+      <td :data-testid="`td-transaction-node-valid-start-${index}`">
         <DateTimeString :date="validStartDate" compact wrap />
       </td>
     </template>
@@ -181,17 +183,19 @@ const handleDetails = async () => {
         <template v-if="props.collection === TransactionNodeCollection.READY_TO_SIGN">
           <SignSingleButton
             v-if="props.node.transactionId"
+            :data-testid="`button-transaction-node-sign-${index}`"
             :transactionId="props.node.transactionId"
             @transactionSigned="(tid: number) => emit('transactionSigned', tid)"
           />
           <SignGroupButton
             v-if="props.node.groupId"
+            :data-testid="`button-transaction-node-sign-${index}`"
             :group-id="props.node.groupId"
             @transactionGroupSigned="(gid: number) => emit('transactionGroupSigned', gid)"
           />
         </template>
         <AppButton
-          :data-testid="`button-group-details-${index}`"
+          :data-testid="`button-transaction-node-details-${index}`"
           color="secondary"
           type="button"
           @click="handleDetails"
