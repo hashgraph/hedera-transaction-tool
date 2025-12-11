@@ -609,7 +609,7 @@ export class OrganizationPage extends BasePage {
     await this.transactionPage.clickOnTransactionsMenuButton();
     await this.transactionPage.clickOnCreateNewTransactionButton();
     await this.transactionPage.clickOnCreateAccountTransaction();
-    await this.transactionPage.fillInInitialFunds('100');
+    await this.transactionPage.fillInInitialFunds('0.01');
     await this.transactionPage.clickOnComplexTab();
     await this.transactionPage.clickOnCreateNewComplexKeyButton();
 
@@ -644,7 +644,7 @@ export class OrganizationPage extends BasePage {
     await this.transactionPage.clickOnTransactionsMenuButton();
     await this.transactionPage.clickOnCreateNewTransactionButton();
     await this.transactionPage.clickOnCreateAccountTransaction();
-    await this.transactionPage.fillInInitialFunds('100');
+    await this.transactionPage.fillInInitialFunds('0.01');
     await this.transactionPage.clickOnComplexTab();
     await this.transactionPage.clickOnCreateNewComplexKeyButton();
 
@@ -792,7 +792,7 @@ export class OrganizationPage extends BasePage {
 
     // Step 3: Complete the transaction
     await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
-    await this.transactionPage.fillInInitialFunds('100');
+    await this.transactionPage.fillInInitialFunds('0.01');
     await this.transactionPage.clickOnSignAndSubmitButton();
     await this.transactionPage.clickSignTransactionButton();
 
@@ -1370,6 +1370,10 @@ export class OrganizationPage extends BasePage {
 
   async getHistoryTransactionStatusByIndex(index: number) {
     return await this.getText(this.transactionNodeStatusIndexSelector + index);
+  }
+
+  async getHistoryTransactionExecutedAtByIndex(index: number) {
+    return await this.getText(this.transactionNodeExecutedAtIndexSelector + index);
   }
 
   async getHistoryTransactionExecutedAtByIndex(index: number) {
