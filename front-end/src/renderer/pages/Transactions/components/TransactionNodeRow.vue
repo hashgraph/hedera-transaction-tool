@@ -184,6 +184,7 @@ const handleDetails = async () => {
           <div :data-testid="`button-transaction-node-sign-${index}`">
             <SignSingleButton
               v-if="props.node.transactionId"
+            :data-testid="`button-transaction-node-sign-${index}`"
               :transactionId="props.node.transactionId"
               @transactionSigned="(tid: number) => emit('transactionSigned', tid)"
             />
@@ -191,6 +192,7 @@ const handleDetails = async () => {
           <div :data-testid="`button-transaction-node-sign-${index}`">
             <SignGroupButton
               v-if="props.node.groupId"
+            :data-testid="`button-transaction-node-sign-${index}`"
               :group-id="props.node.groupId"
               @transactionGroupSigned="(gid: number) => emit('transactionGroupSigned', gid)"
             />

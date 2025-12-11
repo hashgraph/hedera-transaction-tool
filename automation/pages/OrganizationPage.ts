@@ -1397,7 +1397,7 @@ export class OrganizationPage extends BasePage {
     }>,
     maxRetries = 10,
     retryDelay = 500,
-  ):Promise<{
+  ): Promise<{
     transactionId: string | null;
     transactionType: string | null;
     validStart: string | null;
