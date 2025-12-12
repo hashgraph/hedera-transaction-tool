@@ -107,6 +107,7 @@ export class TransactionsController {
   }
 
   /* Get all transactions visible by the user */
+  /* NO LONGER USED BY FRONT-END */
   @ApiOperation({
     summary: 'Get created transactions by user or transactions with specific status',
     description:
@@ -153,6 +154,7 @@ export class TransactionsController {
   }
 
   /* Get all transactions to be signed by the user */
+  /* NO LONGER USED BY FRONT-END */
   @ApiOperation({
     summary: 'Get transactions to sign',
     description: 'Get all transactions to be signed by the current user.',
