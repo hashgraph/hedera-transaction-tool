@@ -134,7 +134,7 @@ test.describe('Organization Transaction tests', () => {
     const transactionDetails = await organizationPage.getReadyForSignTransactionDetails(txId ?? '');
 
     expect(transactionDetails?.transactionId).toBe(txId);
-    expect(transactionDetails?.transactionType).toBe('Account Update Transaction');
+    expect(transactionDetails?.transactionType).toBe('Account Update');
     expect(transactionDetails?.validStart).toBe(validStart);
     expect(transactionDetails?.detailsButton).toBe(true);
 
@@ -150,7 +150,7 @@ test.describe('Organization Transaction tests', () => {
       txId ?? '',
     );
     expect(transactionDetails2?.transactionId).toBe(txId);
-    expect(transactionDetails2?.transactionType).toBe('Account Update Transaction');
+    expect(transactionDetails2?.transactionType).toBe('Account Update');
     expect(transactionDetails2?.validStart).toBe(validStart);
     expect(transactionDetails2?.detailsButton).toBe(true);
   });
@@ -225,7 +225,7 @@ test.describe('Organization Transaction tests', () => {
 
     const transactionDetails = await organizationPage.getInProgressTransactionDetails(txId ?? '');
     expect(transactionDetails?.transactionId).toBe(txId);
-    expect(transactionDetails?.transactionType).toBe('Account Update Transaction');
+    expect(transactionDetails?.transactionType).toBe('Account Update');
     expect(transactionDetails?.validStart).toBe(validStart);
     expect(transactionDetails?.detailsButton).toBe(true);
   });
@@ -256,7 +256,7 @@ test.describe('Organization Transaction tests', () => {
       txId ?? '',
     );
     expect(transactionDetails?.transactionId).toBe(txId);
-    expect(transactionDetails?.transactionType).toBe('Account Update Transaction');
+    expect(transactionDetails?.transactionType).toBe('Account Update');
     expect(transactionDetails?.validStart).toBe(validStart);
     expect(transactionDetails?.detailsButton).toBe(true);
 
@@ -297,7 +297,7 @@ test.describe('Organization Transaction tests', () => {
 
     const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
     expect(transactionDetails?.transactionId).toBe(txId);
-    expect(transactionDetails?.transactionType).toBe('Account Update Transaction');
+    expect(transactionDetails?.transactionType).toBe('Account Update');
     expect(transactionDetails?.validStart).toBeTruthy();
     expect(transactionDetails?.detailsButton).toBe(true);
     expect(transactionDetails?.status).toBe('SUCCESS');
@@ -456,7 +456,7 @@ test.describe('Organization Transaction tests', () => {
     await organizationPage.clickOnHistoryTab();
     const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
     expect(transactionDetails?.transactionId).toBe(txId);
-    expect(transactionDetails?.transactionType).toBe('Transfer Transaction');
+    expect(transactionDetails?.transactionType).toBe('Transfer');
     expect(transactionDetails?.validStart).toBeTruthy();
     expect(transactionDetails?.detailsButton).toBe(true);
     expect(transactionDetails?.status).toBe('SUCCESS');
@@ -482,7 +482,7 @@ test.describe('Organization Transaction tests', () => {
     await organizationPage.clickOnHistoryTab();
     const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
     expect(transactionDetails?.transactionId).toBe(txId);
-    expect(transactionDetails?.transactionType).toBe('Account Allowance Approve Transaction');
+    expect(transactionDetails?.transactionType).toBe('Account Allowance Approve');
     expect(transactionDetails?.validStart).toBeTruthy();
     expect(transactionDetails?.detailsButton).toBe(true);
     expect(transactionDetails?.status).toBe('SUCCESS');
@@ -497,7 +497,7 @@ test.describe('Organization Transaction tests', () => {
     );
     const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
     expect(transactionDetails?.transactionId).toBe(txId);
-    expect(transactionDetails?.transactionType).toBe('File Create Transaction');
+    expect(transactionDetails?.transactionType).toBe('File Create');
     expect(transactionDetails?.validStart).toBeTruthy();
     expect(transactionDetails?.detailsButton).toBe(true);
     expect(transactionDetails?.status).toBe('SUCCESS');
@@ -520,7 +520,7 @@ test.describe('Organization Transaction tests', () => {
 
     const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
     expect(transactionDetails?.transactionId).toBe(txId);
-    expect(transactionDetails?.transactionType).toBe('File Update Transaction');
+    expect(transactionDetails?.transactionType).toBe('File Update');
     expect(transactionDetails?.validStart).toBeTruthy();
     expect(transactionDetails?.detailsButton).toBe(true);
     expect(transactionDetails?.status).toBe('SUCCESS');
@@ -543,7 +543,7 @@ test.describe('Organization Transaction tests', () => {
 
     const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
     expect(transactionDetails?.transactionId).toBe(txId);
-    expect(transactionDetails?.transactionType).toBe('File Append Transaction');
+    expect(transactionDetails?.transactionType).toBe('File Append');
     expect(transactionDetails?.validStart).toBeTruthy();
     expect(transactionDetails?.detailsButton).toBe(true);
     expect(transactionDetails?.status).toBe('SUCCESS');
@@ -557,7 +557,7 @@ test.describe('Organization Transaction tests', () => {
 
     const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
     expect(transactionDetails?.transactionId).toBe(txId);
-    expect(transactionDetails?.transactionType).toBe('Account Delete Transaction');
+    expect(transactionDetails?.transactionType).toBe('Account Delete');
     expect(transactionDetails?.validStart).toBeTruthy();
     expect(transactionDetails?.detailsButton).toBe(true);
     expect(transactionDetails?.status).toBe('SUCCESS');
@@ -641,7 +641,7 @@ test.describe('Organization Transaction tests', () => {
       await organizationPage.clickOnHistoryTab();
       const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
       expect(transactionDetails?.transactionId).toBe(txId);
-      expect(transactionDetails?.transactionType).toBe('Account Create Transaction');
+      expect(transactionDetails?.transactionType).toBe('Account Create');
       expect(transactionDetails?.validStart).toBeTruthy();
       expect(transactionDetails?.detailsButton).toBe(true);
       expect(transactionDetails?.status).toBe('SUCCESS');
@@ -699,7 +699,7 @@ test.describe('Organization Transaction tests', () => {
       await organizationPage.clickOnHistoryTab();
       const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
       expect(transactionDetails?.transactionId).toBe(txId);
-      expect(transactionDetails?.transactionType).toBe('Account Create Transaction');
+      expect(transactionDetails?.transactionType).toBe('Account Create');
       expect(transactionDetails?.validStart).toBeTruthy();
       expect(transactionDetails?.detailsButton).toBe(true);
       expect(transactionDetails?.status).toBe('SUCCESS');
