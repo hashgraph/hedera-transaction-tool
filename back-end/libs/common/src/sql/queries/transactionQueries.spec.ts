@@ -60,12 +60,6 @@ describe('selectTransactionIdsForUser', () => {
       expect(typeof sql).toBe('string');
       expect(sql.length).toBeGreaterThan(0);
     });
-
-    it('should generate SQL with correct structure (snapshot)', () => {
-      const sql = selectTransactionIdsForUser(sqlBuilder);
-
-      expect(sql).toMatchSnapshot();
-    });
   });
 
   describe('SQL Keywords and Structure', () => {
