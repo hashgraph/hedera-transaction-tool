@@ -6,12 +6,13 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 /* Props */
 const props = withDefaults(
   defineProps<{
-    show: boolean;
+    show?: boolean;
     title: string;
     text: string;
     callback?: ((...args: any[]) => void) | null;
   }>(),
   {
+    show: false,
     callback: null,
   },
 );
@@ -29,7 +30,7 @@ const handleCancel = () => {
 };
 </script>
 <template>
-  <AppModal :show="show" class="common-modal" @update:show="emit('update:show')">
+  <AppModal :show="props.show" class="common-modal" @update:show="emit('update:show')">
     <div class="p-4">
       <i class="bi bi-x-lg d-inline-block cursor-pointer" @click="handleCancel"></i>
       <div class="text-center">
