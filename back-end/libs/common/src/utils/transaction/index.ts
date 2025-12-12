@@ -10,7 +10,13 @@ import {
   hasValidSignatureKey,
   smartCollate,
 } from '@app/common';
-import { User, Transaction, UserKey, TransactionStatus } from '@entities';
+
+import {
+  User,
+  Transaction,
+  UserKey,
+  TransactionStatus,
+} from '@entities';
 
 export const keysRequiredToSign = async (
   transaction: Transaction,

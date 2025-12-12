@@ -71,7 +71,6 @@ describe('TransactionNodesService', () => {
   //
 
   const TEST_NETWORK = 'testnet';
-  const OTHER_NETWORK = 'previewnet';
 
   const singleTransaction1: Transaction = {
     id: 1,
@@ -114,6 +113,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
+    transactionAccounts: [],
+    transactionNodes: [],
   };
 
   const singleTransaction2: Transaction = {
@@ -158,6 +159,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
+    transactionAccounts: [],
+    transactionNodes: [],
   };
 
   const childTransactionDate1 = Date.now();
@@ -205,6 +208,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
+    transactionAccounts: [],
+    transactionNodes: [],
   };
 
   const childTransactionDate2 = childTransactionDate1 + 4000;
@@ -252,6 +257,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
+    transactionAccounts: [],
+    transactionNodes: [],
   };
 
   const childTransactionDate3 = childTransactionDate2 + 4000;
@@ -299,6 +306,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
+    transactionAccounts: [],
+    transactionNodes: [],
   };
 
   const childTransactionDate4 = childTransactionDate3 + 4000;
@@ -345,6 +354,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
+    transactionAccounts: [],
+    transactionNodes: [],
   };
 
   const childTransactionDate5 = childTransactionDate4 + 4000;
@@ -391,6 +402,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
+    transactionAccounts: [],
+    transactionNodes: [],
   };
 
   //

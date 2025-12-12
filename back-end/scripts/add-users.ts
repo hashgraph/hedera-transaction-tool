@@ -22,7 +22,13 @@ import {
   Notification,
   NotificationPreferences,
   NotificationReceiver,
-} from '../libs/common/src/database/entities';
+  TransactionAccount,
+  TransactionNode,
+  CachedAccount,
+  CachedAccountKey,
+  CachedNode,
+  CachedNodeAdminKey,
+} from '@entities';
 
 dotenv.config({
   path: path.join(__dirname, './.env'),
@@ -119,6 +125,12 @@ async function connectDatabase() {
       TransactionComment,
       TransactionGroupItem,
       TransactionGroup,
+      TransactionAccount,
+      TransactionNode,
+      CachedAccount,
+      CachedAccountKey,
+      CachedNode,
+      CachedNodeAdminKey,
       Notification,
       NotificationPreferences,
       NotificationReceiver,

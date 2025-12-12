@@ -12,6 +12,12 @@ import {
   TransactionObserver,
   TransactionSigner,
   NotificationReceiver,
+  TransactionAccount,
+  TransactionNode,
+  CachedAccount,
+  CachedAccountKey,
+  CachedNode,
+  CachedNodeAdminKey,
 } from '@entities';
 
 import { ExecuteModule, MirrorNodeModule } from '@app/common';
@@ -35,6 +41,12 @@ import { TransactionNodesService } from './nodes/transaction-nodes.service';
       TransactionSigner,
       TransactionApprover,
       TransactionObserver,
+      TransactionAccount,
+      TransactionNode,
+      CachedAccount,
+      CachedAccountKey,
+      CachedNode,
+      CachedNodeAdminKey,
       Notification,
       NotificationReceiver,
     ]),
