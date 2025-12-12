@@ -92,7 +92,6 @@ const handleSign = async (personalPassword: string|null) => {
     title="Sign all transactions?"
     text="Are you sure you want to sign all the transactions of this group?"
     :callback="confirmCallback"
-    mandatory="true"
     v-model:show="isConfirmModalShown"
   />
 </template>
