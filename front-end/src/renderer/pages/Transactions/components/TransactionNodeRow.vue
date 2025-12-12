@@ -181,18 +181,20 @@ const handleDetails = async () => {
     <td class="text-center">
       <div class="d-flex justify-content-center gap-4">
         <template v-if="props.collection === TransactionNodeCollection.READY_TO_SIGN">
-          <SignSingleButton
-            v-if="props.node.transactionId"
-            :data-testid="`button-transaction-node-sign-${index}`"
-            :transactionId="props.node.transactionId"
-            @transactionSigned="(tid: number) => emit('transactionSigned', tid)"
-          />
-          <SignGroupButton
-            v-if="props.node.groupId"
-            :data-testid="`button-transaction-node-sign-${index}`"
-            :group-id="props.node.groupId"
-            @transactionGroupSigned="(gid: number) => emit('transactionGroupSigned', gid)"
-          />
+          <div :data-testid="`button-transaction-node-sign-${index}`">
+            <SignSingleButton
+              v-if="props.node.transactionId"
+              :transactionId="props.node.transactionId"
+              @transactionSigned="(tid: number) => emit('transactionSigned', tid)"
+            />
+          </div>
+          <div :data-testid="`button-transaction-node-sign-${index}`">
+            <SignGroupButton
+              v-if="props.node.groupId"
+              :group-id="props.node.groupId"
+              @transactionGroupSigned="(gid: number) => emit('transactionGroupSigned', gid)"
+            />
+          </div>
         </template>
         <AppButton
           :data-testid="`button-transaction-node-details-${index}`"
