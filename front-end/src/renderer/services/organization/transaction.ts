@@ -11,7 +11,6 @@ import type {
   SignatureImportResultDto,
   TransactionApproverDto,
 } from '@shared/interfaces';
-import { TransactionStatus } from '@shared/interfaces';
 
 import {
   axiosWithCredentials,
@@ -152,30 +151,6 @@ export const importSignatures = async (
   }, 'Failed to import signatures');
 };
 
-/* Get transactions to sign */
-export const getTransactionsToSign = async (
-  serverUrl: string,
-  network: Network,
-  page: number,
-  size: number,
-  sort?: { property: string; direction: 'asc' | 'desc' }[],
-): Promise<
-  PaginatedResourceDto<{
-    transaction: ITransaction;
-    keysToSign: number[];
-  }>
-> =>
-  commonRequestHandler(async () => {
-    const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
-    const filtering = `&filter=mirrorNetwork:eq:${network}`;
-
-    const { data } = await axiosWithCredentials.get(
-      `${serverUrl}/${controller}/sign?page=${page}&size=${size}${sorting}${filtering}`,
-    );
-
-    return data;
-  }, 'Failed to get transactions to sign');
-
 /* Get transactions to approve */
 export const getTransactionsToApprove = async (
   serverUrl: string,
@@ -227,26 +202,6 @@ export const getTransactionById = async (
 
     return data;
   }, `Failed to get transaction with id ${id}`);
-
-/* Get transactions for user with specific status */
-export const getTransactionsForUser = async (
-  serverUrl: string,
-  status: TransactionStatus[],
-  network: Network,
-  page: number,
-  size: number,
-  sort?: { property: string; direction: 'asc' | 'desc' }[],
-): Promise<PaginatedResourceDto<ITransaction>> =>
-  commonRequestHandler(async () => {
-    const filtering = `&filter=status:in:${status.join(',')}&filter=mirrorNetwork:eq:${network}`;
-    const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
-
-    const { data } = await axiosWithCredentials.get(
-      `${serverUrl}/${controller}?page=${page}&size=${size}${filtering}${sorting}`,
-    );
-
-    return data;
-  }, 'Failed to get transactions for user');
 
 /* Get history transactions */
 export const getHistoryTransactions = async (
