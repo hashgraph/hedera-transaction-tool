@@ -27,6 +27,12 @@ import {
   NotificationPreferences,
   NotificationReceiver,
   NotificationType,
+  TransactionNode,
+  TransactionAccount,
+  CachedAccount,
+  CachedAccountKey,
+  CachedNode,
+  CachedNodeAdminKey,
 } from '@entities';
 
 import {
@@ -549,6 +555,12 @@ async function connectDatabase() {
       TransactionComment,
       TransactionGroupItem,
       TransactionGroup,
+      TransactionAccount,
+      TransactionNode,
+      CachedAccount,
+      CachedAccountKey,
+      CachedNode,
+      CachedNodeAdminKey,
       Notification,
       NotificationReceiver,
       NotificationPreferences,
