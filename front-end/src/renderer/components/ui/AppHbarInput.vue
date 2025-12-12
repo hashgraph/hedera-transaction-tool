@@ -26,7 +26,12 @@ const handleUpdateValue = async (value: string) => {
   value = value.trim();
   setInputValue(value);
 
-  if (value === '' || value === '.' || value === '0') {
+  if (value.startsWith('.')) {
+    value = '0' + value;
+    setInputValue(value);
+  }
+
+  if (value === '' || value === '0') {
     emit('update:modelValue', new Hbar(0));
     return;
   }
