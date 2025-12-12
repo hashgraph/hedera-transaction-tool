@@ -125,6 +125,8 @@ describe('TransactionsController', () => {
       observers: [],
       comments: [],
       groupItem: null,
+      transactionAccounts: [],
+      transactionNodes: [],
     };
     pagination = {
       page: 1,
