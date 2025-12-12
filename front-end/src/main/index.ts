@@ -8,6 +8,7 @@ import initLogger from '@main/modules/logger';
 import createMenu from '@main/modules/menu';
 import handleDeepLink, { PROTOCOL_NAME } from '@main/modules/deepLink';
 import registerIpcListeners from '@main/modules/ipcHandlers';
+import initUpdater from '@main/modules/updater';
 
 import { safeAwait } from '@main/utils/safeAwait';
 import { deleteAllTempFolders } from '@main/services/localUser';
@@ -83,6 +84,8 @@ async function initMainWindow() {
   mainWindow = await restoreOrCreateWindow();
 
   createMenu();
+
+  initUpdater(mainWindow);
 
   mainWindow.on('closed', () => {
     mainWindow = null;
