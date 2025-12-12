@@ -8,20 +8,48 @@ import { MockedObject } from 'vitest';
 vi.mock('path', () => ({
   resolve: vi.fn(),
 }));
-vi.mock('@electron-toolkit/utils', () => ({}));
+vi.mock('@electron-toolkit/utils', () => ({
+  is: {
+    dev: false,
+  },
+}));
+vi.mock('electron-updater', () => ({
+  autoUpdater: {
+    logger: null,
+    autoDownload: false,
+    forceDevUpdateConfig: false,
+    on: vi.fn(),
+    checkForUpdates: vi.fn(),
+    downloadUpdate: vi.fn(),
+    quitAndInstall: vi.fn(),
+  },
+  ProgressInfo: {},
+  UpdateInfo: {},
+}));
 vi.mock('electron', () => {
   return {
     app: {
       on: vi.fn(),
       setAsDefaultProtocolClient: vi.fn(),
       quit: vi.fn(),
+      getVersion: vi.fn(() => '1.0.0'),
     },
     BrowserWindow: vi.fn(),
   };
 });
 vi.mock('@main/db/init', () => ({ default: vi.fn() }));
 vi.mock('@main/services/localUser', () => ({ deleteAllTempFolders: vi.fn() }));
-vi.mock('@main/modules/logger', () => ({ default: vi.fn() }));
+vi.mock('@main/modules/logger', () => ({
+  default: vi.fn(),
+  getAppUpdateLogger: vi.fn(() => ({
+    transports: {
+      file: {
+        fileName: 'app-updates.log',
+        level: 'debug',
+      },
+    },
+  })),
+}));
 vi.mock('@main/modules/menu', () => ({
   default: vi.fn(),
 }));
@@ -40,14 +68,15 @@ describe('Electron entry file', async () => {
     close: vi.fn(),
   } as unknown as BrowserWindow);
 
+  Object.defineProperty(process, 'defaultApp', {
+    value: true,
+    configurable: true,
+  });
+  vi.mocked(path.resolve).mockReturnValue('test-path');
+
+  await import('@main/index');
+
   test('Should setup deep link in defaultApp', async () => {
-    Object.defineProperty(process, 'defaultApp', {
-      value: true,
-    });
-    vi.mocked(path.resolve).mockReturnValue('test-path');
-
-    await import('@main/index');
-
     expect(app.setAsDefaultProtocolClient).toHaveBeenCalledWith(PROTOCOL_NAME, process.execPath, [
       'test-path',
     ]);
