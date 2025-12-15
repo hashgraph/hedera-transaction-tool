@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ClientProxy } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 
@@ -9,7 +8,7 @@ import { AuthService } from './auth.service';
 
 import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
-import { ErrorCodes, NOTIFICATIONS_SERVICE } from '@app/common';
+import { ErrorCodes, NatsPublisherService } from '@app/common';
 import { User, UserStatus } from '@entities';
 import { totp } from 'otplib';
 import { UsersService } from '../users/users.service';
@@ -24,7 +23,7 @@ describe('AuthService', () => {
   const userService = mock<UsersService>();
   const configService = mock<ConfigService>();
   const jwtService = mock<JwtService>();
-  const notificationsService = mock<ClientProxy>();
+  const notificationsPublisher = mock<NatsPublisherService>();
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -45,8 +44,8 @@ describe('AuthService', () => {
           useValue: jwtService,
         },
         {
-          provide: NOTIFICATIONS_SERVICE,
-          useValue: notificationsService,
+          provide: NatsPublisherService,
+          useValue: notificationsPublisher,
         },
       ],
     }).compile();
@@ -133,9 +132,17 @@ describe('AuthService', () => {
     await service.signUpByAdmin(dto, 'http://localhost');
 
     expect(userService.createUser).toHaveBeenCalledWith(dto.email, expect.any(String));
-    expect(notificationsService.emit).toHaveBeenCalledWith(
-      'notify_email',
-      expect.objectContaining({ email: dto.email }),
+    expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+      'notifications.queue.email.invite',
+      expect.arrayContaining([
+        expect.objectContaining({
+          email: dto.email,
+          additionalData: expect.objectContaining({
+            tempPassword: expect.any(String),
+            url: expect.any(String),
+          }),
+        }),
+      ]),
     );
   });
 
@@ -166,9 +173,17 @@ describe('AuthService', () => {
 
     expect(userService.updateUserById).toHaveBeenCalledWith(1, { password: 'hashedPassword' });
 
-    expect(notificationsService.emit).toHaveBeenCalledWith(
-      'notify_email',
-      expect.objectContaining({ email: dto.email }),
+    expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+      'notifications.queue.email.invite',
+      expect.arrayContaining([
+        expect.objectContaining({
+          email: dto.email,
+          additionalData: expect.objectContaining({
+            tempPassword: expect.any(String),
+            url: expect.any(String),
+          }),
+        }),
+      ]),
     );
   });
 
@@ -224,9 +239,7 @@ describe('AuthService', () => {
 
     await service.changePassword(user as User, { oldPassword: '', newPassword: 'new' });
 
-    expect(notificationsService.emit).toHaveBeenCalledWith('notify_general', {
-      type: 'USER_REGISTERED',
-      userIds: [2],
+    expect(notificationsPublisher.publish).toHaveBeenCalledWith('notifications.queue.user.registered', {
       entityId: user.id,
       additionalData: { username: user.email },
     });
@@ -236,22 +249,20 @@ describe('AuthService', () => {
     const { user, otpSecret, totpRes } = await invokeCreateOtp(false);
 
     expect(totp.generate).toHaveBeenCalledWith(`${otpSecret}${user.email}`);
-    expect(notificationsService.emit).toHaveBeenCalledWith('notify_email', {
+    expect(notificationsPublisher.publish).toHaveBeenCalledWith('notifications.queue.email.password-reset', [{
       email: user.email,
-      subject: 'Password Reset token',
-      text: expect.stringContaining(totpRes),
-    });
+      additionalData: { otp: totpRes },
+    }]);
   });
 
   it('should create otp in production', async () => {
     const { user, otpSecret, totpRes } = await invokeCreateOtp(true);
 
     expect(totp.generate).toHaveBeenCalledWith(`${otpSecret}${user.email}`);
-    expect(notificationsService.emit).toHaveBeenCalledWith('notify_email', {
+    expect(notificationsPublisher.publish).toHaveBeenCalledWith('notifications.queue.email.password-reset', [{
       email: user.email,
-      subject: 'Password Reset token',
-      text: expect.stringContaining(totpRes),
-    });
+      additionalData: { otp: totpRes },
+    }]);
   });
 
   it('should not create otp if user not found', async () => {

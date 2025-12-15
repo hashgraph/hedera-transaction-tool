@@ -1,6 +1,6 @@
 {
   "name": "back-end",
-  "version": "0.19.0",
+  "version": "0.21.0",
   "description": "",
   "author": "",
   "private": true,
@@ -21,9 +21,14 @@
     "create-admin": "npx ts-node ./scripts/create-admin.ts",
     "create-users": "npx ts-node ./scripts/add-users.ts",
     "deploy:dev": "sh ./k8s/dev/deploy.sh",
-    "test:libs": "jest --config ./jest.config.ts",
-    "test:all": "npm run test --workspace=apps/api && npm run test --workspace=apps/chain && npm run test --workspace=apps/notifications",
-    "test:cov:all": "npm run test:cov --workspace=apps/api && npm run test:cov --workspace=apps/chain && npm run test:cov --workspace=apps/notifications"
+    "test:libs": "jest --testPathPattern='libs/.*\\.spec\\.ts$'",
+    "test:migrations": "jest --testPathPattern='typeorm/test/.*\\.test\\.ts$' --verbose=false",
+    "test:all": "INCLUDE_LIBS=0 pnpm --filter=api test && INCLUDE_LIBS=0 pnpm --filter=chain test && INCLUDE_LIBS=0 pnpm --filter=notifications test && pnpm test:libs && pnpm test:migrations",
+    "test:cov:all": "pnpm --filter=api test:cov && pnpm --filter=chain test:cov && pnpm --filter=notifications test:cov",
+    "migration:generate": "ts-node scripts/generate-migration.ts",
+    "migration:create": "pnpm typeorm migration:create",
+    "migration:run": "pnpm typeorm migration:run -d typeorm/data-source.ts",
+    "migration:revert": "pnpm typeorm migration:revert -d typeorm/data-source.ts"
   },
   "dependencies": {
     "@hashgraph/proto": "2.19.0",
@@ -58,6 +63,7 @@
     "ioredis": "5.4.2",
     "joi": "17.13.3",
     "murlock": "4.0.0",
+    "nats": "2.29.3",
     "nest-winston": "1.9.7",
     "pg": "8.13.1",
     "readline-sync": "1.4.10",

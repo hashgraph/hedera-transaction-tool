@@ -8,3 +8,4 @@ export * from './transaction-signer.entity';
 export * from './user.entity';
 export * from './user-key.entity';
 export * from './notifications';
+export * from './caches';

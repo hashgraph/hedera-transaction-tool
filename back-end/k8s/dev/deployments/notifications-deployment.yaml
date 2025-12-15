@@ -6,7 +6,7 @@ metadata:
     name: notifications-deployment
     app: htx-back-end
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       name: notifications
@@ -27,8 +27,8 @@ spec:
               value: 'api-service'
             - name: AUTH_PORT
               value: '3001'
-            - name: RABBITMQ_URI
-              value: 'amqp://rabbitmq-service:5672'
+            - name: NATS_URL
+              value: 'nats://nats:4222'
             - name: EMAIL_API_HOST
               valueFrom:
                 secretKeyRef:
@@ -74,7 +74,7 @@ spec:
             - name: POSTGRES_PASSWORD
               value: 'postgres'
             - name: POSTGRES_SYNCHRONIZE
-              value: 'true'
+              value: 'false'
             - name: POSTGRES_MAX_POOL_SIZE
               value: '2'
 ---

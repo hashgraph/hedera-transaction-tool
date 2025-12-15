@@ -2,11 +2,18 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import * as nodemailer from 'nodemailer';
+import { SendMailOptions } from 'nodemailer';
 
-import { generateEmailContent, NotificationTypeEmailSubjects, NotifyEmailDto } from '@app/common';
+import {
+  EmailDto,
+  generateEmailContent,
+  generateResetPasswordMessage,
+  generateUserRegisteredMessage,
+  NotificationTypeEmailSubjects,
+} from '@app/common';
 import { DebouncedNotificationBatcher } from '../utils';
 import { Notification } from '@entities';
-import { SendMailOptions } from 'nodemailer';
+import { EmailNotificationDto } from '../dtos';
 
 @Injectable()
 export class EmailService {
@@ -38,44 +45,127 @@ export class EmailService {
     return user && pass ? { auth: { user, pass } } : {};
   }
 
-  async notifyEmail({ email, subject, text }: NotifyEmailDto) {
-    // send mail with defined transport object
-    const info = await this.transporter.sendMail({
-      from: `"Transaction Tool" ${this.sender}`,
-      to: email, // list of receivers
-      subject: subject, // Subject line
-      text: text.replace(/<\/?[^>]+(>|$)/g, ''), // plain text fallback
-      html: text, // plain text body
-    });
-
-    console.log(`Message sent: ${info.messageId}`);
+  async processUserInviteNotifications(events: EmailDto[]) {
+    await this.sendTransactionalEmails(
+      events,
+      'Hedera Transaction Tool Registration',
+      generateUserRegisteredMessage,
+      'user invite',
+    );
   }
 
-  async processEmail(emails: string[], notification: Notification) {
-    for (const email of emails) {
-      await this.batcher.add(notification, email)
+  async processUserPasswordResetNotifications(events: EmailDto[]) {
+    await this.sendTransactionalEmails(
+      events,
+      'Password Reset Token',
+      generateResetPasswordMessage,
+      'password reset',
+    );
+  }
+
+  private async sendTransactionalEmails(
+    events: EmailDto[],
+    subject: string,
+    generateMessage: (payload: any) => string,
+    emailType: string, // For logging
+  ) {
+    if (events.length === 0) return;
+
+    for (const event of events) {
+      if (!event.email) {
+        console.error(`No email provided in event for ${emailType} notification`);
+        continue;
+      }
+
+      if (!event.additionalData) {
+        console.error(`No payload provided in event for ${emailType} notification`);
+        continue;
+      }
+
+      try {
+        const html = generateMessage(event.additionalData);
+
+        await this.transporter.sendMail({
+          from: `"Transaction Tool" ${this.sender}`,
+          to: event.email,
+          subject: subject,
+          text: html.replace(/<\/?[^>]+(>|$)/g, ''), // Plain text fallback
+          html: html,
+        });
+
+        console.log(`Sent ${emailType} email to ${event.email}`);
+      } catch (error) {
+        console.error(`Failed to send ${emailType} email to ${event.email}:`, error);
+      }
+    }
+
+    console.log(`Completed sending ${events.length} ${emailType} emails`);
+  }
+
+  async processEmails(emails: EmailNotificationDto[]) {
+    for (const { email, notifications } of emails) {
+      for (const notification of notifications) {
+        await this.batcher.add(notification, email);
+      }
+    }
+  }
+
+  private async sendWithRetry(
+    mailOptions: SendMailOptions,
+    attempts = 5,
+    baseDelayMs = 1000,
+    maxDelayMs = 60000,
+    useJitter = true,
+  ) {
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      try {
+        const info = await this.transporter.sendMail(mailOptions);
+        console.log(`Message sent: ${info.messageId}`);
+        return info;
+      } catch (err: any) {
+        const last = attempt === attempts;
+        console.error(`sendMail attempt ${attempt} failed${last ? ' (final)' : ''}:`, err?.code ?? err);
+
+        if (last) throw err;
+
+        // exponential backoff: baseDelayMs * 2^(attempt-1), capped by maxDelayMs
+        let delay = Math.min(baseDelayMs * Math.pow(2, attempt - 1), maxDelayMs);
+
+        // optional jitter (0.5x - 1.5x)
+        if (useJitter) {
+          const jitterFactor = 0.5 + Math.random(); // range [0.5, 1.5)
+          delay = Math.floor(delay * jitterFactor);
+        }
+
+        console.log(`Retrying sendMail in ${delay}ms (attempt ${attempt + 1}/${attempts})`);
+        await new Promise((res) => setTimeout(res, delay));
+      }
     }
   }
 
   private async processMessages(groupKey: string, notifications: Notification[]) {
     const groupedNotifications = notifications.reduce((map, msg) => {
-      if (!map.has(msg.type)) {
-        map.set(msg.type, []);
-      }
+      if (!map.has(msg.type)) map.set(msg.type, []);
       map.get(msg.type)!.push(msg);
       return map;
     }, new Map<string, Notification[]>());
 
-    for (const [type, notifications] of groupedNotifications.entries()) {
+    console.log(`Processing email batch for ${groupKey} with ${notifications.length} notifications in ${groupedNotifications.size} groups.`);
+
+    for (const [type, notifs] of groupedNotifications.entries()) {
       const mailOptions: SendMailOptions = {
         from: `"Transaction Tool" ${this.sender}`,
         to: groupKey,
         subject: NotificationTypeEmailSubjects[type],
-        text: generateEmailContent(type, ...notifications),
+        text: generateEmailContent(type, ...notifs),
       };
 
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log(`Message sent: ${info.messageId}`);
+      try {
+        await this.sendWithRetry(mailOptions);
+      } catch (err) {
+        console.error(`Failed to send email for type=${type} to ${groupKey}:`, err);
+        // continue to next group; consider re-queueing or alerting for persistent failures
+      }
     }
-  };
+  }
 }

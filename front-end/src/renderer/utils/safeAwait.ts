@@ -35,18 +35,18 @@ export const safeAwait = async <T>(promise: Promise<T>): Promise<ISafeAwaitResul
     return { error };
   }
 };
-export const safeAwaitAll = async <T extends unknown[]>(
-  promises: { [K in keyof T]: Promise<T[K]> },
-  finallyFunc?: () => Promise<void> | void,
-): Promise<{ [K in keyof T]: ISafeAwaitResult<T[K]> }> => {
-  try {
-    const results = await Promise.all(promises.map(p => safeAwait(p)));
-    return results as { [K in keyof T]: ISafeAwaitResult<T[K]> };
-  } catch (error: unknown) {
-    return promises.map(() => ({ error }) as ISafeAwaitResultError) as {
-      [K in keyof T]: ISafeAwaitResult<T[K]>;
-    };
-  } finally {
-    await finallyFunc?.();
-  }
-};
+// export const safeAwaitAll = async <T extends unknown[]>(
+//   promises: { [K in keyof T]: Promise<T[K]> },
+//   finallyFunc?: () => Promise<void> | void,
+// ): Promise<{ [K in keyof T]: ISafeAwaitResult<T[K]> }> => {
+//   try {
+//     const results = await Promise.all(promises.map(p => safeAwait(p)));
+//     return results as { [K in keyof T]: ISafeAwaitResult<T[K]> };
+//   } catch (error: unknown) {
+//     return promises.map(() => ({ error }) as ISafeAwaitResultError) as {
+//       [K in keyof T]: ISafeAwaitResult<T[K]>;
+//     };
+//   } finally {
+//     await finallyFunc?.();
+//   }
+// };

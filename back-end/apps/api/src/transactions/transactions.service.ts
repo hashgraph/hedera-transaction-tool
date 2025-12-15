@@ -1,81 +1,72 @@
-import { BadRequestException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
-import { ClientProxy } from '@nestjs/microservices';
 
-import { PublicKey, Transaction as SDKTransaction, TransactionId } from '@hashgraph/sdk';
+import { Client, PublicKey, Transaction as SDKTransaction, TransactionId } from '@hashgraph/sdk';
 
 import {
-  Repository,
+  Brackets,
   EntityManager,
   FindManyOptions,
-  Brackets,
+  FindOperator,
+  FindOptionsWhere,
   In,
   Not,
-  FindOptionsWhere,
-  FindOperator,
+  Repository,
 } from 'typeorm';
 
-import {
-  NotificationType,
-  Transaction,
-  TransactionSigner,
-  TransactionStatus,
-  User,
-} from '@entities';
+import { Transaction, TransactionSigner, TransactionStatus, User } from '@entities';
 
 import {
-  CHAIN_SERVICE,
-  NOTIFICATIONS_SERVICE,
-  MirrorNodeService,
-  encodeUint8Array,
-  getClientFromNetwork,
-  getTransactionTypeEnumValue,
-  isExpired,
-  notifyTransactionAction,
-  Pagination,
-  Sorting,
-  Filtering,
-  getWhere,
-  getOrder,
-  userKeysRequiredToSign,
-  PaginatedResourceDto,
   attachKeys,
-  notifyWaitingForSignatures,
-  notifySyncIndicators,
+  emitTransactionStatusUpdate,
+  emitTransactionUpdate,
+  encodeUint8Array,
   ErrorCodes,
-  isTransactionBodyOverMaxSize,
-  emitExecuteTransaction,
-  notifyGeneral,
-  SchedulerService,
+  ExecuteService,
+  Filtering,
+  getClientFromNetwork,
+  getOrder,
   getTransactionSignReminderKey,
+  getTransactionTypeEnumValue,
+  getWhere,
+  isExpired,
+  isTransactionBodyOverMaxSize,
+  MirrorNodeService,
+  PaginatedResourceDto,
+  Pagination,
   safe,
+  SchedulerService,
+  Sorting,
+  userKeysRequiredToSign,
   validateSignature,
-  emitUpdateTransactionStatus,
 } from '@app/common';
 
-import { CreateTransactionDto, UploadSignatureMapDto, SignatureImportResultDto } from './dto';
+import { CreateTransactionDto, SignatureImportResultDto, UploadSignatureMapDto } from './dto';
 
 import { ApproversService } from './approvers';
+import { NatsPublisherService } from '@app/common/nats/nats.publisher';
 
 @Injectable()
 export class TransactionsService {
   constructor(
     @InjectRepository(Transaction) private repo: Repository<Transaction>,
-    @Inject(NOTIFICATIONS_SERVICE) private readonly notificationsService: ClientProxy,
-    @Inject(CHAIN_SERVICE) private readonly chainService: ClientProxy,
     @InjectEntityManager() private entityManager: EntityManager,
     private readonly approversService: ApproversService,
     private readonly mirrorNodeService: MirrorNodeService,
     private readonly schedulerService: SchedulerService,
-  ) {}
+    private readonly executeService: ExecuteService,
+    private readonly notificationsPublisher: NatsPublisherService,
+  ) {
+  }
 
   /* Get the transaction for the provided id in the DATABASE */
+
   /* id can be number (ie internal id) or string (ie payerId@timestamp) */
-  async getTransactionById(id: number|TransactionId): Promise<Transaction> {
+  async getTransactionById(id: number | TransactionId): Promise<Transaction> {
     if (!id) return null;
 
     const transaction = await this.repo.findOne({
-      where:  typeof id == "number" ? { id } : { transactionId: id.toString() },
+      where: typeof id == 'number' ? { id } : { transactionId: id.toString() },
       relations: ['creatorKey', 'creatorKey.user', 'observers', 'comments', 'groupItem'],
     });
 
@@ -337,28 +328,28 @@ export class TransactionsService {
 
   /* Create a new transaction with the provided information */
   async createTransaction(dto: CreateTransactionDto, user: User): Promise<Transaction> {
+    const [transaction] = await this.createTransactions([dto], user);
+    return transaction;
+  }
+
+  async createTransactions(dtos: CreateTransactionDto[], user: User): Promise<Transaction[]> {
+    if (dtos.length === 0) return [];
+
     await attachKeys(user, this.entityManager);
-    const creatorKey = user.keys.find(key => key.id === dto.creatorKeyId);
-    const publicKey = PublicKey.fromString(creatorKey?.publicKey);
 
-    /* Verify the signature matches the transaction */
-    const validSignature = publicKey.verify(dto.transactionBytes, dto.signature);
-    if (!validSignature) throw new BadRequestException(ErrorCodes.SNMP);
+    const client = await getClientFromNetwork(dtos[0].mirrorNetwork);
 
-    /* Check if the transaction is expired */
-    const sdkTransaction = SDKTransaction.fromBytes(dto.transactionBytes);
-    if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
+    try {
+      // Validate all DTOs upfront
+      const validatedData = await Promise.all(
+        dtos.map(dto => this.validateAndPrepareTransaction(dto, user, client)),
+      );
 
-    /* Check if the transaction body is over the max size */
-    if (isTransactionBodyOverMaxSize(sdkTransaction)) {
-      throw new BadRequestException(ErrorCodes.TOS);
-    }
-
-    /* Check if the transaction already exists */
-    const countExisting = await this.repo.count({
-      where: [
-        {
-          transactionId: sdkTransaction.transactionId.toString(),
+      // Batch check for existing transactions
+      const transactionIds = validatedData.map(v => v.transactionId);
+      const existing = await this.repo.find({
+        where: {
+          transactionId: In(transactionIds),
           status: Not(
             In([
               TransactionStatus.CANCELED,
@@ -367,67 +358,121 @@ export class TransactionsService {
             ]),
           ),
         },
-      ],
-    });
+        select: ['transactionId'],
+      });
 
-    if (countExisting > 0) throw new BadRequestException(ErrorCodes.TEX);
+      if (existing.length > 0) {
+        throw new BadRequestException(
+          `Transactions already exist: ${existing.map(t => t.transactionId).join(', ')}`,
+        );
+      }
 
-    const client = await getClientFromNetwork(dto.mirrorNetwork);
-    sdkTransaction.freezeWith(client);
+      // Wrap database operations in transaction
+      const savedTransactions = await this.entityManager.transaction(async (entityManager) => {
+        const transactions = validatedData.map(data =>
+          this.repo.create({
+            name: data.name,
+            type: data.type,
+            description: data.description,
+            transactionId: data.transactionId,
+            transactionHash: data.transactionHash,
+            transactionBytes: data.transactionBytes,
+            unsignedTransactionBytes: data.unsignedTransactionBytes,
+            status: TransactionStatus.WAITING_FOR_SIGNATURES,
+            creatorKey: { id: data.creatorKeyId },
+            signature: data.signature,
+            mirrorNetwork: data.mirrorNetwork,
+            validStart: data.validStart,
+            isManual: data.isManual,
+            cutoffAt: data.cutoffAt,
+          }),
+        );
 
-    const transaction = this.repo.create({
-      name: dto.name,
-      type: getTransactionTypeEnumValue(sdkTransaction),
-      description: dto.description,
-      transactionId: sdkTransaction.transactionId.toString(),
-      transactionHash: encodeUint8Array(await sdkTransaction.getTransactionHash()),
-      transactionBytes: sdkTransaction.toBytes(),
-      unsignedTransactionBytes: sdkTransaction.toBytes(),
-      status: TransactionStatus.WAITING_FOR_SIGNATURES,
-      creatorKey: {
-        id: dto.creatorKeyId,
-      },
-      signature: dto.signature,
-      mirrorNetwork: dto.mirrorNetwork,
-      validStart: sdkTransaction.transactionId.validStart.toDate(),
-      isManual: dto.isManual,
-      cutoffAt: dto.cutoffAt,
-    });
-    client.close();
+        try {
+          return await entityManager.save(Transaction, transactions);
+        } catch (error) {
+          throw new BadRequestException(ErrorCodes.FST);
+        }
+      });
 
-    try {
-      await this.repo.save(transaction);
-    } catch {
-      throw new BadRequestException(ErrorCodes.FST);
+      // Batch schedule reminders
+      const reminderPromises = savedTransactions
+        .map((tx, index) => {
+          const dto = dtos[index];
+          if (!dto.reminderMillisecondsBefore) return null;
+
+          const remindAt = new Date(tx.validStart.getTime() - dto.reminderMillisecondsBefore);
+          return this.schedulerService.addReminder(
+            getTransactionSignReminderKey(tx.id),
+            remindAt,
+          );
+        })
+        .filter(Boolean);
+
+      await Promise.all(reminderPromises);
+
+      emitTransactionStatusUpdate(
+        this.notificationsPublisher,
+        savedTransactions.map(tx => ({
+          entityId: tx.id,
+          additionalData: {
+            transactionId: tx.transactionId,
+            network: tx.mirrorNetwork,
+          },
+        })),
+      );
+
+      return savedTransactions;
+    } catch (err) {
+      // Preserve explicit BadRequestException, but annotate unexpected errors
+      if (err instanceof BadRequestException) throw err;
+
+      const PREFIX = 'An unexpected error occurred while creating transactions';
+      const message = err instanceof Error && err.message ? `${PREFIX}: ${err.message}` : PREFIX;
+      throw new BadRequestException(message);
+    } finally {
+      client.close();
     }
-
-    if (dto.reminderMillisecondsBefore) {
-      const remindAt = new Date(transaction.validStart.getTime() - dto.reminderMillisecondsBefore);
-      await this.schedulerService.addReminder(getTransactionSignReminderKey(transaction.id), remindAt);
-    }
-    notifyWaitingForSignatures(this.notificationsService, transaction.id, {
-      transactionId: transaction.transactionId,
-      network: transaction.mirrorNetwork,
-    });
-    notifyTransactionAction(this.notificationsService);
-
-    return transaction;
   }
 
   async importSignatures(
     dto: UploadSignatureMapDto[],
     user: User,
   ): Promise<SignatureImportResultDto[]> {
-    const results = new Set<SignatureImportResultDto>();
+    type UpdateRecord = {
+      id: number;
+      transactionBytes: Buffer;
+      transactionId: string;
+      network: string;
+    };
+
+    const ids = dto.map(d => d.id);
+
+    // Single batch query for all transactions
+    const transactions = await this.entityManager.find(Transaction, {
+      where: { id: In(ids) },
+      relations: ['creatorKey', 'approvers', 'signers', 'observers'],
+    });
+
+    if (transactions.length === 0) {
+      return ids.map(id => ({
+        id,
+        error: new BadRequestException(ErrorCodes.TNF).message,
+      }));
+    }
+
+    // Create a map for quick lookup
+    const transactionMap = new Map(transactions.map(t => [t.id, t]));
+
+    const results = new Map<number, SignatureImportResultDto>();
+    const updates = new Map<number, UpdateRecord>();
+
     for (const { id, signatureMap: map } of dto) {
-      const transaction = await this.entityManager.findOne(Transaction, {
-        where: { id },
-        relations: ['creatorKey', 'approvers', 'signers', 'observers'],
-      });
+      const transaction = transactionMap.get(id);
 
       try {
         /* Verify that the transaction exists and access is verified */
-        if (!transaction || !(await this.verifyAccess(transaction, user))) {
+        if (!(await this.verifyAccess(transaction, user))) {
           throw new BadRequestException(ErrorCodes.TNF);
         }
 
@@ -452,21 +497,17 @@ export class TransactionsService {
           sdkTransaction.addSignature(publicKey, map);
         }
 
-        await this.entityManager.update(
-          Transaction,
-          { id },
-          { transactionBytes: sdkTransaction.toBytes() },
-        );
+        transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
 
-        results.add({ id });
-        emitUpdateTransactionStatus(this.chainService, id);
-        notifyTransactionAction(this.notificationsService);
-        notifySyncIndicators(this.notificationsService, id, transaction.status, {
+        results.set(id, { id });
+        updates.set(id, {
+          id,
+          transactionBytes: transaction.transactionBytes,
           transactionId: transaction.transactionId,
           network: transaction.mirrorNetwork,
         });
       } catch (error) {
-        results.add({
+        results.set(id, {
           id,
           error:
             (error instanceof BadRequestException)
@@ -475,7 +516,58 @@ export class TransactionsService {
         });
       }
     }
-    return [...results];
+
+    //Added a batch mechanism, probably should limit this on the api side of things
+    const BATCH_SIZE = 500;
+
+    const updateArray = Array.from(updates.values());
+
+    if (updateArray.length > 0) {
+      for (let i = 0; i < updateArray.length; i += BATCH_SIZE) {
+        const batch = updateArray.slice(i, i + BATCH_SIZE);
+
+        let caseSQL = 'CASE id ';
+        const params: any = {};
+
+        batch.forEach((update, idx) => {
+          caseSQL += `WHEN :id${idx} THEN :bytes${idx} `;
+          params[`id${idx}`] = update.id;
+          params[`bytes${idx}`] = update.transactionBytes;
+        });
+        caseSQL += 'END';
+
+        try {
+          await this.entityManager
+            .createQueryBuilder()
+            .update(Transaction)
+            .set({ transactionBytes: () => caseSQL })
+            .where('id IN (:...ids)', { ids: batch.map(u => u.id) })
+            .setParameters(params)
+            .execute();
+
+          // mark each update in the batch as succeeded
+          batch.forEach(u => results.set(u.id, { id: u.id }));
+        } catch (err) {
+          const SAVE_ERROR_PREFIX = 'An unexpected error occurred while saving the signatures';
+          const message =
+            err instanceof Error && err.message
+              ? `${SAVE_ERROR_PREFIX}: ${err.message}`
+              : SAVE_ERROR_PREFIX;
+
+          batch.forEach(u => results.set(u.id, { id: u.id, error: message }));
+        }
+      }
+
+      emitTransactionStatusUpdate(
+        this.notificationsPublisher,
+        updateArray.map(r => ({
+          entityId: r.id,
+          additionalData: { transactionId: r.transactionId, network: r.network },
+        })),
+      );
+    }
+
+    return Array.from(results.values());
   }
 
   /* Remove the transaction for the given transaction id. */
@@ -483,16 +575,22 @@ export class TransactionsService {
     const transaction = await this.getTransactionForCreator(id, user);
 
     if (softRemove) {
+      await this.repo.update(transaction.id, { status: TransactionStatus.CANCELED });
       await this.repo.softRemove(transaction);
     } else {
       await this.repo.remove(transaction);
     }
 
-    notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.CANCELED, {
-      transactionId: transaction.transactionId,
-      network: transaction.mirrorNetwork,
-    });
-    notifyTransactionAction(this.notificationsService);
+    emitTransactionStatusUpdate(
+      this.notificationsPublisher,
+      [{
+        entityId: transaction.id,
+        additionalData: {
+          transactionId: transaction.transactionId,
+          network: transaction.mirrorNetwork,
+        },
+      }],
+    );
 
     return true;
   }
@@ -513,26 +611,15 @@ export class TransactionsService {
 
     await this.repo.update({ id }, { status: TransactionStatus.CANCELED });
 
-    notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.CANCELED, {
-      transactionId: transaction.transactionId,
-      network: transaction.mirrorNetwork,
-    });
-    notifyTransactionAction(this.notificationsService);
-
-    /* Send email notification to all the participants */
-    await this.attachTransactionApprovers(transaction);
-    const userIds = new Set<number>();
-    transaction.approvers?.forEach(a => userIds.add(a.userId));
-    transaction.signers?.forEach(s => userIds.add(s.userId));
-    transaction.observers?.forEach(o => userIds.add(o.userId));
-
-    notifyGeneral(
-      this.notificationsService,
-      NotificationType.TRANSACTION_CANCELLED,
-      [...userIds],
-      transaction.id,
-      false,
-      { transactionId: transaction.transactionId, network: transaction.mirrorNetwork },
+    emitTransactionStatusUpdate(
+      this.notificationsPublisher,
+      [{
+        entityId: id,
+        additionalData: {
+          transactionId: transaction.transactionId,
+          network: transaction.mirrorNetwork,
+        },
+      }],
     );
 
     return true;
@@ -552,12 +639,16 @@ export class TransactionsService {
     }
 
     await this.repo.update({ id }, { status: TransactionStatus.ARCHIVED });
-
-    notifySyncIndicators(this.notificationsService, transaction.id, TransactionStatus.ARCHIVED, {
-      transactionId: transaction.transactionId,
-      network: transaction.mirrorNetwork,
-    });
-    notifyTransactionAction(this.notificationsService);
+    emitTransactionStatusUpdate(
+      this.notificationsPublisher,
+      [{
+        entityId: transaction.id,
+        additionalData: {
+          transactionId: transaction.transactionId,
+          network: transaction.mirrorNetwork,
+        },
+      }],
+    );
 
     return true;
   }
@@ -572,16 +663,9 @@ export class TransactionsService {
 
     if (transaction.validStart.getTime() > Date.now()) {
       await this.repo.update({ id }, { isManual: false });
-      notifyTransactionAction(this.notificationsService);
+      emitTransactionUpdate(this.notificationsPublisher, [{ entityId: transaction.id }]);
     } else {
-      emitExecuteTransaction(this.chainService, {
-        id: transaction.id,
-        status: transaction.status,
-        //@ts-expect-error - cannot send Buffer instance over the network
-        transactionBytes: transaction.transactionBytes.toString('hex'),
-        mirrorNetwork: transaction.mirrorNetwork,
-        validStart: transaction.validStart,
-      });
+      await this.executeService.executeTransaction(transaction);
     }
 
     return true;
@@ -594,7 +678,7 @@ export class TransactionsService {
     await this.attachTransactionApprovers(transaction);
 
     if (!(await this.verifyAccess(transaction, user))) {
-      throw new UnauthorizedException("You don't have permission to view this transaction");
+      throw new UnauthorizedException('You don\'t have permission to view this transaction');
     }
     return transaction;
   }
@@ -639,9 +723,9 @@ export class TransactionsService {
     return (
       userKeysToSign.length !== 0 ||
       transaction.creatorKey?.userId === user.id ||
-      transaction.observers?.some(o => o.userId === user.id) ||
-      transaction.signers?.some(s => s.userKey?.userId === user.id) ||
-      transaction.approvers?.some(a => a.userId === user.id)
+      !!transaction.observers?.some(o => o.userId === user.id) ||
+      !!transaction.signers?.some(s => s.userKey?.userId === user.id) ||
+      !!transaction.approvers?.some(a => a.userId === user.id)
     );
   }
 
@@ -677,6 +761,63 @@ export class TransactionsService {
     }
 
     return transaction;
+  }
+
+  /**
+   * Validate and prepare a single transaction
+   */
+  private async validateAndPrepareTransaction(
+    dto: CreateTransactionDto,
+    user: User,
+    client: Client,
+  ) {
+    const creatorKey = user.keys.find(key => key.id === dto.creatorKeyId);
+
+    if (!creatorKey) {
+      throw new BadRequestException(`Creator key ${dto.creatorKeyId} not found`);
+    }
+
+    const publicKey = PublicKey.fromString(creatorKey.publicKey);
+
+    // Verify signature
+    const validSignature = publicKey.verify(dto.transactionBytes, dto.signature);
+    if (!validSignature) {
+      throw new BadRequestException(ErrorCodes.SNMP);
+    }
+
+    // Parse SDK transaction
+    const sdkTransaction = SDKTransaction.fromBytes(dto.transactionBytes);
+
+    // Check if expired
+    if (isExpired(sdkTransaction)) {
+      throw new BadRequestException(ErrorCodes.TE);
+    }
+
+    // Check size
+    if (isTransactionBodyOverMaxSize(sdkTransaction)) {
+      throw new BadRequestException(ErrorCodes.TOS);
+    }
+
+    // Freeze transaction with shared client
+    sdkTransaction.freezeWith(client);
+
+    const transactionHash = await sdkTransaction.getTransactionHash();
+
+    return {
+      name: dto.name,
+      type: getTransactionTypeEnumValue(sdkTransaction),
+      description: dto.description,
+      transactionId: sdkTransaction.transactionId.toString(),
+      transactionHash: encodeUint8Array(transactionHash),
+      transactionBytes: sdkTransaction.toBytes(),
+      unsignedTransactionBytes: sdkTransaction.toBytes(),
+      creatorKeyId: dto.creatorKeyId,
+      signature: dto.signature,
+      mirrorNetwork: dto.mirrorNetwork,
+      validStart: sdkTransaction.transactionId.validStart.toDate(),
+      isManual: dto.isManual,
+      cutoffAt: dto.cutoffAt,
+    };
   }
 
   /* Get the status where clause for the history transactions */

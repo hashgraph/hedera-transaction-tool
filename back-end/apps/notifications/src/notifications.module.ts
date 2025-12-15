@@ -4,13 +4,13 @@ import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
 
 import {
-  ApiProxyModule,
   AuthProxyModule,
   LoggerModule,
   LoggerMiddleware,
   HealthModule,
   DatabaseModule,
   SchedulerModule,
+  NatsModule,
 } from '@app/common';
 
 import getEnvFilePaths from './config/envFilePaths';
@@ -26,7 +26,7 @@ export const config = ConfigModule.forRoot({
     HTTP_PORT: Joi.number().required(),
     AUTH_HOST: Joi.string().required(),
     AUTH_PORT: Joi.number().required(),
-    RABBITMQ_URI: Joi.string().required(),
+    NATS_URL: Joi.string().required(),
     EMAIL_API_HOST: Joi.string().required(),
     EMAIL_API_PORT: Joi.string().required(),
     EMAIL_API_SECURE: Joi.boolean().required(),
@@ -52,9 +52,9 @@ export const config = ConfigModule.forRoot({
     ReceiverModule,
     LoggerModule,
     WebsocketModule,
-    ApiProxyModule,
     AuthProxyModule,
     HealthModule,
+    NatsModule.forRoot(),
     SchedulerModule.register({ isGlobal: true }),
   ],
   providers: [LoggerMiddleware],

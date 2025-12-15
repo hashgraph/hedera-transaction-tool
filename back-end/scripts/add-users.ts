@@ -22,7 +22,13 @@ import {
   Notification,
   NotificationPreferences,
   NotificationReceiver,
-} from '../libs/common/src/database/entities';
+  TransactionAccount,
+  TransactionNode,
+  CachedAccount,
+  CachedAccountKey,
+  CachedNode,
+  CachedNodeAdminKey,
+} from '@entities';
 
 dotenv.config({
   path: path.join(__dirname, './.env'),
@@ -69,7 +75,14 @@ async function main() {
 
   /* Exit */
   console.log(pc.redBright('\nExiting...'));
-  process.exit(0);
+  try {
+    await dataSource.destroy();
+    console.log(pc.cyan('Disconnected from database'));
+    process.exit(0);
+  } catch (err) {
+    console.error(pc.red('Error while disconnecting from database:'), err);
+    process.exit(1);
+  }
 }
 
 main();
@@ -112,6 +125,12 @@ async function connectDatabase() {
       TransactionComment,
       TransactionGroupItem,
       TransactionGroup,
+      TransactionAccount,
+      TransactionNode,
+      CachedAccount,
+      CachedAccountKey,
+      CachedNode,
+      CachedNodeAdminKey,
       Notification,
       NotificationPreferences,
       NotificationReceiver,

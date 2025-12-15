@@ -4,12 +4,13 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 /* Props */
 const props = withDefaults(
   defineProps<{
-    show: boolean;
+    show?: boolean;
     closeOnEscape?: boolean;
     closeOnClickOutside?: boolean;
     scrollable?: boolean;
   }>(),
   {
+    show: false,
     closeOnEscape: true,
     closeOnClickOutside: true,
     scrollable: false,
@@ -51,17 +52,17 @@ onBeforeUnmount(() => {
     v-bind="$attrs"
     class="modal fade show"
     aria-labelledby="exampleModalLabel"
-    :inert="!show"
+    :inert="!props.show"
     data-testid="modal-confirm-transaction"
-    :style="{ display: show ? 'block' : 'none' }"
+    :style="{ display: props.show ? 'block' : 'none' }"
   >
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" ref="modalRef">
       <div class="modal-content">
-        <div v-if="scrollable" class="modal-header pb-0"><slot name="header"></slot></div>
+        <div v-if="props.scrollable" class="modal-header pb-0"><slot name="header"></slot></div>
         <div class="modal-body"><slot></slot></div>
-        <div v-if="scrollable" class="modal-footer p-0"><slot name="footer"></slot></div>
+        <div v-if="props.scrollable" class="modal-footer p-0"><slot name="footer"></slot></div>
       </div>
     </div>
   </div>
-  <div :style="{ display: show ? 'block' : 'none' }" class="modal-backdrop fade show"></div>
+  <div :style="{ display: props.show ? 'block' : 'none' }" class="modal-backdrop fade show"></div>
 </template>

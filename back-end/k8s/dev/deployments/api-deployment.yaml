@@ -6,7 +6,7 @@ metadata:
     name: api-deployment
     app: htx-back-end
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       name: api
@@ -17,6 +17,21 @@ spec:
         name: api
         app: htx-back-end
     spec:
+      initContainers: # ADD THIS SECTION
+        - name: run-migrations
+          image: back-end-api:1.0.0
+          command: [ 'pnpm', 'migration:run' ]
+          env:
+            - name: POSTGRES_HOST
+              value: 'postgres-service'
+            - name: POSTGRES_PORT
+              value: '5432'
+            - name: POSTGRES_USERNAME
+              value: 'postgres'
+            - name: POSTGRES_PASSWORD
+              value: 'postgres'
+            - name: POSTGRES_DATABASE
+              value: 'postgres'
       containers:
         - name: api
           image: back-end-api:1.0.0
@@ -25,8 +40,8 @@ spec:
               value: '3000'
             - name: TCP_PORT
               value: '3001'
-            - name: RABBITMQ_URI
-              value: 'amqp://rabbitmq-service:5672'
+            - name: NATS_URL
+              value: 'nats://nats:4222'
             - name: POSTGRES_HOST
               value: 'postgres-service'
             - name: POSTGRES_PORT
@@ -38,7 +53,7 @@ spec:
             - name: POSTGRES_PASSWORD
               value: 'postgres'
             - name: POSTGRES_SYNCHRONIZE
-              value: 'true'
+              value: 'false'
             - name: POSTGRES_MAX_POOL_SIZE
               value: '2'
             - name: JWT_SECRET

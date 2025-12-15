@@ -2,7 +2,7 @@ import { KeyList, PublicKey } from '@hashgraph/sdk';
 
 import { areKeysEqual, computeShortenedPublicKeyList } from '.';
 
-jest.mock('@app/common');
+jest.mock('@app/common/utils');
 
 describe('computeShortenedPublicKeyList', () => {
   let publicKey1,

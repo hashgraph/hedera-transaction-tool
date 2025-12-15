@@ -27,7 +27,13 @@ import {
   NotificationPreferences,
   NotificationReceiver,
   NotificationType,
-} from '../../../../libs/common/src/database/entities';
+  TransactionNode,
+  TransactionAccount,
+  CachedAccount,
+  CachedAccountKey,
+  CachedNode,
+  CachedNodeAdminKey,
+} from '@entities';
 
 import {
   createTransactionId,
@@ -538,7 +544,7 @@ async function connectDatabase() {
     username: process.env.POSTGRES_USERNAME,
     password: process.env.POSTGRES_PASSWORD,
     database: process.env.POSTGRES_DATABASE,
-    synchronize: true,
+    synchronize: false,
     entities: [
       User,
       UserKey,
@@ -549,6 +555,12 @@ async function connectDatabase() {
       TransactionComment,
       TransactionGroupItem,
       TransactionGroup,
+      TransactionAccount,
+      TransactionNode,
+      CachedAccount,
+      CachedAccountKey,
+      CachedNode,
+      CachedNodeAdminKey,
       Notification,
       NotificationReceiver,
       NotificationPreferences,

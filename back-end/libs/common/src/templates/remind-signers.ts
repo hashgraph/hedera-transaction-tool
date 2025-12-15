@@ -10,11 +10,20 @@ export const generateRemindSignersContent = (...notifications: Notification[]) =
       Please visit the Hedera Transaction Tool and locate the transactions.`;
 
   const details = notifications.map(notification => {
-    const validStart = notification.additionalData?.validStart;
+    const validStartRaw = notification.additionalData?.validStart;
+    let validStartDisplay: string;
+
+    if (validStartRaw == null) {
+      validStartDisplay = 'unknown';
+    } else {
+      const parsed = new Date(validStartRaw);
+      validStartDisplay = isNaN(parsed.getTime()) ? String(validStartRaw) : parsed.toUTCString();
+    }
+
     const transactionId = notification.additionalData?.transactionId;
     const network = notification.additionalData?.network;
 
-    return `Valid start: ${validStart.toUTCString()} 
+    return `Valid start: ${validStartDisplay}
     Transaction ID: ${transactionId}
     Network: ${getNetworkString(network)}`;
   }).join('\n\n');

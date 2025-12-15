@@ -17,9 +17,11 @@ import {
   TransactionApprover,
   TransactionObserver,
   TransactionGroupItem,
+  TransactionAccount,
+  TransactionNode,
 } from './';
 
-import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 
 export enum TransactionType {
   ACCOUNT_CREATE = 'ACCOUNT CREATE',
@@ -138,6 +140,12 @@ export class Transaction {
 
   @OneToOne(() => TransactionGroupItem, groupItem => groupItem.transaction)
   groupItem?: TransactionGroupItem;
+
+  @OneToMany(() => TransactionAccount, (ta) => ta.transaction)
+  transactionAccounts: TransactionAccount[];
+
+  @OneToMany(() => TransactionNode, (ta) => ta.transaction)
+  transactionNodes: TransactionNode[];
 }
 
 export const transactionProperties: (keyof Transaction)[] = [
