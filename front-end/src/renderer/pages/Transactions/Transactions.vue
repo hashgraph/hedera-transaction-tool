@@ -21,8 +21,6 @@ import useNotificationsStore from '@renderer/stores/storeNotifications';
 import { useRouter } from 'vue-router';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
-import { getTransactionsToApprove } from '@renderer/services/organization';
-
 import { isLoggedInOrganization, isOrganizationActive } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionSelectionModal from '@renderer/components/TransactionSelectionModal.vue';
@@ -32,6 +30,7 @@ import TransactionImportButton from '@renderer/components/TransactionImportButto
 import { TransactionNodeCollection } from '../../../../../shared/src/ITransactionNode.ts';
 import TransactionNodeTable from '@renderer/pages/Transactions/components/TransactionNodeTable.vue';
 import History from '@renderer/pages/Transactions/components/History.vue';
+import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -149,22 +148,22 @@ async function findPrimaryTabTitle(): Promise<string> {
       Org          | if some transactions are available for approval
                    |        'Ready for Review'
                    | else
-                   |        'Ready to Sign' else
+                   |        'Ready to Sign'
      --------------|-------------------------------------------------------------------
    */
 
   if (!isLoggedInOrganization(user.selectedOrganization)) return historyTitle;
   if (user.selectedOrganization.isPasswordTemporary) return historyTitle;
 
-  const { totalItems } = await getTransactionsToApprove(
+  const nodes = await getTransactionNodes(
     user.selectedOrganization.serverUrl,
+    TransactionNodeCollection.READY_FOR_REVIEW,
     network.network,
-    1,
-    1,
+    [],
     [],
   );
 
-  return totalItems > 0 ? readyForReviewTitle : readyToSignTitle;
+  return nodes.length > 0 ? readyForReviewTitle : readyToSignTitle;
 }
 
 async function handleTabSelection(newSelectedTabIndex: number) {

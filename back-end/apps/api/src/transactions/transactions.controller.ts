@@ -196,6 +196,7 @@ export class TransactionsController {
   }
 
   /* Get all transactions to be approved by the user */
+  /* NO LONGER USED BY FRONT-END */
   @ApiOperation({
     summary: 'Get transactions to approve',
     description: 'Get all transactions to be approved by the current user.',

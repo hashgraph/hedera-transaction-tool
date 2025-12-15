@@ -151,25 +151,6 @@ export const importSignatures = async (
   }, 'Failed to import signatures');
 };
 
-/* Get transactions to approve */
-export const getTransactionsToApprove = async (
-  serverUrl: string,
-  network: Network,
-  page: number,
-  size: number,
-  sort?: { property: string; direction: 'asc' | 'desc' }[],
-): Promise<PaginatedResourceDto<ITransaction>> =>
-  commonRequestHandler(async () => {
-    const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
-    const filtering = `&filter=mirrorNetwork:eq:${network}`;
-
-    const { data } = await axiosWithCredentials.get(
-      `${serverUrl}/${controller}/approve?page=${page}&size=${size}${sorting}${filtering}`,
-    );
-
-    return data;
-  }, 'Failed to get transactions to approve');
-
 /* Get if user should approve a transaction */
 export const getUserShouldApprove = async (
   _serverUrl: string, // eslint-disable-line @typescript-eslint/no-unused-vars
