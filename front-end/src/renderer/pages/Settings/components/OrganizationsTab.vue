@@ -41,6 +41,7 @@ const handleDeleteConnection = async (organizationId: string) => {
   toggleAuthTokenInSessionStorage(serverUrl, '', true);
   await user.selectOrganization(null);
   await user.deleteOrganization(organizationId);
+  await setLast(null);
   toast.success('Connection deleted successfully', successToastOptions);
 };
 

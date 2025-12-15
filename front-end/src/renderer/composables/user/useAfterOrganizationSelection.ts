@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import { SKIPPED_PERSONAL_SETUP } from '@shared/constants';
 
 import useSetupStores from '@renderer/composables/user/useSetupStores';
+import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 
 import { get as getStoredMnemonics } from '@renderer/services/mnemonicService';
 import { getStoredClaim } from '@renderer/services/claimService';
@@ -28,6 +29,7 @@ export default function useAfterOrganizationSelection() {
   /* Composables */
   const router = useRouter();
   const setupStores = useSetupStores();
+  const { setLast } = useDefaultOrganization();
 
   /* Functions */
   const handleStates = async () => {
@@ -61,6 +63,7 @@ export default function useAfterOrganizationSelection() {
     const organization = user.selectedOrganization;
     if (organization !== null && !isOrganizationActive(organization)) {
       await user.selectOrganization(null);
+      await setLast(null);
       return;
     }
 
