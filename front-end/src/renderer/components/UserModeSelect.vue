@@ -82,6 +82,8 @@ const handleAddOrganization = async (organization: Organization) => {
 
     dropDownValue.value =
       user.organizations.find(org => org.id === organization.id)?.nickname || '';
+
+    await setLast(organization.id);
   }
 };
 

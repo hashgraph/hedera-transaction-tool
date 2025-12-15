@@ -10,7 +10,9 @@ import { useToast } from 'vue-toast-notification';
 
 import { updateOrganization } from '@renderer/services/organizationsService';
 
-import { assertUserLoggedIn, toggleAuthTokenInSessionStorage } from '@renderer/utils';
+import { assertUserLoggedIn, isOrganizationActive, toggleAuthTokenInSessionStorage } from '@renderer/utils';
+
+import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -23,6 +25,7 @@ const ws = useWebsocketConnection();
 
 /* Composables */
 const toast = useToast();
+const { setLast } = useDefaultOrganization();
 
 /* State */
 const editedIndex = ref(-1);
@@ -78,6 +81,10 @@ const handleChangeNickname = async (e: Event) => {
 const handleAddOrganization = async (organization: Organization) => {
   await user.refetchOrganizations();
   await user.selectOrganization(organization);
+
+  if (isOrganizationActive(user.selectedOrganization)) {
+    await setLast(organization.id);
+  }
 };
 </script>
 <template>
