@@ -146,7 +146,12 @@ const handleDetails = async () => {
 
     <!-- Column #3 : Description -->
     <td>
-      <span class="text-wrap-two-line-ellipsis">{{ props.node.description }}</span>
+      <span 
+        :title="props.node.description.length > 120 ? props.node.description : ''"
+        class="text-wrap-two-line-ellipsis"
+      >
+        {{ props.node.description }}
+      </span>
     </td>
 
     <template v-if="props.collection === TransactionNodeCollection.HISTORY">

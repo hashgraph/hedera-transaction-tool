@@ -216,6 +216,12 @@ async function fetchDrafts() {
   }
 }
 
+const getDraftDescription = (draft: TransactionDraft | TransactionGroup) => {
+  return (draft as TransactionDraft).type
+    ? (draft as TransactionDraft).description
+    : (draft as TransactionGroup).description;
+}
+
 /* Hooks */
 onBeforeMount(async () => {
   await fetchDrafts();
@@ -320,11 +326,13 @@ watch([currentPage, pageSize], async () => {
                     }}</span>
                 </td>
                 <td>
-                  <span class="text-wrap-two-line-ellipsis" :data-testid="'span-draft-tx-description-' + i">{{
-                      (draft as TransactionDraft).type
-                        ? (draft as TransactionDraft).description
-                        : (draft as TransactionGroup).description
-                    }}</span>
+                  <span
+                    class="text-wrap-two-line-ellipsis"
+                    :data-testid="'span-draft-tx-description-' + i"
+                    :title="getDraftDescription(draft)?.length > 120 ? getDraftDescription(draft) : ''"
+                  >
+                    {{getDraftDescription(draft)}}
+                  </span>
                 </td>
                 <td class="text-center">
                   <input
