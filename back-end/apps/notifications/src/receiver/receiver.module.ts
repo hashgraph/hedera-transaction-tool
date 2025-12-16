@@ -12,6 +12,7 @@ import {
   CachedAccountKey,
   CachedNode,
   CachedNodeAdminKey,
+  Client,
   Notification,
   NotificationPreferences,
   NotificationReceiver,
@@ -39,6 +40,7 @@ import { ReceiverConsumerService } from './receiver-consumer.service';
     TypeOrmModule.forFeature([
       User,
       UserKey,
+      Client,
       Transaction,
       TransactionSigner,
       TransactionApprover,
