@@ -4,7 +4,7 @@ import { FindOptionsWhere, Repository } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
 import { ErrorCodes } from '@app/common';
-import { User } from '@entities';
+import { Client, User } from '@entities';
 
 import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
@@ -18,6 +18,7 @@ describe('UsersService', () => {
   let service: UsersService;
 
   const userRepository = mockDeep<Repository<User>>();
+  const clientRepository = mockDeep<Repository<Client>>();
 
   const email = 'some@email.com';
   const password = 'password';
@@ -34,6 +35,10 @@ describe('UsersService', () => {
         {
           provide: getRepositoryToken(User),
           useValue: userRepository,
+        },
+        {
+          provide: getRepositoryToken(Client),
+          useValue: clientRepository,
         },
       ],
     }).compile();
@@ -258,6 +263,51 @@ describe('UsersService', () => {
 
     expect(userRepository.find).toHaveBeenCalledWith({
       where: { admin: true },
+    });
+  });
+
+  describe('updateClientVersion', () => {
+    const userId = 1;
+    const version = '1.0.0';
+    const newVersion = '1.1.0';
+
+    it('should create a new client record when none exists', async () => {
+      const newClient: Partial<Client> = { userId, version };
+      clientRepository.findOne.mockResolvedValue(null);
+      clientRepository.create.mockReturnValue(newClient as Client);
+      clientRepository.save.mockResolvedValue(newClient as Client);
+
+      const result = await service.updateClientVersion(userId, version);
+
+      expect(clientRepository.findOne).toHaveBeenCalledWith({ where: { userId } });
+      expect(clientRepository.create).toHaveBeenCalledWith({ userId, version });
+      expect(clientRepository.save).toHaveBeenCalledWith(newClient);
+      expect(result).toEqual(newClient);
+    });
+
+    it('should update existing client record when version changes', async () => {
+      const existingClient: Partial<Client> = { id: 1, userId, version };
+      const updatedClient: Partial<Client> = { id: 1, userId, version: newVersion };
+      clientRepository.findOne.mockResolvedValue(existingClient as Client);
+      clientRepository.save.mockResolvedValue(updatedClient as Client);
+
+      const result = await service.updateClientVersion(userId, newVersion);
+
+      expect(clientRepository.findOne).toHaveBeenCalledWith({ where: { userId } });
+      expect(clientRepository.save).toHaveBeenCalledWith({ ...existingClient, version: newVersion });
+      expect(result).toEqual(updatedClient);
+    });
+
+    it('should not update when version is the same', async () => {
+      const existingClient: Partial<Client> = { id: 1, userId, version };
+      clientRepository.findOne.mockResolvedValue(existingClient as Client);
+
+      const result = await service.updateClientVersion(userId, version);
+
+      expect(clientRepository.findOne).toHaveBeenCalledWith({ where: { userId } });
+      expect(clientRepository.save).not.toHaveBeenCalled();
+      expect(clientRepository.create).not.toHaveBeenCalled();
+      expect(result).toEqual(existingClient);
     });
   });
 });
