@@ -2,6 +2,8 @@ import { Notification } from '@entities';
 import { getNetworkString } from '@app/common';
 
 export const generateRemindSignersContent = (...notifications: Notification[]) => {
+  if (notifications.length === 0) return null;
+
   const header =
     notifications.length === 1
       ? `A transaction has not collected the required signatures and requires attention. 

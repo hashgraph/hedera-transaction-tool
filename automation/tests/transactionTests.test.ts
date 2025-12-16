@@ -239,7 +239,7 @@ test.describe('Transaction tests', () => {
     expect(maxAutoAssocFromResponse.toString()).toBe(maxAutoAssociationsNumber);
   });
 
-  test('Verify that system account can be updated without account key', async () => {
+  test('Verify that system account can be updated without account key using a superUser as the fee payer', async () => {
     await setupEnvironmentForTransactions(window, process.env.OPERATOR_KEY);
     const newPublicKey = await transactionPage.generateRandomPublicKey();
     const transactionId = await transactionPage.updateAccountKey('0.0.100', newPublicKey, '0.0.2');
