@@ -1,3 +1,4 @@
+export * from './client.entity';
 export * from './transaction.entity';
 export * from './transaction-approver.entity';
 export * from './transaction-comment.entity';
