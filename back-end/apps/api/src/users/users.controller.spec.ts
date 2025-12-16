@@ -2,12 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 
 import { BlacklistService, guardMock } from '@app/common';
-import { User, UserStatus } from '@entities';
+import { Client, User, UserStatus } from '@entities';
 
 import { VerifiedUserGuard } from '../guards';
 
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
+import { VersionCheckDto } from './dtos';
 
 describe('UsersController', () => {
   let controller: UsersController;
@@ -52,6 +53,7 @@ describe('UsersController', () => {
       issuedNotifications: [],
       receivedNotifications: [],
       notificationPreferences: [],
+      clients: [],
     };
   });
 
@@ -150,6 +152,35 @@ describe('UsersController', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
       }
+    });
+  });
+
+  describe('versionCheck', () => {
+    it('should call usersService.updateClientVersion with correct params', async () => {
+      const dto: VersionCheckDto = { version: '1.0.0' };
+      const client: Partial<Client> = { id: 1, userId: user.id, version: dto.version };
+      userService.updateClientVersion.mockResolvedValue(client as Client);
+
+      await controller.versionCheck(user, dto);
+
+      expect(userService.updateClientVersion).toHaveBeenCalledWith(user.id, dto.version);
+    });
+
+    it('should return success response', async () => {
+      const dto: VersionCheckDto = { version: '1.0.0' };
+      const client: Partial<Client> = { id: 1, userId: user.id, version: dto.version };
+      userService.updateClientVersion.mockResolvedValue(client as Client);
+
+      const result = await controller.versionCheck(user, dto);
+
+      expect(result).toEqual({ success: true });
+    });
+
+    it('should throw an error if the service fails', async () => {
+      const dto: VersionCheckDto = { version: '1.0.0' };
+      userService.updateClientVersion.mockRejectedValue(new Error('Database error'));
+
+      await expect(controller.versionCheck(user, dto)).rejects.toThrow('Database error');
     });
   });
 

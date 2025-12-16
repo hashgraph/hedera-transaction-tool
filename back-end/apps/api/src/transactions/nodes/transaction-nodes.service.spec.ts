@@ -64,6 +64,7 @@ describe('TransactionNodesService', () => {
     issuedNotifications: [],
     receivedNotifications: [],
     notificationPreferences: [],
+    clients: [],
   };
 
   //

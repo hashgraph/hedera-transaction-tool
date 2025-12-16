@@ -1,14 +1,16 @@
 import { Notification } from '@entities';
 
-export const generateUserRegisteredMessage = (additionData: Record<string, any>) => {
-  const { url, tempPassword } = additionData;
+export const generateUserRegisteredMessage = (additionalData: Record<string, any>) => {
+  const { url, tempPassword } = additionalData;
   return `You have been registered in Hedera Transaction Tool.
 The Organization URL is: <b>${url}</b>
 Your temporary password is: <b>${tempPassword}</b>`
 }
 
 export function generateNotifyUserRegisteredContent(notifications: Notification[]): string {
-  const emails = notifications.map(n => n.additionalData?.email).filter(Boolean);
+  if (notifications.length === 0) return null;
+
+  const emails = notifications.map(n => n.additionalData?.username).filter(Boolean);
 
   const title =
     emails.length === 1 ? 'New user registration' : 'New user registrations';

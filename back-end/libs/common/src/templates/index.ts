@@ -17,7 +17,6 @@ export * from './transaction-waiting-for-signatures';
 export * from './user-registered';
 
 export const generateEmailContent = (type: string | NotificationType, ...notifications: Notification[]) => {
-  console.log(`generateEmailContent: ${type}`);
   switch (type) {
     case NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES:
       return generateTransactionWaitingForSignaturesContent(...notifications);
@@ -37,6 +36,7 @@ export const generateEmailContent = (type: string | NotificationType, ...notific
 }
 
 export const getNetworkString = (network: string) => {
+  if (!network) return '';
   network = network.toLocaleLowerCase();
   switch (network) {
     case 'mainnet':

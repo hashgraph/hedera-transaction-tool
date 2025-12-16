@@ -17,6 +17,8 @@ function groupByStatus(
 }
 
 export function generateTransactionExecutedContent(...notifications: Notification[]): string {
+  if (notifications.length === 0) return null;
+
   const header =
     notifications.length === 1
       ? `Transaction has executed!`
@@ -36,9 +38,7 @@ export function generateTransactionExecutedContent(...notifications: Notificatio
 //TODO this should use TT colors. Make sure status separation is clear.
 //executedAt and status values don't appear to be in the Notification.additionalData.
 export function newGenerateTransactionExecutedContent(...notifications: Notification[]): string {
-  if (!notifications.length) {
-    return '';
-  }
+  if (notifications.length === 0) return null;
 
   const count = notifications.length;
   const title =

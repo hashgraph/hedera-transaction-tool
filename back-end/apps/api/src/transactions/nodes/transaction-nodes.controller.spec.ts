@@ -60,6 +60,7 @@ describe('TransactionNodesController', () => {
       issuedNotifications: [],
       receivedNotifications: [],
       notificationPreferences: [],
+      clients: [],
     };
     transactionNode = {
       transactionId: 1,
