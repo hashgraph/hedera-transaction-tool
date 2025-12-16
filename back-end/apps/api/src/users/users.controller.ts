@@ -7,6 +7,7 @@ import {
   Param,
   ParseIntPipe,
   Patch,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -18,7 +19,7 @@ import { User } from '@entities';
 import { AdminGuard, JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../guards';
 import { AllowNonVerifiedUser, GetUser } from '../decorators';
 
-import { UpdateUserDto, UserDto } from './dtos';
+import { UpdateUserDto, UserDto, VersionCheckDto, VersionCheckResponseDto } from './dtos';
 
 import { UsersService } from './users.service';
 
@@ -110,5 +111,29 @@ export class UsersController {
   removeUser(@GetUser() user: User, @Param('id', ParseIntPipe) id: number): Promise<boolean> {
     if (user.id === id) throw new BadRequestException(ErrorCodes.CRYFO);
     return this.usersService.removeUser(id);
+  }
+
+  @ApiOperation({
+    summary: 'Check and store client version',
+    description: 'Logs and persists the frontend version for the authenticated user.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Version recorded successfully',
+    type: VersionCheckResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid version format',
+  })
+  @AllowNonVerifiedUser()
+  @Post('/version-check')
+  @Serialize(VersionCheckResponseDto)
+  async versionCheck(
+    @GetUser() user: User,
+    @Body() dto: VersionCheckDto,
+  ): Promise<VersionCheckResponseDto> {
+    await this.usersService.updateClientVersion(user.id, dto.version);
+    return { success: true };
   }
 }
