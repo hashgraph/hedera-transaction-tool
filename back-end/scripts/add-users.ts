@@ -28,6 +28,7 @@ import {
   CachedAccountKey,
   CachedNode,
   CachedNodeAdminKey,
+  Client,
 } from '@entities';
 
 dotenv.config({
@@ -134,6 +135,7 @@ async function connectDatabase() {
       Notification,
       NotificationPreferences,
       NotificationReceiver,
+      Client,
     ],
   });
 

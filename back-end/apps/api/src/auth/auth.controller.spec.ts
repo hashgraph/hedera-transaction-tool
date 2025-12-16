@@ -67,6 +67,7 @@ describe('AuthController', () => {
       issuedNotifications: [],
       receivedNotifications: [],
       notificationPreferences: [],
+      clients: [],
     };
   });
 
