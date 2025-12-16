@@ -2,6 +2,8 @@ import { Notification } from '@entities';
 import { getNetworkString } from '@app/common';
 
 export const generateTransactionReadyForExecutionContent = (...notifications: Notification[]) => {
+  if (notifications.length === 0) return null;
+
   const header =
     notifications.length === 1
       ? `Transaction is ready for execution!`

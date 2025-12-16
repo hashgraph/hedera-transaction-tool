@@ -1,6 +1,7 @@
 import { ELECTRON_APP_PROTOCOL_PREFIX } from '@app/common';
 
-export const generateResetPasswordMessage = (otp: string) => {
+export const generateResetPasswordMessage = (additionalData: Record<string, any>) => {
+  const { otp } = additionalData;
   return `
       <div>
         <h1 style="margin: 0">Hedera Transaction Tool</h1>
