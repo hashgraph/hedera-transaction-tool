@@ -13,6 +13,7 @@ import { DataSource } from 'typeorm';
 import {
   User,
   UserKey,
+  Client,
   Transaction,
   TransactionApprover,
   TransactionSigner,
@@ -131,6 +132,7 @@ async function connectDatabase() {
     entities: [
       User,
       UserKey,
+      Client,
       Transaction,
       TransactionSigner,
       TransactionApprover,
