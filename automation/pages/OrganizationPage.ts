@@ -1376,10 +1376,6 @@ export class OrganizationPage extends BasePage {
     return await this.getText(this.transactionNodeExecutedAtIndexSelector + index);
   }
 
-  async getHistoryTransactionExecutedAtByIndex(index: number) {
-    return await this.getText(this.transactionNodeExecutedAtIndexSelector + index);
-  }
-
   async isHistoryDetailsButtonVisibleByIndex(index: number) {
     return await this.isElementVisible(this.transactionNodeDetailsButtonIndexSelector + index);
   }
