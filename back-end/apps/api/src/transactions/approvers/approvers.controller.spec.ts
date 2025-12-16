@@ -59,6 +59,7 @@ describe('ApproversController', () => {
       issuedNotifications: [],
       receivedNotifications: [],
       notificationPreferences: [],
+      clients: [],
     };
     transactionApprover = {
       id: 1,

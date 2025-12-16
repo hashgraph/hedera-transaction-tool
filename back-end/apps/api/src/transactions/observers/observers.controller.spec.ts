@@ -53,6 +53,7 @@ describe('ObserversController', () => {
       issuedNotifications: [],
       receivedNotifications: [],
       notificationPreferences: [],
+      clients: [],
     };
     observer = {
       id: 1,
