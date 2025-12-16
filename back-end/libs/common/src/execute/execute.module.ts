@@ -6,6 +6,7 @@ import {
   CachedAccountKey,
   CachedNode,
   CachedNodeAdminKey,
+  Client,
   Notification,
   NotificationPreferences,
   NotificationReceiver,
@@ -31,6 +32,7 @@ import { ExecuteService } from './execute.service';
     TypeOrmModule.forFeature([
       User,
       UserKey,
+      Client,
       Transaction,
       TransactionSigner,
       TransactionApprover,
