@@ -1,0 +1,159 @@
+import { checkFrontendVersion } from './index';
+
+describe('Semver Utilities', () => {
+  describe('checkFrontendVersion', () => {
+    const repoUrl = 'https://github.com/hashgraph/hedera-transaction-tool/releases';
+
+    describe('when user version is older than latest supported', () => {
+      it('should indicate update is available', () => {
+        const result = checkFrontendVersion('1.0.0', '1.1.0', '0.9.0', repoUrl);
+
+        expect(result.updateAvailable).toBe(true);
+        expect(result.belowMinimumVersion).toBe(false);
+        expect(result.latestSupportedVersion).toBe('1.1.0');
+        expect(result.minimumSupportedVersion).toBe('0.9.0');
+        expect(result.updateUrl).toBe(`${repoUrl}/tag/v1.1.0`);
+      });
+
+      it('should handle major version differences', () => {
+        const result = checkFrontendVersion('1.9.9', '2.0.0', '1.0.0', repoUrl);
+
+        expect(result.updateAvailable).toBe(true);
+        expect(result.updateUrl).toBe(`${repoUrl}/tag/v2.0.0`);
+      });
+
+      it('should handle patch version differences', () => {
+        const result = checkFrontendVersion('1.2.3', '1.2.4', '1.0.0', repoUrl);
+
+        expect(result.updateAvailable).toBe(true);
+      });
+    });
+
+    describe('when user version equals latest supported', () => {
+      it('should not indicate update is available', () => {
+        const result = checkFrontendVersion('1.2.0', '1.2.0', '1.0.0', repoUrl);
+
+        expect(result.updateAvailable).toBe(false);
+        expect(result.updateUrl).toBeNull();
+        expect(result.latestSupportedVersion).toBe('1.2.0');
+      });
+    });
+
+    describe('when user version is newer than latest supported', () => {
+      it('should not indicate update is available', () => {
+        const result = checkFrontendVersion('2.0.0', '1.5.0', '1.0.0', repoUrl);
+
+        expect(result.updateAvailable).toBe(false);
+        expect(result.belowMinimumVersion).toBe(false);
+        expect(result.updateUrl).toBeNull();
+      });
+    });
+
+    describe('when user version is below minimum supported', () => {
+      it('should indicate below minimum version', () => {
+        const result = checkFrontendVersion('0.8.0', '1.2.0', '1.0.0', repoUrl);
+
+        expect(result.belowMinimumVersion).toBe(true);
+        expect(result.updateAvailable).toBe(true);
+        expect(result.minimumSupportedVersion).toBe('1.0.0');
+      });
+
+      it('should handle when user version is just below minimum', () => {
+        const result = checkFrontendVersion('0.9.9', '1.2.0', '1.0.0', repoUrl);
+
+        expect(result.belowMinimumVersion).toBe(true);
+      });
+    });
+
+    describe('when environment variables are not set', () => {
+      it('should handle null latest supported version', () => {
+        const result = checkFrontendVersion('1.0.0', null, '0.9.0', repoUrl);
+
+        expect(result.latestSupportedVersion).toBeNull();
+        expect(result.updateAvailable).toBe(false);
+        expect(result.updateUrl).toBeNull();
+      });
+
+      it('should handle null minimum supported version', () => {
+        const result = checkFrontendVersion('1.0.0', '1.2.0', null, repoUrl);
+
+        expect(result.minimumSupportedVersion).toBeNull();
+        expect(result.belowMinimumVersion).toBe(false);
+      });
+
+      it('should handle null repo URL', () => {
+        const result = checkFrontendVersion('1.0.0', '1.2.0', '0.9.0', null);
+
+        expect(result.updateAvailable).toBe(true);
+        expect(result.updateUrl).toBeNull();
+      });
+
+      it('should handle all null environment values', () => {
+        const result = checkFrontendVersion('1.0.0', null, null, null);
+
+        expect(result.latestSupportedVersion).toBeNull();
+        expect(result.minimumSupportedVersion).toBeNull();
+        expect(result.updateAvailable).toBe(false);
+        expect(result.belowMinimumVersion).toBe(false);
+        expect(result.updateUrl).toBeNull();
+      });
+    });
+
+    describe('pre-release versions', () => {
+      it('should handle pre-release user versions', () => {
+        const result = checkFrontendVersion('1.0.0-beta.1', '1.0.0', '0.9.0', repoUrl);
+
+        expect(result.updateAvailable).toBe(true);
+      });
+
+      it('should handle pre-release latest versions', () => {
+        const result = checkFrontendVersion('1.0.0', '1.1.0-rc.1', '0.9.0', repoUrl);
+
+        // 1.0.0 is less than 1.1.0-rc.1 in semver
+        expect(result.updateAvailable).toBe(true);
+      });
+    });
+
+    describe('URL handling', () => {
+      it('should handle trailing slash in repo URL', () => {
+        const result = checkFrontendVersion(
+          '1.0.0',
+          '1.2.0',
+          '0.9.0',
+          'https://github.com/org/repo/releases/',
+        );
+
+        expect(result.updateUrl).toBe('https://github.com/org/repo/releases/tag/v1.2.0');
+      });
+
+      it('should handle multiple trailing slashes', () => {
+        const result = checkFrontendVersion(
+          '1.0.0',
+          '1.2.0',
+          '0.9.0',
+          'https://github.com/org/repo/releases///',
+        );
+
+        expect(result.updateUrl).toBe('https://github.com/org/repo/releases/tag/v1.2.0');
+      });
+    });
+
+    describe('invalid version handling', () => {
+      it('should handle invalid user version gracefully', () => {
+        const result = checkFrontendVersion('invalid', '1.2.0', '1.0.0', repoUrl);
+
+        expect(result.updateAvailable).toBe(false);
+        expect(result.belowMinimumVersion).toBe(false);
+        expect(result.latestSupportedVersion).toBe('1.2.0');
+      });
+
+      it('should handle invalid latest version gracefully', () => {
+        const result = checkFrontendVersion('1.0.0', 'invalid', '0.9.0', repoUrl);
+
+        expect(result.updateAvailable).toBe(false);
+        expect(result.latestSupportedVersion).toBe('invalid');
+      });
+    });
+  });
+});
+
