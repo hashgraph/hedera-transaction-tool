@@ -1,6 +1,7 @@
 import { app, ipcMain } from 'electron';
 
 import { Updater } from '@main/services/update';
+import { getUpdaterService } from '@main/services/electronUpdater';
 
 const createChannelName = (...props: string[]) => ['update', ...props].join(':');
 
@@ -10,4 +11,27 @@ export default () => {
   );
 
   ipcMain.handle(createChannelName('get-version'), () => app.getVersion());
+
+  ipcMain.on(createChannelName('start-download'), (_e, updateUrl: string) => {
+    const updaterService = getUpdaterService();
+    if (updaterService) {
+      updaterService.checkForUpdates(updateUrl).then(() => {
+        updaterService.downloadUpdate();
+      });
+    }
+  });
+
+  ipcMain.on(createChannelName('install'), () => {
+    const updaterService = getUpdaterService();
+    if (updaterService) {
+      updaterService.quitAndInstall();
+    }
+  });
+
+  ipcMain.on(createChannelName('cancel'), () => {
+    const updaterService = getUpdaterService();
+    if (updaterService) {
+      updaterService.cancelUpdate();
+    }
+  });
 };

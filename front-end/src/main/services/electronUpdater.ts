@@ -206,3 +206,16 @@ export class ElectronUpdaterService {
     return this.currentUpdateUrl;
   }
 }
+
+let updaterServiceInstance: ElectronUpdaterService | null = null;
+
+export function getUpdaterService(): ElectronUpdaterService | null {
+  return updaterServiceInstance;
+}
+
+export function initializeUpdaterService(window: BrowserWindow): ElectronUpdaterService {
+  if (!updaterServiceInstance) {
+    updaterServiceInstance = new ElectronUpdaterService(window);
+  }
+  return updaterServiceInstance;
+}
