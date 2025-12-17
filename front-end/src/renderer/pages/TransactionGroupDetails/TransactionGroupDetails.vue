@@ -48,6 +48,7 @@ import {
   signTransactions,
   getErrorMessage,
   assertIsLoggedInOrganization,
+  getStatusFromCode,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -290,7 +291,9 @@ const handleSignAll = async (showModal = false) => {
     loadingStates[sign] = 'Signing...';
 
     let itemsToSign = group.value?.groupItems.map(item => item.transaction) ?? [];
-    itemsToSign = itemsToSign.filter(item => item.status === TransactionStatus.WAITING_FOR_SIGNATURES);
+    itemsToSign = itemsToSign.filter(
+      item => item.status === TransactionStatus.WAITING_FOR_SIGNATURES,
+    );
     const signed = await signTransactions(
       itemsToSign,
       personalPassword,
@@ -591,61 +594,62 @@ function setGetTransactionsFunction() {
   }, false);
 }
 
-function statusIconClass(status: TransactionStatus): string {
-  let result: string;
-  switch (status) {
-    case TransactionStatus.CANCELED:
-    case TransactionStatus.EXPIRED:
-      result = 'bi-x-lg text-danger';
-      break;
-    case TransactionStatus.REJECTED:
-    case TransactionStatus.FAILED:
-      result = 'bi-x-circle text-danger';
-      break;
-    case TransactionStatus.WAITING_FOR_EXECUTION:
-      result = 'bi-check-lg text-success';
-      break;
-    case TransactionStatus.EXECUTED:
-    case TransactionStatus.ARCHIVED:
-      result = 'bi-check-circle text-success';
-      break;
-    case TransactionStatus.WAITING_FOR_SIGNATURES:
-    default:
-      result = '';
-  }
-  return result;
-}
+// function statusIconClass(status: TransactionStatus): string {
+//   let result: string;
+//   switch (status) {
+//     case TransactionStatus.CANCELED:
+//     case TransactionStatus.EXPIRED:
+//       result = 'bi-x-lg text-danger';
+//       break;
+//     case TransactionStatus.REJECTED:
+//     case TransactionStatus.FAILED:
+//       result = 'bi-x-circle text-danger';
+//       break;
+//     case TransactionStatus.WAITING_FOR_EXECUTION:
+//       result = 'bi-check-lg text-success';
+//       break;
+//     case TransactionStatus.EXECUTED:
+//     case TransactionStatus.ARCHIVED:
+//       result = 'bi-check-circle text-success';
+//       break;
+//     case TransactionStatus.WAITING_FOR_SIGNATURES:
+//     default:
+//       result = '';
+//   }
+//   return result;
+// }
 
-function tooltipText(status: TransactionStatus): string {
-  let result: string;
-  switch (status) {
-    case TransactionStatus.CANCELED:
-      result = 'Transaction has been canceled';
-      break;
-    case TransactionStatus.EXPIRED:
-      result = 'Transaction has expired';
-      break;
-    case TransactionStatus.REJECTED:
-      result = 'Transaction has beed rejected by the network';
-      break;
-    case TransactionStatus.FAILED:
-      result = 'Transaction has failed';
-      break;
-    case TransactionStatus.WAITING_FOR_EXECUTION:
-      result = 'Transaction is signed by all required signers';
-      break;
-    case TransactionStatus.EXECUTED:
-      result = 'Transaction was succesfully executed';
-      break;
-    case TransactionStatus.ARCHIVED:
-      result = 'Transaction was archived';
-      break;
-    case TransactionStatus.WAITING_FOR_SIGNATURES:
-    default:
-      result = '';
-  }
-  return result;
-}
+// function tooltipText(status: TransactionStatus): string {
+//   let result: string;
+//   switch (status) {
+//     case TransactionStatus.CANCELED:
+//       result = 'Transaction has been canceled';
+//       break;
+//     case TransactionStatus.EXPIRED:
+//       result = 'Transaction has expired';
+//       break;
+//     case TransactionStatus.REJECTED:
+//       result = 'Transaction has beed rejected by the network';
+//       break;
+//     case TransactionStatus.FAILED:
+//       result = 'Transaction has failed';
+//       break;
+//     case TransactionStatus.WAITING_FOR_EXECUTION:
+//       result = 'Transaction is signed by all required signers';
+//       break;
+//     case TransactionStatus.EXECUTED:
+//       result = 'Transaction was succesfully executed';
+//       break;
+//     case TransactionStatus.ARCHIVED:
+//       result = 'Transaction was archived';
+//       break;
+//     case TransactionStatus.WAITING_FOR_SIGNATURES:
+//     default:
+//       result = '';
+//   }
+//   return result;
+// }
+
 const canSignItem = (item: IGroupItem) => {
   return (
     !signingItems.value[item.seq] &&
@@ -653,6 +657,64 @@ const canSignItem = (item: IGroupItem) => {
     item.transaction.status === TransactionStatus.WAITING_FOR_SIGNATURES
   );
 };
+
+const makeItemStatus = (item: IGroupItem) => {
+  let result: string;
+  const status = item.transaction.status;
+  const statusCode = item.transaction.statusCode;
+
+  if (statusCode) {
+    // Transaction has been executed
+    result = getStatusFromCode(statusCode) ?? '';
+  } else {
+    switch (status) {
+      case TransactionStatus.WAITING_FOR_SIGNATURES:
+        result = canSignItem(item) ? 'READY TO SIGN' : 'IN PROGRESS';
+        break;
+      case TransactionStatus.WAITING_FOR_EXECUTION:
+        result = 'READY FOR EXECUTION';
+        break;
+      case TransactionStatus.EXECUTED:
+        result = 'EXECUTED';
+        break;
+      case TransactionStatus.CANCELED:
+        result = 'CANCELED';
+        break;
+      case TransactionStatus.EXPIRED:
+        result = 'EXPIRED';
+        break;
+      case TransactionStatus.REJECTED:
+        result = 'REJECTED';
+        break;
+      case TransactionStatus.ARCHIVED:
+        result = 'ARCHIVED';
+        break;
+      default:
+        result = status;
+    }
+  }
+  return result;
+};
+
+function itemStatusBadgeClass(item: IGroupItem): string {
+  let result: string;
+  const status = item.transaction.status;
+  const statusCode = item.transaction.statusCode;
+  if (statusCode) {
+    result = [0, 22, 104].includes(statusCode) ? 'bg-success' : 'bg-danger';
+  } else if (status === TransactionStatus.ARCHIVED) {
+    result = 'bg-success';
+  } else if (
+    [TransactionStatus.EXPIRED, TransactionStatus.CANCELED, TransactionStatus.REJECTED].includes(
+      status,
+    )
+  ) {
+    result = 'bg-danger';
+  } else {
+    result = 'bg-info';
+  }
+  return result;
+}
 </script>
 <template>
   <form @submit.prevent="handleSubmit" class="p-5">
@@ -759,7 +821,7 @@ const canSignItem = (item: IGroupItem) => {
                   <table class="table-custom">
                     <thead>
                       <tr>
-                        <th></th>
+<!--                        <th></th>-->
                         <th>
                           <div>
                             <span>Transaction ID</span>
@@ -768,6 +830,11 @@ const canSignItem = (item: IGroupItem) => {
                         <th>
                           <div>
                             <span>Transaction Type</span>
+                          </div>
+                        </th>
+                        <th>
+                          <div>
+                            <span>Status</span>
                           </div>
                         </th>
                         <th>
@@ -785,22 +852,24 @@ const canSignItem = (item: IGroupItem) => {
                         <Transition name="fade" mode="out-in">
                           <template v-if="groupItem">
                             <tr>
-                              <td class="pe-0 ps-3">
-                                <span
-                                  v-if="groupItem.transaction.status"
-                                  data-bs-toggle="tooltip"
-                                  data-bs-custom-class="wide-tooltip"
-                                  data-bs-trigger="hover"
-                                  data-bs-placement="top"
-                                  :title="tooltipText(groupItem.transaction.status)"
-                                  ref="tooltipRef"
-                                  class="bi fs-5"
-                                  :class="statusIconClass(groupItem.transaction.status)"
-                                ></span>
-                              </td>
+<!--                              <td class="pe-0 ps-3">-->
+<!--                                <span-->
+<!--                                  v-if="groupItem.transaction.status"-->
+<!--                                  data-bs-toggle="tooltip"-->
+<!--                                  data-bs-custom-class="wide-tooltip"-->
+<!--                                  data-bs-trigger="hover"-->
+<!--                                  data-bs-placement="top"-->
+<!--                                  :title="tooltipText(groupItem.transaction.status)"-->
+<!--                                  ref="tooltipRef"-->
+<!--                                  class="bi fs-5"-->
+<!--                                  :class="statusIconClass(groupItem.transaction.status)"-->
+<!--                                ></span>-->
+<!--                              </td>-->
+                              <!-- Column #1 : Transaction ID -->
                               <td data-testid="td-group-transaction-id">
                                 {{ groupItem.transaction.transactionId }}
                               </td>
+                              <!-- Column #2 : Transaction Type -->
                               <td>
                                 <span class="text-bold">{{
                                   formatTransactionType(
@@ -810,6 +879,15 @@ const canSignItem = (item: IGroupItem) => {
                                   )
                                 }}</span>
                               </td>
+                              <!-- Column #3 : Status -->
+                              <td :data-testid="`td-transaction-node-transaction-status-${index}`">
+                                <span
+                                  :class="itemStatusBadgeClass(groupItem as IGroupItem)"
+                                  class="badge text-break"
+                                  >{{ makeItemStatus(groupItem as IGroupItem) }}</span
+                                >
+                              </td>
+                              <!-- Column #4 : Valid Start -->
                               <td data-testid="td-group-valid-start-time">
                                 <DateTimeString
                                   :date="new Date(groupItem.transaction.validStart)"
@@ -817,6 +895,7 @@ const canSignItem = (item: IGroupItem) => {
                                   wrap
                                 />
                               </td>
+                              <!-- Column #5 : Actions -->
                               <td class="text-center">
                                 <div class="d-flex justify-content-center flex-wrap gap-4">
                                   <AppButton
@@ -860,7 +939,6 @@ const canSignItem = (item: IGroupItem) => {
               :text="confirmModalText"
               :callback="confirmCallback"
             />
-
           </div>
         </template>
         <template v-else>
