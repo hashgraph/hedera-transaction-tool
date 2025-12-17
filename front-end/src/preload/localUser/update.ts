@@ -1,11 +1,7 @@
 import type { ProgressInfo, UpdateInfo } from 'electron-updater';
 import { ipcRenderer } from 'electron';
 
-export interface UpdateError {
-  type: 'network' | 'connection-refused' | 'invalid-url' | 'generic';
-  message: string;
-  details: string;
-}
+import type { UpdateError } from '@shared/interfaces/update';
 
 export default {
   update: {

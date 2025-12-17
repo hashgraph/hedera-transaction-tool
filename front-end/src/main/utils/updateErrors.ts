@@ -1,12 +1,6 @@
-export type UpdateErrorType = 'network' | 'connection-refused' | 'invalid-url' | 'generic';
+import type { UpdateError } from '@shared/interfaces/update';
 
-export interface CategorizedError {
-  type: UpdateErrorType;
-  message: string;
-  details: string;
-}
-
-export function categorizeUpdateError(error: Error | string): CategorizedError {
+export function categorizeUpdateError(error: Error | string): UpdateError {
   const errorMessage = typeof error === 'string' ? error : error.message;
   const errorStack = typeof error === 'string' ? undefined : error.stack;
   const errorName = typeof error === 'string' ? 'Unknown' : error.name;
