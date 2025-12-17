@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
@@ -19,6 +20,7 @@ describe('UsersService', () => {
 
   const userRepository = mockDeep<Repository<User>>();
   const clientRepository = mockDeep<Repository<Client>>();
+  const configService = mockDeep<ConfigService>();
 
   const email = 'some@email.com';
   const password = 'password';
@@ -39,6 +41,10 @@ describe('UsersService', () => {
         {
           provide: getRepositoryToken(Client),
           useValue: clientRepository,
+        },
+        {
+          provide: ConfigService,
+          useValue: configService,
         },
       ],
     }).compile();
