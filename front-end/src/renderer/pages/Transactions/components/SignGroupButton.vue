@@ -78,6 +78,7 @@ const handleSign = async (personalPassword: string|null) => {
 
 <template>
   <AppButton
+    v-bind="$attrs"
     :disabled="signOnGoing"
     :loading="signOnGoing"
     loading-text="Sign All"
