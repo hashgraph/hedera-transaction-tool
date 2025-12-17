@@ -216,6 +216,17 @@ async function fetchDrafts() {
   }
 }
 
+const getDraftDescriptionData = (draft: TransactionDraft | TransactionGroup) => {
+  const desc = (draft as TransactionDraft).type
+    ? (draft as TransactionDraft).description
+    : (draft as TransactionGroup).description;
+  
+  return {
+    description: desc,
+    tooltip: desc.length > 120 ? desc : ''
+  };
+}
+
 /* Hooks */
 onBeforeMount(async () => {
   await fetchDrafts();
@@ -320,11 +331,13 @@ watch([currentPage, pageSize], async () => {
                     }}</span>
                 </td>
                 <td>
-                  <span class="text-wrap-two-line-ellipsis" :data-testid="'span-draft-tx-description-' + i">{{
-                      (draft as TransactionDraft).type
-                        ? (draft as TransactionDraft).description
-                        : (draft as TransactionGroup).description
-                    }}</span>
+                  <span
+                    class="text-wrap-two-line-ellipsis"
+                    :data-testid="'span-draft-tx-description-' + i"
+                    :title="getDraftDescriptionData(draft).tooltip"
+                  >
+                    {{getDraftDescriptionData(draft).description}}
+                  </span>
                 </td>
                 <td class="text-center">
                   <input
