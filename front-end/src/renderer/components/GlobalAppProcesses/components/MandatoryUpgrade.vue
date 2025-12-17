@@ -1,16 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-import useUserStore from '@renderer/stores/storeUser';
 import useVersionCheck from '@renderer/composables/useVersionCheck';
 
-import { openExternal } from '@renderer/services/electronUtilsService';
+import { openExternal, quit } from '@renderer/services/electronUtilsService';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 
-const user = useUserStore();
-const { versionStatus, updateUrl, reset } = useVersionCheck();
+const { versionStatus, updateUrl } = useVersionCheck();
 
 const shown = computed(() => versionStatus.value === 'belowMinimum');
 
@@ -20,9 +18,8 @@ const handleDownload = () => {
   }
 };
 
-const handleLogout = () => {
-  reset();
-  user.logout();
+const handleQuit = async () => {
+  await quit();
 };
 </script>
 <template>
@@ -45,7 +42,7 @@ const handleLogout = () => {
       <hr class="separator my-4" />
 
       <div class="d-flex gap-4 justify-content-center">
-        <AppButton type="button" color="secondary" @click="handleLogout">Logout</AppButton>
+        <AppButton type="button" color="secondary" @click="handleQuit">Quit</AppButton>
         <AppButton type="button" color="primary" @click="handleDownload">
           <i class="bi bi-download me-2"></i>Download Update
         </AppButton>
@@ -53,4 +50,3 @@ const handleLogout = () => {
     </div>
   </AppModal>
 </template>
-
