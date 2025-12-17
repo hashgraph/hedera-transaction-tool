@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, onUpdated } from 'vue';
 import { useRouter } from 'vue-router';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import useFilterNotifications from '@renderer/composables/useFilterNotifications.ts';
@@ -15,6 +15,7 @@ import {
   TransactionNodeCollection,
 } from '../../../../../../shared/src/ITransactionNode.ts';
 import { NotificationType, TransactionStatus } from '@shared/interfaces';
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 /* Props */
 const props = defineProps<{
@@ -34,6 +35,7 @@ const notifications = useNotificationsStore();
 
 /* Composables */
 const router = useRouter();
+const createTooltips = useCreateTooltips();
 
 /* Computed */
 const hasNotifications = computed(() => {
@@ -125,6 +127,14 @@ const handleDetails = async () => {
     await redirectToGroupDetails(router, props.node.groupId, 'readyToSign');
   }
 };
+
+onMounted(() => {
+  createTooltips();
+});
+
+onUpdated(() => {
+  createTooltips();
+});
 </script>
 
 <template>
@@ -147,8 +157,12 @@ const handleDetails = async () => {
     <!-- Column #3 : Description -->
     <td>
       <span 
-        :title="props.node.description.length > 120 ? props.node.description : ''"
         class="text-wrap-two-line-ellipsis"
+        :data-bs-toggle="props.node.description.length > 120 ? 'tooltip' : ''"
+        data-bs-custom-class="wide-tooltip"
+        data-bs-trigger="hover"
+        data-bs-placement="top"
+        :data-bs-title="props.node.description.length > 120 ? props.node.description : ''"
       >
         {{ props.node.description }}
       </span>

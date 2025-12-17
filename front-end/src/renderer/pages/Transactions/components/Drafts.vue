@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TransactionDraft, TransactionGroup } from '@prisma/client';
 
-import { computed, onBeforeMount, ref, watch } from 'vue';
+import { computed, onBeforeMount, onUpdated, ref, watch } from 'vue';
 
 import { Prisma } from '@prisma/client';
 
@@ -32,6 +32,7 @@ import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 /* Store */
 const user = useUserStore();
@@ -55,6 +56,7 @@ const generatedClass = computed(() => {
 /* Composables */
 const router = useRouter();
 const toast = useToast();
+const createTooltips = useCreateTooltips();
 
 /* Handlers */
 const handleSort = async (field: string, direction: string) => {
@@ -220,21 +222,30 @@ const getDraftDescriptionData = (draft: TransactionDraft | TransactionGroup) => 
   const desc = (draft as TransactionDraft).type
     ? (draft as TransactionDraft).description
     : (draft as TransactionGroup).description;
+
+  const hasTooltip = desc.length > 120;
   
   return {
     description: desc,
-    tooltip: desc.length > 120 ? desc : ''
+    tooltip: hasTooltip ? desc : '',
+    showTooltip: hasTooltip,
   };
 }
 
 /* Hooks */
 onBeforeMount(async () => {
   await fetchDrafts();
+  createTooltips();
+});
+
+onUpdated(() => {
+  createTooltips();
 });
 
 /* Watchers */
 watch([currentPage, pageSize], async () => {
   await fetchDrafts();
+  createTooltips();
 });
 </script>
 
@@ -334,7 +345,11 @@ watch([currentPage, pageSize], async () => {
                   <span
                     class="text-wrap-two-line-ellipsis"
                     :data-testid="'span-draft-tx-description-' + i"
-                    :title="getDraftDescriptionData(draft).tooltip"
+                    :data-bs-toggle="getDraftDescriptionData(draft).showTooltip ? 'tooltip' : ''"
+                    data-bs-trigger="hover"
+                    data-bs-placement="bottom"
+                    data-bs-custom-class="wide-tooltip"
+                    :data-bs-title="getDraftDescriptionData(draft).tooltip"
                   >
                     {{getDraftDescriptionData(draft).description}}
                   </span>
