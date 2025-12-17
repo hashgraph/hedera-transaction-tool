@@ -12,7 +12,7 @@ const { versionStatus, updateUrl, latestVersion, isDismissed, dismissOptionalUpd
   useVersionCheck();
 
 const shown = computed(
-  () => versionStatus.value === 'updateAvailable' && !isDismissed(),
+  () => versionStatus.value === 'updateAvailable' && !isDismissed.value,
 );
 
 const handleUpdate = () => {

@@ -10,6 +10,7 @@ const versionStatus = ref<VersionStatus>(null);
 const updateUrl = ref<string | null>(null);
 const latestVersion = ref<string | null>(null);
 const isChecking = ref(false);
+const isDismissed = ref(sessionStorage.getItem(SESSION_STORAGE_DISMISSED_UPDATE_PROMPT) === 'true');
 
 export default function useVersionCheck() {
   const performVersionCheck = async (serverUrl: string): Promise<void> => {
@@ -39,12 +40,9 @@ export default function useVersionCheck() {
     }
   };
 
-  const isDismissed = (): boolean => {
-    return sessionStorage.getItem(SESSION_STORAGE_DISMISSED_UPDATE_PROMPT) === 'true';
-  };
-
   const dismissOptionalUpdate = (): void => {
     sessionStorage.setItem(SESSION_STORAGE_DISMISSED_UPDATE_PROMPT, 'true');
+    isDismissed.value = true;
   };
 
   const reset = (): void => {
@@ -52,6 +50,7 @@ export default function useVersionCheck() {
     updateUrl.value = null;
     latestVersion.value = null;
     isChecking.value = false;
+    isDismissed.value = false;
     sessionStorage.removeItem(SESSION_STORAGE_DISMISSED_UPDATE_PROMPT);
   };
 
