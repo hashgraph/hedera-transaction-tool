@@ -6,6 +6,7 @@ import {
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
@@ -14,7 +15,7 @@ import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
 import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
 
-import { ErrorCodes } from '@app/common';
+import { ErrorCodes, checkFrontendVersion, VersionCheckResult } from '@app/common';
 import { Client, User, UserStatus } from '@entities';
 
 @Injectable()
@@ -24,6 +25,7 @@ export class UsersService {
   constructor(
     @InjectRepository(User) private repo: Repository<User>,
     @InjectRepository(Client) private clientRepo: Repository<Client>,
+    private readonly configService: ConfigService,
   ) {}
 
   /* Creates a user with a given email and password. */
@@ -182,5 +184,23 @@ export class UsersService {
     }
 
     return client;
+  }
+
+  getVersionCheckInfo(userVersion: string): VersionCheckResult {
+    const latestSupported = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
+    const minimumSupported = this.configService.get<string>('MINIMUM_SUPPORTED_FRONTEND_VERSION');
+    const repoUrl = this.configService.get<string>('FRONTEND_REPO_URL');
+
+    const result = checkFrontendVersion(userVersion, latestSupported, minimumSupported, repoUrl);
+
+    if (result.belowMinimumVersion) {
+      this.logger.warn(
+        `User version ${userVersion} is below minimum supported version ${minimumSupported}`,
+      );
+    } else if (result.updateAvailable) {
+      this.logger.log(`Update available for user version ${userVersion} -> ${latestSupported}`);
+    }
+
+    return result;
   }
 }
