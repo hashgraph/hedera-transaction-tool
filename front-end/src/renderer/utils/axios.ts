@@ -4,6 +4,13 @@ import axios, { AxiosError } from 'axios';
 
 import { ErrorCodes, ErrorMessages } from '@shared/constants';
 import { getAuthTokenFromSessionStorage } from '@renderer/utils';
+import { FRONTEND_VERSION } from './version';
+
+// Global interceptor to add frontend version header to ALL axios requests
+axios.interceptors.request.use(config => {
+  config.headers['x-frontend-version'] = FRONTEND_VERSION;
+  return config;
+});
 
 export function throwIfNoResponse(response?: AxiosResponse): asserts response is AxiosResponse {
   if (!response) {
