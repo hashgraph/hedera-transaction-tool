@@ -11,9 +11,11 @@ import { User } from '@entities';
 import { WebsocketGateway } from './websocket.gateway';
 
 import { AuthWebsocket, AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
+import { FrontendVersionWebsocketMiddleware } from './middlewares/frontend-version-websocket.middleware';
 import { roomKeys } from './helpers';
 
 jest.mock('./middlewares/auth-websocket.middleware');
+jest.mock('./middlewares/frontend-version-websocket.middleware');
 
 describe('WebsocketGateway', () => {
   let gateway: WebsocketGateway;
@@ -68,14 +70,23 @@ describe('WebsocketGateway', () => {
   });
 
   describe('afterInit', () => {
-    it('should apply auth middleware after init', () => {
+    it('should apply frontend version and auth middlewares after init', () => {
+      const minimumVersion = '1.0.0';
+      configService.getOrThrow.mockReturnValue(minimumVersion);
+
       const server: Partial<Server> = {
         use: jest.fn(),
       };
 
       gateway.afterInit(server as Server);
 
-      expect(server.use).toHaveBeenCalled();
+      // Should call server.use twice - once for each middleware
+      expect(server.use).toHaveBeenCalledTimes(2);
+
+      // Verify FrontendVersionWebsocketMiddleware is called with minimum version
+      expect(FrontendVersionWebsocketMiddleware).toHaveBeenCalledWith(minimumVersion);
+
+      // Verify AuthWebsocketMiddleware is called with auth service and blacklist service
       expect(AuthWebsocketMiddleware).toHaveBeenCalledWith(authService, blacklistService);
     });
   });
