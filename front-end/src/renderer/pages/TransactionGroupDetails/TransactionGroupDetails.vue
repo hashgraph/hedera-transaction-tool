@@ -716,7 +716,7 @@ function itemStatusBadgeClass(item: IGroupItem): string {
         result = 'bg-info';
         break;
       default:
-        result = 'bg-info-subtle text-primary-emphasis';
+        result = 'text-muted';
     }
   }
   return result;
