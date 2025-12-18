@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUpdated } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, onUpdated, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import useFilterNotifications from '@renderer/composables/useFilterNotifications.ts';
@@ -16,6 +16,7 @@ import {
 } from '../../../../../../shared/src/ITransactionNode.ts';
 import { NotificationType, TransactionStatus } from '@shared/interfaces';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
+import Tooltip from 'bootstrap/js/dist/tooltip';
 
 /* Props */
 const props = defineProps<{
@@ -32,6 +33,10 @@ const emit = defineEmits<{
 
 /* Stores */
 const notifications = useNotificationsStore();
+
+/* State */
+const descriptionRef = ref<HTMLElement | null>(null);
+const isTruncated = ref(false);
 
 /* Composables */
 const router = useRouter();
@@ -128,12 +133,46 @@ const handleDetails = async () => {
   }
 };
 
+/* Functions */
+function checkTruncation() {
+  if (!descriptionRef.value) {
+    return;
+  }
+  isTruncated.value = descriptionRef.value.scrollHeight > descriptionRef.value.clientHeight;
+}
+
+/* Hooks */
 onMounted(() => {
-  createTooltips();
+  nextTick(() => {
+    checkTruncation();
+    if (isTruncated.value) {
+      createTooltips();
+    }
+  });
+  window.addEventListener('resize', checkTruncation);
 });
 
 onUpdated(() => {
-  createTooltips();
+  nextTick(() => {
+    checkTruncation();
+  });
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkTruncation);
+});
+
+/* Watchers */
+watch(isTruncated, (newValue, oldValue) => {
+  if (!descriptionRef.value) return;
+  
+  const tooltip = Tooltip.getInstance(descriptionRef.value);
+  
+  if (oldValue && !newValue && tooltip) {
+    tooltip.dispose();
+  } else if (!oldValue && newValue) {
+    nextTick(() => createTooltips());
+  }
 });
 </script>
 
@@ -157,12 +196,13 @@ onUpdated(() => {
     <!-- Column #3 : Description -->
     <td>
       <span 
+        ref="descriptionRef"
         class="text-wrap-two-line-ellipsis"
-        :data-bs-toggle="props.node.description.length > 120 ? 'tooltip' : ''"
+        :data-bs-toggle="isTruncated ? 'tooltip' : ''"
         data-bs-custom-class="wide-tooltip"
         data-bs-trigger="hover"
         data-bs-placement="top"
-        :data-bs-title="props.node.description.length > 120 ? props.node.description : ''"
+        :data-bs-title="isTruncated ? props.node.description : ''"
       >
         {{ props.node.description }}
       </span>
