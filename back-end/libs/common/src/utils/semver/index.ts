@@ -4,7 +4,6 @@ export interface VersionCheckResult {
   latestSupportedVersion: string;
   minimumSupportedVersion: string;
   updateUrl: string | null;
-  updateAvailable: boolean;
 }
 
 export function checkFrontendVersion(
@@ -17,7 +16,6 @@ export function checkFrontendVersion(
     latestSupportedVersion: latestSupported ?? '',
     minimumSupportedVersion: minimumSupported ?? '',
     updateUrl: null,
-    updateAvailable: false,
   };
 
   const cleanUserVersion = semver.clean(userVersion);
@@ -29,8 +27,6 @@ export function checkFrontendVersion(
   if (latestSupported) {
     const cleanLatest = semver.clean(latestSupported);
     if (cleanLatest && semver.lt(cleanUserVersion, cleanLatest)) {
-      result.updateAvailable = true;
-
       if (repoUrl) {
         const baseUrl = repoUrl.replace(/\/+$/, '');
         result.updateUrl = `${baseUrl}/tag/v${cleanLatest}`;

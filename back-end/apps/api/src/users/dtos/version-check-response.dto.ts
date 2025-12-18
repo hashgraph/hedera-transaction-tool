@@ -17,17 +17,10 @@ export class VersionCheckResponseDto {
   minimumSupportedVersion: string;
 
   @ApiProperty({
-    description: 'URL to the releases page where the user can download updates',
+    description: 'URL to the releases page where the user can download updates. Null if no update is available.',
     example: 'https://github.com/hashgraph/hedera-transaction-tool/releases/tag/v1.2.0',
     nullable: true,
   })
   @Expose()
   updateUrl: string | null;
-
-  @ApiProperty({
-    description: 'True if the user version is older than the latest supported version',
-    example: true,
-  })
-  @Expose()
-  updateAvailable: boolean;
 }

@@ -160,7 +160,6 @@ describe('UsersController', () => {
       latestSupportedVersion: '1.2.0',
       minimumSupportedVersion: '1.0.0',
       updateUrl: 'https://github.com/hashgraph/hedera-transaction-tool/releases/tag/v1.2.0',
-      updateAvailable: true,
     };
 
     beforeEach(() => {
@@ -206,14 +205,12 @@ describe('UsersController', () => {
         latestSupportedVersion: '1.2.0',
         minimumSupportedVersion: '1.0.0',
         updateUrl: null,
-        updateAvailable: false,
       };
       userService.getVersionCheckInfo.mockReturnValue(noUpdateResult);
 
       const result = await controller.versionCheck(user, dto);
 
       expect(result).toEqual(noUpdateResult);
-      expect(result.updateAvailable).toBe(false);
       expect(result.updateUrl).toBeNull();
     });
 
@@ -226,13 +223,12 @@ describe('UsersController', () => {
         latestSupportedVersion: '1.2.0',
         minimumSupportedVersion: '1.0.0',
         updateUrl: null,
-        updateAvailable: false,
       };
       userService.getVersionCheckInfo.mockReturnValue(newerVersionResult);
 
       const result = await controller.versionCheck(user, dto);
 
-      expect(result.updateAvailable).toBe(false);
+      expect(result.updateUrl).toBeNull();
     });
 
     it('should throw an error if the service fails', async () => {

@@ -193,7 +193,7 @@ export class UsersService {
 
     const result = checkFrontendVersion(userVersion, latestSupported, minimumSupported, repoUrl);
 
-    if (result.updateAvailable) {
+    if (result.updateUrl) {
       this.logger.log(`Update available for user version ${userVersion} -> ${latestSupported}`);
     }
 

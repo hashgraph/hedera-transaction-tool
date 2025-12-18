@@ -351,7 +351,6 @@ describe('UsersService', () => {
         latestSupportedVersion: latestVersion,
         minimumSupportedVersion: minimumVersion,
         updateUrl: `${repoUrl}/tag/v${latestVersion}`,
-        updateAvailable: true,
       };
       jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
 
@@ -375,13 +374,12 @@ describe('UsersService', () => {
         latestSupportedVersion: latestVersion,
         minimumSupportedVersion: minimumVersion,
         updateUrl: null,
-        updateAvailable: false,
       };
       jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
 
       const result = service.getVersionCheckInfo(userVersion);
 
-      expect(result.updateAvailable).toBe(false);
+      expect(result.updateUrl).toBeNull();
     });
 
     it('should return result when update is available', () => {
@@ -390,13 +388,12 @@ describe('UsersService', () => {
         latestSupportedVersion: latestVersion,
         minimumSupportedVersion: minimumVersion,
         updateUrl: `${repoUrl}/tag/v${latestVersion}`,
-        updateAvailable: true,
       };
       jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
 
       const result = service.getVersionCheckInfo(userVersion);
 
-      expect(result.updateAvailable).toBe(true);
+      expect(result.updateUrl).toBe(`${repoUrl}/tag/v${latestVersion}`);
     });
 
     it('should handle missing config values gracefully', () => {
@@ -408,7 +405,6 @@ describe('UsersService', () => {
         latestSupportedVersion: '',
         minimumSupportedVersion: '',
         updateUrl: null,
-        updateAvailable: false,
       };
       jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
 
@@ -424,13 +420,12 @@ describe('UsersService', () => {
         latestSupportedVersion: latestVersion,
         minimumSupportedVersion: minimumVersion,
         updateUrl: null,
-        updateAvailable: false,
       };
       jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
 
       const result = service.getVersionCheckInfo(userVersion);
 
-      expect(result.updateAvailable).toBe(false);
+      expect(result.updateUrl).toBeNull();
     });
   });
 });

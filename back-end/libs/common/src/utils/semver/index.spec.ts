@@ -8,23 +8,21 @@ describe('Semver Utilities', () => {
       it('should indicate update is available', () => {
         const result = checkFrontendVersion('1.0.0', '1.1.0', '0.9.0', repoUrl);
 
-        expect(result.updateAvailable).toBe(true);
+        expect(result.updateUrl).toBe(`${repoUrl}/tag/v1.1.0`);
         expect(result.latestSupportedVersion).toBe('1.1.0');
         expect(result.minimumSupportedVersion).toBe('0.9.0');
-        expect(result.updateUrl).toBe(`${repoUrl}/tag/v1.1.0`);
       });
 
       it('should handle major version differences', () => {
         const result = checkFrontendVersion('1.9.9', '2.0.0', '1.0.0', repoUrl);
 
-        expect(result.updateAvailable).toBe(true);
         expect(result.updateUrl).toBe(`${repoUrl}/tag/v2.0.0`);
       });
 
       it('should handle patch version differences', () => {
         const result = checkFrontendVersion('1.2.3', '1.2.4', '1.0.0', repoUrl);
 
-        expect(result.updateAvailable).toBe(true);
+        expect(result.updateUrl).toBe(`${repoUrl}/tag/v1.2.4`);
       });
     });
 
@@ -32,7 +30,6 @@ describe('Semver Utilities', () => {
       it('should not indicate update is available', () => {
         const result = checkFrontendVersion('1.2.0', '1.2.0', '1.0.0', repoUrl);
 
-        expect(result.updateAvailable).toBe(false);
         expect(result.updateUrl).toBeNull();
         expect(result.latestSupportedVersion).toBe('1.2.0');
       });
@@ -42,7 +39,6 @@ describe('Semver Utilities', () => {
       it('should not indicate update is available', () => {
         const result = checkFrontendVersion('2.0.0', '1.5.0', '1.0.0', repoUrl);
 
-        expect(result.updateAvailable).toBe(false);
         expect(result.updateUrl).toBeNull();
       });
     });
@@ -52,7 +48,6 @@ describe('Semver Utilities', () => {
         const result = checkFrontendVersion('1.0.0', null, '0.9.0', repoUrl);
 
         expect(result.latestSupportedVersion).toBe('');
-        expect(result.updateAvailable).toBe(false);
         expect(result.updateUrl).toBeNull();
       });
 
@@ -65,7 +60,7 @@ describe('Semver Utilities', () => {
       it('should handle null repo URL', () => {
         const result = checkFrontendVersion('1.0.0', '1.2.0', '0.9.0', null);
 
-        expect(result.updateAvailable).toBe(true);
+        // When repoUrl is null, updateUrl remains null even if update is available
         expect(result.updateUrl).toBeNull();
       });
 
@@ -74,7 +69,6 @@ describe('Semver Utilities', () => {
 
         expect(result.latestSupportedVersion).toBe('');
         expect(result.minimumSupportedVersion).toBe('');
-        expect(result.updateAvailable).toBe(false);
         expect(result.updateUrl).toBeNull();
       });
     });
@@ -83,14 +77,14 @@ describe('Semver Utilities', () => {
       it('should handle pre-release user versions', () => {
         const result = checkFrontendVersion('1.0.0-beta.1', '1.0.0', '0.9.0', repoUrl);
 
-        expect(result.updateAvailable).toBe(true);
+        expect(result.updateUrl).toBe(`${repoUrl}/tag/v1.0.0`);
       });
 
       it('should handle pre-release latest versions', () => {
         const result = checkFrontendVersion('1.0.0', '1.1.0-rc.1', '0.9.0', repoUrl);
 
         // 1.0.0 is less than 1.1.0-rc.1 in semver
-        expect(result.updateAvailable).toBe(true);
+        expect(result.updateUrl).toBe(`${repoUrl}/tag/v1.1.0-rc.1`);
       });
     });
 
@@ -122,14 +116,14 @@ describe('Semver Utilities', () => {
       it('should handle invalid user version gracefully', () => {
         const result = checkFrontendVersion('invalid', '1.2.0', '1.0.0', repoUrl);
 
-        expect(result.updateAvailable).toBe(false);
+        expect(result.updateUrl).toBeNull();
         expect(result.latestSupportedVersion).toBe('1.2.0');
       });
 
       it('should handle invalid latest version gracefully', () => {
         const result = checkFrontendVersion('1.0.0', 'invalid', '0.9.0', repoUrl);
 
-        expect(result.updateAvailable).toBe(false);
+        expect(result.updateUrl).toBeNull();
         expect(result.latestSupportedVersion).toBe('invalid');
       });
     });
