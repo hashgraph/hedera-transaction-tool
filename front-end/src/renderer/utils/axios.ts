@@ -5,12 +5,26 @@ import axios, { AxiosError } from 'axios';
 import { ErrorCodes, ErrorMessages } from '@shared/constants';
 import { getAuthTokenFromSessionStorage } from '@renderer/utils';
 import { FRONTEND_VERSION } from './version';
+import { setVersionBelowMinimum } from '@renderer/stores/versionState';
 
 // Global interceptor to add frontend version header to ALL axios requests
 axios.interceptors.request.use(config => {
   config.headers['x-frontend-version'] = FRONTEND_VERSION;
   return config;
 });
+
+// Global response interceptor to catch 426 (Upgrade Required) errors
+// and trigger the mandatory upgrade modal
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 426) {
+      const errorUpdateUrl = error.response.data?.updateUrl || null;
+      setVersionBelowMinimum(errorUpdateUrl);
+    }
+    return Promise.reject(error);
+  },
+);
 
 export function throwIfNoResponse(response?: AxiosResponse): asserts response is AxiosResponse {
   if (!response) {
@@ -43,15 +57,6 @@ export const commonRequestHandler = async <T>(
 
       if (error.response.status === 429) {
         message = 'Too many requests. Please try again later.';
-      }
-
-      if (error.response.status === 426) {
-        const minVersion = error.response.data?.minimumVersion;
-        const currentVersion = error.response.data?.currentVersion;
-        message =
-          minVersion && currentVersion
-            ? `Your application version (${currentVersion}) is outdated. Please update to version ${minVersion} or later.`
-            : 'Your application version is outdated. Please update to the latest version.';
       }
     }
     throw new Error(message);

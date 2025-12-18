@@ -5,11 +5,14 @@ import { SESSION_STORAGE_DISMISSED_UPDATE_PROMPT } from '@shared/constants';
 import { checkVersion } from '@renderer/services/organization';
 import { FRONTEND_VERSION } from '@renderer/utils/version';
 
-export type VersionStatus = 'current' | 'updateAvailable' | null;
+import {
+  versionStatus,
+  updateUrl,
+  latestVersion,
+  resetVersionState,
+  type VersionStatus,
+} from '@renderer/stores/versionState';
 
-const versionStatus = ref<VersionStatus>(null);
-const updateUrl = ref<string | null>(null);
-const latestVersion = ref<string | null>(null);
 const isChecking = ref(false);
 const isDismissed = ref(sessionStorage.getItem(SESSION_STORAGE_DISMISSED_UPDATE_PROMPT) === 'true');
 
@@ -28,7 +31,9 @@ export default function useVersionCheck() {
       versionStatus.value = response.updateUrl ? 'updateAvailable' : 'current';
     } catch (error) {
       console.error('Version check failed:', error);
-      versionStatus.value = 'current';
+      if (versionStatus.value !== 'belowMinimum') {
+        versionStatus.value = 'current';
+      }
     } finally {
       isChecking.value = false;
     }
@@ -40,9 +45,7 @@ export default function useVersionCheck() {
   };
 
   const reset = (): void => {
-    versionStatus.value = null;
-    updateUrl.value = null;
-    latestVersion.value = null;
+    resetVersionState();
     isChecking.value = false;
     isDismissed.value = false;
     sessionStorage.removeItem(SESSION_STORAGE_DISMISSED_UPDATE_PROMPT);
@@ -59,3 +62,5 @@ export default function useVersionCheck() {
     reset,
   };
 }
+
+export type { VersionStatus };
