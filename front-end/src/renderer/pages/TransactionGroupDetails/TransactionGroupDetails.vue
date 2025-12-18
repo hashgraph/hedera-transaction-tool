@@ -827,30 +827,11 @@ function itemStatusBadgeClass(item: IGroupItem): string {
                   <table class="table-custom">
                     <thead>
                       <tr>
-                        <!--                        <th></th>-->
-                        <th>
-                          <div>
-                            <span>Transaction ID</span>
-                          </div>
-                        </th>
-                        <th>
-                          <div>
-                            <span>Transaction Type</span>
-                          </div>
-                        </th>
-                        <th>
-                          <div>
-                            <span>Status</span>
-                          </div>
-                        </th>
-                        <th>
-                          <div>
-                            <span>Valid Start</span>
-                          </div>
-                        </th>
-                        <th class="text-center">
-                          <span>Actions</span>
-                        </th>
+                        <th>Transaction ID</th>
+                        <th>Transaction Type</th>
+                        <th>Status</th>
+                        <th>Valid Start</th>
+                        <th class="text-end">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -902,10 +883,10 @@ function itemStatusBadgeClass(item: IGroupItem): string {
                                 />
                               </td>
                               <!-- Column #5 : Actions -->
-                              <td class="text-center">
-                                <div class="d-flex justify-content-center flex-wrap gap-4">
+                              <td class="text-end">
+                                <div class="d-flex justify-content-end gap-4">
                                   <AppButton
-                                    :disabled="!canSignItem(groupItem as IGroupItem)"
+                                    v-if="canSignItem(groupItem as IGroupItem)"
                                     loading-text="Sign"
                                     type="button"
                                     color="primary"
