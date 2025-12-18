@@ -9,13 +9,17 @@ import {
 import { CachedNodeAdminKey, TransactionNode } from './';
 
 @Entity()
+@Index(['nodeId', 'mirrorNetwork'], { unique: true })
 export class CachedNode {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
+  @Column()
   @Index()
   nodeId: number;
+
+  @Column()
+  mirrorNetwork: string;
 
   @Column({ length: 100, nullable: true })
   etag?: string; // Mirror node etag or hash of response
