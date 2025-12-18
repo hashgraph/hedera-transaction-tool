@@ -65,7 +65,7 @@ type ActionButton =
   | 'Next'
   | 'Cancel'
   | 'Export'
-  | 'Submit'
+  | 'Schedule'
   | 'Remind Signers'
   | 'Archive';
 
@@ -76,7 +76,7 @@ const sign: ActionButton = 'Sign';
 const previous: ActionButton = 'Previous';
 const next: ActionButton = 'Next';
 const cancel: ActionButton = 'Cancel';
-const execute: ActionButton = 'Submit';
+const execute: ActionButton = 'Schedule';
 const remindSignersLabel: ActionButton = 'Remind Signers';
 const archive: ActionButton = 'Archive';
 const exportName: ActionButton = 'Export';
@@ -409,11 +409,11 @@ const handleTransactionAction = async (
       actionFunction: archiveTransaction,
     },
     execute: {
-      title: 'Submit Transaction?',
+      title: 'Schedule Transaction?',
       text: 'The transaction will be scheduled to execute at the specified time and processed automatically.',
       buttonText: 'Confirm',
-      loadingText: 'Submitting…',
-      successMessage: 'Transaction sent for execution successfully',
+      loadingText: 'Scheduling…',
+      successMessage: 'Transaction scheduled for execution successfully',
       actionFunction: executeTransaction,
     },
     remindSigners: {
