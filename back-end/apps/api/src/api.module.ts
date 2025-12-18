@@ -16,7 +16,7 @@ import {
 
 import getEnvFilePaths from './config/envFilePaths';
 
-import { IpThrottlerGuard } from './guards';
+import { FrontendVersionGuard, IpThrottlerGuard } from './guards';
 
 import { EmailThrottlerModule, IpThrottlerModule } from './modules';
 
@@ -71,6 +71,10 @@ export const config = ConfigModule.forRoot({
     SchedulerModule.register({ isGlobal: true }),
   ],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: FrontendVersionGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: IpThrottlerGuard,
