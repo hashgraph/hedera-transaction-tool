@@ -7,6 +7,7 @@ import useUserStore from './storeUser';
 import { getLocalWebsocketPath } from '@renderer/services/organizationsService';
 
 import { getAuthTokenFromSessionStorage, isUserLoggedIn } from '@renderer/utils';
+import { FRONTEND_VERSION } from '@renderer/utils/version';
 
 const useWebsocketConnection = defineStore('websocketConnection', () => {
   /* Stores */
@@ -51,9 +52,10 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
     const newSocket = io(url, {
       path: '/ws',
       // Use a function so token is fetched on EVERY connection attempt, in case the token has been updated
-      auth: (cb) => {
+      auth: cb => {
         cb({
           token: `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`,
+          version: FRONTEND_VERSION,
         });
       },
       transports: ['websocket', 'polling'],
