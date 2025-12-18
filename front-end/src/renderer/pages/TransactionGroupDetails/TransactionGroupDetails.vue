@@ -595,62 +595,6 @@ function setGetTransactionsFunction() {
   }, false);
 }
 
-// function statusIconClass(status: TransactionStatus): string {
-//   let result: string;
-//   switch (status) {
-//     case TransactionStatus.CANCELED:
-//     case TransactionStatus.EXPIRED:
-//       result = 'bi-x-lg text-danger';
-//       break;
-//     case TransactionStatus.REJECTED:
-//     case TransactionStatus.FAILED:
-//       result = 'bi-x-circle text-danger';
-//       break;
-//     case TransactionStatus.WAITING_FOR_EXECUTION:
-//       result = 'bi-check-lg text-success';
-//       break;
-//     case TransactionStatus.EXECUTED:
-//     case TransactionStatus.ARCHIVED:
-//       result = 'bi-check-circle text-success';
-//       break;
-//     case TransactionStatus.WAITING_FOR_SIGNATURES:
-//     default:
-//       result = '';
-//   }
-//   return result;
-// }
-
-// function tooltipText(status: TransactionStatus): string {
-//   let result: string;
-//   switch (status) {
-//     case TransactionStatus.CANCELED:
-//       result = 'Transaction has been canceled';
-//       break;
-//     case TransactionStatus.EXPIRED:
-//       result = 'Transaction has expired';
-//       break;
-//     case TransactionStatus.REJECTED:
-//       result = 'Transaction has beed rejected by the network';
-//       break;
-//     case TransactionStatus.FAILED:
-//       result = 'Transaction has failed';
-//       break;
-//     case TransactionStatus.WAITING_FOR_EXECUTION:
-//       result = 'Transaction is signed by all required signers';
-//       break;
-//     case TransactionStatus.EXECUTED:
-//       result = 'Transaction was succesfully executed';
-//       break;
-//     case TransactionStatus.ARCHIVED:
-//       result = 'Transaction was archived';
-//       break;
-//     case TransactionStatus.WAITING_FOR_SIGNATURES:
-//     default:
-//       result = '';
-//   }
-//   return result;
-// }
-
 const canSignItem = (item: IGroupItem) => {
   return (
     !signingItems.value[item.seq] &&
@@ -840,19 +784,6 @@ function itemStatusBadgeClass(item: IGroupItem): string {
                         <Transition name="fade" mode="out-in">
                           <template v-if="groupItem">
                             <tr>
-                              <!--                              <td class="pe-0 ps-3">-->
-                              <!--                                <span-->
-                              <!--                                  v-if="groupItem.transaction.status"-->
-                              <!--                                  data-bs-toggle="tooltip"-->
-                              <!--                                  data-bs-custom-class="wide-tooltip"-->
-                              <!--                                  data-bs-trigger="hover"-->
-                              <!--                                  data-bs-placement="top"-->
-                              <!--                                  :title="tooltipText(groupItem.transaction.status)"-->
-                              <!--                                  ref="tooltipRef"-->
-                              <!--                                  class="bi fs-5"-->
-                              <!--                                  :class="statusIconClass(groupItem.transaction.status)"-->
-                              <!--                                ></span>-->
-                              <!--                              </td>-->
                               <!-- Column #1 : Transaction ID -->
                               <td data-testid="td-group-transaction-id">
                                 <TransactionId
