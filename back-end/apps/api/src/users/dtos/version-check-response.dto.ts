@@ -37,11 +37,4 @@ export class VersionCheckResponseDto {
   })
   @Expose()
   updateAvailable: boolean;
-
-  @ApiProperty({
-    description: 'True if the user version is below the minimum supported version',
-    example: false,
-  })
-  @Expose()
-  belowMinimumVersion: boolean;
 }

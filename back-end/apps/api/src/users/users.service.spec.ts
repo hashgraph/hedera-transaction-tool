@@ -352,7 +352,6 @@ describe('UsersService', () => {
         minimumSupportedVersion: minimumVersion,
         updateUrl: `${repoUrl}/tag/v${latestVersion}`,
         updateAvailable: true,
-        belowMinimumVersion: false,
       };
       jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
 
@@ -377,14 +376,12 @@ describe('UsersService', () => {
         minimumSupportedVersion: minimumVersion,
         updateUrl: null,
         updateAvailable: false,
-        belowMinimumVersion: false,
       };
       jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
 
       const result = service.getVersionCheckInfo(userVersion);
 
       expect(result.updateAvailable).toBe(false);
-      expect(result.belowMinimumVersion).toBe(false);
     });
 
     it('should return result when update is available', () => {
@@ -394,31 +391,12 @@ describe('UsersService', () => {
         minimumSupportedVersion: minimumVersion,
         updateUrl: `${repoUrl}/tag/v${latestVersion}`,
         updateAvailable: true,
-        belowMinimumVersion: false,
       };
       jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
 
       const result = service.getVersionCheckInfo(userVersion);
 
       expect(result.updateAvailable).toBe(true);
-      expect(result.belowMinimumVersion).toBe(false);
-    });
-
-    it('should return result when user version is below minimum', () => {
-      const userVersion = '0.8.0';
-      const mockResult = {
-        latestSupportedVersion: latestVersion,
-        minimumSupportedVersion: minimumVersion,
-        updateUrl: `${repoUrl}/tag/v${latestVersion}`,
-        updateAvailable: true,
-        belowMinimumVersion: true,
-      };
-      jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
-
-      const result = service.getVersionCheckInfo(userVersion);
-
-      expect(result.updateAvailable).toBe(true);
-      expect(result.belowMinimumVersion).toBe(true);
     });
 
     it('should handle missing config values gracefully', () => {
@@ -431,7 +409,6 @@ describe('UsersService', () => {
         minimumSupportedVersion: '',
         updateUrl: null,
         updateAvailable: false,
-        belowMinimumVersion: false,
       };
       jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
 
@@ -448,14 +425,12 @@ describe('UsersService', () => {
         minimumSupportedVersion: minimumVersion,
         updateUrl: null,
         updateAvailable: false,
-        belowMinimumVersion: false,
       };
       jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
 
       const result = service.getVersionCheckInfo(userVersion);
 
       expect(result.updateAvailable).toBe(false);
-      expect(result.belowMinimumVersion).toBe(false);
     });
   });
 });

@@ -5,7 +5,6 @@ export interface VersionCheckResult {
   minimumSupportedVersion: string;
   updateUrl: string | null;
   updateAvailable: boolean;
-  belowMinimumVersion: boolean;
 }
 
 export function checkFrontendVersion(
@@ -19,20 +18,12 @@ export function checkFrontendVersion(
     minimumSupportedVersion: minimumSupported ?? '',
     updateUrl: null,
     updateAvailable: false,
-    belowMinimumVersion: false,
   };
 
   const cleanUserVersion = semver.clean(userVersion);
 
   if (!cleanUserVersion) {
     return result;
-  }
-
-  if (minimumSupported) {
-    const cleanMinimum = semver.clean(minimumSupported);
-    if (cleanMinimum && semver.lt(cleanUserVersion, cleanMinimum)) {
-      result.belowMinimumVersion = true;
-    }
   }
 
   if (latestSupported) {

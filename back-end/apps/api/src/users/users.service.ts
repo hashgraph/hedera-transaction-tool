@@ -193,11 +193,7 @@ export class UsersService {
 
     const result = checkFrontendVersion(userVersion, latestSupported, minimumSupported, repoUrl);
 
-    if (result.belowMinimumVersion) {
-      this.logger.warn(
-        `User version ${userVersion} is below minimum supported version ${minimumSupported}`,
-      );
-    } else if (result.updateAvailable) {
+    if (result.updateAvailable) {
       this.logger.log(`Update available for user version ${userVersion} -> ${latestSupported}`);
     }
 

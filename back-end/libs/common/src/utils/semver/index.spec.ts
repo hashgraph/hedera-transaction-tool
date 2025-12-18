@@ -9,7 +9,6 @@ describe('Semver Utilities', () => {
         const result = checkFrontendVersion('1.0.0', '1.1.0', '0.9.0', repoUrl);
 
         expect(result.updateAvailable).toBe(true);
-        expect(result.belowMinimumVersion).toBe(false);
         expect(result.latestSupportedVersion).toBe('1.1.0');
         expect(result.minimumSupportedVersion).toBe('0.9.0');
         expect(result.updateUrl).toBe(`${repoUrl}/tag/v1.1.0`);
@@ -44,24 +43,7 @@ describe('Semver Utilities', () => {
         const result = checkFrontendVersion('2.0.0', '1.5.0', '1.0.0', repoUrl);
 
         expect(result.updateAvailable).toBe(false);
-        expect(result.belowMinimumVersion).toBe(false);
         expect(result.updateUrl).toBeNull();
-      });
-    });
-
-    describe('when user version is below minimum supported', () => {
-      it('should indicate below minimum version', () => {
-        const result = checkFrontendVersion('0.8.0', '1.2.0', '1.0.0', repoUrl);
-
-        expect(result.belowMinimumVersion).toBe(true);
-        expect(result.updateAvailable).toBe(true);
-        expect(result.minimumSupportedVersion).toBe('1.0.0');
-      });
-
-      it('should handle when user version is just below minimum', () => {
-        const result = checkFrontendVersion('0.9.9', '1.2.0', '1.0.0', repoUrl);
-
-        expect(result.belowMinimumVersion).toBe(true);
       });
     });
 
@@ -78,7 +60,6 @@ describe('Semver Utilities', () => {
         const result = checkFrontendVersion('1.0.0', '1.2.0', null, repoUrl);
 
         expect(result.minimumSupportedVersion).toBe('');
-        expect(result.belowMinimumVersion).toBe(false);
       });
 
       it('should handle null repo URL', () => {
@@ -94,7 +75,6 @@ describe('Semver Utilities', () => {
         expect(result.latestSupportedVersion).toBe('');
         expect(result.minimumSupportedVersion).toBe('');
         expect(result.updateAvailable).toBe(false);
-        expect(result.belowMinimumVersion).toBe(false);
         expect(result.updateUrl).toBeNull();
       });
     });
@@ -143,7 +123,6 @@ describe('Semver Utilities', () => {
         const result = checkFrontendVersion('invalid', '1.2.0', '1.0.0', repoUrl);
 
         expect(result.updateAvailable).toBe(false);
-        expect(result.belowMinimumVersion).toBe(false);
         expect(result.latestSupportedVersion).toBe('1.2.0');
       });
 
