@@ -62,6 +62,7 @@ import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
+import TransactionId from '@renderer/components/ui/TransactionId.vue';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
@@ -854,7 +855,10 @@ function itemStatusBadgeClass(item: IGroupItem): string {
                               <!--                              </td>-->
                               <!-- Column #1 : Transaction ID -->
                               <td data-testid="td-group-transaction-id">
-                                {{ groupItem.transaction.transactionId }}
+                                <TransactionId
+                                  :transaction-id="groupItem.transaction.transactionId"
+                                  wrap
+                                />
                               </td>
                               <!-- Column #2 : Transaction Type -->
                               <td>
