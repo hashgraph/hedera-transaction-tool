@@ -15,6 +15,23 @@ export class FrontendVersionGuard implements CanActivate {
 
   constructor(private readonly configService: ConfigService) {}
 
+  private getUpdateUrl(): string | null {
+    const repoUrl = this.configService.get<string>('FRONTEND_REPO_URL');
+    const latestVersion = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
+
+    if (!repoUrl || !latestVersion) {
+      return null;
+    }
+
+    const cleanLatest = semver.clean(latestVersion);
+    if (!cleanLatest) {
+      return null;
+    }
+
+    const baseUrl = repoUrl.replace(/\/+$/, '');
+    return `${baseUrl}/tag/v${cleanLatest}`;
+  }
+
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
     const frontendVersion = request.headers['x-frontend-version'];
@@ -22,6 +39,7 @@ export class FrontendVersionGuard implements CanActivate {
     const clientIp = request.headers['x-forwarded-for'] || request.ip || 'unknown';
 
     const UPGRADE_REQUIRED = 426;
+    const updateUrl = this.getUpdateUrl();
 
     if (!frontendVersion) {
       this.logger.warn(`Request rejected: Missing x-frontend-version header from IP ${clientIp}`);
@@ -30,6 +48,7 @@ export class FrontendVersionGuard implements CanActivate {
           statusCode: UPGRADE_REQUIRED,
           message: 'Frontend version header is required. Please update your application.',
           error: 'Upgrade Required',
+          updateUrl,
         },
         UPGRADE_REQUIRED,
       );
@@ -48,6 +67,7 @@ export class FrontendVersionGuard implements CanActivate {
           statusCode: UPGRADE_REQUIRED,
           message: 'Invalid frontend version format. Please update your application.',
           error: 'Upgrade Required',
+          updateUrl,
         },
         UPGRADE_REQUIRED,
       );
@@ -76,6 +96,7 @@ export class FrontendVersionGuard implements CanActivate {
           error: 'Upgrade Required',
           minimumVersion: cleanMinimumVersion,
           currentVersion: cleanFrontendVersion,
+          updateUrl,
         },
         UPGRADE_REQUIRED,
       );
