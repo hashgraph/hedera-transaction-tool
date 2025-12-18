@@ -194,10 +194,7 @@ describe('UsersController', () => {
 
       const result = await controller.versionCheck(user, dto);
 
-      expect(result).toEqual({
-        success: true,
-        ...mockVersionCheckResult,
-      });
+      expect(result).toEqual(mockVersionCheckResult);
     });
 
     it('should return response without updateUrl when version is up to date', async () => {
@@ -215,10 +212,7 @@ describe('UsersController', () => {
 
       const result = await controller.versionCheck(user, dto);
 
-      expect(result).toEqual({
-        success: true,
-        ...noUpdateResult,
-      });
+      expect(result).toEqual(noUpdateResult);
       expect(result.updateAvailable).toBe(false);
       expect(result.updateUrl).toBeNull();
     });

@@ -140,11 +140,6 @@ export class UsersController {
   ): Promise<VersionCheckResponseDto> {
     await this.usersService.updateClientVersion(user.id, dto.version);
 
-    const versionInfo = this.usersService.getVersionCheckInfo(dto.version);
-
-    return {
-      success: true,
-      ...versionInfo,
-    };
+    return this.usersService.getVersionCheckInfo(dto.version);
   }
 }

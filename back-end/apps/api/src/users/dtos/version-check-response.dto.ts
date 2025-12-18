@@ -3,13 +3,6 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class VersionCheckResponseDto {
   @ApiProperty({
-    description: 'Indicates if the version check was successful',
-    example: true,
-  })
-  @Expose()
-  success: boolean;
-
-  @ApiProperty({
     description: 'The latest supported frontend version (from server configuration)',
     example: '1.2.0',
   })
