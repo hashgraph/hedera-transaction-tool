@@ -8,6 +8,7 @@ export * from './user';
 export * from './client';
 export * from './safeAwait';
 export * from './scheduler';
+export * from './semver';
 
 export const asyncFilter = async <T>(list: T[], predicate: (t: T) => Promise<boolean>) => {
   const resolvedPredicates = await Promise.all(list.map(predicate));
