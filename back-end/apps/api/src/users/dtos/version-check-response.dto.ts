@@ -12,18 +12,16 @@ export class VersionCheckResponseDto {
   @ApiProperty({
     description: 'The latest supported frontend version (from server configuration)',
     example: '1.2.0',
-    nullable: true,
   })
   @Expose()
-  latestSupportedVersion: string | null;
+  latestSupportedVersion: string;
 
   @ApiProperty({
     description: 'The minimum supported frontend version (from server configuration)',
     example: '1.0.0',
-    nullable: true,
   })
   @Expose()
-  minimumSupportedVersion: string | null;
+  minimumSupportedVersion: string;
 
   @ApiProperty({
     description: 'URL to the releases page where the user can download updates',

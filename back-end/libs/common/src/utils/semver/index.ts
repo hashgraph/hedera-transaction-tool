@@ -1,8 +1,8 @@
 import * as semver from 'semver';
 
 export interface VersionCheckResult {
-  latestSupportedVersion: string | null;
-  minimumSupportedVersion: string | null;
+  latestSupportedVersion: string;
+  minimumSupportedVersion: string;
   updateUrl: string | null;
   updateAvailable: boolean;
   belowMinimumVersion: boolean;
@@ -15,8 +15,8 @@ export function checkFrontendVersion(
   repoUrl: string | undefined | null,
 ): VersionCheckResult {
   const result: VersionCheckResult = {
-    latestSupportedVersion: latestSupported || null,
-    minimumSupportedVersion: minimumSupported || null,
+    latestSupportedVersion: latestSupported ?? '',
+    minimumSupportedVersion: minimumSupported ?? '',
     updateUrl: null,
     updateAvailable: false,
     belowMinimumVersion: false,

@@ -423,11 +423,12 @@ describe('UsersService', () => {
 
     it('should handle missing config values gracefully', () => {
       // Override config to return undefined for all version-related keys
+      // Note: In production, config is required, so this scenario won't occur
       configService.get.mockReturnValue(undefined);
 
       const mockResult = {
-        latestSupportedVersion: null,
-        minimumSupportedVersion: null,
+        latestSupportedVersion: '',
+        minimumSupportedVersion: '',
         updateUrl: null,
         updateAvailable: false,
         belowMinimumVersion: false,

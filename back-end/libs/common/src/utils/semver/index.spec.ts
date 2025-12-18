@@ -69,7 +69,7 @@ describe('Semver Utilities', () => {
       it('should handle null latest supported version', () => {
         const result = checkFrontendVersion('1.0.0', null, '0.9.0', repoUrl);
 
-        expect(result.latestSupportedVersion).toBeNull();
+        expect(result.latestSupportedVersion).toBe('');
         expect(result.updateAvailable).toBe(false);
         expect(result.updateUrl).toBeNull();
       });
@@ -77,7 +77,7 @@ describe('Semver Utilities', () => {
       it('should handle null minimum supported version', () => {
         const result = checkFrontendVersion('1.0.0', '1.2.0', null, repoUrl);
 
-        expect(result.minimumSupportedVersion).toBeNull();
+        expect(result.minimumSupportedVersion).toBe('');
         expect(result.belowMinimumVersion).toBe(false);
       });
 
@@ -91,8 +91,8 @@ describe('Semver Utilities', () => {
       it('should handle all null environment values', () => {
         const result = checkFrontendVersion('1.0.0', null, null, null);
 
-        expect(result.latestSupportedVersion).toBeNull();
-        expect(result.minimumSupportedVersion).toBeNull();
+        expect(result.latestSupportedVersion).toBe('');
+        expect(result.minimumSupportedVersion).toBe('');
         expect(result.updateAvailable).toBe(false);
         expect(result.belowMinimumVersion).toBe(false);
         expect(result.updateUrl).toBeNull();
