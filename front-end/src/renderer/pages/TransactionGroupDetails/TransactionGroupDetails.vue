@@ -702,16 +702,22 @@ function itemStatusBadgeClass(item: IGroupItem): string {
   const statusCode = item.transaction.statusCode;
   if (statusCode) {
     result = [0, 22, 104].includes(statusCode) ? 'bg-success' : 'bg-danger';
-  } else if (status === TransactionStatus.ARCHIVED) {
-    result = 'bg-success';
-  } else if (
-    [TransactionStatus.EXPIRED, TransactionStatus.CANCELED, TransactionStatus.REJECTED].includes(
-      status,
-    )
-  ) {
-    result = 'bg-danger';
   } else {
-    result = 'bg-info';
+    switch (status) {
+      case TransactionStatus.ARCHIVED:
+        result = 'bg-success';
+        break;
+      case TransactionStatus.EXPIRED:
+      case TransactionStatus.CANCELED:
+      case TransactionStatus.REJECTED:
+        result = 'bg-danger';
+        break;
+      case TransactionStatus.WAITING_FOR_EXECUTION:
+        result = 'bg-info';
+        break;
+      default:
+        result = 'bg-info-subtle text-primary-emphasis';
+    }
   }
   return result;
 }
@@ -821,7 +827,7 @@ function itemStatusBadgeClass(item: IGroupItem): string {
                   <table class="table-custom">
                     <thead>
                       <tr>
-<!--                        <th></th>-->
+                        <!--                        <th></th>-->
                         <th>
                           <div>
                             <span>Transaction ID</span>
@@ -852,19 +858,19 @@ function itemStatusBadgeClass(item: IGroupItem): string {
                         <Transition name="fade" mode="out-in">
                           <template v-if="groupItem">
                             <tr>
-<!--                              <td class="pe-0 ps-3">-->
-<!--                                <span-->
-<!--                                  v-if="groupItem.transaction.status"-->
-<!--                                  data-bs-toggle="tooltip"-->
-<!--                                  data-bs-custom-class="wide-tooltip"-->
-<!--                                  data-bs-trigger="hover"-->
-<!--                                  data-bs-placement="top"-->
-<!--                                  :title="tooltipText(groupItem.transaction.status)"-->
-<!--                                  ref="tooltipRef"-->
-<!--                                  class="bi fs-5"-->
-<!--                                  :class="statusIconClass(groupItem.transaction.status)"-->
-<!--                                ></span>-->
-<!--                              </td>-->
+                              <!--                              <td class="pe-0 ps-3">-->
+                              <!--                                <span-->
+                              <!--                                  v-if="groupItem.transaction.status"-->
+                              <!--                                  data-bs-toggle="tooltip"-->
+                              <!--                                  data-bs-custom-class="wide-tooltip"-->
+                              <!--                                  data-bs-trigger="hover"-->
+                              <!--                                  data-bs-placement="top"-->
+                              <!--                                  :title="tooltipText(groupItem.transaction.status)"-->
+                              <!--                                  ref="tooltipRef"-->
+                              <!--                                  class="bi fs-5"-->
+                              <!--                                  :class="statusIconClass(groupItem.transaction.status)"-->
+                              <!--                                ></span>-->
+                              <!--                              </td>-->
                               <!-- Column #1 : Transaction ID -->
                               <td data-testid="td-group-transaction-id">
                                 {{ groupItem.transaction.transactionId }}
