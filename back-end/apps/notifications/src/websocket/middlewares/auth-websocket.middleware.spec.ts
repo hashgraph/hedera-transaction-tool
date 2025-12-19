@@ -76,7 +76,8 @@ describe('AuthWebsocketMiddleware (fixed)', () => {
     const err = nextFunction.mock.calls[0][0];
     expect(err).toBeInstanceOf(Error);
     expect(err.message).toBe('Unauthorized');
-    expect(socket.disconnect).toHaveBeenCalledWith(true);
+    // Note: socket.io automatically disconnects after next(error), no explicit disconnect call needed
+    expect(socket.disconnect).not.toHaveBeenCalled();
   });
 
   it('calls next with Unauthorized when token missing or malformed', async () => {
@@ -100,7 +101,7 @@ describe('AuthWebsocketMiddleware (fixed)', () => {
 
     const err = nextFunction.mock.calls[0][0];
     expect(err.message).toBe('Unauthorized');
-    expect(socket.disconnect).toHaveBeenCalledWith(true);
+    expect(socket.disconnect).not.toHaveBeenCalled();
   });
 
   it('handles apiService send throwing synchronously', async () => {
@@ -114,7 +115,7 @@ describe('AuthWebsocketMiddleware (fixed)', () => {
 
     const err = nextFunction.mock.calls[0][0];
     expect(err.message).toBe('Unauthorized');
-    expect(socket.disconnect).toHaveBeenCalledWith(true);
+    expect(socket.disconnect).not.toHaveBeenCalled();
   });
 
   it('returns "Auth service unavailable" on TimeoutError', async () => {
@@ -130,7 +131,7 @@ describe('AuthWebsocketMiddleware (fixed)', () => {
 
     const err = nextFunction.mock.calls[0][0];
     expect(err.message).toBe('Auth service unavailable');
-    expect(socket.disconnect).toHaveBeenCalledWith(true);
+    expect(socket.disconnect).not.toHaveBeenCalled();
   });
 
   it('returns "Auth service unavailable" on ECONNREFUSED', async () => {
@@ -215,7 +216,8 @@ describe('AuthWebsocketMiddleware (fixed)', () => {
     await shortMiddleware(socket as any, nextFunction);
     const err = nextFunction.mock.calls[0][0];
     expect(err.message).toBe('Too many failed authentication attempts');
-    expect(socket.disconnect).toHaveBeenCalledWith(true);
+    // socket.io handles disconnect automatically after next(error)
+    expect(socket.disconnect).not.toHaveBeenCalled();
   });
 
   it('rate-limits when JWT is missing even if token exists', async () => {
@@ -229,7 +231,7 @@ describe('AuthWebsocketMiddleware (fixed)', () => {
     const err = nextFunction.mock.calls[0][0];
 
     expect(err.message).toBe('Too many failed authentication attempts');
-    expect(socket.disconnect).toHaveBeenCalledWith(true);
+    expect(socket.disconnect).not.toHaveBeenCalled();
   });
 
   it('rate-limits when token is blacklisted repeatedly', async () => {
