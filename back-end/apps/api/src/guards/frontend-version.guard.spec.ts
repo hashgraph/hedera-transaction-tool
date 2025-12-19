@@ -291,6 +291,154 @@ describe('FrontendVersionGuard', () => {
     });
   });
 
+  describe('updateUrl in 426 responses', () => {
+    const repoUrl = 'https://github.com/hashgraph/hedera-transaction-tool/releases';
+    const latestVersion = '2.0.0';
+
+    beforeEach(() => {
+      // Mock config service to return different values based on key
+      (configService.get as jest.Mock).mockImplementation((key: string) => {
+        switch (key) {
+          case 'MINIMUM_SUPPORTED_FRONTEND_VERSION':
+            return '1.0.0';
+          case 'FRONTEND_REPO_URL':
+            return repoUrl;
+          case 'LATEST_SUPPORTED_FRONTEND_VERSION':
+            return latestVersion;
+          default:
+            return undefined;
+        }
+      });
+    });
+
+    it('should include updateUrl when version is below minimum', () => {
+      const context = createMockContext({ 'x-frontend-version': '0.9.0' });
+
+      try {
+        guard.canActivate(context);
+      } catch (error) {
+        const response = (error as HttpException).getResponse() as Record<string, unknown>;
+        expect(response.updateUrl).toBe(`${repoUrl}/tag/v${latestVersion}`);
+      }
+    });
+
+    it('should include updateUrl when version header is missing', () => {
+      const context = createMockContext({});
+
+      try {
+        guard.canActivate(context);
+      } catch (error) {
+        const response = (error as HttpException).getResponse() as Record<string, unknown>;
+        expect(response.updateUrl).toBe(`${repoUrl}/tag/v${latestVersion}`);
+      }
+    });
+
+    it('should include updateUrl when version format is invalid', () => {
+      const context = createMockContext({ 'x-frontend-version': 'invalid' });
+
+      try {
+        guard.canActivate(context);
+      } catch (error) {
+        const response = (error as HttpException).getResponse() as Record<string, unknown>;
+        expect(response.updateUrl).toBe(`${repoUrl}/tag/v${latestVersion}`);
+      }
+    });
+
+    it('should return null updateUrl when FRONTEND_REPO_URL is missing', () => {
+      (configService.get as jest.Mock).mockImplementation((key: string) => {
+        switch (key) {
+          case 'MINIMUM_SUPPORTED_FRONTEND_VERSION':
+            return '1.0.0';
+          case 'LATEST_SUPPORTED_FRONTEND_VERSION':
+            return latestVersion;
+          default:
+            return undefined;
+        }
+      });
+
+      const context = createMockContext({ 'x-frontend-version': '0.9.0' });
+
+      try {
+        guard.canActivate(context);
+      } catch (error) {
+        const response = (error as HttpException).getResponse() as Record<string, unknown>;
+        expect(response.updateUrl).toBeNull();
+      }
+    });
+
+    it('should return null updateUrl when LATEST_SUPPORTED_FRONTEND_VERSION is missing', () => {
+      (configService.get as jest.Mock).mockImplementation((key: string) => {
+        switch (key) {
+          case 'MINIMUM_SUPPORTED_FRONTEND_VERSION':
+            return '1.0.0';
+          case 'FRONTEND_REPO_URL':
+            return repoUrl;
+          default:
+            return undefined;
+        }
+      });
+
+      const context = createMockContext({ 'x-frontend-version': '0.9.0' });
+
+      try {
+        guard.canActivate(context);
+      } catch (error) {
+        const response = (error as HttpException).getResponse() as Record<string, unknown>;
+        expect(response.updateUrl).toBeNull();
+      }
+    });
+
+    it('should return null updateUrl when LATEST_SUPPORTED_FRONTEND_VERSION is invalid', () => {
+      (configService.get as jest.Mock).mockImplementation((key: string) => {
+        switch (key) {
+          case 'MINIMUM_SUPPORTED_FRONTEND_VERSION':
+            return '1.0.0';
+          case 'FRONTEND_REPO_URL':
+            return repoUrl;
+          case 'LATEST_SUPPORTED_FRONTEND_VERSION':
+            return 'invalid-version';
+          default:
+            return undefined;
+        }
+      });
+
+      const context = createMockContext({ 'x-frontend-version': '0.9.0' });
+
+      try {
+        guard.canActivate(context);
+      } catch (error) {
+        const response = (error as HttpException).getResponse() as Record<string, unknown>;
+        expect(response.updateUrl).toBeNull();
+      }
+    });
+
+    it('should strip trailing slashes from repo URL', () => {
+      (configService.get as jest.Mock).mockImplementation((key: string) => {
+        switch (key) {
+          case 'MINIMUM_SUPPORTED_FRONTEND_VERSION':
+            return '1.0.0';
+          case 'FRONTEND_REPO_URL':
+            return 'https://github.com/hashgraph/hedera-transaction-tool/releases///';
+          case 'LATEST_SUPPORTED_FRONTEND_VERSION':
+            return '2.0.0';
+          default:
+            return undefined;
+        }
+      });
+
+      const context = createMockContext({ 'x-frontend-version': '0.9.0' });
+
+      try {
+        guard.canActivate(context);
+      } catch (error) {
+        const response = (error as HttpException).getResponse() as Record<string, unknown>;
+        expect(response.updateUrl).toBe(
+          'https://github.com/hashgraph/hedera-transaction-tool/releases/tag/v2.0.0',
+        );
+      }
+    });
+  });
+
   describe('Edge cases', () => {
     it('should handle prerelease versions correctly', () => {
       // 1.0.0-alpha is less than 1.0.0

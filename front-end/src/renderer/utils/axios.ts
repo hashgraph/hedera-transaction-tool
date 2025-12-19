@@ -5,12 +5,26 @@ import axios, { AxiosError } from 'axios';
 import { ErrorCodes, ErrorMessages } from '@shared/constants';
 import { getAuthTokenFromSessionStorage } from '@renderer/utils';
 import { FRONTEND_VERSION } from './version';
+import { setVersionBelowMinimum } from '@renderer/stores/versionState';
 
 // Global interceptor to add frontend version header to ALL axios requests
 axios.interceptors.request.use(config => {
   config.headers['x-frontend-version'] = FRONTEND_VERSION;
   return config;
 });
+
+// Global response interceptor to catch 426 (Upgrade Required) errors
+// and trigger the mandatory upgrade modal
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 426) {
+      const errorUpdateUrl = error.response.data?.updateUrl || null;
+      setVersionBelowMinimum(errorUpdateUrl);
+    }
+    return Promise.reject(error);
+  },
+);
 
 export function throwIfNoResponse(response?: AxiosResponse): asserts response is AxiosResponse {
   if (!response) {

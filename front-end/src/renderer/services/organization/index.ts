@@ -6,3 +6,4 @@ export * from './transaction';
 export * from './notifications';
 export * from './notificationPreferences';
 export * from './transactionGroup';
+export * from './versionCheck';
