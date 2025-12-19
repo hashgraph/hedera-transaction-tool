@@ -649,6 +649,7 @@ function itemStatusBadgeClass(item: IGroupItem): string {
     result = [0, 22, 104].includes(statusCode) ? 'bg-success' : 'bg-danger';
   } else {
     switch (status) {
+      case TransactionStatus.WAITING_FOR_EXECUTION:
       case TransactionStatus.ARCHIVED:
         result = 'bg-success';
         break;
@@ -657,8 +658,8 @@ function itemStatusBadgeClass(item: IGroupItem): string {
       case TransactionStatus.REJECTED:
         result = 'bg-danger';
         break;
-      case TransactionStatus.WAITING_FOR_EXECUTION:
-        result = 'bg-info';
+      case TransactionStatus.WAITING_FOR_SIGNATURES:
+        result = canSignItem(item) ? 'bg-info' : 'text-muted';
         break;
       default:
         result = 'text-muted';
@@ -776,7 +777,7 @@ function itemStatusBadgeClass(item: IGroupItem): string {
                         <th>Transaction Type</th>
                         <th>Status</th>
                         <th>Valid Start</th>
-                        <th class="text-end">Actions</th>
+                        <th class="text-center">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -818,10 +819,10 @@ function itemStatusBadgeClass(item: IGroupItem): string {
                                 />
                               </td>
                               <!-- Column #5 : Actions -->
-                              <td class="text-end">
-                                <div class="d-flex justify-content-end gap-4">
+                              <td class="text-center">
+                                <div class="d-flex justify-content-center gap-4">
                                   <AppButton
-                                    v-if="canSignItem(groupItem as IGroupItem)"
+                                    :disabled="!canSignItem(groupItem as IGroupItem)"
                                     loading-text="Sign"
                                     type="button"
                                     color="primary"
