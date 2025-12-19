@@ -50,6 +50,7 @@ const sortField = ref<string>('created_at');
 const sortDirection = ref<string>('desc');
 const descriptionRefs = ref<Map<string, HTMLElement>>(new Map());
 const truncationState = ref<Map<string, boolean>>(new Map());
+let resizeObserver: ResizeObserver | undefined;
 
 /* Computed */
 const generatedClass = computed(() => {
@@ -209,10 +210,13 @@ function clearTruncationState() {
     if (tooltip) {
       tooltip.dispose();
     }
+    if (resizeObserver) {
+      resizeObserver.unobserve(el);
+    }
   });
   descriptionRefs.value.clear();
   truncationState.value.clear();
-};
+}
 
 async function fetchDrafts() {
   if (!isUserLoggedIn(user.personal)) {
@@ -239,92 +243,104 @@ function getDraftDescription(draft: TransactionDraft | TransactionGroup): string
     return (draft as TransactionDraft).description;
   }
   return (draft as TransactionGroup).description;
-};
+}
 
 function getDraftId(draft: TransactionDraft | TransactionGroup): string {
   return draft.id;
-};
+}
 
 function setDescriptionRef(el: HTMLElement | null, draft: TransactionDraft | TransactionGroup) {
   const id = getDraftId(draft);
+
   if (el) {
     descriptionRefs.value.set(id, el);
+
+    if (!resizeObserver) {
+      resizeObserver = new ResizeObserver((entries) => {
+        entries.forEach((entry) => {
+          const element = entry.target as HTMLElement;
+          checkTruncation(element);
+        });
+      });
+    }
+    resizeObserver.observe(el);
+
+    nextTick(() => checkTruncation(el));
   } else {
-    descriptionRefs.value.delete(id);
-  }
-};
+    const existingEl = descriptionRefs.value.get(id);
+    if (existingEl && resizeObserver) {
+      resizeObserver.unobserve(existingEl);
+    }
 
-function isTruncated(draft: TransactionDraft | TransactionGroup): boolean {
-  const id = getDraftId(draft);
-  const state = truncationState.value.get(id);
-  if (state === undefined) {
-    return false;
-  }
-  return state;
-};
-
-function checkAllTruncations() {
-  let hasChanges = false;
-  
-  descriptionRefs.value.forEach((el, id) => {
-    const previousState = truncationState.value.get(id);
-    const wasTruncated = previousState === undefined ? false : previousState;
-    const nowTruncated = el.scrollHeight > el.clientHeight;
-    const isNewItem = previousState === undefined ? true : false;
-    const stateChanged = wasTruncated !== nowTruncated ? true : false;
-    
-    if (isNewItem || stateChanged) {
-      truncationState.value.set(id, nowTruncated);
-      hasChanges = true;
-      
-      const tooltip = Tooltip.getInstance(el);
-      if (wasTruncated && !nowTruncated && tooltip) {
+    if (existingEl) {
+      const tooltip = Tooltip.getInstance(existingEl);
+      if (tooltip) {
         tooltip.dispose();
       }
     }
-  });
-  
-  if (hasChanges) {
-    truncationState.value = new Map(truncationState.value);
-  }
-};
 
-function handleResize() {
-  checkAllTruncations();
-};
+    descriptionRefs.value.delete(id);
+    truncationState.value.delete(id);
+  }
+}
+
+function checkTruncation(el: HTMLElement) {
+  let elementId: string | undefined;
+  descriptionRefs.value.forEach((value, key) => {
+    if (value === el) {
+      elementId = key;
+    }
+  });
+
+  if (!elementId) {
+    return;
+  }
+
+  const wasTruncated = truncationState.value.get(elementId) ?? false;
+  const isNowTruncated = el.scrollHeight > el.clientHeight;
+
+  if (wasTruncated === isNowTruncated) {
+    return;
+  }
+
+  truncationState.value.set(elementId, isNowTruncated);
+
+  const tooltip = Tooltip.getInstance(el);
+
+  if (wasTruncated && !isNowTruncated && tooltip) {
+    tooltip.dispose();
+  } else if (!wasTruncated && isNowTruncated) {
+    nextTick(() => createTooltips());
+  }
+}
+
+function isTruncated(draft: TransactionDraft | TransactionGroup): boolean {
+  const id = getDraftId(draft);
+  return truncationState.value.get(id) ?? false;
+}
 
 /* Hooks */
 onBeforeMount(async () => {
   await fetchDrafts();
-  nextTick(() => {
-    checkAllTruncations();
-  });
-  window.addEventListener('resize', handleResize);
-});
-
-onUpdated(() => {
-  nextTick(() => {
-    checkAllTruncations();
-  });
 });
 
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize);
+  clearTruncationState();
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+  }
 });
 
 /* Watchers */
 watch([currentPage, pageSize], async () => {
   await fetchDrafts();
-  nextTick(() => {
-    checkAllTruncations();
-  });
 });
 
-watch(truncationState, () => {
+watch(() => list.value.length, () => {
   nextTick(() => {
-    createTooltips();
+    descriptionRefs.value.forEach((el) => checkTruncation(el));
   });
-}, { deep: true });
+});
 </script>
 
 <template>

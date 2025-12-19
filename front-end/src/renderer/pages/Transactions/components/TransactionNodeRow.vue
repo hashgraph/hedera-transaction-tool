@@ -37,6 +37,7 @@ const notifications = useNotificationsStore();
 /* State */
 const descriptionRef = ref<HTMLElement | null>(null);
 const isTruncated = ref(false);
+let resizeObserver: ResizeObserver | null = null;
 
 /* Composables */
 const router = useRouter();
@@ -138,42 +139,40 @@ function checkTruncation() {
   if (!descriptionRef.value) {
     return;
   }
-  isTruncated.value = descriptionRef.value.scrollHeight > descriptionRef.value.clientHeight;
+  const wasTruncated = isTruncated.value;
+  const isNowTruncated = descriptionRef.value.scrollHeight > descriptionRef.value.clientHeight;
+  isTruncated.value = isNowTruncated;
+
+  const tooltip = Tooltip.getInstance(descriptionRef.value);
+
+  if (!isNowTruncated && tooltip) {
+    tooltip.dispose();
+  } else if (!wasTruncated && isNowTruncated) {
+    nextTick(() => createTooltips());
+  }
 }
 
 /* Hooks */
 onMounted(() => {
   nextTick(() => {
-    checkTruncation();
-    if (isTruncated.value) {
-      createTooltips();
+    if (descriptionRef.value) {
+      checkTruncation();
+      resizeObserver = new ResizeObserver(checkTruncation);
+      resizeObserver.observe(descriptionRef.value);
     }
-  });
-  window.addEventListener('resize', checkTruncation);
-});
-
-onUpdated(() => {
-  nextTick(() => {
-    checkTruncation();
   });
 });
 
 onUnmounted(() => {
-  window.removeEventListener('resize', checkTruncation);
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+  }
 });
 
 /* Watchers */
-watch(isTruncated, (newValue, oldValue) => {
-  if (!descriptionRef.value) return;
-  
-  const tooltip = Tooltip.getInstance(descriptionRef.value);
-  
-  if (oldValue && !newValue && tooltip) {
-    tooltip.dispose();
-  } else if (!oldValue && newValue) {
-    nextTick(() => createTooltips());
-  }
-});
+watch(() => props.node.description, () => {
+  nextTick(() => checkTruncation());
+}, { immediate: true });
 </script>
 
 <template>
