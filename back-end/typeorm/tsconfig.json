@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../dist/typeorm",
+    "rootDir": "."
+  },
+  "include": [
+    "data-source.ts",
+    "migrations/**/*.ts",
+    "../libs/**/*.entity.ts"
+  ],
+  "exclude": ["node_modules"]
+}

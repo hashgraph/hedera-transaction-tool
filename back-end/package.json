@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "build": "nest build",
+    "build:migrations": "pnpm -F typeorm build",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "postinstall": "sh ./scripts/postinstall.sh",
     "typecheck": "tsc --noEmit -p tsconfig.json --composite false",

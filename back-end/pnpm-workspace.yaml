@@ -1,5 +1,11 @@
 packages:
   - apps/*
+  - typeorm
+
+catalog:
+  typeorm: 0.3.20
+  pg: 8.13.1
+  reflect-metadata: 0.2.2
 
 onlyBuiltDependencies:
   - '@nestjs/core'

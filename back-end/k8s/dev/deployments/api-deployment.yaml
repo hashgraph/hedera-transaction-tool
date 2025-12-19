@@ -17,21 +17,6 @@ spec:
         name: api
         app: htx-back-end
     spec:
-      initContainers: # ADD THIS SECTION
-        - name: run-migrations
-          image: back-end-api:1.0.0
-          command: ['pnpm', 'migration:run']
-          env:
-            - name: POSTGRES_HOST
-              value: 'postgres-service'
-            - name: POSTGRES_PORT
-              value: '5432'
-            - name: POSTGRES_USERNAME
-              value: 'postgres'
-            - name: POSTGRES_PASSWORD
-              value: 'postgres'
-            - name: POSTGRES_DATABASE
-              value: 'postgres'
       containers:
         - name: api
           image: back-end-api:1.0.0
