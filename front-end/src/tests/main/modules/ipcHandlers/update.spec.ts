@@ -8,6 +8,17 @@ import { Updater } from '@main/services/update';
 
 vi.mock('@main/services/localUser/update', () => mockDeep());
 
+// Mock the new electronUpdater service to avoid ESM import issues with electron-updater
+vi.mock('@main/services/electronUpdater', () => ({
+  getUpdaterService: vi.fn(() => ({
+    checkForUpdates: vi.fn().mockResolvedValue(undefined),
+    downloadUpdate: vi.fn().mockResolvedValue(undefined),
+    quitAndInstall: vi.fn(),
+    cancelUpdate: vi.fn(),
+  })),
+  initializeUpdaterService: vi.fn(),
+}));
+
 describe('registerUpdateListeners', () => {
   beforeEach(() => {
     vi.resetAllMocks();
