@@ -31,6 +31,11 @@ const handleUpdateValue = async (value: string) => {
     return;
   }
 
+  if (value.startsWith('.')) {
+    value = '0' + value;
+    setInputValue(value);
+  }
+
   const separatorIndex = value.search(/[.,]/);
 
   if (separatorIndex !== -1 && value.length - separatorIndex - 1 > 8) {

@@ -26,7 +26,6 @@ import { UsersService } from './users.service';
 @ApiTags('Users')
 @Controller('users')
 @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
-@Serialize(UserDto)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -39,6 +38,7 @@ export class UsersController {
     type: [UserDto],
   })
   @Get()
+  @Serialize(UserDto)
   getUsers(): Promise<User[]> {
     return this.usersService.getUsers();
   }
@@ -53,6 +53,7 @@ export class UsersController {
   })
   @AllowNonVerifiedUser()
   @Get('/me')
+  @Serialize(UserDto)
   getMe(@GetUser() user: User): User {
     return user;
   }
@@ -66,6 +67,7 @@ export class UsersController {
     type: UserDto,
   })
   @Get('/:id')
+  @Serialize(UserDto)
   getUser(@Param('id', ParseIntPipe) id: number): Promise<User> {
     return this.usersService.getUser({ id });
   }
@@ -94,6 +96,7 @@ export class UsersController {
   })
   @UseGuards(AdminGuard)
   @Patch('/:id')
+  @Serialize(UserDto)
   updateUser(@Param('id', ParseIntPipe) userId: number, @Body() dto: UpdateUserDto): Promise<User> {
     return this.usersService.updateUserById(userId, dto);
   }
@@ -115,11 +118,13 @@ export class UsersController {
 
   @ApiOperation({
     summary: 'Check and store client version',
-    description: 'Logs and persists the frontend version for the authenticated user.',
+    description:
+      'Logs and persists the frontend version for the authenticated user. ' +
+      'Returns information about available updates and minimum version requirements.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Version recorded successfully',
+    description: 'Version recorded successfully with update information',
     type: VersionCheckResponseDto,
   })
   @ApiResponse({
@@ -134,6 +139,7 @@ export class UsersController {
     @Body() dto: VersionCheckDto,
   ): Promise<VersionCheckResponseDto> {
     await this.usersService.updateClientVersion(user.id, dto.version);
-    return { success: true };
+
+    return this.usersService.getVersionCheckInfo(dto.version);
   }
 }
