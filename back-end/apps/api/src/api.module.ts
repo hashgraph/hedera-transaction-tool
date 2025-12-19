@@ -73,11 +73,11 @@ export const config = ConfigModule.forRoot({
   providers: [
     {
       provide: APP_GUARD,
-      useClass: FrontendVersionGuard,
+      useClass: IpThrottlerGuard,
     },
     {
       provide: APP_GUARD,
-      useClass: IpThrottlerGuard,
+      useClass: FrontendVersionGuard,
     },
     LoggerMiddleware,
   ],
