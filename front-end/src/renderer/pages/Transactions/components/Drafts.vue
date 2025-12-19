@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TransactionDraft, TransactionGroup } from '@prisma/client';
 
-import { computed, nextTick, onBeforeMount, onUnmounted, onUpdated, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeMount, onUnmounted, ref, watch } from 'vue';
 
 import { Prisma } from '@prisma/client';
 
