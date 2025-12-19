@@ -16,6 +16,7 @@ import {
 } from '@app/common';
 
 import { AuthWebsocket, AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
+import { FrontendVersionWebsocketMiddleware } from './middlewares/frontend-version-websocket.middleware';
 import { roomKeys } from './helpers';
 import { DebouncedNotificationBatcher } from '../utils';
 import { ConfigService } from '@nestjs/config';
@@ -50,6 +51,11 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   private io: Server;
 
   afterInit(io: Server) {
+    const minimumVersion = this.configService.getOrThrow<string>(
+      'MINIMUM_SUPPORTED_FRONTEND_VERSION',
+    );
+
+    io.use(FrontendVersionWebsocketMiddleware(minimumVersion));
     io.use(AuthWebsocketMiddleware(this.authService, this.blacklistService));
   }
 
