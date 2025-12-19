@@ -58,6 +58,15 @@ export const commonRequestHandler = async <T>(
       if (error.response.status === 429) {
         message = 'Too many requests. Please try again later.';
       }
+
+      if (error.response.status === 426) {
+        const minVersion = error.response.data?.minimumVersion;
+        const currentVersion = error.response.data?.currentVersion;
+        message =
+          minVersion && currentVersion
+            ? `Your application version (${currentVersion}) is outdated. Please update to version ${minVersion} or later.`
+            : 'Your application version is outdated. Please update to the latest version.';
+      }
     }
     throw new Error(message);
   }
