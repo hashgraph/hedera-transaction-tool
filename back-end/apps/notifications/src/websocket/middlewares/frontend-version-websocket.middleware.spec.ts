@@ -204,15 +204,11 @@ describe('FrontendVersionWebsocketMiddleware', () => {
       expect(socket.disconnect).not.toHaveBeenCalled();
     });
 
-    it('should reject connection when minimum version config is invalid', () => {
-      const middleware = FrontendVersionWebsocketMiddleware('invalid-version');
-      const socket = makeSocket('1.0.0');
-
-      middleware(socket, nextFunction);
-
-      expect(socket.disconnect).not.toHaveBeenCalled();
-      const err = nextFunction.mock.calls[0][0];
-      expect(err.message).toContain('Server configuration error');
+    it('should throw at factory time when minimum version config is invalid', () => {
+      // Fail fast: invalid config should throw immediately, not wait for connections
+      expect(() => FrontendVersionWebsocketMiddleware('invalid-version')).toThrow(
+        'Invalid MINIMUM_SUPPORTED_FRONTEND_VERSION format',
+      );
     });
   });
 
@@ -295,22 +291,10 @@ describe('FrontendVersionWebsocketMiddleware', () => {
       expect(loggerWarnSpy).toHaveBeenCalledWith(expect.stringContaining('garbage-version'));
     });
 
-    it('should log error when minimum version config is invalid (at factory time)', () => {
-      FrontendVersionWebsocketMiddleware('bad-config');
-
-      expect(loggerErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Invalid MINIMUM_SUPPORTED_FRONTEND_VERSION format'),
-      );
-    });
-
-    it('should log error when minimum version config is invalid (at runtime)', () => {
-      const middleware = FrontendVersionWebsocketMiddleware('bad-config');
-      const socket = makeSocket('1.0.0');
-
-      middleware(socket, nextFunction);
-
-      expect(loggerErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Server configuration error'),
+    it('should throw with descriptive message when minimum version config is invalid', () => {
+      // Fail fast: throw at factory time with a helpful error message
+      expect(() => FrontendVersionWebsocketMiddleware('bad-config')).toThrow(
+        /Invalid MINIMUM_SUPPORTED_FRONTEND_VERSION format.*bad-config.*valid semver/,
       );
     });
   });

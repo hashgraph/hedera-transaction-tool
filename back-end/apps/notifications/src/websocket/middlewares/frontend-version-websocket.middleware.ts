@@ -15,6 +15,10 @@ export const FrontendVersionWebsocketMiddleware = (
 
   if (!cleanMinimumVersion) {
     logger.error(`Invalid MINIMUM_SUPPORTED_FRONTEND_VERSION format: "${minimumSupportedVersion}"`);
+    throw new Error(
+      `Invalid MINIMUM_SUPPORTED_FRONTEND_VERSION format: "${minimumSupportedVersion}". ` +
+        'Please provide a valid semver version (e.g., "1.0.0").',
+    );
   }
 
   return (socket: Socket, next) => {
@@ -39,13 +43,6 @@ export const FrontendVersionWebsocketMiddleware = (
         `Connection rejected: Invalid frontend version format "${version}" from IP ${ip}`,
       );
       return next(new Error('Invalid frontend version format. Please update your application.'));
-    }
-
-    if (!cleanMinimumVersion) {
-      logger.error(
-        'Server configuration error: Invalid minimum supported frontend version format.',
-      );
-      return next(new Error('Server configuration error.'));
     }
 
     if (semver.lt(cleanFrontendVersion, cleanMinimumVersion)) {
