@@ -26,10 +26,7 @@ export class ElectronUpdaterService {
   private setupLogger(): void {
     autoUpdater.logger = this.logger;
     autoUpdater.autoDownload = false;
-
-    if (is.dev) {
-      autoUpdater.forceDevUpdateConfig = true;
-    }
+    autoUpdater.forceDevUpdateConfig = is.dev;
   }
 
   private createUpdater(updateUrl: string): MacUpdater | NsisUpdater | AppImageUpdater {
@@ -64,40 +61,38 @@ export class ElectronUpdaterService {
   }
 
   private setupEventListeners(): void {
-    if (!this.updater || !this.window) {
-      return;
-    }
-
     this.removeEventListeners();
 
-    this.updater.on('checking-for-update', () => {
+    const updater = this.updater!;
+
+    updater.on('checking-for-update', () => {
       this.logger.info('Checking for update...');
       this.window?.webContents.send('update:checking-for-update');
     });
 
-    this.updater.on('update-available', (info: UpdateInfo) => {
+    updater.on('update-available', (info: UpdateInfo) => {
       this.logger.info(`Update available: ${info.version}`);
       this.window?.webContents.send('update:update-available', info);
     });
 
-    this.updater.on('update-not-available', () => {
+    updater.on('update-not-available', () => {
       this.logger.info('No update available');
       this.window?.webContents.send('update:update-not-available');
     });
 
-    this.updater.on('download-progress', (info: ProgressInfo) => {
+    updater.on('download-progress', (info: ProgressInfo) => {
       this.logger.debug(
         `Download progress: ${info.percent.toFixed(2)}% (${info.transferred}/${info.total} bytes)`,
       );
       this.window?.webContents.send('update:download-progress', info);
     });
 
-    this.updater.on('update-downloaded', () => {
+    updater.on('update-downloaded', () => {
       this.logger.info('Update downloaded successfully');
       this.window?.webContents.send('update:update-downloaded');
     });
 
-    this.updater.on('error', (error: Error) => {
+    updater.on('error', (error: Error) => {
       const categorized = categorizeUpdateError(error);
       this.logger.error(`Update error [${categorized.type}]: ${categorized.details}`);
 
@@ -110,16 +105,12 @@ export class ElectronUpdaterService {
   }
 
   private removeEventListeners(): void {
-    if (!this.updater) {
-      return;
-    }
-
-    this.updater.removeAllListeners('checking-for-update');
-    this.updater.removeAllListeners('update-available');
-    this.updater.removeAllListeners('update-not-available');
-    this.updater.removeAllListeners('download-progress');
-    this.updater.removeAllListeners('update-downloaded');
-    this.updater.removeAllListeners('error');
+    this.updater?.removeAllListeners('checking-for-update');
+    this.updater?.removeAllListeners('update-available');
+    this.updater?.removeAllListeners('update-not-available');
+    this.updater?.removeAllListeners('download-progress');
+    this.updater?.removeAllListeners('update-downloaded');
+    this.updater?.removeAllListeners('error');
   }
 
   async checkForUpdates(updateUrl?: string): Promise<void> {

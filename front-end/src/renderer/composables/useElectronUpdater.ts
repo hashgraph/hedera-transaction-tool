@@ -1,6 +1,6 @@
 import { ref, readonly, onBeforeUnmount } from 'vue';
-import type { UpdateState, UpdateProgress, UpdateError, UpdateInfo } from '@shared/interfaces/update';
-import type { ProgressInfo } from 'electron-updater';
+import type { UpdateState, UpdateProgress, UpdateError } from '@shared/interfaces/update';
+import type { ProgressInfo, UpdateInfo } from 'electron-updater';
 
 const state = ref<UpdateState>('idle');
 const progress = ref<UpdateProgress | null>(null);

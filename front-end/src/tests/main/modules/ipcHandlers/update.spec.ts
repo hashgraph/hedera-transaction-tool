@@ -5,16 +5,23 @@ import { getIPCHandler, getIPCListener, invokeIPCHandler, invokeIPCListener } fr
 import registerUpdateListeners from '@main/modules/ipcHandlers/update';
 import { app } from 'electron';
 import { Updater } from '@main/services/update';
+import { getUpdaterService } from '@main/services/electronUpdater';
 
 vi.mock('@main/services/localUser/update', () => mockDeep());
+
+// Create mock functions for the updater service
+const mockCheckForUpdates = vi.fn().mockResolvedValue(undefined);
+const mockDownloadUpdate = vi.fn().mockResolvedValue(undefined);
+const mockQuitAndInstall = vi.fn();
+const mockCancelUpdate = vi.fn();
 
 // Mock the new electronUpdater service to avoid ESM import issues with electron-updater
 vi.mock('@main/services/electronUpdater', () => ({
   getUpdaterService: vi.fn(() => ({
-    checkForUpdates: vi.fn().mockResolvedValue(undefined),
-    downloadUpdate: vi.fn().mockResolvedValue(undefined),
-    quitAndInstall: vi.fn(),
-    cancelUpdate: vi.fn(),
+    checkForUpdates: mockCheckForUpdates,
+    downloadUpdate: mockDownloadUpdate,
+    quitAndInstall: mockQuitAndInstall,
+    cancelUpdate: mockCancelUpdate,
   })),
   initializeUpdaterService: vi.fn(),
 }));
@@ -22,11 +29,21 @@ vi.mock('@main/services/electronUpdater', () => ({
 describe('registerUpdateListeners', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    // Reset mock implementations
+    mockCheckForUpdates.mockResolvedValue(undefined);
+    mockDownloadUpdate.mockResolvedValue(undefined);
+    // Re-setup the mock to return the service
+    vi.mocked(getUpdaterService).mockReturnValue({
+      checkForUpdates: mockCheckForUpdates,
+      downloadUpdate: mockDownloadUpdate,
+      quitAndInstall: mockQuitAndInstall,
+      cancelUpdate: mockCancelUpdate,
+    } as ReturnType<typeof getUpdaterService>);
     registerUpdateListeners();
   });
 
   test('Should register handlers for each update event', () => {
-    const onEventNames = ['check-for-update'];
+    const onEventNames = ['check-for-update', 'start-download', 'install', 'cancel'];
     const handleEventNames = ['get-version'];
 
     expect(onEventNames.every(util => getIPCListener(`update:${util}`))).toBe(true);
@@ -47,5 +64,54 @@ describe('registerUpdateListeners', () => {
     const result = await invokeIPCHandler('update:get-version');
 
     expect(result).toBe('1.0.0');
+  });
+
+  describe('electron-updater integration', () => {
+    test('Should start download when start-download is called', async () => {
+      await invokeIPCListener('update:start-download', 'https://releases.example.com');
+
+      expect(mockCheckForUpdates).toHaveBeenCalledWith('https://releases.example.com');
+      // Wait for the promise chain to complete
+      await vi.waitFor(() => {
+        expect(mockDownloadUpdate).toHaveBeenCalled();
+      });
+    });
+
+    test('Should not start download when updater service is null', async () => {
+      vi.mocked(getUpdaterService).mockReturnValue(null);
+
+      await invokeIPCListener('update:start-download', 'https://releases.example.com');
+
+      expect(mockCheckForUpdates).not.toHaveBeenCalled();
+      expect(mockDownloadUpdate).not.toHaveBeenCalled();
+    });
+
+    test('Should install update when install is called', async () => {
+      await invokeIPCListener('update:install');
+
+      expect(mockQuitAndInstall).toHaveBeenCalled();
+    });
+
+    test('Should not install when updater service is null', async () => {
+      vi.mocked(getUpdaterService).mockReturnValue(null);
+
+      await invokeIPCListener('update:install');
+
+      expect(mockQuitAndInstall).not.toHaveBeenCalled();
+    });
+
+    test('Should cancel update when cancel is called', async () => {
+      await invokeIPCListener('update:cancel');
+
+      expect(mockCancelUpdate).toHaveBeenCalled();
+    });
+
+    test('Should not cancel when updater service is null', async () => {
+      vi.mocked(getUpdaterService).mockReturnValue(null);
+
+      await invokeIPCListener('update:cancel');
+
+      expect(mockCancelUpdate).not.toHaveBeenCalled();
+    });
   });
 });
