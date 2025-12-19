@@ -23,7 +23,10 @@ export const FrontendVersionWebsocketMiddleware = (
     const frontendVersion =
       socket.handshake.headers['x-frontend-version'] || socket.handshake.auth?.version;
 
-    if (!frontendVersion) {
+    const isMissingVersion =
+      !frontendVersion || (Array.isArray(frontendVersion) && frontendVersion.length === 0);
+
+    if (isMissingVersion) {
       logger.warn(`Connection rejected: Missing frontend version from IP ${ip}`);
       return next(new Error('Frontend version is required. Please update your application.'));
     }

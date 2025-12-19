@@ -156,6 +156,19 @@ describe('FrontendVersionWebsocketMiddleware', () => {
       const err = nextFunction.mock.calls[0][0];
       expect(err.message).toContain('Frontend version is required');
     });
+
+    it('should treat empty array as missing version', () => {
+      const middleware = FrontendVersionWebsocketMiddleware('1.0.0');
+      // Empty array should be treated as missing, not as invalid format
+      const socket = makeSocket([]);
+
+      middleware(socket, nextFunction);
+
+      expect(socket.disconnect).not.toHaveBeenCalled();
+      const err = nextFunction.mock.calls[0][0];
+      expect(err).toBeInstanceOf(Error);
+      expect(err.message).toContain('Frontend version is required');
+    });
   });
 
   describe('Invalid version format handling', () => {
