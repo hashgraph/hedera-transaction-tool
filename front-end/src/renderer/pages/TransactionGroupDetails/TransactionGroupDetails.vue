@@ -650,6 +650,8 @@ function itemStatusBadgeClass(item: IGroupItem): string {
   } else {
     switch (status) {
       case TransactionStatus.WAITING_FOR_EXECUTION:
+        result = 'bg-success-subtle text-success-emphasis border border-success-subtle';
+        break;
       case TransactionStatus.ARCHIVED:
         result = 'bg-success';
         break;
