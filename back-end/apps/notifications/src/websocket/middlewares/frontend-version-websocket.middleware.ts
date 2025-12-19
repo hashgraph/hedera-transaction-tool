@@ -25,7 +25,6 @@ export const FrontendVersionWebsocketMiddleware = (
 
     if (!frontendVersion) {
       logger.warn(`Connection rejected: Missing frontend version from IP ${ip}`);
-      socket.disconnect(true);
       return next(new Error('Frontend version is required. Please update your application.'));
     }
 
@@ -36,7 +35,6 @@ export const FrontendVersionWebsocketMiddleware = (
       logger.warn(
         `Connection rejected: Invalid frontend version format "${version}" from IP ${ip}`,
       );
-      socket.disconnect(true);
       return next(new Error('Invalid frontend version format. Please update your application.'));
     }
 
@@ -44,7 +42,6 @@ export const FrontendVersionWebsocketMiddleware = (
       logger.error(
         'Server configuration error: Invalid minimum supported frontend version format.',
       );
-      socket.disconnect(true);
       return next(new Error('Server configuration error.'));
     }
 
@@ -52,7 +49,6 @@ export const FrontendVersionWebsocketMiddleware = (
       logger.warn(
         `Connection rejected: Frontend version ${cleanFrontendVersion} is below minimum ${cleanMinimumVersion} from IP ${ip}`,
       );
-      socket.disconnect(true);
       return next(
         new Error(
           `Your application version (${cleanFrontendVersion}) is no longer supported. ` +

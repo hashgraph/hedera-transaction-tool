@@ -96,7 +96,8 @@ describe('FrontendVersionWebsocketMiddleware', () => {
 
       middleware(socket, nextFunction);
 
-      expect(socket.disconnect).toHaveBeenCalledWith(true);
+      // Note: socket.io automatically disconnects after next(error), no explicit disconnect call needed
+      expect(socket.disconnect).not.toHaveBeenCalled();
       const err = nextFunction.mock.calls[0][0];
       expect(err).toBeInstanceOf(Error);
       expect(err.message).toContain('no longer supported');
@@ -110,7 +111,7 @@ describe('FrontendVersionWebsocketMiddleware', () => {
 
       middleware(socket, nextFunction);
 
-      expect(socket.disconnect).toHaveBeenCalledWith(true);
+      expect(socket.disconnect).not.toHaveBeenCalled();
       const err = nextFunction.mock.calls[0][0];
       expect(err).toBeInstanceOf(Error);
     });
@@ -121,7 +122,7 @@ describe('FrontendVersionWebsocketMiddleware', () => {
 
       middleware(socket, nextFunction);
 
-      expect(socket.disconnect).toHaveBeenCalledWith(true);
+      expect(socket.disconnect).not.toHaveBeenCalled();
     });
   });
 
@@ -132,7 +133,7 @@ describe('FrontendVersionWebsocketMiddleware', () => {
 
       middleware(socket, nextFunction);
 
-      expect(socket.disconnect).toHaveBeenCalledWith(true);
+      expect(socket.disconnect).not.toHaveBeenCalled();
       const err = nextFunction.mock.calls[0][0];
       expect(err).toBeInstanceOf(Error);
       expect(err.message).toContain('Frontend version is required');
@@ -151,7 +152,7 @@ describe('FrontendVersionWebsocketMiddleware', () => {
 
       middleware(socket, nextFunction);
 
-      expect(socket.disconnect).toHaveBeenCalledWith(true);
+      expect(socket.disconnect).not.toHaveBeenCalled();
       const err = nextFunction.mock.calls[0][0];
       expect(err.message).toContain('Frontend version is required');
     });
@@ -164,7 +165,7 @@ describe('FrontendVersionWebsocketMiddleware', () => {
 
       middleware(socket, nextFunction);
 
-      expect(socket.disconnect).toHaveBeenCalledWith(true);
+      expect(socket.disconnect).not.toHaveBeenCalled();
       const err = nextFunction.mock.calls[0][0];
       expect(err).toBeInstanceOf(Error);
       expect(err.message).toContain('Invalid frontend version format');
@@ -176,7 +177,7 @@ describe('FrontendVersionWebsocketMiddleware', () => {
 
       middleware(socket, nextFunction);
 
-      expect(socket.disconnect).toHaveBeenCalledWith(true);
+      expect(socket.disconnect).not.toHaveBeenCalled();
     });
 
     it('should handle version with leading "v" prefix', () => {
@@ -196,7 +197,7 @@ describe('FrontendVersionWebsocketMiddleware', () => {
 
       middleware(socket, nextFunction);
 
-      expect(socket.disconnect).toHaveBeenCalledWith(true);
+      expect(socket.disconnect).not.toHaveBeenCalled();
       const err = nextFunction.mock.calls[0][0];
       expect(err.message).toContain('Server configuration error');
     });
@@ -238,7 +239,7 @@ describe('FrontendVersionWebsocketMiddleware', () => {
 
       middleware(socket, nextFunction);
 
-      expect(socket.disconnect).toHaveBeenCalledWith(true);
+      expect(socket.disconnect).not.toHaveBeenCalled();
       const err = nextFunction.mock.calls[0][0];
       expect(err.message).toContain('Invalid frontend version format');
     });
@@ -309,7 +310,7 @@ describe('FrontendVersionWebsocketMiddleware', () => {
 
       middleware(socket, nextFunction);
 
-      expect(socket.disconnect).toHaveBeenCalledWith(true);
+      expect(socket.disconnect).not.toHaveBeenCalled();
     });
 
     it('should handle version with build metadata', () => {
@@ -335,8 +336,11 @@ describe('FrontendVersionWebsocketMiddleware', () => {
 
       nextFunction.mockClear();
 
+      // middleware2 rejects version 1.5.0 because minimum is 2.0.0
       middleware2(socket2, nextFunction);
-      expect(socket2.disconnect).toHaveBeenCalledWith(true);
+      expect(socket2.disconnect).not.toHaveBeenCalled();
+      const err = nextFunction.mock.calls[0][0];
+      expect(err).toBeInstanceOf(Error);
     });
   });
 });
