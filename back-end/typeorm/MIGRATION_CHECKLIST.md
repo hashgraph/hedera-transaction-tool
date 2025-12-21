@@ -2,6 +2,6 @@
 
 Before merging a migration PR:
 
-- [ ] Run `pnpm test:all` on empty local database - succeeds
+- [ ] Run `pnpm test` - succeeds
 - [ ] Test on dev environment with existing data
 - [ ] Verify no data loss after migration

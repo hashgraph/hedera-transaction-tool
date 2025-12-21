@@ -834,6 +834,9 @@ This product includes software (@types/readline-sync@1.4.8) developed at
 This product includes software (@types/responselike@1.0.3) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
+This product includes software (@types/semver@7.5.8) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
 This product includes software (@types/stack-utils@2.0.3) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
@@ -3187,6 +3190,10 @@ is James Halliday (https://github.com/substack/semver-compare).
 Copyright James Halliday. All Rights Reserved.
 
 The Initial Developer of semver@7.6.3,
+is GitHub Inc. (https://github.com/npm/node-semver).
+Copyright GitHub Inc.. All Rights Reserved.
+
+The Initial Developer of semver@7.7.1,
 is GitHub Inc. (https://github.com/npm/node-semver).
 Copyright GitHub Inc.. All Rights Reserved.
 
