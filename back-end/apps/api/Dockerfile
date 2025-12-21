@@ -20,7 +20,7 @@ RUN pnpm install && cd apps/api && pnpm install
 COPY libs libs
 COPY apps/api apps/api
 
-RUN pnpm run build api
+RUN pnpm build:api
 
 FROM node:22-alpine AS production
 

@@ -4,8 +4,7 @@
   "private": true,
   "scripts": {
     "build": "tsc",
-    "migration:run": "typeorm migration:run --dataSource dist/typeorm/data-source.js",
-    "migrate": "ts-node ../../node_modules/typeorm/cli.js migration:run -d ./data-source.ts"
+    "migration:run": "typeorm migration:run --dataSource ../dist/typeorm/data-source.js"
   },
   "dependencies": {
     "typeorm": "catalog:",
@@ -13,7 +12,7 @@
     "reflect-metadata": "catalog:"
   },
   "devDependencies": {
-    "typescript": "^5.5.4",
-    "ts-node": "^10.9.2"
+    "typescript": "5.5.4",
+    "ts-node": "10.9.2"
   }
 }

@@ -1,7 +1,11 @@
 import { DataSource } from 'typeorm';
-import { join } from 'path';
+import { extname, join } from 'path';
 
-const isCompiled = __dirname.includes('/dist/');
+const isCompiled =
+  process.env.NODE_ENV === 'production' ||
+  extname(__filename) === '.js';
+
+const fileExt = isCompiled ? 'js' : 'ts';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -14,14 +18,13 @@ export const AppDataSource = new DataSource({
   // Entities: .ts in dev, .js in production/Docker
   entities: [
     join(
-      __dirname,
-      isCompiled ? '../libs/**/*.entity.js' : '../libs/**/*.entity.ts'
+      __dirname, `../libs/common/src/database/entities/**/*.entity.${fileExt}`
     ),
   ],
 
   // Migrations: .ts in dev (with ts-node), .js in production
   migrations: [
-    join(__dirname, 'migrations', isCompiled ? '*.js' : '*.ts'),
+    join(__dirname, `migrations/*.${fileExt}`),
   ],
 
   migrationsTableName: 'migrations',

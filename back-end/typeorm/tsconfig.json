@@ -6,8 +6,7 @@
   },
   "include": [
     "data-source.ts",
-    "migrations/**/*.ts",
-    "../libs/**/*.entity.ts"
+    "migrations/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [ "node_modules", "**/*.test.ts" ]
 }
