@@ -63,10 +63,8 @@ export const AuthWebsocketMiddleware = (
       if (!token) {
         const isRateLimited = trackAttempt(ip);
         if (isRateLimited) {
-          socket.disconnect(true);
           return next(new Error('Too many failed authentication attempts'));
         }
-        socket.disconnect(true);
         return next(new Error('Unauthorized'));
       }
 
@@ -75,10 +73,8 @@ export const AuthWebsocketMiddleware = (
       if (!jwt) {
         const isRateLimited = trackAttempt(ip);
         if (isRateLimited) {
-          socket.disconnect(true);
           return next(new Error('Too many failed authentication attempts'));
         }
-        socket.disconnect(true);
         return next(new Error('Unauthorized'));
       }
 
@@ -86,28 +82,24 @@ export const AuthWebsocketMiddleware = (
       if (isBlacklisted) {
         const isRateLimited = trackAttempt(ip);
         if (isRateLimited) {
-          socket.disconnect(true);
           return next(new Error('Too many failed authentication attempts'));
         }
-        socket.disconnect(true);
         return next(new Error('Unauthorized'));
       }
 
       /* Request authentication of the jwt from the API service. */
-      const response = authService.send<User>('authenticate-websocket-token', {
-        jwt,
-      }).pipe(
-        timeout(2000)
-      );
+      const response = authService
+        .send<User>('authenticate-websocket-token', {
+          jwt,
+        })
+        .pipe(timeout(2000));
       const user = await firstValueFrom(response);
 
       if (!user) {
         const isRateLimited = trackAttempt(ip);
         if (isRateLimited) {
-          socket.disconnect(true);
           return next(new Error('Too many failed authentication attempts'));
         }
-        socket.disconnect(true);
         return next(new Error('Unauthorized'));
       }
 
@@ -118,23 +110,23 @@ export const AuthWebsocketMiddleware = (
     } catch (err) {
       const e = err as any;
 
-      if (e?.name === 'TimeoutError' ||
+      // Note: socket.io automatically disconnects after next(error), no need for explicit disconnect
+      if (
+        e?.name === 'TimeoutError' ||
         e?.code === 'ECONNREFUSED' ||
         e?.code === 'NO_RESPONDERS' ||
-        e?.message?.includes('No responders')) {
-        socket.disconnect(true);
-        next(new Error('Auth service unavailable'));
+        e?.message?.includes('No responders')
+      ) {
+        return next(new Error('Auth service unavailable'));
       } else {
         // Rate limit other auth failures
         const isRateLimited = trackAttempt(ip);
         if (isRateLimited) {
-          socket.disconnect(true);
           return next(new Error('Too many failed authentication attempts'));
         }
 
         console.error('AuthWebsocketMiddleware error:', err);
-        socket.disconnect(true);
-        next(new Error('Unauthorized'));
+        return next(new Error('Unauthorized'));
       }
     }
   };

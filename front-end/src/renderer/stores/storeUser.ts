@@ -18,6 +18,7 @@ import { ACCOUNT_SETUP_STARTED } from '@shared/constants';
 import { add, remove } from '@renderer/services/claimService';
 
 import useAfterOrganizationSelection from '@renderer/composables/user/useAfterOrganizationSelection';
+import useVersionCheck from '@renderer/composables/useVersionCheck';
 
 import { safeAwait } from '@renderer/utils';
 import * as ush from '@renderer/utils/userStoreHelpers';
@@ -31,6 +32,7 @@ const useUserStore = defineStore('user', () => {
 
   /* Composables */
   const afterOrganizationSelection = useAfterOrganizationSelection();
+  const { reset: resetVersionCheck } = useVersionCheck();
 
   /* Injected */
   const accountByKeyCache = AccountByPublicKeyCache.inject();
@@ -82,6 +84,7 @@ const useUserStore = defineStore('user', () => {
     publicKeyToAccounts.value = [];
     keyPairs.value = [];
     recoveryPhrase.value = null;
+    resetVersionCheck();
   };
 
   const getPassword = () => {

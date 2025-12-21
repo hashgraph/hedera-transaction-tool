@@ -19,6 +19,8 @@ import AutoLoginInOrganization from '@renderer/components/Organization/AutoLogin
 import AppUpdate from './components/AppUpdate.vue';
 import ImportantNote from './components/ImportantNote.vue';
 import BeginDataMigration from './components/BeginDataMigration.vue';
+import MandatoryUpgrade from './components/MandatoryUpgrade.vue';
+import OptionalUpgrade from './components/OptionalUpgrade.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -97,6 +99,8 @@ watch(
 
 <template>
   <AppUpdate />
+  <MandatoryUpgrade />
+  <OptionalUpgrade />
 
   <template v-if="!user.personal?.isLoggedIn && precheckReady">
     <ImportantNote ref="importantNoteRef" @ready="handleImportantModalReady" />
