@@ -7,6 +7,7 @@ import useUserStore from './storeUser';
 import { getLocalWebsocketPath } from '@renderer/services/organizationsService';
 
 import { getAuthTokenFromSessionStorage, isUserLoggedIn } from '@renderer/utils';
+import { FRONTEND_VERSION } from '@renderer/utils/version';
 
 const useWebsocketConnection = defineStore('websocketConnection', () => {
   /* Stores */
@@ -51,9 +52,10 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
     const newSocket = io(url, {
       path: '/ws',
       // Use a function so token is fetched on EVERY connection attempt, in case the token has been updated
-      auth: (cb) => {
+      auth: cb => {
         cb({
           token: `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`,
+          version: FRONTEND_VERSION,
         });
       },
       transports: ['websocket', 'polling'],
@@ -74,12 +76,32 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
     }
   }
 
+  function isVersionError(errorMessage: string): boolean {
+    const versionErrorPatterns = [
+      'no longer supported',
+      'Please update your application',
+      'Frontend version is required',
+      'Invalid frontend version',
+    ];
+    return versionErrorPatterns.some(pattern =>
+      errorMessage.toLowerCase().includes(pattern.toLowerCase()),
+    );
+  }
+
   function listenConnection(socket: Socket, wsUrl: string, serverUrl: string) {
     socket.on('connect', () => {
       console.log(`Connected to server ${wsUrl} with id: ${socket?.id}`);
     });
 
     socket.on('connect_error', error => {
+      if (isVersionError(error.message)) {
+        console.error(
+          `Socket for ${serverUrl}: Version error - ${error.message}. Disconnecting permanently.`,
+        );
+        socket.disconnect();
+        return;
+      }
+
       if (socket?.active) {
         // temporary failure, the socket will automatically try to reconnect
       } else {
