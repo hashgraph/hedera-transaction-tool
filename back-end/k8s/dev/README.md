@@ -24,6 +24,10 @@
 2. **(On back-end change only)** Build Docker images from the root `back-end` folder
 
    ```bash
+   docker build -t back-end-migration:1.0.0 -f ./typeorm/Dockerfile .
+   ```
+
+   ```bash
    docker build -t back-end-api:1.0.0 -f ./apps/api/Dockerfile .
    ```
 
