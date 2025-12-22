@@ -20,7 +20,6 @@ services:
       database:
         condition: service_healthy
     restart: "no"  # Run once and exit
-
   api:
     build:
       context: .

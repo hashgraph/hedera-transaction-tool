@@ -4,11 +4,11 @@
   "private": true,
   "scripts": {
     "build": "tsc",
-    "migration:run": "typeorm migration:run --dataSource ../dist/typeorm/data-source.js","test": "jest --config ./jest.config.ts",
+    "migration:run": "typeorm migration:run --dataSource ../dist/typeorm/data-source.js",
+    "test": "jest --config ./jest.config.ts",
     "test:cov": "jest --config ./jest.config.ts --coverage",
     "test:watch": "jest --config ./jest.config.ts --watch",
     "test:watch:cov": "jest --config ./jest.config.ts --watch --coverage"
-
   },
   "dependencies": {
     "typeorm": "catalog:",
