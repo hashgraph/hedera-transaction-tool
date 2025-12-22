@@ -159,7 +159,7 @@ describe('UsersController', () => {
     const mockVersionCheckResult: VersionCheckResult = {
       latestSupportedVersion: '1.2.0',
       minimumSupportedVersion: '1.0.0',
-      updateUrl: 'https://github.com/hashgraph/hedera-transaction-tool/releases/tag/v1.2.0',
+      updateUrl: 'https://github.com/hashgraph/hedera-transaction-tool/releases/download/v1.2.0',
     };
 
     beforeEach(() => {
