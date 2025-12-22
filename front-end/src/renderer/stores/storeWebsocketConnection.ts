@@ -164,6 +164,7 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
 
   return {
     disconnect,
+    connect,
     on,
     setup,
     isConnected,
