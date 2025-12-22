@@ -31,6 +31,7 @@
     "create-users": "npx ts-node ./scripts/add-users.ts",
     "deploy:dev": "sh ./k8s/dev/deploy.sh",
     "test:libs": "jest --testPathPattern='libs/.*\\.spec\\.ts$'",
+    "test:migrations": "pnpm --filter=typeorm test",
     "test:all": "INCLUDE_LIBS=0 pnpm --filter=api test && INCLUDE_LIBS=0 pnpm --filter=chain test && INCLUDE_LIBS=0 pnpm --filter=notifications test && pnpm test:libs && pnpm --filter=typeorm test",
     "test:cov:all": "pnpm --filter=api test:cov && pnpm --filter=chain test:cov && pnpm --filter=notifications test:cov && pnpm --filter=typeorm test:cov",
     "migration:generate": "ts-node scripts/generate-migration.ts",
