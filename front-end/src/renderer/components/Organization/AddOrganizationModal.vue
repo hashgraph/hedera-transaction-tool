@@ -10,11 +10,23 @@ import { useToast } from 'vue-toast-notification';
 import { addOrganization } from '@renderer/services/organizationsService';
 
 import { getErrorMessage } from '@renderer/utils';
+import { FRONTEND_VERSION } from '@renderer/utils/version';
+
+import useVersionCheck from '@renderer/composables/useVersionCheck';
+import { checkVersion } from '@renderer/services/organization';
+import {
+  checkCompatibilityForNewOrg,
+  isVersionBelowMinimum,
+  type CompatibilityCheckResult,
+} from '@renderer/services/organization/versionCompatibility';
+import { setVersionBelowMinimum, setVersionStatusForOrg } from '@renderer/stores/versionState';
+import { organizationCompatibilityResults } from '@renderer/stores/versionState';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import CompatibilityWarningModal from '@renderer/components/Organization/CompatibilityWarningModal.vue';
 import { healthCheck } from '@renderer/services/organization';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
@@ -34,10 +46,15 @@ const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
+const versionCheck = useVersionCheck();
+const { storeVersionDataForOrganization, getAllOrganizationVersionData } = versionCheck;
 
 /* State */
 const nickname = ref('');
 const serverUrl = ref('');
+const showCompatibilityWarning = ref(false);
+const compatibilityResult = ref<CompatibilityCheckResult | null>(null);
+const newOrgNickname = ref<string>('');
 
 /* Handlers */
 const handleAdd = async () => {
@@ -59,6 +76,35 @@ const handleAdd = async () => {
       serverUrl: serverUrl.value,
       key: '',
     });
+
+    newOrgNickname.value = organization.nickname || serverUrl.value;
+
+    try {
+      const versionResponse = await checkVersion(serverUrl.value, FRONTEND_VERSION);
+
+      storeVersionDataForOrganization(serverUrl.value, versionResponse);
+
+      if (versionResponse.updateUrl) {
+        const compatResult = await checkCompatibilityForNewOrg(serverUrl.value, versionResponse);
+
+        organizationCompatibilityResults.value[serverUrl.value] = compatResult;
+
+        if (compatResult.hasConflict) {
+          compatibilityResult.value = compatResult;
+          showCompatibilityWarning.value = true;
+          return;
+        }
+
+        if (isVersionBelowMinimum(versionResponse)) {
+          setVersionBelowMinimum(serverUrl.value, versionResponse.updateUrl);
+        } else {
+          setVersionStatusForOrg(serverUrl.value, 'updateAvailable');
+        }
+      }
+    } catch (versionError) {
+      console.error('Version check failed for new organization:', versionError);
+    }
+
     toast.success('Organization Added', successToastOptions);
     emit('added', organization);
     emit('update:show', false);
@@ -67,12 +113,60 @@ const handleAdd = async () => {
   }
 };
 
+const handleCompatibilityProceed = async () => {
+  showCompatibilityWarning.value = false;
+  const orgServerUrl = serverUrl.value;
+
+  const addedOrg = user.organizations.find(org => org.serverUrl === orgServerUrl);
+  if (!addedOrg) {
+    console.error('Could not find added organization');
+    emit('update:show', false);
+    return;
+  }
+
+  const allVersionData = getAllOrganizationVersionData();
+  const versionData = allVersionData[orgServerUrl];
+
+  if (versionData && versionData.updateUrl) {
+    if (isVersionBelowMinimum(versionData)) {
+      setVersionBelowMinimum(orgServerUrl, versionData.updateUrl);
+    } else {
+      setVersionStatusForOrg(orgServerUrl, 'updateAvailable');
+    }
+  }
+
+  toast.success('Organization Added', successToastOptions);
+  emit('added', addedOrg);
+  emit('update:show', false);
+};
+
+const handleCompatibilityCancel = () => {
+  showCompatibilityWarning.value = false;
+  const orgServerUrl = serverUrl.value;
+
+  const allVersionData = getAllOrganizationVersionData();
+  const versionData = allVersionData[orgServerUrl];
+
+  if (versionData && versionData.updateUrl) {
+    if (isVersionBelowMinimum(versionData)) {
+      setVersionBelowMinimum(orgServerUrl, versionData.updateUrl);
+    } else {
+      setVersionStatusForOrg(orgServerUrl, 'updateAvailable');
+    }
+  }
+
+  emit('update:show', false);
+};
+
 /* Watchers */
 watch(
   () => props.show,
   () => {
     nickname.value = '';
     serverUrl.value = '';
+    showCompatibilityWarning.value = false;
+    compatibilityResult.value = null;
+    newOrgNickname.value = '';
   },
 );
 </script>
@@ -131,5 +225,17 @@ watch(
         >
       </div>
     </form>
+
+    <!-- Compatibility Warning Modal -->
+    <CompatibilityWarningModal
+      :show="showCompatibilityWarning"
+      :conflicts="compatibilityResult?.conflicts || []"
+      :suggested-version="compatibilityResult?.suggestedVersion || ''"
+      :is-optional="compatibilityResult?.isOptional ?? true"
+      :triggering-org-name="newOrgNickname"
+      @update:show="showCompatibilityWarning = $event"
+      @proceed="handleCompatibilityProceed"
+      @cancel="handleCompatibilityCancel"
+    />
   </AppModal>
 </template>
