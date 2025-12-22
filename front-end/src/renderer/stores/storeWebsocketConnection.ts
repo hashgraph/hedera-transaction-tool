@@ -15,6 +15,9 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
 
   /* State */
   const sockets = ref<{ [serverUrl: string]: Socket | null }>({});
+  const connectionStates = ref<{
+    [serverUrl: string]: 'connected' | 'disconnected' | 'connecting';
+  }>({});
 
   /* Actions */
   async function setup() {
@@ -43,11 +46,17 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
       //@ts-expect-error - auth is missing in typings
       if (socket.auth?.token !== `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`) {
         socket.disconnect();
+        connectionStates.value[serverUrl] = 'disconnected';
       } else {
         socket.off();
+        if (socket.connected) {
+          connectionStates.value[serverUrl] = 'connected';
+        }
         return socket;
       }
     }
+
+    connectionStates.value[serverUrl] = 'connecting';
 
     const newSocket = io(url, {
       path: '/ws',
@@ -74,6 +83,7 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
       socket.disconnect();
       sockets.value[serverUrl] = null;
     }
+    connectionStates.value[serverUrl] = 'disconnected';
   }
 
   function isVersionError(errorMessage: string): boolean {
@@ -91,6 +101,7 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
   function listenConnection(socket: Socket, wsUrl: string, serverUrl: string) {
     socket.on('connect', () => {
       console.log(`Connected to server ${wsUrl} with id: ${socket?.id}`);
+      connectionStates.value[serverUrl] = 'connected';
     });
 
     socket.on('connect_error', error => {
@@ -99,21 +110,26 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
           `Socket for ${serverUrl}: Version error - ${error.message}. Disconnecting permanently.`,
         );
         socket.disconnect();
+        connectionStates.value[serverUrl] = 'disconnected';
         return;
       }
 
       if (socket?.active) {
         // temporary failure, the socket will automatically try to reconnect
+        connectionStates.value[serverUrl] = 'connecting';
       } else {
         console.log(`Socket for ${serverUrl}: ${error.message}`);
+        connectionStates.value[serverUrl] = 'disconnected';
       }
     });
 
     socket.on('disconnect', reason => {
       if (socket?.active) {
         // temporary disconnection, the socket will automatically try to reconnect
+        connectionStates.value[serverUrl] = 'connecting';
       } else {
         console.log(`Socket for ${serverUrl}: ${reason}`);
+        connectionStates.value[serverUrl] = 'disconnected';
       }
     });
   }
@@ -132,10 +148,27 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
     return () => {};
   }
 
+  function isConnected(serverUrl: string): boolean {
+    const state = connectionStates.value[serverUrl];
+    return state === 'connected';
+  }
+
+  function getConnectionState(serverUrl: string): 'connected' | 'disconnected' | 'connecting' {
+    return connectionStates.value[serverUrl] || 'disconnected';
+  }
+
+  function isLive(serverUrl: string): boolean {
+    const socket = sockets.value[serverUrl];
+    return socket?.connected === true;
+  }
+
   return {
     disconnect,
     on,
     setup,
+    isConnected,
+    getConnectionState,
+    isLive,
   };
 });
 
