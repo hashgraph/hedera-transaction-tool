@@ -164,3 +164,18 @@ export function isUpgradeOptional(versionData: IVersionCheckResponse): boolean {
 
   return true;
 }
+
+export function isVersionBelowMinimum(versionData: IVersionCheckResponse): boolean {
+  if (!versionData.minimumSupportedVersion) {
+    return false;
+  }
+
+  const cleanCurrentVersion = semver.clean(FRONTEND_VERSION);
+  const cleanMinimumVersion = semver.clean(versionData.minimumSupportedVersion);
+
+  if (!cleanCurrentVersion || !cleanMinimumVersion) {
+    return false;
+  }
+
+  return semver.lt(cleanCurrentVersion, cleanMinimumVersion);
+}
