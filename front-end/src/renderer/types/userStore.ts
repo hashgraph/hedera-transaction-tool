@@ -64,6 +64,9 @@ export type LoggedInOrganization = {
   secretHashes: string[];
 };
 
+export type ConnectionStatus = 'connected' | 'disconnected' | 'live' | 'upgradeRequired';
+export type DisconnectReason = 'upgradeRequired' | 'manual' | 'error' | 'compatibilityConflict';
+
 export type ConnectedOrganization = Organization &
   (
     | OrganizationLoading
@@ -72,7 +75,13 @@ export type ConnectedOrganization = Organization &
           | OrganizationInactiveServer
           | (OrganizationActiveServer & (LoggedInOrganization | LoggedOutOrganization))
         ))
-  );
+  ) & {
+    connectionStatus?: ConnectionStatus;
+    disconnectReason?: DisconnectReason;
+    lastDisconnectedAt?: Date;
+    latestSupportedVersion?: string;
+    minimumSupportedVersion?: string;
+  };
 
 export type OrganizationTokens = {
   [organizationId: string]: string | null;
