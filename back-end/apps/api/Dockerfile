@@ -19,9 +19,8 @@ RUN pnpm install && cd apps/api && pnpm install
 
 COPY libs libs
 COPY apps/api apps/api
-COPY typeorm typeorm
 
-RUN pnpm run build api
+RUN pnpm build:api
 
 FROM node:22-alpine AS production
 
@@ -32,18 +31,14 @@ WORKDIR /usr/src/app
 
 COPY package.json ./
 COPY pnpm-lock.yaml ./
-COPY pnpm-workspace.yaml ./
 COPY scripts/postinstall.sh scripts/postinstall.sh
 
 RUN npm install -g pnpm
 
 ENV SKIP_NOTICE_GEN=true
 
-RUN pnpm install
+RUN pnpm install --prod
 
 COPY --from=development /usr/src/app/dist ./dist
-COPY --from=development /usr/src/app/typeorm ./typeorm
-COPY --from=development /usr/src/app/libs ./libs
-COPY --from=development /usr/src/app/tsconfig.json ./tsconfig.json
 
 CMD ["node", "dist/apps/api/main"]

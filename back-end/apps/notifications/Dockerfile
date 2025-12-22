@@ -20,7 +20,7 @@ RUN pnpm install && cd apps/notifications && pnpm install
 COPY libs libs
 COPY apps/notifications apps/notifications
 
-RUN pnpm run build notifications
+RUN pnpm build:notifications
 
 FROM node:22-alpine AS production
 

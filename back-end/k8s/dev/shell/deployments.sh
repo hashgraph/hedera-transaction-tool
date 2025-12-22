@@ -25,6 +25,10 @@ delete_service() {
     $KUBECTL delete services "$1"
 }
 
+delete_job() {
+    $KUBECTL delete job "$1" --ignore-not-found=true
+}
+
 # Check and switch to correct context
 assert_k8s_context() {
     local target_context="$1"
@@ -119,6 +123,9 @@ wait_for() {
     if [ "$1" = "statefulset" ]; then
         # For StatefulSets, wait for pods to be ready
         $KUBECTL wait --for=condition=ready pod -l app.kubernetes.io/name=$2 --timeout=180s
+    elif [ "$1" = "job" ]; then
+        # For Jobs, wait until the Job completes
+        $KUBECTL wait --for=condition=complete --timeout=180s job/$2
     else
         # For Deployments, use condition=available
         $KUBECTL wait --for=condition=available --timeout=180s $1/$2
@@ -149,6 +156,10 @@ deploy_all() {
     wait_for "deployment" "postgres-deployment"
     wait_for "deployment" "redis-deployment"
 
+    deploy "migration-job"
+
+    wait_for "job" "migration-job"
+
     deploy "api-deployment"
     deploy "chain-deployment"
     deploy "notifications-deployment"
@@ -161,12 +172,14 @@ stop_all() {
     delete_deployment "api-deployment"
     delete_deployment "chain-deployment"
     delete_deployment "notifications-deployment"
-    
+
     delete_service "api-service"
     delete_service "api-http-service"
     delete_service "notifications-service"
     delete_service "postgres-service"
     delete_service "redis-service"
+
+    delete_job "migration-job"
 
     $KUBECTL delete ingresses back-end
 
