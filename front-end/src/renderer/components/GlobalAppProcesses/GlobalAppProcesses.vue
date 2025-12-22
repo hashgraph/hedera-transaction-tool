@@ -15,10 +15,7 @@ import useVersionCheck from '@renderer/composables/useVersionCheck';
 import { getUseKeychain } from '@renderer/services/safeStorageService';
 import { getUsersCount, resetDataLocal } from '@renderer/services/userService';
 import { getStoredClaim } from '@renderer/services/claimService';
-import {
-  checkCompatibilityAcrossOrganizations,
-  type CompatibilityCheckResult,
-} from '@renderer/services/organization/versionCompatibility';
+import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organization/versionCompatibility';
 import {
   getVersionStatusForOrg,
   organizationCompatibilityResults,
@@ -101,26 +98,26 @@ async function checkCompatibilityForUpgrades(
       continue;
     }
 
-      try {
-        const compatibilityResult = await checkCompatibilityAcrossOrganizations(
-          versionData.latestSupportedVersion,
-          org.serverUrl,
+    try {
+      const compatibilityResult = await checkCompatibilityAcrossOrganizations(
+        versionData.latestSupportedVersion,
+        org.serverUrl,
+      );
+
+      organizationCompatibilityResults.value[org.serverUrl] = compatibilityResult;
+
+      if (compatibilityResult.hasConflict) {
+        console.warn(
+          `[${new Date().toISOString()}] COMPATIBILITY_CHECK App launch check for ${org.serverUrl}`,
         );
-
-        organizationCompatibilityResults.value[org.serverUrl] = compatibilityResult;
-
-        if (compatibilityResult.hasConflict) {
-          console.warn(
-            `[${new Date().toISOString()}] COMPATIBILITY_CHECK App launch check for ${org.serverUrl}`,
-          );
-          console.warn(
-            `Conflicts found with ${compatibilityResult.conflicts.length} organization(s)`,
-          );
-        }
-      } catch (error) {
-        console.error(`Failed to check compatibility for ${org.serverUrl}:`, error);
-        organizationCompatibilityResults.value[org.serverUrl] = null;
+        console.warn(
+          `Conflicts found with ${compatibilityResult.conflicts.length} organization(s)`,
+        );
       }
+    } catch (error) {
+      console.error(`Failed to check compatibility for ${org.serverUrl}:`, error);
+      organizationCompatibilityResults.value[org.serverUrl] = null;
+    }
   }
 }
 
