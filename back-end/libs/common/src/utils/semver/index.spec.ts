@@ -10,20 +10,20 @@ describe('Semver Utilities', () => {
 
         expect(result.latestSupportedVersion).toBe('1.1.0');
         expect(result.minimumSupportedVersion).toBe('0.9.0');
-        expect(result.updateUrl).toBe(`${repoUrl}/download/v1.1.0`);
+        expect(result.updateUrl).toBe(`${repoUrl}/download/v1.1.0/`);
       });
 
       it('should handle major version differences', () => {
         const result = checkFrontendVersion('1.9.9', '2.0.0', '1.0.0', repoUrl);
 
         expect(result.updateUrl).not.toBeNull();
-        expect(result.updateUrl).toBe(`${repoUrl}/download/v2.0.0`);
+        expect(result.updateUrl).toBe(`${repoUrl}/download/v2.0.0/`);
       });
 
       it('should handle patch version differences', () => {
         const result = checkFrontendVersion('1.2.3', '1.2.4', '1.0.0', repoUrl);
 
-        expect(result.updateUrl).toBe(`${repoUrl}/download/v1.2.4`);
+        expect(result.updateUrl).toBe(`${repoUrl}/download/v1.2.4/`);
       });
     });
 
@@ -78,14 +78,14 @@ describe('Semver Utilities', () => {
       it('should handle pre-release user versions', () => {
         const result = checkFrontendVersion('1.0.0-beta.1', '1.0.0', '0.9.0', repoUrl);
 
-        expect(result.updateUrl).toBe(`${repoUrl}/download/v1.0.0`);
+        expect(result.updateUrl).toBe(`${repoUrl}/download/v1.0.0/`);
       });
 
       it('should handle pre-release latest versions', () => {
         const result = checkFrontendVersion('1.0.0', '1.1.0-rc.1', '0.9.0', repoUrl);
 
         // 1.0.0 is less than 1.1.0-rc.1 in semver
-        expect(result.updateUrl).toBe(`${repoUrl}/download/v1.1.0-rc.1`);
+        expect(result.updateUrl).toBe(`${repoUrl}/download/v1.1.0-rc.1/`);
       });
     });
 
@@ -98,7 +98,7 @@ describe('Semver Utilities', () => {
           'https://github.com/org/repo/releases/',
         );
 
-        expect(result.updateUrl).toBe('https://github.com/org/repo/releases/download/v1.2.0');
+        expect(result.updateUrl).toBe('https://github.com/org/repo/releases/download/v1.2.0/');
       });
 
       it('should handle multiple trailing slashes', () => {
@@ -109,7 +109,7 @@ describe('Semver Utilities', () => {
           'https://github.com/org/repo/releases///',
         );
 
-        expect(result.updateUrl).toBe('https://github.com/org/repo/releases/download/v1.2.0');
+        expect(result.updateUrl).toBe('https://github.com/org/repo/releases/download/v1.2.0/');
       });
     });
 

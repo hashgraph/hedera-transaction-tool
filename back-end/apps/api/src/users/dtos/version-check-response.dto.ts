@@ -18,7 +18,7 @@ export class VersionCheckResponseDto {
 
   @ApiProperty({
     description: 'URL to the releases page where the user can download updates. Null if no update is available.',
-    example: 'https://github.com/hashgraph/hedera-transaction-tool/releases/download/v1.2.0',
+    example: 'https://github.com/hashgraph/hedera-transaction-tool/releases/download/v1.2.0/',
     nullable: true,
   })
   @Expose()
