@@ -7,48 +7,44 @@ vi.mock('electron', () => ({
   BrowserWindow: vi.fn(),
 }));
 
-// Create mock functions that we can reference in tests
-const mockOn = vi.fn();
-const mockRemoveAllListeners = vi.fn();
-const mockCheckForUpdates = vi.fn().mockResolvedValue(undefined);
-const mockDownloadUpdate = vi.fn().mockResolvedValue(undefined);
-const mockQuitAndInstall = vi.fn();
+// Create mock functions using vi.hoisted() so they're available in the mock factory
+const {
+  mockOn,
+  mockRemoveAllListeners,
+  mockCheckForUpdates,
+  mockDownloadUpdate,
+  mockQuitAndInstall,
+  mockSetFeedURL,
+} = vi.hoisted(() => {
+  return {
+    mockOn: vi.fn(),
+    mockRemoveAllListeners: vi.fn(),
+    mockCheckForUpdates: vi.fn().mockResolvedValue(undefined),
+    mockDownloadUpdate: vi.fn().mockResolvedValue(undefined),
+    mockQuitAndInstall: vi.fn(),
+    mockSetFeedURL: vi.fn(),
+  };
+});
 
-// Mock electron-updater
-vi.mock('electron-updater', () => ({
-  autoUpdater: {
+// Mock electron-updater - create a simple mock object
+vi.mock('electron-updater', () => {
+  // Create a new object each time to avoid circular references
+  const mockAutoUpdater = {
     logger: null,
     autoDownload: false,
     forceDevUpdateConfig: false,
-  },
-  MacUpdater: vi.fn().mockImplementation(() => ({
     on: mockOn,
     removeAllListeners: mockRemoveAllListeners,
     checkForUpdates: mockCheckForUpdates,
     downloadUpdate: mockDownloadUpdate,
     quitAndInstall: mockQuitAndInstall,
-    logger: null,
-    autoDownload: false,
-  })),
-  NsisUpdater: vi.fn().mockImplementation(() => ({
-    on: mockOn,
-    removeAllListeners: mockRemoveAllListeners,
-    checkForUpdates: mockCheckForUpdates,
-    downloadUpdate: mockDownloadUpdate,
-    quitAndInstall: mockQuitAndInstall,
-    logger: null,
-    autoDownload: false,
-  })),
-  AppImageUpdater: vi.fn().mockImplementation(() => ({
-    on: mockOn,
-    removeAllListeners: mockRemoveAllListeners,
-    checkForUpdates: mockCheckForUpdates,
-    downloadUpdate: mockDownloadUpdate,
-    quitAndInstall: mockQuitAndInstall,
-    logger: null,
-    autoDownload: false,
-  })),
-}));
+    setFeedURL: mockSetFeedURL,
+  };
+
+  return {
+    autoUpdater: mockAutoUpdater,
+  };
+});
 
 // Mock @electron-toolkit/utils
 vi.mock('@electron-toolkit/utils', () => ({
@@ -80,7 +76,6 @@ import {
   getUpdaterService,
   initializeUpdaterService,
 } from '@main/services/electronUpdater';
-import { MacUpdater, NsisUpdater, AppImageUpdater } from 'electron-updater';
 
 describe('ElectronUpdaterService', () => {
   let mockWindow: any;
@@ -93,6 +88,7 @@ describe('ElectronUpdaterService', () => {
     mockCheckForUpdates.mockClear();
     mockDownloadUpdate.mockClear();
     mockQuitAndInstall.mockClear();
+    mockSetFeedURL.mockClear();
 
     // Reset mock implementations
     mockCheckForUpdates.mockResolvedValue(undefined);
@@ -130,6 +126,10 @@ describe('ElectronUpdaterService', () => {
       service.initialize('https://releases.example.com');
 
       expect(service.getUpdateUrl()).toBe('https://releases.example.com');
+      expect(mockSetFeedURL).toHaveBeenCalledWith({
+        provider: 'generic',
+        url: 'https://releases.example.com',
+      });
     });
   });
 
@@ -441,9 +441,7 @@ describe('ElectronUpdaterService - edge cases', () => {
     mockCheckForUpdates.mockClear();
     mockDownloadUpdate.mockClear();
     mockQuitAndInstall.mockClear();
-    vi.mocked(MacUpdater).mockClear();
-    vi.mocked(NsisUpdater).mockClear();
-    vi.mocked(AppImageUpdater).mockClear();
+    mockSetFeedURL.mockClear();
   });
 
   describe('removeEventListeners when updater is null', () => {
@@ -488,20 +486,8 @@ describe('ElectronUpdaterService - edge cases', () => {
     });
   });
 
-  describe('platform-specific updater creation', () => {
-    const originalPlatform = process.platform;
-
-    afterEach(() => {
-      Object.defineProperty(process, 'platform', {
-        value: originalPlatform,
-      });
-    });
-
-    it('should create MacUpdater on darwin platform', () => {
-      Object.defineProperty(process, 'platform', {
-        value: 'darwin',
-      });
-
+  describe('setFeedURL configuration', () => {
+    it('should call setFeedURL with correct parameters when initializing', () => {
       const mockWindow = {
         webContents: { send: vi.fn() },
       };
@@ -509,39 +495,10 @@ describe('ElectronUpdaterService - edge cases', () => {
       const service = new ElectronUpdaterService(mockWindow as unknown as BrowserWindow);
       service.initialize('https://releases.example.com');
 
-      expect(MacUpdater).toHaveBeenCalled();
-      expect(NsisUpdater).not.toHaveBeenCalled();
-      expect(AppImageUpdater).not.toHaveBeenCalled();
-    });
-
-    it('should create NsisUpdater on win32 platform', () => {
-      Object.defineProperty(process, 'platform', {
-        value: 'win32',
+      expect(mockSetFeedURL).toHaveBeenCalledWith({
+        provider: 'generic',
+        url: 'https://releases.example.com',
       });
-
-      const mockWindow = {
-        webContents: { send: vi.fn() },
-      };
-
-      const service = new ElectronUpdaterService(mockWindow as unknown as BrowserWindow);
-      service.initialize('https://releases.example.com');
-
-      expect(NsisUpdater).toHaveBeenCalled();
-    });
-
-    it('should create AppImageUpdater on linux platform', () => {
-      Object.defineProperty(process, 'platform', {
-        value: 'linux',
-      });
-
-      const mockWindow = {
-        webContents: { send: vi.fn() },
-      };
-
-      const service = new ElectronUpdaterService(mockWindow as unknown as BrowserWindow);
-      service.initialize('https://releases.example.com');
-
-      expect(AppImageUpdater).toHaveBeenCalled();
     });
   });
 

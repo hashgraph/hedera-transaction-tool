@@ -1,19 +1,12 @@
 import { BrowserWindow } from 'electron';
-import {
-  autoUpdater,
-  MacUpdater,
-  NsisUpdater,
-  AppImageUpdater,
-  type UpdateInfo,
-  type ProgressInfo,
-} from 'electron-updater';
+import { autoUpdater, type AppUpdater, type UpdateInfo, type ProgressInfo } from 'electron-updater';
 import { is } from '@electron-toolkit/utils';
 
 import { getAppUpdateLogger } from '@main/modules/logger';
 import { categorizeUpdateError } from '@main/utils/updateErrors';
 
 export class ElectronUpdaterService {
-  private updater: MacUpdater | NsisUpdater | AppImageUpdater | null = null;
+  private updater: AppUpdater | null = null;
   private logger = getAppUpdateLogger();
   private window: BrowserWindow | null = null;
   private currentUpdateUrl: string | null = null;
@@ -29,22 +22,6 @@ export class ElectronUpdaterService {
     autoUpdater.forceDevUpdateConfig = is.dev;
   }
 
-  private createUpdater(updateUrl: string): MacUpdater | NsisUpdater | AppImageUpdater {
-    const options = {
-      provider: 'generic' as const,
-      url: updateUrl,
-    };
-
-    switch (process.platform) {
-      case 'darwin':
-        return new MacUpdater(options);
-      case 'win32':
-        return new NsisUpdater(options);
-      default:
-        return new AppImageUpdater(options);
-    }
-  }
-
   initialize(updateUrl: string): void {
     if (!updateUrl) {
       this.logger.error('Cannot initialize updater: updateUrl is empty');
@@ -52,10 +29,11 @@ export class ElectronUpdaterService {
     }
 
     this.currentUpdateUrl = updateUrl;
-    this.updater = this.createUpdater(updateUrl);
-
-    this.updater.logger = this.logger;
-    this.updater.autoDownload = false;
+    this.updater = autoUpdater;
+    this.updater.setFeedURL({
+      provider: 'generic',
+      url: updateUrl,
+    });
 
     this.logger.info(`Updater initialized with URL: ${updateUrl}`);
   }
