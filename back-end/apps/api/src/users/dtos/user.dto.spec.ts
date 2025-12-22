@@ -7,7 +7,7 @@ import { UserKeyDto } from '../../user-keys/dtos';
 import { UserStatus } from '@entities'
 
 const toDto = (plain: Record<string, unknown>) =>
-  plainToInstance(UserDto, plain, { enableImplicitConversion: false })
+  plainToInstance(UserDto, plain)
 
 describe('UserDto', () => {
   test('maps plain object to UserDto and converts nested UserKeyDto and dates', () => {
@@ -16,8 +16,8 @@ describe('UserDto', () => {
       email: 'alice@example.com',
       admin: false,
       status: UserStatus.NEW,
-      createdAt: '2024-01-01T00:00:00.000Z',
-      updatedAt: '2024-01-02T00:00:00.000Z',
+      createdAt: new Date('2024-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2024-01-02T00:00:00.000Z'),
       keys: { id: 10, key: 'abc' }
     }
 
@@ -36,8 +36,8 @@ describe('UserDto', () => {
       email: 'bob@example.com',
       admin: true,
       status: 'INVALID_STATUS',
-      createdAt: '2024-01-01T00:00:00.000Z',
-      updatedAt: '2024-01-02T00:00:00.000Z',
+      createdAt: new Date('2024-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2024-01-02T00:00:00.000Z'),
       keys: {}
     }
 
