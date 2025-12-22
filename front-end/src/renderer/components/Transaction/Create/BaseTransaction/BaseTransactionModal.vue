@@ -157,6 +157,18 @@ async function handleSubmit() {
 onBeforeRouteLeave(async to => {
   redirectPath.value = to.fullPath;
   if (to.name?.toString().toLocaleLowerCase().includes('login')) return true;
+
+  if (to.path.startsWith('/transaction/')) {
+    sessionStorage.setItem('transactionWasSubmitted', 'true');
+  }
+
+  if (to.path === '/transactions' || to.name === 'transactions') {
+    if (sessionStorage.getItem('transactionWasSubmitted') === 'true') {
+      sessionStorage.removeItem('transactionWasSubmitted');
+      return true;
+    }
+  }
+
   if (shouldWarnForUnsaved.value && wantToDeleteModalShown.value === false) {
     wantToDeleteModalShown.value = true;
     return false;
