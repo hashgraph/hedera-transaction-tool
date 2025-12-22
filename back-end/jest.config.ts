@@ -3,13 +3,13 @@ import type { Config } from 'jest';
 const config: Config = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: '.',
-  testRegex: '.*\\.(spec|test)\\.ts$',
+  testMatch: ['**/?(*.)+(spec|test).ts'],
   transform: {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
-  collectCoverageFrom: ['<rootDir>/libs/common/src/**/*.{!(module),}.(t|j)s'],
   testEnvironment: 'node',
-  roots: ['<rootDir>/libs/', '<rootDir>/typeorm/test/'],
+  collectCoverageFrom: ['<rootDir>/libs/common/src/**/*.{!(module),}.(t|j)s'],
+  roots: ['<rootDir>/libs/'],
   moduleNameMapper: {
     '^@app/common(|/.*)$': '<rootDir>/libs/common/src/$1',
     '^@entities(|/.*)$': '<rootDir>/libs/common/src/database/entities/$1',

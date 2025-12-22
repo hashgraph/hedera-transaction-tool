@@ -13,14 +13,18 @@ import { CachedAccountKey, TransactionAccount } from './';
  * These accounts can include: fee payer, transfer sender/receiver, node account, etc.
  */
 @Entity()
+@Index(['account', 'mirrorNetwork'], { unique: true })
 export class CachedAccount {
   @PrimaryGeneratedColumn()
   id: number;
 
   // Hedera ID (shard.realm.num or null)
-  @Column({ unique: true, length: 64 })
+  @Column({ length: 64 })
   @Index()
   account: string;
+
+  @Column()
+  mirrorNetwork: string;
 
   @Column({ nullable: true })
   receiverSignatureRequired?: boolean;

@@ -1,0 +1,106 @@
+services:
+  migration:
+    build:
+      context: .
+      dockerfile: ./typeorm/Dockerfile
+    env_file:
+      - ./typeorm/.env
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: "no"  # Run once and exit
+
+  api:
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+      target: production
+    env_file:
+      - ./apps/api/.env
+    ports:
+      - '3001:3000'
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+    restart: always
+  chain:
+    build:
+      context: .
+      dockerfile: ./apps/chain/Dockerfile
+      target: production
+    env_file:
+      - ./apps/chain/.env
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+    restart: always
+  notifications:
+    build:
+      context: .
+      dockerfile: ./apps/notifications/Dockerfile
+      target: production
+    env_file:
+      - ./apps/notifications/.env
+    ports:
+      - '3020:3020'
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+    restart: always
+  nats:
+    image: nats:2.10
+    container_name: nats
+    command:
+      - "-js"                       # Enable JetStream
+      - "-sd=/data/jetstream"       # JetStream storeDir
+    ports:
+      - "4222:4222"                 # Client connections
+    volumes:
+      - nats:/data/jetstream
+    restart: unless-stopped
+  nats-box:
+    image: natsio/nats-box
+    container_name: nats-box
+    stdin_open: true
+    tty: true
+    depends_on:
+      - nats
+  database:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD
+    container_name: postgres
+    volumes:
+      - ./pgdata:/var/lib/postgresql
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    container_name: nest-pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL
+      - PGADMIN_DEFAULT_PASSWORD
+    ports:
+      - '5050:80'
+    depends_on:
+      - database
+  redis:
+    build: ./redis
+    container_name: cache
+    ports:
+      - '6380:6379'
+    volumes:
+      - redis:/data
+    restart: always
+volumes:
+  redis:
+    driver: local
+  nats:
+    driver: local

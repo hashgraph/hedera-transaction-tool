@@ -1,17 +1,12 @@
 import type { Config } from 'jest';
+import baseConfig from '../../jest.config';
 
 const includeLibs = process.env.INCLUDE_LIBS !== '0';
 
 const config: Config = {
-  moduleFileExtensions: ['js', 'json', 'ts'],
-  // keep config local to the app folder
+  ...baseConfig,
   rootDir: '.',
-  testRegex: '.*\\.spec\\.ts$',
-  transform: {
-    '^.+\\.(t|j)s$': 'ts-jest',
-  },
   collectCoverageFrom: ['<rootDir>/src/**/*.{!(module),}.(t|j)s'],
-  testEnvironment: 'node',
   // include libs only when INCLUDE_LIBS !== '0'
   roots: includeLibs ? ['<rootDir>/../../libs/', '<rootDir>/src'] : ['<rootDir>/src'],
   moduleNameMapper: {
@@ -19,9 +14,5 @@ const config: Config = {
     '^@entities(|/.*)$': '<rootDir>/../../libs/common/src/database/entities/$1',
   },
 };
-
-if (process.env.CI) {
-  config.maxWorkers = 2; // This is to prevent Jest from starving the worker in CI environments and causing instability
-}
 
 export default config;

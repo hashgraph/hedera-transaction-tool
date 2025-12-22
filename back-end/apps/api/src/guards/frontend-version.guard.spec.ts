@@ -318,7 +318,7 @@ describe('FrontendVersionGuard', () => {
         guard.canActivate(context);
       } catch (error) {
         const response = (error as HttpException).getResponse() as Record<string, unknown>;
-        expect(response.updateUrl).toBe(`${repoUrl}/tag/v${latestVersion}`);
+        expect(response.updateUrl).toBe(`${repoUrl}/download/v${latestVersion}/`);
       }
     });
 
@@ -329,7 +329,7 @@ describe('FrontendVersionGuard', () => {
         guard.canActivate(context);
       } catch (error) {
         const response = (error as HttpException).getResponse() as Record<string, unknown>;
-        expect(response.updateUrl).toBe(`${repoUrl}/tag/v${latestVersion}`);
+        expect(response.updateUrl).toBe(`${repoUrl}/download/v${latestVersion}/`);
       }
     });
 
@@ -340,7 +340,7 @@ describe('FrontendVersionGuard', () => {
         guard.canActivate(context);
       } catch (error) {
         const response = (error as HttpException).getResponse() as Record<string, unknown>;
-        expect(response.updateUrl).toBe(`${repoUrl}/tag/v${latestVersion}`);
+        expect(response.updateUrl).toBe(`${repoUrl}/download/v${latestVersion}/`);
       }
     });
 
@@ -433,7 +433,7 @@ describe('FrontendVersionGuard', () => {
       } catch (error) {
         const response = (error as HttpException).getResponse() as Record<string, unknown>;
         expect(response.updateUrl).toBe(
-          'https://github.com/hashgraph/hedera-transaction-tool/releases/tag/v2.0.0',
+          'https://github.com/hashgraph/hedera-transaction-tool/releases/download/v2.0.0/',
         );
       }
     });

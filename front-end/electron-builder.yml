@@ -43,6 +43,10 @@ pkg:
   isRelocatable: false
 publish:
   provider: github
+  # Explicitly set repository owner and name for GitHub Releases
+  # This ensures electron-builder knows where to publish releases
+  owner: hashgraph
+  repo: hedera-transaction-tool
 extraResources:
   - node_modules/prisma/**/*
   - node_modules/.prisma/**/*

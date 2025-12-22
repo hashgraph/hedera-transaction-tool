@@ -42,6 +42,7 @@ There are `example.env` files in the following directories:
 - `apps/api`
 - `apps/chain`
 - `apps/notifications`
+- `typeorm`
 - `scripts`
 - the root one
 
@@ -76,6 +77,10 @@ You can deploy the backend for local development in two ways
 - Kubernetes
 
 ### Deploy Using Docker
+
+There are two docker-compose.yaml files in the `backend` directory:
+- `docker-compose.yaml` - for local development
+- `docker-compose.prod.yaml` - for production mirroring deployment (not covered in this readme)
 
 **HTTP Mode**
 In the root of the `backend` directory run the following Docker command:
@@ -229,7 +234,9 @@ docker-compose up
 
 ### Unit/Integration
 
-Tests are run per service. Navigate to the service you want to test. There you can use the test commands to run the tests and see the coverage
+Tests are run per service. Navigate to the service you want to test. There you can use the test commands to run the tests and see the coverage.
+Check each of the `package.json` files for more test commands.
+
 **API**
 
     cd apps/api
@@ -244,6 +251,15 @@ Tests are run per service. Navigate to the service you want to test. There you c
 
     cd apps/chain
     pnpm test:cov
+
+**Migrations**
+
+    cd typeorm
+    pnpm test:cov
+
+All tests can be run from the back-end directory with:
+
+    pnpm test:all
 
 ### E2E
 
