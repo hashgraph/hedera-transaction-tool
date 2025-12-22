@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import useFilterNotifications from '@renderer/composables/useFilterNotifications.ts';
@@ -15,6 +15,8 @@ import {
   TransactionNodeCollection,
 } from '../../../../../../shared/src/ITransactionNode.ts';
 import { NotificationType, TransactionStatus } from '@shared/interfaces';
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
+import Tooltip from 'bootstrap/js/dist/tooltip';
 
 /* Props */
 const props = defineProps<{
@@ -32,8 +34,14 @@ const emit = defineEmits<{
 /* Stores */
 const notifications = useNotificationsStore();
 
+/* State */
+const descriptionRef = ref<HTMLElement | null>(null);
+const isTruncated = ref(false);
+let resizeObserver: ResizeObserver | null = null;
+
 /* Composables */
 const router = useRouter();
+const createTooltips = useCreateTooltips();
 
 /* Computed */
 const hasNotifications = computed(() => {
@@ -125,6 +133,46 @@ const handleDetails = async () => {
     await redirectToGroupDetails(router, props.node.groupId, 'readyToSign');
   }
 };
+
+/* Functions */
+function checkTruncation() {
+  if (!descriptionRef.value) {
+    return;
+  }
+  const wasTruncated = isTruncated.value;
+  const isNowTruncated = descriptionRef.value.scrollHeight > descriptionRef.value.clientHeight;
+  isTruncated.value = isNowTruncated;
+
+  const tooltip = Tooltip.getInstance(descriptionRef.value);
+
+  if (!isNowTruncated && tooltip) {
+    tooltip.dispose();
+  } else if (!wasTruncated && isNowTruncated) {
+    nextTick(() => createTooltips());
+  }
+}
+
+/* Hooks */
+onMounted(() => {
+  nextTick(() => {
+    if (descriptionRef.value) {
+      checkTruncation();
+      resizeObserver = new ResizeObserver(checkTruncation);
+      resizeObserver.observe(descriptionRef.value);
+    }
+  });
+});
+
+onUnmounted(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+  }
+});
+
+/* Watchers */
+watch(() => props.node.description, () => {
+  nextTick(() => checkTruncation());
+});
 </script>
 
 <template>
@@ -146,7 +194,17 @@ const handleDetails = async () => {
 
     <!-- Column #3 : Description -->
     <td>
-      <span class="text-wrap-two-line-ellipsis">{{ props.node.description }}</span>
+      <span 
+        ref="descriptionRef"
+        class="text-wrap-two-line-ellipsis"
+        :data-bs-toggle="isTruncated ? 'tooltip' : ''"
+        data-bs-custom-class="wide-tooltip"
+        data-bs-trigger="hover"
+        data-bs-placement="top"
+        :data-bs-title="isTruncated ? props.node.description : ''"
+      >
+        {{ props.node.description }}
+      </span>
     </td>
 
     <template v-if="props.collection === TransactionNodeCollection.HISTORY">
