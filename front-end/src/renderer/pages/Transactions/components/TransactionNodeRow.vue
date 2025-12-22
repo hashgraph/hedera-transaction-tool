@@ -172,7 +172,7 @@ onUnmounted(() => {
 /* Watchers */
 watch(() => props.node.description, () => {
   nextTick(() => checkTruncation());
-}, { immediate: true });
+});
 </script>
 
 <template>
