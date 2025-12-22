@@ -67,7 +67,7 @@ jobs:
         working-directory: back-end
 
       - name: Run migration tests
-        run: pnpm test:migrations
+        run: pnpm -F typeorm test
         working-directory: back-end
         env:
           POSTGRES_HOST: localhost
