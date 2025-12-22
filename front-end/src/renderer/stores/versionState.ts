@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 
 import type { IVersionCheckResponse } from '@shared/interfaces';
+import type { CompatibilityCheckResult } from '@renderer/services/organization/versionCompatibility';
 
 export type VersionStatus = 'current' | 'updateAvailable' | 'belowMinimum' | null;
 
@@ -15,6 +16,12 @@ export const organizationMinimumVersions = ref<{ [serverUrl: string]: string | n
 export const organizationVersionData = ref<{ [serverUrl: string]: IVersionCheckResponse | null }>(
   {},
 );
+
+export const organizationCompatibilityResults = ref<{
+  [serverUrl: string]: CompatibilityCheckResult | null;
+}>({});
+
+export const triggeringOrganizationServerUrl = ref<string | null>(null);
 
 export const setVersionBelowMinimum = (
   serverUrlOrUrl: string | null,
@@ -88,4 +95,6 @@ export const resetVersionState = (): void => {
   organizationLatestVersions.value = {};
   organizationMinimumVersions.value = {};
   organizationVersionData.value = {};
+  organizationCompatibilityResults.value = {};
+  triggeringOrganizationServerUrl.value = null;
 };
