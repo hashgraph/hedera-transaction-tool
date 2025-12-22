@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TransactionDraft, TransactionGroup } from '@prisma/client';
 
-import { computed, onBeforeMount, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeMount, onUnmounted, ref, watch } from 'vue';
 
 import { Prisma } from '@prisma/client';
 
@@ -32,6 +32,8 @@ import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
+import useCreateTooltips from '@renderer/composables/useCreateTooltips';
+import Tooltip from 'bootstrap/js/dist/tooltip';
 
 /* Store */
 const user = useUserStore();
@@ -46,6 +48,9 @@ const groups = ref<TransactionGroup[]>([]);
 const list = ref<(TransactionDraft | TransactionGroup)[]>([]);
 const sortField = ref<string>('created_at');
 const sortDirection = ref<string>('desc');
+const descriptionRefs = ref<Map<string, HTMLElement>>(new Map());
+const truncationState = ref<Map<string, boolean>>(new Map());
+let resizeObserver: ResizeObserver | undefined;
 
 /* Computed */
 const generatedClass = computed(() => {
@@ -55,6 +60,7 @@ const generatedClass = computed(() => {
 /* Composables */
 const router = useRouter();
 const toast = useToast();
+const createTooltips = useCreateTooltips();
 
 /* Handlers */
 const handleSort = async (field: string, direction: string) => {
@@ -198,17 +204,33 @@ function createFindGroupArgs(): Prisma.TransactionGroupFindManyArgs {
   };
 }
 
+function clearTruncationState() {
+  descriptionRefs.value.forEach((el) => {
+    const tooltip = Tooltip.getInstance(el);
+    if (tooltip) {
+      tooltip.dispose();
+    }
+    if (resizeObserver) {
+      resizeObserver.unobserve(el);
+    }
+  });
+  descriptionRefs.value.clear();
+  truncationState.value.clear();
+}
+
 async function fetchDrafts() {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 
   isLoading.value = true;
+  clearTruncationState();
   try {
-    totalItems.value = await getDraftsCount(user.personal.id);
+    const draftsCount = await getDraftsCount(user.personal.id);
     drafts.value = await getDrafts(createFindArgs());
-    totalItems.value = await getGroupsCount(user.personal.id);
+    const groupsCount = await getGroupsCount(user.personal.id);
     groups.value = await getGroups(createFindGroupArgs());
+    totalItems.value = draftsCount + groupsCount;
     list.value = [...drafts.value, ...groups.value];
     await handleSort(sortField.value, sortDirection.value);
   } finally {
@@ -216,14 +238,108 @@ async function fetchDrafts() {
   }
 }
 
+function getDraftDescription(draft: TransactionDraft | TransactionGroup): string {
+  if ((draft as TransactionDraft).type) {
+    return (draft as TransactionDraft).description;
+  }
+  return (draft as TransactionGroup).description;
+}
+
+function getDraftId(draft: TransactionDraft | TransactionGroup): string {
+  return draft.id;
+}
+
+function setDescriptionRef(el: HTMLElement | null, draft: TransactionDraft | TransactionGroup) {
+  const id = getDraftId(draft);
+
+  if (el) {
+    descriptionRefs.value.set(id, el);
+
+    if (!resizeObserver) {
+      resizeObserver = new ResizeObserver((entries) => {
+        entries.forEach((entry) => {
+          const element = entry.target as HTMLElement;
+          checkTruncation(element);
+        });
+      });
+    }
+    resizeObserver.observe(el);
+
+    nextTick(() => checkTruncation(el));
+  } else {
+    const existingEl = descriptionRefs.value.get(id);
+    if (existingEl && resizeObserver) {
+      resizeObserver.unobserve(existingEl);
+    }
+
+    if (existingEl) {
+      const tooltip = Tooltip.getInstance(existingEl);
+      if (tooltip) {
+        tooltip.dispose();
+      }
+    }
+
+    descriptionRefs.value.delete(id);
+    truncationState.value.delete(id);
+  }
+}
+
+function checkTruncation(el: HTMLElement) {
+  let elementId: string | undefined;
+  descriptionRefs.value.forEach((value, key) => {
+    if (value === el) {
+      elementId = key;
+    }
+  });
+
+  if (!elementId) {
+    return;
+  }
+
+  const wasTruncated = truncationState.value.get(elementId) ?? false;
+  const isNowTruncated = el.scrollHeight > el.clientHeight;
+
+  if (wasTruncated === isNowTruncated) {
+    return;
+  }
+
+  truncationState.value.set(elementId, isNowTruncated);
+
+  const tooltip = Tooltip.getInstance(el);
+
+  if (wasTruncated && !isNowTruncated && tooltip) {
+    tooltip.dispose();
+  } else if (!wasTruncated && isNowTruncated) {
+    nextTick(() => createTooltips());
+  }
+}
+
+function isTruncated(draft: TransactionDraft | TransactionGroup): boolean {
+  const id = getDraftId(draft);
+  return truncationState.value.get(id) ?? false;
+}
+
 /* Hooks */
 onBeforeMount(async () => {
   await fetchDrafts();
 });
 
+onUnmounted(() => {
+  clearTruncationState();
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+  }
+});
+
 /* Watchers */
 watch([currentPage, pageSize], async () => {
   await fetchDrafts();
+});
+
+watch(() => list.value.length, () => {
+  nextTick(() => {
+    descriptionRefs.value.forEach((el) => checkTruncation(el));
+  });
 });
 </script>
 
@@ -320,11 +436,18 @@ watch([currentPage, pageSize], async () => {
                     }}</span>
                 </td>
                 <td>
-                  <span class="text-wrap-two-line-ellipsis" :data-testid="'span-draft-tx-description-' + i">{{
-                      (draft as TransactionDraft).type
-                        ? (draft as TransactionDraft).description
-                        : (draft as TransactionGroup).description
-                    }}</span>
+                  <span
+                  :ref="(el) => setDescriptionRef(el as HTMLElement, draft)"
+                  class="text-wrap-two-line-ellipsis"
+                  :data-testid="'span-draft-tx-description-' + i"
+                  :data-bs-toggle="isTruncated(draft) ? 'tooltip' : ''"
+                  data-bs-trigger="hover"
+                  data-bs-placement="bottom"
+                  data-bs-custom-class="wide-tooltip"
+                  :data-bs-title="isTruncated(draft) ? getDraftDescription(draft) : ''"
+                  >
+                  {{getDraftDescription(draft)}}
+                  </span>
                 </td>
                 <td class="text-center">
                   <input
