@@ -139,6 +139,52 @@ describe('ElectronUpdaterService', () => {
         url: 'https://releases.example.com',
       });
     });
+
+    it('should not re-initialize when called with the same URL', () => {
+      const url = 'https://releases.example.com';
+      
+      // First initialization
+      service.initialize(url);
+      expect(mockSetFeedURL).toHaveBeenCalledTimes(1);
+      expect(mockSetFeedURL).toHaveBeenCalledWith({
+        provider: 'generic',
+        url: url,
+      });
+
+      // Clear the mock to track subsequent calls
+      mockSetFeedURL.mockClear();
+
+      // Second initialization with same URL should not call setFeedURL again
+      service.initialize(url);
+      expect(mockSetFeedURL).not.toHaveBeenCalled();
+      expect(service.getUpdateUrl()).toBe(url);
+    });
+
+    it('should re-initialize when called with a different URL', () => {
+      const firstUrl = 'https://releases.example.com';
+      const secondUrl = 'https://releases.different.com';
+      
+      // First initialization
+      service.initialize(firstUrl);
+      expect(mockSetFeedURL).toHaveBeenCalledTimes(1);
+      expect(mockSetFeedURL).toHaveBeenCalledWith({
+        provider: 'generic',
+        url: firstUrl,
+      });
+      expect(service.getUpdateUrl()).toBe(firstUrl);
+
+      // Clear the mock to track subsequent calls
+      mockSetFeedURL.mockClear();
+
+      // Second initialization with different URL should call setFeedURL again
+      service.initialize(secondUrl);
+      expect(mockSetFeedURL).toHaveBeenCalledTimes(1);
+      expect(mockSetFeedURL).toHaveBeenCalledWith({
+        provider: 'generic',
+        url: secondUrl,
+      });
+      expect(service.getUpdateUrl()).toBe(secondUrl);
+    });
   });
 
   describe('checkForUpdatesAndDownload', () => {

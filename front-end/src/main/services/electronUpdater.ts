@@ -28,6 +28,12 @@ export class ElectronUpdaterService {
       return;
     }
 
+    // Only re-initialize if the URL has changed
+    if (this.currentUpdateUrl === updateUrl && this.updater) {
+      this.logger.debug(`Updater already initialized with URL: ${updateUrl}`);
+      return;
+    }
+
     this.currentUpdateUrl = updateUrl;
     this.updater = autoUpdater;
     this.updater.setFeedURL({
