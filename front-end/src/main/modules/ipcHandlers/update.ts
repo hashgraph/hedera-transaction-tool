@@ -15,9 +15,7 @@ export default () => {
   ipcMain.on(createChannelName('start-download'), (_e, updateUrl: string) => {
     const updaterService = getUpdaterService();
     if (updaterService) {
-      updaterService.checkForUpdates(updateUrl).then(() => {
-        updaterService.downloadUpdate();
-      });
+      updaterService.checkForUpdatesAndDownload(updateUrl);
     }
   });
 

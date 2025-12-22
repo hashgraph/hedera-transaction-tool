@@ -91,7 +91,7 @@ export class ElectronUpdaterService {
     this.updater?.removeAllListeners('error');
   }
 
-  async checkForUpdates(updateUrl?: string): Promise<void> {
+  async checkForUpdatesAndDownload(updateUrl?: string): Promise<void> {
     if (updateUrl) {
       this.initialize(updateUrl);
     }
@@ -110,11 +110,21 @@ export class ElectronUpdaterService {
     }
 
     this.setupEventListeners();
+
+    const updateAvailableHandler = () => {
+      this.logger.info('Update available, starting download...');
+      this.downloadUpdate();
+      this.updater?.removeListener('update-available', updateAvailableHandler);
+    };
+
+    this.updater.once('update-available', updateAvailableHandler);
+
     this.logger.info('Checking for updates...');
 
     try {
       await this.updater.checkForUpdates();
     } catch (error) {
+      this.updater?.removeListener('update-available', updateAvailableHandler);
       const categorized = categorizeUpdateError(error as Error);
       this.logger.error(`Failed to check for updates: ${categorized.details}`);
       this.window?.webContents.send('update:error', {

@@ -10,7 +10,9 @@ vi.mock('electron', () => ({
 // Create mock functions using vi.hoisted() so they're available in the mock factory
 const {
   mockOn,
+  mockOnce,
   mockRemoveAllListeners,
+  mockRemoveListener,
   mockCheckForUpdates,
   mockDownloadUpdate,
   mockQuitAndInstall,
@@ -18,7 +20,9 @@ const {
 } = vi.hoisted(() => {
   return {
     mockOn: vi.fn(),
+    mockOnce: vi.fn(),
     mockRemoveAllListeners: vi.fn(),
+    mockRemoveListener: vi.fn(),
     mockCheckForUpdates: vi.fn().mockResolvedValue(undefined),
     mockDownloadUpdate: vi.fn().mockResolvedValue(undefined),
     mockQuitAndInstall: vi.fn(),
@@ -34,7 +38,9 @@ vi.mock('electron-updater', () => {
     autoDownload: false,
     forceDevUpdateConfig: false,
     on: mockOn,
+    once: mockOnce,
     removeAllListeners: mockRemoveAllListeners,
+    removeListener: mockRemoveListener,
     checkForUpdates: mockCheckForUpdates,
     downloadUpdate: mockDownloadUpdate,
     quitAndInstall: mockQuitAndInstall,
@@ -84,7 +90,9 @@ describe('ElectronUpdaterService', () => {
   beforeEach(() => {
     // Clear all mock calls
     mockOn.mockClear();
+    mockOnce.mockClear();
     mockRemoveAllListeners.mockClear();
+    mockRemoveListener.mockClear();
     mockCheckForUpdates.mockClear();
     mockDownloadUpdate.mockClear();
     mockQuitAndInstall.mockClear();
@@ -133,9 +141,9 @@ describe('ElectronUpdaterService', () => {
     });
   });
 
-  describe('checkForUpdates', () => {
+  describe('checkForUpdatesAndDownload', () => {
     it('should send error when updater is not initialized and no URL provided', async () => {
-      await service.checkForUpdates();
+      await service.checkForUpdatesAndDownload();
 
       expect(mockWindow.webContents.send).toHaveBeenCalledWith(
         'update:error',
@@ -147,7 +155,7 @@ describe('ElectronUpdaterService', () => {
     });
 
     it('should initialize updater when URL is provided', async () => {
-      await service.checkForUpdates('https://releases.example.com');
+      await service.checkForUpdatesAndDownload('https://releases.example.com');
 
       expect(service.getUpdateUrl()).toBe('https://releases.example.com');
     });
@@ -155,17 +163,71 @@ describe('ElectronUpdaterService', () => {
     it('should call updater.checkForUpdates when initialized', async () => {
       service.initialize('https://releases.example.com');
 
-      await service.checkForUpdates();
+      await service.checkForUpdatesAndDownload();
 
       expect(mockCheckForUpdates).toHaveBeenCalled();
+    });
+
+    it('should set up one-time listener for update-available that triggers download', async () => {
+      service.initialize('https://releases.example.com');
+      await service.checkForUpdatesAndDownload();
+
+      // Should have called once() to set up a one-time listener for 'update-available'
+      expect(mockOnce).toHaveBeenCalledWith('update-available', expect.any(Function));
+    });
+
+    it('should call downloadUpdate when update-available event fires', async () => {
+      service.initialize('https://releases.example.com');
+
+      // Capture the handler passed to once()
+      let updateAvailableHandler: (() => void) | undefined;
+      mockOnce.mockImplementation((event: string, handler: () => void) => {
+        if (event === 'update-available') {
+          updateAvailableHandler = handler;
+        }
+      });
+
+      await service.checkForUpdatesAndDownload();
+
+      // Verify downloadUpdate is NOT called before the event
+      expect(mockDownloadUpdate).not.toHaveBeenCalled();
+
+      // Simulate the update-available event by calling the handler
+      if (updateAvailableHandler) {
+        updateAvailableHandler();
+        // Now downloadUpdate should have been called
+        expect(mockDownloadUpdate).toHaveBeenCalled();
+      } else {
+        throw new Error('update-available handler was not set up');
+      }
+    });
+
+    it('should NOT call downloadUpdate when update-not-available event fires', async () => {
+      service.initialize('https://releases.example.com');
+      await service.checkForUpdatesAndDownload();
+
+      // Simulate update-not-available event
+      const updateNotAvailableCall = mockOn.mock.calls.find(
+        ([name]) => name === 'update-not-available',
+      );
+      expect(updateNotAvailableCall).toBeDefined();
+
+      // Trigger the callback
+      const callback = updateNotAvailableCall![1];
+      callback();
+
+      // downloadUpdate should NOT have been called
+      expect(mockDownloadUpdate).not.toHaveBeenCalled();
     });
 
     it('should handle checkForUpdates error', async () => {
       service.initialize('https://releases.example.com');
       mockCheckForUpdates.mockRejectedValueOnce(new Error('Network error'));
 
-      await service.checkForUpdates();
+      await service.checkForUpdatesAndDownload();
 
+      // Should clean up the one-time listener on error
+      expect(mockRemoveListener).toHaveBeenCalledWith('update-available', expect.any(Function));
       expect(mockWindow.webContents.send).toHaveBeenCalledWith(
         'update:error',
         expect.objectContaining({
@@ -262,7 +324,7 @@ describe('ElectronUpdaterService', () => {
     it('should set up event listeners when checking for updates', async () => {
       service.initialize('https://releases.example.com');
 
-      await service.checkForUpdates();
+      await service.checkForUpdatesAndDownload();
 
       expect(mockOn).toHaveBeenCalledWith('checking-for-update', expect.any(Function));
       expect(mockOn).toHaveBeenCalledWith('update-available', expect.any(Function));
@@ -275,7 +337,7 @@ describe('ElectronUpdaterService', () => {
     it('should remove old listeners before setting up new ones', async () => {
       service.initialize('https://releases.example.com');
 
-      await service.checkForUpdates();
+      await service.checkForUpdatesAndDownload();
 
       expect(mockRemoveAllListeners).toHaveBeenCalledWith('checking-for-update');
       expect(mockRemoveAllListeners).toHaveBeenCalledWith('update-available');
@@ -295,7 +357,7 @@ describe('ElectronUpdaterService', () => {
 
     it('should send update-not-available event when no update is available', async () => {
       service.initialize('https://releases.example.com');
-      await service.checkForUpdates();
+      await service.checkForUpdatesAndDownload();
 
       const callback = getEventCallback('update-not-available');
       expect(callback).toBeDefined();
@@ -308,7 +370,7 @@ describe('ElectronUpdaterService', () => {
 
     it('should send download-progress event with progress info', async () => {
       service.initialize('https://releases.example.com');
-      await service.checkForUpdates();
+      await service.checkForUpdatesAndDownload();
 
       const callback = getEventCallback('download-progress');
       expect(callback).toBeDefined();
@@ -332,7 +394,7 @@ describe('ElectronUpdaterService', () => {
 
     it('should send update-downloaded event when download completes', async () => {
       service.initialize('https://releases.example.com');
-      await service.checkForUpdates();
+      await service.checkForUpdatesAndDownload();
 
       const callback = getEventCallback('update-downloaded');
       expect(callback).toBeDefined();
@@ -345,7 +407,7 @@ describe('ElectronUpdaterService', () => {
 
     it('should send categorized error event on updater error', async () => {
       service.initialize('https://releases.example.com');
-      await service.checkForUpdates();
+      await service.checkForUpdatesAndDownload();
 
       const callback = getEventCallback('error');
       expect(callback).toBeDefined();
@@ -367,7 +429,7 @@ describe('ElectronUpdaterService', () => {
 
     it('should send checking-for-update event when check starts', async () => {
       service.initialize('https://releases.example.com');
-      await service.checkForUpdates();
+      await service.checkForUpdatesAndDownload();
 
       const callback = getEventCallback('checking-for-update');
       expect(callback).toBeDefined();
@@ -380,7 +442,7 @@ describe('ElectronUpdaterService', () => {
 
     it('should send update-available event with update info', async () => {
       service.initialize('https://releases.example.com');
-      await service.checkForUpdates();
+      await service.checkForUpdatesAndDownload();
 
       const callback = getEventCallback('update-available');
       expect(callback).toBeDefined();
@@ -437,7 +499,9 @@ describe('initializeUpdaterService', () => {
 describe('ElectronUpdaterService - edge cases', () => {
   beforeEach(() => {
     mockOn.mockClear();
+    mockOnce.mockClear();
     mockRemoveAllListeners.mockClear();
+    mockRemoveListener.mockClear();
     mockCheckForUpdates.mockClear();
     mockDownloadUpdate.mockClear();
     mockQuitAndInstall.mockClear();
@@ -474,7 +538,7 @@ describe('ElectronUpdaterService - edge cases', () => {
       const service = new ElectronUpdaterService(mockWindow as unknown as BrowserWindow);
       service.initialize('https://releases.example.com');
 
-      await service.checkForUpdates();
+      await service.checkForUpdatesAndDownload();
 
       // Get the callback and invoke it - should not throw even if window.webContents.send is called
       const callback = mockOn.mock.calls.find(([name]) => name === 'checking-for-update');
@@ -518,8 +582,8 @@ describe('ElectronUpdaterService - edge cases', () => {
     });
   });
 
-  describe('multiple checkForUpdates calls', () => {
-    it('should remove and re-add listeners on subsequent checkForUpdates calls', async () => {
+  describe('multiple checkForUpdatesAndDownload calls', () => {
+    it('should remove and re-add listeners on subsequent checkForUpdatesAndDownload calls', async () => {
       const mockWindow = {
         webContents: { send: vi.fn() },
       };
@@ -528,12 +592,12 @@ describe('ElectronUpdaterService - edge cases', () => {
       service.initialize('https://releases.example.com');
 
       // First call
-      await service.checkForUpdates();
+      await service.checkForUpdatesAndDownload();
       const firstRemoveCount = mockRemoveAllListeners.mock.calls.length;
       const firstOnCount = mockOn.mock.calls.length;
 
       // Second call should remove old listeners and add new ones
-      await service.checkForUpdates();
+      await service.checkForUpdatesAndDownload();
 
       // Should have more calls now
       expect(mockRemoveAllListeners.mock.calls.length).toBeGreaterThan(firstRemoveCount);

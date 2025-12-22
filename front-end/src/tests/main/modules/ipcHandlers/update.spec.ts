@@ -10,7 +10,7 @@ import { getUpdaterService } from '@main/services/electronUpdater';
 vi.mock('@main/services/localUser/update', () => mockDeep());
 
 // Create mock functions for the updater service
-const mockCheckForUpdates = vi.fn().mockResolvedValue(undefined);
+const mockCheckForUpdatesAndDownload = vi.fn().mockResolvedValue(undefined);
 const mockDownloadUpdate = vi.fn().mockResolvedValue(undefined);
 const mockQuitAndInstall = vi.fn();
 const mockCancelUpdate = vi.fn();
@@ -18,7 +18,7 @@ const mockCancelUpdate = vi.fn();
 // Mock the new electronUpdater service to avoid ESM import issues with electron-updater
 vi.mock('@main/services/electronUpdater', () => ({
   getUpdaterService: vi.fn(() => ({
-    checkForUpdates: mockCheckForUpdates,
+    checkForUpdatesAndDownload: mockCheckForUpdatesAndDownload,
     downloadUpdate: mockDownloadUpdate,
     quitAndInstall: mockQuitAndInstall,
     cancelUpdate: mockCancelUpdate,
@@ -30,11 +30,11 @@ describe('registerUpdateListeners', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     // Reset mock implementations
-    mockCheckForUpdates.mockResolvedValue(undefined);
+    mockCheckForUpdatesAndDownload.mockResolvedValue(undefined);
     mockDownloadUpdate.mockResolvedValue(undefined);
     // Re-setup the mock to return the service
     vi.mocked(getUpdaterService).mockReturnValue({
-      checkForUpdates: mockCheckForUpdates,
+      checkForUpdatesAndDownload: mockCheckForUpdatesAndDownload,
       downloadUpdate: mockDownloadUpdate,
       quitAndInstall: mockQuitAndInstall,
       cancelUpdate: mockCancelUpdate,
@@ -67,14 +67,14 @@ describe('registerUpdateListeners', () => {
   });
 
   describe('electron-updater integration', () => {
-    test('Should start download when start-download is called', async () => {
+    test('Should call checkForUpdatesAndDownload when start-download is called', async () => {
       await invokeIPCListener('update:start-download', 'https://releases.example.com');
 
-      expect(mockCheckForUpdates).toHaveBeenCalledWith('https://releases.example.com');
-      // Wait for the promise chain to complete
-      await vi.waitFor(() => {
-        expect(mockDownloadUpdate).toHaveBeenCalled();
-      });
+      // Should call checkForUpdatesAndDownload which handles both checking and downloading
+      // Download will only happen if update is available (event-driven)
+      expect(mockCheckForUpdatesAndDownload).toHaveBeenCalledWith('https://releases.example.com');
+      // downloadUpdate should NOT be called directly - only via event handler when update is available
+      expect(mockDownloadUpdate).not.toHaveBeenCalled();
     });
 
     test('Should not start download when updater service is null', async () => {
@@ -82,7 +82,7 @@ describe('registerUpdateListeners', () => {
 
       await invokeIPCListener('update:start-download', 'https://releases.example.com');
 
-      expect(mockCheckForUpdates).not.toHaveBeenCalled();
+      expect(mockCheckForUpdatesAndDownload).not.toHaveBeenCalled();
       expect(mockDownloadUpdate).not.toHaveBeenCalled();
     });
 
