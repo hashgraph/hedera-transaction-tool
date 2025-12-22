@@ -7,15 +7,18 @@ import { UPDATE_ERROR_MESSAGES } from '@shared/constants';
 
 import { quit } from '@renderer/services/electronUtilsService';
 import { disconnectOrganization } from '@renderer/services/organization/disconnect';
+import { logout } from '@renderer/services/organization/auth';
 import { convertBytes } from '@renderer/utils';
 import { useToast } from 'vue-toast-notification';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 import {
   triggeringOrganizationServerUrl,
   organizationCompatibilityResults,
   organizationUpdateUrls,
   getVersionStatusForOrg,
+  resetVersionStatusForOrg,
 } from '@renderer/stores/versionState';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -28,6 +31,7 @@ const { versionStatus, updateUrl } = useVersionCheck();
 const { state, progress, error, updateInfo, startUpdate, installUpdate } = useElectronUpdater();
 const user = useUserStore();
 const toast = useToast();
+const { setLast } = useDefaultOrganization();
 
 const affectedOrg = computed(() => {
   const serverUrl = triggeringOrganizationServerUrl.value;
@@ -99,7 +103,24 @@ const handleDisconnect = async () => {
   const org = affectedOrg.value;
   if (org) {
     try {
+      // Disconnect organization (websocket, connection status, auth token)
       await disconnectOrganization(org.serverUrl, 'upgradeRequired');
+
+      // Logout from organization
+      try {
+        await logout(org.serverUrl);
+      } catch (logoutError) {
+        // Log but don't fail - organization might already be disconnected
+        console.warn('Logout failed (may already be disconnected):', logoutError);
+      }
+
+      // Switch to personal mode
+      await user.selectOrganization(null);
+      await setLast(null);
+
+      // Reset version status to close the modal
+      resetVersionStatusForOrg(org.serverUrl);
+
       toast.info(
         `Disconnected from ${org.nickname || org.serverUrl}. Update required to reconnect.`,
         errorToastOptions,
