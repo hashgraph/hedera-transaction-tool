@@ -5,5 +5,6 @@ export * from './Theme';
 export * from './organization';
 export * from './Contacts';
 export * from './V1ImportFilterResult';
+export * from './update';
 
 export type Network = string;
