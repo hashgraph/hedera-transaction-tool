@@ -25,13 +25,15 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  publish:
+  semantic-release:
     name: Publish Official Release of Hedera Transaction Tool
-    # MacOS runner for future compatibility (when frontend builds get added to semantic release)
-    runs-on: macos-latest
+    runs-on: transaction-tools-linux-medium
+    outputs:
+      # We extract the version from the VERSION file created by .releaserc
+      version: ${{ steps.extract-version.outputs.version }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
+        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76 # v2.14.0
         with:
           egress-policy: audit
 
@@ -41,7 +43,15 @@ jobs:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Install GnuPG Tools
-        run: brew install gnupg
+        run: |
+          if ! command -v gpg2 >/dev/null 2>&1; then
+            echo "::group::Updating APT Repository Indices"
+              sudo apt update
+            echo "::endgroup::"
+            echo "::group::Installing GnuPG Tools"
+              sudo apt install -y gnupg2
+            echo "::endgroup::"
+          fi
 
       - name: Import GPG Key
         id: gpg
@@ -55,23 +65,9 @@ jobs:
           passphrase: ${{ secrets.GPG_KEY_PASSPHRASE }}
 
       - name: Setup Node
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
-        with:
-          version: latest
-
-      - name: Setup Helm
-        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4.3.1
-        with:
-          version: "v3.12.3"
-
-      - name: Log in to the Container registry
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.REGISTRY }} --username ${{ github.actor }} --password-stdin
 
       - name: Install Semantic Release
         if: ${{ github.event_name == 'workflow_dispatch' && !cancelled() && !failure() }}
@@ -101,4 +97,67 @@ jobs:
           else
             echo "Running semantic-release now..."
             npx semantic-release --debug
+          fi
+
+      - name: Extract Version Output
+        id: extract-version
+        run: |
+          # The .releaserc 'verifyRelease' step writes the version to a file named VERSION
+          if [[ -f VERSION ]]; then
+            VER=$(cat VERSION | tr -d '[:space:]')
+            echo "::notice::New version is: $VER"
+            echo "version=$VER" >> $GITHUB_OUTPUT
+          else
+            echo "::warning::No new version file output by semantic release."
+          fi
+
+  build-and-push-docker:
+    name: Build and Push Docker Images
+    if: ${{ inputs.dry-run-enabled != true && needs.semantic-release.outputs.version != '' }}
+    needs: semantic-release
+    uses: ./.github/workflows/300-flow-docker-images.yaml
+    with:
+      ref: v${{ needs.semantic-release.outputs.version }}
+
+  helm-publish:
+    name: Helm Chart Publish
+    needs: [semantic-release, build-and-push-docker]
+    if: ${{ inputs.dry-run-enabled != true && needs.semantic-release.outputs.version != '' }}
+    runs-on: transaction-tools-linux-medium
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76 # v2.14.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout Code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+
+      - name: Setup Helm
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4.3.1
+        with:
+          version: "v3.12.3"
+
+      - name: Helm Registry Login
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.REGISTRY }} --username ${{ github.actor }} --password-stdin
+
+      - name: Package and Push Chart
+        run: |
+          # 1. Update dependencies
+          helm dependency update charts/transaction-tool
+          
+          # 2. Package
+          helm package charts/transaction-tool
+          
+          # 3. Push
+          CHART_FILE="transaction-tool-${{ needs.semantic-release.outputs.version }}.tgz"
+          
+          if [[ -f "$CHART_FILE" ]]; then
+            echo "Pushing $CHART_FILE to GitHub Registry..."
+            helm push "$CHART_FILE" oci://${{ env.REGISTRY }}/hashgraph/hedera-transaction-tool
+          else
+            echo "::error::Chart file $CHART_FILE was not found."
+            exit 1
           fi
