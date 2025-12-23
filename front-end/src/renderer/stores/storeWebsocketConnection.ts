@@ -3,18 +3,34 @@ import { defineStore } from 'pinia';
 import { Socket, io } from 'socket.io-client';
 
 import useUserStore from './storeUser';
+import useOrganizationConnection from './storeOrganizationConnection';
 
 import { getLocalWebsocketPath } from '@renderer/services/organizationsService';
 
 import { getAuthTokenFromSessionStorage, isUserLoggedIn } from '@renderer/utils';
 import { FRONTEND_VERSION } from '@renderer/utils/version';
 
-const useWebsocketConnection = defineStore('websocketConnection', () => {
+// Define store interface to avoid TypeScript inference issues with deep node_modules paths
+interface WebsocketConnectionStoreReturn {
+  disconnect: (serverUrl: string) => void;
+  connect: (serverUrl: string, url: string) => Socket;
+  on: (serverUrl: string, event: string, callback: (...args: any[]) => void) => () => void;
+  setup: () => Promise<void>;
+  isConnected: (serverUrl: string) => boolean;
+  getConnectionState: (serverUrl: string) => 'connected' | 'disconnected' | 'connecting';
+  isLive: (serverUrl: string) => boolean;
+}
+
+const useWebsocketConnection = defineStore('websocketConnection', (): WebsocketConnectionStoreReturn => {
   /* Stores */
   const user = useUserStore();
+  const orgConnection = useOrganizationConnection();
 
   /* State */
   const sockets = ref<{ [serverUrl: string]: Socket | null }>({});
+  const connectionStates = ref<{
+    [serverUrl: string]: 'connected' | 'disconnected' | 'connecting';
+  }>({});
 
   /* Actions */
   async function setup() {
@@ -24,6 +40,16 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
     const serverUrls = user.organizations.map(o => o.serverUrl);
 
     for (const serverUrl of serverUrls) {
+      const connectionStatus = orgConnection.getConnectionStatus(serverUrl);
+      const disconnectReason = orgConnection.getDisconnectReason(serverUrl);
+
+      if (connectionStatus === 'disconnected' && disconnectReason === 'upgradeRequired') {
+        console.log(
+          `[${new Date().toISOString()}] Skipping websocket setup for disconnected organization: ${serverUrl} (Reason: ${disconnectReason})`,
+        );
+        continue;
+      }
+
       try {
         const url = serverUrl.includes('localhost') ? getLocalWebsocketPath(serverUrl) : serverUrl;
         newSockets[serverUrl] = connect(serverUrl, url);
@@ -43,11 +69,17 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
       //@ts-expect-error - auth is missing in typings
       if (socket.auth?.token !== `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`) {
         socket.disconnect();
+        connectionStates.value[serverUrl] = 'disconnected';
       } else {
         socket.off();
+        if (socket.connected) {
+          connectionStates.value[serverUrl] = 'connected';
+        }
         return socket;
       }
     }
+
+    connectionStates.value[serverUrl] = 'connecting';
 
     const newSocket = io(url, {
       path: '/ws',
@@ -74,6 +106,7 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
       socket.disconnect();
       sockets.value[serverUrl] = null;
     }
+    connectionStates.value[serverUrl] = 'disconnected';
   }
 
   function isVersionError(errorMessage: string): boolean {
@@ -91,6 +124,7 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
   function listenConnection(socket: Socket, wsUrl: string, serverUrl: string) {
     socket.on('connect', () => {
       console.log(`Connected to server ${wsUrl} with id: ${socket?.id}`);
+      connectionStates.value[serverUrl] = 'connected';
     });
 
     socket.on('connect_error', error => {
@@ -99,21 +133,26 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
           `Socket for ${serverUrl}: Version error - ${error.message}. Disconnecting permanently.`,
         );
         socket.disconnect();
+        connectionStates.value[serverUrl] = 'disconnected';
         return;
       }
 
       if (socket?.active) {
         // temporary failure, the socket will automatically try to reconnect
+        connectionStates.value[serverUrl] = 'connecting';
       } else {
         console.log(`Socket for ${serverUrl}: ${error.message}`);
+        connectionStates.value[serverUrl] = 'disconnected';
       }
     });
 
     socket.on('disconnect', reason => {
       if (socket?.active) {
         // temporary disconnection, the socket will automatically try to reconnect
+        connectionStates.value[serverUrl] = 'connecting';
       } else {
         console.log(`Socket for ${serverUrl}: ${reason}`);
+        connectionStates.value[serverUrl] = 'disconnected';
       }
     });
   }
@@ -132,10 +171,28 @@ const useWebsocketConnection = defineStore('websocketConnection', () => {
     return () => {};
   }
 
+  function isConnected(serverUrl: string): boolean {
+    const state = connectionStates.value[serverUrl];
+    return state === 'connected';
+  }
+
+  function getConnectionState(serverUrl: string): 'connected' | 'disconnected' | 'connecting' {
+    return connectionStates.value[serverUrl] || 'disconnected';
+  }
+
+  function isLive(serverUrl: string): boolean {
+    const socket = sockets.value[serverUrl];
+    return socket?.connected === true;
+  }
+
   return {
     disconnect,
+    connect,
     on,
     setup,
+    isConnected,
+    getConnectionState,
+    isLive,
   };
 });
 
