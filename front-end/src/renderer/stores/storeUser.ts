@@ -24,11 +24,13 @@ import { safeAwait } from '@renderer/utils';
 import * as ush from '@renderer/utils/userStoreHelpers';
 
 import useNetworkStore from './storeNetwork';
+import useOrganizationConnection from './storeOrganizationConnection';
 import { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
 
 const useUserStore = defineStore('user', () => {
   /* Stores */
   const network = useNetworkStore();
+  const orgConnection = useOrganizationConnection();
 
   /* Composables */
   const afterOrganizationSelection = useAfterOrganizationSelection();
@@ -184,6 +186,58 @@ const useUserStore = defineStore('user', () => {
   /* Organization */
   const selectOrganization = async (organization: Organization | null) => {
     await nextTick();
+
+    if (organization) {
+      const connectionStatus = orgConnection.getConnectionStatus(organization.serverUrl);
+      const disconnectReason = orgConnection.getDisconnectReason(organization.serverUrl);
+
+      // Prevent selecting organizations that are disconnected due to upgrade requirement
+      if (connectionStatus === 'disconnected' && disconnectReason === 'upgradeRequired') {
+        console.warn(
+          `[${new Date().toISOString()}] Cannot select disconnected organization: ${organization.nickname || organization.serverUrl} (Reason: ${disconnectReason})`,
+        );
+        // Auto-switch to another connected organization or personal mode
+        const connectedOrg = organizations.value.find(
+          org =>
+            org.serverUrl !== organization.serverUrl &&
+            orgConnection.isConnected(org.serverUrl),
+        );
+
+        if (connectedOrg) {
+          console.log(
+            `[${new Date().toISOString()}] Auto-switching to connected organization: ${connectedOrg.nickname || connectedOrg.serverUrl}`,
+          );
+          selectedOrganization.value = await ush.getConnectedOrganization(connectedOrg, personal.value);
+          await afterOrganizationSelection();
+          return;
+        } else {
+          // No connected organizations available, switch to personal mode
+          console.log(
+            `[${new Date().toISOString()}] No connected organizations available, switching to personal mode`,
+          );
+          selectedOrganization.value = null;
+          await afterOrganizationSelection();
+          return;
+        }
+      }
+    }
+
+    // Check if currently selected organization becomes disconnected
+    if (selectedOrganization.value && organization?.serverUrl !== selectedOrganization.value.serverUrl) {
+      const currentStatus = orgConnection.getConnectionStatus(selectedOrganization.value.serverUrl);
+      const currentReason = orgConnection.getDisconnectReason(selectedOrganization.value.serverUrl);
+
+      if (currentStatus === 'disconnected' && currentReason === 'upgradeRequired') {
+        console.log(
+          `[${new Date().toISOString()}] Current organization disconnected, auto-switching`,
+        );
+        // Organization was disconnected, switch to the new one or personal mode
+        selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
+        await afterOrganizationSelection();
+        return;
+      }
+    }
+
     selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
     await afterOrganizationSelection();
   };

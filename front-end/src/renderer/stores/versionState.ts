@@ -23,6 +23,8 @@ export const organizationCompatibilityResults = ref<{
 
 export const triggeringOrganizationServerUrl = ref<string | null>(null);
 
+export const organizationUpdateTimestamps = ref<{ [serverUrl: string]: Date }>({});
+
 export const setVersionBelowMinimum = (
   serverUrlOrUrl: string | null,
   url?: string | null,
@@ -37,6 +39,8 @@ export const setVersionBelowMinimum = (
   if (serverUrl) {
     organizationVersionStatus.value[serverUrl] = 'belowMinimum';
     organizationUpdateUrls.value[serverUrl] = url;
+    organizationUpdateTimestamps.value[serverUrl] = new Date();
+    triggeringOrganizationServerUrl.value = serverUrl;
   } else {
     versionStatus.value = 'belowMinimum';
     updateUrl.value = url;
@@ -72,6 +76,23 @@ export const resetVersionStatusForOrg = (serverUrl: string): void => {
   delete organizationLatestVersions.value[serverUrl];
   delete organizationMinimumVersions.value[serverUrl];
   delete organizationVersionData.value[serverUrl];
+  delete organizationUpdateTimestamps.value[serverUrl];
+  delete organizationCompatibilityResults.value[serverUrl];
+
+  // If this was the triggering org, find the next most recent one
+  if (triggeringOrganizationServerUrl.value === serverUrl) {
+    const orgsRequiringUpdate = Object.entries(organizationVersionStatus.value)
+      .filter(([, status]) => status === 'belowMinimum')
+      .map(([url]) => ({
+        serverUrl: url,
+        timestamp: organizationUpdateTimestamps.value[url],
+      }))
+      .filter(org => org.timestamp)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+    triggeringOrganizationServerUrl.value =
+      orgsRequiringUpdate.length > 0 ? orgsRequiringUpdate[0].serverUrl : null;
+  }
 };
 
 export const getAllOrganizationVersions = (): {
@@ -96,5 +117,19 @@ export const resetVersionState = (): void => {
   organizationMinimumVersions.value = {};
   organizationVersionData.value = {};
   organizationCompatibilityResults.value = {};
+  organizationUpdateTimestamps.value = {};
   triggeringOrganizationServerUrl.value = null;
+};
+
+export const getMostRecentOrganizationRequiringUpdate = (): string | null => {
+  const orgsRequiringUpdate = Object.entries(organizationVersionStatus.value)
+    .filter(([, status]) => status === 'belowMinimum')
+    .map(([url]) => ({
+      serverUrl: url,
+      timestamp: organizationUpdateTimestamps.value[url],
+    }))
+    .filter(org => org.timestamp)
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+  return orgsRequiringUpdate.length > 0 ? orgsRequiringUpdate[0].serverUrl : null;
 };
