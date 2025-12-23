@@ -9,7 +9,18 @@ import { getLocalWebsocketPath } from '@renderer/services/organizationsService';
 import { getAuthTokenFromSessionStorage, isUserLoggedIn } from '@renderer/utils';
 import { FRONTEND_VERSION } from '@renderer/utils/version';
 
-const useWebsocketConnection = defineStore('websocketConnection', () => {
+// Define store interface to avoid TypeScript inference issues with deep node_modules paths
+interface WebsocketConnectionStoreReturn {
+  disconnect: (serverUrl: string) => void;
+  connect: (serverUrl: string, url: string) => Socket;
+  on: (serverUrl: string, event: string, callback: (...args: any[]) => void) => () => void;
+  setup: () => Promise<void>;
+  isConnected: (serverUrl: string) => boolean;
+  getConnectionState: (serverUrl: string) => 'connected' | 'disconnected' | 'connecting';
+  isLive: (serverUrl: string) => boolean;
+}
+
+const useWebsocketConnection = defineStore('websocketConnection', (): WebsocketConnectionStoreReturn => {
   /* Stores */
   const user = useUserStore();
 

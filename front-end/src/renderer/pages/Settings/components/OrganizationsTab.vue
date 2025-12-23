@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Organization } from '@prisma/client';
 
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
