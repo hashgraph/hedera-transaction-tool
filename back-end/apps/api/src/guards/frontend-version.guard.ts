@@ -37,6 +37,7 @@ export class FrontendVersionGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const frontendVersion = request.headers['x-frontend-version'];
     const minimumVersion = this.configService.get<string>('MINIMUM_SUPPORTED_FRONTEND_VERSION');
+    const latestVersion = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
     const clientIp = request.headers['x-forwarded-for'] || request.ip || 'unknown';
 
     const UPGRADE_REQUIRED = 426;
@@ -95,7 +96,8 @@ export class FrontendVersionGuard implements CanActivate {
           statusCode: UPGRADE_REQUIRED,
           message: `Your application version (${cleanFrontendVersion}) is no longer supported. Minimum required version is ${cleanMinimumVersion}. Please update your application.`,
           error: 'Upgrade Required',
-          minimumVersion: cleanMinimumVersion,
+          minimumSupportedVersion: cleanMinimumVersion,
+          latestSupportedVersion: latestVersion,
           currentVersion: cleanFrontendVersion,
           updateUrl,
         },
