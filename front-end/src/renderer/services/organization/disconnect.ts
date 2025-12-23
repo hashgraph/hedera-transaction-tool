@@ -5,6 +5,8 @@ import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 import useOrganizationConnection from '@renderer/stores/storeOrganizationConnection';
 
 import { toggleAuthTokenInSessionStorage } from '@renderer/utils';
+import { useToast } from 'vue-toast-notification';
+import { errorToastOptions, infoToastOptions } from '@renderer/utils/toastOptions';
 
 export async function disconnectOrganization(
   serverUrl: string,
@@ -13,6 +15,7 @@ export async function disconnectOrganization(
   const userStore = useUserStore();
   const ws = useWebsocketConnection();
   const orgConnection = useOrganizationConnection();
+  const toast = useToast();
 
   ws.disconnect(serverUrl);
 
@@ -29,6 +32,26 @@ export async function disconnectOrganization(
 
   if (userStore.selectedOrganization?.serverUrl === serverUrl) {
     await userStore.selectOrganization(null);
+  }
+
+  // Show toast notification based on disconnect reason
+  if (reason === 'upgradeRequired') {
+    toast.info(
+      `Disconnected from ${org?.nickname || serverUrl}. Update required to reconnect.`,
+      infoToastOptions,
+    );
+  } else if (reason === 'compatibilityConflict') {
+    toast.warning(
+      `Disconnected from ${org?.nickname || serverUrl}. Compatibility conflict detected.`,
+      errorToastOptions,
+    );
+  } else if (reason === 'manual') {
+    toast.info(`Disconnected from ${org?.nickname || serverUrl}`, infoToastOptions);
+  } else if (reason === 'error') {
+    toast.error(
+      `Disconnected from ${org?.nickname || serverUrl}. Connection error occurred.`,
+      errorToastOptions,
+    );
   }
 
   console.log(

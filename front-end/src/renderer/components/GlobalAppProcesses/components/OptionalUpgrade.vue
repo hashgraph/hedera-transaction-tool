@@ -8,6 +8,8 @@ import { UPDATE_ERROR_MESSAGES } from '@shared/constants';
 import { convertBytes } from '@renderer/utils';
 import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organization/versionCompatibility';
 import { getAllOrganizationVersions } from '@renderer/stores/versionState';
+import { useToast } from 'vue-toast-notification';
+import { warningToastOptions } from '@renderer/utils/toastOptions';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -18,6 +20,7 @@ const { versionStatus, updateUrl, latestVersion, isDismissed, dismissOptionalUpd
   useVersionCheck();
 const { state, progress, error, updateInfo, startUpdate, installUpdate, cancelUpdate } =
   useElectronUpdater();
+const toast = useToast();
 
 const compatibilityResult = ref<{
   hasConflict: boolean;
@@ -44,6 +47,14 @@ watch([() => versionStatus.value, () => latestVersion.value], async ([status, la
           if (result.hasConflict) {
             compatibilityResult.value = result;
             showCompatibilityWarning.value = true;
+
+            // Show toast notification for compatibility conflicts
+            const conflictOrgNames = result.conflicts.map(c => c.organizationName).join(', ');
+            toast.warning(
+              `Update may cause issues with ${conflictOrgNames}. Please review compatibility warnings.`,
+              warningToastOptions,
+            );
+
             break;
           }
         }

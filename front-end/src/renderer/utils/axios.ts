@@ -15,6 +15,8 @@ import {
 import useUserStore from '@renderer/stores/storeUser';
 
 import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organization/versionCompatibility';
+import { useToast } from 'vue-toast-notification';
+import { warningToastOptions } from './toastOptions';
 
 function extractServerUrlFromRequest(url: string): string | null {
   if (!url) return null;
@@ -78,6 +80,17 @@ axios.interceptors.response.use(
             organizationCompatibilityResults.value[serverUrl] = compatibilityResult;
 
             if (compatibilityResult.hasConflict) {
+              const conflictOrgNames = compatibilityResult.conflicts
+                .map(c => c.organizationName)
+                .join(', ');
+
+              // Show toast notification for compatibility conflicts
+              const toast = useToast();
+              toast.warning(
+                `Update may cause issues with ${conflictOrgNames}. Please review compatibility warnings.`,
+                warningToastOptions,
+              );
+
               console.warn(
                 `[${new Date().toISOString()}] COMPATIBILITY_CHECK Version guard failure for ${serverUrl}`,
               );
