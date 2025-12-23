@@ -117,54 +117,6 @@ export async function checkCompatibilityForNewOrg(
   };
 }
 
-export function getConflictingOrganizations(
-  suggestedVersion: string,
-  excludingServerUrl?: string,
-): CompatibilityConflict[] {
-  const userStore = useUserStore();
-  const conflicts: CompatibilityConflict[] = [];
-
-  const cleanSuggestedVersion = semver.clean(suggestedVersion);
-  if (!cleanSuggestedVersion) {
-    return conflicts;
-  }
-
-  for (const org of userStore.organizations) {
-    if (excludingServerUrl && org.serverUrl === excludingServerUrl) {
-      continue;
-    }
-
-    const orgLatestVersion = getLatestVersionForOrg(org.serverUrl);
-    if (!orgLatestVersion) {
-      continue;
-    }
-
-    const cleanOrgLatestVersion = semver.clean(orgLatestVersion);
-    if (!cleanOrgLatestVersion) {
-      continue;
-    }
-
-    if (semver.gt(cleanSuggestedVersion, cleanOrgLatestVersion)) {
-      conflicts.push({
-        serverUrl: org.serverUrl,
-        organizationName: org.nickname || org.serverUrl,
-        latestSupportedVersion: orgLatestVersion,
-        suggestedVersion: cleanSuggestedVersion,
-      });
-    }
-  }
-
-  return conflicts;
-}
-
-export function isUpgradeOptional(versionData: IVersionCheckResponse): boolean {
-  if (!versionData.updateUrl) {
-    return true;
-  }
-
-  return true;
-}
-
 export function isVersionBelowMinimum(versionData: IVersionCheckResponse): boolean {
   if (!versionData.minimumSupportedVersion) {
     return false;

@@ -126,10 +126,10 @@ async function checkCompatibilityForUpgrades(
     } catch (error) {
       console.error(`Failed to check compatibility for ${org.serverUrl}:`, error);
       organizationCompatibilityResults.value[org.serverUrl] = null;
-      }
     }
+  }
 
-    if (orgsRequiringUpdate.length > 1) {
+  if (orgsRequiringUpdate.length > 1) {
     console.log(
       `[${new Date().toISOString()}] MULTIPLE_ORGS_REQUIRING_UPDATE: ${orgsRequiringUpdate.length} organization(s) require updates`,
     );
