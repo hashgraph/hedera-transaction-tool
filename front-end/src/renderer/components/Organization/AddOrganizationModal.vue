@@ -56,6 +56,24 @@ const showCompatibilityWarning = ref(false);
 const compatibilityResult = ref<CompatibilityCheckResult | null>(null);
 const newOrgNickname = ref<string>('');
 
+/* Helper functions */
+/**
+ * Sets the version status for a newly added organization based on its version data.
+ * This is used when handling compatibility warnings for new organizations.
+ */
+const setVersionStatusForNewOrg = (orgServerUrl: string): void => {
+  const allVersionData = getAllOrganizationVersionData();
+  const versionData = allVersionData[orgServerUrl];
+
+  if (versionData && versionData.updateUrl) {
+    if (isVersionBelowMinimum(versionData)) {
+      setVersionBelowMinimum(orgServerUrl, versionData.updateUrl);
+    } else {
+      setVersionStatusForOrg(orgServerUrl, 'updateAvailable');
+    }
+  }
+};
+
 /* Handlers */
 const handleAdd = async () => {
   try {
@@ -124,16 +142,7 @@ const handleCompatibilityProceed = async () => {
     return;
   }
 
-  const allVersionData = getAllOrganizationVersionData();
-  const versionData = allVersionData[orgServerUrl];
-
-  if (versionData && versionData.updateUrl) {
-    if (isVersionBelowMinimum(versionData)) {
-      setVersionBelowMinimum(orgServerUrl, versionData.updateUrl);
-    } else {
-      setVersionStatusForOrg(orgServerUrl, 'updateAvailable');
-    }
-  }
+  setVersionStatusForNewOrg(orgServerUrl);
 
   toast.success('Organization Added', successToastOptions);
   emit('added', addedOrg);
@@ -144,16 +153,7 @@ const handleCompatibilityCancel = () => {
   showCompatibilityWarning.value = false;
   const orgServerUrl = serverUrl.value;
 
-  const allVersionData = getAllOrganizationVersionData();
-  const versionData = allVersionData[orgServerUrl];
-
-  if (versionData && versionData.updateUrl) {
-    if (isVersionBelowMinimum(versionData)) {
-      setVersionBelowMinimum(orgServerUrl, versionData.updateUrl);
-    } else {
-      setVersionStatusForOrg(orgServerUrl, 'updateAvailable');
-    }
-  }
+  setVersionStatusForNewOrg(orgServerUrl);
 
   emit('update:show', false);
 };
