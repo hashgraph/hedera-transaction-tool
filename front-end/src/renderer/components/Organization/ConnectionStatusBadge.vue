@@ -2,7 +2,6 @@
 import { computed } from 'vue';
 
 import type { ConnectionStatus, DisconnectReason } from '@renderer/types/userStore';
-import { spawn } from 'child_process';
 
 /* Props */
 const props = withDefaults(
