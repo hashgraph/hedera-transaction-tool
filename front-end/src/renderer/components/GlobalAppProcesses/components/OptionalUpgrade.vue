@@ -7,9 +7,14 @@ import { UPDATE_ERROR_MESSAGES } from '@shared/constants';
 
 import { convertBytes } from '@renderer/utils';
 import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organization/versionCompatibility';
-import { getAllOrganizationVersions } from '@renderer/stores/versionState';
+import type { CompatibilityConflict } from '@renderer/services/organization/versionCompatibility';
+import {
+  getAllOrganizationVersions,
+  getVersionStatusForOrg,
+} from '@renderer/stores/versionState';
 import { useToast } from 'vue-toast-notification';
 import { warningToastOptions } from '@renderer/utils/toastOptions';
+import useUserStore from '@renderer/stores/storeUser';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -21,10 +26,11 @@ const { versionStatus, updateUrl, latestVersion, isDismissed, dismissOptionalUpd
 const { state, progress, error, updateInfo, startUpdate, installUpdate, cancelUpdate } =
   useElectronUpdater();
 const toast = useToast();
+const user = useUserStore();
 
 const compatibilityResult = ref<{
   hasConflict: boolean;
-  conflicts: any[];
+  conflicts: CompatibilityConflict[];
   suggestedVersion: string | null;
   isOptional: boolean;
 } | null>(null);
@@ -35,28 +41,38 @@ watch([() => versionStatus.value, () => latestVersion.value], async ([status, la
   if (status === 'updateAvailable' && latestVer && !isDismissed.value) {
     isCheckingCompatibility.value = true;
     try {
+      // Find the organization(s) that triggered the optional update
+      const orgsWithOptionalUpdates = user.organizations.filter(
+        org => getVersionStatusForOrg(org.serverUrl) === 'updateAvailable',
+      );
+
+      if (orgsWithOptionalUpdates.length === 0) {
+        return;
+      }
+
+      // Check compatibility for the first org with optional update (or most recent)
+      // In case of multiple, we check the first one found
+      const triggeringOrg = orgsWithOptionalUpdates[0];
       const allVersions = getAllOrganizationVersions();
-      const orgsWithUpdates = Object.entries(allVersions).filter(([, data]) => data?.updateUrl);
+      const versionData = allVersions[triggeringOrg.serverUrl];
 
-      for (const [serverUrl, versionData] of orgsWithUpdates) {
-        if (versionData?.latestSupportedVersion) {
-          const result = await checkCompatibilityAcrossOrganizations(
-            versionData.latestSupportedVersion,
-            serverUrl,
+      if (versionData?.latestSupportedVersion) {
+        // Check compatibility excluding the triggering org
+        const result = await checkCompatibilityAcrossOrganizations(
+          versionData.latestSupportedVersion,
+          triggeringOrg.serverUrl, // Exclude the triggering org from conflict check
+        );
+
+        if (result.hasConflict) {
+          compatibilityResult.value = result;
+          showCompatibilityWarning.value = true;
+
+          // Show toast notification for compatibility conflicts
+          const conflictOrgNames = result.conflicts.map(c => c.organizationName).join(', ');
+          toast.warning(
+            `Update may cause issues with ${conflictOrgNames}. Please review compatibility warnings.`,
+            warningToastOptions,
           );
-          if (result.hasConflict) {
-            compatibilityResult.value = result;
-            showCompatibilityWarning.value = true;
-
-            // Show toast notification for compatibility conflicts
-            const conflictOrgNames = result.conflicts.map(c => c.organizationName).join(', ');
-            toast.warning(
-              `Update may cause issues with ${conflictOrgNames}. Please review compatibility warnings.`,
-              warningToastOptions,
-            );
-
-            break;
-          }
         }
       }
     } catch (error) {
