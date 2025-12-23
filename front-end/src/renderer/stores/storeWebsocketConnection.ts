@@ -3,6 +3,7 @@ import { defineStore } from 'pinia';
 import { Socket, io } from 'socket.io-client';
 
 import useUserStore from './storeUser';
+import useOrganizationConnection from './storeOrganizationConnection';
 
 import { getLocalWebsocketPath } from '@renderer/services/organizationsService';
 
@@ -23,6 +24,7 @@ interface WebsocketConnectionStoreReturn {
 const useWebsocketConnection = defineStore('websocketConnection', (): WebsocketConnectionStoreReturn => {
   /* Stores */
   const user = useUserStore();
+  const orgConnection = useOrganizationConnection();
 
   /* State */
   const sockets = ref<{ [serverUrl: string]: Socket | null }>({});
@@ -38,6 +40,16 @@ const useWebsocketConnection = defineStore('websocketConnection', (): WebsocketC
     const serverUrls = user.organizations.map(o => o.serverUrl);
 
     for (const serverUrl of serverUrls) {
+      const connectionStatus = orgConnection.getConnectionStatus(serverUrl);
+      const disconnectReason = orgConnection.getDisconnectReason(serverUrl);
+
+      if (connectionStatus === 'disconnected' && disconnectReason === 'upgradeRequired') {
+        console.log(
+          `[${new Date().toISOString()}] Skipping websocket setup for disconnected organization: ${serverUrl} (Reason: ${disconnectReason})`,
+        );
+        continue;
+      }
+
       try {
         const url = serverUrl.includes('localhost') ? getLocalWebsocketPath(serverUrl) : serverUrl;
         newSockets[serverUrl] = connect(serverUrl, url);

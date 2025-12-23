@@ -101,7 +101,7 @@ async function checkCompatibilityForUpgrades(
     try {
       const compatibilityResult = await checkCompatibilityAcrossOrganizations(
         versionData.latestSupportedVersion,
-        org.serverUrl,
+        org.serverUrl, // Exclude the current org from conflict check
       );
 
       organizationCompatibilityResults.value[org.serverUrl] = compatibilityResult;
@@ -111,13 +111,32 @@ async function checkCompatibilityForUpgrades(
           `[${new Date().toISOString()}] COMPATIBILITY_CHECK App launch check for ${org.serverUrl}`,
         );
         console.warn(
-          `Conflicts found with ${compatibilityResult.conflicts.length} organization(s)`,
+          `Conflicts found with ${compatibilityResult.conflicts.length} organization(s):`,
+        );
+        compatibilityResult.conflicts.forEach(conflict => {
+          console.warn(
+            `  - ${conflict.organizationName} (${conflict.serverUrl}): Latest supported: ${conflict.latestSupportedVersion}`,
+          );
+        });
+      } else {
+        console.log(
+          `[${new Date().toISOString()}] COMPATIBILITY_CHECK App launch check for ${org.serverUrl}: No conflicts`,
         );
       }
     } catch (error) {
       console.error(`Failed to check compatibility for ${org.serverUrl}:`, error);
       organizationCompatibilityResults.value[org.serverUrl] = null;
+      }
     }
+
+    if (orgsRequiringUpdate.length > 1) {
+    console.log(
+      `[${new Date().toISOString()}] MULTIPLE_ORGS_REQUIRING_UPDATE: ${orgsRequiringUpdate.length} organization(s) require updates`,
+    );
+    orgsRequiringUpdate.forEach(org => {
+      const status = getVersionStatusForOrg(org.serverUrl);
+      console.log(`  - ${org.nickname || org.serverUrl}: ${status}`);
+    });
   }
 }
 

@@ -19,6 +19,7 @@ import {
   organizationUpdateUrls,
   getVersionStatusForOrg,
   resetVersionStatusForOrg,
+  getMostRecentOrganizationRequiringUpdate,
 } from '@renderer/stores/versionState';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -34,7 +35,7 @@ const toast = useToast();
 const { setLast } = useDefaultOrganization();
 
 const affectedOrg = computed(() => {
-  const serverUrl = triggeringOrganizationServerUrl.value;
+  const serverUrl = triggeringOrganizationServerUrl.value || getMostRecentOrganizationRequiringUpdate();
   if (!serverUrl) return null;
   return user.organizations.find(org => org.serverUrl === serverUrl) || null;
 });
@@ -114,17 +115,24 @@ const handleDisconnect = async () => {
         console.warn('Logout failed (may already be disconnected):', logoutError);
       }
 
-      // Switch to personal mode
+      // Switch to personal mode or another connected organization
       await user.selectOrganization(null);
       await setLast(null);
 
-      // Reset version status to close the modal
+      // Reset version status for this org (will auto-select next org if multiple require updates)
       resetVersionStatusForOrg(org.serverUrl);
 
       toast.info(
         `Disconnected from ${org.nickname || org.serverUrl}. Update required to reconnect.`,
         errorToastOptions,
       );
+
+      console.log(
+        `[${new Date().toISOString()}] DISCONNECT Organization: ${org.nickname || org.serverUrl} (Server: ${org.serverUrl})`,
+      );
+      console.log(`  - Status: disconnected`);
+      console.log(`  - Reason: upgradeRequired`);
+      console.log(`  - Remaining orgs requiring update: ${user.organizations.filter(o => getVersionStatusForOrg(o.serverUrl) === 'belowMinimum').length}`);
     } catch (error) {
       console.error('Failed to disconnect organization:', error);
       toast.error('Failed to disconnect organization', errorToastOptions);
@@ -255,6 +263,17 @@ const handleCompatibilityCancel = () => {
           <strong>{{ affectedOrg.nickname || affectedOrg.serverUrl }}</strong> requires an update to
           continue.<br />
           Your current version is no longer supported by this organization.
+          <span
+            v-if="
+              user.organizations.filter(org => getVersionStatusForOrg(org.serverUrl) === 'belowMinimum')
+                .length > 1
+            "
+            class="d-block mt-2 text-warning"
+          >
+            <i class="bi bi-info-circle me-1"></i>
+            {{ user.organizations.filter(org => getVersionStatusForOrg(org.serverUrl) === 'belowMinimum').length - 1 }}
+            other organization(s) also require updates.
+          </span>
         </span>
         <span v-else>
           Your current version is no longer supported.<br />
