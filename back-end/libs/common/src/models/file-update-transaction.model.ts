@@ -1,9 +1,14 @@
 import { FileUpdateTransaction } from '@hashgraph/sdk';
 
-import { TransactionBaseModel } from './transaction.model';
+import { TransactionBaseModel } from './transaction-base.model';
 import { isHederaSpecialFileId } from '@app/common';
+import TransactionFactory from './transaction-factory';
 
-export default class FileUpdateTransactionModel extends TransactionBaseModel<FileUpdateTransaction> {
+export default class FileUpdateTransactionModel
+  extends TransactionBaseModel<FileUpdateTransaction> {
+
+  static readonly TRANSACTION_TYPE = 'FileUpdateTransaction';
+
   // If a system file, the fee payer must 2,50,55,56,57, or 58 depending on the file.
   // This validation should be added in the future.
 
@@ -26,3 +31,8 @@ export default class FileUpdateTransactionModel extends TransactionBaseModel<Fil
     return this.transaction.keys || [];
   }
 }
+
+TransactionFactory.register(
+  FileUpdateTransactionModel.TRANSACTION_TYPE,
+  FileUpdateTransactionModel
+);

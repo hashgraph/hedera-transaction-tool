@@ -1,9 +1,14 @@
 import { NodeDeleteTransaction } from '@hashgraph/sdk';
 
-import { TransactionBaseModel } from './transaction.model';
+import { TransactionBaseModel } from './transaction-base.model';
 import { COUNCIL_ACCOUNTS } from '@app/common';
+import TransactionFactory from './transaction-factory';
 
-export default class NodeDeleteTransactionModel extends TransactionBaseModel<NodeDeleteTransaction> {
+export default class NodeDeleteTransactionModel
+  extends TransactionBaseModel<NodeDeleteTransaction> {
+
+  static readonly TRANSACTION_TYPE = 'NodeDeleteTransaction';
+
   getNodeId(): number | null {
     // if fee payer is council_accounts,
     // it will already be added to the required list
@@ -17,3 +22,8 @@ export default class NodeDeleteTransactionModel extends TransactionBaseModel<Nod
     return null;
   }
 }
+
+TransactionFactory.register(
+  NodeDeleteTransactionModel.TRANSACTION_TYPE,
+  NodeDeleteTransactionModel
+);

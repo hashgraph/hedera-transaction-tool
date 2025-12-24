@@ -1,53 +1,31 @@
 import { Transaction } from '@hashgraph/sdk';
-import { TransactionBaseModel } from './transaction.model';
-import TransferTransactionModel from './transfer-transaction.model';
-import AccountCreateTransactionModel from './account-create-transaction.model';
-import AccountUpdateTransactionModel from './account-update-transaction.model';
-import SystemDeleteTransactionModel from './system-delete-transaction.model';
-import SystemUndeleteTransactionModel from './system-undelete-transaction.model';
-import FileUpdateTransactionModel from './file-update-transaction.model';
-import FreezeTransactionModel from './freeze-transaction.model';
-import FileAppendTransactionModel from './file-append-transaction.model';
-import AccountDeleteTransactionModel from './account-delete-transaction.model';
-import AccountAllowanceApproveTransactionModel from './approve-allowance-transaction.model';
-import FileCreateTransactionModel from './file-create-transaction.model';
-import NodeCreateTransactionModel from './node-create-transaction.model';
-import NodeUpdateTransactionModel from './node-update-transaction.model';
-import NodeDeleteTransactionModel from './node-delete-transaction.model';
+import { TransactionBaseModel } from './transaction-base.model';
 import { getTransactionType } from '@app/common';
 
+type TxModelCtor = new (tx: Transaction) => TransactionBaseModel<any>;
+
 export default class TransactionFactory {
-  static fromBytes(bytes: Buffer) {
-    const transaction = Transaction.fromBytes(bytes);
-    return this.fromTransaction(transaction);
+  private static readonly registry = new Map<string, TxModelCtor>();
+
+  static register(type: string, ctor: TxModelCtor): void {
+    if (this.registry.has(type)) {
+      throw new Error(`Transaction model already registered for ${type}`);
+    }
+    this.registry.set(type, ctor);
   }
 
-  static fromTransaction(transaction: Transaction): TransactionBaseModel<Transaction> {
-    const transactionModelMap = {
-      TransferTransaction: TransferTransactionModel,
-      AccountCreateTransaction: AccountCreateTransactionModel,
-      AccountUpdateTransaction: AccountUpdateTransactionModel,
-      SystemDeleteTransaction: SystemDeleteTransactionModel,
-      SystemUndeleteTransaction: SystemUndeleteTransactionModel,
-      FreezeTransaction: FreezeTransactionModel,
-      FileUpdateTransaction: FileUpdateTransactionModel,
-      FileAppendTransaction: FileAppendTransactionModel,
-      AccountDeleteTransaction: AccountDeleteTransactionModel,
-      AccountAllowanceApproveTransaction: AccountAllowanceApproveTransactionModel,
-      FileCreateTransaction: FileCreateTransactionModel,
-      NodeCreateTransaction: NodeCreateTransactionModel,
-      NodeUpdateTransaction: NodeUpdateTransactionModel,
-      NodeDeleteTransaction: NodeDeleteTransactionModel,
-    };
+  static fromTransaction(tx: Transaction): TransactionBaseModel<any> {
+    const type = getTransactionType(tx, true);
+    const Model = this.registry.get(type);
 
-    const transactionType = getTransactionType(transaction, true) as keyof typeof transactionModelMap;
-
-    if (transactionModelMap[transactionType]) {
-      const Model = transactionModelMap[transactionType];
-      //@ts-expect-error typescript
-      return new Model(transaction);
-    } else {
-      throw new Error('Transaction type unknown');
+    if (!Model) {
+      throw new Error(`No transaction model registered for type: ${type}`);
     }
+
+    return new Model(tx);
+  }
+
+  static fromBytes(bytes: Buffer): TransactionBaseModel<any> {
+    return this.fromTransaction(Transaction.fromBytes(bytes));
   }
 }

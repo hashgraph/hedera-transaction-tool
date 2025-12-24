@@ -1,8 +1,13 @@
 import { AccountId, AccountUpdateTransaction, Key } from '@hashgraph/sdk';
 
-import { TransactionBaseModel } from './transaction.model';
+import { TransactionBaseModel } from './transaction-base.model';
+import TransactionFactory from './transaction-factory';
 
-export default class AccountUpdateTransactionModel extends TransactionBaseModel<AccountUpdateTransaction> {
+export default class AccountUpdateTransactionModel
+  extends TransactionBaseModel<AccountUpdateTransaction> {
+
+  static readonly TRANSACTION_TYPE = 'AccountUpdateTransaction';
+
   private readonly TREASURY_ACCOUNT = AccountId.fromString('0.0.2');
   private readonly ADMIN_ACCOUNT = AccountId.fromString('0.0.50');
   private readonly MINIMUM_SYSTEM_ACCOUNT = AccountId.fromString('0.0.3');
@@ -56,3 +61,8 @@ export default class AccountUpdateTransactionModel extends TransactionBaseModel<
     );
   }
 }
+
+TransactionFactory.register(
+  AccountUpdateTransactionModel.TRANSACTION_TYPE,
+  AccountUpdateTransactionModel
+);

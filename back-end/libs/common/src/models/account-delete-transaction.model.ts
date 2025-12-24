@@ -1,7 +1,12 @@
 import { AccountDeleteTransaction } from '@hashgraph/sdk';
-import { TransactionBaseModel } from './transaction.model';
+import { TransactionBaseModel } from './transaction-base.model';
+import TransactionFactory from './transaction-factory';
 
-export default class AccountDeleteTransactionModel extends TransactionBaseModel<AccountDeleteTransaction> {
+export default class AccountDeleteTransactionModel
+  extends TransactionBaseModel<AccountDeleteTransaction> {
+
+  static readonly TRANSACTION_TYPE = 'AccountDeleteTransaction';
+
   getSigningAccounts(): Set<string> {
     const set = super.getSigningAccounts();
     if (this.transaction.accountId) {
@@ -16,3 +21,8 @@ export default class AccountDeleteTransactionModel extends TransactionBaseModel<
     );
   }
 }
+
+TransactionFactory.register(
+  AccountDeleteTransactionModel.TRANSACTION_TYPE,
+  AccountDeleteTransactionModel
+);

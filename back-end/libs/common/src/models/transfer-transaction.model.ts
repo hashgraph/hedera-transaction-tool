@@ -1,11 +1,15 @@
 import { TransferTransaction } from '@hashgraph/sdk';
 
-import { TransactionBaseModel } from './transaction.model';
+import { TransactionBaseModel } from './transaction-base.model';
+import TransactionFactory from './transaction-factory';
 
-export default class TransferTransactionModel extends TransactionBaseModel<TransferTransaction> {
+export default class TransferTransactionModel
+  extends TransactionBaseModel<TransferTransaction> {
+
+  static readonly TRANSACTION_TYPE = 'TransferTransaction';
+
   getSigningAccounts(): Set<string> {
-    // Get the Fee Payer
-    const accounts = super.getSigningAccounts();
+    const accounts = new Set<string>();
 
     // add all accounts that are senders
     for (const transfer of this.transaction.hbarTransfersList) {
@@ -27,3 +31,8 @@ export default class TransferTransactionModel extends TransactionBaseModel<Trans
     return accounts;
   }
 }
+
+TransactionFactory.register(
+  TransferTransactionModel.TRANSACTION_TYPE,
+  TransferTransactionModel
+);
