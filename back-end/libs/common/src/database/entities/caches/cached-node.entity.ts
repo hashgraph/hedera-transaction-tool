@@ -6,7 +6,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn, Index,
 } from 'typeorm';
-import { CachedNodeAdminKey, TransactionNode } from './';
+import { CachedNodeAdminKey, TransactionCachedNode } from './';
 
 @Entity()
 @Index(['nodeId', 'mirrorNetwork'], { unique: true })
@@ -18,17 +18,24 @@ export class CachedNode {
   @Index()
   nodeId: number;
 
+  @Column({ length: 64 })
+  @Index()
+  nodeAccountId: string;
+
   @Column()
   mirrorNetwork: string;
 
+  @Column({ type: 'bytea', nullable: true })
+  encodedKey: Buffer | null;
+
   @Column({ length: 100, nullable: true })
-  etag?: string; // Mirror node etag or hash of response
+  etag: string | null; // Mirror node etag or hash of response
 
   @OneToMany(() => CachedNodeAdminKey, (key) => key.node)
   keys: CachedNodeAdminKey[];
 
-  @OneToMany(() => TransactionNode, (tn) => tn.node)
-  nodeTransactions: TransactionNode[];
+  @OneToMany(() => TransactionCachedNode, (tn) => tn.node)
+  nodeTransactions: TransactionCachedNode[];
 
   @CreateDateColumn()
   createdAt: Date;
@@ -36,4 +43,11 @@ export class CachedNode {
   @UpdateDateColumn()
   @Index()
   updatedAt: Date;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  lastCheckedAt: Date | null; // For tracking when the account was last verified
+
+  @Column({ type: 'uuid', nullable: true })
+  @Index()
+  refreshToken: string | null;
 }

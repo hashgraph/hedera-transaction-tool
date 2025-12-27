@@ -1,4 +1,4 @@
-import { AccountInfo, AccountInfoParsed, KeyType, decodeProtobuffKey } from '@app/common';
+import { AccountInfo, AccountInfoParsed, KeyType, decodeProtobufKey } from '@app/common';
 import { AccountId, EvmAddress, Hbar, HbarUnit, Key, PublicKey, Timestamp } from '@hashgraph/sdk';
 
 export const parseAccountInfo = (accountInfo: AccountInfo) => {
@@ -89,7 +89,7 @@ export function parseAccountProperty(accountInfo: AccountInfo, property: keyof A
     case 'key':
       switch (accountInfo.key._type) {
         case KeyType.ProtobufEncoded:
-          return decodeProtobuffKey(accountInfo.key.key);
+          return decodeProtobufKey(accountInfo.key.key);
         case KeyType.ED25519:
           return PublicKey.fromStringED25519(accountInfo.key.key);
         case KeyType.ECDSA_SECP256K1:

@@ -3,7 +3,8 @@ import { CachedNode } from './';
 import { Transaction } from '../';
 
 @Entity()
-export class TransactionNode {
+@Index(['transaction', 'node'], { unique: true })
+export class TransactionCachedNode {
   @PrimaryGeneratedColumn()
   id: number;
 

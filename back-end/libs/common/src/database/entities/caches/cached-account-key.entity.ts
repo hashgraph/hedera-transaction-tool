@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index } from 'typeor
 import { CachedAccount } from './';
 
 @Entity()
+@Index(['account', 'publicKey'], { unique: true })
 export class CachedAccountKey {
   @PrimaryGeneratedColumn()
   id: number;

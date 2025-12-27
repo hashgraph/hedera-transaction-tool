@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index } from 'typeor
 import { CachedNode } from './';
 
 @Entity()
+@Index(['node', 'publicKey'], { unique: true })
 export class CachedNodeAdminKey {
   @PrimaryGeneratedColumn()
   id: number;
