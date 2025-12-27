@@ -11,19 +11,19 @@ import {
   NotificationPreferences,
   NotificationReceiver,
   Transaction,
-  TransactionAccount,
+  TransactionCachedAccount,
   TransactionApprover,
   TransactionComment,
   TransactionGroup,
   TransactionGroupItem,
-  TransactionNode,
+  TransactionCachedNode,
   TransactionObserver,
   TransactionSigner,
   User,
   UserKey,
 } from '@entities';
 
-import { MirrorNodeModule, NatsModule, RedisMurlockModule } from '@app/common';
+import { NatsModule, RedisMurlockModule, TransactionSignatureModule } from '@app/common';
 
 import { ExecuteService } from './execute.service';
 
@@ -40,8 +40,8 @@ import { ExecuteService } from './execute.service';
       TransactionComment,
       TransactionGroup,
       TransactionGroupItem,
-      TransactionAccount,
-      TransactionNode,
+      TransactionCachedAccount,
+      TransactionCachedNode,
       CachedAccount,
       CachedAccountKey,
       CachedNode,
@@ -50,7 +50,7 @@ import { ExecuteService } from './execute.service';
       NotificationReceiver,
       NotificationPreferences,
     ]),
-    MirrorNodeModule,
+    TransactionSignatureModule,
     RedisMurlockModule,
     NatsModule.forRoot(),
   ],

@@ -4,8 +4,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MurLock } from 'murlock';
 import {
-  AccountUpdateTransaction,
-  NodeUpdateTransaction,
   Status,
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
@@ -13,17 +11,15 @@ import {
 import { Transaction, TransactionGroup, TransactionStatus } from '@entities';
 
 import {
-  computeSignatureKey,
   emitTransactionStatusUpdate,
   getClientFromNetwork,
   getStatusCodeFromMessage,
   hasValidSignatureKey,
-  MirrorNodeService,
   NatsPublisherService,
   sleep,
   TransactionExecutedDto,
   TransactionGroupExecutedDto,
-  transactionIs,
+  TransactionSignatureService,
 } from '@app/common';
 
 @Injectable()
@@ -31,7 +27,7 @@ export class ExecuteService {
   constructor(
     @InjectRepository(Transaction) private transactionsRepo: Repository<Transaction>,
     private readonly notificationsPublisher: NatsPublisherService,
-    private readonly mirrorNodeService: MirrorNodeService,
+    private readonly transactionSignatureService: TransactionSignatureService,
   ) {
   }
 
@@ -156,7 +152,7 @@ export class ExecuteService {
 
       client.close();
 
-      this.sideEffect(sdkTransaction, transaction.mirrorNetwork);
+      // this.sideEffect(sdkTransaction, transaction.mirrorNetwork);
     }
     return result;
   }
@@ -173,11 +169,7 @@ export class ExecuteService {
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
     /* Gets the signature key */
-    const signatureKey = await computeSignatureKey(
-      sdkTransaction,
-      this.mirrorNodeService,
-      transaction.mirrorNetwork,
-    );
+    const signatureKey = await this.transactionSignatureService.computeSignatureKey(transaction);
 
     /* Checks if the transaction has valid signatureKey */
     if (!hasValidSignatureKey([...sdkTransaction._signerPublicKeys], signatureKey))
@@ -211,29 +203,30 @@ export class ExecuteService {
     }
   }
 
-  private sideEffect(sdkTransaction: SDKTransaction, mirrorNetwork: string) {
-    if (transactionIs(AccountUpdateTransaction, sdkTransaction)) {
-      setTimeout(async () => {
-        try {
-          await this.mirrorNodeService.updateAccountInfo(
-            sdkTransaction.accountId.toString(),
-            mirrorNetwork,
-          );
-        } catch (error) {
-          console.log('Error updating account info', error);
-        }
-      }, 5 * 1_000);
-    } else if (transactionIs(NodeUpdateTransaction, sdkTransaction)) {
-      setTimeout(async () => {
-        try {
-          await this.mirrorNodeService.updateNodeInfo(
-            sdkTransaction.nodeId?.toNumber(),
-            mirrorNetwork,
-          );
-        } catch (error) {
-          console.log('Error updating node info', error);
-        }
-      }, 5 * 1_000);
-    }
-  }
+  //TODO i don't think I need this, not once we use the cached tables
+  // private sideEffect(sdkTransaction: SDKTransaction, mirrorNetwork: string) {
+  //   if (transactionIs(AccountUpdateTransaction, sdkTransaction)) {
+  //     setTimeout(async () => {
+  //       try {
+  //         await this.mirrorNodeService.updateAccountInfo(
+  //           sdkTransaction.accountId.toString(),
+  //           mirrorNetwork,
+  //         );
+  //       } catch (error) {
+  //         console.log('Error updating account info', error);
+  //       }
+  //     }, 5 * 1_000);
+  //   } else if (transactionIs(NodeUpdateTransaction, sdkTransaction)) {
+  //     setTimeout(async () => {
+  //       try {
+  //         await this.mirrorNodeService.updateNodeInfo(
+  //           sdkTransaction.nodeId?.toNumber(),
+  //           mirrorNetwork,
+  //         );
+  //       } catch (error) {
+  //         console.log('Error updating node info', error);
+  //       }
+  //     }, 5 * 1_000);
+  //   }
+  // }
 }

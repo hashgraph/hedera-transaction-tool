@@ -12,15 +12,15 @@ import {
   TransactionObserver,
   TransactionSigner,
   NotificationReceiver,
-  TransactionAccount,
-  TransactionNode,
+  TransactionCachedAccount,
+  TransactionCachedNode,
   CachedAccount,
   CachedAccountKey,
   CachedNode,
   CachedNodeAdminKey,
 } from '@entities';
 
-import { ExecuteModule, MirrorNodeModule } from '@app/common';
+import { ExecuteModule, TransactionSignatureModule } from '@app/common';
 
 import { UserKeysModule } from '../user-keys/user-keys.module';
 import { TransactionGroupsController, TransactionGroupsService } from './groups';
@@ -41,8 +41,8 @@ import { TransactionNodesService } from './nodes/transaction-nodes.service';
       TransactionSigner,
       TransactionApprover,
       TransactionObserver,
-      TransactionAccount,
-      TransactionNode,
+      TransactionCachedAccount,
+      TransactionCachedNode,
       CachedAccount,
       CachedAccountKey,
       CachedNode,
@@ -50,7 +50,7 @@ import { TransactionNodesService } from './nodes/transaction-nodes.service';
       Notification,
       NotificationReceiver,
     ]),
-    MirrorNodeModule,
+    TransactionSignatureModule,
     UserKeysModule,
     ExecuteModule,
   ],

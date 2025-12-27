@@ -3,9 +3,8 @@ import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 import { EntityManager, In, Repository } from 'typeorm';
 
 import {
-  MirrorNodeService,
+  TransactionSignatureService,
   attachKeys,
-  computeSignatureKey,
   flattenKeyList,
   hasValidSignatureKey,
   smartCollate,
@@ -20,8 +19,9 @@ import {
 
 export const keysRequiredToSign = async (
   transaction: Transaction,
-  mirrorNodeService: MirrorNodeService,
+  transactionSignatureService: TransactionSignatureService,
   entityManager: EntityManager,
+  showAll: boolean = false,
   userKeys?: UserKey[],
   cache?: Map<string, UserKey>,
 ): Promise<UserKey[]> => {
@@ -33,7 +33,7 @@ export const keysRequiredToSign = async (
   // list of just public keys that have already signed the transaction
   const signerKeys = sdkTransaction._signerPublicKeys;
 
-  const signature = await computeSignatureKey(sdkTransaction, mirrorNodeService, transaction.mirrorNetwork);
+  const signature = await transactionSignatureService.computeSignatureKey(transaction, showAll);
   // flatten the key list to an array of public keys
   // and filter out any keys that have already signed the transaction
   const flatPublicKeys = flattenKeyList(signature)
@@ -96,17 +96,19 @@ export const keysRequiredToSign = async (
 export const userKeysRequiredToSign = async (
   transaction: Transaction,
   user: User,
-  mirrorNodeService: MirrorNodeService,
+  transactionSignatureService: TransactionSignatureService,
   entityManager: EntityManager,
+  showAll: boolean = false,
 ): Promise<number[]> => {
   await attachKeys(user, entityManager);
   if (user.keys.length === 0) return [];
 
   const userKeysRequiredToSign = await keysRequiredToSign(
     transaction,
-    mirrorNodeService,
+    transactionSignatureService,
     entityManager,
-    user.keys,
+    showAll,
+    user.keys
   );
 
   return userKeysRequiredToSign.map(k => k.id);
@@ -115,7 +117,7 @@ export const userKeysRequiredToSign = async (
 /* Checks if the signers are enough to sign the transaction and update its status */
 export async function processTransactionStatus(
   transactionRepo: Repository<Transaction>,
-  mirrorNodeService: MirrorNodeService,
+  transactionSignatureService: TransactionSignatureService,
   transactions: Transaction[],
 ): Promise<Map<number, TransactionStatus>> {
   const statusChanges = new Map<number, TransactionStatus>();
@@ -127,11 +129,7 @@ export async function processTransactionStatus(
 
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
-    const signatureKey = await computeSignatureKey(
-      sdkTransaction,
-      mirrorNodeService,
-      transaction.mirrorNetwork,
-    );
+    const signatureKey = await transactionSignatureService.computeSignatureKey(transaction);
 
     const isAbleToSign = hasValidSignatureKey(
       [...sdkTransaction._signerPublicKeys],
@@ -141,7 +139,7 @@ export async function processTransactionStatus(
     let newStatus = TransactionStatus.WAITING_FOR_SIGNATURES;
 
     if (isAbleToSign) {
-      const collatedTx = await smartCollate(transaction, mirrorNodeService);
+      const collatedTx = await smartCollate(transaction, signatureKey);
 
       if (collatedTx !== null) {
         newStatus = TransactionStatus.WAITING_FOR_EXECUTION;

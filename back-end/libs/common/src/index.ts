@@ -17,6 +17,7 @@ export * from './health';
 export * from './blacklist';
 export * from './scheduler';
 export * from './templates';
+export * from './transaction-signature';
 export * from './execute';
 export * from './test';
 export * from './sql';

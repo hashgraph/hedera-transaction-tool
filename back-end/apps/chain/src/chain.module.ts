@@ -18,6 +18,7 @@ import getEnvFilePaths from './config/envFilePaths';
 
 import { ReminderHandlerService } from './transaction-reminder';
 import { TransactionSchedulerModule } from './transaction-scheduler';
+import { CacheManagementModule } from './cache-management';
 
 export const config = ConfigModule.forRoot({
   envFilePath: getEnvFilePaths(),
@@ -38,6 +39,7 @@ export const config = ConfigModule.forRoot({
 @Module({
   imports: [
     config,
+    CacheManagementModule,
     DatabaseModule,
     LoggerModule,
     NatsModule.forRoot(),
