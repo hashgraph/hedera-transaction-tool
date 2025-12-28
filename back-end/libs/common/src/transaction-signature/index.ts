@@ -4,3 +4,4 @@ export * from './transaction-signature.service';
 export * from './node-cache.service';
 export * from './mirror-node.client';
 export * from './cache.helper';
+export * from './cache.types';

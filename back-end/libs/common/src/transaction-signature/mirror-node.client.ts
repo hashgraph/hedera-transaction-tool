@@ -17,9 +17,11 @@ const HTTP_STATUS = {
   NOT_MODIFIED: 304,
 } as const;
 
-const RATE_LIMIT = {
-  MAX_CONCURRENT: 10,
-  DELAY_MS: 200, // 200ms delay between batches = ~50 req/sec with batch of 10
+const RETRY_CONFIG = {
+  MAX_RETRIES: 3,
+  INITIAL_DELAY_MS: 1000, // Start with 1 second
+  MAX_DELAY_MS: 10000, // Cap at 10 seconds
+  BACKOFF_MULTIPLIER: 2,
 } as const;
 
 export interface HttpResult<T> {
@@ -49,7 +51,7 @@ export class MirrorNodeClient {
     const url = `${this.getMirrorNodeRESTURL(mirrorNetwork)}/accounts/${accountId}`;
 
     try {
-      const response = await this.getMirrorNodeData<AccountInfo>(url, etag);
+      const response = await this.fetchWithRetry<AccountInfo>(url, etag);
 
       if (response.status === HTTP_STATUS.NOT_MODIFIED) {
         return { data: null, etag };
@@ -78,7 +80,7 @@ export class MirrorNodeClient {
     const url = `${this.getMirrorNodeRESTURL(mirrorNetwork)}/network/nodes?node.id=eq:${nodeId}`;
 
     try {
-      const response = await this.getMirrorNodeData<NetworkNodesResponse>(url, etag);
+      const response = await this.fetchWithRetry<NetworkNodesResponse>(url, etag);
 
       if (response.status === HTTP_STATUS.NOT_MODIFIED) {
         return { data: null, etag: etag };
@@ -98,6 +100,81 @@ export class MirrorNodeClient {
       this.logger.error(`Failed to fetch node ${nodeId}: ${error.message}`);
       throw error;
     }
+  }
+
+  /**
+   * Fetch data with exponential backoff retry logic
+   */
+  private async fetchWithRetry<T>(
+    url: string,
+    etag?: string,
+    attempt = 1,
+  ): Promise<HttpResult<T>> {
+    try {
+      return await this.getMirrorNodeData<T>(url, etag);
+    } catch (error) {
+      const shouldRetry = this.isRetryableError(error);
+
+      if (!shouldRetry || attempt >= RETRY_CONFIG.MAX_RETRIES) {
+        this.logger.error(
+          `Request failed after ${attempt} attempt(s) for ${url}: ${error.message}`
+        );
+        throw error;
+      }
+
+      const delay = this.calculateBackoffDelay(attempt);
+      this.logger.warn(
+        `Request failed (attempt ${attempt}/${RETRY_CONFIG.MAX_RETRIES}), ` +
+        `retrying in ${delay}ms: ${error.message}`
+      );
+
+      await this.delay(delay);
+      return this.fetchWithRetry<T>(url, etag, attempt + 1);
+    }
+  }
+
+  /**
+   * Calculate exponential backoff delay with jitter
+   */
+  private calculateBackoffDelay(attempt: number): number {
+    const exponentialDelay = Math.min(
+      RETRY_CONFIG.INITIAL_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, attempt - 1),
+      RETRY_CONFIG.MAX_DELAY_MS
+    );
+
+    // Add jitter (±25% randomization) to prevent thundering herd
+    const jitter = exponentialDelay * 0.25 * (Math.random() * 2 - 1);
+    return Math.floor(exponentialDelay + jitter);
+  }
+
+  /**
+   * Determine if an error is retryable
+   */
+  private isRetryableError(error: any): boolean {
+    // Don't retry client errors (4xx) except 429 (rate limit)
+    if (error.response?.status) {
+      const status = error.response.status;
+
+      // Retry on rate limits and server errors
+      if (status === 429 || status >= 500) {
+        return true;
+      }
+
+      // Don't retry other 4xx errors
+      if (status >= 400 && status < 500) {
+        return false;
+      }
+    }
+
+    // Retry on network errors (ECONNREFUSED, ETIMEDOUT, etc.)
+    if (error.code === 'ECONNREFUSED' ||
+      error.code === 'ETIMEDOUT' ||
+      error.code === 'ENOTFOUND') {
+      return true;
+    }
+
+    // Default to retrying for unknown errors
+    return true;
   }
 
   private getMirrorNodeRESTURL(mirrorNetwork: string): string {
@@ -134,39 +211,6 @@ export class MirrorNodeClient {
         error.response?.status || HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
-  }
-
-  //TODO gotta implement this
-  private async rateLimitedBatch<T>(
-    items: T[],
-    operation: (item: T) => Promise<any>,
-  ): Promise<void> {
-    const chunks = this.chunkArray(items, RATE_LIMIT.MAX_CONCURRENT);
-
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      const promises = chunk.map(item =>
-        operation(item).catch(error => {
-          this.logger.error(`Batch operation failed: ${error.message}`);
-          return null;
-        })
-      );
-
-      await Promise.all(promises);
-
-      // Delay between batches (except after last batch)
-      if (i < chunks.length - 1) {
-        await this.delay(RATE_LIMIT.DELAY_MS);
-      }
-    }
-  }
-
-  private chunkArray<T>(array: T[], size: number): T[][] {
-    const chunks: T[][] = [];
-    for (let i = 0; i < array.length; i += size) {
-      chunks.push(array.slice(i, i + size));
-    }
-    return chunks;
   }
 
   private delay(ms: number): Promise<void> {

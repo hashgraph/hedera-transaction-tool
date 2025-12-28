@@ -11,15 +11,16 @@ import {
   TransactionCachedAccount,
   TransactionCachedNode,
 } from '@entities';
+import { NatsModule, TransactionSignatureModule } from '@app/common';
 import {
   CacheManagementService,
 } from '.';
-import { TransactionSignatureModule } from '@app/common/transaction-signature/transaction-signature.module';
 
 @Module({
   imports: [
     ConfigModule,
     HttpModule,
+    NatsModule.forRoot(),
     TransactionSignatureModule,
     ScheduleModule.forRoot(),
     TypeOrmModule.forFeature([

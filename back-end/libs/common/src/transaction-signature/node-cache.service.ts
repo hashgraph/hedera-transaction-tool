@@ -14,21 +14,25 @@ import {
   NodeInfoParsed,
   serializeKey,
 } from '@app/common';
-import { CacheHelper, MirrorNodeClient } from '.';
-
-const CACHE_STALE_THRESHOLD_MS = 10 * 1000; // 10 seconds
-const RECLAIM_AFTER_MS = 2 * 60 * 1000;
+import { CacheHelper, MirrorNodeClient, RefreshResult, RefreshStatus } from '.';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class NodeCacheService {
   private readonly logger = new Logger(NodeCacheService.name);
   private readonly cacheHelper: CacheHelper;
 
+  private readonly cacheTtlMs: number;
+  private readonly reclaimDelayMs: number;
+
   constructor(
     private readonly mirrorNodeClient: MirrorNodeClient,
     private readonly dataSource: DataSource,
+    private readonly configService: ConfigService,
   ) {
     this.cacheHelper = new CacheHelper(dataSource);
+    this.cacheTtlMs = this.configService.get<number>('CACHE_STALE_THRESHOLD_MS', 10 * 1000);
+    this.reclaimDelayMs = this.configService.get<number>('RECLAIM_DELAY_MS', 2 * 60 * 1000);
   }
 
   /**
@@ -36,7 +40,7 @@ export class NodeCacheService {
    * Used by cron jobs or when an explicit forced refresh is required.
    * Returns parsed node info when refreshed successfully, or null otherwise.
    */
-  async refreshNode(cached: CachedNode): Promise<NodeInfoParsed | null> {
+  async refreshNode(cached: CachedNode): Promise<boolean> {
     const nodeId = cached.nodeId;
     const mirrorNetwork = cached.mirrorNetwork;
 
@@ -45,15 +49,11 @@ export class NodeCacheService {
 
     if (!claimedNode.refreshToken) {
       this.logger.debug(`Node ${nodeId} on ${mirrorNetwork} is already being refreshed`);
-
-      if (this.hasCompleteData(claimedNode)) {
-        return this.parseCachedNode(claimedNode);
-      }
-
-      return null;
+      return false; // Didn't refresh (someone else is doing it)
     }
 
-    return this.performRefreshForClaimedNode(claimedNode);
+    const { status } = await this.performRefreshForClaimedNode(claimedNode);
+    return status === RefreshStatus.REFRESHED;
   }
 
   /**
@@ -105,7 +105,8 @@ export class NodeCacheService {
       return null;
     }
 
-    return this.performRefreshForClaimedNode(claimedNode, transaction.id);
+    const { data } = await this.performRefreshForClaimedNode(claimedNode, transaction.id);
+    return data;
   }
 
   /**
@@ -118,7 +119,7 @@ export class NodeCacheService {
     return this.cacheHelper.tryClaimRefresh(
       CachedNode,
       { nodeId, mirrorNetwork },
-      RECLAIM_AFTER_MS,
+      this.reclaimDelayMs,
     );
   }
 
@@ -228,7 +229,7 @@ export class NodeCacheService {
   private async performRefreshForClaimedNode(
     claimedNode: CachedNode,
     transactionId?: number,
-  ): Promise<NodeInfoParsed | null> {
+  ): Promise<RefreshResult<NodeInfoParsed>> {
     const nodeId = claimedNode.nodeId;
     const mirrorNetwork = claimedNode.mirrorNetwork;
     try {
@@ -243,15 +244,15 @@ export class NodeCacheService {
 
       // If 304 (no new data), return cached data if complete
       if (!nodeData && this.hasCompleteData(claimedNode)) {
-        return this.parseCachedNode(claimedNode);
+        return { status: RefreshStatus.NOT_MODIFIED, data: this.parseCachedNode(claimedNode) };
       }
 
       if (!nodeData) {
         this.logger.warn(`Node ${nodeId} not found on mirror network ${mirrorNetwork}`);
-        return null;
+        return { status: RefreshStatus.NOT_FOUND, data: null };
       }
 
-      return nodeData;
+      return { status: RefreshStatus.REFRESHED, data: nodeData };
     } catch (error) {
       // On error, clear the refresh token so another process can try
       try {
@@ -327,7 +328,7 @@ export class NodeCacheService {
    */
   private isFresh(cached: CachedNode | null): boolean {
     return cached?.lastCheckedAt &&
-      (Date.now() - cached.lastCheckedAt.getTime()) < CACHE_STALE_THRESHOLD_MS;
+      (Date.now() - cached.lastCheckedAt.getTime()) < this.cacheTtlMs;
   }
 
   /**

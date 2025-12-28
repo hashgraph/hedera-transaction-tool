@@ -8,26 +8,28 @@ import {
   TransactionCachedAccount,
 } from '@entities';
 import { AccountInfoParsed, deserializeKey, flattenKeyList, serializeKey } from '@app/common';
-import { MirrorNodeClient } from './mirror-node.client';
-import { CacheHelper } from '@app/common/transaction-signature/cache.helper';
+import { CacheHelper, MirrorNodeClient, RefreshResult, RefreshStatus } from '.';
 import { PublicKey } from '@hashgraph/sdk';
+import { ConfigService } from '@nestjs/config';
 
-const CACHE_STALE_THRESHOLD_MS = 10 * 1000; // 10 seconds
-const RECLAIM_AFTER_MS = 2 * 60 * 1000; // 2 minutes
 //TODO still need to be sure that i only store stringraw keys or whatever, they all have to be the same
-//TODO the transaciton_cached_account was saivng a new row every refresh
-//TODO cache cleanup didn't remove anything (not sure if it even went off)
 //TODO BE SURE TO ADD MANUAL RESYNC OF MIRROR NODE TO UI
 @Injectable()
 export class AccountCacheService {
   private readonly logger = new Logger(AccountCacheService.name);
   private readonly cacheHelper: CacheHelper;
 
+  private readonly cacheTtlMs: number;
+  private readonly reclaimDelayMs: number;
+
   constructor(
     private readonly mirrorNodeClient: MirrorNodeClient,
     private readonly dataSource: DataSource,
+    private readonly configService: ConfigService,
   ) {
     this.cacheHelper = new CacheHelper(dataSource);
+    this.cacheTtlMs = this.configService.get<number>('CACHE_STALE_THRESHOLD_MS', 10 * 1000);
+    this.reclaimDelayMs = this.configService.get<number>('RECLAIM_DELAY_MS', 2 * 60 * 1000);
   }
 
   /**
@@ -35,7 +37,7 @@ export class AccountCacheService {
    * Used by cron jobs or when an explicit forced refresh is required.
    * Returns parsed account info when refreshed successfully, or null otherwise.
    */
-  async refreshAccount(cached: CachedAccount): Promise<AccountInfoParsed | null> {
+  async refreshAccount(cached: CachedAccount): Promise<boolean> {
     const account = cached.account;
     const mirrorNetwork = cached.mirrorNetwork;
 
@@ -44,15 +46,11 @@ export class AccountCacheService {
 
     if (!claimedAccount.refreshToken) {
       this.logger.debug(`Account ${account} on ${mirrorNetwork} is already being refreshed`);
-
-      if (this.hasCompleteData(claimedAccount)) {
-        return this.parseCachedAccount(claimedAccount);
-      }
-
-      return null;
+      return false; // Didn't refresh (someone else is doing it)
     }
 
-    return this.performRefreshForClaimedAccount(claimedAccount);
+    const { status } = await this.performRefreshForClaimedAccount(claimedAccount);
+    return status === RefreshStatus.REFRESHED;
   }
 
   /**
@@ -104,7 +102,8 @@ export class AccountCacheService {
       return null;
     }
 
-    return this.performRefreshForClaimedAccount(claimedAccount, transaction.id);
+    const { data } = await this.performRefreshForClaimedAccount(claimedAccount, transaction.id);
+    return data;
   }
 
   /**
@@ -117,7 +116,7 @@ export class AccountCacheService {
     return this.cacheHelper.tryClaimRefresh(
       CachedAccount,
       { account, mirrorNetwork },
-      RECLAIM_AFTER_MS,
+      this.reclaimDelayMs,
     );
   }
 
@@ -227,7 +226,7 @@ export class AccountCacheService {
   private async performRefreshForClaimedAccount(
     claimedAccount: CachedAccount,
     transactionId?: number,
-  ): Promise<AccountInfoParsed | null> {
+  ): Promise<RefreshResult<AccountInfoParsed>> {
     const account = claimedAccount.account;
     const mirrorNetwork = claimedAccount.mirrorNetwork;
     try {
@@ -242,15 +241,15 @@ export class AccountCacheService {
 
       // If 304 (no new data), return cached data if complete
       if (!accountData && this.hasCompleteData(claimedAccount)) {
-        return this.parseCachedAccount(claimedAccount);
+        return { status: RefreshStatus.NOT_MODIFIED, data: this.parseCachedAccount(claimedAccount) };
       }
 
       if (!accountData) {
         this.logger.warn(`Account ${account} not found on mirror network ${mirrorNetwork}`);
-        return null;
+        return { status: RefreshStatus.NOT_FOUND, data: null };
       }
 
-      return accountData;
+      return { status: RefreshStatus.REFRESHED, data: accountData };
     } catch (error) {
       // On error, clear the refresh token so another process can try
       try {
@@ -330,7 +329,7 @@ export class AccountCacheService {
    */
   private isFresh(cached: CachedAccount | null): boolean {
     return cached?.lastCheckedAt &&
-      (Date.now() - cached.lastCheckedAt.getTime()) < CACHE_STALE_THRESHOLD_MS;
+      (Date.now() - cached.lastCheckedAt.getTime()) < this.cacheTtlMs;
   }
 
   /**

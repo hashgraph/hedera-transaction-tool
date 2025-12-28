@@ -1,17 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { CachedAccount, CachedNode, TransactionStatus } from '@entities';
-import { AccountCacheService, NodeCacheService } from '@app/common/transaction-signature';
+import {
+  CachedAccount,
+  CachedNode,
+  TransactionCachedAccount,
+  TransactionCachedNode,
+  TransactionStatus,
+} from '@entities';
+import { emitTransactionUpdate, AccountCacheService, NatsPublisherService, NodeCacheService } from '@app/common';
 
 interface CacheRefreshConfig {
   staleThresholdSeconds: number;
   batchSize: number;
-  retryAttempts: number;
-  retryDelayMs: number;
-  requestTimeoutMs: number;
   reclaimTimeoutMs: number;
 }
 
@@ -20,9 +23,9 @@ export class CacheManagementService {
   private readonly logger = new Logger(CacheManagementService.name);
   private readonly config: CacheRefreshConfig;
 
-  //TODO a lot of these config things should go into mirronode, i think
-  //TODO after a successful refresh, we need to send out a notification for transaction changed
   constructor(
+    @InjectDataSource()
+    private dataSource: DataSource,
     private readonly accountCacheService: AccountCacheService,
     private readonly nodeCacheService: NodeCacheService,
     @InjectRepository(CachedAccount)
@@ -30,19 +33,17 @@ export class CacheManagementService {
     @InjectRepository(CachedNode)
     private readonly nodeRepository: Repository<CachedNode>,
     private readonly configService: ConfigService,
+    private readonly notificationsPublisher: NatsPublisherService,
   ) {
     this.config = {
       staleThresholdSeconds: this.configService.get<number>('CACHE_STALE_THRESHOLD_SECONDS', 10),
-      batchSize: this.configService.get<number>('CACHE_REFRESH_BATCH_SIZE', 10),
-      retryAttempts: this.configService.get<number>('CACHE_REFRESH_RETRY_ATTEMPTS', 3),
-      retryDelayMs: this.configService.get<number>('CACHE_REFRESH_RETRY_DELAY_MS', 1000),
-      requestTimeoutMs: this.configService.get<number>('CACHE_REFRESH_TIMEOUT_MS', 5000),
+      batchSize: this.configService.get<number>('CACHE_REFRESH_BATCH_SIZE', 100),
       reclaimTimeoutMs: this.configService.get<number>('CACHE_RECLAIM_TIMEOUT_MS', 2 * 60 * 1000),
     };
   }
 
-  //TODO I've changed my mind agian. I do want to do the skip locked thing. it will reduce the chance of extra stuff being queued up, reducing load and such
-
+  //TODO when we add the manual mirrornode sync feature, we can probably increase this from 30 seconds to a few minutes or something,
+  //as it is really rarely neeeded except in emergencies and such
   /**
    * Main method to refresh all stale cache entries
    */
@@ -51,6 +52,10 @@ export class CacheManagementService {
   })
   async refreshStaleCache(): Promise<void> {
     try {
+      // 0–2 seconds of jitter, help prevent thundering herd across multiple instances
+      const jitterMs = Math.random() * 2000;
+      await new Promise((res) => setTimeout(res, jitterMs));
+
       await this.refreshStaleAccounts();
       await this.refreshStaleNodes();
     } catch (error: any) {
@@ -59,6 +64,7 @@ export class CacheManagementService {
     }
   }
 
+  //TODO this can probably run less frequently, like every hour or day
   /**
    * Scheduled job - runs less frequently than refresh since cleanup is less urgent
    * Default: every 5 minutes
@@ -67,15 +73,6 @@ export class CacheManagementService {
     name: 'cache-cleanup',
   })
   async cleanupUnusedCache() {
-    // Prevent overlapping executions
-    // if (this.isRunning) {
-    //   this.logger.warn('Previous cache cleanup still running, skipping this execution');
-    //   return;
-    // }
-
-    // this.isRunning = true;
-
-    // try {
     this.logger.log('Starting cache cleanup job');
 
     const startTime = Date.now();
@@ -96,48 +93,160 @@ export class CacheManagementService {
       this.logger.error('Cache cleanup job failed', error?.stack ?? error?.message ?? String(error));
       throw error;
     }
-    // } catch (error) {
-    //   this.logger.error('Cache cleanup cron job failed', error.stack);
-    // } finally {
-    //   this.isRunning = false;
-    // }
   }
 
-  //TODO i think i still want to do skip locked or whtaever here, lower the chances of collisions even more
-  //and increase refresh velocity
   async refreshStaleAccounts() {
-    // find stale rows
-    const staleAccounts = await this.accountRepository
-      .createQueryBuilder('c')
-      .where('c.lastCheckedAt < :staleTime OR c.lastCheckedAt IS NULL', {
-        staleTime: new Date(Date.now() - this.config.staleThresholdSeconds * 1000),
-      })
-      .andWhere('(c.refreshToken IS NULL OR c.lastCheckedAt < :reclaimDate)', {
-        reclaimDate: new Date(Date.now() - this.config.reclaimTimeoutMs),
-      })
-      .limit(100) // optional batch
-      .getMany();
+    const staleTime = new Date(Date.now() - this.config.staleThresholdSeconds * 1000);
+    const reclaimDate = new Date(Date.now() - this.config.reclaimTimeoutMs);
 
-    for (const cached of staleAccounts) {
-      await this.accountCacheService.refreshAccount(cached);
+    // Non-zero benefit, but mainly to ensure locks are released immediately
+    const accountTransactionMap = await this.dataSource.transaction(
+      async (manager) => {
+        const staleAccounts = await manager
+          .createQueryBuilder(CachedAccount, 'c')
+          .where('c.lastCheckedAt < :staleTime OR c.lastCheckedAt IS NULL', {
+            staleTime,
+          })
+          .andWhere('(c.refreshToken IS NULL OR c.lastCheckedAt < :reclaimDate)', {
+            reclaimDate,
+          })
+          .orderBy('c.lastCheckedAt', 'ASC')
+          .limit(this.config.batchSize)
+          .setLock('pessimistic_write')
+          .setOnLocked('skip_locked')
+          .getMany();
+
+        if (staleAccounts.length === 0) {
+          return new Map<CachedAccount, number[]>();
+        }
+
+        const accountIds = staleAccounts.map(a => a.id);
+
+        // Get all transaction associations for these accounts
+        // innerJoinAndSelect loads the full Transaction entity
+        const transactionAccounts = await manager
+          .createQueryBuilder(TransactionCachedAccount, 'tca')
+          .innerJoinAndSelect('tca.account', 'account')        // Load the account relation
+          .innerJoinAndSelect('tca.transaction', 't')           // Load the transaction relation
+          .where('account.id IN (:...accountIds)', { accountIds })
+          .getMany();
+
+        // Build map of CachedAccount -> transaction IDs
+        const map = new Map<CachedAccount, number[]>();
+        for (const account of staleAccounts) {
+          const txIds = transactionAccounts
+            .filter(ta => ta.account.id === account.id)
+            .map(ta => ta.transaction.id);
+          map.set(account, txIds);
+        }
+      }
+    );
+
+    if (accountTransactionMap.size === 0) {
+      return;
+    }
+
+    // Track which transactions need updates
+    const transactionsToUpdate = new Set<number>();
+
+    // Refresh outside the transaction
+    for (const [account, txIds] of accountTransactionMap) {
+      const wasRefreshed = await this.accountCacheService.refreshAccount(account);
+
+      if (wasRefreshed) {
+        txIds.forEach(txId => transactionsToUpdate.add(txId));
+      }
+    }
+
+    // Emit updates for affected transactions
+    if (transactionsToUpdate.size > 0) {
+      this.logger.log(
+        `Refreshed ${accountTransactionMap.size} nodes, updating ${transactionsToUpdate.size} transactions`
+      );
+
+      emitTransactionUpdate(
+        this.notificationsPublisher,
+        Array.from(transactionsToUpdate).map(id => ({ entityId: id }))
+      );
     }
   }
 
   async refreshStaleNodes() {
-    // find stale rows
-    const staleAccounts = await this.nodeRepository
-      .createQueryBuilder('c')
-      .where('c.lastCheckedAt < :staleTime OR c.lastCheckedAt IS NULL', {
-        staleTime: new Date(Date.now() - this.config.staleThresholdSeconds * 1000),
-      })
-      .andWhere('(c.refreshToken IS NULL OR c.lastCheckedAt < :reclaimDate)', {
-        reclaimDate: new Date(Date.now() - this.config.reclaimTimeoutMs),
-      })
-      .limit(100) // optional batch
-      .getMany();
+    const staleTime = new Date(Date.now() - this.config.staleThresholdSeconds * 1000);
+    const reclaimDate = new Date(Date.now() - this.config.reclaimTimeoutMs);
 
-    for (const cached of staleAccounts) {
-      await this.nodeCacheService.refreshNode(cached);
+    // Fetch stale nodes and their associated transactions in one transaction
+    const nodeTransactionMap = await this.dataSource.transaction(
+      async (manager) => {
+        // Get stale nodes with pessimistic lock
+        const staleNodes = await manager
+          .createQueryBuilder(CachedNode, 'c')
+          .where('c.lastCheckedAt < :staleTime OR c.lastCheckedAt IS NULL', {
+            staleTime,
+          })
+          .andWhere('(c.refreshToken IS NULL OR c.lastCheckedAt < :reclaimDate)', {
+            reclaimDate,
+          })
+          .orderBy('c.lastCheckedAt', 'ASC')
+          .limit(this.config.batchSize)
+          .setLock('pessimistic_write')
+          .setOnLocked('skip_locked')
+          .getMany();
+
+        if (staleNodes.length === 0) {
+          return new Map<CachedNode, number[]>();
+        }
+
+        const nodeIds = staleNodes.map(n => n.id);
+
+        // Get all transaction associations for these nodes
+        // innerJoinAndSelect loads the full Transaction entity
+        const transactionNodes = await manager
+          .createQueryBuilder(TransactionCachedNode, 'tcn')
+          .innerJoinAndSelect('tcn.node', 'node')        // Load the node relation
+          .innerJoinAndSelect('tcn.transaction', 't')     // Load the transaction relation
+          .where('node.id IN (:...nodeIds)', { nodeIds })
+          .getMany();
+
+        // Build map of CachedNode -> transaction IDs
+        const map = new Map<CachedNode, number[]>();
+        for (const node of staleNodes) {
+          const txIds = transactionNodes
+            .filter(tn => tn.node.id === node.id)
+            .map(tn => tn.transaction.id);
+          map.set(node, txIds);
+        }
+
+        return map;
+      }
+    );
+
+    if (nodeTransactionMap.size === 0) {
+      return;
+    }
+
+    // Track which transactions need updates
+    const transactionsToUpdate = new Set<number>();
+
+    // Refresh outside the transaction
+    for (const [node, txIds] of nodeTransactionMap) {
+      const wasRefreshed = await this.nodeCacheService.refreshNode(node);
+
+      if (wasRefreshed) {
+        txIds.forEach(txId => transactionsToUpdate.add(txId));
+      }
+    }
+
+    // Emit updates for affected transactions
+    if (transactionsToUpdate.size > 0) {
+      this.logger.log(
+        `Refreshed ${nodeTransactionMap.size} nodes, updating ${transactionsToUpdate.size} transactions`
+      );
+
+      emitTransactionUpdate(
+        this.notificationsPublisher,
+        Array.from(transactionsToUpdate).map(id => ({ entityId: id }))
+      );
     }
   }
 
@@ -217,11 +326,4 @@ export class CacheManagementService {
     this.logger.log(`Optimized cleanup removed ${removedCount} nodes`);
     return removedCount;
   }
-
-  // also, actual changes should fire off a transaciton_action thing. maybe not on create, but yes on the tohers (but not for each refresh, but for each job), so that should just be in the cron job stuff
-  // well, that's not entirely true if the api request catches something stale and updates it. then it would fire of fa transactionaction on its own. so, just add it to the api stuff (or leave it alone since creating a transaciton fires one off' +
-  // 'and we don't currenlty send of an action with transactions affected or what not)
-  //
-  // if it runs every 10 seconsd, though, how would that look? what are we talking about here anyway? i mean, 50 per sec, 10 sec. 500 requests max. could we hit that max? if so, then what? increase to 30 seconds? i guess it is actually
-  // 1500 requests if we have 3 replicas. I suppose it is a trade off we will need to take. Then we can add a manual mirrornode refresh button (with rate limits) that will trigger it manually for a specifica transaction
 }
