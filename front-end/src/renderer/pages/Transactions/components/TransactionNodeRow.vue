@@ -190,11 +190,12 @@ watch(() => props.node.description, () => {
     <!-- Column #2 : Transaction Type / Group -->
     <td :data-testid="`td-transaction-node-transaction-type-${index}`" class="text-bold">
       {{ transactionType }}
+      <span v-if="props.node.isManual" class="badge bg-info ms-3">Manual</span>
     </td>
 
     <!-- Column #3 : Description -->
     <td>
-      <span 
+      <span
         ref="descriptionRef"
         class="text-wrap-two-line-ellipsis"
         :data-bs-toggle="isTruncated ? 'tooltip' : ''"
