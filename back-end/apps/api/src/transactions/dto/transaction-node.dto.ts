@@ -36,6 +36,9 @@ export class TransactionNodeDto implements ITransactionNode {
   transactionType?: string;
 
   @Expose()
+  isManual?: boolean;
+
+  @Expose()
   groupItemCount?: number;
 
   @Expose()
