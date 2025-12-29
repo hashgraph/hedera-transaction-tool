@@ -10,6 +10,7 @@ export interface ITransactionNode {   //   Single   Group
   statusCode?: number;                //      x
   sdkTransactionId?: string;          //      x
   transactionType?: string;           //      x
+  isManual?: boolean;                 //      x
   groupItemCount?: number;            //              x
   groupCollectedCount?: number;       //              x
 }
@@ -38,6 +39,7 @@ export enum TransactionNodeCollection {
     statusCode       | tx status code     | undefined            |
     sdkTransactionId | hiero tx id        | undefined            |
     transactionType  | tx type            | undefined            |
+    isManual         | tx is manual       | undefined            |
     groupItemCount   | 0                  | group item count     |
 
  */
