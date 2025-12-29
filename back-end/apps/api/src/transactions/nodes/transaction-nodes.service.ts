@@ -131,6 +131,7 @@ export class TransactionNodesService {
           node.isManual = t.isManual;
           node.groupItemCount = undefined;
           node.groupCollectedCount = undefined;
+          node.externalSignerCount = 0;
           result.push(node);
         }
       } else {
@@ -150,6 +151,7 @@ export class TransactionNodesService {
         node.isManual = undefined;
         node.groupItemCount = group.groupItems.length;
         node.groupCollectedCount = transactions.length;
+        node.externalSignerCount = 0;
         result.push(node);
       }
     }
