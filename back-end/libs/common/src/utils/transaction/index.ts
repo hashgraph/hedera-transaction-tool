@@ -1,4 +1,4 @@
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import { EntityManager, In, Repository } from 'typeorm';
 
@@ -11,12 +11,7 @@ import {
   smartCollate,
 } from '@app/common';
 
-import {
-  User,
-  Transaction,
-  UserKey,
-  TransactionStatus,
-} from '@entities';
+import { User, Transaction, UserKey, TransactionStatus } from '@entities';
 
 export const keysRequiredToSign = async (
   transaction: Transaction,
@@ -33,7 +28,11 @@ export const keysRequiredToSign = async (
   // list of just public keys that have already signed the transaction
   const signerKeys = sdkTransaction._signerPublicKeys;
 
-  const signature = await computeSignatureKey(sdkTransaction, mirrorNodeService, transaction.mirrorNetwork);
+  const signature = await computeSignatureKey(
+    sdkTransaction,
+    mirrorNodeService,
+    transaction.mirrorNetwork,
+  );
   // flatten the key list to an array of public keys
   // and filter out any keys that have already signed the transaction
   const flatPublicKeys = flattenKeyList(signature)
@@ -47,9 +46,7 @@ export const keysRequiredToSign = async (
   // this way a user requesting required keys will only see their own keys that are required
   // Otherwise, fetch all UserKeys that are in flatPublicKeys
   if (userKeys) {
-    results = userKeys.filter(publicKey =>
-        flatPublicKeys.includes(publicKey.publicKey)
-    );
+    results = userKeys.filter(publicKey => flatPublicKeys.includes(publicKey.publicKey));
   } else {
     if (cache) {
       const cachedKeys: Set<UserKey> = new Set();
@@ -133,10 +130,7 @@ export async function processTransactionStatus(
       transaction.mirrorNetwork,
     );
 
-    const isAbleToSign = hasValidSignatureKey(
-      [...sdkTransaction._signerPublicKeys],
-      signatureKey
-    );
+    const isAbleToSign = hasValidSignatureKey([...sdkTransaction._signerPublicKeys], signatureKey);
 
     let newStatus = TransactionStatus.WAITING_FOR_SIGNATURES;
 
@@ -164,10 +158,114 @@ export async function processTransactionStatus(
   if (updatesByStatus.size > 0) {
     await Promise.all(
       Array.from(updatesByStatus.entries()).map(([status, ids]) =>
-        transactionRepo.update({ id: In(ids) }, { status })
-      )
+        transactionRepo.update({ id: In(ids) }, { status }),
+      ),
     );
   }
 
   return statusChanges;
+}
+
+export interface SigningReport {
+  internalSigners: Set<String>;
+  externalSigners: Set<String>;
+  internalSignatures: Set<String>;
+  externalSignatures: Set<String>;
+  unexpectedSignatures: Set<String>;
+}
+
+export async function produceSigningReport(
+  transaction: Transaction,
+  mirrorNodeService: MirrorNodeService,
+  mirrorNetwork: string,
+  entityManager: EntityManager,
+): Promise<SigningReport> {
+  const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
+
+  // Lists public keys that have already signed the transaction
+  const signatureKeys = sdkTransaction._signerPublicKeys;
+
+  // Lists sdk keys that needs to sign the transaction
+  const sdkKeyList = await computeSignatureKey(sdkTransaction, mirrorNodeService, mirrorNetwork);
+  const signerKeys = new Set<string>();
+  for (const k of sdkKeyList) {
+    if (k instanceof PublicKey) {
+      signerKeys.add(k.toStringRaw());
+    } else {
+      throw new Error('k should be a PublicKey instance');
+    }
+  }
+
+  // Filters signers and signatures
+  let internalSigners = new Set<string>();
+  let externalSigners = new Set<string>();
+  let internalSignatures = new Set<string>();
+  let externalSignatures = new Set<string>();
+  for (const k of signerKeys) {
+    const signed = signatureKeys.has(k);
+    const userId = await findUserByKey(k, entityManager);
+    if (signed) {
+      // Transaction is already signed with k
+      if (userId !== null) {
+        internalSignatures.add(k);
+      } else {
+        externalSignatures.add(k);
+      }
+    } else {
+      // Transaction is not signed with k yet
+      if (userId !== null) {
+        internalSigners.add(k);
+      } else {
+        externalSigners.add(k);
+      }
+    }
+  }
+  let unexpectedSignatures = new Set<string>();
+  for (const k of signatureKeys) {
+    if (!signerKeys.has(k)) {
+      // Transaction is signed with k but this is not expected
+      unexpectedSignatures.add(k);
+    }
+  }
+
+  return {
+    internalSigners,
+    externalSigners,
+    internalSignatures,
+    externalSignatures,
+    unexpectedSignatures,
+  };
+}
+
+export async function produceSigningReportForArray(
+  transactions: Transaction[],
+  mirrorNodeService: MirrorNodeService,
+  mirrorNetwork: string,
+  entityManager: EntityManager,
+): Promise<SigningReport> {
+  const result: SigningReport = {
+    internalSigners: new Set<string>(),
+    externalSigners: new Set<string>(),
+    internalSignatures: new Set<string>(),
+    externalSignatures: new Set<string>(),
+    unexpectedSignatures: new Set<string>(),
+  };
+
+  for (const t of transactions) {
+    const r = await produceSigningReport(t, mirrorNodeService, mirrorNetwork, entityManager);
+    r.internalSigners.forEach(s => result.internalSigners.add(s));
+    r.externalSigners.forEach(s => result.externalSigners.add(s));
+    r.internalSignatures.forEach(s => result.internalSignatures.add(s));
+    r.externalSignatures.forEach(s => result.externalSignatures.add(s));
+    r.unexpectedSignatures.forEach(s => result.unexpectedSignatures.add(s));
+  }
+
+  return result;
+}
+
+async function findUserByKey(publicKey: string, entityManager: EntityManager): Promise<number|null> {
+  const userKey = await entityManager.find(UserKey, {
+    where: {publicKey: publicKey, deletedAt: null }
+  })
+  return userKey[0]?.userId ?? null;
 }
