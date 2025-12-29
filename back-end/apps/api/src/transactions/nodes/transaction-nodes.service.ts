@@ -1,11 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { Transaction, TransactionStatus, TransactionType, User } from '@entities';
-import { Filtering, Pagination } from '@app/common';
+import {
+  Filtering,
+  MirrorNodeService,
+  Pagination,
+  produceSigningReport,
+  produceSigningReportForArray,
+} from '@app/common';
 import { TransactionNodeDto } from '../dto';
 import { TransactionNodeCollection } from '../dto/ITransactionNode';
 import { TransactionsService } from '../transactions.service';
 import { TransactionGroupsService } from '../groups';
 import { compareTransactionNodes } from './transaction-nodes.util';
+import { Transaction as SDKTransaction } from '@hashgraph/sdk/lib/exports';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
 const PAGINATION_ALL: Pagination = {
   page: 0,
@@ -19,6 +28,8 @@ export class TransactionNodesService {
   constructor(
     private readonly transactionsService: TransactionsService,
     private readonly transactionGroupsService: TransactionGroupsService,
+    private readonly mirrorNodeService: MirrorNodeService,
+    @InjectDataSource() private dataSource: DataSource,
   ) {}
 
   async getTransactionNodes(
@@ -116,6 +127,12 @@ export class TransactionNodesService {
       if (groupId === -1) {
         // transactions contains the single transactions
         for (const t of transactions) {
+          const signingReport = await produceSigningReport(
+            t,
+            this.mirrorNodeService,
+            network,
+            this.dataSource.manager,
+          );
           const node = new TransactionNodeDto();
           node.transactionId = t.id;
           node.groupId = undefined;
@@ -131,11 +148,21 @@ export class TransactionNodesService {
           node.isManual = t.isManual;
           node.groupItemCount = undefined;
           node.groupCollectedCount = undefined;
-          node.externalSignerCount = 0;
+          node.internalSignerCount = signingReport.internalSigners.size;
+          node.externalSignerCount = signingReport.externalSigners.size;
+          node.internalSignatureCount = signingReport.internalSignatures.size;
+          node.externalSignatureCount = signingReport.externalSignatures.size;
+          node.unexpectedSignatureCount = signingReport.unexpectedSignatures.size;
           result.push(node);
         }
       } else {
         const group = await this.transactionGroupsService.getTransactionGroup(user, groupId);
+        const signingReport = await produceSigningReportForArray(
+          transactions,
+          this.mirrorNodeService,
+          network,
+          this.dataSource.manager,
+        );
         const node = new TransactionNodeDto();
         node.transactionId = undefined;
         node.groupId = groupId;
@@ -151,7 +178,11 @@ export class TransactionNodesService {
         node.isManual = undefined;
         node.groupItemCount = group.groupItems.length;
         node.groupCollectedCount = transactions.length;
-        node.externalSignerCount = 0;
+        node.internalSignerCount = signingReport.internalSigners.size;
+        node.externalSignerCount = signingReport.externalSigners.size;
+        node.internalSignatureCount = signingReport.internalSignatures.size;
+        node.externalSignatureCount = signingReport.externalSignatures.size;
+        node.unexpectedSignatureCount = signingReport.unexpectedSignatures.size;
         result.push(node);
       }
     }

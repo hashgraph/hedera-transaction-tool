@@ -552,6 +552,11 @@ describe('TransactionNodesService', () => {
   singleTransactionNode1.isManual = singleTransaction1.isManual;
   singleTransactionNode1.groupItemCount = undefined;
   singleTransactionNode1.groupCollectedCount = undefined;
+  singleTransactionNode1.internalSignerCount = 0;
+  singleTransactionNode1.internalSignatureCount = 0;
+  singleTransactionNode1.externalSignerCount = 0;
+  singleTransactionNode1.externalSignatureCount = 0;
+  singleTransactionNode1.unexpectedSignatureCount = 0;
 
   const singleTransactionNode2 = new TransactionNodeDto();
   singleTransactionNode2.transactionId = singleTransaction2.id;
@@ -568,6 +573,11 @@ describe('TransactionNodesService', () => {
   singleTransactionNode2.isManual = singleTransaction2.isManual;
   singleTransactionNode2.groupItemCount = undefined;
   singleTransactionNode2.groupCollectedCount = undefined;
+  singleTransactionNode2.internalSignerCount = 0;
+  singleTransactionNode2.internalSignatureCount = 0;
+  singleTransactionNode2.externalSignerCount = 0;
+  singleTransactionNode2.externalSignatureCount = 0;
+  singleTransactionNode2.unexpectedSignatureCount = 0;
 
   const groupNode1 = new TransactionNodeDto();
   groupNode1.transactionId = undefined;
@@ -584,6 +594,11 @@ describe('TransactionNodesService', () => {
   groupNode1.isManual = undefined;
   groupNode1.groupItemCount = 2;
   groupNode1.groupCollectedCount = 2;
+  groupNode1.internalSignerCount = 0;
+  groupNode1.internalSignatureCount = 0;
+  groupNode1.externalSignerCount = 0;
+  groupNode1.externalSignatureCount = 0;
+  groupNode1.unexpectedSignatureCount = 0;
 
   const groupNode2 = new TransactionNodeDto();
   groupNode2.transactionId = undefined;
@@ -600,6 +615,11 @@ describe('TransactionNodesService', () => {
   groupNode2.isManual = undefined;
   groupNode2.groupItemCount = 2;
   groupNode2.groupCollectedCount = 2;
+  groupNode2.internalSignerCount = 0;
+  groupNode2.internalSignatureCount = 0;
+  groupNode2.externalSignerCount = 0;
+  groupNode2.externalSignatureCount = 0;
+  groupNode2.unexpectedSignatureCount = 0;
 
   const groupNode3 = new TransactionNodeDto();
   groupNode3.transactionId = undefined;
@@ -616,6 +636,11 @@ describe('TransactionNodesService', () => {
   groupNode3.isManual = undefined;
   groupNode3.groupItemCount = 1;
   groupNode3.groupCollectedCount = 1;
+  groupNode3.internalSignerCount = 0;
+  groupNode3.internalSignatureCount = 0;
+  groupNode3.externalSignerCount = 0;
+  groupNode3.externalSignatureCount = 0;
+  groupNode3.unexpectedSignatureCount = 0;
 
   const allNodes = [
     groupNode1,
