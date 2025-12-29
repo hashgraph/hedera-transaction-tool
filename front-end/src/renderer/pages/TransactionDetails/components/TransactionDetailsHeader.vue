@@ -55,12 +55,14 @@ import { TransactionStatus } from '@shared/interfaces';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+import ExternalSigningActionModal from '@renderer/components/ExternalSigning/ExternalSigningActionModal.vue';
 
 /* Types */
 type ActionButton =
   | 'Reject'
   | 'Approve'
   | 'Sign'
+  | 'External Signing'
   | 'Previous'
   | 'Next'
   | 'Cancel'
@@ -73,6 +75,7 @@ type ActionButton =
 const reject: ActionButton = 'Reject';
 const approve: ActionButton = 'Approve';
 const sign: ActionButton = 'Sign';
+const externalSigning: ActionButton = 'External Signing';
 const previous: ActionButton = 'Previous';
 const next: ActionButton = 'Next';
 const cancel: ActionButton = 'Cancel';
@@ -81,11 +84,12 @@ const remindSignersLabel: ActionButton = 'Remind Signers';
 const archive: ActionButton = 'Archive';
 const exportName: ActionButton = 'Export';
 
-const primaryButtons: ActionButton[] = [reject, approve, sign, next];
+const primaryButtons: ActionButton[] = [reject, approve, sign, externalSigning, next];
 const buttonsDataTestIds: { [key: string]: string } = {
   [reject]: 'button-reject-org-transaction',
   [approve]: 'button-approve-org-transaction',
   [sign]: 'button-sign-org-transaction',
+  [externalSigning]: 'button-request-signature-org-transaction',
   [previous]: 'button-previous-org-transaction',
   [next]: 'button-next-org-transaction',
   [cancel]: 'button-cancel-org-transaction',
@@ -143,6 +147,8 @@ const confirmModalText = ref('');
 const confirmModalButtonText = ref('');
 const confirmModalLoadingText = ref('');
 const confirmCallback = ref<((...args: any[]) => void) | null>(null);
+
+const isExternalSigningModalShow = ref(false);
 
 const fullyLoaded = ref(false);
 const loadingStates = reactive<{ [key: string]: string | null }>({
@@ -202,6 +208,21 @@ const canSign = computed(() => {
   );
 });
 
+const canRequestSignature = computed(() => {
+  // TODO - use this once the backend supports external signatures
+  // const externalSignerCount = props.organizationTransaction?.externalSignerCount ?? 0;
+  // const externalSignatureCount = props.organizationTransaction?.externalSignatureCount ?? 0;
+
+  // For testing purposes
+  const externalSignerCount = 1;
+  const externalSignatureCount = 0;
+
+  return (
+    props.organizationTransaction?.status === TransactionStatus.WAITING_FOR_SIGNATURES &&
+    externalSignerCount > externalSignatureCount
+  );
+});
+
 const canExecute = computed(() => {
   const status = props.organizationTransaction?.status;
   const isManual = props.organizationTransaction?.isManual;
@@ -229,6 +250,7 @@ const visibleButtons = computed(() => {
   /* The order is important REJECT, APPROVE, SIGN, SUBMIT, PREVIOUS, NEXT, CANCEL, ARCHIVE, EXPORT */
   shouldApprove.value && buttons.push(reject, approve);
   canSign.value && !shouldApprove.value && buttons.push(sign);
+  canRequestSignature.value && buttons.push(externalSigning);
   canExecute.value && buttons.push(execute);
   // if (isLargeScreen.value) {
   //   props.previousId && buttons.push(previous);
@@ -305,6 +327,10 @@ const handleSign = async () => {
     loadingStates[sign] = null;
   }
 };
+
+const handleExternalSigning = async () => {
+  isExternalSigningModalShow.value = true;
+}
 
 const handleApprove = async (approved: boolean, showModal?: boolean) => {
   if (!approved && showModal) {
@@ -572,6 +598,8 @@ const handleAction = async (value: ActionButton) => {
     await handleApprove(true, true);
   } else if (value === sign) {
     await handleSign();
+  } else if (value === externalSigning) {
+    await handleExternalSigning();
   } else if (value === next) {
     handleNext();
   } else if (value === previous) {
@@ -766,4 +794,7 @@ watch(
     :text="confirmModalText"
     :title="confirmModalTitle"
   />
+
+  <ExternalSigningActionModal v-model:show="isExternalSigningModalShow" />
+
 </template>

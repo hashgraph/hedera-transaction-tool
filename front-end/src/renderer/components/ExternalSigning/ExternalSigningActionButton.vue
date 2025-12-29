@@ -14,7 +14,7 @@ const isModalShow = ref(false);
     type="button"
     @click.prevent="isModalShow = true"
   >
-    Request External Signing
+    External Signing
   </AppButton>
   <ExternalSigningActionModal v-model:show="isModalShow" />
 </template>
