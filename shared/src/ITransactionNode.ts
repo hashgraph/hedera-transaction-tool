@@ -16,7 +16,11 @@ export interface ITransactionNode {   //   Single   Group
   isManual?: boolean;                 //      x
   groupItemCount?: number;            //              x
   groupCollectedCount?: number;       //              x
+  internalSignerCount: number;        //      x       x
+  internalSignatureCount: number;     //      x       x
   externalSignerCount: number;        //      x       x
+  externalSignatureCount: number;     //      x       x
+  unexpectedSignatureCount: number;   //      x       x
 }
 
 export enum TransactionNodeCollection {
