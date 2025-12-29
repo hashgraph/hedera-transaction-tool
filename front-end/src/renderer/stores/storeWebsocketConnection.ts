@@ -52,7 +52,11 @@ const useWebsocketConnection = defineStore('websocketConnection', (): WebsocketC
 
       try {
         const url = serverUrl.includes('localhost') ? getLocalWebsocketPath(serverUrl) : serverUrl;
+        const socket = connect(serverUrl, url);
         newSockets[serverUrl] = connect(serverUrl, url);
+        if (socket.connected) {
+          orgConnection.setConnectionStatus(serverUrl, 'live');
+        }
       } catch (error) {
         console.error(`Failed to connect to server ${serverUrl}:`, error);
         disconnect(serverUrl);
@@ -125,6 +129,11 @@ const useWebsocketConnection = defineStore('websocketConnection', (): WebsocketC
     socket.on('connect', () => {
       console.log(`Connected to server ${wsUrl} with id: ${socket?.id}`);
       connectionStates.value[serverUrl] = 'connected';
+      if (socket.connected) {
+        orgConnection.setConnectionStatus(serverUrl, 'live');
+      } else {
+        orgConnection.setConnectionStatus(serverUrl, 'connected');
+      }
     });
 
     socket.on('connect_error', error => {
@@ -134,6 +143,7 @@ const useWebsocketConnection = defineStore('websocketConnection', (): WebsocketC
         );
         socket.disconnect();
         connectionStates.value[serverUrl] = 'disconnected';
+        orgConnection.setConnectionStatus(serverUrl, 'disconnected', 'upgradeRequired');
         return;
       }
 
@@ -143,6 +153,10 @@ const useWebsocketConnection = defineStore('websocketConnection', (): WebsocketC
       } else {
         console.log(`Socket for ${serverUrl}: ${error.message}`);
         connectionStates.value[serverUrl] = 'disconnected';
+        const currentStatus = orgConnection.getConnectionStatus(serverUrl);
+        if (currentStatus !== 'disconnected') {
+          orgConnection.setConnectionStatus(serverUrl, 'disconnected', 'error');
+        }
       }
     });
 
@@ -153,6 +167,10 @@ const useWebsocketConnection = defineStore('websocketConnection', (): WebsocketC
       } else {
         console.log(`Socket for ${serverUrl}: ${reason}`);
         connectionStates.value[serverUrl] = 'disconnected';
+        const currentReason = orgConnection.getDisconnectReason(serverUrl);
+        if (currentReason !== 'upgradeRequired' && currentReason !== 'compatibilityConflict') {
+          orgConnection.setConnectionStatus(serverUrl, 'disconnected', 'error');
+        }
       }
     });
   }

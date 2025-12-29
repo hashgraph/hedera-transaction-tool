@@ -82,7 +82,6 @@ const handleReconnect = async () => {
 const handleDisconnect = async () => {
   await disconnectOrganization(props.organization.serverUrl, 'manual');
   emit('disconnect');
-  toast.info(`Disconnected from ${props.organization.nickname || props.organization.serverUrl}`);
 };
 </script>
 <template>

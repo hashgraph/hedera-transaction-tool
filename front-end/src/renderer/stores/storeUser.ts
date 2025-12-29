@@ -26,11 +26,14 @@ import * as ush from '@renderer/utils/userStoreHelpers';
 import useNetworkStore from './storeNetwork';
 import useOrganizationConnection from './storeOrganizationConnection';
 import { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
+import { useToast } from 'vue-toast-notification';
+import { warningToastOptions } from '@renderer/utils/toastOptions';
 
 const useUserStore = defineStore('user', () => {
   /* Stores */
   const network = useNetworkStore();
   const orgConnection = useOrganizationConnection();
+  const toast = useToast();
 
   /* Composables */
   const afterOrganizationSelection = useAfterOrganizationSelection();
@@ -193,8 +196,14 @@ const useUserStore = defineStore('user', () => {
 
       // Prevent selecting organizations that are disconnected due to upgrade requirement
       if (connectionStatus === 'disconnected' && disconnectReason === 'upgradeRequired') {
+        const orgName = organization.nickname || organization.serverUrl;
         console.warn(
-          `[${new Date().toISOString()}] Cannot select disconnected organization: ${organization.nickname || organization.serverUrl} (Reason: ${disconnectReason})`,
+          `[${new Date().toISOString()}] Cannot select disconnected organization: ${orgName} (Reason: ${disconnectReason})`,
+        );
+
+        toast.info(
+          `Cannot select disconnected organization: "${orgName}". An organization update is required.`,
+          warningToastOptions,
         );
         // Auto-switch to another connected organization or personal mode
         const connectedOrg = organizations.value.find(

@@ -89,6 +89,10 @@ const handleAdd = async () => {
       throw new Error('Organization does not exist. Please check the server URL');
     }
 
+    const allVersionData = getAllOrganizationVersionData();
+    const versionData = allVersionData[serverUrl.value];
+    const requiresUpdate = versionData && isVersionBelowMinimum(versionData);
+    
     const organization = await addOrganization({
       nickname: nickname.value.trim() || `Organization ${user.organizations.length + 1}`,
       serverUrl: serverUrl.value,
@@ -97,30 +101,40 @@ const handleAdd = async () => {
 
     newOrgNickname.value = organization.nickname || serverUrl.value;
 
-    try {
-      const versionResponse = await checkVersion(serverUrl.value, FRONTEND_VERSION);
-
-      storeVersionDataForOrganization(serverUrl.value, versionResponse);
-
-      if (versionResponse.updateUrl) {
-        const compatResult = await checkCompatibilityForNewOrg(serverUrl.value, versionResponse);
-
-        organizationCompatibilityResults.value[serverUrl.value] = compatResult;
-
-        if (compatResult.hasConflict) {
-          compatibilityResult.value = compatResult;
-          showCompatibilityWarning.value = true;
-          return;
-        }
-
-        if (isVersionBelowMinimum(versionResponse)) {
-          setVersionBelowMinimum(serverUrl.value, versionResponse.updateUrl);
-        } else {
-          setVersionStatusForOrg(serverUrl.value, 'updateAvailable');
-        }
+    if (versionData) {
+      storeVersionDataForOrganization(serverUrl.value, versionData);
+      
+      if (requiresUpdate) {
+        setVersionBelowMinimum(serverUrl.value, versionData.updateUrl);
+      } else if (versionData.updateUrl) {
+        setVersionStatusForOrg(serverUrl.value, 'updateAvailable');
       }
-    } catch (versionError) {
-      console.error('Version check failed for new organization:', versionError);
+    } else {
+      try {
+        const versionResponse = await checkVersion(serverUrl.value, FRONTEND_VERSION);
+
+        storeVersionDataForOrganization(serverUrl.value, versionResponse);
+
+        if (versionResponse.updateUrl) {
+          const compatResult = await checkCompatibilityForNewOrg(serverUrl.value, versionResponse);
+
+          organizationCompatibilityResults.value[serverUrl.value] = compatResult;
+
+          if (compatResult.hasConflict) {
+            compatibilityResult.value = compatResult;
+            showCompatibilityWarning.value = true;
+            return;
+          }
+
+          if (isVersionBelowMinimum(versionResponse)) {
+            setVersionBelowMinimum(serverUrl.value, versionResponse.updateUrl);
+          } else {
+            setVersionStatusForOrg(serverUrl.value, 'updateAvailable');
+          }
+        }
+      } catch (versionError) {
+        console.error('Version check failed for new organization:', versionError);
+      }
     }
 
     toast.success('Organization Added', successToastOptions);

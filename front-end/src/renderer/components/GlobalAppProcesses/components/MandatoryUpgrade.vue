@@ -122,11 +122,6 @@ const handleDisconnect = async () => {
       // Reset version status for this org (will auto-select next org if multiple require updates)
       resetVersionStatusForOrg(org.serverUrl);
 
-      toast.info(
-        `Disconnected from ${org.nickname || org.serverUrl}. Update required to reconnect.`,
-        errorToastOptions,
-      );
-
       console.log(
         `[${new Date().toISOString()}] DISCONNECT Organization: ${org.nickname || org.serverUrl} (Server: ${org.serverUrl})`,
       );
