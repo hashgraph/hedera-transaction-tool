@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron';
-import { TransactionFile } from '@shared/interfaces';
+import type { TransactionFile } from '@shared/interfaces';
 
 export default {
   transactionFile: {
