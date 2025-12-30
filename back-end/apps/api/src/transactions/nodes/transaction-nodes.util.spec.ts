@@ -16,6 +16,7 @@ const singleNode1: ITransactionNode = {
   statusCode: undefined,
   sdkTransactionId: '0.0.123@15648433.112315',
   transactionType: 'CREATE ACCOUNT',
+  isManual: false,
   groupItemCount: undefined,
   groupCollectedCount: undefined,
 };
@@ -34,6 +35,7 @@ const singleNode2: ITransactionNode = {
   statusCode: undefined,
   sdkTransactionId: '0.0.123@15648433.231511',
   transactionType: 'CREATE ACCOUNT',
+  isManual: false,
   groupItemCount: undefined,
   groupCollectedCount: undefined,
 };
@@ -52,6 +54,7 @@ const groupNode1: ITransactionNode = {
   statusCode: undefined,
   sdkTransactionId: undefined,
   transactionType: undefined,
+  isManual: undefined,
   groupItemCount: 42,
   groupCollectedCount: 21,
 };
@@ -70,6 +73,7 @@ const groupNode2: ITransactionNode = {
   statusCode: undefined,
   sdkTransactionId: undefined,
   transactionType: undefined,
+  isManual: undefined,
   groupItemCount: 21,
   groupCollectedCount: 10,
 };
@@ -90,6 +94,7 @@ const malformedNode: ITransactionNode = {
   statusCode: undefined,
   sdkTransactionId: undefined,
   transactionType: undefined,
+  isManual: undefined,
   groupItemCount: 21,
   groupCollectedCount: 10,
 }

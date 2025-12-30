@@ -128,6 +128,7 @@ export class TransactionNodesService {
           node.statusCode = t.statusCode;
           node.sdkTransactionId = t.transactionId;
           node.transactionType = t.type;
+          node.isManual = t.isManual;
           node.groupItemCount = undefined;
           node.groupCollectedCount = undefined;
           result.push(node);
@@ -146,6 +147,7 @@ export class TransactionNodesService {
         node.statusCode = calculateStatusCodeForGroup(transactions);
         node.sdkTransactionId = undefined;
         node.transactionType = undefined;
+        node.isManual = undefined;
         node.groupItemCount = group.groupItems.length;
         node.groupCollectedCount = transactions.length;
         result.push(node);

@@ -74,6 +74,7 @@ describe('TransactionNodesController', () => {
       statusCode: undefined,
       sdkTransactionId: '0.0.123@15648433.112315',
       transactionType: 'TRANSFER TRANSACTION',
+      isManual: false,
       groupItemCount: undefined,
       groupCollectedCount: undefined,
     };
