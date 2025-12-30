@@ -1,4 +1,8 @@
-import type { ITransaction, ITransactionFull } from '@shared/interfaces';
+import type {
+  ITransaction,
+  ITransactionFull,
+  TransactionFile,
+} from '@shared/interfaces';
 import type { PrivateKey } from '@hashgraph/sdk';
 
 import { Transaction } from '@hashgraph/sdk';
@@ -76,7 +80,26 @@ export const getTransactionGroupById = async (serverUrl: string, id: number) => 
   }, 'Failed to get transaction groups');
 };
 
-export const generateTransactionExportContent = async (
+export const generateTransactionExportContentV2 = (
+  orgTransactions: ITransactionFull[],
+): TransactionFile => {
+
+  const result: TransactionFile = {
+    items: [],
+  }
+  for (const tx of orgTransactions) {
+    result.items.push({
+      name: tx.name,
+      description: tx.description,
+      transactionBytes: tx.transactionBytes,
+      mirrorNetwork: tx.mirrorNetwork,
+      creatorEmail: tx.creatorEmail,
+    })
+  }
+  return result;
+}
+
+export const generateTransactionExportContentV1 = async (
   orgTransaction: ITransactionFull,
   key: PrivateKey,
   defaultDescription?: string

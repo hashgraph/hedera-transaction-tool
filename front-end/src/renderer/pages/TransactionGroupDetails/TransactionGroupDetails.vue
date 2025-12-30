@@ -24,7 +24,7 @@ import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscrip
 import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
 import {
-  generateTransactionExportContent,
+  generateTransactionExportContentV1,
   generateTransactionExportFileName,
   getTransactionById,
   getTransactionGroupById,
@@ -421,7 +421,7 @@ const handleExportGroup = async () => {
 
       const baseName = generateTransactionExportFileName(orgTransaction);
 
-      const { signedBytes, jsonContent } = await generateTransactionExportContent(
+      const { signedBytes, jsonContent } = await generateTransactionExportContentV1(
         orgTransaction,
         privateKey,
         group.value.description,
