@@ -1,22 +1,20 @@
 import { Transaction } from '@hashgraph/sdk';
 import { TransactionBaseModel } from './transaction-base.model';
 import { getTransactionType } from '@app/common';
-import {
-  AccountAllowanceApproveTransactionModel,
-  AccountCreateTransactionModel,
-  AccountDeleteTransactionModel,
-  AccountUpdateTransactionModel,
-  FileAppendTransactionModel,
-  FileCreateTransactionModel,
-  FileUpdateTransactionModel,
-  FreezeTransactionModel,
-  NodeCreateTransactionModel,
-  NodeDeleteTransactionModel,
-  NodeUpdateTransactionModel,
-  SystemDeleteTransactionModel,
-  SystemUndeleteTransactionModel,
-  TransferTransactionModel,
-} from '.';
+import { AccountAllowanceApproveTransactionModel } from './account-allowance-approve-transaction.model';
+import { AccountCreateTransactionModel } from './account-create-transaction.model';
+import { AccountDeleteTransactionModel } from './account-delete-transaction.model';
+import { AccountUpdateTransactionModel } from './account-update-transaction.model';
+import { FileAppendTransactionModel } from './file-append-transaction.model';
+import { FileCreateTransactionModel } from './file-create-transaction.model';
+import { FileUpdateTransactionModel } from './file-update-transaction.model';
+import { FreezeTransactionModel } from './freeze-transaction.model';
+import { NodeCreateTransactionModel } from './node-create-transaction.model';
+import { NodeDeleteTransactionModel } from './node-delete-transaction.model';
+import { NodeUpdateTransactionModel } from './node-update-transaction.model';
+import { SystemDeleteTransactionModel } from './system-delete-transaction.model';
+import { SystemUndeleteTransactionModel } from './system-undelete-transaction.model';
+import { TransferTransactionModel } from './transfer-transaction.model';
 
 type TxModelCtor = new (tx: Transaction) => TransactionBaseModel<any>;
 

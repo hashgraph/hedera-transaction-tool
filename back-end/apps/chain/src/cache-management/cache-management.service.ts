@@ -12,16 +12,12 @@ import {
 } from '@entities';
 import { emitTransactionUpdate, AccountCacheService, NatsPublisherService, NodeCacheService } from '@app/common';
 
-interface CacheRefreshConfig {
-  staleThresholdSeconds: number;
-  batchSize: number;
-  reclaimTimeoutMs: number;
-}
-
 @Injectable()
 export class CacheManagementService {
   private readonly logger = new Logger(CacheManagementService.name);
-  private readonly config: CacheRefreshConfig;
+  private readonly staleThresholdMs: number;
+  private readonly batchSize: number;
+  private readonly reclaimTimeoutMs: number
 
   constructor(
     @InjectDataSource()
@@ -35,11 +31,9 @@ export class CacheManagementService {
     private readonly configService: ConfigService,
     private readonly notificationsPublisher: NatsPublisherService,
   ) {
-    this.config = {
-      staleThresholdSeconds: this.configService.get<number>('CACHE_STALE_THRESHOLD_SECONDS', 10),
-      batchSize: this.configService.get<number>('CACHE_REFRESH_BATCH_SIZE', 100),
-      reclaimTimeoutMs: this.configService.get<number>('CACHE_RECLAIM_TIMEOUT_MS', 2 * 60 * 1000),
-    };
+    this.staleThresholdMs =  this.configService.get<number>('CACHE_STALE_THRESHOLD_MS', 10 * 1000);
+    this.batchSize =  this.configService.get<number>('CACHE_REFRESH_BATCH_SIZE', 100);
+    this.reclaimTimeoutMs = this.configService.get<number>('CACHE_RECLAIM_TIMEOUT_MS', 2 * 60 * 1000);
   }
 
   //TODO when we add the manual mirrornode sync feature, we can probably increase this from 30 seconds to a few minutes or something,
@@ -96,8 +90,8 @@ export class CacheManagementService {
   }
 
   async refreshStaleAccounts() {
-    const staleTime = new Date(Date.now() - this.config.staleThresholdSeconds * 1000);
-    const reclaimDate = new Date(Date.now() - this.config.reclaimTimeoutMs);
+    const staleTime = new Date(Date.now() - this.staleThresholdMs);
+    const reclaimDate = new Date(Date.now() - this.reclaimTimeoutMs);
 
     // Non-zero benefit, but mainly to ensure locks are released immediately
     const accountTransactionMap = await this.dataSource.transaction(
@@ -111,7 +105,7 @@ export class CacheManagementService {
             reclaimDate,
           })
           .orderBy('c.lastCheckedAt', 'ASC')
-          .limit(this.config.batchSize)
+          .limit(this.batchSize)
           .setLock('pessimistic_write')
           .setOnLocked('skip_locked')
           .getMany();
@@ -139,6 +133,8 @@ export class CacheManagementService {
             .map(ta => ta.transaction.id);
           map.set(account, txIds);
         }
+
+        return map;
       }
     );
 
@@ -172,8 +168,8 @@ export class CacheManagementService {
   }
 
   async refreshStaleNodes() {
-    const staleTime = new Date(Date.now() - this.config.staleThresholdSeconds * 1000);
-    const reclaimDate = new Date(Date.now() - this.config.reclaimTimeoutMs);
+    const staleTime = new Date(Date.now() - this.staleThresholdMs);
+    const reclaimDate = new Date(Date.now() - this.reclaimTimeoutMs);
 
     // Fetch stale nodes and their associated transactions in one transaction
     const nodeTransactionMap = await this.dataSource.transaction(
@@ -188,7 +184,7 @@ export class CacheManagementService {
             reclaimDate,
           })
           .orderBy('c.lastCheckedAt', 'ASC')
-          .limit(this.config.batchSize)
+          .limit(this.batchSize)
           .setLock('pessimistic_write')
           .setOnLocked('skip_locked')
           .getMany();
@@ -259,6 +255,7 @@ export class CacheManagementService {
     return (
       result.affectedRows ??
       result.rowCount ??
+      (Array.isArray(result) && typeof result[1] === 'number' ? result[1] : null) ??
       (Array.isArray(result) && result[1]?.affectedRows) ??
       (Array.isArray(result) && result[1]?.rowCount) ??
       0

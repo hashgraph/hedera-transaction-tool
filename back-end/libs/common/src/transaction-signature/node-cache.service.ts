@@ -1,4 +1,5 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
 import { AccountId, PublicKey } from '@hashgraph/sdk';
 
@@ -15,8 +16,9 @@ import {
   NodeInfoParsed,
   serializeKey,
 } from '@app/common';
-import { CacheHelper, MirrorNodeClient, RefreshResult, RefreshStatus } from '.';
-import { ConfigService } from '@nestjs/config';
+import { MirrorNodeClient } from './mirror-node.client';
+import { CacheHelper } from './cache.helper';
+import { RefreshResult, RefreshStatus } from './cache.types';
 
 @Injectable()
 export class NodeCacheService {

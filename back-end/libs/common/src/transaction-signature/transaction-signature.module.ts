@@ -12,12 +12,10 @@ import {
   TransactionCachedNode,
 } from '@entities';
 
-import {
-  AccountCacheService,
-  MirrorNodeClient,
-  NodeCacheService,
-  TransactionSignatureService,
-} from '.';
+import { AccountCacheService } from './account-cache.service';
+import { MirrorNodeClient } from './mirror-node.client';
+import { NodeCacheService } from './node-cache.service';
+import { TransactionSignatureService } from './transaction-signature.service';
 
 @Module({
   imports: [

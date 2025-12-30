@@ -59,8 +59,6 @@ export class MirrorNodeClient {
 
       const accountInfoParsed = parseAccountInfo(response.data);
       const newEtag = response.etag ?? null;
-      //or this?
-      // const newEtag = (response.headers && (response.headers.etag ?? response.headers['etag'])) ?? null;
 
       return { data: accountInfoParsed, etag: newEtag };
     } catch (error) {
@@ -119,7 +117,10 @@ export class MirrorNodeClient {
         this.logger.error(
           `Request failed after ${attempt} attempt(s) for ${url}: ${error.message}`
         );
-        throw error;
+        throw new HttpException(
+          `Mirror node request failed: ${error.message}`,
+          error.response?.status || HttpStatus.SERVICE_UNAVAILABLE,
+        );
       }
 
       const delay = this.calculateBackoffDelay(attempt);
@@ -206,10 +207,7 @@ export class MirrorNodeClient {
       };
     } catch (error) {
       this.logger.error(`HTTP request failed for ${url}: ${error.message}`);
-      throw new HttpException(
-        `Mirror node request failed: ${error.message}`,
-        error.response?.status || HttpStatus.SERVICE_UNAVAILABLE,
-      );
+      throw error;
     }
   }
 

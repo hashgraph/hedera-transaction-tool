@@ -1,5 +1,7 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
+import { PublicKey } from '@hashgraph/sdk';
 
 import {
   CachedAccount,
@@ -12,11 +14,11 @@ import {
   deserializeKey,
   flattenKeyList,
   isFresh,
-  serializeKey
+  serializeKey,
 } from '@app/common';
-import { CacheHelper, MirrorNodeClient, RefreshResult, RefreshStatus } from '.';
-import { PublicKey } from '@hashgraph/sdk';
-import { ConfigService } from '@nestjs/config';
+import { MirrorNodeClient } from './mirror-node.client';
+import { CacheHelper } from './cache.helper';
+import { RefreshResult, RefreshStatus } from './cache.types';
 
 //TODO still need to be sure that i only store stringraw keys or whatever, they all have to be the same
 //TODO BE SURE TO ADD MANUAL RESYNC OF MIRROR NODE TO UI

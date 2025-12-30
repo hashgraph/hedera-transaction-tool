@@ -12,9 +12,7 @@ import {
   TransactionCachedNode,
 } from '@entities';
 import { NatsModule, TransactionSignatureModule } from '@app/common';
-import {
-  CacheManagementService,
-} from '.';
+import { CacheManagementService } from './cache-management.service';
 
 @Module({
   imports: [
