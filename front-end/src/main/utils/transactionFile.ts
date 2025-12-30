@@ -1,5 +1,5 @@
 import * as fsp from 'fs/promises';
-import { TransactionFile } from '../../shared/interfaces';
+import type { TransactionFile } from '@shared/interfaces';
 
 export async function readTransactionFile(filePath: string): Promise<TransactionFile> {
   const data = await fsp.readFile(filePath, { encoding: 'utf8' });
