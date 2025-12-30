@@ -19,6 +19,8 @@ import useVersionCheck from '@renderer/composables/useVersionCheck';
 
 import { useToast } from 'vue-toast-notification';
 import { errorToastOptions } from '@renderer/utils/toastOptions';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
+import { tryAutoSignInOrganization } from '@renderer/services/organizationCredentials';
 
 /**
  * Reconnect an organization with version checking and compatibility validation.
@@ -35,6 +37,7 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
   success: boolean;
   requiresUpdate?: boolean;
   hasCompatibilityConflict?: boolean;
+  redirectToLogin?: boolean;
 }> {
   const userStore = useUserStore();
   const ws = useWebsocketConnection();
@@ -48,6 +51,66 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
     toast.error('Organization not found', errorToastOptions);
     return { success: false };
   }
+
+    if (
+      !org.isLoading &&
+      org.isServerActive &&
+      'loginRequired' in org &&
+      org.loginRequired &&
+      userStore.personal &&
+      userStore.personal.isLoggedIn
+    ) {
+      const personalId = userStore.personal.id;
+      const organizationId = org.id;
+      
+      const { getPasswordV2 } = usePersonalPassword();
+      
+      const autoLoginResult = await new Promise<{ success: boolean; noCredentials?: boolean }>((resolve) => {
+        getPasswordV2(
+          async (password: string | null) => {
+            try {
+              const result = await tryAutoSignInOrganization(
+                personalId,
+                organizationId,
+                password,
+              );
+  
+              if (!result.success) {
+                if (result.error?.includes('No credentials found')) {
+                  resolve({ success: false, noCredentials: true });
+                  return;
+                }
+                
+                console.error('Auto-login failed:', result.error);
+                resolve({ success: false });
+                return;
+              }
+  
+              await userStore.refetchOrganizationTokens();
+              resolve({ success: true });
+            } catch (error) {
+              console.error('Auto-login error:', error);
+              resolve({ success: false });
+            }
+          },
+          {
+            heading: 'Enter your application password',
+            subHeading: 'To decrypt organization credentials and reconnect',
+          },
+        );
+      });
+  
+      if (autoLoginResult.noCredentials) {
+        console.log(`No credentials found for ${org.nickname || serverUrl}`);
+        userStore.selectedOrganization = org;
+        return { success: false, redirectToLogin: true };
+      }
+  
+      if (!autoLoginResult.success) {
+        return { success: false };
+      }
+    }
+  
 
   try {
     console.log(

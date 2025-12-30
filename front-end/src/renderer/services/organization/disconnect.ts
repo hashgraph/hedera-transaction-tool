@@ -7,6 +7,7 @@ import useOrganizationConnection from '@renderer/stores/storeOrganizationConnect
 import { toggleAuthTokenInSessionStorage } from '@renderer/utils';
 import { useToast } from 'vue-toast-notification';
 import { errorToastOptions, infoToastOptions } from '@renderer/utils/toastOptions';
+import { updateOrganizationCredentials } from '../organizationCredentials';
 
 export async function disconnectOrganization(
   serverUrl: string,
@@ -24,6 +25,15 @@ export async function disconnectOrganization(
   toggleAuthTokenInSessionStorage(serverUrl, '', true);
 
   const org = userStore.organizations.find(o => o.serverUrl === serverUrl);
+  if (org && userStore.personal && userStore.personal.isLoggedIn) {
+    try {
+      await updateOrganizationCredentials(org.id, userStore.personal.id, undefined, undefined, null);
+      await userStore.refetchOrganizationTokens();
+    } catch (error) {
+      console.error('Failed to remove JWT from SQLite:', error);
+    }
+  }
+
   if (org) {
     org.connectionStatus = 'disconnected';
     org.disconnectReason = reason;

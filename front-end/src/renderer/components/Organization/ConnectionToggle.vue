@@ -11,6 +11,7 @@ import { useToast } from 'vue-toast-notification';
 import { errorToastOptions } from '@renderer/utils/toastOptions';
 
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
+import { useRouter } from 'vue-router';
 
 /* Props */
 const props = defineProps<{
@@ -28,6 +29,7 @@ const emit = defineEmits<{
 /* Stores */
 const orgConnection = useOrganizationConnection();
 const toast = useToast();
+const router = useRouter(); 
 
 /* State */
 const isProcessing = ref(false);
@@ -39,7 +41,16 @@ const isConnected = computed(() => {
 });
 
 const isDisabled = computed(() => {
-  return props.disabled || isProcessing.value;
+  if (props.disabled || isProcessing.value) {
+    return true;
+  }
+  
+  const disconnectReason = orgConnection.getDisconnectReason(props.organization.serverUrl);
+  if (disconnectReason === 'upgradeRequired') {
+    return true;
+  }
+  
+  return false;
 });
 
 /* Handlers */
@@ -68,11 +79,14 @@ const handleToggle = async (checked: boolean) => {
 const handleReconnect = async () => {
   const result = await reconnectOrganization(props.organization.serverUrl);
 
+  if (result.redirectToLogin) {
+    await router.push({ name: 'organizationLogin' });
+    return;
+  }
+
   if (result.success) {
     emit('connect');
   } else if (result.requiresUpdate) {
-    // Version check failed - modal will be shown by reconnect service
-    // Don't emit error, just let the user know via the modal
     console.log('Reconnection requires update - modal should be shown');
   } else {
     throw new Error('Failed to reconnect');

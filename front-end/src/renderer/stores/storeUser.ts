@@ -229,6 +229,40 @@ const useUserStore = defineStore('user', () => {
           return;
         }
       }
+
+      const connectedOrg = await ush.getConnectedOrganization(organization, personal.value);
+
+      if (
+        connectedOrg &&
+        !connectedOrg.isLoading &&
+        connectedOrg.isServerActive &&
+        'loginRequired' in connectedOrg &&
+        connectedOrg.loginRequired &&
+        personal.value &&
+        personal.value.isLoggedIn
+      ) {
+        const orgServerUrl = connectedOrg.serverUrl;
+        
+        const { reconnectOrganization } = await import('@renderer/services/organization/reconnect');
+        const result = await reconnectOrganization(orgServerUrl);
+        
+        if (result.redirectToLogin) {
+          selectedOrganization.value = connectedOrg;
+          await afterOrganizationSelection();
+          return;
+        }
+        
+        if (result.success) {
+          await refetchOrganizations();
+          selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
+          await afterOrganizationSelection();
+          return;
+        } else {
+          selectedOrganization.value = connectedOrg;
+          await afterOrganizationSelection();
+          return;
+        }
+      }
     }
 
     // Check if currently selected organization becomes disconnected
@@ -260,8 +294,8 @@ const useUserStore = defineStore('user', () => {
   };
 
   const refetchOrganizations = async () => {
-    await ush.updateConnectedOrganizations(organizations, personal.value);
     await refetchOrganizationTokens();
+    await ush.updateConnectedOrganizations(organizations, personal.value);
   };
 
   const deleteOrganization = async (organizationId: string) => {

@@ -62,5 +62,16 @@ export default {
       ),
     tryAutoSignIn: (user_id: string, decryptPassword: string | null): Promise<Organization[]> =>
       ipcRenderer.invoke('organizationCredentials:tryAutoSignIn', user_id, decryptPassword),
+    tryAutoSignInOrganization: (
+      user_id: string,
+      organization_id: string,
+      decryptPassword: string | null,
+    ): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke(
+        'organizationCredentials:tryAutoSignInOrganization',
+        user_id,
+        organization_id,
+        decryptPassword,
+      ),
   },
 };

@@ -90,17 +90,30 @@ const handleLogin = async () => {
     );
     await user.refetchOrganizationTokens();
     await performVersionCheck(user.selectedOrganization.serverUrl);
-
+    await user.refetchOrganizations();
+    
     toast.success('Successfully signed in', successToastOptions);
 
     loading.value = false;
 
-    await withLoader(
-      user.selectOrganization.bind(null, user.selectedOrganization),
-      'Failed to change user mode',
-      10000,
-      false,
-    );
+    // Small delay to ensure database write is committed
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    const updatedOrg = user.organizations.find(org => org.id === user.selectedOrganization?.id);
+    if (!updatedOrg) {
+      throw new Error('Organization not found after refresh');
+    }
+
+    if ('loginRequired' in updatedOrg && !updatedOrg.loginRequired) {
+      await withLoader(
+        user.selectOrganization.bind(null, updatedOrg),
+        'Failed to change user mode',
+        10000,
+        false,
+      );
+    } else {
+      await user.selectOrganization(updatedOrg);
+    }
 
     if (isOrganizationActive(user.selectedOrganization)) {
       await setLast(user.selectedOrganization.id);
