@@ -31,7 +31,6 @@ import { TransactionNodeCollection } from '../../../../../shared/src/ITransactio
 import TransactionNodeTable from '@renderer/pages/Transactions/components/TransactionNodeTable.vue';
 import History from '@renderer/pages/Transactions/components/History.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
-import ExternalSigningActionButton from '@renderer/components/ExternalSigning/ExternalSigningActionButton.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -221,9 +220,6 @@ onBeforeMount(async () => {
               >
             </li>
           </ul>
-        </div>
-        <div>
-          <ExternalSigningActionButton />
         </div>
         <div>
           <TransactionImportButton />
