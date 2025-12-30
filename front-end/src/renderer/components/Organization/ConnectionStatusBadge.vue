@@ -21,8 +21,6 @@ const badgeClass = computed(() => {
   switch (props.status) {
     case 'connected':
       return 'bg-success text-white';
-    case 'live':
-      return 'bg-info text-white';
     case 'disconnected':
       return 'bg-secondary text-white';
     case 'upgradeRequired':
@@ -36,8 +34,6 @@ const badgeText = computed(() => {
   switch (props.status) {
     case 'connected':
       return 'Connected';
-    case 'live':
-      return 'Live';
     case 'disconnected':
       return 'Disconnected';
     case 'upgradeRequired':
@@ -71,9 +67,6 @@ const tooltipText = computed(() => {
   return text;
 });
 
-const showPulse = computed(() => {
-  return props.status === 'live';
-});
 </script>
 
 <template>
@@ -86,7 +79,6 @@ const showPulse = computed(() => {
       'rounded',
       'py-3',
       'px-3',
-      { pulse: showPulse },
     ]"
     :title="tooltipText"
     data-testid="connection-status-badge"
@@ -97,7 +89,7 @@ const showPulse = computed(() => {
       title="Compatibility conflict detected"
     ></i>
     <i
-      v-else-if="status === 'connected' || status === 'live'"
+      v-else-if="status === 'connected'"
       class="bi bi-check-circle-fill me-3"
     ></i>
     <i v-else-if="status === 'upgradeRequired'" class="bi bi-exclamation-circle-fill me-3"></i>

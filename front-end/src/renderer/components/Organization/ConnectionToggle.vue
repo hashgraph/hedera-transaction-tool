@@ -35,7 +35,7 @@ const isProcessing = ref(false);
 /* Computed */
 const isConnected = computed(() => {
   const status = orgConnection.getConnectionStatus(props.organization.serverUrl);
-  return status === 'connected' || status === 'live';
+  return status === 'connected';
 });
 
 const isDisabled = computed(() => {

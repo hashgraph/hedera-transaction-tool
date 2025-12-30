@@ -118,13 +118,7 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
     await userStore.refetchUserState();
 
     setTimeout(() => {
-      if (ws.isLive(serverUrl)) {
-        orgConnection.setConnectionStatus(serverUrl, 'live');
-      } else if (ws.isConnected(serverUrl)) {
-        orgConnection.setConnectionStatus(serverUrl, 'connected');
-      } else {
-        orgConnection.setConnectionStatus(serverUrl, 'connected');
-      }
+      orgConnection.setConnectionStatus(serverUrl, 'connected');
     }, 500);
 
     if (org) {

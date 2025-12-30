@@ -64,7 +64,7 @@ export type LoggedInOrganization = {
   secretHashes: string[];
 };
 
-export type ConnectionStatus = 'connected' | 'disconnected' | 'live' | 'upgradeRequired';
+export type ConnectionStatus = 'connected' | 'disconnected' | 'upgradeRequired';
 export type DisconnectReason = 'upgradeRequired' | 'manual' | 'error' | 'compatibilityConflict';
 
 export type ConnectedOrganization = Organization &

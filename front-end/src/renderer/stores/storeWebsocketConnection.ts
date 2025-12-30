@@ -55,7 +55,7 @@ const useWebsocketConnection = defineStore('websocketConnection', (): WebsocketC
         const socket = connect(serverUrl, url);
         newSockets[serverUrl] = connect(serverUrl, url);
         if (socket.connected) {
-          orgConnection.setConnectionStatus(serverUrl, 'live');
+          orgConnection.setConnectionStatus(serverUrl, 'connected');
         }
       } catch (error) {
         console.error(`Failed to connect to server ${serverUrl}:`, error);
@@ -129,11 +129,7 @@ const useWebsocketConnection = defineStore('websocketConnection', (): WebsocketC
     socket.on('connect', () => {
       console.log(`Connected to server ${wsUrl} with id: ${socket?.id}`);
       connectionStates.value[serverUrl] = 'connected';
-      if (socket.connected) {
-        orgConnection.setConnectionStatus(serverUrl, 'live');
-      } else {
-        orgConnection.setConnectionStatus(serverUrl, 'connected');
-      }
+      orgConnection.setConnectionStatus(serverUrl, 'connected');
     });
 
     socket.on('connect_error', error => {

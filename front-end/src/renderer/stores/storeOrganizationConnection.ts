@@ -39,11 +39,7 @@ const useOrganizationConnection = defineStore('organizationConnection', () => {
 
   function isConnected(serverUrl: string): boolean {
     const status = connectionStatuses.value[serverUrl];
-    return status === 'connected' || status === 'live';
-  }
-
-  function isWebsocketLive(serverUrl: string): boolean {
-    return connectionStatuses.value[serverUrl] === 'live';
+    return status === 'connected';
   }
 
   function getDisconnectReason(serverUrl: string): DisconnectReason | null {
@@ -75,7 +71,6 @@ const useOrganizationConnection = defineStore('organizationConnection', () => {
     setConnectionStatus,
     getConnectionStatus,
     isConnected,
-    isWebsocketLive,
     getDisconnectReason,
     getDisconnectTimestamp,
     resetConnectionStatus,

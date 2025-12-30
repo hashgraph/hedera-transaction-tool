@@ -111,9 +111,7 @@ const getConnectionStatus = (serverUrl: string) => {
   if (org?.connectionStatus) return org.connectionStatus;
 
   // Fallback to websocket connection state
-  if (ws.isLive(serverUrl)) return 'live';
-  if (ws.isConnected(serverUrl)) return 'connected';
-  return 'disconnected';
+  return ws.isLive(serverUrl) || ws.isConnected(serverUrl) ? 'connected' : 'disconnected';
 };
 
 const getDisconnectReason = (serverUrl: string) => {
