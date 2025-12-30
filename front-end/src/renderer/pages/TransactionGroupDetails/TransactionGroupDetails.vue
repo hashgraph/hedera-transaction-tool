@@ -25,7 +25,7 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
 import {
-  generateTransactionExportContent,
+  generateTransactionExportContentV1,
   generateTransactionExportFileName,
   getTransactionById,
   getApiGroupById,
@@ -419,7 +419,7 @@ const handleExportGroup = async () => {
 
       const baseName = generateTransactionExportFileName(orgTransaction);
 
-      const { signedBytes, jsonContent } = await generateTransactionExportContent(
+      const { signedBytes, jsonContent } = await generateTransactionExportContentV1(
         orgTransaction,
         privateKey,
         group.value.description,
