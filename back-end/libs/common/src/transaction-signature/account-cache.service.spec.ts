@@ -22,6 +22,7 @@ import {
 } from '@app/common';
 
 jest.mock('@app/common', () => ({
+  ...jest.requireActual('@app/common'),
   serializeKey: jest.fn((key) => `serialized-${key}`),
   deserializeKey: jest.fn((encoded) => `deserialized-${encoded}`),
   flattenKeyList: jest.fn((key) => [key]),
