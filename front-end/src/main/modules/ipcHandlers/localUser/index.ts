@@ -17,6 +17,7 @@ import listenForSDKEvents from './sdk';
 import listenForMnemonicEvents from './mnemonic';
 import listenForPublicKeyMappingsEvents from './publicKeyMappings';
 import listenForImportV1Events from './importV1';
+import listenForTransactionFileEvents from './transactionFile';
 
 export default () => {
   listenForKeyPairEvents();
@@ -38,4 +39,5 @@ export default () => {
   listenForMnemonicEvents();
   listenForPublicKeyMappingsEvents();
   listenForImportV1Events();
+  listenForTransactionFileEvents();
 };
