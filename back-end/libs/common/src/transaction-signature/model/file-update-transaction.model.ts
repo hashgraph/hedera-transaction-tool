@@ -2,9 +2,8 @@ import { FileUpdateTransaction } from '@hashgraph/sdk';
 
 import { TransactionBaseModel } from './transaction-base.model';
 import { isHederaSpecialFileId } from '@app/common';
-import TransactionFactory from './transaction-factory';
 
-export default class FileUpdateTransactionModel
+export class FileUpdateTransactionModel
   extends TransactionBaseModel<FileUpdateTransaction> {
 
   static readonly TRANSACTION_TYPE = 'FileUpdateTransaction';
@@ -31,8 +30,3 @@ export default class FileUpdateTransactionModel
     return this.transaction.keys || [];
   }
 }
-
-TransactionFactory.register(
-  FileUpdateTransactionModel.TRANSACTION_TYPE,
-  FileUpdateTransactionModel
-);

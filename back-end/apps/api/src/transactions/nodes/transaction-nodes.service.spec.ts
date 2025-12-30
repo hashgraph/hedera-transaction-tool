@@ -20,13 +20,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   CHAIN_SERVICE,
-  Filtering,
-  MirrorNodeService,
   NOTIFICATIONS_SERVICE,
-  PaginatedResourceDto,
-  Pagination,
   SchedulerService,
-  Sorting,
 } from '@app/common';
 import { ApproversService } from '../approvers';
 import { EntityManager, Repository } from 'typeorm';
@@ -43,7 +38,6 @@ describe('TransactionNodesService', () => {
   const chainService = mock<ClientProxy>();
   const notificationsService = mock<ClientProxy>();
   const approversService = mock<ApproversService>();
-  const mirrorNodeService = mock<MirrorNodeService>();
   const schedulerService = mock<SchedulerService>();
   const entityManager = mockDeep<EntityManager>();
 
@@ -654,10 +648,6 @@ describe('TransactionNodesService', () => {
           {
             provide: ApproversService,
             useValue: approversService,
-          },
-          {
-            provide: MirrorNodeService,
-            useValue: mirrorNodeService,
           },
           {
             provide: EntityManager,

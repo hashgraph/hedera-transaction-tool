@@ -1,9 +1,8 @@
 import { TransferTransaction } from '@hashgraph/sdk';
 
 import { TransactionBaseModel } from './transaction-base.model';
-import TransactionFactory from './transaction-factory';
 
-export default class TransferTransactionModel
+export class TransferTransactionModel
   extends TransactionBaseModel<TransferTransaction> {
 
   static readonly TRANSACTION_TYPE = 'TransferTransaction';
@@ -31,8 +30,3 @@ export default class TransferTransactionModel
     return accounts;
   }
 }
-
-TransactionFactory.register(
-  TransferTransactionModel.TRANSACTION_TYPE,
-  TransferTransactionModel
-);

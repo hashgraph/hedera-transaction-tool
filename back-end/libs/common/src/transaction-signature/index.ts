@@ -5,3 +5,4 @@ export * from './node-cache.service';
 export * from './mirror-node.client';
 export * from './cache.helper';
 export * from './cache.types';
+export * from './cache.util';

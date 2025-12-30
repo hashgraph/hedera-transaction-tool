@@ -16,9 +16,9 @@ import {
   emitTransactionStatusUpdate,
   emitTransactionUpdate,
   ErrorCodes,
-  MirrorNodeService,
   NatsPublisherService,
   processTransactionStatus,
+  TransactionSignatureService,
 } from '@app/common';
 import { isExpired } from '@app/common/utils';
 
@@ -39,7 +39,7 @@ describe('SignersService', () => {
   const transactionsRepo = mockDeep<Repository<Transaction>>();
   const dataSource = mockDeep<DataSource>();
   const notificationsPublisher = mock<NatsPublisherService>();
-  const mirrorNodeService = mock<MirrorNodeService>();
+  const transactionSignatureService = mock<TransactionSignatureService>();
 
   const defaultPagination = {
     limit: 10,
@@ -77,8 +77,8 @@ describe('SignersService', () => {
           useValue: notificationsPublisher,
         },
         {
-          provide: MirrorNodeService,
-          useValue: mirrorNodeService,
+          provide: TransactionSignatureService,
+          useValue: transactionSignatureService,
         },
       ],
     }).compile();
@@ -466,7 +466,7 @@ describe('SignersService', () => {
 
       expect(processTransactionStatus).toHaveBeenCalledWith(
         transactionsRepo,
-        mirrorNodeService,
+        transactionSignatureService,
         [transactionsToProcess[0].transaction, transactionsToProcess[1].transaction]
       );
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(

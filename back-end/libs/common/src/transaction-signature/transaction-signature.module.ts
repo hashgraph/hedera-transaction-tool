@@ -19,8 +19,6 @@ import {
   TransactionSignatureService,
 } from '.';
 
-import './model/index';
-
 @Module({
   imports: [
     TypeOrmModule.forFeature([

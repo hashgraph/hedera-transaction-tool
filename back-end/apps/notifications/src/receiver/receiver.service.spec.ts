@@ -2,7 +2,7 @@ import { Test } from '@nestjs/testing';
 import { ReceiverService } from './receiver.service';
 import { EntityManager, In } from 'typeorm';
 
-import { MirrorNodeService } from '@app/common';
+import { TransactionSignatureService } from '@app/common';
 import { NatsPublisherService } from '@app/common/nats/nats.publisher';
 
 import {
@@ -46,7 +46,7 @@ const mockEntityManager = () => ({
   transaction: jest.fn(),
 });
 
-const mockMirror = () => ({
+const mockTransactionSignatureService = () => ({
   someMethod: jest.fn(),
 });
 
@@ -57,12 +57,12 @@ const mockPublisher = () => ({
 describe('ReceiverService', () => {
   let service: ReceiverService;
   let em: ReturnType<typeof mockEntityManager>;
-  let mirror: ReturnType<typeof mockMirror>;
+  let tss: ReturnType<typeof mockTransactionSignatureService>;
   let publisher: ReturnType<typeof mockPublisher>;
 
   beforeEach(async () => {
     em = mockEntityManager();
-    mirror = mockMirror();
+    tss = mockTransactionSignatureService();
     publisher = mockPublisher();
 
     // Make transaction execute the callback with our mock em
@@ -72,7 +72,7 @@ describe('ReceiverService', () => {
       providers: [
         ReceiverService,
         { provide: EntityManager, useValue: em },
-        { provide: MirrorNodeService, useValue: mirror },
+        { provide: TransactionSignatureService, useValue: tss },
         { provide: NatsPublisherService, useValue: publisher },
       ],
     }).compile();

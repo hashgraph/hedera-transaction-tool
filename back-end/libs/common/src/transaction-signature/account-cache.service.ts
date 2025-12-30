@@ -7,7 +7,13 @@ import {
   Transaction,
   TransactionCachedAccount,
 } from '@entities';
-import { AccountInfoParsed, deserializeKey, flattenKeyList, serializeKey } from '@app/common';
+import {
+  AccountInfoParsed,
+  deserializeKey,
+  flattenKeyList,
+  isFresh,
+  serializeKey
+} from '@app/common';
 import { CacheHelper, MirrorNodeClient, RefreshResult, RefreshStatus } from '.';
 import { PublicKey } from '@hashgraph/sdk';
 import { ConfigService } from '@nestjs/config';
@@ -74,7 +80,7 @@ export class AccountCacheService {
       where: { account, mirrorNetwork },
     });
 
-    if (this.isFresh(cached) && this.hasCompleteData(cached)) {
+    if (this.hasCompleteData(cached) && isFresh(cached.lastCheckedAt, this.cacheTtlMs)) {
       // Link to transaction even if using cache
       await this.linkTransactionToAccount(transaction.id, cached.id);
       return this.parseCachedAccount(cached);
@@ -322,14 +328,6 @@ export class AccountCacheService {
       key: deserializeKey(cached.encodedKey),
       receiverSignatureRequired: cached.receiverSignatureRequired,
     } as AccountInfoParsed;
-  }
-
-  /**
-   * Return true when the cached row's lastCheckedAt is within the freshness threshold.
-   */
-  private isFresh(cached: CachedAccount | null): boolean {
-    return cached?.lastCheckedAt &&
-      (Date.now() - cached.lastCheckedAt.getTime()) < this.cacheTtlMs;
   }
 
   /**

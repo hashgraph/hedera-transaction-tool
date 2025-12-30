@@ -1,8 +1,7 @@
 import { AccountDeleteTransaction } from '@hashgraph/sdk';
 import { TransactionBaseModel } from './transaction-base.model';
-import TransactionFactory from './transaction-factory';
 
-export default class AccountDeleteTransactionModel
+export class AccountDeleteTransactionModel
   extends TransactionBaseModel<AccountDeleteTransaction> {
 
   static readonly TRANSACTION_TYPE = 'AccountDeleteTransaction';
@@ -21,8 +20,3 @@ export default class AccountDeleteTransactionModel
     );
   }
 }
-
-TransactionFactory.register(
-  AccountDeleteTransactionModel.TRANSACTION_TYPE,
-  AccountDeleteTransactionModel
-);

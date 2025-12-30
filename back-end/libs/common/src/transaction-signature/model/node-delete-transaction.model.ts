@@ -2,9 +2,8 @@ import { NodeDeleteTransaction } from '@hashgraph/sdk';
 
 import { TransactionBaseModel } from './transaction-base.model';
 import { COUNCIL_ACCOUNTS } from '@app/common';
-import TransactionFactory from './transaction-factory';
 
-export default class NodeDeleteTransactionModel
+export class NodeDeleteTransactionModel
   extends TransactionBaseModel<NodeDeleteTransaction> {
 
   static readonly TRANSACTION_TYPE = 'NodeDeleteTransaction';
@@ -15,15 +14,11 @@ export default class NodeDeleteTransactionModel
     // and the admin key is not required
     // otherwise, admin key is required
     const payerId = this.transaction.transactionId?.accountId;
-    const isCouncilAccount = payerId && payerId.toString() in COUNCIL_ACCOUNTS;
+    if (!payerId) return null;
+    const isCouncilAccount = payerId.toString() in COUNCIL_ACCOUNTS;
     if (!isCouncilAccount && this.transaction.nodeId) {
       return this.transaction.nodeId.toNumber();
     }
     return null;
   }
 }
-
-TransactionFactory.register(
-  NodeDeleteTransactionModel.TRANSACTION_TYPE,
-  NodeDeleteTransactionModel
-);

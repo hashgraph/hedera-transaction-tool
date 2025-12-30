@@ -11,6 +11,7 @@ import {
 import {
   deserializeKey,
   flattenKeyList,
+  isFresh,
   NodeInfoParsed,
   serializeKey,
 } from '@app/common';
@@ -77,7 +78,7 @@ export class NodeCacheService {
       where: { nodeId, mirrorNetwork },
     });
 
-    if (this.isFresh(cached) && this.hasCompleteData(cached)) {
+    if (this.hasCompleteData(cached) && isFresh(cached.lastCheckedAt, this.cacheTtlMs)) {
       // Link to transaction even if using cache
       await this.linkTransactionToNode(transaction.id, cached.id);
       return this.parseCachedNode(cached);
@@ -321,14 +322,6 @@ export class NodeCacheService {
       admin_key: deserializeKey(cached.encodedKey),
       node_account_id: AccountId.fromString(cached.nodeAccountId),
     } as NodeInfoParsed;
-  }
-
-  /**
-   * Return true when the cached row's lastCheckedAt is within the freshness threshold.
-   */
-  private isFresh(cached: CachedNode | null): boolean {
-    return cached?.lastCheckedAt &&
-      (Date.now() - cached.lastCheckedAt.getTime()) < this.cacheTtlMs;
   }
 
   /**

@@ -1,9 +1,8 @@
 import { AccountAllowanceApproveTransaction } from '@hashgraph/sdk';
 
 import { TransactionBaseModel } from './transaction-base.model';
-import TransactionFactory from './transaction-factory';
 
-export default class AccountAllowanceApproveTransactionModel
+export class AccountAllowanceApproveTransactionModel
   extends TransactionBaseModel<AccountAllowanceApproveTransaction> {
 
   static readonly TRANSACTION_TYPE = 'AccountAllowanceApproveTransaction';
@@ -26,8 +25,3 @@ export default class AccountAllowanceApproveTransactionModel
     return set;
   }
 }
-
-TransactionFactory.register(
-  AccountAllowanceApproveTransactionModel.TRANSACTION_TYPE,
-  AccountAllowanceApproveTransactionModel
-);

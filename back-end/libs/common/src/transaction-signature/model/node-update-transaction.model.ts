@@ -1,9 +1,8 @@
 import { NodeUpdateTransaction } from '@hashgraph/sdk';
 
 import { TransactionBaseModel } from './transaction-base.model';
-import TransactionFactory from './transaction-factory';
 
-export default class NodeUpdateTransactionModel
+export class NodeUpdateTransactionModel
   extends TransactionBaseModel<NodeUpdateTransaction> {
 
   static readonly TRANSACTION_TYPE = 'NodeUpdateTransaction';
@@ -23,8 +22,3 @@ export default class NodeUpdateTransactionModel
     return null;
   }
 }
-
-TransactionFactory.register(
-  NodeUpdateTransactionModel.TRANSACTION_TYPE,
-  NodeUpdateTransactionModel
-);

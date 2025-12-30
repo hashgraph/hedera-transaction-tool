@@ -1,9 +1,8 @@
 import { AccountId, AccountUpdateTransaction, Key } from '@hashgraph/sdk';
 
 import { TransactionBaseModel } from './transaction-base.model';
-import TransactionFactory from './transaction-factory';
 
-export default class AccountUpdateTransactionModel
+export class AccountUpdateTransactionModel
   extends TransactionBaseModel<AccountUpdateTransaction> {
 
   static readonly TRANSACTION_TYPE = 'AccountUpdateTransaction';
@@ -61,8 +60,3 @@ export default class AccountUpdateTransactionModel
     );
   }
 }
-
-TransactionFactory.register(
-  AccountUpdateTransactionModel.TRANSACTION_TYPE,
-  AccountUpdateTransactionModel
-);

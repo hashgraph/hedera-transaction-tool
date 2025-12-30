@@ -138,13 +138,4 @@ export class CacheHelper {
       .orIgnore()
       .execute();
   }
-
-  /**
-   * Check if cached data is fresh based on threshold.
-   */
-  isFresh(lastCheckedAt: Date | null | undefined, thresholdMs: number): boolean {
-    return (
-      lastCheckedAt && Date.now() - lastCheckedAt.getTime() < thresholdMs
-    );
-  }
 }
