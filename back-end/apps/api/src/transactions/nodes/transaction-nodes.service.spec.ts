@@ -108,8 +108,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
-    transactionAccounts: [],
-    transactionNodes: [],
+    transactionCachedAccounts: [],
+    transactionCachedNodes: [],
   };
 
   const singleTransaction2: Transaction = {
@@ -154,8 +154,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
-    transactionAccounts: [],
-    transactionNodes: [],
+    transactionCachedAccounts: [],
+    transactionCachedNodes: [],
   };
 
   const childTransactionDate1 = Date.now();
@@ -203,8 +203,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
-    transactionAccounts: [],
-    transactionNodes: [],
+    transactionCachedAccounts: [],
+    transactionCachedNodes: [],
   };
 
   const childTransactionDate2 = childTransactionDate1 + 4000;
@@ -252,8 +252,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
-    transactionAccounts: [],
-    transactionNodes: [],
+    transactionCachedAccounts: [],
+    transactionCachedNodes: [],
   };
 
   const childTransactionDate3 = childTransactionDate2 + 4000;
@@ -301,8 +301,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
-    transactionAccounts: [],
-    transactionNodes: [],
+    transactionCachedAccounts: [],
+    transactionCachedNodes: [],
   };
 
   const childTransactionDate4 = childTransactionDate3 + 4000;
@@ -349,8 +349,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
-    transactionAccounts: [],
-    transactionNodes: [],
+    transactionCachedAccounts: [],
+    transactionCachedNodes: [],
   };
 
   const childTransactionDate5 = childTransactionDate4 + 4000;
@@ -397,8 +397,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
-    transactionAccounts: [],
-    transactionNodes: [],
+    transactionCachedAccounts: [],
+    transactionCachedNodes: [],
   };
 
   //

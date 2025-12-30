@@ -142,10 +142,10 @@ export class Transaction {
   groupItem?: TransactionGroupItem;
 
   @OneToMany(() => TransactionCachedAccount, (ta) => ta.transaction)
-  transactionAccounts: TransactionCachedAccount[];
+  transactionCachedAccounts: TransactionCachedAccount[];
 
   @OneToMany(() => TransactionCachedNode, (ta) => ta.transaction)
-  transactionNodes: TransactionCachedNode[];
+  transactionCachedNodes: TransactionCachedNode[];
 }
 
 export const transactionProperties: (keyof Transaction)[] = [

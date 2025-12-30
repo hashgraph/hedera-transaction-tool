@@ -8,7 +8,7 @@ export class TransactionCachedAccount {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Transaction, (tx) => tx.transactionAccounts, {
+  @ManyToOne(() => Transaction, (tx) => tx.transactionCachedAccounts, {
     onDelete: 'CASCADE',
   })
   @Index()
