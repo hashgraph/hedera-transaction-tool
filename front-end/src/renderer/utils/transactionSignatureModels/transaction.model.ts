@@ -1,17 +1,21 @@
-import { AccountId, Key, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { AccountId, Key, PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import { compareKeys } from '../sdk';
 import type { INodeInfoParsed } from '@shared/interfaces';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import type { ConnectedOrganization } from '@renderer/types';
+import { getPublicKeyOwner } from '@renderer/services/organization';
+import { flattenKeyList } from '@renderer/services/keyPairService.ts';
 
 export interface SignatureAudit {
-  signatureKeys: Key[];
-  accountsKeys: Record<string, Key>;
+  signatureKeys: Key[]; // All the keys expected to sign target transaction
+  accountsKeys: Record<string, Key>; // All the account ids expected to sign target transaction
   receiverAccountsKeys: Record<string, Key>;
   newKeys: Key[];
-  payerKey: Record<string, Key>;
+  payerKey: Record<string, Key>; // Fee payer accounts (including transaction payer id)
   nodeAdminKeys: Record<number, Key>;
+  externalKeys: Set<PublicKey>; // External keys (no matching user in backend)
 }
 
 export abstract class TransactionBaseModel<T extends SDKTransaction> {
@@ -50,6 +54,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     mirrorNodeLink: string,
     accountInfoCache: AccountByIdCache,
     nodeInfoCache: NodeByIdCache,
+    organization: ConnectedOrganization | null,
   ): Promise<SignatureAudit> {
     const feePayerAccountId = this.getFeePayerAccountId();
     const accounts = this.getSigningAccounts();
@@ -63,6 +68,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     const payerKey: Record<string, Key> = {};
     const receiverAccountsKeys: Record<string, Key> = {};
     const nodeAdminKeys: Record<number, Key> = {};
+    const externalKeys = new Set<PublicKey>();
 
     const currentKeyList: Key[] = [];
     const hasKey = (key: Key) => currentKeyList.some(existingKey => compareKeys(existingKey, key));
@@ -156,6 +162,22 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
       }
     }
 
+    // Collects external keys: those one have no matching user in backend
+    if (organization !== null) {
+      for (const key of signatureKeys) {
+        const flatKeys = flattenKeyList(key);
+        for (const flatKey of flatKeys) {
+          const o = await getPublicKeyOwner(organization.serverUrl, flatKey.toStringRaw());
+          if (o === null) {
+            // flatKey has no matching user in organization
+            // => flatKey is external
+            externalKeys.add(flatKey);
+            break;
+          }
+        }
+      }
+    }
+
     return {
       signatureKeys,
       accountsKeys,
@@ -163,6 +185,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
       newKeys,
       payerKey,
       nodeAdminKeys,
+      externalKeys,
       // nodeAccountKeys,
     };
   }
