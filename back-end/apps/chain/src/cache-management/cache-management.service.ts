@@ -256,8 +256,8 @@ export class CacheManagementService {
       result.affectedRows ??
       result.rowCount ??
       (Array.isArray(result) && typeof result[1] === 'number' ? result[1] : null) ??
-      (Array.isArray(result) && result[1]?.affectedRows) ??
-      (Array.isArray(result) && result[1]?.rowCount) ??
+      (Array.isArray(result) ? result[1]?.affectedRows ?? null : null) ??
+      (Array.isArray(result) ? result[1]?.rowCount ?? null : null) ??
       0
     );
   }

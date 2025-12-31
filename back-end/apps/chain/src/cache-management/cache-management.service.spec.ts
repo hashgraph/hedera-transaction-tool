@@ -319,6 +319,49 @@ describe('CacheManagementService', () => {
     });
   });
 
+  describe('extractAffectedCount', () => {
+    it('should extract count from null/undefined', () => {
+      expect((service as any).extractAffectedCount(null)).toBe(0);
+      expect((service as any).extractAffectedCount(undefined)).toBe(0);
+    });
+
+    it('should extract count from number', () => {
+      expect((service as any).extractAffectedCount(42)).toBe(42);
+    });
+
+    it('should extract count from affectedRows', () => {
+      expect((service as any).extractAffectedCount({ affectedRows: 10 })).toBe(10);
+    });
+
+    it('should extract count from rowCount', () => {
+      expect((service as any).extractAffectedCount({ rowCount: 15 })).toBe(15);
+    });
+
+    it('should extract count when result is an array and second element is a number', () => {
+      expect((service as any).extractAffectedCount([null, 3])).toBe(3);
+    });
+
+    it('should extract zero when result is an array and second element is 0', () => {
+      expect((service as any).extractAffectedCount([null, 0])).toBe(0);
+    });
+
+    it('should extract count from array with affectedRows', () => {
+      expect((service as any).extractAffectedCount([null, { affectedRows: 20 }])).toBe(20);
+    });
+
+    it('should extract count from array with rowCount', () => {
+      expect((service as any).extractAffectedCount([null, { rowCount: 25 }])).toBe(25);
+    });
+
+    it('should return 0 when result is an array and second element has no rowCount/affectedRows', () => {
+      expect((service as any).extractAffectedCount([null, { something: 'else' }])).toBe(0);
+    });
+
+    it('should return 0 for unrecognized format', () => {
+      expect((service as any).extractAffectedCount({ something: 'else' })).toBe(0);
+    });
+  });
+
   describe('cleanupUnusedCache', () => {
     it('should cleanup unused accounts and nodes', async () => {
       accountRepository.query.mockResolvedValue(returningRows(5));
