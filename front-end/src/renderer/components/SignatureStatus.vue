@@ -1,30 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-import { Key } from '@hashgraph/sdk';
-
-import { ableToSign } from '@renderer/utils';
+import { ableToSign, type SignatureAudit } from '@renderer/utils';
 
 import SignatureStatusEntities from '@renderer/components/SignatureStatusEntities.vue';
 
 /* Props */
 const props = defineProps<{
-  signatureKeyObject: {
-    signatureKeys: Key[];
-    accountsKeys: {
-      [accountId: string]: Key;
-    };
-    receiverAccountsKeys: {
-      [accountId: string]: Key;
-    };
-    newKeys: Key[];
-    payerKey: {
-      [accountId: string]: Key;
-    };
-    nodeAdminKeys: {
-      [accountId: string]: Key;
-    };
-  };
+  signatureKeyObject: SignatureAudit;
   clean?: boolean;
   publicKeysSigned: string[];
 }>();
