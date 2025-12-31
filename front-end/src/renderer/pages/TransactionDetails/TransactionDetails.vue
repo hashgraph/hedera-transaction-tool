@@ -159,6 +159,7 @@ async function fetchTransaction() {
       network.mirrorNodeBaseURL,
       accountByIdCache,
       nodeByIdCache,
+      user.selectedOrganization,
     );
   }
 

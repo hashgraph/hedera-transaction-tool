@@ -641,6 +641,7 @@ watch(
         network.mirrorNodeBaseURL,
         accountByIdCache,
         nodeByIdCache,
+        user.selectedOrganization,
       ),
       getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id),
     ]);

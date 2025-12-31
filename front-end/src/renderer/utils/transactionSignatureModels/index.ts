@@ -7,6 +7,7 @@ import { flattenKeyList } from '../../services/keyPairService';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import type { SignatureAudit } from './transaction.model';
+import type { ConnectedOrganization } from '@renderer/types';
 
 export * from './account-create-transaction.model';
 export * from './account-update-transaction.model';
@@ -28,10 +29,16 @@ export const computeSignatureKey = async (
   mirrorNodeLink: string,
   accountInfoCache: AccountByIdCache,
   nodeInfoCache: NodeByIdCache,
+  organization: ConnectedOrganization | null,
 ): Promise<SignatureAudit> => {
   const transactionModel = TransactionFactory.fromTransaction(transaction);
 
-  return await transactionModel.computeSignatureKey(mirrorNodeLink, accountInfoCache, nodeInfoCache);
+  return await transactionModel.computeSignatureKey(
+    mirrorNodeLink,
+    accountInfoCache,
+    nodeInfoCache,
+    organization,
+  );
 };
 
 /* Returns only users PK required to sign */
@@ -41,6 +48,7 @@ export const usersPublicRequiredToSign = async (
   mirrorNodeLink: string,
   accountInfoCache: AccountByIdCache,
   nodeInfoCache: NodeByIdCache,
+  organization: ConnectedOrganization | null,
 ): Promise<string[]> => {
   const publicKeysRequired: Set<string> = new Set<string>();
 
@@ -50,7 +58,13 @@ export const usersPublicRequiredToSign = async (
   /* Transaction signers' public keys */
   const signerPublicKeys = new Set([...transaction._signerPublicKeys]);
 
-  const requiredKeys = await computeSignatureKey(transaction, mirrorNodeLink, accountInfoCache, nodeInfoCache);
+  const requiredKeys = await computeSignatureKey(
+    transaction,
+    mirrorNodeLink,
+    accountInfoCache,
+    nodeInfoCache,
+    organization,
+  );
 
   const requiredUnsignedKeys = new Set<string>();
   requiredKeys.signatureKeys.forEach(key => {
