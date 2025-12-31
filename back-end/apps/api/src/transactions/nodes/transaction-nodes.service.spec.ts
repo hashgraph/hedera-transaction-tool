@@ -549,6 +549,7 @@ describe('TransactionNodesService', () => {
   singleTransactionNode1.statusCode = singleTransaction1.statusCode;
   singleTransactionNode1.sdkTransactionId = singleTransaction1.transactionId;
   singleTransactionNode1.transactionType = singleTransaction1.type;
+  singleTransactionNode1.isManual = singleTransaction1.isManual;
   singleTransactionNode1.groupItemCount = undefined;
   singleTransactionNode1.groupCollectedCount = undefined;
 
@@ -564,6 +565,7 @@ describe('TransactionNodesService', () => {
   singleTransactionNode2.statusCode = singleTransaction2.statusCode;
   singleTransactionNode2.sdkTransactionId = singleTransaction2.transactionId;
   singleTransactionNode2.transactionType = singleTransaction2.type;
+  singleTransactionNode2.isManual = singleTransaction2.isManual;
   singleTransactionNode2.groupItemCount = undefined;
   singleTransactionNode2.groupCollectedCount = undefined;
 
@@ -579,6 +581,7 @@ describe('TransactionNodesService', () => {
   groupNode1.statusCode = childTransaction1.statusCode;
   groupNode1.sdkTransactionId = undefined;
   groupNode1.transactionType = undefined;
+  groupNode1.isManual = undefined;
   groupNode1.groupItemCount = 2;
   groupNode1.groupCollectedCount = 2;
 
@@ -594,6 +597,7 @@ describe('TransactionNodesService', () => {
   groupNode2.statusCode = undefined;
   groupNode2.sdkTransactionId = undefined;
   groupNode2.transactionType = undefined;
+  groupNode2.isManual = undefined;
   groupNode2.groupItemCount = 2;
   groupNode2.groupCollectedCount = 2;
 
@@ -609,6 +613,7 @@ describe('TransactionNodesService', () => {
   groupNode3.statusCode = childTransaction5.statusCode;
   groupNode3.sdkTransactionId = undefined;
   groupNode3.transactionType = undefined;
+  groupNode3.isManual = undefined;
   groupNode3.groupItemCount = 1;
   groupNode3.groupCollectedCount = 1;
 
