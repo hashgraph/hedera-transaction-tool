@@ -262,6 +262,7 @@ async function updateTransactionKey() {
     network.mirrorNodeBaseURL,
     accountByIdCache,
     nodeByIdCache,
+    user.selectedOrganization,
   );
   transactionKey.value = new KeyList(computedKeys.signatureKeys);
 }
