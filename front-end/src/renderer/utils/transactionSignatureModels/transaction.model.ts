@@ -13,11 +13,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
   }
 
   getFeePayerAccountId(): AccountId | null {
-    const payerId = this.transaction.transactionId?.accountId;
-    if (payerId) {
-      return payerId;
-    }
-    return null;
+    return this.transaction.transactionId?.accountId ?? null;
   }
 
   getSigningAccounts(): Set<string> {
