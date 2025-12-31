@@ -540,6 +540,7 @@ async function fetchGroup(id: string | number) {
             network.mirrorNodeBaseURL,
             accountByIdCache,
             nodeByIdCache,
+            user.selectedOrganization,
           );
 
           if (
