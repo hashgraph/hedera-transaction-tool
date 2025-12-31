@@ -13,6 +13,7 @@ import AppPublicKeyNickname from '@renderer/components/ui/AppPublicKeyNickname.v
 const props = defineProps<{
   keyList: KeyList;
   publicKeysSigned: string[];
+  externalKeys: Set<string>;
   depth: number;
 }>();
 
@@ -38,6 +39,7 @@ defineEmits(['update:keyList']);
         :public-key="publicKeysInKeyListRaw[0]"
         class="me-2"
         :signed="ableToSign(publicKeysSigned, keyList)"
+        :external="props.externalKeys.has(publicKeysInKeyListRaw[0])"
       />
     </div>
   </template>
@@ -65,6 +67,7 @@ defineEmits(['update:keyList']);
             <SignatureStatusKeyStructure
               :key-list="item"
               :public-keys-signed="publicKeysSigned"
+              :external-keys="props.externalKeys"
               :depth="depth + 1"
             />
           </div>
@@ -80,6 +83,7 @@ defineEmits(['update:keyList']);
             <p class="text-nowrap me-2" :data-testid="`span-public-key-${depth}-${_index}`">
               <AppPublicKeyNickname
                 :signed="publicKeysSigned.includes(item.toStringRaw())"
+                :external="props.externalKeys.has(item.toStringRaw())"
                 :public-key="item"
               />
             </p>
