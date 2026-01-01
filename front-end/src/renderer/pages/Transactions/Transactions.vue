@@ -39,7 +39,8 @@ import TransactionNodeTable from '@renderer/pages/Transactions/components/Transa
 import History from '@renderer/pages/Transactions/components/History.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
-import { showSaveDialog } from '@renderer/services/electronUtilsService.ts';
+import SignTransactionFileModal from '@renderer/components/ExternalSigning/SignTransactionFileModal.vue';
+import { showOpenDialog, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
 import {
   generateTransactionExportContentV2,
   generateTransactionExportFileName,
@@ -71,8 +72,10 @@ const sharedTabs: TabItem[] = [{ title: draftsTitle }, { title: historyTitle }];
 const notificationsKey = ref(user.selectedOrganization?.serverUrl || '');
 
 const isTransactionSelectionModalShown = ref(false);
+const isSignTransactionFileModalShown = ref(false);
 
 const collectionNodes = ref<ITransactionNode[]>([]);
+const transactionFilePath = ref<string | null>(null);
 
 /* Computed */
 const networkFilteredNotifications = computed(() => {
@@ -153,7 +156,10 @@ async function handleTransactionFileAction(action: string) {
       await createTransactionFile();
       break;
     case 'signTransactionFile':
-      console.log('signTransactionFile: NOT IMPLEMENTED');
+      transactionFilePath.value = await selectTransactionFile();
+      if (transactionFilePath.value !== null) {
+        isSignTransactionFileModalShown.value = true;
+      }
       break;
   }
 }
@@ -183,6 +189,7 @@ async function createTransactionFile() {
   if (collectionTransactions.length > 0) {
     const baseName = generateTransactionExportFileName(collectionTransactions[0]);
 
+    // Show the save dialog to the user, allowing them to choose the file name and location
     const { filePath, canceled } = await showSaveDialog(
       `${baseName}.tx2`,
       'Export transactions',
@@ -197,6 +204,18 @@ async function createTransactionFile() {
       await writeTransactionFile(tx2Content, filePath);
     }
   }
+}
+
+async function selectTransactionFile(): Promise<string | null> {
+  const result = await showOpenDialog(
+    'Sign Transaction File',
+    'Select',
+    [{ name: '.tx2', extensions: ['tx2'] }],
+    ['openFile'],
+    'Select .tx2 files exported by TT V2',
+  );
+
+  return result.canceled ? null : result.filePaths[0];
 }
 
 async function setQueryTabAndRemount(title: string) {
@@ -359,6 +378,11 @@ onBeforeMount(async () => {
       v-if="isTransactionSelectionModalShown"
       v-model:show="isTransactionSelectionModalShown"
       :group="false"
+    />
+
+    <SignTransactionFileModal
+      v-model:show="isSignTransactionFileModalShown"
+      :filePath="transactionFilePath"
     />
   </div>
 </template>
