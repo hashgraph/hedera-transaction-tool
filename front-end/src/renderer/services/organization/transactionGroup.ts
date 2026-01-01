@@ -81,7 +81,7 @@ export const getTransactionGroupById = async (serverUrl: string, id: number) => 
 };
 
 export const generateTransactionExportContentV2 = (
-  orgTransactions: ITransactionFull[],
+  orgTransactions: ITransaction[],
 ): TransactionFile => {
 
   const result: TransactionFile = {
@@ -128,7 +128,7 @@ export const generateTransactionExportContentV1 = async (
   });
 };
 
-export const generateTransactionExportFileName = (orgTransaction: ITransactionFull) => {
+export const generateTransactionExportFileName = (orgTransaction: ITransaction) => {
   const transactionBytes = hexToUint8Array(orgTransaction.transactionBytes);
   const sdkTransaction = Transaction.fromBytes(transactionBytes);
 
