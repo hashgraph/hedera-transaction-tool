@@ -27,7 +27,10 @@ import TransactionSelectionModal from '@renderer/components/TransactionSelection
 import Drafts from './components/Drafts.vue';
 import useLoader from '@renderer/composables/useLoader';
 import TransactionImportButton from '@renderer/components/TransactionImportButton.vue';
-import { TransactionNodeCollection } from '../../../../../shared/src/ITransactionNode.ts';
+import {
+  type ITransactionNode,
+  TransactionNodeCollection,
+} from '../../../../../shared/src/ITransactionNode.ts';
 import TransactionNodeTable from '@renderer/pages/Transactions/components/TransactionNodeTable.vue';
 import History from '@renderer/pages/Transactions/components/History.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
@@ -125,6 +128,8 @@ const selectedTabIndex = computed(() => {
   const result = activeTabs.value.findIndex(tabItem => tabItem.title === selectedTabTitle.value);
   return result != -1 ? result : null;
 });
+
+const collectionNodes = ref<ITransactionNode[]>([]);
 
 /* Function */
 
@@ -237,22 +242,35 @@ onBeforeMount(async () => {
         ></AppTabs>
       </div>
       <template v-if="selectedTabTitle === readyForReviewTitle">
-        <TransactionNodeTable :collection="TransactionNodeCollection.READY_FOR_REVIEW" />
+        <TransactionNodeTable
+          :collection="TransactionNodeCollection.READY_FOR_REVIEW"
+          @nodes-fetched="collectionNodes = $event"
+        />
       </template>
       <template v-if="selectedTabTitle === readyToSignTitle">
-        <TransactionNodeTable :collection="TransactionNodeCollection.READY_TO_SIGN" />
+        <TransactionNodeTable
+          :collection="TransactionNodeCollection.READY_TO_SIGN"
+          @nodes-fetched="collectionNodes = $event"
+        />
       </template>
       <template v-if="selectedTabTitle === inProgressTitle">
-        <TransactionNodeTable :collection="TransactionNodeCollection.IN_PROGRESS" />
+        <TransactionNodeTable
+          :collection="TransactionNodeCollection.IN_PROGRESS"
+          @nodes-fetched="collectionNodes = $event"
+        />
       </template>
       <template v-if="selectedTabTitle === readyForExecutionTitle">
-        <TransactionNodeTable :collection="TransactionNodeCollection.READY_FOR_EXECUTION" />
+        <TransactionNodeTable
+          :collection="TransactionNodeCollection.READY_FOR_EXECUTION"
+          @nodes-fetched="collectionNodes = $event"
+        />
       </template>
       <template v-if="selectedTabTitle === draftsTitle"><Drafts /></template>
       <template v-if="selectedTabTitle === historyTitle">
         <TransactionNodeTable
           v-if="user.selectedOrganization"
           :collection="TransactionNodeCollection.HISTORY"
+          @nodes-fetched="collectionNodes = $event"
         />
         <History v-else />
       </template>
