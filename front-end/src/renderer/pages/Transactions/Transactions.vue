@@ -4,7 +4,7 @@ import AppTabs from '@renderer/components/ui/AppTabs.vue';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
 
-import { NotificationType } from '@shared/interfaces';
+import { type ITransaction, NotificationType, type TransactionFile } from '@shared/interfaces';
 import {
   draftsTitle,
   historyTitle,
@@ -21,7 +21,11 @@ import useNotificationsStore from '@renderer/stores/storeNotifications';
 import { useRouter } from 'vue-router';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
-import { isLoggedInOrganization, isOrganizationActive } from '@renderer/utils';
+import {
+  assertIsLoggedInOrganization,
+  isLoggedInOrganization,
+  isOrganizationActive,
+} from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionSelectionModal from '@renderer/components/TransactionSelectionModal.vue';
 import Drafts from './components/Drafts.vue';
@@ -34,6 +38,15 @@ import {
 import TransactionNodeTable from '@renderer/pages/Transactions/components/TransactionNodeTable.vue';
 import History from '@renderer/pages/Transactions/components/History.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
+import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
+import { showSaveDialog } from '@renderer/services/electronUtilsService.ts';
+import {
+  generateTransactionExportContentV2,
+  generateTransactionExportFileName,
+  getApiGroupById,
+  getTransactionById,
+} from '@renderer/services/organization';
+import { writeTransactionFile } from '@renderer/services/transactionFile.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -58,6 +71,8 @@ const sharedTabs: TabItem[] = [{ title: draftsTitle }, { title: historyTitle }];
 const notificationsKey = ref(user.selectedOrganization?.serverUrl || '');
 
 const isTransactionSelectionModalShown = ref(false);
+
+const collectionNodes = ref<ITransactionNode[]>([]);
 
 /* Computed */
 const networkFilteredNotifications = computed(() => {
@@ -129,9 +144,58 @@ const selectedTabIndex = computed(() => {
   return result != -1 ? result : null;
 });
 
-const collectionNodes = ref<ITransactionNode[]>([]);
+/* Handlers */
+async function handleTransactionFileAction(action: string) {
+  switch (action) {
+    case 'createTransactionFile':
+      await createTransactionFile();
+      break;
+    case 'signTransactionFile':
+      console.log('signTransactionFile: NOT IMPLEMENTED');
+      break;
+  }
+}
 
-/* Function */
+/* Functions */
+async function createTransactionFile() {
+  assertIsLoggedInOrganization(user.selectedOrganization);
+  const collectionTransactions: ITransaction[] = [];
+
+  for (const node of collectionNodes.value) {
+    if (node.groupId !== undefined) {
+      const group = await getApiGroupById(user.selectedOrganization.serverUrl, node.groupId);
+      for (const item of group.groupItems) {
+        collectionTransactions.push(item.transaction);
+      }
+    } else {
+      if (node.transactionId !== undefined) {
+        const transaction = await getTransactionById(
+          user.selectedOrganization.serverUrl,
+          node.transactionId,
+        );
+        collectionTransactions.push(transaction);
+      }
+    }
+  }
+
+  if (collectionTransactions.length > 0) {
+    const baseName = generateTransactionExportFileName(collectionTransactions[0]);
+
+    const { filePath, canceled } = await showSaveDialog(
+      `${baseName}.tx2`,
+      'Export transactions',
+      'Export',
+      [],
+      'Export transaction',
+    );
+
+    if (!canceled) {
+      const tx2Content: TransactionFile =
+        generateTransactionExportContentV2(collectionTransactions);
+      await writeTransactionFile(tx2Content, filePath);
+    }
+  }
+}
 
 async function setQueryTabAndRemount(title: string) {
   const query = router.currentRoute.value.query;
@@ -228,6 +292,19 @@ onBeforeMount(async () => {
         </div>
         <div>
           <TransactionImportButton />
+        </div>
+
+        <div>
+          <AppDropDown
+            :color="'secondary'"
+            :items="[
+              { label: 'Export', value: 'createTransactionFile' },
+              { label: 'Sign External Transactions', value: 'signTransactionFile' },
+            ]"
+            compact
+            data-testid="button-more-dropdown-sm"
+            @select="handleTransactionFileAction($event)"
+          />
         </div>
       </div>
     </div>
