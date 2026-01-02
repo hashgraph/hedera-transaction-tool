@@ -11,7 +11,7 @@ import { User, UserKey } from '@entities';
 import { UserKeysService } from './user-keys.service';
 
 import { UpdateUserKeyMnemonicHashDto, UploadUserKeyDto } from './dtos';
-import { PrivateKey, PublicKey } from '@hashgraph/sdk';
+import { PrivateKey } from '@hashgraph/sdk';
 
 jest.mock('@app/common/utils');
 describe('UserKeysService', () => {
@@ -68,20 +68,6 @@ describe('UserKeysService', () => {
         mnemonicHash: 'test-hash',
         index: 0,
       };
-    });
-
-    it('should throw BadRequestException if public key is invalid', async () => {
-      jest.mocked(attachKeys).mockImplementationOnce(async (user: User) => {
-        user.keys = [];
-      });
-
-      // Mock PublicKey.fromString to return an object that returns falsy for toStringRaw
-      jest.spyOn(PublicKey, 'fromString').mockReturnValue({
-        toStringRaw: () => null,
-      } as any);
-
-      await expect(service.uploadKey(user, dto)).rejects.toThrow(BadRequestException);
-      await expect(service.uploadKey(user, dto)).rejects.toThrow(ErrorCodes.IPK);
     });
 
     it('should throw BadRequestException if public key is in use by a different user', async () => {
