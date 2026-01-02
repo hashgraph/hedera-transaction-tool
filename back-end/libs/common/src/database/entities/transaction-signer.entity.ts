@@ -1,7 +1,7 @@
 import {
   Column,
   CreateDateColumn,
-  Entity,
+  Entity, Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -11,6 +11,7 @@ import { UserKey } from './user-key.entity';
 import { User } from './user.entity';
 
 @Entity()
+@Index(['transactionId', 'userKeyId'])
 export class TransactionSigner {
   @PrimaryGeneratedColumn()
   id: number;
