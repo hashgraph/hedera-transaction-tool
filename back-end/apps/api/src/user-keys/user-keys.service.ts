@@ -12,12 +12,12 @@ import {
 import { User, UserKey } from '@entities';
 
 import { UpdateUserKeyMnemonicHashDto, UploadUserKeyDto } from './dtos';
-import { PublicKey } from '@hashgraph/sdk';
 
 @Injectable()
 export class UserKeysService {
   constructor(@InjectRepository(UserKey) private repo: Repository<UserKey>) {}
 
+  // Get the user key for the provided where clause.
   getUserKey(
     where: FindOptionsWhere<UserKey>,
     relations?: FindOptionsRelations<UserKey>,
@@ -37,17 +37,9 @@ export class UserKeysService {
       throw new BadRequestException(ErrorCodes.UMK);
     }
 
-    //validate the key
-    const publicKey = PublicKey.fromString(dto.publicKey).toStringRaw();
-    if (!publicKey) {
-      throw new BadRequestException(ErrorCodes.IPK);
-    }
-
-    dto.publicKey = publicKey;
-
     // Find the userKey by the publicKey
     let userKey = await this.repo.findOne({
-      where: { publicKey },
+      where: { publicKey: dto.publicKey },
       withDeleted: true,
     });
 
