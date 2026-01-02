@@ -1,6 +1,6 @@
 import {
   Column,
-  Entity,
+  Entity, Index,
   JoinColumn,
   ManyToOne,
   OneToOne,
@@ -10,6 +10,7 @@ import {
 import { TransactionGroup, Transaction } from './';
 
 @Entity()
+@Index(['transactionId', 'groupId'])
 export class TransactionGroupItem {
   @Column()
   seq: number;
