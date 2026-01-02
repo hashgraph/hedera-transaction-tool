@@ -50,7 +50,7 @@ watch(
       <div class="d-flex align-items-center mb-5">
         <i class="bi bi-x-lg cursor-pointer me-5" @click="show = false" />
         <h3 class="text-subheader fw-medium flex-1">
-          Do you want to sign the following external transactions?
+          Do you want to sign the following transactions?
         </h3>
       </div>
       <form @submit.prevent="handleSign">
@@ -85,7 +85,7 @@ watch(
 
         <div class="d-flex justify-content-end mt-5">
           <AppButton color="primary" data-testid="button-sign-transaction-file" type="submit"
-            >Sign All Transactions</AppButton
+            >Sign and Update File</AppButton
           >
         </div>
       </form>
