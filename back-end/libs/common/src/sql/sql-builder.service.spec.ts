@@ -1,11 +1,11 @@
 import { EntityManager, EntityMetadata, Repository } from 'typeorm';
 import {
-  SqlBuilder,
+  SqlBuilderService,
   SqlBuilderError,
   EntityNotFoundError,
   ColumnNotFoundError,
   InvalidEntityManagerError,
-} from './SqlBuilder';
+} from './sql-builder.service';
 
 // Mock entities for testing
 class User {
@@ -23,7 +23,7 @@ class Post {
 
 describe('SqlBuilder', () => {
   let entityManager: EntityManager;
-  let sqlBuilder: SqlBuilder;
+  let sqlBuilder: SqlBuilderService;
   let mockMetadata: Partial<EntityMetadata>;
   let mockRepository: Partial<Repository<any>>;
   let mockEmailColumn: any;
@@ -64,7 +64,7 @@ describe('SqlBuilder', () => {
       }),
     } as unknown as EntityManager;
 
-    sqlBuilder = new SqlBuilder(entityManager);
+    sqlBuilder = new SqlBuilderService(entityManager);
   });
 
   afterEach(() => {
@@ -73,19 +73,19 @@ describe('SqlBuilder', () => {
 
   describe('Constructor', () => {
     it('should create instance with valid EntityManager', () => {
-      expect(sqlBuilder).toBeInstanceOf(SqlBuilder);
+      expect(sqlBuilder).toBeInstanceOf(SqlBuilderService);
     });
 
     it('should throw InvalidEntityManagerError when EntityManager is null', () => {
-      expect(() => new SqlBuilder(null as any)).toThrow(InvalidEntityManagerError);
+      expect(() => new SqlBuilderService(null as any)).toThrow(InvalidEntityManagerError);
     });
 
     it('should throw InvalidEntityManagerError when EntityManager is undefined', () => {
-      expect(() => new SqlBuilder(undefined as any)).toThrow(InvalidEntityManagerError);
+      expect(() => new SqlBuilderService(undefined as any)).toThrow(InvalidEntityManagerError);
     });
 
     it('should have descriptive error message for invalid EntityManager', () => {
-      expect(() => new SqlBuilder(null as any)).toThrow(
+      expect(() => new SqlBuilderService(null as any)).toThrow(
         'EntityManager is required and must be initialized'
       );
     });
@@ -282,8 +282,8 @@ describe('SqlBuilder', () => {
     });
 
     it('should not cache failed entity lookups', () => {
-      try { sqlBuilder.table(Post); } catch {}
-      try { sqlBuilder.table(Post); } catch {}
+      try { sqlBuilder.table(Post); } catch { /* empty */ }
+      try { sqlBuilder.table(Post); } catch { /* empty */ }
 
       expect(entityManager.getRepository).toHaveBeenCalledTimes(2);
     });
