@@ -320,7 +320,7 @@ onBeforeMount(async () => {
             :color="'secondary'"
             :items="[
               { label: 'Export', value: 'createTransactionFile' },
-              { label: 'Sign External Transactions', value: 'signTransactionFile' },
+              { label: 'Sign Transactions from File', value: 'signTransactionFile' },
             ]"
             compact
             data-testid="button-more-dropdown-sm"
