@@ -199,8 +199,10 @@ async function createTransactionFile() {
     );
 
     if (!canceled) {
-      const tx2Content: TransactionFile =
-        generateTransactionExportContentV2(collectionTransactions);
+      const tx2Content: TransactionFile = generateTransactionExportContentV2(
+        collectionTransactions,
+        network.network
+      );
       await writeTransactionFile(tx2Content, filePath);
     }
   }
