@@ -538,7 +538,10 @@ const handleExport = async () => {
   // Create file(s) based on name and selected format
   if (ext === 'tx2') {
     // Export TTv2 --> TTv2
-    const tx2Content: TransactionFile = generateTransactionExportContentV2([props.organizationTransaction]);
+    const tx2Content: TransactionFile = generateTransactionExportContentV2(
+      [props.organizationTransaction],
+      network.network,
+    );
     await writeTransactionFile(tx2Content, filePath);
 
     toast.success('Transaction exported successfully', successToastOptions);
@@ -768,5 +771,4 @@ watch(
     :text="confirmModalText"
     :title="confirmModalTitle"
   />
-
 </template>

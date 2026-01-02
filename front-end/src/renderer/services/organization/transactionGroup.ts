@@ -82,9 +82,11 @@ export const getApiGroupById = async (serverUrl: string, id: number) => {
 
 export const generateTransactionExportContentV2 = (
   orgTransactions: ITransaction[],
+  network: string
 ): TransactionFile => {
 
   const result: TransactionFile = {
+    network: network,
     items: [],
   }
   for (const tx of orgTransactions) {
@@ -92,7 +94,6 @@ export const generateTransactionExportContentV2 = (
       name: tx.name,
       description: tx.description,
       transactionBytes: tx.transactionBytes,
-      mirrorNetwork: tx.mirrorNetwork,
       creatorEmail: tx.creatorEmail,
     })
   }
