@@ -12,7 +12,12 @@ import {
   User,
 } from '@entities';
 
-import { MirrorNodeService, ErrorCodes, NatsPublisherService, emitTransactionUpdate } from '@app/common';
+import {
+  ErrorCodes,
+  NatsPublisherService,
+  emitTransactionUpdate,
+  TransactionSignatureService,
+} from '@app/common';
 import { userKeysRequiredToSign } from '@app/common/utils';
 
 import { ObserversService } from './observers.service';
@@ -26,8 +31,8 @@ describe('ObserversService', () => {
   const observersRepo = mockDeep<Repository<TransactionObserver>>();
   const entityManager = mockDeep<EntityManager>();
   const approversService = mock<ApproversService>();
-  const mirrorNodeService = mock<MirrorNodeService>();
   const notificationsPublisher = mock<NatsPublisherService>();
+  const transactionSignatureService = mock<TransactionSignatureService>();
 
   const user = {
     id: 1,
@@ -53,12 +58,12 @@ describe('ObserversService', () => {
           useValue: approversService,
         },
         {
-          provide: MirrorNodeService,
-          useValue: mirrorNodeService,
-        },
-        {
           provide: NatsPublisherService,
           useValue: notificationsPublisher,
+        },
+        {
+          provide: TransactionSignatureService,
+          useValue: transactionSignatureService,
         },
       ],
     }).compile();

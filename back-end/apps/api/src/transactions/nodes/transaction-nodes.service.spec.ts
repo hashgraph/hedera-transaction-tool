@@ -20,7 +20,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   CHAIN_SERVICE,
-  MirrorNodeService,
   NOTIFICATIONS_SERVICE,
   SchedulerService,
 } from '@app/common';
@@ -39,7 +38,6 @@ describe('TransactionNodesService', () => {
   const chainService = mock<ClientProxy>();
   const notificationsService = mock<ClientProxy>();
   const approversService = mock<ApproversService>();
-  const mirrorNodeService = mock<MirrorNodeService>();
   const schedulerService = mock<SchedulerService>();
   const entityManager = mockDeep<EntityManager>();
 
@@ -110,8 +108,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
-    transactionAccounts: [],
-    transactionNodes: [],
+    transactionCachedAccounts: [],
+    transactionCachedNodes: [],
   };
 
   const singleTransaction2: Transaction = {
@@ -156,8 +154,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
-    transactionAccounts: [],
-    transactionNodes: [],
+    transactionCachedAccounts: [],
+    transactionCachedNodes: [],
   };
 
   const childTransactionDate1 = Date.now();
@@ -205,8 +203,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
-    transactionAccounts: [],
-    transactionNodes: [],
+    transactionCachedAccounts: [],
+    transactionCachedNodes: [],
   };
 
   const childTransactionDate2 = childTransactionDate1 + 4000;
@@ -254,8 +252,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
-    transactionAccounts: [],
-    transactionNodes: [],
+    transactionCachedAccounts: [],
+    transactionCachedNodes: [],
   };
 
   const childTransactionDate3 = childTransactionDate2 + 4000;
@@ -303,8 +301,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
-    transactionAccounts: [],
-    transactionNodes: [],
+    transactionCachedAccounts: [],
+    transactionCachedNodes: [],
   };
 
   const childTransactionDate4 = childTransactionDate3 + 4000;
@@ -351,8 +349,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
-    transactionAccounts: [],
-    transactionNodes: [],
+    transactionCachedAccounts: [],
+    transactionCachedNodes: [],
   };
 
   const childTransactionDate5 = childTransactionDate4 + 4000;
@@ -399,8 +397,8 @@ describe('TransactionNodesService', () => {
     observers: [],
     comments: [],
     groupItem: null,
-    transactionAccounts: [],
-    transactionNodes: [],
+    transactionCachedAccounts: [],
+    transactionCachedNodes: [],
   };
 
   //
@@ -655,10 +653,6 @@ describe('TransactionNodesService', () => {
           {
             provide: ApproversService,
             useValue: approversService,
-          },
-          {
-            provide: MirrorNodeService,
-            useValue: mirrorNodeService,
           },
           {
             provide: EntityManager,

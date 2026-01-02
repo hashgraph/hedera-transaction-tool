@@ -4,9 +4,10 @@ import {
   Column,
   OneToMany,
   CreateDateColumn,
-  UpdateDateColumn, Index,
+  UpdateDateColumn,
+  Index,
 } from 'typeorm';
-import { CachedAccountKey, TransactionAccount } from './';
+import { CachedAccountKey, TransactionCachedAccount } from './';
 
 /**
  * CachedAccount entity represents a cached Hedera account with its properties and relationships.
@@ -27,16 +28,19 @@ export class CachedAccount {
   mirrorNetwork: string;
 
   @Column({ nullable: true })
-  receiverSignatureRequired?: boolean;
+  receiverSignatureRequired: boolean | null;
+
+  @Column({ type: 'bytea', nullable: true })
+  encodedKey: Buffer | null;
 
   @Column({ length: 100, nullable: true })
-  etag?: string; // Mirror node etag or hash of response
+  etag: string | null; // Mirror node etag or hash of response
 
   @OneToMany(() => CachedAccountKey, (key) => key.account)
   keys: CachedAccountKey[];
 
-  @OneToMany(() => TransactionAccount, (ta) => ta.account)
-  accountTransactions: TransactionAccount[];
+  @OneToMany(() => TransactionCachedAccount, (ta) => ta.account)
+  accountTransactions: TransactionCachedAccount[];
 
   @CreateDateColumn()
   createdAt: Date; // For tracking cache life span
@@ -44,4 +48,11 @@ export class CachedAccount {
   @UpdateDateColumn()
   @Index()
   updatedAt: Date;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  lastCheckedAt: Date | null; // For tracking when the account was last verified
+
+  @Column({ type: 'uuid', nullable: true })
+  @Index()
+  refreshToken: string | null;
 }

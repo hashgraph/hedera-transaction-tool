@@ -17,8 +17,8 @@ import {
   TransactionApprover,
   TransactionObserver,
   TransactionGroupItem,
-  TransactionAccount,
-  TransactionNode,
+  TransactionCachedAccount,
+  TransactionCachedNode,
 } from './';
 
 import { ApiProperty } from '@nestjs/swagger';
@@ -141,11 +141,11 @@ export class Transaction {
   @OneToOne(() => TransactionGroupItem, groupItem => groupItem.transaction)
   groupItem?: TransactionGroupItem;
 
-  @OneToMany(() => TransactionAccount, (ta) => ta.transaction)
-  transactionAccounts: TransactionAccount[];
+  @OneToMany(() => TransactionCachedAccount, (ta) => ta.transaction)
+  transactionCachedAccounts: TransactionCachedAccount[];
 
-  @OneToMany(() => TransactionNode, (ta) => ta.transaction)
-  transactionNodes: TransactionNode[];
+  @OneToMany(() => TransactionCachedNode, (ta) => ta.transaction)
+  transactionCachedNodes: TransactionCachedNode[];
 }
 
 export const transactionProperties: (keyof Transaction)[] = [

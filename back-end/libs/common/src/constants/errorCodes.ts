@@ -23,6 +23,7 @@ export enum ErrorCodes {
   CRYFO = 'CRYFO',
   UNF = 'UNF',
   IFP = 'IFP',
+  IPK = 'IPK',
   ISP = 'ISP',
   IRP = 'IRP',
   IPP = 'IPP',
@@ -63,6 +64,7 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.CRYFO]: 'Cannot remove yourself from the organization',
   [ErrorCodes.UNF]: 'User not found',
   [ErrorCodes.IFP]: 'Invalid filter parameters',
+  [ErrorCodes.IPK]: 'Invalid public key',
   [ErrorCodes.ISP]: 'Invalid sorting parameters',
   [ErrorCodes.IRP]: 'Invalid Request parameters',
   [ErrorCodes.IPP]:

@@ -2,10 +2,10 @@ import { SqlBuilder } from '@app/common';
 import {
   Transaction,
   UserKey,
-  TransactionAccount,
+  TransactionCachedAccount,
   CachedAccount,
   CachedAccountKey,
-  TransactionNode,
+  TransactionCachedNode,
   CachedNode,
   CachedNodeAdminKey,
 } from '@entities';
@@ -22,18 +22,18 @@ export function selectTransactionIdsForUser(sql: SqlBuilder): string {
     JOIN ${sql.table(UserKey)} uk 
       ON uk.${sql.col(UserKey, 'userId')} = $1
 
-    LEFT JOIN ${sql.table(TransactionAccount)} ta 
-      ON ta.${sql.col(TransactionAccount, 'transactionId')} = t.${sql.col(Transaction, 'id')}
+    LEFT JOIN ${sql.table(TransactionCachedAccount)} ta 
+      ON ta.${sql.col(TransactionCachedAccount, 'transactionId')} = t.${sql.col(Transaction, 'id')}
     LEFT JOIN ${sql.table(CachedAccount)} ca 
-      ON ca.${sql.col(CachedAccount, 'id')} = ta.${sql.col(TransactionAccount, 'accountId')}
+      ON ca.${sql.col(CachedAccount, 'id')} = ta.${sql.col(TransactionCachedAccount, 'accountId')}
     LEFT JOIN ${sql.table(CachedAccountKey)} cak 
       ON cak.${sql.col(CachedAccountKey, 'accountId')} = ca.${sql.col(CachedAccount, 'id')}
       AND cak.${sql.col(CachedAccountKey, 'publicKey')} = uk.${sql.col(UserKey, 'publicKey')}
 
-    LEFT JOIN ${sql.table(TransactionNode)} tn 
-      ON tn.${sql.col(TransactionNode, 'transactionId')} = t.${sql.col(Transaction, 'id')}
+    LEFT JOIN ${sql.table(TransactionCachedNode)} tn 
+      ON tn.${sql.col(TransactionCachedNode, 'transactionId')} = t.${sql.col(Transaction, 'id')}
     LEFT JOIN ${sql.table(CachedNode)} cn 
-      ON cn.${sql.col(CachedNode, 'id')} = tn.${sql.col(TransactionNode, 'nodeId')}
+      ON cn.${sql.col(CachedNode, 'id')} = tn.${sql.col(TransactionCachedNode, 'nodeId')}
     LEFT JOIN ${sql.table(CachedNodeAdminKey)} cnak 
       ON cnak.${sql.col(CachedNodeAdminKey, 'nodeId')} = cn.${sql.col(CachedNode, 'id')}
       AND cnak.${sql.col(CachedNodeAdminKey, 'publicKey')} = uk.${sql.col(UserKey, 'publicKey')}

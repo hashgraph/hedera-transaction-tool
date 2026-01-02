@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { MirrorNodeModule } from '@app/common';
 import { NotificationReceiver } from '@entities';
 
 import { TransactionsModule } from '../transactions/transactions.module';
@@ -13,7 +12,6 @@ import { NotificationReceiverService } from './notification-receiver.service';
   imports: [
     TypeOrmModule.forFeature([NotificationReceiver]),
     TransactionsModule,
-    MirrorNodeModule,
   ],
   controllers: [NotificationsController],
   providers: [NotificationReceiverService],

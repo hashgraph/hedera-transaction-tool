@@ -6,7 +6,7 @@ import { In, Between, MoreThan, Repository, LessThan } from 'typeorm';
 import { Status } from '@hashgraph/sdk';
 
 import {
-  MirrorNodeService,
+  TransactionSignatureService,
   ExecuteService,
   smartCollate,
   emitTransactionStatusUpdate,
@@ -27,7 +27,7 @@ export class TransactionSchedulerService {
     private readonly notificationsPublisher: NatsPublisherService,
     private schedulerRegistry: SchedulerRegistry,
     private readonly executeService: ExecuteService,
-    private readonly mirrorNodeService: MirrorNodeService,
+    private readonly transactionSignatureService: TransactionSignatureService,
   ) {}
 
   /* UPDATES THE TRANSACTIONS STATUSES */
@@ -158,7 +158,7 @@ export class TransactionSchedulerService {
       },
     });
 
-    const results = await processTransactionStatus(this.transactionRepo, this.mirrorNodeService, transactions);
+    const results = await processTransactionStatus(this.transactionRepo, this.transactionSignatureService, transactions);
 
     if (results.size > 0) {
       const events = Array.from(results.keys(), id => ({ entityId: id }));
@@ -219,7 +219,10 @@ export class TransactionSchedulerService {
         let smartCollateFailed = false;
         for (const groupItem of transactionGroup.groupItems) {
           const transaction = groupItem.transaction;
-          const sdkTransaction = await smartCollate(transaction, this.mirrorNodeService);
+
+          const requiredKeys = await this.transactionSignatureService.computeSignatureKey(transaction);
+
+          const sdkTransaction = await smartCollate(transaction, requiredKeys);
 
           // If the transaction is still too large,
           // break out of the loop and update all transactions in the group to failed
@@ -278,7 +281,9 @@ export class TransactionSchedulerService {
 
     const callback = async () => {
       try {
-        const sdkTransaction = await smartCollate(transaction, this.mirrorNodeService);
+        const requiredKeys = await this.transactionSignatureService.computeSignatureKey(transaction);
+
+        const sdkTransaction = await smartCollate(transaction, requiredKeys);
 
         // If the transaction is still too large,
         // set it to failed with the TRANSACTION_OVERSIZE status code

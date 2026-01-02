@@ -3,9 +3,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import {
   LoggerModule,
-  MirrorNodeModule,
   NatsModule,
   RedisMurlockModule,
+  TransactionSignatureModule,
 } from '@app/common';
 import {
   CachedAccount,
@@ -17,12 +17,12 @@ import {
   NotificationPreferences,
   NotificationReceiver,
   Transaction,
-  TransactionAccount,
+  TransactionCachedAccount,
   TransactionApprover,
   TransactionComment,
   TransactionGroup,
   TransactionGroupItem,
-  TransactionNode,
+  TransactionCachedNode,
   TransactionObserver,
   TransactionSigner,
   User,
@@ -48,8 +48,8 @@ import { ReceiverConsumerService } from './receiver-consumer.service';
       TransactionComment,
       TransactionGroup,
       TransactionGroupItem,
-      TransactionAccount,
-      TransactionNode,
+      TransactionCachedAccount,
+      TransactionCachedNode,
       CachedAccount,
       CachedAccountKey,
       CachedNode,
@@ -58,7 +58,7 @@ import { ReceiverConsumerService } from './receiver-consumer.service';
       NotificationReceiver,
       NotificationPreferences,
     ]),
-    MirrorNodeModule,
+    TransactionSignatureModule,
     FanOutModule,
     RedisMurlockModule,
     NatsModule

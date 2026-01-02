@@ -4,10 +4,10 @@ import { selectTransactionIdsForUser } from './';
 import {
   Transaction,
   UserKey,
-  TransactionAccount,
+  TransactionCachedAccount,
   CachedAccount,
   CachedAccountKey,
-  TransactionNode,
+  TransactionCachedNode,
   CachedNode,
   CachedNodeAdminKey,
 } from '@entities';
@@ -31,10 +31,10 @@ describe('selectTransactionIdsForUser', () => {
     const entityMetadataMap = new Map<any, any>([
       [Transaction, createMockMetadata('transaction', { id: 'id' })],
       [UserKey, createMockMetadata('user_key', { userId: 'user_id', publicKey: 'public_key' })],
-      [TransactionAccount, createMockMetadata('transaction_account', { transactionId: 'transaction_id', accountId: 'account_id' })],
+      [TransactionCachedAccount, createMockMetadata('transaction_account', { transactionId: 'transaction_id', accountId: 'account_id' })],
       [CachedAccount, createMockMetadata('cached_account', { id: 'id' })],
       [CachedAccountKey, createMockMetadata('cached_account_key', { accountId: 'account_id', publicKey: 'public_key' })],
-      [TransactionNode, createMockMetadata('transaction_node', { transactionId: 'transaction_id', nodeId: 'node_id' })],
+      [TransactionCachedNode, createMockMetadata('transaction_node', { transactionId: 'transaction_id', nodeId: 'node_id' })],
       [CachedNode, createMockMetadata('cached_node', { id: 'id' })],
       [CachedNodeAdminKey, createMockMetadata('cached_node_admin_key', { nodeId: 'node_id', publicKey: 'public_key' })],
     ]);
@@ -111,10 +111,10 @@ describe('selectTransactionIdsForUser', () => {
 
       expect(tableSpy).toHaveBeenCalledWith(Transaction);
       expect(tableSpy).toHaveBeenCalledWith(UserKey);
-      expect(tableSpy).toHaveBeenCalledWith(TransactionAccount);
+      expect(tableSpy).toHaveBeenCalledWith(TransactionCachedAccount);
       expect(tableSpy).toHaveBeenCalledWith(CachedAccount);
       expect(tableSpy).toHaveBeenCalledWith(CachedAccountKey);
-      expect(tableSpy).toHaveBeenCalledWith(TransactionNode);
+      expect(tableSpy).toHaveBeenCalledWith(TransactionCachedNode);
       expect(tableSpy).toHaveBeenCalledWith(CachedNode);
       expect(tableSpy).toHaveBeenCalledWith(CachedNodeAdminKey);
     });
@@ -147,8 +147,8 @@ describe('selectTransactionIdsForUser', () => {
       expect(colSpy).toHaveBeenCalledWith(UserKey, 'publicKey');
 
       // TransactionAccount columns
-      expect(colSpy).toHaveBeenCalledWith(TransactionAccount, 'transactionId');
-      expect(colSpy).toHaveBeenCalledWith(TransactionAccount, 'accountId');
+      expect(colSpy).toHaveBeenCalledWith(TransactionCachedAccount, 'transactionId');
+      expect(colSpy).toHaveBeenCalledWith(TransactionCachedAccount, 'accountId');
 
       // CachedAccount columns
       expect(colSpy).toHaveBeenCalledWith(CachedAccount, 'id');
@@ -158,8 +158,8 @@ describe('selectTransactionIdsForUser', () => {
       expect(colSpy).toHaveBeenCalledWith(CachedAccountKey, 'publicKey');
 
       // TransactionNode columns
-      expect(colSpy).toHaveBeenCalledWith(TransactionNode, 'transactionId');
-      expect(colSpy).toHaveBeenCalledWith(TransactionNode, 'nodeId');
+      expect(colSpy).toHaveBeenCalledWith(TransactionCachedNode, 'transactionId');
+      expect(colSpy).toHaveBeenCalledWith(TransactionCachedNode, 'nodeId');
 
       // CachedNode columns
       expect(colSpy).toHaveBeenCalledWith(CachedNode, 'id');
