@@ -2,10 +2,15 @@
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { computed, ref, watch } from 'vue';
-import type { TransactionFile } from '@shared/interfaces';
+import type { TransactionFile, TransactionFileItem } from '@shared/interfaces';
 import { readTransactionFile } from '@renderer/services/transactionFile.ts';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import SignTransactionFileModalRow from '@renderer/components/ExternalSigning/SignTransactionFileModalRow.vue';
+import { filterTransactionFileItemsToBeSigned } from '@shared/utils/transactionFile.ts';
+import useUserStore from '@renderer/stores/storeUser.ts';
+import useNetworkStore from '@renderer/stores/storeNetwork';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -15,16 +20,24 @@ const props = defineProps<{
 /* Models */
 const show = defineModel<boolean>('show', { required: true });
 
+/* Stores */
+const user = useUserStore();
+const network = useNetworkStore();
+
+/* Injected */
+const accountInfoCache = AccountByIdCache.inject();
+const nodeInfoCache = NodeByIdCache.inject();
+
 /* State */
 const transactionFile = ref<TransactionFile | null>(null);
+const itemsToBeSigned = ref<TransactionFileItem[]>([]);
 const currentPage = ref(1);
 const pageSize = ref(15);
 
 /* Computed */
 const pageStart = computed(() => (currentPage.value - 1) * pageSize.value);
 const pagedItems = computed(() => {
-  const items = transactionFile.value?.items ?? [];
-  return items.slice(pageStart.value, pageStart.value + pageSize.value);
+  return itemsToBeSigned.value.slice(pageStart.value, pageStart.value + pageSize.value);
 });
 
 /* Handlers */
@@ -38,6 +51,13 @@ watch(
   async () => {
     if (props.filePath) {
       transactionFile.value = await readTransactionFile(props.filePath);
+      itemsToBeSigned.value = await filterTransactionFileItemsToBeSigned(
+        transactionFile.value.items,
+        user.publicKeys,
+        network.getMirrorNodeREST(transactionFile.value.network),
+        accountInfoCache,
+        nodeInfoCache,
+      );
     }
   },
   { immediate: true },
