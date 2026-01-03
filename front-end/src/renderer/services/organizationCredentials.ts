@@ -82,3 +82,17 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string | n
       decryptPassword,
     );
   }, 'Failed failed to auto sign in to organizations');
+
+/* Try auto sign in to a single organization */
+export const tryAutoSignInOrganization = async (
+  user_id: string,
+  organization_id: string,
+  decryptPassword: string | null,
+) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.organizationCredentials.tryAutoSignInOrganization(
+      user_id,
+      organization_id,
+      decryptPassword,
+    );
+  }, 'Failed to auto sign in to organization');

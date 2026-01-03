@@ -6,6 +6,7 @@ import {
   updateOrganizationCredentials,
   deleteOrganizationCredentials,
   tryAutoSignIn,
+  tryAutoSignInOrganization,
 } from '@main/services/localUser';
 import { createIPCChannel, renameFunc } from '@main/utils/electronInfra';
 
@@ -19,5 +20,6 @@ export default () => {
     renameFunc(updateOrganizationCredentials, 'updateOrganizationCredentials'),
     renameFunc(deleteOrganizationCredentials, 'deleteOrganizationCredentials'),
     renameFunc(tryAutoSignIn, 'tryAutoSignIn'),
+    renameFunc(tryAutoSignInOrganization, 'tryAutoSignInOrganization'),
   ]);
 };

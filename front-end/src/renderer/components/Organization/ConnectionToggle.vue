@@ -1,0 +1,111 @@
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+
+import type { ConnectedOrganization } from '@renderer/types/userStore';
+
+import useOrganizationConnection from '@renderer/stores/storeOrganizationConnection';
+import { disconnectOrganization } from '@renderer/services/organization/disconnect';
+import { reconnectOrganization } from '@renderer/services/organization/reconnect';
+
+import { useToast } from 'vue-toast-notification';
+import { errorToastOptions } from '@renderer/utils/toastOptions';
+
+import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
+import { useRouter } from 'vue-router';
+
+/* Props */
+const props = defineProps<{
+  organization: ConnectedOrganization;
+  disabled?: boolean;
+}>();
+
+/* Emits */
+const emit = defineEmits<{
+  (event: 'connect'): void;
+  (event: 'disconnect'): void;
+  (event: 'error', error: Error): void;
+}>();
+
+/* Stores */
+const orgConnection = useOrganizationConnection();
+const toast = useToast();
+const router = useRouter(); 
+
+/* State */
+const isProcessing = ref(false);
+
+/* Computed */
+const isConnected = computed(() => {
+  const status = orgConnection.getConnectionStatus(props.organization.serverUrl);
+  return status === 'connected';
+});
+
+const isDisabled = computed(() => {
+  if (props.disabled || isProcessing.value) {
+    return true;
+  }
+  
+  const disconnectReason = orgConnection.getDisconnectReason(props.organization.serverUrl);
+  if (disconnectReason === 'upgradeRequired') {
+    return true;
+  }
+  
+  return false;
+});
+
+/* Handlers */
+const handleToggle = async (checked: boolean) => {
+  if (isProcessing.value) return;
+
+  isProcessing.value = true;
+
+  try {
+    if (checked) {
+      // Toggling ON - attempt to reconnect
+      await handleReconnect();
+    } else {
+      // Toggling OFF - disconnect
+      await handleDisconnect();
+    }
+  } catch (error) {
+    console.error('Connection toggle error:', error);
+    emit('error', error instanceof Error ? error : new Error('Unknown error'));
+    toast.error(`Failed to ${checked ? 'connect' : 'disconnect'} organization`, errorToastOptions);
+  } finally {
+    isProcessing.value = false;
+  }
+};
+
+const handleReconnect = async () => {
+  const result = await reconnectOrganization(props.organization.serverUrl);
+
+  if (result.redirectToLogin) {
+    await router.push({ name: 'organizationLogin' });
+    return;
+  }
+
+  if (result.success) {
+    emit('connect');
+  } else if (result.requiresUpdate) {
+    console.log('Reconnection requires update - modal should be shown');
+  } else {
+    throw new Error('Failed to reconnect');
+  }
+};
+
+const handleDisconnect = async () => {
+  await disconnectOrganization(props.organization.serverUrl, 'manual');
+  emit('disconnect');
+};
+</script>
+<template>
+  <AppSwitch
+    :name="`connection-toggle-${organization.id}`"
+    :checked="isConnected"
+    :disabled="isDisabled"
+    size="md"
+    class="mb-0 me-2"
+    @update:checked="handleToggle"
+    data-testid="connection-toggle"
+  />
+</template>

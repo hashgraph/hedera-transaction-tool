@@ -274,6 +274,65 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string | n
   return failedLogins;
 };
 
+/* Tries to auto sign in to a single organization */
+export const tryAutoSignInOrganization = async (
+  user_id: string,
+  organization_id: string,
+  decryptPassword: string | null,
+): Promise<{ success: boolean; error?: string }> => {
+  const prisma = getPrismaClient();
+
+  try {
+    // Find credentials for this organization
+    const credentials = await prisma.organizationCredentials.findFirst({
+      where: { user_id, organization_id },
+      include: {
+        organization: true,
+      },
+    });
+
+    if (!credentials) {
+      return { success: false, error: 'No credentials found for this organization' };
+    }
+
+    // Check if JWT is already valid (no need to login)
+    const isInvalid = await organizationCredentialsInvalid(credentials);
+    if (!isInvalid) {
+      return { success: true }; // Already logged in
+    }
+
+    // Decrypt the stored password
+    let password: string;
+    try {
+      password = await decryptData(credentials.password, decryptPassword);
+    } catch {
+      return { success: false, error: 'Incorrect decryption password' };
+    }
+
+    // Login to the organization server
+    try {
+      const { accessToken } = await login(
+        credentials.organization.serverUrl,
+        credentials.email,
+        password,
+      );
+
+      // Save the new JWT token to database
+      await prisma.organizationCredentials.update({
+        where: { id: credentials.id },
+        data: { jwtToken: accessToken },
+      });
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Login failed' };
+    }
+  } catch (error) {
+    console.error('Auto-sign in failed:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+};
+
 /* Encrypt data */
 async function encryptData(data: string, encryptPassword?: string | null) {
   const useKeychain = await getUseKeychainClaim();
