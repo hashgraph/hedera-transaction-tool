@@ -35,7 +35,8 @@ const toast = useToast();
 const { setLast } = useDefaultOrganization();
 
 const affectedOrg = computed(() => {
-  const serverUrl = triggeringOrganizationServerUrl.value || getMostRecentOrganizationRequiringUpdate();
+  const serverUrl =
+    triggeringOrganizationServerUrl.value || getMostRecentOrganizationRequiringUpdate();
   if (!serverUrl) return null;
   return user.organizations.find(org => org.serverUrl === serverUrl) || null;
 });
@@ -127,16 +128,14 @@ const handleDisconnect = async () => {
       );
       console.log(`  - Status: disconnected`);
       console.log(`  - Reason: upgradeRequired`);
-      console.log(`  - Remaining orgs requiring update: ${user.organizations.filter(o => getVersionStatusForOrg(o.serverUrl) === 'belowMinimum').length}`);
+      console.log(
+        `  - Remaining orgs requiring update: ${user.organizations.filter(o => getVersionStatusForOrg(o.serverUrl) === 'belowMinimum').length}`,
+      );
     } catch (error) {
       console.error('Failed to disconnect organization:', error);
       toast.error('Failed to disconnect organization', errorToastOptions);
     }
   }
-};
-
-const handleQuit = async () => {
-  await quit();
 };
 
 const handleRetry = () => {
@@ -239,7 +238,9 @@ const handleCompatibilityCancel = () => {
       </p>
       <hr class="separator my-4" />
       <div class="d-flex gap-4 justify-content-center">
-        <AppButton type="button" color="secondary" @click="handleQuit">Quit</AppButton>
+        <AppButton type="button" color="secondary" @click="handleDisconnect">
+          Disconnect
+        </AppButton>
         <AppButton type="button" color="primary" @click="handleRetry">
           <i class="bi bi-arrow-repeat me-2"></i>Try Again
         </AppButton>
@@ -260,13 +261,18 @@ const handleCompatibilityCancel = () => {
           Your current version is no longer supported by this organization.
           <span
             v-if="
-              user.organizations.filter(org => getVersionStatusForOrg(org.serverUrl) === 'belowMinimum')
-                .length > 1
+              user.organizations.filter(
+                org => getVersionStatusForOrg(org.serverUrl) === 'belowMinimum',
+              ).length > 1
             "
             class="d-block mt-2 text-warning"
           >
             <i class="bi bi-info-circle me-1"></i>
-            {{ user.organizations.filter(org => getVersionStatusForOrg(org.serverUrl) === 'belowMinimum').length - 1 }}
+            {{
+              user.organizations.filter(
+                org => getVersionStatusForOrg(org.serverUrl) === 'belowMinimum',
+              ).length - 1
+            }}
             other organization(s) also require updates.
           </span>
         </span>
