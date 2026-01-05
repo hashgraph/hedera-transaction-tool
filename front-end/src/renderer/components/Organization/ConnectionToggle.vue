@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import router from '@renderer/router';
 
 import type { ConnectedOrganization } from '@renderer/types/userStore';
 
 import useOrganizationConnection from '@renderer/stores/storeOrganizationConnection';
 import { disconnectOrganization } from '@renderer/services/organization/disconnect';
 import { reconnectOrganization } from '@renderer/services/organization/reconnect';
+import { isLoggedOutOrganization } from '@renderer/utils';
 
 import { useToast } from 'vue-toast-notification';
 import { errorToastOptions } from '@renderer/utils/toastOptions';
@@ -50,10 +52,8 @@ const handleToggle = async (checked: boolean) => {
 
   try {
     if (checked) {
-      // Toggling ON - attempt to reconnect
       await handleReconnect();
     } else {
-      // Toggling OFF - disconnect
       await handleDisconnect();
     }
   } catch (error) {
@@ -69,11 +69,10 @@ const handleReconnect = async () => {
   const result = await reconnectOrganization(props.organization.serverUrl);
 
   if (result.success) {
+    if (isLoggedOutOrganization(props.organization)) {
+      await router.push({ name: 'organizationLogin' });
+    }
     emit('connect');
-  } else if (result.requiresUpdate) {
-    // Version check failed - modal will be shown by reconnect service
-    // Don't emit error, just let the user know via the modal
-    console.log('Reconnection requires update - modal should be shown');
   } else {
     throw new Error('Failed to reconnect');
   }

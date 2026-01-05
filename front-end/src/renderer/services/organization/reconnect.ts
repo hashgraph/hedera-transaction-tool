@@ -10,16 +10,17 @@ import {
   organizationCompatibilityResults,
 } from '@renderer/stores/versionState';
 
+import router from '@renderer/router';
 import { getLocalWebsocketPath } from '@renderer/services/organizationsService';
 import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organization/versionCompatibility';
 import { isVersionBelowMinimum } from '@renderer/services/organization/versionCompatibility';
 import { checkVersion } from '@renderer/services/organization';
 import { FRONTEND_VERSION } from '@renderer/utils/version';
 import useVersionCheck from '@renderer/composables/useVersionCheck';
+import { getConnectedOrganization, isLoggedOutOrganization } from '@renderer/utils/userStoreHelpers';
 
 import { useToast } from 'vue-toast-notification';
 import { errorToastOptions } from '@renderer/utils/toastOptions';
-
 /**
  * Reconnect an organization with version checking and compatibility validation.
  *
@@ -41,7 +42,7 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
   const orgConnection = useOrganizationConnection();
   const { performVersionCheck } = useVersionCheck();
   const toast = useToast();
-
+  
   const org = userStore.organizations.find(o => o.serverUrl === serverUrl);
   if (!org) {
     console.error(`[${new Date().toISOString()}] RECONNECT Organization not found: ${serverUrl}`);
@@ -133,7 +134,12 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
     console.log(`  - Status: connected`);
     console.log(`  - Details: Version check passed, websocket connected`);
 
-    toast.success(`Reconnected to ${org.nickname || serverUrl}`);
+    userStore.selectedOrganization = await getConnectedOrganization(org, userStore.personal);
+    if (isLoggedOutOrganization(userStore.selectedOrganization)) {
+      await router.push({ name: 'organizationLogin' });
+    } else {
+      toast.success(`Reconnected to ${org.nickname || serverUrl}`);
+    }
 
     return { success: true };
   } catch (error) {
