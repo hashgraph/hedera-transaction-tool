@@ -181,12 +181,8 @@ export async function produceSigningReport(
   // Lists sdk keys that needs to sign the transaction
   const sdkKeyList = await transactionSignatureService.computeSignatureKey(transaction);
   const signerKeys = new Set<string>();
-  for (const k of sdkKeyList) {
-    if (k instanceof PublicKey) {
-      signerKeys.add(k.toStringRaw());
-    } else {
-      throw new Error('k should be a PublicKey instance');
-    }
+  for (const k of flattenKeyList(sdkKeyList)) {
+    signerKeys.add(k.toStringRaw());
   }
 
   // Filters signers and signatures
