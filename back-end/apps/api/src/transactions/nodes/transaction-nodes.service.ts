@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Transaction, TransactionStatus, TransactionType, User } from '@entities';
 import {
   Filtering,
-  MirrorNodeService,
+  TransactionSignatureService,
   Pagination,
   produceSigningReport,
   produceSigningReportForArray,
@@ -28,7 +28,7 @@ export class TransactionNodesService {
   constructor(
     private readonly transactionsService: TransactionsService,
     private readonly transactionGroupsService: TransactionGroupsService,
-    private readonly mirrorNodeService: MirrorNodeService,
+    private readonly transactionSignatureService: TransactionSignatureService,
     @InjectDataSource() private dataSource: DataSource,
   ) {}
 
@@ -129,8 +129,7 @@ export class TransactionNodesService {
         for (const t of transactions) {
           const signingReport = await produceSigningReport(
             t,
-            this.mirrorNodeService,
-            network,
+            this.transactionSignatureService,
             this.dataSource.manager,
           );
           const node = new TransactionNodeDto();
@@ -159,8 +158,7 @@ export class TransactionNodesService {
         const group = await this.transactionGroupsService.getTransactionGroup(user, groupId);
         const signingReport = await produceSigningReportForArray(
           transactions,
-          this.mirrorNodeService,
-          network,
+          this.transactionSignatureService,
           this.dataSource.manager,
         );
         const node = new TransactionNodeDto();
