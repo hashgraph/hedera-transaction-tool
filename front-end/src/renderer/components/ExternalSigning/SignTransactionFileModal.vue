@@ -3,14 +3,20 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { computed, ref, watch } from 'vue';
 import type { TransactionFile, TransactionFileItem } from '@shared/interfaces';
-import { readTransactionFile } from '@renderer/services/transactionFile.ts';
+import { readTransactionFile, writeTransactionFile } from '@renderer/services/transactionFile.ts';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import SignTransactionFileModalRow from '@renderer/components/ExternalSigning/SignTransactionFileModalRow.vue';
-import { filterTransactionFileItemsToBeSigned } from '@shared/utils/transactionFile.ts';
+import {
+  collectMissingSignerKeys,
+  filterTransactionFileItemsToBeSigned,
+} from '@shared/utils/transactionFile.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { assertUserLoggedIn, hexToUint8Array, uint8ToHex } from '@renderer/utils';
+import { Transaction } from '@hashgraph/sdk';
+import { signTransaction } from '@renderer/services/transactionService.ts';
 
 /* Props */
 const props = defineProps<{
@@ -41,7 +47,58 @@ const pagedItems = computed(() => {
 });
 
 /* Handlers */
-async function handleSign() {
+async function handleSignAll() {
+  assertUserLoggedIn(user.personal);
+  const password = user.getPassword();
+  if (!password && !user.personal.useKeychain) throw new Error('Password is required to sign');
+
+  if (transactionFile.value) {
+    const updatedFile: TransactionFile = {
+      network: transactionFile.value!.network,
+      items: [],
+    };
+
+    for (const item of transactionFile.value!.items) {
+      if (itemsToBeSigned.value.includes(item)) {
+        const transactionBytes = hexToUint8Array(item.transactionBytes);
+        const sdkTransaction = Transaction.fromBytes(transactionBytes);
+        const missingSignerKeys = await collectMissingSignerKeys(
+          sdkTransaction,
+          user.publicKeys,
+          network.getMirrorNodeREST(transactionFile.value!.network),
+          accountInfoCache,
+          nodeInfoCache,
+        );
+        console.log(`Signing transaction with these keys`, JSON.stringify(missingSignerKeys));
+
+        try {
+          const signedBytes = await signTransaction(
+            transactionBytes,
+            missingSignerKeys,
+            user.personal.id,
+            password,
+          );
+          const signedItem = {
+            name: item.name,
+            description: item.description,
+            transactionBytes: uint8ToHex(signedBytes),
+            creatorEmail: item.creatorEmail,
+          };
+          updatedFile.items.push(signedItem);
+        } catch (error) {
+          console.log(
+            `Error signing one of the transactions in the file (leaving transaction untouched):`,
+            error,
+          );
+          updatedFile.items.push(item);
+        }
+      } else {
+        updatedFile.items.push(item);
+      }
+    }
+    await writeTransactionFile(updatedFile, props.filePath!);
+  }
+
   show.value = false;
 }
 
@@ -73,7 +130,7 @@ watch(
           Do you want to sign the following transactions?
         </h3>
       </div>
-      <form @submit.prevent="handleSign">
+      <form @submit.prevent="handleSignAll">
         <template v-if="transactionFile">
           <table class="table-custom">
             <thead>
