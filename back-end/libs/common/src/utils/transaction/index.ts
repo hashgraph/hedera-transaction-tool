@@ -170,8 +170,7 @@ export interface SigningReport {
 
 export async function produceSigningReport(
   transaction: Transaction,
-  mirrorNodeService: MirrorNodeService,
-  mirrorNetwork: string,
+  transactionSignatureService: TransactionSignatureService,
   entityManager: EntityManager,
 ): Promise<SigningReport> {
   const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
@@ -180,7 +179,7 @@ export async function produceSigningReport(
   const signatureKeys = sdkTransaction._signerPublicKeys;
 
   // Lists sdk keys that needs to sign the transaction
-  const sdkKeyList = await computeSignatureKey(sdkTransaction, mirrorNodeService, mirrorNetwork);
+  const sdkKeyList = await transactionSignatureService.computeSignatureKey(transaction);
   const signerKeys = new Set<string>();
   for (const k of sdkKeyList) {
     if (k instanceof PublicKey) {
@@ -233,8 +232,7 @@ export async function produceSigningReport(
 
 export async function produceSigningReportForArray(
   transactions: Transaction[],
-  mirrorNodeService: MirrorNodeService,
-  mirrorNetwork: string,
+  transactionSignatureService: TransactionSignatureService,
   entityManager: EntityManager,
 ): Promise<SigningReport> {
   const result: SigningReport = {
@@ -246,7 +244,7 @@ export async function produceSigningReportForArray(
   };
 
   for (const t of transactions) {
-    const r = await produceSigningReport(t, mirrorNodeService, mirrorNetwork, entityManager);
+    const r = await produceSigningReport(t, transactionSignatureService, entityManager);
     r.internalSigners.forEach(s => result.internalSigners.add(s));
     r.externalSigners.forEach(s => result.externalSigners.add(s));
     r.internalSignatures.forEach(s => result.internalSignatures.add(s));
