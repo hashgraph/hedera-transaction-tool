@@ -34,7 +34,7 @@ export async function filterTransactionFileItemsToBeSigned(
   return result;
 }
 
-async function collectMissingSignerKeys(
+export async function collectMissingSignerKeys(
   transaction: SDKTransaction,
   userPublicKeys: string[],
   mirrorNodeLink: string,
@@ -51,14 +51,19 @@ async function collectMissingSignerKeys(
     null,
   );
   const signatureKeys = transaction._signerPublicKeys;
+
+  console.log(`Transaction currently signed with these keys`, JSON.stringify(signatureKeys));
+
   for (const key of audit.signatureKeys) {
     for (const flatKey of flattenKeyList(key)) {
-      if (!signatureKeys.has(flatKey.toStringDer())) {
+      if (!signatureKeys.has(flatKey.toStringRaw())) {
         // flatKey must sign the transaction
         // => checks if flatKey is part of user public keys
+        console.log(`Transaction needs to be signed with this key (RAW):`, flatKey.toStringRaw());
         if (userPublicKeys.includes(flatKey.toStringRaw())) {
           // User is able to sign transaction with flatKey
-          result.push(flatKey.toStringDer());
+          console.log(`Transaction can be signed with this user key (RAW):`, flatKey.toStringRaw());
+          result.push(flatKey.toStringRaw());
         }
       }
     }
