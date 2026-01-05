@@ -18,6 +18,6 @@ export async function writeTransactionFile(
         transactionFile,
         filePath,
       ),
-    'Failed to read transaction file',
+    'Failed to write transaction file',
   );
 }
