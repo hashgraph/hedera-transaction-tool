@@ -101,16 +101,14 @@ const handleAddOrganization = async (organization: Organization) => {
   }
 };
 
-/* Helper functions for organization data */
+/* Helpers */
 const getConnectionStatus = (serverUrl: string) => {
-  // Check connection status from store, fallback to organization object, then websocket
   const storeStatus = orgConnection.getConnectionStatus(serverUrl);
   if (storeStatus) return storeStatus;
 
   const org = user.organizations.find(o => o.serverUrl === serverUrl);
   if (org?.connectionStatus) return org.connectionStatus;
 
-  // Fallback to websocket connection state
   return ws.isLive(serverUrl) || ws.isConnected(serverUrl) ? 'connected' : 'disconnected';
 };
 
@@ -136,6 +134,7 @@ const hasCompatibilityConflict = (serverUrl: string) => {
   return compatibilityResult?.hasConflict || false;
 };
 </script>
+
 <template>
   <div>
     <div class="fill-remaining">

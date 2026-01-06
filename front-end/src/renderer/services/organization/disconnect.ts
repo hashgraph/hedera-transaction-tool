@@ -34,7 +34,6 @@ export async function disconnectOrganization(
     await userStore.selectOrganization(null);
   }
 
-  // Show toast notification based on disconnect reason
   if (reason === 'upgradeRequired') {
     toast.info(
       `Disconnected from ${org?.nickname || serverUrl}. Update required to reconnect.`,

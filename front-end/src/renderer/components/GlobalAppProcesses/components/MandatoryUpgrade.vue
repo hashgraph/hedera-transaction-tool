@@ -3,16 +3,17 @@ import { computed, ref, watch } from 'vue';
 
 import useVersionCheck from '@renderer/composables/useVersionCheck';
 import useElectronUpdater from '@renderer/composables/useElectronUpdater';
+import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 import { UPDATE_ERROR_MESSAGES } from '@shared/constants';
 
-import { quit } from '@renderer/services/electronUtilsService';
+import { formatProgressBytes } from '@renderer/utils';
+import { errorToastOptions } from '@renderer/utils/toastOptions';
+
 import { disconnectOrganization } from '@renderer/services/organization/disconnect';
 import { logout } from '@renderer/services/organization/auth';
-import { convertBytes } from '@renderer/utils';
 import { useToast } from 'vue-toast-notification';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 import {
   triggeringOrganizationServerUrl,
   organizationCompatibilityResults,
@@ -26,7 +27,6 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppProgressBar from '@renderer/components/ui/AppProgressBar.vue';
 import CompatibilityWarningModal from '@renderer/components/Organization/CompatibilityWarningModal.vue';
-import { errorToastOptions } from '@renderer/utils/toastOptions';
 
 const { versionStatus, updateUrl } = useVersionCheck();
 const { state, progress, error, updateInfo, startUpdate, installUpdate } = useElectronUpdater();
@@ -80,6 +80,10 @@ const progressBarLabel = computed(() => {
   return '';
 });
 
+const organizationsRequiringUpdate = computed(() => {
+  return user.organizations.filter(org => getVersionStatusForOrg(org.serverUrl) === 'belowMinimum');
+});
+
 watch(
   [shown, compatibilityResult],
   ([isShown, compatResult]) => {
@@ -105,22 +109,17 @@ const handleDisconnect = async () => {
   const org = affectedOrg.value;
   if (org) {
     try {
-      // Disconnect organization (websocket, connection status, auth token)
       await disconnectOrganization(org.serverUrl, 'upgradeRequired');
 
-      // Logout from organization
       try {
         await logout(org.serverUrl);
       } catch (logoutError) {
-        // Log but don't fail - organization might already be disconnected
         console.warn('Logout failed (may already be disconnected):', logoutError);
       }
 
-      // Switch to personal mode or another connected organization
       await user.selectOrganization(null);
       await setLast(null);
 
-      // Reset version status for this org (will auto-select next org if multiple require updates)
       resetVersionStatusForOrg(org.serverUrl);
 
       console.log(
@@ -155,6 +154,7 @@ const handleCompatibilityCancel = () => {
   handleDisconnect();
 };
 </script>
+
 <template>
   <AppModal
     :show="shown"
@@ -162,7 +162,6 @@ const handleCompatibilityCancel = () => {
     :close-on-escape="false"
     class="modal-fit-content"
   >
-    <!-- Checking for update -->
     <div v-if="isChecking" class="text-center p-4">
       <div>
         <i
@@ -174,7 +173,6 @@ const handleCompatibilityCancel = () => {
       <p class="text-small text-secondary mt-3">Please wait...</p>
     </div>
 
-    <!-- Downloading -->
     <div v-else-if="isDownloading" class="text-center p-4">
       <div>
         <i class="bi bi-download text-primary" style="font-size: 4rem"></i>
@@ -186,17 +184,12 @@ const handleCompatibilityCancel = () => {
       <div class="d-grid mt-4" v-if="progress">
         <div class="d-flex justify-content-between">
           <p class="text-start text-footnote mt-3">
-            {{
-              convertBytes(progress.transferred || 0, { useBinaryUnits: false, decimals: 2 }) || '0'
-            }}
+            {{ formatProgressBytes(progress.transferred) }}
             of
-            {{ convertBytes(progress.total || 0, { useBinaryUnits: false, decimals: 2 }) || '0' }}
+            {{ formatProgressBytes(progress.total) }}
           </p>
           <p class="text-start text-micro mt-3">
-            {{
-              convertBytes(progress.bytesPerSecond || 0, { useBinaryUnits: false, decimals: 2 }) ||
-              ''
-            }}/s
+            {{ formatProgressBytes(progress.bytesPerSecond, '') }}/s
           </p>
         </div>
         <AppProgressBar
@@ -208,7 +201,6 @@ const handleCompatibilityCancel = () => {
       </div>
     </div>
 
-    <!-- Downloaded -->
     <div v-else-if="isDownloaded" class="text-center p-4">
       <div>
         <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem"></i>
@@ -226,7 +218,6 @@ const handleCompatibilityCancel = () => {
       </div>
     </div>
 
-    <!-- Error -->
     <div v-else-if="hasError && errorMessage" class="text-center p-4">
       <div>
         <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 4rem"></i>
@@ -247,7 +238,6 @@ const handleCompatibilityCancel = () => {
       </div>
     </div>
 
-    <!-- Initial prompt -->
     <div v-else class="text-center p-4">
       <div>
         <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 4rem"></i>
@@ -259,20 +249,9 @@ const handleCompatibilityCancel = () => {
           <strong>{{ affectedOrg.nickname || affectedOrg.serverUrl }}</strong> requires an update to
           continue.<br />
           Your current version is no longer supported by this organization.
-          <span
-            v-if="
-              user.organizations.filter(
-                org => getVersionStatusForOrg(org.serverUrl) === 'belowMinimum',
-              ).length > 1
-            "
-            class="d-block mt-2 text-warning"
-          >
+          <span v-if="organizationsRequiringUpdate.length > 1" class="d-block mt-2 text-warning">
             <i class="bi bi-info-circle me-1"></i>
-            {{
-              user.organizations.filter(
-                org => getVersionStatusForOrg(org.serverUrl) === 'belowMinimum',
-              ).length - 1
-            }}
+            {{ organizationsRequiringUpdate.length - 1 }}
             other organization(s) also require updates.
           </span>
         </span>
@@ -282,7 +261,6 @@ const handleCompatibilityCancel = () => {
         </span>
       </p>
 
-      <!-- Compatibility warning section -->
       <div v-if="compatibilityResult?.hasConflict" class="mt-4">
         <div class="alert alert-warning text-start" role="alert">
           <p class="text-small mb-2"><strong>Compatibility Warning:</strong></p>
@@ -304,7 +282,7 @@ const handleCompatibilityCancel = () => {
       <hr class="separator my-4" />
       <div class="d-flex gap-4 justify-content-center">
         <AppButton type="button" color="secondary" @click="handleDisconnect">
-          {{ affectedOrg ? 'Disconnect' : 'Quit' }}
+          Disconnect
         </AppButton>
         <AppButton type="button" color="primary" @click="handleDownload">
           <i class="bi bi-download me-2"></i>Download Update
@@ -312,7 +290,6 @@ const handleCompatibilityCancel = () => {
       </div>
     </div>
 
-    <!-- Compatibility Warning Modal -->
     <CompatibilityWarningModal
       :show="showCompatibilityWarning"
       :conflicts="compatibilityResult?.conflicts || []"
@@ -334,21 +311,5 @@ const handleCompatibilityCancel = () => {
   to {
     transform: rotate(360deg);
   }
-}
-
-.alert {
-  padding: 1rem;
-  border-radius: 0.375rem;
-}
-
-.alert-warning {
-  background-color: rgba(255, 193, 7, 0.1);
-  border: 1px solid rgba(255, 193, 7, 0.3);
-  color: #856404;
-}
-
-.list-unstyled {
-  padding-left: 0;
-  list-style: none;
 }
 </style>

@@ -1,3 +1,9 @@
+import router from '@renderer/router';
+
+import { useToast } from 'vue-toast-notification';
+
+import useVersionCheck from '@renderer/composables/useVersionCheck';
+
 import useUserStore from '@renderer/stores/storeUser';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 import useOrganizationConnection from '@renderer/stores/storeOrganizationConnection';
@@ -10,28 +16,19 @@ import {
   organizationCompatibilityResults,
 } from '@renderer/stores/versionState';
 
-import router from '@renderer/router';
 import { getLocalWebsocketPath } from '@renderer/services/organizationsService';
 import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organization/versionCompatibility';
 import { isVersionBelowMinimum } from '@renderer/services/organization/versionCompatibility';
 import { checkVersion } from '@renderer/services/organization';
-import { FRONTEND_VERSION } from '@renderer/utils/version';
-import useVersionCheck from '@renderer/composables/useVersionCheck';
-import { getConnectedOrganization, isLoggedOutOrganization } from '@renderer/utils/userStoreHelpers';
 
-import { useToast } from 'vue-toast-notification';
+import { FRONTEND_VERSION } from '@renderer/utils/version';
+import {
+  getConnectedOrganization,
+  isLoggedOutOrganization,
+} from '@renderer/utils/userStoreHelpers';
+
 import { errorToastOptions } from '@renderer/utils/toastOptions';
-/**
- * Reconnect an organization with version checking and compatibility validation.
- *
- * This function:
- * 1. Checks the version before reconnecting
- * 2. If version is below minimum, runs compatibility checks and triggers mandatory update modal
- * 3. If version is acceptable, reconnects websocket and updates connection status
- *
- * @param serverUrl - The server URL of the organization to reconnect
- * @returns Promise with success status and optional flags for update requirements
- */
+
 export async function reconnectOrganization(serverUrl: string): Promise<{
   success: boolean;
   requiresUpdate?: boolean;
@@ -42,7 +39,7 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
   const orgConnection = useOrganizationConnection();
   const { performVersionCheck } = useVersionCheck();
   const toast = useToast();
-  
+
   const org = userStore.organizations.find(o => o.serverUrl === serverUrl);
   if (!org) {
     console.error(`[${new Date().toISOString()}] RECONNECT Organization not found: ${serverUrl}`);

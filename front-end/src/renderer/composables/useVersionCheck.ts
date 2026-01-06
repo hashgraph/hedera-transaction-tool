@@ -1,14 +1,11 @@
 import { ref } from 'vue';
 
 import type { IVersionCheckResponse } from '@shared/interfaces';
-import type { ConnectedOrganization } from '@renderer/types/userStore';
 
 import { SESSION_STORAGE_DISMISSED_UPDATE_PROMPT } from '@shared/constants';
 
 import { checkVersion } from '@renderer/services/organization';
 import { FRONTEND_VERSION } from '@renderer/utils/version';
-
-import useUserStore from '@renderer/stores/storeUser';
 
 import {
   versionStatus,
@@ -26,8 +23,6 @@ const isChecking = ref(false);
 const isDismissed = ref(sessionStorage.getItem(SESSION_STORAGE_DISMISSED_UPDATE_PROMPT) === 'true');
 
 export default function useVersionCheck() {
-  const user = useUserStore();
-
   const performVersionCheck = async (serverUrl: string): Promise<void> => {
     if (isChecking.value) return;
 
@@ -65,31 +60,6 @@ export default function useVersionCheck() {
     }
   };
 
-  const getVersionStatusForOrganization = (serverUrl: string): VersionStatus => {
-    return getVersionStatusForOrg(serverUrl);
-  };
-
-  const getAffectedOrganization = (): ConnectedOrganization | null => {
-    return (
-      user.organizations.find(org => getVersionStatusForOrg(org.serverUrl) === 'belowMinimum') ||
-      null
-    );
-  };
-
-  const hasOrganizationRequiringUpdate = (): boolean => {
-    return user.organizations.some(org => getVersionStatusForOrg(org.serverUrl) === 'belowMinimum');
-  };
-
-  const getLatestVersionForOrganization = (serverUrl: string): string | null => {
-    const allVersions = getAllOrganizationVersions();
-    return allVersions[serverUrl]?.latestSupportedVersion || null;
-  };
-
-  const getMinimumVersionForOrganization = (serverUrl: string): string | null => {
-    const allVersions = getAllOrganizationVersions();
-    return allVersions[serverUrl]?.minimumSupportedVersion || null;
-  };
-
   const storeVersionDataForOrganization = (
     serverUrl: string,
     data: IVersionCheckResponse,
@@ -122,12 +92,6 @@ export default function useVersionCheck() {
     isDismissed,
     dismissOptionalUpdate,
     reset,
-    // New per-organization methods
-    getVersionStatusForOrganization,
-    getAffectedOrganization,
-    hasOrganizationRequiringUpdate,
-    getLatestVersionForOrganization,
-    getMinimumVersionForOrganization,
     storeVersionDataForOrganization,
     getAllOrganizationVersionData,
   };

@@ -7,18 +7,21 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
 
-import { addOrganization } from '@renderer/services/organizationsService';
-
-import { getErrorMessage } from '@renderer/utils';
-import { FRONTEND_VERSION } from '@renderer/utils/version';
-
 import useVersionCheck from '@renderer/composables/useVersionCheck';
+
+import { addOrganization } from '@renderer/services/organizationsService';
 import { checkVersion } from '@renderer/services/organization';
+import { healthCheck } from '@renderer/services/organization';
 import {
   checkCompatibilityForNewOrg,
   isVersionBelowMinimum,
   type CompatibilityCheckResult,
 } from '@renderer/services/organization/versionCompatibility';
+
+import { getErrorMessage } from '@renderer/utils';
+import { FRONTEND_VERSION } from '@renderer/utils/version';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+
 import { setVersionBelowMinimum, setVersionStatusForOrg } from '@renderer/stores/versionState';
 import { organizationCompatibilityResults } from '@renderer/stores/versionState';
 
@@ -27,8 +30,6 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import CompatibilityWarningModal from '@renderer/components/Organization/CompatibilityWarningModal.vue';
-import { healthCheck } from '@renderer/services/organization';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -56,24 +57,6 @@ const showCompatibilityWarning = ref(false);
 const compatibilityResult = ref<CompatibilityCheckResult | null>(null);
 const newOrgNickname = ref<string>('');
 
-/* Helper functions */
-/**
- * Sets the version status for a newly added organization based on its version data.
- * This is used when handling compatibility warnings for new organizations.
- */
-const setVersionStatusForNewOrg = (orgServerUrl: string): void => {
-  const allVersionData = getAllOrganizationVersionData();
-  const versionData = allVersionData[orgServerUrl];
-
-  if (versionData && versionData.updateUrl) {
-    if (isVersionBelowMinimum(versionData)) {
-      setVersionBelowMinimum(orgServerUrl, versionData.updateUrl);
-    } else {
-      setVersionStatusForOrg(orgServerUrl, 'updateAvailable');
-    }
-  }
-};
-
 /* Handlers */
 const handleAdd = async () => {
   try {
@@ -92,7 +75,7 @@ const handleAdd = async () => {
     const allVersionData = getAllOrganizationVersionData();
     const versionData = allVersionData[serverUrl.value];
     const requiresUpdate = versionData && isVersionBelowMinimum(versionData);
-    
+
     const organization = await addOrganization({
       nickname: nickname.value.trim() || `Organization ${user.organizations.length + 1}`,
       serverUrl: serverUrl.value,
@@ -103,7 +86,7 @@ const handleAdd = async () => {
 
     if (versionData) {
       storeVersionDataForOrganization(serverUrl.value, versionData);
-      
+
       if (requiresUpdate) {
         setVersionBelowMinimum(serverUrl.value, versionData.updateUrl);
       } else if (versionData.updateUrl) {
@@ -172,6 +155,20 @@ const handleCompatibilityCancel = () => {
   emit('update:show', false);
 };
 
+/* Helpers */
+const setVersionStatusForNewOrg = (orgServerUrl: string): void => {
+  const allVersionData = getAllOrganizationVersionData();
+  const versionData = allVersionData[orgServerUrl];
+
+  if (versionData && versionData.updateUrl) {
+    if (isVersionBelowMinimum(versionData)) {
+      setVersionBelowMinimum(orgServerUrl, versionData.updateUrl);
+    } else {
+      setVersionStatusForOrg(orgServerUrl, 'updateAvailable');
+    }
+  }
+};
+
 /* Watchers */
 watch(
   () => props.show,
@@ -184,6 +181,7 @@ watch(
   },
 );
 </script>
+
 <template>
   <AppModal
     :show="show"
@@ -240,7 +238,6 @@ watch(
       </div>
     </form>
 
-    <!-- Compatibility Warning Modal -->
     <CompatibilityWarningModal
       :show="showCompatibilityWarning"
       :conflicts="compatibilityResult?.conflicts || []"

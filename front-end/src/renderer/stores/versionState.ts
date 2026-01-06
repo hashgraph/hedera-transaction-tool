@@ -55,10 +55,6 @@ export const getLatestVersionForOrg = (serverUrl: string): string | null => {
   return organizationLatestVersions.value[serverUrl] || null;
 };
 
-export const getMinimumVersionForOrg = (serverUrl: string): string | null => {
-  return organizationMinimumVersions.value[serverUrl] || null;
-};
-
 export const setVersionDataForOrg = (serverUrl: string, data: IVersionCheckResponse): void => {
   organizationVersionData.value[serverUrl] = data;
   organizationLatestVersions.value[serverUrl] = data.latestSupportedVersion;

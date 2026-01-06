@@ -5,16 +5,16 @@ import useVersionCheck from '@renderer/composables/useVersionCheck';
 import useElectronUpdater from '@renderer/composables/useElectronUpdater';
 import { UPDATE_ERROR_MESSAGES } from '@shared/constants';
 
-import { convertBytes } from '@renderer/utils';
+import { formatProgressBytes } from '@renderer/utils';
+import { warningToastOptions } from '@renderer/utils/toastOptions';
+
 import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organization/versionCompatibility';
 import type { CompatibilityConflict } from '@renderer/services/organization/versionCompatibility';
-import {
-  getAllOrganizationVersions,
-  getVersionStatusForOrg,
-} from '@renderer/stores/versionState';
-import { useToast } from 'vue-toast-notification';
-import { warningToastOptions } from '@renderer/utils/toastOptions';
+
+import { getAllOrganizationVersions, getVersionStatusForOrg } from '@renderer/stores/versionState';
 import useUserStore from '@renderer/stores/storeUser';
+
+import { useToast } from 'vue-toast-notification';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -41,7 +41,6 @@ watch([() => versionStatus.value, () => latestVersion.value], async ([status, la
   if (status === 'updateAvailable' && latestVer && !isDismissed.value) {
     isCheckingCompatibility.value = true;
     try {
-      // Find the organization(s) that triggered the optional update
       const orgsWithOptionalUpdates = user.organizations.filter(
         org => getVersionStatusForOrg(org.serverUrl) === 'updateAvailable',
       );
@@ -50,24 +49,20 @@ watch([() => versionStatus.value, () => latestVersion.value], async ([status, la
         return;
       }
 
-      // Check compatibility for the first org with optional update (or most recent)
-      // In case of multiple, we check the first one found
       const triggeringOrg = orgsWithOptionalUpdates[0];
       const allVersions = getAllOrganizationVersions();
       const versionData = allVersions[triggeringOrg.serverUrl];
 
       if (versionData?.latestSupportedVersion) {
-        // Check compatibility excluding the triggering org
         const result = await checkCompatibilityAcrossOrganizations(
           versionData.latestSupportedVersion,
-          triggeringOrg.serverUrl, // Exclude the triggering org from conflict check
+          triggeringOrg.serverUrl,
         );
 
         if (result.hasConflict) {
           compatibilityResult.value = result;
           showCompatibilityWarning.value = true;
 
-          // Show toast notification for compatibility conflicts
           const conflictOrgNames = result.conflicts.map(c => c.organizationName).join(', ');
           toast.warning(
             `Update may cause issues with ${conflictOrgNames}. Please review compatibility warnings.`,
@@ -142,7 +137,6 @@ const handleCompatibilityCancel = () => {
 </script>
 <template>
   <AppModal :show="shown" :close-on-click-outside="false" class="modal-fit-content">
-    <!-- Checking for update -->
     <div v-if="isChecking" class="text-center p-4">
       <div>
         <i
@@ -154,7 +148,6 @@ const handleCompatibilityCancel = () => {
       <p class="text-small text-secondary mt-3">Please wait...</p>
     </div>
 
-    <!-- Downloading -->
     <div v-else-if="isDownloading" class="text-center p-4">
       <div>
         <i class="bi bi-download text-primary" style="font-size: 4rem"></i>
@@ -166,17 +159,12 @@ const handleCompatibilityCancel = () => {
       <div class="d-grid mt-4" v-if="progress">
         <div class="d-flex justify-content-between">
           <p class="text-start text-footnote mt-3">
-            {{
-              convertBytes(progress.transferred || 0, { useBinaryUnits: false, decimals: 2 }) || '0'
-            }}
+            {{ formatProgressBytes(progress.transferred) }}
             of
-            {{ convertBytes(progress.total || 0, { useBinaryUnits: false, decimals: 2 }) || '0' }}
+            {{ formatProgressBytes(progress.total) }}
           </p>
           <p class="text-start text-micro mt-3">
-            {{
-              convertBytes(progress.bytesPerSecond || 0, { useBinaryUnits: false, decimals: 2 }) ||
-              ''
-            }}/s
+            {{ formatProgressBytes(progress.bytesPerSecond, '') }}/s
           </p>
         </div>
         <AppProgressBar
@@ -192,7 +180,6 @@ const handleCompatibilityCancel = () => {
       </div>
     </div>
 
-    <!-- Downloaded -->
     <div v-else-if="isDownloaded" class="text-center p-4">
       <div>
         <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem"></i>
@@ -211,7 +198,6 @@ const handleCompatibilityCancel = () => {
       </div>
     </div>
 
-    <!-- Error -->
     <div v-else-if="hasError && errorMessage" class="text-center p-4">
       <div>
         <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 4rem"></i>
@@ -230,7 +216,6 @@ const handleCompatibilityCancel = () => {
       </div>
     </div>
 
-    <!-- Initial prompt -->
     <div v-else class="text-center p-4">
       <div>
         <i class="bi bi-arrow-up-circle-fill text-primary" style="font-size: 4rem"></i>
@@ -250,7 +235,6 @@ const handleCompatibilityCancel = () => {
       </div>
     </div>
 
-    <!-- Compatibility Warning Modal -->
     <CompatibilityWarningModal
       v-if="compatibilityResult"
       :show="showCompatibilityWarning"
