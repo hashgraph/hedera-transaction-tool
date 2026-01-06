@@ -4,7 +4,7 @@ import AppTabs from '@renderer/components/ui/AppTabs.vue';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
 
-import { type ITransaction, NotificationType, type TransactionFile } from '@shared/interfaces';
+import { type ISignatureImport, type ITransaction, NotificationType, type TransactionFile } from '@shared/interfaces';
 import {
   draftsTitle,
   historyTitle,
@@ -23,6 +23,7 @@ import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/use
 
 import {
   assertIsLoggedInOrganization,
+  hexToUint8Array,
   isLoggedInOrganization,
   isOrganizationActive,
 } from '@renderer/utils';
@@ -46,8 +47,10 @@ import {
   generateTransactionExportFileName,
   getApiGroupById,
   getTransactionById,
+  importSignatures,
 } from '@renderer/services/organization';
-import { writeTransactionFile } from '@renderer/services/transactionFile.ts';
+import { readTransactionFile, writeTransactionFile } from '@renderer/services/transactionFile.ts';
+import { SignatureMap, Transaction } from '@hashgraph/sdk';
 
 /* Stores */
 const user = useUserStore();
@@ -78,6 +81,17 @@ const collectionNodes = ref<ITransactionNode[]>([]);
 const transactionFilePath = ref<string | null>(null);
 
 /* Computed */
+const dropDownMenuItems = computed(() => {
+  const result = [
+    { label: 'Export', value: 'createTransactionFile' },
+    { label: 'Sign Transactions from File', value: 'signTransactionFile' },
+  ];
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    result.push({ label: 'Import Signatures from File', value: 'importTransactionFile' });
+  }
+  return result;
+});
+
 const networkFilteredNotifications = computed(() => {
   return (
     notifications.notifications[notificationsKey.value]?.filter(
@@ -159,10 +173,47 @@ async function handleTransactionFileAction(action: string) {
         isSignTransactionFileModalShown.value = true;
       }
       break;
+    case 'importTransactionFile':
+      await importSignaturesFromFile();
+      break;
   }
 }
 
 /* Functions */
+async function importSignaturesFromFile() {
+  assertIsLoggedInOrganization(user.selectedOrganization);
+
+  transactionFilePath.value = await selectTransactionFile();
+  if (transactionFilePath.value !== null) {
+    const transactionFile = await readTransactionFile(transactionFilePath.value);
+    const importInputs: ISignatureImport[] = [];
+
+    for (const item of transactionFile.items) {
+      const transactionBytes = hexToUint8Array(item.transactionBytes);
+      const sdkTransaction = Transaction.fromBytes(transactionBytes);
+
+      const map = SignatureMap._fromTransaction(sdkTransaction);
+      const transactionId = sdkTransaction.transactionId;
+      const transaction = await getTransactionById(
+        user.selectedOrganization.serverUrl,
+        transactionId!,
+      );
+
+      importInputs.push({
+        id: transaction.id,
+        signatureMap: map,
+      })
+    }
+
+    console.log('importSignatures: INPUTS', JSON.stringify(importInputs));
+
+    const importResults = await  importSignatures(user.selectedOrganization, importInputs);
+
+    console.log('importSignatures: RESULTS', JSON.stringify(importResults));
+
+  }
+}
+
 async function createTransactionFile() {
   assertIsLoggedInOrganization(user.selectedOrganization);
   const collectionTransactions: ITransaction[] = [];
@@ -318,10 +369,7 @@ onBeforeMount(async () => {
         <div>
           <AppDropDown
             :color="'secondary'"
-            :items="[
-              { label: 'Export', value: 'createTransactionFile' },
-              { label: 'Sign Transactions from File', value: 'signTransactionFile' },
-            ]"
+            :items="dropDownMenuItems"
             compact
             data-testid="button-more-dropdown-sm"
             @select="handleTransactionFileAction($event)"

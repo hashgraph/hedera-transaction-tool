@@ -50,19 +50,19 @@ export async function collectMissingSignerKeys(
     nodeInfoCache,
     null,
   );
-  const signatureKeys = transaction._signerPublicKeys;
 
-  console.log(`Transaction currently signed with these keys`, JSON.stringify(signatureKeys));
+  const signatureKeys = transaction._signerPublicKeys;
+  console.log(`Content of transaction._signerPublicKeys:`);
+  signatureKeys.forEach(key => console.log(`   key: ${key}`));
 
   for (const key of audit.signatureKeys) {
     for (const flatKey of flattenKeyList(key)) {
       if (!signatureKeys.has(flatKey.toStringRaw())) {
         // flatKey must sign the transaction
         // => checks if flatKey is part of user public keys
-        console.log(`Transaction needs to be signed with this key (RAW):`, flatKey.toStringRaw());
         if (userPublicKeys.includes(flatKey.toStringRaw())) {
           // User is able to sign transaction with flatKey
-          console.log(`Transaction can be signed with this user key (RAW):`, flatKey.toStringRaw());
+          console.log(`Transaction can be signed with key: ${flatKey.toStringRaw()}`);
           result.push(flatKey.toStringRaw());
         }
       }
