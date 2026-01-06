@@ -530,7 +530,7 @@ export class TransactionsService {
         const params: any = {};
 
         batch.forEach((update, idx) => {
-          caseSQL += `WHEN :id${idx} THEN :bytes${idx} `;
+          caseSQL += `WHEN :id${idx} THEN :bytes${idx}::bytea `;
           params[`id${idx}`] = update.id;
           params[`bytes${idx}`] = update.transactionBytes;
         });
