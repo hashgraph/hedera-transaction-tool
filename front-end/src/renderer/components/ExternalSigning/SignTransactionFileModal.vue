@@ -15,7 +15,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { assertUserLoggedIn, hexToUint8Array, uint8ToHex } from '@renderer/utils';
-import { Transaction } from '@hashgraph/sdk';
+import { SignatureMap, Transaction } from '@hashgraph/sdk';
 import { signTransaction } from '@renderer/services/transactionService.ts';
 
 /* Props */
@@ -69,7 +69,9 @@ async function handleSignAll() {
           accountInfoCache,
           nodeInfoCache,
         );
-        console.log(`Signing transaction with these keys`, JSON.stringify(missingSignerKeys));
+
+        const sigMapBefore = SignatureMap._fromTransaction(sdkTransaction);
+        console.log(`SignatureMap before signing`, sigMapBefore.toJSON());
 
         try {
           const signedBytes = await signTransaction(
@@ -78,6 +80,11 @@ async function handleSignAll() {
             user.personal.id,
             password,
           );
+
+          const signedTransaction = Transaction.fromBytes(signedBytes);
+          const sigMapAfter = SignatureMap._fromTransaction(signedTransaction);
+          console.log(`SignatureMap after signing`, sigMapAfter.toJSON());
+
           const signedItem = {
             name: item.name,
             description: item.description,
@@ -104,9 +111,9 @@ async function handleSignAll() {
 
 /* Watchers */
 watch(
-  () => props.filePath,
+  show,
   async () => {
-    if (props.filePath) {
+    if (show.value && props.filePath) {
       transactionFile.value = await readTransactionFile(props.filePath);
       itemsToBeSigned.value = await filterTransactionFileItemsToBeSigned(
         transactionFile.value.items,
@@ -115,6 +122,9 @@ watch(
         accountInfoCache,
         nodeInfoCache,
       );
+    } else {
+      transactionFile.value = null;
+      itemsToBeSigned.value = [];
     }
   },
   { immediate: true },
