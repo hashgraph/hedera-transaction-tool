@@ -6,7 +6,11 @@ import useOrganizationConnection from '@renderer/stores/storeOrganizationConnect
 
 import { toggleAuthTokenInSessionStorage } from '@renderer/utils';
 import { useToast } from 'vue-toast-notification';
-import { errorToastOptions, infoToastOptions } from '@renderer/utils/toastOptions';
+import {
+  errorToastOptions,
+  infoToastOptions,
+  warningToastOptions,
+} from '@renderer/utils/toastOptions';
 
 export async function disconnectOrganization(
   serverUrl: string,
@@ -42,7 +46,7 @@ export async function disconnectOrganization(
   } else if (reason === 'compatibilityConflict') {
     toast.warning(
       `Disconnected from ${org?.nickname || serverUrl}. Compatibility conflict detected.`,
-      errorToastOptions,
+      warningToastOptions,
     );
   } else if (reason === 'manual') {
     toast.info(`Disconnected from ${org?.nickname || serverUrl}`, infoToastOptions);
