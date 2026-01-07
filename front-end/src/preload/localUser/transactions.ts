@@ -15,6 +15,7 @@ export default {
       publicKeys: string[],
       userId: string,
       userPassword: string | null,
+      needsFreeze: boolean
     ): Promise<Uint8Array> =>
       ipcRenderer.invoke(
         'transactions:signTransaction',
@@ -22,6 +23,7 @@ export default {
         publicKeys,
         userId,
         userPassword,
+        needsFreeze
       ),
     executeTransaction: (
       transactionBytes: Uint8Array,

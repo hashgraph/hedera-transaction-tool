@@ -67,6 +67,7 @@ export const signTransaction = async (
   publicKeys: string[],
   userId: string,
   userPassword: string | null,
+  needsFreeze = true,
 ) =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.transactions.signTransaction(
@@ -74,6 +75,7 @@ export const signTransaction = async (
       publicKeys,
       userId,
       userPassword,
+      needsFreeze
     );
   }, 'Transaction signing failed');
 
