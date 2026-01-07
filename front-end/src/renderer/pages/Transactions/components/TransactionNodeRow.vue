@@ -47,6 +47,7 @@ const createTooltips = useCreateTooltips();
 const hasNotifications = computed(() => {
   return notificationMonitor.filteredNotifications.value.length > 0;
 });
+
 const filteringNotificationType = computed(() => {
   let result: NotificationType | null;
   switch (props.collection) {
@@ -59,13 +60,22 @@ const filteringNotificationType = computed(() => {
     case TransactionNodeCollection.READY_FOR_EXECUTION:
       result = NotificationType.TRANSACTION_INDICATOR_EXECUTABLE;
       break;
-    case TransactionNodeCollection.IN_PROGRESS:
     case TransactionNodeCollection.HISTORY:
+      result = [
+        NotificationType.TRANSACTION_INDICATOR_EXECUTED,
+        NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+        NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
+        NotificationType.TRANSACTION_INDICATOR_CANCELLED,
+        NotificationType.TRANSACTION_INDICATOR_FAILED,
+      ];
+      break;
+    case TransactionNodeCollection.IN_PROGRESS:
       result = null;
       break;
   }
   return result;
 });
+
 const notificationMonitor = useFilterNotifications(
   computed(() => props.node),
   filteringNotificationType,

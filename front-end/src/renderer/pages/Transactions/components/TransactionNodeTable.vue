@@ -1,26 +1,30 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import AppLoader from '@renderer/components/ui/AppLoader.vue';
-import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
-import TransactionNodeHead from '@renderer/pages/Transactions/components/TransactionNodeHead.vue';
-import TransactionNodeRow from '@renderer/pages/Transactions/components/TransactionNodeRow.vue';
+import { useToast } from 'vue-toast-notification';
+
 import {
   type ITransactionNode,
   TransactionNodeCollection,
 } from '../../../../../../shared/src/ITransactionNode.ts';
+
+import { BackEndTransactionType, NotificationType, TransactionStatus } from '@shared/interfaces';
+
+import AppLoader from '@renderer/components/ui/AppLoader.vue';
+import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
+import TransactionNodeHead from '@renderer/pages/Transactions/components/TransactionNodeHead.vue';
+import TransactionNodeRow from '@renderer/pages/Transactions/components/TransactionNodeRow.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork.ts';
-import { useToast } from 'vue-toast-notification';
 import { isLoggedInOrganization } from '@renderer/utils';
 import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 import {
   sortTransactionNodes,
   TransactionNodeSortField,
 } from '@renderer/utils/sortTransactionNodes.ts';
-import { BackEndTransactionType, TransactionStatus } from '@shared/interfaces';
 import TransactionsFilterV2 from '@renderer/components/Filter/v2/TransactionsFilterV2.vue';
+import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
 /* Props */
 const props = defineProps<{
@@ -30,7 +34,17 @@ const props = defineProps<{
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+
+/* Composables */
 const toast = useToast();
+const { oldNotifications } = useMarkNotifications([
+  NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
+  NotificationType.TRANSACTION_INDICATOR_EXECUTED,
+  NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+  NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
+  NotificationType.TRANSACTION_INDICATOR_CANCELLED,
+  NotificationType.TRANSACTION_INDICATOR_FAILED,
+]);
 
 /* State */
 const nodes = ref<ITransactionNode[]>([]);
