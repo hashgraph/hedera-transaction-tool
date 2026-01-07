@@ -7,7 +7,8 @@ import { getAuthTokenFromSessionStorage } from '@renderer/utils';
 
 import { FRONTEND_VERSION } from './version';
 import {
-  setVersionBelowMinimum,
+  setGlobalVersionBelowMinimum,
+  setOrgVersionBelowMinimum,
   setVersionDataForOrg,
   triggeringOrganizationServerUrl,
   organizationCompatibilityResults,
@@ -104,10 +105,10 @@ axios.interceptors.response.use(
           }
         }
 
-        setVersionBelowMinimum(serverUrl, errorUpdateUrl);
+        setOrgVersionBelowMinimum(serverUrl, errorUpdateUrl);
       } else {
         triggeringOrganizationServerUrl.value = null;
-        setVersionBelowMinimum(null, errorUpdateUrl);
+        setGlobalVersionBelowMinimum(errorUpdateUrl);
       }
     }
     return Promise.reject(error);

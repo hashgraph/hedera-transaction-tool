@@ -22,7 +22,7 @@ import { getErrorMessage } from '@renderer/utils';
 import { FRONTEND_VERSION } from '@renderer/utils/version';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
-import { setVersionBelowMinimum, setVersionStatusForOrg } from '@renderer/stores/versionState';
+import { setOrgVersionBelowMinimum, setVersionStatusForOrg } from '@renderer/stores/versionState';
 import { organizationCompatibilityResults } from '@renderer/stores/versionState';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -88,7 +88,7 @@ const handleAdd = async () => {
       storeVersionDataForOrganization(serverUrl.value, versionData);
 
       if (requiresUpdate) {
-        setVersionBelowMinimum(serverUrl.value, versionData.updateUrl);
+        setOrgVersionBelowMinimum(serverUrl.value, versionData.updateUrl);
       } else if (versionData.updateUrl) {
         setVersionStatusForOrg(serverUrl.value, 'updateAvailable');
       }
@@ -110,7 +110,7 @@ const handleAdd = async () => {
           }
 
           if (isVersionBelowMinimum(versionResponse)) {
-            setVersionBelowMinimum(serverUrl.value, versionResponse.updateUrl);
+            setOrgVersionBelowMinimum(serverUrl.value, versionResponse.updateUrl);
           } else {
             setVersionStatusForOrg(serverUrl.value, 'updateAvailable');
           }
@@ -162,7 +162,7 @@ const setVersionStatusForNewOrg = (orgServerUrl: string): void => {
 
   if (versionData && versionData.updateUrl) {
     if (isVersionBelowMinimum(versionData)) {
-      setVersionBelowMinimum(orgServerUrl, versionData.updateUrl);
+      setOrgVersionBelowMinimum(orgServerUrl, versionData.updateUrl);
     } else {
       setVersionStatusForOrg(orgServerUrl, 'updateAvailable');
     }

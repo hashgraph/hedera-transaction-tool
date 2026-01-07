@@ -25,26 +25,16 @@ export const triggeringOrganizationServerUrl = ref<string | null>(null);
 
 export const organizationUpdateTimestamps = ref<{ [serverUrl: string]: Date }>({});
 
-export const setVersionBelowMinimum = (
-  serverUrlOrUrl: string | null,
-  url?: string | null,
-): void => {
-  if (url === undefined) {
-    versionStatus.value = 'belowMinimum';
-    updateUrl.value = serverUrlOrUrl;
-    return;
-  }
+export const setGlobalVersionBelowMinimum = (url: string | null): void => {
+  versionStatus.value = 'belowMinimum';
+  updateUrl.value = url;
+};
 
-  const serverUrl = serverUrlOrUrl;
-  if (serverUrl) {
-    organizationVersionStatus.value[serverUrl] = 'belowMinimum';
-    organizationUpdateUrls.value[serverUrl] = url;
-    organizationUpdateTimestamps.value[serverUrl] = new Date();
-    triggeringOrganizationServerUrl.value = serverUrl;
-  } else {
-    versionStatus.value = 'belowMinimum';
-    updateUrl.value = url;
-  }
+export const setOrgVersionBelowMinimum = (serverUrl: string, url: string | null): void => {
+  organizationVersionStatus.value[serverUrl] = 'belowMinimum';
+  organizationUpdateUrls.value[serverUrl] = url;
+  organizationUpdateTimestamps.value[serverUrl] = new Date();
+  triggeringOrganizationServerUrl.value = serverUrl;
 };
 
 export const getVersionStatusForOrg = (serverUrl: string): VersionStatus => {

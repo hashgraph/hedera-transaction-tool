@@ -8,7 +8,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 import useOrganizationConnection from '@renderer/stores/storeOrganizationConnection';
 import {
-  setVersionBelowMinimum,
+  setOrgVersionBelowMinimum,
   setVersionDataForOrg,
   getVersionStatusForOrg,
   organizationVersionData,
@@ -83,7 +83,7 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
         triggeringOrganizationServerUrl.value = serverUrl;
 
         if (versionResponse.updateUrl) {
-          setVersionBelowMinimum(serverUrl, versionResponse.updateUrl);
+          setOrgVersionBelowMinimum(serverUrl, versionResponse.updateUrl);
         }
 
         console.log(
