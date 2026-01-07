@@ -79,6 +79,7 @@ async function handleSignAll() {
             missingSignerKeys,
             user.personal.id,
             password,
+            false
           );
 
           const signedTransaction = Transaction.fromBytes(signedBytes);
