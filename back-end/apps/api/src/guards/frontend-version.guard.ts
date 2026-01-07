@@ -98,7 +98,6 @@ export class FrontendVersionGuard implements CanActivate {
           error: 'Upgrade Required',
           minimumSupportedVersion: cleanMinimumVersion,
           latestSupportedVersion: latestVersion,
-          currentVersion: cleanFrontendVersion,
           updateUrl,
         },
         UPGRADE_REQUIRED,
