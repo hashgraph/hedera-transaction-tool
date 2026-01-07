@@ -1,0 +1,14 @@
+# k6 reports and output
+reports/
+*.json.gz
+*.html
+
+# Compiled TypeScript output
+dist/
+
+# Environment files with credentials
+.env
+*.local.json
+
+# Generated test data (from seed-perf-data.ts)
+data/
