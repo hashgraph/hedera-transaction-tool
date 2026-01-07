@@ -55,7 +55,7 @@ const useWebsocketConnection = defineStore(
             ? getLocalWebsocketPath(serverUrl)
             : serverUrl;
           const socket = connect(serverUrl, url);
-          newSockets[serverUrl] = connect(serverUrl, url);
+          newSockets[serverUrl] = socket;
           if (socket.connected) {
             orgConnection.setConnectionStatus(serverUrl, 'connected');
           }
