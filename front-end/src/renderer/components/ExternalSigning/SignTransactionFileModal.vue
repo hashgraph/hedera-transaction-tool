@@ -144,7 +144,9 @@ watch(
                   <th>Description</th>
                   <th>Valid Start</th>
                   <th>Creator email</th>
+<!--
                   <th>Actions</th>
+-->
                 </tr>
               </thead>
               <tbody>

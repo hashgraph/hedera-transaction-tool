@@ -3,7 +3,6 @@ import { computed } from 'vue';
 import type { TransactionFileItem } from '@shared/interfaces';
 import { Transaction } from '@hashgraph/sdk';
 import { hexToUint8Array } from '@renderer/utils';
-import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import { getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions.ts';
@@ -28,9 +27,9 @@ const validStartDate = computed(() => {
 });
 const creatorEmail = computed(() => props.item.creatorEmail ?? '');
 
-function handleDetails() {
-  alert('Details for transaction index #' + props.index);
-}
+// function handleDetails() {
+//   alert('Details for transaction index #' + props.index);
+// }
 </script>
 
 <template>
@@ -50,6 +49,7 @@ function handleDetails() {
       <DateTimeString :date="validStartDate" compact wrap />
     </td>
     <td>{{ creatorEmail }}</td>
+<!--
     <td>
       <AppButton
         :data-testid="`button-external-transaction-details-${index}`"
@@ -60,6 +60,7 @@ function handleDetails() {
         Details
       </AppButton>
     </td>
+-->
   </tr>
 </template>
 
