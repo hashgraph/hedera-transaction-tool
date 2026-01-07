@@ -193,6 +193,8 @@ async function importSignaturesFromFile() {
       const sdkTransaction = Transaction.fromBytes(transactionBytes);
 
       const map = SignatureMap._fromTransaction(sdkTransaction);
+      console.log(`importSignatures: SignatureMap`, map.toJSON());
+
       const transactionId = sdkTransaction.transactionId;
       const transaction = await getTransactionById(
         user.selectedOrganization.serverUrl,
