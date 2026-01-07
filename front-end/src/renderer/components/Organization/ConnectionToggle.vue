@@ -24,7 +24,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'connect'): void;
   (event: 'disconnect'): void;
-  (event: 'error', error: Error): void;
 }>();
 
 /* Stores */
@@ -58,7 +57,6 @@ const handleToggle = async (checked: boolean) => {
     }
   } catch (error) {
     console.error('Connection toggle error:', error);
-    emit('error', error instanceof Error ? error : new Error('Unknown error'));
     toast.error(`Failed to ${checked ? 'connect' : 'disconnect'} organization`, errorToastOptions);
   } finally {
     isProcessing.value = false;
