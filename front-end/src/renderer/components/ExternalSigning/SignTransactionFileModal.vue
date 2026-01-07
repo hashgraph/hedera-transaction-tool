@@ -59,6 +59,8 @@ async function handleSignAll() {
     };
 
     for (const item of transactionFile.value!.items) {
+      const updatedItem = { ...item };
+
       if (itemsToBeSigned.value.includes(item)) {
         const transactionBytes = hexToUint8Array(item.transactionBytes);
         const sdkTransaction = Transaction.fromBytes(transactionBytes);
@@ -79,34 +81,24 @@ async function handleSignAll() {
             missingSignerKeys,
             user.personal.id,
             password,
-            false
+            false,
           );
+          updatedItem.transactionBytes = uint8ToHex(signedBytes);
 
           const signedTransaction = Transaction.fromBytes(signedBytes);
           const sigMapAfter = SignatureMap._fromTransaction(signedTransaction);
           console.log(`SignatureMap after signing`, sigMapAfter.toJSON());
-
-          const signedItem = {
-            name: item.name,
-            description: item.description,
-            transactionBytes: uint8ToHex(signedBytes),
-            creatorEmail: item.creatorEmail,
-          };
-          updatedFile.items.push(signedItem);
         } catch (error) {
           console.log(
             `Error signing one of the transactions in the file (leaving transaction untouched):`,
             error,
           );
-          updatedFile.items.push(item);
         }
-      } else {
-        updatedFile.items.push(item);
       }
+      updatedFile.items.push(updatedItem);
     }
     await writeTransactionFile(updatedFile, props.filePath!);
   }
-
   show.value = false;
 }
 
