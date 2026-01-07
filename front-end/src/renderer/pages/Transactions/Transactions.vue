@@ -4,7 +4,12 @@ import AppTabs from '@renderer/components/ui/AppTabs.vue';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
 
-import { type ISignatureImport, type ITransaction, NotificationType, type TransactionFile } from '@shared/interfaces';
+import {
+  type ISignatureImport,
+  type ITransaction,
+  NotificationType,
+  type TransactionFile,
+} from '@shared/interfaces';
 import {
   draftsTitle,
   historyTitle,
@@ -51,6 +56,8 @@ import {
 } from '@renderer/services/organization';
 import { readTransactionFile, writeTransactionFile } from '@renderer/services/transactionFile.ts';
 import { SignatureMap, Transaction } from '@hashgraph/sdk';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { useToast } from 'vue-toast-notification';
 
 /* Stores */
 const user = useUserStore();
@@ -58,6 +65,7 @@ const network = useNetworkStore();
 const notifications = useNotificationsStore();
 
 /* Composables */
+const toast = useToast();
 const router = useRouter();
 const withLoader = useLoader();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
@@ -206,15 +214,34 @@ async function importSignaturesFromFile() {
       importInputs.push({
         id: transaction.id,
         signatureMap: map,
-      })
+      });
     }
 
     console.log('importSignatures: INPUTS', JSON.stringify(importInputs));
 
-    const importResults = await  importSignatures(user.selectedOrganization, importInputs);
+    const importResults = await importSignatures(user.selectedOrganization, importInputs);
+    let failedImportCount = 0;
+    let successfulImportCount = 0;
+    for (const result of importResults) {
+      if (result.error) {
+        failedImportCount++;
+      } else {
+        successfulImportCount++;
+      }
+    }
+    if (failedImportCount > 0) {
+      toast.error(
+        `Failed to import signatures for ${failedImportCount} transaction${failedImportCount > 1 ? 's' : ''}`,
+        errorToastOptions,
+      );
+    } else {
+      toast.success(
+        `Successfully imported signatures for ${successfulImportCount} transaction${successfulImportCount > 1 ? 's' : ''}`,
+        successToastOptions,
+      );
+    }
 
     console.log('importSignatures: RESULTS', JSON.stringify(importResults));
-
   }
 }
 
@@ -254,7 +281,7 @@ async function createTransactionFile() {
     if (!canceled) {
       const tx2Content: TransactionFile = generateTransactionExportContentV2(
         collectionTransactions,
-        network.network
+        network.network,
       );
       await writeTransactionFile(tx2Content, filePath);
     }
