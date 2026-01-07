@@ -376,7 +376,7 @@ export class SignersService {
     }
   }
 
-  private async updateStatusesAndNotify(
+  async updateStatusesAndNotify(
     transactionsToProcess: Array<{ id: number; transaction: Transaction }>
   ) {
     if (transactionsToProcess.length === 0) return;
