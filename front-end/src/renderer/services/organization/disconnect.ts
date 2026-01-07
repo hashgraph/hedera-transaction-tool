@@ -39,9 +39,9 @@ export async function disconnectOrganization(
   }
 
   if (reason === 'upgradeRequired') {
-    toast.info(
+    toast.warning(
       `Disconnected from ${org?.nickname || serverUrl}. Update required to reconnect.`,
-      infoToastOptions,
+      warningToastOptions,
     );
   } else if (reason === 'compatibilityConflict') {
     toast.warning(
