@@ -19,6 +19,7 @@ import {
   formatDuration,
   DATA_VOLUMES,
   DEBUG,
+  TEST_LOCAL_PASSWORD,
 } from './performanceUtils.js';
 import { SELECTORS } from './selectors.js';
 
@@ -39,7 +40,7 @@ test.describe('Files Page Performance', () => {
     registrationPage = new RegistrationPage(window);
 
     testEmail = `perf-files-${Date.now()}@test.com`;
-    const password = 'TestPassword123';
+    const password = TEST_LOCAL_PASSWORD;
     await registrationPage.completeRegistration(testEmail, password);
 
     const result = await seedLocalPerfData(testEmail);

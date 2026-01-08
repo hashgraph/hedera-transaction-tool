@@ -9,7 +9,7 @@ import { THRESHOLDS } from '../../k6/src/config/constants.js';
 import { SELECTORS } from './selectors.js';
 
 // Re-export k6 constants for UI perf tests (SSOT)
-export { DATA_VOLUMES, THRESHOLDS } from '../../k6/src/config/constants.js';
+export { DATA_VOLUMES, THRESHOLDS, TEST_LOCAL_PASSWORD } from '../../k6/src/config/constants.js';
 
 // Debug mode - enable with DEBUG=true environment variable
 export const DEBUG = process.env.DEBUG === 'true';
@@ -53,7 +53,10 @@ export async function collectPerformanceSamples(
 }
 
 /**
- * Formats duration for display
+ * Formats duration for display (UI version - rounded for cleaner output)
+ *
+ * Note: k6 tests use a similar function with 2 decimal places (see k6/src/lib/helpers.ts)
+ * for precision timing analysis. This version uses rounded integers for UI test logs.
  */
 export function formatDuration(ms: number): string {
   if (ms < 1000) {

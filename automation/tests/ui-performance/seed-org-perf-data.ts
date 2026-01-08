@@ -14,7 +14,7 @@ import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { Page } from '@playwright/test';
 import { Client } from 'pg';
-import { TEST_USER_POOL, DATA_VOLUMES, COMPLEX_KEY } from '../../k6/src/config/constants.js';
+import { TEST_USER_POOL, DATA_VOLUMES, COMPLEX_KEY, TEST_LOCAL_PASSWORD } from '../../k6/src/config/constants.js';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
 import { OrganizationPage } from '../../pages/OrganizationPage.js';
 import { DEBUG } from './performanceUtils.js';
@@ -101,26 +101,28 @@ function loadStagingComplexKeys(): StagingComplexKeys {
 }
 
 /**
- * Seed staging complex keys to SQLite only.
- * On staging, PostgreSQL already has keys from bootstrap script.
+ * Insert private keys into SQLite KeyPair table.
+ * Common helper used by both staging and local key seeding.
  *
  * @param privateKeys - Array of PrivateKey objects to seed
  * @param localPassword - Password for encrypting private keys
  * @param secretHash - Hash to use (must match PostgreSQL user_key.mnemonicHash)
  * @param organizationUserId - PostgreSQL user ID (links SQLite to backend user_key)
+ * @param label - Label for logging (e.g., "staging keys", "complex keys")
  */
-async function seedStagingComplexKeysToSQLite(
+async function insertKeysToSQLite(
   privateKeys: PrivateKey[],
   localPassword: string,
   secretHash: string,
   organizationUserId: number,
+  label: string,
 ): Promise<void> {
   const db = openDatabase();
   if (!db) {
     throw new Error('SQLite database not found - app must be launched first');
   }
 
-  console.log(`\nSeeding ${privateKeys.length} staging keys to SQLite KeyPair...`);
+  console.log(`\nSeeding ${privateKeys.length} ${label} to SQLite KeyPair...`);
 
   try {
     for (let i = 0; i < privateKeys.length; i++) {
@@ -146,14 +148,27 @@ async function seedStagingComplexKeysToSQLite(
       });
 
       if ((i + 1) % 20 === 0 || i === privateKeys.length - 1) {
-        if (DEBUG) console.log(`  Inserted ${i + 1}/${privateKeys.length} staging keys to SQLite`);
+        if (DEBUG) console.log(`  Inserted ${i + 1}/${privateKeys.length} ${label} to SQLite`);
       }
     }
 
-    console.log(`  Completed: ${privateKeys.length} staging keys in SQLite KeyPair`);
+    console.log(`  Completed: ${privateKeys.length} ${label} in SQLite KeyPair`);
   } finally {
     closeDatabase(db);
   }
+}
+
+/**
+ * Seed staging complex keys to SQLite only.
+ * On staging, PostgreSQL already has keys from bootstrap script.
+ */
+async function seedStagingComplexKeysToSQLite(
+  privateKeys: PrivateKey[],
+  localPassword: string,
+  secretHash: string,
+  organizationUserId: number,
+): Promise<void> {
+  return insertKeysToSQLite(privateKeys, localPassword, secretHash, organizationUserId, 'staging keys');
 }
 
 /**
@@ -196,6 +211,7 @@ export async function seedOrgPerfData(): Promise<SeedResult> {
     execSync('npx tsx k6/helpers/seed-test-users.ts', {
       cwd: automationDir,
       stdio: 'inherit',
+      timeout: 120000, // 2 minutes
       env: {
         ...process.env,
         SEED_POOL: 'true',
@@ -206,6 +222,7 @@ export async function seedOrgPerfData(): Promise<SeedResult> {
     execSync('npx tsx k6/helpers/seed-perf-data.ts', {
       cwd: automationDir,
       stdio: 'inherit',
+      timeout: 300000, // 5 minutes (seeding many transactions)
       env: {
         ...process.env,
         SEED_POOL: 'true',
@@ -298,7 +315,7 @@ export async function setupOrgModeTestEnvironment(
 ): Promise<void> {
   await seedOrgPerfData();
 
-  const localPassword = 'TestPassword123';
+  const localPassword = TEST_LOCAL_PASSWORD;
   await registrationPage.completeRegistration(
     `${testNamePrefix}-${Date.now()}@test.com`,
     localPassword,
@@ -409,52 +426,7 @@ export async function seedComplexKeysToSQLite(
   secretHash: string,
   organizationUserId: number,
 ): Promise<void> {
-  const db = openDatabase();
-  if (!db) {
-    throw new Error('SQLite database not found - app must be launched first');
-  }
-
-  console.log(`\nSeeding ${complexKey.allPrivateKeys.length} complex keys to SQLite KeyPair...`);
-
-  try {
-    for (let i = 0; i < complexKey.allPrivateKeys.length; i++) {
-      const privateKey = complexKey.allPrivateKeys[i];
-      const publicKey = privateKey.publicKey.toStringRaw();
-      const privateKeyRaw = privateKey.toStringRaw();
-
-      // Encrypt private key with local password (same as app does)
-      const encryptedKey = encrypt(privateKeyRaw, localPassword);
-
-      await new Promise<void>((resolve, reject) => {
-        db.run(
-          `INSERT INTO KeyPair (id, user_id, "index", public_key, private_key,
-                               type, organization_id, secret_hash, organization_user_id)
-           VALUES (?,
-                   (SELECT id FROM User WHERE email != 'keychain@mode' LIMIT 1),
-                   ?, ?, ?, 'ED25519',
-                   (SELECT id FROM Organization LIMIT 1),
-                   ?,
-                   ?)`,
-          [crypto.randomUUID(), i, publicKey, encryptedKey, secretHash, organizationUserId],
-          function (err) {
-            if (err) {
-              reject(err);
-            } else {
-              resolve();
-            }
-          },
-        );
-      });
-
-      if ((i + 1) % 20 === 0 || i === complexKey.allPrivateKeys.length - 1) {
-        if (DEBUG) console.log(`  Inserted ${i + 1}/${complexKey.allPrivateKeys.length} keys to SQLite`);
-      }
-    }
-
-    console.log(`  Completed: ${complexKey.allPrivateKeys.length} keys in SQLite KeyPair`);
-  } finally {
-    closeDatabase(db);
-  }
+  return insertKeysToSQLite(complexKey.allPrivateKeys, localPassword, secretHash, organizationUserId, 'complex keys');
 }
 
 /**
@@ -536,7 +508,7 @@ export async function setupComplexKeyTestEnvironment(
   testNamePrefix: string,
   useHederaStyle: boolean = false,
 ): Promise<ComplexKeySetupResult> {
-  const localPassword = 'TestPassword123';
+  const localPassword = TEST_LOCAL_PASSWORD;
 
   if (isStaging()) {
     // === STAGING PATH ===

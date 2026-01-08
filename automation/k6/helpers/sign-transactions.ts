@@ -13,6 +13,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'node:url';
 import { Transaction, PrivateKey } from '@hashgraph/sdk';
 import type { SignatureMap } from '../src/types/api.types.js';
 
@@ -41,6 +42,9 @@ interface K6SignaturesOutput {
 /**
  * Convert SDK signature map to backend format
  * Structure: nodeAccountId -> transactionId -> publicKey -> signature (hex with 0x prefix)
+ *
+ * Note: Similar function exists in seed-perf-data.ts with looser types (Iterable<[unknown, unknown]>)
+ * for compatibility with SDK's SignatureMap. This version uses strict Map types for type safety.
  */
 function signatureMapToBackendFormat(
   signatureMap: Map<string, Map<string, Map<string, Uint8Array>>>,
@@ -157,8 +161,8 @@ export function writeSignaturesForK6(outputPath: string, signedTransactions: Sig
   console.log(`Wrote ${signedTransactions.length} transaction signatures to ${outputPath}`);
 }
 
-// CLI interface
-const isMainModule = process.argv[1]?.includes('sign-transactions');
+// CLI interface - check if this module is being run directly
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
 
 if (isMainModule) {
   const args = process.argv.slice(2);
@@ -174,6 +178,20 @@ if (isMainModule) {
   }
 
   const [txPath, outputPath, ...privateKeys] = args;
+
+  // Validate inputs before processing
+  if (!fs.existsSync(txPath)) {
+    console.error(`Error: Transaction file not found: ${txPath}`);
+    process.exit(1);
+  }
+
+  // Validate private key format (should be hex strings, typically starting with 302e for DER-encoded)
+  for (const key of privateKeys) {
+    if (!/^[0-9a-fA-F]+$/.test(key)) {
+      console.error(`Error: Invalid private key format (expected hex string): ${key.slice(0, 20)}...`);
+      process.exit(1);
+    }
+  }
 
   try {
     const txBytes = fs.readFileSync(txPath);

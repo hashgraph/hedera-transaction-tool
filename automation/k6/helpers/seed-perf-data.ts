@@ -252,6 +252,8 @@ function createComplexKeyTransaction(
     .setContents(`Complex key performance test file ${index}`)
     .setNodeAccountIds([AccountId.fromString('0.0.3')])
     .setTransactionValidDuration(120)
+    // Type assertion: freezeWith() expects Client but we use minimal mock object
+    // with just operatorAccountId and network for transaction freezing without a real client
     .freezeWith({
       operatorAccountId: AccountId.fromString('0.0.2'),
       network: { '0.0.3': 'localhost:50211' },
@@ -428,8 +430,9 @@ function createFileCreateTransaction(index: number): {
     .setContents(`Performance test file ${index}`)
     .setNodeAccountIds([AccountId.fromString('0.0.3')])
     .setTransactionValidDuration(120)
+    // Type assertion: freezeWith() expects Client but we use minimal mock object
+    // with just operatorAccountId and network for transaction freezing without a real client
     .freezeWith({
-      // Minimal client-like object for freezing
       operatorAccountId: AccountId.fromString('0.0.2'),
       network: { '0.0.3': 'localhost:50211' },
     } as never);
@@ -758,6 +761,10 @@ async function seedReadyForExecutionTransactions(
 /**
  * Convert SDK SignatureMap to backend JSON format using public iterators
  * Backend expects: { nodeAccountId: { transactionId: { derPublicKey: "0x" + signatureHex }}}
+ *
+ * Note: Similar function exists in sign-transactions.ts with strict Map types.
+ * This version uses Iterable<[unknown, unknown]> for compatibility with SDK's SignatureMap
+ * which doesn't expose typed iteration methods.
  */
 function signatureMapToBackendFormat(signatureMap: Iterable<[unknown, unknown]>): SignatureMap {
   const result: SignatureMap = {};
@@ -1017,7 +1024,8 @@ async function seedData(): Promise<void> {
   }
 }
 
-const isMainModule = process.argv[1]?.includes('seed-perf-data');
+// Check if this module is being run directly
+const isMainModule = process.argv[1] === __filename;
 if (isMainModule) {
   await seedData();
 }

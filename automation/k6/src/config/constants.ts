@@ -93,6 +93,12 @@ export const SIGNATURE_MODES = {
 export const SEED_MARKER = 'k6-perf-seed';
 
 /**
+ * Default password for UI performance test local encryption
+ * Used across all org-mode performance tests for consistency
+ */
+export const TEST_LOCAL_PASSWORD = 'TestPassword123';
+
+/**
  * Complex threshold key configuration
  * Based on Hedera's 0.0.2 account structure
  */

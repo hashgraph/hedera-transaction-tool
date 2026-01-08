@@ -41,6 +41,7 @@ export interface Thresholds {
 
 /**
  * k6 scenario configuration
+ * See: https://grafana.com/docs/k6/latest/using-k6/scenarios/
  */
 export interface Scenario {
   executor: string;
@@ -51,6 +52,11 @@ export interface Scenario {
   startVUs?: number;
   stages?: LoadStage[];
   tags?: Record<string, string>;
+  // Common scenario options
+  startTime?: string;
+  gracefulStop?: string;
+  env?: Record<string, string>;
+  exec?: string;
 }
 
 /**
