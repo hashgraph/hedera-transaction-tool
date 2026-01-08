@@ -48,17 +48,17 @@ const router = useRouter();
 const createTooltips = useCreateTooltips();
 
 /* Computed */
-const filteringNotificationType = computed(() => {
-  let result: NotificationType | NotificationType[] | null;
+const filteringNotificationTypes = computed(() => {
+  let result: NotificationType[];
   switch (props.collection) {
     case TransactionNodeCollection.READY_FOR_REVIEW:
-      result = NotificationType.TRANSACTION_INDICATOR_APPROVE;
+      result = [NotificationType.TRANSACTION_INDICATOR_APPROVE];
       break;
     case TransactionNodeCollection.READY_TO_SIGN:
-      result = NotificationType.TRANSACTION_INDICATOR_SIGN;
+      result = [NotificationType.TRANSACTION_INDICATOR_SIGN];
       break;
     case TransactionNodeCollection.READY_FOR_EXECUTION:
-      result = NotificationType.TRANSACTION_INDICATOR_EXECUTABLE;
+      result = [NotificationType.TRANSACTION_INDICATOR_EXECUTABLE];
       break;
     case TransactionNodeCollection.HISTORY:
       result = [
@@ -70,7 +70,7 @@ const filteringNotificationType = computed(() => {
       ];
       break;
     case TransactionNodeCollection.IN_PROGRESS:
-      result = null;
+      result = [];
       break;
   }
   return result;
@@ -78,7 +78,7 @@ const filteringNotificationType = computed(() => {
 
 const notificationMonitor = useFilterNotifications(
   computed(() => props.node),
-  filteringNotificationType,
+  filteringNotificationTypes,
 );
 
 const hasOldNotifications = computed(() => {
@@ -86,11 +86,7 @@ const hasOldNotifications = computed(() => {
     return false;
   }
 
-  const notificationTypes = Array.isArray(filteringNotificationType.value)
-    ? filteringNotificationType.value
-    : filteringNotificationType.value
-      ? [filteringNotificationType.value]
-      : [];
+  const notificationTypes = filteringNotificationTypes.value;
 
   if (notificationTypes.length === 0) {
     return false;
