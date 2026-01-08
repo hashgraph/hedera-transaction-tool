@@ -6,18 +6,23 @@ export class EnumArrayValidationPipe<T> implements PipeTransform<string, T[]> {
   constructor(private enumEntity: object) {}
 
   transform(value: string): T[] {
+    if (!isDefined(value) || value.trim() === '') {
+      return null;
+    }
+
     const result = new Set<T>();
-    if (isDefined(value) && value !== '') {
-      const items = value.split(',');
-      for (const item of items) {
-        if (isEnum(item, this.enumEntity)) {
-          result.add(item as T);
-        } else {
-          const errorMessage = `the value ${value} is not valid. See the acceptable values: ${Object.keys(this.enumEntity).map(key => this.enumEntity[key])}`;
-          throw new BadRequestException(errorMessage);
-        }
+    const items = value.split(',');
+
+    for (const item of items) {
+      if (isEnum(item, this.enumEntity)) {
+        result.add(item as T);
+      } else {
+        throw new BadRequestException(
+          `The value "${item}" is not valid. Acceptable values: ${Object.values(this.enumEntity).join(', ')}`
+        );
       }
-    } // else keeps result empty
-    return Array.from(result.values()).sort();
+    }
+
+    return result.size > 0 ? Array.from(result).sort() : null;
   }
 }

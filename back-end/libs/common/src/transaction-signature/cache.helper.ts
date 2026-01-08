@@ -1,5 +1,6 @@
 import { DataSource, EntityTarget } from 'typeorm';
 import { PublicKey } from '@hashgraph/sdk';
+import { randomUUID } from 'node:crypto';
 
 /**
  * Helper class for common caching operations.
@@ -9,56 +10,83 @@ export class CacheHelper {
   constructor(private readonly dataSource: DataSource) {}
 
   /**
-   * Generic claim-based refresh pattern for any entity.
+   * Generic claim-based refresh coordinator for any entity.
    *
-   * 1) Idempotent insert-or-ignore to ensure the row exists.
-   * 2) Conditional update to set a refresh token only if unclaimed or reclaimable.
-   * 3) Return the row that this caller now owns (or the current authoritative row).
+   * Behavior:
+   * 1) Ensures the row exists via idempotent insert-or-ignore.
+   * 2) Attempts to atomically claim the row by setting a refresh token
+   *    if it is unclaimed or reclaimable.
+   * 3) If the claim succeeds, returns the claimed row (this caller is the refresher).
+   * 4) If another caller is refreshing, waits until the refresh completes
+   *    (refreshToken is cleared) or the reclaim window expires, then retries.
+   *
+   * Guarantees:
+   * - At most one caller holds the refresh claim at any time.
+   * - Waiting callers do not perform redundant refresh work.
+   * - If a refresher stalls past the reclaim window, exactly one waiting
+   *   caller will take over the claim.
+   *
+   * Freshness is enforced by the caller; this method coordinates ownership only.
    */
-  async tryClaimRefresh<T>(
+  async tryClaimRefresh<T extends { refreshToken?: string | null; updatedAt?: Date }>(
     entity: EntityTarget<T>,
     where: Record<string, any>,
     reclaimAfterMs: number,
   ): Promise<T> {
-    const now = new Date();
-    const reclaimDate = new Date(now.getTime() - reclaimAfterMs);
+    const pollIntervalMs = 100;
+    const uuid = randomUUID();
 
-    // 1. Ensure row exists (idempotent insert)
-    const insertResult = await this.dataSource
+    // 1. Ensure row exists (idempotent)
+    await this.dataSource
       .createQueryBuilder()
       .insert()
       .into(entity)
       .values(where)
       .orIgnore()
-      .returning('*')
       .execute();
 
-    // 2. Try to claim by setting a refresh token
-    const updateResult = await this.dataSource
-      .createQueryBuilder()
-      .update(entity)
-      .set({
-        refreshToken: () => 'gen_random_uuid()',
-      })
-      .where(where)
-      .andWhere(
-        `(refreshToken IS NULL OR lastCheckedAt < :reclaimDate)`,
-        { reclaimDate },
-      )
-      .returning('*')
-      .execute();
+    while (true) {
+      const reclaimDate = new Date(Date.now() - reclaimAfterMs);
 
-    // 3. If we claimed it, return our claimed row
-    if (updateResult.affected === 1) {
-      return updateResult.raw[0] as T;
+      // 2. Try to claim (MUST update updatedAt)
+      const updateResult = await this.dataSource
+        .createQueryBuilder()
+        .update(entity)
+        .set({
+          refreshToken: uuid,
+          updatedAt: () => 'NOW()',
+        })
+        .where(where)
+        .andWhere(
+          `(refreshToken IS NULL OR updatedAt < :reclaimDate)`,
+          { reclaimDate },
+        )
+        .returning('*')
+        .execute();
+
+      // 3. We won the claim
+      if (updateResult.affected === 1) {
+        return updateResult.raw[0] as T;
+      }
+
+      // 4. Someone else owns it → wait
+      await new Promise(res => setTimeout(res, pollIntervalMs));
+
+      const row = await this.dataSource.manager.findOne(entity, { where });
+
+      if (!row) {
+        // Should not happen, but be defensive
+        continue;
+      }
+
+      // 5. Refresh finished while we waited
+      if (!row.refreshToken) {
+        return row;
+      }
+
+      // 6. Otherwise: loop again
+      // Eventually reclaimDate will pass and one waiter will win
     }
-
-    if (insertResult.raw.length > 0) {
-      return insertResult.raw[0] as T;
-    }
-
-    // 4. Otherwise return the current authoritative row
-    return await this.dataSource.manager.findOne(entity, { where });
   }
 
   /**
@@ -71,15 +99,13 @@ export class CacheHelper {
     refreshToken: string,
     updates: Record<string, any>,
   ): Promise<number | null> {
-    const now = new Date();
-
     const result = await this.dataSource
       .createQueryBuilder()
       .update(entity)
       .set({
         ...updates,
-        lastCheckedAt: now,
         refreshToken: null, // release claim
+        updatedAt: () => 'NOW()',
       })
       .where(where)
       .andWhere('refreshToken = :refreshToken', { refreshToken })

@@ -138,7 +138,7 @@ export class SqlBuilderService {
         throw new SqlBuilderError(`Column for property "${property}" has no database name`);
       }
 
-      return column.databaseName;
+      return `"${column.databaseName}"`;
     } catch (error) {
       // Re-throw our custom errors with context
       if (error instanceof SqlBuilderError) {

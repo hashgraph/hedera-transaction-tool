@@ -36,10 +36,10 @@ export class CachedAccount {
   @Column({ length: 100, nullable: true })
   etag: string | null; // Mirror node etag or hash of response
 
-  @OneToMany(() => CachedAccountKey, (key) => key.account)
+  @OneToMany(() => CachedAccountKey, (key) => key.cachedAccount)
   keys: CachedAccountKey[];
 
-  @OneToMany(() => TransactionCachedAccount, (ta) => ta.account)
+  @OneToMany(() => TransactionCachedAccount, (ta) => ta.cachedAccount)
   accountTransactions: TransactionCachedAccount[];
 
   @CreateDateColumn()
@@ -47,10 +47,9 @@ export class CachedAccount {
 
   @UpdateDateColumn()
   @Index()
-  updatedAt: Date;
-
-  @Column({ type: 'timestamptz', nullable: true })
-  lastCheckedAt: Date | null; // For tracking when the account was last verified
+  updatedAt: Date; // Auto-updates on ANY save - serves dual purpose:
+                   // 1. Last time data was checked/refreshed from mirror node
+                   // 2. Timestamp for when refreshToken was set (for stale lock detection)
 
   @Column({ type: 'uuid', nullable: true })
   @Index()

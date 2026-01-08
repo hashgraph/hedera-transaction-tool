@@ -29,6 +29,7 @@ import {
   emitTransactionStatusUpdate,
   ExecuteService,
   TransactionSignatureService,
+  SqlBuilderService,
 } from '@app/common';
 import {
   attachKeys,
@@ -64,6 +65,7 @@ describe('TransactionsService', () => {
   const transactionSignatureService = mock<TransactionSignatureService>();
   const schedulerService = mock<SchedulerService>();
   const executeService = mockDeep<ExecuteService>();
+  const sqlBuilderService = mockDeep<SqlBuilderService>();
   const entityManager = mockDeep<EntityManager>();
 
   const user: Partial<User> = {
@@ -113,6 +115,10 @@ describe('TransactionsService', () => {
         {
           provide: SchedulerService,
           useValue: schedulerService,
+        },
+        {
+          provide: SqlBuilderService,
+          useValue: sqlBuilderService
         },
         {
           provide: ExecuteService,
