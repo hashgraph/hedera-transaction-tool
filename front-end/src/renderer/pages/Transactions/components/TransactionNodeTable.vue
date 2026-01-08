@@ -42,9 +42,8 @@ const wsStore = useWebsocketConnection();
 /* Composables */
 const toast = useToast();
 const ws = useDisposableWs();
-
 // Mark relevant notifications as read onMounted and onBeforeUnmount
-useMarkNotifications([
+const { oldNotifications } = useMarkNotifications([
   NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
   NotificationType.TRANSACTION_INDICATOR_EXECUTED,
   NotificationType.TRANSACTION_INDICATOR_EXPIRED,
@@ -203,6 +202,7 @@ onMounted(fetchNodes);
                 :collection="props.collection"
                 :node="node"
                 :index="index"
+                :old-notifications="oldNotifications"
                 @transaction-signed="fetchNodes"
                 @transaction-group-signed="fetchNodes"
               />

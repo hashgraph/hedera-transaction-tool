@@ -23,6 +23,7 @@ const props = defineProps<{
   collection: TransactionNodeCollection;
   node: ITransactionNode;
   index: number;
+  oldNotifications?: INotificationReceiver[];
 }>();
 
 /* Emits */
@@ -44,10 +45,6 @@ const router = useRouter();
 const createTooltips = useCreateTooltips();
 
 /* Computed */
-const hasNotifications = computed(() => {
-  return notificationMonitor.filteredNotifications.value.length > 0;
-});
-
 const filteringNotificationType = computed(() => {
   let result: NotificationType | NotificationType[] | null;
   switch (props.collection) {
@@ -80,6 +77,33 @@ const notificationMonitor = useFilterNotifications(
   computed(() => props.node),
   filteringNotificationType,
 );
+
+const hasOldNotifications = computed(() => {
+  if (!props.oldNotifications || props.oldNotifications.length === 0) {
+    return false;
+  }
+
+  const notificationTypes = Array.isArray(filteringNotificationType.value)
+    ? filteringNotificationType.value
+    : filteringNotificationType.value
+      ? [filteringNotificationType.value]
+      : [];
+
+  if (notificationTypes.length === 0) {
+    return false;
+  }
+
+  // Check if any old notifications match this node
+  return props.oldNotifications.some(n => {
+    const matchesType = notificationTypes.includes(n.notification.type);
+    const matchesEntity = n.notification.entityId === (props.node.transactionId || props.node.groupId);
+    return matchesType && matchesEntity;
+  });
+});
+
+const hasNotifications = computed(() => {
+  return notificationMonitor.filteredNotifications.value.length > 0 || hasOldNotifications.value;
+});
 
 const transactionType = computed(() => {
   let result: string;
