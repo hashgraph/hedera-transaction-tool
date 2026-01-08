@@ -2,7 +2,7 @@ import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
-  Entity,
+  Entity, Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -14,6 +14,8 @@ import { UserKey } from './user-key.entity';
 import { User } from './user.entity';
 
 @Entity()
+@Index(['transactionId'])
+@Index(['userId'])
 export class TransactionApprover {
   @PrimaryGeneratedColumn()
   id: number;

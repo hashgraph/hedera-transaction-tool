@@ -1,9 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, ManyToOne, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, ManyToOne, Index, JoinColumn, Column } from 'typeorm';
 import { CachedAccount } from './';
 import { Transaction } from '../';
 
 @Entity()
-@Index(['transaction', 'account'], { unique: true })
+@Index(['transactionId', 'cachedAccountId'], { unique: true })
 export class TransactionCachedAccount {
   @PrimaryGeneratedColumn()
   id: number;
@@ -11,12 +11,18 @@ export class TransactionCachedAccount {
   @ManyToOne(() => Transaction, (tx) => tx.transactionCachedAccounts, {
     onDelete: 'CASCADE',
   })
-  @Index()
+  @JoinColumn({ name: 'transactionId' })
   transaction: Transaction;
+
+  @Column()
+  transactionId: number;
 
   @ManyToOne(() => CachedAccount, (acc) => acc.accountTransactions, {
     onDelete: 'CASCADE',
   })
-  @Index()
-  account: CachedAccount;
+  @JoinColumn({ name: 'cachedAccountId' })
+  cachedAccount: CachedAccount;
+
+  @Column()
+  cachedAccountId: number;
 }

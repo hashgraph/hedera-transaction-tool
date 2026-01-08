@@ -1,45 +1,38 @@
 import { TransactionNodeCollection } from '../dto/ITransactionNode';
-import { mock, mockDeep } from 'jest-mock-extended';
-import { TransactionsService } from '../transactions.service';
+import { mockDeep } from 'jest-mock-extended';
 import {
-  maxExecutedAt,
-  maxUpdatedAt,
-  minValidStart,
   TransactionNodesService,
 } from './transaction-nodes.service';
 import {
-  Transaction,
-  TransactionGroup,
-  TransactionGroupItem,
   TransactionStatus,
   TransactionType,
   User,
+  UserKey,
   UserStatus,
 } from '@entities';
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import {
-  CHAIN_SERVICE,
-  NOTIFICATIONS_SERVICE,
-  SchedulerService,
+  attachKeys,
+  getTransactionNodesForUser,
+  SqlBuilderService,
 } from '@app/common';
-import { ApproversService } from '../approvers';
-import { EntityManager, Repository } from 'typeorm';
-import { ClientProxy } from '@nestjs/microservices';
-import { TransactionGroupsService } from '../groups';
+import { EntityManager } from 'typeorm';
 import { TransactionNodeDto } from '../dto';
+import { TRANSACTION_STATUS_COLLECTIONS } from './transaction-node-collections.constants';
+
+jest.mock('@app/common', () => {
+  return {
+    ...jest.requireActual('@app/common'),
+    attachKeys: jest.fn(),
+    getTransactionNodesForUser: jest.fn(),
+  };
+});
 
 describe('TransactionNodesService', () => {
   let service: TransactionNodesService;
 
-  const transactionsRepo = mockDeep<Repository<Transaction>>();
-  const transactionGroupsService = mockDeep<TransactionGroupsService>();
-  const transactionsService = mockDeep<TransactionsService>();
-  const chainService = mock<ClientProxy>();
-  const notificationsService = mock<ClientProxy>();
-  const approversService = mock<ApproversService>();
-  const schedulerService = mock<SchedulerService>();
   const entityManager = mockDeep<EntityManager>();
+  const sqlBuilderService = mockDeep<SqlBuilderService>();
 
   const user: User = {
     id: 1,
@@ -61,476 +54,108 @@ describe('TransactionNodesService', () => {
     clients: [],
   };
 
+  const userKey: UserKey = {
+    id: 1,
+    userId: 1,
+    mnemonicHash: 'someHashValue',
+    index: 1,
+    publicKey: 'some public key',
+    user: user,
+    deletedAt: undefined,
+    createdTransactions: [],
+    approvedTransactions: [],
+    signedTransactions: [],
+  };
+
   //
   // Transactions
   //
 
   const TEST_NETWORK = 'testnet';
 
-  const singleTransaction1: Transaction = {
-    id: 1,
-    name: 'Single test transaction 1',
-    type: TransactionType.ACCOUNT_CREATE,
-    description: 'Single test transaction description 1',
-    transactionId: '0.0.123@15648433.112315',
-    validStart: new Date(),
-    transactionHash: '5a381df6a8s4f9e0asd8f46aw8e1f0asdd',
-    transactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
-    ),
-    unsignedTransactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
-    ),
-    signature: Buffer.from(
-      '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
-    ),
+  const singleTransactionRow1 = {
+    transaction_id: 1,
+    group_id: null,
+    description: 'Single test transaction 1',
+    created_at: new Date('2025-01-01T00:00:00Z'),
+    valid_start: new Date('2025-01-01T00:01:00Z'),
+    updated_at: new Date('2025-01-01T00:02:00Z'),
+    executed_at: null,
     status: TransactionStatus.NEW,
-    mirrorNetwork: 'testnet',
-    isManual: false,
-    cutoffAt: new Date(),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    deletedAt: null,
-    creatorKey: {
-      id: 1,
-      publicKey: 'publicKey',
-      mnemonicHash: 'mnemonicHash',
-      index: 1,
-      user: user,
-      userId: user.id,
-      deletedAt: null,
-      createdTransactions: [],
-      approvedTransactions: [],
-      signedTransactions: [],
-    },
-    signers: [],
-    approvers: [],
-    observers: [],
-    comments: [],
-    groupItem: null,
-    transactionCachedAccounts: [],
-    transactionCachedNodes: [],
+    status_code: null,
+    sdk_transaction_id: '0.0.123@15648433.112315',
+    transaction_type: TransactionType.ACCOUNT_CREATE,
+    is_manual: false,
+    group_item_count: null,
+    group_collected_count: null,
   };
 
-  const singleTransaction2: Transaction = {
-    id: 2,
-    name: 'Single test transaction 2',
-    type: TransactionType.ACCOUNT_UPDATE,
-    description: 'Single test transaction description 2',
-    transactionId: '0.0.123@15648433.315112',
-    validStart: new Date(),
-    transactionHash: '5a381df6a8s4f9e0asd8f46aw8e1f0asdd',
-    transactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
-    ),
-    unsignedTransactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
-    ),
-    signature: Buffer.from(
-      '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
-    ),
-    status: TransactionStatus.EXECUTED, // different from singleTransaction1 to improve code coverage
-    mirrorNetwork: TEST_NETWORK,
-    isManual: false,
-    cutoffAt: new Date(),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    executedAt: new Date(),
-    deletedAt: null,
-    creatorKey: {
-      id: 1,
-      publicKey: 'publicKey',
-      mnemonicHash: 'mnemonicHash',
-      index: 1,
-      user: user,
-      userId: user.id,
-      deletedAt: null,
-      createdTransactions: [],
-      approvedTransactions: [],
-      signedTransactions: [],
-    },
-    signers: [],
-    approvers: [],
-    observers: [],
-    comments: [],
-    groupItem: null,
-    transactionCachedAccounts: [],
-    transactionCachedNodes: [],
+  const singleTransactionRow2 = {
+    transaction_id: 2,
+    group_id: null,
+    description: 'Single test transaction 2',
+    created_at: new Date('2025-01-02T00:00:00Z'),
+    valid_start: new Date('2025-01-02T00:01:00Z'),
+    updated_at: new Date('2025-01-02T00:02:00Z'),
+    executed_at: new Date('2025-01-02T00:03:00Z'),
+    status: TransactionStatus.WAITING_FOR_EXECUTION,
+    status_code: 22,
+    sdk_transaction_id: '0.0.123@15648433.315112',
+    transaction_type: TransactionType.ACCOUNT_UPDATE,
+    is_manual: false,
+    group_item_count: null,
+    group_collected_count: null,
   };
 
-  const childTransactionDate1 = Date.now();
-
-  const childTransaction1: Transaction = {
-    id: 1,
-    name: 'Test child transaction 1',
-    type: TransactionType.ACCOUNT_CREATE,
-    description: 'Test child  transaction description 1',
-    transactionId: '0.0.123@15648433.112315',
-    validStart: new Date(childTransactionDate1 + 2000),
-    transactionHash: '5a381df6a8s4f9e0asd8f46aw8e1f0asdd',
-    transactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
-    ),
-    unsignedTransactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
-    ),
-    signature: Buffer.from(
-      '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
-    ),
-    status: TransactionStatus.EXECUTED,
-    statusCode: 22,
-    mirrorNetwork: TEST_NETWORK,
-    isManual: false,
-    cutoffAt: new Date(childTransactionDate1),
-    createdAt: new Date(childTransactionDate1),
-    updatedAt: new Date(childTransactionDate1 + 1000),
-    executedAt: new Date(childTransactionDate1 + 2100),
-    deletedAt: null,
-    creatorKey: {
-      id: 1,
-      publicKey: 'publicKey',
-      mnemonicHash: 'mnemonicHash',
-      index: 1,
-      user: user,
-      userId: user.id,
-      deletedAt: null,
-      createdTransactions: [],
-      approvedTransactions: [],
-      signedTransactions: [],
-    },
-    signers: [],
-    approvers: [],
-    observers: [],
-    comments: [],
-    groupItem: null,
-    transactionCachedAccounts: [],
-    transactionCachedNodes: [],
-  };
-
-  const childTransactionDate2 = childTransactionDate1 + 4000;
-
-  const childTransaction2: Transaction = {
-    id: 1,
-    name: 'Test child transaction 2',
-    type: TransactionType.ACCOUNT_CREATE,
-    description: 'Test child  transaction description 2',
-    transactionId: '0.0.123@15648433.315112',
-    validStart: new Date(childTransactionDate2 + 3000),
-    transactionHash: '5a381df6a8s4f9e0asd8f46aw8e1f0asdd',
-    transactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
-    ),
-    unsignedTransactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
-    ),
-    signature: Buffer.from(
-      '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
-    ),
-    status: TransactionStatus.EXECUTED,
-    statusCode: 22,
-    mirrorNetwork: TEST_NETWORK,
-    isManual: false,
-    cutoffAt: new Date(childTransactionDate2),
-    createdAt: new Date(childTransactionDate2),
-    updatedAt: new Date(childTransactionDate2 + 2000),
-    executedAt: new Date(childTransactionDate2 + 3100),
-    deletedAt: null,
-    creatorKey: {
-      id: 1,
-      publicKey: 'publicKey',
-      mnemonicHash: 'mnemonicHash',
-      index: 1,
-      user: user,
-      userId: user.id,
-      deletedAt: null,
-      createdTransactions: [],
-      approvedTransactions: [],
-      signedTransactions: [],
-    },
-    signers: [],
-    approvers: [],
-    observers: [],
-    comments: [],
-    groupItem: null,
-    transactionCachedAccounts: [],
-    transactionCachedNodes: [],
-  };
-
-  const childTransactionDate3 = childTransactionDate2 + 4000;
-
-  const childTransaction3: Transaction = {
-    id: 3,
-    name: 'Test child transaction 3',
-    type: TransactionType.ACCOUNT_CREATE,
-    description: 'Test child  transaction description 3',
-    transactionId: '0.0.123@15648433.415112',
-    validStart: new Date(childTransactionDate3 + 3000),
-    transactionHash: '5a381df6a8s4f9e0asd8f46aw8e1f0asdd',
-    transactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
-    ),
-    unsignedTransactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
-    ),
-    signature: Buffer.from(
-      '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
-    ),
-    status: TransactionStatus.EXECUTED,
-    statusCode: 22,
-    mirrorNetwork: TEST_NETWORK,
-    isManual: false,
-    cutoffAt: new Date(childTransactionDate3),
-    createdAt: new Date(childTransactionDate3),
-    updatedAt: new Date(childTransactionDate3 + 2000),
-    executedAt: new Date(childTransactionDate3 + 3100),
-    deletedAt: null,
-    creatorKey: {
-      id: 1,
-      publicKey: 'publicKey',
-      mnemonicHash: 'mnemonicHash',
-      index: 1,
-      user: user,
-      userId: user.id,
-      deletedAt: null,
-      createdTransactions: [],
-      approvedTransactions: [],
-      signedTransactions: [],
-    },
-    signers: [],
-    approvers: [],
-    observers: [],
-    comments: [],
-    groupItem: null,
-    transactionCachedAccounts: [],
-    transactionCachedNodes: [],
-  };
-
-  const childTransactionDate4 = childTransactionDate3 + 4000;
-
-  const childTransaction4: Transaction = {
-    id: 4,
-    name: 'Test child transaction 4',
-    type: TransactionType.ACCOUNT_UPDATE,
-    description: 'Test child  transaction description 4',
-    transactionId: '0.0.123@15648433.515112',
-    validStart: new Date(childTransactionDate4 + 3000),
-    transactionHash: '5a381df6a8s4f9e0asd8f46aw8e1f0asdd',
-    transactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
-    ),
-    unsignedTransactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
-    ),
-    signature: Buffer.from(
-      '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
-    ),
-    status: TransactionStatus.FAILED,
-    statusCode: 42,
-    mirrorNetwork: TEST_NETWORK,
-    isManual: false,
-    cutoffAt: new Date(childTransactionDate4),
-    createdAt: new Date(childTransactionDate4),
-    updatedAt: new Date(childTransactionDate4 + 2000),
-    deletedAt: null,
-    creatorKey: {
-      id: 1,
-      publicKey: 'publicKey',
-      mnemonicHash: 'mnemonicHash',
-      index: 1,
-      user: user,
-      userId: user.id,
-      deletedAt: null,
-      createdTransactions: [],
-      approvedTransactions: [],
-      signedTransactions: [],
-    },
-    signers: [],
-    approvers: [],
-    observers: [],
-    comments: [],
-    groupItem: null,
-    transactionCachedAccounts: [],
-    transactionCachedNodes: [],
-  };
-
-  const childTransactionDate5 = childTransactionDate4 + 4000;
-
-  const childTransaction5: Transaction = {
-    id: 4,
-    name: 'Test child transaction 5',
-    type: TransactionType.TRANSFER,
-    description: 'Test child  transaction description 5',
-    transactionId: '0.0.123@15648433.615112',
-    validStart: new Date(childTransactionDate5 + 3000),
-    transactionHash: '5a381df6a8s4f9e0asd8f46aw8e1f0asdd',
-    transactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
-    ),
-    unsignedTransactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
-    ),
-    signature: Buffer.from(
-      '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
-    ),
-    status: TransactionStatus.NEW,
-    statusCode: undefined,
-    mirrorNetwork: TEST_NETWORK,
-    isManual: false,
-    cutoffAt: new Date(childTransactionDate5),
-    createdAt: new Date(childTransactionDate5),
-    updatedAt: new Date(childTransactionDate5 + 2000),
-    deletedAt: null,
-    creatorKey: {
-      id: 1,
-      publicKey: 'publicKey',
-      mnemonicHash: 'mnemonicHash',
-      index: 1,
-      user: user,
-      userId: user.id,
-      deletedAt: null,
-      createdTransactions: [],
-      approvedTransactions: [],
-      signedTransactions: [],
-    },
-    signers: [],
-    approvers: [],
-    observers: [],
-    comments: [],
-    groupItem: null,
-    transactionCachedAccounts: [],
-    transactionCachedNodes: [],
-  };
-
-  //
-  // Group 1  { childTransaction1, childTransaction2 }
-  //
-
-  const group1: TransactionGroup = {
-    id: 1,
+  const groupRow1 = {
+    transaction_id: null,
+    group_id: 1,
     description: 'Test group 1',
-    atomic: true,
-    sequential: true,
-    createdAt: new Date(),
-    groupItems: [],
+    created_at: new Date('2025-01-03T00:00:00Z'),
+    valid_start: new Date('2025-01-03T00:01:00Z'),
+    updated_at: new Date('2025-01-03T00:02:00Z'),
+    executed_at: new Date('2025-01-03T00:03:00Z'),
+    status: TransactionStatus.EXECUTED,
+    status_code: 22,
+    sdk_transaction_id: null,
+    transaction_type: null,
+    is_manual: null,
+    group_item_count: 2,
+    group_collected_count: 2,
   };
 
-  const groupItem1_1: TransactionGroupItem = {
-    seq: 0,
-    transactionId: childTransaction1.id,
-    transaction: childTransaction1,
-    group: group1,
-    groupId: group1.id,
-  };
-  childTransaction1.groupItem = groupItem1_1;
-
-  const groupItem1_2: TransactionGroupItem = {
-    seq: 0,
-    transactionId: childTransaction2.id,
-    transaction: childTransaction2,
-    group: group1,
-    groupId: group1.id,
-  };
-  childTransaction2.groupItem = groupItem1_2;
-
-  group1.groupItems = [groupItem1_1, groupItem1_2];
-
-  //
-  // Group 2 { childTransaction3, childTransaction4 }
-  //
-
-  const group2: TransactionGroup = {
-    id: 2,
+  const groupRow2 = {
+    transaction_id: null,
+    group_id: 2,
     description: 'Test group 2',
-    atomic: true,
-    sequential: true,
-    createdAt: new Date(),
-    groupItems: [],
+    created_at: new Date('2025-01-04T00:00:00Z'),
+    valid_start: new Date('2025-01-04T00:01:00Z'),
+    updated_at: new Date('2025-01-04T00:02:00Z'),
+    executed_at: null,
+    status: TransactionStatus.FAILED,
+    status_code: 42,
+    sdk_transaction_id: null,
+    transaction_type: null,
+    is_manual: null,
+    group_item_count: 2,
+    group_collected_count: 1,
   };
 
-  const groupItem2_1: TransactionGroupItem = {
-    seq: 0,
-    transactionId: childTransaction3.id,
-    transaction: childTransaction3,
-    group: group2,
-    groupId: group2.id,
-  };
-  childTransaction3.groupItem = groupItem2_1;
-
-  const groupItem2_2: TransactionGroupItem = {
-    seq: 1,
-    transactionId: childTransaction4.id,
-    transaction: childTransaction4,
-    group: group2,
-    groupId: group2.id,
-  };
-  childTransaction4.groupItem = groupItem2_2;
-
-  group2.groupItems = [groupItem2_1, groupItem2_2];
-
-  //
-  // Group 3 { childTransaction5 }
-  //
-
-  const group3: TransactionGroup = {
-    id: 3,
+  const groupRow3 = {
+    transaction_id: null,
+    group_id: 3,
     description: 'Test group 3',
-    atomic: true,
-    sequential: true,
-    createdAt: new Date(),
-    groupItems: [],
-  };
-
-  const groupItem3_1: TransactionGroupItem = {
-    seq: 0,
-    transactionId: childTransaction5.id,
-    transaction: childTransaction5,
-    group: group3,
-    groupId: group3.id,
-  };
-  childTransaction5.groupItem = groupItem3_1;
-
-  group3.groupItems = [groupItem3_1];
-
-  //
-  // All
-  //
-
-  const allTransactions = [
-    singleTransaction1,
-    singleTransaction2,
-    childTransaction1,
-    childTransaction2,
-    childTransaction4, // 4 before 3 to improve coverage
-    childTransaction3,
-    childTransaction5,
-  ];
-
-  const allTransactionPage = {
-    totalItems: allTransactions.length,
-    items: allTransactions,
-    page: 1,
-    size: allTransactions.length,
-  };
-
-  const getTransactionGroupMock = async (
-    _user: User,
-    groupId: number,
-  ): Promise<TransactionGroup> => {
-    let result: TransactionGroup;
-    switch (groupId) {
-      case group1.id:
-        result = group1;
-        break;
-      case group2.id:
-        result = group2;
-        break;
-      case group3.id:
-        result = group3;
-        break;
-      default:
-        throw Error('Unexpected group id ' + groupId);
-    }
-    return result;
+    created_at: new Date('2025-01-05T00:00:00Z'),
+    valid_start: new Date('2025-01-05T00:01:00Z'),
+    updated_at: new Date('2025-01-05T00:02:00Z'),
+    executed_at: null,
+    status: TransactionStatus.WAITING_FOR_SIGNATURES,
+    status_code: null,
+    sdk_transaction_id: null,
+    transaction_type: null,
+    is_manual: null,
+    group_item_count: 1,
+    group_collected_count: 1,
   };
 
   //
@@ -538,47 +163,47 @@ describe('TransactionNodesService', () => {
   //
 
   const singleTransactionNode1 = new TransactionNodeDto();
-  singleTransactionNode1.transactionId = singleTransaction1.id;
+  singleTransactionNode1.transactionId = singleTransactionRow1.transaction_id;
   singleTransactionNode1.groupId = undefined;
-  singleTransactionNode1.description = singleTransaction1.description;
-  singleTransactionNode1.createdAt = singleTransaction1.createdAt.toISOString();
-  singleTransactionNode1.validStart = singleTransaction1.validStart.toISOString();
-  singleTransactionNode1.updatedAt = singleTransaction1.updatedAt.toISOString();
-  singleTransactionNode1.executedAt = singleTransaction1.executedAt?.toISOString();
-  singleTransactionNode1.status = singleTransaction1.status;
-  singleTransactionNode1.statusCode = singleTransaction1.statusCode;
-  singleTransactionNode1.sdkTransactionId = singleTransaction1.transactionId;
-  singleTransactionNode1.transactionType = singleTransaction1.type;
-  singleTransactionNode1.isManual = singleTransaction1.isManual;
+  singleTransactionNode1.description = singleTransactionRow1.description;
+  singleTransactionNode1.createdAt = singleTransactionRow1.created_at.toISOString();
+  singleTransactionNode1.validStart = singleTransactionRow1.valid_start.toISOString();
+  singleTransactionNode1.updatedAt = singleTransactionRow1.updated_at.toISOString();
+  singleTransactionNode1.executedAt = singleTransactionRow1.executed_at?.toISOString();
+  singleTransactionNode1.status = singleTransactionRow1.status;
+  singleTransactionNode1.statusCode = singleTransactionRow1.status_code;
+  singleTransactionNode1.sdkTransactionId = singleTransactionRow1.sdk_transaction_id;
+  singleTransactionNode1.transactionType = singleTransactionRow1.transaction_type;
+  singleTransactionNode1.isManual = singleTransactionRow1.is_manual;
   singleTransactionNode1.groupItemCount = undefined;
   singleTransactionNode1.groupCollectedCount = undefined;
 
   const singleTransactionNode2 = new TransactionNodeDto();
-  singleTransactionNode2.transactionId = singleTransaction2.id;
+  singleTransactionNode2.transactionId = singleTransactionRow2.transaction_id;
   singleTransactionNode2.groupId = undefined;
-  singleTransactionNode2.description = singleTransaction2.description;
-  singleTransactionNode2.createdAt = singleTransaction2.createdAt.toISOString();
-  singleTransactionNode2.validStart = singleTransaction2.validStart.toISOString();
-  singleTransactionNode2.updatedAt = singleTransaction2.updatedAt.toISOString();
-  singleTransactionNode2.executedAt = singleTransaction2.executedAt?.toISOString();
-  singleTransactionNode2.status = singleTransaction2.status;
-  singleTransactionNode2.statusCode = singleTransaction2.statusCode;
-  singleTransactionNode2.sdkTransactionId = singleTransaction2.transactionId;
-  singleTransactionNode2.transactionType = singleTransaction2.type;
-  singleTransactionNode2.isManual = singleTransaction2.isManual;
+  singleTransactionNode2.description = singleTransactionRow2.description;
+  singleTransactionNode2.createdAt = singleTransactionRow2.created_at.toISOString();
+  singleTransactionNode2.validStart = singleTransactionRow2.valid_start.toISOString();
+  singleTransactionNode2.updatedAt = singleTransactionRow2.updated_at.toISOString();
+  singleTransactionNode2.executedAt = singleTransactionRow2.executed_at?.toISOString();
+  singleTransactionNode2.status = singleTransactionRow2.status;
+  singleTransactionNode2.statusCode = singleTransactionRow2.status_code;
+  singleTransactionNode2.sdkTransactionId = singleTransactionRow2.sdk_transaction_id;
+  singleTransactionNode2.transactionType = singleTransactionRow2.transaction_type;
+  singleTransactionNode2.isManual = singleTransactionRow2.is_manual;
   singleTransactionNode2.groupItemCount = undefined;
   singleTransactionNode2.groupCollectedCount = undefined;
 
   const groupNode1 = new TransactionNodeDto();
   groupNode1.transactionId = undefined;
-  groupNode1.groupId = group1.id;
-  groupNode1.description = group1.description;
-  groupNode1.createdAt = group1.createdAt.toISOString();
-  groupNode1.validStart = childTransaction1.validStart.toISOString();
-  groupNode1.updatedAt = childTransaction2.updatedAt.toISOString();
-  groupNode1.executedAt = childTransaction2.executedAt?.toISOString();
-  groupNode1.status = childTransaction1.status;
-  groupNode1.statusCode = childTransaction1.statusCode;
+  groupNode1.groupId = groupRow1.group_id;
+  groupNode1.description = groupRow1.description;
+  groupNode1.createdAt = groupRow1.created_at.toISOString();
+  groupNode1.validStart = groupRow1.valid_start.toISOString();
+  groupNode1.updatedAt = groupRow1.updated_at.toISOString();
+  groupNode1.executedAt = groupRow1.executed_at?.toISOString();
+  groupNode1.status = groupRow1.status;
+  groupNode1.statusCode = groupRow1.status_code;
   groupNode1.sdkTransactionId = undefined;
   groupNode1.transactionType = undefined;
   groupNode1.isManual = undefined;
@@ -587,12 +212,12 @@ describe('TransactionNodesService', () => {
 
   const groupNode2 = new TransactionNodeDto();
   groupNode2.transactionId = undefined;
-  groupNode2.groupId = group2.id;
-  groupNode2.description = group2.description;
-  groupNode2.createdAt = group2.createdAt.toISOString();
-  groupNode2.validStart = childTransaction3.validStart.toISOString();
-  groupNode2.updatedAt = childTransaction4.updatedAt.toISOString();
-  groupNode2.executedAt = childTransaction4.executedAt?.toISOString();
+  groupNode2.groupId = groupRow2.group_id;
+  groupNode2.description = groupRow2.description;
+  groupNode2.createdAt = groupRow2.created_at.toISOString();
+  groupNode2.validStart = groupRow2.valid_start.toISOString();
+  groupNode2.updatedAt = groupRow2.updated_at.toISOString();
+  groupNode2.executedAt = groupRow2.executed_at?.toISOString();
   groupNode2.status = undefined;
   groupNode2.statusCode = undefined;
   groupNode2.sdkTransactionId = undefined;
@@ -603,14 +228,14 @@ describe('TransactionNodesService', () => {
 
   const groupNode3 = new TransactionNodeDto();
   groupNode3.transactionId = undefined;
-  groupNode3.groupId = group3.id;
-  groupNode3.description = group3.description;
-  groupNode3.createdAt = group3.createdAt.toISOString();
-  groupNode3.validStart = childTransaction5.validStart.toISOString();
-  groupNode3.updatedAt = childTransaction5.updatedAt.toISOString();
-  groupNode3.executedAt = childTransaction5.executedAt?.toISOString();
-  groupNode3.status = childTransaction5.status;
-  groupNode3.statusCode = childTransaction5.statusCode;
+  groupNode3.groupId = groupRow3.group_id;
+  groupNode3.description = groupRow3.description;
+  groupNode3.createdAt = groupRow3.created_at.toISOString();
+  groupNode3.validStart = groupRow3.valid_start.toISOString();
+  groupNode3.updatedAt = groupRow3.updated_at.toISOString();
+  groupNode3.executedAt = groupRow3.executed_at?.toISOString();
+  groupNode3.status = groupRow3.status;
+  groupNode3.statusCode = groupRow3.status_code;
   groupNode3.sdkTransactionId = undefined;
   groupNode3.transactionType = undefined;
   groupNode3.isManual = undefined;
@@ -618,11 +243,11 @@ describe('TransactionNodesService', () => {
   groupNode3.groupCollectedCount = 1;
 
   const allNodes = [
+    singleTransactionNode1,
+    singleTransactionNode2,
     groupNode1,
     groupNode2,
     groupNode3,
-    singleTransactionNode1,
-    singleTransactionNode2,
   ];
 
   describe('getTransactionNodes()', () => {
@@ -631,36 +256,12 @@ describe('TransactionNodesService', () => {
         providers: [
           TransactionNodesService,
           {
-            provide: TransactionGroupsService,
-            useValue: transactionGroupsService,
-          },
-          {
-            provide: TransactionsService,
-            useValue: transactionsService,
-          },
-          {
-            provide: getRepositoryToken(Transaction),
-            useValue: transactionsRepo,
-          },
-          {
-            provide: NOTIFICATIONS_SERVICE,
-            useValue: notificationsService,
-          },
-          {
-            provide: CHAIN_SERVICE,
-            useValue: chainService,
-          },
-          {
-            provide: ApproversService,
-            useValue: approversService,
-          },
-          {
             provide: EntityManager,
             useValue: entityManager,
           },
           {
-            provide: SchedulerService,
-            useValue: schedulerService,
+            provide: SqlBuilderService,
+            useValue: sqlBuilderService,
           },
         ],
       }).compile();
@@ -668,13 +269,21 @@ describe('TransactionNodesService', () => {
       service = module.get<TransactionNodesService>(TransactionNodesService);
 
       jest.resetAllMocks();
+
+      // Default mock implementation for attachKeys
+      (attachKeys as jest.Mock).mockImplementation((user) => user.keys.push(userKey));
     });
 
     it('TransactionNodeCollection.READY_FOR_REVIEW => getTransactionsToApprove()', async () => {
-      transactionsService.getTransactionsToApprove.mockResolvedValue(allTransactionPage);
-      transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
+      const mockQuery = { text: 'SELECT * FROM transactions...', values: [] };
 
-      const r = await service.getTransactionNodes(
+      (getTransactionNodesForUser as jest.Mock).mockReturnValue(mockQuery);
+      entityManager.query.mockResolvedValue([
+        singleTransactionRow1,
+        groupRow3,
+      ]);
+
+      const result = await service.getTransactionNodes(
         user,
         TransactionNodeCollection.READY_FOR_REVIEW,
         TEST_NETWORK,
@@ -682,23 +291,74 @@ describe('TransactionNodesService', () => {
         [],
       );
 
-      expect(r).toStrictEqual(allNodes);
+      expect(result).toEqual([
+        singleTransactionNode1,
+        groupNode3,
+      ]);
+
+      expect(getTransactionNodesForUser).toHaveBeenCalledWith(
+        sqlBuilderService,
+        user,
+        { approver: true },
+        {
+          statuses: TRANSACTION_STATUS_COLLECTIONS.READY_FOR_REVIEW,
+          mirrorNetwork: TEST_NETWORK,
+        }
+      );
+
+      expect(entityManager.query).toHaveBeenCalledWith(mockQuery.text, mockQuery.values);
     });
 
     it('TransactionNodeCollection.READY_TO_SIGN => getTransactionsToSign()', async () => {
-      const result = {
-        totalItems: 1,
-        items: allTransactions.map(t => {
-          return { transaction: t, keysToSign: [] };
-        }),
-        page: 1,
-        size: 10,
-      };
+      const rows = [
+        {
+          transaction_id: 123,
+          group_id: null,
+          description: 'Test tx',
+          created_at: new Date('2025-01-01T00:00:00Z'),
+          valid_start: new Date('2025-01-01T00:01:00Z'),
+          updated_at: new Date('2025-01-01T00:02:00Z'),
+          executed_at: null,
+          status: 'WAITING_FOR_SIGNATURES',
+          status_code: null,
+          sdk_transaction_id: 'sdk-123',
+          transaction_type: 'TRANSFER',
+          is_manual: false,
+          group_item_count: null,
+          group_collected_count: null,
+        },
+      ];
+      const expected: TransactionNodeDto[] = [
+        {
+          description: 'Test tx',
+          createdAt: '2025-01-01T00:00:00.000Z',
+          validStart: '2025-01-01T00:01:00.000Z',
+          updatedAt: '2025-01-01T00:02:00.000Z',
+          executedAt: undefined,
+          status: 'WAITING_FOR_SIGNATURES',
+          statusCode: null,
 
-      transactionsService.getTransactionsToSign.mockResolvedValue(result);
-      transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
+          transactionId: 123,
+          groupId: undefined,
+          sdkTransactionId: 'sdk-123',
+          transactionType: 'TRANSFER',
+          isManual: false,
+          groupItemCount: undefined,
+          groupCollectedCount: undefined,
+        },
+      ];
 
-      const r = await service.getTransactionNodes(
+      const mockQuery = { text: 'SELECT * FROM...', values: [] };
+
+      (attachKeys as jest.Mock).mockImplementation((user, entityManager) => user.keys.push(userKey));
+
+      // Mock getTransactionNodesForUser to return a query object
+      (getTransactionNodesForUser as jest.Mock).mockReturnValue(mockQuery);
+
+      // Mock entityManager.query to return the rows
+      entityManager.query.mockResolvedValue(rows);
+
+      const result = await service.getTransactionNodes(
         user,
         TransactionNodeCollection.READY_TO_SIGN,
         TEST_NETWORK,
@@ -706,13 +366,25 @@ describe('TransactionNodesService', () => {
         [],
       );
 
-      expect(r).toStrictEqual(allNodes);
+      expect(result).toEqual(expected);
+
+      // Verify getTransactionNodesForUser was called with correct parameters
+      expect(getTransactionNodesForUser)
+        .toHaveBeenCalledWith(
+          sqlBuilderService,
+          user,
+          { signer: true },
+          {
+            statuses: TRANSACTION_STATUS_COLLECTIONS.READY_TO_SIGN,
+            mirrorNetwork: TEST_NETWORK,
+          }
+        );
+
+      // Verify entityManager.query was called with the query
+      expect(entityManager.query).toHaveBeenCalledWith(mockQuery.text, mockQuery.values);
     });
 
     it('TransactionNodeCollection.READY_FOR_EXECUTION => getTransactions(TransactionStatus.WAITING_FOR_EXECUTION)', async () => {
-      transactionsService.getTransactions.mockResolvedValue(allTransactionPage);
-      transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
-
       const r = await service.getTransactionNodes(
         user,
         TransactionNodeCollection.READY_FOR_EXECUTION,
@@ -725,9 +397,6 @@ describe('TransactionNodesService', () => {
     });
 
     it('TransactionNodeCollection.IN_PROGRESS => getTransactions(TransactionStatus.WAITING_FOR_SIGNATURES)', async () => {
-      transactionsService.getTransactions.mockResolvedValue(allTransactionPage);
-      transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
-
       const r = await service.getTransactionNodes(
         user,
         TransactionNodeCollection.IN_PROGRESS,
@@ -740,9 +409,6 @@ describe('TransactionNodesService', () => {
     });
 
     it('TransactionNodeCollection.HISTORY => getHistoryTransactions()', async () => {
-      transactionsService.getHistoryTransactions.mockResolvedValue(allTransactionPage);
-      transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
-
       const r = await service.getTransactionNodes(
         user,
         TransactionNodeCollection.HISTORY,
@@ -755,9 +421,6 @@ describe('TransactionNodesService', () => {
     });
 
     it('status filtering is effective', async () => {
-      transactionsService.getHistoryTransactions.mockResolvedValue(allTransactionPage);
-      transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
-
       const r = await service.getTransactionNodes(
         user,
         TransactionNodeCollection.HISTORY,
@@ -770,9 +433,6 @@ describe('TransactionNodesService', () => {
     });
 
     it('transaction type filtering is effective', async () => {
-      transactionsService.getHistoryTransactions.mockResolvedValue(allTransactionPage);
-      transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
-
       const r = await service.getTransactionNodes(
         user,
         TransactionNodeCollection.HISTORY,
@@ -782,25 +442,6 @@ describe('TransactionNodesService', () => {
       );
 
       expect(r).toStrictEqual([]);
-    });
-  });
-
-  describe('error report', () => {
-    it('minValidStart() should throw error when receiving empty array', () => {
-      expect(() => minValidStart([])).toThrow(Error);
-    });
-
-    it('maxUpdatedAt() should throw error when receiving empty array', () => {
-      expect(() => maxUpdatedAt([])).toThrow(Error);
-    });
-
-    it('maxExecutedAt() should throw error when receiving empty array', () => {
-      expect(() => maxExecutedAt([])).toThrow(Error);
-    });
-
-    it('maxExecutedAt() should return max execution date', () => {
-      const transactions: Transaction[] = [childTransaction1, childTransaction2];
-      expect(maxExecutedAt(transactions)).toBe(childTransaction2.executedAt);
     });
   });
 });
