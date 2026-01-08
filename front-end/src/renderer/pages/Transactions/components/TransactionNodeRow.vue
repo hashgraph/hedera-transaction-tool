@@ -14,7 +14,7 @@ import {
   type ITransactionNode,
   TransactionNodeCollection,
 } from '../../../../../../shared/src/ITransactionNode.ts';
-import { NotificationType, TransactionStatus } from '@shared/interfaces';
+import { INotificationReceiver, NotificationType, TransactionStatus } from '@shared/interfaces';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
