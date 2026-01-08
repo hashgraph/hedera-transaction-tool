@@ -49,7 +49,7 @@ const hasNotifications = computed(() => {
 });
 
 const filteringNotificationType = computed(() => {
-  let result: NotificationType | null;
+  let result: NotificationType | NotificationType[] | null;
   switch (props.collection) {
     case TransactionNodeCollection.READY_FOR_REVIEW:
       result = NotificationType.TRANSACTION_INDICATOR_APPROVE;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeMount, onMounted, ref, watch } from 'vue';
 import { useToast } from 'vue-toast-notification';
 
 import {
@@ -25,6 +25,9 @@ import {
 } from '@renderer/utils/sortTransactionNodes.ts';
 import TransactionsFilterV2 from '@renderer/components/Filter/v2/TransactionsFilterV2.vue';
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
+import useDisposableWs from '@renderer/composables/useDisposableWs';
+import { TRANSACTION_ACTION } from '@shared/constants';
+import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 
 /* Props */
 const props = defineProps<{
@@ -34,9 +37,12 @@ const props = defineProps<{
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const wsStore = useWebsocketConnection();
 
 /* Composables */
 const toast = useToast();
+const ws = useDisposableWs();
+// Mark relevant notifications as read onMounted and onBeforeUnmount
 const { oldNotifications } = useMarkNotifications([
   NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
   NotificationType.TRANSACTION_INDICATOR_EXECUTED,
@@ -112,6 +118,7 @@ function initialSort() {
   }
   return result;
 }
+
 async function fetchNodes(): Promise<void> {
   if (isLoggedInOrganization(user.selectedOrganization)) {
     isLoading.value = true;
@@ -146,13 +153,28 @@ function resetPagination(): void {
   currentPage.value = 1;
 }
 
+const subscribeToTransactionAction = () => {
+  if (!user.selectedOrganization?.serverUrl) return;
+  ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
+    await fetchNodes();
+  });
+};
+
 /* Watchers */
+wsStore.$onAction(ctx => {
+  if (ctx.name !== 'setup') return;
+  ctx.after(() => subscribeToTransactionAction());
+});
+
 watch(sort, () => {
     resetPagination();
     sortNodes();
   },
 );
+
 watch([statusFilter, transactionTypeFilter], fetchNodes, { deep: true });
+
+onBeforeMount(subscribeToTransactionAction);
 
 onMounted(fetchNodes);
 </script>

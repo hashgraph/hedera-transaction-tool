@@ -8,7 +8,7 @@ import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 
 export default function useFilterNotifications(
   transactionNode: Ref<ITransactionNode>,
-  notificationType: Ref<NotificationType|null>,
+  notificationType: Ref<NotificationType | NotificationType[] | null>,
 ) {
 
   /* Stores */
@@ -22,16 +22,24 @@ export default function useFilterNotifications(
   const filteredNotificationIds = computed(() => {
     return filteredNotifications.value.map(candidate => candidate.id);
   });
+
   const notificationsKey = computed(() => user.selectedOrganization?.serverUrl ?? '');
+
+  const notificationTypesArray = computed(() => {
+    const type = notificationType.value;
+    if (type === null) return [];
+    return Array.isArray(type) ? type : [type];
+  });
+
   const candidateNotifications = computed(() => {
     let result: INotificationReceiver[];
-    if (notificationType.value !== null) {
+    if (notificationTypesArray.value.length > 0) {
       const serverNotifications = notifications.notifications[notificationsKey.value] ?? [];
       result = serverNotifications.filter((n: INotificationReceiver) => {
-        return n.notification.type === notificationType.value;
+        return notificationTypesArray.value.includes(n.notification.type);
       });
     } else {
-      result = []
+      result = [];
     }
     return result;
   });
