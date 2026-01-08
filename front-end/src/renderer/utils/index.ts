@@ -170,7 +170,7 @@ export const getAccountIdWithChecksum = (accountId: string): string => {
 
 const TINYBAR_THRESHOLD = 1_000_000;
 
-export function stringifyHbarWithFont(hbar: Hbar, fontClass='text-bold text-secondary'): string {
+export function stringifyHbarWithFont(hbar: Hbar, fontClass = 'text-bold text-secondary'): string {
   const amount = hbar.isNegative() ? hbar.toTinybars().negate() : hbar.toTinybars();
   const showTinybars = amount.lessThan(Long.fromNumber(TINYBAR_THRESHOLD));
 
@@ -397,3 +397,10 @@ export function sanitizeAccountId(value: string): string {
 
   return value;
 }
+
+export const formatProgressBytes = (
+  bytes: number | undefined | null,
+  fallback: string = '0',
+): string => {
+  return convertBytes(bytes || 0, { useBinaryUnits: false, decimals: 2 }) || fallback;
+};

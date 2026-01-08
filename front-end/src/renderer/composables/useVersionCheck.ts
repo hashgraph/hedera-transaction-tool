@@ -1,5 +1,7 @@
 import { ref } from 'vue';
 
+import type { IVersionCheckResponse } from '@shared/interfaces';
+
 import { SESSION_STORAGE_DISMISSED_UPDATE_PROMPT } from '@shared/constants';
 
 import { checkVersion } from '@renderer/services/organization';
@@ -10,6 +12,10 @@ import {
   updateUrl,
   latestVersion,
   resetVersionState,
+  setVersionDataForOrg,
+  setVersionStatusForOrg,
+  getVersionStatusForOrg,
+  getAllOrganizationVersions,
   type VersionStatus,
 } from '@renderer/stores/versionState';
 
@@ -25,18 +31,44 @@ export default function useVersionCheck() {
 
       const response = await checkVersion(serverUrl, FRONTEND_VERSION);
 
+      setVersionDataForOrg(serverUrl, {
+        latestSupportedVersion: response.latestSupportedVersion,
+        minimumSupportedVersion: response.minimumSupportedVersion,
+        updateUrl: response.updateUrl,
+      });
+
+      if (response.updateUrl) {
+        setVersionStatusForOrg(serverUrl, 'updateAvailable');
+      } else {
+        setVersionStatusForOrg(serverUrl, 'current');
+      }
+
       updateUrl.value = response.updateUrl;
       latestVersion.value = response.latestSupportedVersion;
-
       versionStatus.value = response.updateUrl ? 'updateAvailable' : 'current';
     } catch (error) {
       console.error('Version check failed:', error);
+      const orgStatus = getVersionStatusForOrg(serverUrl);
+      if (orgStatus !== 'belowMinimum') {
+        setVersionStatusForOrg(serverUrl, 'current');
+      }
       if (versionStatus.value !== 'belowMinimum') {
         versionStatus.value = 'current';
       }
     } finally {
       isChecking.value = false;
     }
+  };
+
+  const storeVersionDataForOrganization = (
+    serverUrl: string,
+    data: IVersionCheckResponse,
+  ): void => {
+    setVersionDataForOrg(serverUrl, data);
+  };
+
+  const getAllOrganizationVersionData = (): { [serverUrl: string]: IVersionCheckResponse } => {
+    return getAllOrganizationVersions();
   };
 
   const dismissOptionalUpdate = (): void => {
@@ -60,6 +92,8 @@ export default function useVersionCheck() {
     isDismissed,
     dismissOptionalUpdate,
     reset,
+    storeVersionDataForOrganization,
+    getAllOrganizationVersionData,
   };
 }
 
