@@ -19,6 +19,7 @@ import {
   waitForRowCount,
   DATA_VOLUMES,
   DEBUG,
+  TEST_LOCAL_PASSWORD,
 } from './performanceUtils.js';
 import { SELECTORS } from './selectors.js';
 
@@ -49,7 +50,7 @@ test.describe('Contacts Page Performance', () => {
     const testUser = organizationPage.getUser(0);
     if (DEBUG) console.log(`Created ${DB_ITEM_COUNT} users`);
 
-    const password = 'TestPassword123';
+    const password = TEST_LOCAL_PASSWORD;
     await registrationPage.completeRegistration(`perf-contacts-${Date.now()}@test.com`, password);
 
     await contactListPage.upgradeUserToAdmin(testUser.email);

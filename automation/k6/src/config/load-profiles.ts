@@ -5,14 +5,7 @@
  */
 
 import { LOAD_TEST, THRESHOLDS } from './constants';
-
-/**
- * Stage configuration for k6 options
- */
-export interface LoadStage {
-  duration: string;
-  target: number;
-}
+import type { LoadStage } from '../types';
 
 /**
  * Standard load test stages

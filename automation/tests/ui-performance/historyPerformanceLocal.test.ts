@@ -24,6 +24,7 @@ import {
   TRANSACTION_ROW_SELECTOR,
   DATA_VOLUMES,
   DEBUG,
+  TEST_LOCAL_PASSWORD,
 } from './performanceUtils.js';
 import { SELECTORS } from './selectors.js';
 
@@ -44,7 +45,7 @@ test.describe('History Page Performance (Local Mode)', () => {
     registrationPage = new RegistrationPage(window);
 
     testEmail = `perf-history-local-${Date.now()}@test.com`;
-    const password = 'TestPassword123';
+    const password = TEST_LOCAL_PASSWORD;
     await registrationPage.completeRegistration(testEmail, password);
 
     const result = await seedLocalPerfData(testEmail);
