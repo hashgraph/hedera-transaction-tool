@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import type { INotificationReceiver } from '@shared/interfaces';
+
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import useFilterNotifications from '@renderer/composables/useFilterNotifications.ts';
 import { getTransactionTypeFromBackendType } from '@renderer/utils/sdk/transactions.ts';
@@ -14,7 +17,7 @@ import {
   type ITransactionNode,
   TransactionNodeCollection,
 } from '../../../../../../shared/src/ITransactionNode.ts';
-import { INotificationReceiver, NotificationType, TransactionStatus } from '@shared/interfaces';
+import { NotificationType, TransactionStatus } from '@shared/interfaces';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
