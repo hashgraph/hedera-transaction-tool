@@ -42,8 +42,9 @@ const wsStore = useWebsocketConnection();
 /* Composables */
 const toast = useToast();
 const ws = useDisposableWs();
+
 // Mark relevant notifications as read onMounted and onBeforeUnmount
-const { oldNotifications } = useMarkNotifications([
+useMarkNotifications([
   NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
   NotificationType.TRANSACTION_INDICATOR_EXECUTED,
   NotificationType.TRANSACTION_INDICATOR_EXPIRED,
