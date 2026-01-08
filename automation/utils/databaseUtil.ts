@@ -12,8 +12,9 @@ const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
-// Re-export SEED_MARKER from k6 constants (SSOT)
-export { SEED_MARKER } from '../k6/src/config/constants.js';
+// Import and re-export SEED_MARKER from k6 constants (SSOT)
+import { SEED_MARKER } from '../k6/src/config/constants.js';
+export { SEED_MARKER };
 
 /**
  * Local host identifiers for staging safety checks.
@@ -298,7 +299,7 @@ export async function resetPostgresDbState() {
       } else if (tablesWithDescription.includes(table)) {
         // Staging-safe: only delete records with seed marker
         query = `DELETE FROM "${table}" WHERE description LIKE $1;`;
-        params = ['k6-perf-seed%'];
+        params = [`${SEED_MARKER}%`];
       } else if (table === 'user') {
         // Staging-safe: only delete test users by email pattern
         query = `DELETE FROM "${table}" WHERE email LIKE $1;`;

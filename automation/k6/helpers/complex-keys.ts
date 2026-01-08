@@ -115,7 +115,7 @@ export function generateComplexThresholdKey(
  *
  * Structure: THRESHOLD (17 of 29)
  * - Each child is THRESHOLD (1 of 2) or (1 of 3), alternating
- * - Total: 29 nested threshold keys, ~73 ED25519 keys
+ * - Total: 29 nested threshold keys, 72 ED25519 keys (15×2 + 14×3)
  *
  * @returns ComplexKeyResult with Hedera-style complex key
  */

@@ -59,7 +59,10 @@ export function authHeaders(token: string): AuthHeaders {
 }
 
 /**
- * Format duration for logging
+ * Format duration for logging (k6 version - 2 decimal places for precision)
+ *
+ * Note: UI performance tests use a similar function with rounded integers (see performanceUtils.ts)
+ * for cleaner output. This version shows decimals for k6 timing analysis.
  */
 export function formatDuration(ms: number): string {
   if (ms < THRESHOLDS.PAGE_LOAD_MS) return `${ms.toFixed(2)}ms`;
