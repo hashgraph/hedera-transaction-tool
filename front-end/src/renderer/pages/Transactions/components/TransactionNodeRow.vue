@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import type { INotificationReceiver } from '@shared/interfaces';
+
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import useFilterNotifications from '@renderer/composables/useFilterNotifications.ts';
 import { getTransactionTypeFromBackendType } from '@renderer/utils/sdk/transactions.ts';
@@ -23,6 +26,7 @@ const props = defineProps<{
   collection: TransactionNodeCollection;
   node: ITransactionNode;
   index: number;
+  oldNotifications?: INotificationReceiver[];
 }>();
 
 /* Emits */
@@ -44,32 +48,61 @@ const router = useRouter();
 const createTooltips = useCreateTooltips();
 
 /* Computed */
-const hasNotifications = computed(() => {
-  return notificationMonitor.filteredNotifications.value.length > 0;
-});
-const filteringNotificationType = computed(() => {
-  let result: NotificationType | null;
+const filteringNotificationTypes = computed(() => {
+  let result: NotificationType[];
   switch (props.collection) {
     case TransactionNodeCollection.READY_FOR_REVIEW:
-      result = NotificationType.TRANSACTION_INDICATOR_APPROVE;
+      result = [NotificationType.TRANSACTION_INDICATOR_APPROVE];
       break;
     case TransactionNodeCollection.READY_TO_SIGN:
-      result = NotificationType.TRANSACTION_INDICATOR_SIGN;
+      result = [NotificationType.TRANSACTION_INDICATOR_SIGN];
       break;
     case TransactionNodeCollection.READY_FOR_EXECUTION:
-      result = NotificationType.TRANSACTION_INDICATOR_EXECUTABLE;
+      result = [NotificationType.TRANSACTION_INDICATOR_EXECUTABLE];
+      break;
+    case TransactionNodeCollection.HISTORY:
+      result = [
+        NotificationType.TRANSACTION_INDICATOR_EXECUTED,
+        NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+        NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
+        NotificationType.TRANSACTION_INDICATOR_CANCELLED,
+        NotificationType.TRANSACTION_INDICATOR_FAILED,
+      ];
       break;
     case TransactionNodeCollection.IN_PROGRESS:
-    case TransactionNodeCollection.HISTORY:
-      result = null;
+      result = [];
       break;
   }
   return result;
 });
+
 const notificationMonitor = useFilterNotifications(
   computed(() => props.node),
-  filteringNotificationType,
+  filteringNotificationTypes,
 );
+
+const hasOldNotifications = computed(() => {
+  if (!props.oldNotifications || props.oldNotifications.length === 0) {
+    return false;
+  }
+
+  const notificationTypes = filteringNotificationTypes.value;
+
+  if (notificationTypes.length === 0) {
+    return false;
+  }
+
+  // Check if any old notifications match this node
+  return props.oldNotifications.some(n => {
+    const matchesType = notificationTypes.includes(n.notification.type);
+    const matchesEntity = n.notification.entityId === (props.node.transactionId || props.node.groupId);
+    return matchesType && matchesEntity;
+  });
+});
+
+const hasNotifications = computed(() => {
+  return notificationMonitor.filteredNotifications.value.length > 0 || hasOldNotifications.value;
+});
 
 const transactionType = computed(() => {
   let result: string;
