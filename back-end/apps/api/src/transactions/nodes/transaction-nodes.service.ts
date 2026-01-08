@@ -1,24 +1,21 @@
 import { Injectable } from '@nestjs/common';
-import { Transaction, TransactionStatus, TransactionType, User } from '@entities';
-import { Filtering, Pagination } from '@app/common';
+import { TransactionStatus, TransactionType, User } from '@entities';
 import { TransactionNodeDto } from '../dto';
 import { TransactionNodeCollection } from '../dto/ITransactionNode';
-import { TransactionsService } from '../transactions.service';
-import { TransactionGroupsService } from '../groups';
-import { compareTransactionNodes } from './transaction-nodes.util';
-
-const PAGINATION_ALL: Pagination = {
-  page: 0,
-  limit: Number.MAX_SAFE_INTEGER,
-  size: Number.MAX_SAFE_INTEGER,
-  offset: 0,
-};
+import { TRANSACTION_STATUS_COLLECTIONS } from './transaction-node-collections.constants';
+import {
+  attachKeys,
+  getTransactionNodesForUser,
+  SqlBuilderService,
+} from '@app/common';
+import { InjectEntityManager } from '@nestjs/typeorm';
+import { EntityManager } from 'typeorm';
 
 @Injectable()
 export class TransactionNodesService {
   constructor(
-    private readonly transactionsService: TransactionsService,
-    private readonly transactionGroupsService: TransactionGroupsService,
+    @InjectEntityManager() private entityManager: EntityManager,
+    private readonly sqlBuilder: SqlBuilderService,
   ) {}
 
   async getTransactionNodes(
@@ -28,228 +25,143 @@ export class TransactionNodesService {
     statusFilter: TransactionStatus[],
     transactionTypeFilter: TransactionType[],
   ): Promise<TransactionNodeDto[]> {
-    let transactions: Transaction[];
-    const filter: Filtering = {
-      property: 'mirrorNetwork',
-      rule: 'eq',
-      value: network,
-    };
+    let rows: any[];
+
+    //this should already be done, imo, in the validation stuff
+    await attachKeys(user, this.entityManager);
+    if (user.keys.length === 0) {
+      return [];
+    }
+
     switch (collection) {
       case TransactionNodeCollection.READY_FOR_REVIEW: {
-        const p = await this.transactionsService.getTransactionsToApprove(
+        const query = getTransactionNodesForUser(
+          this.sqlBuilder,
           user,
-          PAGINATION_ALL,
-          undefined,
-          [filter],
+          { approver: true },
+          {
+            statuses: TRANSACTION_STATUS_COLLECTIONS.READY_FOR_REVIEW,
+            mirrorNetwork: network,
+          }
         );
-        transactions = p.items;
+
+        rows = await this.entityManager.query(query.text, query.values);
         break;
       }
       case TransactionNodeCollection.READY_TO_SIGN: {
-        const r = await this.transactionsService.getTransactionsToSign(
+        const query = getTransactionNodesForUser(
+          this.sqlBuilder,
           user,
-          PAGINATION_ALL,
-          undefined,
-          [filter],
+          { signer: true },
+          {
+            statuses: TRANSACTION_STATUS_COLLECTIONS.READY_TO_SIGN,
+            mirrorNetwork: network,
+          }
         );
-        transactions = r.items.map(v => v.transaction);
+
+        rows = await this.entityManager.query(query.text, query.values);
         break;
       }
       case TransactionNodeCollection.READY_FOR_EXECUTION: {
-        const filterExecution: Filtering = {
-          property: 'status',
-          rule: 'eq',
-          value: TransactionStatus.WAITING_FOR_EXECUTION,
-        };
-        const p = await this.transactionsService.getTransactions(user, PAGINATION_ALL, undefined, [
-          filter,
-          filterExecution,
-        ]);
-        transactions = p.items;
+        const query = getTransactionNodesForUser(
+          this.sqlBuilder,
+          user,
+          {
+            signer: true,
+            creator: true,
+            observer: true,
+            approver: true,
+          },
+          {
+            statuses: TRANSACTION_STATUS_COLLECTIONS.READY_FOR_EXECUTION,
+            mirrorNetwork: network,
+          }
+        );
+
+        rows = await this.entityManager.query(query.text, query.values);
         break;
       }
       case TransactionNodeCollection.IN_PROGRESS: {
-        const filterProgress: Filtering = {
-          property: 'status',
-          rule: 'eq',
-          value: TransactionStatus.WAITING_FOR_SIGNATURES,
-        };
-        const p = await this.transactionsService.getTransactions(user, PAGINATION_ALL, undefined, [
-          filter,
-          filterProgress,
-        ]);
-        transactions = p.items;
+        const query = getTransactionNodesForUser(
+          this.sqlBuilder,
+          user,
+          {
+            signer: true,
+            creator: true,
+            observer: true,
+            approver: true,
+          },
+          {
+            statuses: TRANSACTION_STATUS_COLLECTIONS.IN_PROGRESS,
+            mirrorNetwork: network,
+          }
+        );
+
+        rows = await this.entityManager.query(query.text, query.values);
         break;
       }
       case TransactionNodeCollection.HISTORY: {
-        const p = await this.transactionsService.getHistoryTransactions(PAGINATION_ALL, [filter]);
-        transactions = p.items;
+        statusFilter = statusFilter?.length ? statusFilter : TRANSACTION_STATUS_COLLECTIONS.HISTORY;
+        transactionTypeFilter = transactionTypeFilter?.length ? transactionTypeFilter : null;
+        const query = getTransactionNodesForUser(
+          this.sqlBuilder,
+          user,
+          {
+            signer: true,
+            creator: true,
+            observer: true,
+            approver: true,
+          },
+          {
+            statuses: statusFilter,
+            types: transactionTypeFilter,
+            mirrorNetwork: network,
+          }
+        );
+
+        rows = await this.entityManager.query(query.text, query.values);
         break;
       }
     }
+    //TODO when my group expired while I was watching it in 'ready to sign', the red notitication
+    // went away that was on it, but the row itself did not, until I navigated away and back
+    //TODO I was confused why I saw a transaction both in ready to sign and ready for exectuion
+    // but not in progress. that really does feel wrong. i think in progress should stay until
+    // all sigs?
+    return rows.map(row => {
+      const node = new TransactionNodeDto();
 
-    // Filters
-    if (statusFilter.length > 0) {
-      transactions = transactions.filter((t: Transaction) => statusFilter.includes(t.status));
-    }
-    if (transactionTypeFilter.length > 0) {
-      transactions = transactions.filter((t: Transaction) =>
-        transactionTypeFilter.includes(t.type),
-      );
-    }
+      // These fields are always present
+      node.description = row.description;
+      node.createdAt = new Date(row.created_at).toISOString();
+      node.validStart = new Date(row.valid_start).toISOString();
+      node.updatedAt = new Date(row.updated_at).toISOString();
+      node.executedAt = row.executed_at ? new Date(row.executed_at).toISOString() : undefined;
+      node.status = row.status;
+      node.statusCode = row.status_code;
 
-    // Aggregates transactions by group
-    const transactionsByGroup = new Map<number, Transaction[]>();
-    for (const t of transactions) {
-      const groupId = t.groupItem?.groupId ?? -1;
-      const items = transactionsByGroup.get(groupId);
-      if (items) {
-        items.push(t);
+      // Either transaction fields OR group fields
+      if (row.group_id === null) {
+        // Ungrouped transaction
+        node.transactionId = row.transaction_id;
+        node.groupId = undefined;
+        node.sdkTransactionId = row.sdk_transaction_id;
+        node.transactionType = row.transaction_type;
+        node.isManual = row.is_manual;
+        node.groupItemCount = undefined;
+        node.groupCollectedCount = undefined;
       } else {
-        transactionsByGroup.set(groupId, [t]);
-      }
-    }
-
-    // Makes transaction nodes
-    const result: TransactionNodeDto[] = [];
-    for (const [groupId, transactions] of transactionsByGroup) {
-      if (groupId === -1) {
-        // transactions contains the single transactions
-        for (const t of transactions) {
-          const node = new TransactionNodeDto();
-          node.transactionId = t.id;
-          node.groupId = undefined;
-          node.description = t.description;
-          node.createdAt = t.createdAt.toISOString();
-          node.validStart = t.validStart.toISOString();
-          node.updatedAt = t.updatedAt.toISOString();
-          node.executedAt = t.executedAt?.toISOString();
-          node.status = t.status;
-          node.statusCode = t.statusCode;
-          node.sdkTransactionId = t.transactionId;
-          node.transactionType = t.type;
-          node.isManual = t.isManual;
-          node.groupItemCount = undefined;
-          node.groupCollectedCount = undefined;
-          result.push(node);
-        }
-      } else {
-        const group = await this.transactionGroupsService.getTransactionGroup(user, groupId);
-        const node = new TransactionNodeDto();
+        // Grouped transactions
         node.transactionId = undefined;
-        node.groupId = groupId;
-        node.description = group.description;
-        node.createdAt = group.createdAt.toISOString();
-        node.validStart = minValidStart(transactions).toISOString();
-        node.updatedAt = maxUpdatedAt(transactions).toISOString();
-        node.executedAt = maxExecutedAt(transactions)?.toISOString();
-        node.status = calculateStatusForGroup(transactions);
-        node.statusCode = calculateStatusCodeForGroup(transactions);
+        node.groupId = row.group_id;
         node.sdkTransactionId = undefined;
         node.transactionType = undefined;
         node.isManual = undefined;
-        node.groupItemCount = group.groupItems.length;
-        node.groupCollectedCount = transactions.length;
-        result.push(node);
+        node.groupItemCount = row.group_item_count;
+        node.groupCollectedCount = row.group_collected_count;
       }
-    }
 
-    // We sort by node.transactionId / node.groupId
-    // => stable order will help in testing.
-    result.sort(compareTransactionNodes);
-
-    return result;
+      return node;
+    });
   }
-}
-
-export function minValidStart(transactions: Transaction[]): Date {
-  let result: Date;
-  if (transactions.length === 0) {
-    throw new Error('Group with no transactions');
-  } else {
-    // transactions contains at least one element
-    result = transactions[0].validStart;
-    for (const t of transactions) {
-      if (t.validStart.getTime() < result.getTime()) {
-        result = t.validStart;
-      }
-    }
-  }
-  return result;
-}
-
-export function maxUpdatedAt(transactions: Transaction[]): Date {
-  let result: Date;
-  if (transactions.length === 0) {
-    throw new Error('Group with no transactions');
-  } else {
-    result = transactions[0].updatedAt;
-    for (const t of transactions) {
-      if (t.updatedAt.getTime() > result.getTime()) {
-        result = t.updatedAt;
-      }
-    }
-  }
-  return result;
-}
-
-export function maxExecutedAt(transactions: Transaction[]): Date | undefined {
-  let result: Date | undefined;
-  if (transactions.length === 0) {
-    throw new Error('Group with no transactions');
-  } else if (transactions.find(t => !t.executedAt)) {
-    // If one a transactions has undefined executedAt, we return undefined
-    result = undefined;
-  } else {
-    result = undefined;
-    for (const t of transactions) {
-      if (result === undefined || t.executedAt!.getTime() > result.getTime()) {
-        result = t.executedAt;
-      }
-    }
-  }
-  return result;
-}
-
-function calculateStatusCodeForGroup(transactions: Transaction[]): number | undefined {
-  let result: number | undefined;
-
-  // Aggregates status codes for all transactions
-  const allStatusCodes = new Set<number>();
-  let undefinedStatusCodeCount = 0;
-  for (const t of transactions) {
-    if (t.statusCode) {
-      allStatusCodes.add(t.statusCode);
-    } else {
-      undefinedStatusCodeCount += 1;
-    }
-  }
-  if (allStatusCodes.size === 1 && undefinedStatusCodeCount === 0) {
-    // Easy : all transactions have the same status code
-    result = allStatusCodes.values().next().value;
-  } else {
-    // We have a mix of status codes … to be refined later
-    result = undefined;
-  }
-
-  return result;
-}
-
-function calculateStatusForGroup(transactions: Transaction[]): string | undefined {
-  let result: string | undefined;
-
-  // Aggregates status for all transactions
-  const allStatuses = new Set<string>();
-  for (const t of transactions) {
-    allStatuses.add(t.status);
-  }
-  if (allStatuses.size === 1) {
-    // Easy : all transactions have the same status
-    result = allStatuses.values().next().value;
-  } else {
-    // We have a mix of statuses … to be refined later
-    result = undefined;
-  }
-
-  return result;
 }
