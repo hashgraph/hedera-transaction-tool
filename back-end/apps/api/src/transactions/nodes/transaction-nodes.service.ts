@@ -123,11 +123,7 @@ export class TransactionNodesService {
         break;
       }
     }
-    //TODO when my group expired while I was watching it in 'ready to sign', the red notitication
-    // went away that was on it, but the row itself did not, until I navigated away and back
-    //TODO I was confused why I saw a transaction both in ready to sign and ready for exectuion
-    // but not in progress. that really does feel wrong. i think in progress should stay until
-    // all sigs?
+
     return rows.map(row => {
       const node = new TransactionNodeDto();
 
