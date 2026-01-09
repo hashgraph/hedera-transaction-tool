@@ -1,9 +1,33 @@
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 import { computeSignatureKey, hexToUint8Array } from '@renderer/utils';
-import type { TransactionFileItem } from '@shared/interfaces';
+import type { ITransaction, TransactionFileItem } from '@shared/interfaces';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { flattenKeyList } from '@renderer/services/keyPairService.ts';
+import { getApiGroupById, getTransactionById } from '@renderer/services/organization';
+import type { ITransactionNode } from '../../../../shared/src/ITransactionNode.ts';
+
+export async function flattenNodeCollection(
+  nodeCollection: ITransactionNode[],
+  serverUrl: string,
+): Promise<ITransaction[]> {
+  const result: ITransaction[] = [];
+
+  for (const node of nodeCollection) {
+    if (node.groupId !== undefined) {
+      const group = await getApiGroupById(serverUrl, node.groupId);
+      for (const item of group.groupItems) {
+        result.push(item.transaction);
+      }
+    } else {
+      if (node.transactionId !== undefined) {
+        const transaction = await getTransactionById(serverUrl, node.transactionId);
+        result.push(transaction);
+      }
+    }
+  }
+  return result;
+}
 
 export async function filterTransactionFileItemsToBeSigned(
   transactionFileItems: TransactionFileItem[],

@@ -50,7 +50,6 @@ import { showOpenDialog, showSaveDialog } from '@renderer/services/electronUtils
 import {
   generateTransactionExportContentV2,
   generateTransactionExportFileName,
-  getApiGroupById,
   getTransactionById,
   importSignatures,
 } from '@renderer/services/organization';
@@ -58,6 +57,7 @@ import { readTransactionFile, writeTransactionFile } from '@renderer/services/tr
 import { SignatureMap, Transaction } from '@hashgraph/sdk';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { useToast } from 'vue-toast-notification';
+import { flattenNodeCollection } from '@shared/utils/transactionFile.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -248,24 +248,11 @@ async function importSignaturesFromFile() {
 
 async function createTransactionFile() {
   assertIsLoggedInOrganization(user.selectedOrganization);
-  const collectionTransactions: ITransaction[] = [];
 
-  for (const node of collectionNodes.value) {
-    if (node.groupId !== undefined) {
-      const group = await getApiGroupById(user.selectedOrganization.serverUrl, node.groupId);
-      for (const item of group.groupItems) {
-        collectionTransactions.push(item.transaction);
-      }
-    } else {
-      if (node.transactionId !== undefined) {
-        const transaction = await getTransactionById(
-          user.selectedOrganization.serverUrl,
-          node.transactionId,
-        );
-        collectionTransactions.push(transaction);
-      }
-    }
-  }
+  const collectionTransactions: ITransaction[] = await flattenNodeCollection(
+    collectionNodes.value,
+    user.selectedOrganization.serverUrl,
+  );
 
   if (collectionTransactions.length > 0) {
     const baseName = generateTransactionExportFileName(collectionTransactions[0]);
