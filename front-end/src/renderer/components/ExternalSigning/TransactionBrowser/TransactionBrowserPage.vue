@@ -50,56 +50,77 @@ const creatorEmail = computed(() => props.item.creatorEmail ?? '');
 </script>
 
 <template>
-  <div>
-    <div>Transaction ID: {{ transactionId?.toString() }}</div>
-    <div>Transaction Type: {{ transactionType }}</div>
-    <div>Valid Start: {{ validStartDate }}</div>
-    <div>description: {{ description }}</div>
-    <div>Creator e-mail: {{ creatorEmail }}</div>
+  <div class="p-5">
+    <div class="flex-column-100 overflow-hidden">
+      <div class="flex-column-100">
+        <div class="fill-remaining mt-5">
+          <div class="row flex-wrap">
+            <!-- Description -->
+            <div class="col-11">
+              <div v-if="description.length > 0">
+                <h4 class="d-flex justify-content-between align-items-center">Description</h4>
+                <p class="text-micro text-semi-bold text-dark-blue">
+                  {{ description }}
+                </p>
+              </div>
+            </div>
+            <div>Transaction ID: {{ transactionId?.toString() }}</div>
+            <div>Transaction Type: {{ transactionType }}</div>
+            <div>Valid Start: {{ validStartDate }}</div>
+            <div>description: {{ description }}</div>
+            <div>Creator e-mail: {{ creatorEmail }}</div>
 
-    <div
-      v-if="
-        transaction instanceof FileCreateTransaction ||
-        transaction instanceof FileUpdateTransaction ||
-        transaction instanceof FileAppendTransaction
-      "
-    >
-      File transaction properties
-    </div>
-    <div
-      v-if="
-        transaction instanceof AccountCreateTransaction ||
-        transaction instanceof AccountUpdateTransaction
-      "
-    >
-      Account delete transaction properties
-    </div>
-    <div v-if="transaction instanceof AccountDeleteTransaction">Account transaction properties</div>
-    <div v-if="transaction instanceof TransferTransaction">Transfer transaction properties</div>
-    <div v-if="transaction instanceof AccountAllowanceApproveTransaction">
-      Allowance transaction properties
-    </div>
-    <div v-if="transaction instanceof FreezeTransaction">Freeze transaction properties</div>
-    <div
-      v-if="
-        transaction instanceof SystemDeleteTransaction ||
-        transaction instanceof SystemUndeleteTransaction
-      "
-    >
-      System delete/undelete transaction properties
-    </div>
-    <div
-      v-if="
-        transaction instanceof NodeCreateTransaction ||
-        transaction instanceof NodeUpdateTransaction ||
-        transaction instanceof NodeDeleteTransaction
-      "
-    >
-      System delete/undelete transaction properties
-    </div>
-    <div>
-      <div>Collected Signatures</div>
-      <TransactionBrowserKeySection :item="props.item" />
+            <div
+              v-if="
+                transaction instanceof FileCreateTransaction ||
+                transaction instanceof FileUpdateTransaction ||
+                transaction instanceof FileAppendTransaction
+              "
+            >
+              File transaction properties
+            </div>
+            <div
+              v-if="
+                transaction instanceof AccountCreateTransaction ||
+                transaction instanceof AccountUpdateTransaction
+              "
+            >
+              Account delete transaction properties
+            </div>
+            <div v-if="transaction instanceof AccountDeleteTransaction">
+              Account transaction properties
+            </div>
+            <div v-if="transaction instanceof TransferTransaction">
+              Transfer transaction properties
+            </div>
+            <div v-if="transaction instanceof AccountAllowanceApproveTransaction">
+              Allowance transaction properties
+            </div>
+            <div v-if="transaction instanceof FreezeTransaction">Freeze transaction properties</div>
+            <div
+              v-if="
+                transaction instanceof SystemDeleteTransaction ||
+                transaction instanceof SystemUndeleteTransaction
+              "
+            >
+              System delete/undelete transaction properties
+            </div>
+            <div
+              v-if="
+                transaction instanceof NodeCreateTransaction ||
+                transaction instanceof NodeUpdateTransaction ||
+                transaction instanceof NodeDeleteTransaction
+              "
+            >
+              System delete/undelete transaction properties
+            </div>
+            <div>
+              <div>Collected Signatures</div>
+              <TransactionBrowserKeySection :item="props.item" />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
