@@ -122,3 +122,42 @@ export const getFreezeTypeString = (freezeType: FreezeType) => {
       return 'Unknown';
   }
 };
+
+/**
+ * Gets the display transaction type, including specific freeze types.
+ * For freeze transactions, returns the specific freeze type (e.g., "Freeze Upgrade").
+ * For other transactions, returns the standard type.
+ *
+ * @param transaction - SDK Transaction instance or Uint8Array
+ * @param short - Whether to use short format (no spaces)
+ * @param removeTransaction - Whether to remove " Transaction" suffix
+ * @returns Display string for transaction type
+ */
+export const getDisplayTransactionType = (
+  transaction: Transaction | Uint8Array,
+  short = false,
+  removeTransaction = false,
+): string => {
+  // Deserialize if needed
+  let sdkTransaction = transaction;
+  if (transaction instanceof Uint8Array) {
+    try {
+      sdkTransaction = Transaction.fromBytes(transaction);
+    } catch (error) {
+      console.error('Failed to deserialize transaction:', error);
+      return formatTransactionType('Freeze Transaction', short, removeTransaction);
+    }
+  }
+
+  // Check if this is a freeze transaction
+  if (sdkTransaction instanceof FreezeTransaction) {
+    const freezeType = sdkTransaction.freezeType;
+    if (freezeType) {
+      const freezeTypeStr = getFreezeTypeString(freezeType);
+      return formatTransactionType(freezeTypeStr, short, removeTransaction);
+    }
+  }
+
+  // Fall back to standard transaction type
+  return getTransactionType(sdkTransaction, short, removeTransaction);
+};

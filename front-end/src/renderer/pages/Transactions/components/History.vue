@@ -32,6 +32,7 @@ import {
   isUserLoggedIn,
 } from '@renderer/utils';
 import * as sdkTransactionUtils from '@renderer/utils/sdk/transactions';
+import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -97,6 +98,25 @@ const isLoading = ref(true);
 const generatedClass = computed(() => {
   return localSort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
 });
+
+/**
+ * Gets display transaction type for personal mode transactions.
+ * For freeze transactions, extracts specific freeze type from transaction bytes.
+ */
+const getPersonalTransactionType = (transaction: Transaction): string => {
+  // Only process freeze transactions
+  if (transaction.type === 'Freeze Transaction') {
+    try {
+      const transactionBytes = hexToUint8Array(transaction.body);
+      return getDisplayTransactionType(transactionBytes, false, false);
+    } catch (error) {
+      console.error('Failed to extract freeze type for transaction:', transaction.id, error);
+      return transaction.type; // Fallback to database type
+    }
+  }
+
+  return transaction.type; // For non-freeze, return database type
+};
 
 /* Handlers */
 const handleSort = async (
@@ -415,7 +435,7 @@ watch(
                     <TransactionId :transaction-id="transaction.transaction_id" wrap />
                   </td>
                   <td :data-testid="`td-transaction-type-${index}`">
-                    <span class="text-bold">{{ transaction.type }}</span>
+                    <span class="text-bold">{{ getPersonalTransactionType(transaction) }}</span>
                   </td>
                   <td :data-testid="`td-transaction-description-${index}`">
                     <span class="text-wrap-two-line-ellipsis">{{ transaction.description }}</span>
@@ -463,7 +483,7 @@ watch(
                   </td>
                   <td :data-testid="`td-transaction-type-${index}`">
                     <span class="text-bold">{{
-                      sdkTransactionUtils.getTransactionType(transactionData.transaction, false, true)
+                      getDisplayTransactionType(transactionData.transaction, false, true)
                     }}</span>
                   </td>
                   <td :data-testid="`td-transaction-description-${index}`">
