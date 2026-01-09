@@ -40,8 +40,10 @@ onMounted(() => {
   <div class="d-flex align-items-center mb-3">
     <AppCheckBox v-model:checked="isTabularDisplay" name="Oxebo" label="Tabular" />
     <template v-if="!isTabularDisplay">
-      <AppButton :disabled="index === 0" @click="index -= 1">Previous</AppButton>
-      <AppButton :disabled="index === props.items.length - 1" @click="index += 1">Next</AppButton>
+      <AppButton :disabled="index === 0" @click.prevent="index -= 1">Previous</AppButton>
+      <AppButton :disabled="index === props.items.length - 1" @click.prevent="index += 1"
+        >Next</AppButton
+      >
     </template>
   </div>
 
