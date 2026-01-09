@@ -20,6 +20,7 @@ import {
 import type { ITransactionBrowserItem } from './ITransactionBrowserItem';
 import { hexToUint8Array } from '@renderer/utils';
 import { getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions.ts';
+import TransactionBrowserKeySection from '@renderer/components/ExternalSigning/TransactionBrowser/TransactionBrowserKeySection.vue';
 
 /* Props */
 const props = defineProps<{
@@ -95,6 +96,10 @@ const creatorEmail = computed(() => props.item.creatorEmail ?? '');
       "
     >
       System delete/undelete transaction properties
+    </div>
+    <div>
+      <div>Collected Signatures</div>
+      <TransactionBrowserKeySection :item="props.item" />
     </div>
   </div>
 </template>
