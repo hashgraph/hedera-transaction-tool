@@ -251,10 +251,14 @@ async function importSignaturesFromFile() {
 async function createTransactionFile() {
   assertIsLoggedInOrganization(user.selectedOrganization);
 
+  const collectionNodes = await fetchNodes();
+  console.log(`Fetched ${collectionNodes.length} nodes`);
+
   const collectionTransactions: ITransaction[] = await flattenNodeCollection(
-    collectionNodes.value,
+    collectionNodes,
     user.selectedOrganization.serverUrl,
   );
+  console.log(`Flattened ${collectionTransactions.length} transactions`);
 
   if (collectionTransactions.length > 0) {
     const baseName = generateTransactionExportFileName(collectionTransactions[0]);
@@ -276,6 +280,27 @@ async function createTransactionFile() {
       await writeTransactionFile(tx2Content, filePath);
     }
   }
+}
+
+async function fetchNodes(): Promise<ITransactionNode[]> {
+  let nodes: ITransactionNode[];
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    try {
+      nodes = await getTransactionNodes(
+        user.selectedOrganization.serverUrl,
+        TransactionNodeCollection.IN_PROGRESS,
+        network.network,
+        [],
+        [],
+      );
+    } catch {
+      nodes = [];
+      toast.error('Failed to fetch Transactions to export', errorToastOptions);
+    }
+  } else {
+    nodes = [];
+  }
+  return nodes;
 }
 
 async function selectTransactionFile(): Promise<string | null> {
