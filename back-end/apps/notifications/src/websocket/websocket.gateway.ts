@@ -1,4 +1,5 @@
 import { Inject, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   OnGatewayConnection,
@@ -19,12 +20,14 @@ import { AuthWebsocket, AuthWebsocketMiddleware } from './middlewares/auth-webso
 import { FrontendVersionWebsocketMiddleware } from './middlewares/frontend-version-websocket.middleware';
 import { roomKeys } from './helpers';
 import { DebouncedNotificationBatcher } from '../utils';
-import { ConfigService } from '@nestjs/config';
 
 @WebSocketGateway({
   path: '/ws',
   cors: { origin: true, methods: ['GET', 'POST'], credentials: true },
-  connectionStateRecovery: { maxDisconnectionDuration: 2 * 60 * 1000 },
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 30 * 1000,
+    skipMiddlewares: false,
+  },
   transports: ['websocket', 'polling'],
 })
 export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
@@ -80,11 +83,6 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
     const newMessage = new NotificationMessage(message, [content]);
     await this.batcher.add(newMessage);
   }
-
-  // async notifyClients(userId{ message, content }: NotifyClientDto) {
-  //   const newMessage = new NotificationMessage(message, [content]);
-  //   await this.batcher.add(newMessage);
-  // }
 
   async notifyUser(userId: number, message: string, data: any | any[]) {
     const content = Array.isArray(data) ? data : [data];
