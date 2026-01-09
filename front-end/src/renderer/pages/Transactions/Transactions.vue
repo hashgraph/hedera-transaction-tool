@@ -90,12 +90,15 @@ const transactionFilePath = ref<string | null>(null);
 
 /* Computed */
 const dropDownMenuItems = computed(() => {
-  const result = [
-    { label: 'Export', value: 'createTransactionFile' },
-    { label: 'Sign Transactions from File', value: 'signTransactionFile' },
-  ];
+  let result: { label: string; value: string }[];
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    result.push({ label: 'Import Signatures from File', value: 'importTransactionFile' });
+    result = [
+      { label: 'Export', value: 'export' },
+      { label: 'Sign Transactions from File', value: 'signTransactionFile' },
+      { label: 'Import Signatures from File', value: 'importTransactionFile' },
+    ];
+  } else {
+    result = [{ label: 'Sign Transactions from File', value: 'signTransactionFile' }];
   }
   return result;
 });
@@ -172,7 +175,7 @@ const selectedTabIndex = computed(() => {
 /* Handlers */
 async function handleTransactionFileAction(action: string) {
   switch (action) {
-    case 'createTransactionFile':
+    case 'export':
       await createTransactionFile();
       break;
     case 'signTransactionFile':
@@ -458,6 +461,7 @@ onBeforeMount(async () => {
     />
 
     <SignTransactionFileModal
+      v-if="isSignTransactionFileModalShown"
       v-model:show="isSignTransactionFileModalShown"
       :filePath="transactionFilePath"
     />
