@@ -7,7 +7,12 @@ import { writeTransactionFile } from '@renderer/services/transactionFile.ts';
 import { flattenNodeCollection } from '@shared/utils/transactionFile.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork';
-import { assertIsLoggedInOrganization, isLoggedInOrganization } from '@renderer/utils';
+import {
+  assertIsLoggedInOrganization,
+  computeSignatureKey,
+  hexToUint8Array,
+  isLoggedInOrganization,
+} from '@renderer/utils';
 import {
   generateTransactionExportContentV2,
   generateTransactionExportFileName,
@@ -22,6 +27,9 @@ import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
 import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 import { useToast } from 'vue-toast-notification';
+import { Transaction } from '@hashgraph/sdk';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 
 /* Models */
 const show = defineModel<boolean>('show', { required: true });
@@ -33,6 +41,10 @@ const network = useNetworkStore();
 /* Composables */
 const toast = useToast();
 
+/* Injected */
+const accountInfoCache = AccountByIdCache.inject();
+const nodeInfoCache = NodeByIdCache.inject();
+
 /* State */
 const isOnlyExternalSelected = ref(false);
 
@@ -43,11 +55,32 @@ async function handleExport() {
   const collectionNodes = await fetchNodes();
   console.log(`Fetched ${collectionNodes.length} nodes`);
 
-  const collectionTransactions: ITransaction[] = await flattenNodeCollection(
+  let collectionTransactions: ITransaction[] = await flattenNodeCollection(
     collectionNodes,
     user.selectedOrganization.serverUrl,
   );
   console.log(`Flattened ${collectionTransactions.length} transactions`);
+
+  if (isOnlyExternalSelected.value) {
+    const filteredTransactions: ITransaction[] = [];
+    for (const tx of collectionTransactions) {
+      const sdkTransaction = Transaction.fromBytes(hexToUint8Array(tx.transactionBytes));
+      const mirrorNodeLink = network.getMirrorNodeREST(network.network);
+      const audit = await computeSignatureKey(
+        sdkTransaction,
+        mirrorNodeLink,
+        accountInfoCache,
+        nodeInfoCache,
+        user.selectedOrganization,
+      );
+      if (audit.externalKeys.size > 0) {
+        filteredTransactions.push(tx);
+      }
+    }
+    collectionTransactions = filteredTransactions;
+
+    console.log(`Filtered ${collectionTransactions.length} external transactions`);
+  }
 
   if (collectionTransactions.length > 0) {
     const baseName = generateTransactionExportFileName(collectionTransactions[0]);
