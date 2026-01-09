@@ -4,12 +4,7 @@ import AppTabs from '@renderer/components/ui/AppTabs.vue';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
 
-import {
-  type ISignatureImport,
-  type ITransaction,
-  NotificationType,
-  type TransactionFile,
-} from '@shared/interfaces';
+import { type ISignatureImport, NotificationType } from '@shared/interfaces';
 import {
   draftsTitle,
   historyTitle,
@@ -46,18 +41,13 @@ import History from '@renderer/pages/Transactions/components/History.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import SignTransactionFileModal from '@renderer/components/ExternalSigning/SignTransactionFileModal.vue';
-import { showOpenDialog, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
-import {
-  generateTransactionExportContentV2,
-  generateTransactionExportFileName,
-  getTransactionById,
-  importSignatures,
-} from '@renderer/services/organization';
-import { readTransactionFile, writeTransactionFile } from '@renderer/services/transactionFile.ts';
+import { showOpenDialog } from '@renderer/services/electronUtilsService.ts';
+import { getTransactionById, importSignatures } from '@renderer/services/organization';
+import { readTransactionFile } from '@renderer/services/transactionFile.ts';
 import { SignatureMap, Transaction } from '@hashgraph/sdk';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { useToast } from 'vue-toast-notification';
-import { flattenNodeCollection } from '@shared/utils/transactionFile.ts';
+import ExportTransactionsModal from '@renderer/components/ExternalSigning/ExportTransactionsModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -82,6 +72,7 @@ const organizationTabs: TabItem[] = [
 const sharedTabs: TabItem[] = [{ title: draftsTitle }, { title: historyTitle }];
 const notificationsKey = ref(user.selectedOrganization?.serverUrl || '');
 
+const isExportModalShown = ref(false);
 const isTransactionSelectionModalShown = ref(false);
 const isSignTransactionFileModalShown = ref(false);
 
@@ -178,7 +169,7 @@ const selectedTabIndex = computed(() => {
 async function handleTransactionFileAction(action: string) {
   switch (action) {
     case 'export':
-      await createTransactionFile();
+      isExportModalShown.value = true;
       break;
     case 'signTransactionFile':
       transactionFilePath.value = await selectTransactionFile();
@@ -246,61 +237,6 @@ async function importSignaturesFromFile() {
 
     console.log('importSignatures: RESULTS', JSON.stringify(importResults));
   }
-}
-
-async function createTransactionFile() {
-  assertIsLoggedInOrganization(user.selectedOrganization);
-
-  const collectionNodes = await fetchNodes();
-  console.log(`Fetched ${collectionNodes.length} nodes`);
-
-  const collectionTransactions: ITransaction[] = await flattenNodeCollection(
-    collectionNodes,
-    user.selectedOrganization.serverUrl,
-  );
-  console.log(`Flattened ${collectionTransactions.length} transactions`);
-
-  if (collectionTransactions.length > 0) {
-    const baseName = generateTransactionExportFileName(collectionTransactions[0]);
-
-    // Show the save dialog to the user, allowing them to choose the file name and location
-    const { filePath, canceled } = await showSaveDialog(
-      `${baseName}.tx2`,
-      'Export transactions',
-      'Export',
-      [],
-      'Export transaction',
-    );
-
-    if (!canceled) {
-      const tx2Content: TransactionFile = generateTransactionExportContentV2(
-        collectionTransactions,
-        network.network,
-      );
-      await writeTransactionFile(tx2Content, filePath);
-    }
-  }
-}
-
-async function fetchNodes(): Promise<ITransactionNode[]> {
-  let nodes: ITransactionNode[];
-  if (isLoggedInOrganization(user.selectedOrganization)) {
-    try {
-      nodes = await getTransactionNodes(
-        user.selectedOrganization.serverUrl,
-        TransactionNodeCollection.IN_PROGRESS,
-        network.network,
-        [],
-        [],
-      );
-    } catch {
-      nodes = [];
-      toast.error('Failed to fetch Transactions to export', errorToastOptions);
-    }
-  } else {
-    nodes = [];
-  }
-  return nodes;
 }
 
 async function selectTransactionFile(): Promise<string | null> {
@@ -467,6 +403,8 @@ onBeforeMount(async () => {
         <History v-else />
       </template>
     </div>
+
+    <ExportTransactionsModal v-if="isExportModalShown" v-model:show="isExportModalShown" />
 
     <TransactionSelectionModal
       v-if="isTransactionSelectionModalShown"
