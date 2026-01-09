@@ -151,8 +151,6 @@ export class ExecuteService {
       );
 
       client.close();
-
-      // this.sideEffect(sdkTransaction, transaction.mirrorNetwork);
     }
     return result;
   }
@@ -202,31 +200,4 @@ export class ExecuteService {
         throw new Error('Transaction is archived.');
     }
   }
-
-  //TODO i don't think I need this, not once we use the cached tables
-  // private sideEffect(sdkTransaction: SDKTransaction, mirrorNetwork: string) {
-  //   if (transactionIs(AccountUpdateTransaction, sdkTransaction)) {
-  //     setTimeout(async () => {
-  //       try {
-  //         await this.mirrorNodeService.updateAccountInfo(
-  //           sdkTransaction.accountId.toString(),
-  //           mirrorNetwork,
-  //         );
-  //       } catch (error) {
-  //         console.log('Error updating account info', error);
-  //       }
-  //     }, 5 * 1_000);
-  //   } else if (transactionIs(NodeUpdateTransaction, sdkTransaction)) {
-  //     setTimeout(async () => {
-  //       try {
-  //         await this.mirrorNodeService.updateNodeInfo(
-  //           sdkTransaction.nodeId?.toNumber(),
-  //           mirrorNetwork,
-  //         );
-  //       } catch (error) {
-  //         console.log('Error updating node info', error);
-  //       }
-  //     }, 5 * 1_000);
-  //   }
-  // }
 }
