@@ -422,11 +422,11 @@ td .btn {
 }
 
 .full-screen-modal {
-  --#{$prefix}modal-width: 100vw;
+  --#{$prefix}modal-width: calc(100vw - 48px);
 
   & > .modal-dialog > .modal-content {
-    height: 100vh;
-    max-height: 100vh;
+    height: calc(100vh - 48px);
+    max-height: calc(100vh - 48px);
   }
 }
 
