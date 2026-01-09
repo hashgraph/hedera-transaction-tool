@@ -36,8 +36,6 @@ export class CacheManagementService {
     this.reclaimTimeoutMs = this.configService.get<number>('CACHE_RECLAIM_TIMEOUT_MS', 2 * 60 * 1000);
   }
 
-  //TODO when we add the manual mirrornode sync feature, we can probably increase this from 30 seconds to a few minutes or something,
-  //as it is really rarely neeeded except in emergencies and such
   /**
    * Main method to refresh all stale cache entries
    */
@@ -58,7 +56,6 @@ export class CacheManagementService {
     }
   }
 
-  //TODO this can probably run less frequently, like every hour or day
   /**
    * Scheduled job - runs less frequently than refresh since cleanup is less urgent
    * Default: every 5 minutes
