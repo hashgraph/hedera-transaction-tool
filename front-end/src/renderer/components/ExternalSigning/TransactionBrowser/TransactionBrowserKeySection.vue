@@ -5,7 +5,6 @@ import { computed, ref, watch } from 'vue';
 import { Transaction } from '@hashgraph/sdk';
 import {
   computeSignatureKey,
-  getUInt8ArrayFromBytesString,
   hexToUint8Array,
   type SignatureAudit,
 } from '@renderer/utils';
