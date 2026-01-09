@@ -20,7 +20,9 @@ import {
 import type { ITransactionBrowserItem } from './ITransactionBrowserItem';
 import { hexToUint8Array } from '@renderer/utils';
 import { getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions.ts';
-import TransactionBrowserKeySection from '@renderer/components/ExternalSigning/TransactionBrowser/TransactionBrowserKeySection.vue';
+import TransactionBrowserSection from './TransactionBrowserSection.vue';
+import TransactionBrowserSectionHeading from './TransactionBrowserSectionHeading.vue';
+import TransactionBrowserKeySection from './TransactionBrowserKeySection.vue';
 
 /* Props */
 const props = defineProps<{
@@ -47,6 +49,8 @@ const validStartDate = computed(() => {
   return transaction.value !== null ? getTransactionValidStart(transaction.value) : null;
 });
 const creatorEmail = computed(() => props.item.creatorEmail ?? '');
+
+const transactionDetailsTitle = computed(() => transactionType.value + ' Detail');
 </script>
 
 <template>
@@ -56,19 +60,31 @@ const creatorEmail = computed(() => props.item.creatorEmail ?? '');
         <div class="fill-remaining mt-5">
           <div class="row flex-wrap">
             <!-- Description -->
-            <div class="col-11">
-              <div v-if="description.length > 0">
-                <h4 class="d-flex justify-content-between align-items-center">Description</h4>
-                <p class="text-micro text-semi-bold text-dark-blue">
-                  {{ description }}
-                </p>
-              </div>
-            </div>
-            <div>Transaction ID: {{ transactionId?.toString() }}</div>
-            <div>Transaction Type: {{ transactionType }}</div>
-            <div>Valid Start: {{ validStartDate }}</div>
-            <div>description: {{ description }}</div>
-            <div>Creator e-mail: {{ creatorEmail }}</div>
+            <TransactionBrowserSection>
+              <template v-slot:label>Description</template>
+              <template v-slot:value>{{ description }}</template>
+            </TransactionBrowserSection>
+
+            <TransactionBrowserSectionHeading title="Creation Details" />
+
+            <TransactionBrowserSection>
+              <template v-slot:label>Creator</template>
+              <template v-slot:value>{{ creatorEmail }}</template>
+            </TransactionBrowserSection>
+
+            <TransactionBrowserSectionHeading title="Transaction Details" />
+
+            <TransactionBrowserSection>
+              <template v-slot:label>Transaction Type</template>
+              <template v-slot:value>{{ transactionType }}</template>
+            </TransactionBrowserSection>
+
+            <TransactionBrowserSection>
+              <template v-slot:label>Valid Start</template>
+              <template v-slot:value>{{ validStartDate }}</template>
+            </TransactionBrowserSection>
+
+            <TransactionBrowserSectionHeading :title="transactionDetailsTitle" />
 
             <div
               v-if="
@@ -114,10 +130,10 @@ const creatorEmail = computed(() => props.item.creatorEmail ?? '');
             >
               System delete/undelete transaction properties
             </div>
-            <div>
-              <div>Collected Signatures</div>
-              <TransactionBrowserKeySection :item="props.item" />
-            </div>
+
+            <TransactionBrowserSectionHeading title="Collected Signatures" />
+            <TransactionBrowserKeySection :item="props.item" />
+
           </div>
         </div>
       </div>
