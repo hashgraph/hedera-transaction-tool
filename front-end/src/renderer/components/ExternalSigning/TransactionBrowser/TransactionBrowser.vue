@@ -1,25 +1,47 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import TransactionBrowserTable from './TransactionBrowserTable.vue';
+import { onMounted, ref, watch } from 'vue';
+import useNetworkStore from '@renderer/stores/storeNetwork.ts';
+import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import type { ITransactionBrowserItem } from './ITransactionBrowserItem.ts';
+import TransactionBrowserTable from './TransactionBrowserTable.vue';
+import { TransactionBrowserEntry } from '@renderer/components/ExternalSigning/TransactionBrowser/TransactionBrowserEntry.ts';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 
 /* Props */
 const props = defineProps<{
   items: ITransactionBrowserItem[];
 }>();
 
-// /* State */
-// const index = ref(0);
-//
-// /* Watchers */
-// watch(
-//   () => props.items,
-//   () => {
-//     index.value = 0;
-//   },
-//   { immediate: true },
-// );
-//
+/* Injected */
+const accountInfoCache = AccountByIdCache.inject();
+const nodeInfoCache = NodeByIdCache.inject();
+
+/* Stores */
+const network = useNetworkStore();
+
+/* State */
+const entries = ref<TransactionBrowserEntry[] | Error | null>(null); // null means loading
+
+/* Handlers */
+const updateEntries = async () => {
+  entries.value = null;
+  try {
+    const mirrorNodeLink = network.getMirrorNodeREST(network.network);
+    entries.value = await TransactionBrowserEntry.makeFromArray(
+      props.items,
+      mirrorNodeLink,
+      accountInfoCache,
+      nodeInfoCache,
+    );
+  } catch {
+    entries.value = new Error('Failed to create entries');
+  }
+};
+
+/* Watchers */
+watch(() => props.items, updateEntries, { immediate: true });
+
 // /* Handlers */
 // const handleNavigate = (targetIndex: number) => {
 //   index.value = targetIndex;
@@ -32,14 +54,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <template v-if="props.items.length >= 1">
-    <TransactionBrowserTable :items="props.items" />
+  <template v-if="entries === null">
+    <AppLoader />
   </template>
-  <!--
-  <template v-if="props.items.length === 1">
-    <TransactionBrowserPage :item="props.items[0]" />
+  <template v-else-if="entries instanceof Error">
+    <span>Loading failure</span>
   </template>
--->
+  <template v-else-if="entries.length >= 1">
+    <TransactionBrowserTable :entries="entries as TransactionBrowserEntry[]" />
+  </template>
   <template v-else>
     <span>No transactions to browse</span>
   </template>

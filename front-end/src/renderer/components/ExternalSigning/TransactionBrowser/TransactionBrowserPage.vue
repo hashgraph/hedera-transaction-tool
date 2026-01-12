@@ -26,10 +26,11 @@ import TransactionBrowserKeySection from './TransactionBrowserKeySection.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import type { TransactionBrowserEntry } from './TransactionBrowserEntry';
 
 /* Props */
 const props = defineProps<{
-  items: ITransactionBrowserItem[];
+  entries: TransactionBrowserEntry[];
 }>();
 
 /* Models */
@@ -42,8 +43,8 @@ const emit = defineEmits(['previous', 'next']);
 /* Computed */
 const currentItem = computed(() => {
   let result: ITransactionBrowserItem | null;
-  if (currentIndex.value >= 0 && currentIndex.value <= props.items.length - 1) {
-    result = props.items[currentIndex.value];
+  if (currentIndex.value >= 0 && currentIndex.value <= props.entries.length - 1) {
+    result = props.entries[currentIndex.value].item;
   } else {
     result = null;
   }
@@ -102,7 +103,7 @@ const transactionDetailsTitle = computed(() => transactionType.value + ' Detail'
               >
 
               <AppButton
-                :disabled="currentIndex >= props.items.length - 1"
+                :disabled="currentIndex >= props.entries.length - 1"
                 color="secondary"
                 @click.prevent="emit('next')"
                 >Next</AppButton
