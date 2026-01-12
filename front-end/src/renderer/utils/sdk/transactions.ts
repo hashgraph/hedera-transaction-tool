@@ -19,6 +19,8 @@ import {
   TransferTransaction,
 } from '@hashgraph/sdk';
 import { TransactionTypeName } from '@shared/interfaces';
+import { getTransactionById } from '@renderer/services/organization';
+import { hexToUint8Array } from '@renderer/utils';
 
 export const getTransactionPayerId = (transaction: Transaction) =>
   transaction.transactionId?.accountId?.toString() || null;
@@ -121,4 +123,80 @@ export const getFreezeTypeString = (freezeType: FreezeType) => {
     default:
       return 'Unknown';
   }
+};
+
+/**
+ * Gets the display transaction type, including specific freeze types.
+ * For freeze transactions, returns the specific freeze type (e.g., "Freeze Upgrade").
+ * For other transactions, returns the standard type.
+ *
+ * @param transaction - SDK Transaction instance or Uint8Array
+ * @param short - Whether to use short format (no spaces)
+ * @param removeTransaction - Whether to remove " Transaction" suffix
+ * @returns Display string for transaction type
+ */
+export const getDisplayTransactionType = (
+  transaction: Transaction | Uint8Array,
+  short = false,
+  removeTransaction = false,
+): string => {
+  // Deserialize if needed
+  let sdkTransaction = transaction;
+  if (transaction instanceof Uint8Array) {
+    try {
+      sdkTransaction = Transaction.fromBytes(transaction);
+    } catch (error) {
+      console.error('Failed to deserialize transaction:', error);
+      return formatTransactionType('Freeze Transaction', short, removeTransaction);
+    }
+  }
+
+  // Check if this is a freeze transaction
+  if (sdkTransaction instanceof FreezeTransaction) {
+    const freezeType = sdkTransaction.freezeType;
+    if (freezeType) {
+      const freezeTypeStr = getFreezeTypeString(freezeType);
+      return formatTransactionType(freezeTypeStr, short, removeTransaction);
+    }
+  }
+
+  // Fall back to standard transaction type
+  return getTransactionType(sdkTransaction, short, removeTransaction);
+};
+
+// Cache to avoid re-fetching freeze types
+const freezeTypeCache = new Map<number, number | null>();
+
+/**
+ * Fetches the freeze type for a transaction from the backend.
+ * Uses caching to avoid redundant API calls.
+ *
+ * @param serverUrl - The organization server URL
+ * @param transactionId - The transaction ID
+ * @returns The freeze type code (1-5) or null if not a freeze transaction or on error
+ */
+export const getFreezeTypeForTransaction = async (
+  serverUrl: string,
+  transactionId: number,
+): Promise<number | null> => {
+  if (freezeTypeCache.has(transactionId)) {
+    return freezeTypeCache.get(transactionId)!;
+  }
+
+  try {
+    const txFull = await getTransactionById(serverUrl, transactionId);
+    const bytes = hexToUint8Array(txFull.transactionBytes);
+    const sdkTx = Transaction.fromBytes(bytes);
+
+    if (sdkTx instanceof FreezeTransaction && sdkTx.freezeType) {
+      const code = sdkTx.freezeType._code;
+      freezeTypeCache.set(transactionId, code);
+      return code;
+    }
+  } catch (error) {
+    console.error('Failed to fetch freeze type:', error);
+  }
+
+  freezeTypeCache.set(transactionId, null);
+  return null;
 };
