@@ -1,16 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Transaction } from '@hashgraph/sdk';
-import type { ITransactionBrowserItem } from './ITransactionBrowserItem';
+import type { TransactionBrowserEntry } from './TransactionBrowserEntry';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import { hexToUint8Array } from '@renderer/utils';
 import { getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions.ts';
 
 /* Props */
 const props = defineProps<{
-  item: ITransactionBrowserItem;
+  entry: TransactionBrowserEntry;
   index: number;
 }>();
 
@@ -19,17 +17,17 @@ const emit = defineEmits(['details']);
 
 /* Computed */
 const transaction = computed(() => {
-  return Transaction.fromBytes(hexToUint8Array(props.item.transactionBytes));
+  return props.entry.transaction;
 });
 const transactionId = computed(() => transaction.value?.transactionId);
 const transactionType = computed(() => {
-  return getTransactionType(transaction.value, false, true);
+  return transaction.value ? getTransactionType(transaction.value, false, true) : "Decoding failure";
 });
-const description = computed(() => props.item.description ?? '');
+const description = computed(() => props.entry.item.description ?? '');
 const validStartDate = computed(() => {
-  return getTransactionValidStart(transaction.value);
+  return transaction.value ? getTransactionValidStart(transaction.value) : null;
 });
-const creatorEmail = computed(() => props.item.creatorEmail ?? '');
+const creatorEmail = computed(() => props.entry.item.creatorEmail ?? '');
 
 function handleDetails() {
   emit('details', props.index);
