@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import {
-  type AccountCreateTransaction,
-  type AccountUpdateTransaction,
+  AccountCreateTransaction,
+  AccountUpdateTransaction,
   KeyList,
   PublicKey,
 } from '@hashgraph/sdk';
@@ -13,6 +13,7 @@ import {
   stringifyHbar,
 } from '@renderer/utils';
 import { ref, watch } from 'vue';
+import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 
 /* Props */
 const props = defineProps<{
@@ -81,26 +82,41 @@ watch(
   </TransactionBrowserSection>
 
   <TransactionBrowserSection
-    v-if="transaction.stakedNodeId !== null || transaction.stakedAccountId !== null"
+    v-if="
+      transaction instanceof AccountUpdateTransaction ||
+      transaction.stakedNodeId !== null ||
+      transaction.stakedAccountId !== null
+    "
   >
     <template v-slot:label>Staking</template>
     <template v-slot:value>
       {{
         transaction.stakedAccountId && transaction.stakedAccountId.toString() !== '0.0.0'
           ? `Account ${transaction.stakedAccountId.toString()}`
-          : transaction.stakedNodeId
+          : transaction.stakedNodeId && transaction.stakedNodeId.toString()
             ? `Node ${transaction.stakedNodeId.toString()}`
-            : 'None'
+            : transaction instanceof AccountCreateTransaction
+              ? 'None'
+              : 'Unstaked'
       }}
     </template>
   </TransactionBrowserSection>
 
-  <TransactionBrowserSection v-if="transaction.declineStakingRewards !== null">
+  <TransactionBrowserSection
+    v-if="
+      transaction instanceof AccountUpdateTransaction || transaction.declineStakingRewards !== null
+    "
+  >
     <template v-slot:label>Accept Staking Rewards</template>
     <template v-slot:value> {{ transaction.declineStakingRewards ? 'No' : 'Yes' }} </template>
   </TransactionBrowserSection>
 
-  <TransactionBrowserSection v-if="transaction.receiverSignatureRequired !== null">
+  <TransactionBrowserSection
+    v-if="
+      transaction instanceof AccountCreateTransaction ||
+      transaction.receiverSignatureRequired !== null
+    "
+  >
     <template v-slot:label>Accept Staking Rewards</template>
     <template v-slot:value> {{ transaction.receiverSignatureRequired ? 'Yes' : 'No' }} </template>
   </TransactionBrowserSection>
@@ -112,8 +128,16 @@ watch(
     }}</template>
   </TransactionBrowserSection>
 
-  <TransactionBrowserSection v-if="transaction.maxAutomaticTokenAssociations !== null">
+  <TransactionBrowserSection
+    v-if="
+      transaction instanceof AccountCreateTransaction ||
+      transaction.maxAutomaticTokenAssociations !== null
+    "
+  >
     <template v-slot:label>Max Automatic Token Associations</template>
     <template v-slot:value> {{ transaction.maxAutomaticTokenAssociations }} </template>
   </TransactionBrowserSection>
+
+  <KeyStructureModal v-model:show="isKeyStructureModalShown" :account-key="transaction.key" />
+
 </template>
