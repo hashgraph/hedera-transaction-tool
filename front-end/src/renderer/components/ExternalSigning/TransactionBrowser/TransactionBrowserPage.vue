@@ -115,9 +115,16 @@ const transactionDetailsTitle = computed(() => transactionType.value + ' Info');
           <div class="fill-remaining mt-5">
             <div class="row flex-wrap">
               <!-- Description -->
-              <TransactionBrowserSection>
+              <TransactionBrowserSection :alone="true">
                 <template v-slot:label>Description</template>
-                <template v-slot:value>{{ description }}</template>
+                <template v-slot:value>{{
+                  description && description.trim().length > 0 ? description : 'None'
+                }}</template>
+              </TransactionBrowserSection>
+
+              <TransactionBrowserSection>
+                <template v-slot:label>Transaction Type</template>
+                <template v-slot:value>{{ transactionType }}</template>
               </TransactionBrowserSection>
 
               <TransactionBrowserSection>
@@ -127,18 +134,11 @@ const transactionDetailsTitle = computed(() => transactionType.value + ' Info');
                 </template>
               </TransactionBrowserSection>
 
-              <TransactionBrowserSectionHeading title="Creation Details" />
-
               <TransactionBrowserSection>
                 <template v-slot:label>Creator</template>
-                <template v-slot:value>{{ creatorEmail }}</template>
-              </TransactionBrowserSection>
-
-              <TransactionBrowserSectionHeading title="Transaction Details" />
-
-              <TransactionBrowserSection>
-                <template v-slot:label>Transaction Type</template>
-                <template v-slot:value>{{ transactionType }}</template>
+                <template v-slot:value>{{
+                    creatorEmail && creatorEmail.trim().length > 0 ? creatorEmail : 'None'
+                  }}</template>
               </TransactionBrowserSection>
 
               <TransactionBrowserSection>
@@ -163,18 +163,17 @@ const transactionDetailsTitle = computed(() => transactionType.value + ' Info');
                   transaction instanceof AccountUpdateTransaction
                 "
               >
-                <AccountDetailsBrowserSection :transaction="transaction"/>
-
+                <AccountDetailsBrowserSection :transaction="transaction" />
               </template>
               <template v-if="transaction instanceof AccountDeleteTransaction">
-<!--                <TransactionBrowserSection>-->
-<!--                  <template v-slot:label>Account ID</template>-->
-<!--                  <template v-slot:value>{{ transactionData.accountId }}</template>-->
-<!--                </TransactionBrowserSection>-->
-<!--                <TransactionBrowserSection>-->
-<!--                  <template v-slot:label>Transfer Account ID</template>-->
-<!--                  <template v-slot:value>{{ transactionData.transferAccountId }}</template>-->
-<!--                </TransactionBrowserSection>-->
+                <!--                <TransactionBrowserSection>-->
+                <!--                  <template v-slot:label>Account ID</template>-->
+                <!--                  <template v-slot:value>{{ transactionData.accountId }}</template>-->
+                <!--                </TransactionBrowserSection>-->
+                <!--                <TransactionBrowserSection>-->
+                <!--                  <template v-slot:label>Transfer Account ID</template>-->
+                <!--                  <template v-slot:value>{{ transactionData.transferAccountId }}</template>-->
+                <!--                </TransactionBrowserSection>-->
               </template>
               <div v-if="transaction instanceof TransferTransaction">
                 Transfer transaction properties
