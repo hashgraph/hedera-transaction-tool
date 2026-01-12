@@ -31,8 +31,8 @@ import {
   isLoggedInOrganization,
   isUserLoggedIn,
 } from '@renderer/utils';
-import * as sdkTransactionUtils from '@renderer/utils/sdk/transactions';
 import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions';
+import { getTransactionFromBytes } from '@renderer/utils/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -98,25 +98,6 @@ const isLoading = ref(true);
 const generatedClass = computed(() => {
   return localSort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
 });
-
-/**
- * Gets display transaction type for personal mode transactions.
- * For freeze transactions, extracts specific freeze type from transaction bytes.
- */
-const getPersonalTransactionType = (transaction: Transaction): string => {
-  // Only process freeze transactions
-  if (transaction.type === 'Freeze Transaction') {
-    try {
-      const transactionBytes = hexToUint8Array(transaction.body);
-      return getDisplayTransactionType(transactionBytes, false, false);
-    } catch (error) {
-      console.error('Failed to extract freeze type for transaction:', transaction.id, error);
-      return transaction.type; // Fallback to database type
-    }
-  }
-
-  return transaction.type; // For non-freeze, return database type
-};
 
 /* Handlers */
 const handleSort = async (
@@ -259,6 +240,22 @@ function setPreviousTransactionsIds(id: string | number) {
       .map(t => t.id);
     nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
   }
+}
+
+/**
+ * Gets the display transaction type for local transactions.
+ * For freeze transactions, extracts the specific freeze type from the transaction body.
+ */
+function getLocalTransactionDisplayType(transaction: Transaction): string {
+  if (transaction.type === 'FREEZE' && transaction.body) {
+    try {
+      const sdkTx = getTransactionFromBytes(transaction.body);
+      return getDisplayTransactionType(sdkTx, false, true);
+    } catch {
+      return transaction.type;
+    }
+  }
+  return transaction.type;
 }
 
 /* Hooks */
@@ -435,7 +432,7 @@ watch(
                     <TransactionId :transaction-id="transaction.transaction_id" wrap />
                   </td>
                   <td :data-testid="`td-transaction-type-${index}`">
-                    <span class="text-bold">{{ getPersonalTransactionType(transaction) }}</span>
+                    <span class="text-bold">{{ getLocalTransactionDisplayType(transaction) }}</span>
                   </td>
                   <td :data-testid="`td-transaction-description-${index}`">
                     <span class="text-wrap-two-line-ellipsis">{{ transaction.description }}</span>
