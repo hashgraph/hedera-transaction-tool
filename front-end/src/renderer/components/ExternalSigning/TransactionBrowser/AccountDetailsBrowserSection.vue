@@ -76,6 +76,7 @@ watch(
 
   <TransactionBrowserSection
     v-if="transaction.accountMemo !== null && transaction.accountMemo.trim().length > 0"
+    :alone="true"
   >
     <template v-slot:label>Memo</template>
     <template v-slot:value>{{ transaction.accountMemo }}</template>
@@ -83,7 +84,7 @@ watch(
 
   <TransactionBrowserSection
     v-if="
-      transaction instanceof AccountUpdateTransaction ||
+      transaction instanceof AccountCreateTransaction ||
       transaction.stakedNodeId !== null ||
       transaction.stakedAccountId !== null
     "
@@ -117,7 +118,7 @@ watch(
       transaction.receiverSignatureRequired !== null
     "
   >
-    <template v-slot:label>Accept Staking Rewards</template>
+    <template v-slot:label>Receiver Signature Required</template>
     <template v-slot:value> {{ transaction.receiverSignatureRequired ? 'Yes' : 'No' }} </template>
   </TransactionBrowserSection>
 
@@ -139,5 +140,4 @@ watch(
   </TransactionBrowserSection>
 
   <KeyStructureModal v-model:show="isKeyStructureModalShown" :account-key="transaction.key" />
-
 </template>
