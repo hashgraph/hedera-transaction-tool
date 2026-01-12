@@ -27,6 +27,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import type { TransactionBrowserEntry } from './TransactionBrowserEntry';
+import AccountDetailsBrowserSection from './AccountDetailsBrowserSection.vue';
 
 /* Props */
 const props = defineProps<{
@@ -71,7 +72,7 @@ const validStartDate = computed(() => {
 });
 const creatorEmail = computed(() => currentItem.value!.creatorEmail ?? '');
 
-const transactionDetailsTitle = computed(() => transactionType.value + ' Detail');
+const transactionDetailsTitle = computed(() => transactionType.value + ' Info');
 </script>
 
 <template>
@@ -156,17 +157,25 @@ const transactionDetailsTitle = computed(() => transactionType.value + ' Detail'
               >
                 File transaction properties
               </div>
-              <div
+              <template
                 v-if="
                   transaction instanceof AccountCreateTransaction ||
                   transaction instanceof AccountUpdateTransaction
                 "
               >
-                Account delete transaction properties
-              </div>
-              <div v-if="transaction instanceof AccountDeleteTransaction">
-                Account transaction properties
-              </div>
+                <AccountDetailsBrowserSection :transaction="transaction"/>
+
+              </template>
+              <template v-if="transaction instanceof AccountDeleteTransaction">
+<!--                <TransactionBrowserSection>-->
+<!--                  <template v-slot:label>Account ID</template>-->
+<!--                  <template v-slot:value>{{ transactionData.accountId }}</template>-->
+<!--                </TransactionBrowserSection>-->
+<!--                <TransactionBrowserSection>-->
+<!--                  <template v-slot:label>Transfer Account ID</template>-->
+<!--                  <template v-slot:value>{{ transactionData.transferAccountId }}</template>-->
+<!--                </TransactionBrowserSection>-->
+              </template>
               <div v-if="transaction instanceof TransferTransaction">
                 Transfer transaction properties
               </div>
