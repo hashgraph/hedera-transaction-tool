@@ -133,7 +133,7 @@ async function fetchNodes(): Promise<ITransactionNode[]> {
     <div class="p-4">
       <i class="bi bi-x-lg d-inline-block cursor-pointer" @click="show = false"></i>
       <div class="text-center">
-        <AppCustomIcon :name="'questionMark'" style="height: 160px" />
+        <AppCustomIcon :name="'questionMark'" style="height: 80px" />
       </div>
       <h3 class="text-center text-title text-bold mt-4">Export Transactions</h3>
       <div class="text-center mt-4">
