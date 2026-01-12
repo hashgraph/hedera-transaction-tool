@@ -1,15 +1,10 @@
 <script lang="ts" setup>
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import type { TransactionFile, TransactionFileItem } from '@shared/interfaces';
 import { readTransactionFile, writeTransactionFile } from '@renderer/services/transactionFile.ts';
-import AppPager from '@renderer/components/ui/AppPager.vue';
-import SignTransactionFileModalRow from '@renderer/components/ExternalSigning/SignTransactionFileModalRow.vue';
-import {
-  collectMissingSignerKeys,
-  filterTransactionFileItemsToBeSigned,
-} from '@shared/utils/transactionFile.ts';
+import { collectMissingSignerKeys } from '@shared/utils/transactionFile.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
@@ -17,6 +12,7 @@ import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { assertUserLoggedIn, hexToUint8Array, uint8ToHex } from '@renderer/utils';
 import { SignatureMap, Transaction } from '@hashgraph/sdk';
 import { signTransaction } from '@renderer/services/transactionService.ts';
+import TransactionBrowser from '@renderer/components/ExternalSigning/TransactionBrowser/TransactionBrowser.vue';
 
 /* Props */
 const props = defineProps<{
@@ -37,14 +33,6 @@ const nodeInfoCache = NodeByIdCache.inject();
 /* State */
 const transactionFile = ref<TransactionFile | null>(null);
 const itemsToBeSigned = ref<TransactionFileItem[]>([]);
-const currentPage = ref(1);
-const pageSize = ref(15);
-
-/* Computed */
-const pageStart = computed(() => (currentPage.value - 1) * pageSize.value);
-const pagedItems = computed(() => {
-  return itemsToBeSigned.value.slice(pageStart.value, pageStart.value + pageSize.value);
-});
 
 /* Handlers */
 async function handleSignAll() {
@@ -108,13 +96,14 @@ watch(
   async () => {
     if (show.value && props.filePath) {
       transactionFile.value = await readTransactionFile(props.filePath);
-      itemsToBeSigned.value = await filterTransactionFileItemsToBeSigned(
-        transactionFile.value.items,
-        user.publicKeys,
-        network.getMirrorNodeREST(transactionFile.value.network),
-        accountInfoCache,
-        nodeInfoCache,
-      );
+      itemsToBeSigned.value = transactionFile.value.items;
+      // itemsToBeSigned.value = await filterTransactionFileItemsToBeSigned(
+      //   transactionFile.value.items,
+      //   user.publicKeys,
+      //   network.getMirrorNodeREST(transactionFile.value.network),
+      //   accountInfoCache,
+      //   nodeInfoCache,
+      // );
     } else {
       transactionFile.value = null;
       itemsToBeSigned.value = [];
@@ -130,40 +119,14 @@ watch(
       <div class="p-5">
         <div class="d-flex align-items-center mb-5">
           <i class="bi bi-x-lg cursor-pointer me-5" @click="show = false" />
-          <h3 class="text-subheader fw-medium flex-1">
+          <h3 class="fw-medium flex-1">
             Do you want to sign the following transactions?
           </h3>
         </div>
         <form @submit.prevent="handleSignAll">
+
           <template v-if="transactionFile">
-            <table class="table-custom">
-              <thead>
-                <tr>
-                  <th>Transaction ID</th>
-                  <th>Transaction Type</th>
-                  <th>Description</th>
-                  <th>Valid Start</th>
-                  <th>Creator email</th>
-<!--
-                  <th>Actions</th>
--->
-                </tr>
-              </thead>
-              <tbody>
-                <template v-for="(item, index) of pagedItems" :key="pageStart + index">
-                  <SignTransactionFileModalRow :index="pageStart + index" :item="item" />
-                </template>
-              </tbody>
-              <tfoot v-if="transactionFile.items.length > pageSize" class="d-table-caption">
-                <tr class="d-inline">
-                  <AppPager
-                    v-model:current-page="currentPage"
-                    v-model:per-page="pageSize"
-                    :total-items="transactionFile.items.length"
-                  />
-                </tr>
-              </tfoot>
-            </table>
+            <TransactionBrowser :items="itemsToBeSigned" />
           </template>
 
           <div class="d-flex justify-content-end mt-5">
@@ -174,6 +137,7 @@ watch(
         </form>
       </div>
     </template>
+
     <template v-else>
       <div class="p-5">
         <div class="d-flex align-items-center mb-5">

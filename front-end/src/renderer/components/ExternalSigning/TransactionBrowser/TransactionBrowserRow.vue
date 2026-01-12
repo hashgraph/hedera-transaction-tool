@@ -15,7 +15,7 @@ const props = defineProps<{
 }>();
 
 /* Emits */
-const emit = defineEmits(['navigate']);
+const emit = defineEmits(['details']);
 
 /* Computed */
 const transaction = computed(() => {
@@ -32,7 +32,7 @@ const validStartDate = computed(() => {
 const creatorEmail = computed(() => props.item.creatorEmail ?? '');
 
 function handleDetails() {
-  emit('navigate', props.index);
+  emit('details', props.index);
 }
 </script>
 
