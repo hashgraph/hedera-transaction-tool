@@ -48,7 +48,7 @@ watch(() => props.items, updateEntries, { immediate: true });
 // };
 
 onMounted(() => {
-  console.log('items=' + JSON.stringify(props.items));
+  // console.log('items=' + JSON.stringify(props.items));
   // console.log('index=' + index.value);
 });
 </script>
