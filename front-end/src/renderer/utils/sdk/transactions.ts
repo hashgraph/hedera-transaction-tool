@@ -40,7 +40,7 @@ export const formatTransactionType = (
   }
   if (short) {
     // Remove all whitespace characters
-    result = type.replace(/\s+/g, '');
+    result = result.replace(/\s+/g, '');
   }
   return result;
 };
