@@ -430,6 +430,15 @@ td .btn {
   }
 }
 
+.full-screen-modal-in-modal {
+  --#{$prefix}modal-width: calc(100vw - 96px);
+
+  & > .modal-dialog > .modal-content {
+    height: calc(100vh - 96px);
+    max-height: calc(100vh - 96px);
+  }
+}
+
 .custom-key-modal {
   display: flex;
   flex-direction: column;
