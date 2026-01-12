@@ -54,9 +54,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <template v-if="entries === null">
-    <AppLoader />
-  </template>
+  <AppLoader v-if="entries === null" />
   <template v-else-if="entries instanceof Error">
     <span>Loading failure</span>
   </template>

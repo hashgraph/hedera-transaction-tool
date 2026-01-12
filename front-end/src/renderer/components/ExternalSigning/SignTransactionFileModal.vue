@@ -117,13 +117,15 @@ watch(
   <AppModal v-model:show="show" :class="{ 'full-screen-modal': itemsToBeSigned.length > 0 }">
     <template v-if="itemsToBeSigned.length > 0">
       <div class="p-5">
-        <div class="d-flex align-items-center mb-5">
+        <div class="d-flex align-items-center">
           <i class="bi bi-x-lg cursor-pointer me-5" @click="show = false" />
-          <h3 class="fw-medium flex-1">
-            Do you want to sign the following transactions?
-          </h3>
         </div>
-        <form @submit.prevent="handleSignAll">
+        <form @submit.prevent="handleSignAll" class="h-100">
+          <h1 class="text-title text-semi-bold text-center mb-5">
+            <template v-if="itemsToBeSigned.length == 0">You have no transaction to sign</template>
+            <template v-if="itemsToBeSigned.length == 1">You have 1 transaction to sign</template>
+            <template v-else>You have {{ itemsToBeSigned.length }} transactions to sign</template>
+          </h1>
 
           <template v-if="transactionFile">
             <TransactionBrowser :items="itemsToBeSigned" />
