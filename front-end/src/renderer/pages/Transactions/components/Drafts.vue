@@ -31,8 +31,7 @@ import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import { successToastOptions } from '@renderer/utils/toastOptions.ts';
-import { formatTransactionType, getDisplayTransactionType } from '@renderer/utils/sdk/transactions.ts';
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
+import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
@@ -164,29 +163,6 @@ const handleContinueDraft = async (draft: TransactionDraft | TransactionGroup) =
 /* Functions */
 function getOpositeDirection() {
   return sortDirection.value === 'asc' ? 'desc' : 'asc';
-}
-
-/**
- * Gets the display transaction type for drafts.
- * For freeze transactions, extracts the specific freeze type from transactionBytes.
- * Draft type is stored as human-readable (e.g., "Freeze Transaction" or "FreezeTransaction")
- */
-function getDraftDisplayType(draft: TransactionDraft): string {
-  const isFreezeType =
-    draft.type === 'Freeze Transaction' ||
-    draft.type === 'FreezeTransaction' ||
-    draft.type === 'Freeze' ||
-    draft.type === 'FREEZE';
-
-  if (isFreezeType && draft.transactionBytes) {
-    try {
-      const sdkTx = getTransactionFromBytes(draft.transactionBytes);
-      return getDisplayTransactionType(sdkTx, false, true);
-    } catch {
-      return formatTransactionType(draft.type, false, true);
-    }
-  }
-  return formatTransactionType(draft.type, false, true);
 }
 
 function createFindArgs(): Prisma.TransactionDraftFindManyArgs {
@@ -455,7 +431,7 @@ watch(() => list.value.length, () => {
                 <td>
                   <span class="text-bold" :data-testid="'span-draft-tx-type-' + i">{{
                       (draft as TransactionDraft).type
-                        ? getDraftDisplayType(draft as TransactionDraft)
+                        ? formatTransactionType((draft as TransactionDraft).type, false, true)
                         : 'Group'
                     }}</span>
                 </td>
