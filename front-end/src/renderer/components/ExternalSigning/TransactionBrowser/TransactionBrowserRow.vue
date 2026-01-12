@@ -5,6 +5,7 @@ import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions.ts';
+import useUserStore from '@renderer/stores/storeUser.ts';
 
 /* Props */
 const props = defineProps<{
@@ -15,13 +16,18 @@ const props = defineProps<{
 /* Emits */
 const emit = defineEmits(['details']);
 
+/* Stores */
+const user = useUserStore();
+
 /* Computed */
 const transaction = computed(() => {
   return props.entry.transaction;
 });
 const transactionId = computed(() => transaction.value?.transactionId);
 const transactionType = computed(() => {
-  return transaction.value ? getTransactionType(transaction.value, false, true) : "Decoding failure";
+  return transaction.value
+    ? getTransactionType(transaction.value, false, true)
+    : 'Decoding failure';
 });
 const description = computed(() => props.entry.item.description ?? '');
 const validStartDate = computed(() => {
@@ -29,15 +35,24 @@ const validStartDate = computed(() => {
 });
 const creatorEmail = computed(() => props.entry.item.creatorEmail ?? '');
 
+const fullySignedByUser = computed(() => props.entry.isFullySignedByUser(user.publicKeys));
+
 function handleDetails() {
   emit('details', props.index);
 }
 </script>
 
 <template>
-  <tr>
+  <tr class="position-relative">
     <td>
-      <TransactionId v-if="transactionId" :transaction-id="transactionId" wrap />
+      <span>
+        <span
+          v-if="fullySignedByUser"
+          class="bi bi-check-lg text-success position-absolute"
+          :style="{ left: '-16px' }"
+        />
+        <TransactionId v-if="transactionId" :transaction-id="transactionId" wrap />
+      </span>
     </td>
     <td class="text-bold">
       {{ transactionType }}

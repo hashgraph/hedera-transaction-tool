@@ -1,5 +1,5 @@
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
-import { computeSignatureKey, hexToUint8Array } from '@renderer/utils';
+import { computeSignatureKey, hexToUint8Array, type SignatureAudit } from '@renderer/utils';
 import type { ITransaction, TransactionFileItem } from '@shared/interfaces';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
@@ -41,14 +41,16 @@ export async function filterTransactionFileItemsToBeSigned(
     try {
       const transactionBytes = hexToUint8Array(item.transactionBytes);
       const sdkTransaction = SDKTransaction.fromBytes(transactionBytes);
-      const missingSignerKeys = await collectMissingSignerKeys(
+      const audit = await computeSignatureKey(
         sdkTransaction,
-        userPublicKeys,
         mirrorNetwork,
         accountInfoCache,
         nodeInfoCache,
+        null,
       );
-      if (missingSignerKeys.length > 0) {
+      const requiredKeys = filterAuditByUser(audit, userPublicKeys);
+      const signingKeys = filterTransactionSignersByUser(sdkTransaction, userPublicKeys);
+      if (requiredKeys.size > 0 && signingKeys.size < requiredKeys.size) {
         result.push(item);
       }
     } catch {
@@ -93,5 +95,33 @@ export async function collectMissingSignerKeys(
     }
   }
 
+  return result;
+}
+
+export function filterAuditByUser(audit: SignatureAudit, userKeys: string[]): Set<string> {
+  const result = new Set<string>();
+  for (const key of audit.signatureKeys) {
+    for (const flatKey of flattenKeyList(key)) {
+      const flatKeyRaw = flatKey.toStringRaw();
+      if (userKeys.includes(flatKeyRaw)) {
+        // flatKey belongs to userKeys and is expected to sign transaction
+        result.add(flatKeyRaw);
+      }
+    }
+  }
+  return result;
+}
+
+export function filterTransactionSignersByUser(
+  transaction: SDKTransaction,
+  userKeys: string[],
+): Set<string> {
+  const result = new Set<string>();
+  for (const key of transaction._signerPublicKeys) {
+    if (userKeys.includes(key)) {
+      // key belongs to user and is used for signing the transaction
+      result.add(key);
+    }
+  }
   return result;
 }

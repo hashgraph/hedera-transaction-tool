@@ -3,6 +3,10 @@ import type { ITransactionBrowserItem } from './ITransactionBrowserItem';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { computeSignatureKey, hexToUint8Array, type SignatureAudit } from '@renderer/utils';
+import {
+  filterAuditByUser,
+  filterTransactionSignersByUser,
+} from '@shared/utils/transactionFile.ts';
 
 export class TransactionBrowserEntry {
   public constructor(
@@ -10,6 +14,18 @@ export class TransactionBrowserEntry {
     public readonly transaction: SDKTransaction | null, // null means decoding failed
     public readonly signatureAudit: SignatureAudit | null, // null if transaction is null
   ) {}
+
+  public isFullySignedByUser(userKeys: string[]): boolean {
+    let result: boolean;
+    if (this.transaction !== null && this.signatureAudit !== null) {
+      const requiredKeys = filterAuditByUser(this.signatureAudit, userKeys);
+      const signingKeys = filterTransactionSignersByUser(this.transaction, userKeys);
+      result = requiredKeys.size >= 1 && signingKeys.size == requiredKeys.size;
+    } else {
+      result = false;
+    }
+    return result;
+  }
 
   //
   // Static
