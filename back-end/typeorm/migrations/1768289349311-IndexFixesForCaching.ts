@@ -23,7 +23,9 @@ export class IndexFixesForCaching1768289349311 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "cached_account" DROP COLUMN "lastCheckedAt"`);
         await queryRunner.query(`ALTER TABLE "cached_node" DROP COLUMN "lastCheckedAt"`);
         await queryRunner.query(`ALTER TABLE "transaction_cached_account" RENAME COLUMN "accountId" TO "cachedAccountId"`);
+        await queryRunner.query(`ALTER TABLE "transaction_cached_account" ALTER COLUMN "cachedAccountId" SET NOT NULL`);
         await queryRunner.query(`ALTER TABLE "transaction_cached_node" RENAME COLUMN "nodeId" TO "cachedNodeId"`);
+        await queryRunner.query(`ALTER TABLE "transaction_cached_node" ALTER COLUMN "cachedNodeId" SET NOT NULL`);
         await queryRunner.query(`ALTER TABLE "transaction_group_item" DROP CONSTRAINT "FK_a86690b96e78a551252bfe15d91"`);
         await queryRunner.query(`ALTER TABLE "transaction_group_item" ALTER COLUMN "groupId" SET NOT NULL`);
         await queryRunner.query(`ALTER TABLE "transaction_observer" DROP CONSTRAINT "FK_adbc3bb6e05cc969fa33da99de9"`);
@@ -114,10 +116,10 @@ export class IndexFixesForCaching1768289349311 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "transaction_observer" ADD CONSTRAINT "FK_adbc3bb6e05cc969fa33da99de9" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "transaction_group_item" ALTER COLUMN "groupId" DROP NOT NULL`);
         await queryRunner.query(`ALTER TABLE "transaction_group_item" ADD CONSTRAINT "FK_a86690b96e78a551252bfe15d91" FOREIGN KEY ("groupId") REFERENCES "transaction_group"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "transaction_cached_node" DROP COLUMN "cachedNodeId"`);
-        await queryRunner.query(`ALTER TABLE "transaction_cached_account" DROP COLUMN "cachedAccountId"`);
-        await queryRunner.query(`ALTER TABLE "transaction_cached_node" ADD "nodeId" integer`);
-        await queryRunner.query(`ALTER TABLE "transaction_cached_account" ADD "accountId" integer`);
+        await queryRunner.query(`ALTER TABLE "transaction_cached_node" ALTER COLUMN "cachedNodeId" DROP NOT NULL`);
+        await queryRunner.query(`ALTER TABLE "transaction_cached_account" ALTER COLUMN "cachedAccountId" DROP NOT NULL`);
+        await queryRunner.query(`ALTER TABLE "transaction_cached_node" RENAME COLUMN "cachedNodeId" TO 'nodeId'`);
+        await queryRunner.query(`ALTER TABLE "transaction_cached_account" RENAME COLUMN "cachedAccountId" TO "accountId"`);
         await queryRunner.query(`ALTER TABLE "cached_node" ADD "lastCheckedAt" TIMESTAMP WITH TIME ZONE`);
         await queryRunner.query(`ALTER TABLE "cached_account" ADD "lastCheckedAt" TIMESTAMP WITH TIME ZONE`);
         await queryRunner.query(`ALTER TABLE "cached_node_admin_key" RENAME COLUMN "cachedNodeId" TO "nodeId"`);
