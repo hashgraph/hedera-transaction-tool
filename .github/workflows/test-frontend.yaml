@@ -207,6 +207,10 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: front-end
 
+      - name: Generate Prisma Client
+        run: pnpm run generate:database
+        working-directory: front-end
+
       - name: Run Unit Tests
         run: pnpm run test:${{ matrix.test-suite.command }}:coverage
         working-directory: front-end
