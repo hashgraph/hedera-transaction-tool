@@ -217,7 +217,7 @@ describe('AccountCacheService', () => {
         mirrorNetwork: 'testnet',
         encodedKey: Buffer.from('encoded-key'),
         receiverSignatureRequired: true,
-        lastCheckedAt: new Date(),
+        updatedAt: new Date(),
       } as CachedAccount;
 
       dataSource.manager.findOne = jest.fn().mockResolvedValue(cachedAccount);
@@ -233,7 +233,7 @@ describe('AccountCacheService', () => {
         TransactionCachedAccount,
         1,
         1,
-        'account'
+        'cachedAccount'
       );
     });
 
@@ -244,7 +244,7 @@ describe('AccountCacheService', () => {
         account: '0.0.123',
         mirrorNetwork: 'testnet',
         encodedKey: Buffer.from('old-key'),
-        lastCheckedAt: staleDate,
+        updatedAt: staleDate,
         refreshToken: 'token-123',
       } as CachedAccount;
       const accountInfo: Partial<AccountInfoParsed> = {
@@ -304,7 +304,7 @@ describe('AccountCacheService', () => {
         mirrorNetwork: 'testnet',
         encodedKey: Buffer.from('encoded-key'),
         receiverSignatureRequired: true,
-        lastCheckedAt: new Date(Date.now() - 20000),
+        updatedAt: new Date(Date.now() - 20000),
       } as CachedAccount;
 
       const claimedAccount = {
@@ -487,7 +487,7 @@ describe('AccountCacheService', () => {
         TransactionCachedAccount,
         999,
         1,
-        'account'
+        'cachedAccount'
       );
     });
   });
@@ -520,7 +520,7 @@ describe('AccountCacheService', () => {
       expect(cacheHelper.insertKeys).toHaveBeenCalledWith(
         CachedAccountKey,
         1,
-        'account',
+        'cachedAccount',
         [mockKey]
       );
     });
@@ -572,7 +572,7 @@ describe('AccountCacheService', () => {
         TransactionCachedAccount,
         999,
         1,
-        'account'
+        'cachedAccount'
       );
     });
   });

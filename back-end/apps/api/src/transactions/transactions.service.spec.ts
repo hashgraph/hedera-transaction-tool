@@ -504,13 +504,7 @@ describe('TransactionsService', () => {
       expect(saveMock).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
         notificationsPublisher,
-        [{
-          entityId: 1,
-          additionalData: {
-            transactionId: expect.any(String),
-            network: dto.mirrorNetwork,
-          },
-        }],
+        [{ entityId: 1 }],
       );
       expect(schedulerService.addReminder).toHaveBeenCalledWith(
         `transaction:sign:1`,
@@ -562,13 +556,7 @@ describe('TransactionsService', () => {
       expect(saveMock).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
         notificationsPublisher,
-        [{
-          entityId: 1,
-          additionalData: {
-            transactionId: expect.any(String),
-            network: dto.mirrorNetwork,
-          },
-        }],
+        [{ entityId: 1 }],
       );
 
 
@@ -875,7 +863,7 @@ describe('TransactionsService', () => {
         }],
       );
     });
-
+    
     it('should return error if transaction not found', async () => {
       entityManager.find.mockResolvedValue([]);
 

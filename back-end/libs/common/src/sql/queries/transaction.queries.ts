@@ -272,12 +272,12 @@ export function getTransactionNodesForUser(
       CASE WHEN rt.group_id IS NULL THEN rt.transaction_type END AS transaction_type,
       CASE WHEN rt.group_id IS NULL THEN rt.is_manual END AS is_manual,
       (
-        SELECT COUNT(*)
+        SELECT COUNT(*)::int
         FROM ${sql.table(TransactionGroupItem)} gi_all
         WHERE gi_all.${sql.col(TransactionGroupItem, 'groupId')} = rt.group_id
       ) AS group_item_count,
       (
-        SELECT COUNT(DISTINCT transaction_id)
+        SELECT COUNT(DISTINCT transaction_id)::int
         FROM eligible_transactions et_inner
         WHERE et_inner.group_id = rt.group_id
       ) AS group_collected_count

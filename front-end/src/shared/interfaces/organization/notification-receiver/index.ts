@@ -33,6 +33,7 @@ export interface INotificationReceiver extends INotificationReceiverCore {
 
 export interface NotificationAdditionalData {
   network: string;
+  groupId?: number;
 }
 
 export interface INotification {

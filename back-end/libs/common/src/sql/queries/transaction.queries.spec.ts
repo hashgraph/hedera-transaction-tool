@@ -1,5 +1,4 @@
 import { DataSource } from 'typeorm';
-import { SqlBuilderService } from '../sql-builder.service';
 import {
   CachedAccount,
   CachedAccountKey,
@@ -9,13 +8,15 @@ import {
   TransactionGroupItem,
   TransactionSigner,
   TransactionStatus,
+  TransactionType,
   User,
   UserKey,
+  UserStatus,
 } from '@entities';
 import { createTestPostgresDataSource } from '../../../../../test-utils/postgres-test-db';
-import { selectTransactionNodesToSignForUser } from '@app/common';
+import { getTransactionNodesForUser, SqlBuilderService } from '@app/common';
 
-describe('selectTransactionNodesToSignForUser - Integration', () => {
+describe('getTransactionNodesForUser - Integration', () => {
   let dataSource: DataSource;
   let cleanup: () => Promise<void>;
   let sqlBuilder: SqlBuilderService;
@@ -25,14 +26,13 @@ describe('selectTransactionNodesToSignForUser - Integration', () => {
     dataSource = testDb.dataSource;
     cleanup = testDb.cleanup;
     sqlBuilder = new SqlBuilderService(dataSource.manager);
-  }, 60000); // Increased timeout for container startup
+  }, 60000);
 
   afterAll(async () => {
     await cleanup();
   });
 
   afterEach(async () => {
-    // Clean up test data after each test
     const entities = [
       TransactionSigner,
       TransactionCachedAccount,
@@ -50,24 +50,29 @@ describe('selectTransactionNodesToSignForUser - Integration', () => {
     }
   });
 
+  const defaultFilters = {
+    statuses: [TransactionStatus.WAITING_FOR_SIGNATURES],
+  };
+
+  const signerRoles = { signer: true } as const;
+
   describe('query execution', () => {
     it('should execute without errors on empty database', async () => {
-      const user = await createTestUser(dataSource);
+      const user = await createTestUserWithKeys(dataSource);
 
-      const query = selectTransactionNodesToSignForUser(sqlBuilder, user);
-
+      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toEqual([]);
     });
 
     it('should return ungrouped transaction that needs signing', async () => {
-      const user = await createTestUser(dataSource);
+      const user = await createTestUserWithKeys(dataSource);
       const transaction = await createTestTransaction(dataSource, user, {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
       });
 
-      const query = selectTransactionNodesToSignForUser(sqlBuilder, user);
+      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(1);
@@ -77,22 +82,21 @@ describe('selectTransactionNodesToSignForUser - Integration', () => {
     });
 
     it('should not return transaction already signed by user', async () => {
-      const user = await createTestUser(dataSource);
+      const user = await createTestUserWithKeys(dataSource);
       const transaction = await createTestTransaction(dataSource, user, {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
       });
 
-      // User has already signed
       await createTransactionSigner(dataSource, transaction, user.keys[0]);
 
-      const query = selectTransactionNodesToSignForUser(sqlBuilder, user);
+      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(0);
     });
 
     it('should return transaction if only partially signed', async () => {
-      const user = await createTestUserWithMultipleKeys(dataSource, 2);
+      const user = await createTestUserWithKeys(dataSource, 2);
       const transaction = await createTestTransaction(dataSource, user, {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         requireBothKeys: true,
@@ -101,7 +105,7 @@ describe('selectTransactionNodesToSignForUser - Integration', () => {
       // Only signed with first key
       await createTransactionSigner(dataSource, transaction, user.keys[0]);
 
-      const query = selectTransactionNodesToSignForUser(sqlBuilder, user);
+      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(1);
@@ -109,7 +113,7 @@ describe('selectTransactionNodesToSignForUser - Integration', () => {
     });
 
     it('should filter by status', async () => {
-      const user = await createTestUser(dataSource);
+      const user = await createTestUserWithKeys(dataSource);
 
       await createTestTransaction(dataSource, user, {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
@@ -119,7 +123,7 @@ describe('selectTransactionNodesToSignForUser - Integration', () => {
         status: TransactionStatus.EXECUTED,
       });
 
-      const query = selectTransactionNodesToSignForUser(sqlBuilder, user);
+      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(1);
@@ -127,7 +131,7 @@ describe('selectTransactionNodesToSignForUser - Integration', () => {
     });
 
     it('should filter by mirror network', async () => {
-      const user = await createTestUser(dataSource);
+      const user = await createTestUserWithKeys(dataSource);
 
       await createTestTransaction(dataSource, user, {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
@@ -139,11 +143,12 @@ describe('selectTransactionNodesToSignForUser - Integration', () => {
         mirrorNetwork: 'testnet',
       });
 
-      const query = selectTransactionNodesToSignForUser(
-        sqlBuilder,
-        user,
-        'mainnet'
-      );
+      const filters = {
+        ...defaultFilters,
+        mirrorNetwork: 'mainnet',
+      };
+
+      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, filters);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(1);
@@ -153,24 +158,18 @@ describe('selectTransactionNodesToSignForUser - Integration', () => {
 
   describe('grouped transactions', () => {
     it('should return one row per group', async () => {
-      const user = await createTestUser(dataSource);
+      const user = await createTestUserWithKeys(dataSource);
       const group = await createTestTransactionGroup(dataSource);
 
-      // Create 3 transactions in the group
-      await createTestTransaction(dataSource, user, {
-        status: TransactionStatus.WAITING_FOR_SIGNATURES,
-        groupId: group.id,
-      });
-      await createTestTransaction(dataSource, user, {
-        status: TransactionStatus.WAITING_FOR_SIGNATURES,
-        groupId: group.id,
-      });
-      await createTestTransaction(dataSource, user, {
-        status: TransactionStatus.WAITING_FOR_SIGNATURES,
-        groupId: group.id,
-      });
+      for (let i = 0; i < 3; i++) {
+        await createTestTransaction(dataSource, user, {
+          status: TransactionStatus.WAITING_FOR_SIGNATURES,
+          groupId: group.id,
+          seq: i,
+        });
+      }
 
-      const query = selectTransactionNodesToSignForUser(sqlBuilder, user);
+      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(1);
@@ -179,32 +178,33 @@ describe('selectTransactionNodesToSignForUser - Integration', () => {
     });
 
     it('should calculate group_item_count correctly', async () => {
-      const user = await createTestUser(dataSource);
+      const user = await createTestUserWithKeys(dataSource);
       const group = await createTestTransactionGroup(dataSource);
 
-      // Create 5 transactions in the group
       for (let i = 0; i < 5; i++) {
         await createTestTransaction(dataSource, user, {
           status: TransactionStatus.WAITING_FOR_SIGNATURES,
           groupId: group.id,
+          seq: i,
         });
       }
 
-      const query = selectTransactionNodesToSignForUser(sqlBuilder, user);
+      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result[0].group_item_count).toBe(5);
     });
 
-    it('should calculate group_collected_count correctly', async () => {
-      const user = await createTestUser(dataSource);
+    it('should calculate group_collected_count correctly (only eligible transactions)', async () => {
+      const user = await createTestUserWithKeys(dataSource);
       const group = await createTestTransactionGroup(dataSource);
 
-      // Create 5 transactions, but user has signed 2 already
+      // 5 tx total; user has already signed 2, so 3 remain eligible
       for (let i = 0; i < 5; i++) {
         const tx = await createTestTransaction(dataSource, user, {
           status: TransactionStatus.WAITING_FOR_SIGNATURES,
           groupId: group.id,
+          seq: i,
         });
 
         if (i < 2) {
@@ -212,53 +212,64 @@ describe('selectTransactionNodesToSignForUser - Integration', () => {
         }
       }
 
-      const query = selectTransactionNodesToSignForUser(sqlBuilder, user);
+      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result[0].group_item_count).toBe(5);
-      expect(result[0].group_collected_count).toBe(3); // Only 3 need signing
+      expect(result[0].group_collected_count).toBe(3);
     });
 
     it('should return uniform status when all transactions have same status', async () => {
-      const user = await createTestUser(dataSource);
+      const user = await createTestUserWithKeys(dataSource);
       const group = await createTestTransactionGroup(dataSource);
 
       await createTestTransaction(dataSource, user, {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         groupId: group.id,
+        seq: 0,
       });
       await createTestTransaction(dataSource, user, {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         groupId: group.id,
+        seq: 1,
       });
 
-      const query = selectTransactionNodesToSignForUser(sqlBuilder, user);
+      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result[0].status).toBe(TransactionStatus.WAITING_FOR_SIGNATURES);
     });
 
     it('should return null status when transactions have mixed statuses', async () => {
-      const user = await createTestUser(dataSource);
+      const user = await createTestUserWithKeys(dataSource);
       const group = await createTestTransactionGroup(dataSource);
 
       await createTestTransaction(dataSource, user, {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         groupId: group.id,
+        seq: 0,
       });
       await createTestTransaction(dataSource, user, {
         status: TransactionStatus.WAITING_FOR_EXECUTION,
         groupId: group.id,
+        seq: 1,
       });
 
-      const query = selectTransactionNodesToSignForUser(sqlBuilder, user);
+      const filters = {
+        statuses: [
+          TransactionStatus.WAITING_FOR_SIGNATURES,
+          TransactionStatus.WAITING_FOR_EXECUTION,
+        ],
+      };
+
+      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, filters);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result[0].status).toBeNull();
     });
 
     it('should use group description when available', async () => {
-      const user = await createTestUser(dataSource);
+      const user = await createTestUserWithKeys(dataSource);
       const group = await createTestTransactionGroup(dataSource, {
         description: 'Group Description',
       });
@@ -267,9 +278,10 @@ describe('selectTransactionNodesToSignForUser - Integration', () => {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         description: 'Transaction Description',
         groupId: group.id,
+        seq: 0,
       });
 
-      const query = selectTransactionNodesToSignForUser(sqlBuilder, user);
+      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result[0].description).toBe('Group Description');
@@ -278,7 +290,7 @@ describe('selectTransactionNodesToSignForUser - Integration', () => {
 
   describe('ordering', () => {
     it('should order by created_at DESC', async () => {
-      const user = await createTestUser(dataSource);
+      const user = await createTestUserWithKeys(dataSource);
 
       const tx1 = await createTestTransaction(dataSource, user, {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
@@ -295,52 +307,49 @@ describe('selectTransactionNodesToSignForUser - Integration', () => {
         createdAt: new Date('2024-01-02'),
       });
 
-      const query = selectTransactionNodesToSignForUser(sqlBuilder, user);
+      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(3);
-      expect(result[0].transaction_id).toBe(tx2.id); // Most recent
+      expect(result[0].transaction_id).toBe(tx2.id);
       expect(result[1].transaction_id).toBe(tx3.id);
-      expect(result[2].transaction_id).toBe(tx1.id); // Oldest
+      expect(result[2].transaction_id).toBe(tx1.id);
     });
   });
 });
 
-//TODO start here add in this stuff
-
-// Helper functions to create test data
-async function createTestUser(dataSource: DataSource): Promise<User> {
-  const user = dataSource.getRepository(User).create({
-    // Add required user fields
-  });
-  await dataSource.getRepository(User).save(user);
-
-  const userKey = dataSource.getRepository(UserKey).create({
-    userId: user.id,
-    publicKey: 'test-public-key-' + Math.random(),
-    // Add other required fields
-  });
-  await dataSource.getRepository(UserKey).save(userKey);
-
-  user.keys = [userKey];
-  return user;
-}
-
-async function createTestUserWithMultipleKeys(
+async function createTestUserWithKeys(
   dataSource: DataSource,
-  keyCount: number
+  keyCount: number = 1
 ): Promise<User> {
   const user = dataSource.getRepository(User).create({
-    // Add required user fields
+    email: `test-user-${Date.now()}-${Math.random()}@example.com`,
+    password: 'test-password',
+    admin: false,
+    status: UserStatus.NONE,
+    // relations initialized to empty arrays to avoid undefined access in tests
+    keys: [],
+    signerForTransactions: [],
+    observableTransactions: [],
+    approvableTransactions: [],
+    comments: [],
+    issuedNotifications: [],
+    receivedNotifications: [],
+    notificationPreferences: [],
+    clients: [],
   });
   await dataSource.getRepository(User).save(user);
 
-  const keys = [];
+  const keys: UserKey[] = [];
   for (let i = 0; i < keyCount; i++) {
     const userKey = dataSource.getRepository(UserKey).create({
       userId: user.id,
-      publicKey: `test-public-key-${i}-${Math.random()}`,
-      // Add other required fields
+      publicKey: 'test-public-key-' + Math.random().toString(36).slice(2),
+      mnemonicHash: null,
+      index: null,
+      createdTransactions: [],
+      approvedTransactions: [],
+      signedTransactions: [],
     });
     await dataSource.getRepository(UserKey).save(userKey);
     keys.push(userKey);
@@ -358,29 +367,64 @@ async function createTestTransaction(
     mirrorNetwork?: string;
     description?: string;
     groupId?: number;
+    seq?: number;
     createdAt?: Date;
     requireBothKeys?: boolean;
   }
 ): Promise<Transaction> {
+  const now = options.createdAt || new Date();
+  const millis = now.getTime();
+  const seconds = Math.floor(millis / 1000);
+  const nanos = (millis % 1000) * 1_000_000; // ms -> ns
+
+  const accountId = '0.0.100'; // or derive from user if needed
+  const transactionId = `${accountId}@${seconds}.${nanos}`;
+
   const transaction = dataSource.getRepository(Transaction).create({
-    status: options.status,
-    mirrorNetwork: options.mirrorNetwork,
+    name: 'Test Transaction',
+    type: TransactionType.TRANSFER,
     description: options.description || 'Test Transaction',
+    transactionId,
+    transactionHash: Buffer.from('hash-' + Math.random().toString(36).slice(2)).toString('hex'),
+    transactionBytes: Buffer.from('tx-bytes'),
+    unsignedTransactionBytes: Buffer.from('unsigned-tx-bytes'),
+    status: options.status,
+    statusCode: null,
+    creatorKeyId: user.keys[0].id,
+    signature: Buffer.from('signature'),
+    validStart: options.createdAt || new Date(),
+    mirrorNetwork: options.mirrorNetwork || 'mainnet',
+    isManual: false,
+    cutoffAt: null,
     createdAt: options.createdAt || new Date(),
-    // Add other required fields
+    executedAt: null,
+    updatedAt: options.createdAt || new Date(),
+    deletedAt: null,
+    comments: [],
+    signers: [],
+    approvers: [],
+    observers: [],
+    groupItem: null,
+    transactionCachedAccounts: [],
+    transactionCachedNodes: [],
   });
   await dataSource.getRepository(Transaction).save(transaction);
 
-  // Create cached account and link to user's key
   const cachedAccount = dataSource.getRepository(CachedAccount).create({
-    // Add required fields
+    // deterministic, unique per transaction, not real account
+    account: `0.0.${transaction.id}`,
+    mirrorNetwork: options.mirrorNetwork || 'mainnet',
+    receiverSignatureRequired: null,
+    encodedKey: null,
+    etag: null,
+    keys: [],
+    accountTransactions: [],
   });
   await dataSource.getRepository(CachedAccount).save(cachedAccount);
 
   const cachedAccountKey = dataSource.getRepository(CachedAccountKey).create({
     cachedAccountId: cachedAccount.id,
     publicKey: user.keys[0].publicKey,
-    // Add other required fields
   });
   await dataSource.getRepository(CachedAccountKey).save(cachedAccountKey);
 
@@ -400,9 +444,9 @@ async function createTestTransaction(
     });
   await dataSource.getRepository(TransactionCachedAccount).save(transactionCachedAccount);
 
-  // If part of a group, create group item
   if (options.groupId) {
     const groupItem = dataSource.getRepository(TransactionGroupItem).create({
+      seq: options.seq,
       groupId: options.groupId,
       transactionId: transaction.id,
     });
@@ -418,8 +462,9 @@ async function createTestTransactionGroup(
 ): Promise<TransactionGroup> {
   const group = dataSource.getRepository(TransactionGroup).create({
     description: options?.description || 'Test Group',
-    createdAt: new Date(),
-    // Add other required fields
+    atomic: false,
+    sequential: false,
+    groupItems: [],
   });
   await dataSource.getRepository(TransactionGroup).save(group);
   return group;
@@ -433,361 +478,8 @@ async function createTransactionSigner(
   const signer = dataSource.getRepository(TransactionSigner).create({
     transactionId: transaction.id,
     userKeyId: userKey.id,
+    userId: userKey.userId,
   });
   await dataSource.getRepository(TransactionSigner).save(signer);
   return signer;
 }
-// import { EntityManager, Repository } from 'typeorm';
-// import { SqlBuilderService } from '@app/common';
-// import { selectTransactionIdsForUser } from './';
-// import {
-//   Transaction,
-//   UserKey,
-//   TransactionCachedAccount,
-//   CachedAccount,
-//   CachedAccountKey,
-//   TransactionCachedNode,
-//   CachedNode,
-//   CachedNodeAdminKey,
-// } from '@entities';
-//
-// describe('selectTransactionIdsForUser', () => {
-//   let entityManager: EntityManager;
-//   let sqlBuilder: SqlBuilderService;
-//
-//   // Create a mock entity manager with all required entities
-//   beforeEach(() => {
-//     const createMockMetadata = (tableName: string, columns: Record<string, string>) => ({
-//       tableName,
-//       findColumnWithPropertyName: (prop: string) => {
-//         if (columns[prop]) {
-//           return { databaseName: columns[prop], propertyName: prop };
-//         }
-//         return undefined;
-//       },
-//     });
-//
-//     const entityMetadataMap = new Map<any, any>([
-//       [Transaction, createMockMetadata('transaction', { id: 'id' })],
-//       [UserKey, createMockMetadata('user_key', { userId: 'user_id', publicKey: 'public_key' })],
-//       [TransactionCachedAccount, createMockMetadata('transaction_account', { transactionId: 'transaction_id', accountId: 'account_id' })],
-//       [CachedAccount, createMockMetadata('cached_account', { id: 'id' })],
-//       [CachedAccountKey, createMockMetadata('cached_account_key', { accountId: 'account_id', publicKey: 'public_key' })],
-//       [TransactionCachedNode, createMockMetadata('transaction_node', { transactionId: 'transaction_id', nodeId: 'node_id' })],
-//       [CachedNode, createMockMetadata('cached_node', { id: 'id' })],
-//       [CachedNodeAdminKey, createMockMetadata('cached_node_admin_key', { nodeId: 'node_id', publicKey: 'public_key' })],
-//     ]);
-//
-//     entityManager = {
-//       getRepository: jest.fn((entity: any) => {
-//         const metadata = entityMetadataMap.get(entity);
-//         if (metadata) {
-//           return { metadata } as Repository<any>;
-//         }
-//         throw new Error(`Entity ${entity.name} not found`);
-//       }),
-//     } as unknown as EntityManager;
-//
-//     sqlBuilder = new SqlBuilderService(entityManager);
-//   });
-//
-//   describe('SQL Generation', () => {
-//     it('should return a non-empty SQL string', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       expect(sql).toBeDefined();
-//       expect(typeof sql).toBe('string');
-//       expect(sql.length).toBeGreaterThan(0);
-//     });
-//   });
-//
-//   describe('SQL Keywords and Structure', () => {
-//     it('should start with SELECT DISTINCT', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       expect(sql.trim()).toMatch(/^SELECT\s+DISTINCT/i);
-//     });
-//
-//     it('should contain all required table joins', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       // Main table
-//       expect(sql).toContain('FROM transaction t');
-//
-//       // INNER JOIN
-//       expect(sql).toContain('JOIN user_key uk');
-//
-//       // LEFT JOINs
-//       expect(sql).toContain('LEFT JOIN transaction_account ta');
-//       expect(sql).toContain('LEFT JOIN cached_account ca');
-//       expect(sql).toContain('LEFT JOIN cached_account_key cak');
-//       expect(sql).toContain('LEFT JOIN transaction_node tn');
-//       expect(sql).toContain('LEFT JOIN cached_node cn');
-//       expect(sql).toContain('LEFT JOIN cached_node_admin_key cnak');
-//     });
-//
-//     it('should use parameterized query with $1 for userId', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       expect(sql).toContain('$1');
-//       expect(sql).toMatch(/uk\.user_id\s*=\s*\$1/);
-//     });
-//
-//     it('should not contain SQL injection vulnerabilities (no string interpolation of values)', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       // Should only contain $1, no other $ placeholders or direct value injection
-//       const placeholders = sql.match(/\$\d+/g) || [];
-//       expect(placeholders).toEqual(['$1']);
-//     });
-//   });
-//
-//   describe('Table Name Usage', () => {
-//     it('should call SqlBuilder.table() for all entities', () => {
-//       const tableSpy = jest.spyOn(sqlBuilder, 'table');
-//
-//       selectTransactionIdsForUser(sqlBuilder);
-//
-//       expect(tableSpy).toHaveBeenCalledWith(Transaction);
-//       expect(tableSpy).toHaveBeenCalledWith(UserKey);
-//       expect(tableSpy).toHaveBeenCalledWith(TransactionCachedAccount);
-//       expect(tableSpy).toHaveBeenCalledWith(CachedAccount);
-//       expect(tableSpy).toHaveBeenCalledWith(CachedAccountKey);
-//       expect(tableSpy).toHaveBeenCalledWith(TransactionCachedNode);
-//       expect(tableSpy).toHaveBeenCalledWith(CachedNode);
-//       expect(tableSpy).toHaveBeenCalledWith(CachedNodeAdminKey);
-//     });
-//
-//     it('should use correct table names from SqlBuilder', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       expect(sql).toContain('transaction t');
-//       expect(sql).toContain('user_key uk');
-//       expect(sql).toContain('transaction_account ta');
-//       expect(sql).toContain('cached_account ca');
-//       expect(sql).toContain('cached_account_key cak');
-//       expect(sql).toContain('transaction_node tn');
-//       expect(sql).toContain('cached_node cn');
-//       expect(sql).toContain('cached_node_admin_key cnak');
-//     });
-//   });
-//
-//   describe('Column Name Usage', () => {
-//     it('should call SqlBuilder.col() for all column references', () => {
-//       const colSpy = jest.spyOn(sqlBuilder, 'col');
-//
-//       selectTransactionIdsForUser(sqlBuilder);
-//
-//       // Transaction columns
-//       expect(colSpy).toHaveBeenCalledWith(Transaction, 'id');
-//
-//       // UserKey columns
-//       expect(colSpy).toHaveBeenCalledWith(UserKey, 'userId');
-//       expect(colSpy).toHaveBeenCalledWith(UserKey, 'publicKey');
-//
-//       // TransactionAccount columns
-//       expect(colSpy).toHaveBeenCalledWith(TransactionCachedAccount, 'transactionId');
-//       expect(colSpy).toHaveBeenCalledWith(TransactionCachedAccount, 'accountId');
-//
-//       // CachedAccount columns
-//       expect(colSpy).toHaveBeenCalledWith(CachedAccount, 'id');
-//
-//       // CachedAccountKey columns
-//       expect(colSpy).toHaveBeenCalledWith(CachedAccountKey, 'accountId');
-//       expect(colSpy).toHaveBeenCalledWith(CachedAccountKey, 'publicKey');
-//
-//       // TransactionNode columns
-//       expect(colSpy).toHaveBeenCalledWith(TransactionCachedNode, 'transactionId');
-//       expect(colSpy).toHaveBeenCalledWith(TransactionCachedNode, 'nodeId');
-//
-//       // CachedNode columns
-//       expect(colSpy).toHaveBeenCalledWith(CachedNode, 'id');
-//
-//       // CachedNodeAdminKey columns
-//       expect(colSpy).toHaveBeenCalledWith(CachedNodeAdminKey, 'nodeId');
-//       expect(colSpy).toHaveBeenCalledWith(CachedNodeAdminKey, 'publicKey');
-//     });
-//
-//     it('should use correct column names from SqlBuilder', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       expect(sql).toContain('t.id');
-//       expect(sql).toContain('uk.user_id');
-//       expect(sql).toContain('uk.public_key');
-//       expect(sql).toContain('ta.transaction_id');
-//       expect(sql).toContain('ta.account_id');
-//       expect(sql).toContain('ca.id');
-//       expect(sql).toContain('cak.account_id');
-//       expect(sql).toContain('cak.public_key');
-//       expect(sql).toContain('tn.transaction_id');
-//       expect(sql).toContain('tn.node_id');
-//       expect(sql).toContain('cn.id');
-//       expect(sql).toContain('cnak.node_id');
-//       expect(sql).toContain('cnak.public_key');
-//     });
-//   });
-//
-//   describe('JOIN Conditions', () => {
-//     it('should have correct JOIN condition for UserKey', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       expect(sql).toMatch(/JOIN user_key uk\s+ON uk\.user_id\s*=\s*\$1/);
-//     });
-//
-//     it('should have correct JOIN condition for TransactionAccount', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       expect(sql).toMatch(/LEFT JOIN transaction_account ta\s+ON ta\.transaction_id\s*=\s*t\.id/);
-//     });
-//
-//     it('should have correct JOIN condition for CachedAccount', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       expect(sql).toMatch(/LEFT JOIN cached_account ca\s+ON ca\.id\s*=\s*ta\.account_id/);
-//     });
-//
-//     it('should have correct multi-condition JOIN for CachedAccountKey', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       expect(sql).toMatch(/LEFT JOIN cached_account_key cak/);
-//       expect(sql).toMatch(/cak\.account_id\s*=\s*ca\.id/);
-//       expect(sql).toMatch(/cak\.public_key\s*=\s*uk\.public_key/);
-//     });
-//
-//     it('should have correct JOIN condition for TransactionNode', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       expect(sql).toMatch(/LEFT JOIN transaction_node tn\s+ON tn\.transaction_id\s*=\s*t\.id/);
-//     });
-//
-//     it('should have correct JOIN condition for CachedNode', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       expect(sql).toMatch(/LEFT JOIN cached_node cn\s+ON cn\.id\s*=\s*tn\.node_id/);
-//     });
-//
-//     it('should have correct multi-condition JOIN for CachedNodeAdminKey', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       expect(sql).toMatch(/LEFT JOIN cached_node_admin_key cnak/);
-//       expect(sql).toMatch(/cnak\.node_id\s*=\s*cn\.id/);
-//       expect(sql).toMatch(/cnak\.public_key\s*=\s*uk\.public_key/);
-//     });
-//   });
-//
-//   describe('Query Intent', () => {
-//     it('should select only transaction IDs', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       // Should select t.id
-//       expect(sql).toMatch(/SELECT\s+DISTINCT\s+t\.id/i);
-//
-//       // Should not select other columns
-//       expect(sql).not.toMatch(/SELECT.*\*/);
-//     });
-//
-//     it('should use DISTINCT to avoid duplicates', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       expect(sql).toMatch(/SELECT\s+DISTINCT/i);
-//     });
-//
-//     it('should join based on public key matching (account path)', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       // Account-based authorization path
-//       expect(sql).toContain('cak.public_key = uk.public_key');
-//     });
-//
-//     it('should join based on public key matching (node path)', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       // Node-based authorization path
-//       expect(sql).toContain('cnak.public_key = uk.public_key');
-//     });
-//   });
-//
-//   describe('SQL Validity', () => {
-//     it('should not have syntax errors (basic validation)', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       // Check for common SQL syntax issues
-//       expect(sql).not.toContain(',,'); // Double commas
-//       expect(sql).not.toContain('FROMFROM'); // Missing space
-//       expect(sql).not.toContain('JOINON'); // Missing space
-//
-//       // Check for balanced structure
-//       const selectCount = (sql.match(/SELECT/gi) || []).length;
-//       const fromCount = (sql.match(/FROM/gi) || []).length;
-//       expect(selectCount).toBe(fromCount); // Each SELECT should have a FROM
-//     });
-//
-//     it('should have consistent alias usage', () => {
-//       const sql = selectTransactionIdsForUser(sqlBuilder);
-//
-//       // Check that aliases defined in FROM/JOIN are actually used
-//       const definedAliases = ['t', 'uk', 'ta', 'ca', 'cak', 'tn', 'cn', 'cnak'];
-//
-//       for (const alias of definedAliases) {
-//         // Should appear in FROM/JOIN clause
-//         expect(sql).toMatch(new RegExp(`\\b${alias}\\b`));
-//
-//         // Should be used in column references (e.g., t.id, uk.user_id)
-//         expect(sql).toMatch(new RegExp(`${alias}\\.\\w+`));
-//       }
-//     });
-//   });
-//
-//   describe('Error Handling', () => {
-//     it('should throw if SqlBuilder throws for missing entity', () => {
-//       const brokenEntityManager = {
-//         getRepository: jest.fn(() => {
-//           throw new Error('Entity not found');
-//         }),
-//       } as unknown as EntityManager;
-//
-//       const brokenSqlBuilder = new SqlBuilderService(brokenEntityManager);
-//
-//       expect(() => selectTransactionIdsForUser(brokenSqlBuilder)).toThrow();
-//     });
-//
-//     it('should throw if SqlBuilder throws for missing column', () => {
-//       const invalidMetadata = {
-//         tableName: 'transaction',
-//         findColumnWithPropertyName: jest.fn(() => undefined),
-//       };
-//
-//       const invalidEntityManager = {
-//         getRepository: jest.fn(() => ({
-//           metadata: invalidMetadata,
-//         })),
-//       } as unknown as EntityManager;
-//
-//       const invalidSqlBuilder = new SqlBuilderService(invalidEntityManager);
-//
-//       expect(() => selectTransactionIdsForUser(invalidSqlBuilder)).toThrow();
-//     });
-//   });
-//
-//   describe('Idempotency', () => {
-//     it('should return the same SQL when called multiple times', () => {
-//       const sql1 = selectTransactionIdsForUser(sqlBuilder);
-//       const sql2 = selectTransactionIdsForUser(sqlBuilder);
-//       const sql3 = selectTransactionIdsForUser(sqlBuilder);
-//
-//       expect(sql1).toBe(sql2);
-//       expect(sql2).toBe(sql3);
-//     });
-//
-//     it('should not modify the SqlBuilder instance', () => {
-//       const tableCallsBefore = (entityManager.getRepository as jest.Mock).mock.calls.length;
-//
-//       selectTransactionIdsForUser(sqlBuilder);
-//       selectTransactionIdsForUser(sqlBuilder);
-//
-//       // SqlBuilder should cache, so second call shouldn't make new getRepository calls
-//       const tableCallsAfter = (entityManager.getRepository as jest.Mock).mock.calls.length;
-//       expect(tableCallsAfter).toBe(tableCallsBefore + 8); // 8 entities, but only called once due to cache
-//     });
-//   });
-// });

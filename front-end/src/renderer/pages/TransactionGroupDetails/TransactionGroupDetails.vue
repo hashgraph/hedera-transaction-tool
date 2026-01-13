@@ -27,7 +27,7 @@ import {
   generateTransactionExportContent,
   generateTransactionExportFileName,
   getTransactionById,
-  getApiGroupById,
+  getTransactionGroupById,
   getUserShouldApprove,
   sendApproverChoice,
   cancelTransaction,
@@ -509,7 +509,7 @@ async function fetchGroup(id: string | number) {
     try {
       const updatedUnsignedSignersToCheck: Record<number, string[]> = {};
 
-      group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
+      group.value = await getTransactionGroupById(user.selectedOrganization.serverUrl, Number(id));
       isVersionMismatch.value = false;
 
       if (group.value?.groupItems != undefined) {

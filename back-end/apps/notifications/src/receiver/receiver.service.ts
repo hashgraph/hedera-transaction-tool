@@ -80,6 +80,7 @@ export class ReceiverService {
         creatorKey: true,
         observers: true,
         signers: true,
+        groupItem: true,
       },
       withDeleted,
     });
@@ -697,7 +698,13 @@ export class ReceiverService {
     transactionId: number,
   ) {
     try {
-      const additionalData = { transactionId: transaction.transactionId, network: transaction.mirrorNetwork };
+      const additionalData = {
+        transactionId: transaction.transactionId,
+        network: transaction.mirrorNetwork,
+        ...(transaction.groupItem?.groupId
+          ? { groupId: transaction.groupItem.groupId }
+          : {}),
+      };
 
       if (syncType) {
         const deletedReceiverIds = await this.deleteExistingIndicators(entityManager, transaction);
