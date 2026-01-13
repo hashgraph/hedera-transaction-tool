@@ -12,7 +12,6 @@ import { TransactionNodeCollection } from '../dto/ITransactionNode';
 import { TransactionsService } from '../transactions.service';
 import { TransactionGroupsService } from '../groups';
 import { compareTransactionNodes } from './transaction-nodes.util';
-import { Transaction as SDKTransaction } from '@hashgraph/sdk/lib/exports';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
@@ -152,6 +151,7 @@ export class TransactionNodesService {
           node.internalSignatureCount = signingReport.internalSignatures.size;
           node.externalSignatureCount = signingReport.externalSignatures.size;
           node.unexpectedSignatureCount = signingReport.unexpectedSignatures.size;
+          node.creatorId = await this.transactionsService.getCreatorIdForTransaction(t.id);
           result.push(node);
         }
       } else {
@@ -181,6 +181,7 @@ export class TransactionNodesService {
         node.internalSignatureCount = signingReport.internalSignatures.size;
         node.externalSignatureCount = signingReport.externalSignatures.size;
         node.unexpectedSignatureCount = signingReport.unexpectedSignatures.size;
+        node.creatorId = await calculateCreatorIdForGroup(transactions, this.transactionsService);
         result.push(node);
       }
     }
@@ -282,5 +283,23 @@ function calculateStatusForGroup(transactions: Transaction[]): string | undefine
     result = undefined;
   }
 
+  return result;
+}
+
+async function calculateCreatorIdForGroup(transactions: Transaction[], service: TransactionsService): Promise<number|undefined> {
+  let result: number | undefined;
+
+  // Aggregates creator ids for all transactions
+  const allCreatorIds = new Set<number>();
+  for (const t of transactions) {
+    allCreatorIds.add(await service.getCreatorIdForTransaction(t.id));
+  }
+  if (allCreatorIds.size === 1) {
+    // All transactions have the same creator
+    result = allCreatorIds.values().next().value
+  } else {
+    // We have a mix of creators => no creator for the group
+    result = undefined;
+  }
   return result;
 }

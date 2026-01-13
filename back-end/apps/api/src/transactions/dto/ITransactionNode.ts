@@ -21,6 +21,7 @@ export interface ITransactionNode {   //   Single   Group
   externalSignerCount: number;        //      x       x
   externalSignatureCount: number;     //      x       x
   unexpectedSignatureCount: number;   //      x       x
+  creatorId?: number;                 //      x       x (if single)
 }
 
 export enum TransactionNodeCollection {
@@ -47,12 +48,13 @@ export enum TransactionNodeCollection {
     statusCode               | tx status code        | undefined                   |
     sdkTransactionId         | hiero tx id           | undefined                   |
     transactionType          | tx type               | undefined                   |
-    isManual                 | tx is manual          | undefined            |
+    isManual                 | tx is manual          | undefined                   |
     groupItemCount           | 0                     | group item count            |
     internalSignerCount      | int. signer count     | count(int. signer union)    |
     externalSignerCount      | ext. signer count     | count(ext. signer union)    |
     internalSignatureCount   | int. signature count  | count(ext. signature union) |
     externalSignatureCount   | ext. signature. count | count(ext. signature union) |
     unexpectedSignatureCount | unx. signature. count | count(unx. signature union) |
+    creatorId                | tx creator id         | creator id if same of all items |
 
  */

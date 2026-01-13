@@ -58,4 +58,7 @@ export class TransactionNodeDto implements ITransactionNode {
 
   @Expose()
   unexpectedSignatureCount: number;
+
+  @Expose()
+  creatorId?: number;
 }

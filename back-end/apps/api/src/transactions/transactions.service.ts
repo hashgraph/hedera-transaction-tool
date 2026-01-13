@@ -763,6 +763,20 @@ export class TransactionsService {
     return transaction;
   }
 
+  async getCreatorIdForTransaction(id: number): Promise<number> {
+
+    const transaction = await this.repo.findOne({
+      where: { id },
+      relations: ['creatorKey', 'creatorKey.user'],
+    });
+
+    if (!transaction) {
+      throw new BadRequestException(ErrorCodes.TNF);
+    }
+
+    return transaction.creatorKey?.userId;
+  }
+
   /**
    * Validate and prepare a single transaction
    */
