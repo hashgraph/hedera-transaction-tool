@@ -20,7 +20,6 @@ import { MirrorNodeClient } from './mirror-node.client';
 import { CacheHelper } from './cache.helper';
 import { RefreshResult, RefreshStatus } from './cache.types';
 
-//TODO BE SURE TO ADD MANUAL RESYNC OF MIRROR NODE TO UI
 @Injectable()
 export class AccountCacheService {
   private readonly logger = new Logger(AccountCacheService.name);

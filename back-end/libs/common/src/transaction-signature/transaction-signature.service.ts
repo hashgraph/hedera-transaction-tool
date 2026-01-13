@@ -13,25 +13,7 @@ export interface SignatureRequirements {
   newKeys: Key[];
   nodeId: number | null;
 }
-//TODO I think that cancel all (at leaset) still sends off 1 notification per cancel, needs to be grouped
-//TODO created new large group, i got all the messages of 'new' and stuff right away EXCEPT in ready to sign (I caould see the new group, but didn't have red marker on it)
-// and before the red marker, going into deatils did NOT clear the notification. It did after the red marker showed up.
-// same thign happend in ready to execute.
-//TODO simularly, I canceld a group BEFORE I 'looked' at the ready to execute notifiation, now the notifications are stuck there. can't clear them.
-// NEEED to fix taht, and add a 'clear all' button in notifications
-//TODO loading times of all other pages is too large. Ready to sign is very fast. loading group details is likewise slow
-//TODO sign all popup from ready to sign page doesn't wrap text
-//TODO what is this???
-//2026-01-03T17:25:22.970714542Z [Nest] 1  - 01/03/2026, 5:25:22 PM   DEBUG [AccountCacheService] Fetching account 0.0.2673708 from mirror node (cache stale)
-// 2026-01-03T17:25:22.984003667Z [Nest] 1  - 01/03/2026, 5:25:22 PM   DEBUG [AccountCacheService] Fetching account 0.0.2673708 from mirror node (cache stale)
-// 2026-01-03T17:25:22.984036083Z [Nest] 1  - 01/03/2026, 5:25:22 PM   DEBUG [AccountCacheService] Fetching account 0.0.2673708 from mirror node (cache stale)
-// 2026-01-03T17:25:22.984064292Z [Nest] 1  - 01/03/2026, 5:25:22 PM   DEBUG [AccountCacheService] Fetching account 0.0.2673708 from mirror node (cache stale)
-// 2026-01-03T17:25:22.984521500Z [Nest] 1  - 01/03/2026, 5:25:22 PM   DEBUG [AccountCacheService] Fetching account 0.0.2673708 from mirror node (cache stale)
-// 2026-01-03T17:25:22.984738958Z [Nest] 1  - 01/03/2026, 5:25:22 PM   DEBUG [AccountCacheService] Fetching account 0.0.2673708 from mirror node (cache stale)
-// 2026-01-03T17:25:22.985070958Z [Nest] 1  - 01/03/2026, 5:25:22 PM   DEBUG [AccountCacheService] Fetching account 0.0.2673708 from mirror node (cache stale)
-// 2026-01-03T17:25:22.985567458Z [Nest] 1  - 01/03/2026, 5:25:22 PM   DEBUG [AccountCacheService] Fetching account 0.0.2673708 from mirror node (cache stale)
-// 2026-01-03T17:25:22.985587292Z [Nest] 1  - 01/03/2026, 5:25:22 PM   DEBUG [AccountCacheService] Fetching account 0.0.2673708 from mirror node (cache stale)
-// plus lots more.
+
 @Injectable()
 export class TransactionSignatureService {
   private readonly logger = new Logger(TransactionSignatureService.name);
