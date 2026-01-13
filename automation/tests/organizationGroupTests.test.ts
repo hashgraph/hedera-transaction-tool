@@ -4,7 +4,7 @@ import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { GroupPage } from '../pages/GroupPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
-import { resetDbState, resetPostgresDbState } from '../utils/databaseUtil.js';
+import { resetDbState, resetPostgresDbState, flushRateLimiter } from '../utils/databaseUtil.js';
 import {
   closeApp,
   generateRandomEmail,
@@ -92,11 +92,17 @@ test.describe('Organization Group Tx tests', () => {
   });
 
   test.beforeEach(async () => {
+    // Flush rate limiter before each test to prevent "too many requests" errors
+    await flushRateLimiter();
+
     await organizationPage.signInOrganization(
       firstUser.email,
       firstUser.password,
       globalCredentials.password,
     );
+
+    // Wait for login toast to disappear before test starts
+    await groupPage.waitForElementToDisappear('.v-toast__text');
 
     await transactionPage.clickOnTransactionsMenuButton();
 
@@ -110,6 +116,10 @@ test.describe('Organization Group Tx tests', () => {
     await groupPage.deleteGroupModal();
 
     await groupPage.navigateToGroupTransaction();
+
+    // Handle modals that may appear after navigation
+    await groupPage.closeGroupDraftModal();  // "Save Group?" modal
+    await groupPage.deleteGroupModal();       // "Group Contains No Transactions" modal
   });
 
   test.afterEach(async () => {

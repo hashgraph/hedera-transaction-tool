@@ -1,13 +1,9 @@
 import { Page } from '@playwright/test';
 import { BasePage } from './BasePage.js';
 
-import { SettingsPage } from './SettingsPage.js';
-
 export class LoginPage extends BasePage {
-  private readonly settingsPage: SettingsPage;
   constructor(window: Page) {
     super(window);
-    this.settingsPage = new SettingsPage(window);
   }
 
   /* Selectors */
@@ -78,15 +74,38 @@ export class LoginPage extends BasePage {
 
   // specific logout method for the login tests
   async logout() {
-    await this.settingsPage.navigateToLogout(this.resetForm.bind(this));
-    const isLogoutButtonVisible = await this.isElementVisible(this.logoutButtonSelector);
+    // Quick check if logout button already visible (already on Profile tab)
+    let isLogoutButtonVisible = await this.isElementVisible(this.logoutButtonSelector, null, 500);
+
+    if (!isLogoutButtonVisible) {
+      // Navigate to Settings > Profile to find logout button
+      // First click Settings menu if visible
+      const settingsMenuVisible = await this.isElementVisible(this.settingsButtonSelector, null, 500);
+      if (settingsMenuVisible) {
+        console.log('Clicking Settings menu');
+        await this.click(this.settingsButtonSelector);
+        await this.window.waitForTimeout(500);
+      }
+
+      // Now click Profile tab (should be on Settings page now)
+      const profileTab = this.window.locator('[data-testid="tab-4"]');
+      try {
+        await profileTab.click({ timeout: 2000 });
+        console.log('Clicked Profile tab');
+        await this.window.waitForTimeout(500);
+        isLogoutButtonVisible = await this.isElementVisible(this.logoutButtonSelector, null, 1000);
+      } catch (e) {
+        console.log('Profile tab click failed:', e);
+      }
+    }
+
     if (isLogoutButtonVisible) {
-      console.log('Logout button is visible, clicking to logout');
+      console.log('Logout button visible, clicking to logout');
       await this.click(this.logoutButtonSelector);
       const element = this.window.getByTestId(this.emailInputSelector);
-      await element.waitFor({ state: 'visible', timeout: 1000 });
+      await element.waitFor({ state: 'visible', timeout: 3000 });
     } else {
-      console.log('Logout button is not visible, resetting the form');
+      console.log('Logout button not visible, resetting form');
       await this.resetForm();
     }
   }
