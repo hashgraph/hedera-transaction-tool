@@ -14,6 +14,7 @@ import { TransactionSigner } from './transaction-signer.entity';
 import { TransactionApprover } from './transaction-approver.entity';
 import { Notification, NotificationPreferences } from './notifications';
 import { NotificationReceiver } from './notifications/notification-receiver.entity';
+import { Client } from './client.entity';
 
 export enum UserStatus {
   NEW = 'NEW',
@@ -70,4 +71,7 @@ export class User {
 
   @OneToMany(() => NotificationPreferences, preferences => preferences.user)
   notificationPreferences: NotificationPreferences[];
+
+  @OneToMany(() => Client, client => client.user)
+  clients: Client[];
 }

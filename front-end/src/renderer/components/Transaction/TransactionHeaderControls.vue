@@ -79,7 +79,7 @@ watch(showAddReminder, show => {
           >
             <AppCheckBox
               v-model:checked="submitManually"
-              label="Submit manually"
+              label="Schedule manually"
               name="submit-manually"
             />
           </div>

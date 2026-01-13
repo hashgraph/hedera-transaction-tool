@@ -7,6 +7,7 @@ import {
   Param,
   ParseIntPipe,
   Patch,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -18,14 +19,13 @@ import { User } from '@entities';
 import { AdminGuard, JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../guards';
 import { AllowNonVerifiedUser, GetUser } from '../decorators';
 
-import { UpdateUserDto, UserDto } from './dtos';
+import { UpdateUserDto, UserDto, VersionCheckDto, VersionCheckResponseDto } from './dtos';
 
 import { UsersService } from './users.service';
 
 @ApiTags('Users')
 @Controller('users')
 @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
-@Serialize(UserDto)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -38,6 +38,7 @@ export class UsersController {
     type: [UserDto],
   })
   @Get()
+  @Serialize(UserDto)
   getUsers(): Promise<User[]> {
     return this.usersService.getUsers();
   }
@@ -52,6 +53,7 @@ export class UsersController {
   })
   @AllowNonVerifiedUser()
   @Get('/me')
+  @Serialize(UserDto)
   getMe(@GetUser() user: User): User {
     return user;
   }
@@ -65,6 +67,7 @@ export class UsersController {
     type: UserDto,
   })
   @Get('/:id')
+  @Serialize(UserDto)
   getUser(@Param('id', ParseIntPipe) id: number): Promise<User> {
     return this.usersService.getUser({ id });
   }
@@ -93,6 +96,7 @@ export class UsersController {
   })
   @UseGuards(AdminGuard)
   @Patch('/:id')
+  @Serialize(UserDto)
   updateUser(@Param('id', ParseIntPipe) userId: number, @Body() dto: UpdateUserDto): Promise<User> {
     return this.usersService.updateUserById(userId, dto);
   }
@@ -110,5 +114,32 @@ export class UsersController {
   removeUser(@GetUser() user: User, @Param('id', ParseIntPipe) id: number): Promise<boolean> {
     if (user.id === id) throw new BadRequestException(ErrorCodes.CRYFO);
     return this.usersService.removeUser(id);
+  }
+
+  @ApiOperation({
+    summary: 'Check and store client version',
+    description:
+      'Logs and persists the frontend version for the authenticated user. ' +
+      'Returns information about available updates and minimum version requirements.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Version recorded successfully with update information',
+    type: VersionCheckResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid version format',
+  })
+  @AllowNonVerifiedUser()
+  @Post('/version-check')
+  @Serialize(VersionCheckResponseDto)
+  async versionCheck(
+    @GetUser() user: User,
+    @Body() dto: VersionCheckDto,
+  ): Promise<VersionCheckResponseDto> {
+    await this.usersService.updateClientVersion(user.id, dto.version);
+
+    return this.usersService.getVersionCheckInfo(dto.version);
   }
 }

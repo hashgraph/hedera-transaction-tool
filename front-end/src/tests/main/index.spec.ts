@@ -26,6 +26,12 @@ vi.mock('@main/modules/deepLink', () => ({
 vi.mock('@main/modules/ipcHandlers', () => mockDeep());
 vi.mock('@main/windows/mainWindow', () => mockDeep());
 
+// Mock the new electronUpdater service to avoid electron-updater accessing app.getVersion()
+vi.mock('@main/services/electronUpdater', () => ({
+  getUpdaterService: vi.fn(() => null),
+  initializeUpdaterService: vi.fn(),
+}));
+
 describe('Electron entry file', async () => {
   await import('@main/index');
 

@@ -83,6 +83,7 @@ describe('TransactionsController', () => {
       issuedNotifications: [],
       receivedNotifications: [],
       notificationPreferences: [],
+      clients: [],
     };
     transaction = {
       id: 1,
@@ -125,6 +126,8 @@ describe('TransactionsController', () => {
       observers: [],
       comments: [],
       groupItem: null,
+      transactionCachedAccounts: [],
+      transactionCachedNodes: [],
     };
     pagination = {
       page: 1,

@@ -3,14 +3,14 @@ import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { User } from '@entities';
+import { User, Client } from '@entities';
 
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, Client]),
     JwtModule.registerAsync({
       imports: [], // imports is required, but it doesn't appear to require ConfigModule, maybe because it isGlobal?
       useFactory: (configService: ConfigService) => ({

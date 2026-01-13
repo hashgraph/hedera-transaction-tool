@@ -31,7 +31,8 @@ import {
   getWhere,
   isExpired,
   isTransactionBodyOverMaxSize,
-  MirrorNodeService,
+  NatsPublisherService,
+  TransactionSignatureService,
   PaginatedResourceDto,
   Pagination,
   safe,
@@ -44,7 +45,6 @@ import {
 import { CreateTransactionDto, SignatureImportResultDto, UploadSignatureMapDto } from './dto';
 
 import { ApproversService } from './approvers';
-import { NatsPublisherService } from '@app/common/nats/nats.publisher';
 
 @Injectable()
 export class TransactionsService {
@@ -52,7 +52,7 @@ export class TransactionsService {
     @InjectRepository(Transaction) private repo: Repository<Transaction>,
     @InjectEntityManager() private entityManager: EntityManager,
     private readonly approversService: ApproversService,
-    private readonly mirrorNodeService: MirrorNodeService,
+    private readonly transactionSignatureService: TransactionSignatureService,
     private readonly schedulerService: SchedulerService,
     private readonly executeService: ExecuteService,
     private readonly notificationsPublisher: NatsPublisherService,
@@ -530,7 +530,7 @@ export class TransactionsService {
         const params: any = {};
 
         batch.forEach((update, idx) => {
-          caseSQL += `WHEN :id${idx} THEN :bytes${idx} `;
+          caseSQL += `WHEN :id${idx} THEN :bytes${idx}::bytea `;
           params[`id${idx}`] = update.id;
           params[`bytes${idx}`] = update.transactionBytes;
         });
@@ -718,7 +718,7 @@ export class TransactionsService {
     )
       return true;
 
-    const userKeysToSign = await this.userKeysToSign(transaction, user);
+    const userKeysToSign = await this.userKeysToSign(transaction, user, true);
 
     return (
       userKeysToSign.length !== 0 ||
@@ -745,8 +745,8 @@ export class TransactionsService {
   }
 
   /* Get the user keys that are required for a given transaction */
-  userKeysToSign(transaction: Transaction, user: User) {
-    return userKeysRequiredToSign(transaction, user, this.mirrorNodeService, this.entityManager);
+  async userKeysToSign(transaction: Transaction, user: User, showAll: boolean = false) {
+    return userKeysRequiredToSign(transaction, user, this.transactionSignatureService, this.entityManager, showAll);
   }
 
   async getTransactionForCreator(id: number, user: User) {

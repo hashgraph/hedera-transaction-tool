@@ -9,8 +9,8 @@ import {
   PaginatedResourceDto,
   Pagination,
   ErrorCodes,
-  MirrorNodeService,
   NatsPublisherService,
+  TransactionSignatureService,
   emitTransactionStatusUpdate,
   emitTransactionUpdate,
   processTransactionStatus,
@@ -34,7 +34,7 @@ export class SignersService {
     private txRepo: Repository<Transaction>,
     @InjectDataSource() private dataSource: DataSource,
     private readonly notificationsPublisher: NatsPublisherService,
-    private readonly mirrorNodeService: MirrorNodeService,
+    private readonly transactionSignatureService: TransactionSignatureService,
   ) {}
 
   /* Get the signature for the given signature id */
@@ -386,7 +386,7 @@ export class SignersService {
     try {
       statusMap = await processTransactionStatus(
         this.txRepo,
-        this.mirrorNodeService,
+        this.transactionSignatureService,
         transactionsToProcess.map(t => t.transaction)
       );
     } catch (err) {

@@ -81,6 +81,12 @@ spec:
               value: '1000'
             - name: NODE_ENV
               value: 'production'
+            - name: LATEST_SUPPORTED_FRONTEND_VERSION
+              value: '0.21.0'
+            - name: MINIMUM_SUPPORTED_FRONTEND_VERSION
+              value: '0.21.0'
+            - name: FRONTEND_REPO_URL
+              value: 'https://github.com/hashgraph/hedera-transaction-tool/releases'
           ports:
             - containerPort: 3000
 ---

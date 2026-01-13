@@ -1,5 +1,6 @@
 export * from './admin.guard';
 export * from './email-throttler.guard';
+export * from './frontend-version.guard';
 export * from './has-key.guard';
 export * from './ip-throttler.guard';
 export * from './jwt-auth.guard';

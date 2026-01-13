@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migration-job
+  labels:
+    name: migration-job
+    app: htx-back-end
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 600  # Clean up after 10 minutes
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migration
+          image: back-end-migration:1.0.0
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: POSTGRES_HOST
+              value: 'postgres-service'
+            - name: POSTGRES_PORT
+              value: '5432'
+            - name: POSTGRES_DATABASE
+              value: 'postgres'
+            - name: POSTGRES_USERNAME
+              value: 'postgres'
+            - name: POSTGRES_PASSWORD
+              value: 'postgres'

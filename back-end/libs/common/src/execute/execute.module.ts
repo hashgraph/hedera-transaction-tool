@@ -2,21 +2,28 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import {
+  CachedAccount,
+  CachedAccountKey,
+  CachedNode,
+  CachedNodeAdminKey,
+  Client,
   Notification,
   NotificationPreferences,
   NotificationReceiver,
   Transaction,
+  TransactionCachedAccount,
   TransactionApprover,
   TransactionComment,
   TransactionGroup,
   TransactionGroupItem,
+  TransactionCachedNode,
   TransactionObserver,
   TransactionSigner,
   User,
   UserKey,
 } from '@entities';
 
-import { MirrorNodeModule, NatsModule, RedisMurlockModule } from '@app/common';
+import { NatsModule, RedisMurlockModule, TransactionSignatureModule } from '@app/common';
 
 import { ExecuteService } from './execute.service';
 
@@ -25,6 +32,7 @@ import { ExecuteService } from './execute.service';
     TypeOrmModule.forFeature([
       User,
       UserKey,
+      Client,
       Transaction,
       TransactionSigner,
       TransactionApprover,
@@ -32,11 +40,17 @@ import { ExecuteService } from './execute.service';
       TransactionComment,
       TransactionGroup,
       TransactionGroupItem,
+      TransactionCachedAccount,
+      TransactionCachedNode,
+      CachedAccount,
+      CachedAccountKey,
+      CachedNode,
+      CachedNodeAdminKey,
       Notification,
       NotificationReceiver,
       NotificationPreferences,
     ]),
-    MirrorNodeModule,
+    TransactionSignatureModule,
     RedisMurlockModule,
     NatsModule.forRoot(),
   ],

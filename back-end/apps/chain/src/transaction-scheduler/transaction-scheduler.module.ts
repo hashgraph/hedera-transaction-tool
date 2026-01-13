@@ -8,9 +8,15 @@ import {
   TransactionApprover,
   TransactionObserver,
   TransactionGroup,
-} from '@app/common/database/entities';
+  TransactionCachedAccount,
+  TransactionCachedNode,
+  CachedAccount,
+  CachedAccountKey,
+  CachedNode,
+  CachedNodeAdminKey,
+} from '@entities';
 
-import { ExecuteModule, MirrorNodeModule } from '@app/common';
+import { ExecuteModule, TransactionSignatureModule } from '@app/common';
 
 import { TransactionSchedulerService } from './transaction-scheduler.service';
 
@@ -23,8 +29,14 @@ import { TransactionSchedulerService } from './transaction-scheduler.service';
       TransactionApprover,
       TransactionObserver,
       TransactionGroup,
+      TransactionCachedAccount,
+      TransactionCachedNode,
+      CachedAccount,
+      CachedAccountKey,
+      CachedNode,
+      CachedNodeAdminKey,
     ]),
-    MirrorNodeModule,
+    TransactionSignatureModule,
     ExecuteModule,
   ],
   providers: [TransactionSchedulerService],

@@ -5,24 +5,40 @@ import { ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
+import useOrganizationConnection from '@renderer/stores/storeOrganizationConnection';
+import {
+  getVersionStatusForOrg,
+  getLatestVersionForOrg,
+  organizationCompatibilityResults,
+} from '@renderer/stores/versionState';
 
 import { useToast } from 'vue-toast-notification';
 
 import { updateOrganization } from '@renderer/services/organizationsService';
 
-import { assertUserLoggedIn, toggleAuthTokenInSessionStorage } from '@renderer/utils';
+import {
+  assertUserLoggedIn,
+  isOrganizationActive,
+  toggleAuthTokenInSessionStorage,
+} from '@renderer/utils';
+
+import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
+import ConnectionStatusBadge from '@renderer/components/Organization/ConnectionStatusBadge.vue';
+import ConnectionToggle from '@renderer/components/Organization/ConnectionToggle.vue';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
 const ws = useWebsocketConnection();
+const orgConnection = useOrganizationConnection();
 
 /* Composables */
 const toast = useToast();
+const { setLast } = useDefaultOrganization();
 
 /* State */
 const editedIndex = ref(-1);
@@ -38,6 +54,7 @@ const handleDeleteConnection = async (organizationId: string) => {
   toggleAuthTokenInSessionStorage(serverUrl, '', true);
   await user.selectOrganization(null);
   await user.deleteOrganization(organizationId);
+  await setLast(null);
   toast.success('Connection deleted successfully', successToastOptions);
 };
 
@@ -78,8 +95,46 @@ const handleChangeNickname = async (e: Event) => {
 const handleAddOrganization = async (organization: Organization) => {
   await user.refetchOrganizations();
   await user.selectOrganization(organization);
+
+  if (isOrganizationActive(user.selectedOrganization)) {
+    await setLast(organization.id);
+  }
+};
+
+/* Helpers */
+const getConnectionStatus = (serverUrl: string) => {
+  const storeStatus = orgConnection.getConnectionStatus(serverUrl);
+  if (storeStatus) return storeStatus;
+
+  const org = user.organizations.find(o => o.serverUrl === serverUrl);
+  if (org?.connectionStatus) return org.connectionStatus;
+
+  return ws.isLive(serverUrl) || ws.isConnected(serverUrl) ? 'connected' : 'disconnected';
+};
+
+const getDisconnectReason = (serverUrl: string) => {
+  const storeReason = orgConnection.getDisconnectReason(serverUrl);
+  if (storeReason) return storeReason;
+
+  const org = user.organizations.find(o => o.serverUrl === serverUrl);
+  return org?.disconnectReason;
+};
+
+const getVersionInfo = (serverUrl: string) => {
+  const latestVersion = getLatestVersionForOrg(serverUrl);
+  const versionStatus = getVersionStatusForOrg(serverUrl);
+  return {
+    latestVersion,
+    versionStatus,
+  };
+};
+
+const hasCompatibilityConflict = (serverUrl: string) => {
+  const compatibilityResult = organizationCompatibilityResults.value[serverUrl];
+  return compatibilityResult?.hasConflict || false;
 };
 </script>
+
 <template>
   <div>
     <div class="fill-remaining">
@@ -89,7 +144,9 @@ const handleAddOrganization = async (organization: Organization) => {
             <tr>
               <th>Nickname</th>
               <th>Server URL</th>
-              <th></th>
+              <th>Connection Status</th>
+              <th>Version Info</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody class="text-secondary">
@@ -128,15 +185,68 @@ const handleAddOrganization = async (organization: Organization) => {
                     {{ organization.serverUrl }}
                   </p>
                 </td>
-                <td class="text-center">
-                  <AppButton
-                    size="small"
-                    data-testid="button-delete-connection"
-                    color="danger"
-                    @click="handleDeleteConnection(organization.id)"
-                    class="min-w-unset"
-                    ><span class="bi bi-trash"></span
-                  ></AppButton>
+                <td>
+                  <ConnectionStatusBadge
+                    :status="getConnectionStatus(organization.serverUrl)"
+                    :reason="getDisconnectReason(organization.serverUrl)"
+                    :organization-name="organization.nickname"
+                    :has-compatibility-conflict="hasCompatibilityConflict(organization.serverUrl)"
+                  />
+                  <p
+                    v-if="getDisconnectReason(organization.serverUrl) === 'upgradeRequired'"
+                    class="text-small text-warning mt-2 mb-0"
+                  >
+                    Update required to reconnect
+                  </p>
+                </td>
+                <td>
+                  <div class="d-flex flex-column gap-1">
+                    <span
+                      v-if="getVersionInfo(organization.serverUrl).latestVersion"
+                      class="text-small"
+                    >
+                      Latest: {{ getVersionInfo(organization.serverUrl).latestVersion }}
+                    </span>
+                    <span
+                      v-if="getVersionInfo(organization.serverUrl).versionStatus === 'belowMinimum'"
+                      class="text-small text-warning"
+                    >
+                      Update Required
+                    </span>
+                    <span
+                      v-else-if="
+                        getVersionInfo(organization.serverUrl).versionStatus === 'updateAvailable'
+                      "
+                      class="text-small text-info"
+                    >
+                      Update Available
+                    </span>
+                    <span
+                      v-else-if="getVersionInfo(organization.serverUrl).versionStatus === 'current'"
+                      class="text-small text-success"
+                    >
+                      Current
+                    </span>
+                    <span
+                      v-if="hasCompatibilityConflict(organization.serverUrl)"
+                      class="text-small text-warning"
+                    >
+                      <i class="bi bi-exclamation-triangle-fill me-1"></i>Compatibility conflict
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <ConnectionToggle :organization="organization" />
+                    <AppButton
+                      size="small"
+                      data-testid="button-delete-connection"
+                      color="danger"
+                      @click="handleDeleteConnection(organization.id)"
+                      class="min-w-unset"
+                      ><span class="bi bi-trash"></span
+                    ></AppButton>
+                  </div>
                 </td>
               </tr>
             </template>

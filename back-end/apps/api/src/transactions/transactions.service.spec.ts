@@ -22,13 +22,13 @@ import {
 } from '@hashgraph/sdk';
 
 import {
-  MirrorNodeService,
   ErrorCodes,
   SchedulerService,
   safe,
   NatsPublisherService,
   emitTransactionStatusUpdate,
   ExecuteService,
+  TransactionSignatureService,
 } from '@app/common';
 import {
   attachKeys,
@@ -61,7 +61,7 @@ describe('TransactionsService', () => {
   const transactionsRepo = mockDeep<Repository<Transaction>>();
   const notificationsPublisher = mock<NatsPublisherService>();
   const approversService = mock<ApproversService>();
-  const mirrorNodeService = mock<MirrorNodeService>();
+  const transactionSignatureService = mock<TransactionSignatureService>();
   const schedulerService = mock<SchedulerService>();
   const executeService = mockDeep<ExecuteService>();
   const entityManager = mockDeep<EntityManager>();
@@ -103,8 +103,8 @@ describe('TransactionsService', () => {
           useValue: approversService,
         },
         {
-          provide: MirrorNodeService,
-          useValue: mirrorNodeService,
+          provide: TransactionSignatureService,
+          useValue: transactionSignatureService,
         },
         {
           provide: EntityManager,
@@ -1571,8 +1571,9 @@ describe('TransactionsService', () => {
       expect(jest.mocked(userKeysRequiredToSign)).toHaveBeenCalledWith(
         transaction,
         user,
-        mirrorNodeService,
+        transactionSignatureService,
         entityManager,
+        false,
       );
     });
   });

@@ -45,10 +45,19 @@ export const hasValidSignatureKey = (publicKeys: string[], key: Key) => {
   } else throw new Error(`Invalid key type`);
 };
 
-export const decodeProtobuffKey = (protobuffEncodedKey: string) => {
-  const buffer = Buffer.from(protobuffEncodedKey, 'hex');
+export const serializeKey = (key: Key) => {
+  const protoKey = key._toProtobufKey();
+  return Buffer.from(proto.Key.encode(protoKey).finish());
+};
+
+export const deserializeKey = (buffer: Buffer) => {
   const protoKey = proto.Key.decode(buffer);
   return Key._fromProtobufKey(protoKey);
+};
+
+export const decodeProtobufKey = (protobuffEncodedKey: string) => {
+  const buffer = Buffer.from(protobuffEncodedKey, 'hex');
+  return deserializeKey(buffer);
 };
 
 export function isPublicKeyInKeyList(publicKey: PublicKey | string, key: Key) {

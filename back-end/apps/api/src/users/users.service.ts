@@ -2,9 +2,11 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
@@ -13,12 +15,18 @@ import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
 import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
 
-import { ErrorCodes } from '@app/common';
-import { User, UserStatus } from '@entities';
+import { ErrorCodes, checkFrontendVersion, VersionCheckResult } from '@app/common';
+import { Client, User, UserStatus } from '@entities';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectRepository(User) private repo: Repository<User>) {}
+  private readonly logger = new Logger(UsersService.name);
+
+  constructor(
+    @InjectRepository(User) private repo: Repository<User>,
+    @InjectRepository(Client) private clientRepo: Repository<Client>,
+    private readonly configService: ConfigService,
+  ) {}
 
   /* Creates a user with a given email and password. */
   async createUser(email: string, password: string): Promise<User> {
@@ -154,5 +162,41 @@ export class UsersService {
 
   async getAdmins() {
     return await this.repo.find({ where: { admin: true } });
+  }
+
+  async updateClientVersion(userId: number, version: string): Promise<Client> {
+    this.logger.log(`Version check received: userId=${userId}, version=${version}`);
+
+    let client = await this.clientRepo.findOne({ where: { userId } });
+
+    if (client) {
+      if (client.version !== version) {
+        client.version = version;
+        client = await this.clientRepo.save(client);
+        this.logger.log(`Updated client version for userId=${userId} to ${version}`);
+      } else {
+        this.logger.log(`Client version unchanged for userId=${userId}, version=${version}`);
+      }
+    } else {
+      client = this.clientRepo.create({ userId, version });
+      client = await this.clientRepo.save(client);
+      this.logger.log(`Created new client record for userId=${userId} with version=${version}`);
+    }
+
+    return client;
+  }
+
+  getVersionCheckInfo(userVersion: string): VersionCheckResult {
+    const latestSupported = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
+    const minimumSupported = this.configService.get<string>('MINIMUM_SUPPORTED_FRONTEND_VERSION');
+    const repoUrl = this.configService.get<string>('FRONTEND_REPO_URL');
+
+    const result = checkFrontendVersion(userVersion, latestSupported, minimumSupported, repoUrl);
+
+    if (result.updateUrl) {
+      this.logger.log(`Update available for user version ${userVersion} -> ${latestSupported}`);
+    }
+
+    return result;
   }
 }

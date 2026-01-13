@@ -75,6 +75,7 @@ Create `.env` files from the provided `example.env` templates in each of the fol
 - `apps/api`
 - `apps/chain`
 - `apps/notifications`
+- `typeorm`
 - `scripts`
 - the root one
 

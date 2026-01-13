@@ -6,3 +6,6 @@ export * from './transaction';
 export * from './notifications';
 export * from './notificationPreferences';
 export * from './transactionGroup';
+export * from './versionCheck';
+export * from './disconnect';
+export * from './reconnect';

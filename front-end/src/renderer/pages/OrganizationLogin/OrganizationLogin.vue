@@ -9,6 +9,8 @@ import useLoader from '@renderer/composables/useLoader';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useSetDynamicLayout, { DEFAULT_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
+import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
+import useVersionCheck from '@renderer/composables/useVersionCheck';
 
 import { login } from '@renderer/services/organization';
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
@@ -38,6 +40,8 @@ const withLoader = useLoader();
 useSetDynamicLayout(DEFAULT_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 const { redirectIfRequiredKeysToMigrate } = useRecoveryPhraseHashMigrate();
+const { setLast } = useDefaultOrganization();
+const { performVersionCheck } = useVersionCheck();
 
 /* State */
 const loading = ref(false);
@@ -85,6 +89,7 @@ const handleLogin = async () => {
       true,
     );
     await user.refetchOrganizationTokens();
+    await performVersionCheck(user.selectedOrganization.serverUrl);
 
     toast.success('Successfully signed in', successToastOptions);
 
@@ -96,6 +101,11 @@ const handleLogin = async () => {
       10000,
       false,
     );
+
+    if (isOrganizationActive(user.selectedOrganization)) {
+      await setLast(user.selectedOrganization.id);
+    }
+
     await withLoader(
       redirectIfRequiredKeysToMigrate,
       'Failed to redirect to recovery phrase migration',

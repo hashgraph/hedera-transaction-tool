@@ -8,7 +8,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../user.entity';
-import { NotificationReceiver } from '@app/common/database/entities';
+import { NotificationReceiver } from './';
 
 export enum NotificationType {
   TRANSACTION_CREATED = 'TRANSACTION_CREATED',

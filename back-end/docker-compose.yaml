@@ -10,42 +10,61 @@ services:
   #   volumes:
   #     # Listen to the Docker events
   #     - /var/run/docker.sock:/var/run/docker.sock
+  migration:
+    build:
+      context: .
+      dockerfile: ./typeorm/Dockerfile
+    env_file:
+      - ./typeorm/.env
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: "no"  # Run once and exit
   api:
     build:
       context: .
       dockerfile: ./apps/api/Dockerfile
       target: development
-    command: npm run start:dev api
+    command: pnpm start:dev api
     env_file:
       - ./apps/api/.env
     ports:
       - '3001:3000'
     volumes:
       - .:/usr/src/app
+    depends_on:
+      migration:
+        condition: service_completed_successfully
     restart: always
   chain:
     build:
       context: .
       dockerfile: ./apps/chain/Dockerfile
       target: development
-    command: npm run start:dev chain
+    command: pnpm start:dev chain
     env_file:
       - ./apps/chain/.env
     volumes:
       - .:/usr/src/app
+    depends_on:
+      migration:
+        condition: service_completed_successfully
     restart: always
   notifications:
     build:
       context: .
       dockerfile: ./apps/notifications/Dockerfile
       target: development
-    command: npm run start:dev notifications
+    command: pnpm start:dev notifications
     env_file:
       - ./apps/notifications/.env
     ports:
       - '3020:3020'
     volumes:
       - .:/usr/src/app
+    depends_on:
+      migration:
+        condition: service_completed_successfully
     restart: always
   nats:
     image: nats:2.10
@@ -78,6 +97,11 @@ services:
       - '5432:5432'
   #    expose:
   #      - '5432'
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   pgadmin:
     image: dpage/pgadmin4
     restart: always

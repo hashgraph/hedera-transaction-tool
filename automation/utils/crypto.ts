@@ -50,7 +50,3 @@ export async function argonHash(data:string, usePseudoSalt = false) {
     salt: pseudoSalt,
   });
 }
-
-export async function verifyArgonHash(hash:string, data:string) {
-  return await argon2.verify(hash, data);
-}

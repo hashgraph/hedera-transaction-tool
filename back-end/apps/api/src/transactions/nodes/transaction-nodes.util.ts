@@ -1,0 +1,45 @@
+import { ITransactionNode } from '../dto/ITransactionNode';
+
+export function compareTransactionNodes(n1: ITransactionNode, n2: ITransactionNode): number {
+  let result = compareNodesByGroupId(n1, n2);
+  if (result === 0) {
+    result = compareNodesByTransactionId(n1, n2);
+  }
+  return result;
+}
+
+function compareNodesByGroupId(n1: ITransactionNode, n2: ITransactionNode): number {
+  let result: number;
+  if (n1.groupId !== undefined && n2.groupId !== undefined) {
+    if (n1.groupId !== n2.groupId) {
+      result = n1.groupId < n2.groupId ? -1 : +1;
+    } else {
+      result = 0;
+    }
+  } else if (n1.groupId !== undefined) {
+    result = -1;
+  } else if (n2.groupId !== undefined) {
+    result = +1;
+  } else {
+    result = 0;
+  }
+  return result;
+}
+
+function compareNodesByTransactionId(n1: ITransactionNode, n2: ITransactionNode): number {
+  let result: number;
+  if (n1.transactionId !== undefined && n2.transactionId !== undefined) {
+    if (n1.transactionId !== n2.transactionId) {
+      result = n1.transactionId < n2.transactionId ? -1 : +1;
+    } else {
+      result = 0;
+    }
+  } else if (n1.transactionId !== undefined) {
+    result = -1;
+  } else if (n2.transactionId !== undefined) {
+    result = +1
+  } else {
+    result = 0;
+  }
+  return result;
+}

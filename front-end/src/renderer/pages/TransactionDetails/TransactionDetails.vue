@@ -14,11 +14,10 @@ import { CommonNetwork } from '@shared/enums';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
-import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
-import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
+import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 
 import { getApiGroupById, getTransactionById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
@@ -58,12 +57,20 @@ import TransactionId from '@renderer/components/ui/TransactionId.vue';
 const user = useUserStore();
 const network = useNetwork();
 const contacts = useContactsStore();
-const wsStore = useWebsocketConnection();
 const nextTransaction = useNextTransactionStore();
 
 /* Composables */
 const router = useRouter();
-const ws = useDisposableWs();
+useWebsocketSubscription(TRANSACTION_ACTION, async () => {
+  await fetchTransaction();
+  const id = formattedId.value!;
+  nextId.value = await nextTransaction.getNext(
+    isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
+  );
+  prevId.value = await nextTransaction.getPrevious(
+    isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
+  );
+});
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const route = useRoute();
 
@@ -158,20 +165,6 @@ async function fetchTransaction() {
   feePayer.value = getTransactionPayerId(sdkTransaction.value);
 }
 
-const subscribeToTransactionAction = () => {
-  if (!user.selectedOrganization?.serverUrl) return;
-  ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
-    await fetchTransaction();
-    const id = formattedId.value!;
-    nextId.value = await nextTransaction.getNext(
-      isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
-    );
-    prevId.value = await nextTransaction.getPrevious(
-      isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
-    );
-  });
-};
-
 const formattedId = computed(() => {
   const id = router.currentRoute.value.params.id;
   return id ? (Array.isArray(id) ? id[0] : id) : null;
@@ -188,8 +181,6 @@ onBeforeMount(async () => {
 
   const keepNextTransaction = router.currentRoute.value.query[KEEP_NEXT_QUERY_KEY];
   if (!keepNextTransaction) nextTransaction.reset();
-
-  subscribeToTransactionAction();
 
   const result = await Promise.all([
     fetchTransaction(),
@@ -215,11 +206,6 @@ onBeforeRouteLeave(to => {
 });
 
 /* Watchers */
-wsStore.$onAction(ctx => {
-  if (ctx.name !== 'setup') return;
-  ctx.after(() => subscribeToTransactionAction());
-});
-
 watch(() => user.selectedOrganization, router.back);
 
 watch(feePayer, async newFeePayer => {

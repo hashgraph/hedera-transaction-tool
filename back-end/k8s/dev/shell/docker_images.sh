@@ -21,8 +21,10 @@ assert_docker_images() {
     local api_name="api"
     local chain_name="chain"
     local notifications_name="notifications"
+    local migration_name="migration"
 
     local apps_path=$(realpath "$BASEDIR/../../apps")
+    local typeorm_path=$(realpath "$BASEDIR/../../typeorm")
     local context_path=$(realpath "$BASEDIR/../..")
 
     for name in $api_name $chain_name $notifications_name
@@ -34,4 +36,11 @@ assert_docker_images() {
             $DOCKER build -t $image_name -f "$apps_path/$name/Dockerfile" "$context_path"
         fi
     done
+
+    image_name="back-end-$migration_name:1.0.0"
+    docker_image_exist $image_name
+    if [[ $? -eq 0 || ! "$1" = '--skip-build' ]]; then
+        echo "Building Docker image for migration..."
+        $DOCKER build -t $image_name -f "$typeorm_path/Dockerfile" "$context_path"
+    fi
 }

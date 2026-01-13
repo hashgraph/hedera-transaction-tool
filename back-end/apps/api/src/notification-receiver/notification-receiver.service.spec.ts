@@ -7,7 +7,7 @@ import { In, Repository } from 'typeorm';
 
 import {
   Filtering,
-  MirrorNodeService, NatsPublisherService,
+  NatsPublisherService,
   Pagination,
   Sorting,
 } from '@app/common';
@@ -34,7 +34,6 @@ describe('NotificationReceiverService', () => {
   let service: NotificationReceiverService;
   const repo = mockDeep<Repository<NotificationReceiver>>();
   const notificationsPublisher = mock<NatsPublisherService>();
-  const mirrorNodeService = mock<MirrorNodeService>();
   const transactionsService = mock<TransactionsService>();
 
   const user: User = { id: 1 } as User;
@@ -58,10 +57,6 @@ describe('NotificationReceiverService', () => {
         {
           provide: NatsPublisherService,
           useValue: notificationsPublisher,
-        },
-        {
-          provide: MirrorNodeService,
-          useValue: mirrorNodeService,
         },
         {
           provide: TransactionsService,

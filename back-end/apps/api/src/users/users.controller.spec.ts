@@ -1,13 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 
-import { BlacklistService, guardMock } from '@app/common';
-import { User, UserStatus } from '@entities';
+import { BlacklistService, guardMock, VersionCheckResult } from '@app/common';
+import { Client, User, UserStatus } from '@entities';
 
 import { VerifiedUserGuard } from '../guards';
 
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
+import { VersionCheckDto } from './dtos';
 
 describe('UsersController', () => {
   let controller: UsersController;
@@ -52,6 +53,7 @@ describe('UsersController', () => {
       issuedNotifications: [],
       receivedNotifications: [],
       notificationPreferences: [],
+      clients: [],
     };
   });
 
@@ -150,6 +152,90 @@ describe('UsersController', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
       }
+    });
+  });
+
+  describe('versionCheck', () => {
+    const mockVersionCheckResult: VersionCheckResult = {
+      latestSupportedVersion: '1.2.0',
+      minimumSupportedVersion: '1.0.0',
+      updateUrl: 'https://github.com/hashgraph/hedera-transaction-tool/releases/download/v1.2.0/',
+    };
+
+    beforeEach(() => {
+      userService.getVersionCheckInfo.mockReturnValue(mockVersionCheckResult);
+    });
+
+    it('should call usersService.updateClientVersion with correct params', async () => {
+      const dto: VersionCheckDto = { version: '1.0.0' };
+      const client: Partial<Client> = { id: 1, userId: user.id, version: dto.version };
+      userService.updateClientVersion.mockResolvedValue(client as Client);
+
+      await controller.versionCheck(user, dto);
+
+      expect(userService.updateClientVersion).toHaveBeenCalledWith(user.id, dto.version);
+    });
+
+    it('should call usersService.getVersionCheckInfo with user version', async () => {
+      const dto: VersionCheckDto = { version: '1.0.0' };
+      const client: Partial<Client> = { id: 1, userId: user.id, version: dto.version };
+      userService.updateClientVersion.mockResolvedValue(client as Client);
+
+      await controller.versionCheck(user, dto);
+
+      expect(userService.getVersionCheckInfo).toHaveBeenCalledWith(dto.version);
+    });
+
+    it('should return success response with version info when update is available', async () => {
+      const dto: VersionCheckDto = { version: '1.0.0' };
+      const client: Partial<Client> = { id: 1, userId: user.id, version: dto.version };
+      userService.updateClientVersion.mockResolvedValue(client as Client);
+
+      const result = await controller.versionCheck(user, dto);
+
+      expect(result).toEqual(mockVersionCheckResult);
+    });
+
+    it('should return response without updateUrl when version is up to date', async () => {
+      const dto: VersionCheckDto = { version: '1.2.0' };
+      const client: Partial<Client> = { id: 1, userId: user.id, version: dto.version };
+      userService.updateClientVersion.mockResolvedValue(client as Client);
+
+      const noUpdateResult: VersionCheckResult = {
+        latestSupportedVersion: '1.2.0',
+        minimumSupportedVersion: '1.0.0',
+        updateUrl: null,
+      };
+      userService.getVersionCheckInfo.mockReturnValue(noUpdateResult);
+
+      const result = await controller.versionCheck(user, dto);
+
+      expect(result).toEqual(noUpdateResult);
+      expect(result.updateUrl).toBeNull();
+    });
+
+    it('should return response when user version is newer than latest supported', async () => {
+      const dto: VersionCheckDto = { version: '2.0.0' };
+      const client: Partial<Client> = { id: 1, userId: user.id, version: dto.version };
+      userService.updateClientVersion.mockResolvedValue(client as Client);
+
+      const newerVersionResult: VersionCheckResult = {
+        latestSupportedVersion: '1.2.0',
+        minimumSupportedVersion: '1.0.0',
+        updateUrl: null,
+      };
+      userService.getVersionCheckInfo.mockReturnValue(newerVersionResult);
+
+      const result = await controller.versionCheck(user, dto);
+
+      expect(result.updateUrl).toBeNull();
+    });
+
+    it('should throw an error if the service fails', async () => {
+      const dto: VersionCheckDto = { version: '1.0.0' };
+      userService.updateClientVersion.mockRejectedValue(new Error('Database error'));
+
+      await expect(controller.versionCheck(user, dto)).rejects.toThrow('Database error');
     });
   });
 

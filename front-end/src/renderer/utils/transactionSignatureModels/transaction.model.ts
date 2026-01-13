@@ -5,6 +5,15 @@ import type { INodeInfoParsed } from '@shared/interfaces';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 
+export interface SignatureAudit {
+  signatureKeys: Key[];
+  accountsKeys: Record<string, Key>;
+  receiverAccountsKeys: Record<string, Key>;
+  newKeys: Key[];
+  payerKey: Record<string, Key>;
+  nodeAdminKeys: Record<number, Key>;
+}
+
 export abstract class TransactionBaseModel<T extends SDKTransaction> {
   constructor(protected transaction: T) {}
 
@@ -13,11 +22,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
   }
 
   getFeePayerAccountId(): AccountId | null {
-    const payerId = this.transaction.transactionId?.accountId;
-    if (payerId) {
-      return payerId;
-    }
-    return null;
+    return this.transaction.transactionId?.accountId ?? null;
   }
 
   getSigningAccounts(): Set<string> {
@@ -41,7 +46,11 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     return null;
   }
 
-  async computeSignatureKey(mirrorNodeLink: string, accountInfoCache: AccountByIdCache, nodeInfoCache: NodeByIdCache) {
+  async computeSignatureKey(
+    mirrorNodeLink: string,
+    accountInfoCache: AccountByIdCache,
+    nodeInfoCache: NodeByIdCache,
+  ): Promise<SignatureAudit> {
     const feePayerAccountId = this.getFeePayerAccountId();
     const accounts = this.getSigningAccounts();
     const receiverAccounts = this.getReceiverAccounts();
@@ -92,7 +101,11 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     for (const accountId of receiverAccounts) {
       try {
         const accountInfo = await accountInfoCache.lookup(accountId, mirrorNodeLink);
-        if (accountInfo?.receiverSignatureRequired && accountInfo?.key && !hasKey(accountInfo.key)) {
+        if (
+          accountInfo?.receiverSignatureRequired &&
+          accountInfo?.key &&
+          !hasKey(accountInfo.key)
+        ) {
           signatureKeys.push(accountInfo.key);
           receiverAccountsKeys[accountId] = accountInfo.key;
           currentKeyList.push(accountInfo.key);

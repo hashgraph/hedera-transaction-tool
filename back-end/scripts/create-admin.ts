@@ -13,6 +13,7 @@ import { DataSource } from 'typeorm';
 import {
   User,
   UserKey,
+  Client,
   Transaction,
   TransactionApprover,
   TransactionSigner,
@@ -24,6 +25,12 @@ import {
   Notification,
   NotificationPreferences,
   NotificationReceiver,
+  TransactionCachedAccount,
+  TransactionCachedNode,
+  CachedAccount,
+  CachedAccountKey,
+  CachedNode,
+  CachedNodeAdminKey,
 } from '@entities';
 
 dotenv.config({
@@ -82,7 +89,14 @@ async function main() {
 
   /* Exit */
   console.log(pc.redBright('\nExiting...'));
-  process.exit(0);
+  try {
+    await dataSource.destroy();
+    console.log(pc.cyan('Disconnected from database'));
+    process.exit(0);
+  } catch (err) {
+    console.error(pc.red('Error while disconnecting from database:'), err);
+    process.exit(1);
+  }
 }
 
 main();
@@ -118,6 +132,7 @@ async function connectDatabase() {
     entities: [
       User,
       UserKey,
+      Client,
       Transaction,
       TransactionSigner,
       TransactionApprover,
@@ -125,6 +140,12 @@ async function connectDatabase() {
       TransactionComment,
       TransactionGroupItem,
       TransactionGroup,
+      TransactionCachedAccount,
+      TransactionCachedNode,
+      CachedAccount,
+      CachedAccountKey,
+      CachedNode,
+      CachedNodeAdminKey,
       Notification,
       NotificationPreferences,
       NotificationReceiver,

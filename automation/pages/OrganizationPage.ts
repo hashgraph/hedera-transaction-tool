@@ -114,23 +114,15 @@ export class OrganizationPage extends BasePage {
   // Indexes
   modeSelectionIndexSelector = 'dropdown-item-';
   firstMissingKeyIndexSelector = 'cell-index-missing-0';
-  readyForSignTransactionIdIndexSelector = 'td-transaction-id-for-sign-';
-  readyForSignTransactionTypeIndexSelector = 'td-transaction-type-for-sign-';
-  readyForSignValidStartIndexSelector = 'td-transaction-valid-start-for-sign-';
-  readyForSignSubmitSignButtonIndexSelector = 'button-transaction-sign-';
-  inProgressTransactionIdIndexSelector = 'td-transaction-id-in-progress-';
-  inProgressTransactionTypeIndexSelector = 'td-transaction-type-in-progress-';
-  inProgressValidStartIndexSelector = 'td-transaction-valid-start-in-progress-';
-  inProgressDetailsButtonIndexSelector = 'button-transaction-in-progress-details-';
-  readyForExecutionTransactionIdIndexSelector = 'td-transaction-id-ready-execution-';
-  readyForExecutionTransactionTypeIndexSelector = 'td-transaction-type-ready-execution-';
-  readyForExecutionValidStartIndexSelector = 'td-transaction-valid-start-ready-execution-';
-  readyForExecutionDetailsButtonIndexSelector = 'button-transaction-ready-execution-details-';
-  historyTransactionIdIndexSelector = 'td-transaction-id-';
-  historyTransactionTypeIndexSelector = 'td-transaction-type-';
-  historyTransactionStatusIndexSelector = 'td-transaction-status-';
-  historyCreatedAtIndexSelector = 'td-transaction-createdAt-';
-  historyDetailsButtonIndexSelector = 'button-transaction-details-';
+
+  transactionNodeTransactionIdIndexSelector = 'td-transaction-node-transaction-id-';
+  transactionNodeTransactionTypeIndexSelector = 'td-transaction-node-transaction-type-';
+  transactionNodeValidStartIndexSelector = 'td-transaction-node-transaction-valid-start-';
+  transactionNodeExecutedAtIndexSelector = 'td-transaction-node-transaction-executed-at-';
+  transactionNodeStatusIndexSelector = 'td-transaction-node-transaction-status-';
+  transactionNodeSignButtonIndexSelector = 'button-transaction-node-sign-';
+  transactionNodeDetailsButtonIndexSelector = 'button-transaction-node-details-';
+
   stageBubbleIndexSelector = 'div-stepper-nav-item-bubble-';
   observerIndexSelector = 'span-group-email-';
   userListIndexSelector = 'span-email-';
@@ -375,7 +367,7 @@ export class OrganizationPage extends BasePage {
   }
 
   async getNotificationElementFromFirstTransaction() {
-    return await this.hasBeforePseudoElement(this.readyForSignTransactionIdIndexSelector + '0');
+    return await this.hasBeforePseudoElement(this.transactionNodeTransactionIdIndexSelector + '0');
   }
 
   async selectModeByIndex(index: number) {
@@ -1313,83 +1305,83 @@ export class OrganizationPage extends BasePage {
   }
 
   async getReadyForSignTransactionIdByIndex(index: number) {
-    return await this.getText(this.readyForSignTransactionIdIndexSelector + index);
+    return await this.getText(this.transactionNodeTransactionIdIndexSelector + index);
   }
 
   async getReadyForSignTransactionTypeByIndex(index: number) {
-    return await this.getText(this.readyForSignTransactionTypeIndexSelector + index);
+    return await this.getText(this.transactionNodeTransactionTypeIndexSelector + index);
   }
 
   async getReadyForSignValidStartByIndex(index: number) {
-    return await this.getText(this.readyForSignValidStartIndexSelector + index);
+    return await this.getText(this.transactionNodeValidStartIndexSelector + index);
   }
 
   async isReadyForSignSubmitSignButtonVisibleByIndex(index: number) {
-    return await this.isElementVisible(this.readyForSignSubmitSignButtonIndexSelector + index);
+    return await this.isElementVisible(this.transactionNodeSignButtonIndexSelector + index);
   }
 
   async clickOnSubmitSignButtonByIndex(index: number) {
-    await this.click(this.readyForSignSubmitSignButtonIndexSelector + index, null, 5000);
+    await this.click(this.transactionNodeSignButtonIndexSelector + index, null, 5000);
   }
 
   async getInProgressTransactionIdByIndex(index: number) {
-    return await this.getText(this.inProgressTransactionIdIndexSelector + index);
+    return await this.getText(this.transactionNodeTransactionIdIndexSelector + index);
   }
 
   async getInProgressTransactionTypeByIndex(index: number) {
-    return await this.getText(this.inProgressTransactionTypeIndexSelector + index);
+    return await this.getText(this.transactionNodeTransactionTypeIndexSelector + index);
   }
 
   async getInProgressValidStartByIndex(index: number) {
-    return await this.getText(this.inProgressValidStartIndexSelector + index);
+    return await this.getText(this.transactionNodeValidStartIndexSelector + index);
   }
 
   async isInProgressDetailsButtonVisibleByIndex(index: number) {
-    return await this.isElementVisible(this.inProgressDetailsButtonIndexSelector + index);
+    return await this.isElementVisible(this.transactionNodeDetailsButtonIndexSelector + index);
   }
 
   async getReadyForExecutionTransactionIdByIndex(index: number) {
-    return await this.getText(this.readyForExecutionTransactionIdIndexSelector + index);
+    return await this.getText(this.transactionNodeTransactionIdIndexSelector + index);
   }
 
   async getReadyForExecutionTransactionTypeByIndex(index: number) {
-    return await this.getText(this.readyForExecutionTransactionTypeIndexSelector + index);
+    return await this.getText(this.transactionNodeTransactionTypeIndexSelector + index);
   }
 
   async getReadyForExecutionValidStartByIndex(index: number) {
-    return await this.getText(this.readyForExecutionValidStartIndexSelector + index);
+    return await this.getText(this.transactionNodeValidStartIndexSelector + index);
   }
 
   async isReadyForExecutionDetailsButtonVisibleByIndex(index: number) {
-    return await this.isElementVisible(this.readyForExecutionDetailsButtonIndexSelector + index);
+    return await this.isElementVisible(this.transactionNodeDetailsButtonIndexSelector + index);
   }
 
   async clickOnReadyForExecutionDetailsButtonByIndex(index: number) {
-    await this.click(this.readyForExecutionDetailsButtonIndexSelector + index);
+    await this.click(this.transactionNodeDetailsButtonIndexSelector + index);
   }
 
   async getHistoryTransactionIdByIndex(index: number) {
-    return await this.getText(this.historyTransactionIdIndexSelector + index);
+    return await this.getText(this.transactionNodeTransactionIdIndexSelector + index);
   }
 
   async getHistoryTransactionTypeByIndex(index: number) {
-    return await this.getText(this.historyTransactionTypeIndexSelector + index);
+    return await this.getText(this.transactionNodeTransactionTypeIndexSelector + index);
   }
 
   async getHistoryTransactionStatusByIndex(index: number) {
-    return await this.getText(this.historyTransactionStatusIndexSelector + index);
+    return await this.getText(this.transactionNodeStatusIndexSelector + index);
   }
 
-  async getHistoryTransactionCreatedAtByIndex(index: number) {
-    return await this.getText(this.historyCreatedAtIndexSelector + index);
+  async getHistoryTransactionExecutedAtByIndex(index: number) {
+    return await this.getText(this.transactionNodeExecutedAtIndexSelector + index);
   }
 
   async isHistoryDetailsButtonVisibleByIndex(index: number) {
-    return await this.isElementVisible(this.historyDetailsButtonIndexSelector + index);
+    return await this.isElementVisible(this.transactionNodeDetailsButtonIndexSelector + index);
   }
 
   async clickOnHistoryDetailsButtonByIndex(index: number) {
-    await this.click(this.historyDetailsButtonIndexSelector + index);
+    await this.click(this.transactionNodeDetailsButtonIndexSelector + index);
   }
 
   async getTransactionDetails(
@@ -1443,7 +1435,7 @@ export class OrganizationPage extends BasePage {
   async getReadyForSignTransactionDetails(transactionId: string) {
     return await this.getTransactionDetails(
       transactionId,
-      this.readyForSignTransactionIdIndexSelector,
+      this.transactionNodeTransactionIdIndexSelector,
       this.getReadyForSignTransactionIdByIndex,
       this.getReadyForSignTransactionTypeByIndex,
       this.getReadyForSignValidStartByIndex,
@@ -1455,7 +1447,7 @@ export class OrganizationPage extends BasePage {
   async getInProgressTransactionDetails(transactionId: string) {
     return await this.getTransactionDetails(
       transactionId,
-      this.inProgressTransactionIdIndexSelector,
+      this.transactionNodeTransactionIdIndexSelector,
       this.getInProgressTransactionIdByIndex,
       this.getInProgressTransactionTypeByIndex,
       this.getInProgressValidStartByIndex,
@@ -1467,7 +1459,7 @@ export class OrganizationPage extends BasePage {
   async getReadyForExecutionTransactionDetails(transactionId: string) {
     return await this.getTransactionDetails(
       transactionId,
-      this.readyForExecutionTransactionIdIndexSelector,
+      this.transactionNodeTransactionIdIndexSelector,
       this.getReadyForExecutionTransactionIdByIndex,
       this.getReadyForExecutionTransactionTypeByIndex,
       this.getReadyForExecutionValidStartByIndex,
@@ -1485,10 +1477,10 @@ export class OrganizationPage extends BasePage {
   } | null> {
     return await this.getTransactionDetails(
       transactionId,
-      this.historyTransactionIdIndexSelector,
+      this.transactionNodeTransactionIdIndexSelector,
       this.getHistoryTransactionIdByIndex,
       this.getHistoryTransactionTypeByIndex,
-      this.getHistoryTransactionCreatedAtByIndex,
+      this.getHistoryTransactionExecutedAtByIndex,
       this.isHistoryDetailsButtonVisibleByIndex,
       [{ name: 'status', getter: this.getHistoryTransactionStatusByIndex }],
     );
@@ -1500,7 +1492,7 @@ export class OrganizationPage extends BasePage {
     retryDelay = 1000,
   ) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const count = await this.countElements(this.readyForSignTransactionIdIndexSelector);
+      const count = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
       for (let i = 0; i < count; i++) {
         const id = await this.getReadyForSignTransactionIdByIndex(i);
         if (id === transactionId) {
@@ -1518,7 +1510,7 @@ export class OrganizationPage extends BasePage {
     retryDelay = 1000,
   ) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const count = await this.countElements(this.readyForExecutionTransactionIdIndexSelector);
+      const count = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
       for (let i = 0; i < count; i++) {
         const id = await this.getReadyForExecutionTransactionIdByIndex(i);
         if (id === transactionId) {
@@ -1536,7 +1528,7 @@ export class OrganizationPage extends BasePage {
     retryDelay = 1000,
   ) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const count = await this.countElements(this.historyTransactionIdIndexSelector);
+      const count = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
       for (let i = 0; i < count; i++) {
         const id = await this.getHistoryTransactionIdByIndex(i);
         if (id === transactionId) {
@@ -1550,7 +1542,7 @@ export class OrganizationPage extends BasePage {
 
   async isTransactionIdVisibleInProgress(transactionId: string, attempts = 10) {
     for (let attempt = 0; attempt < attempts; attempt++) {
-      const count = await this.countElements(this.inProgressTransactionIdIndexSelector);
+      const count = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
       for (let i = 0; i < count; i++) {
         if ((await this.getInProgressTransactionIdByIndex(i)) === transactionId) {
           return true;
@@ -1563,7 +1555,7 @@ export class OrganizationPage extends BasePage {
 
   async isTransactionIdVisibleReadyForExecution(transactionId: string, attempts = 10) {
     for (let attempt = 0; attempt < attempts; attempt++) {
-      const count = await this.countElements(this.readyForExecutionTransactionIdIndexSelector);
+      const count = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
       for (let i = 0; i < count; i++) {
         if ((await this.getReadyForExecutionTransactionIdByIndex(i)) === transactionId) {
           return true;

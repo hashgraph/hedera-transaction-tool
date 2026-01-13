@@ -6,7 +6,7 @@ import { EntityManager, Repository } from 'typeorm';
 import { Role, Transaction, TransactionObserver, TransactionStatus, User } from '@entities';
 
 import {
-  MirrorNodeService,
+  TransactionSignatureService,
   NatsPublisherService,
   userKeysRequiredToSign,
   ErrorCodes,
@@ -24,7 +24,7 @@ export class ObserversService {
     private repo: Repository<TransactionObserver>,
     @InjectEntityManager() private entityManager: EntityManager,
     private readonly approversService: ApproversService,
-    private readonly mirrorNodeService: MirrorNodeService,
+    private readonly transactionSignatureService: TransactionSignatureService,
     private readonly notificationsPublisher: NatsPublisherService,
   ) {}
 
@@ -83,7 +83,7 @@ export class ObserversService {
     const userKeysToSign = await userKeysRequiredToSign(
       transaction,
       user,
-      this.mirrorNodeService,
+      this.transactionSignatureService,
       this.entityManager,
     );
 
