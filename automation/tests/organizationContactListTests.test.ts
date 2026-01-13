@@ -9,12 +9,15 @@ import {
   generateRandomPassword,
   setupApp,
   setupEnvironmentForTransactions,
+  resetAppState,
 } from '../utils/util.js';
+import { LoginPage } from '../pages/LoginPage.js';
 
 let app: ElectronApplication;
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;
+let loginPage: LoginPage;
 let organizationPage: OrganizationPage;
 let contactListPage: ContactListPage;
 
@@ -26,9 +29,17 @@ test.describe('Organization Contact List tests', () => {
     await resetDbState();
     await resetPostgresDbState();
     ({ app, window } = await setupApp());
+    loginPage = new LoginPage(window);
     organizationPage = new OrganizationPage(window);
     registrationPage = new RegistrationPage(window);
     contactListPage = new ContactListPage(window);
+
+    // Check if we need to reset app state (if user exists from previous run)
+    const isSettingsButtonVisible = await loginPage.isSettingsButtonVisible();
+    if (isSettingsButtonVisible) {
+      console.log('Existing user detected, resetting app state...');
+      await resetAppState(window, app);
+    }
 
     // Generate credentials and store them globally
     globalCredentials.email = generateRandomEmail();

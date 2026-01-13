@@ -7,6 +7,13 @@ import * as fsp from 'fs/promises';
 import _ from 'lodash';
 import Diff from 'deep-diff';
 
+/**
+ * Localnet payer account ID corresponding to the PRIVATE_KEY in .env
+ * Solo account 0.0.1022 with key: 44162cd9b9a2f5582bd13b43cfd8be3bc20b8a81ee77f6bf77391598bcfbae4c
+ * Used as fallback if Mirror Node auto-population fails
+ */
+export const LOCALNET_PAYER_ACCOUNT_ID = '0.0.1022';
+
 export async function setupApp() {
   console.log(asciiArt); // Display ASCII art as the app starts
   const app = await launchHederaTransactionTool();
@@ -59,6 +66,11 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.fillInED25519PrivateKey(privateKey ?? '');
     await settingsPage.fillInED25519Nickname('Payer Account');
     await settingsPage.clickOnED25519ImportButton();
+
+    const modalClosedLocalnet = await settingsPage.isElementHidden(settingsPage.ed25519ImportButtonSelector, null, 10000);
+    if (!modalClosedLocalnet) {
+      throw new Error('Import modal did not close within 10 seconds (LOCALNET)');
+    }
   } else if (env?.toUpperCase() === 'TESTNET') {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
@@ -69,6 +81,11 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.fillInECDSAPrivateKey(privateKey ?? '');
     await settingsPage.fillInECDSANickname('Payer Account');
     await settingsPage.clickOnECDSAImportButton();
+ 
+    const modalClosedTestnet = await settingsPage.isElementHidden(settingsPage.ecdsaImportButtonSelector, null, 10000);
+    if (!modalClosedTestnet) {
+      throw new Error('Import modal did not close within 10 seconds (TESTNET)');
+    }
   } else if (env?.toUpperCase() === 'PREVIEWNET') {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
@@ -79,6 +96,11 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.fillInECDSAPrivateKey(privateKey ?? '');
     await settingsPage.fillInECDSANickname('Payer Account');
     await settingsPage.clickOnECDSAImportButton();
+
+    const modalClosedPreviewnet = await settingsPage.isElementHidden(settingsPage.ecdsaImportButtonSelector, null, 10000);
+    if (!modalClosedPreviewnet) {
+      throw new Error('Import modal did not close within 10 seconds (PREVIEWNET)');
+    }
   } else {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
@@ -90,6 +112,11 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.fillInED25519PrivateKey(privateKey ?? '');
     await settingsPage.fillInED25519Nickname('Payer Account');
     await settingsPage.clickOnED25519ImportButton();
+
+    const modalClosedCustom = await settingsPage.isElementHidden(settingsPage.ed25519ImportButtonSelector, null, 10000);
+    if (!modalClosedCustom) {
+      throw new Error('Import modal did not close within 10 seconds (Custom)');
+    }
   }
 }
 

@@ -8,7 +8,7 @@ import {
   verifyTransactionExists,
 } from '../utils/databaseQueries.js';
 import { decodeAndFlattenKeys } from '../utils/keyUtil.js';
-import { getCleanAccountId } from '../utils/util.js';
+import { getCleanAccountId, LOCALNET_PAYER_ACCOUNT_ID } from '../utils/util.js';
 import { Transaction } from '../../front-end/src/shared/interfaces/index.js';
 import * as path from 'node:path';
 
@@ -37,6 +37,7 @@ export class TransactionPage extends BasePage {
 
   //Inputs
   payerAccountInputSelector = 'input-payer-account';
+  payerDropdownSelector = 'dropdown-payer'; // Used for queries (FileContentsQuery, etc.)
   initialBalanceInputSelector = 'input-initial-balance-amount';
   maxAutoAssociationsInputSelector = 'input-max-auto-token-associations';
   accountMemoInputSelector = 'input-account-memo';
@@ -235,8 +236,13 @@ export class TransactionPage extends BasePage {
   }
 
   async clickOnCreateNewTransactionButton() {
+    // Click Create New button to open dropdown
     await this.click(this.createNewTransactionButtonSelector);
-    await this.clickOnSingleTransactionButton();
+
+    // Wait for dropdown and click Single Transaction
+    const singleTxButton = this.getElement(this.singleTransactionButtonSelector);
+    await singleTxButton.waitFor({ state: 'visible', timeout: 5000 });
+    await singleTxButton.click();
   }
 
   async clickOnImportButton() {
@@ -461,6 +467,16 @@ export class TransactionPage extends BasePage {
 
     await this.clickOnSignAndSubmitButton();
     await this.clickSignTransactionButton();
+    // Wait for Confirm Transaction modal to close before looking for execution modal
+    await this.window.waitForSelector(
+      `[data-testid="${this.confirmTransactionModalSelector}"]`,
+      { state: 'hidden', timeout: 10000 }
+    );
+    // Wait for execution modal to APPEAR first (shows "Executing" text while tx runs)
+    await this.window.waitForSelector('text=Executing', { state: 'visible', timeout: 10000 });
+    // DON'T click Close - it's a cancel button that dismisses modal while tx still running!
+    // Wait for modal to AUTO-CLOSE when execution completes (isExecuting becomes false in Vue component)
+    await this.window.waitForSelector('text=Executing', { state: 'hidden', timeout: 30000 });
     await this.waitForCreatedAtToBeVisible();
 
     const newTransactionId = await this.getTransactionDetailsId();
@@ -482,6 +498,13 @@ export class TransactionPage extends BasePage {
     await this.clickOnCreateNewComplexKeyButton();
     await this.createComplexKeyStructure();
     await this.clickOnDoneButton();
+    // Wait for complex key modal to actually close (Done button hidden)
+    const modalClosed = await this.isElementHidden(this.doneComplexKeyButtonSelector, null, 10000);
+    if (!modalClosed) {
+      throw new Error('Complex key modal did not close within 10 seconds');
+    }
+    // Then wait for sign button to become visible and clickable
+    await this.waitForElementToBeVisible(this.signAndSubmitButtonSelector, 5000);
   }
 
   async deleteAccount(accountId: string) {
@@ -586,7 +609,7 @@ export class TransactionPage extends BasePage {
     await this.clickOnFileServiceLink();
     await this.clickOnReadCreateTransaction();
     await this.fillInFileIdForRead(fileId);
-    await this.clickOnSignAndSubmitButton();
+    await this.clickOnSignAndReadButton(); // Use query-specific method (dropdown payer, not input)
     await this.waitForElementToDisappear(this.toastMessageSelector);
     return await this.readFileContentFromTextArea();
   }
@@ -740,7 +763,44 @@ export class TransactionPage extends BasePage {
   }
 
   async clickOnSignAndSubmitButton() {
-    await this.click(this.signAndSubmitButtonSelector, null, 10000);
+    // For LOCALNET: Mirror Node doesn't return accounts, so Payer ID is empty.
+    // Fill it explicitly with the known account ID for the imported key.
+    if (process.env.ENVIRONMENT?.toUpperCase() === 'LOCALNET') {
+      const payerInput = this.window.getByTestId(this.payerAccountInputSelector);
+      const currentValue = await payerInput.inputValue();
+      if (!currentValue || currentValue.trim() === '') {
+        await this.fillInPayerAccountId(LOCALNET_PAYER_ACCOUNT_ID);
+        // Blur field to trigger Vue validation
+        await payerInput.blur();
+        // Wait for Vue to re-validate and enable the button
+        const button = this.window.getByTestId(this.signAndSubmitButtonSelector);
+        await button.waitFor({ state: 'visible', timeout: 5000 });
+        // Small delay for Vue reactivity to update button state
+        await this.window.waitForTimeout(500);
+      }
+    }
+
+    // Scroll to top to ensure button is visible, then click
+    const button = this.window.getByTestId(this.signAndSubmitButtonSelector);
+    await button.scrollIntoViewIfNeeded();
+    await button.click({ timeout: 10000 });
+  }
+
+  // For queries (FileContentsQuery, etc.) - uses dropdown for payer, not input
+  async clickOnSignAndReadButton() {
+    // For LOCALNET: Select payer from dropdown if not already selected
+    if (process.env.ENVIRONMENT?.toUpperCase() === 'LOCALNET') {
+      const payerDropdown = this.window.getByTestId(this.payerDropdownSelector);
+      // Check if dropdown exists and wait for it
+      await payerDropdown.waitFor({ state: 'visible', timeout: 10000 });
+      // The dropdown should auto-populate with imported accounts
+      // Just ensure something is selected by waiting for the button to be enabled
+    }
+
+    // Click the Sign & Read button (same testid as Sign & Submit)
+    const button = this.window.getByTestId(this.signAndSubmitButtonSelector);
+    await button.scrollIntoViewIfNeeded();
+    await button.click({ timeout: 10000 });
   }
 
   async clickSignTransactionButton() {

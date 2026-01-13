@@ -9,6 +9,7 @@ import {
   generateRandomPassword,
   setupApp,
   setupEnvironmentForTransactions,
+  resetAppState,
 } from '../utils/util.js';
 import { Transaction } from '../../front-end/src/shared/interfaces/index.js';
 
@@ -29,6 +30,13 @@ test.describe('Transaction tests', () => {
 
     // Ensure transactionPage generatedAccounts is empty
     transactionPage.generatedAccounts = [];
+
+    // Check if we need to reset app state (if user exists from previous run)
+    const isSettingsButtonVisible = await loginPage.isSettingsButtonVisible();
+    if (isSettingsButtonVisible) {
+      console.log('Existing user detected, resetting app state...');
+      await resetAppState(window, app);
+    }
 
     // Generate credentials and store them globally
     globalCredentials.email = generateRandomEmail();
@@ -51,14 +59,23 @@ test.describe('Transaction tests', () => {
   });
 
   test.beforeEach(async () => {
-    // await transactionPage.closeCompletedTransaction();
+    // Wait for any ongoing operations to complete
+    await window.waitForLoadState('networkidle');
+
+    // Ensure menu button is visible before clicking
+    await transactionPage.waitForElementToBeVisible(
+      transactionPage.transactionsMenuButtonSelector,
+      5000,
+    );
     await transactionPage.clickOnTransactionsMenuButton();
 
-    //this is needed because tests fail in CI environment
+    // Additional wait for CI environment stability
     if (process.env.CI) {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
+    // Wait for page to stabilize after navigation
+    await window.waitForLoadState('networkidle');
     await transactionPage.closeDraftModal();
   });
 
