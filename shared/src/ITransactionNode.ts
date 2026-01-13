@@ -1,3 +1,6 @@
+// WARNING : MUST BE KEPT IN SYNC WITH
+// back-end/apps/api/src/transactions/dto/ITransactionNode.ts
+
 export interface ITransactionNode {   //   Single   Group
   transactionId?: number;             //      x
   groupId?: number;                   //              x
@@ -13,6 +16,11 @@ export interface ITransactionNode {   //   Single   Group
   isManual?: boolean;                 //      x
   groupItemCount?: number;            //              x
   groupCollectedCount?: number;       //              x
+  internalSignerCount: number;        //      x       x
+  internalSignatureCount: number;     //      x       x
+  externalSignerCount: number;        //      x       x
+  externalSignatureCount: number;     //      x       x
+  unexpectedSignatureCount: number;   //      x       x
 }
 
 export enum TransactionNodeCollection {
@@ -41,5 +49,6 @@ export enum TransactionNodeCollection {
     transactionType  | tx type            | undefined            |
     isManual         | tx is manual       | undefined            |
     groupItemCount   | 0                  | group item count     |
+    externalSignCount| tx ext. sign. count| sum of item ext. sign. Count|
 
  */

@@ -178,6 +178,7 @@ export class TransactionsController {
   }
 
   /* Returns whether a user should sign a transaction with id */
+  /* NO LONGER USED BY FRONT-END */
   @ApiOperation({
     summary: 'Check if the current user should sign the transaction with the provided id',
     description: 'Check if the current user should sign the transaction with the provided id.',

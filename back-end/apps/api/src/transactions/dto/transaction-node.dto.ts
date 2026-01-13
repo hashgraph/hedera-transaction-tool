@@ -43,4 +43,19 @@ export class TransactionNodeDto implements ITransactionNode {
 
   @Expose()
   groupCollectedCount?: number;
+
+  @Expose()
+  internalSignerCount: number;
+
+  @Expose()
+  internalSignatureCount: number;
+
+  @Expose()
+  externalSignerCount: number;
+
+  @Expose()
+  externalSignatureCount: number;
+
+  @Expose()
+  unexpectedSignatureCount: number;
 }

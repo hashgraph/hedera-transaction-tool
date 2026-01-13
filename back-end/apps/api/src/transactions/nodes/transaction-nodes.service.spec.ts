@@ -21,13 +21,16 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   CHAIN_SERVICE,
   NOTIFICATIONS_SERVICE,
+  produceSigningReport,
   SchedulerService,
+  TransactionSignatureService,
 } from '@app/common';
 import { ApproversService } from '../approvers';
-import { EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 import { TransactionGroupsService } from '../groups';
 import { TransactionNodeDto } from '../dto';
+import { Key, KeyList, PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 describe('TransactionNodesService', () => {
   let service: TransactionNodesService;
@@ -39,7 +42,9 @@ describe('TransactionNodesService', () => {
   const notificationsService = mock<ClientProxy>();
   const approversService = mock<ApproversService>();
   const schedulerService = mock<SchedulerService>();
+  const signatureService = mockDeep<TransactionSignatureService>();
   const entityManager = mockDeep<EntityManager>();
+  const dataSource = mockDeep<DataSource>();
 
   const user: User = {
     id: 1,
@@ -76,13 +81,16 @@ describe('TransactionNodesService', () => {
     validStart: new Date(),
     transactionHash: '5a381df6a8s4f9e0asd8f46aw8e1f0asdd',
     transactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      '0aba012ab7010a4c0a150a0808eed2decb061000120708001000188f0818001206080010001806188084af5f220308b40132007a1f120708001000189d0872100a0e56657279206e696365206d656d6f7a02080012670a650a2103a51c1b6785a7d8931854b1615de9b5cd8f2b47869efac6b94e8a88ddfb22988a324098f02e24306ee9601fcff6eab05dd68a1649da9dfa5459b8a8cbeabde5670db67d0fa21ba40b649e9334597e170df3f0f9d58fcf854f5fc3ad50ad46e689da560aba012ab7010a4c0a150a0808eed2decb061000120708001000188f0818001206080010001803188084af5f220308b40132007a1f120708001000189d0872100a0e56657279206e696365206d656d6f7a02080012670a650a2103a51c1b6785a7d8931854b1615de9b5cd8f2b47869efac6b94e8a88ddfb22988a3240e765ef050af9abc3b7695e5deed7bf8d46ef8c9d7a9acba0ec503d3d949af8134af8edb0063b19005fb5dfa7c59042077e5748a1a98d5cef4b899e1ed76b85e00aba012ab7010a4c0a150a0808eed2decb061000120708001000188f0818001206080010001808188084af5f220308b40132007a1f120708001000189d0872100a0e56657279206e696365206d656d6f7a02080012670a650a2103a51c1b6785a7d8931854b1615de9b5cd8f2b47869efac6b94e8a88ddfb22988a3240c288a27fe9d4fbac19dbdc4a499fdd6b12615eb98179f45bf15ab9ed09383ce94c996ae3c8293eeb2e4b9312ccce760dbce01a463afbc1e6b43d8435a3a2604a0aba012ab7010a4c0a150a0808eed2decb061000120708001000188f0818001206080010001807188084af5f220308b40132007a1f120708001000189d0872100a0e56657279206e696365206d656d6f7a02080012670a650a2103a51c1b6785a7d8931854b1615de9b5cd8f2b47869efac6b94e8a88ddfb22988a3240385d2e9eb2d5785d58e7f4bb6be97261f1f390f51afa2efe47dadbd0321d871678dd728a636c96f67df845ea1ccfc1081e696cf854fa03f54a7b234aea5b48ad0aba012ab7010a4c0a150a0808eed2decb061000120708001000188f0818001206080010001804188084af5f220308b40132007a1f120708001000189d0872100a0e56657279206e696365206d656d6f7a02080012670a650a2103a51c1b6785a7d8931854b1615de9b5cd8f2b47869efac6b94e8a88ddfb22988a3240be786b624c39bb8830143d09e71ced88bb9b1a5c030aeca8b37c50100a13513a4f4baf8f3f91479a9b07e07dd8b4a45516e4879a3a2f7a869354e5154df91976',
+      'hex',
     ),
     unsignedTransactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      '0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      'hex',
     ),
     signature: Buffer.from(
-      '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
+      'fb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
+      'hex',
     ),
     status: TransactionStatus.NEW,
     mirrorNetwork: 'testnet',
@@ -112,6 +120,9 @@ describe('TransactionNodesService', () => {
     transactionCachedNodes: [],
   };
 
+  const singleTransactionKey1 =
+    '03a51c1b6785a7d8931854b1615de9b5cd8f2b47869efac6b94e8a88ddfb22988a';
+
   const singleTransaction2: Transaction = {
     id: 2,
     name: 'Single test transaction 2',
@@ -121,13 +132,16 @@ describe('TransactionNodesService', () => {
     validStart: new Date(),
     transactionHash: '5a381df6a8s4f9e0asd8f46aw8e1f0asdd',
     transactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      '0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      'hex',
     ),
     unsignedTransactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      '0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      'hex',
     ),
     signature: Buffer.from(
-      '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
+      'fb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
+      'hex',
     ),
     status: TransactionStatus.EXECUTED, // different from singleTransaction1 to improve code coverage
     mirrorNetwork: TEST_NETWORK,
@@ -169,13 +183,16 @@ describe('TransactionNodesService', () => {
     validStart: new Date(childTransactionDate1 + 2000),
     transactionHash: '5a381df6a8s4f9e0asd8f46aw8e1f0asdd',
     transactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      '0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      'hex',
     ),
     unsignedTransactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      '0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      'hex',
     ),
     signature: Buffer.from(
-      '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
+      'fb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
+      'hex',
     ),
     status: TransactionStatus.EXECUTED,
     statusCode: 22,
@@ -218,13 +235,16 @@ describe('TransactionNodesService', () => {
     validStart: new Date(childTransactionDate2 + 3000),
     transactionHash: '5a381df6a8s4f9e0asd8f46aw8e1f0asdd',
     transactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      '0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      'hex',
     ),
     unsignedTransactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      '0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      'hex',
     ),
     signature: Buffer.from(
-      '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
+      'fb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
+      'hex',
     ),
     status: TransactionStatus.EXECUTED,
     statusCode: 22,
@@ -267,13 +287,16 @@ describe('TransactionNodesService', () => {
     validStart: new Date(childTransactionDate3 + 3000),
     transactionHash: '5a381df6a8s4f9e0asd8f46aw8e1f0asdd',
     transactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      '0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      'hex',
     ),
     unsignedTransactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      '0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      'hex',
     ),
     signature: Buffer.from(
-      '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
+      'fb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
+      'hex',
     ),
     status: TransactionStatus.EXECUTED,
     statusCode: 22,
@@ -316,13 +339,16 @@ describe('TransactionNodesService', () => {
     validStart: new Date(childTransactionDate4 + 3000),
     transactionHash: '5a381df6a8s4f9e0asd8f46aw8e1f0asdd',
     transactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      '0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      'hex',
     ),
     unsignedTransactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      '0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      'hex',
     ),
     signature: Buffer.from(
-      '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
+      'fb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
+      'hex',
     ),
     status: TransactionStatus.FAILED,
     statusCode: 42,
@@ -364,13 +390,16 @@ describe('TransactionNodesService', () => {
     validStart: new Date(childTransactionDate5 + 3000),
     transactionHash: '5a381df6a8s4f9e0asd8f46aw8e1f0asdd',
     transactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      '0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      'hex',
     ),
     unsignedTransactionBytes: Buffer.from(
-      '0x0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      '0a8b012a88010a83010a170a0b08a1b78ab20610c0c8e722120608001000187b180012060800100018021880c2d72f220308b401320274785a520a221220d3ef6b5fcf45025d011c18bea660cc0add0d35d4f6c9d4a24e70c4ceba49224b1080c0d590830130ffffffffffffffff7f38ffffffffffffffff7f40004a050880ceda036a0361636370008801011200',
+      'hex',
     ),
     signature: Buffer.from(
-      '0xfb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
+      'fb228df4984c1d7bd0d6a915683350c2179f5436fc242d394a625f805c25061a50d9922448e88891a2dd6f9933f155c4b3a47195cfbf54a04597bd67ec27670f',
+      'hex',
     ),
     status: TransactionStatus.NEW,
     statusCode: undefined,
@@ -552,6 +581,11 @@ describe('TransactionNodesService', () => {
   singleTransactionNode1.isManual = singleTransaction1.isManual;
   singleTransactionNode1.groupItemCount = undefined;
   singleTransactionNode1.groupCollectedCount = undefined;
+  singleTransactionNode1.internalSignerCount = 0;
+  singleTransactionNode1.internalSignatureCount = 0;
+  singleTransactionNode1.externalSignerCount = 0;
+  singleTransactionNode1.externalSignatureCount = 0;
+  singleTransactionNode1.unexpectedSignatureCount = 1;
 
   const singleTransactionNode2 = new TransactionNodeDto();
   singleTransactionNode2.transactionId = singleTransaction2.id;
@@ -568,6 +602,11 @@ describe('TransactionNodesService', () => {
   singleTransactionNode2.isManual = singleTransaction2.isManual;
   singleTransactionNode2.groupItemCount = undefined;
   singleTransactionNode2.groupCollectedCount = undefined;
+  singleTransactionNode2.internalSignerCount = 0;
+  singleTransactionNode2.internalSignatureCount = 0;
+  singleTransactionNode2.externalSignerCount = 0;
+  singleTransactionNode2.externalSignatureCount = 0;
+  singleTransactionNode2.unexpectedSignatureCount = 0;
 
   const groupNode1 = new TransactionNodeDto();
   groupNode1.transactionId = undefined;
@@ -584,6 +623,11 @@ describe('TransactionNodesService', () => {
   groupNode1.isManual = undefined;
   groupNode1.groupItemCount = 2;
   groupNode1.groupCollectedCount = 2;
+  groupNode1.internalSignerCount = 0;
+  groupNode1.internalSignatureCount = 0;
+  groupNode1.externalSignerCount = 0;
+  groupNode1.externalSignatureCount = 0;
+  groupNode1.unexpectedSignatureCount = 0;
 
   const groupNode2 = new TransactionNodeDto();
   groupNode2.transactionId = undefined;
@@ -600,6 +644,11 @@ describe('TransactionNodesService', () => {
   groupNode2.isManual = undefined;
   groupNode2.groupItemCount = 2;
   groupNode2.groupCollectedCount = 2;
+  groupNode2.internalSignerCount = 0;
+  groupNode2.internalSignatureCount = 0;
+  groupNode2.externalSignerCount = 0;
+  groupNode2.externalSignatureCount = 0;
+  groupNode2.unexpectedSignatureCount = 0;
 
   const groupNode3 = new TransactionNodeDto();
   groupNode3.transactionId = undefined;
@@ -616,6 +665,11 @@ describe('TransactionNodesService', () => {
   groupNode3.isManual = undefined;
   groupNode3.groupItemCount = 1;
   groupNode3.groupCollectedCount = 1;
+  groupNode3.internalSignerCount = 0;
+  groupNode3.internalSignatureCount = 0;
+  groupNode3.externalSignerCount = 0;
+  groupNode3.externalSignatureCount = 0;
+  groupNode3.unexpectedSignatureCount = 0;
 
   const allNodes = [
     groupNode1,
@@ -662,6 +716,14 @@ describe('TransactionNodesService', () => {
             provide: SchedulerService,
             useValue: schedulerService,
           },
+          {
+            provide: TransactionSignatureService,
+            useValue: signatureService,
+          },
+          {
+            provide: DataSource,
+            useValue: dataSource,
+          },
         ],
       }).compile();
 
@@ -673,6 +735,7 @@ describe('TransactionNodesService', () => {
     it('TransactionNodeCollection.READY_FOR_REVIEW => getTransactionsToApprove()', async () => {
       transactionsService.getTransactionsToApprove.mockResolvedValue(allTransactionPage);
       transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
+      signatureService.computeSignatureKey.mockResolvedValue(new KeyList());
 
       const r = await service.getTransactionNodes(
         user,
@@ -697,6 +760,7 @@ describe('TransactionNodesService', () => {
 
       transactionsService.getTransactionsToSign.mockResolvedValue(result);
       transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
+      signatureService.computeSignatureKey.mockResolvedValue(new KeyList());
 
       const r = await service.getTransactionNodes(
         user,
@@ -712,6 +776,7 @@ describe('TransactionNodesService', () => {
     it('TransactionNodeCollection.READY_FOR_EXECUTION => getTransactions(TransactionStatus.WAITING_FOR_EXECUTION)', async () => {
       transactionsService.getTransactions.mockResolvedValue(allTransactionPage);
       transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
+      signatureService.computeSignatureKey.mockResolvedValue(new KeyList());
 
       const r = await service.getTransactionNodes(
         user,
@@ -727,6 +792,7 @@ describe('TransactionNodesService', () => {
     it('TransactionNodeCollection.IN_PROGRESS => getTransactions(TransactionStatus.WAITING_FOR_SIGNATURES)', async () => {
       transactionsService.getTransactions.mockResolvedValue(allTransactionPage);
       transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
+      signatureService.computeSignatureKey.mockResolvedValue(new KeyList());
 
       const r = await service.getTransactionNodes(
         user,
@@ -742,6 +808,7 @@ describe('TransactionNodesService', () => {
     it('TransactionNodeCollection.HISTORY => getHistoryTransactions()', async () => {
       transactionsService.getHistoryTransactions.mockResolvedValue(allTransactionPage);
       transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
+      signatureService.computeSignatureKey.mockResolvedValue(new KeyList());
 
       const r = await service.getTransactionNodes(
         user,
@@ -757,6 +824,7 @@ describe('TransactionNodesService', () => {
     it('status filtering is effective', async () => {
       transactionsService.getHistoryTransactions.mockResolvedValue(allTransactionPage);
       transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
+      signatureService.computeSignatureKey.mockResolvedValue(new KeyList());
 
       const r = await service.getTransactionNodes(
         user,
@@ -772,6 +840,7 @@ describe('TransactionNodesService', () => {
     it('transaction type filtering is effective', async () => {
       transactionsService.getHistoryTransactions.mockResolvedValue(allTransactionPage);
       transactionGroupsService.getTransactionGroup.mockImplementation(getTransactionGroupMock);
+      signatureService.computeSignatureKey.mockResolvedValue(new KeyList());
 
       const r = await service.getTransactionNodes(
         user,
