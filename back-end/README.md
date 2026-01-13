@@ -90,10 +90,12 @@ Example: Create Brevo Account:
 
 1. Create a free tier [Brevo account](https://onboarding.brevo.com/account/register)
 2. Log in to your account.
-3. Select the drop down menu on the top right of the page next to the notifications icon.
-4. Select on SMTP & API.
-5. Copy the SMTP key value.
-6. Enter the SMTP key in the `apps/notifications/.env`:
+3. Select the drop down menu in the top-right corner (next to the notifications icon).
+4. Select Settings from the dropdown menu.
+5. In the left sidebar under Organization settings, select SMTP & API.
+6. Locate your SMTP key in the SMTP keys table.
+7. (Optional) If no SMTP key appears, select **Generate a new SMTP Key** in the top-right corner.
+8. Copy the SMTP key value and add it to your `apps/notifications/.env`:
 
 ```
    EMAIL_API_HOST=smtp-relay.brevo.com
@@ -141,7 +143,7 @@ You can deploy using either the automated script (preferred) or manual steps.
 Option 1: Automated Deployment (Preferred)
 
    ```bash
-   sh deploy.sh
+   pnpm deploy:dev
    # or
    ./deploy.sh
    ```
