@@ -571,6 +571,7 @@ export class TransactionPage extends BasePage {
     await this.fillInDeletedAccountId(accountId);
     await this.clickOnSignAndSubmitButton(true);
     await this.clickOnConfirmDeleteAccountButton();
+    await this.window.waitForTimeout(500);
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
     const transactionId = await this.getTransactionDetailsId();
