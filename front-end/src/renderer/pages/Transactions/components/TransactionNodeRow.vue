@@ -91,13 +91,13 @@ const hasOldNotifications = computed(() => {
     const matchesType = notificationTypes.includes(n.notification.type);
 
     const hasEntityIds =
-      n.notification.entityId != null && props.node.transactionId != null;
+      n.notification.entityId !== undefined && props.node.transactionId !== undefined;
     const matchesEntity =
       hasEntityIds && n.notification.entityId === props.node.transactionId;
 
     const notificationGroupId = n.notification.additionalData?.groupId;
     const hasGroupIds =
-      notificationGroupId != null && props.node.groupId != null;
+      notificationGroupId !== undefined && props.node.groupId !== undefined;
     const matchesGroup =
       hasGroupIds && notificationGroupId === props.node.groupId;
 
