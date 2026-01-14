@@ -169,14 +169,32 @@ function handleInputValidation(e: Event) {
 }
 
 /* Functions */
+function stripProtocolAndPath(input: string): string {
+  let result = input.trim();
+
+  // Remove protocol prefix (http://, https://, grpc://, etc.)
+  result = result.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, '');
+
+  // Remove path (everything after the first /)
+  // Preserve trailing dot for FQDN
+  const slashIndex = result.indexOf('/');
+  if (slashIndex !== -1) {
+    result = result.substring(0, slashIndex);
+  }
+
+  return result;
+}
+
 function getEndpointData(ipOrDomain: string, port: string) {
   let ip = '';
   let domain = '';
 
-  if (ipOrDomain.match(validIp)) {
-    ip = ipOrDomain;
+  const cleanedInput = stripProtocolAndPath(ipOrDomain);
+
+  if (cleanedInput.match(validIp)) {
+    ip = cleanedInput;
   } else {
-    domain = ipOrDomain;
+    domain = cleanedInput;
   }
 
   return {
@@ -192,7 +210,9 @@ function getGrpcWebProxyEndpoint(field: 'domainName' | 'port', value: string) {
     grpcWebProxyEndpoint: {
       ipAddressV4: '',
       domainName:
-        field === 'domainName' ? value : props.data.grpcWebProxyEndpoint?.domainName || '',
+        field === 'domainName'
+          ? stripProtocolAndPath(value)
+          : props.data.grpcWebProxyEndpoint?.domainName || '',
       port: field === 'port' ? value : props.data.grpcWebProxyEndpoint?.port || '',
     },
   });
