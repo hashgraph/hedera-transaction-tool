@@ -91,5 +91,10 @@
   },
   "engines": {
     "node": ">=22.12.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "better-sqlite3": "11.8.1"
+    }
   }
 }
