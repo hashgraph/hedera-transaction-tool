@@ -15,6 +15,7 @@ import { signTransaction } from '@renderer/services/transactionService.ts';
 import TransactionBrowser from '@renderer/components/ExternalSigning/TransactionBrowser/TransactionBrowser.vue';
 import { useToast } from 'vue-toast-notification';
 import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
+import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Props */
 const props = defineProps<{
@@ -38,6 +39,7 @@ const nodeInfoCache = NodeByIdCache.inject();
 /* State */
 const transactionFile = ref<TransactionFile | null>(null);
 const itemsToBeSigned = ref<TransactionFileItem[]>([]);
+const showSuccessModal = ref(false);
 
 /* Handlers */
 async function handleSignAll() {
@@ -92,7 +94,7 @@ async function handleSignAll() {
     }
     try {
       await writeTransactionFile(updatedFile, props.filePath!);
-      show.value = false;
+      showSuccessModal.value = true;
     } catch (error) {
       console.log(getErrorMessage(error, 'Failed to update transaction file'));
       toast.error('Failed to update file', errorToastOptions);
@@ -172,5 +174,31 @@ watch(
         </div>
       </div>
     </template>
+
+    <AppModal v-model:show="showSuccessModal" class="common-modal">
+      <form class="p-5" @submit.prevent="show = false">
+        <div>
+          <i class="bi bi-x-lg cursor-pointer" @click.prevent="show = false"></i>
+        </div>
+
+        <div class="text-center">
+          <AppCustomIcon :name="'success'" style="height: 80px" />
+        </div>
+
+        <h3 class="text-center text-title text-bold mt-4">Transaction file updated</h3>
+
+        <div class="text-center text-secondary mt-4">
+          You have successfully signed {{ itemsToBeSigned.length }}
+          {{ itemsToBeSigned.length > 1 ? 'transactions' : 'transaction' }}.
+        </div>
+        <div class="text-center text-small text-muted mt-4">
+          You may now send the file back to the person who sent it to you.
+        </div>
+
+        <div class="d-grid mt-5">
+          <AppButton color="primary" data-testid="button-close" type="submit">Close</AppButton>
+        </div>
+      </form>
+    </AppModal>
   </AppModal>
 </template>
