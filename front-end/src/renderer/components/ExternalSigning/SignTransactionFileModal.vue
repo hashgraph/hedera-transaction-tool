@@ -9,10 +9,12 @@ import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { assertUserLoggedIn, hexToUint8Array, uint8ToHex } from '@renderer/utils';
+import { assertUserLoggedIn, getErrorMessage, hexToUint8Array, uint8ToHex } from '@renderer/utils';
 import { SignatureMap, Transaction } from '@hashgraph/sdk';
 import { signTransaction } from '@renderer/services/transactionService.ts';
 import TransactionBrowser from '@renderer/components/ExternalSigning/TransactionBrowser/TransactionBrowser.vue';
+import { useToast } from 'vue-toast-notification';
+import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -25,6 +27,9 @@ const show = defineModel<boolean>('show', { required: true });
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+
+/* Composables */
+const toast = useToast();
 
 /* Injected */
 const accountInfoCache = AccountByIdCache.inject();
@@ -85,9 +90,14 @@ async function handleSignAll() {
       }
       updatedFile.items.push(updatedItem);
     }
-    await writeTransactionFile(updatedFile, props.filePath!);
+    try {
+      await writeTransactionFile(updatedFile, props.filePath!);
+      show.value = false;
+    } catch (error) {
+      console.log(getErrorMessage(error, 'Failed to update transaction file'));
+      toast.error('Failed to update file', errorToastOptions);
+    }
   }
-  show.value = false;
 }
 
 /* Watchers */
