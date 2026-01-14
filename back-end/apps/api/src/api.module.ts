@@ -18,7 +18,7 @@ import getEnvFilePaths from './config/envFilePaths';
 
 import { FrontendVersionGuard, IpThrottlerGuard } from './guards';
 
-import { EmailThrottlerModule, IpThrottlerModule } from './modules';
+import { EmailThrottlerModule, IpThrottlerModule } from './throttlers';
 
 import { AuthModule } from './auth/auth.module';
 import { TransactionsModule } from './transactions/transactions.module';

@@ -17,7 +17,7 @@ import {
   emitTransactionStatusUpdate,
   emitTransactionUpdate,
   ErrorCodes,
-  MirrorNodeService,
+  TransactionSignatureService,
   NatsPublisherService,
   userKeysRequiredToSign,
   verifyTransactionBodyWithoutNodeAccountIdSignature,
@@ -58,7 +58,7 @@ export class ApproversService {
     @InjectRepository(TransactionApprover)
     private repo: Repository<TransactionApprover>,
     @InjectDataSource() private dataSource: DataSource,
-    private readonly mirrorNodeService: MirrorNodeService,
+    private readonly transactionSignatureService: TransactionSignatureService,
     private readonly notificationsPublisher: NatsPublisherService,
   ) {}
 
@@ -124,7 +124,7 @@ export class ApproversService {
     const userKeysToSign = await userKeysRequiredToSign(
       transaction,
       user,
-      this.mirrorNodeService,
+      this.transactionSignatureService,
       this.dataSource.manager,
     );
 

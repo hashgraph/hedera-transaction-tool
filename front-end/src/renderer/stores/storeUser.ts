@@ -22,13 +22,17 @@ import useVersionCheck from '@renderer/composables/useVersionCheck';
 
 import { safeAwait } from '@renderer/utils';
 import * as ush from '@renderer/utils/userStoreHelpers';
+import { getVersionStatusForOrg, triggeringOrganizationServerUrl } from './versionState';
 
 import useNetworkStore from './storeNetwork';
+import useOrganizationConnection from './storeOrganizationConnection';
 import { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
+import { reconnectOrganization } from '@renderer/services/organization';
 
 const useUserStore = defineStore('user', () => {
   /* Stores */
   const network = useNetworkStore();
+  const orgConnection = useOrganizationConnection();
 
   /* Composables */
   const afterOrganizationSelection = useAfterOrganizationSelection();
@@ -184,6 +188,25 @@ const useUserStore = defineStore('user', () => {
   /* Organization */
   const selectOrganization = async (organization: Organization | null) => {
     await nextTick();
+
+    if (organization) {
+      const connectionStatus = orgConnection.getConnectionStatus(organization.serverUrl);
+      const disconnectReason = orgConnection.getDisconnectReason(organization.serverUrl);
+
+      // Prevent selecting organizations that are disconnected due to upgrade requirement
+      if (connectionStatus === 'disconnected' && disconnectReason === 'upgradeRequired') {
+        const versionStatus = getVersionStatusForOrg(organization.serverUrl);
+        
+        if (versionStatus === 'belowMinimum') {
+          triggeringOrganizationServerUrl.value = organization.serverUrl;
+          return;
+        }
+
+        await reconnectOrganization(organization.serverUrl);
+        return;
+      }
+    }
+
     selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
     await afterOrganizationSelection();
   };

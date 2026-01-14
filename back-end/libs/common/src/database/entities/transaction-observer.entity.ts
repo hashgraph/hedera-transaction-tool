@@ -2,10 +2,10 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  Generated,
+  Index,
   JoinColumn,
   ManyToOne,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Transaction } from './transaction.entity';
@@ -17,9 +17,11 @@ export enum Role {
 }
 
 @Entity()
+@Index(['userId', 'transactionId'], { unique: true })
+@Index(['transactionId'])
+@Index(['userId'])
 export class TransactionObserver {
-  @Column()
-  @Generated('increment')
+  @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
@@ -29,14 +31,14 @@ export class TransactionObserver {
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @PrimaryColumn()
+  @Column()
   userId: number;
 
   @ManyToOne(() => Transaction, transaction => transaction.observers)
   @JoinColumn({ name: 'transactionId' })
   transaction: Transaction;
 
-  @PrimaryColumn()
+  @Column()
   transactionId: number;
 
   @CreateDateColumn()

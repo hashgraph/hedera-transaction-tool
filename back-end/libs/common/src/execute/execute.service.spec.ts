@@ -6,7 +6,6 @@ import {
   AccountCreateTransaction,
   AccountUpdateTransaction,
   Client,
-  FileUpdateTransaction,
   KeyList,
   Long,
   NodeUpdateTransaction,
@@ -17,16 +16,14 @@ import {
 
 import {
   hasValidSignatureKey,
-  computeSignatureKey,
   getClientFromNetwork,
   getStatusCodeFromMessage,
-  ExecuteService,
-  MirrorNodeService,
-  transactionIs,
   NatsPublisherService,
   emitTransactionStatusUpdate,
+  TransactionSignatureService,
 } from '@app/common';
 import { Transaction, TransactionGroup, TransactionStatus } from '@entities';
+import { ExecuteService } from './execute.service';
 
 jest.mock('@app/common/utils');
 jest.mock('murlock', () => {
@@ -45,9 +42,8 @@ describe('ExecuteService', () => {
   let service: ExecuteService;
 
   const transactionRepo = mockDeep<Repository<Transaction>>();
-  const transactionGroupRepo = mockDeep<Repository<TransactionGroup>>();
   const notificationsPublisher = mockDeep<NatsPublisherService>();
-  const mirrorNodeService = mockDeep<MirrorNodeService>();
+  const transactionSignatureService = mockDeep<TransactionSignatureService>();
 
   const getExecutableTransaction = (
     baseTransaction: Partial<Transaction>,
@@ -55,11 +51,6 @@ describe('ExecuteService', () => {
     ...baseTransaction,
     transactionBytes: new AccountCreateTransaction().toBytes() as Buffer,
     status: TransactionStatus.WAITING_FOR_EXECUTION,
-  });
-
-  const getFileTransaction = (baseTransaction: Partial<Transaction>): Partial<Transaction> => ({
-    ...baseTransaction,
-    transactionBytes: new FileUpdateTransaction().toBytes() as Buffer,
   });
 
   const getAccountUpdateTransaction = (
@@ -77,7 +68,7 @@ describe('ExecuteService', () => {
   });
 
   const getTransaction = (
-    type: 'executable' | 'file' | 'account_update' | 'node_update',
+    type: 'executable' | 'account_update' | 'node_update' = 'executable',
   ): Partial<Transaction> => {
     const baseTransaction = {
       id: 1,
@@ -92,8 +83,6 @@ describe('ExecuteService', () => {
     switch (type) {
       case 'executable':
         return getExecutableTransaction(baseTransaction);
-      case 'file':
-        return getFileTransaction(baseTransaction);
       case 'account_update':
         return getAccountUpdateTransaction(baseTransaction);
       case 'node_update':
@@ -137,8 +126,8 @@ describe('ExecuteService', () => {
           useValue: notificationsPublisher,
         },
         {
-          provide: MirrorNodeService,
-          useValue: mirrorNodeService,
+          provide: TransactionSignatureService,
+          useValue: transactionSignatureService,
         },
       ],
     }).compile();
@@ -156,7 +145,7 @@ describe('ExecuteService', () => {
       const transaction = getTransaction('executable') as Transaction;
 
       transactionRepo.findOne.mockResolvedValueOnce(transaction);
-      jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
+      transactionSignatureService.computeSignatureKey.mockResolvedValueOnce(new KeyList());
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
       const { receipt, response } = mockSDKTransactionExecution();
@@ -173,6 +162,7 @@ describe('ExecuteService', () => {
         },
       );
       expect(client.close).toHaveBeenCalled();
+      expect(emitTransactionStatusUpdate).toHaveBeenCalled();
     });
 
     it('should execute a transaction and save default code', async () => {
@@ -180,7 +170,7 @@ describe('ExecuteService', () => {
       const transaction = getTransaction('executable') as Transaction;
 
       transactionRepo.findOne.mockResolvedValueOnce(transaction);
-      jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
+      transactionSignatureService.computeSignatureKey.mockResolvedValueOnce(new KeyList());
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
       jest.spyOn(SDKTransaction.prototype, 'execute').mockImplementation(async () => {
@@ -214,7 +204,7 @@ describe('ExecuteService', () => {
       const transaction = getTransaction('executable') as Transaction;
 
       transactionRepo.findOne.mockResolvedValueOnce(transaction);
-      jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
+      transactionSignatureService.computeSignatureKey.mockResolvedValueOnce(new KeyList());
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
       jest.spyOn(SDKTransaction.prototype, 'execute').mockRejectedValueOnce({
@@ -240,7 +230,7 @@ describe('ExecuteService', () => {
       const transaction = getTransaction('executable') as Transaction;
 
       transactionRepo.findOne.mockResolvedValueOnce(transaction);
-      jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
+      transactionSignatureService.computeSignatureKey.mockResolvedValueOnce(new KeyList());
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
       jest.spyOn(SDKTransaction.prototype, 'execute').mockRejectedValueOnce({
@@ -264,97 +254,11 @@ describe('ExecuteService', () => {
       expect(emitTransactionStatusUpdate).toHaveBeenCalled();
     });
 
-    it('should update the account info if the transaction is account update', async () => {
-      const client = mockDeep<Client>();
-      const transaction = getTransaction('account_update') as Transaction;
-
-      transactionRepo.findOne.mockResolvedValueOnce(transaction);
-      jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
-      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
-      jest.mocked(transactionIs).mockReturnValueOnce(true);
-
-      jest.useFakeTimers();
-
-      await service.executeTransaction(transaction);
-
-      jest.runAllTimers();
-      jest.useRealTimers();
-
-      expect(mirrorNodeService.updateAccountInfo).toHaveBeenCalled();
-    });
-
-    it('should handle errors when updating account info', async () => {
-      const client = mockDeep<Client>();
-      const transaction = getTransaction('account_update') as Transaction;
-
-      transactionRepo.findOne.mockResolvedValueOnce(transaction);
-      jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
-      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
-      jest.mocked(transactionIs).mockReturnValueOnce(true);
-      mirrorNodeService.updateAccountInfo.mockRejectedValueOnce(
-        new Error('Failed to update account info'),
-      );
-      jest.useFakeTimers();
-
-      await service.executeTransaction(transaction);
-
-      await jest.advanceTimersToNextTimerAsync();
-      jest.useRealTimers();
-
-      expect(mirrorNodeService.updateAccountInfo).toHaveBeenCalled();
-    });
-
-    it('should update the node info if the transaction is node update', async () => {
-      const client = mockDeep<Client>();
-      const transaction = getTransaction('node_update') as Transaction;
-
-      transactionRepo.findOne.mockResolvedValueOnce(transaction);
-      jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
-      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
-      jest.mocked(transactionIs).mockReturnValueOnce(false);
-      jest.mocked(transactionIs).mockReturnValueOnce(true);
-
-      jest.useFakeTimers();
-
-      await service.executeTransaction(transaction);
-
-      jest.runAllTimers();
-      jest.useRealTimers();
-
-      expect(mirrorNodeService.updateNodeInfo).toHaveBeenCalled();
-    });
-
-    it('should handle errors when updating node info', async () => {
-      const client = mockDeep<Client>();
-      const transaction = getTransaction('node_update') as Transaction;
-
-      transactionRepo.findOne.mockResolvedValueOnce(transaction);
-      jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
-      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
-      jest.mocked(transactionIs).mockReturnValueOnce(false);
-      jest.mocked(transactionIs).mockReturnValueOnce(true);
-      mirrorNodeService.updateNodeInfo.mockRejectedValueOnce(
-        new Error('Failed to update node info'),
-      );
-      jest.useFakeTimers();
-
-      await service.executeTransaction(transaction);
-
-      await jest.advanceTimersToNextTimerAsync();
-      jest.useRealTimers();
-
-      expect(mirrorNodeService.updateNodeInfo).toHaveBeenCalled();
-    });
-
     it('should throw on invalid signature', async () => {
       const transaction = getTransaction('executable') as Transaction;
 
       transactionRepo.findOne.mockResolvedValueOnce(transaction);
-      jest.mocked(computeSignatureKey).mockResolvedValueOnce(new KeyList());
+      transactionSignatureService.computeSignatureKey.mockResolvedValueOnce(new KeyList());
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(false);
 
       await expect(service.executeTransaction(transaction)).rejects.toThrow(
@@ -413,13 +317,9 @@ describe('ExecuteService', () => {
       await expect(service.executeTransaction(transaction)).rejects.toThrow(
         'Transaction is archived.',
       );
-
-      transaction.isManual = false;
     });
 
     it('should throw if transaction is null or undefined', async () => {
-      transactionRepo.findOne.mockResolvedValueOnce(undefined);
-
       await expect(service.executeTransaction(null)).rejects.toThrow('Transaction not found');
       await expect(service.executeTransaction(undefined)).rejects.toThrow('Transaction not found');
     });
@@ -456,7 +356,7 @@ describe('ExecuteService', () => {
           transaction,
         });
       }
-      jest.mocked(computeSignatureKey).mockResolvedValue(new KeyList());
+      transactionSignatureService.computeSignatureKey.mockResolvedValue(new KeyList());
       jest.mocked(hasValidSignatureKey).mockReturnValue(true);
       jest.mocked(getClientFromNetwork).mockResolvedValue(client);
     });
@@ -465,7 +365,6 @@ describe('ExecuteService', () => {
       const { receipt, response } = mockSDKTransactionExecution();
 
       transactionGroup.sequential = true;
-      transactionGroupRepo.findOne.mockResolvedValueOnce(transactionGroup);
       transactionRepo.findOne.mockResolvedValue({
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       } as Transaction);
@@ -490,7 +389,6 @@ describe('ExecuteService', () => {
       const { receipt, response } = mockSDKTransactionExecution();
 
       transactionGroup.sequential = true;
-      transactionGroupRepo.findOne.mockResolvedValueOnce(transactionGroup);
       transactionRepo.findOne.mockResolvedValue({
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       } as Transaction);
@@ -512,7 +410,6 @@ describe('ExecuteService', () => {
     it('should execute a group of transactions in parallel', async () => {
       const { receipt, response } = mockSDKTransactionExecution();
 
-      transactionGroupRepo.findOne.mockResolvedValueOnce(transactionGroup);
       transactionRepo.findOne.mockResolvedValue({
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       } as Transaction);
@@ -539,7 +436,6 @@ describe('ExecuteService', () => {
         },
       });
 
-      transactionGroupRepo.findOne.mockResolvedValueOnce(transactionGroup);
       transactionRepo.findOne.mockResolvedValue({
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       } as Transaction);
@@ -568,8 +464,6 @@ describe('ExecuteService', () => {
         // @ts-expect-error private function
         .mockRejectedValueOnce(new Error(errorMessage));
 
-      transactionGroupRepo.findOne.mockResolvedValueOnce(transactionGroup);
-
       await expect(service.executeTransactionGroup(transactionGroup)).rejects.toThrow(
         `Transaction Group cannot be submitted. Error validating transaction 0: ${errorMessage}`,
       );
@@ -580,7 +474,6 @@ describe('ExecuteService', () => {
 
       transactionGroup.groupItems[0].transaction.status = TransactionStatus.CANCELED;
 
-      transactionGroupRepo.findOne.mockResolvedValueOnce(transactionGroup);
       transactionRepo.findOne.mockResolvedValue({
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       } as Transaction);
@@ -615,7 +508,6 @@ describe('ExecuteService', () => {
         groupItem.transaction.status = TransactionStatus.CANCELED;
       });
 
-      transactionGroupRepo.findOne.mockResolvedValueOnce(transactionGroup);
       transactionRepo.findOne.mockResolvedValue({
         status: TransactionStatus.WAITING_FOR_EXECUTION,
       } as Transaction);

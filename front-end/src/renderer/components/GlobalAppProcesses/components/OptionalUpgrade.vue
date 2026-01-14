@@ -1,23 +1,88 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import useVersionCheck from '@renderer/composables/useVersionCheck';
 import useElectronUpdater from '@renderer/composables/useElectronUpdater';
 import { UPDATE_ERROR_MESSAGES } from '@shared/constants';
 
-import { convertBytes } from '@renderer/utils';
+import { formatProgressBytes } from '@renderer/utils';
+import { warningToastOptions } from '@renderer/utils/toastOptions';
+
+import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organization/versionCompatibility';
+import type { CompatibilityConflict } from '@renderer/services/organization/versionCompatibility';
+
+import { getAllOrganizationVersions, getVersionStatusForOrg } from '@renderer/stores/versionState';
+import useUserStore from '@renderer/stores/storeUser';
+
+import { useToast } from 'vue-toast-notification';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppProgressBar from '@renderer/components/ui/AppProgressBar.vue';
+import CompatibilityWarningModal from '@renderer/components/Organization/CompatibilityWarningModal.vue';
 
 const { versionStatus, updateUrl, latestVersion, isDismissed, dismissOptionalUpdate } =
   useVersionCheck();
 const { state, progress, error, updateInfo, startUpdate, installUpdate, cancelUpdate } =
   useElectronUpdater();
+const toast = useToast();
+const user = useUserStore();
+
+const compatibilityResult = ref<{
+  hasConflict: boolean;
+  conflicts: CompatibilityConflict[];
+  suggestedVersion: string | null;
+  isOptional: boolean;
+} | null>(null);
+const showCompatibilityWarning = ref(false);
+const isCheckingCompatibility = ref(false);
+
+watch([() => versionStatus.value, () => latestVersion.value], async ([status, latestVer]) => {
+  if (status === 'updateAvailable' && latestVer && !isDismissed.value) {
+    isCheckingCompatibility.value = true;
+    try {
+      const orgsWithOptionalUpdates = user.organizations.filter(
+        org => getVersionStatusForOrg(org.serverUrl) === 'updateAvailable',
+      );
+
+      if (orgsWithOptionalUpdates.length === 0) {
+        return;
+      }
+
+      const triggeringOrg = orgsWithOptionalUpdates[0];
+      const allVersions = getAllOrganizationVersions();
+      const versionData = allVersions[triggeringOrg.serverUrl];
+
+      if (versionData?.latestSupportedVersion) {
+        const result = await checkCompatibilityAcrossOrganizations(
+          versionData.latestSupportedVersion,
+          triggeringOrg.serverUrl,
+        );
+
+        if (result.hasConflict) {
+          compatibilityResult.value = result;
+          showCompatibilityWarning.value = true;
+
+          const conflictOrgNames = result.conflicts.map(c => c.organizationName).join(', ');
+          toast.warning(
+            `Update may cause issues with ${conflictOrgNames}. Please review compatibility warnings.`,
+            warningToastOptions,
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Compatibility check failed:', error);
+    } finally {
+      isCheckingCompatibility.value = false;
+    }
+  }
+});
 
 const shown = computed(
-  () => versionStatus.value === 'updateAvailable' && !isDismissed.value,
+  () =>
+    versionStatus.value === 'updateAvailable' &&
+    !isDismissed.value &&
+    !showCompatibilityWarning.value,
 );
 
 const isChecking = computed(() => state.value === 'checking');
@@ -50,6 +115,8 @@ const handleInstall = () => {
 const handleLater = () => {
   cancelUpdate();
   dismissOptionalUpdate();
+  showCompatibilityWarning.value = false;
+  compatibilityResult.value = null;
 };
 
 const handleRetry = () => {
@@ -57,19 +124,30 @@ const handleRetry = () => {
     startUpdate(updateUrl.value);
   }
 };
+
+const handleCompatibilityProceed = () => {
+  showCompatibilityWarning.value = false;
+  handleUpdate();
+};
+
+const handleCompatibilityCancel = () => {
+  showCompatibilityWarning.value = false;
+  handleLater();
+};
 </script>
 <template>
   <AppModal :show="shown" :close-on-click-outside="false" class="modal-fit-content">
-    <!-- Checking for update -->
     <div v-if="isChecking" class="text-center p-4">
       <div>
-        <i class="bi bi-arrow-repeat text-primary" style="font-size: 4rem; animation: spin 1s linear infinite"></i>
+        <i
+          class="bi bi-arrow-repeat text-primary"
+          style="font-size: 4rem; animation: spin 1s linear infinite"
+        ></i>
       </div>
       <h2 class="text-title text-semi-bold mt-4">Checking for Update</h2>
       <p class="text-small text-secondary mt-3">Please wait...</p>
     </div>
 
-    <!-- Downloading -->
     <div v-else-if="isDownloading" class="text-center p-4">
       <div>
         <i class="bi bi-download text-primary" style="font-size: 4rem"></i>
@@ -81,12 +159,12 @@ const handleRetry = () => {
       <div class="d-grid mt-4" v-if="progress">
         <div class="d-flex justify-content-between">
           <p class="text-start text-footnote mt-3">
-            {{ convertBytes(progress.transferred || 0, { useBinaryUnits: false, decimals: 2 }) || '0' }}
+            {{ formatProgressBytes(progress.transferred) }}
             of
-            {{ convertBytes(progress.total || 0, { useBinaryUnits: false, decimals: 2 }) || '0' }}
+            {{ formatProgressBytes(progress.total) }}
           </p>
           <p class="text-start text-micro mt-3">
-            {{ convertBytes(progress.bytesPerSecond || 0, { useBinaryUnits: false, decimals: 2 }) || '' }}/s
+            {{ formatProgressBytes(progress.bytesPerSecond, '') }}/s
           </p>
         </div>
         <AppProgressBar
@@ -102,7 +180,6 @@ const handleRetry = () => {
       </div>
     </div>
 
-    <!-- Downloaded -->
     <div v-else-if="isDownloaded" class="text-center p-4">
       <div>
         <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem"></i>
@@ -121,7 +198,6 @@ const handleRetry = () => {
       </div>
     </div>
 
-    <!-- Error -->
     <div v-else-if="hasError && errorMessage" class="text-center p-4">
       <div>
         <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 4rem"></i>
@@ -140,7 +216,6 @@ const handleRetry = () => {
       </div>
     </div>
 
-    <!-- Initial prompt -->
     <div v-else class="text-center p-4">
       <div>
         <i class="bi bi-arrow-up-circle-fill text-primary" style="font-size: 4rem"></i>
@@ -159,6 +234,17 @@ const handleRetry = () => {
         </AppButton>
       </div>
     </div>
+
+    <CompatibilityWarningModal
+      v-if="compatibilityResult"
+      :show="showCompatibilityWarning"
+      :conflicts="compatibilityResult.conflicts || []"
+      :suggested-version="compatibilityResult.suggestedVersion || latestVersion || ''"
+      :is-optional="true"
+      @proceed="handleCompatibilityProceed"
+      @cancel="handleCompatibilityCancel"
+      @update:show="showCompatibilityWarning = $event"
+    />
   </AppModal>
 </template>
 

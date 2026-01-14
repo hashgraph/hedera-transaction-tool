@@ -71,8 +71,7 @@ describe('FrontendVersionGuard', () => {
         expect(error).toBeInstanceOf(HttpException);
         expect((error as HttpException).getStatus()).toBe(426);
         const response = (error as HttpException).getResponse() as Record<string, unknown>;
-        expect(response.minimumVersion).toBe('1.0.0');
-        expect(response.currentVersion).toBe('0.9.0');
+        expect(response.minimumSupportedVersion).toBe('1.0.0');
       }
     });
 
@@ -487,4 +486,3 @@ describe('FrontendVersionGuard', () => {
     });
   });
 });
-

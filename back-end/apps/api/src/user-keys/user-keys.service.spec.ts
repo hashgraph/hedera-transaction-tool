@@ -11,6 +11,7 @@ import { User, UserKey } from '@entities';
 import { UserKeysService } from './user-keys.service';
 
 import { UpdateUserKeyMnemonicHashDto, UploadUserKeyDto } from './dtos';
+import { PrivateKey } from '@hashgraph/sdk';
 
 jest.mock('@app/common/utils');
 describe('UserKeysService', () => {
@@ -59,8 +60,14 @@ describe('UserKeysService', () => {
     let dto: UploadUserKeyDto;
 
     beforeEach(() => {
+      jest.restoreAllMocks();
+
       user = { id: 1 } as unknown as User;
-      dto = { publicKey: 'test-public-key', mnemonicHash: 'test-hash', index: 0 };
+      dto = {
+        publicKey: PrivateKey.generateED25519().publicKey.toStringRaw(),
+        mnemonicHash: 'test-hash',
+        index: 0,
+      };
     });
 
     it('should throw BadRequestException if public key is in use by a different user', async () => {
@@ -76,6 +83,7 @@ describe('UserKeysService', () => {
       repo.findOne.mockResolvedValue(existingUserKey as UserKey);
 
       await expect(service.uploadKey(user, dto)).rejects.toThrow(BadRequestException);
+      await expect(service.uploadKey(user, dto)).rejects.toThrow(ErrorCodes.PU);
     });
 
     it('should throw BadRequestException if public key is in use but dto has different index', async () => {

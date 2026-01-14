@@ -3,8 +3,8 @@ import * as pc from 'picocolors';
 import { DataSource, DeepPartial, EntityTarget, ObjectLiteral } from 'typeorm';
 import {
   AccountCreateTransaction,
-  AccountUpdateTransaction,
   AccountId,
+  AccountUpdateTransaction,
   Client,
   FileCreateTransaction,
   KeyList,
@@ -12,27 +12,27 @@ import {
 } from '@hashgraph/sdk';
 
 import {
-  User,
-  UserKey,
-  Transaction,
-  TransactionApprover,
-  TransactionSigner,
-  TransactionObserver,
-  TransactionComment,
-  TransactionGroupItem,
-  TransactionGroup,
-  UserStatus,
-  TransactionStatus,
-  Notification,
-  NotificationPreferences,
-  NotificationReceiver,
-  NotificationType,
-  TransactionNode,
-  TransactionAccount,
   CachedAccount,
   CachedAccountKey,
   CachedNode,
   CachedNodeAdminKey,
+  Notification,
+  NotificationPreferences,
+  NotificationReceiver,
+  NotificationType,
+  Transaction,
+  TransactionApprover,
+  TransactionCachedAccount,
+  TransactionCachedNode,
+  TransactionComment,
+  TransactionGroup,
+  TransactionGroupItem,
+  TransactionObserver,
+  TransactionSigner,
+  TransactionStatus,
+  User,
+  UserKey,
+  UserStatus,
 } from '@entities';
 
 import {
@@ -46,14 +46,7 @@ import {
   localnet2,
 } from './hederaUtils';
 
-import {
-  adminEmail,
-  adminPassword,
-  dummyEmail,
-  dummyNewEmail,
-  dummyNewPassword,
-  dummyPassword,
-} from './constants';
+import { adminEmail, adminPassword, dummyEmail, dummyNewEmail, dummyNewPassword, dummyPassword } from './constants';
 import { hash } from './crypto';
 
 let _dataSource: DataSource;
@@ -93,8 +86,7 @@ export async function createUser(
     password,
   });
 
-  const hashed = await hash(password);
-  user.password = hashed;
+  user.password = await hash(password);
 
   try {
     return await userRepo.save(user);
@@ -251,7 +243,7 @@ export async function getUserKey(userId: number, publicKey: string) {
   const userKeyRepo = await getRepository(UserKey);
 
   try {
-    const userKey = await userKeyRepo.findOne({
+    return await userKeyRepo.findOne({
       where: {
         user: {
           id: userId,
@@ -259,7 +251,6 @@ export async function getUserKey(userId: number, publicKey: string) {
         publicKey,
       },
     });
-    return userKey;
   } catch (error) {
     console.log(pc.red(error.message));
   }
@@ -555,8 +546,8 @@ async function connectDatabase() {
       TransactionComment,
       TransactionGroupItem,
       TransactionGroup,
-      TransactionAccount,
-      TransactionNode,
+      TransactionCachedAccount,
+      TransactionCachedNode,
       CachedAccount,
       CachedAccountKey,
       CachedNode,

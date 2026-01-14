@@ -4,9 +4,10 @@ import {
   Column,
   OneToMany,
   CreateDateColumn,
-  UpdateDateColumn, Index,
+  UpdateDateColumn,
+  Index,
 } from 'typeorm';
-import { CachedAccountKey, TransactionAccount } from './';
+import { CachedAccountKey, TransactionCachedAccount } from './';
 
 /**
  * CachedAccount entity represents a cached Hedera account with its properties and relationships.
@@ -27,21 +28,30 @@ export class CachedAccount {
   mirrorNetwork: string;
 
   @Column({ nullable: true })
-  receiverSignatureRequired?: boolean;
+  receiverSignatureRequired: boolean | null;
+
+  @Column({ type: 'bytea', nullable: true })
+  encodedKey: Buffer | null;
 
   @Column({ length: 100, nullable: true })
-  etag?: string; // Mirror node etag or hash of response
+  etag: string | null; // Mirror node etag or hash of response
 
-  @OneToMany(() => CachedAccountKey, (key) => key.account)
+  @OneToMany(() => CachedAccountKey, (key) => key.cachedAccount)
   keys: CachedAccountKey[];
 
-  @OneToMany(() => TransactionAccount, (ta) => ta.account)
-  accountTransactions: TransactionAccount[];
+  @OneToMany(() => TransactionCachedAccount, (ta) => ta.cachedAccount)
+  accountTransactions: TransactionCachedAccount[];
 
   @CreateDateColumn()
   createdAt: Date; // For tracking cache life span
 
   @UpdateDateColumn()
   @Index()
-  updatedAt: Date;
+  updatedAt: Date; // Auto-updates on ANY save - serves dual purpose:
+                   // 1. Last time data was checked/refreshed from mirror node
+                   // 2. Timestamp for when refreshToken was set (for stale lock detection)
+
+  @Column({ type: 'uuid', nullable: true })
+  @Index()
+  refreshToken: string | null;
 }

@@ -14,13 +14,12 @@ import { historyTitle, TRANSACTION_ACTION } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
-import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
-import useDisposableWs from '@renderer/composables/useDisposableWs';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
+import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 
 import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
@@ -28,7 +27,7 @@ import {
   generateTransactionExportContent,
   generateTransactionExportFileName,
   getTransactionById,
-  getApiGroupById,
+  getTransactionGroupById,
   getUserShouldApprove,
   sendApproverChoice,
   cancelTransaction,
@@ -86,7 +85,6 @@ const buttonsDataTestIds: { [key: string]: string } = {
 /* Stores */
 const user = useUserStore();
 const network = useNetwork();
-const wsStore = useWebsocketConnection();
 const nextTransaction = useNextTransactionStore();
 const contacts = useContactsStore();
 
@@ -94,7 +92,11 @@ const contacts = useContactsStore();
 const router = useRouter();
 const route = useRoute();
 const toast = useToast();
-const ws = useDisposableWs();
+useWebsocketSubscription(TRANSACTION_ACTION, async () => {
+  const id = router.currentRoute.value.params.id;
+  await fetchGroup(Array.isArray(id) ? id[0] : id);
+  setGetTransactionsFunction();
+});
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 const createTooltips = useCreateTooltips();
@@ -482,17 +484,11 @@ onBeforeMount(async () => {
     return;
   }
 
-  subscribeToTransactionAction();
   await fetchGroup(Array.isArray(id) ? id[0] : id);
   setGetTransactionsFunction();
 });
 
 /* Watchers */
-wsStore.$onAction(ctx => {
-  if (ctx.name !== 'setup') return;
-  ctx.after(() => subscribeToTransactionAction());
-});
-
 watch(
   () => user.selectedOrganization,
   () => {
@@ -513,7 +509,7 @@ async function fetchGroup(id: string | number) {
     try {
       const updatedUnsignedSignersToCheck: Record<number, string[]> = {};
 
-      group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
+      group.value = await getTransactionGroupById(user.selectedOrganization.serverUrl, Number(id));
       isVersionMismatch.value = false;
 
       if (group.value?.groupItems != undefined) {
@@ -574,15 +570,6 @@ const isTransactionInProgress = (transaction: ITransactionFull) => {
     TransactionStatus.WAITING_FOR_EXECUTION,
     TransactionStatus.WAITING_FOR_SIGNATURES,
   ].includes(transaction.status);
-};
-
-const subscribeToTransactionAction = () => {
-  if (!user.selectedOrganization?.serverUrl) return;
-  ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
-    const id = router.currentRoute.value.params.id;
-    await fetchGroup(Array.isArray(id) ? id[0] : id);
-    setGetTransactionsFunction();
-  });
 };
 
 function setGetTransactionsFunction() {

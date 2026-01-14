@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import type { INotificationReceiver } from '@shared/interfaces';
+
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import useFilterNotifications from '@renderer/composables/useFilterNotifications.ts';
 import { getTransactionTypeFromBackendType } from '@renderer/utils/sdk/transactions.ts';
@@ -23,6 +26,7 @@ const props = defineProps<{
   collection: TransactionNodeCollection;
   node: ITransactionNode;
   index: number;
+  oldNotifications?: INotificationReceiver[];
 }>();
 
 /* Emits */
@@ -44,32 +48,66 @@ const router = useRouter();
 const createTooltips = useCreateTooltips();
 
 /* Computed */
-const hasNotifications = computed(() => {
-  return notificationMonitor.filteredNotifications.value.length > 0;
-});
-const filteringNotificationType = computed(() => {
-  let result: NotificationType | null;
+const filteringNotificationTypes = computed(() => {
   switch (props.collection) {
     case TransactionNodeCollection.READY_FOR_REVIEW:
-      result = NotificationType.TRANSACTION_INDICATOR_APPROVE;
-      break;
+      return [NotificationType.TRANSACTION_INDICATOR_APPROVE];
     case TransactionNodeCollection.READY_TO_SIGN:
-      result = NotificationType.TRANSACTION_INDICATOR_SIGN;
-      break;
+      return [NotificationType.TRANSACTION_INDICATOR_SIGN];
     case TransactionNodeCollection.READY_FOR_EXECUTION:
-      result = NotificationType.TRANSACTION_INDICATOR_EXECUTABLE;
-      break;
-    case TransactionNodeCollection.IN_PROGRESS:
+      return [NotificationType.TRANSACTION_INDICATOR_EXECUTABLE];
     case TransactionNodeCollection.HISTORY:
-      result = null;
-      break;
+      return [
+        NotificationType.TRANSACTION_INDICATOR_EXECUTED,
+        NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+        NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
+        NotificationType.TRANSACTION_INDICATOR_CANCELLED,
+        NotificationType.TRANSACTION_INDICATOR_FAILED,
+      ];
+    case TransactionNodeCollection.IN_PROGRESS:
+    default:
+      return [];
   }
-  return result;
 });
+
 const notificationMonitor = useFilterNotifications(
   computed(() => props.node),
-  filteringNotificationType,
+  filteringNotificationTypes,
 );
+
+const hasOldNotifications = computed(() => {
+  if (!props.oldNotifications || props.oldNotifications.length === 0) {
+    return false;
+  }
+
+  const notificationTypes = filteringNotificationTypes.value;
+
+  if (notificationTypes.length === 0) {
+    return false;
+  }
+
+  // Check if any old notifications match this node
+  return props.oldNotifications.some(n => {
+    const matchesType = notificationTypes.includes(n.notification.type);
+
+    const hasEntityIds =
+      n.notification.entityId !== undefined && props.node.transactionId !== undefined;
+    const matchesEntity =
+      hasEntityIds && n.notification.entityId === props.node.transactionId;
+
+    const notificationGroupId = n.notification.additionalData?.groupId;
+    const hasGroupIds =
+      notificationGroupId !== undefined && props.node.groupId !== undefined;
+    const matchesGroup =
+      hasGroupIds && notificationGroupId === props.node.groupId;
+
+    return matchesType && (matchesEntity || matchesGroup);
+  });
+});
+
+const hasNotifications = computed(() => {
+  return notificationMonitor.filteredNotificationIds.value.length > 0 || hasOldNotifications.value;
+});
 
 const transactionType = computed(() => {
   let result: string;
@@ -190,11 +228,12 @@ watch(() => props.node.description, () => {
     <!-- Column #2 : Transaction Type / Group -->
     <td :data-testid="`td-transaction-node-transaction-type-${index}`" class="text-bold">
       {{ transactionType }}
+      <span v-if="props.node.isManual" class="badge bg-info ms-3">Manual</span>
     </td>
 
     <!-- Column #3 : Description -->
     <td>
-      <span 
+      <span
         ref="descriptionRef"
         class="text-wrap-two-line-ellipsis"
         :data-bs-toggle="isTruncated ? 'tooltip' : ''"

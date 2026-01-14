@@ -142,7 +142,7 @@ const hasDataChanged = computed(() => hasTransactionChanged.value || hasDescript
 const handleDraftLoaded = async (transaction: Transaction) => {
   initialTransaction.value = transaction;
 
-  const txData = getTransactionCommonData(transaction) as TransactionCommonData;
+  const txData = getTransactionCommonData(transaction);
   payerData.accountId.value = txData.payerId;
   Object.assign(data, txData);
 
@@ -151,7 +151,7 @@ const handleDraftLoaded = async (transaction: Transaction) => {
 
 const handleCreate = async () => {
   basePreCreateAssert();
-  if ((await preCreateAssert?.()) === false) return;
+  if (preCreateAssert?.() === false) return;
 
   const processable =
     customRequest ||

@@ -3,6 +3,8 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
+  JoinColumn,
   ManyToOne,
   OneToMany,
   OneToOne,
@@ -17,8 +19,8 @@ import {
   TransactionApprover,
   TransactionObserver,
   TransactionGroupItem,
-  TransactionAccount,
-  TransactionNode,
+  TransactionCachedAccount,
+  TransactionCachedNode,
 } from './';
 
 import { ApiProperty } from '@nestjs/swagger';
@@ -56,6 +58,8 @@ export enum TransactionStatus {
 export const MAX_TRANSACTION_BYTE_SIZE = 6_144;
 
 @Entity()
+@Index(['status', 'mirrorNetwork'])
+@Index(['creatorKeyId'])
 export class Transaction {
   @PrimaryGeneratedColumn()
   id: number;
@@ -97,7 +101,11 @@ export class Transaction {
     description: 'The id of the user key used by the creator',
   })
   @ManyToOne(() => UserKey, userKey => userKey.createdTransactions)
+  @JoinColumn({ name: 'creatorKeyId' })
   creatorKey: UserKey;
+
+  @Column()
+  creatorKeyId: number;
 
   @Column({ type: 'bytea' })
   signature: Buffer;
@@ -141,11 +149,11 @@ export class Transaction {
   @OneToOne(() => TransactionGroupItem, groupItem => groupItem.transaction)
   groupItem?: TransactionGroupItem;
 
-  @OneToMany(() => TransactionAccount, (ta) => ta.transaction)
-  transactionAccounts: TransactionAccount[];
+  @OneToMany(() => TransactionCachedAccount, (ta) => ta.transaction)
+  transactionCachedAccounts: TransactionCachedAccount[];
 
-  @OneToMany(() => TransactionNode, (ta) => ta.transaction)
-  transactionNodes: TransactionNode[];
+  @OneToMany(() => TransactionCachedNode, (ta) => ta.transaction)
+  transactionCachedNodes: TransactionCachedNode[];
 }
 
 export const transactionProperties: (keyof Transaction)[] = [

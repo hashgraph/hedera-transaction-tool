@@ -1655,7 +1655,7 @@ The Initial Developer of electron-to-chromium@1.5.88,
 is Kilian Valkhof (https://github.com/kilian/electron-to-chromium).
 Copyright Kilian Valkhof. All Rights Reserved.
 
-The Initial Developer of electron-updater@6.3.9,
+The Initial Developer of electron-updater@6.6.2,
 is Vladimir Krivosheev (https://github.com/electron-userland/electron-builder).
 Copyright Vladimir Krivosheev. All Rights Reserved.
 
@@ -3188,10 +3188,6 @@ This product includes software (secure-json-parse@2.7.0) developed at
 The Initial Developer of semver-compare@1.0.0,
 is James Halliday (https://github.com/substack/semver-compare).
 Copyright James Halliday. All Rights Reserved.
-
-The Initial Developer of semver@7.6.3,
-is GitHub Inc. (https://github.com/npm/node-semver).
-Copyright GitHub Inc.. All Rights Reserved.
 
 The Initial Developer of semver@7.7.1,
 is GitHub Inc. (https://github.com/npm/node-semver).

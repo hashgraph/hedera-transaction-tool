@@ -6,7 +6,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn, Index,
 } from 'typeorm';
-import { CachedNodeAdminKey, TransactionNode } from './';
+import { CachedNodeAdminKey, TransactionCachedNode } from './';
 
 @Entity()
 @Index(['nodeId', 'mirrorNetwork'], { unique: true })
@@ -18,22 +18,35 @@ export class CachedNode {
   @Index()
   nodeId: number;
 
+  @Column({ length: 64 })
+  @Index()
+  nodeAccountId: string;
+
   @Column()
   mirrorNetwork: string;
 
-  @Column({ length: 100, nullable: true })
-  etag?: string; // Mirror node etag or hash of response
+  @Column({ type: 'bytea', nullable: true })
+  encodedKey: Buffer | null;
 
-  @OneToMany(() => CachedNodeAdminKey, (key) => key.node)
+  @Column({ length: 100, nullable: true })
+  etag: string | null; // Mirror node etag or hash of response
+
+  @OneToMany(() => CachedNodeAdminKey, (key) => key.cachedNode)
   keys: CachedNodeAdminKey[];
 
-  @OneToMany(() => TransactionNode, (tn) => tn.node)
-  nodeTransactions: TransactionNode[];
+  @OneToMany(() => TransactionCachedNode, (tn) => tn.cachedNode)
+  nodeTransactions: TransactionCachedNode[];
 
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   @Index()
-  updatedAt: Date;
+  updatedAt: Date; // Auto-updates on ANY save - serves dual purpose:
+                   // 1. Last time data was checked/refreshed from mirror node
+                   // 2. Timestamp for when refreshToken was set (for stale lock detection)
+
+  @Column({ type: 'uuid', nullable: true })
+  @Index()
+  refreshToken: string | null;
 }

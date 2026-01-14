@@ -1,11 +1,48 @@
-import type { AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosError, type AxiosRequestConfig, type AxiosResponse } from 'axios';
 
-import axios, { AxiosError } from 'axios';
-
+import type { IVersionCheckResponse } from '@shared/interfaces';
 import { ErrorCodes, ErrorMessages } from '@shared/constants';
+
 import { getAuthTokenFromSessionStorage } from '@renderer/utils';
+
 import { FRONTEND_VERSION } from './version';
-import { setVersionBelowMinimum } from '@renderer/stores/versionState';
+import {
+  setGlobalVersionBelowMinimum,
+  setOrgVersionBelowMinimum,
+  setVersionDataForOrg,
+  triggeringOrganizationServerUrl,
+  organizationCompatibilityResults,
+} from '@renderer/stores/versionState';
+import useUserStore from '@renderer/stores/storeUser';
+
+import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organization/versionCompatibility';
+import { useToast } from 'vue-toast-notification';
+import { warningToastOptions } from './toastOptions';
+
+function extractServerUrlFromRequest(url: string): string | null {
+  if (!url) return null;
+
+  try {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      const urlObj = new URL(url);
+      return `${urlObj.protocol}//${urlObj.host}`;
+    }
+
+    const userStore = useUserStore();
+    if (userStore && userStore.organizations && userStore.organizations.length > 0) {
+      for (const org of userStore.organizations) {
+        if (url.includes(org.serverUrl) || org.serverUrl.includes(url.split('/')[0])) {
+          return org.serverUrl;
+        }
+      }
+      return userStore.organizations[0]?.serverUrl || null;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 // Global interceptor to add frontend version header to ALL axios requests
 axios.interceptors.request.use(config => {
@@ -13,14 +50,66 @@ axios.interceptors.request.use(config => {
   return config;
 });
 
-// Global response interceptor to catch 426 (Upgrade Required) errors
-// and trigger the mandatory upgrade modal
 axios.interceptors.response.use(
   response => response,
-  error => {
+  async error => {
     if (error.response?.status === 426) {
       const errorUpdateUrl = error.response.data?.updateUrl || null;
-      setVersionBelowMinimum(errorUpdateUrl);
+      const errorLatestVersion = error.response.data?.latestSupportedVersion || null;
+      const errorMinimumVersion = error.response.data?.minimumSupportedVersion || null;
+
+      const requestUrl = error.config?.url || error.config?.baseURL || '';
+      const serverUrl = extractServerUrlFromRequest(requestUrl);
+
+      if (serverUrl) {
+        const versionData: IVersionCheckResponse = {
+          latestSupportedVersion: errorLatestVersion || '',
+          minimumSupportedVersion: errorMinimumVersion || '',
+          updateUrl: errorUpdateUrl,
+        };
+        setVersionDataForOrg(serverUrl, versionData);
+
+        triggeringOrganizationServerUrl.value = serverUrl;
+
+        if (errorLatestVersion) {
+          try {
+            const compatibilityResult = await checkCompatibilityAcrossOrganizations(
+              errorLatestVersion,
+              serverUrl,
+            );
+
+            organizationCompatibilityResults.value[serverUrl] = compatibilityResult;
+
+            if (compatibilityResult.hasConflict) {
+              const conflictOrgNames = compatibilityResult.conflicts
+                .map(c => c.organizationName)
+                .join(', ');
+
+              // Show toast notification for compatibility conflicts
+              const toast = useToast();
+              toast.warning(
+                `Update may cause issues with ${conflictOrgNames}. Please review compatibility warnings.`,
+                warningToastOptions,
+              );
+
+              console.warn(
+                `[${new Date().toISOString()}] COMPATIBILITY_CHECK Version guard failure for ${serverUrl}`,
+              );
+              console.warn(
+                `Conflicts found with ${compatibilityResult.conflicts.length} organization(s)`,
+              );
+            }
+          } catch (compatError) {
+            console.error('Compatibility check failed:', compatError);
+            organizationCompatibilityResults.value[serverUrl] = null;
+          }
+        }
+
+        setOrgVersionBelowMinimum(serverUrl, errorUpdateUrl);
+      } else {
+        triggeringOrganizationServerUrl.value = null;
+        setGlobalVersionBelowMinimum(errorUpdateUrl);
+      }
     }
     return Promise.reject(error);
   },
@@ -57,15 +146,6 @@ export const commonRequestHandler = async <T>(
 
       if (error.response.status === 429) {
         message = 'Too many requests. Please try again later.';
-      }
-
-      if (error.response.status === 426) {
-        const minVersion = error.response.data?.minimumVersion;
-        const currentVersion = error.response.data?.currentVersion;
-        message =
-          minVersion && currentVersion
-            ? `Your application version (${currentVersion}) is outdated. Please update to version ${minVersion} or later.`
-            : 'Your application version is outdated. Please update to the latest version.';
       }
     }
     throw new Error(message);

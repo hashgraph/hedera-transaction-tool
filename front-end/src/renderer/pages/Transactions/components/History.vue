@@ -3,6 +3,7 @@ import type { ITransaction } from '@shared/interfaces';
 import type { Transaction } from '@prisma/client';
 
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { Prisma } from '@prisma/client';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
@@ -13,12 +14,10 @@ import { TRANSACTION_ACTION } from '@shared/constants';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
-import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
-
-import { useRouter } from 'vue-router';
-import useDisposableWs from '@renderer/composables/useDisposableWs';
-import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
+
+import useMarkNotifications from '@renderer/composables/useMarkNotifications';
+import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 
 import { getTransactions, getTransactionsCount } from '@renderer/services/transactionService';
 import { getHistoryTransactions } from '@renderer/services/organization';
@@ -46,12 +45,11 @@ import TransactionId from '@renderer/components/ui/TransactionId.vue';
 const user = useUserStore();
 const network = useNetworkStore();
 const notifications = useNotificationsStore();
-const wsStore = useWebsocketConnection();
 const nextTransaction = useNextTransactionStore();
 
 /* Composables */
 const router = useRouter();
-const ws = useDisposableWs();
+useWebsocketSubscription(TRANSACTION_ACTION, fetchTransactions);
 const { oldNotifications } = useMarkNotifications([
   NotificationType.TRANSACTION_INDICATOR_EXECUTED,
   NotificationType.TRANSACTION_INDICATOR_EXPIRED,
@@ -243,26 +241,13 @@ function setPreviousTransactionsIds(id: string | number) {
   }
 }
 
-const subscribeToTransactionAction = () => {
-  if (!user.selectedOrganization?.serverUrl) return;
-  ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
-    await fetchTransactions();
-  });
-};
-
 /* Hooks */
 onBeforeMount(async () => {
-  subscribeToTransactionAction();
   setGetTransactionsFunction();
   await fetchTransactions();
 });
 
 /* Watchers */
-wsStore.$onAction(ctx => {
-  if (ctx.name !== 'setup') return;
-  ctx.after(() => subscribeToTransactionAction());
-});
-
 watch([currentPage, pageSize, () => user.selectedOrganization, orgFilters], async () => {
   setGetTransactionsFunction();
   await fetchTransactions();

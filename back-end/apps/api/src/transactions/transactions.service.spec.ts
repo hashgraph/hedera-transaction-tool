@@ -22,13 +22,14 @@ import {
 } from '@hashgraph/sdk';
 
 import {
-  MirrorNodeService,
   ErrorCodes,
   SchedulerService,
   safe,
   NatsPublisherService,
   emitTransactionStatusUpdate,
   ExecuteService,
+  TransactionSignatureService,
+  SqlBuilderService,
 } from '@app/common';
 import {
   attachKeys,
@@ -61,9 +62,10 @@ describe('TransactionsService', () => {
   const transactionsRepo = mockDeep<Repository<Transaction>>();
   const notificationsPublisher = mock<NatsPublisherService>();
   const approversService = mock<ApproversService>();
-  const mirrorNodeService = mock<MirrorNodeService>();
+  const transactionSignatureService = mock<TransactionSignatureService>();
   const schedulerService = mock<SchedulerService>();
   const executeService = mockDeep<ExecuteService>();
+  const sqlBuilderService = mockDeep<SqlBuilderService>();
   const entityManager = mockDeep<EntityManager>();
 
   const user: Partial<User> = {
@@ -103,8 +105,8 @@ describe('TransactionsService', () => {
           useValue: approversService,
         },
         {
-          provide: MirrorNodeService,
-          useValue: mirrorNodeService,
+          provide: TransactionSignatureService,
+          useValue: transactionSignatureService,
         },
         {
           provide: EntityManager,
@@ -113,6 +115,10 @@ describe('TransactionsService', () => {
         {
           provide: SchedulerService,
           useValue: schedulerService,
+        },
+        {
+          provide: SqlBuilderService,
+          useValue: sqlBuilderService
         },
         {
           provide: ExecuteService,
@@ -498,13 +504,7 @@ describe('TransactionsService', () => {
       expect(saveMock).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
         notificationsPublisher,
-        [{
-          entityId: 1,
-          additionalData: {
-            transactionId: expect.any(String),
-            network: dto.mirrorNetwork,
-          },
-        }],
+        [{ entityId: 1 }],
       );
       expect(schedulerService.addReminder).toHaveBeenCalledWith(
         `transaction:sign:1`,
@@ -556,13 +556,7 @@ describe('TransactionsService', () => {
       expect(saveMock).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
         notificationsPublisher,
-        [{
-          entityId: 1,
-          additionalData: {
-            transactionId: expect.any(String),
-            network: dto.mirrorNetwork,
-          },
-        }],
+        [{ entityId: 1 }],
       );
 
 
@@ -869,7 +863,7 @@ describe('TransactionsService', () => {
         }],
       );
     });
-
+    
     it('should return error if transaction not found', async () => {
       entityManager.find.mockResolvedValue([]);
 
@@ -1571,8 +1565,9 @@ describe('TransactionsService', () => {
       expect(jest.mocked(userKeysRequiredToSign)).toHaveBeenCalledWith(
         transaction,
         user,
-        mirrorNodeService,
+        transactionSignatureService,
         entityManager,
+        false,
       );
     });
   });

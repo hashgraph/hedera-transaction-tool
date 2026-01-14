@@ -2,7 +2,7 @@ import { Test } from '@nestjs/testing';
 import { ReceiverService } from './receiver.service';
 import { EntityManager, In } from 'typeorm';
 
-import { MirrorNodeService } from '@app/common';
+import { TransactionSignatureService } from '@app/common';
 import { NatsPublisherService } from '@app/common/nats/nats.publisher';
 
 import {
@@ -13,6 +13,7 @@ import {
   TransactionApprover,
   TransactionStatus,
   User,
+  NOTIFICATION_CHANNELS,
 } from '@entities';
 
 import {
@@ -46,7 +47,7 @@ const mockEntityManager = () => ({
   transaction: jest.fn(),
 });
 
-const mockMirror = () => ({
+const mockTransactionSignatureService = () => ({
   someMethod: jest.fn(),
 });
 
@@ -57,12 +58,12 @@ const mockPublisher = () => ({
 describe('ReceiverService', () => {
   let service: ReceiverService;
   let em: ReturnType<typeof mockEntityManager>;
-  let mirror: ReturnType<typeof mockMirror>;
+  let tss: ReturnType<typeof mockTransactionSignatureService>;
   let publisher: ReturnType<typeof mockPublisher>;
 
   beforeEach(async () => {
     em = mockEntityManager();
-    mirror = mockMirror();
+    tss = mockTransactionSignatureService();
     publisher = mockPublisher();
 
     // Make transaction execute the callback with our mock em
@@ -72,7 +73,7 @@ describe('ReceiverService', () => {
       providers: [
         ReceiverService,
         { provide: EntityManager, useValue: em },
-        { provide: MirrorNodeService, useValue: mirror },
+        { provide: TransactionSignatureService, useValue: tss },
         { provide: NatsPublisherService, useValue: publisher },
       ],
     }).compile();
@@ -93,6 +94,18 @@ describe('ReceiverService', () => {
     }
   });
 
+  it('returns null when status is not mapped', () => {
+    // use a value that is not present in the maps and cast to TransactionStatus
+    const unknownStatus = (9999 as unknown) as TransactionStatus;
+
+    expect((service as any).getInAppNotificationType(unknownStatus)).toBeNull();
+    expect((service as any).getEmailNotificationType(unknownStatus)).toBeNull();
+
+
+    expect((service as any).getInAppNotificationType(null)).toBeNull();
+    expect((service as any).getEmailNotificationType(null)).toBeNull();
+  });
+
   it('fetchTransactionsWithRelations returns map', async () => {
     const tx = { id: 1 } as any;
     em.find.mockResolvedValue([tx]);
@@ -100,6 +113,26 @@ describe('ReceiverService', () => {
     const result = await (service as any).fetchTransactionsWithRelations([1], false);
     expect(em.find).toHaveBeenCalledWith(Transaction, expect.any(Object));
     expect(result.get(1)).toBe(tx);
+  });
+
+  it('fetchTransactionsWithRelations uses default withDeleted = false when omitted', async () => {
+    const tx = { id: 2 } as any;
+    em.find.mockResolvedValueOnce([tx]);
+
+    const result = await (service as any).fetchTransactionsWithRelations([2]); // omit second arg
+
+    expect(em.find).toHaveBeenCalledWith(Transaction, expect.objectContaining({ withDeleted: false }));
+    expect(result.get(2)).toBe(tx);
+  });
+
+  it('fetchTransactionsWithRelations forwards withDeleted = true when provided', async () => {
+    const tx = { id: 3 } as any;
+    em.find.mockResolvedValueOnce([tx]);
+
+    const result = await (service as any).fetchTransactionsWithRelations([3], true);
+
+    expect(em.find).toHaveBeenCalledWith(Transaction, expect.objectContaining({ withDeleted: true }));
+    expect(result.get(3)).toBe(tx);
   });
 
   it('getApproversByTransactionIds groups approvers', async () => {
@@ -112,6 +145,17 @@ describe('ReceiverService', () => {
     const result = await (service as any).getApproversByTransactionIds(em as any, [1, 2]);
     expect(result.get(1)!.length).toBe(2);
     expect(result.get(2)!.length).toBe(1);
+  });
+
+  it('getApproversByTransactionIds returns empty Map when transactionIds is empty', async () => {
+    // ensure no DB calls are made for empty input
+    em.query.mockClear();
+
+    const result = await (service as any).getApproversByTransactionIds(em as any, []);
+
+    expect(result).toBeInstanceOf(Map);
+    expect(result.size).toBe(0);
+    expect(em.query).not.toHaveBeenCalled();
   });
 
   it('getUsersIdsRequiredToSign calls keysRequiredToSign and dedups', async () => {
@@ -145,6 +189,45 @@ describe('ReceiverService', () => {
     const result = await (service as any).getTransactionParticipants(em as any, tx, approvers, new Map());
     expect(result.participants).toEqual(expect.arrayContaining([1, 2, 3, 4, 100]));
     expect(result.requiredUserIds).toEqual([100]);
+  });
+
+  it('getTransactionParticipants yields empty approversShouldChooseUserIds when status is not waiting', async () => {
+    (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 100 }]);
+
+    const tx: any = {
+      creatorKey: { userId: 1 },
+      signers: [{ userId: 2 }],
+      observers: [{ userId: 3 }],
+      status: TransactionStatus.EXECUTED, // not in waiting set
+    };
+
+    const approvers: any[] = [
+      { userId: 4, approved: null },
+      { userId: 5, approved: null },
+    ];
+
+    const res = await (service as any).getTransactionParticipants(em as any, tx, approvers, new Map());
+    expect(res.approversShouldChooseUserIds).toEqual([]);
+  });
+
+  it('getTransactionParticipants yields empty approversShouldChooseUserIds when no approver is pending (all approved !== null) even if status is waiting', async () => {
+    (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 200 }]);
+
+    const tx: any = {
+      creatorKey: { userId: 1 },
+      signers: [{ userId: 2 }],
+      observers: [{ userId: 3 }],
+      status: TransactionStatus.WAITING_FOR_SIGNATURES, // in waiting set
+    };
+
+    const approvers: any[] = [
+      { userId: 4, approved: true },
+      { userId: 5, approved: false }, // explicitly not null
+      { userId: null, approved: true }, // falsy userId should be filtered out
+    ];
+
+    const res = await (service as any).getTransactionParticipants(em as any, tx, approvers, new Map());
+    expect(res.approversShouldChooseUserIds).toEqual([]);
   });
 
   describe('getNotificationReceiverIds', () => {
@@ -391,6 +474,46 @@ describe('ReceiverService', () => {
     expect(em.update).toHaveBeenCalled();
   });
 
+  it('processNotificationType uses in-app update fields when channel.email is falsey', async () => {
+    const notificationType = NotificationType.TRANSACTION_INDICATOR_SIGN;
+
+    // Stub existing notification with two receivers
+    const notification = { id: 123, notificationReceivers: [{ id: 10, userId: 1 }, { id: 11, userId: 2 }] } as any;
+    em.findOne.mockResolvedValueOnce(notification);
+
+    // Ensure all users pass preference filter
+    jest.spyOn(service as any, 'filterReceiversByPreferenceForType').mockResolvedValue([1, 2]);
+
+    // Temporarily override NOTIFICATION_CHANNELS for this type to have email = false
+    const originalChannel = NOTIFICATION_CHANNELS[notificationType];
+    NOTIFICATION_CHANNELS[notificationType] = { email: false, inApp: true };
+
+    // Mock DB update/find/save flows used by the method
+    em.update.mockResolvedValueOnce({});
+    em.find.mockResolvedValueOnce([{ id: 10, userId: 1, notification } as any, { id: 11, userId: 2, notification } as any]);
+    em.save.mockResolvedValueOnce([]); // createNotificationReceivers -> none
+
+    const cache = new Map<number, User>();
+    cache.set(1, { id: 1 } as any);
+    cache.set(2, { id: 2 } as any);
+
+    const result = await (service as any).processNotificationType(
+      em as any,
+      /* transactionId */ 999,
+      notificationType,
+      new Set([1, 2]),
+      cache,
+    );
+
+    // verify update used in-app fields (email false => in-app update)
+    expect(em.update).toHaveBeenCalled();
+    const updateArgs = em.update.mock.calls[0];
+    expect(updateArgs[2]).toEqual({ isRead: false, isInAppNotified: false });
+
+    // cleanup: restore original channels mapping
+    NOTIFICATION_CHANNELS[notificationType] = originalChannel;
+  });
+
   it('processReminderEmail creates a new notification and receivers', async () => {
     const tx: any = { id: 1, validStart: 1, transactionId: 'tx1', mirrorNetwork: 'net' };
     em.save.mockResolvedValueOnce({ id: 900 }); // notification
@@ -507,6 +630,40 @@ describe('ReceiverService', () => {
       expect(em.update).not.toHaveBeenCalled();
 
       consoleSpy.mockRestore();
+    });
+  });
+
+  describe('buildAdditionData', () => {
+    it('buildAdditionalData includes groupId when present', () => {
+      const transaction: any = {
+        transactionId: 'tx-1',
+        mirrorNetwork: 'net-1',
+        groupItem: { groupId: 'group-123' },
+      };
+
+      const res = (service as any).buildAdditionalData(transaction);
+
+      expect(res).toEqual({
+        transactionId: 'tx-1',
+        network: 'net-1',
+        groupId: 'group-123',
+      });
+    });
+
+    it('buildAdditionalData omits groupId when missing', () => {
+      const transaction: any = {
+        transactionId: 'tx-2',
+        mirrorNetwork: 'net-2',
+        groupItem: {}, // or `groupItem: undefined`
+      };
+
+      const res = (service as any).buildAdditionalData(transaction);
+
+      expect(res).toEqual({
+        transactionId: 'tx-2',
+        network: 'net-2',
+      });
+      expect(res).not.toHaveProperty('groupId');
     });
   });
 

@@ -121,13 +121,14 @@ describe('TransactionsController', () => {
         approvedTransactions: [],
         signedTransactions: [],
       },
+      creatorKeyId: 1,
       signers: [],
       approvers: [],
       observers: [],
       comments: [],
       groupItem: null,
-      transactionAccounts: [],
-      transactionNodes: [],
+      transactionCachedAccounts: [],
+      transactionCachedNodes: [],
     };
     pagination = {
       page: 1,
