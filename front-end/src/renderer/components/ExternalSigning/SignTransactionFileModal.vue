@@ -122,14 +122,20 @@ watch(
         </div>
         <form @submit.prevent="handleSignAll" class="h-100">
           <h1 class="text-title text-semi-bold text-center mb-5">
-            <template v-if="itemsToBeSigned.length == 0">You have no transaction to sign in this file</template>
-            <template v-if="itemsToBeSigned.length == 1">You have 1 transaction to sign in this file</template>
-            <template v-else>You have {{ itemsToBeSigned.length }} transactions to sign in this file</template>
+            <template v-if="itemsToBeSigned.length == 0"
+              >You have no transaction to sign in this file</template
+            >
+            <template v-if="itemsToBeSigned.length == 1"
+              >You have 1 transaction to sign in this file</template
+            >
+            <template v-else
+              >You have {{ itemsToBeSigned.length }} transactions to sign in this file</template
+            >
           </h1>
 
           <div class="d-flex justify-content-end mb-5">
             <AppButton color="primary" data-testid="button-sign-transaction-file" type="submit"
-            >Sign and Update File</AppButton
+              >Sign and Update File</AppButton
             >
           </div>
 
