@@ -98,13 +98,13 @@ const buttonsDataTestIds: { [key: string]: string } = {
 
 const EXPORT_FORMATS = [
   {
-    name: 'Transaction Tool 2.0 (.tx2)',
+    name: 'TX2 (Tx Tool 2.0)',
     value: 'tt2',
     extensions: ['tx2'],
     enabled: true, // Set to false to hide/remove in the future
   },
   {
-    name: 'Transaction Tool (.tx)',
+    name: 'TX (Tx Tool 1.0)',
     value: 'tt1',
     extensions: ['tx'],
     enabled: true, // Set to false to hide/remove
