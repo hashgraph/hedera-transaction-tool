@@ -27,7 +27,14 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import type { TransactionBrowserEntry } from './TransactionBrowserEntry';
-import AccountDetailsBrowserSection from './AccountDetailsBrowserSection.vue';
+import AccountApproveAllowanceDetails from '@renderer/components/Transaction/Details/AccountApproveAllowanceDetails.vue';
+import DeleteAccountDetails from '@renderer/components/Transaction/Details/DeleteAccountDetails.vue';
+import FileDetails from '@renderer/components/Transaction/Details/FileDetails.vue';
+import AccountDetails from '@renderer/components/Transaction/Details/AccountDetails.vue';
+import TransferDetails from '@renderer/components/Transaction/Details/TransferDetails.vue';
+import FreezeDetails from '@renderer/components/Transaction/Details/FreezeDetails.vue';
+import SystemDetails from '@renderer/components/Transaction/Details/SystemDetails.vue';
+import NodeDetails from '@renderer/components/Transaction/Details/NodeDetails.vue';
 
 /* Props */
 const props = defineProps<{
@@ -72,7 +79,7 @@ const validStartDate = computed(() => {
 });
 const creatorEmail = computed(() => currentItem.value!.creatorEmail ?? '');
 
-const transactionDetailsTitle = computed(() => transactionType.value + ' Info');
+const transactionDetailsTitle = computed(() => transactionType.value!);
 </script>
 
 <template>
@@ -114,6 +121,7 @@ const transactionDetailsTitle = computed(() => transactionType.value + ' Info');
 
           <div class="fill-remaining mt-5">
             <div class="row flex-wrap">
+
               <!-- Description -->
               <TransactionBrowserSection :alone="true">
                 <template v-slot:label>Description</template>
@@ -122,25 +130,23 @@ const transactionDetailsTitle = computed(() => transactionType.value + ' Info');
                 }}</template>
               </TransactionBrowserSection>
 
+              <!-- Transaction ID -->
               <TransactionBrowserSection>
-                <template v-slot:label>Transaction Type</template>
-                <template v-slot:value>{{ transactionType }}</template>
-              </TransactionBrowserSection>
-
-              <TransactionBrowserSection>
-                <template v-slot:label>TransactionId</template>
+                <template v-slot:label>Transaction ID</template>
                 <template v-slot:value>
                   <TransactionId :transaction-id="transactionId"> </TransactionId>
                 </template>
               </TransactionBrowserSection>
 
+              <!-- Creator Email -->
               <TransactionBrowserSection>
                 <template v-slot:label>Creator</template>
                 <template v-slot:value>{{
-                    creatorEmail && creatorEmail.trim().length > 0 ? creatorEmail : 'None'
-                  }}</template>
+                  creatorEmail && creatorEmail.trim().length > 0 ? creatorEmail : 'None'
+                }}</template>
               </TransactionBrowserSection>
 
+              <!-- Valid Start -->
               <TransactionBrowserSection>
                 <template v-slot:label>Valid Start</template>
                 <template v-slot:value>{{ validStartDate }}</template>
@@ -148,59 +154,64 @@ const transactionDetailsTitle = computed(() => transactionType.value + ' Info');
 
               <TransactionBrowserSectionHeading :title="transactionDetailsTitle" />
 
-              <div
+              <FileDetails
                 v-if="
                   transaction instanceof FileCreateTransaction ||
                   transaction instanceof FileUpdateTransaction ||
                   transaction instanceof FileAppendTransaction
                 "
-              >
-                File transaction properties
-              </div>
-              <template
+                :organization-transaction="null"
+                :transaction="transaction"
+              />
+
+              <AccountDetails
                 v-if="
                   transaction instanceof AccountCreateTransaction ||
                   transaction instanceof AccountUpdateTransaction
                 "
-              >
-                <AccountDetailsBrowserSection :transaction="transaction" />
-              </template>
-              <template v-if="transaction instanceof AccountDeleteTransaction">
-                <!--                <TransactionBrowserSection>-->
-                <!--                  <template v-slot:label>Account ID</template>-->
-                <!--                  <template v-slot:value>{{ transactionData.accountId }}</template>-->
-                <!--                </TransactionBrowserSection>-->
-                <!--                <TransactionBrowserSection>-->
-                <!--                  <template v-slot:label>Transfer Account ID</template>-->
-                <!--                  <template v-slot:value>{{ transactionData.transferAccountId }}</template>-->
-                <!--                </TransactionBrowserSection>-->
-              </template>
-              <div v-if="transaction instanceof TransferTransaction">
-                Transfer transaction properties
-              </div>
-              <div v-if="transaction instanceof AccountAllowanceApproveTransaction">
-                Allowance transaction properties
-              </div>
-              <div v-if="transaction instanceof FreezeTransaction">
-                Freeze transaction properties
-              </div>
-              <div
+                :transaction="transaction"
+                :organization-transaction="null"
+              />
+
+              <DeleteAccountDetails
+                v-if="transaction instanceof AccountDeleteTransaction"
+                :transaction="transaction"
+                :organization-transaction="null"
+              />
+
+              <TransferDetails
+                v-if="transaction instanceof TransferTransaction"
+                :transaction="transaction"
+              />
+
+              <AccountApproveAllowanceDetails
+                v-if="transaction instanceof AccountAllowanceApproveTransaction"
+                :transaction="transaction"
+              />
+
+              <FreezeDetails
+                v-if="transaction instanceof FreezeTransaction"
+                :transaction="transaction"
+              />
+
+              <SystemDetails
                 v-if="
                   transaction instanceof SystemDeleteTransaction ||
                   transaction instanceof SystemUndeleteTransaction
                 "
-              >
-                System delete/undelete transaction properties
-              </div>
-              <div
+                :organization-transaction="null"
+                :transaction="transaction"
+              />
+
+              <NodeDetails
                 v-if="
                   transaction instanceof NodeCreateTransaction ||
                   transaction instanceof NodeUpdateTransaction ||
                   transaction instanceof NodeDeleteTransaction
                 "
-              >
-                System delete/undelete transaction properties
-              </div>
+                :organization-transaction="null"
+                :transaction="transaction"
+              />
 
               <TransactionBrowserSectionHeading title="Collected Signatures" />
               <TransactionBrowserKeySection :item="currentItem" />
