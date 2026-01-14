@@ -19,6 +19,11 @@ const singleNode1: ITransactionNode = {
   isManual: false,
   groupItemCount: undefined,
   groupCollectedCount: undefined,
+  internalSignerCount: 0,
+  internalSignatureCount: 0,
+  externalSignerCount: 0,
+  externalSignatureCount: 0,
+  unexpectedSignatureCount: 0,
 };
 
 const singleNodeDate2 = 1000;
@@ -38,6 +43,11 @@ const singleNode2: ITransactionNode = {
   isManual: false,
   groupItemCount: undefined,
   groupCollectedCount: undefined,
+  internalSignerCount: 0,
+  internalSignatureCount: 0,
+  externalSignerCount: 0,
+  externalSignatureCount: 0,
+  unexpectedSignatureCount: 0,
 };
 
 const groupNodeDate1 = 2000;
@@ -57,6 +67,11 @@ const groupNode1: ITransactionNode = {
   isManual: undefined,
   groupItemCount: 42,
   groupCollectedCount: 21,
+  internalSignerCount: 0,
+  internalSignatureCount: 0,
+  externalSignerCount: 0,
+  externalSignatureCount: 0,
+  unexpectedSignatureCount: 0,
 };
 
 const groupNodeDate2 = 3000;
@@ -76,6 +91,11 @@ const groupNode2: ITransactionNode = {
   isManual: undefined,
   groupItemCount: 21,
   groupCollectedCount: 10,
+  internalSignerCount: 0,
+  internalSignatureCount: 0,
+  externalSignerCount: 0,
+  externalSignatureCount: 0,
+  unexpectedSignatureCount: 0,
 };
 
 const malformedNodeDate2 = 3000;
@@ -97,7 +117,12 @@ const malformedNode: ITransactionNode = {
   isManual: undefined,
   groupItemCount: 21,
   groupCollectedCount: 10,
-}
+  internalSignerCount: 0,
+  internalSignatureCount: 0,
+  externalSignerCount: 0,
+  externalSignatureCount: 0,
+  unexpectedSignatureCount: 0,
+};
 
 describe('Transaction Node Utils', () => {
   it('compareTransactionNodes()', () => {

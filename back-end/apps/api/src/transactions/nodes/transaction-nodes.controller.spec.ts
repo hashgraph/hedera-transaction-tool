@@ -77,6 +77,11 @@ describe('TransactionNodesController', () => {
       isManual: false,
       groupItemCount: undefined,
       groupCollectedCount: undefined,
+      internalSignerCount: 0,
+      internalSignatureCount: 0,
+      externalSignerCount: 0,
+      externalSignatureCount: 0,
+      unexpectedSignatureCount: 0
     };
   });
 

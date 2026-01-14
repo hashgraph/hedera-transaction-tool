@@ -1,11 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { Transaction, TransactionStatus, TransactionType, User } from '@entities';
-import { Filtering, Pagination } from '@app/common';
+import {
+  Filtering,
+  TransactionSignatureService,
+  Pagination,
+  produceSigningReport,
+  produceSigningReportForArray,
+} from '@app/common';
 import { TransactionNodeDto } from '../dto';
 import { TransactionNodeCollection } from '../dto/ITransactionNode';
 import { TransactionsService } from '../transactions.service';
 import { TransactionGroupsService } from '../groups';
 import { compareTransactionNodes } from './transaction-nodes.util';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
 const PAGINATION_ALL: Pagination = {
   page: 0,
@@ -19,6 +27,8 @@ export class TransactionNodesService {
   constructor(
     private readonly transactionsService: TransactionsService,
     private readonly transactionGroupsService: TransactionGroupsService,
+    private readonly transactionSignatureService: TransactionSignatureService,
+    @InjectDataSource() private dataSource: DataSource,
   ) {}
 
   async getTransactionNodes(
@@ -116,6 +126,11 @@ export class TransactionNodesService {
       if (groupId === -1) {
         // transactions contains the single transactions
         for (const t of transactions) {
+          const signingReport = await produceSigningReport(
+            t,
+            this.transactionSignatureService,
+            this.dataSource.manager,
+          );
           const node = new TransactionNodeDto();
           node.transactionId = t.id;
           node.groupId = undefined;
@@ -131,10 +146,21 @@ export class TransactionNodesService {
           node.isManual = t.isManual;
           node.groupItemCount = undefined;
           node.groupCollectedCount = undefined;
+          node.internalSignerCount = signingReport.internalSigners.size;
+          node.externalSignerCount = signingReport.externalSigners.size;
+          node.internalSignatureCount = signingReport.internalSignatures.size;
+          node.externalSignatureCount = signingReport.externalSignatures.size;
+          node.unexpectedSignatureCount = signingReport.unexpectedSignatures.size;
+          node.creatorId = await this.transactionsService.getCreatorIdForTransaction(t.id);
           result.push(node);
         }
       } else {
         const group = await this.transactionGroupsService.getTransactionGroup(user, groupId);
+        const signingReport = await produceSigningReportForArray(
+          transactions,
+          this.transactionSignatureService,
+          this.dataSource.manager,
+        );
         const node = new TransactionNodeDto();
         node.transactionId = undefined;
         node.groupId = groupId;
@@ -150,6 +176,12 @@ export class TransactionNodesService {
         node.isManual = undefined;
         node.groupItemCount = group.groupItems.length;
         node.groupCollectedCount = transactions.length;
+        node.internalSignerCount = signingReport.internalSigners.size;
+        node.externalSignerCount = signingReport.externalSigners.size;
+        node.internalSignatureCount = signingReport.internalSignatures.size;
+        node.externalSignatureCount = signingReport.externalSignatures.size;
+        node.unexpectedSignatureCount = signingReport.unexpectedSignatures.size;
+        node.creatorId = await calculateCreatorIdForGroup(transactions, this.transactionsService);
         result.push(node);
       }
     }
@@ -251,5 +283,23 @@ function calculateStatusForGroup(transactions: Transaction[]): string | undefine
     result = undefined;
   }
 
+  return result;
+}
+
+async function calculateCreatorIdForGroup(transactions: Transaction[], service: TransactionsService): Promise<number|undefined> {
+  let result: number | undefined;
+
+  // Aggregates creator ids for all transactions
+  const allCreatorIds = new Set<number>();
+  for (const t of transactions) {
+    allCreatorIds.add(await service.getCreatorIdForTransaction(t.id));
+  }
+  if (allCreatorIds.size === 1) {
+    // All transactions have the same creator
+    result = allCreatorIds.values().next().value
+  } else {
+    // We have a mix of creators => no creator for the group
+    result = undefined;
+  }
   return result;
 }
