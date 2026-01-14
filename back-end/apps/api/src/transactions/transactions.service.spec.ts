@@ -29,6 +29,7 @@ import {
   emitTransactionStatusUpdate,
   ExecuteService,
   TransactionSignatureService,
+  SqlBuilderService,
 } from '@app/common';
 import {
   attachKeys,
@@ -64,6 +65,7 @@ describe('TransactionsService', () => {
   const transactionSignatureService = mock<TransactionSignatureService>();
   const schedulerService = mock<SchedulerService>();
   const executeService = mockDeep<ExecuteService>();
+  const sqlBuilderService = mockDeep<SqlBuilderService>();
   const entityManager = mockDeep<EntityManager>();
 
   const user: Partial<User> = {
@@ -113,6 +115,10 @@ describe('TransactionsService', () => {
         {
           provide: SchedulerService,
           useValue: schedulerService,
+        },
+        {
+          provide: SqlBuilderService,
+          useValue: sqlBuilderService
         },
         {
           provide: ExecuteService,
@@ -498,13 +504,7 @@ describe('TransactionsService', () => {
       expect(saveMock).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
         notificationsPublisher,
-        [{
-          entityId: 1,
-          additionalData: {
-            transactionId: expect.any(String),
-            network: dto.mirrorNetwork,
-          },
-        }],
+        [{ entityId: 1 }],
       );
       expect(schedulerService.addReminder).toHaveBeenCalledWith(
         `transaction:sign:1`,
@@ -556,13 +556,7 @@ describe('TransactionsService', () => {
       expect(saveMock).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
         notificationsPublisher,
-        [{
-          entityId: 1,
-          additionalData: {
-            transactionId: expect.any(String),
-            network: dto.mirrorNetwork,
-          },
-        }],
+        [{ entityId: 1 }],
       );
 
 
@@ -869,7 +863,7 @@ describe('TransactionsService', () => {
         }],
       );
     });
-
+    
     it('should return error if transaction not found', async () => {
       entityManager.find.mockResolvedValue([]);
 

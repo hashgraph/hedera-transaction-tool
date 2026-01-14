@@ -30,6 +30,26 @@ import {
 import TransactionsFilterV2 from '@renderer/components/Filter/v2/TransactionsFilterV2.vue';
 import { TRANSACTION_ACTION } from '@shared/constants';
 
+const NOTIFICATION_TYPES_BY_COLLECTION: Record<
+  TransactionNodeCollection,
+  NotificationType[]
+> = {
+  [TransactionNodeCollection.READY_FOR_REVIEW]: [],
+  [TransactionNodeCollection.READY_TO_SIGN]: [],
+  [TransactionNodeCollection.IN_PROGRESS]: [],
+  [TransactionNodeCollection.READY_FOR_EXECUTION]: [
+    NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
+  ],
+
+  [TransactionNodeCollection.HISTORY]: [
+    NotificationType.TRANSACTION_INDICATOR_EXECUTED,
+    NotificationType.TRANSACTION_INDICATOR_EXPIRED,
+    NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
+    NotificationType.TRANSACTION_INDICATOR_CANCELLED,
+    NotificationType.TRANSACTION_INDICATOR_FAILED,
+  ],
+};
+
 /* Props */
 const props = defineProps<{
   collection: TransactionNodeCollection;
@@ -42,15 +62,10 @@ const network = useNetworkStore();
 /* Composables */
 const toast = useToast();
 useWebsocketSubscription(TRANSACTION_ACTION, fetchNodes);
-// Mark relevant notifications as read onMounted and onBeforeUnmount
-const { oldNotifications } = useMarkNotifications([
-  NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
-  NotificationType.TRANSACTION_INDICATOR_EXECUTED,
-  NotificationType.TRANSACTION_INDICATOR_EXPIRED,
-  NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
-  NotificationType.TRANSACTION_INDICATOR_CANCELLED,
-  NotificationType.TRANSACTION_INDICATOR_FAILED,
-]);
+/* Use mark notifications with computed types */
+const { oldNotifications } = useMarkNotifications(
+  NOTIFICATION_TYPES_BY_COLLECTION[props.collection] ?? [],
+);
 
 /* State */
 const nodes = ref<ITransactionNode[]>([]);

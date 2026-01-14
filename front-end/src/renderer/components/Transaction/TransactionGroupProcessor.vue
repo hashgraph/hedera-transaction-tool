@@ -24,7 +24,7 @@ import {
   addApprovers,
   addObservers,
   submitTransactionGroup,
-  getApiGroupById,
+  getTransactionGroupById,
 } from '@renderer/services/organization';
 
 import { createTransactionId } from '@renderer/utils/sdk';
@@ -346,7 +346,7 @@ async function sendSignedTransactionsToOrganization() {
     apiGroupItems,
   );
 
-  const group: IGroup = await getApiGroupById(user.selectedOrganization.serverUrl, id);
+  const group: IGroup = await getTransactionGroupById(user.selectedOrganization.serverUrl, id);
 
   toast.success('Transaction submitted successfully', successToastOptions);
 

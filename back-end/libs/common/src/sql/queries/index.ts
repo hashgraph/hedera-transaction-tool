@@ -1,1 +1,1 @@
-export * from './transactionQueries';
+export * from './transaction.queries';

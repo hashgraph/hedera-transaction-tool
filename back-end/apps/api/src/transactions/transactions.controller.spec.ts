@@ -121,6 +121,7 @@ describe('TransactionsController', () => {
         approvedTransactions: [],
         signedTransactions: [],
       },
+      creatorKeyId: 1,
       signers: [],
       approvers: [],
       observers: [],

@@ -74,10 +74,10 @@ const useWebsocketConnection = defineStore(
       if (socket) {
         //@ts-expect-error - auth is missing in typings
         if (socket.auth?.token !== `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`) {
+          socket.off();
           socket.disconnect();
           connectionStates.value[serverUrl] = 'disconnected';
         } else {
-          socket.off();
           if (socket.connected) {
             connectionStates.value[serverUrl] = 'connected';
           }
@@ -89,10 +89,17 @@ const useWebsocketConnection = defineStore(
 
       const newSocket = io(url, {
         path: '/ws',
-        // Use a function so token is fetched on EVERY connection attempt, in case the token has been updated
         auth: cb => {
+          const token = getAuthTokenFromSessionStorage(serverUrl);
+
+          console.log('[WS][CLIENT][AUTH]', {
+            serverUrl,
+            hasToken: !!token,
+            tokenPrefix: typeof token === 'string' ? token.slice(0, 15) : null,
+          });
+
           cb({
-            token: `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`,
+            token: token ? `bearer ${token}` : undefined,
             version: FRONTEND_VERSION,
           });
         },
@@ -135,6 +142,12 @@ const useWebsocketConnection = defineStore(
       });
 
       socket.on('connect_error', error => {
+        console.log(`⚠️ Socket for ${serverUrl}: connect_error`, {
+          message: error.message,
+          active: socket?.active,
+          willRetry: socket?.active === true
+        });
+
         if (isVersionError(error.message)) {
           console.error(
             `Socket for ${serverUrl}: Version error - ${error.message}. Disconnecting permanently.`,
@@ -159,8 +172,16 @@ const useWebsocketConnection = defineStore(
       });
 
       socket.on('disconnect', reason => {
+        console.log(`🔌 Socket for ${serverUrl}: disconnect event`, {
+          reason,
+          active: socket?.active,
+          connected: socket?.connected,
+          willReconnect: socket?.active === true
+        });
+
         if (socket?.active) {
           // temporary disconnection, the socket will automatically try to reconnect
+          console.log(`♻️ Socket for ${serverUrl}: Will auto-reconnect`);
           connectionStates.value[serverUrl] = 'connecting';
         } else {
           console.log(`Socket for ${serverUrl}: ${reason}`);
