@@ -7,6 +7,7 @@ import TransactionBrowserTable from './TransactionBrowserTable.vue';
 import { TransactionBrowserEntry } from '@renderer/components/ExternalSigning/TransactionBrowser/TransactionBrowserEntry.ts';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import useUserStore from '@renderer/stores/storeUser.ts';
 
 /* Props */
 const props = defineProps<{
@@ -19,6 +20,7 @@ const nodeInfoCache = NodeByIdCache.inject();
 
 /* Stores */
 const network = useNetworkStore();
+const user = useUserStore();
 
 /* State */
 const entries = ref<TransactionBrowserEntry[] | Error | null>(null); // null means loading
@@ -33,6 +35,7 @@ const updateEntries = async () => {
       mirrorNodeLink,
       accountInfoCache,
       nodeInfoCache,
+      user.publicKeys,
     );
   } catch {
     entries.value = new Error('Failed to create entries');
@@ -41,11 +44,6 @@ const updateEntries = async () => {
 
 /* Watchers */
 watch(() => props.items, updateEntries, { immediate: true });
-
-// /* Handlers */
-// const handleNavigate = (targetIndex: number) => {
-//   index.value = targetIndex;
-// };
 
 onMounted(() => {
   // console.log('items=' + JSON.stringify(props.items));

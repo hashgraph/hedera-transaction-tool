@@ -5,7 +5,6 @@ import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions.ts';
-import useUserStore from '@renderer/stores/storeUser.ts';
 
 /* Props */
 const props = defineProps<{
@@ -15,9 +14,6 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits(['details']);
-
-/* Stores */
-const user = useUserStore();
 
 /* Computed */
 const transaction = computed(() => {
@@ -35,7 +31,7 @@ const validStartDate = computed(() => {
 });
 const creatorEmail = computed(() => props.entry.item.creatorEmail ?? '');
 
-const fullySignedByUser = computed(() => props.entry.isFullySignedByUser(user.publicKeys));
+const fullySignedByUser = computed(() => props.entry.fullySignedByUser);
 
 function handleDetails() {
   emit('details', props.index);
