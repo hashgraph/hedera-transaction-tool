@@ -1,8 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index, JoinColumn } from 'typeorm';
 import { CachedNode } from './';
 
 @Entity()
-@Index(['node', 'publicKey'], { unique: true })
+@Index(['cachedNodeId', 'publicKey'], { unique: true })
 export class CachedNodeAdminKey {
   @PrimaryGeneratedColumn()
   id: number;
@@ -10,8 +10,11 @@ export class CachedNodeAdminKey {
   @ManyToOne(() => CachedNode, (node) => node.keys, {
     onDelete: 'CASCADE',
   })
-  @Index()
-  node: CachedNode;
+  @JoinColumn({ name: 'cachedNodeId' })
+  cachedNode: CachedNode;
+
+  @Column()
+  cachedNodeId: number;
 
   @Column({ length: 128 })
   @Index()

@@ -55,7 +55,7 @@ export const submitTransactionGroup = async (
 };
 
 /* Get transaction groups */
-export const getApiGroups = async (serverUrl: string) => {
+export const getTransactionGroups = async (serverUrl: string) => {
   return commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.get(`${serverUrl}/transaction-groups/`, {
       withCredentials: true,
@@ -66,7 +66,7 @@ export const getApiGroups = async (serverUrl: string) => {
 };
 
 /* Get transaction groups */
-export const getApiGroupById = async (serverUrl: string, id: number) => {
+export const getTransactionGroupById = async (serverUrl: string, id: number) => {
   return commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.get<IGroup>(`${serverUrl}/transaction-groups/${id}`, {
       withCredentials: true,

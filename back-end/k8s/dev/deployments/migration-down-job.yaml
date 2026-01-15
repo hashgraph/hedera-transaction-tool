@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migration-down-job
+  labels:
+    name: migration-down-job
+    app: htx-back-end
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 60
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migration
+          image: back-end-migration:1.0.0
+          command: ["sh", "-lc"]
+          args:
+            - >
+              cd /usr/src/app &&
+              pnpm -F typeorm migration:revert
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: POSTGRES_HOST
+              value: 'postgres-service'
+            - name: POSTGRES_PORT
+              value: '5432'
+            - name: POSTGRES_DATABASE
+              value: 'postgres'
+            - name: POSTGRES_USERNAME
+              value: 'postgres'
+            - name: POSTGRES_PASSWORD
+              value: 'postgres'
