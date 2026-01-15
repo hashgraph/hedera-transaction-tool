@@ -31,8 +31,7 @@ import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import { successToastOptions } from '@renderer/utils/toastOptions.ts';
-import { formatTransactionType, getDisplayTransactionType } from '@renderer/utils/sdk/transactions.ts';
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
+import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
@@ -169,24 +168,13 @@ function getOpositeDirection() {
 /**
  * Gets the display transaction type for drafts.
  * For freeze transactions, extracts the specific freeze type from transactionBytes.
- * Draft type is stored as human-readable (e.g., "Freeze Transaction" or "FreezeTransaction")
  */
 function getDraftDisplayType(draft: TransactionDraft): string {
-  const isFreezeType =
-    draft.type === 'Freeze Transaction' ||
-    draft.type === 'FreezeTransaction' ||
-    draft.type === 'Freeze' ||
-    draft.type === 'FREEZE';
-
-  if (isFreezeType && draft.transactionBytes) {
-    try {
-      const sdkTx = getTransactionFromBytes(draft.transactionBytes);
-      return getDisplayTransactionType(sdkTx, false, true);
-    } catch {
-      return formatTransactionType(draft.type, false, true);
-    }
-  }
-  return formatTransactionType(draft.type, false, true);
+  return getDisplayTransactionType(
+    { localType: draft.type, transactionBytes: draft.transactionBytes },
+    false,
+    true,
+  );
 }
 
 function createFindArgs(): Prisma.TransactionDraftFindManyArgs {

@@ -8,12 +8,11 @@ import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useFilterNotifications from '@renderer/composables/useFilterNotifications.ts';
 import {
-  getTransactionTypeFromBackendType,
+  getDisplayTransactionType,
   getFreezeTypeForTransaction,
-  getFreezeTypeString,
 } from '@renderer/utils/sdk/transactions.ts';
 import { isLoggedInOrganization } from '@renderer/utils';
-import { FreezeType } from '@hashgraph/sdk';
+import type { FreezeType } from '@hashgraph/sdk';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -50,7 +49,7 @@ const user = useUserStore();
 const descriptionRef = ref<HTMLElement | null>(null);
 const isTruncated = ref(false);
 let resizeObserver: ResizeObserver | null = null;
-const freezeTypeCode = ref<number | null>(null);
+const freezeType = ref<FreezeType | null>(null);
 
 /* Composables */
 const router = useRouter();
@@ -121,13 +120,11 @@ const hasNotifications = computed(() => {
 const transactionType = computed(() => {
   let result: string;
   if (props.node.transactionType) {
-    // For freeze transactions, display the specific freeze type if available
-    if (props.node.transactionType === 'FREEZE' && freezeTypeCode.value !== null) {
-      const freezeType = FreezeType._fromCode(freezeTypeCode.value);
-      result = getFreezeTypeString(freezeType);
-    } else {
-      result = getTransactionTypeFromBackendType(props.node.transactionType, false, true);
-    }
+    result = getDisplayTransactionType(
+      { backendType: props.node.transactionType, freezeType: freezeType.value },
+      false,
+      true,
+    );
   } else if (props.node.groupItemCount) {
     const groupItemCount = props.node.groupItemCount;
     const groupCollectedCount = props.node.groupCollectedCount ?? groupItemCount;
@@ -229,17 +226,17 @@ watch(() => props.node.description, () => {
 
 // Fetch freeze type when node is a freeze transaction
 watch(
-  () => props.node,
-  async node => {
-    if (node.transactionType === 'FREEZE' && node.transactionId) {
+  () => [props.node.transactionType, props.node.transactionId] as const,
+  async ([transactionType, transactionId]) => {
+    if (transactionType === 'FREEZE' && transactionId) {
       if (isLoggedInOrganization(user.selectedOrganization)) {
-        freezeTypeCode.value = await getFreezeTypeForTransaction(
+        freezeType.value = await getFreezeTypeForTransaction(
           user.selectedOrganization.serverUrl,
-          node.transactionId,
+          transactionId,
         );
       }
     } else {
-      freezeTypeCode.value = null;
+      freezeType.value = null;
     }
   },
   { immediate: true },

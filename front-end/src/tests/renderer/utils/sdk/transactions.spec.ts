@@ -1,11 +1,16 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { FreezeTransaction, FreezeType, TransferTransaction } from '@hashgraph/sdk';
+import { describe, test, expect, vi, beforeEach, type MockInstance } from 'vitest';
+import { FreezeTransaction, FreezeType, Transaction, TransferTransaction } from '@hashgraph/sdk';
 import {
   getFreezeTypeString,
   getDisplayTransactionType,
   formatTransactionType,
   getTransactionType,
 } from '@renderer/utils/sdk/transactions';
+import * as organizationService from '@renderer/services/organization';
+
+vi.mock('@renderer/services/organization', () => ({
+  getTransactionById: vi.fn(),
+}));
 
 describe('SDK Transaction Utilities - Freeze Types', () => {
   beforeEach(() => {
@@ -146,6 +151,298 @@ describe('SDK Transaction Utilities - Freeze Types', () => {
       // Should return fallback value for invalid bytes
       const result = getDisplayTransactionType(invalidBytes, false, true);
       expect(result).toBe('Freeze');
+    });
+
+    describe('with BackendTypeInput', () => {
+      test('returns freeze type string when backendType is FREEZE and freezeType provided', () => {
+        const result = getDisplayTransactionType(
+          { backendType: 'FREEZE', freezeType: FreezeType.FreezeUpgrade },
+          false,
+          true,
+        );
+        expect(result).toBe('Freeze Upgrade');
+      });
+
+      test('returns standard type when backendType is FREEZE but freezeType is null', () => {
+        const result = getDisplayTransactionType(
+          { backendType: 'FREEZE', freezeType: null },
+          false,
+          true,
+        );
+        expect(result).toBe('Freeze');
+      });
+
+      test('converts backend type to display format for non-freeze types', () => {
+        const result = getDisplayTransactionType({ backendType: 'TRANSFER' }, false, true);
+        expect(result).toBe('Transfer');
+      });
+
+      test('applies short format to backend type', () => {
+        const result = getDisplayTransactionType(
+          { backendType: 'FREEZE', freezeType: FreezeType.FreezeAbort },
+          true,
+          false,
+        );
+        expect(result).toBe('FreezeAbort');
+      });
+    });
+
+    describe('with LocalTypeInput', () => {
+      test('returns formatted local type for non-freeze transactions', () => {
+        const result = getDisplayTransactionType(
+          { localType: 'Transfer Transaction' },
+          false,
+          true,
+        );
+        expect(result).toBe('Transfer');
+      });
+
+      test('returns formatted local type when no transactionBytes provided', () => {
+        const result = getDisplayTransactionType(
+          { localType: 'Freeze Transaction' },
+          false,
+          true,
+        );
+        expect(result).toBe('Freeze');
+      });
+
+      test('applies short format to local type', () => {
+        const result = getDisplayTransactionType(
+          { localType: 'Transfer Transaction' },
+          true,
+          false,
+        );
+        expect(result).toBe('TransferTransaction');
+      });
+
+      test.each([
+        ['Freeze Transaction', 'Freeze'],
+        ['FreezeTransaction', 'FreezeTransaction'],
+        ['Freeze', 'Freeze'],
+        ['FREEZE', 'FREEZE'],
+      ])(
+        'recognizes freeze type variant "%s" for freeze subtype extraction',
+        (localType, expected) => {
+          // Without transactionBytes, should just format the localType
+          // The key behavior is that all these variants are recognized as freeze types
+          // and would attempt to extract freeze subtype if transactionBytes were provided
+          const result = getDisplayTransactionType({ localType }, false, true);
+          expect(result).toBe(expected);
+        },
+      );
+    });
+  });
+});
+
+describe('getFreezeTypeForTransaction', () => {
+  const serverUrl = 'http://localhost:8080';
+  const transactionId = 123;
+
+  // Helper to create mock freeze transaction with specific freeze type
+  const createMockFreezeTransaction = (freezeType: FreezeType) => {
+    const mockTx = {
+      freezeType,
+    };
+    // Make it pass instanceof check
+    Object.setPrototypeOf(mockTx, FreezeTransaction.prototype);
+    return mockTx;
+  };
+
+  // Helper to create mock non-freeze transaction
+  const createMockTransferTransaction = () => {
+    const mockTx = {};
+    Object.setPrototypeOf(mockTx, TransferTransaction.prototype);
+    return mockTx;
+  };
+
+  // Convert string to hex for mock response
+  const stringToHex = (str: string) =>
+    Array.from(str)
+      .map(c => c.charCodeAt(0).toString(16).padStart(2, '0'))
+      .join('');
+
+  let getFreezeTypeForTransaction: typeof import('@renderer/utils/sdk/transactions').getFreezeTypeForTransaction;
+  let fromBytesSpy: MockInstance;
+
+  beforeEach(async () => {
+    vi.resetAllMocks();
+    // Reset modules to clear the module-level cache
+    vi.resetModules();
+
+    // Re-import to get fresh module with empty cache
+    const module = await import('@renderer/utils/sdk/transactions');
+    getFreezeTypeForTransaction = module.getFreezeTypeForTransaction;
+
+    // Spy on Transaction.fromBytes
+    fromBytesSpy = vi.spyOn(Transaction, 'fromBytes');
+  });
+
+  describe('API fetching', () => {
+    test('fetches and returns freeze type for freeze transaction', async () => {
+      const mockFreezeTransaction = createMockFreezeTransaction(FreezeType.FreezeUpgrade);
+
+      vi.mocked(organizationService.getTransactionById).mockResolvedValueOnce({
+        transactionBytes: stringToHex('mock-bytes'),
+      } as any);
+      fromBytesSpy.mockReturnValueOnce(mockFreezeTransaction as any);
+
+      const result = await getFreezeTypeForTransaction(serverUrl, transactionId);
+
+      expect(organizationService.getTransactionById).toHaveBeenCalledWith(serverUrl, transactionId);
+      expect(result).toBe(FreezeType.FreezeUpgrade);
+    });
+
+    test('returns null for non-freeze transactions', async () => {
+      const mockTransferTransaction = createMockTransferTransaction();
+
+      vi.mocked(organizationService.getTransactionById).mockResolvedValueOnce({
+        transactionBytes: stringToHex('mock-bytes'),
+      } as any);
+      fromBytesSpy.mockReturnValueOnce(mockTransferTransaction as any);
+
+      const result = await getFreezeTypeForTransaction(serverUrl, transactionId);
+
+      expect(result).toBeNull();
+    });
+
+    test('returns null and logs error when API fails', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      vi.mocked(organizationService.getTransactionById).mockRejectedValueOnce(
+        new Error('Network error'),
+      );
+
+      const result = await getFreezeTypeForTransaction(serverUrl, transactionId);
+
+      expect(result).toBeNull();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Failed to fetch freeze type:',
+        expect.any(Error),
+      );
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    test('returns null for freeze transaction without freezeType set', async () => {
+      const mockFreezeTransaction = {
+        freezeType: null,
+      };
+      Object.setPrototypeOf(mockFreezeTransaction, FreezeTransaction.prototype);
+
+      vi.mocked(organizationService.getTransactionById).mockResolvedValueOnce({
+        transactionBytes: stringToHex('mock-bytes'),
+      } as any);
+      fromBytesSpy.mockReturnValueOnce(mockFreezeTransaction as any);
+
+      const result = await getFreezeTypeForTransaction(serverUrl, transactionId);
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('caching', () => {
+    test('returns cached result on second call with same params', async () => {
+      const mockFreezeTransaction = createMockFreezeTransaction(FreezeType.PrepareUpgrade);
+
+      vi.mocked(organizationService.getTransactionById).mockResolvedValueOnce({
+        transactionBytes: stringToHex('mock-bytes'),
+      } as any);
+      fromBytesSpy.mockReturnValueOnce(mockFreezeTransaction as any);
+
+      // First call - should fetch from API
+      const result1 = await getFreezeTypeForTransaction(serverUrl, transactionId);
+      expect(result1).toBe(FreezeType.PrepareUpgrade);
+      expect(organizationService.getTransactionById).toHaveBeenCalledTimes(1);
+
+      // Second call - should use cache
+      const result2 = await getFreezeTypeForTransaction(serverUrl, transactionId);
+      expect(result2).toBe(FreezeType.PrepareUpgrade);
+      expect(organizationService.getTransactionById).toHaveBeenCalledTimes(1); // Still 1
+    });
+
+    test('fetches separately for different serverUrls with same transactionId', async () => {
+      const serverUrl1 = 'http://server1.com';
+      const serverUrl2 = 'http://server2.com';
+
+      const mockFreezeTransaction1 = createMockFreezeTransaction(FreezeType.FreezeOnly);
+      const mockFreezeTransaction2 = createMockFreezeTransaction(FreezeType.FreezeUpgrade);
+
+      vi.mocked(organizationService.getTransactionById)
+        .mockResolvedValueOnce({ transactionBytes: stringToHex('mock-bytes-1') } as any)
+        .mockResolvedValueOnce({ transactionBytes: stringToHex('mock-bytes-2') } as any);
+      fromBytesSpy
+        .mockReturnValueOnce(mockFreezeTransaction1 as any)
+        .mockReturnValueOnce(mockFreezeTransaction2 as any);
+
+      // Call with first serverUrl
+      const result1 = await getFreezeTypeForTransaction(serverUrl1, transactionId);
+      expect(result1).toBe(FreezeType.FreezeOnly);
+
+      // Call with second serverUrl (same transactionId) - should NOT use cache
+      const result2 = await getFreezeTypeForTransaction(serverUrl2, transactionId);
+      expect(result2).toBe(FreezeType.FreezeUpgrade);
+
+      // API should have been called twice (once per serverUrl)
+      expect(organizationService.getTransactionById).toHaveBeenCalledTimes(2);
+      expect(organizationService.getTransactionById).toHaveBeenCalledWith(serverUrl1, transactionId);
+      expect(organizationService.getTransactionById).toHaveBeenCalledWith(serverUrl2, transactionId);
+    });
+
+    test('caches null results for non-freeze transactions', async () => {
+      const mockTransferTransaction = createMockTransferTransaction();
+
+      vi.mocked(organizationService.getTransactionById).mockResolvedValueOnce({
+        transactionBytes: stringToHex('mock-bytes'),
+      } as any);
+      fromBytesSpy.mockReturnValueOnce(mockTransferTransaction as any);
+
+      // First call - returns null
+      const result1 = await getFreezeTypeForTransaction(serverUrl, transactionId);
+      expect(result1).toBeNull();
+      expect(organizationService.getTransactionById).toHaveBeenCalledTimes(1);
+
+      // Second call - should use cached null
+      const result2 = await getFreezeTypeForTransaction(serverUrl, transactionId);
+      expect(result2).toBeNull();
+      expect(organizationService.getTransactionById).toHaveBeenCalledTimes(1); // Still 1
+    });
+  });
+
+  describe('LRU eviction', () => {
+    test('evicts oldest entry when cache exceeds 250 entries', async () => {
+      const mockFreezeTransaction = createMockFreezeTransaction(FreezeType.FreezeOnly);
+
+      // Mock to always return a freeze transaction
+      vi.mocked(organizationService.getTransactionById).mockResolvedValue({
+        transactionBytes: stringToHex('mock-bytes'),
+      } as any);
+      fromBytesSpy.mockReturnValue(mockFreezeTransaction as any);
+
+      // Fill cache with 250 entries
+      for (let i = 0; i < 250; i++) {
+        await getFreezeTypeForTransaction(serverUrl, i);
+      }
+
+      expect(organizationService.getTransactionById).toHaveBeenCalledTimes(250);
+
+      // Access entry 0 again - should be cached
+      vi.mocked(organizationService.getTransactionById).mockClear();
+      await getFreezeTypeForTransaction(serverUrl, 0);
+      expect(organizationService.getTransactionById).toHaveBeenCalledTimes(0);
+
+      // Add entry 250 - this should evict the oldest (entry 1, since 0 was just accessed)
+      await getFreezeTypeForTransaction(serverUrl, 250);
+      expect(organizationService.getTransactionById).toHaveBeenCalledTimes(1);
+
+      // Entry 1 should have been evicted - accessing it should trigger API call
+      vi.mocked(organizationService.getTransactionById).mockClear();
+      await getFreezeTypeForTransaction(serverUrl, 1);
+      expect(organizationService.getTransactionById).toHaveBeenCalledTimes(1);
+
+      // Entry 0 should still be cached (was accessed recently)
+      vi.mocked(organizationService.getTransactionById).mockClear();
+      await getFreezeTypeForTransaction(serverUrl, 0);
+      expect(organizationService.getTransactionById).toHaveBeenCalledTimes(0);
     });
   });
 });

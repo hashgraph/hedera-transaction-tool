@@ -32,7 +32,6 @@ import {
   isUserLoggedIn,
 } from '@renderer/utils';
 import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions';
-import { getTransactionFromBytes } from '@renderer/utils/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -247,15 +246,11 @@ function setPreviousTransactionsIds(id: string | number) {
  * For freeze transactions, extracts the specific freeze type from the transaction body.
  */
 function getLocalTransactionDisplayType(transaction: Transaction): string {
-  if (transaction.type === 'FREEZE' && transaction.body) {
-    try {
-      const sdkTx = getTransactionFromBytes(transaction.body);
-      return getDisplayTransactionType(sdkTx, false, true);
-    } catch {
-      return transaction.type;
-    }
-  }
-  return transaction.type;
+  return getDisplayTransactionType(
+    { localType: transaction.type, transactionBytes: transaction.body },
+    false,
+    true,
+  );
 }
 
 /* Hooks */
