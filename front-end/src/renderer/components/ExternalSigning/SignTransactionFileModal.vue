@@ -107,15 +107,22 @@ watch(
   show,
   async () => {
     if (show.value && props.filePath) {
-      transactionFile.value = await readTransactionFile(props.filePath);
-      itemsToBeSigned.value = transactionFile.value.items;
-      // itemsToBeSigned.value = await filterTransactionFileItemsToBeSigned(
-      //   transactionFile.value.items,
-      //   user.publicKeys,
-      //   network.getMirrorNodeREST(transactionFile.value.network),
-      //   accountInfoCache,
-      //   nodeInfoCache,
-      // );
+      try {
+        transactionFile.value = await readTransactionFile(props.filePath);
+        itemsToBeSigned.value = transactionFile.value.items;
+        // itemsToBeSigned.value = await filterTransactionFileItemsToBeSigned(
+        //   transactionFile.value.items,
+        //   user.publicKeys,
+        //   network.getMirrorNodeREST(transactionFile.value.network),
+        //   accountInfoCache,
+        //   nodeInfoCache,
+        // );
+      } catch (error) {
+        console.log(getErrorMessage(error, 'Failed to read transaction file'));
+        toast.error('Failed to read file', errorToastOptions);
+        transactionFile.value = null;
+        itemsToBeSigned.value = [];
+      }
     } else {
       transactionFile.value = null;
       itemsToBeSigned.value = [];
@@ -161,14 +168,23 @@ watch(
     <template v-else>
       <div class="p-5">
         <div class="d-flex align-items-center mb-5">
-          <i class="bi bi-x-lg cursor-pointer me-5" @click="show = false" />
-          <h3 class="text-subheader fw-medium flex-1">No transactions to sign.</h3>
+          <i class="bi bi-x-lg cursor-pointer" @click.prevent="show = false"></i>
         </div>
-        <p v-if="transactionFile && transactionFile.items.length > 0" class="text-secondary">
+
+        <div class="text-center">
+          <AppCustomIcon :name="'error'" style="height: 80px" />
+        </div>
+
+        <h3 class="text-center text-title text-bold mt-4">No transactions to sign.</h3>
+
+        <div v-if="transactionFile && transactionFile.items.length > 0" class="text-center text-secondary mt-4">
           You do not have any of the keys required to sign the transactions in this file. Make sure
           all your keys are imported in the Settings page and try again.
-        </p>
-        <p v-else class="text-secondary">This file does not contain any usable transactions.</p>
+        </div>
+        <div v-else class="text-center text-secondary mt-4">
+          This file does not contain any usable transactions..
+        </div>
+
         <div class="d-flex justify-content-end mt-5">
           <AppButton color="primary" data-testid="button-ok" @click="show = false"> OK</AppButton>
         </div>
@@ -200,5 +216,6 @@ watch(
         </div>
       </form>
     </AppModal>
+
   </AppModal>
 </template>
