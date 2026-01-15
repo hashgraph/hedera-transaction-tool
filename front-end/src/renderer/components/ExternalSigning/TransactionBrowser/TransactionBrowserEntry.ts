@@ -9,11 +9,15 @@ import {
 } from '@shared/utils/transactionFile.ts';
 
 export class TransactionBrowserEntry {
+  public readonly fullySignedByUser: boolean;
   public constructor(
     public readonly item: ITransactionBrowserItem,
     public readonly transaction: SDKTransaction | null, // null means decoding failed
     public readonly signatureAudit: SignatureAudit | null, // null if transaction is null
-  ) {}
+    userKeys: string[],
+  ) {
+    this.fullySignedByUser = this.isFullySignedByUser(userKeys);
+  }
 
   public isFullySignedByUser(userKeys: string[]): boolean {
     let result: boolean;
@@ -36,6 +40,7 @@ export class TransactionBrowserEntry {
     mirrorNetwork: string,
     accountInfoCache: AccountByIdCache,
     nodeInfoCache: NodeByIdCache,
+    userKeys: string[],
   ): Promise<TransactionBrowserEntry> {
     let transaction: SDKTransaction | null;
     let signatureAudit: SignatureAudit | null;
@@ -52,7 +57,7 @@ export class TransactionBrowserEntry {
       transaction = null;
       signatureAudit = null;
     }
-    return new TransactionBrowserEntry(item, transaction, signatureAudit);
+    return new TransactionBrowserEntry(item, transaction, signatureAudit, userKeys);
   }
 
   public static async makeFromArray(
@@ -60,10 +65,11 @@ export class TransactionBrowserEntry {
     mirrorNetwork: string,
     accountInfoCache: AccountByIdCache,
     nodeInfoCache: NodeByIdCache,
+    userKeys: string[],
   ): Promise<TransactionBrowserEntry[]> {
     const result: TransactionBrowserEntry[] = [];
     for (const i of items) {
-      result.push(await this.make(i, mirrorNetwork, accountInfoCache, nodeInfoCache));
+      result.push(await this.make(i, mirrorNetwork, accountInfoCache, nodeInfoCache, userKeys));
     }
     return result;
   }
