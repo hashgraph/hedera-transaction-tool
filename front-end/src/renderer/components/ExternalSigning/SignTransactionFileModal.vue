@@ -4,7 +4,10 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import { ref, watch } from 'vue';
 import type { TransactionFile, TransactionFileItem } from '@shared/interfaces';
 import { readTransactionFile, writeTransactionFile } from '@renderer/services/transactionFile.ts';
-import { collectMissingSignerKeys } from '@shared/utils/transactionFile.ts';
+import {
+  collectMissingSignerKeys,
+  filterTransactionFileItemsToBeSigned,
+} from '@shared/utils/transactionFile.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
@@ -39,6 +42,8 @@ const nodeInfoCache = NodeByIdCache.inject();
 /* State */
 const transactionFile = ref<TransactionFile | null>(null);
 const itemsToBeSigned = ref<TransactionFileItem[]>([]);
+const itemsFullySigned = ref<TransactionFileItem[]>([]);
+const itemsSignable = ref<TransactionFileItem[]>([]);
 const showSuccessModal = ref(false);
 
 /* Handlers */
@@ -109,23 +114,29 @@ watch(
     if (show.value && props.filePath) {
       try {
         transactionFile.value = await readTransactionFile(props.filePath);
-        itemsToBeSigned.value = transactionFile.value.items;
-        // itemsToBeSigned.value = await filterTransactionFileItemsToBeSigned(
-        //   transactionFile.value.items,
-        //   user.publicKeys,
-        //   network.getMirrorNodeREST(transactionFile.value.network),
-        //   accountInfoCache,
-        //   nodeInfoCache,
-        // );
+
+        const status = await filterTransactionFileItemsToBeSigned(
+          transactionFile.value.items,
+          user.publicKeys,
+          network.getMirrorNodeREST(transactionFile.value.network),
+          accountInfoCache,
+          nodeInfoCache,
+        );
+
+        itemsToBeSigned.value = status.needSigning;
+        itemsFullySigned.value = status.fullySigned;
+        itemsSignable.value = status.needSigning.concat(status.fullySigned);
       } catch (error) {
         console.log(getErrorMessage(error, 'Failed to read transaction file'));
         toast.error('Failed to read file', errorToastOptions);
         transactionFile.value = null;
         itemsToBeSigned.value = [];
+        show.value = false;
       }
     } else {
       transactionFile.value = null;
       itemsToBeSigned.value = [];
+      show.value = false;
     }
   },
   { immediate: true },
@@ -133,63 +144,38 @@ watch(
 </script>
 
 <template>
-  <AppModal v-model:show="show" :class="{ 'full-screen-modal': itemsToBeSigned.length > 0 }">
-    <template v-if="itemsToBeSigned.length > 0">
+  <template v-if="itemsSignable.length > 0">
+    <AppModal v-model:show="show" class="full-screen-modal">
       <div class="p-5">
         <div class="d-flex align-items-center">
           <i class="bi bi-x-lg cursor-pointer me-5" @click="show = false" />
         </div>
-        <form @submit.prevent="handleSignAll" class="h-100">
+        <form class="h-100" @submit.prevent="handleSignAll">
           <h1 class="text-title text-semi-bold text-center mb-5">
-            <template v-if="itemsToBeSigned.length == 0"
-              >You have no transaction to sign in this file</template
-            >
-            <template v-if="itemsToBeSigned.length == 1"
-              >You have 1 transaction to sign in this file</template
-            >
-            <template v-else
-              >You have {{ itemsToBeSigned.length }} transactions to sign in this file</template
-            >
+            <template v-if="itemsToBeSigned.length === 0 && itemsFullySigned.length === 1">
+              You have already signed this transaction
+            </template>
+            <template v-else-if="itemsToBeSigned.length === 0">
+              You have already signed these transactions
+            </template>
+            <template v-else-if="itemsToBeSigned.length === 1">
+              You have 1 transaction to sign
+            </template>
+            <template v-else> You have {{ itemsToBeSigned.length }} transactions to sign </template>
           </h1>
-
           <div class="d-flex justify-content-end mb-5">
-            <AppButton color="primary" data-testid="button-sign-transaction-file" type="submit"
-              >Sign and Update File</AppButton
-            >
+            <AppButton
+              :disabled="itemsToBeSigned.length === 0"
+              color="primary"
+              data-testid="button-sign-transaction-file"
+              type="submit"
+              >Sign and Update File
+            </AppButton>
           </div>
-
-          <template v-if="transactionFile">
-            <TransactionBrowser :items="itemsToBeSigned" />
-          </template>
+          <TransactionBrowser :items="itemsSignable" />
         </form>
       </div>
-    </template>
-
-    <template v-else>
-      <div class="p-5">
-        <div class="d-flex align-items-center mb-5">
-          <i class="bi bi-x-lg cursor-pointer" @click.prevent="show = false"></i>
-        </div>
-
-        <div class="text-center">
-          <AppCustomIcon :name="'error'" style="height: 80px" />
-        </div>
-
-        <h3 class="text-center text-title text-bold mt-4">No transactions to sign.</h3>
-
-        <div v-if="transactionFile && transactionFile.items.length > 0" class="text-center text-secondary mt-4">
-          You do not have any of the keys required to sign the transactions in this file. Make sure
-          all your keys are imported in the Settings page and try again.
-        </div>
-        <div v-else class="text-center text-secondary mt-4">
-          This file does not contain any usable transactions..
-        </div>
-
-        <div class="d-flex justify-content-end mt-5">
-          <AppButton color="primary" data-testid="button-ok" @click="show = false"> OK</AppButton>
-        </div>
-      </div>
-    </template>
+    </AppModal>
 
     <AppModal v-model:show="showSuccessModal" class="common-modal">
       <form class="p-5" @submit.prevent="show = false">
@@ -216,6 +202,32 @@ watch(
         </div>
       </form>
     </AppModal>
+  </template>
 
-  </AppModal>
+  <template v-else>
+    <AppModal v-if="transactionFile" v-model:show="show" class="medium-modal">
+      <div class="p-5">
+        <div class="d-flex align-items-center mb-5">
+          <i class="bi bi-x-lg cursor-pointer" @click.prevent="show = false"></i>
+        </div>
+        <div class="text-center">
+          <AppCustomIcon :name="'error'" style="height: 80px" />
+        </div>
+        <h3 class="text-center text-title text-bold mt-4">No transaction to sign.</h3>
+        <div
+          v-if="transactionFile && transactionFile.items.length > 0"
+          class="text-center text-secondary mt-4"
+        >
+          You do not have any of the keys required to sign the transactions in this file. Make sure
+          to imports all needed keys in the Settings page and try again.
+        </div>
+        <div v-else class="text-center text-secondary mt-4">
+          This file is empty or does not contain any usable transaction.
+        </div>
+        <div class="d-grid mt-5">
+          <AppButton color="primary" data-testid="button-ok" @click="show = false">OK</AppButton>
+        </div>
+      </div>
+    </AppModal>
+  </template>
 </template>
