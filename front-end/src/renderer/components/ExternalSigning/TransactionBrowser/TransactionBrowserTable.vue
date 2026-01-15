@@ -21,6 +21,7 @@ const pageStart = computed(() => (currentPage.value - 1) * pageSize.value);
 const pagedEntries = computed(() => {
   return props.entries.slice(pageStart.value, pageStart.value + pageSize.value);
 });
+const showStatusColumn = computed(() => props.entries.some(entry => entry.fullySignedByUser));
 
 /* Handlers */
 const handleDetails = (index: number) => {
@@ -33,17 +34,23 @@ const handleDetails = (index: number) => {
   <table class="table-custom">
     <thead>
       <tr>
+        <th v-if="showStatusColumn" class="text-center">Signed</th>
         <th>Transaction ID</th>
         <th>Transaction Type</th>
         <th>Description</th>
         <th>Valid Start</th>
         <th>Creator email</th>
-        <th>Action</th>
+        <th class="text-center">Action</th>
       </tr>
     </thead>
     <tbody>
       <template v-for="(entry, index) of pagedEntries" :key="pageStart + index">
-        <TransactionBrowserRow :index="pageStart + index" :entry="entry" @details="handleDetails" />
+        <TransactionBrowserRow
+          :entry="entry"
+          :index="pageStart + index"
+          :show-status-column="showStatusColumn"
+          @details="handleDetails"
+        />
       </template>
     </tbody>
     <tfoot v-if="entries.length > pageSize" class="d-table-caption">

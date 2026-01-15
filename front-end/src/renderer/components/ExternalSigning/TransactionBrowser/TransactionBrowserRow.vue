@@ -10,6 +10,7 @@ import { getTransactionType, getTransactionValidStart } from '@renderer/utils/sd
 const props = defineProps<{
   entry: TransactionBrowserEntry;
   index: number;
+  showStatusColumn: boolean;
 }>();
 
 /* Emits */
@@ -39,16 +40,12 @@ function handleDetails() {
 </script>
 
 <template>
-  <tr class="position-relative">
+  <tr>
+    <td v-if="showStatusColumn" class="text-center">
+      <span v-if="fullySignedByUser" class="bi bi-check-lg text-success" />
+    </td>
     <td>
-      <span>
-        <span
-          v-if="fullySignedByUser"
-          class="bi bi-check-lg text-success position-absolute"
-          :style="{ left: '-16px' }"
-        />
-        <TransactionId v-if="transactionId" :transaction-id="transactionId" wrap />
-      </span>
+      <TransactionId v-if="transactionId" :transaction-id="transactionId" wrap />
     </td>
     <td class="text-bold">
       {{ transactionType }}
@@ -62,7 +59,7 @@ function handleDetails() {
       <DateTimeString :date="validStartDate" compact wrap />
     </td>
     <td>{{ creatorEmail }}</td>
-    <td>
+    <td class="text-center">
       <AppButton
         :data-testid="`button-external-transaction-details-${props.index}`"
         color="secondary"
