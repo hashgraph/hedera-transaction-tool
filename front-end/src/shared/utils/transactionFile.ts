@@ -29,14 +29,20 @@ export async function flattenNodeCollection(
   return result;
 }
 
+export interface TransactionFileItemsStatus {
+  fullySigned: TransactionFileItem[];
+  needSigning: TransactionFileItem[];
+}
+
 export async function filterTransactionFileItemsToBeSigned(
   transactionFileItems: TransactionFileItem[],
   userPublicKeys: string[],
   mirrorNetwork: string,
   accountInfoCache: AccountByIdCache,
   nodeInfoCache: NodeByIdCache,
-): Promise<TransactionFileItem[]> {
-  const result: TransactionFileItem[] = [];
+): Promise<TransactionFileItemsStatus> {
+  const fullySigned: TransactionFileItem[] = [];
+  const needSigning: TransactionFileItem[] = [];
   for (const item of transactionFileItems) {
     try {
       const transactionBytes = hexToUint8Array(item.transactionBytes);
@@ -50,14 +56,22 @@ export async function filterTransactionFileItemsToBeSigned(
       );
       const requiredKeys = filterAuditByUser(audit, userPublicKeys);
       const signingKeys = filterTransactionSignersByUser(sdkTransaction, userPublicKeys);
-      if (requiredKeys.size > 0 && signingKeys.size < requiredKeys.size) {
-        result.push(item);
+
+      if (requiredKeys.size > 0 ) {
+        if (signingKeys.size < requiredKeys.size) {
+          needSigning.push(item);
+        } else {
+          fullySigned.push(item);
+        }
       }
     } catch {
       // Silently ignored
     }
   }
-  return result;
+  return {
+    fullySigned: fullySigned,
+    needSigning: needSigning,
+  };
 }
 
 export async function collectMissingSignerKeys(
