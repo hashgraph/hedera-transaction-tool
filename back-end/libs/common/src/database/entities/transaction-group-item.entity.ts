@@ -1,15 +1,16 @@
 import {
   Column,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToOne,
   PrimaryColumn,
-  RelationId,
 } from 'typeorm';
 import { TransactionGroup, Transaction } from './';
 
 @Entity()
+@Index(['transaction', 'group'])
 export class TransactionGroupItem {
   @Column()
   seq: number;
@@ -23,8 +24,9 @@ export class TransactionGroupItem {
   transaction: Transaction;
 
   @ManyToOne(() => TransactionGroup, group => group.groupItems)
+  @JoinColumn({ name: 'groupId' })
   group: TransactionGroup;
 
-  @RelationId((groupItem: TransactionGroupItem) => groupItem.group)
+  @Column()
   groupId: number;
 }

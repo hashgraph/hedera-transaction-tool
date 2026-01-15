@@ -36,8 +36,6 @@ export class CacheManagementService {
     this.reclaimTimeoutMs = this.configService.get<number>('CACHE_RECLAIM_TIMEOUT_MS', 2 * 60 * 1000);
   }
 
-  //TODO when we add the manual mirrornode sync feature, we can probably increase this from 30 seconds to a few minutes or something,
-  //as it is really rarely neeeded except in emergencies and such
   /**
    * Main method to refresh all stale cache entries
    */
@@ -58,7 +56,6 @@ export class CacheManagementService {
     }
   }
 
-  //TODO this can probably run less frequently, like every hour or day
   /**
    * Scheduled job - runs less frequently than refresh since cleanup is less urgent
    * Default: every 5 minutes
@@ -98,13 +95,13 @@ export class CacheManagementService {
       async (manager) => {
         const staleAccounts = await manager
           .createQueryBuilder(CachedAccount, 'c')
-          .where('c.lastCheckedAt < :staleTime OR c.lastCheckedAt IS NULL', {
+          .where('c.updatedAt < :staleTime OR c.updatedAt IS NULL', {
             staleTime,
           })
-          .andWhere('(c.refreshToken IS NULL OR c.lastCheckedAt < :reclaimDate)', {
+          .andWhere('(c.refreshToken IS NULL OR c.updatedAt < :reclaimDate)', {
             reclaimDate,
           })
-          .orderBy('c.lastCheckedAt', 'ASC')
+          .orderBy('c.updatedAt', 'ASC')
           .limit(this.batchSize)
           .setLock('pessimistic_write')
           .setOnLocked('skip_locked')
@@ -120,16 +117,15 @@ export class CacheManagementService {
         // innerJoinAndSelect loads the full Transaction entity
         const transactionAccounts = await manager
           .createQueryBuilder(TransactionCachedAccount, 'tca')
-          .innerJoinAndSelect('tca.account', 'account')        // Load the account relation
           .innerJoinAndSelect('tca.transaction', 't')           // Load the transaction relation
-          .where('account.id IN (:...accountIds)', { accountIds })
+          .where('tca.cachedAccountId IN (:...accountIds)', { accountIds })
           .getMany();
 
         // Build map of CachedAccount -> transaction IDs
         const map = new Map<CachedAccount, number[]>();
         for (const account of staleAccounts) {
           const txIds = transactionAccounts
-            .filter(ta => ta.account.id === account.id)
+            .filter(ta => ta.cachedAccountId === account.id)
             .map(ta => ta.transaction.id);
           map.set(account, txIds);
         }
@@ -177,13 +173,13 @@ export class CacheManagementService {
         // Get stale nodes with pessimistic lock
         const staleNodes = await manager
           .createQueryBuilder(CachedNode, 'c')
-          .where('c.lastCheckedAt < :staleTime OR c.lastCheckedAt IS NULL', {
+          .where('c.updatedAt < :staleTime OR c.updatedAt IS NULL', {
             staleTime,
           })
-          .andWhere('(c.refreshToken IS NULL OR c.lastCheckedAt < :reclaimDate)', {
+          .andWhere('(c.refreshToken IS NULL OR c.updatedAt < :reclaimDate)', {
             reclaimDate,
           })
-          .orderBy('c.lastCheckedAt', 'ASC')
+          .orderBy('c.updatedAt', 'ASC')
           .limit(this.batchSize)
           .setLock('pessimistic_write')
           .setOnLocked('skip_locked')
@@ -199,16 +195,15 @@ export class CacheManagementService {
         // innerJoinAndSelect loads the full Transaction entity
         const transactionNodes = await manager
           .createQueryBuilder(TransactionCachedNode, 'tcn')
-          .innerJoinAndSelect('tcn.node', 'node')        // Load the node relation
           .innerJoinAndSelect('tcn.transaction', 't')     // Load the transaction relation
-          .where('node.id IN (:...nodeIds)', { nodeIds })
+          .where('tcn.cachedNodeId IN (:...nodeIds)', { nodeIds })
           .getMany();
 
         // Build map of CachedNode -> transaction IDs
         const map = new Map<CachedNode, number[]>();
         for (const node of staleNodes) {
           const txIds = transactionNodes
-            .filter(tn => tn.node.id === node.id)
+            .filter(tn => tn.cachedNodeId === node.id)
             .map(tn => tn.transaction.id);
           map.set(node, txIds);
         }

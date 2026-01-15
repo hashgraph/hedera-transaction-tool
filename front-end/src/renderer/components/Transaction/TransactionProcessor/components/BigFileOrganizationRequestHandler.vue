@@ -21,7 +21,7 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { decryptPrivateKey, flattenKeyList } from '@renderer/services/keyPairService';
 import {
-  getApiGroupById,
+  getTransactionGroupById,
   submitTransactionGroup,
 } from '@renderer/services/organization/transactionGroup';
 
@@ -216,7 +216,7 @@ async function submitGroup(groupItems: GroupItem[], signature: string[], keyToSi
       true,
       apiGroupItems,
     );
-    const group = await getApiGroupById(user.selectedOrganization.serverUrl, id);
+    const group = await getTransactionGroupById(user.selectedOrganization.serverUrl, id);
     await safeAwait(submitApproversObservers(group));
     emit('transaction:group:submit:success', id);
   } catch (error) {

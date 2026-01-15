@@ -19,7 +19,7 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 
-import { getApiGroupById, getTransactionById } from '@renderer/services/organization';
+import { getTransactionGroupById, getTransactionById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
 
 import {
@@ -122,7 +122,7 @@ async function fetchTransaction() {
 
       if (orgTransaction.value?.groupItem?.groupId) {
         if (user.selectedOrganization?.serverUrl) {
-          const orgGroup = await getApiGroupById(
+          const orgGroup = await getTransactionGroupById(
             user.selectedOrganization?.serverUrl,
             orgTransaction.value.groupItem.groupId,
           );

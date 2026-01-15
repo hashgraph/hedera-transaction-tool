@@ -58,31 +58,25 @@ const createTooltips = useCreateTooltips();
 
 /* Computed */
 const filteringNotificationTypes = computed(() => {
-  let result: NotificationType[];
   switch (props.collection) {
     case TransactionNodeCollection.READY_FOR_REVIEW:
-      result = [NotificationType.TRANSACTION_INDICATOR_APPROVE];
-      break;
+      return [NotificationType.TRANSACTION_INDICATOR_APPROVE];
     case TransactionNodeCollection.READY_TO_SIGN:
-      result = [NotificationType.TRANSACTION_INDICATOR_SIGN];
-      break;
+      return [NotificationType.TRANSACTION_INDICATOR_SIGN];
     case TransactionNodeCollection.READY_FOR_EXECUTION:
-      result = [NotificationType.TRANSACTION_INDICATOR_EXECUTABLE];
-      break;
+      return [NotificationType.TRANSACTION_INDICATOR_EXECUTABLE];
     case TransactionNodeCollection.HISTORY:
-      result = [
+      return [
         NotificationType.TRANSACTION_INDICATOR_EXECUTED,
         NotificationType.TRANSACTION_INDICATOR_EXPIRED,
         NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
         NotificationType.TRANSACTION_INDICATOR_CANCELLED,
         NotificationType.TRANSACTION_INDICATOR_FAILED,
       ];
-      break;
     case TransactionNodeCollection.IN_PROGRESS:
-      result = [];
-      break;
+    default:
+      return [];
   }
-  return result;
 });
 
 const notificationMonitor = useFilterNotifications(
@@ -104,13 +98,24 @@ const hasOldNotifications = computed(() => {
   // Check if any old notifications match this node
   return props.oldNotifications.some(n => {
     const matchesType = notificationTypes.includes(n.notification.type);
-    const matchesEntity = n.notification.entityId === (props.node.transactionId || props.node.groupId);
-    return matchesType && matchesEntity;
+
+    const hasEntityIds =
+      n.notification.entityId !== undefined && props.node.transactionId !== undefined;
+    const matchesEntity =
+      hasEntityIds && n.notification.entityId === props.node.transactionId;
+
+    const notificationGroupId = n.notification.additionalData?.groupId;
+    const hasGroupIds =
+      notificationGroupId !== undefined && props.node.groupId !== undefined;
+    const matchesGroup =
+      hasGroupIds && notificationGroupId === props.node.groupId;
+
+    return matchesType && (matchesEntity || matchesGroup);
   });
 });
 
 const hasNotifications = computed(() => {
-  return notificationMonitor.filteredNotifications.value.length > 0 || hasOldNotifications.value;
+  return notificationMonitor.filteredNotificationIds.value.length > 0 || hasOldNotifications.value;
 });
 
 const transactionType = computed(() => {

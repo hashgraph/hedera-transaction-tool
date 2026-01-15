@@ -154,7 +154,8 @@ describe('CacheManagementService', () => {
       const mockAccount2: CachedAccount = { id: 2, account: '0.0.200' } as CachedAccount;
 
       const mockTransactionAccount = {
-        account: mockAccount1,
+        cachedAccount: mockAccount1,
+        cachedAccountId: mockAccount1.id,
         transaction: { id: 10 },
       };
 
@@ -206,9 +207,9 @@ describe('CacheManagementService', () => {
       const mockAccount2: CachedAccount = { id: 2, account: '0.0.200' } as CachedAccount;
 
       const mockTransactionAccounts = [
-        { account: mockAccount1, transaction: { id: 10 } },
-        { account: mockAccount1, transaction: { id: 20 } },
-        { account: mockAccount2, transaction: { id: 10 } }, // Duplicate transaction ID
+        { cachedAccount: mockAccount1, cachedAccountId: mockAccount1.id, transaction: { id: 10 } },
+        { cachedAccount: mockAccount1, cachedAccountId: mockAccount1.id, transaction: { id: 20 } },
+        { cachedAccount: mockAccount2, cachedAccountId: mockAccount2.id, transaction: { id: 10 } }, // Duplicate transaction ID
       ];
 
       const accountQueryBuilder = createMockQueryBuilder();
@@ -271,7 +272,8 @@ describe('CacheManagementService', () => {
       const mockNode2: CachedNode = { id: 2, nodeId: 4 } as CachedNode;
 
       const mockTransactionNode = {
-        node: mockNode1,
+        cachedNode: mockNode1,
+        cachedNodeId: mockNode1.id,
         transaction: { id: 30 },
       };
 

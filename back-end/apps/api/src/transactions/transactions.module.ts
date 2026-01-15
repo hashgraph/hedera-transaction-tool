@@ -20,7 +20,7 @@ import {
   CachedNodeAdminKey,
 } from '@entities';
 
-import { ExecuteModule, TransactionSignatureModule } from '@app/common';
+import { ExecuteModule, SqlBuilderModule, TransactionSignatureModule } from '@app/common';
 
 import { UserKeysModule } from '../user-keys/user-keys.module';
 import { TransactionGroupsController, TransactionGroupsService } from './groups';
@@ -53,6 +53,7 @@ import { TransactionNodesService } from './nodes/transaction-nodes.service';
     TransactionSignatureModule,
     UserKeysModule,
     ExecuteModule,
+    SqlBuilderModule,
   ],
   controllers: [
     TransactionsController,

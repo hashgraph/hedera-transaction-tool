@@ -93,7 +93,9 @@ const activeTabs = computed(() => {
       nr =>
         nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXECUTED ||
         nr.notification.type === NotificationType.TRANSACTION_INDICATOR_EXPIRED ||
-        nr.notification.type === NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
+        nr.notification.type === NotificationType.TRANSACTION_INDICATOR_ARCHIVED ||
+        nr.notification.type === NotificationType.TRANSACTION_INDICATOR_CANCELLED ||
+        nr.notification.type === NotificationType.TRANSACTION_INDICATOR_FAILED,
     ) || [];
 
   rawTabItems.forEach(tab => {

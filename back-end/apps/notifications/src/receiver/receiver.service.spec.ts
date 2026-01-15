@@ -633,6 +633,40 @@ describe('ReceiverService', () => {
     });
   });
 
+  describe('buildAdditionData', () => {
+    it('buildAdditionalData includes groupId when present', () => {
+      const transaction: any = {
+        transactionId: 'tx-1',
+        mirrorNetwork: 'net-1',
+        groupItem: { groupId: 'group-123' },
+      };
+
+      const res = (service as any).buildAdditionalData(transaction);
+
+      expect(res).toEqual({
+        transactionId: 'tx-1',
+        network: 'net-1',
+        groupId: 'group-123',
+      });
+    });
+
+    it('buildAdditionalData omits groupId when missing', () => {
+      const transaction: any = {
+        transactionId: 'tx-2',
+        mirrorNetwork: 'net-2',
+        groupItem: {}, // or `groupItem: undefined`
+      };
+
+      const res = (service as any).buildAdditionalData(transaction);
+
+      expect(res).toEqual({
+        transactionId: 'tx-2',
+        network: 'net-2',
+      });
+      expect(res).not.toHaveProperty('groupId');
+    });
+  });
+
   describe('handleTransactionStatusUpdateNotifications', () => {
     beforeEach(() => jest.clearAllMocks());
 
