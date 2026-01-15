@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { NodeData } from '@renderer/utils/sdk';
 
-import { ref, useTemplateRef, watch } from 'vue';
+import { nextTick, ref, useTemplateRef, watch } from 'vue';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -43,6 +43,8 @@ const grpcCertificate = ref('');
 const gossipCaCertificateText = ref('');
 const gossipFile = useTemplateRef<HTMLInputElement>('gossipFile');
 const grpcFile = useTemplateRef<HTMLInputElement>('grpcFile');
+const gossipPortRef = useTemplateRef<HTMLInputElement>('gossipPortInput');
+const servicePortRef = useTemplateRef<HTMLInputElement>('servicePortInput');
 const nodeDescriptionError = ref(false);
 
 const validIp =
@@ -52,6 +54,33 @@ const validIp =
 const emit = defineEmits<{
   (event: 'update:data', data: NodeData): void;
 }>();
+
+/* Watchers */
+watch(gossipIpOrDomain, newValue => {
+  if (newValue.includes(':')) {
+    const { hostPart, port } = extractPortFromInput(newValue);
+    if (port) {
+      gossipIpOrDomain.value = hostPart;
+      gossipPort.value = port;
+      nextTick(() => {
+        gossipPortRef.value?.focus();
+      });
+    }
+  }
+});
+
+watch(serviceIpOrDomain, newValue => {
+  if (newValue.includes(':')) {
+    const { hostPart, port } = extractPortFromInput(newValue);
+    if (port) {
+      serviceIpOrDomain.value = hostPart;
+      servicePort.value = port;
+      nextTick(() => {
+        servicePortRef.value?.focus();
+      });
+    }
+  }
+});
 
 /* Handlers */
 function handleAddEndpoint(key: 'gossip' | 'service') {
@@ -182,7 +211,37 @@ function stripProtocolAndPath(input: string): string {
     result = result.substring(0, slashIndex);
   }
 
+  // Remove query parameters (everything after '?') and fragments (everything after '#')
+  const queryIndex = result.indexOf('?');
+  const fragmentIndex = result.indexOf('#');
+  let cutIndex = -1;
+  if (queryIndex !== -1 && fragmentIndex !== -1) {
+    cutIndex = Math.min(queryIndex, fragmentIndex);
+  } else if (queryIndex !== -1) {
+    cutIndex = queryIndex;
+  } else if (fragmentIndex !== -1) {
+    cutIndex = fragmentIndex;
+  }
+  if (cutIndex !== -1) {
+    result = result.substring(0, cutIndex);
+  }
+
   return result;
+}
+
+function extractPortFromInput(input: string): { hostPart: string; port: string | null } {
+  // First strip protocol and path
+  let hostPart = stripProtocolAndPath(input);
+
+  // Check for port pattern: host:port where port is numeric
+  const portMatch = hostPart.match(/:(\d+)$/);
+  if (portMatch) {
+    const port = portMatch[1];
+    hostPart = hostPart.substring(0, hostPart.lastIndexOf(':'));
+    return { hostPart, port };
+  }
+
+  return { hostPart, port: null };
 }
 
 function getEndpointData(ipOrDomain: string, port: string) {
@@ -205,15 +264,27 @@ function getEndpointData(ipOrDomain: string, port: string) {
 }
 
 function getGrpcWebProxyEndpoint(field: 'domainName' | 'port', value: string) {
+  let domainValue =
+    field === 'domainName' ? value : props.data.grpcWebProxyEndpoint?.domainName || '';
+  let portValue = field === 'port' ? value : props.data.grpcWebProxyEndpoint?.port || '';
+
+  // If setting domain, check for embedded port
+  if (field === 'domainName' && value.includes(':')) {
+    const { hostPart, port } = extractPortFromInput(value);
+    if (port) {
+      domainValue = hostPart;
+      portValue = port;
+    }
+  } else if (field === 'domainName') {
+    domainValue = stripProtocolAndPath(value);
+  }
+
   emit('update:data', {
     ...props.data,
     grpcWebProxyEndpoint: {
       ipAddressV4: '',
-      domainName:
-        field === 'domainName'
-          ? stripProtocolAndPath(value)
-          : props.data.grpcWebProxyEndpoint?.domainName || '',
-      port: field === 'port' ? value : props.data.grpcWebProxyEndpoint?.port || '',
+      domainName: domainValue,
+      port: portValue,
     },
   });
 }
@@ -330,6 +401,7 @@ watch(
     <div class="col-4 col-xxxl-3">
       <label class="form-label">Port</label>
       <input
+        ref="gossipPortInput"
         v-model="gossipPort"
         @input="formatPort($event, 'gossip')"
         class="form-control is-fill"
@@ -407,6 +479,7 @@ watch(
     <div class="col-4 col-xxxl-3">
       <label class="form-label">Port</label>
       <input
+        ref="servicePortInput"
         v-model="servicePort"
         @input="formatPort($event, 'service')"
         class="form-control is-fill"
