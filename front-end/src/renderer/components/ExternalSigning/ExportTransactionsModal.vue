@@ -82,6 +82,8 @@ async function handleExport() {
     console.log(`Filtered ${collectionTransactions.length} external transactions`);
   }
 
+  show.value = false;
+
   if (collectionTransactions.length > 0) {
     const baseName = generateTransactionExportFileName(collectionTransactions[0]);
 
@@ -102,7 +104,6 @@ async function handleExport() {
       await writeTransactionFile(tx2Content, filePath);
     }
   }
-  show.value = false;
 }
 
 /* Functions */
