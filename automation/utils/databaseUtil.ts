@@ -12,8 +12,8 @@ const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
-// Import and re-export SEED_MARKER from k6 constants (SSOT)
-import { SEED_MARKER } from '../k6/src/config/constants.js';
+// Import and re-export constants from k6 (SSOT)
+import { SEED_MARKER, TEST_USER_EMAIL_PATTERN } from '../k6/src/config/constants.js';
 export { SEED_MARKER };
 
 /**
@@ -297,7 +297,7 @@ export async function resetPostgresDbState() {
       } else if (table === 'user') {
         // Staging-safe: only delete test users by email pattern
         query = `DELETE FROM "${table}" WHERE email LIKE $1;`;
-        params = ['k6perf@%'];
+        params = [TEST_USER_EMAIL_PATTERN];
       } else {
         // Skip tables we can't safely filter
         console.log(`Skipping ${table} (no safe filter available)`);

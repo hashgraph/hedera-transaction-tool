@@ -387,8 +387,8 @@ export async function refreshCachedAccountTimestamp(client?: Client): Promise<vo
     );
 
     await pgClient.query(
-      `INSERT INTO cached_account (account, "mirrorNetwork", "encodedKey", "lastCheckedAt", "receiverSignatureRequired", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, NOW(), false, NOW(), NOW())`,
+      `INSERT INTO cached_account (account, "mirrorNetwork", "encodedKey", "receiverSignatureRequired", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, false, NOW(), NOW())`,
       ['0.0.2', MIRROR_NETWORK, encodedKey],
     );
 

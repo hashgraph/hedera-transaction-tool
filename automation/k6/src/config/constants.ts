@@ -67,6 +67,12 @@ export const PAGINATION = {
 };
 
 /**
+ * Email pattern for test user cleanup (SQL LIKE pattern).
+ * All test users match this pattern for safe staging deletion.
+ */
+export const TEST_USER_EMAIL_PATTERN = 'k6perf@%';
+
+/**
  * Test user pool for staging rate limiting avoidance.
  * Each test can use a different user to avoid backend rate limits (3 logins/min per email).
  * All emails match cleanup pattern 'k6perf@%' for safe staging cleanup.
