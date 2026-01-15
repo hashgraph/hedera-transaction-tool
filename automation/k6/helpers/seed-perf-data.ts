@@ -86,8 +86,8 @@ function serializeKeyToProtobuf(key: { _toProtobufKey: () => proto.IKey }): Buff
  * Seed CachedAccount with test public key so Mirror Node is not queried.
  * This makes the fee payer (0.0.2) resolve to our test key instead of real mainnet key.
  *
- * The backend checks CachedAccount first - if encodedKey exists and lastCheckedAt
- * is fresh (< 10s), it returns cached data without calling Mirror Node.
+ * The backend checks CachedAccount first - if encodedKey exists, it returns
+ * cached data without calling Mirror Node.
  */
 async function seedCachedAccount(client: Client, publicKeyHex: string): Promise<void> {
   const accountId = '0.0.2'; // Fee payer used in transactions
@@ -108,10 +108,10 @@ async function seedCachedAccount(client: Client, publicKeyHex: string): Promise<
   // Insert cached account with test public key
   await client.query(
     `INSERT INTO cached_account (
-       account, "mirrorNetwork", "encodedKey", "lastCheckedAt",
+       account, "mirrorNetwork", "encodedKey",
        "receiverSignatureRequired", "createdAt", "updatedAt"
      )
-     VALUES ($1, $2, $3, NOW(), false, NOW(), NOW())`,
+     VALUES ($1, $2, $3, false, NOW(), NOW())`,
     [accountId, mirrorNetwork, encodedKey],
   );
 
