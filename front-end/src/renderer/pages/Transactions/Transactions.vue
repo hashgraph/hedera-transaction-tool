@@ -4,7 +4,7 @@ import AppTabs from '@renderer/components/ui/AppTabs.vue';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
 
-import { type ISignatureImport, NotificationType } from '@shared/interfaces';
+import {  NotificationType } from '@shared/interfaces';
 import {
   draftsTitle,
   historyTitle,
@@ -21,12 +21,7 @@ import useNotificationsStore from '@renderer/stores/storeNotifications';
 import { useRouter } from 'vue-router';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
-import {
-  assertIsLoggedInOrganization,
-  hexToUint8Array,
-  isLoggedInOrganization,
-  isOrganizationActive,
-} from '@renderer/utils';
+import { isLoggedInOrganization, isOrganizationActive } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import TransactionSelectionModal from '@renderer/components/TransactionSelectionModal.vue';
 import Drafts from './components/Drafts.vue';
@@ -42,11 +37,6 @@ import { getTransactionNodes } from '@renderer/services/organization/transaction
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import SignTransactionFileModal from '@renderer/components/ExternalSigning/SignTransactionFileModal.vue';
 import { showOpenDialog } from '@renderer/services/electronUtilsService.ts';
-import { getTransactionById, importSignatures } from '@renderer/services/organization';
-import { readTransactionFile } from '@renderer/services/transactionFile.ts';
-import { SignatureMap, Transaction } from '@hashgraph/sdk';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
-import { useToast } from 'vue-toast-notification';
 import ExportTransactionsModal from '@renderer/components/ExternalSigning/ExportTransactionsModal.vue';
 
 /* Stores */
@@ -55,7 +45,6 @@ const network = useNetworkStore();
 const notifications = useNotificationsStore();
 
 /* Composables */
-const toast = useToast();
 const router = useRouter();
 const withLoader = useLoader();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
@@ -86,7 +75,7 @@ const dropDownMenuItems = computed(() => {
     result = [
       { label: 'Export', value: 'export' },
       { label: 'Sign Transactions from File', value: 'signTransactionFile' },
-      { label: 'Import Signatures from File', value: 'importTransactionFile' },
+      // { label: 'Import Signatures from File', value: 'importTransactionFile' },
     ];
   } else {
     result = [{ label: 'Sign Transactions from File', value: 'signTransactionFile' }];
@@ -177,68 +166,10 @@ async function handleTransactionFileAction(action: string) {
         isSignTransactionFileModalShown.value = true;
       }
       break;
-    case 'importTransactionFile':
-      await importSignaturesFromFile();
-      break;
   }
 }
 
 /* Functions */
-async function importSignaturesFromFile() {
-  assertIsLoggedInOrganization(user.selectedOrganization);
-
-  transactionFilePath.value = await selectTransactionFile();
-  if (transactionFilePath.value !== null) {
-    const transactionFile = await readTransactionFile(transactionFilePath.value);
-    const importInputs: ISignatureImport[] = [];
-
-    for (const item of transactionFile.items) {
-      const transactionBytes = hexToUint8Array(item.transactionBytes);
-      const sdkTransaction = Transaction.fromBytes(transactionBytes);
-
-      const map = SignatureMap._fromTransaction(sdkTransaction);
-      console.log(`importSignatures: SignatureMap`, map.toJSON());
-
-      const transactionId = sdkTransaction.transactionId;
-      const transaction = await getTransactionById(
-        user.selectedOrganization.serverUrl,
-        transactionId!,
-      );
-
-      importInputs.push({
-        id: transaction.id,
-        signatureMap: map,
-      });
-    }
-
-    console.log('importSignatures: INPUTS', JSON.stringify(importInputs));
-
-    const importResults = await importSignatures(user.selectedOrganization, importInputs);
-    let failedImportCount = 0;
-    let successfulImportCount = 0;
-    for (const result of importResults) {
-      if (result.error) {
-        failedImportCount++;
-      } else {
-        successfulImportCount++;
-      }
-    }
-    if (failedImportCount > 0) {
-      toast.error(
-        `Failed to import signatures for ${failedImportCount} transaction${failedImportCount > 1 ? 's' : ''}`,
-        errorToastOptions,
-      );
-    } else {
-      toast.success(
-        `Successfully imported signatures for ${successfulImportCount} transaction${successfulImportCount > 1 ? 's' : ''}`,
-        successToastOptions,
-      );
-    }
-
-    console.log('importSignatures: RESULTS', JSON.stringify(importResults));
-  }
-}
-
 async function selectTransactionFile(): Promise<string | null> {
   const result = await showOpenDialog(
     'Sign Transaction File',
