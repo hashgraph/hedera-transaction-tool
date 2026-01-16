@@ -4,7 +4,7 @@ import type { ITransaction, TransactionFileItem } from '@shared/interfaces';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { flattenKeyList } from '@renderer/services/keyPairService.ts';
-import { getApiGroupById, getTransactionById } from '@renderer/services/organization';
+import { getTransactionById, getTransactionGroupById } from '@renderer/services/organization';
 import type { ITransactionNode } from '../../../../shared/src/ITransactionNode.ts';
 
 export async function flattenNodeCollection(
@@ -15,7 +15,7 @@ export async function flattenNodeCollection(
 
   for (const node of nodeCollection) {
     if (node.groupId !== undefined) {
-      const group = await getApiGroupById(serverUrl, node.groupId);
+      const group = await getTransactionGroupById(serverUrl, node.groupId);
       for (const item of group.groupItems) {
         result.push(item.transaction);
       }

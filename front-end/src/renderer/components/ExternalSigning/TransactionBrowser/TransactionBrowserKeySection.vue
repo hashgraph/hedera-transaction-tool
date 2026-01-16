@@ -73,6 +73,7 @@ watch(transaction, updateSignatureKeyObject, { immediate: true });
     v-if="signatureKeyObject"
     :signature-key-object="signatureKeyObject"
     :public-keys-signed="signersPublicKeys"
+    :show-external="false"
   />
 </template>
 
