@@ -207,6 +207,7 @@ export async function signTransactions(
       network.mirrorNodeBaseURL,
       accountInfoCache,
       nodeInfoCache,
+      user.selectedOrganization,
     );
 
     const restoredRequiredKeys = [];

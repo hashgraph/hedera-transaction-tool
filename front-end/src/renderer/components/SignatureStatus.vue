@@ -10,6 +10,7 @@ const props = defineProps<{
   signatureKeyObject: SignatureAudit;
   clean?: boolean;
   publicKeysSigned: string[];
+  showExternal: boolean;
 }>();
 
 /* Computed */
@@ -17,6 +18,14 @@ const hasMultiplePublicKeys = computed(() => props.signatureKeyObject.signatureK
 const isSignatureKeySatisfied = computed(() =>
   props.signatureKeyObject.signatureKeys.every(key => ableToSign(props.publicKeysSigned, key)),
 );
+const externalKeysRaw = computed(() => {
+  const result = new Set<string>();
+  if (props.showExternal) {
+    props.signatureKeyObject.externalKeys.forEach(k => result.add(k.toStringRaw()));
+  }
+  // else we leave result empty => no external badge will appear
+  return result;
+});
 </script>
 <template>
   <div :class="{ 'ms-4': hasMultiplePublicKeys }">
@@ -38,6 +47,7 @@ const isSignatureKeySatisfied = computed(() =>
           :entities="signatureKeyObject.payerKey"
           :public-keys-signed="publicKeysSigned"
           :label="`Payer $entityId Key`"
+          :externalKeys="externalKeysRaw"
         />
       </div>
     </template>
@@ -47,6 +57,7 @@ const isSignatureKeySatisfied = computed(() =>
           :entities="signatureKeyObject.accountsKeys"
           :public-keys-signed="publicKeysSigned"
           :label="`$entityId Key`"
+          :externalKeys="externalKeysRaw"
         />
       </div>
     </template>
@@ -56,6 +67,7 @@ const isSignatureKeySatisfied = computed(() =>
           :entities="signatureKeyObject.receiverAccountsKeys"
           :public-keys-signed="publicKeysSigned"
           :label="`Receiver Account $entityId Key`"
+          :externalKeys="externalKeysRaw"
         />
       </div>
     </template>
@@ -65,6 +77,7 @@ const isSignatureKeySatisfied = computed(() =>
           :entities="signatureKeyObject.nodeAdminKeys"
           :public-keys-signed="publicKeysSigned"
           :label="`Node $entityId Admin Key`"
+          :externalKeys="externalKeysRaw"
         />
       </div>
     </template>
@@ -74,6 +87,7 @@ const isSignatureKeySatisfied = computed(() =>
           :entities="signatureKeyObject.newKeys"
           :public-keys-signed="publicKeysSigned"
           :label="`New Key${signatureKeyObject.newKeys.length > 1 ? 's' : ''}`"
+          :externalKeys="externalKeysRaw"
         />
       </div>
     </template>
