@@ -26,6 +26,7 @@ mac:
       arch:
         - x64
         - arm64
+        - universal
     - target: 'pkg'
       arch:
         - x64

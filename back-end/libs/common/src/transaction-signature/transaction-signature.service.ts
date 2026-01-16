@@ -128,7 +128,7 @@ export class TransactionSignatureService {
           transaction,
           account,
         );
-        if ((showAll || accountInfo.receiverSignatureRequired) && accountInfo?.key) {
+        if ((showAll || accountInfo?.receiverSignatureRequired) && accountInfo?.key) {
           signatureKey.push(accountInfo.key);
         }
       } catch (error) {

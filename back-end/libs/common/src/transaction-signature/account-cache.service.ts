@@ -20,8 +20,6 @@ import { MirrorNodeClient } from './mirror-node.client';
 import { CacheHelper } from './cache.helper';
 import { RefreshResult, RefreshStatus } from './cache.types';
 
-//TODO still need to be sure that i only store stringraw keys or whatever, they all have to be the same
-//TODO BE SURE TO ADD MANUAL RESYNC OF MIRROR NODE TO UI
 @Injectable()
 export class AccountCacheService {
   private readonly logger = new Logger(AccountCacheService.name);
@@ -53,8 +51,7 @@ export class AccountCacheService {
     const claimedAccount = await this.tryClaimAccountRefresh(account, mirrorNetwork);
 
     if (!claimedAccount.refreshToken) {
-      this.logger.debug(`Account ${account} on ${mirrorNetwork} is already being refreshed`);
-      return false; // Didn't refresh (someone else is doing it)
+      return false; // Didn't refresh (someone else did it)
     }
 
     const { status } = await this.performRefreshForClaimedAccount(claimedAccount);
@@ -82,7 +79,7 @@ export class AccountCacheService {
       where: { account, mirrorNetwork },
     });
 
-    if (this.hasCompleteData(cached) && isFresh(cached.lastCheckedAt, this.cacheTtlMs)) {
+    if (this.hasCompleteData(cached) && isFresh(cached.updatedAt, this.cacheTtlMs)) {
       // Link to transaction even if using cache
       await this.linkTransactionToAccount(transaction.id, cached.id);
       return this.parseCachedAccount(cached);
@@ -95,18 +92,15 @@ export class AccountCacheService {
     const claimedAccount = await this.tryClaimAccountRefresh(account, mirrorNetwork);
 
     if (!claimedAccount.refreshToken) {
-      // Another process is refreshing - return cached data if available
-      this.logger.debug(`Account ${account} on ${mirrorNetwork} is being refreshed by another process`);
-
-      // Link to transaction if we have cached data
+      // Link to transaction
       await this.linkTransactionToAccount(transaction.id, claimedAccount.id);
 
       if (this.hasCompleteData(claimedAccount)) {
         return this.parseCachedAccount(claimedAccount);
       }
 
-      // No cached data and someone else is refreshing
-      // This should not normally happen; return null so caller can decide wait/retry.
+      // No cached data
+      // This should never happen
       return null;
     }
 
@@ -202,7 +196,7 @@ export class AccountCacheService {
 
     // Handle 304 Not Modified - data hasn't changed
     if (!fetchedAccount.data) {
-      // Update lastCheckedAt and clear refresh token only
+      // Update updatedAt and clear refresh token only
       await this.saveAccountData(
         account,
         mirrorNetwork,
@@ -289,7 +283,7 @@ export class AccountCacheService {
       TransactionCachedAccount,
       transactionId,
       cachedAccountId,
-      'account',
+      'cachedAccount',
     );
   }
 
@@ -300,7 +294,7 @@ export class AccountCacheService {
     return this.cacheHelper.insertKeys(
       CachedAccountKey,
       cachedAccountId,
-      'account',
+      'cachedAccount',
       keys,
     );
   }

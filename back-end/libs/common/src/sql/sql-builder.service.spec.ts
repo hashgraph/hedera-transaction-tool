@@ -1,11 +1,11 @@
 import { EntityManager, EntityMetadata, Repository } from 'typeorm';
 import {
-  SqlBuilder,
+  SqlBuilderService,
   SqlBuilderError,
   EntityNotFoundError,
   ColumnNotFoundError,
   InvalidEntityManagerError,
-} from './SqlBuilder';
+} from './sql-builder.service';
 
 // Mock entities for testing
 class User {
@@ -23,7 +23,7 @@ class Post {
 
 describe('SqlBuilder', () => {
   let entityManager: EntityManager;
-  let sqlBuilder: SqlBuilder;
+  let sqlBuilder: SqlBuilderService;
   let mockMetadata: Partial<EntityMetadata>;
   let mockRepository: Partial<Repository<any>>;
   let mockEmailColumn: any;
@@ -64,7 +64,7 @@ describe('SqlBuilder', () => {
       }),
     } as unknown as EntityManager;
 
-    sqlBuilder = new SqlBuilder(entityManager);
+    sqlBuilder = new SqlBuilderService(entityManager);
   });
 
   afterEach(() => {
@@ -73,19 +73,19 @@ describe('SqlBuilder', () => {
 
   describe('Constructor', () => {
     it('should create instance with valid EntityManager', () => {
-      expect(sqlBuilder).toBeInstanceOf(SqlBuilder);
+      expect(sqlBuilder).toBeInstanceOf(SqlBuilderService);
     });
 
     it('should throw InvalidEntityManagerError when EntityManager is null', () => {
-      expect(() => new SqlBuilder(null as any)).toThrow(InvalidEntityManagerError);
+      expect(() => new SqlBuilderService(null as any)).toThrow(InvalidEntityManagerError);
     });
 
     it('should throw InvalidEntityManagerError when EntityManager is undefined', () => {
-      expect(() => new SqlBuilder(undefined as any)).toThrow(InvalidEntityManagerError);
+      expect(() => new SqlBuilderService(undefined as any)).toThrow(InvalidEntityManagerError);
     });
 
     it('should have descriptive error message for invalid EntityManager', () => {
-      expect(() => new SqlBuilder(null as any)).toThrow(
+      expect(() => new SqlBuilderService(null as any)).toThrow(
         'EntityManager is required and must be initialized'
       );
     });
@@ -157,7 +157,7 @@ describe('SqlBuilder', () => {
   describe('col()', () => {
     it('should return column name for valid property', () => {
       const columnName = sqlBuilder.col(User, 'email');
-      expect(columnName).toBe('user_email');
+      expect(columnName).toBe('"user_email"');
     });
 
     it('should call findColumnWithPropertyName with correct property', () => {
@@ -169,8 +169,8 @@ describe('SqlBuilder', () => {
       const col1 = sqlBuilder.col(User, 'email');
       const col2 = sqlBuilder.col(User, 'firstName');
 
-      expect(col1).toBe('user_email');
-      expect(col2).toBe('first_name');
+      expect(col1).toBe('"user_email"');
+      expect(col2).toBe('"first_name"');
     });
 
     it('should throw ColumnNotFoundError for non-existent property', () => {
@@ -246,18 +246,18 @@ describe('SqlBuilder', () => {
     it('should handle typical workflow: get table and column', () => {
       const table = sqlBuilder.table(User);
       const column = sqlBuilder.col(User, 'email');
-      expect(`SELECT ${column} FROM ${table}`).toBe('SELECT user_email FROM users');
+      expect(`SELECT ${column} FROM ${table}`).toBe('SELECT "user_email" FROM users');
     });
 
     it('should handle mixed valid and invalid operations gracefully', () => {
       expect(sqlBuilder.table(User)).toBe('users');
-      expect(sqlBuilder.col(User, 'email')).toBe('user_email');
+      expect(sqlBuilder.col(User, 'email')).toBe('"user_email"');
 
       expect(() => sqlBuilder.table(Post)).toThrow(EntityNotFoundError);
       expect(() => sqlBuilder.col(User, 'invalid')).toThrow(ColumnNotFoundError);
 
       expect(sqlBuilder.table(User)).toBe('users');
-      expect(sqlBuilder.col(User, 'email')).toBe('user_email');
+      expect(sqlBuilder.col(User, 'email')).toBe('"user_email"');
     });
 
     it('should generate valid SQL query parts', () => {
@@ -267,7 +267,7 @@ describe('SqlBuilder', () => {
 
       const query = `SELECT ${emailCol}, ${firstNameCol} FROM ${table} WHERE ${emailCol} = ?`;
 
-      expect(query).toBe('SELECT user_email, first_name FROM users WHERE user_email = ?');
+      expect(query).toBe('SELECT "user_email", "first_name" FROM users WHERE "user_email" = ?');
     });
   });
 
@@ -282,8 +282,8 @@ describe('SqlBuilder', () => {
     });
 
     it('should not cache failed entity lookups', () => {
-      try { sqlBuilder.table(Post); } catch {}
-      try { sqlBuilder.table(Post); } catch {}
+      try { sqlBuilder.table(Post); } catch { /* empty */ }
+      try { sqlBuilder.table(Post); } catch { /* empty */ }
 
       expect(entityManager.getRepository).toHaveBeenCalledTimes(2);
     });

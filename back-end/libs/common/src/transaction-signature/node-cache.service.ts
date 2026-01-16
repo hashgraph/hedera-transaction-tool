@@ -51,8 +51,7 @@ export class NodeCacheService {
     const claimedNode = await this.tryClaimNodeRefresh(nodeId, mirrorNetwork);
 
     if (!claimedNode.refreshToken) {
-      this.logger.debug(`Node ${nodeId} on ${mirrorNetwork} is already being refreshed`);
-      return false; // Didn't refresh (someone else is doing it)
+      return false; // Didn't refresh (someone else did it)
     }
 
     const { status } = await this.performRefreshForClaimedNode(claimedNode);
@@ -80,7 +79,7 @@ export class NodeCacheService {
       where: { nodeId, mirrorNetwork },
     });
 
-    if (this.hasCompleteData(cached) && isFresh(cached.lastCheckedAt, this.cacheTtlMs)) {
+    if (this.hasCompleteData(cached) && isFresh(cached.updatedAt, this.cacheTtlMs)) {
       // Link to transaction even if using cache
       await this.linkTransactionToNode(transaction.id, cached.id);
       return this.parseCachedNode(cached);
@@ -93,9 +92,6 @@ export class NodeCacheService {
     const claimedNode = await this.tryClaimNodeRefresh(nodeId, mirrorNetwork);
 
     if (!claimedNode.refreshToken) {
-      // Another process is refreshing - return cached data if available
-      this.logger.debug(`Node ${nodeId} on ${mirrorNetwork} is being refreshed by another process`);
-
       // Link to transaction if we have cached data
       await this.linkTransactionToNode(transaction.id, claimedNode.id);
 
@@ -103,8 +99,8 @@ export class NodeCacheService {
         return this.parseCachedNode(claimedNode);
       }
 
-      // No cached data and someone else is refreshing
-      // This should not normally happen; return null so caller can decide wait/retry.
+      // No cached data
+      // This should never happen
       return null;
     }
 
@@ -200,7 +196,7 @@ export class NodeCacheService {
 
     // Handle 304 Not Modified - data hasn't changed
     if (!fetchedNode.data) {
-      // Update lastCheckedAt and clear refresh token only
+      // Update updatedAt and clear refresh token only
       await this.saveNodeData(
         nodeId,
         mirrorNetwork,
@@ -287,7 +283,7 @@ export class NodeCacheService {
       TransactionCachedNode,
       transactionId,
       cachedNodeId,
-      'node',
+      'cachedNode',
     );
   }
 
@@ -298,7 +294,7 @@ export class NodeCacheService {
     return this.cacheHelper.insertKeys(
       CachedNodeAdminKey,
       cachedNodeId,
-      'node',
+      'cachedNode',
       keys,
     );
   }

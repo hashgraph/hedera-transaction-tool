@@ -1,4 +1,10 @@
 import { EntityManager, EntityMetadata } from 'typeorm';
+import { Injectable } from '@nestjs/common';
+
+export interface SqlQuery {
+  text: string;
+  values: any[];
+}
 
 /**
  * Custom error classes for better error handling
@@ -36,7 +42,8 @@ export class InvalidEntityManagerError extends SqlBuilderError {
 /**
  * SqlBuilder - Type-safe SQL identifier builder with comprehensive error handling
  */
-export class SqlBuilder {
+@Injectable()
+export class SqlBuilderService {
   private metaCache = new Map<any, EntityMetadata>();
 
   constructor(private entityManager: EntityManager) {
@@ -131,7 +138,7 @@ export class SqlBuilder {
         throw new SqlBuilderError(`Column for property "${property}" has no database name`);
       }
 
-      return column.databaseName;
+      return `"${column.databaseName}"`;
     } catch (error) {
       // Re-throw our custom errors with context
       if (error instanceof SqlBuilderError) {

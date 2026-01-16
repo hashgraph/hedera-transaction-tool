@@ -49,10 +49,11 @@ describe('CacheHelper', () => {
       expect(result).toEqual({ id: 1 });
     });
 
-    it('returns inserted row when update fails but insert happened', async () => {
+    it('returns updated row when update fails the first time, but succeeds afterwards', async () => {
       qb.execute
         .mockResolvedValueOnce({ raw: [{ id: 2 }] }) // insert
-        .mockResolvedValueOnce({ affected: 0, raw: [] }); // update
+        .mockResolvedValueOnce({ affected: 0, raw: [] }) // update
+        .mockResolvedValueOnce({ affected: 1, raw: [{ id: 2 }] }); // update
 
       const result = await helper.tryClaimRefresh(entity, where, 1000);
 
