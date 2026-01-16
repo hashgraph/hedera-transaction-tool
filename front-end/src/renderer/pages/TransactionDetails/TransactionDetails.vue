@@ -108,6 +108,13 @@ const creator = computed(() => {
     : null;
 });
 
+const showExternal = computed(() => {
+  // External badges are displayed for the transaction creator only
+  return isLoggedInOrganization(user.selectedOrganization) ?
+    user.selectedOrganization?.userId === orgTransaction.value?.creatorId :
+    false;
+});
+
 /* Functions */
 async function fetchTransaction() {
   const id = formattedId.value!;
@@ -448,6 +455,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 <SignatureStatus
                   :signature-key-object="signatureKeyObject"
                   :public-keys-signed="signersPublicKeys"
+                  :show-external="showExternal"
                 />
               </div>
 

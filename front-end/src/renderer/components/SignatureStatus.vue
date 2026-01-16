@@ -10,6 +10,7 @@ const props = defineProps<{
   signatureKeyObject: SignatureAudit;
   clean?: boolean;
   publicKeysSigned: string[];
+  showExternal: boolean;
 }>();
 
 /* Computed */
@@ -19,7 +20,10 @@ const isSignatureKeySatisfied = computed(() =>
 );
 const externalKeysRaw = computed(() => {
   const result = new Set<string>();
-  props.signatureKeyObject.externalKeys.forEach(k => result.add(k.toStringRaw()));
+  if (props.showExternal) {
+    props.signatureKeyObject.externalKeys.forEach(k => result.add(k.toStringRaw()));
+  }
+  // else we leave result empty => no external badge will appear
   return result;
 });
 </script>
