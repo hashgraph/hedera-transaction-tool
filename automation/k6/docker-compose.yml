@@ -16,10 +16,11 @@ services:
       - influxdb_data:/var/lib/influxdb
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:10.2.3
     ports:
       - "3030:3000"  # Using 3030 to avoid conflict with backend (3001) or frontend (5173)
     environment:
+      # Anonymous admin access - for local development only
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_INSTALL_PLUGINS=grafana-clock-panel
