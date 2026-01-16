@@ -1046,15 +1046,16 @@ async function seedData(): Promise<void> {
 
     await validateSeededData(client);
 
-    const txPerUser = SIGN_COUNT + HISTORY_COUNT + APPROVE_COUNT + GROUP_SIZE;
+    const txPerUser = SIGN_COUNT + HISTORY_COUNT + APPROVE_COUNT + GROUP_SIZE + EXECUTION_COUNT;
     const totalTx = txPerUser * usersToSeed.length;
     console.log('\n=== Seeding Complete ===');
     console.log(`Users seeded: ${usersToSeed.length}`);
     console.log(`Transactions per user: ${txPerUser}`);
     console.log(`Total transactions created: ${totalTx}`);
-    console.log(`  /transactions/sign: ${SIGN_COUNT} per user`);
-    console.log(`  /transactions/history: ${HISTORY_COUNT} per user`);
-    console.log(`  /transactions/approve: ${APPROVE_COUNT} per user`);
+    console.log(`  Ready to Sign: ${SIGN_COUNT} per user`);
+    console.log(`  History: ${HISTORY_COUNT} per user`);
+    console.log(`  Ready to Approve: ${APPROVE_COUNT} per user`);
+    console.log(`  Ready for Execution: ${EXECUTION_COUNT} per user`);
     console.log(`  Transaction group: 1 group with ${GROUP_SIZE} transactions per user`);
 
     if (usersToSeed.length === 1) {
