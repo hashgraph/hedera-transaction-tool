@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { NodeData } from '@renderer/utils/sdk';
 
-import { nextTick, ref, useTemplateRef, watch } from 'vue';
+import { ref, useTemplateRef, watch } from 'vue';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -43,8 +43,6 @@ const grpcCertificate = ref('');
 const gossipCaCertificateText = ref('');
 const gossipFile = useTemplateRef<HTMLInputElement>('gossipFile');
 const grpcFile = useTemplateRef<HTMLInputElement>('grpcFile');
-const gossipPortRef = useTemplateRef<HTMLInputElement>('gossipPortInput');
-const servicePortRef = useTemplateRef<HTMLInputElement>('servicePortInput');
 const nodeDescriptionError = ref(false);
 
 const validIp =
@@ -54,33 +52,6 @@ const validIp =
 const emit = defineEmits<{
   (event: 'update:data', data: NodeData): void;
 }>();
-
-/* Watchers */
-watch(gossipIpOrDomain, newValue => {
-  if (newValue.includes(':')) {
-    const { hostPart, port } = extractPortFromInput(newValue);
-    if (port) {
-      gossipIpOrDomain.value = hostPart;
-      gossipPort.value = port;
-      nextTick(() => {
-        gossipPortRef.value?.focus();
-      });
-    }
-  }
-});
-
-watch(serviceIpOrDomain, newValue => {
-  if (newValue.includes(':')) {
-    const { hostPart, port } = extractPortFromInput(newValue);
-    if (port) {
-      serviceIpOrDomain.value = hostPart;
-      servicePort.value = port;
-      nextTick(() => {
-        servicePortRef.value?.focus();
-      });
-    }
-  }
-});
 
 /* Handlers */
 function handleAddEndpoint(key: 'gossip' | 'service') {
@@ -229,7 +200,7 @@ function stripProtocolAndPath(input: string): string {
   return result;
 }
 
-function extractPortFromInput(input: string): { hostPart: string; port: string | null } {
+function cleanAndExtractPort(input: string): { hostPart: string; port: string | null } {
   // First strip protocol and path
   let hostPart = stripProtocolAndPath(input);
 
@@ -245,21 +216,13 @@ function extractPortFromInput(input: string): { hostPart: string; port: string |
 }
 
 function getEndpointData(ipOrDomain: string, port: string) {
-  let ip = '';
-  let domain = '';
-
-  const cleanedInput = stripProtocolAndPath(ipOrDomain);
-
-  if (cleanedInput.match(validIp)) {
-    ip = cleanedInput;
-  } else {
-    domain = cleanedInput;
-  }
+  // Input already cleaned by watcher - just classify as IP or domain
+  const isIp = ipOrDomain.match(validIp);
 
   return {
-    ipAddressV4: ip,
+    ipAddressV4: isIp ? ipOrDomain : '',
     port,
-    domainName: domain.trim(),
+    domainName: isIp ? '' : ipOrDomain.trim(),
   };
 }
 
@@ -268,15 +231,12 @@ function getGrpcWebProxyEndpoint(field: 'domainName' | 'port', value: string) {
     field === 'domainName' ? value : props.data.grpcWebProxyEndpoint?.domainName || '';
   let portValue = field === 'port' ? value : props.data.grpcWebProxyEndpoint?.port || '';
 
-  // If setting domain, check for embedded port
-  if (field === 'domainName' && value.includes(':')) {
-    const { hostPart, port } = extractPortFromInput(value);
+  if (field === 'domainName') {
+    const { hostPart, port } = cleanAndExtractPort(value);
+    domainValue = hostPart;
     if (port) {
-      domainValue = hostPart;
       portValue = port;
     }
-  } else if (field === 'domainName') {
-    domainValue = stripProtocolAndPath(value);
   }
 
   emit('update:data', {
@@ -296,6 +256,19 @@ function formatPort(event: Event, key: 'gossip' | 'service') {
   };
   const target = event.target as HTMLInputElement;
   portMapping[key].value = target.value.replace(/[^0-9]/g, '');
+}
+
+function handleIpOrDomainBlur(key: 'gossip' | 'service') {
+  const mapping = {
+    gossip: { ipOrDomain: gossipIpOrDomain, port: gossipPort },
+    service: { ipOrDomain: serviceIpOrDomain, port: servicePort },
+  };
+
+  const { hostPart, port } = cleanAndExtractPort(mapping[key].ipOrDomain.value);
+  mapping[key].ipOrDomain.value = hostPart;
+  if (port) {
+    mapping[key].port.value = port;
+  }
 }
 
 /* Watchers */
@@ -393,6 +366,7 @@ watch(
       <label class="form-label">IP/Domain</label>
       <input
         v-model="gossipIpOrDomain"
+        @blur="handleIpOrDomainBlur('gossip')"
         class="form-control is-fill"
         placeholder="Enter Domain Name or IP Address"
       />
@@ -401,7 +375,6 @@ watch(
     <div class="col-4 col-xxxl-3">
       <label class="form-label">Port</label>
       <input
-        ref="gossipPortInput"
         v-model="gossipPort"
         @input="formatPort($event, 'gossip')"
         class="form-control is-fill"
@@ -471,6 +444,7 @@ watch(
       <label class="form-label">IP/Domain</label>
       <input
         v-model="serviceIpOrDomain"
+        @blur="handleIpOrDomainBlur('service')"
         class="form-control is-fill"
         placeholder="Enter Domain Name or IP Address"
       />
@@ -479,7 +453,6 @@ watch(
     <div class="col-4 col-xxxl-3">
       <label class="form-label">Port</label>
       <input
-        ref="servicePortInput"
         v-model="servicePort"
         @input="formatPort($event, 'service')"
         class="form-control is-fill"
