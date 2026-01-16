@@ -73,7 +73,7 @@ const dropDownMenuItems = computed(() => {
   let result: { label: string; value: string }[];
   if (isLoggedInOrganization(user.selectedOrganization)) {
     result = [
-      { label: 'Export', value: 'export' },
+      // { label: 'Export', value: 'export' },
       { label: 'Sign Transactions from File', value: 'signTransactionFile' },
       // { label: 'Import Signatures from File', value: 'importTransactionFile' },
     ];
