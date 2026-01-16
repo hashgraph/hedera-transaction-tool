@@ -4,6 +4,8 @@
  * Requirements:
  * - Page load < 1 second (100 items)
  * - 100+ concurrent users
+ *
+ * Uses the optimized /transaction-nodes endpoint (PR #2161)
  */
 
 import http from 'k6/http';
@@ -14,7 +16,7 @@ import { multiUserSetup, getTokenForVU } from '../lib/setup';
 import { formatDataMetrics, needed_properties } from '../lib/utils';
 import { generateReport } from '../lib/reporter';
 import { getBaseUrlWithFallback } from '../config/credentials';
-import { DATA_VOLUMES, THRESHOLDS, DELAYS, HTTP_STATUS, PAGINATION } from '../config/constants';
+import { DATA_VOLUMES, THRESHOLDS, DELAYS, HTTP_STATUS } from '../config/constants';
 import { STANDARD_LOAD_STAGES, TAB_LOAD_THRESHOLDS } from '../config/load-profiles';
 import type { K6Options, MultiUserSetupData, SummaryData, SummaryOutput } from '../types';
 
@@ -23,6 +25,8 @@ const dataVolumeOk = new Rate('ready_to_approve_data_volume_ok');
 
 declare const __ENV: Record<string, string | undefined>;
 const DEBUG = __ENV.DEBUG === 'true';
+// Network parameter - matches seed data (mainnet for local, testnet for staging)
+const NETWORK = __ENV.HEDERA_NETWORK || 'mainnet';
 
 /**
  * k6 options configuration
@@ -54,7 +58,7 @@ export function setup(): MultiUserSetupData {
 
 /**
  * Main test function
- * Fetches 100 items (fits in single page since MAX_SIZE=100)
+ * Uses optimized /transaction-nodes endpoint - returns all items in single request
  */
 export default function (data: MultiUserSetupData): void {
   const token = getTokenForVU(data);
@@ -65,7 +69,7 @@ export default function (data: MultiUserSetupData): void {
 
   group('Ready to Approve Page', () => {
     const res = http.get(
-      `${BASE_URL}/transactions/approve?page=1&size=${PAGINATION.MAX_SIZE}`,
+      `${BASE_URL}/transaction-nodes?collection=READY_FOR_REVIEW&network=${NETWORK}`,
       { ...headers, tags: { name: 'ready-to-approve' } },
     );
 
@@ -80,8 +84,8 @@ export default function (data: MultiUserSetupData): void {
     }
 
     try {
-      const body = JSON.parse(res.body as string) as { items: unknown[] };
-      const itemCount = body.items?.length ?? 0;
+      const items = JSON.parse(res.body as string) as unknown[];
+      const itemCount = items?.length ?? 0;
 
       const volumeMet = itemCount >= targetCount;
       dataVolumeOk.add(volumeMet);

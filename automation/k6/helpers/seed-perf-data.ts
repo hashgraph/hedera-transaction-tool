@@ -88,12 +88,18 @@ function serializeKeyToProtobuf(key: { _toProtobufKey: () => proto.IKey }): Buff
  *
  * The backend checks CachedAccount first - if encodedKey exists, it returns
  * cached data without calling Mirror Node.
+ *
+ * Also creates cached_account_key record linking the public key to the cached account.
+ * This is required for the optimized /transaction-nodes endpoint to work.
+ *
+ * @returns The cachedAccountId for linking transactions
  */
-async function seedCachedAccount(client: Client, publicKeyHex: string): Promise<void> {
+async function seedCachedAccount(client: Client, publicKeyHex: string): Promise<number> {
   const accountId = '0.0.2'; // Fee payer used in transactions
   const mirrorNetwork = MIRROR_NETWORK;
 
-  // Delete existing cached account if present
+  // Delete existing cached account keys first (cascade will handle this via FK)
+  // Then delete cached account
   await client.query(
     `DELETE FROM cached_account WHERE account = $1 AND "mirrorNetwork" = $2`,
     [accountId, mirrorNetwork],
@@ -105,17 +111,31 @@ async function seedCachedAccount(client: Client, publicKeyHex: string): Promise<
   const publicKey = PublicKey.fromString(publicKeyHex);
   const encodedKey = serializeKeyToProtobuf(publicKey as any);
 
-  // Insert cached account with test public key
-  await client.query(
+  // Insert cached account with test public key and get the ID
+  const cachedAccountResult: QueryResult<{ id: number }> = await client.query(
     `INSERT INTO cached_account (
        account, "mirrorNetwork", "encodedKey",
        "receiverSignatureRequired", "createdAt", "updatedAt"
      )
-     VALUES ($1, $2, $3, false, NOW(), NOW())`,
+     VALUES ($1, $2, $3, false, NOW(), NOW())
+     RETURNING id`,
     [accountId, mirrorNetwork, encodedKey],
+  );
+  const cachedAccountId = cachedAccountResult.rows[0].id;
+
+  // Create cached_account_key linking public key to cached account
+  // This is required for /transaction-nodes?collection=READY_TO_SIGN to work
+  await client.query(
+    `INSERT INTO cached_account_key ("cachedAccountId", "publicKey")
+     VALUES ($1, $2)
+     ON CONFLICT ("cachedAccountId", "publicKey") DO NOTHING`,
+    [cachedAccountId, publicKeyHex],
   );
 
   console.log(`✓ Seeded CachedAccount: ${accountId} with test public key (${publicKeyHex.substring(0, 16)}...)`);
+  console.log(`✓ Seeded CachedAccountKey: linked publicKey to cachedAccount (id: ${cachedAccountId})`);
+
+  return cachedAccountId;
 }
 
 const DEFAULT_EMAIL = 'k6perf@test.com';
@@ -387,6 +407,15 @@ async function cleanupAllSeedData(client: Client): Promise<void> {
     [`${SEED_MARKER}%`],
   );
 
+  // Clean up transaction_cached_account links for seed transactions
+  await client.query(
+    `DELETE FROM transaction_cached_account
+     WHERE "transactionId" IN (
+       SELECT id FROM "transaction" WHERE description LIKE $1
+     )`,
+    [`${SEED_MARKER}%`],
+  );
+
   const txResult = await client.query(
     `DELETE FROM "transaction" WHERE description LIKE $1`,
     [`${SEED_MARKER}%`],
@@ -469,6 +498,8 @@ interface InsertTransactionOptions {
   descriptionSuffix?: string;
   /** Offset in seconds to add to validStart (for sorting group transactions to page 1) */
   validStartOffsetSeconds?: number;
+  /** CachedAccountId to link transaction to (required for /transaction-nodes endpoint) */
+  cachedAccountId?: number;
 }
 
 interface InsertTransactionResult {
@@ -489,6 +520,7 @@ async function insertTransaction(
     name = `Perf Test ${index}`,
     descriptionSuffix = `${index}`,
     validStartOffsetSeconds = 0,
+    cachedAccountId,
   } = options;
 
   let transactionBytes: Buffer;
@@ -551,6 +583,16 @@ async function insertTransaction(
 
   const insertResult: InsertTransactionResult = { id: result.rows[0].id };
 
+  // Link transaction to cached account (required for /transaction-nodes endpoint)
+  if (cachedAccountId) {
+    await client.query(
+      `INSERT INTO transaction_cached_account ("transactionId", "cachedAccountId")
+       VALUES ($1, $2)
+       ON CONFLICT ("transactionId", "cachedAccountId") DO NOTHING`,
+      [insertResult.id, cachedAccountId],
+    );
+  }
+
   // Return transaction data for signature generation when using real transactions
   if (useRealTx) {
     insertResult.signData = {
@@ -565,6 +607,7 @@ async function insertTransaction(
 async function seedSignTransactions(
   client: Client,
   userKeyId: number,
+  cachedAccountId: number,
 ): Promise<void> {
   console.log(`\nSeeding ${SIGN_COUNT} transactions for /transactions/sign...`);
   console.log('  (Using real Hedera SDK transactions - this may take a moment)');
@@ -578,6 +621,7 @@ async function seedSignTransactions(
       status: 'WAITING FOR SIGNATURES',
       creatorKeyId: userKeyId,
       useRealTx: true,
+      cachedAccountId,
     });
 
     // Collect for signature generation
@@ -585,8 +629,8 @@ async function seedSignTransactions(
       signTransactionsData.push(result.signData);
     }
 
-    // NOTE: transaction_signer rows are NOT needed for /transactions/sign
-    // The endpoint uses required keys from transaction bytes + user_key matching
+    // NOTE: transaction_cached_account link is created by insertTransaction
+    // This is required for /transaction-nodes?collection=READY_TO_SIGN endpoint
 
     if ((i + 1) % 50 === 0) {
       console.log(`  Created ${i + 1}/${SIGN_COUNT} sign transactions`);
@@ -599,6 +643,7 @@ async function seedSignTransactions(
 async function seedHistoryTransactions(
   client: Client,
   userKeyId: number,
+  cachedAccountId: number,
 ): Promise<void> {
   console.log(`\nSeeding ${HISTORY_COUNT} transactions for /transactions/history...`);
 
@@ -613,6 +658,7 @@ async function seedHistoryTransactions(
       creatorKeyId: userKeyId,
       executedAt,
       useRealTx: true, // Dummy bytes cause "invalid wire type" protobuf errors
+      cachedAccountId,
     });
 
     if ((i + 1) % 100 === 0) {
@@ -627,6 +673,7 @@ async function seedApproveTransactions(
   client: Client,
   userId: number,
   userKeyId: number,
+  cachedAccountId: number,
 ): Promise<void> {
   console.log(`\nSeeding ${APPROVE_COUNT} transactions for /transactions/approve...`);
   console.log('  (Using real Hedera SDK transactions)');
@@ -638,6 +685,7 @@ async function seedApproveTransactions(
       status: 'WAITING FOR SIGNATURES',
       creatorKeyId: userKeyId,
       useRealTx: true,
+      cachedAccountId,
     });
 
     // Collect for signature generation (approve transactions also appear in /transactions/sign)
@@ -673,6 +721,7 @@ interface GroupRow {
 async function seedTransactionGroups(
   client: Client,
   userKeyId: number,
+  cachedAccountId: number,
 ): Promise<void> {
   console.log(`\nSeeding transaction group with ${GROUP_SIZE} transactions for Sign All...`);
   console.log('  (Using real Hedera SDK transactions)');
@@ -705,6 +754,7 @@ async function seedTransactionGroups(
       name: `Group Tx ${i + 1}`,
       descriptionSuffix: `group-item-${i}`,
       validStartOffsetSeconds: GROUP_TIMESTAMP_OFFSET_SECONDS,
+      cachedAccountId,
     });
 
     transactionIds.push(result.id);
@@ -733,6 +783,7 @@ async function seedTransactionGroups(
 async function seedReadyForExecutionTransactions(
   client: Client,
   userKeyId: number,
+  cachedAccountId: number,
 ): Promise<void> {
   console.log(`\nSeeding ${EXECUTION_COUNT} transactions for Ready for Execution tab...`);
   console.log('  (Using real Hedera SDK transactions)');
@@ -748,6 +799,7 @@ async function seedReadyForExecutionTransactions(
       creatorKeyId: userKeyId,
       useRealTx: true,
       descriptionSuffix: `execution-${i}`,
+      cachedAccountId,
     });
 
     if ((i + 1) % 25 === 0) {
@@ -911,8 +963,10 @@ async function validateSeededData(client: Client): Promise<void> {
  * Creates user_key and transactions for the specified email.
  * Requires initializeKeyPair() to be called first.
  * NOTE: Call cleanupAllSeedData() ONCE before calling this for multiple users.
+ *
+ * @param cachedAccountId - The ID of the cached account to link transactions to
  */
-async function seedDataForUser(client: Client, email: string): Promise<void> {
+async function seedDataForUser(client: Client, email: string, cachedAccountId: number): Promise<void> {
   // Find test user
   const userResult: QueryResult<UserRow> = await client.query(
     'SELECT id FROM "user" WHERE email = $1',
@@ -937,11 +991,11 @@ async function seedDataForUser(client: Client, email: string): Promise<void> {
   // Create new user key with the generated keypair (shared across all pool users)
   const userKeyId = await findOrCreateUserKey(client, userId);
 
-  await seedSignTransactions(client, userKeyId);
-  await seedHistoryTransactions(client, userKeyId);
-  await seedApproveTransactions(client, userId, userKeyId);
-  await seedTransactionGroups(client, userKeyId);
-  await seedReadyForExecutionTransactions(client, userKeyId);
+  await seedSignTransactions(client, userKeyId, cachedAccountId);
+  await seedHistoryTransactions(client, userKeyId, cachedAccountId);
+  await seedApproveTransactions(client, userId, userKeyId, cachedAccountId);
+  await seedTransactionGroups(client, userKeyId, cachedAccountId);
+  await seedReadyForExecutionTransactions(client, userKeyId, cachedAccountId);
 }
 
 async function seedData(): Promise<void> {
@@ -976,11 +1030,12 @@ async function seedData(): Promise<void> {
 
     // Seed CachedAccount so backend uses test key instead of querying Mirror Node
     // This is required for Ready to Sign tests - fee payer 0.0.2 needs test key
-    await seedCachedAccount(client, testPublicKeyHex);
+    // Also creates cached_account_key for the optimized /transaction-nodes endpoint
+    const cachedAccountId = await seedCachedAccount(client, testPublicKeyHex);
 
     // Seed data for each user (user keys cleaned per-user, transactions not)
     for (const email of usersToSeed) {
-      await seedDataForUser(client, email);
+      await seedDataForUser(client, email, cachedAccountId);
     }
 
     // Generate signatures.json for PRE_SIGNED mode (all users' transactions)

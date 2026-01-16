@@ -4,24 +4,25 @@
  * Requirements:
  * - Ready to Sign page load < 1 second (200 items)
  * - 100+ concurrent users
+ *
+ * Uses the optimized /transaction-nodes endpoint (PR #2161)
  */
 
+import http from 'k6/http';
 import { check, sleep, group } from 'k6';
 import { Trend, Rate } from 'k6/metrics';
 import { authHeaders, formatDuration } from '../lib/helpers';
 import { multiUserSetup, getTokenForVU } from '../lib/setup';
 import { formatDataMetrics, needed_properties } from '../lib/utils';
 import { generateReport } from '../lib/reporter';
-import { fetchPaginated } from '../lib/pagination';
 import { getBaseUrlWithFallback } from '../config/credentials';
-import { DATA_VOLUMES, THRESHOLDS, DELAYS } from '../config/constants';
+import { DATA_VOLUMES, THRESHOLDS, DELAYS, HTTP_STATUS } from '../config/constants';
 import { STANDARD_LOAD_STAGES, TAB_LOAD_THRESHOLDS } from '../config/load-profiles';
 import type {
   K6Options,
   MultiUserSetupData,
   SummaryData,
   SummaryOutput,
-  TransactionToSignDto,
 } from '../types';
 
 // Custom metrics
@@ -30,6 +31,8 @@ const dataVolumeOk = new Rate('ready_to_sign_data_volume_ok');
 
 declare const __ENV: Record<string, string | undefined>;
 const DEBUG = __ENV.DEBUG === 'true';
+// Network parameter - matches seed data (mainnet for local, testnet for staging)
+const NETWORK = __ENV.HEDERA_NETWORK || 'mainnet';
 
 /**
  * k6 options configuration
@@ -62,7 +65,7 @@ export function setup(): MultiUserSetupData {
 
 /**
  * Main test function
- * Fetches 200 items across 2 pages (100 items per page due to backend limit)
+ * Uses optimized /transaction-nodes endpoint - returns all items in single request
  */
 export default function (data: MultiUserSetupData): void {
   const token = getTokenForVU(data);
@@ -72,24 +75,41 @@ export default function (data: MultiUserSetupData): void {
   const targetCount = DATA_VOLUMES.READY_TO_SIGN; // 200
 
   group('Ready to Sign Page', () => {
-    const result = fetchPaginated<TransactionToSignDto>({
-      buildUrl: (page, size) => `${BASE_URL}/transactions/sign?page=${page}&size=${size}`,
-      headers,
-      targetCount,
-      tagName: 'ready-to-sign',
-      checkName: 'ready-to-sign',
+    const startTime = Date.now();
+
+    const res = http.get(
+      `${BASE_URL}/transaction-nodes?collection=READY_TO_SIGN&network=${NETWORK}`,
+      { ...headers, tags: { name: 'ready-to-sign' } },
+    );
+
+    const totalDuration = Date.now() - startTime;
+    totalDurationTrend.add(totalDuration);
+
+    check(res, {
+      'ready-to-sign status 200': (r) => r.status === HTTP_STATUS.OK,
     });
 
-    totalDurationTrend.add(result.totalDuration);
-    dataVolumeOk.add(result.totalItems >= targetCount);
+    if (res.status !== HTTP_STATUS.OK) {
+      dataVolumeOk.add(false);
+      return;
+    }
 
-    check(null, {
-      'ready-to-sign total time < 1s': () => result.totalDuration < THRESHOLDS.PAGE_LOAD_MS,
-      [`fetched ${targetCount}+ items`]: () => result.totalItems >= targetCount,
-    });
+    try {
+      const items = JSON.parse(res.body as string) as unknown[];
+      const itemCount = items?.length ?? 0;
 
-    if (DEBUG)
-      console.log(`Ready to Sign: ${result.totalItems} items in ${formatDuration(result.totalDuration)}`);
+      dataVolumeOk.add(itemCount >= targetCount);
+
+      check(null, {
+        'ready-to-sign total time < 1s': () => totalDuration < THRESHOLDS.PAGE_LOAD_MS,
+        [`fetched ${targetCount}+ items`]: () => itemCount >= targetCount,
+      });
+
+      if (DEBUG)
+        console.log(`Ready to Sign: ${itemCount} items in ${formatDuration(totalDuration)}`);
+    } catch {
+      dataVolumeOk.add(false);
+    }
   });
 
   sleep(DELAYS.BETWEEN_ITERATIONS);

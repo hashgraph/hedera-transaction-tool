@@ -8,6 +8,8 @@
  * Two modes:
  * 1. PRE_SIGNED_FILE - Load signatures from JSON file (recommended)
  * 2. API_ONLY - Fetch transactions and measure GET/POST without real signatures
+ *
+ * Uses the optimized /transaction-nodes endpoint (PR #2161) to fetch transactions
  */
 
 import http from 'k6/http';
@@ -18,15 +20,12 @@ import { generateReport } from '../lib/reporter';
 import { formatDataMetrics, needed_properties } from '../lib/utils';
 import { standardSetup } from '../lib/setup';
 import { getBaseUrlWithFallback } from '../config/credentials';
-import { DATA_VOLUMES, THRESHOLDS, HTTP_STATUS, PAGINATION, SIGNATURE_MODES } from '../config/constants';
+import { DATA_VOLUMES, THRESHOLDS, HTTP_STATUS, SIGNATURE_MODES } from '../config/constants';
 import type {
   K6Options,
   SetupData,
   SummaryData,
   SummaryOutput,
-  Transaction,
-  TransactionToSignDto,
-  PaginatedResponse,
   PreSignedData,
 } from '../types';
 
@@ -35,6 +34,8 @@ declare function open(filePath: string): string;
 
 // Debug mode - gate verbose logging
 const DEBUG = __ENV.DEBUG === 'true';
+// Network parameter - matches seed data (mainnet for local, testnet for staging)
+const NETWORK = __ENV.HEDERA_NETWORK || 'mainnet';
 
 // Custom metrics
 const signAllDuration = new Trend('sign_all_duration');
@@ -86,8 +87,17 @@ interface SignaturePayload {
   signatureMap: Record<string, unknown>;
 }
 
+/**
+ * Minimal transaction info needed for signing
+ * The new optimized endpoint returns less data than the full Transaction type
+ */
+interface SignableTransaction {
+  id: number;
+  transactionId?: string;
+}
+
 interface FetchResult {
-  transactions: Transaction[];
+  transactions: SignableTransaction[];
   success: boolean;
 }
 
@@ -97,52 +107,59 @@ interface SubmitResult {
 }
 
 /**
- * Fetch transactions to sign with pagination
+ * Transaction node response from optimized endpoint
+ */
+interface TransactionNode {
+  transactionId?: number;
+  sdkTransactionId?: string;
+  description: string;
+  status?: string;
+}
+
+/**
+ * Fetch transactions to sign using optimized endpoint (single request)
  */
 function fetchTransactionsToSign(
   headers: ReturnType<typeof authHeaders>,
   targetCount: number,
 ): FetchResult {
-  const transactions: Transaction[] = [];
-  const pagesNeeded = Math.ceil(targetCount / PAGINATION.MAX_SIZE);
+  const res = http.get(
+    `${BASE_URL}/transaction-nodes?collection=READY_TO_SIGN&network=${NETWORK}`,
+    { ...headers, tags: { name: 'list-to-sign' } },
+  );
 
-  for (let page = 1; page <= pagesNeeded; page++) {
-    const res = http.get(
-      `${BASE_URL}/transactions/sign?page=${page}&size=${PAGINATION.MAX_SIZE}`,
-      { ...headers, tags: { name: 'list-to-sign' } },
-    );
+  const success = check(res, {
+    'list transactions status 200': (r) => r.status === HTTP_STATUS.OK,
+  });
 
-    const success = check(res, {
-      [`list transactions page ${page} status 200`]: (r) => r.status === HTTP_STATUS.OK,
-    });
-
-    if (!success) {
-      console.error(`Failed to list transactions page ${page}: ${res.status}`);
-      return { transactions, success: false };
-    }
-
-    try {
-      const body = JSON.parse(res.body as string) as PaginatedResponse<TransactionToSignDto>;
-      const txItems = body.items.map((item) => item.transaction);
-      transactions.push(...txItems);
-
-      if (transactions.length >= targetCount || body.items.length < PAGINATION.MAX_SIZE) {
-        break;
-      }
-    } catch (e) {
-      console.error(`Failed to parse response: ${(e as Error).message}`);
-      return { transactions, success: false };
-    }
+  if (!success) {
+    console.error(`Failed to list transactions: ${res.status}`);
+    return { transactions: [], success: false };
   }
 
-  return { transactions, success: true };
+  try {
+    const nodes = JSON.parse(res.body as string) as TransactionNode[];
+    // Map transactionId from new endpoint to id for compatibility
+    const transactions: SignableTransaction[] = nodes
+      .filter((node) => node.transactionId !== undefined)
+      .slice(0, targetCount)
+      .map((node) => ({
+        id: node.transactionId as number,
+        transactionId: node.sdkTransactionId,
+      }));
+
+    return { transactions, success: true };
+  } catch (e) {
+    console.error(`Failed to parse response: ${(e as Error).message}`);
+    return { transactions: [], success: false };
+  }
 }
 
 /**
  * Build signature payloads by matching transactions to pre-signed data
  */
 function buildSignaturePayloads(
-  transactions: Transaction[],
+  transactions: SignableTransaction[],
   signedData: PreSignedData,
   txCount: number,
 ): SignaturePayload[] {
@@ -203,7 +220,7 @@ function submitBatchSignatures(
  * Measure API performance without real signatures (API_ONLY mode)
  */
 function measureApiOnly(
-  transactions: Transaction[],
+  transactions: SignableTransaction[],
   headers: ReturnType<typeof authHeaders>,
   txCount: number,
 ): SubmitResult {

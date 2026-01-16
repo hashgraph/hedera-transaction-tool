@@ -3,6 +3,8 @@
  *
  * Baseline test for all main UI tabs.
  * Measures API response times for each tab's data endpoint.
+ *
+ * Uses the optimized /transaction-nodes endpoint (PR #2161)
  */
 
 import http from 'k6/http';
@@ -14,16 +16,13 @@ import { formatDataMetrics, needed_properties } from '../lib/utils';
 import { generateReport } from '../lib/reporter';
 import { getBaseUrlWithFallback } from '../config/credentials';
 import { endpoints } from '../config/environments';
-import { THRESHOLDS, DELAYS, HTTP_STATUS, DATA_VOLUMES, PAGINATION } from '../config/constants';
+import { THRESHOLDS, DELAYS, HTTP_STATUS, DATA_VOLUMES } from '../config/constants';
 import type {
   K6Options,
   SetupData,
   SummaryData,
   SummaryOutput,
   TabConfig,
-  PaginatedResponse,
-  Transaction,
-  TransactionToSignDto,
 } from '../types';
 
 // Custom metrics per tab
@@ -35,7 +34,7 @@ const allTransactionsDuration = new Trend('tab_all_transactions_duration');
 const historyDuration = new Trend('tab_history_duration');
 const notificationsDuration = new Trend('tab_notifications_duration');
 
-// Total duration trends for multi-page tabs
+// Total duration trends (now single request, kept for metric consistency)
 const readyToSignTotalDuration = new Trend('tab_ready_to_sign_total_duration');
 const historyTotalDuration = new Trend('tab_history_total_duration');
 
@@ -68,7 +67,7 @@ export const options: K6Options = {
     tab_all_transactions_duration: tabThreshold,
     tab_history_duration: tabThreshold,
     tab_notifications_duration: tabThreshold,
-    // Total duration for multi-page tabs (200/500 items)
+    // Total duration (now single request with optimized endpoint)
     tab_ready_to_sign_total_duration: tabThreshold,
     tab_history_total_duration: tabThreshold,
     // Data volume enforcement
@@ -137,94 +136,92 @@ export function setup(): SetupData {
 }
 
 /**
- * Fetch paginated data for Ready to Sign tab (200 items across 2 pages)
+ * Fetch Ready to Sign data using optimized endpoint (single request)
  */
 function fetchReadyToSign(headers: ReturnType<typeof authHeaders>): void {
   group('Ready to Sign', () => {
     const startTime = Date.now();
-    let totalItems = 0;
     const targetCount = DATA_VOLUMES.READY_TO_SIGN;
-    const pagesNeeded = Math.ceil(targetCount / PAGINATION.MAX_SIZE);
 
-    for (let page = 1; page <= pagesNeeded; page++) {
-      const res = http.get(
-        `${BASE_URL}/transactions/sign?page=${page}&size=${PAGINATION.MAX_SIZE}`,
-        { ...headers, tags: { name: 'ready-to-sign' } },
-      );
-
-      const success = res.status === HTTP_STATUS.OK;
-      tabLoadSuccess.add(success);
-      readyToSignDuration.add(res.timings.duration);
-
-      check(res, {
-        [`Ready to Sign page ${page} status 200`]: () => res.status === HTTP_STATUS.OK,
-      });
-
-      if (!success) break;
-
-      try {
-        const body = JSON.parse(res.body as string) as PaginatedResponse<TransactionToSignDto>;
-        totalItems += body.items.length;
-        if (body.items.length < PAGINATION.MAX_SIZE) break;
-      } catch {
-        break;
-      }
-    }
+    const res = http.get(
+      `${BASE_URL}${endpoints['ready-to-sign']}`,
+      { ...headers, tags: { name: 'ready-to-sign' } },
+    );
 
     const totalDuration = Date.now() - startTime;
-    readyToSignTotalDuration.add(totalDuration);
-    readyToSignVolumeOk.add(totalItems >= targetCount);
+    const success = res.status === HTTP_STATUS.OK;
 
-    check(null, {
-      'Ready to Sign total time < 1s': () => totalDuration < THRESHOLDS.PAGE_LOAD_MS,
-      [`Ready to Sign fetched ${targetCount}+ items`]: () => totalItems >= targetCount,
+    tabLoadSuccess.add(success);
+    readyToSignDuration.add(res.timings.duration);
+    readyToSignTotalDuration.add(totalDuration);
+
+    check(res, {
+      'Ready to Sign status 200': () => res.status === HTTP_STATUS.OK,
     });
+
+    if (!success) {
+      readyToSignVolumeOk.add(false);
+      return;
+    }
+
+    try {
+      const items = JSON.parse(res.body as string) as unknown[];
+      const totalItems = items?.length ?? 0;
+
+      readyToSignVolumeOk.add(totalItems >= targetCount);
+
+      check(null, {
+        'Ready to Sign total time < 1s': () => totalDuration < THRESHOLDS.PAGE_LOAD_MS,
+        [`Ready to Sign fetched ${targetCount}+ items`]: () => totalItems >= targetCount,
+      });
+    } catch {
+      readyToSignVolumeOk.add(false);
+    }
   });
 }
 
 /**
- * Fetch paginated data for History tab (500 items across 5 pages)
+ * Fetch History data using optimized endpoint (single request)
  */
 function fetchHistory(headers: ReturnType<typeof authHeaders>): void {
   group('History', () => {
     const startTime = Date.now();
-    let totalItems = 0;
     const targetCount = DATA_VOLUMES.HISTORY;
-    const pagesNeeded = Math.ceil(targetCount / PAGINATION.MAX_SIZE);
 
-    for (let page = 1; page <= pagesNeeded; page++) {
-      const res = http.get(
-        `${BASE_URL}/transactions/history?page=${page}&size=${PAGINATION.MAX_SIZE}`,
-        { ...headers, tags: { name: 'history' } },
-      );
-
-      const success = res.status === HTTP_STATUS.OK;
-      tabLoadSuccess.add(success);
-      historyDuration.add(res.timings.duration);
-
-      check(res, {
-        [`History page ${page} status 200`]: () => res.status === HTTP_STATUS.OK,
-      });
-
-      if (!success) break;
-
-      try {
-        const body = JSON.parse(res.body as string) as PaginatedResponse<Transaction>;
-        totalItems += body.items.length;
-        if (body.items.length < PAGINATION.MAX_SIZE) break;
-      } catch {
-        break;
-      }
-    }
+    const res = http.get(
+      `${BASE_URL}${endpoints['history']}`,
+      { ...headers, tags: { name: 'history' } },
+    );
 
     const totalDuration = Date.now() - startTime;
-    historyTotalDuration.add(totalDuration);
-    historyVolumeOk.add(totalItems >= targetCount);
+    const success = res.status === HTTP_STATUS.OK;
 
-    check(null, {
-      'History total time < 1s': () => totalDuration < THRESHOLDS.PAGE_LOAD_MS,
-      [`History fetched ${targetCount}+ items`]: () => totalItems >= targetCount,
+    tabLoadSuccess.add(success);
+    historyDuration.add(res.timings.duration);
+    historyTotalDuration.add(totalDuration);
+
+    check(res, {
+      'History status 200': () => res.status === HTTP_STATUS.OK,
     });
+
+    if (!success) {
+      historyVolumeOk.add(false);
+      return;
+    }
+
+    try {
+      const items = JSON.parse(res.body as string) as unknown[];
+      const totalItems = items?.length ?? 0;
+
+      historyVolumeOk.add(totalItems >= targetCount);
+
+      check(null, {
+        'History total time < 1s': () => totalDuration < THRESHOLDS.PAGE_LOAD_MS,
+        [`History fetched ${targetCount}+ items`]: () => totalItems >= targetCount,
+      });
+    } catch {
+      historyVolumeOk.add(false);
+    }
   });
 }
 
