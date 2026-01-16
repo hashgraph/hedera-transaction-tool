@@ -6,6 +6,8 @@
  * Requirements:
  * - Page load < 1 second (100 items)
  * - 100+ concurrent users
+ *
+ * Uses the optimized /transaction-nodes endpoint (PR #2161)
  */
 
 import http from 'k6/http';
@@ -16,7 +18,7 @@ import { multiUserSetup, getTokenForVU } from '../lib/setup';
 import { formatDataMetrics, needed_properties } from '../lib/utils';
 import { generateReport } from '../lib/reporter';
 import { getBaseUrlWithFallback } from '../config/credentials';
-import { THRESHOLDS, DELAYS, HTTP_STATUS, PAGINATION } from '../config/constants';
+import { THRESHOLDS, DELAYS, HTTP_STATUS } from '../config/constants';
 import { STANDARD_LOAD_STAGES, TAB_LOAD_THRESHOLDS } from '../config/load-profiles';
 import type { K6Options, MultiUserSetupData, SummaryData, SummaryOutput } from '../types';
 
@@ -25,6 +27,8 @@ const dataVolumeOk = new Rate('in_progress_data_volume_ok');
 
 declare const __ENV: Record<string, string | undefined>;
 const DEBUG = __ENV.DEBUG === 'true';
+// Network parameter - matches seed data (mainnet for local, testnet for staging)
+const NETWORK = __ENV.HEDERA_NETWORK || 'mainnet';
 
 // Target count for In Progress transactions (same as Ready for Review)
 const TARGET_COUNT = 100;
@@ -59,18 +63,17 @@ export function setup(): MultiUserSetupData {
 
 /**
  * Main test function
- * Fetches transactions with status "WAITING FOR SIGNATURES"
+ * Uses optimized /transaction-nodes endpoint - returns all items in single request
  */
 export default function (data: MultiUserSetupData): void {
   const token = getTokenForVU(data);
   if (!token) return;
 
   const headers = authHeaders(token);
-  const filter = encodeURIComponent('status:in:WAITING FOR SIGNATURES');
 
   group('In Progress Page', () => {
     const res = http.get(
-      `${BASE_URL}/transactions?page=1&size=${PAGINATION.MAX_SIZE}&filter=${filter}`,
+      `${BASE_URL}/transaction-nodes?collection=IN_PROGRESS&network=${NETWORK}`,
       { ...headers, tags: { name: 'in-progress' } },
     );
 
@@ -85,8 +88,8 @@ export default function (data: MultiUserSetupData): void {
     }
 
     try {
-      const body = JSON.parse(res.body as string) as { items: unknown[] };
-      const itemCount = body.items?.length ?? 0;
+      const items = JSON.parse(res.body as string) as unknown[];
+      const itemCount = items?.length ?? 0;
 
       const volumeMet = itemCount >= TARGET_COUNT;
       dataVolumeOk.add(volumeMet);

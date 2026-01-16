@@ -5,9 +5,12 @@
  */
 
 import type { Environment, EnvironmentMap, Endpoints } from '../types';
-import { PAGINATION, DATA_VOLUMES } from './constants';
+import { PAGINATION } from './constants';
 
 declare const __ENV: Record<string, string | undefined>;
+
+// Network parameter - matches seed data (mainnet for local, testnet for staging)
+const NETWORK = __ENV.HEDERA_NETWORK || 'mainnet';
 
 /**
  * Available environments for testing
@@ -28,10 +31,19 @@ export const ENVIRONMENTS: EnvironmentMap = {
 };
 
 /**
- * Build endpoint URL with pagination parameters
- * Note: pageSize is capped at backend MAX_SIZE (100)
+ * Build optimized transaction-nodes endpoint URL
+ * Uses the new /transaction-nodes endpoint (PR #2161) which returns all items in a single request
  */
-function buildEndpoint(
+function buildTransactionNodesEndpoint(collection: string): string {
+  return `/transaction-nodes?collection=${collection}&network=${NETWORK}`;
+}
+
+/**
+ * Build legacy endpoint URL with pagination parameters
+ * Note: pageSize is capped at backend MAX_SIZE (100)
+ * Used for endpoints that don't have optimized versions
+ */
+function buildPaginatedEndpoint(
   path: string,
   pageSize: number = PAGINATION.DEFAULT_SIZE,
   filter?: string,
@@ -61,14 +73,14 @@ export function getEnvironment(): Environment {
 
 /**
  * API endpoints for page load tests
- * Page sizes based on performance requirements
+ * Uses optimized /transaction-nodes endpoint where available (PR #2161)
  */
 export const endpoints: Endpoints = {
-  'all-transactions': buildEndpoint('/transactions'),
-  'history': buildEndpoint('/transactions/history', DATA_VOLUMES.HISTORY),
-  'in-progress': buildEndpoint('/transactions', PAGINATION.DEFAULT_SIZE, 'status:in:WAITING FOR SIGNATURES'),
-  'notifications': buildEndpoint('/notifications'),
-  'ready-for-execution': buildEndpoint('/transactions', PAGINATION.DEFAULT_SIZE, 'status:in:WAITING FOR EXECUTION'),
-  'ready-to-approve': buildEndpoint('/transactions/approve'),
-  'ready-to-sign': buildEndpoint('/transactions/sign', DATA_VOLUMES.READY_TO_SIGN),
+  'all-transactions': buildPaginatedEndpoint('/transactions'),
+  'history': buildTransactionNodesEndpoint('HISTORY'),
+  'in-progress': buildTransactionNodesEndpoint('IN_PROGRESS'),
+  'notifications': buildPaginatedEndpoint('/notifications'),
+  'ready-for-execution': buildTransactionNodesEndpoint('READY_FOR_EXECUTION'),
+  'ready-to-approve': buildTransactionNodesEndpoint('READY_FOR_REVIEW'),
+  'ready-to-sign': buildTransactionNodesEndpoint('READY_TO_SIGN'),
 };
