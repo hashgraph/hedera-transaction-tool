@@ -792,7 +792,7 @@ async function seedReadyForExecutionTransactions(
   const indexOffset = SIGN_COUNT + HISTORY_COUNT + APPROVE_COUNT + GROUP_SIZE;
 
   for (let i = 0; i < EXECUTION_COUNT; i++) {
-    await insertTransaction({
+    const result = await insertTransaction({
       client,
       index: indexOffset + i,
       status: 'WAITING FOR EXECUTION',
@@ -801,6 +801,11 @@ async function seedReadyForExecutionTransactions(
       descriptionSuffix: `execution-${i}`,
       cachedAccountId,
     });
+
+    // Collect for signature generation (needed for sign-all test)
+    if (result.signData) {
+      signTransactionsData.push(result.signData);
+    }
 
     if ((i + 1) % 25 === 0) {
       console.log(`  Created ${i + 1}/${EXECUTION_COUNT} execution transactions`);
