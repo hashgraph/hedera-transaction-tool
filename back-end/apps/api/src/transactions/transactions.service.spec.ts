@@ -35,6 +35,7 @@ import {
   attachKeys,
   getClientFromNetwork,
   isExpired,
+  keysRequiredToSign,
   userKeysRequiredToSign,
   MirrorNetworkGRPC,
   isTransactionBodyOverMaxSize,
@@ -448,6 +449,9 @@ describe('TransactionsService', () => {
         usr.keys = userKeys;
       });
 
+      // Default mock for keysRequiredToSign - returns empty active signers (no validation error)
+      jest.mocked(keysRequiredToSign).mockResolvedValue([]);
+
       saveMock = jest.fn().mockImplementation(async (entityOrTarget: any, data?: any) => {
         const items = Array.isArray(data) ? data : Array.isArray(entityOrTarget) ? entityOrTarget : [entityOrTarget];
         items.forEach((d: any, i: number) => {
@@ -783,6 +787,181 @@ describe('TransactionsService', () => {
       await expect(service.createTransaction(dto as CreateTransactionDto, user as User)).rejects.toThrow(
         `Creator key ${dto.creatorKeyId} not found`,
       );
+
+      client.close();
+    });
+
+    it('should throw if required signer is a deleted user', async () => {
+      const sdkTransaction = new AccountCreateTransaction().setTransactionId(
+        new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
+      );
+
+      const dto: CreateTransactionDto = {
+        name: 'Transaction 1',
+        description: 'Description',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
+      });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+
+      // Mock keysRequiredToSign to return a key with deleted user
+      jest.mocked(keysRequiredToSign).mockResolvedValueOnce([
+        {
+          id: 1,
+          userId: 10,
+          publicKey: '0x123',
+          deletedAt: null,
+          user: { id: 10, email: 'deleted@example.com', deletedAt: new Date() },
+        } as any,
+      ]);
+
+      await expect(service.createTransaction(dto, user as User)).rejects.toThrow(
+        /Cannot create transaction: required signers are inactive or deleted/,
+      );
+
+      client.close();
+    });
+
+    it('should throw if required key is soft-deleted', async () => {
+      const sdkTransaction = new AccountCreateTransaction().setTransactionId(
+        new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
+      );
+
+      const dto: CreateTransactionDto = {
+        name: 'Transaction 1',
+        description: 'Description',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
+      });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+
+      // Mock keysRequiredToSign to return a soft-deleted key
+      jest.mocked(keysRequiredToSign).mockResolvedValueOnce([
+        {
+          id: 1,
+          userId: 10,
+          publicKey: '0x123',
+          deletedAt: new Date(),
+          user: { id: 10, email: 'user@example.com', deletedAt: null },
+        } as any,
+      ]);
+
+      await expect(service.createTransaction(dto, user as User)).rejects.toThrow(
+        /Cannot create transaction: required signers are inactive or deleted/,
+      );
+
+      client.close();
+    });
+
+    it('should throw if required key has no user (orphaned key)', async () => {
+      const sdkTransaction = new AccountCreateTransaction().setTransactionId(
+        new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
+      );
+
+      const dto: CreateTransactionDto = {
+        name: 'Transaction 1',
+        description: 'Description',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
+      });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+
+      // Mock keysRequiredToSign to return a key with no user (orphaned)
+      jest.mocked(keysRequiredToSign).mockResolvedValueOnce([
+        {
+          id: 99,
+          userId: 10,
+          publicKey: '0x123',
+          deletedAt: null,
+          user: null,
+        } as any,
+      ]);
+
+      await expect(service.createTransaction(dto, user as User)).rejects.toThrow(
+        /Cannot create transaction: required signers are inactive or deleted.*Unknown \(key ID: 99\)/,
+      );
+
+      client.close();
+    });
+
+    it('should allow transaction when all required signers are active', async () => {
+      const sdkTransaction = new AccountCreateTransaction().setTransactionId(
+        new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
+      );
+
+      const dto: CreateTransactionDto = {
+        name: 'Transaction 1',
+        description: 'Description',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
+      });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+      transactionsRepo.find.mockResolvedValueOnce([]);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      transactionsRepo.create.mockImplementationOnce(
+        (input: DeepPartial<Transaction>) => ({ ...input }) as Transaction,
+      );
+
+      // Mock keysRequiredToSign to return active signers
+      jest.mocked(keysRequiredToSign).mockResolvedValueOnce([
+        {
+          id: 1,
+          userId: 10,
+          publicKey: '0x123',
+          deletedAt: null,
+          user: { id: 10, email: 'active@example.com', deletedAt: null },
+        } as any,
+      ]);
+
+      // Should not throw - transaction should be created successfully
+      await expect(service.createTransaction(dto, user as User)).resolves.toBeDefined();
 
       client.close();
     });

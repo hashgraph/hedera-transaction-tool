@@ -188,7 +188,12 @@ export class ReceiverService {
       keyCache,
     );
 
-    return [...new Set(allKeys.map((k) => k.userId).filter(Boolean))];
+    // Filter out keys/users that have been soft-deleted to prevent notification failures
+    const activeKeys = allKeys.filter(
+      (k) => !k.deletedAt && k.user && !k.user.deletedAt,
+    );
+
+    return [...new Set(activeKeys.map((k) => k.userId).filter(Boolean))];
   }
 
   private async getNotificationReceiverIds(
@@ -1084,7 +1089,12 @@ export class ReceiverService {
         keyCache,
       );
 
-      const userIds = new Set(allKeys.map(k => k.userId).filter(Boolean));
+      // Filter out keys/users that have been soft-deleted to prevent notification failures
+      const activeKeys = allKeys.filter(
+        (k) => !k.deletedAt && k.user && !k.user.deletedAt,
+      );
+
+      const userIds = new Set(activeKeys.map(k => k.userId).filter(Boolean));
 
       if (userIds.size === 0) continue;
 
