@@ -229,6 +229,7 @@ watch(() => props.node.description, () => {
     <td :data-testid="`td-transaction-node-transaction-type-${index}`" class="text-bold">
       {{ transactionType }}
       <span v-if="props.node.isManual" class="badge bg-info ms-3">Manual</span>
+      <span v-if="props.index == 1" class="badge bg-info">External</span>
     </td>
 
     <!-- Column #3 : Description -->

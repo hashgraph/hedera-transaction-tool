@@ -653,7 +653,10 @@ watch(
     results.forEach(
       r =>
         r.status === 'rejected' &&
-        toast.error(getErrorMessage(r.reason, 'Failed to load transaction details'), errorToastOptions),
+        toast.error(
+          getErrorMessage(r.reason, 'Failed to load transaction details'),
+          errorToastOptions,
+        ),
     );
   },
 );
@@ -764,5 +767,4 @@ watch(
     :text="confirmModalText"
     :title="confirmModalTitle"
   />
-
 </template>
