@@ -21,11 +21,12 @@ export class UserKeysService {
   getUserKey(
     where: FindOptionsWhere<UserKey>,
     relations?: FindOptionsRelations<UserKey>,
+    withDeleted: boolean = false,
   ): Promise<UserKey> {
     if (!where) {
       return null;
     }
-    return this.repo.findOne({ where, relations });
+    return this.repo.findOne({ where, relations, withDeleted });
   }
 
   // Upload the provided user key for the provided user.
@@ -65,10 +66,12 @@ export class UserKeysService {
   }
 
   // Get the list of user keys for the provided userId
+  // Includes soft-deleted keys so UI can show deleted state
   async getUserKeysRestricted(user: User, userId: number): Promise<UserKey[]> {
     if (!userId) return [];
     return this.repo.find({
       where: { userId },
+      withDeleted: true,
       select: {
         id: true,
         userId: true,

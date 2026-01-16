@@ -557,10 +557,6 @@ The Initial Developer of @pkgr/core@0.1.1,
 is JounQin (https://github.com/un-ts/pkgr).
 Copyright JounQin. All Rights Reserved.
 
-The Initial Developer of @playwright/test@1.56.1,
-is Microsoft Corporation (https://github.com/microsoft/playwright).
-Copyright Microsoft Corporation. All Rights Reserved.
-
 The Initial Developer of @polka/url@1.0.0-next.28,
 is Luke Edwards (https://github.com/lukeed/polka).
 Copyright Luke Edwards. All Rights Reserved.
@@ -714,9 +710,6 @@ The Initial Developer of @tootallnate/once@2.0.0,
 is Nathan Rajlich (https://github.com/TooTallNate/once).
 Copyright Nathan Rajlich. All Rights Reserved.
 
-This product includes software (@types/async-retry@1.4.5) developed at
-(https://github.com/DefinitelyTyped/DefinitelyTyped).
-
 This product includes software (@types/babel__core@7.20.5) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
@@ -730,9 +723,6 @@ This product includes software (@types/babel__traverse@7.20.7) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/bcrypt@5.0.2) developed at
-(https://github.com/DefinitelyTyped/DefinitelyTyped).
-
-This product includes software (@types/bcrypt@6.0.0) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/bcryptjs@2.4.6) developed at
@@ -753,16 +743,7 @@ This product includes software (@types/cacheable-request@6.0.3) developed at
 This product includes software (@types/debug@4.1.12) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
-This product includes software (@types/deep-diff@1.0.5) developed at
-(https://github.com/DefinitelyTyped/DefinitelyTyped).
-
-This product includes software (@types/eslint-scope@3.7.7) developed at
-(https://github.com/DefinitelyTyped/DefinitelyTyped).
-
 This product includes software (@types/eslint@8.56.12) developed at
-(https://github.com/DefinitelyTyped/DefinitelyTyped).
-
-This product includes software (@types/eslint@9.6.1) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/estree@1.0.6) developed at
@@ -798,9 +779,6 @@ This product includes software (@types/json-schema@7.0.15) developed at
 This product includes software (@types/keyv@3.1.4) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
-This product includes software (@types/lodash@4.17.21) developed at
-(https://github.com/DefinitelyTyped/DefinitelyTyped).
-
 This product includes software (@types/ms@2.1.0) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
@@ -820,9 +798,6 @@ This product includes software (@types/passport-jwt@4.0.1) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/passport-local@1.0.38) developed at
-(https://github.com/DefinitelyTyped/DefinitelyTyped).
-
-This product includes software (@types/pg@8.15.6) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/plist@3.0.5) developed at
@@ -850,6 +825,12 @@ This product includes software (@types/verror@1.10.10) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/web-bluetooth@0.0.20) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
+This product includes software (@types/whatwg-mimetype@3.0.2) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
+This product includes software (@types/ws@8.18.1) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/yargs-parser@21.0.3) developed at
@@ -1146,9 +1127,6 @@ The Initial Developer of async-limiter@1.0.1,
 is Samuel Reed (https://github.com/strml/async-limiter).
 Copyright Samuel Reed. All Rights Reserved.
 
-This product includes software (async-retry@1.3.3) developed at
-(https://github.com/vercel/async-retry).
-
 The Initial Developer of async@3.2.6,
 is Caolan McMahon (https://github.com/caolan/async).
 Copyright Caolan McMahon. All Rights Reserved.
@@ -1164,10 +1142,6 @@ Copyright Ryan Zimmerman. All Rights Reserved.
 The Initial Developer of atomic-sleep@1.0.0,
 is David Mark Clements (https://github.com/davidmarkclements/atomic-sleep).
 Copyright David Mark Clements. All Rights Reserved.
-
-The Initial Developer of axios@1.13.2,
-is Matt Zabriskie (https://github.com/axios/axios).
-Copyright Matt Zabriskie. All Rights Reserved.
 
 The Initial Developer of axios@1.8.3,
 is Matt Zabriskie (https://github.com/axios/axios).
@@ -1205,10 +1179,6 @@ The Initial Developer of bcrypt@5.1.1,
 is Nick Campbell (https://github.com/kelektiv/node.bcrypt.js).
 Copyright Nick Campbell. All Rights Reserved.
 
-The Initial Developer of bcrypt@6.0.0,
-is Nick Campbell (https://github.com/kelektiv/node.bcrypt.js).
-Copyright Nick Campbell. All Rights Reserved.
-
 The Initial Developer of bcryptjs@2.4.3,
 is Daniel Wirtz (https://github.com/dcodeIO/bcrypt.js).
 Copyright Daniel Wirtz. All Rights Reserved.
@@ -1228,10 +1198,6 @@ Copyright Sindre Sorhus. All Rights Reserved.
 The Initial Developer of bindings@1.5.0,
 is Nathan Rajlich (https://github.com/TooTallNate/node-bindings).
 Copyright Nathan Rajlich. All Rights Reserved.
-
-The Initial Developer of bip39@3.1.0,
-is Wei Lu (https://github.com/bitcoinjs/bip39).
-Copyright Wei Lu. All Rights Reserved.
 
 The Initial Developer of birpc@0.2.19,
 is Anthony Fu (https://github.com/antfu/birpc).
@@ -1532,10 +1498,6 @@ Copyright Josh Junon. All Rights Reserved.
 The Initial Developer of decompress-response@6.0.0,
 is Sindre Sorhus (https://github.com/sindresorhus/decompress-response).
 Copyright Sindre Sorhus. All Rights Reserved.
-
-The Initial Developer of deep-diff@1.0.2,
-is Phillip Clark (https://github.com/flitbit/diff).
-Copyright Phillip Clark. All Rights Reserved.
 
 The Initial Developer of deep-eql@5.0.2,
 is Jake Luer (https://github.com/chaijs/deep-eql).
@@ -1942,9 +1904,6 @@ The Initial Developer of fs.realpath@1.0.0,
 is Isaac Z. Schlueter (https://github.com/isaacs/fs.realpath).
 Copyright Isaac Z. Schlueter. All Rights Reserved.
 
-This product includes software (fsevents@2.3.2) developed at
-(https://github.com/fsevents/fsevents).
-
 This product includes software (fsevents@2.3.3) developed at
 (https://github.com/fsevents/fsevents).
 
@@ -2009,6 +1968,10 @@ This product includes software (graceful-fs@4.2.11) developed at
 The Initial Developer of graphemer@1.4.0,
 is Matt Davies (https://github.com/flmnt/graphemer).
 Copyright Matt Davies. All Rights Reserved.
+
+The Initial Developer of happy-dom@20.3.0,
+is David Ortner (https://github.com/capricorn86/happy-dom).
+Copyright David Ortner. All Rights Reserved.
 
 The Initial Developer of has-flag@4.0.0,
 is Sindre Sorhus (https://github.com/sindresorhus/has-flag).
@@ -2453,10 +2416,6 @@ The Initial Developer of log-symbols@4.1.0,
 is Sindre Sorhus (https://github.com/sindresorhus/log-symbols).
 Copyright Sindre Sorhus. All Rights Reserved.
 
-The Initial Developer of long@5.2.3,
-is Daniel Wirtz (https://github.com/dcodeIO/long.js).
-Copyright Daniel Wirtz. All Rights Reserved.
-
 The Initial Developer of long@5.3.1,
 is Daniel Wirtz (https://github.com/dcodeIO/long.js).
 Copyright Daniel Wirtz. All Rights Reserved.
@@ -2886,10 +2845,6 @@ The Initial Developer of pg@8.13.1,
 is Brian Carlson (https://github.com/brianc/node-postgres).
 Copyright Brian Carlson. All Rights Reserved.
 
-The Initial Developer of pg@8.16.3,
-is Brian Carlson (https://github.com/brianc/node-postgres).
-Copyright Brian Carlson. All Rights Reserved.
-
 The Initial Developer of picocolors@1.1.1,
 is Alexey Raspopov (https://github.com/alexeyraspopov/picocolors).
 Copyright Alexey Raspopov. All Rights Reserved.
@@ -2921,14 +2876,6 @@ Copyright Matteo Collina. All Rights Reserved.
 The Initial Developer of pirates@4.0.7,
 is Ari Porad (https://github.com/danez/pirates).
 Copyright Ari Porad. All Rights Reserved.
-
-The Initial Developer of playwright-core@1.56.1,
-is Microsoft Corporation (https://github.com/microsoft/playwright).
-Copyright Microsoft Corporation. All Rights Reserved.
-
-The Initial Developer of playwright@1.56.1,
-is Microsoft Corporation (https://github.com/microsoft/playwright).
-Copyright Microsoft Corporation. All Rights Reserved.
 
 The Initial Developer of plist@3.1.0,
 is Nathan Rajlich (https://github.com/TooTallNate/node-plist).
@@ -3312,10 +3259,6 @@ The Initial Developer of sprintf-js@1.1.3,
 is Alexandru Mărășteanu (https://github.com/alexei/sprintf.js).
 Copyright Alexandru Mărășteanu. All Rights Reserved.
 
-The Initial Developer of sqlite3@5.1.7,
-is Mapbox (https://github.com/TryGhost/node-sqlite3).
-Copyright Mapbox. All Rights Reserved.
-
 The Initial Developer of ssri@9.0.1,
 is GitHub Inc. (https://github.com/npm/ssri).
 Copyright GitHub Inc.. All Rights Reserved.
@@ -3535,10 +3478,6 @@ The Initial Developer of typescript@5.7.3,
 is Microsoft Corp. (https://github.com/microsoft/TypeScript).
 Copyright Microsoft Corp.. All Rights Reserved.
 
-The Initial Developer of typescript@5.9.3,
-is Microsoft Corp. (https://github.com/microsoft/TypeScript).
-Copyright Microsoft Corp.. All Rights Reserved.
-
 This product includes software (undici-types@6.20.0) developed at
 (https://github.com/nodejs/undici).
 
@@ -3589,9 +3528,6 @@ Copyright Nathan Rajlich. All Rights Reserved.
 The Initial Developer of utils-merge@1.0.1,
 is Jared Hanson (https://github.com/jaredhanson/utils-merge).
 Copyright Jared Hanson. All Rights Reserved.
-
-This product includes software (uuid@13.0.0) developed at
-(https://github.com/uuidjs/uuid).
 
 This product includes software (verror@1.10.1) developed at
 (https://github.com/joyent/node-verror).
@@ -3682,6 +3618,10 @@ Copyright Domenic Denicola. All Rights Reserved.
 This product includes software (whatwg-fetch@3.6.20) developed at
 (https://github.com/github/fetch).
 
+The Initial Developer of whatwg-mimetype@3.0.0,
+is Domenic Denicola (https://github.com/jsdom/whatwg-mimetype).
+Copyright Domenic Denicola. All Rights Reserved.
+
 The Initial Developer of whatwg-url@5.0.0,
 is Sebastian Mayr (https://github.com/jsdom/whatwg-url).
 Copyright Sebastian Mayr. All Rights Reserved.
@@ -3718,7 +3658,7 @@ The Initial Developer of write-file-atomic@4.0.2,
 is GitHub Inc. (https://github.com/npm/write-file-atomic).
 Copyright GitHub Inc.. All Rights Reserved.
 
-The Initial Developer of ws@8.17.1,
+The Initial Developer of ws@8.19.0,
 is Einar Otto Stangvik (https://github.com/websockets/ws).
 Copyright Einar Otto Stangvik. All Rights Reserved.
 

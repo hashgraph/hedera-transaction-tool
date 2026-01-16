@@ -16,7 +16,7 @@ import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
 
 import { ErrorCodes, checkFrontendVersion, VersionCheckResult } from '@app/common';
-import { Client, User, UserStatus } from '@entities';
+import { Client, User, UserKey, UserStatus } from '@entities';
 
 @Injectable()
 export class UsersService {
@@ -91,6 +91,7 @@ export class UsersService {
     const existingUser = await this.repo.findOne({
       where: { keys: { publicKey } },
       relations: ['keys'],
+      withDeleted: true,
     });
     return existingUser ? existingUser.email : null;
   }
@@ -124,6 +125,7 @@ export class UsersService {
 
   // Remove a user from the organization.
   // This is a soft delete, meaning the deletedTimestamp will be set.
+  // Also soft-deletes all keys belonging to the user.
   async removeUser(id: number): Promise<boolean> {
     const user = await this.getUser({ id });
 
@@ -131,6 +133,10 @@ export class UsersService {
       throw new BadRequestException(ErrorCodes.UNF);
     }
 
+    // Soft-delete all user keys first
+    await this.repo.manager.softDelete(UserKey, { userId: id });
+
+    // Then soft-delete the user
     await this.repo.softRemove(user);
 
     return true;

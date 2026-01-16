@@ -31,6 +31,7 @@ import {
   getWhere,
   isExpired,
   isTransactionBodyOverMaxSize,
+  keysRequiredToSign,
   NatsPublisherService,
   TransactionSignatureService,
   PaginatedResourceDto,
@@ -795,6 +796,32 @@ export class TransactionsService {
 
     // Freeze transaction with shared client
     sdkTransaction.freezeWith(client);
+
+    // Validate that all required signers are active users
+    const tempTransaction = {
+      transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+      mirrorNetwork: dto.mirrorNetwork,
+    } as unknown as Transaction;
+
+    const requiredKeys = await keysRequiredToSign(
+      tempTransaction,
+      this.transactionSignatureService,
+      this.entityManager,
+    );
+
+    // Check for deleted keys or users
+    const inactiveSigners = requiredKeys.filter(
+      k => k.deletedAt || !k.user || k.user.deletedAt,
+    );
+
+    if (inactiveSigners.length > 0) {
+      const inactiveEmails = inactiveSigners
+        .map(k => k.user?.email ?? `Unknown (key ID: ${k.id})`)
+        .join(', ');
+      throw new BadRequestException(
+        `Cannot create transaction: required signers are inactive or deleted: ${inactiveEmails}`,
+      );
+    }
 
     const transactionHash = await sdkTransaction.getTransactionHash();
 
