@@ -169,31 +169,82 @@ function handleInputValidation(e: Event) {
 }
 
 /* Functions */
-function getEndpointData(ipOrDomain: string, port: string) {
-  let ip = '';
-  let domain = '';
+function stripProtocolAndPath(input: string): string {
+  let result = input.trim();
 
-  if (ipOrDomain.match(validIp)) {
-    ip = ipOrDomain;
-  } else {
-    domain = ipOrDomain;
+  // Remove protocol prefix (http://, https://, grpc://, etc.)
+  result = result.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, '');
+
+  // Remove path (everything after the first /)
+  // Preserve trailing dot for FQDN
+  const slashIndex = result.indexOf('/');
+  if (slashIndex !== -1) {
+    result = result.substring(0, slashIndex);
   }
 
+  // Remove query parameters (everything after '?') and fragments (everything after '#')
+  const queryIndex = result.indexOf('?');
+  const fragmentIndex = result.indexOf('#');
+  let cutIndex = -1;
+  if (queryIndex !== -1 && fragmentIndex !== -1) {
+    cutIndex = Math.min(queryIndex, fragmentIndex);
+  } else if (queryIndex !== -1) {
+    cutIndex = queryIndex;
+  } else if (fragmentIndex !== -1) {
+    cutIndex = fragmentIndex;
+  }
+  if (cutIndex !== -1) {
+    result = result.substring(0, cutIndex);
+  }
+
+  return result;
+}
+
+function cleanAndExtractPort(input: string): { hostPart: string; port: string | null } {
+  // First strip protocol and path
+  let hostPart = stripProtocolAndPath(input);
+
+  // Check for port pattern: host:port where port is numeric
+  const portMatch = hostPart.match(/:(\d+)$/);
+  if (portMatch) {
+    const port = portMatch[1];
+    hostPart = hostPart.substring(0, hostPart.lastIndexOf(':'));
+    return { hostPart, port };
+  }
+
+  return { hostPart, port: null };
+}
+
+function getEndpointData(ipOrDomain: string, port: string) {
+  // Input already cleaned by watcher - just classify as IP or domain
+  const isIp = ipOrDomain.match(validIp);
+
   return {
-    ipAddressV4: ip,
+    ipAddressV4: isIp ? ipOrDomain : '',
     port,
-    domainName: domain.trim(),
+    domainName: isIp ? '' : ipOrDomain.trim(),
   };
 }
 
 function getGrpcWebProxyEndpoint(field: 'domainName' | 'port', value: string) {
+  let domainValue =
+    field === 'domainName' ? value : props.data.grpcWebProxyEndpoint?.domainName || '';
+  let portValue = field === 'port' ? value : props.data.grpcWebProxyEndpoint?.port || '';
+
+  if (field === 'domainName') {
+    const { hostPart, port } = cleanAndExtractPort(value);
+    domainValue = hostPart;
+    if (port) {
+      portValue = port;
+    }
+  }
+
   emit('update:data', {
     ...props.data,
     grpcWebProxyEndpoint: {
       ipAddressV4: '',
-      domainName:
-        field === 'domainName' ? value : props.data.grpcWebProxyEndpoint?.domainName || '',
-      port: field === 'port' ? value : props.data.grpcWebProxyEndpoint?.port || '',
+      domainName: domainValue,
+      port: portValue,
     },
   });
 }
@@ -205,6 +256,19 @@ function formatPort(event: Event, key: 'gossip' | 'service') {
   };
   const target = event.target as HTMLInputElement;
   portMapping[key].value = target.value.replace(/[^0-9]/g, '');
+}
+
+function handleIpOrDomainBlur(key: 'gossip' | 'service') {
+  const mapping = {
+    gossip: { ipOrDomain: gossipIpOrDomain, port: gossipPort },
+    service: { ipOrDomain: serviceIpOrDomain, port: servicePort },
+  };
+
+  const { hostPart, port } = cleanAndExtractPort(mapping[key].ipOrDomain.value);
+  mapping[key].ipOrDomain.value = hostPart;
+  if (port) {
+    mapping[key].port.value = port;
+  }
 }
 
 /* Watchers */
@@ -302,6 +366,7 @@ watch(
       <label class="form-label">IP/Domain</label>
       <input
         v-model="gossipIpOrDomain"
+        @blur="handleIpOrDomainBlur('gossip')"
         class="form-control is-fill"
         placeholder="Enter Domain Name or IP Address"
       />
@@ -379,6 +444,7 @@ watch(
       <label class="form-label">IP/Domain</label>
       <input
         v-model="serviceIpOrDomain"
+        @blur="handleIpOrDomainBlur('service')"
         class="form-control is-fill"
         placeholder="Enter Domain Name or IP Address"
       />
