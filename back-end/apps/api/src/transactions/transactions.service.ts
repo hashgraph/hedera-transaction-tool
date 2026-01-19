@@ -804,11 +804,12 @@ export class TransactionsService {
       mirrorNetwork: dto.mirrorNetwork,
     } as unknown as Transaction;
 
-    const requiredKeys = await keysRequiredToSign(
-      tempTransaction,
-      this.transactionSignatureService,
-      this.entityManager,
-    );
+    const requiredKeys =
+      (await keysRequiredToSign(
+        tempTransaction,
+        this.transactionSignatureService,
+        this.entityManager,
+      )) ?? [];
 
     // Check for deleted keys or users
     const inactiveSigners = filterInactiveUserKeys(requiredKeys);
