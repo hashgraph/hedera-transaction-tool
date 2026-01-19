@@ -19,41 +19,44 @@ To setup the frontend application, Follow the complete setup process below..
 # Prerequisites
 
 - [**Node.js**](https://nodejs.org/en/download/package-manager)
+
   - Required version: `>= 22.12.0`
   - Verify installation:
-    
+
     ```bash
     node -v
     ```
 
-- [**pnpm**](https://pnpm.io/installation) 
+- [**pnpm**](https://pnpm.io/installation)
+
   - Required version: `>= 9.13.1`
   - Installation of `pnpm`(if not already installed):
-    
+
     ```bash
     npm install -g pnpm@latest
     ```
+
   - Verify installation:
-     
     ```bash
     pnpm --version
     ```
 
 - [**Python setuptools**](https://pypi.org/project/setuptools)
+
   - Required version: `>= 75.6.0`
   - Installation of `python-setuptools` with `brew`:
-    
+
     ```bash
     brew install python-setuptools
     ```
+
   - Verify installation:
-      
     ```bash
     python -m setuptools --version
     ```
 
 - **Docker Desktop with Kubernetes enabled**
-   - Enable Kubernetes: Docker Desktop → Settings → Kubernetes → Enable Kubernetes → Apply & Restart.
+  - Enable Kubernetes: Docker Desktop → Settings → Kubernetes → Enable Kubernetes → Apply & Restart.
 
 ## 1. Clone the project
 
@@ -102,17 +105,18 @@ Example: Create Brevo Account:
    EMAIL_API_HOST=smtp-relay.brevo.com
    EMAIL_API_PORT=587
    EMAIL_API_SECURE=false
-   EMAIL_API_USERNAME=<your brevo username>
-   EMAIL_API_PASSWORD=<your brevo password>
+   EMAIL_API_USERNAME=<your Brevo login email>
+   EMAIL_API_PASSWORD=<your SMTP key from step 6>
    SENDER_EMAIL=no-reply@<yourdomain.com>
 ```
 
 ## 5. Create Email API Secret for Kubernetes
+
 (First time only) Create `email-api-secret.yaml` from the example template:
 
-   1. Navigate to `backend/k8s/dev/`
-   2. Copy `email-api-secret.example.yaml` to `email-api-secret.yaml`
-   3. Update the file with your Brevo (or other provider) credentials from step 4.
+1.  Navigate to `backend/k8s/dev/`
+2.  Copy `email-api-secret.example.yaml` to `email-api-secret.yaml`
+3.  Update the file with your Brevo (or other provider) credentials from step 4.
 
 ## 6. Deployment on Kubernetes
 
@@ -123,11 +127,13 @@ Ensure Kubernetes cluster is running (Docker Desktop with Kubernetes enabled).
 (First time only) Create self-signed certificates for HTTPS. Required for testing with the built Electron client application.
 
 1. **Install mkcert (macOS example)**:
+
    ```bash
    brew install mkcert
    ```
 
 2. **Create cert directory (if it doesn't exist):**
+
    ```bash
    mkdir -p cert
    ```
@@ -139,15 +145,16 @@ Ensure Kubernetes cluster is running (Docker Desktop with Kubernetes enabled).
    ```
 
 ### Deployment Options
+
 You can deploy using either the automated script (preferred) or manual steps.
 
 Option 1: Automated Deployment (Preferred)
 
-   ```bash
-   pnpm deploy:dev
-   # or
-   ./deploy.sh
-   ```
+```bash
+pnpm deploy:dev
+# or
+./deploy.sh
+```
 
 Option 2: Manual Deployment
 
@@ -162,10 +169,10 @@ Option 2: Manual Deployment
    ```bash
    # API service
    docker build -t back-end-api:1.0.0 -f ./apps/api/Dockerfile .
-   
+
    # Chain service
    docker build -t back-end-chain:1.0.0 -f ./apps/chain/Dockerfile .
-   
+
    # Notifications service
    docker build -t back-end-notifications:1.0.0 -f ./apps/notifications/Dockerfile .
    ```
@@ -191,7 +198,7 @@ Option 2: Manual Deployment
    ```
 
 6. Expose PostgreSQL service:
-   
+
    ```bash
    kubectl port-forward svc/postgres 5432:5432
    ```
@@ -201,20 +208,20 @@ Option 2: Manual Deployment
 All ports are defined in the `docker-compose.yaml` file.
 The default ports are:
 
-| Type                           | Endpoint                                        |
-| ------------------------------ | ----------------------------------------------- |
-| API Service Endpoint           | [https://localhost](https://localhost) |
+| Type                           | Endpoint                                                           |
+| ------------------------------ | ------------------------------------------------------------------ |
+| API Service Endpoint           | [https://localhost](https://localhost)                             |
 | Notifications Service Endpoint | [https://localhost/notifications](https://localhost/notifications) |
-| PgAdmin                        | [https://localhost:5050](https://localhost:5050) |
+| PgAdmin                        | [https://localhost:5050](https://localhost:5050)                   |
 
 ## Stopping the Deployment
 
 To stop all services:
 
-   ```bash
-   kubectl delete --all deployments,ingresses
-   helm uninstall traefik
-   ```
+```bash
+kubectl delete --all deployments,ingresses
+helm uninstall traefik
+```
 
 ## Adding a Local Organization to Your Local Development Environment
 
@@ -224,10 +231,10 @@ To add the local organization to your application for development:
 
 Ensure your local database is running, then create an admin user:
 
-   ```bash
-   cd backend/scripts
-   pnpm create-admin
-   ```
+```bash
+cd backend/scripts
+pnpm create-admin
+```
 
 Follow the prompts to:
 
@@ -260,7 +267,6 @@ Tests are run separately for each service. Navigate to the service you want to t
     cd apps/chain
     pnpm test:cov
 
-
 # Troubleshooting
 
 1. If you encounter setup problems:
@@ -270,42 +276,43 @@ Tests are run separately for each service. Navigate to the service you want to t
    - Verify you are connected to your local development backend to observe the deployed changes and not your staging backend.
 
 2. When installing `traefik`, if you receive `Error: INSTALLATION FAILED: cannot re-use a name that is still in use`:
-   
-     ```bash
-     helm upgrade traefik traefik/traefik
-     ```
+
+   ```bash
+   helm upgrade traefik traefik/traefik
+   ```
+
 3. Docker Image Pull Errors
-   
-  If you encounter Cloudflare storage connection errors:
-     ```
-     error pulling image configuration: download failed after attempts=6: 
-     dialing docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage.com:443
-     ```
+
+If you encounter Cloudflare storage connection errors:
+
+```
+error pulling image configuration: download failed after attempts=6:
+dialing docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage.com:443
+```
+
 **Solution**: Use DockerHub Mirror
 
-  1. Pull from mirror registry:
-  
-     ```bash
-     docker pull mirror.gcr.io/library/node:22-alpine
-     ```
-     
-  2. Tag the image:
-     
-     ```bash
-     docker tag mirror.gcr.io/library/node:22-alpine node:22-alpine
-     ```
-  
-  **Alternative**: Configure Docker Desktop Registry Mirrors:
-  
-  1. Open Docker Desktop → Settings → Docker Engine.
-  2. Add registry mirror configuration:
-        
-        ```
-        {
-          "registry-mirrors": [
-            "https://your-mirror-url/"
-          ]
-        }
-        ```
-  3. Click Apply & Restart.
-      
+1. Pull from mirror registry:
+
+   ```bash
+   docker pull mirror.gcr.io/library/node:22-alpine
+   ```
+
+2. Tag the image:
+
+   ```bash
+   docker tag mirror.gcr.io/library/node:22-alpine node:22-alpine
+   ```
+
+**Alternative**: Configure Docker Desktop Registry Mirrors:
+
+1. Open Docker Desktop → Settings → Docker Engine.
+2. Add registry mirror configuration:
+   ```
+   {
+     "registry-mirrors": [
+       "https://your-mirror-url/"
+     ]
+   }
+   ```
+3. Click Apply & Restart.
