@@ -33,6 +33,7 @@ import {
 } from '@app/common';
 import {
   attachKeys,
+  filterInactiveUserKeys,
   getClientFromNetwork,
   isExpired,
   keysRequiredToSign,
@@ -816,16 +817,18 @@ describe('TransactionsService', () => {
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
 
+      const inactiveKey = {
+        id: 1,
+        userId: 10,
+        publicKey: '0x123',
+        deletedAt: null,
+        user: { id: 10, email: 'deleted@example.com', deletedAt: new Date() },
+      } as any;
+
       // Mock keysRequiredToSign to return a key with deleted user
-      jest.mocked(keysRequiredToSign).mockResolvedValueOnce([
-        {
-          id: 1,
-          userId: 10,
-          publicKey: '0x123',
-          deletedAt: null,
-          user: { id: 10, email: 'deleted@example.com', deletedAt: new Date() },
-        } as any,
-      ]);
+      jest.mocked(keysRequiredToSign).mockResolvedValueOnce([inactiveKey]);
+      // Mock filterInactiveUserKeys to return the inactive key
+      jest.mocked(filterInactiveUserKeys).mockReturnValueOnce([inactiveKey]);
 
       await expect(service.createTransaction(dto, user as User)).rejects.toThrow(
         /Cannot create transaction: required signers are inactive or deleted/,
@@ -859,16 +862,18 @@ describe('TransactionsService', () => {
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
 
+      const inactiveKey = {
+        id: 1,
+        userId: 10,
+        publicKey: '0x123',
+        deletedAt: new Date(),
+        user: { id: 10, email: 'user@example.com', deletedAt: null },
+      } as any;
+
       // Mock keysRequiredToSign to return a soft-deleted key
-      jest.mocked(keysRequiredToSign).mockResolvedValueOnce([
-        {
-          id: 1,
-          userId: 10,
-          publicKey: '0x123',
-          deletedAt: new Date(),
-          user: { id: 10, email: 'user@example.com', deletedAt: null },
-        } as any,
-      ]);
+      jest.mocked(keysRequiredToSign).mockResolvedValueOnce([inactiveKey]);
+      // Mock filterInactiveUserKeys to return the inactive key
+      jest.mocked(filterInactiveUserKeys).mockReturnValueOnce([inactiveKey]);
 
       await expect(service.createTransaction(dto, user as User)).rejects.toThrow(
         /Cannot create transaction: required signers are inactive or deleted/,
@@ -902,16 +907,18 @@ describe('TransactionsService', () => {
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
 
+      const orphanedKey = {
+        id: 99,
+        userId: 10,
+        publicKey: '0x123',
+        deletedAt: null,
+        user: null,
+      } as any;
+
       // Mock keysRequiredToSign to return a key with no user (orphaned)
-      jest.mocked(keysRequiredToSign).mockResolvedValueOnce([
-        {
-          id: 99,
-          userId: 10,
-          publicKey: '0x123',
-          deletedAt: null,
-          user: null,
-        } as any,
-      ]);
+      jest.mocked(keysRequiredToSign).mockResolvedValueOnce([orphanedKey]);
+      // Mock filterInactiveUserKeys to return the orphaned key
+      jest.mocked(filterInactiveUserKeys).mockReturnValueOnce([orphanedKey]);
 
       await expect(service.createTransaction(dto, user as User)).rejects.toThrow(
         /Cannot create transaction: required signers are inactive or deleted.*Unknown user \(public key: 0x123\)/,
