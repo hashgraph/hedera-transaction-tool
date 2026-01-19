@@ -31,6 +31,9 @@ import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtils
 import {
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
+  generateTransactionExportFileName,
+  generateTransactionV1ExportContent,
+  generateTransactionV2ExportContent,
   getErrorMessage,
   getLastExportExtension,
   getPrivateKey,
@@ -43,11 +46,6 @@ import {
   signTransactions,
   usersPublicRequiredToSign,
 } from '@renderer/utils';
-import {
-  generateTransactionV1ExportContent,
-  generateTransactionExportFileName,
-  generateTransactionV2ExportContent,
-} from '@renderer/utils/transactionFile.ts';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';

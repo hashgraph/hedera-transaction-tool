@@ -10,6 +10,8 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import {
   assertIsLoggedInOrganization,
   computeSignatureKey,
+  generateTransactionExportFileName,
+  generateTransactionV2ExportContent,
   hexToUint8Array,
   isLoggedInOrganization,
 } from '@renderer/utils';
@@ -26,10 +28,6 @@ import { useToast } from 'vue-toast-notification';
 import { Transaction } from '@hashgraph/sdk';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import {
-  generateTransactionV2ExportContent,
-  generateTransactionExportFileName,
-} from '@renderer/utils/transactionFile.ts';
 
 /* Models */
 const show = defineModel<boolean>('show', { required: true });
