@@ -33,7 +33,7 @@ export const generateTransactionV1ExportContent = async (
   });
 };
 
-export const generateTransactionExportContentV2 = (
+export const generateTransactionV2ExportContent = (
   orgTransactions: ITransaction[],
   network: string,
 ): TransactionFile => {

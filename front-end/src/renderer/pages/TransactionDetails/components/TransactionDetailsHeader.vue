@@ -46,7 +46,7 @@ import {
 import {
   generateTransactionV1ExportContent,
   generateTransactionExportFileName,
-  generateTransactionExportContentV2,
+  generateTransactionV2ExportContent,
 } from '@renderer/utils/transactionFile.ts';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -540,7 +540,7 @@ const handleExport = async () => {
   // Create file(s) based on name and selected format
   if (ext === 'tx2') {
     // Export TTv2 --> TTv2
-    const tx2Content: TransactionFile = generateTransactionExportContentV2(
+    const tx2Content: TransactionFile = generateTransactionV2ExportContent(
       [props.organizationTransaction],
       network.network,
     );

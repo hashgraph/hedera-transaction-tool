@@ -27,7 +27,7 @@ import { Transaction } from '@hashgraph/sdk';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import {
-  generateTransactionExportContentV2,
+  generateTransactionV2ExportContent,
   generateTransactionExportFileName,
 } from '@renderer/utils/transactionFile.ts';
 
@@ -97,7 +97,7 @@ async function handleExport() {
     );
 
     if (!canceled) {
-      const tx2Content: TransactionFile = generateTransactionExportContentV2(
+      const tx2Content: TransactionFile = generateTransactionV2ExportContent(
         collectionTransactions,
         network.network,
       );
