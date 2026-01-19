@@ -927,6 +927,46 @@ describe('TransactionsService', () => {
       client.close();
     });
 
+    it('should handle undefined return from keysRequiredToSign gracefully', async () => {
+      const sdkTransaction = new AccountCreateTransaction().setTransactionId(
+        new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
+      );
+
+      const dto: CreateTransactionDto = {
+        name: 'Transaction 1',
+        description: 'Description',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
+      });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+      transactionsRepo.find.mockResolvedValueOnce([]);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      transactionsRepo.create.mockImplementationOnce(
+        (input: DeepPartial<Transaction>) => ({ ...input }) as Transaction,
+      );
+
+      // Mock keysRequiredToSign to return undefined (edge case)
+      jest.mocked(keysRequiredToSign).mockResolvedValueOnce(undefined as any);
+      // Mock filterInactiveUserKeys to return empty array (no inactive signers)
+      jest.mocked(filterInactiveUserKeys).mockReturnValueOnce([]);
+
+      // Should not throw - transaction should be created successfully
+      await expect(service.createTransaction(dto, user as User)).resolves.toBeDefined();
+
+      client.close();
+    });
+
     it('should allow transaction when all required signers are active', async () => {
       const sdkTransaction = new AccountCreateTransaction().setTransactionId(
         new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
