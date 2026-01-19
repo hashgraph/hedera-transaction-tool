@@ -12,7 +12,7 @@ const props = defineProps<{
 
 /* State */
 const currentPage = ref(1);
-const pageSize = ref(15);
+const pageSize = ref(10);
 const showDetailsModal = ref(false);
 const detailedItemIndex = ref(-1);
 
