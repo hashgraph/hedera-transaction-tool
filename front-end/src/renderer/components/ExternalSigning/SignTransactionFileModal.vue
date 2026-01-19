@@ -3,7 +3,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { ref, watch } from 'vue';
 import type { TransactionFile, TransactionFileItem } from '@shared/interfaces';
-import { readTransactionFile, writeTransactionFile } from '@renderer/services/transactionFile.ts';
+import { readTransactionFile, writeTransactionFile } from '@renderer/services/transactionFileService.ts';
 import {
   collectMissingSignerKeys,
   filterTransactionFileItemsToBeSigned,

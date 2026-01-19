@@ -55,7 +55,7 @@ import { TransactionStatus } from '@shared/interfaces';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
-import { writeTransactionFile } from '@renderer/services/transactionFile.ts';
+import { writeTransactionFile } from '@renderer/services/transactionFileService.ts';
 
 /* Types */
 type ActionButton =

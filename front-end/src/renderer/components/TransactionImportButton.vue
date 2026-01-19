@@ -8,7 +8,7 @@ import TransactionImportModal from '@renderer/components/TransactionImportModal.
 import { useToast } from 'vue-toast-notification';
 import { assertIsLoggedInOrganization, hexToUint8Array } from '@renderer/utils';
 import useUserStore from '@renderer/stores/storeUser.ts';
-import { readTransactionFile } from '@renderer/services/transactionFile.ts';
+import { readTransactionFile } from '@renderer/services/transactionFileService.ts';
 import { SignatureMap, Transaction } from '@hashgraph/sdk';
 import { getTransactionById, importSignatures } from '@renderer/services/organization';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
