@@ -24,8 +24,6 @@ import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscrip
 import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
 import {
-  generateTransactionExportContentV1,
-  generateTransactionExportFileName,
   getTransactionById,
   getTransactionGroupById,
   getUserShouldApprove,
@@ -62,6 +60,10 @@ import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
+import {
+  generateTransactionV1ExportContent,
+  generateTransactionExportFileName,
+} from '@renderer/utils/transactionFile.ts';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
@@ -421,7 +423,7 @@ const handleExportGroup = async () => {
 
       const baseName = generateTransactionExportFileName(orgTransaction);
 
-      const { signedBytes, jsonContent } = await generateTransactionExportContentV1(
+      const { signedBytes, jsonContent } = await generateTransactionV1ExportContent(
         orgTransaction,
         privateKey,
         group.value.description,
