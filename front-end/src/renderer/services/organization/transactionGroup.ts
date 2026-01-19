@@ -1,4 +1,4 @@
-import type { ITransaction, TransactionFile, } from '@shared/interfaces';
+import type { ITransaction } from '@shared/interfaces';
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 
 export interface ApiGroupItem {
@@ -71,23 +71,3 @@ export const getTransactionGroupById = async (serverUrl: string, id: number) => 
     return data;
   }, 'Failed to get transaction groups');
 };
-
-export const generateTransactionExportContentV2 = (
-  orgTransactions: ITransaction[],
-  network: string
-): TransactionFile => {
-
-  const result: TransactionFile = {
-    network: network,
-    items: [],
-  }
-  for (const tx of orgTransactions) {
-    result.items.push({
-      name: tx.name,
-      description: tx.description,
-      transactionBytes: tx.transactionBytes,
-      creatorEmail: tx.creatorEmail,
-    })
-  }
-  return result;
-}

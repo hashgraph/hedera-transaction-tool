@@ -21,7 +21,6 @@ import {
   archiveTransaction,
   cancelTransaction,
   executeTransaction,
-  generateTransactionExportContentV2,
   getUserShouldApprove,
   remindSigners,
   sendApproverChoice,
@@ -47,6 +46,7 @@ import {
 import {
   generateTransactionV1ExportContent,
   generateTransactionExportFileName,
+  generateTransactionExportContentV2,
 } from '@renderer/utils/transactionFile.ts';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';

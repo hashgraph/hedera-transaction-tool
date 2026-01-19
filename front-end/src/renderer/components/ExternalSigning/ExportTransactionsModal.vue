@@ -13,10 +13,6 @@ import {
   hexToUint8Array,
   isLoggedInOrganization,
 } from '@renderer/utils';
-import {
-  generateTransactionExportContentV2,
-  generateTransactionExportFileName,
-} from '@renderer/services/organization';
 import { showSaveDialog } from '@renderer/services/electronUtilsService.ts';
 import {
   type ITransactionNode,
@@ -30,6 +26,10 @@ import { useToast } from 'vue-toast-notification';
 import { Transaction } from '@hashgraph/sdk';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import {
+  generateTransactionExportContentV2,
+  generateTransactionExportFileName,
+} from '@renderer/utils/transactionFile.ts';
 
 /* Models */
 const show = defineModel<boolean>('show', { required: true });
