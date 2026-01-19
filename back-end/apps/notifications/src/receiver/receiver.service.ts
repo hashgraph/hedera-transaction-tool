@@ -3,6 +3,7 @@ import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, In } from 'typeorm';
 
 import {
+  filterActiveUserKeys,
   keysRequiredToSign,
   TransactionSignatureService,
   NatsPublisherService,
@@ -189,9 +190,7 @@ export class ReceiverService {
     );
 
     // Filter out keys/users that have been soft-deleted to prevent notification failures
-    const activeKeys = allKeys.filter(
-      (k) => !k.deletedAt && k.user && !k.user.deletedAt,
-    );
+    const activeKeys = filterActiveUserKeys(allKeys);
 
     return [...new Set(activeKeys.map((k) => k.userId).filter(Boolean))];
   }
@@ -1090,9 +1089,7 @@ export class ReceiverService {
       );
 
       // Filter out keys/users that have been soft-deleted to prevent notification failures
-      const activeKeys = allKeys.filter(
-        (k) => !k.deletedAt && k.user && !k.user.deletedAt,
-      );
+      const activeKeys = filterActiveUserKeys(allKeys);
 
       const userIds = new Set(activeKeys.map(k => k.userId).filter(Boolean));
 

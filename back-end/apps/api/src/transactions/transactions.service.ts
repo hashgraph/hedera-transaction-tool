@@ -24,6 +24,7 @@ import {
   ErrorCodes,
   ExecuteService,
   Filtering,
+  filterInactiveUserKeys,
   getClientFromNetwork,
   getOrder,
   getTransactionSignReminderKey,
@@ -810,9 +811,7 @@ export class TransactionsService {
     );
 
     // Check for deleted keys or users
-    const inactiveSigners = requiredKeys.filter(
-      k => k.deletedAt || !k.user || k.user.deletedAt,
-    );
+    const inactiveSigners = filterInactiveUserKeys(requiredKeys);
 
     if (inactiveSigners.length > 0) {
       const inactiveEmails = inactiveSigners
