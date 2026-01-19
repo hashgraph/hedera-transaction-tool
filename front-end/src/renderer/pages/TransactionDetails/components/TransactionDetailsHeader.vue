@@ -22,8 +22,6 @@ import {
   archiveTransaction,
   cancelTransaction,
   executeTransaction,
-  generateTransactionExportContent,
-  generateTransactionExportFileName,
   getUserShouldApprove,
   remindSigners,
   sendApproverChoice,
@@ -46,6 +44,10 @@ import {
   signTransactions,
   usersPublicRequiredToSign,
 } from '@renderer/utils';
+import {
+  generateTransactionV1ExportContent,
+  generateTransactionExportFileName,
+} from '@renderer/utils/transactionFile.ts';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
@@ -552,7 +554,7 @@ const handleExport = async () => {
     const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
     const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
-    const { signedBytes, jsonContent } = await generateTransactionExportContent(
+    const { signedBytes, jsonContent } = await generateTransactionV1ExportContent(
       props.organizationTransaction,
       privateKey,
     );
@@ -653,7 +655,10 @@ watch(
     results.forEach(
       r =>
         r.status === 'rejected' &&
-        toast.error(getErrorMessage(r.reason, 'Failed to load transaction details'), errorToastOptions),
+        toast.error(
+          getErrorMessage(r.reason, 'Failed to load transaction details'),
+          errorToastOptions,
+        ),
     );
   },
 );
@@ -764,5 +769,4 @@ watch(
     :text="confirmModalText"
     :title="confirmModalTitle"
   />
-
 </template>
