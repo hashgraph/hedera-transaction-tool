@@ -5,12 +5,10 @@ import { User, UserKey } from '@app/common/database/entities';
 export const attachKeys = async (
   user: User,
   entityManager: EntityManager,
-  withDeleted: boolean = false,
 ) => {
   if (!user.keys || user.keys.length === 0) {
     user.keys = await entityManager.find(UserKey, {
       where: { userId: user.id },
-      withDeleted,
     });
   }
 };
@@ -28,22 +26,8 @@ export const isActiveUserKey = (key: UserKeyWithUser): boolean => {
 };
 
 /**
- * Checks if a UserKey is inactive (inverse of isActiveUserKey).
- */
-export const isInactiveUserKey = (key: UserKeyWithUser): boolean => {
-  return !isActiveUserKey(key);
-};
-
-/**
  * Filters array to return only active UserKeys.
  */
 export const filterActiveUserKeys = <T extends UserKeyWithUser>(keys: T[]): T[] => {
   return keys.filter(isActiveUserKey);
-};
-
-/**
- * Filters array to return only inactive UserKeys.
- */
-export const filterInactiveUserKeys = <T extends UserKeyWithUser>(keys: T[]): T[] => {
-  return keys.filter(isInactiveUserKey);
 };
