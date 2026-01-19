@@ -914,7 +914,7 @@ describe('TransactionsService', () => {
       ]);
 
       await expect(service.createTransaction(dto, user as User)).rejects.toThrow(
-        /Cannot create transaction: required signers are inactive or deleted.*Unknown \(key ID: 99\)/,
+        /Cannot create transaction: required signers are inactive or deleted.*Unknown user \(public key: 0x123\)/,
       );
 
       client.close();

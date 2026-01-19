@@ -816,7 +816,7 @@ export class TransactionsService {
 
     if (inactiveSigners.length > 0) {
       const inactiveEmails = inactiveSigners
-        .map(k => k.user?.email ?? `Unknown (key ID: ${k.id})`)
+        .map(k => k.user?.email ?? `Unknown user (public key: ${k.publicKey})`)
         .join(', ');
       throw new BadRequestException(
         `Cannot create transaction: required signers are inactive or deleted: ${inactiveEmails}`,

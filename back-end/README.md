@@ -284,9 +284,12 @@ Tests are run separately for each service. Navigate to the service you want to t
 3. Docker Image Pull Errors
 
 If you encounter Cloudflare storage connection errors:
-`      error pulling image configuration: download failed after attempts=6: 
-     dialing docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage.com:443
-     `
+
+```
+error pulling image configuration: download failed after attempts=6:
+dialing docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage.com:443
+```
+
 **Solution**: Use DockerHub Mirror
 
 1. Pull from mirror registry:
