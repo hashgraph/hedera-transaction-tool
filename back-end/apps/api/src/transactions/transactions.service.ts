@@ -812,7 +812,7 @@ export class TransactionsService {
       )) ?? [];
 
     // Check for deleted keys or users
-    const inactiveSigners = filterInactiveUserKeys(requiredKeys);
+    const inactiveSigners = filterInactiveUserKeys(requiredKeys) ?? [];
 
     if (inactiveSigners.length > 0) {
       const inactiveEmails = inactiveSigners
