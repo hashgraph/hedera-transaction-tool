@@ -39,6 +39,7 @@ export * from './sdk';
 export * from './transactionSignatureModels';
 export * from './autoFocus';
 export * from './localServices';
+export * from './transactionFile';
 
 export const convertBytes = (
   bytes: number,

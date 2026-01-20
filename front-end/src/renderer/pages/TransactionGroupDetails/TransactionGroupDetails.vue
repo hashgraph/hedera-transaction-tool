@@ -46,6 +46,8 @@ import {
   getErrorMessage,
   assertIsLoggedInOrganization,
   getStatusFromCode,
+  generateTransactionExportFileName,
+  generateTransactionV1ExportContent,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -60,10 +62,6 @@ import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
-import {
-  generateTransactionV1ExportContent,
-  generateTransactionExportFileName,
-} from '@renderer/utils/transactionFile.ts';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
