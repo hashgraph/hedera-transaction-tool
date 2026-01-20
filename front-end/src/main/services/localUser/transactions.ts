@@ -90,7 +90,7 @@ export const signTransaction = async (
   publicKeys: string[],
   userId: string,
   userPassword: string | null,
-  needsFreeze: boolean
+  needsFreeze = true,
 ) => {
   const transaction = Transaction.fromBytes(transactionBytes);
 
