@@ -146,7 +146,7 @@ const confirmModalButtonText = ref('');
 const confirmModalLoadingText = ref('');
 const confirmCallback = ref<((...args: any[]) => void) | null>(null);
 
-const fullyLoaded = ref(false);
+const isRefreshing = ref(false);
 const loadingStates = reactive<{ [key: string]: string | null }>({
   [reject]: null,
   [approve]: null,
@@ -225,8 +225,6 @@ const canArchive = computed(() => {
 
 const visibleButtons = computed(() => {
   const buttons: ActionButton[] = [];
-
-  if (!fullyLoaded.value) return buttons;
 
   /* The order is important REJECT, APPROVE, SIGN, SUBMIT, PREVIOUS, NEXT, CANCEL, ARCHIVE, EXPORT */
   shouldApprove.value && buttons.push(reject, approve);
@@ -616,9 +614,6 @@ const updateTransactionVersionMismatch = (): void => {
 /* Hooks */
 onMounted(() => {
   updateTransactionVersionMismatch();
-  if (!isLoggedInOrganization(user.selectedOrganization)) {
-    fullyLoaded.value = true;
-  }
 });
 
 /* Watchers */
@@ -627,11 +622,12 @@ watch(
   async transaction => {
     assertIsLoggedInOrganization(user.selectedOrganization);
 
-    fullyLoaded.value = false;
+    isRefreshing.value = true;
 
     if (!transaction) {
       publicKeysRequiredToSign.value = null;
       shouldApprove.value = false;
+      isRefreshing.value = false;
       return;
     }
 
@@ -650,7 +646,7 @@ watch(
     results[0].status === 'fulfilled' && (publicKeysRequiredToSign.value = results[0].value);
     results[1].status === 'fulfilled' && (shouldApprove.value = results[1].value);
 
-    fullyLoaded.value = true;
+    isRefreshing.value = false;
 
     results.forEach(
       r =>
@@ -701,6 +697,7 @@ watch(
           <div>
             <AppButton
               :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
+              :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[0]])"
               :loading="Boolean(loadingStates[visibleButtons[0]])"
               :loading-text="loadingStates[visibleButtons[0]] || ''"
               :data-testid="buttonsDataTestIds[visibleButtons[0]]"
@@ -716,6 +713,7 @@ watch(
           <div class="d-none d-lg-block">
             <AppButton
               :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
+              :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[1]])"
               :loading="Boolean(loadingStates[visibleButtons[1]])"
               :loading-text="loadingStates[visibleButtons[1]] || ''"
               :data-testid="buttonsDataTestIds[visibleButtons[1]]"
@@ -733,6 +731,7 @@ watch(
               class="d-lg-none"
               :color="'secondary'"
               :items="dropDownItems"
+              :disabled="isRefreshing"
               compact
               @select="handleDropDownItem($event as ActionButton)"
               data-testid="button-more-dropdown-sm"
@@ -741,6 +740,7 @@ watch(
               class="d-none d-lg-block"
               :color="'secondary'"
               :items="dropDownItems.slice(1)"
+              :disabled="isRefreshing"
               compact
               @select="handleDropDownItem($event as ActionButton)"
               data-testid="button-more-dropdown-lg"
@@ -751,6 +751,7 @@ watch(
           <div class="d-lg-none">
             <AppButton
               :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
+              :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[1]])"
               :loading="Boolean(loadingStates[visibleButtons[1]])"
               :loading-text="loadingStates[visibleButtons[1]] || ''"
               :data-testid="buttonsDataTestIds[visibleButtons[1]]"
