@@ -2,10 +2,10 @@
 import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@shared/interfaces';
 
-import { computed, onBeforeMount, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, type Ref, watch } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
-
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Key, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import useTransactionAudit from '@renderer/composables/useTransactionAudit.ts';
 
 import { TransactionStatus } from '@shared/interfaces';
 import { TRANSACTION_ACTION } from '@shared/constants';
@@ -15,25 +15,19 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
+import useGroupAudit from '@renderer/composables/useGroupAudit.ts';
 
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
-
-import { getTransactionGroupById, getTransactionById } from '@renderer/services/organization';
-import { getTransaction } from '@renderer/services/transactionService';
-
 import {
   getTransactionPayerId,
   getTransactionType,
   getTransactionValidStart,
 } from '@renderer/utils/sdk/transactions';
 import {
-  getUInt8ArrayFromBytesString,
   KEEP_NEXT_QUERY_KEY,
   openTransactionInHashscan,
-  hexToUint8Array,
   isLoggedInOrganization,
-  computeSignatureKey,
   getAccountNicknameFromId,
   getAccountIdWithChecksum,
 } from '@renderer/utils';
@@ -47,11 +41,11 @@ import txTypeComponentMapping from '@renderer/components/Transaction/Details/txT
 
 import TransactionDetailsHeader from './components/TransactionDetailsHeader.vue';
 import TransactionDetailsStatusStepper from './components/TransactionDetailsStatusStepper.vue';
-import { getGroup } from '@renderer/services/transactionGroupsService';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
+import type { SignatureAudit } from '@renderer/utils';
+import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
+import { useToast } from 'vue-toast-notification';
 
 /* Stores */
 const user = useUserStore();
@@ -63,7 +57,7 @@ const nextTransaction = useNextTransactionStore();
 const router = useRouter();
 useWebsocketSubscription(TRANSACTION_ACTION, async () => {
   await fetchTransaction();
-  const id = formattedId.value!;
+  const id = transactionId.value!;
   nextId.value = await nextTransaction.getNext(
     isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
   );
@@ -73,27 +67,41 @@ useWebsocketSubscription(TRANSACTION_ACTION, async () => {
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const route = useRoute();
-
-/* Injected */
-const accountByIdCache = AccountByIdCache.inject();
-const nodeByIdCache = NodeByIdCache.inject();
+const transactionId = computed(() => {
+  let result: number | null;
+  const id = router.currentRoute.value.params.id;
+  if (typeof id === 'string') {
+    const n = Number(id);
+    result = isNaN(n) ? null : n;
+  } else if (Array.isArray(id) && id.length > 0) {
+    const n = Number(id[0]);
+    result = isNaN(n) ? null : n;
+  } else {
+    result = null;
+  }
+  return result;
+});
+const groupId = computed(() => orgTransaction.value?.groupItem?.groupId ?? null);
+const transactionAudit = useTransactionAudit(transactionId);
+const groupAudit = useGroupAudit(groupId);
+const toast = useToast();
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);
 const localTransaction = ref<Transaction | null>(null);
-const sdkTransaction = ref<SDKTransaction | null>(null);
-const signatureKeyObject = ref<Awaited<ReturnType<typeof computeSignatureKey>> | null>(null);
 const nextId = ref<string | number | null>(null);
 const prevId = ref<string | number | null>(null);
-const feePayer = ref<string | null>(null);
 const feePayerNickname = ref<string | null>(null);
-const groupDescription = ref<string | undefined>(undefined);
+const sdkTransaction: Ref<SDKTransaction | null> = ref(null);
+const groupDescription = ref<string | null>(null);
+const signatureKeyObject = ref<SignatureAudit | null>(null);
+const externalSignerKeys = ref<Set<Key>>(new Set<Key>());
 
 /* Computed */
 const transactionSpecificLabel = computed(() => {
-  if (!sdkTransaction.value || !(sdkTransaction.value instanceof SDKTransaction))
-    return 'Transaction Specific Details';
-  return `${getTransactionType(sdkTransaction.value, false, true)} Info`;
+  return sdkTransaction.value === null
+    ? 'Transaction Specific Details'
+    : `${getTransactionType(sdkTransaction.value, false, true)} Info`;
 });
 
 const signersPublicKeys = computed(() => {
@@ -109,78 +117,35 @@ const creator = computed(() => {
 });
 
 const showExternal = computed(() => {
-  // External badges are displayed for the transaction creator only
-  return isLoggedInOrganization(user.selectedOrganization) ?
-    user.selectedOrganization?.userId === orgTransaction.value?.creatorId :
-    false;
+  return externalSignerKeys.value.size > 0;
+});
+
+const feePayer = computed(() => {
+  return sdkTransaction.value !== null ? getTransactionPayerId(sdkTransaction.value) : null;
 });
 
 /* Functions */
 async function fetchTransaction() {
-  const id = formattedId.value!;
-  let transactionBytes: Uint8Array;
-  try {
-    if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
-      orgTransaction.value = await getTransactionById(
-        user.selectedOrganization?.serverUrl || '',
-        Number(id),
-      );
-      transactionBytes = hexToUint8Array(orgTransaction.value.transactionBytes);
-
-      if (orgTransaction.value?.groupItem?.groupId) {
-        if (user.selectedOrganization?.serverUrl) {
-          const orgGroup = await getTransactionGroupById(
-            user.selectedOrganization?.serverUrl,
-            orgTransaction.value.groupItem.groupId,
-          );
-          groupDescription.value = orgGroup.description;
-        }
-      }
-    } else {
-      localTransaction.value = await getTransaction(id.toString());
-      transactionBytes = getUInt8ArrayFromBytesString(localTransaction.value.body);
-      if (localTransaction.value?.group_id) {
-        const localGroup = await getGroup(localTransaction.value.group_id.toString());
-        groupDescription.value = localGroup.description;
-      }
-    }
-  } catch (error) {
-    router.back();
-    throw error;
+  const orgTX = await transactionAudit.transaction.value;
+  orgTransaction.value = orgTX === null || orgTX instanceof Error ? null : orgTX;
+  if (orgTX instanceof Error) {
+    toast.error('Failure when loading transaction information from server', errorToastOptions);
   }
 
-  try {
-    sdkTransaction.value = SDKTransaction.fromBytes(transactionBytes);
-  } catch {
-    throw new Error('Failed to deserialize transaction');
+  const sdkTX = await transactionAudit.sdkTransaction.value;
+  sdkTransaction.value = sdkTX === null || sdkTX instanceof Error ? null : sdkTX;
+  if (sdkTX instanceof Error) {
+    toast.error('Failure when decoding transaction bytes', errorToastOptions);
   }
 
-  if (!(sdkTransaction.value instanceof SDKTransaction)) {
-    router.back();
-    return;
-  }
-
-  if (isLoggedInOrganization(user.selectedOrganization)) {
-    signatureKeyObject.value = await computeSignatureKey(
-      sdkTransaction.value,
-      network.mirrorNodeBaseURL,
-      accountByIdCache,
-      nodeByIdCache,
-      user.selectedOrganization,
-    );
-  }
-
-  feePayer.value = getTransactionPayerId(sdkTransaction.value);
+  signatureKeyObject.value = await transactionAudit.signatureKey.value;
+  externalSignerKeys.value = await transactionAudit.externalSignerKeys.value;
+  groupDescription.value = await groupAudit.description.value;
 }
-
-const formattedId = computed(() => {
-  const id = router.currentRoute.value.params.id;
-  return id ? (Array.isArray(id) ? id[0] : id) : null;
-});
 
 /* Hooks */
 onBeforeMount(async () => {
-  const id = formattedId.value;
+  const id = transactionId.value;
 
   if (!id) {
     router.back();
