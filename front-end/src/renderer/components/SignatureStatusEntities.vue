@@ -21,6 +21,7 @@ const props = defineProps<{
       }
     | Key[];
   publicKeysSigned: string[];
+  externalKeys: Set<string>;
   label: string;
 }>();
 
@@ -105,6 +106,7 @@ onBeforeMount(async () => {
         <SignatureStatusKeyStructure
           :keyList="key instanceof KeyList ? key : new KeyList([key])"
           :public-keys-signed="publicKeysSigned"
+          :external-keys="props.externalKeys"
           :depth="0"
         />
       </div>

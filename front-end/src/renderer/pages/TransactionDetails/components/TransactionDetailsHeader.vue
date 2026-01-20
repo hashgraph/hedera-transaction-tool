@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import type { Transaction } from '@prisma/client';
-import type { ITransactionFull } from '@shared/interfaces';
+import type { ITransactionFull, TransactionFile } from '@shared/interfaces';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
-import { encode } from 'msgpackr';
 
 import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
@@ -22,8 +21,6 @@ import {
   archiveTransaction,
   cancelTransaction,
   executeTransaction,
-  generateTransactionExportContent,
-  generateTransactionExportFileName,
   getUserShouldApprove,
   remindSigners,
   sendApproverChoice,
@@ -34,6 +31,9 @@ import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtils
 import {
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
+  generateTransactionExportFileName,
+  generateTransactionV1ExportContent,
+  generateTransactionV2ExportContent,
   getErrorMessage,
   getLastExportExtension,
   getPrivateKey,
@@ -55,6 +55,7 @@ import { TransactionStatus } from '@shared/interfaces';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { writeTransactionFile } from '@renderer/services/transactionFileService.ts';
 
 /* Types */
 type ActionButton =
@@ -97,13 +98,13 @@ const buttonsDataTestIds: { [key: string]: string } = {
 
 const EXPORT_FORMATS = [
   {
-    name: 'Transaction Tool 2.0 (.tx2)',
+    name: 'TX2 (Tx Tool 2.0)',
     value: 'tt2',
     extensions: ['tx2'],
     enabled: true, // Set to false to hide/remove in the future
   },
   {
-    name: 'Transaction Tool (.tx)',
+    name: 'TX (Tx Tool 1.0)',
     value: 'tt1',
     extensions: ['tx'],
     enabled: true, // Set to false to hide/remove
@@ -536,13 +537,16 @@ const handleExport = async () => {
 
   // Create file(s) based on name and selected format
   if (ext === 'tx2') {
-    // TTv2 is the new format, which includes the entire transaction, comments, and any other
-    // metadata that might be relevant.
-    const bytes = encode(props.organizationTransaction);
-    await saveFileToPath(bytes, filePath);
+    // Export TTv2 --> TTv2
+    const tx2Content: TransactionFile = generateTransactionV2ExportContent(
+      [props.organizationTransaction],
+      network.network,
+    );
+    await writeTransactionFile(tx2Content, filePath);
 
     toast.success('Transaction exported successfully', successToastOptions);
   } else if (ext === 'tx') {
+    // Export TTv2 --> TTv1
     if (user.publicKeys.length === 0) {
       throw new Error(
         'Exporting in the .tx format requires a signature. User must have at least one key pair to sign the transaction.',
@@ -552,7 +556,7 @@ const handleExport = async () => {
     const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
     const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
-    const { signedBytes, jsonContent } = await generateTransactionExportContent(
+    const { signedBytes, jsonContent } = await generateTransactionV1ExportContent(
       props.organizationTransaction,
       privateKey,
     );
@@ -640,6 +644,7 @@ watch(
         network.mirrorNodeBaseURL,
         accountByIdCache,
         nodeByIdCache,
+        user.selectedOrganization,
       ),
       getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id),
     ]);
@@ -652,7 +657,10 @@ watch(
     results.forEach(
       r =>
         r.status === 'rejected' &&
-        toast.error(getErrorMessage(r.reason, 'Failed to load transaction details'), errorToastOptions),
+        toast.error(
+          getErrorMessage(r.reason, 'Failed to load transaction details'),
+          errorToastOptions,
+        ),
     );
   },
 );
@@ -763,5 +771,4 @@ watch(
     :text="confirmModalText"
     :title="confirmModalTitle"
   />
-
 </template>

@@ -4,6 +4,7 @@ import type { INotificationReceiver } from '@shared/interfaces';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
+import useTransactionAudit from '@renderer/composables/useTransactionAudit.ts';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import useFilterNotifications from '@renderer/composables/useFilterNotifications.ts';
 import { getTransactionTypeFromBackendType } from '@renderer/utils/sdk/transactions.ts';
@@ -41,11 +42,14 @@ const notifications = useNotificationsStore();
 /* State */
 const descriptionRef = ref<HTMLElement | null>(null);
 const isTruncated = ref(false);
+const isExternal = ref(false);
 let resizeObserver: ResizeObserver | null = null;
 
 /* Composables */
 const router = useRouter();
 const createTooltips = useCreateTooltips();
+const transactionId = computed(() => props.node.transactionId ?? null);
+const transactionAudit = useTransactionAudit(transactionId);
 
 /* Computed */
 const filteringNotificationTypes = computed(() => {
@@ -211,6 +215,11 @@ onUnmounted(() => {
 watch(() => props.node.description, () => {
   nextTick(() => checkTruncation());
 });
+watch(transactionId, async () => {
+  const externalSignerKeys = await transactionAudit.externalSignerKeys.value;
+  isExternal.value = externalSignerKeys.size > 0;
+},{ immediate: true });
+
 </script>
 
 <template>
@@ -229,6 +238,7 @@ watch(() => props.node.description, () => {
     <td :data-testid="`td-transaction-node-transaction-type-${index}`" class="text-bold">
       {{ transactionType }}
       <span v-if="props.node.isManual" class="badge bg-info ms-3">Manual</span>
+      <span v-if="isExternal" class="badge bg-info ms-2">External</span>
     </td>
 
     <!-- Column #3 : Description -->
