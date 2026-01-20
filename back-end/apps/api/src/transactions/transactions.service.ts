@@ -45,7 +45,6 @@ import {
 import { CreateTransactionDto, SignatureImportResultDto, UploadSignatureMapDto } from './dto';
 
 import { ApproversService } from './approvers';
-import { SignersService } from './signers';
 
 @Injectable()
 export class TransactionsService {
@@ -56,7 +55,6 @@ export class TransactionsService {
     private readonly transactionSignatureService: TransactionSignatureService,
     private readonly schedulerService: SchedulerService,
     private readonly executeService: ExecuteService,
-    private readonly signersService: SignersService,
     private readonly notificationsPublisher: NatsPublisherService,
   ) {
   }
@@ -439,7 +437,8 @@ export class TransactionsService {
     type UpdateRecord = {
       id: number;
       transactionBytes: Buffer;
-      transaction: Transaction;
+      transactionId: string;
+      network: string;
     };
 
     const ids = dto.map(d => d.id);
@@ -499,7 +498,8 @@ export class TransactionsService {
         updates.set(id, {
           id,
           transactionBytes: transaction.transactionBytes,
-          transaction,
+          transactionId: transaction.transactionId,
+          network: transaction.mirrorNetwork,
         });
       } catch (error) {
         results.set(id, {
@@ -552,7 +552,14 @@ export class TransactionsService {
           batch.forEach(u => results.set(u.id, { id: u.id, error: message }));
         }
       }
-      await this.signersService.updateStatusesAndNotify(updateArray);
+
+      emitTransactionStatusUpdate(
+        this.notificationsPublisher,
+        updateArray.map(r => ({
+          entityId: r.id,
+          additionalData: { transactionId: r.transactionId, network: r.network },
+        })),
+      );
     }
 
     return Array.from(results.values());
