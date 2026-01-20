@@ -92,8 +92,6 @@ const transactionFilePath = ref<string | null>(null);
 const emptyFilterResult: V1ImportFilterResult = { candidates: [], ignoredPaths: [] };
 const filterResult = ref<V1ImportFilterResult>(emptyFilterResult);
 const isImportModalVisible = ref(false);
-const isFailureModalVisible = ref(false);
-const unknownTransactionIds = ref<string[]>([]);
 
 /* Computed */
 const dropDownMenuItems = computed(() => {
@@ -188,28 +186,20 @@ async function handleTransactionFileAction(action: string) {
       isExportModalShown.value = true;
       break;
     case 'signTransactionFile':
-      transactionFilePath.value = await selectTransactionFile();
+      transactionFilePath.value = await selectTransactionFile(true);
       if (transactionFilePath.value !== null) {
         isSignTransactionFileModalShown.value = true;
       }
       break;
     case 'importSignaturesFromFile':
-      const result = await showOpenDialog(
-        'Import Signatures from Transaction File',
-        'Select',
-        IMPORT_FORMATS,
-        ['openFile' /*, 'openDirectory', 'multiSelections' */],
-        'Select a .tx2 file (created by TT V2) or a .zip file (created by TT V1)',
-      );
-      if (!result.canceled) {
-        const selectedPath = result.filePaths[0];
-        const lastDot = selectedPath.lastIndexOf('.');
-        const ext = lastDot === -1 ? '' : selectedPath.slice(lastDot).toLowerCase();
+      transactionFilePath.value = await selectTransactionFile();
 
-        if (ext === '.tx2') {
-          await importSignaturesFromV2File(selectedPath);
-        } else if (ext === '.zip') {
-          filterResult.value = await filterForImportV1(result.filePaths);
+      if (transactionFilePath.value !== null) {
+        const ext = transactionFilePath.value.split('.').pop();
+        if (ext === 'tx2') {
+          await importSignaturesFromV2File(transactionFilePath.value);
+        } else if (ext === 'zip') {
+          filterResult.value = await filterForImportV1([transactionFilePath.value]);
           isImportModalVisible.value = true;
         } else {
           toast.error(`Unsupported file extension: ${ext}`, errorToastOptions);
@@ -225,6 +215,7 @@ async function importSignaturesFromV2File(filePath: string) {
 
   const transactionFile = await readTransactionFile(filePath);
   const importInputs: ISignatureImport[] = [];
+  const unknownTransactionIds = [];
 
   for (const item of transactionFile.items) {
     const transactionBytes = hexToUint8Array(item.transactionBytes);
@@ -243,12 +234,17 @@ async function importSignaturesFromV2File(filePath: string) {
         signatureMap: map,
       });
     } catch {
-      unknownTransactionIds.value.push(transactionId!.toString());
+      unknownTransactionIds.push(transactionId!.toString());
     }
   }
 
-  if (unknownTransactionIds.value.length > 0) {
-    isFailureModalVisible.value = true;
+  if (unknownTransactionIds.length > 1) {
+    toast.error(
+      `Import failed: there are ${unknownTransactionIds.length} unknown transactions in this file`,
+      errorToastOptions,
+    );
+  } else if (unknownTransactionIds.length === 1) {
+    toast.error('Import failed: there is 1 unknown transaction in this file', errorToastOptions);
   } else {
     // console.log('importSignatures: INPUTS', JSON.stringify(importInputs));
     const importResults = await importSignatures(user.selectedOrganization, importInputs);
@@ -276,13 +272,18 @@ async function importSignaturesFromV2File(filePath: string) {
   }
 }
 
-async function selectTransactionFile(): Promise<string | null> {
+async function selectTransactionFile(onlyV2 = false): Promise<string | null> {
+  const filter = onlyV2 ? [IMPORT_FORMATS[1]] : IMPORT_FORMATS;
+  const message = onlyV2
+    ? 'Select .tx2 files exported by TT V2'
+    : 'Select a .tx2 file (created by TT V2) or a .zip file (created by TT V1)';
+
   const result = await showOpenDialog(
-    'Sign Transaction File',
+    'Select Transaction File',
     'Select',
-    [{ name: '.tx2', extensions: ['tx2'] }],
-    ['openFile'],
-    'Select .tx2 files exported by TT V2',
+    filter,
+    ['openFile' /*, 'openDirectory', 'multiSelections' */],
+    message,
   );
 
   return result.canceled ? null : result.filePaths[0];
