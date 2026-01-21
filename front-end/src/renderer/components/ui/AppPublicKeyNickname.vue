@@ -7,6 +7,7 @@ import { extractIdentifier, formatPublicKey } from '@renderer/utils';
 const props = defineProps<{
   publicKey: PublicKey | string;
   signed?: boolean;
+  external?: boolean;
 }>();
 
 /* State */
@@ -31,5 +32,6 @@ watchEffect(async () => {
       <span>{{ `(${extractIdentifier(formattedPublicKey)?.pk})` }}</span>
     </span>
     <span v-else>{{ formattedPublicKey }}</span>
+    <span v-if="props.external" class="badge bg-info text-break ms-2">External</span>
   </span>
 </template>
