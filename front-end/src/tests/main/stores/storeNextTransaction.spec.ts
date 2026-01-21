@@ -459,5 +459,60 @@ describe('useNextTransactionStore', () => {
       // The function should be set (we can verify by calling getNext)
       expect(mockGetTransactions).not.toHaveBeenCalled();
     });
+
+    test('getNext should return first item of next page when current is last on a page', async () => {
+      const store = useNextTransactionStore();
+      const mockGetTransactions = vi.fn(async (page: number | null) => {
+        if (page === 1) {
+          // Simulate 100 items on page 1, with totalItems indicating more pages
+          const items = Array.from({ length: 100 }, (_, i) => i + 1);
+          return { items, totalItems: 150 };
+        }
+        // Page 2 has items 101-150
+        const items = Array.from({ length: 50 }, (_, i) => i + 101);
+        return { items, totalItems: 150 };
+      });
+      store.setGetTransactionsFunction(mockGetTransactions, true);
+      store.setPreviousTransactionsIds([]);
+
+      const result = await store.getNext(100); // Last item on page 1
+      expect(result).toBe(101); // First item on page 2
+    });
+
+    test('getNext should search across pages when ID not found on current page', async () => {
+      const store = useNextTransactionStore();
+      let callCount = 0;
+      const mockGetTransactions = vi.fn(async (page: number | null) => {
+        callCount++;
+        if (page === 1) {
+          return { items: Array.from({ length: 100 }, (_, i) => i + 1), totalItems: 200 };
+        }
+        // ID 150 is on page 2
+        return { items: Array.from({ length: 100 }, (_, i) => i + 101), totalItems: 200 };
+      });
+      store.setGetTransactionsFunction(mockGetTransactions, true);
+      store.setPreviousTransactionsIds([]);
+
+      const result = await store.getNext(150);
+      expect(result).toBe(151);
+      expect(callCount).toBeGreaterThan(1); // Should have fetched multiple pages
+    });
+
+    test('getNext should return null when ID not found across all pages', async () => {
+      const store = useNextTransactionStore();
+      const mockGetTransactions = vi.fn(async (page: number | null) => {
+        if (page === 1) {
+          return { items: Array.from({ length: 100 }, (_, i) => i + 1), totalItems: 200 };
+        }
+        // Page 2 has items 101-200
+        return { items: Array.from({ length: 100 }, (_, i) => i + 101), totalItems: 200 };
+      });
+      store.setGetTransactionsFunction(mockGetTransactions, true);
+      store.setPreviousTransactionsIds([]);
+
+      // ID 999 doesn't exist in any page
+      const result = await store.getNext(999);
+      expect(result).toBeNull();
+    });
   });
 });
