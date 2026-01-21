@@ -2,7 +2,7 @@
 import type { Transaction } from '@prisma/client';
 import type { ITransactionFull } from '@shared/interfaces';
 
-import { computed, onBeforeMount, onUnmounted, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
@@ -63,7 +63,13 @@ const nextTransaction = useNextTransactionStore();
 const router = useRouter();
 useWebsocketSubscription(TRANSACTION_ACTION, async () => {
   await fetchTransaction();
-  await computeNavigationIds();
+  const id = formattedId.value!;
+  nextId.value = await nextTransaction.getNext(
+    isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
+  );
+  prevId.value = await nextTransaction.getPrevious(
+    isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
+  );
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const route = useRoute();
@@ -82,7 +88,6 @@ const prevId = ref<string | number | null>(null);
 const feePayer = ref<string | null>(null);
 const feePayerNickname = ref<string | null>(null);
 const groupDescription = ref<string | undefined>(undefined);
-const isMounted = ref(true);
 
 /* Computed */
 const transactionSpecificLabel = computed(() => {
@@ -108,12 +113,6 @@ const showExternal = computed(() => {
   return isLoggedInOrganization(user.selectedOrganization) ?
     user.selectedOrganization?.userId === orgTransaction.value?.creatorId :
     false;
-});
-
-const fromCollection = computed(() => {
-  const value = router.currentRoute.value.query['fromCollection'];
-  if (Array.isArray(value)) return value[0] ?? undefined;
-  return value ?? undefined;
 });
 
 /* Functions */
@@ -179,38 +178,6 @@ const formattedId = computed(() => {
   return id ? (Array.isArray(id) ? id[0] : id) : null;
 });
 
-async function computeNavigationIds(): Promise<void> {
-  const id = formattedId.value;
-  if (!id) return;
-
-  const numericId = isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id;
-
-  // Validate that numeric ID conversion didn't result in NaN
-  if (typeof numericId === 'number' && isNaN(numericId)) {
-    console.error('Invalid transaction ID: unable to convert to number');
-    return;
-  }
-
-  try {
-    if (fromCollection.value === 'READY_TO_SIGN') {
-      const { next, previous } = await nextTransaction.getNextAndPreviousWithWrapAround(numericId);
-      if (!isMounted.value) return;
-      nextId.value = next;
-      prevId.value = previous;
-    } else {
-      const [next, prev] = await Promise.all([
-        nextTransaction.getNext(numericId),
-        nextTransaction.getPrevious(numericId),
-      ]);
-      if (!isMounted.value) return;
-      nextId.value = next;
-      prevId.value = prev;
-    }
-  } catch (error) {
-    console.error('Failed to compute navigation IDs:', error);
-  }
-}
-
 /* Hooks */
 onBeforeMount(async () => {
   const id = formattedId.value;
@@ -223,7 +190,17 @@ onBeforeMount(async () => {
   const keepNextTransaction = router.currentRoute.value.query[KEEP_NEXT_QUERY_KEY];
   if (!keepNextTransaction) nextTransaction.reset();
 
-  await Promise.all([fetchTransaction(), computeNavigationIds()]);
+  const result = await Promise.all([
+    fetchTransaction(),
+    nextTransaction.getNext(
+      isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
+    ),
+    nextTransaction.getPrevious(
+      isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
+    ),
+  ]);
+  nextId.value = result[1];
+  prevId.value = result[2];
 });
 
 onBeforeRouteLeave(to => {
@@ -234,10 +211,6 @@ onBeforeRouteLeave(to => {
       to.query = { ...to.query, previousTab: 'transactionDetails' };
     }
   }
-});
-
-onUnmounted(() => {
-  isMounted.value = false;
 });
 
 /* Watchers */
@@ -267,7 +240,6 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           :local-transaction="localTransaction"
           :next-id="nextId"
           :previous-id="prevId"
-          :from-collection="fromCollection"
           :on-action="fetchTransaction"
         />
 

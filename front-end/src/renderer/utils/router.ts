@@ -8,7 +8,6 @@ export const redirectToDetails = (
   keepNextQueryKey = false,
   replace = false,
   fromInProgressTab?: boolean,
-  fromCollection?: string,
 ) => {
   const query: any = {};
 
@@ -18,10 +17,6 @@ export const redirectToDetails = (
 
   if (fromInProgressTab) {
     query['fromInProgress'] = 'true';
-  }
-
-  if (fromCollection) {
-    query['fromCollection'] = fromCollection;
   }
 
   router.push({
@@ -36,16 +31,11 @@ export const redirectToGroupDetails = async (
   router: Router,
   id: string | number,
   previousTab?: string,
-  fromCollection?: string,
 ) => {
-  const query: Record<string, string> = {};
-  if (previousTab) query.previousTab = previousTab;
-  if (fromCollection) query.fromCollection = fromCollection;
-
   await router.push({
     name: 'transactionGroupDetails',
     params: { id },
-    query,
+    query: previousTab ? { previousTab } : {},
   });
 };
 

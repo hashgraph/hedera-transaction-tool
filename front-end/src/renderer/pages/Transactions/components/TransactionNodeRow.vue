@@ -34,7 +34,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'transactionSigned', transactionId: number): void;
   (event: 'transactionGroupSigned', groupId: number): void;
-  (event: 'beforeNavigateToDetails', transactionId: number): void;
 }>();
 
 /* Stores */
@@ -171,10 +170,9 @@ const handleDetails = async () => {
     await notifications.markAsReadIds(notificationMonitor.filteredNotificationIds.value);
   }
   if (props.node.transactionId) {
-    emit('beforeNavigateToDetails', props.node.transactionId);
-    redirectToDetails(router, props.node.transactionId, true, false, false, props.collection);
+    redirectToDetails(router, props.node.transactionId, true);
   } else if (props.node.groupId) {
-    await redirectToGroupDetails(router, props.node.groupId, 'readyToSign', props.collection);
+    await redirectToGroupDetails(router, props.node.groupId, 'readyToSign');
   }
 };
 

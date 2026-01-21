@@ -67,40 +67,6 @@ const useNextTransactionStore = defineStore('nextTransaction', () => {
     return findItem(currentId, findPreviousTransactionId);
   };
 
-  const getNextAndPreviousWithWrapAround = async (
-    currentId: string | number,
-  ): Promise<{ next: string | number | null; previous: string | number | null }> => {
-    if (!getTransactions.value) return { next: null, previous: null };
-
-    try {
-      const { items } = await getTransactions.value(null, null);
-      if (items.length === 0) return { next: null, previous: null };
-
-      const currentIndex = items.findIndex(id => String(id) === String(currentId));
-
-      if (currentIndex === -1) {
-        // Current not in list, return first/last items
-        return {
-          next: items[0],
-          previous: items[items.length - 1],
-        };
-      }
-
-      // Calculate next and previous indices with wrap-around
-      const nextIndex = (currentIndex + 1) % items.length;
-      const prevIndex = currentIndex === 0 ? items.length - 1 : currentIndex - 1;
-
-      return {
-        // If we wrapped around to ourselves, there's only one item
-        next: items[nextIndex] === currentId ? null : items[nextIndex],
-        previous: items[prevIndex] === currentId ? null : items[prevIndex],
-      };
-    } catch (error) {
-      console.error('Failed to get next/previous with wrap around:', error);
-      return { next: null, previous: null };
-    }
-  };
-
   const findTransactionId = async (id: string | number, action: 'next' | 'prev') => {
     if (!getTransactions.value) throw new Error('No transaction fetching function set');
 
@@ -197,7 +163,6 @@ const useNextTransactionStore = defineStore('nextTransaction', () => {
     setGetTransactionsFunction,
     getNext,
     getPrevious,
-    getNextAndPreviousWithWrapAround,
     reset,
   };
 });
