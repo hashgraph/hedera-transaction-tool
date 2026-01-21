@@ -91,7 +91,6 @@ export class UsersService {
     const existingUser = await this.repo.findOne({
       where: { keys: { publicKey } },
       relations: ['keys'],
-      withDeleted: true,
     });
     return existingUser ? existingUser.email : null;
   }

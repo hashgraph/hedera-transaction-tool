@@ -198,7 +198,6 @@ describe('UserKeysService', () => {
 
       expect(repo.find).toHaveBeenCalledWith({
         select: {
-          deletedAt: true,
           id: true,
           index: true,
           mnemonicHash: true,
@@ -206,7 +205,6 @@ describe('UserKeysService', () => {
           userId: true,
         },
         where: { userId },
-        withDeleted: true,
       });
       expect(result).toEqual(mockUserKeys);
     });
@@ -223,14 +221,12 @@ describe('UserKeysService', () => {
 
       expect(repo.find).toHaveBeenCalledWith({
         where: { userId },
-        withDeleted: true,
         select: {
           id: true,
           userId: true,
           mnemonicHash: false,
           index: false,
           publicKey: true,
-          deletedAt: true,
         },
       });
       expect(result).toEqual(mockUserKeys);

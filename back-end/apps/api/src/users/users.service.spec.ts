@@ -233,7 +233,6 @@ describe('UsersService', () => {
     expect(userRepository.findOne).toHaveBeenCalledWith({
       where: { keys: { publicKey } },
       relations: ['keys'],
-      withDeleted: true,
     });
     expect(result).toEqual(email);
   });
@@ -248,7 +247,6 @@ describe('UsersService', () => {
     expect(userRepository.findOne).toHaveBeenCalledWith({
       where: { keys: { publicKey } },
       relations: ['keys'],
-      withDeleted: true,
     });
     expect(result).toBeNull();
   });
