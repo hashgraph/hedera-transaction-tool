@@ -66,19 +66,16 @@ export class UserKeysService {
   }
 
   // Get the list of user keys for the provided userId
-  // Includes soft-deleted keys so UI can show deleted state
   async getUserKeysRestricted(user: User, userId: number): Promise<UserKey[]> {
     if (!userId) return [];
     return this.repo.find({
       where: { userId },
-      withDeleted: true,
       select: {
         id: true,
         userId: true,
         mnemonicHash: user.id === userId,
         index: user.id === userId,
         publicKey: true,
-        deletedAt: true,
       },
     });
   }
