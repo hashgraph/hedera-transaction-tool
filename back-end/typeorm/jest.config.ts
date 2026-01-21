@@ -9,6 +9,7 @@ const config: Config = {
     'data-source.ts',
   ],
   roots: ['<rootDir>/test'],
+  setupFilesAfterEnv: ['<rootDir>/../libs/common/jest.setup.ts'],
 };
 
 export default config;
