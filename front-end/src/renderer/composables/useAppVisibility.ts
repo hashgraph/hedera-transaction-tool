@@ -54,14 +54,14 @@ export default function useAppVisibility(options: UseAppVisibilityOptions = {}) 
 
       // Always refresh organization tokens to ensure sessionStorage is in sync
       // This handles cases where sessionStorage was cleared but DB tokens are still valid
-      await user.refetchOrganizationTokens();
-
       if (!tokensValid) {
         await user.refetchOrganizations();
 
         if (onTokenExpired) {
           await onTokenExpired();
         }
+      } else {
+        await user.refetchOrganizationTokens();
       }
     } catch (error) {
       console.error('Error checking token validity on visibility change:', error);
