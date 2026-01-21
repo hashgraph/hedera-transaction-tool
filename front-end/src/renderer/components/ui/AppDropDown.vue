@@ -14,7 +14,6 @@ const props = defineProps<{
   colorOnActive?: boolean;
   buttonClass?: string;
   compact?: boolean;
-  disabled?: boolean;
 }>();
 
 /* Emits */
@@ -72,7 +71,6 @@ watch(
       data-bs-popper-config='{"strategy":"fixed"}'
       :data-testid="dataTestid"
       :class="[active ? null : 'text-body', compact ? 'min-w-unset px-4' : '', buttonClass]"
-      :disabled="disabled"
     >
       <template v-if="compact">
         <i class="bi bi-three-dots-vertical"></i>
