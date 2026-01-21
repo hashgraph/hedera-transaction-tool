@@ -409,40 +409,36 @@ export const getConnectedOrganization = async (
     return null;
   }
 
-  let isActive = false;
   try {
-    isActive = await healthCheck(organization.serverUrl);
+    const isActive = await healthCheck(organization.serverUrl);
+
+    if (!isActive) {
+      return {
+        ...organization,
+        isLoading: false,
+        isServerActive: false,
+        loginRequired: false,
+      };
+    }
   } catch (error) {
     console.log(error);
   }
 
-  const inactiveServer: ConnectedOrganization = {
-    ...organization,
-    isLoading: false,
-    isServerActive: false,
-    loginRequired: false,
-  };
-
-  const activeloginRequired: ConnectedOrganization = {
+  const activeLoginRequired: ConnectedOrganization = {
     ...organization,
     isLoading: false,
     isServerActive: true,
     loginRequired: true,
   };
 
-  if (!isActive) {
-    return inactiveServer;
-  }
-
-  let shouldSignIn = true;
   try {
-    shouldSignIn = await shouldSignInOrganization(user.id, organization.id);
+    const shouldSignIn = await shouldSignInOrganization(user.id, organization.id);
+
+    if (shouldSignIn) {
+      return activeLoginRequired;
+    }
   } catch (error) {
     console.log(error);
-  }
-
-  if (shouldSignIn) {
-    return activeloginRequired;
   }
 
   try {
@@ -453,7 +449,7 @@ export const getConnectedOrganization = async (
     const connectedOrganization: ConnectedOrganization = {
       ...organization,
       isLoading: false,
-      isServerActive: isActive,
+      isServerActive: true,
       loginRequired: false,
       userId: id,
       email,
@@ -464,7 +460,7 @@ export const getConnectedOrganization = async (
     };
     return connectedOrganization;
   } catch {
-    return activeloginRequired;
+    return activeLoginRequired;
   }
 };
 

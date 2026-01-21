@@ -103,13 +103,24 @@ export const getCurrentUser = async (organizationServerUrl: string) => {
 };
 
 /* Returns credentials for organization */
-export const getOrganizationCredentials = async (organization_id: string, user_id: string) => {
+export const getOrganizationCredentials = async (
+  organization_id: string,
+  user_id: string,
+  decryptPassword: string,
+) => {
   const prisma = getPrismaClient();
 
   try {
-    return await prisma.organizationCredentials.findFirst({
+    const credentials = await prisma.organizationCredentials.findFirst({
       where: { user_id, organization_id },
     });
+
+    const password = await decryptData(credentials.password, decryptPassword);
+
+    return {
+      ...credentials,
+      password,
+    };
   } catch (error) {
     console.log(error);
     return null;
