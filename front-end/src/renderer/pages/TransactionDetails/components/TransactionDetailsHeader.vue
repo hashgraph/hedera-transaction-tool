@@ -118,6 +118,7 @@ const props = defineProps<{
   sdkTransaction: SDKTransaction | null;
   nextId: number | string | null;
   previousId: number | string | null;
+  fromCollection?: string;
   onAction: () => Promise<void>;
 }>();
 
@@ -222,6 +223,18 @@ const canArchive = computed(() => {
   return isManual && isCreator.value && transactionIsInProgress.value;
 });
 
+const showNavigationForReadyToSign = computed(() => {
+  return props.fromCollection === 'READY_TO_SIGN';
+});
+
+const isNextDisabled = computed(() => {
+  return showNavigationForReadyToSign.value && !props.nextId;
+});
+
+const isPreviousDisabled = computed(() => {
+  return showNavigationForReadyToSign.value && !props.previousId;
+});
+
 const visibleButtons = computed(() => {
   const buttons: ActionButton[] = [];
 
@@ -229,13 +242,9 @@ const visibleButtons = computed(() => {
   shouldApprove.value && buttons.push(reject, approve);
   canSign.value && !shouldApprove.value && buttons.push(sign);
   canExecute.value && buttons.push(execute);
-  // if (isLargeScreen.value) {
-  //   props.previousId && buttons.push(previous);
-  //   props.nextId && buttons.push(next);
-  // } else {
-  props.nextId && buttons.push(next);
-  props.previousId && buttons.push(previous);
-  // }
+  // Show Next/Previous buttons if there's a nextId/previousId OR if we're showing navigation for Ready to Sign
+  (props.nextId || showNavigationForReadyToSign.value) && buttons.push(next);
+  (props.previousId || showNavigationForReadyToSign.value) && buttons.push(previous);
   canCancel.value && buttons.push(cancel);
   canRemind.value && buttons.push(remindSignersLabel);
   canArchive.value && buttons.push(archive);
@@ -245,8 +254,18 @@ const visibleButtons = computed(() => {
 });
 
 const dropDownItems = computed(() =>
-  visibleButtons.value.slice(1).map(item => ({ label: item, value: item })),
+  visibleButtons.value.slice(1).map(item => ({
+    label: item,
+    value: item,
+    disabled: isButtonDisabled(item),
+  })),
 );
+
+const isButtonDisabled = (button: ActionButton): boolean => {
+  if (button === next) return isNextDisabled.value;
+  if (button === previous) return isPreviousDisabled.value;
+  return false;
+};
 
 const isTransactionFailed = computed(() => {
   return props.organizationTransaction?.status === TransactionStatus.FAILED;
@@ -471,7 +490,7 @@ const handlePrevious = () => {
   }
   nextTransaction.setPreviousTransactionsIds(newPreviousTransactionsIds);
 
-  redirectToDetails(router, props.previousId.toString(), true, true);
+  redirectToDetails(router, props.previousId.toString(), true, true, false, props.fromCollection);
 };
 
 const handleNext = () => {
@@ -486,7 +505,7 @@ const handleNext = () => {
   }
   nextTransaction.setPreviousTransactionsIds(newPreviousTransactionsIds);
 
-  redirectToDetails(router, props.nextId.toString(), true, true);
+  redirectToDetails(router, props.nextId.toString(), true, true, false, props.fromCollection);
 };
 
 const handleExport = async () => {
@@ -699,7 +718,7 @@ watch(
           <div>
             <AppButton
               :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
-              :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[0]])"
+              :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[0]]) || isButtonDisabled(visibleButtons[0])"
               :loading="Boolean(loadingStates[visibleButtons[0]])"
               :loading-text="loadingStates[visibleButtons[0]] || ''"
               :data-testid="buttonsDataTestIds[visibleButtons[0]]"
@@ -715,7 +734,7 @@ watch(
           <div class="d-none d-lg-block">
             <AppButton
               :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
-              :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[1]])"
+              :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[1]]) || isButtonDisabled(visibleButtons[1])"
               :loading="Boolean(loadingStates[visibleButtons[1]])"
               :loading-text="loadingStates[visibleButtons[1]] || ''"
               :data-testid="buttonsDataTestIds[visibleButtons[1]]"
@@ -753,7 +772,7 @@ watch(
           <div class="d-lg-none">
             <AppButton
               :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
-              :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[1]])"
+              :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[1]]) || isButtonDisabled(visibleButtons[1])"
               :loading="Boolean(loadingStates[visibleButtons[1]])"
               :loading-text="loadingStates[visibleButtons[1]] || ''"
               :data-testid="buttonsDataTestIds[visibleButtons[1]]"

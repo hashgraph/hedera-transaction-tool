@@ -11,6 +11,7 @@ import { BackEndTransactionType, NotificationType, TransactionStatus } from '@sh
 
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork.ts';
+import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
@@ -63,6 +64,7 @@ const emit = defineEmits<{
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const nextTransaction = useNextTransactionStore();
 
 /* Composables */
 const toast = useToast();
@@ -174,6 +176,42 @@ function resetPagination(): void {
   currentPage.value = 1;
 }
 
+function setGetTransactionsFunction(): void {
+  nextTransaction.setGetTransactionsFunction(async () => {
+    if (isLoggedInOrganization(user.selectedOrganization)) {
+      try {
+        const allNodes = await getTransactionNodes(
+          user.selectedOrganization.serverUrl,
+          props.collection,
+          network.network,
+          statusFilter.value,
+          transactionTypeFilter.value,
+        );
+        const transactionIds = allNodes
+          .filter((node): node is ITransactionNode & { transactionId: number } =>
+            node.transactionId !== undefined)
+          .map(node => node.transactionId);
+        return { items: transactionIds, totalItems: transactionIds.length };
+      } catch {
+        return { items: [], totalItems: 0 };
+      }
+    }
+    return { items: [], totalItems: 0 };
+  }, false);
+}
+
+function handleBeforeNavigateToDetails(transactionId: number): void {
+  const selectedIndex = nodes.value.findIndex(n => n.transactionId === transactionId);
+  if (selectedIndex >= 0) {
+    const previousIds = nodes.value
+      .slice(0, selectedIndex)
+      .filter((n): n is ITransactionNode & { transactionId: number } =>
+        n.transactionId !== undefined)
+      .map(n => n.transactionId);
+    nextTransaction.setPreviousTransactionsIds(previousIds);
+  }
+}
+
 /* Watchers */
 watch(sort, () => {
     resetPagination();
@@ -181,9 +219,15 @@ watch(sort, () => {
   },
 );
 
-watch([statusFilter, transactionTypeFilter], fetchNodes, { deep: true });
+watch([statusFilter, transactionTypeFilter], () => {
+  setGetTransactionsFunction();
+  fetchNodes();
+}, { deep: true });
 
-onMounted(fetchNodes);
+onMounted(() => {
+  setGetTransactionsFunction();
+  fetchNodes();
+});
 </script>
 
 <template>
@@ -212,6 +256,7 @@ onMounted(fetchNodes);
                 :old-notifications="oldNotifications"
                 @transaction-signed="fetchNodes"
                 @transaction-group-signed="fetchNodes"
+                @before-navigate-to-details="handleBeforeNavigateToDetails"
               />
             </template>
           </tbody>
