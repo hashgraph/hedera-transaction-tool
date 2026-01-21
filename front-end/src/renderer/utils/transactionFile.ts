@@ -1,4 +1,4 @@
-import type { ITransactionFull } from '@shared/interfaces';
+import type { ITransaction, ITransactionFull, TransactionFile } from '@shared/interfaces';
 import { type PrivateKey, Transaction } from '@hashgraph/sdk';
 import { hexToUint8Array } from '@renderer/utils/index.ts';
 import { javaFormatArrayHashCode } from '@shared/utils/byteUtils.ts';
@@ -33,7 +33,26 @@ export const generateTransactionV1ExportContent = async (
   });
 };
 
-export const generateTransactionExportFileName = (orgTransaction: ITransactionFull) => {
+export const generateTransactionV2ExportContent = (
+  orgTransactions: ITransaction[],
+  network: string,
+): TransactionFile => {
+  const result: TransactionFile = {
+    network: network,
+    items: [],
+  };
+  for (const tx of orgTransactions) {
+    result.items.push({
+      name: tx.name,
+      description: tx.description,
+      transactionBytes: tx.transactionBytes,
+      creatorEmail: tx.creatorEmail,
+    });
+  }
+  return result;
+};
+
+export const generateTransactionExportFileName = (orgTransaction: ITransaction) => {
   const transactionBytes = hexToUint8Array(orgTransaction.transactionBytes);
   const sdkTransaction = Transaction.fromBytes(transactionBytes);
 

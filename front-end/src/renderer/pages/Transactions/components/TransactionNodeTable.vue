@@ -56,6 +56,11 @@ const props = defineProps<{
   collection: TransactionNodeCollection;
 }>();
 
+/* Emits */
+const emit = defineEmits<{
+  (event: 'nodesFetched', value: ITransactionNode[]): void;
+}>();
+
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
@@ -157,6 +162,7 @@ async function fetchNodes(): Promise<void> {
   } else {
     nodes.value = [];
   }
+  emit('nodesFetched', nodes.value);
 }
 
 function sortNodes(): void {

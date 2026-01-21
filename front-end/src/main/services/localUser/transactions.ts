@@ -90,10 +90,13 @@ export const signTransaction = async (
   publicKeys: string[],
   userId: string,
   userPassword: string | null,
+  needsFreeze = true,
 ) => {
   const transaction = Transaction.fromBytes(transactionBytes);
 
-  transaction.freezeWith(client);
+  if (needsFreeze) {
+    transaction.freezeWith(client);
+  }
 
   const keyPairs = await getKeyPairs(userId);
 
