@@ -203,7 +203,7 @@ describe('NodeCacheService', () => {
         mirrorNetwork: 'testnet',
         nodeAccountId: '0.0.3',
         encodedKey: Buffer.from('encoded-key'),
-        lastCheckedAt: new Date(),
+        updatedAt: new Date(),
       } as CachedNode;
 
       dataSource.manager.findOne = jest.fn().mockResolvedValue(cachedNode);
@@ -218,7 +218,7 @@ describe('NodeCacheService', () => {
         TransactionCachedNode,
         1,
         1,
-        'node'
+        'cachedNode'
       );
     });
 
@@ -230,7 +230,7 @@ describe('NodeCacheService', () => {
         mirrorNetwork: 'testnet',
         nodeAccountId: '0.0.3',
         encodedKey: Buffer.from('old-key'),
-        lastCheckedAt: staleDate,
+        updatedAt: staleDate,
         refreshToken: 'token-123',
       } as CachedNode;
       const nodeInfo: Partial<NodeInfoParsed> = {
@@ -289,7 +289,7 @@ describe('NodeCacheService', () => {
         mirrorNetwork: 'testnet',
         nodeAccountId: '0.0.3',
         encodedKey: Buffer.from('encoded-key'),
-        lastCheckedAt: new Date(Date.now() - 20000),
+        updatedAt: new Date(Date.now() - 20000),
       } as CachedNode;
 
       const claimedNode = {
@@ -472,7 +472,7 @@ describe('NodeCacheService', () => {
         TransactionCachedNode,
         999,
         1,
-        'node'
+        'cachedNode'
       );
     });
   });
@@ -505,7 +505,7 @@ describe('NodeCacheService', () => {
       expect(cacheHelper.insertKeys).toHaveBeenCalledWith(
         CachedNodeAdminKey,
         1,
-        'node',
+        'cachedNode',
         [mockKey]
       );
     });
@@ -558,7 +558,7 @@ describe('NodeCacheService', () => {
         TransactionCachedNode,
         999,
         1,
-        'node'
+        'cachedNode'
       );
     });
   });

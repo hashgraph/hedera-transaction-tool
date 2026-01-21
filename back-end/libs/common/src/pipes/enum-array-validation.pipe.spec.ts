@@ -1,6 +1,3 @@
-import { TransactionId } from '@hashgraph/sdk';
-
-import { TransactionIdPipe } from '@app/common/pipes/transaction-id.pipe';
 import { EnumArrayValidationPipe } from '@app/common/pipes/enum-array-validation.pipe';
 
 describe('EnumArrayValidationPipe', () => {
@@ -12,8 +9,8 @@ describe('EnumArrayValidationPipe', () => {
 
   const pipe = new EnumArrayValidationPipe<SampleEnum>(SampleEnum);
 
-  it('should transform empty string to []', () => {
-    expect(pipe.transform('')).toStrictEqual([]);
+  it('should transform empty string to null', () => {
+    expect(pipe.transform('')).toStrictEqual(null);
   });
 
   it('should transform valid string to enums', async () => {

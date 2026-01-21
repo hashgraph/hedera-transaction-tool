@@ -80,6 +80,7 @@ export class ReceiverService {
         creatorKey: true,
         observers: true,
         signers: true,
+        groupItem: true,
       },
       withDeleted,
     });
@@ -680,6 +681,20 @@ export class ReceiverService {
 
   // --- Entity Transaction Handlers ------------------------------------
 
+  private buildAdditionalData(transaction: Transaction): {
+    transactionId: string;
+    network: string;
+    groupId?: number;
+  } {
+    return {
+      transactionId: transaction.transactionId,
+      network: transaction.mirrorNetwork,
+      ...(transaction.groupItem?.groupId
+        ? { groupId: transaction.groupItem.groupId }
+        : {}),
+    };
+  }
+
   private async handleTransactionStatusUpdateNotifications(
     entityManager: EntityManager,
     transaction: Transaction,
@@ -697,7 +712,7 @@ export class ReceiverService {
     transactionId: number,
   ) {
     try {
-      const additionalData = { transactionId: transaction.transactionId, network: transaction.mirrorNetwork };
+      const additionalData = this.buildAdditionalData(transaction);
 
       if (syncType) {
         const deletedReceiverIds = await this.deleteExistingIndicators(entityManager, transaction);

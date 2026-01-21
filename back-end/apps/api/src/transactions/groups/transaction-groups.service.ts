@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 
 import {
   asyncFilter,
+  emitTransactionStatusUpdate,
   emitTransactionUpdate,
   ErrorCodes,
   NatsPublisherService,
@@ -54,6 +55,13 @@ export class TransactionGroupsService {
       // Save everything
       await manager.save(TransactionGroup, group);
       await manager.save(TransactionGroupItem, groupItems);
+
+      emitTransactionStatusUpdate(
+        this.notificationsPublisher,
+        transactions.map(tx => ({
+          entityId: tx.id,
+        })),
+      );
     });
 
     return group;

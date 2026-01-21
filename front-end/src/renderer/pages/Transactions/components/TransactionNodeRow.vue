@@ -4,6 +4,7 @@ import type { INotificationReceiver } from '@shared/interfaces';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
+import useTransactionAudit from '@renderer/composables/useTransactionAudit.ts';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import useFilterNotifications from '@renderer/composables/useFilterNotifications.ts';
 import { getTransactionTypeFromBackendType } from '@renderer/utils/sdk/transactions.ts';
@@ -41,39 +42,36 @@ const notifications = useNotificationsStore();
 /* State */
 const descriptionRef = ref<HTMLElement | null>(null);
 const isTruncated = ref(false);
+const isExternal = ref(false);
 let resizeObserver: ResizeObserver | null = null;
 
 /* Composables */
 const router = useRouter();
 const createTooltips = useCreateTooltips();
+const transactionId = computed(() => props.node.transactionId ?? null);
+const transactionAudit = useTransactionAudit(transactionId);
 
 /* Computed */
 const filteringNotificationTypes = computed(() => {
-  let result: NotificationType[];
   switch (props.collection) {
     case TransactionNodeCollection.READY_FOR_REVIEW:
-      result = [NotificationType.TRANSACTION_INDICATOR_APPROVE];
-      break;
+      return [NotificationType.TRANSACTION_INDICATOR_APPROVE];
     case TransactionNodeCollection.READY_TO_SIGN:
-      result = [NotificationType.TRANSACTION_INDICATOR_SIGN];
-      break;
+      return [NotificationType.TRANSACTION_INDICATOR_SIGN];
     case TransactionNodeCollection.READY_FOR_EXECUTION:
-      result = [NotificationType.TRANSACTION_INDICATOR_EXECUTABLE];
-      break;
+      return [NotificationType.TRANSACTION_INDICATOR_EXECUTABLE];
     case TransactionNodeCollection.HISTORY:
-      result = [
+      return [
         NotificationType.TRANSACTION_INDICATOR_EXECUTED,
         NotificationType.TRANSACTION_INDICATOR_EXPIRED,
         NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
         NotificationType.TRANSACTION_INDICATOR_CANCELLED,
         NotificationType.TRANSACTION_INDICATOR_FAILED,
       ];
-      break;
     case TransactionNodeCollection.IN_PROGRESS:
-      result = [];
-      break;
+    default:
+      return [];
   }
-  return result;
 });
 
 const notificationMonitor = useFilterNotifications(
@@ -95,13 +93,24 @@ const hasOldNotifications = computed(() => {
   // Check if any old notifications match this node
   return props.oldNotifications.some(n => {
     const matchesType = notificationTypes.includes(n.notification.type);
-    const matchesEntity = n.notification.entityId === (props.node.transactionId || props.node.groupId);
-    return matchesType && matchesEntity;
+
+    const hasEntityIds =
+      n.notification.entityId !== undefined && props.node.transactionId !== undefined;
+    const matchesEntity =
+      hasEntityIds && n.notification.entityId === props.node.transactionId;
+
+    const notificationGroupId = n.notification.additionalData?.groupId;
+    const hasGroupIds =
+      notificationGroupId !== undefined && props.node.groupId !== undefined;
+    const matchesGroup =
+      hasGroupIds && notificationGroupId === props.node.groupId;
+
+    return matchesType && (matchesEntity || matchesGroup);
   });
 });
 
 const hasNotifications = computed(() => {
-  return notificationMonitor.filteredNotifications.value.length > 0 || hasOldNotifications.value;
+  return notificationMonitor.filteredNotificationIds.value.length > 0 || hasOldNotifications.value;
 });
 
 const transactionType = computed(() => {
@@ -206,6 +215,11 @@ onUnmounted(() => {
 watch(() => props.node.description, () => {
   nextTick(() => checkTruncation());
 });
+watch(transactionId, async () => {
+  const externalSignerKeys = await transactionAudit.externalSignerKeys.value;
+  isExternal.value = externalSignerKeys.size > 0;
+},{ immediate: true });
+
 </script>
 
 <template>
@@ -224,6 +238,7 @@ watch(() => props.node.description, () => {
     <td :data-testid="`td-transaction-node-transaction-type-${index}`" class="text-bold">
       {{ transactionType }}
       <span v-if="props.node.isManual" class="badge bg-info ms-3">Manual</span>
+      <span v-if="isExternal" class="badge bg-info ms-2">External</span>
     </td>
 
     <!-- Column #3 : Description -->

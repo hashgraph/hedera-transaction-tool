@@ -19,7 +19,7 @@ import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 
-import { getApiGroupById, getTransactionById } from '@renderer/services/organization';
+import { getTransactionGroupById, getTransactionById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
 
 import {
@@ -108,6 +108,13 @@ const creator = computed(() => {
     : null;
 });
 
+const showExternal = computed(() => {
+  // External badges are displayed for the transaction creator only
+  return isLoggedInOrganization(user.selectedOrganization) ?
+    user.selectedOrganization?.userId === orgTransaction.value?.creatorId :
+    false;
+});
+
 /* Functions */
 async function fetchTransaction() {
   const id = formattedId.value!;
@@ -122,7 +129,7 @@ async function fetchTransaction() {
 
       if (orgTransaction.value?.groupItem?.groupId) {
         if (user.selectedOrganization?.serverUrl) {
-          const orgGroup = await getApiGroupById(
+          const orgGroup = await getTransactionGroupById(
             user.selectedOrganization?.serverUrl,
             orgTransaction.value.groupItem.groupId,
           );
@@ -159,6 +166,7 @@ async function fetchTransaction() {
       network.mirrorNodeBaseURL,
       accountByIdCache,
       nodeByIdCache,
+      user.selectedOrganization,
     );
   }
 
@@ -447,6 +455,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 <SignatureStatus
                   :signature-key-object="signatureKeyObject"
                   :public-keys-signed="signersPublicKeys"
+                  :show-external="showExternal"
                 />
               </div>
 

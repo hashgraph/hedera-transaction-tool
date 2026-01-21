@@ -5,6 +5,7 @@
   "scripts": {
     "build": "tsc",
     "migration:run": "typeorm migration:run --dataSource ../dist/typeorm/data-source.js",
+    "migration:revert": "typeorm migration:revert --dataSource ../dist/typeorm/data-source.js",
     "test": "jest --config ./jest.config.ts",
     "test:cov": "jest --config ./jest.config.ts --coverage",
     "test:watch": "jest --config ./jest.config.ts --watch",

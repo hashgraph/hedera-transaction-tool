@@ -24,10 +24,8 @@ import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscrip
 import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
 import {
-  generateTransactionExportContent,
-  generateTransactionExportFileName,
   getTransactionById,
-  getApiGroupById,
+  getTransactionGroupById,
   getUserShouldApprove,
   sendApproverChoice,
   cancelTransaction,
@@ -48,6 +46,8 @@ import {
   getErrorMessage,
   assertIsLoggedInOrganization,
   getStatusFromCode,
+  generateTransactionExportFileName,
+  generateTransactionV1ExportContent,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -421,7 +421,7 @@ const handleExportGroup = async () => {
 
       const baseName = generateTransactionExportFileName(orgTransaction);
 
-      const { signedBytes, jsonContent } = await generateTransactionExportContent(
+      const { signedBytes, jsonContent } = await generateTransactionV1ExportContent(
         orgTransaction,
         privateKey,
         group.value.description,
@@ -509,7 +509,7 @@ async function fetchGroup(id: string | number) {
     try {
       const updatedUnsignedSignersToCheck: Record<number, string[]> = {};
 
-      group.value = await getApiGroupById(user.selectedOrganization.serverUrl, Number(id));
+      group.value = await getTransactionGroupById(user.selectedOrganization.serverUrl, Number(id));
       isVersionMismatch.value = false;
 
       if (group.value?.groupItems != undefined) {
@@ -536,6 +536,7 @@ async function fetchGroup(id: string | number) {
             network.mirrorNodeBaseURL,
             accountByIdCache,
             nodeByIdCache,
+            user.selectedOrganization,
           );
 
           if (

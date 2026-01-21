@@ -329,6 +329,12 @@ export class TransactionsService {
   /* Create a new transaction with the provided information */
   async createTransaction(dto: CreateTransactionDto, user: User): Promise<Transaction> {
     const [transaction] = await this.createTransactions([dto], user);
+
+    emitTransactionStatusUpdate(
+      this.notificationsPublisher,
+      [{ entityId: transaction.id }],
+    );
+
     return transaction;
   }
 
@@ -410,17 +416,6 @@ export class TransactionsService {
         .filter(Boolean);
 
       await Promise.all(reminderPromises);
-
-      emitTransactionStatusUpdate(
-        this.notificationsPublisher,
-        savedTransactions.map(tx => ({
-          entityId: tx.id,
-          additionalData: {
-            transactionId: tx.transactionId,
-            network: tx.mirrorNetwork,
-          },
-        })),
-      );
 
       return savedTransactions;
     } catch (err) {
