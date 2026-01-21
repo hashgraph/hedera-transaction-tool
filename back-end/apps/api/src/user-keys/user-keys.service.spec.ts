@@ -45,13 +45,31 @@ describe('UserKeysService', () => {
     it('should return a UserKey if where condition is provided', async () => {
       await service.getUserKey({ id: 1 });
 
-      expect(repo.findOne).toHaveBeenCalledWith({ where: { id: 1 }, relations: undefined });
+      expect(repo.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+        relations: undefined,
+        withDeleted: false,
+      });
     });
 
     it('should handle relations when provided', async () => {
       await service.getUserKey({ id: 1 }, { user: true });
 
-      expect(repo.findOne).toHaveBeenCalledWith({ where: { id: 1 }, relations: { user: true } });
+      expect(repo.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+        relations: { user: true },
+        withDeleted: false,
+      });
+    });
+
+    it('should handle withDeleted when provided', async () => {
+      await service.getUserKey({ id: 1 }, undefined, true);
+
+      expect(repo.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+        relations: undefined,
+        withDeleted: true,
+      });
     });
   });
 
@@ -180,7 +198,6 @@ describe('UserKeysService', () => {
 
       expect(repo.find).toHaveBeenCalledWith({
         select: {
-          deletedAt: true,
           id: true,
           index: true,
           mnemonicHash: true,
@@ -210,7 +227,6 @@ describe('UserKeysService', () => {
           mnemonicHash: false,
           index: false,
           publicKey: true,
-          deletedAt: true,
         },
       });
       expect(result).toEqual(mockUserKeys);

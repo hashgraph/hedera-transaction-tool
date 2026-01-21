@@ -160,9 +160,9 @@ describe('ReceiverService', () => {
 
   it('getUsersIdsRequiredToSign calls keysRequiredToSign and dedups', async () => {
     (keysRequiredToSign as jest.Mock).mockResolvedValue([
-      { userId: 10 },
-      { userId: 10 },
-      { userId: 11 },
+      { userId: 10, user: { id: 10 } },
+      { userId: 10, user: { id: 10 } },
+      { userId: 11, user: { id: 11 } },
     ]);
     const tx = {} as any;
 
@@ -171,8 +171,59 @@ describe('ReceiverService', () => {
     expect(res).toEqual([10, 11]);
   });
 
+  it('getUsersIdsRequiredToSign filters out soft-deleted users', async () => {
+    (keysRequiredToSign as jest.Mock).mockResolvedValue([
+      { userId: 10, user: { id: 10, deletedAt: null } },
+      { userId: 11, user: { id: 11, deletedAt: new Date() } }, // deleted user
+      { userId: 12, user: { id: 12, deletedAt: null } },
+    ]);
+    const tx = {} as any;
+
+    const res = await (service as any).getUsersIdsRequiredToSign(em as any, tx, new Map());
+    expect(res).toEqual([10, 12]);
+    expect(res).not.toContain(11);
+  });
+
+  it('getUsersIdsRequiredToSign filters out soft-deleted keys', async () => {
+    (keysRequiredToSign as jest.Mock).mockResolvedValue([
+      { userId: 10, deletedAt: null, user: { id: 10, deletedAt: null } },
+      { userId: 11, deletedAt: new Date(), user: { id: 11, deletedAt: null } }, // deleted key
+      { userId: 12, deletedAt: null, user: { id: 12, deletedAt: null } },
+    ]);
+    const tx = {} as any;
+
+    const res = await (service as any).getUsersIdsRequiredToSign(em as any, tx, new Map());
+    expect(res).toEqual([10, 12]);
+    expect(res).not.toContain(11);
+  });
+
+  it('getUsersIdsRequiredToSign filters out keys with missing user relation', async () => {
+    (keysRequiredToSign as jest.Mock).mockResolvedValue([
+      { userId: 10, deletedAt: null, user: { id: 10, deletedAt: null } },
+      { userId: 11, deletedAt: null, user: null }, // missing user (orphaned key)
+      { userId: 12, deletedAt: null, user: { id: 12, deletedAt: null } },
+    ]);
+    const tx = {} as any;
+
+    const res = await (service as any).getUsersIdsRequiredToSign(em as any, tx, new Map());
+    expect(res).toEqual([10, 12]);
+    expect(res).not.toContain(11);
+  });
+
+  it('getUsersIdsRequiredToSign filters out all inactive keys leaving empty result', async () => {
+    (keysRequiredToSign as jest.Mock).mockResolvedValue([
+      { userId: 10, deletedAt: new Date(), user: { id: 10, deletedAt: null } }, // deleted key
+      { userId: 11, deletedAt: null, user: { id: 11, deletedAt: new Date() } }, // deleted user
+      { userId: 12, deletedAt: null, user: null }, // missing user
+    ]);
+    const tx = {} as any;
+
+    const res = await (service as any).getUsersIdsRequiredToSign(em as any, tx, new Map());
+    expect(res).toEqual([]);
+  });
+
   it('getTransactionParticipants computes participants correctly', async () => {
-    (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 100 }]);
+    (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 100, user: { id: 100 } }]);
 
     const tx: any = {
       creatorKey: { userId: 1 },
@@ -192,7 +243,7 @@ describe('ReceiverService', () => {
   });
 
   it('getTransactionParticipants yields empty approversShouldChooseUserIds when status is not waiting', async () => {
-    (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 100 }]);
+    (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 100, user: { id: 100 } }]);
 
     const tx: any = {
       creatorKey: { userId: 1 },
@@ -211,7 +262,7 @@ describe('ReceiverService', () => {
   });
 
   it('getTransactionParticipants yields empty approversShouldChooseUserIds when no approver is pending (all approved !== null) even if status is waiting', async () => {
-    (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 200 }]);
+    (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 200, user: { id: 200 } }]);
 
     const tx: any = {
       creatorKey: { userId: 1 },
@@ -1101,7 +1152,7 @@ describe('ReceiverService', () => {
       em.query.mockResolvedValue([]);
 
       // keysRequiredToSign for processSignerReminders
-      (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 10 }]);
+      (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 10, user: { id: 10 } }]);
       // For manual path: processNotificationType invoked; mock to return empty arrays
       (service as any).processNotificationType = jest.fn().mockResolvedValue({ newReceivers: [], updatedReceivers: [] });
       // For automatic path: processReminderEmail invoked; mock to return []
@@ -1135,7 +1186,7 @@ describe('ReceiverService', () => {
       em.query.mockResolvedValue([]);
 
       // keysRequiredToSign returns a signer id
-      (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 10 }]);
+      (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 10, user: { id: 10 } }]);
 
       // Prepare an updated receiver to be returned by processNotificationType
       const updatedReceiver = { id: 700, userId: 10, notification: { id: 201 } } as any;
