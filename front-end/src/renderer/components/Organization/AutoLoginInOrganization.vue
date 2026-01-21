@@ -81,6 +81,16 @@ watch(
     }
   },
 );
+
+/* Exposed Methods */
+async function triggerReauthentication() {
+  checked.value = false;
+  await openPasswordModalIfRequired();
+}
+
+defineExpose({
+  triggerReauthentication,
+});
 </script>
 <template>
   <AppModal
