@@ -10,7 +10,9 @@
     "baseUrl": ".",
     "paths": {
       "@main/*": ["src/main/*"],
-      "@shared/*": ["src/shared/*"]
+      "@shared/*": ["src/shared/*"],
+      "@prisma/client": ["src/generated/prisma/client.ts"],
+      "@prisma/client/*": ["src/generated/prisma/*"]
     }
   }
 }

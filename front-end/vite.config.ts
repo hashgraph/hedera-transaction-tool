@@ -22,11 +22,13 @@ export default defineConfig(({ command }) => {
 
   return {
     resolve: {
-      alias: {
-        '@renderer': resolve('src/renderer'),
-        '@main': resolve('src/main'),
-        '@shared': resolve('src/shared'),
-      },
+      alias: [
+        { find: '@renderer', replacement: resolve('src/renderer') },
+        { find: '@main', replacement: resolve('src/main') },
+        { find: '@shared', replacement: resolve('src/shared') },
+        // Exact match for @prisma/client - don't match @prisma/client/runtime/*
+        { find: /^@prisma\/client$/, replacement: resolve('src/generated/prisma/browser.ts') },
+      ],
     },
     plugins: [
       vue(),
@@ -41,15 +43,23 @@ export default defineConfig(({ command }) => {
               minify: isBuild,
               outDir: 'dist-electron/main',
               rollupOptions: {
-                external: Object.keys('dependencies' in pkg ? pkg.dependencies : {}),
+                // Exclude @prisma/client from externals so the alias can resolve to generated client
+                external: Object.keys('dependencies' in pkg ? pkg.dependencies : {}).filter(
+                  dep => dep !== '@prisma/client',
+                ),
               },
             },
             resolve: {
-              alias: {
-                '@renderer': resolve('src/renderer'),
-                '@main': resolve('src/main'),
-                '@shared': resolve('src/shared'),
-              },
+              alias: [
+                { find: '@renderer', replacement: resolve('src/renderer') },
+                { find: '@main', replacement: resolve('src/main') },
+                { find: '@shared', replacement: resolve('src/shared') },
+                // Exact match for @prisma/client - don't match @prisma/client/runtime/*
+                {
+                  find: /^@prisma\/client$/,
+                  replacement: resolve('src/generated/prisma/client.ts'),
+                },
+              ],
             },
           },
         },
@@ -61,14 +71,22 @@ export default defineConfig(({ command }) => {
               minify: isBuild,
               outDir: 'dist-electron/preload',
               rollupOptions: {
-                external: Object.keys('dependencies' in pkg ? pkg.dependencies : {}),
+                // Exclude @prisma/client from externals so the alias can resolve to generated client
+                external: Object.keys('dependencies' in pkg ? pkg.dependencies : {}).filter(
+                  dep => dep !== '@prisma/client',
+                ),
               },
             },
             resolve: {
-              alias: {
-                '@main': resolve('src/main'),
-                '@shared': resolve('src/shared'),
-              },
+              alias: [
+                { find: '@main', replacement: resolve('src/main') },
+                { find: '@shared', replacement: resolve('src/shared') },
+                // Exact match for @prisma/client - don't match @prisma/client/runtime/*
+                {
+                  find: /^@prisma\/client$/,
+                  replacement: resolve('src/generated/prisma/client.ts'),
+                },
+              ],
             },
           },
         },
