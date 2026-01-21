@@ -55,10 +55,12 @@ export default function useAppVisibility(options: UseAppVisibilityOptions = {}) 
       // Always refresh organization tokens to ensure sessionStorage is in sync
       // This handles cases where sessionStorage was cleared but DB tokens are still valid
       if (!tokensValid) {
-        await user.refetchOrganizations();
-
         if (onTokenExpired) {
+          // Delegate token expiry handling to the provided callback to avoid
+          // triggering re-authentication flows twice (e.g., via refetchOrganizations watcher)
           await onTokenExpired();
+        } else {
+          await user.refetchOrganizations();
         }
       } else {
         await user.refetchOrganizationTokens();
