@@ -1,12 +1,5 @@
-import type { ITransaction, ITransactionFull } from '@shared/interfaces';
-import type { PrivateKey } from '@hashgraph/sdk';
-
-import { Transaction } from '@hashgraph/sdk';
-import { format } from 'date-fns';
-
-import { javaFormatArrayHashCode } from '@shared/utils/byteUtils.ts';
-
-import { axiosWithCredentials, commonRequestHandler, hexToUint8Array } from '@renderer/utils';
+import type { ITransaction } from '@shared/interfaces';
+import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 
 export interface ApiGroupItem {
   seq: number;
@@ -68,51 +61,13 @@ export const getTransactionGroups = async (serverUrl: string) => {
 /* Get transaction groups */
 export const getTransactionGroupById = async (serverUrl: string, id: number) => {
   return commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.get<IGroup>(`${serverUrl}/transaction-groups/${id}`, {
-      withCredentials: true,
-    });
+    const { data } = await axiosWithCredentials.get<IGroup>(
+      `${serverUrl}/transaction-groups/${id}`,
+      {
+        withCredentials: true,
+      },
+    );
 
     return data;
   }, 'Failed to get transaction groups');
-};
-
-export const generateTransactionExportContent = async (
-  orgTransaction: ITransactionFull,
-  key: PrivateKey,
-  defaultDescription?: string
-) => {
-  const transactionBytes = hexToUint8Array(orgTransaction.transactionBytes);
-  const sdkTransaction = Transaction.fromBytes(transactionBytes);
-
-  // create .tx file contents
-  const signedBytes = (await sdkTransaction.sign(key)).toBytes();
-
-  // create .txt file contents
-  const author = orgTransaction.creatorEmail;
-  const contents = orgTransaction.description || defaultDescription || '';
-  const timestamp = new Date(orgTransaction.createdAt);
-  const formattedTimestamp = format(timestamp, 'yyyy-MM-dd HH:mm:ss');
-
-  const jsonContent = JSON.stringify({
-    Author: author,
-    Contents: contents,
-    Timestamp: formattedTimestamp,
-  });
-
-  return Promise.resolve({
-    signedBytes,
-    jsonContent,
-  });
-};
-
-export const generateTransactionExportFileName = (orgTransaction: ITransactionFull) => {
-  const transactionBytes = hexToUint8Array(orgTransaction.transactionBytes);
-  const sdkTransaction = Transaction.fromBytes(transactionBytes);
-
-  // Use TTv1 file name format:  `${epochSeconds}_${accountId}_${hash}.tx`
-  const validStart = sdkTransaction!.transactionId!.validStart;
-  const accountId = sdkTransaction.transactionId!.accountId!.toString();
-  const hash = javaFormatArrayHashCode(transactionBytes);
-
-  return `${validStart!.seconds}_${accountId}_${hash}`;
 };
