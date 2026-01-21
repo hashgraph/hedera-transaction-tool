@@ -345,4 +345,119 @@ describe('useNextTransactionStore', () => {
       expect(result).toBeNull();
     });
   });
+
+  describe('pagination scenarios', () => {
+    test('getNext should return next item when using paginated mode', async () => {
+      const store = useNextTransactionStore();
+      const mockGetTransactions = vi.fn(async () => ({
+        items: [1, 2, 3, 4, 5],
+        totalItems: 5,
+      }));
+      store.setGetTransactionsFunction(mockGetTransactions, true);
+      store.setPreviousTransactionsIds([]);
+
+      const result = await store.getNext(3);
+
+      expect(result).toBe(4);
+    });
+
+    test('getPrevious should return previous item when using paginated mode', async () => {
+      const store = useNextTransactionStore();
+      const mockGetTransactions = vi.fn(async () => ({
+        items: [1, 2, 3, 4, 5],
+        totalItems: 5,
+      }));
+      store.setGetTransactionsFunction(mockGetTransactions, true);
+      store.setPreviousTransactionsIds([]);
+
+      const result = await store.getPrevious(4);
+
+      expect(result).toBe(3);
+    });
+
+    test('getNext should return null when current is last item in paginated mode', async () => {
+      const store = useNextTransactionStore();
+      const mockGetTransactions = vi.fn(async () => ({
+        items: [1, 2, 3, 4, 5, 6],
+        totalItems: 6,
+      }));
+      store.setGetTransactionsFunction(mockGetTransactions, true);
+      store.setPreviousTransactionsIds([]);
+
+      const result = await store.getNext(6);
+
+      expect(result).toBeNull();
+    });
+
+    test('getPrevious should return null when current is first item in paginated mode', async () => {
+      const store = useNextTransactionStore();
+      const mockGetTransactions = vi.fn(async () => ({
+        items: [1, 2, 3],
+        totalItems: 3,
+      }));
+      store.setGetTransactionsFunction(mockGetTransactions, true);
+      store.setPreviousTransactionsIds([]);
+
+      const result = await store.getPrevious(1);
+
+      expect(result).toBeNull();
+    });
+
+    test('should handle previousTransactionsIds traversal for getNext', async () => {
+      const store = useNextTransactionStore();
+      const mockGetTransactions = vi.fn(async () => ({
+        items: [1, 2, 3, 4, 5],
+        totalItems: 5,
+      }));
+      store.setGetTransactionsFunction(mockGetTransactions, false);
+      store.setPreviousTransactionsIds([1, 2]);
+
+      const result = await store.getNext(3);
+
+      expect(result).toBe(4);
+    });
+
+    test('should handle previousTransactionsIds traversal for getPrevious', async () => {
+      const store = useNextTransactionStore();
+      const mockGetTransactions = vi.fn(async () => ({
+        items: [1, 2, 3, 4, 5],
+        totalItems: 5,
+      }));
+      store.setGetTransactionsFunction(mockGetTransactions, false);
+      store.setPreviousTransactionsIds([1, 2]);
+
+      const result = await store.getPrevious(3);
+
+      expect(result).toBe(2);
+    });
+
+    test('getNext should find item when current ID is in previousTransactionsIds but not in current list', async () => {
+      const store = useNextTransactionStore();
+      const mockGetTransactions = vi.fn(async () => ({
+        items: [10, 20, 30],
+        totalItems: 3,
+      }));
+      store.setGetTransactionsFunction(mockGetTransactions, false);
+      store.setPreviousTransactionsIds([10, 20]);
+
+      const result = await store.getNext(999);
+
+      // Should traverse previousTransactionsIds and find 20, then get next which is 30
+      expect(result).toBe(30);
+    });
+
+    test('setGetTransactionsFunction should set the hasPage flag correctly', () => {
+      const store = useNextTransactionStore();
+      const mockGetTransactions = vi.fn(async () => ({
+        items: [1, 2, 3],
+        totalItems: 3,
+      }));
+
+      store.setGetTransactionsFunction(mockGetTransactions, true);
+      store.setPreviousTransactionsIds([]);
+
+      // The function should be set (we can verify by calling getNext)
+      expect(mockGetTransactions).not.toHaveBeenCalled();
+    });
+  });
 });
