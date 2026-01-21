@@ -339,6 +339,108 @@ describe('EmailService', () => {
 
       setTimeoutSpy.mockRestore();
     });
+
+    it('should use default parameters (attempts=5, baseDelayMs=1000, maxDelayMs=60000, useJitter=true)', async () => {
+      // Fail 4 times, succeed on the 5th (default attempts)
+      (transport.sendMail as jest.Mock)
+        .mockRejectedValueOnce(new Error('e1'))
+        .mockRejectedValueOnce(new Error('e2'))
+        .mockRejectedValueOnce(new Error('e3'))
+        .mockRejectedValueOnce(new Error('e4'))
+        .mockResolvedValueOnce({ messageId: 'msg-default' });
+
+      const delays: number[] = [];
+      const setTimeoutSpy = jest.spyOn(global, 'setTimeout').mockImplementation((cb: any, ms?: number) => {
+        if (ms !== undefined) delays.push(ms);
+        cb();
+        return 1 as unknown as NodeJS.Timeout;
+      });
+
+      // Call with only mailOptions to use all defaults
+      const result = await (service as any).sendWithRetry(mailOptions);
+
+      expect(result).toEqual({ messageId: 'msg-default' });
+      expect(transport.sendMail).toHaveBeenCalledTimes(5);
+      // Verify delays were calculated (with jitter, they should be between 0.5x and 1.5x of base)
+      expect(delays.length).toBe(4);
+
+      setTimeoutSpy.mockRestore();
+    });
+
+    it('should cap delay at maxDelayMs', async () => {
+      // With baseDelayMs=1000, after attempt 6: 1000 * 2^5 = 32000ms
+      // After attempt 7: 1000 * 2^6 = 64000ms > maxDelayMs (60000), should cap
+      (transport.sendMail as jest.Mock).mockRejectedValue(new Error('fail'));
+
+      const delays: number[] = [];
+      const setTimeoutSpy = jest.spyOn(global, 'setTimeout').mockImplementation((cb: any, ms?: number) => {
+        if (ms !== undefined) delays.push(ms);
+        cb();
+        return 1 as unknown as NodeJS.Timeout;
+      });
+
+      // Use 7 attempts, no jitter to test exact capping
+      await expect(
+        (service as any).sendWithRetry(mailOptions, 7, 1000, 60000, false)
+      ).rejects.toThrow('fail');
+
+      // Delays should be: 1000, 2000, 4000, 8000, 16000, 32000 (6 delays for 7 attempts)
+      expect(delays).toEqual([1000, 2000, 4000, 8000, 16000, 32000]);
+
+      setTimeoutSpy.mockRestore();
+    });
+
+    it('should apply jitter when useJitter is true (delays between 0.5x and 1.5x)', async () => {
+      (transport.sendMail as jest.Mock)
+        .mockRejectedValueOnce(new Error('e1'))
+        .mockRejectedValueOnce(new Error('e2'))
+        .mockResolvedValueOnce({ messageId: 'msg-jitter' });
+
+      const delays: number[] = [];
+      const setTimeoutSpy = jest.spyOn(global, 'setTimeout').mockImplementation((cb: any, ms?: number) => {
+        if (ms !== undefined) delays.push(ms);
+        cb();
+        return 1 as unknown as NodeJS.Timeout;
+      });
+
+      // Mock Math.random to return consistent values for testing
+      const randomSpy = jest.spyOn(Math, 'random')
+        .mockReturnValueOnce(0.0)  // jitterFactor = 0.5
+        .mockReturnValueOnce(1.0); // jitterFactor = 1.5
+
+      await (service as any).sendWithRetry(mailOptions, 3, 1000, 60000, true);
+
+      // First delay: 1000 * 0.5 = 500
+      // Second delay: 2000 * 1.5 = 3000
+      expect(delays[0]).toBe(500);
+      expect(delays[1]).toBe(3000);
+
+      setTimeoutSpy.mockRestore();
+      randomSpy.mockRestore();
+    });
+
+    it('should not apply jitter when useJitter is false', async () => {
+      (transport.sendMail as jest.Mock)
+        .mockRejectedValueOnce(new Error('e1'))
+        .mockRejectedValueOnce(new Error('e2'))
+        .mockResolvedValueOnce({ messageId: 'msg-no-jitter' });
+
+      const delays: number[] = [];
+      const setTimeoutSpy = jest.spyOn(global, 'setTimeout').mockImplementation((cb: any, ms?: number) => {
+        if (ms !== undefined) delays.push(ms);
+        cb();
+        return 1 as unknown as NodeJS.Timeout;
+      });
+
+      await (service as any).sendWithRetry(mailOptions, 3, 1000, 60000, false);
+
+      // Without jitter: exact exponential backoff
+      // First delay: 1000 * 2^0 = 1000
+      // Second delay: 1000 * 2^1 = 2000
+      expect(delays).toEqual([1000, 2000]);
+
+      setTimeoutSpy.mockRestore();
+    });
   });
 
   describe('processUserInviteNotifications', () => {
