@@ -143,7 +143,7 @@ export class ApproversService {
       userKeysToSign.length === 0 &&
       transaction.creatorKey?.userId !== user.id &&
       !transaction.observers.some(o => o.userId === user.id) &&
-      !transaction.signers.some(s => s.userKey.userId === user.id) &&
+      !transaction.signers.some(s => s.userKey?.userId === user.id) &&
       !approvers.some(a => a.userId === user.id)
     )
       throw new UnauthorizedException("You don't have permission to view this transaction");

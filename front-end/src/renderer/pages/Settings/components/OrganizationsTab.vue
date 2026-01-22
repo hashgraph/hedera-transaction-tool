@@ -28,7 +28,6 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import ConnectionStatusBadge from '@renderer/components/Organization/ConnectionStatusBadge.vue';
-import ConnectionToggle from '@renderer/components/Organization/ConnectionToggle.vue';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
@@ -144,7 +143,7 @@ const hasCompatibilityConflict = (serverUrl: string) => {
             <tr>
               <th>Nickname</th>
               <th>Server URL</th>
-              <th>Connection Status</th>
+              <th>Status</th>
               <th>Version Info</th>
               <th>Actions</th>
             </tr>
@@ -237,7 +236,7 @@ const hasCompatibilityConflict = (serverUrl: string) => {
                 </td>
                 <td>
                   <div class="d-flex align-items-center gap-2">
-                    <ConnectionToggle :organization="organization" />
+<!--                    <ConnectionToggle :organization="organization" />-->
                     <AppButton
                       size="small"
                       data-testid="button-delete-connection"

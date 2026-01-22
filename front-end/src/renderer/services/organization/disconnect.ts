@@ -11,6 +11,7 @@ import {
   infoToastOptions,
   warningToastOptions,
 } from '@renderer/utils/toastOptions';
+import { updateOrganizationCredentials } from '../organizationCredentials';
 
 export async function disconnectOrganization(
   serverUrl: string,
@@ -28,7 +29,9 @@ export async function disconnectOrganization(
   toggleAuthTokenInSessionStorage(serverUrl, '', true);
 
   const org = userStore.organizations.find(o => o.serverUrl === serverUrl);
-  if (org) {
+  const user = userStore.personal;
+  if (org && user && user.isLoggedIn) {
+    await updateOrganizationCredentials(org.id, user.id, undefined, undefined, null);
     org.connectionStatus = 'disconnected';
     org.disconnectReason = reason;
     org.lastDisconnectedAt = new Date();
