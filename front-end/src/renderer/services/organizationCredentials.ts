@@ -50,7 +50,7 @@ export const updateOrganizationCredentials = async (
   organization_id: string,
   user_id: string,
   email?: string,
-  password?: string,
+  password?: string | null,
   jwtToken?: string | null,
   encryptPassword?: string,
 ) =>
