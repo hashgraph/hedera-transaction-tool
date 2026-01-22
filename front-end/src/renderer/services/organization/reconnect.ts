@@ -50,29 +50,28 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
     return { success: false };
   }
 
-  const token = getAuthTokenFromSessionStorage(org.serverUrl);
-  if (!token && user && user.isLoggedIn && (user.password || user.useKeychain)) {
-    const credentials = await getOrganizationCredentials(org.id, user.id, user.password);
-
-    if (credentials) {
-      const { jwtToken } = await login(
-        org.serverUrl,
-        credentials.email,
-        credentials.password,
-      );
-
-      await updateOrganizationCredentials(
-        org.id,
-        user.id,
-        undefined,
-        undefined,
-        jwtToken,
-      );
-      toggleAuthTokenInSessionStorage(org.serverUrl, jwtToken, false);
-    }
-  }
-
   try {
+    const token = getAuthTokenFromSessionStorage(org.serverUrl);
+    if (!token && user && user.isLoggedIn && (user.password || user.useKeychain)) {
+      const credentials = await getOrganizationCredentials(org.id, user.id, user.password);
+
+      if (credentials) {
+        const { jwtToken } = await login(
+          org.serverUrl,
+          credentials.email,
+          credentials.password,
+        );
+
+        await updateOrganizationCredentials(
+          org.id,
+          user.id,
+          undefined,
+          undefined,
+          jwtToken,
+        );
+        toggleAuthTokenInSessionStorage(org.serverUrl, jwtToken, false);
+      }
+    }
     console.log(
       `[${new Date().toISOString()}] RECONNECT Starting version check for: ${org.nickname || serverUrl}`,
     );
