@@ -351,19 +351,28 @@ describe('Services Local User Organization Credentials', () => {
     });
 
     test('Should return organization credentials', async () => {
-      prisma.organizationCredentials.findFirst.mockResolvedValue(organizationCredentials);
+      const decryptPassword = 'decryptPassword';
+      const decryptedPassword = 'decryptedPassword';
 
-      await getOrganizationCredentials('123', '321');
+      prisma.organizationCredentials.findFirst.mockResolvedValue(organizationCredentials);
+      vi.mocked(decryptData).mockResolvedValue(decryptedPassword);
+
+      const result = await getOrganizationCredentials('123', '321', decryptPassword);
 
       expect(prisma.organizationCredentials.findFirst).toHaveBeenCalledWith({
         where: { user_id: '321', organization_id: '123' },
+      });
+      expect(decryptData).toHaveBeenCalledWith(organizationCredentials.password, decryptPassword);
+      expect(result).toEqual({
+        ...organizationCredentials,
+        password: decryptedPassword,
       });
     });
 
     test('Should return null if database error occur', async () => {
       prisma.organizationCredentials.findFirst.mockRejectedValue('Database error');
 
-      const result = await getOrganizationCredentials('123', '321');
+      const result = await getOrganizationCredentials('123', '321', null);
 
       expect(result).toEqual(null);
     });
