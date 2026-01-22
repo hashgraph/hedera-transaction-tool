@@ -74,7 +74,7 @@ export const deleteOrganizationCredentials = async (organization_id: string, use
     );
   }, 'Failed to delete organization credentials');
 
-export const getOrganizationCredentials = async (organization_id: string, user_id: string, decryptPassword: string) =>
+export const getOrganizationCredentials = async (organization_id: string, user_id: string, decryptPassword: string | null) =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.organizationCredentials.getOrganizationCredentials(
       organization_id,

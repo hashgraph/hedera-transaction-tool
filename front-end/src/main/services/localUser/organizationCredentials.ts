@@ -106,7 +106,7 @@ export const getCurrentUser = async (organizationServerUrl: string) => {
 export const getOrganizationCredentials = async (
   organization_id: string,
   user_id: string,
-  decryptPassword: string,
+  decryptPassword: string | null,
 ) => {
   const prisma = getPrismaClient();
 
