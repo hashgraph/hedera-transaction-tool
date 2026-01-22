@@ -115,6 +115,8 @@ export const getOrganizationCredentials = async (
       where: { user_id, organization_id },
     });
 
+    if (!credentials) return null;
+
     const password = await decryptData(credentials.password, decryptPassword);
 
     return {
