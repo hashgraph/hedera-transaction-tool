@@ -409,19 +409,22 @@ export const getConnectedOrganization = async (
     return null;
   }
 
+  const inactiveOrg: ConnectedOrganization = {
+    ...organization,
+    isLoading: false,
+    isServerActive: false,
+    loginRequired: false,
+  };
+
   try {
     const isActive = await healthCheck(organization.serverUrl);
 
     if (!isActive) {
-      return {
-        ...organization,
-        isLoading: false,
-        isServerActive: false,
-        loginRequired: false,
-      };
+      return inactiveOrg;
     }
   } catch (error) {
     console.log(error);
+    return inactiveOrg;
   }
 
   const activeLoginRequired: ConnectedOrganization = {
@@ -439,6 +442,7 @@ export const getConnectedOrganization = async (
     }
   } catch (error) {
     console.log(error);
+    return activeLoginRequired;
   }
 
   try {
