@@ -175,25 +175,15 @@ function stripProtocolAndPath(input: string): string {
   // Remove protocol prefix (http://, https://, grpc://, etc.)
   result = result.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, '');
 
-  // Remove path (everything after the first /)
-  // Preserve trailing dot for FQDN
+  // Remove path, query parameters, and fragments
+  // Find the first occurrence of /, ?, or # and truncate there
   const slashIndex = result.indexOf('/');
-  if (slashIndex !== -1) {
-    result = result.substring(0, slashIndex);
-  }
-
-  // Remove query parameters (everything after '?') and fragments (everything after '#')
   const queryIndex = result.indexOf('?');
   const fragmentIndex = result.indexOf('#');
-  let cutIndex = -1;
-  if (queryIndex !== -1 && fragmentIndex !== -1) {
-    cutIndex = Math.min(queryIndex, fragmentIndex);
-  } else if (queryIndex !== -1) {
-    cutIndex = queryIndex;
-  } else if (fragmentIndex !== -1) {
-    cutIndex = fragmentIndex;
-  }
-  if (cutIndex !== -1) {
+
+  const indices = [slashIndex, queryIndex, fragmentIndex].filter(i => i !== -1);
+  if (indices.length > 0) {
+    const cutIndex = Math.min(...indices);
     result = result.substring(0, cutIndex);
   }
 
