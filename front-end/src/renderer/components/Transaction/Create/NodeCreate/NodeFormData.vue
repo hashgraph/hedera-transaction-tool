@@ -201,10 +201,21 @@ function stripProtocolAndPath(input: string): string {
 }
 
 function cleanAndExtractPort(input: string): { hostPart: string; port: string | null } {
-  // First strip protocol and path
   let hostPart = stripProtocolAndPath(input);
 
-  // Check for port pattern: host:port where port is numeric
+  const colonCount = (hostPart.match(/:/g) || []).length;
+
+  if (colonCount > 1) {
+    // IPv6 territory - only extract port if brackets are used: [IPv6]:port
+    const bracketMatch = hostPart.match(/^(\[.+\]):(\d+)$/);
+    if (bracketMatch) {
+      return { hostPart: bracketMatch[1], port: bracketMatch[2] };
+    }
+    // Bare IPv6 - can't have a port without brackets
+    return { hostPart, port: null };
+  }
+
+  // IPv4 or domain - standard port extraction
   const portMatch = hostPart.match(/:(\d+)$/);
   if (portMatch) {
     const port = portMatch[1];
