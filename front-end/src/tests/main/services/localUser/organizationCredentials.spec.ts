@@ -350,9 +350,12 @@ describe('Services Local User Organization Credentials', () => {
       vi.resetAllMocks();
     });
 
-    test('Should return organization credentials', async () => {
+    test('Should return organization credentials with decrypted password using decrypt password', async () => {
       const decryptPassword = 'decryptPassword';
+      const decryptedPassword = 'decryptedPassword';
 
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
+      vi.mocked(decrypt).mockReturnValue(decryptedPassword);
       prisma.organizationCredentials.findFirst.mockResolvedValue(organizationCredentials);
 
       const result = await getOrganizationCredentials('123', '321', decryptPassword);
@@ -360,19 +363,58 @@ describe('Services Local User Organization Credentials', () => {
       expect(prisma.organizationCredentials.findFirst).toHaveBeenCalledWith({
         where: { user_id: '321', organization_id: '123' },
       });
-
-      // Since decryptData is tested separately, we only assert the DB call + shape here
+      expect(decrypt).toHaveBeenCalledWith(organizationCredentials.password, decryptPassword);
       expect(result).toEqual({
         ...organizationCredentials,
-        // if decryptData returns the same value under test env, password will match
-        password: expect.any(String),
+        password: decryptedPassword,
       });
     });
 
-    test('Should return null if database error occur', async () => {
-      prisma.organizationCredentials.findFirst.mockRejectedValue('Database error');
+    test('Should return organization credentials with decrypted password using keychain', async () => {
+      const decryptedPassword = 'decryptedPassword';
+      const buffer = Buffer.from(organizationCredentials.password, 'base64');
+
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(true);
+      vi.mocked(safeStorage.decryptString).mockReturnValue(decryptedPassword);
+      prisma.organizationCredentials.findFirst.mockResolvedValue(organizationCredentials);
 
       const result = await getOrganizationCredentials('123', '321', null);
+
+      expect(prisma.organizationCredentials.findFirst).toHaveBeenCalledWith({
+        where: { user_id: '321', organization_id: '123' },
+      });
+      expect(safeStorage.decryptString).toHaveBeenCalledWith(buffer);
+      expect(result).toEqual({
+        ...organizationCredentials,
+        password: decryptedPassword,
+      });
+    });
+
+    test('Should return null if decryptPassword is null and keychain is not used', async () => {
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
+      prisma.organizationCredentials.findFirst.mockResolvedValue(organizationCredentials);
+
+      const result = await getOrganizationCredentials('123', '321', null);
+
+      expect(result).toEqual(null);
+    });
+
+    test('Should return null if database error occurs', async () => {
+      prisma.organizationCredentials.findFirst.mockRejectedValue('Database error');
+
+      const result = await getOrganizationCredentials('123', '321', 'password');
+
+      expect(result).toEqual(null);
+    });
+
+    test('Should return null if decryption fails', async () => {
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
+      vi.mocked(decrypt).mockImplementation(() => {
+        throw new Error('Decryption failed');
+      });
+      prisma.organizationCredentials.findFirst.mockResolvedValue(organizationCredentials);
+
+      const result = await getOrganizationCredentials('123', '321', 'wrongPassword');
 
       expect(result).toEqual(null);
     });
