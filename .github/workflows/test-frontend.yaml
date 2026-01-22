@@ -126,7 +126,8 @@ jobs:
         if: ${{ matrix.test-suite.soloRequired }}
         run: |
           set -euo pipefail
-          npx --yes @hashgraph/solo --version
+          npm install -g @hashgraph/solo@0.49.0
+          solo --version
           kind --version
 
       - name: Deploy Solo
@@ -140,7 +141,7 @@ jobs:
         run: |
           set -euo pipefail
           kind create cluster -n "${SOLO_CLUSTER_NAME}"
-          npx --yes @hashgraph/solo one-shot single deploy | tee solo-deploy.log
+          solo one-shot single deploy | tee solo-deploy.log
 
       - name: Check port forwarding
         if: ${{ matrix.test-suite.soloRequired }}
