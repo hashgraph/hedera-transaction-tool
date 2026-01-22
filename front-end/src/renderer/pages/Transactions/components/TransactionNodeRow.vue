@@ -228,16 +228,30 @@ watch(() => props.node.description, () => {
   nextTick(() => checkTruncation());
 });
 
-// Fetch freeze type when node is a freeze transaction
+// Fetch transaction metadata (external status and freeze type)
 watch(
   () => [props.node.transactionType, props.node.transactionId] as const,
   async ([transactionType, transactionId]) => {
-    if (transactionType === 'FREEZE' && transactionId) {
+    // No transaction: reset everything
+    if (!transactionId) {
+      isExternal.value = false;
+      freezeType.value = null;
+      return;
+    }
+
+    // We have a transaction: compute isExternal
+    const externalSignerKeys = await transactionAudit.externalSignerKeys.value;
+    isExternal.value = externalSignerKeys.size > 0;
+
+    // Handle FREEZE transactions
+    if (transactionType === 'FREEZE') {
       if (isLoggedInOrganization(user.selectedOrganization)) {
         freezeType.value = await getFreezeTypeForTransaction(
           user.selectedOrganization.serverUrl,
           transactionId,
         );
+      } else {
+        freezeType.value = null;
       }
     } else {
       freezeType.value = null;
