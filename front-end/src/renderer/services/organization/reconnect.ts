@@ -43,7 +43,7 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
   const toast = useToast();
 
   const org = userStore.organizations.find(o => o.serverUrl === serverUrl);
-
+  const user = userStore.personal;
   if (!org) {
     console.error(`[${new Date().toISOString()}] RECONNECT Organization not found: ${serverUrl}`);
     toast.error('Organization not found', errorToastOptions);
@@ -51,23 +51,25 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
   }
 
   const token = getAuthTokenFromSessionStorage(org.serverUrl);
-  if (!token && (userStore.personal.password || userStore.personal.useKeychain)) {
-    const credentials = await getOrganizationCredentials(org.id, userStore.personal.id, userStore.personal.password);
+  if (!token && user && user.isLoggedIn && (user.password || user.useKeychain)) {
+    const credentials = await getOrganizationCredentials(org.id, user.id, user.password);
 
-    const { jwtToken } = await login(
-      org.serverUrl,
-      credentials.email,
-      credentials.password,
-    );
+    if (credentials) {
+      const { jwtToken } = await login(
+        org.serverUrl,
+        credentials.email,
+        credentials.password,
+      );
 
-    await updateOrganizationCredentials(
-      org.id,
-      userStore.personal.id,
-      undefined,
-      undefined,
-      jwtToken,
-    );
-    toggleAuthTokenInSessionStorage(org.serverUrl, jwtToken, false);
+      await updateOrganizationCredentials(
+        org.id,
+        user.id,
+        undefined,
+        undefined,
+        jwtToken,
+      );
+      toggleAuthTokenInSessionStorage(org.serverUrl, jwtToken, false);
+    }
   }
 
   try {

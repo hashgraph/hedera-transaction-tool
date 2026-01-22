@@ -29,8 +29,9 @@ export async function disconnectOrganization(
   toggleAuthTokenInSessionStorage(serverUrl, '', true);
 
   const org = userStore.organizations.find(o => o.serverUrl === serverUrl);
-  if (org) {
-    await updateOrganizationCredentials(org.id, userStore.personal.id, undefined, undefined, null);
+  const user = userStore.personal;
+  if (org && user && user.isLoggedIn) {
+    await updateOrganizationCredentials(org.id, user.id, undefined, undefined, null);
     org.connectionStatus = 'disconnected';
     org.disconnectReason = reason;
     org.lastDisconnectedAt = new Date();
