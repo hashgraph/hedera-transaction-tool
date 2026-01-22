@@ -21,11 +21,12 @@ export class UserKeysService {
   getUserKey(
     where: FindOptionsWhere<UserKey>,
     relations?: FindOptionsRelations<UserKey>,
+    withDeleted: boolean = false,
   ): Promise<UserKey> {
     if (!where) {
       return null;
     }
-    return this.repo.findOne({ where, relations });
+    return this.repo.findOne({ where, relations, withDeleted });
   }
 
   // Upload the provided user key for the provided user.
@@ -75,7 +76,6 @@ export class UserKeysService {
         mnemonicHash: user.id === userId,
         index: user.id === userId,
         publicKey: true,
-        deletedAt: true,
       },
     });
   }
