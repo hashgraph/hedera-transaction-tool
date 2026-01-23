@@ -60,6 +60,7 @@ import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
+import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
@@ -641,6 +642,7 @@ function itemStatusBadgeClass(item: IGroupItem): string {
           <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
             <i class="bi bi-arrow-left"></i>
           </AppButton>
+          <NextTransactionCursor />
 
           <h2 class="text-title text-bold">Transaction Group Details</h2>
         </div>

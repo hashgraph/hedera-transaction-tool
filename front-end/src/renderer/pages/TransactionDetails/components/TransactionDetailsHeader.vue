@@ -49,6 +49,7 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
+import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
 
 import { TransactionStatus } from '@shared/interfaces';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
@@ -639,7 +640,7 @@ watch(
       >
         <i class="bi bi-arrow-left"></i>
       </AppButton>
-
+      <NextTransactionCursor/>
       <h2 class="text-title text-bold">
         Transaction Details
         <span v-if="isTransactionFailed" class="badge bg-danger text-break ms-2">
