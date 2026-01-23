@@ -41,7 +41,7 @@ export default {
       organization_id: string,
       user_id: string,
       email?: string,
-      password?: string,
+      password?: string | null,
       jwtToken?: string | null,
       encryptPassword?: string,
     ): Promise<boolean> =>
@@ -59,6 +59,17 @@ export default {
         'organizationCredentials:deleteOrganizationCredentials',
         organization_id,
         user_id,
+      ),
+    getOrganizationCredentials: (organization_id: string, user_id: string, decryptPassword: string | null): Promise<{
+      email: string;
+      password: string;
+      jwtToken: string | null;
+    } | null> =>
+      ipcRenderer.invoke(
+        'organizationCredentials:getOrganizationCredentials',
+        organization_id,
+        user_id,
+        decryptPassword,
       ),
     tryAutoSignIn: (user_id: string, decryptPassword: string | null): Promise<Organization[]> =>
       ipcRenderer.invoke('organizationCredentials:tryAutoSignIn', user_id, decryptPassword),

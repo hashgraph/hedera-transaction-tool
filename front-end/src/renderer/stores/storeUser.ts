@@ -194,16 +194,17 @@ const useUserStore = defineStore('user', () => {
       const disconnectReason = orgConnection.getDisconnectReason(organization.serverUrl);
 
       // Prevent selecting organizations that are disconnected due to upgrade requirement
-      if (connectionStatus === 'disconnected' && disconnectReason === 'upgradeRequired') {
-        const versionStatus = getVersionStatusForOrg(organization.serverUrl);
-        
-        if (versionStatus === 'belowMinimum') {
-          triggeringOrganizationServerUrl.value = organization.serverUrl;
-          return;
+      if (connectionStatus === 'disconnected') {
+        if (disconnectReason === 'upgradeRequired') {
+          const versionStatus = getVersionStatusForOrg(organization.serverUrl);
+
+          if (versionStatus === 'belowMinimum') {
+            triggeringOrganizationServerUrl.value = organization.serverUrl;
+            return;
+          }
         }
 
         await reconnectOrganization(organization.serverUrl);
-        return;
       }
     }
 
