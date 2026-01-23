@@ -103,13 +103,26 @@ export const getCurrentUser = async (organizationServerUrl: string) => {
 };
 
 /* Returns credentials for organization */
-export const getOrganizationCredentials = async (organization_id: string, user_id: string) => {
+export const getOrganizationCredentials = async (
+  organization_id: string,
+  user_id: string,
+  decryptPassword: string | null,
+) => {
   const prisma = getPrismaClient();
 
   try {
-    return await prisma.organizationCredentials.findFirst({
+    const credentials = await prisma.organizationCredentials.findFirst({
       where: { user_id, organization_id },
     });
+
+    if (!credentials) return null;
+
+    const password = await decryptData(credentials.password, decryptPassword);
+
+    return {
+      ...credentials,
+      password,
+    };
   } catch (error) {
     console.log(error);
     return null;
@@ -209,7 +222,7 @@ export const updateOrganizationCredentials = async (
       where: { id: credentials.id },
       data: {
         email: email || credentials.email,
-        password: password || credentials.password,
+        password: password !== undefined ? password : credentials.password,
         jwtToken: jwtToken !== undefined ? jwtToken : credentials.jwtToken,
       },
     });
