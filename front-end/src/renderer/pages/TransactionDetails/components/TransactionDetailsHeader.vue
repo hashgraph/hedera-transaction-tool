@@ -13,7 +13,7 @@ import { areByteArraysEqual } from '@shared/utils/byteUtils';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
-import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
+import useNextTransactionV2 from '@renderer/stores/storeNextTransactionV2.ts';
 
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
@@ -41,7 +41,6 @@ import {
   getTransactionBodySignatureWithoutNodeAccountId,
   hexToUint8Array,
   isLoggedInOrganization,
-  redirectToDetails,
   setLastExportExtension,
   signTransactions,
   usersPublicRequiredToSign,
@@ -116,8 +115,6 @@ const props = defineProps<{
   organizationTransaction: ITransactionFull | null;
   localTransaction: Transaction | null;
   sdkTransaction: SDKTransaction | null;
-  nextId: number | string | null;
-  previousId: number | string | null;
   onAction: () => Promise<void>;
 }>();
 
@@ -125,7 +122,7 @@ const props = defineProps<{
 const user = useUserStore();
 const network = useNetwork();
 const contacts = useContactsStore();
-const nextTransaction = useNextTransactionStore();
+const nextTransaction = useNextTransactionV2();
 
 /* Composables */
 const router = useRouter();
@@ -229,13 +226,8 @@ const visibleButtons = computed(() => {
   shouldApprove.value && buttons.push(reject, approve);
   canSign.value && !shouldApprove.value && buttons.push(sign);
   canExecute.value && buttons.push(execute);
-  // if (isLargeScreen.value) {
-  //   props.previousId && buttons.push(previous);
-  //   props.nextId && buttons.push(next);
-  // } else {
-  props.nextId && buttons.push(next);
-  props.previousId && buttons.push(previous);
-  // }
+  nextTransaction.hasNext && buttons.push(next);
+  nextTransaction.hasPrev && buttons.push(previous);
   canCancel.value && buttons.push(cancel);
   canRemind.value && buttons.push(remindSignersLabel);
   canArchive.value && buttons.push(archive);
@@ -257,15 +249,8 @@ const isManualFlagVisible = computed(() => {
 });
 
 /* Handlers */
-const handleBack = () => {
-  if (
-    !history.state?.back?.startsWith('/transactions') &&
-    !history.state?.back?.startsWith('/transaction-group/')
-  ) {
-    router.push({ name: 'transactions' });
-  } else {
-    router.back();
-  }
+const handleBack = async () => {
+  await nextTransaction.routeUp()
 };
 
 const handleSign = async () => {
@@ -459,34 +444,12 @@ const handleExecute = (showModal?: boolean) => handleTransactionAction('execute'
 const handleRemindSigners = (showModal?: boolean) =>
   handleTransactionAction('remindSigners', showModal);
 
-const handlePrevious = () => {
-  if (!props.previousId) return;
-
-  const newPreviousTransactionsIds = [...(nextTransaction.previousTransactionsIds || [])];
-  if (isLoggedInOrganization(user.selectedOrganization)) {
-    props.organizationTransaction &&
-      newPreviousTransactionsIds.push(props.organizationTransaction.id);
-  } else {
-    props.localTransaction && newPreviousTransactionsIds.push(props.localTransaction.id);
-  }
-  nextTransaction.setPreviousTransactionsIds(newPreviousTransactionsIds);
-
-  redirectToDetails(router, props.previousId.toString(), true, true);
+const handlePrevious = async () => {
+  await nextTransaction.routeToPrev();
 };
 
-const handleNext = () => {
-  if (!props.nextId) return;
-
-  const newPreviousTransactionsIds = [...(nextTransaction.previousTransactionsIds || [])];
-  if (isLoggedInOrganization(user.selectedOrganization)) {
-    props.organizationTransaction &&
-      newPreviousTransactionsIds.push(props.organizationTransaction.id);
-  } else {
-    props.localTransaction && newPreviousTransactionsIds.push(props.localTransaction.id);
-  }
-  nextTransaction.setPreviousTransactionsIds(newPreviousTransactionsIds);
-
-  redirectToDetails(router, props.nextId.toString(), true, true);
+const handleNext = async () => {
+  await nextTransaction.routeToNext();
 };
 
 const handleExport = async () => {
