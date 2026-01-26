@@ -7,7 +7,8 @@ import { useRouter } from 'vue-router';
 import useTransactionAudit from '@renderer/composables/useTransactionAudit.ts';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import useFilterNotifications from '@renderer/composables/useFilterNotifications.ts';
-import { getTransactionTypeFromBackendType } from '@renderer/utils/sdk/transactions.ts';
+import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions.ts';
+import { FreezeTransaction, type FreezeType } from '@hashgraph/sdk';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -44,6 +45,7 @@ const descriptionRef = ref<HTMLElement | null>(null);
 const isTruncated = ref(false);
 const isExternal = ref(false);
 let resizeObserver: ResizeObserver | null = null;
+const freezeType = ref<FreezeType | null>(null);
 
 /* Composables */
 const router = useRouter();
@@ -116,7 +118,11 @@ const hasNotifications = computed(() => {
 const transactionType = computed(() => {
   let result: string;
   if (props.node.transactionType) {
-    result = getTransactionTypeFromBackendType(props.node.transactionType, false, true);
+    result = getDisplayTransactionType(
+      { backendType: props.node.transactionType, freezeType: freezeType.value },
+      false,
+      true,
+    );
   } else if (props.node.groupItemCount) {
     const groupItemCount = props.node.groupItemCount;
     const groupCollectedCount = props.node.groupCollectedCount ?? groupItemCount;
@@ -215,11 +221,36 @@ onUnmounted(() => {
 watch(() => props.node.description, () => {
   nextTick(() => checkTruncation());
 });
-watch(transactionId, async () => {
-  const externalSignerKeys = await transactionAudit.externalSignerKeys.value;
-  isExternal.value = externalSignerKeys.size > 0;
-},{ immediate: true });
 
+// Fetch transaction metadata (external status and freeze type)
+watch(
+  () => [props.node.transactionType, props.node.transactionId] as const,
+  async ([transactionType, transactionId]) => {
+    // No transaction: reset everything
+    if (!transactionId) {
+      isExternal.value = false;
+      freezeType.value = null;
+      return;
+    }
+
+    // We have a transaction: compute isExternal
+    const externalSignerKeys = await transactionAudit.externalSignerKeys.value;
+    isExternal.value = externalSignerKeys.size > 0;
+
+    // Handle FREEZE transactions - extract freezeType from sdkTransaction
+    if (transactionType === 'FREEZE') {
+      const sdkTx = await transactionAudit.sdkTransaction.value;
+      if (sdkTx instanceof FreezeTransaction && sdkTx.freezeType) {
+        freezeType.value = sdkTx.freezeType;
+      } else {
+        freezeType.value = null;
+      }
+    } else {
+      freezeType.value = null;
+    }
+  },
+  { immediate: true },
+);
 </script>
 
 <template>

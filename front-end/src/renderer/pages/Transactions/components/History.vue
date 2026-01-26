@@ -31,7 +31,7 @@ import {
   isLoggedInOrganization,
   isUserLoggedIn,
 } from '@renderer/utils';
-import * as sdkTransactionUtils from '@renderer/utils/sdk/transactions';
+import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -241,6 +241,18 @@ function setPreviousTransactionsIds(id: string | number) {
   }
 }
 
+/**
+ * Gets the display transaction type for local transactions.
+ * For freeze transactions, extracts the specific freeze type from the transaction body.
+ */
+function getLocalTransactionDisplayType(transaction: Transaction): string {
+  return getDisplayTransactionType(
+    { localType: transaction.type, transactionBytes: transaction.body },
+    false,
+    true,
+  );
+}
+
 /* Hooks */
 onBeforeMount(async () => {
   setGetTransactionsFunction();
@@ -415,7 +427,7 @@ watch(
                     <TransactionId :transaction-id="transaction.transaction_id" wrap />
                   </td>
                   <td :data-testid="`td-transaction-type-${index}`">
-                    <span class="text-bold">{{ transaction.type }}</span>
+                    <span class="text-bold">{{ getLocalTransactionDisplayType(transaction) }}</span>
                   </td>
                   <td :data-testid="`td-transaction-description-${index}`">
                     <span class="text-wrap-two-line-ellipsis">{{ transaction.description }}</span>
@@ -463,7 +475,7 @@ watch(
                   </td>
                   <td :data-testid="`td-transaction-type-${index}`">
                     <span class="text-bold">{{
-                      sdkTransactionUtils.getTransactionType(transactionData.transaction, false, true)
+                      getDisplayTransactionType(transactionData.transaction, false, true)
                     }}</span>
                   </td>
                   <td :data-testid="`td-transaction-description-${index}`">
