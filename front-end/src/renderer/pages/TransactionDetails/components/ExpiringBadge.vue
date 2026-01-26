@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 
 import { TransactionStatus } from '@shared/interfaces';
 
 /* Constants */
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 const ONE_MINUTE_MS = 60 * 1000;
+const ONE_HOUR_MS = 60 * 60 * 1000;
+const ONE_SECOND_MS = 1000;
 
 /* Props */
 const props = withDefaults(
@@ -16,7 +18,7 @@ const props = withDefaults(
     /**
      * Badge variant:
      * - 'simple': Shows "Expiring soon" text
-     * - 'countdown': Shows "Expires in HH:MM" with live countdown
+     * - 'countdown': Shows "Expires in HHh MMm" (>= 1h) or "Expires in MMm SSs" (< 1h) with live countdown
      *
      * To switch variants, change this prop value.
      * To remove the feature entirely, delete this component and its usage.
@@ -31,6 +33,7 @@ const props = withDefaults(
 /* State */
 const now = ref(Date.now());
 let intervalId: ReturnType<typeof setInterval> | null = null;
+let currentIntervalMs: number | null = null;
 
 /* Computed */
 const inProgressStatuses = [
@@ -54,30 +57,93 @@ const shouldShowBadge = computed(() => {
   return remaining !== null && remaining > 0 && remaining <= TWENTY_FOUR_HOURS_MS;
 });
 
-const countdownText = computed(() => {
-  if (!timeUntilExpiry.value || timeUntilExpiry.value <= 0) return '';
+const currentInterval = computed(() => {
+  const remaining = timeUntilExpiry.value;
 
-  const totalMinutes = Math.floor(timeUntilExpiry.value / ONE_MINUTE_MS);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
+  // No interval needed if badge won't show or time expired
+  if (remaining === null || remaining <= 0 || !shouldShowBadge.value) {
+    return null;
+  }
 
-  return `Expires in ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  // Under 1 hour: update every second for MMm SSs format
+  if (remaining < ONE_HOUR_MS) {
+    return ONE_SECOND_MS;
+  }
+
+  // 1 hour or more: update every minute for HHh MMm format
+  return ONE_MINUTE_MS;
 });
 
-/* Lifecycle - Only start interval for countdown variant */
-onMounted(() => {
-  if (props.variant === 'countdown') {
-    intervalId = setInterval(() => {
-      now.value = Date.now();
-    }, ONE_MINUTE_MS);
+const countdownText = computed(() => {
+  const remaining = timeUntilExpiry.value;
+
+  if (!remaining || remaining <= 0) {
+    return 'Expired';
   }
+
+  const totalSeconds = Math.floor(remaining / ONE_SECOND_MS);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  // Under 1 hour: show MMm SSs format (updates every second)
+  if (remaining < ONE_HOUR_MS) {
+    return `Expires in ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
+  }
+
+  // 1 hour or more: show HHh MMm format (updates every minute)
+  return `Expires in ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m`;
+});
+
+/* Functions - Interval management */
+function clearCurrentInterval() {
+  if (intervalId !== null) {
+    clearInterval(intervalId);
+    intervalId = null;
+    currentIntervalMs = null;
+  }
+}
+
+function setupInterval() {
+  // Only setup interval for countdown variant
+  if (props.variant !== 'countdown') {
+    return;
+  }
+
+  const targetInterval = currentInterval.value;
+
+  // No interval needed (expired or badge not showing)
+  if (targetInterval === null) {
+    clearCurrentInterval();
+    return;
+  }
+
+  // Interval already running at correct rate - no change needed
+  if (currentIntervalMs === targetInterval) {
+    return;
+  }
+
+  // Clear existing interval and setup new one at the target rate
+  clearCurrentInterval();
+
+  currentIntervalMs = targetInterval;
+  intervalId = setInterval(() => {
+    now.value = Date.now();
+  }, targetInterval);
+}
+
+/* Lifecycle */
+onMounted(() => {
+  setupInterval();
 });
 
 onUnmounted(() => {
-  if (intervalId) {
-    clearInterval(intervalId);
-    intervalId = null;
-  }
+  clearCurrentInterval();
+});
+
+/* Watcher - Adjust interval when time tier changes */
+watch(currentInterval, () => {
+  setupInterval();
 });
 </script>
 

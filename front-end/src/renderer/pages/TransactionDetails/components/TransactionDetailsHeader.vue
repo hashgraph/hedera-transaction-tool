@@ -702,9 +702,8 @@ watch(
           :valid-start="validStartDate"
           :valid-duration="props.sdkTransaction?.transactionValidDuration ?? 0"
           :transaction-status="props.organizationTransaction?.status ?? null"
-          variant="simple"
+          variant="countdown"
         />
-        <!-- To use countdown variant: change variant="simple" to variant="countdown" -->
       </h2>
     </div>
 
