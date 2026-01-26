@@ -20,18 +20,11 @@ import { Hbar, KeyList, Timestamp, Transaction } from '@hashgraph/sdk';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 import useLoader from '@renderer/composables/useLoader';
 
-import {
-  computeSignatureKey,
-  getErrorMessage,
-  isAccountId,
-  redirectToDetails,
-  redirectToGroupDetails,
-} from '@renderer/utils';
+import { computeSignatureKey, getErrorMessage, isAccountId } from '@renderer/utils';
 import { getPropagationButtonLabel } from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -47,6 +40,10 @@ import { getTransactionType } from '@renderer/utils/sdk/transactions';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+import useNextTransactionV2, {
+  type TransactionNodeId,
+} from '@renderer/stores/storeNextTransactionV2.ts';
+import { useRouter } from 'vue-router';
 
 /* Props */
 const { createTransaction, preCreateAssert, customRequest } = defineProps<{
@@ -68,10 +65,11 @@ const emit = defineEmits<{
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const nextTransaction = useNextTransactionV2();
 
 /* Composables */
-const toast = useToast();
 const router = useRouter();
+const toast = useToast();
 const payerData = useAccountId();
 const withLoader = useLoader();
 
@@ -189,20 +187,23 @@ const handleExecuted = async ({ success, response, receipt }: ExecutedData) => {
   emit('executed', { success, response, receipt });
 };
 
-const handleSubmit = (id: number, body: string) => {
+const handleSubmit = async (id: number, body: string) => {
   isProcessed.value = true;
-  redirectToDetails(router, id);
+  const targetNodeId: TransactionNodeId = { transactionId: id };
+  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router);
   emit('submitted', id, body);
 };
 
-const handleGroupSubmit = (id: number) => {
+const handleGroupSubmit = async (id: number) => {
   isProcessed.value = true;
-  redirectToGroupDetails(router, id).then();
+  const targetNodeId: TransactionNodeId = { groupId: id };
+  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router);
   emit('group:submitted', id);
 };
 
-const handleLocalStored = (id: string) => {
-  redirectToDetails(router, id);
+const handleLocalStored = async (id: string) => {
+  const targetNodeId: TransactionNodeId = { transactionId: id };
+  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router);
 };
 
 const handleGroupAction = (action: 'add' | 'edit', path?: string) => {

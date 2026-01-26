@@ -2,7 +2,6 @@
 import type { INotificationReceiver } from '@shared/interfaces';
 
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
 
 import useTransactionAudit from '@renderer/composables/useTransactionAudit.ts';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
@@ -13,7 +12,7 @@ import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import SignSingleButton from '@renderer/pages/Transactions/components/SignSingleButton.vue';
 import SignGroupButton from '@renderer/pages/Transactions/components/SignGroupButton.vue';
-import { getStatusFromCode, redirectToDetails, redirectToGroupDetails } from '@renderer/utils';
+import { getStatusFromCode } from '@renderer/utils';
 import {
   type ITransactionNode,
   TransactionNodeCollection,
@@ -34,6 +33,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'transactionSigned', transactionId: number): void;
   (event: 'transactionGroupSigned', groupId: number): void;
+  (event: 'routeToDetails', node: ITransactionNode): void;
 }>();
 
 /* Stores */
@@ -46,7 +46,6 @@ const isExternal = ref(false);
 let resizeObserver: ResizeObserver | null = null;
 
 /* Composables */
-const router = useRouter();
 const createTooltips = useCreateTooltips();
 const transactionId = computed(() => props.node.transactionId ?? null);
 const transactionAudit = useTransactionAudit(transactionId);
@@ -169,11 +168,7 @@ const handleDetails = async () => {
   if (notificationMonitor.filteredNotificationIds.value.length > 0) {
     await notifications.markAsReadIds(notificationMonitor.filteredNotificationIds.value);
   }
-  if (props.node.transactionId) {
-    redirectToDetails(router, props.node.transactionId, true);
-  } else if (props.node.groupId) {
-    await redirectToGroupDetails(router, props.node.groupId, 'readyToSign');
-  }
+  emit('routeToDetails', props.node);
 };
 
 /* Functions */

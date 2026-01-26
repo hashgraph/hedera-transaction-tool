@@ -3,7 +3,6 @@ import type { ITransaction } from '@shared/interfaces';
 import type { Transaction } from '@prisma/client';
 
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
 import { Prisma } from '@prisma/client';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
@@ -14,7 +13,9 @@ import { TRANSACTION_ACTION } from '@shared/constants';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
-import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
+import useNextTransactionV2, {
+  type TransactionNodeId,
+} from '@renderer/stores/storeNextTransactionV2.ts';
 
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
@@ -27,7 +28,6 @@ import {
   getStatusFromCode,
   getNotifiedTransactions,
   hexToUint8Array,
-  redirectToDetails,
   isLoggedInOrganization,
   isUserLoggedIn,
 } from '@renderer/utils';
@@ -40,15 +40,15 @@ import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import TransactionsFilter from '@renderer/components/Filter/TransactionsFilter.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
+import { useRouter } from 'vue-router';
 
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
 const notifications = useNotificationsStore();
-const nextTransaction = useNextTransactionStore();
+const nextTransaction = useNextTransactionV2();
 
 /* Composables */
-const router = useRouter();
 useWebsocketSubscription(TRANSACTION_ACTION, fetchTransactions);
 const { oldNotifications } = useMarkNotifications([
   NotificationType.TRANSACTION_INDICATOR_EXECUTED,
@@ -93,6 +93,9 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 const isLoading = ref(true);
 
+/* Composables */
+const router = useRouter();
+
 /* Computed */
 const generatedClass = computed(() => {
   return localSort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
@@ -109,13 +112,25 @@ const handleSort = async (
   orgSort.field = organizationField;
   orgSort.direction = direction;
 
-  setGetTransactionsFunction();
   await fetchTransactions();
 };
 
-const handleDetails = (id: string | number) => {
-  setPreviousTransactionsIds(id);
-  redirectToDetails(router, id, true);
+const handleDetails = async (id: string | number) => {
+  let nodeIds: TransactionNodeId[] = [];
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    nodeIds = organizationTransactions.value.map(t => {
+      return {
+        transactionId: t.transactionRaw.id,
+      };
+    });
+  } else {
+    nodeIds = transactions.value.map(t => {
+      return {
+        transactionId: t.id,
+      };
+    });
+  }
+  await nextTransaction.routeDown({ transactionId: id }, nodeIds, router);
 };
 
 /* Functions */
@@ -193,63 +208,13 @@ async function fetchTransactions() {
   }
 }
 
-function setGetTransactionsFunction() {
-  nextTransaction.setGetTransactionsFunction(async (page: number | null, size: number | null) => {
-    if (isLoggedInOrganization(user.selectedOrganization)) {
-      const { items, totalItems } = await getHistoryTransactions(
-        user.selectedOrganization.serverUrl,
-        page || 1,
-        size || 10,
-        orgFilters.value,
-        [{ property: orgSort.field, direction: orgSort.direction }],
-      );
-      return {
-        items: items.map(t => t.id),
-        totalItems,
-      };
-    } else {
-      if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
-      totalItems.value = await getTransactionsCount(user.personal.id);
-      const findArgs = createFindArgs();
-      findArgs.skip = ((page || 1) - 1) * (size || 10);
-      findArgs.take = size || 10;
-      transactions.value = await getTransactions(createFindArgs());
-
-      return {
-        items: transactions.value.map(t => t.id),
-        totalItems: totalItems.value,
-      };
-    }
-  }, true);
-}
-
-function setPreviousTransactionsIds(id: string | number) {
-  if (isLoggedInOrganization(user.selectedOrganization)) {
-    const selectedTransactionIndex = organizationTransactions.value.findIndex(
-      t => t.transactionRaw.id === id,
-    );
-    const previousTransactionIds = organizationTransactions.value
-      .slice(0, selectedTransactionIndex)
-      .map(t => t.transactionRaw.id);
-    nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
-  } else {
-    const selectedTransactionIndex = transactions.value.findIndex(t => t.id === id);
-    const previousTransactionIds = transactions.value
-      .slice(0, selectedTransactionIndex)
-      .map(t => t.id);
-    nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
-  }
-}
-
 /* Hooks */
 onBeforeMount(async () => {
-  setGetTransactionsFunction();
   await fetchTransactions();
 });
 
 /* Watchers */
 watch([currentPage, pageSize, () => user.selectedOrganization, orgFilters], async () => {
-  setGetTransactionsFunction();
   await fetchTransactions();
 });
 
@@ -463,7 +428,11 @@ watch(
                   </td>
                   <td :data-testid="`td-transaction-type-${index}`">
                     <span class="text-bold">{{
-                      sdkTransactionUtils.getTransactionType(transactionData.transaction, false, true)
+                      sdkTransactionUtils.getTransactionType(
+                        transactionData.transaction,
+                        false,
+                        true,
+                      )
                     }}</span>
                   </td>
                   <td :data-testid="`td-transaction-description-${index}`">
@@ -490,7 +459,7 @@ watch(
                       }}</span
                     >
                   </td>
-<!--
+                  <!--
                   <td :data-testid="`td-transaction-createdAt-${index}`">
                     <span class="text-small text-secondary">
                       <DateTimeString
