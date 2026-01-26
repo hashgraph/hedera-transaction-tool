@@ -6,14 +6,9 @@ import { useRouter } from 'vue-router';
 
 import useTransactionAudit from '@renderer/composables/useTransactionAudit.ts';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
-import useUserStore from '@renderer/stores/storeUser.ts';
 import useFilterNotifications from '@renderer/composables/useFilterNotifications.ts';
-import {
-  getDisplayTransactionType,
-  getFreezeTypeForTransaction,
-} from '@renderer/utils/sdk/transactions.ts';
-import { isLoggedInOrganization } from '@renderer/utils';
-import type { FreezeType } from '@hashgraph/sdk';
+import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions.ts';
+import { FreezeTransaction, type FreezeType } from '@hashgraph/sdk';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -44,7 +39,6 @@ const emit = defineEmits<{
 
 /* Stores */
 const notifications = useNotificationsStore();
-const user = useUserStore();
 
 /* State */
 const descriptionRef = ref<HTMLElement | null>(null);
@@ -243,13 +237,11 @@ watch(
     const externalSignerKeys = await transactionAudit.externalSignerKeys.value;
     isExternal.value = externalSignerKeys.size > 0;
 
-    // Handle FREEZE transactions
+    // Handle FREEZE transactions - extract freezeType from sdkTransaction
     if (transactionType === 'FREEZE') {
-      if (isLoggedInOrganization(user.selectedOrganization)) {
-        freezeType.value = await getFreezeTypeForTransaction(
-          user.selectedOrganization.serverUrl,
-          transactionId,
-        );
+      const sdkTx = await transactionAudit.sdkTransaction.value;
+      if (sdkTx instanceof FreezeTransaction && sdkTx.freezeType) {
+        freezeType.value = sdkTx.freezeType;
       } else {
         freezeType.value = null;
       }
