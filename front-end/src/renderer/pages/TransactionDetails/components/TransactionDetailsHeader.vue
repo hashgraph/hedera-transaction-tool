@@ -62,8 +62,6 @@ type ActionButton =
   | 'Reject'
   | 'Approve'
   | 'Sign'
-  | 'Previous'
-  | 'Next'
   | 'Cancel'
   | 'Export'
   | 'Schedule'
@@ -74,23 +72,19 @@ type ActionButton =
 const reject: ActionButton = 'Reject';
 const approve: ActionButton = 'Approve';
 const sign: ActionButton = 'Sign';
-const previous: ActionButton = 'Previous';
-const next: ActionButton = 'Next';
-const cancel: ActionButton = 'Cancel';
 const execute: ActionButton = 'Schedule';
+const cancel: ActionButton = 'Cancel';
 const remindSignersLabel: ActionButton = 'Remind Signers';
 const archive: ActionButton = 'Archive';
 const exportName: ActionButton = 'Export';
 
-const primaryButtons: ActionButton[] = [reject, approve, sign, next];
+const primaryButtons: ActionButton[] = [reject, approve, sign, execute];
 const buttonsDataTestIds: { [key: string]: string } = {
   [reject]: 'button-reject-org-transaction',
   [approve]: 'button-approve-org-transaction',
   [sign]: 'button-sign-org-transaction',
-  [previous]: 'button-previous-org-transaction',
-  [next]: 'button-next-org-transaction',
-  [cancel]: 'button-cancel-org-transaction',
   [execute]: 'button-execute-org-transaction',
+  [cancel]: 'button-cancel-org-transaction',
   [remindSignersLabel]: 'button-remind-signers-org-transaction',
   [archive]: 'button-archive-org-transaction',
   [exportName]: 'button-export-transaction',
@@ -223,12 +217,10 @@ const canArchive = computed(() => {
 const visibleButtons = computed(() => {
   const buttons: ActionButton[] = [];
 
-  /* The order is important REJECT, APPROVE, SIGN, SUBMIT, PREVIOUS, NEXT, CANCEL, ARCHIVE, EXPORT */
+  /* The order is important REJECT, APPROVE, SIGN, SUBMIT, CANCEL, ARCHIVE, EXPORT */
   shouldApprove.value && buttons.push(reject, approve);
   canSign.value && !shouldApprove.value && buttons.push(sign);
   canExecute.value && buttons.push(execute);
-  nextTransaction.hasNext && buttons.push(next);
-  nextTransaction.hasPrev && buttons.push(previous);
   canCancel.value && buttons.push(cancel);
   canRemind.value && buttons.push(remindSignersLabel);
   canArchive.value && buttons.push(archive);
@@ -445,14 +437,6 @@ const handleExecute = (showModal?: boolean) => handleTransactionAction('execute'
 const handleRemindSigners = (showModal?: boolean) =>
   handleTransactionAction('remindSigners', showModal);
 
-const handlePrevious = async () => {
-  await nextTransaction.routeToPrev(router);
-};
-
-const handleNext = async () => {
-  await nextTransaction.routeToNext(router);
-};
-
 const handleExport = async () => {
   if (!props.sdkTransaction || !props.organizationTransaction) {
     throw new Error('(BUG) Transaction is not available');
@@ -538,10 +522,6 @@ const handleAction = async (value: ActionButton) => {
     await handleApprove(true, true);
   } else if (value === sign) {
     await handleSign();
-  } else if (value === next) {
-    handleNext();
-  } else if (value === previous) {
-    handlePrevious();
   } else if (value === cancel) {
     await handleCancel(true);
   } else if (value === archive) {
