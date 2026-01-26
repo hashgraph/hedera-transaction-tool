@@ -1,5 +1,5 @@
 import { computed, type ComputedRef, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { type Router } from 'vue-router';
 import { defineStore } from 'pinia';
 
 export interface TransactionNodeId {
@@ -8,10 +8,14 @@ export interface TransactionNodeId {
 }
 
 export interface StoreNextTransactionV2 {
-  routeDown: (current: TransactionNodeId, collection: TransactionNodeId[]) => Promise<void>;
-  routeUp: () => Promise<void>;
-  routeToNext: () => Promise<void>;
-  routeToPrev: () => Promise<void>;
+  routeDown: (
+    current: TransactionNodeId,
+    collection: TransactionNodeId[],
+    router: Router,
+  ) => Promise<void>;
+  routeUp: (router: Router) => Promise<void>;
+  routeToNext: (router: Router) => Promise<void>;
+  routeToPrev: (router: Router) => Promise<void>;
   hasNext: ComputedRef<boolean>;
   hasPrev: ComputedRef<boolean>;
   currentIndex: ComputedRef<number>;
@@ -21,9 +25,6 @@ export interface StoreNextTransactionV2 {
 const useNextTransactionV2 = defineStore(
   'navigationController',
   (): StoreNextTransactionV2 => {
-    /* Store */
-    const router = useRouter();
-
     /* State */
     const collectionStack = ref<TransactionNodeId[][]>([]);
     const currentIndexStack = ref<number[]>([]);
@@ -44,33 +45,34 @@ const useNextTransactionV2 = defineStore(
     const routeDown = async (
       current: TransactionNodeId,
       collection: TransactionNodeId[],
+      router: Router,
     ): Promise<void> => {
       collectionStack.value.push(collection);
       currentIndexStack.value.push(indexOf(current));
-      await routeToCurrent(false);
+      await routeToCurrent(router, false);
     };
 
-    const routeToNext = async (): Promise<void> => {
+    const routeToNext = async (router: Router): Promise<void> => {
       if (hasNext.value) {
         const currentIndex = currentIndexStack.value.pop()!;
         currentIndexStack.value.push(currentIndex + 1);
-        await routeToCurrent(true);
+        await routeToCurrent(router, true);
       } else {
         console.warn('Invalid call in this context');
       }
     };
 
-    const routeToPrev = async (): Promise<void> => {
+    const routeToPrev = async (router: Router): Promise<void> => {
       if (hasPrev.value) {
         const currentIndex = currentIndexStack.value.pop()!;
         currentIndexStack.value.push(currentIndex - 1);
-        await routeToCurrent(true);
+        await routeToCurrent(router, true);
       } else {
         console.warn('Invalid call in this context');
       }
     };
 
-    const routeUp = async (): Promise<void> => {
+    const routeUp = async (router: Router): Promise<void> => {
       if (currentCollection.value !== null && currentIndex.value !== -1) {
         collectionStack.value.pop();
         currentIndexStack.value.pop();
@@ -105,7 +107,7 @@ const useNextTransactionV2 = defineStore(
       return result;
     };
 
-    const routeToCurrent = async (replace: boolean): Promise<void> => {
+    const routeToCurrent = async (router: Router, replace: boolean): Promise<void> => {
       if (currentCollection.value !== null && currentIndex.value < currentCollection.value.length) {
         const nodeId = currentCollection.value[currentIndex.value];
         if (nodeId.transactionId) {

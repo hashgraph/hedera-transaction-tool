@@ -40,6 +40,7 @@ import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import TransactionsFilter from '@renderer/components/Filter/TransactionsFilter.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
+import { useRouter } from 'vue-router';
 
 /* Stores */
 const user = useUserStore();
@@ -92,6 +93,9 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 const isLoading = ref(true);
 
+/* Composables */
+const router = useRouter();
+
 /* Computed */
 const generatedClass = computed(() => {
   return localSort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
@@ -126,7 +130,7 @@ const handleDetails = async (id: string | number) => {
       };
     });
   }
-  await nextTransaction.routeDown({ transactionId: id }, nodeIds);
+  await nextTransaction.routeDown({ transactionId: id }, nodeIds, router);
 };
 
 /* Functions */
@@ -424,7 +428,11 @@ watch(
                   </td>
                   <td :data-testid="`td-transaction-type-${index}`">
                     <span class="text-bold">{{
-                      sdkTransactionUtils.getTransactionType(transactionData.transaction, false, true)
+                      sdkTransactionUtils.getTransactionType(
+                        transactionData.transaction,
+                        false,
+                        true,
+                      )
                     }}</span>
                   </td>
                   <td :data-testid="`td-transaction-description-${index}`">
@@ -451,7 +459,7 @@ watch(
                       }}</span
                     >
                   </td>
-<!--
+                  <!--
                   <td :data-testid="`td-transaction-createdAt-${index}`">
                     <span class="text-small text-secondary">
                       <DateTimeString

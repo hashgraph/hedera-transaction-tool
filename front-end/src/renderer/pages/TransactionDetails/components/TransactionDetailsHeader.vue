@@ -251,7 +251,7 @@ const isManualFlagVisible = computed(() => {
 
 /* Handlers */
 const handleBack = async () => {
-  await nextTransaction.routeUp();
+  await nextTransaction.routeUp(router);
 };
 
 const handleSign = async () => {
@@ -446,11 +446,11 @@ const handleRemindSigners = (showModal?: boolean) =>
   handleTransactionAction('remindSigners', showModal);
 
 const handlePrevious = async () => {
-  await nextTransaction.routeToPrev();
+  await nextTransaction.routeToPrev(router);
 };
 
 const handleNext = async () => {
-  await nextTransaction.routeToNext();
+  await nextTransaction.routeToNext(router);
 };
 
 const handleExport = async () => {

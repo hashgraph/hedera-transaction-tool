@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import useNextTransactionV2 from '@renderer/stores/storeNextTransactionV2.ts';
+
+/* Composables */
+const router = useRouter();
 
 /* Stores */
 const nextTransaction = useNextTransactionV2();
@@ -20,11 +24,11 @@ const positionLabel = computed(() => {
 
 /* Handlers */
 const handlePrev = async () => {
-  await nextTransaction.routeToPrev();
+  await nextTransaction.routeToPrev(router);
 };
 
 const handleNext = async () => {
-  await nextTransaction.routeToNext();
+  await nextTransaction.routeToNext(router);
 };
 </script>
 

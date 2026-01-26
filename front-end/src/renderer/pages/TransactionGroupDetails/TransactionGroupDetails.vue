@@ -177,7 +177,7 @@ const dropDownItems = computed(() =>
 
 /* Handlers */
 const handleBack = async () => {
-  await nextTransaction.routeUp();
+  await nextTransaction.routeUp(router);
 };
 
 const handleDetails = async (id: number) => {
@@ -186,7 +186,7 @@ const handleDetails = async (id: number) => {
   const nodeIds = groupItems.map(item => {
     return { transactionId: item.transactionId };
   });
-  await nextTransaction.routeDown({ transactionId: id }, nodeIds);
+  await nextTransaction.routeDown({ transactionId: id }, nodeIds, router);
 };
 
 const handleSignGroupItem = async (groupItem: IGroupItem) => {

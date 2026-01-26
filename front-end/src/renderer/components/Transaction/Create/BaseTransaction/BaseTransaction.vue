@@ -40,7 +40,10 @@ import { getTransactionType } from '@renderer/utils/sdk/transactions';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
-import useNextTransactionV2, { type TransactionNodeId } from '@renderer/stores/storeNextTransactionV2.ts';
+import useNextTransactionV2, {
+  type TransactionNodeId,
+} from '@renderer/stores/storeNextTransactionV2.ts';
+import { useRouter } from 'vue-router';
 
 /* Props */
 const { createTransaction, preCreateAssert, customRequest } = defineProps<{
@@ -65,6 +68,7 @@ const network = useNetworkStore();
 const nextTransaction = useNextTransactionV2();
 
 /* Composables */
+const router = useRouter();
 const toast = useToast();
 const payerData = useAccountId();
 const withLoader = useLoader();
@@ -186,20 +190,20 @@ const handleExecuted = async ({ success, response, receipt }: ExecutedData) => {
 const handleSubmit = async (id: number, body: string) => {
   isProcessed.value = true;
   const targetNodeId: TransactionNodeId = { transactionId: id };
-  await nextTransaction.routeDown(targetNodeId, [targetNodeId]);
+  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router);
   emit('submitted', id, body);
 };
 
 const handleGroupSubmit = async (id: number) => {
   isProcessed.value = true;
   const targetNodeId: TransactionNodeId = { groupId: id };
-  await nextTransaction.routeDown(targetNodeId, [targetNodeId]);
+  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router);
   emit('group:submitted', id);
 };
 
 const handleLocalStored = async (id: string) => {
   const targetNodeId: TransactionNodeId = { transactionId: id };
-  await nextTransaction.routeDown(targetNodeId, [targetNodeId]);
+  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router);
 };
 
 const handleGroupAction = (action: 'add' | 'edit', path?: string) => {

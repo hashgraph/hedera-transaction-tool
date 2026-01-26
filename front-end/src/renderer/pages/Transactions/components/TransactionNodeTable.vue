@@ -32,11 +32,9 @@ import {
 } from '@renderer/utils/sortTransactionNodes.ts';
 import TransactionsFilterV2 from '@renderer/components/Filter/v2/TransactionsFilterV2.vue';
 import { TRANSACTION_ACTION } from '@shared/constants';
+import { useRouter } from 'vue-router';
 
-const NOTIFICATION_TYPES_BY_COLLECTION: Record<
-  TransactionNodeCollection,
-  NotificationType[]
-> = {
+const NOTIFICATION_TYPES_BY_COLLECTION: Record<TransactionNodeCollection, NotificationType[]> = {
   [TransactionNodeCollection.READY_FOR_REVIEW]: [],
   [TransactionNodeCollection.READY_TO_SIGN]: [],
   [TransactionNodeCollection.IN_PROGRESS]: [],
@@ -69,6 +67,7 @@ const network = useNetworkStore();
 const nextTransaction = useNextTransactionV2();
 
 /* Composables */
+const router = useRouter();
 const toast = useToast();
 useWebsocketSubscription(TRANSACTION_ACTION, fetchNodes);
 /* Use mark notifications with computed types */
@@ -130,9 +129,9 @@ const routeToDetails = async (node: ITransactionNode) => {
     }
   }
   if (node.transactionId) {
-    await nextTransaction.routeDown({ transactionId: node.transactionId }, nodeIds);
+    await nextTransaction.routeDown({ transactionId: node.transactionId }, nodeIds, router);
   } else if (node.groupId) {
-    await nextTransaction.routeDown({ groupId: node.groupId }, nodeIds);
+    await nextTransaction.routeDown({ groupId: node.groupId }, nodeIds, router);
   } else {
     console.warn(`Malformed transaction node`);
   }
