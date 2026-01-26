@@ -2,10 +2,15 @@ import { computed, type ComputedRef, ref } from 'vue';
 import { type Router } from 'vue-router';
 import { defineStore } from 'pinia';
 
-export interface TransactionNodeId {
-  transactionId?: number | string;
-  groupId?: number | string;
-}
+export type TransactionNodeId =
+  | {
+      transactionId: number | string;
+      groupId?: never;
+    }
+  | {
+      transactionId?: never;
+      groupId: number | string;
+    };
 
 export interface StoreNextTransactionV2 {
   routeDown: (
