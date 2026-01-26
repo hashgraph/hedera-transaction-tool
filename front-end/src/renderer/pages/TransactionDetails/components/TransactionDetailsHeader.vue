@@ -251,7 +251,7 @@ const isManualFlagVisible = computed(() => {
 
 /* Handlers */
 const handleBack = async () => {
-  await nextTransaction.routeUp()
+  await nextTransaction.routeUp();
 };
 
 const handleSign = async () => {
