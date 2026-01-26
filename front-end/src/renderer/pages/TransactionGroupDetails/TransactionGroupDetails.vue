@@ -638,8 +638,8 @@ function itemStatusBadgeClass(item: IGroupItem): string {
   <form @submit.prevent="handleSubmit" class="p-5">
     <div class="flex-column-100">
       <div class="flex-centered justify-content-between flex-wrap gap-4">
-        <div class="d-flex align-items-center">
-          <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
+        <div class="d-flex align-items-center gap-4">
+          <AppButton type="button" color="secondary" class="btn-icon-only" @click="handleBack">
             <i class="bi bi-arrow-left"></i>
           </AppButton>
           <NextTransactionCursor />
