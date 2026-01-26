@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 
@@ -23,6 +24,9 @@ import { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPu
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+
+/* Composables */
+const router = useRouter();
 
 /* Stores */
 const user = useUserStore();
@@ -52,6 +56,9 @@ onMounted(async () => {
   window.electronAPI.local.theme.onThemeUpdate(theme =>
     document.body.setAttribute('data-bs-theme', theme.shouldUseDarkColors ? 'dark' : 'light'),
   );
+  window.electronAPI.local.settings.onSettings(() => {
+    router.push('/settings/general').then();
+  });
 });
 
 /* Providers */

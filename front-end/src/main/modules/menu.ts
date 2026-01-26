@@ -1,8 +1,8 @@
-import { Menu, shell } from 'electron';
+import { BrowserWindow, Menu, shell } from 'electron';
 
 export default function () {
   const isMac = process.platform === 'darwin';
-  const appName = "Hedera Transaction Tool" // TBD: retrieve this value at runtime
+  const appName = 'Hedera Transaction Tool'; // TBD: retrieve this value at runtime
 
   const macTemplate: Electron.MenuItemConstructorOptions[] = [
     {
@@ -12,6 +12,17 @@ export default function () {
         {
           role: 'about',
           label: `About ${appName}`,
+        },
+        { type: 'separator' },
+        {
+          label: 'Settings',
+          click: () => {
+            const w = BrowserWindow.getFocusedWindow();
+            if (w !== null) {
+              w.webContents.send('settings');
+            }
+          },
+          accelerator: 'Command+,',
         },
         { type: 'separator' },
         { role: 'services' },
