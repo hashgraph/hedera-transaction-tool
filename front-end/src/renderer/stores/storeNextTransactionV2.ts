@@ -47,9 +47,21 @@ const useNextTransactionV2 = defineStore(
       collection: TransactionNodeId[],
       router: Router,
     ): Promise<void> => {
-      collectionStack.value.push(collection);
-      currentIndexStack.value.push(indexOf(current));
-      await routeToCurrent(router, false);
+      const i = indexOf(current);
+      if (i !== -1) {
+        collectionStack.value.push(collection);
+        currentIndexStack.value.push(indexOf(current));
+        try {
+          await routeToCurrent(router, false);
+        } catch {
+          collectionStack.value.pop();
+          currentIndexStack.value.pop();
+        }
+      } else {
+        console.warn(
+          'Transaction node id not found in currentCollection: ' + JSON.stringify(current),
+        );
+      }
     };
 
     const routeToNext = async (router: Router): Promise<void> => {
@@ -58,7 +70,7 @@ const useNextTransactionV2 = defineStore(
         currentIndexStack.value.push(currentIndex + 1);
         await routeToCurrent(router, true);
       } else {
-        console.warn('Invalid call in this context');
+        console.warn('There is no next in currentCollection');
       }
     };
 
@@ -68,7 +80,7 @@ const useNextTransactionV2 = defineStore(
         currentIndexStack.value.push(currentIndex - 1);
         await routeToCurrent(router, true);
       } else {
-        console.warn('Invalid call in this context');
+        console.warn('There is no prev in currentCollection');
       }
     };
 
@@ -78,7 +90,7 @@ const useNextTransactionV2 = defineStore(
         currentIndexStack.value.pop();
         router.back();
       } else {
-        console.warn('Invalid call in this context');
+        console.warn('There is no up');
       }
     };
 
