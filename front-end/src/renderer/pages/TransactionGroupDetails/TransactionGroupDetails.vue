@@ -176,8 +176,8 @@ const dropDownItems = computed(() =>
 );
 
 /* Handlers */
-const handleBack = () => {
-  nextTransaction.routeUp();
+const handleBack = async () => {
+  await nextTransaction.routeUp();
 };
 
 const handleDetails = async (id: number) => {

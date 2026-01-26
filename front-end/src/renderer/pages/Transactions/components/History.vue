@@ -111,7 +111,7 @@ const handleSort = async (
   await fetchTransactions();
 };
 
-const handleDetails = (id: string | number) => {
+const handleDetails = async (id: string | number) => {
   let nodeIds: TransactionNodeId[] = [];
   if (isLoggedInOrganization(user.selectedOrganization)) {
     nodeIds = organizationTransactions.value.map(t => {
@@ -126,7 +126,7 @@ const handleDetails = (id: string | number) => {
       };
     });
   }
-  nextTransaction.routeDown({ transactionId: id }, nodeIds);
+  await nextTransaction.routeDown({ transactionId: id }, nodeIds);
 };
 
 /* Functions */
