@@ -52,21 +52,9 @@ const useNextTransactionV2 = defineStore(
       collection: TransactionNodeId[],
       router: Router,
     ): Promise<void> => {
-      const i = indexOf(current);
-      if (i !== -1) {
-        collectionStack.value.push(collection);
-        currentIndexStack.value.push(indexOf(current));
-        try {
-          await routeToCurrent(router, false);
-        } catch {
-          collectionStack.value.pop();
-          currentIndexStack.value.pop();
-        }
-      } else {
-        console.warn(
-          'Transaction node id not found in currentCollection: ' + JSON.stringify(current),
-        );
-      }
+      collectionStack.value.push(collection); // now indexOf() will search collection
+      currentIndexStack.value.push(indexOf(current));
+      await routeToCurrent(router, false);
     };
 
     const routeToNext = async (router: Router): Promise<void> => {
