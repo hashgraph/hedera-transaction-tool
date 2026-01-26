@@ -610,11 +610,11 @@ watch(
     @submit.prevent="handleSubmit"
     class="flex-centered justify-content-between flex-wrap gap-4"
   >
-    <div class="d-flex align-items-center">
+    <div class="d-flex align-items-center gap-4">
       <AppButton
         type="button"
         color="secondary"
-        class="btn-icon-only me-4"
+        class="btn-icon-only"
         data-testid="button-back"
         @click="handleBack"
       >
