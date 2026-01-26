@@ -36,8 +36,9 @@ const handleNext = async () => {
     :disabled="!nextTransaction.hasPrev"
     data-testid="button-prev"
     @click="handlePrev"
-    >Prev</AppButton
   >
+    <i class="bi bi-chevron-left"></i>
+  </AppButton>
   <AppButton type="button" color="secondary" :disabled="true" style="min-width: 60px">{{
     positionLabel
   }}</AppButton>
@@ -48,6 +49,7 @@ const handleNext = async () => {
     :disabled="!nextTransaction.hasNext"
     data-testid="button-next"
     @click="handleNext"
-    >Next</AppButton
   >
+    <i class="bi bi-chevron-right"></i>
+  </AppButton>
 </template>
