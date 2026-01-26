@@ -655,7 +655,7 @@ watch(
       </Transition>
 
       <Transition name="fade" mode="out-in">
-        <template v-if="visibleButtons.length > 1">
+        <template v-if="dropDownItems.length > 0">
           <div>
             <AppDropDown
               :color="'secondary'"

@@ -664,51 +664,15 @@ function itemStatusBadgeClass(item: IGroupItem): string {
           </Transition>
 
           <Transition name="fade" mode="out-in">
-            <template v-if="visibleButtons.length > 1">
-              <div class="d-none d-lg-block">
-                <AppButton
-                  :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
-                  :loading="Boolean(loadingStates[visibleButtons[1]])"
-                  :loading-text="loadingStates[visibleButtons[1]] || ''"
-                  :data-testid="buttonsDataTestIds[visibleButtons[1]]"
-                  type="submit"
-                  >{{ visibleButtons[1] }}
-                </AppButton>
-              </div>
-            </template>
-          </Transition>
-
-          <Transition name="fade" mode="out-in">
-            <template v-if="visibleButtons.length > 2">
+            <template v-if="dropDownItems.length > 0">
               <div>
                 <AppDropDown
-                  class="d-lg-none"
                   :color="'secondary'"
                   :items="dropDownItems"
                   compact
                   @select="handleDropDownItem($event as ActionButton)"
-                  data-testid="button-more-dropdown-sm"
-                />
-                <AppDropDown
-                  class="d-none d-lg-block"
-                  :color="'secondary'"
-                  :items="dropDownItems.slice(1)"
-                  compact
-                  @select="handleDropDownItem($event as ActionButton)"
                   data-testid="button-more-dropdown-lg"
                 />
-              </div>
-            </template>
-            <template v-else-if="visibleButtons.length === 2">
-              <div class="d-lg-none">
-                <AppButton
-                  :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
-                  :loading="Boolean(loadingStates[visibleButtons[1]])"
-                  :loading-text="loadingStates[visibleButtons[1]] || ''"
-                  :data-testid="buttonsDataTestIds[visibleButtons[1]]"
-                  type="submit"
-                  >{{ visibleButtons[1] }}
-                </AppButton>
               </div>
             </template>
           </Transition>
