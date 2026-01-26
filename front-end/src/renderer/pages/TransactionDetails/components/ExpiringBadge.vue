@@ -11,6 +11,7 @@ const ONE_MINUTE_MS = 60 * 1000;
 const props = withDefaults(
   defineProps<{
     validStart: Date | null;
+    validDuration: number; // Duration in seconds
     transactionStatus: TransactionStatus | null;
     /**
      * Badge variant:
@@ -40,7 +41,8 @@ const inProgressStatuses = [
 
 const timeUntilExpiry = computed(() => {
   if (!props.validStart) return null;
-  return props.validStart.getTime() - now.value;
+  const expiryTime = props.validStart.getTime() + props.validDuration * 1000;
+  return expiryTime - now.value;
 });
 
 const shouldShowBadge = computed(() => {

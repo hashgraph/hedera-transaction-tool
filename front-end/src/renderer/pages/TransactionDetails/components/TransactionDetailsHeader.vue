@@ -700,6 +700,7 @@ watch(
         <!-- Expiring Soon Badge -->
         <ExpiringBadge
           :valid-start="validStartDate"
+          :valid-duration="props.sdkTransaction?.transactionValidDuration ?? 0"
           :transaction-status="props.organizationTransaction?.status ?? null"
           variant="simple"
         />
