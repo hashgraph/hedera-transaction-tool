@@ -38,7 +38,7 @@ const handleNext = async () => {
     color="secondary"
     class="btn-icon-only"
     :disabled="!nextTransaction.hasPrev"
-    data-testid="button-prev"
+    data-testid="button-previous-org-transaction"
     @click="handlePrev"
   >
     <i class="bi bi-chevron-left"></i>
@@ -51,7 +51,7 @@ const handleNext = async () => {
     color="secondary"
     class="btn-icon-only me-4"
     :disabled="!nextTransaction.hasNext"
-    data-testid="button-next"
+    data-testid="button-next-org-transaction"
     @click="handleNext"
   >
     <i class="bi bi-chevron-right"></i>
