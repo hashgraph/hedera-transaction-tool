@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import NetworkSettings from './components/NetworkSettings.vue';
 import DefaultSettings from './components/DefaultSettings.vue';
 import AppearanceSettings from './components/AppearanceSettings.vue';
 import AppInfo from './components/AppInfo.vue';
@@ -7,7 +6,7 @@ import AppInfo from './components/AppInfo.vue';
 <template>
   <div>
     <!-- Network -->
-    <NetworkSettings />
+<!--    <NetworkSettings />-->
 
     <!-- Appearance -->
     <AppearanceSettings />
