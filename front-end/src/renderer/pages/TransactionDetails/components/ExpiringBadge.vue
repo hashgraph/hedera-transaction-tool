@@ -17,11 +17,12 @@ const props = withDefaults(
     transactionStatus: TransactionStatus | null;
     /**
      * Badge variant:
-     * - 'simple': Shows "Expiring soon" text
-     * - 'countdown': Shows "Expires in HHh MMm" (>= 1h) or "Expires in MMm SSs" (< 1h) with live countdown
+     * - 'simple': Shows "Expiring soon" or "Expired" text
+     * - 'countdown': Shows "Expires in HHh MMm" / "Expires in MMm SSs" (active)
+     *                or "Expired" / "Expired HHh MMm ago" (expired) with live countdown
      *
-     * To switch variants, change this prop value.
-     * To remove the feature entirely, delete this component and its usage.
+     * Note: Expired transactions are hidden by default via shouldShowBadge.
+     * To show expired badges, modify the shouldShowBadge computed property.
      */
     variant?: 'simple' | 'countdown';
   }>(),
@@ -49,12 +50,24 @@ const timeUntilExpiry = computed(() => {
 });
 
 const shouldShowBadge = computed(() => {
-  if (!props.validStart) return false;
+  // Must have valid start date
+  if (!props.validStart || isNaN(props.validStart.getTime())) return false;
+
+  // Must be in-progress status
   if (!props.transactionStatus || !inProgressStatuses.includes(props.transactionStatus)) {
     return false;
   }
+
   const remaining = timeUntilExpiry.value;
-  return remaining !== null && remaining > 0 && remaining <= TWENTY_FOUR_HOURS_MS;
+  if (remaining === null) return false;
+
+  // Hide expired transactions by default (developers can modify this if needed)
+  if (remaining <= 0) {
+    return false;
+  }
+
+  // Show badge when expiring within 24 hours
+  return remaining <= TWENTY_FOUR_HOURS_MS;
 });
 
 const currentInterval = computed(() => {
@@ -77,10 +90,33 @@ const currentInterval = computed(() => {
 const countdownText = computed(() => {
   const remaining = timeUntilExpiry.value;
 
-  if (!remaining || remaining <= 0) {
-    return 'Expired';
+  if (remaining === null) {
+    return '';
   }
 
+  // EXPIRED: Show "Expired" or "Expired HHh MMm ago"
+  if (remaining <= 0) {
+    const elapsed = Math.abs(remaining);
+    const totalSeconds = Math.floor(elapsed / ONE_SECOND_MS);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    // Just expired (under 1 minute ago) - show simple "Expired"
+    if (elapsed < ONE_MINUTE_MS) {
+      return 'Expired';
+    }
+
+    // Under 1 hour ago: show "Expired MMm SSs ago"
+    if (elapsed < ONE_HOUR_MS) {
+      return `Expired ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s ago`;
+    }
+
+    // 1 hour or more ago: show "Expired HHh MMm ago"
+    return `Expired ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ago`;
+  }
+
+  // ACTIVE: Show "Expires in HHh MMm" or "Expires in MMm SSs"
   const totalSeconds = Math.floor(remaining / ONE_SECOND_MS);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -95,6 +131,12 @@ const countdownText = computed(() => {
   return `Expires in ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m`;
 });
 
+const simpleText = computed(() => {
+  const remaining = timeUntilExpiry.value;
+  if (remaining === null) return '';
+  return remaining <= 0 ? 'Expired' : 'Expiring soon';
+});
+
 /* Functions - Interval management */
 function clearCurrentInterval() {
   if (intervalId !== null) {
@@ -105,8 +147,9 @@ function clearCurrentInterval() {
 }
 
 function setupInterval() {
-  // Only setup interval for countdown variant
+  // Clear interval if not countdown variant
   if (props.variant !== 'countdown') {
+    clearCurrentInterval();
     return;
   }
 
@@ -145,12 +188,17 @@ onUnmounted(() => {
 watch(currentInterval, () => {
   setupInterval();
 });
+
+/* Watcher - Handle variant changes at runtime */
+watch(() => props.variant, () => {
+  setupInterval();
+});
 </script>
 
 <template>
   <span v-if="shouldShowBadge" class="badge bg-danger text-break ms-2">
     <!-- VARIANT: Simple text badge -->
-    <template v-if="variant === 'simple'">Expiring soon</template>
+    <template v-if="variant === 'simple'">{{ simpleText }}</template>
 
     <!-- VARIANT: Countdown badge -->
     <template v-else-if="variant === 'countdown'">{{ countdownText }}</template>
