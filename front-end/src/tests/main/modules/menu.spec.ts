@@ -45,7 +45,9 @@ describe('menuBuilder', () => {
     if (helpSection.submenu) {
       helpSection.submenu[0].click();
 
-      expect(vi.mocked(shell).openExternal).toHaveBeenCalledWith('https://electronjs.org');
+      expect(vi.mocked(shell).openExternal).toHaveBeenCalledWith(
+        'https://transactiontool.hedera.com',
+      );
     }
   });
 });

@@ -1,20 +1,19 @@
 <script setup lang="ts">
 import type { IGroup } from '@renderer/services/organization';
 import type { IGroupItem, ITransactionFull } from '@shared/interfaces';
+import { TransactionStatus, TransactionTypeName } from '@shared/interfaces';
 
 import { computed, onBeforeMount, reactive, ref, watch, watchEffect } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
 import { Transaction } from '@hashgraph/sdk';
 import JSZip from 'jszip';
-
-import { TransactionStatus, TransactionTypeName } from '@shared/interfaces';
 import { historyTitle, TRANSACTION_ACTION } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
-import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
+import useNextTransactionV2 from '@renderer/stores/storeNextTransactionV2.ts';
 
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
@@ -36,7 +35,6 @@ import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtils
 import {
   getPrivateKey,
   getTransactionBodySignatureWithoutNodeAccountId,
-  redirectToDetails,
   hexToUint8Array,
   isLoggedInOrganization,
   isUserLoggedIn,
@@ -62,6 +60,7 @@ import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
+import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
@@ -85,17 +84,15 @@ const buttonsDataTestIds: { [key: string]: string } = {
 /* Stores */
 const user = useUserStore();
 const network = useNetwork();
-const nextTransaction = useNextTransactionStore();
+const nextTransaction = useNextTransactionV2();
 const contacts = useContactsStore();
 
 /* Composables */
 const router = useRouter();
-const route = useRoute();
 const toast = useToast();
 useWebsocketSubscription(TRANSACTION_ACTION, async () => {
   const id = router.currentRoute.value.params.id;
   await fetchGroup(Array.isArray(id) ? id[0] : id);
-  setGetTransactionsFunction();
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
@@ -179,27 +176,17 @@ const dropDownItems = computed(() =>
 );
 
 /* Handlers */
-const handleBack = () => {
-  if (!history.state?.back?.startsWith('/transactions')) {
-    router.push({ name: 'transactions' });
-  } else {
-    router.back();
-  }
+const handleBack = async () => {
+  await nextTransaction.routeUp(router);
 };
 
 const handleDetails = async (id: number) => {
-  const flatTransactions = group.value?.groupItems || [];
-  const selectedTransactionIndex = flatTransactions.findIndex(t => t.transaction.id === id);
-  const previousTransactionIds = flatTransactions
-    .slice(0, selectedTransactionIndex)
-    .map(t => t.transaction.id);
-  nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
-
-  if (route.query.previousTab && route.query.previousTab === 'inProgress') {
-    redirectToDetails(router, id, true, false, true);
-  } else {
-    redirectToDetails(router, id, true);
-  }
+  // Before routing to details, we update nextTransaction store
+  const groupItems = group.value?.groupItems ?? [];
+  const nodeIds = groupItems.map(item => {
+    return { transactionId: item.transactionId };
+  });
+  await nextTransaction.routeDown({ transactionId: id }, nodeIds, router);
 };
 
 const handleSignGroupItem = async (groupItem: IGroupItem) => {
@@ -485,7 +472,6 @@ onBeforeMount(async () => {
   }
 
   await fetchGroup(Array.isArray(id) ? id[0] : id);
-  setGetTransactionsFunction();
 });
 
 /* Watchers */
@@ -573,16 +559,6 @@ const isTransactionInProgress = (transaction: ITransactionFull) => {
   ].includes(transaction.status);
 };
 
-function setGetTransactionsFunction() {
-  nextTransaction.setGetTransactionsFunction(async () => {
-    const transactions = group.value?.groupItems.map(t => t.transaction);
-    return {
-      items: transactions?.map(t => t.id) || [],
-      totalItems: transactions?.length || 0,
-    };
-  }, false);
-}
-
 const canSignItem = (item: IGroupItem) => {
   return (
     !signingItems.value[item.seq] &&
@@ -666,6 +642,7 @@ function itemStatusBadgeClass(item: IGroupItem): string {
           <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
             <i class="bi bi-arrow-left"></i>
           </AppButton>
+          <NextTransactionCursor />
 
           <h2 class="text-title text-bold">Transaction Group Details</h2>
         </div>

@@ -14,6 +14,9 @@ import useNetworkStore from '@renderer/stores/storeNetwork.ts';
 
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
+import useNextTransactionV2, {
+  type TransactionNodeId,
+} from '@renderer/stores/storeNextTransactionV2.ts';
 
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
@@ -29,11 +32,9 @@ import {
 } from '@renderer/utils/sortTransactionNodes.ts';
 import TransactionsFilterV2 from '@renderer/components/Filter/v2/TransactionsFilterV2.vue';
 import { TRANSACTION_ACTION } from '@shared/constants';
+import { useRouter } from 'vue-router';
 
-const NOTIFICATION_TYPES_BY_COLLECTION: Record<
-  TransactionNodeCollection,
-  NotificationType[]
-> = {
+const NOTIFICATION_TYPES_BY_COLLECTION: Record<TransactionNodeCollection, NotificationType[]> = {
   [TransactionNodeCollection.READY_FOR_REVIEW]: [],
   [TransactionNodeCollection.READY_TO_SIGN]: [],
   [TransactionNodeCollection.IN_PROGRESS]: [],
@@ -63,8 +64,10 @@ const emit = defineEmits<{
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const nextTransaction = useNextTransactionV2();
 
 /* Composables */
+const router = useRouter();
 const toast = useToast();
 useWebsocketSubscription(TRANSACTION_ACTION, fetchNodes);
 /* Use mark notifications with computed types */
@@ -112,6 +115,27 @@ const loadErrorMessage = computed(() => {
   }
   return result;
 });
+
+/* Handlers */
+const routeToDetails = async (node: ITransactionNode) => {
+  const nodeIds: TransactionNodeId[] = [];
+  for (const n of nodes.value) {
+    if (n.transactionId) {
+      nodeIds.push({ transactionId: n.transactionId });
+    } else if (n.groupId) {
+      nodeIds.push({ groupId: n.groupId });
+    } else {
+      console.log('Malformed transaction node: ' + JSON.stringify(n));
+    }
+  }
+  if (node.transactionId) {
+    await nextTransaction.routeDown({ transactionId: node.transactionId }, nodeIds, router);
+  } else if (node.groupId) {
+    await nextTransaction.routeDown({ groupId: node.groupId }, nodeIds, router);
+  } else {
+    console.warn(`Malformed transaction node`);
+  }
+};
 
 /* Functions */
 function initialSort() {
@@ -183,6 +207,7 @@ watch(sort, () => {
 
 watch([statusFilter, transactionTypeFilter], fetchNodes, { deep: true });
 
+/* Hooks */
 onMounted(fetchNodes);
 </script>
 
@@ -210,6 +235,7 @@ onMounted(fetchNodes);
                 :node="node"
                 :index="index"
                 :old-notifications="oldNotifications"
+                @route-to-details="routeToDetails"
                 @transaction-signed="fetchNodes"
                 @transaction-group-signed="fetchNodes"
               />
