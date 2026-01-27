@@ -7,34 +7,60 @@ import { defineStore } from 'pinia';
 
 import { Client } from '@hashgraph/sdk';
 
-import { CommonNetwork } from '@shared/enums';
+import { CommonNetwork, CommonNetworkNames } from '@shared/enums';
 
 import { getExchangeRateSet } from '@renderer/services/mirrorNodeDataService';
 import { setClient } from '@renderer/services/transactionService';
 
-import { getClientFromMirrorNode, getNodeNumbersFromNetwork } from '@renderer/utils';
+import {
+  getClientFromMirrorNode,
+  getNodeNumbersFromNetwork,
+  isUserLoggedIn,
+} from '@renderer/utils';
+import useUserStore from '@renderer/stores/storeUser.ts';
+import { add, getStoredClaim, update } from '@renderer/services/claimService';
+import { SELECTED_NETWORK } from '@shared/constants';
 
 export interface NetworkStore {
   network: Ref<string>;
+  customMirrorNodeBaseURL: Ref<string | null>;
   exchangeRateSet: Ref<NetworkExchangeRateSetResponse | null>;
-  mirrorNodeBaseURL: Ref<string>;
+  allNetworks: ComputedRef<Network[]>;
+  mirrorNodeBaseURL: ComputedRef<string>;
   client: Ref<Client>;
   currentRate: ComputedRef<number | null>;
   nodeNumbers: Ref<number[]>;
   setup: (defaultNetwork?: Network) => Promise<void>;
   setNetwork: (newNetwork: Network) => Promise<void>;
   getMirrorNodeREST: (network: Network) => string;
+  getNetworkLabel: (network: Network) => string;
 }
 
 const useNetworkStore = defineStore('network', (): NetworkStore => {
+
+  /* Stores */
+  const user = useUserStore();
+
   /* State */
   const network = ref<Network>(CommonNetwork.MAINNET);
-  const mirrorNodeBaseURL = ref(getMirrorNodeREST(network.value));
+  const customMirrorNodeBaseURL = ref<string | null>(null);
   const exchangeRateSet = ref<NetworkExchangeRateSetResponse | null>(null);
   const client = ref<Client>(Client.forTestnet());
   const nodeNumbers = ref<number[]>([]);
 
-  /* Getters */
+  /* Computed */
+  const CUSTOM_NETWORK: Network = "custom";
+  const allNetworks = computed(() => {
+    const result = Object.values(CommonNetwork);
+    if (customMirrorNodeBaseURL.value !== null) {
+      result.push(CUSTOM_NETWORK);
+    }
+    return result;
+  })
+  const mirrorNodeBaseURL = computed(() => {
+    return getMirrorNodeREST(network.value);
+  });
+
   const currentRate = computed(() => {
     if (!exchangeRateSet.value) {
       return null;
@@ -57,14 +83,20 @@ const useNetworkStore = defineStore('network', (): NetworkStore => {
   /* Actions */
   async function setup(defaultNetwork?: Network) {
     await setNetwork(defaultNetwork || CommonNetwork.MAINNET);
+    customMirrorNodeBaseURL.value =
+      network.value in CommonNetworkNames ? null : getMirrorNodeREST(network.value);
   }
 
   async function setNetwork(newNetwork: Network) {
+    if (isUserLoggedIn(user.personal)) {
+      const selectedNetwork = await getStoredClaim(user.personal.id, SELECTED_NETWORK);
+      const addOrUpdate = selectedNetwork !== undefined ? update : add;
+      await addOrUpdate(user.personal.id, SELECTED_NETWORK, newNetwork);
+    }
     await setClient(newNetwork);
     await setStoreClient(newNetwork);
 
-    mirrorNodeBaseURL.value = getMirrorNodeREST(newNetwork);
-    network.value = newNetwork;
+    network.value = newNetwork; // mirrorNodeBaseURL is now usable
     exchangeRateSet.value = await getExchangeRateSet(mirrorNodeBaseURL.value);
 
     nodeNumbers.value = await getNodeNumbersFromNetwork(mirrorNodeBaseURL.value);
@@ -108,9 +140,23 @@ const useNetworkStore = defineStore('network', (): NetworkStore => {
     return networkLink[network];
   }
 
+  function getNetworkLabel(network: Network): string {
+    let result: string;
+    if (network === CUSTOM_NETWORK) {
+      result = "custom";
+    } else if (network in CommonNetworkNames) {
+      result = CommonNetworkNames[network as keyof typeof CommonNetwork];
+    } else {
+      result = '?';
+    }
+    return result;
+  }
+
   return {
     network,
+    customMirrorNodeBaseURL,
     exchangeRateSet,
+    allNetworks,
     mirrorNodeBaseURL,
     client: client as Ref<Client>,
     currentRate,
@@ -118,6 +164,7 @@ const useNetworkStore = defineStore('network', (): NetworkStore => {
     setup,
     setNetwork,
     getMirrorNodeREST,
+    getNetworkLabel,
   };
 });
 
