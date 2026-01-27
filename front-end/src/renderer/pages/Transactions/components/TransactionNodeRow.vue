@@ -3,6 +3,7 @@ import type { INotificationReceiver } from '@shared/interfaces';
 
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { computedAsync } from '@vueuse/core';
 
 import useTransactionAudit from '@renderer/composables/useTransactionAudit.ts';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
@@ -45,7 +46,6 @@ const descriptionRef = ref<HTMLElement | null>(null);
 const isTruncated = ref(false);
 const isExternal = ref(false);
 let resizeObserver: ResizeObserver | null = null;
-const freezeType = ref<FreezeType | null>(null);
 
 /* Composables */
 const router = useRouter();
@@ -54,6 +54,20 @@ const transactionId = computed(() => props.node.transactionId ?? null);
 const transactionAudit = useTransactionAudit(transactionId);
 
 /* Computed */
+const freezeType = computedAsync(
+  async () => {
+    if (props.node.transactionType !== 'FREEZE') return null;
+
+    const sdkTx = await transactionAudit.sdkTransaction.value;
+
+    if (sdkTx instanceof FreezeTransaction && sdkTx.freezeType) {
+      return sdkTx.freezeType;
+    }
+    return null;
+  },
+  null,
+);
+
 const filteringNotificationTypes = computed(() => {
   switch (props.collection) {
     case TransactionNodeCollection.READY_FOR_REVIEW:
@@ -222,32 +236,17 @@ watch(() => props.node.description, () => {
   nextTick(() => checkTruncation());
 });
 
-// Fetch transaction metadata (external status and freeze type)
+// Fetch external status for the transaction
 watch(
-  () => [props.node.transactionType, props.node.transactionId] as const,
-  async ([transactionType, transactionId]) => {
-    // No transaction: reset everything
+  () => props.node.transactionId,
+  async transactionId => {
     if (!transactionId) {
       isExternal.value = false;
-      freezeType.value = null;
       return;
     }
 
-    // We have a transaction: compute isExternal
     const externalSignerKeys = await transactionAudit.externalSignerKeys.value;
     isExternal.value = externalSignerKeys.size > 0;
-
-    // Handle FREEZE transactions - extract freezeType from sdkTransaction
-    if (transactionType === 'FREEZE') {
-      const sdkTx = await transactionAudit.sdkTransaction.value;
-      if (sdkTx instanceof FreezeTransaction && sdkTx.freezeType) {
-        freezeType.value = sdkTx.freezeType;
-      } else {
-        freezeType.value = null;
-      }
-    } else {
-      freezeType.value = null;
-    }
   },
   { immediate: true },
 );
