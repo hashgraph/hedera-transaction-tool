@@ -21,8 +21,8 @@ const props = withDefaults(
      * - 'countdown': Shows "Expires in HHh MMm" / "Expires in MMm SSs" (active)
      *                or "Expired" / "Expired HHh MMm ago" (expired) with live countdown
      *
-     * Note: Expired transactions are hidden by default via shouldShowBadge.
-     * To show expired badges, modify the shouldShowBadge computed property.
+     * Note: Expired transactions show "Expired" state until backend notifies
+     * and updates the transaction status.
      */
     variant?: 'simple' | 'countdown';
   }>(),
@@ -61,23 +61,30 @@ const shouldShowBadge = computed(() => {
   const remaining = timeUntilExpiry.value;
   if (remaining === null) return false;
 
-  // Hide expired transactions by default (developers can modify this if needed)
-  if (remaining <= 0) {
-    return false;
-  }
-
-  // Show badge when expiring within 24 hours
+  // Show badge when expiring within 24 hours OR when just expired
+  // (badge will disappear when backend notifies and status changes to EXPIRED)
   return remaining <= TWENTY_FOUR_HOURS_MS;
 });
 
 const currentInterval = computed(() => {
   const remaining = timeUntilExpiry.value;
 
-  // No interval needed if badge won't show or time expired
-  if (remaining === null || remaining <= 0 || !shouldShowBadge.value) {
+  // No interval needed if badge won't show
+  if (remaining === null || !shouldShowBadge.value) {
     return null;
   }
 
+  // After expiry: update every second to show "Expired X ago" (countdown) or "Expired" (simple)
+  if (remaining <= 0) {
+    return ONE_SECOND_MS;
+  }
+
+  // Simple variant: use 1 second interval to detect the expiry transition precisely
+  if (props.variant === 'simple') {
+    return ONE_SECOND_MS;
+  }
+
+  // Countdown variant: adaptive interval based on remaining time
   // Under 1 hour: update every second for MMm SSs format
   if (remaining < ONE_HOUR_MS) {
     return ONE_SECOND_MS;
@@ -147,15 +154,9 @@ function clearCurrentInterval() {
 }
 
 function setupInterval() {
-  // Clear interval if not countdown variant
-  if (props.variant !== 'countdown') {
-    clearCurrentInterval();
-    return;
-  }
-
   const targetInterval = currentInterval.value;
 
-  // No interval needed (expired or badge not showing)
+  // No interval needed (badge not showing)
   if (targetInterval === null) {
     clearCurrentInterval();
     return;
