@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { computed, onUpdated } from 'vue';
 
-import { networkMapping } from '@shared/constants';
-
 import useUserStore from '@renderer/stores/storeUser';
-import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
@@ -12,10 +9,10 @@ import Logo from '@renderer/components/Logo.vue';
 import LogoText from '@renderer/components/LogoText.vue';
 import NotificationsDropDown from '@renderer/components/Notifications/NotificationsDropDown.vue';
 import UserModeSelect from './UserModeSelect.vue';
+import NetworkSelect from './NetworkSelect.vue';
 
 /* Stores */
 const user = useUserStore();
-const networkStore = useNetworkStore();
 
 /* Composables */
 const createTooltips = useCreateTooltips();
@@ -45,14 +42,7 @@ onUpdated(createTooltips);
       <span class="container-icon">
         <i class="text-icon-main bi bi-three-dots-vertical"></i>
       </span> -->
-      <div class="me-4 position-relative">
-        <RouterLink
-          class="text-bold text-small text-decoration-none"
-          to="/settings/general"
-          :class="networkMapping[networkStore.network]?.className || 'text-info'"
-          >{{ networkMapping[networkStore.network]?.label || 'CUSTOM' }}
-        </RouterLink>
-      </div>
+      <div class="me-4"><NetworkSelect /></div>
       <div>
         <UserModeSelect />
       </div>

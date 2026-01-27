@@ -205,7 +205,7 @@ watch(sort, () => {
   },
 );
 
-watch([statusFilter, transactionTypeFilter], fetchNodes, { deep: true });
+watch([statusFilter, transactionTypeFilter, () => network.network], fetchNodes, { deep: true });
 
 /* Hooks */
 onMounted(fetchNodes);

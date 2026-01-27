@@ -74,7 +74,7 @@ watch(
       <div class="col-11 text-start overflow-hidden">
         <span>{{ selected?.label || toggleText }}</span>
       </div>
-      <div class="col-1 ms-3">
+      <div class="col-1">
         <i v-if="togglerIcon" class="bi bi-chevron-down flex-1"></i>
       </div>
     </AppButton>
