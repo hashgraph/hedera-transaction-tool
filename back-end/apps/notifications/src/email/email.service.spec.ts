@@ -339,6 +339,15 @@ describe('EmailService', () => {
 
       setTimeoutSpy.mockRestore();
     });
+
+    it('should use default parameters when not provided', async () => {
+      const info = { messageId: 'msg-default' };
+      (transport.sendMail as jest.Mock).mockResolvedValueOnce(info);
+
+      const result = await (service as any).sendWithRetry(mailOptions);
+      expect(result).toBe(info);
+      expect(transport.sendMail).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('processUserInviteNotifications', () => {
