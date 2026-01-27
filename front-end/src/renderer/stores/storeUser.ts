@@ -13,9 +13,9 @@ import { defineStore } from 'pinia';
 
 import { Prisma } from '@prisma/client';
 
-import { ACCOUNT_SETUP_STARTED } from '@shared/constants';
+import { ACCOUNT_SETUP_STARTED, SELECTED_NETWORK } from '@shared/constants';
 
-import { add, remove } from '@renderer/services/claimService';
+import { add, getStoredClaim, remove } from '@renderer/services/claimService';
 
 import useAfterOrganizationSelection from '@renderer/composables/user/useAfterOrganizationSelection';
 import useVersionCheck from '@renderer/composables/useVersionCheck';
@@ -76,13 +76,22 @@ const useUserStore = defineStore('user', () => {
   /* Actions */
   /** Personal */
   const login = async (id: string, email: string, useKeychain: boolean) => {
-    personal.value = ush.createPersonalUser(id, email, useKeychain);
-    await ush.setupSafeNetwork(id, network.setup);
+    personal.value = {
+      isLoggedIn: true,
+      id,
+      email,
+      password: null,
+      useKeychain: useKeychain,
+    };
+    const { data } = await safeAwait(getStoredClaim(id, SELECTED_NETWORK));
+    await safeAwait(network.setup(data));
     await selectOrganization(null);
   };
 
   const logout = () => {
-    personal.value = ush.createPersonalUser();
+    personal.value = {
+      isLoggedIn: false,
+    };
     selectedOrganization.value = null;
     organizations.value = [];
     publicKeyToAccounts.value = [];
