@@ -638,8 +638,8 @@ function itemStatusBadgeClass(item: IGroupItem): string {
   <form @submit.prevent="handleSubmit" class="p-5">
     <div class="flex-column-100">
       <div class="flex-centered justify-content-between flex-wrap gap-4">
-        <div class="d-flex align-items-center">
-          <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
+        <div class="d-flex align-items-center gap-4">
+          <AppButton type="button" color="secondary" class="btn-icon-only" @click="handleBack">
             <i class="bi bi-arrow-left"></i>
           </AppButton>
           <NextTransactionCursor />
@@ -664,51 +664,15 @@ function itemStatusBadgeClass(item: IGroupItem): string {
           </Transition>
 
           <Transition name="fade" mode="out-in">
-            <template v-if="visibleButtons.length > 1">
-              <div class="d-none d-lg-block">
-                <AppButton
-                  :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
-                  :loading="Boolean(loadingStates[visibleButtons[1]])"
-                  :loading-text="loadingStates[visibleButtons[1]] || ''"
-                  :data-testid="buttonsDataTestIds[visibleButtons[1]]"
-                  type="submit"
-                  >{{ visibleButtons[1] }}
-                </AppButton>
-              </div>
-            </template>
-          </Transition>
-
-          <Transition name="fade" mode="out-in">
-            <template v-if="visibleButtons.length > 2">
+            <template v-if="dropDownItems.length > 0">
               <div>
                 <AppDropDown
-                  class="d-lg-none"
                   :color="'secondary'"
                   :items="dropDownItems"
                   compact
                   @select="handleDropDownItem($event as ActionButton)"
-                  data-testid="button-more-dropdown-sm"
-                />
-                <AppDropDown
-                  class="d-none d-lg-block"
-                  :color="'secondary'"
-                  :items="dropDownItems.slice(1)"
-                  compact
-                  @select="handleDropDownItem($event as ActionButton)"
                   data-testid="button-more-dropdown-lg"
                 />
-              </div>
-            </template>
-            <template v-else-if="visibleButtons.length === 2">
-              <div class="d-lg-none">
-                <AppButton
-                  :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
-                  :loading="Boolean(loadingStates[visibleButtons[1]])"
-                  :loading-text="loadingStates[visibleButtons[1]] || ''"
-                  :data-testid="buttonsDataTestIds[visibleButtons[1]]"
-                  type="submit"
-                  >{{ visibleButtons[1] }}
-                </AppButton>
               </div>
             </template>
           </Transition>
