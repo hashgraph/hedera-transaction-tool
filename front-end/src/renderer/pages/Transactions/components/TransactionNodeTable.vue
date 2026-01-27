@@ -238,7 +238,7 @@ watch([currentPage, pageSize], () => {
   syncToUrl(currentPage.value, sortFieldToUrl(sort.value.field), sort.value.direction, pageSize.value);
 });
 
-watch([statusFilter, transactionTypeFilter], () => {
+watch([statusFilter, transactionTypeFilter, () => network.network], () => {
   currentPage.value = 1;
   fetchNodes();
 }, { deep: true });
