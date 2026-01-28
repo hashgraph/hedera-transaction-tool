@@ -6,6 +6,7 @@ import { SettingsPage } from '../pages/SettingsPage.js';
 import * as fsp from 'fs/promises';
 import _ from 'lodash';
 import Diff from 'deep-diff';
+import { OrganizationPage } from '../pages/OrganizationPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { generateEd25519KeyPair } from './keyUtil.js';
 
@@ -86,7 +87,6 @@ export async function setupEnvironmentForTransactions(
   if (network === 'LOCALNET') {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
-    await settingsPage.clickOnLocalNodeTab();
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnED25519DropDown();
@@ -128,31 +128,33 @@ export async function setupEnvironmentForTransactions(
       await settingsPage.fillInED25519PrivateKey(privateKey);
       await settingsPage.fillInED25519Nickname('Payer Account');
       await settingsPage.clickOnED25519ImportButton();
-    }
-  } else if (network === 'TESTNET') {
+    const organizationPage = new OrganizationPage(window);
+    await organizationPage.selectLocalNodeNetwork();
+  }} else if (network === 'TESTNET') {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
-    await settingsPage.clickOnTestnetTab();
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnECDSADropDown();
     await settingsPage.fillInECDSAPrivateKey(privateKey ?? '');
     await settingsPage.fillInECDSANickname('Payer Account');
     await settingsPage.clickOnECDSAImportButton();
+    const organizationPage = new OrganizationPage(window);
+    await organizationPage.selectTestnetNetwork();
   } else if (network === 'PREVIEWNET') {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
-    await settingsPage.clickOnPreviewnetTab();
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnECDSADropDown();
     await settingsPage.fillInECDSAPrivateKey(privateKey ?? '');
     await settingsPage.fillInECDSANickname('Payer Account');
     await settingsPage.clickOnECDSAImportButton();
+    const organizationPage = new OrganizationPage(window);
+    await organizationPage.selectPreviewnetNetwork();
   } else {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
-    await settingsPage.clickOnCustomNodeTab();
     await settingsPage.fillInMirrorNodeBaseURL(getNetworkEnv() ?? '');
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnImportButton();
@@ -160,6 +162,8 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.fillInED25519PrivateKey(privateKey ?? '');
     await settingsPage.fillInED25519Nickname('Payer Account');
     await settingsPage.clickOnED25519ImportButton();
+    const organizationPage = new OrganizationPage(window);
+    await organizationPage.selectCustomNetwork();
   }
 }
 
