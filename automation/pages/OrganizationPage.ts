@@ -72,6 +72,7 @@ export class OrganizationPage extends BasePage {
   historyTabSelector = 'tab-5';
   deleteOrganizationButtonSelector = 'button-delete-connection';
   dropdownSelectModeSelector = 'dropdown-select-mode';
+  dropdownSelectNetworkSelector = 'dropdown-select-network';
   notificationsButtonSelector = 'button-notifications';
   editNicknameOrganizationButtonSelector = 'button-edit-nickname';
   logoutButtonSelector = 'button-logout';
@@ -114,6 +115,7 @@ export class OrganizationPage extends BasePage {
   // Indexes
   modeSelectionIndexSelector = 'dropdown-item-';
   firstMissingKeyIndexSelector = 'cell-index-missing-0';
+  networkSelectionNameSelector = 'select-item-';
 
   transactionNodeTransactionIdIndexSelector = 'td-transaction-node-transaction-id-';
   transactionNodeTransactionTypeIndexSelector = 'td-transaction-node-transaction-type-';
@@ -362,6 +364,10 @@ export class OrganizationPage extends BasePage {
     await this.click(this.dropdownSelectModeSelector);
   }
 
+  async clickOnSelectNetworkDropdown() {
+    await this.click(this.dropdownSelectNetworkSelector);
+  }
+
   async isNotificationIndicatorElementVisible() {
     return this.isElementVisible(this.notificationsIndicatorElement);
   }
@@ -382,6 +388,35 @@ export class OrganizationPage extends BasePage {
   async selectOrganizationMode() {
     await this.clickOnSelectModeDropdown();
     await this.selectModeByIndex(1);
+  }
+
+  async selectNetworkByName(network: string) {
+    await this.click(this.networkSelectionNameSelector + network);
+  }
+
+  async selectMainnetNetwork() {
+    await this.clickOnSelectNetworkDropdown();
+    await this.selectNetworkByName('mainnet');
+  }
+
+  async selectTestnetNetwork() {
+    await this.clickOnSelectNetworkDropdown();
+    await this.selectNetworkByName('testnet');
+  }
+
+  async selectPreviewnetNetwork() {
+    await this.clickOnSelectNetworkDropdown();
+    await this.selectNetworkByName('previewnet');
+  }
+
+  async selectLocalNodeNetwork() {
+    await this.clickOnSelectNetworkDropdown();
+    await this.selectNetworkByName('local-node');
+  }
+
+  async selectCustomNetwork() {
+    await this.clickOnSelectNetworkDropdown();
+    await this.selectNetworkByName('custom');
   }
 
   async logoutFromOrganization() {
