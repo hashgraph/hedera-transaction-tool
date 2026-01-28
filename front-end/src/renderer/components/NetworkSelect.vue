@@ -35,5 +35,6 @@ const handleNetworkSelect = async (newValue: Network | undefined) => {
     toggler-icon
     :color="'secondary'"
     button-class="min-w-100"
+    data-testid="dropdown-select-network"
   />
 </template>

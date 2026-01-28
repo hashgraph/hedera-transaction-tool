@@ -28,11 +28,11 @@ export class SettingsPage extends BasePage {
   organisationsTabButtonSelector = 'tab-1';
   keysTabButtonSelector = 'tab-2';
   profileTabButtonSelector = 'tab-4';
-  mainnetTabButtonSelector = 'tab-network-mainnet';
-  testnetTabButtonSelector = 'tab-network-testnet';
-  previewnetTabButtonSelector = 'tab-network-previewnet';
-  localNodeTabButtonSelector = 'tab-network-local-node';
-  customNodeTabButtonSelector = 'tab-network-custom-node';
+  // mainnetTabButtonSelector = 'tab-network-mainnet';
+  // testnetTabButtonSelector = 'tab-network-testnet';
+  // previewnetTabButtonSelector = 'tab-network-previewnet';
+  // localNodeTabButtonSelector = 'tab-network-local-node';
+  // customNodeTabButtonSelector = 'tab-network-custom-node';
   darkTabButtonSelector = 'tab-appearance-dark';
   lightTabButtonSelector = 'tab-appearance-light';
   systemTabButtonSelector = 'tab-appearance-system';
@@ -180,22 +180,22 @@ export class SettingsPage extends BasePage {
     await this.click(this.continuePhraseButtonSelector);
   }
 
-  async clickOnLocalNodeTab(): Promise<void> {
-    await this.click(this.localNodeTabButtonSelector);
-  }
-
-  async clickOnTestnetTab(): Promise<void> {
-    await this.click(this.testnetTabButtonSelector);
-  }
-
-  async clickOnPreviewnetTab(): Promise<void> {
-    await this.click(this.previewnetTabButtonSelector);
-  }
-
-  async clickOnCustomNodeTab(): Promise<void> {
-    await this.click(this.customNodeTabButtonSelector);
-  }
-
+  // async clickOnLocalNodeTab(): Promise<void> {
+  //   await this.click(this.localNodeTabButtonSelector);
+  // }
+  //
+  // async clickOnTestnetTab(): Promise<void> {
+  //   await this.click(this.testnetTabButtonSelector);
+  // }
+  //
+  // async clickOnPreviewnetTab(): Promise<void> {
+  //   await this.click(this.previewnetTabButtonSelector);
+  // }
+  //
+  // async clickOnCustomNodeTab(): Promise<void> {
+  //   await this.click(this.customNodeTabButtonSelector);
+  // }
+  //
   async clickOnImportButton(): Promise<void> {
     await this.click(this.importButtonSelector);
   }
