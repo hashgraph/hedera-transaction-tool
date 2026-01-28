@@ -18,7 +18,7 @@ export interface ITransactionNode {   //   Single   Group
 export enum TransactionNodeCollection {
   READY_FOR_REVIEW = "READY_FOR_REVIEW",
   READY_TO_SIGN = "READY_TO_SIGN",
-  READY_FOR_EXECUTION = "READY_FOR_EXECUTION",
+  READY_FOR_EXECUTION = "READY_FOR_EXECUTION", // Deprecated (subset of IN_PROGRESS collection)
   IN_PROGRESS = "IN_PROGRESS",
   HISTORY = "HISTORY",
 }

@@ -35,7 +35,6 @@ export const draftsTitle = 'Drafts';
 export const readyForReviewTitle = 'Ready for Review';
 export const readyToSignTitle = 'Ready to Sign';
 export const inProgressTitle = 'In Progress';
-export const readyForExecutionTitle = 'Ready for Execution';
 export const historyTitle = 'History';
 
 /* Local Storage */
