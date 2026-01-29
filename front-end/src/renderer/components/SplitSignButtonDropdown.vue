@@ -55,7 +55,7 @@ onBeforeMount(async () => {
       class="dropdown-toggle dropdown-toggle-split"
       color="primary"
       data-bs-toggle="dropdown"
-      data-bs-offset="10,20"
+      data-bs-offset="0,6"
     >
       <span class="visually-hidden">Toggle Dropdown</span>
     </AppButton>
@@ -100,6 +100,7 @@ onBeforeMount(async () => {
   min-width: 280px;
   padding: 0;
   overflow: hidden;
+  border-radius: 6px;
 }
 
 .dropdown-toggle {
