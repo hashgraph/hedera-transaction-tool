@@ -21,6 +21,7 @@ import useAfterOrganizationSelection from '@renderer/composables/user/useAfterOr
 import useVersionCheck from '@renderer/composables/useVersionCheck';
 
 import { safeAwait } from '@renderer/utils';
+import * as pks from '@renderer/services/publicKeyMappingService';
 import * as ush from '@renderer/utils/userStoreHelpers';
 import { getVersionStatusForOrg, triggeringOrganizationServerUrl } from './versionState';
 
@@ -190,7 +191,7 @@ const useUserStore = defineStore('user', () => {
   };
 
   const deletePublicKeyMapping = async (id: string) => {
-    await ush.deletePublicKeyMapping(id);
+    await pks.deletePublicKey(id);
     await refetchPublicKeys();
   };
 
