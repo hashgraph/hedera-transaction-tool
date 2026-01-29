@@ -29,6 +29,7 @@ export const RECOVERY_PHRASE_HASH_UPDATED = 'recovery_phrase_hash_updated';
 export const WINDOW_STATE = 'window_state';
 export const SKIPPED_PERSONAL_SETUP = 'skipped_personal_setup';
 export const SKIPPED_ORGANIZATION_SETUP = 'skipped_organization_setup';
+export const GO_NEXT_AFTER_SIGN = 'go_next_after_sign';
 
 /* Transaction tabs */
 export const draftsTitle = 'Drafts';

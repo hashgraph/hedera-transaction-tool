@@ -1,6 +1,10 @@
 <script lang="ts" setup>
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import { ref } from 'vue';
+import { onBeforeMount, ref, watch } from 'vue';
+import { isUserLoggedIn, safeAwait } from '@renderer/utils';
+import { add, getStoredClaim, update } from '@renderer/services/claimService.ts';
+import useUserStore from '@renderer/stores/storeUser.ts';
+import { GO_NEXT_AFTER_SIGN } from '@shared/constants';
 
 /* Props */
 const props = defineProps<{
@@ -9,8 +13,30 @@ const props = defineProps<{
   disabled?: boolean;
 }>();
 
+/* Stores */
+const user = useUserStore();
+
 /* State */
-const goNext = ref(false);
+const goToNext = ref(false);
+
+/* Watchers */
+watch(goToNext, async () => {
+  if (isUserLoggedIn(user.personal)) {
+    const claimValue = await safeAwait(getStoredClaim(user.personal.id, GO_NEXT_AFTER_SIGN));
+    const addOrUpdate = claimValue.data !== undefined ? update : add;
+    await addOrUpdate(user.personal.id, GO_NEXT_AFTER_SIGN, goToNext.value.toString());
+  }
+});
+
+/* Lifecycle */
+onBeforeMount(async () => {
+  if (isUserLoggedIn(user.personal)) {
+    const claimValue = await safeAwait(getStoredClaim(user.personal.id, GO_NEXT_AFTER_SIGN));
+    if (claimValue.data) {
+      goToNext.value = claimValue.data === 'true';
+    }
+  }
+});
 </script>
 <template>
   <div class="btn-group">
@@ -22,7 +48,7 @@ const goNext = ref(false);
       color="primary"
       type="submit"
     >
-      {{ goNext ? 'Sign & Next' : 'Sign' }}
+      {{ goToNext ? 'Sign & Next' : 'Sign' }}
     </AppButton>
     <AppButton
       :disabled="props.disabled || props.loading"
@@ -34,9 +60,9 @@ const goNext = ref(false);
       <span class="visually-hidden">Toggle Dropdown</span>
     </AppButton>
     <ul class="dropdown-menu">
-      <li @click="goNext = false">
+      <li @click="goToNext = false">
         <div class="dropdown-item cursor-pointer d-flex gap-2 align-items-start">
-            <i :class="['bi', 'bi-check-lg', goNext ? 'invisible' : 'visible']" />
+          <i :class="['bi', 'bi-check-lg', goToNext ? 'invisible' : 'visible']" />
           <div class="option-content">
             <div class="option-label">Sign</div>
             <div class="option-description">Sign this transaction</div>
@@ -44,9 +70,9 @@ const goNext = ref(false);
         </div>
       </li>
       <li><hr class="dropdown-divider" /></li>
-      <li @click="goNext = true">
+      <li @click="goToNext = true">
         <div class="dropdown-item cursor-pointer d-flex gap-2 align-items-start">
-          <i :class="['bi', 'bi-check-lg', goNext ? 'visible' : 'invisible']" />
+          <i :class="['bi', 'bi-check-lg', goToNext ? 'visible' : 'invisible']" />
           <div class="option-content">
             <div class="option-label">Sign & Next</div>
             <div class="option-description">
