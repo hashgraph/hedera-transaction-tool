@@ -700,7 +700,3 @@ export const updatePublicKeyNickname = async (
   }
   return await pks.editPublicKeyNickname(id, newNickname);
 };
-
-export const deletePublicKeyMapping = async (id: string) => {
-  return await pks.deletePublicKey(id);
-};
