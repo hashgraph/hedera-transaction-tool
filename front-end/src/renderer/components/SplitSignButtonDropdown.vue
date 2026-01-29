@@ -45,4 +45,8 @@ const goNext = ref(false);
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.dropdown-toggle-split {
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+}
+</style>
