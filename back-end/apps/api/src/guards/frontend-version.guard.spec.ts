@@ -317,7 +317,7 @@ describe('FrontendVersionGuard', () => {
         guard.canActivate(context);
       } catch (error) {
         const response = (error as HttpException).getResponse() as Record<string, unknown>;
-        expect(response.updateUrl).toBe(`${repoUrl}/download/v${latestVersion}/`);
+        expect(response.updateUrl).toBe(`${repoUrl}/v${latestVersion}/`);
       }
     });
 
@@ -328,7 +328,7 @@ describe('FrontendVersionGuard', () => {
         guard.canActivate(context);
       } catch (error) {
         const response = (error as HttpException).getResponse() as Record<string, unknown>;
-        expect(response.updateUrl).toBe(`${repoUrl}/download/v${latestVersion}/`);
+        expect(response.updateUrl).toBe(`${repoUrl}/v${latestVersion}/`);
       }
     });
 
@@ -339,7 +339,7 @@ describe('FrontendVersionGuard', () => {
         guard.canActivate(context);
       } catch (error) {
         const response = (error as HttpException).getResponse() as Record<string, unknown>;
-        expect(response.updateUrl).toBe(`${repoUrl}/download/v${latestVersion}/`);
+        expect(response.updateUrl).toBe(`${repoUrl}/v${latestVersion}/`);
       }
     });
 
