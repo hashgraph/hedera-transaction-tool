@@ -2,7 +2,7 @@ import { checkFrontendVersion } from './index';
 
 describe('Semver Utilities', () => {
   describe('checkFrontendVersion', () => {
-    const repoUrl = 'https://github.com/hashgraph/hedera-transaction-tool/releases';
+    const repoUrl = 'https://github.com/hashgraph/hedera-transaction-tool/releases/download';
 
     describe('when user version is older than latest supported', () => {
       it('should indicate update is available', () => {
@@ -95,7 +95,7 @@ describe('Semver Utilities', () => {
           '1.0.0',
           '1.2.0',
           '0.9.0',
-          'https://github.com/org/repo/releases/',
+          'https://github.com/org/repo/releases/download/',
         );
 
         expect(result.updateUrl).toBe('https://github.com/org/repo/releases/download/v1.2.0/');
@@ -106,7 +106,7 @@ describe('Semver Utilities', () => {
           '1.0.0',
           '1.2.0',
           '0.9.0',
-          'https://github.com/org/repo/releases///',
+          'https://github.com/org/repo/releases/download///',
         );
 
         expect(result.updateUrl).toBe('https://github.com/org/repo/releases/download/v1.2.0/');
