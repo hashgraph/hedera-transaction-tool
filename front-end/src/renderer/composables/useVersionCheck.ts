@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import type { IVersionCheckResponse } from '@shared/interfaces';
 
@@ -19,15 +19,24 @@ import {
   type VersionStatus,
 } from '@renderer/stores/versionState';
 
-const isChecking = ref(false);
 const isDismissed = ref(sessionStorage.getItem(SESSION_STORAGE_DISMISSED_UPDATE_PROMPT) === 'true');
+
+// per org checking flags
+const orgChecks = ref<Record<string, boolean>>({});
+
+// optional: global "any check running"
+const isAnyChecking = computed(() =>
+  Object.values(orgChecks.value).some((v) => v),
+);
 
 export default function useVersionCheck() {
   const performVersionCheck = async (serverUrl: string): Promise<void> => {
-    if (isChecking.value) return;
+    if (orgChecks.value[serverUrl]) {
+      return;
+    }
 
     try {
-      isChecking.value = true;
+      orgChecks.value[serverUrl] = true;
 
       const response = await checkVersion(serverUrl, FRONTEND_VERSION);
 
@@ -42,21 +51,14 @@ export default function useVersionCheck() {
       } else {
         setVersionStatusForOrg(serverUrl, 'current');
       }
-
-      updateUrl.value = response.updateUrl;
-      latestVersion.value = response.latestSupportedVersion;
-      versionStatus.value = response.updateUrl ? 'updateAvailable' : 'current';
     } catch (error) {
       console.error('Version check failed:', error);
       const orgStatus = getVersionStatusForOrg(serverUrl);
       if (orgStatus !== 'belowMinimum') {
         setVersionStatusForOrg(serverUrl, 'current');
       }
-      if (versionStatus.value !== 'belowMinimum') {
-        versionStatus.value = 'current';
-      }
     } finally {
-      isChecking.value = false;
+      orgChecks.value[serverUrl] = false;
     }
   };
 
@@ -78,8 +80,8 @@ export default function useVersionCheck() {
 
   const reset = (): void => {
     resetVersionState();
-    isChecking.value = false;
     isDismissed.value = false;
+    orgChecks.value = {}; // clear flags on reset
     sessionStorage.removeItem(SESSION_STORAGE_DISMISSED_UPDATE_PROMPT);
   };
 
@@ -87,9 +89,10 @@ export default function useVersionCheck() {
     versionStatus,
     updateUrl,
     latestVersion,
-    isChecking,
     performVersionCheck,
     isDismissed,
+    orgChecks,
+    isAnyChecking,
     dismissOptionalUpdate,
     reset,
     storeVersionDataForOrganization,

@@ -23,7 +23,6 @@ import {
 } from '@renderer/stores/versionState';
 
 import AutoLoginInOrganization from '@renderer/components/Organization/AutoLoginInOrganization.vue';
-import AppUpdate from './components/AppUpdate.vue';
 import ImportantNote from './components/ImportantNote.vue';
 import BeginDataMigration from './components/BeginDataMigration.vue';
 import MandatoryUpgrade from './components/MandatoryUpgrade.vue';
@@ -194,7 +193,6 @@ watch(
 </script>
 
 <template>
-  <AppUpdate />
   <MandatoryUpgrade />
   <OptionalUpgrade />
 

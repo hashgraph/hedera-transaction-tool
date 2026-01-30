@@ -8,12 +8,14 @@ const props = withDefaults(
     closeOnEscape?: boolean;
     closeOnClickOutside?: boolean;
     scrollable?: boolean;
+    loading?: boolean;
   }>(),
   {
     show: false,
     closeOnEscape: true,
     closeOnClickOutside: true,
     scrollable: false,
+    loading: false,
   },
 );
 
@@ -25,13 +27,17 @@ const modalRef = ref<HTMLDivElement | null>(null);
 
 /* Handlers */
 const handleKeyDown = (event: KeyboardEvent) => {
-  if (event.key === 'Escape' && props.closeOnEscape) {
+  if (event.key === 'Escape' && props.closeOnEscape && props.loading !== true) {
     emit('update:show', false);
   }
 };
 
 const handleClickOutside = (event: Event) => {
-  if (!modalRef.value?.contains(event.target as HTMLDivElement) && props.closeOnClickOutside) {
+  if (
+    !modalRef.value?.contains(event.target as HTMLDivElement) &&
+    props.closeOnClickOutside &&
+    props.loading !== true
+  ) {
     emit('update:show', false);
   }
 };
