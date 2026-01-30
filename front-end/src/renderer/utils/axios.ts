@@ -7,10 +7,8 @@ import { getAuthTokenFromSessionStorage } from '@renderer/utils';
 
 import { FRONTEND_VERSION } from './version';
 import {
-  setGlobalVersionBelowMinimum,
   setOrgVersionBelowMinimum,
   setVersionDataForOrg,
-  triggeringOrganizationServerUrl,
   organizationCompatibilityResults,
 } from '@renderer/stores/versionState';
 import useUserStore from '@renderer/stores/storeUser';
@@ -69,8 +67,6 @@ axios.interceptors.response.use(
         };
         setVersionDataForOrg(serverUrl, versionData);
 
-        triggeringOrganizationServerUrl.value = serverUrl;
-
         if (errorLatestVersion) {
           try {
             const compatibilityResult = await checkCompatibilityAcrossOrganizations(
@@ -106,9 +102,6 @@ axios.interceptors.response.use(
         }
 
         setOrgVersionBelowMinimum(serverUrl, errorUpdateUrl);
-      } else {
-        triggeringOrganizationServerUrl.value = null;
-        setGlobalVersionBelowMinimum(errorUpdateUrl);
       }
     }
     return Promise.reject(error);

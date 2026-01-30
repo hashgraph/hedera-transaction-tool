@@ -22,7 +22,7 @@ import useVersionCheck from '@renderer/composables/useVersionCheck';
 
 import { safeAwait } from '@renderer/utils';
 import * as ush from '@renderer/utils/userStoreHelpers';
-import { getVersionStatusForOrg, triggeringOrganizationServerUrl } from './versionState';
+import { getVersionStatusForOrg } from './versionState';
 
 import useNetworkStore from './storeNetwork';
 import useOrganizationConnection from './storeOrganizationConnection';
@@ -199,7 +199,6 @@ const useUserStore = defineStore('user', () => {
           const versionStatus = getVersionStatusForOrg(organization.serverUrl);
 
           if (versionStatus === 'belowMinimum') {
-            triggeringOrganizationServerUrl.value = organization.serverUrl;
             return;
           }
         }
