@@ -13,7 +13,7 @@ const props = withDefaults(
     conflicts: CompatibilityConflict[];
     suggestedVersion: string;
     isOptional: boolean; // true if current version still supported, false if mandatory
-    triggeringOrgName?: string;
+    triggeringOrgName?: string | null;
   }>(),
   {
     show: false,
@@ -40,6 +40,12 @@ const handleCancel = () => {
 };
 
 /* Computed */
+const updateMessage = computed(() => {
+  return props.isOptional
+    ? `has an update available. Version`
+    : `requires an update to version`;
+});
+
 const conflictMessage = computed(() => {
   if (props.conflicts.length === 0) return '';
 
@@ -81,7 +87,7 @@ const cancelButtonText = computed(() => {
 
       <p class="text-small text-secondary mt-3 text-center">
         <span v-if="triggeringOrgName">
-          The organization <strong>{{ triggeringOrgName }}</strong> requires an update to version
+          The organization <strong>{{ triggeringOrgName }}</strong> {{ updateMessage }}
           <strong>{{ suggestedVersion }}</strong
           >.
         </span>
@@ -105,8 +111,10 @@ const cancelButtonText = computed(() => {
               class="text-small text-secondary mb-2"
             >
               <i class="bi bi-exclamation-circle me-2"></i>
-              <strong>{{ conflict.organizationName }}</strong> - Latest supported version:
-              {{ conflict.latestSupportedVersion }}
+              <strong>{{ conflict.organizationName }}</strong>
+              <span v-if="conflict.latestSupportedVersion">
+                \- Latest supported version: {{ conflict.latestSupportedVersion }}
+              </span>
             </li>
           </ul>
         </div>
