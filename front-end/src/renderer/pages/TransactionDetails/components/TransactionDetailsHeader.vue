@@ -50,6 +50,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
+import SplitSignButtonDropdown from '@renderer/components/SplitSignButtonDropdown.vue';
 
 import { TransactionStatus } from '@shared/interfaces';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
@@ -62,6 +63,7 @@ type ActionButton =
   | 'Reject'
   | 'Approve'
   | 'Sign'
+  | 'Sign & Next'
   | 'Cancel'
   | 'Export'
   | 'Schedule'
@@ -72,6 +74,7 @@ type ActionButton =
 const reject: ActionButton = 'Reject';
 const approve: ActionButton = 'Approve';
 const sign: ActionButton = 'Sign';
+const signAndNext: ActionButton = 'Sign & Next';
 const execute: ActionButton = 'Schedule';
 const cancel: ActionButton = 'Cancel';
 const remindSignersLabel: ActionButton = 'Remind Signers';
@@ -246,7 +249,7 @@ const handleBack = async () => {
   await nextTransaction.routeUp(router);
 };
 
-const handleSign = async () => {
+const handleSign = async (goNext = false) => {
   if (!(props.sdkTransaction instanceof SDKTransaction) || !props.organizationTransaction) {
     throw new Error('Transaction is not available');
   }
@@ -254,7 +257,7 @@ const handleSign = async () => {
   assertUserLoggedIn(user.personal);
   assertIsLoggedInOrganization(user.selectedOrganization);
 
-  const personalPassword = getPassword(handleSign, {
+  const personalPassword = getPassword(handleSign.bind(null, goNext), {
     subHeading: 'Enter your application password to access your private key',
   });
   if (passwordModalOpened(personalPassword)) return;
@@ -273,6 +276,9 @@ const handleSign = async () => {
 
     if (signed) {
       toast.success('Transaction signed successfully', successToastOptions);
+      if (goNext) {
+        await nextTransaction.routeToNext(router);
+      }
     } else {
       toast.error('Failed to sign transaction', errorToastOptions);
     }
@@ -522,6 +528,8 @@ const handleAction = async (value: ActionButton) => {
     await handleApprove(true, true);
   } else if (value === sign) {
     await handleSign();
+  } else if (value === signAndNext) {
+    await handleSign(true);
   } else if (value === cancel) {
     await handleCancel(true);
   } else if (value === archive) {
@@ -641,7 +649,13 @@ watch(
       <Transition name="fade" mode="out-in">
         <template v-if="visibleButtons.length > 0">
           <div>
+            <SplitSignButtonDropdown
+              v-if="visibleButtons[0] === sign"
+              :loading="Boolean(loadingStates[sign])"
+              :loading-text="loadingStates[sign] || ''"
+            />
             <AppButton
+              v-else
               :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
               :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[0]])"
               :loading="Boolean(loadingStates[visibleButtons[0]])"
