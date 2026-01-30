@@ -57,6 +57,7 @@ import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.t
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { writeTransactionFile } from '@renderer/services/transactionFileService.ts';
+import { getTransactionType } from '@renderer/utils/sdk/transactions.ts';
 
 /* Types */
 type ActionButton =
@@ -152,6 +153,10 @@ const publicKeysRequiredToSign = ref<string[] | null>(null);
 const shouldApprove = ref<boolean>(false);
 
 /* Computed */
+const txType = computed(() => {
+  return props.sdkTransaction ? getTransactionType(props.sdkTransaction) : null;
+});
+
 const creator = computed(() => {
   return props.organizationTransaction
     ? contacts.contacts.find(contact =>
@@ -629,18 +634,20 @@ watch(
         <i class="bi bi-arrow-left"></i>
       </AppButton>
       <NextTransactionCursor />
-      <h2 class="text-title text-bold">Transaction Details</h2>
-      <span v-if="isTransactionFailed" class="badge bg-danger text-break">
-        {{
-          getStatusFromCode(props.organizationTransaction?.statusCode)
-            ? getStatusFromCode(props.organizationTransaction?.statusCode)
-            : 'FAILED'
-        }}
-      </span>
-      <span v-else-if="isTransactionVersionMismatch" class="badge bg-danger text-break"
-        >Transaction Version Mismatch</span
-      >
-      <span v-else-if="isManualFlagVisible" class="badge bg-info text-break">Manual</span>
+      <template v-if="txType">
+        <h2 class="text-title text-bold">{{ txType }}</h2>
+        <span v-if="isTransactionFailed" class="badge bg-danger text-break">
+          {{
+            getStatusFromCode(props.organizationTransaction?.statusCode)
+              ? getStatusFromCode(props.organizationTransaction?.statusCode)
+              : 'FAILED'
+          }}
+        </span>
+        <span v-else-if="isTransactionVersionMismatch" class="badge bg-danger text-break"
+          >Transaction Version Mismatch</span
+        >
+        <span v-else-if="isManualFlagVisible" class="badge bg-info text-break">Manual</span>
+      </template>
     </div>
 
     <div class="flex-centered gap-4">
