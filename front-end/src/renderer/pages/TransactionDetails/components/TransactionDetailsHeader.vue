@@ -49,9 +49,11 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
-import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
+import ExpiringBadge from './ExpiringBadge.vue';
 
 import { TransactionStatus } from '@shared/interfaces';
+
+import { getTransactionValidStart } from '@renderer/utils/sdk/transactions';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
@@ -239,6 +241,10 @@ const isTransactionFailed = computed(() => {
 
 const isManualFlagVisible = computed(() => {
   return props.organizationTransaction?.isManual && transactionIsInProgress.value;
+});
+
+const validStartDate = computed(() => {
+  return props.sdkTransaction ? getTransactionValidStart(props.sdkTransaction) : null;
 });
 
 /* Handlers */
@@ -634,6 +640,13 @@ watch(
           Transaction Version Mismatch
         </span>
         <span v-else-if="isManualFlagVisible" class="badge bg-info text-break ms-2">Manual</span>
+        <!-- Expiring Soon Badge -->
+        <ExpiringBadge
+          :valid-start="validStartDate"
+          :valid-duration="props.sdkTransaction?.transactionValidDuration ?? 0"
+          :transaction-status="props.organizationTransaction?.status ?? null"
+          variant="countdown"
+        />
       </h2>
     </div>
 
