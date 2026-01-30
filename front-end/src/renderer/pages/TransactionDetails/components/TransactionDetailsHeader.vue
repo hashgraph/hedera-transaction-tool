@@ -628,21 +628,19 @@ watch(
       >
         <i class="bi bi-arrow-left"></i>
       </AppButton>
-      <NextTransactionCursor/>
-      <h2 class="text-title text-bold">
-        Transaction Details
-        <span v-if="isTransactionFailed" class="badge bg-danger text-break ms-2">
-          {{
-            getStatusFromCode(props.organizationTransaction?.statusCode)
-              ? getStatusFromCode(props.organizationTransaction?.statusCode)
-              : 'FAILED'
-          }}
-        </span>
-        <span v-else-if="isTransactionVersionMismatch" class="badge bg-danger text-break ms-2">
-          Transaction Version Mismatch
-        </span>
-        <span v-else-if="isManualFlagVisible" class="badge bg-info text-break ms-2">Manual</span>
-      </h2>
+      <NextTransactionCursor />
+      <h2 class="text-title text-bold">Transaction Details</h2>
+      <span v-if="isTransactionFailed" class="badge bg-danger text-break">
+        {{
+          getStatusFromCode(props.organizationTransaction?.statusCode)
+            ? getStatusFromCode(props.organizationTransaction?.statusCode)
+            : 'FAILED'
+        }}
+      </span>
+      <span v-else-if="isTransactionVersionMismatch" class="badge bg-danger text-break"
+        >Transaction Version Mismatch</span
+      >
+      <span v-else-if="isManualFlagVisible" class="badge bg-info text-break">Manual</span>
     </div>
 
     <div class="flex-centered gap-4">
