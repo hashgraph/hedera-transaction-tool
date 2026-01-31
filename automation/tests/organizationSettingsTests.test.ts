@@ -11,6 +11,7 @@ import {
   generateRandomPassword,
   setupApp,
   setupEnvironmentForTransactions,
+  resetAppState,
 } from '../utils/util.js';
 
 let app: ElectronApplication;
@@ -35,6 +36,13 @@ test.describe('Organization Settings tests', () => {
     organizationPage = new OrganizationPage(window);
     settingsPage = new SettingsPage(window);
     registrationPage = new RegistrationPage(window);
+
+    // Check if we need to reset app state (if user exists from previous run)
+    const isSettingsButtonVisible = await loginPage.isSettingsButtonVisible();
+    if (isSettingsButtonVisible) {
+      console.log('Existing user detected, resetting app state...');
+      await resetAppState(window, app);
+    }
 
     // Generate credentials and store them globally
     globalCredentials.email = generateRandomEmail();

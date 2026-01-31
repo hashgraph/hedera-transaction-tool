@@ -628,6 +628,90 @@ export async function getLatestNotificationStatusByEmail(
 }
 
 /**
+ * Retrieves the latest IN-APP notification status for a user identified by the given email.
+ * This specifically queries for INDICATOR notification types (which are in-app notifications),
+ * not email-only notification types.
+ *
+ * @param {string} email - The email of the user.
+ * @return {Promise<{isRead: boolean, isInAppNotified: boolean}|null>} A promise that resolves to an object containing
+ * 'isRead' and 'isInAppNotified' if an in-app notification is found, or null if not found.
+ * @throws {Error} If there is an error executing the query.
+ */
+export async function getLatestInAppNotificationStatusByEmail(
+  email: string,
+): Promise<{ isRead: boolean; isInAppNotified: boolean } | null> {
+  try {
+    const userId = await getUserIdByEmail(email);
+    if (!userId) {
+      console.error(`User with email ${email} not found.`);
+      return null;
+    }
+
+    const query = `
+      SELECT nr."isRead", nr."isInAppNotified"
+      FROM public.notification_receiver nr
+      JOIN public.notification n ON nr."notificationId" = n.id
+      WHERE nr."userId" = $1
+        AND n.type LIKE 'TRANSACTION_INDICATOR_%'
+      ORDER BY nr."updatedAt" DESC
+      LIMIT 1;
+    `;
+
+    const result = await queryPostgresDatabase(query, [userId]);
+    if (result.length > 0) {
+      const { isRead, isInAppNotified } = result[0];
+      return { isRead, isInAppNotified };
+    } else {
+      console.error(`No in-app notifications found for user with ID ${userId}.`);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error fetching latest in-app notification status by email:', error);
+    return null;
+  }
+}
+
+/**
+ * Gets the SDK transaction ID (e.g., "0.0.123@1234567890.000000000") of the transaction
+ * that has the latest unread in-app notification for a user.
+ * This is used to find the specific transaction row in the UI.
+ */
+export async function getNotifiedTransactionIdByEmail(
+  email: string,
+): Promise<string | null> {
+  try {
+    const userId = await getUserIdByEmail(email);
+    if (!userId) {
+      console.error(`User with email ${email} not found.`);
+      return null;
+    }
+
+    const query = `
+      SELECT t."transactionId"
+      FROM public.notification_receiver nr
+      JOIN public.notification n ON nr."notificationId" = n.id
+      JOIN public.transaction t ON n."entityId" = t.id
+      WHERE nr."userId" = $1
+        AND n.type LIKE 'TRANSACTION_INDICATOR_%'
+        AND nr."isRead" = false
+      ORDER BY nr."updatedAt" DESC
+      LIMIT 1;
+    `;
+
+    const result = await queryPostgresDatabase(query, [userId]);
+    if (result.length > 0) {
+      return result[0].transactionId;
+    } else {
+      console.error(`No unread in-app notification found for user with ID ${userId}.`);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error fetching notified transaction ID:', error);
+    return null;
+  }
+}
+
+/**
  * Retrieves all TransactionGroup rows associated with the given `transaction_id` (not the primary key `id`) from the Transaction table.
  *
  * This function follows these steps:
