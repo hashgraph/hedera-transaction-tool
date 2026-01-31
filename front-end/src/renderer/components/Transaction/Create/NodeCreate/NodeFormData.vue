@@ -169,31 +169,83 @@ function handleInputValidation(e: Event) {
 }
 
 /* Functions */
-function getEndpointData(ipOrDomain: string, port: string) {
-  let ip = '';
-  let domain = '';
+function stripProtocolAndPath(input: string): string {
+  let result = input.trim();
 
-  if (ipOrDomain.match(validIp)) {
-    ip = ipOrDomain;
-  } else {
-    domain = ipOrDomain;
+  // Remove protocol prefix (http://, https://, grpc://, etc.)
+  result = result.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, '');
+
+  // Remove path, query parameters, and fragments
+  // Find the first occurrence of /, ?, or # and truncate there
+  const slashIndex = result.indexOf('/');
+  const queryIndex = result.indexOf('?');
+  const fragmentIndex = result.indexOf('#');
+
+  const indices = [slashIndex, queryIndex, fragmentIndex].filter(i => i !== -1);
+  if (indices.length > 0) {
+    const cutIndex = Math.min(...indices);
+    result = result.substring(0, cutIndex);
   }
 
+  return result;
+}
+
+function cleanAndExtractPort(input: string): { hostPart: string; port: string | null } {
+  let hostPart = stripProtocolAndPath(input);
+
+  const colonCount = (hostPart.match(/:/g) || []).length;
+
+  if (colonCount > 1) {
+    // IPv6 territory - only extract port if brackets are used: [IPv6]:port
+    const bracketMatch = hostPart.match(/^(\[.+\]):(\d+)$/);
+    if (bracketMatch) {
+      return { hostPart: bracketMatch[1], port: bracketMatch[2] };
+    }
+    // Bare IPv6 - can't have a port without brackets
+    return { hostPart, port: null };
+  }
+
+  // IPv4 or domain - standard port extraction
+  const portMatch = hostPart.match(/:(\d+)$/);
+  if (portMatch) {
+    const port = portMatch[1];
+    hostPart = hostPart.substring(0, hostPart.lastIndexOf(':'));
+    return { hostPart, port };
+  }
+
+  return { hostPart, port: null };
+}
+
+function getEndpointData(ipOrDomain: string, port: string) {
+  // Input already cleaned by watcher - just classify as IP or domain
+  const isIp = ipOrDomain.match(validIp);
+
   return {
-    ipAddressV4: ip,
+    ipAddressV4: isIp ? ipOrDomain : '',
     port,
-    domainName: domain.trim(),
+    domainName: isIp ? '' : ipOrDomain.trim(),
   };
 }
 
 function getGrpcWebProxyEndpoint(field: 'domainName' | 'port', value: string) {
+  let domainValue =
+    field === 'domainName' ? value : props.data.grpcWebProxyEndpoint?.domainName || '';
+  let portValue = field === 'port' ? value : props.data.grpcWebProxyEndpoint?.port || '';
+
+  if (field === 'domainName') {
+    const { hostPart, port } = cleanAndExtractPort(value);
+    domainValue = hostPart;
+    if (port) {
+      portValue = port;
+    }
+  }
+
   emit('update:data', {
     ...props.data,
     grpcWebProxyEndpoint: {
       ipAddressV4: '',
-      domainName:
-        field === 'domainName' ? value : props.data.grpcWebProxyEndpoint?.domainName || '',
-      port: field === 'port' ? value : props.data.grpcWebProxyEndpoint?.port || '',
+      domainName: domainValue,
+      port: portValue,
     },
   });
 }
@@ -205,6 +257,19 @@ function formatPort(event: Event, key: 'gossip' | 'service') {
   };
   const target = event.target as HTMLInputElement;
   portMapping[key].value = target.value.replace(/[^0-9]/g, '');
+}
+
+function handleIpOrDomainBlur(key: 'gossip' | 'service') {
+  const mapping = {
+    gossip: { ipOrDomain: gossipIpOrDomain, port: gossipPort },
+    service: { ipOrDomain: serviceIpOrDomain, port: servicePort },
+  };
+
+  const { hostPart, port } = cleanAndExtractPort(mapping[key].ipOrDomain.value);
+  mapping[key].ipOrDomain.value = hostPart;
+  if (port) {
+    mapping[key].port.value = port;
+  }
 }
 
 /* Watchers */
@@ -302,6 +367,7 @@ watch(
       <label class="form-label">IP/Domain</label>
       <input
         v-model="gossipIpOrDomain"
+        @blur="handleIpOrDomainBlur('gossip')"
         class="form-control is-fill"
         placeholder="Enter Domain Name or IP Address"
       />
@@ -379,6 +445,7 @@ watch(
       <label class="form-label">IP/Domain</label>
       <input
         v-model="serviceIpOrDomain"
+        @blur="handleIpOrDomainBlur('service')"
         class="form-control is-fill"
         placeholder="Enter Domain Name or IP Address"
       />
