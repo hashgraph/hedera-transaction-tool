@@ -354,7 +354,7 @@ describe('UsersService', () => {
       const mockResult = {
         latestSupportedVersion: latestVersion,
         minimumSupportedVersion: minimumVersion,
-        updateUrl: `${repoUrl}/download/v${latestVersion}/`,
+        updateUrl: `${repoUrl}/v${latestVersion}/`,
       };
       jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
 
@@ -391,13 +391,13 @@ describe('UsersService', () => {
       const mockResult = {
         latestSupportedVersion: latestVersion,
         minimumSupportedVersion: minimumVersion,
-        updateUrl: `${repoUrl}/download/v${latestVersion}/`,
+        updateUrl: `${repoUrl}/v${latestVersion}/`,
       };
       jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
 
       const result = service.getVersionCheckInfo(userVersion);
 
-      expect(result.updateUrl).toBe(`${repoUrl}/download/v${latestVersion}/`);
+      expect(result.updateUrl).toBe(`${repoUrl}/v${latestVersion}/`);
     });
 
     it('should handle missing config values gracefully', () => {

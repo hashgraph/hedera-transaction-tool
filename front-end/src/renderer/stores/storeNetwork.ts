@@ -2,7 +2,7 @@
 
 import type { Network, NetworkExchangeRateSetResponse } from '@shared/interfaces';
 
-import { computed, ref } from 'vue';
+import { computed, ref, type ComputedRef, type Ref } from 'vue';
 import { defineStore } from 'pinia';
 
 import { Client } from '@hashgraph/sdk';
@@ -14,7 +14,19 @@ import { setClient } from '@renderer/services/transactionService';
 
 import { getClientFromMirrorNode, getNodeNumbersFromNetwork } from '@renderer/utils';
 
-const useNetworkStore = defineStore('network', () => {
+export interface NetworkStore {
+  network: Ref<string>;
+  exchangeRateSet: Ref<NetworkExchangeRateSetResponse | null>;
+  mirrorNodeBaseURL: Ref<string>;
+  client: Ref<Client>;
+  currentRate: ComputedRef<number | null>;
+  nodeNumbers: Ref<number[]>;
+  setup: (defaultNetwork?: Network) => Promise<void>;
+  setNetwork: (newNetwork: Network) => Promise<void>;
+  getMirrorNodeREST: (network: Network) => string;
+}
+
+const useNetworkStore = defineStore('network', (): NetworkStore => {
   /* State */
   const network = ref<Network>(CommonNetwork.MAINNET);
   const mirrorNodeBaseURL = ref(getMirrorNodeREST(network.value));
@@ -100,7 +112,7 @@ const useNetworkStore = defineStore('network', () => {
     network,
     exchangeRateSet,
     mirrorNodeBaseURL,
-    client,
+    client: client as Ref<Client>,
     currentRate,
     nodeNumbers,
     setup,
