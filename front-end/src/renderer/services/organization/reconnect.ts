@@ -55,7 +55,7 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
     if (!token && user && user.isLoggedIn && (user.password || user.useKeychain)) {
       const credentials = await getOrganizationCredentials(org.id, user.id, user.password);
 
-      if (credentials) {
+      if (credentials?.password) {
         const { jwtToken } = await login(
           org.serverUrl,
           credentials.email,
