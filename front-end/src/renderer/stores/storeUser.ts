@@ -13,16 +13,17 @@ import { defineStore } from 'pinia';
 
 import { Prisma } from '@prisma/client';
 
-import { ACCOUNT_SETUP_STARTED } from '@shared/constants';
+import { ACCOUNT_SETUP_STARTED, SELECTED_NETWORK } from '@shared/constants';
 
-import { add, remove } from '@renderer/services/claimService';
+import { add, getStoredClaim, remove } from '@renderer/services/claimService';
 
 import useAfterOrganizationSelection from '@renderer/composables/user/useAfterOrganizationSelection';
 import useVersionCheck from '@renderer/composables/useVersionCheck';
 
 import { safeAwait } from '@renderer/utils';
+import * as pks from '@renderer/services/publicKeyMappingService';
 import * as ush from '@renderer/utils/userStoreHelpers';
-import { getVersionStatusForOrg, triggeringOrganizationServerUrl } from './versionState';
+import { getVersionStatusForOrg } from './versionState';
 
 import useNetworkStore from './storeNetwork';
 import useOrganizationConnection from './storeOrganizationConnection';
@@ -76,13 +77,22 @@ const useUserStore = defineStore('user', () => {
   /* Actions */
   /** Personal */
   const login = async (id: string, email: string, useKeychain: boolean) => {
-    personal.value = ush.createPersonalUser(id, email, useKeychain);
-    await ush.setupSafeNetwork(id, network.setup);
+    personal.value = {
+      isLoggedIn: true,
+      id,
+      email,
+      password: null,
+      useKeychain: useKeychain,
+    };
+    const { data } = await safeAwait(getStoredClaim(id, SELECTED_NETWORK));
+    await safeAwait(network.setup(data));
     await selectOrganization(null);
   };
 
   const logout = () => {
-    personal.value = ush.createPersonalUser();
+    personal.value = {
+      isLoggedIn: false,
+    };
     selectedOrganization.value = null;
     organizations.value = [];
     publicKeyToAccounts.value = [];
@@ -181,7 +191,7 @@ const useUserStore = defineStore('user', () => {
   };
 
   const deletePublicKeyMapping = async (id: string) => {
-    await ush.deletePublicKeyMapping(id);
+    await pks.deletePublicKey(id);
     await refetchPublicKeys();
   };
 
@@ -199,7 +209,6 @@ const useUserStore = defineStore('user', () => {
           const versionStatus = getVersionStatusForOrg(organization.serverUrl);
 
           if (versionStatus === 'belowMinimum') {
-            triggeringOrganizationServerUrl.value = organization.serverUrl;
             return;
           }
         }

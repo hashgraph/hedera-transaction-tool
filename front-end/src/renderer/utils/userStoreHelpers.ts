@@ -18,7 +18,7 @@ import type {
 import { Prisma } from '@prisma/client';
 import { Mnemonic } from '@hashgraph/sdk';
 
-import { SELECTED_NETWORK, SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@shared/constants';
+import { SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@shared/constants';
 
 import {
   getUserState,
@@ -42,7 +42,6 @@ import {
   compareHash,
   compareDataToHashes,
 } from '@renderer/services/electronUtilsService';
-import { getStoredClaim } from '@renderer/services/claimService';
 import { get as getStoredMnemonics } from '@renderer/services/mnemonicService';
 
 import { safeAwait } from './safeAwait';
@@ -153,21 +152,6 @@ export const accountSetupRequiredParts = (
 };
 
 /* Entity creation */
-export const createPersonalUser = (
-  id?: string,
-  email?: string,
-  useKeychain?: boolean,
-): PersonalUser =>
-  id && email
-    ? {
-        isLoggedIn: true,
-        id,
-        email,
-        password: null,
-        useKeychain: useKeychain || false,
-      }
-    : { isLoggedIn: false };
-
 export const createRecoveryPhrase = async (words: string[]): Promise<RecoveryPhrase> => {
   try {
     const mnemonic = await Mnemonic.fromWords(words);
@@ -257,14 +241,6 @@ export const getPublicKeyToAccounts = async (
   }
 
   return [...publicKeyToAccounts];
-};
-
-export const setupSafeNetwork = async (
-  userId: string,
-  setNetwork: (network: string | undefined) => Promise<void>,
-) => {
-  const { data } = await safeAwait(getStoredClaim(userId, SELECTED_NETWORK));
-  await safeAwait(setNetwork(data));
 };
 
 export const getMnemonics = async (user: PersonalUser | null) => {
@@ -723,8 +699,4 @@ export const updatePublicKeyNickname = async (
     throw new Error('You need to set a different nickname than the previous one!');
   }
   return await pks.editPublicKeyNickname(id, newNickname);
-};
-
-export const deletePublicKeyMapping = async (id: string) => {
-  return await pks.deletePublicKey(id);
 };

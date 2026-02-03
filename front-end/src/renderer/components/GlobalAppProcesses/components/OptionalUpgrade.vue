@@ -6,15 +6,16 @@ import useElectronUpdater from '@renderer/composables/useElectronUpdater';
 import { UPDATE_ERROR_MESSAGES } from '@shared/constants';
 
 import { formatProgressBytes } from '@renderer/utils';
-import { warningToastOptions } from '@renderer/utils/toastOptions';
 
 import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organization/versionCompatibility';
 import type { CompatibilityConflict } from '@renderer/services/organization/versionCompatibility';
 
-import { getAllOrganizationVersions, getVersionStatusForOrg } from '@renderer/stores/versionState';
+import {
+  getAllOrganizationVersions,
+  getVersionStatusForOrg,
+  triggeringOrganizationServerUrl,
+} from '@renderer/stores/versionState';
 import useUserStore from '@renderer/stores/storeUser';
-
-import { useToast } from 'vue-toast-notification';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -23,9 +24,15 @@ import CompatibilityWarningModal from '@renderer/components/Organization/Compati
 
 const { versionStatus, updateUrl, latestVersion, isDismissed, dismissOptionalUpdate } =
   useVersionCheck();
-const { state, progress, error, updateInfo, startUpdate, installUpdate, cancelUpdate } =
-  useElectronUpdater();
-const toast = useToast();
+const {
+  state,
+  progress,
+  error,
+  updateInfo,
+  startUpdate,
+  installUpdate,
+  cancelUpdate
+} = useElectronUpdater();
 const user = useUserStore();
 
 const compatibilityResult = ref<{
@@ -36,6 +43,13 @@ const compatibilityResult = ref<{
 } | null>(null);
 const showCompatibilityWarning = ref(false);
 const isCheckingCompatibility = ref(false);
+
+const affectedOrg = computed(() => {
+  const serverUrl =
+    triggeringOrganizationServerUrl.value;
+  if (!serverUrl) return null;
+  return user.organizations.find(org => org.serverUrl === serverUrl) || null;
+});
 
 watch([() => versionStatus.value, () => latestVersion.value], async ([status, latestVer]) => {
   if (status === 'updateAvailable' && latestVer && !isDismissed.value) {
@@ -62,12 +76,6 @@ watch([() => versionStatus.value, () => latestVersion.value], async ([status, la
         if (result.hasConflict) {
           compatibilityResult.value = result;
           showCompatibilityWarning.value = true;
-
-          const conflictOrgNames = result.conflicts.map(c => c.organizationName).join(', ');
-          toast.warning(
-            `Update may cause issues with ${conflictOrgNames}. Please review compatibility warnings.`,
-            warningToastOptions,
-          );
         }
       }
     } catch (error) {
@@ -81,13 +89,13 @@ watch([() => versionStatus.value, () => latestVersion.value], async ([status, la
 const shown = computed(
   () =>
     versionStatus.value === 'updateAvailable' &&
-    !isDismissed.value &&
-    !showCompatibilityWarning.value,
+    !isDismissed.value,
 );
 
 const isChecking = computed(() => state.value === 'checking');
 const isDownloading = computed(() => state.value === 'downloading');
 const isDownloaded = computed(() => state.value === 'downloaded');
+const isInstalling = computed(() => state.value === 'installing');
 const hasError = computed(() => state.value === 'error');
 
 const errorMessage = computed(() => {
@@ -136,7 +144,7 @@ const handleCompatibilityCancel = () => {
 };
 </script>
 <template>
-  <AppModal :show="shown" :close-on-click-outside="false" class="modal-fit-content">
+  <AppModal :show="shown" :close-on-click-outside="false" class="modal-fit-content" :loading="isInstalling">
     <div v-if="isChecking" class="text-center p-4">
       <div>
         <i
@@ -180,7 +188,7 @@ const handleCompatibilityCancel = () => {
       </div>
     </div>
 
-    <div v-else-if="isDownloaded" class="text-center p-4">
+    <div v-else-if="isDownloaded || isInstalling" class="text-center p-4">
       <div>
         <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem"></i>
       </div>
@@ -191,8 +199,8 @@ const handleCompatibilityCancel = () => {
       </p>
       <hr class="separator my-4" />
       <div class="d-flex gap-4 justify-content-center">
-        <AppButton type="button" color="secondary" @click="handleLater">Later</AppButton>
-        <AppButton type="button" color="primary" @click="handleInstall">
+        <AppButton type="button" color="secondary" :disabled="isInstalling" @click="handleLater">Later</AppButton>
+        <AppButton type="button" color="primary" :disabled="isInstalling" @click="handleInstall">
           <i class="bi bi-arrow-clockwise me-2"></i>Install & Restart
         </AppButton>
       </div>
@@ -241,6 +249,7 @@ const handleCompatibilityCancel = () => {
       :conflicts="compatibilityResult.conflicts || []"
       :suggested-version="compatibilityResult.suggestedVersion || latestVersion || ''"
       :is-optional="true"
+      :triggering-org-name="affectedOrg ? affectedOrg.nickname || affectedOrg.serverUrl : ''"
       @proceed="handleCompatibilityProceed"
       @cancel="handleCompatibilityCancel"
       @update:show="showCompatibilityWarning = $event"

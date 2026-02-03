@@ -50,6 +50,8 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import ExpiringBadge from './ExpiringBadge.vue';
+import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
+import SplitSignButtonDropdown from '@renderer/components/SplitSignButtonDropdown.vue';
 
 import { TransactionStatus } from '@shared/interfaces';
 
@@ -58,14 +60,14 @@ import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.t
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { writeTransactionFile } from '@renderer/services/transactionFileService.ts';
+import { getTransactionType } from '@renderer/utils/sdk/transactions.ts';
 
 /* Types */
 type ActionButton =
   | 'Reject'
   | 'Approve'
   | 'Sign'
-  | 'Previous'
-  | 'Next'
+  | 'Sign & Next'
   | 'Cancel'
   | 'Export'
   | 'Schedule'
@@ -76,23 +78,20 @@ type ActionButton =
 const reject: ActionButton = 'Reject';
 const approve: ActionButton = 'Approve';
 const sign: ActionButton = 'Sign';
-const previous: ActionButton = 'Previous';
-const next: ActionButton = 'Next';
-const cancel: ActionButton = 'Cancel';
+const signAndNext: ActionButton = 'Sign & Next';
 const execute: ActionButton = 'Schedule';
+const cancel: ActionButton = 'Cancel';
 const remindSignersLabel: ActionButton = 'Remind Signers';
 const archive: ActionButton = 'Archive';
 const exportName: ActionButton = 'Export';
 
-const primaryButtons: ActionButton[] = [reject, approve, sign, next];
+const primaryButtons: ActionButton[] = [reject, approve, sign, execute];
 const buttonsDataTestIds: { [key: string]: string } = {
   [reject]: 'button-reject-org-transaction',
   [approve]: 'button-approve-org-transaction',
   [sign]: 'button-sign-org-transaction',
-  [previous]: 'button-previous-org-transaction',
-  [next]: 'button-next-org-transaction',
-  [cancel]: 'button-cancel-org-transaction',
   [execute]: 'button-execute-org-transaction',
+  [cancel]: 'button-cancel-org-transaction',
   [remindSignersLabel]: 'button-remind-signers-org-transaction',
   [archive]: 'button-archive-org-transaction',
   [exportName]: 'button-export-transaction',
@@ -157,6 +156,10 @@ const publicKeysRequiredToSign = ref<string[] | null>(null);
 const shouldApprove = ref<boolean>(false);
 
 /* Computed */
+const txType = computed(() => {
+  return props.sdkTransaction ? getTransactionType(props.sdkTransaction) : null;
+});
+
 const creator = computed(() => {
   return props.organizationTransaction
     ? contacts.contacts.find(contact =>
@@ -225,12 +228,10 @@ const canArchive = computed(() => {
 const visibleButtons = computed(() => {
   const buttons: ActionButton[] = [];
 
-  /* The order is important REJECT, APPROVE, SIGN, SUBMIT, PREVIOUS, NEXT, CANCEL, ARCHIVE, EXPORT */
+  /* The order is important REJECT, APPROVE, SIGN, SUBMIT, CANCEL, ARCHIVE, EXPORT */
   shouldApprove.value && buttons.push(reject, approve);
   canSign.value && !shouldApprove.value && buttons.push(sign);
   canExecute.value && buttons.push(execute);
-  nextTransaction.hasNext && buttons.push(next);
-  nextTransaction.hasPrev && buttons.push(previous);
   canCancel.value && buttons.push(cancel);
   canRemind.value && buttons.push(remindSignersLabel);
   canArchive.value && buttons.push(archive);
@@ -260,7 +261,7 @@ const handleBack = async () => {
   await nextTransaction.routeUp(router);
 };
 
-const handleSign = async () => {
+const handleSign = async (goNext = false) => {
   if (!(props.sdkTransaction instanceof SDKTransaction) || !props.organizationTransaction) {
     throw new Error('Transaction is not available');
   }
@@ -268,7 +269,7 @@ const handleSign = async () => {
   assertUserLoggedIn(user.personal);
   assertIsLoggedInOrganization(user.selectedOrganization);
 
-  const personalPassword = getPassword(handleSign, {
+  const personalPassword = getPassword(handleSign.bind(null, goNext), {
     subHeading: 'Enter your application password to access your private key',
   });
   if (passwordModalOpened(personalPassword)) return;
@@ -287,6 +288,9 @@ const handleSign = async () => {
 
     if (signed) {
       toast.success('Transaction signed successfully', successToastOptions);
+      if (goNext) {
+        await nextTransaction.routeToNext(router);
+      }
     } else {
       toast.error('Failed to sign transaction', errorToastOptions);
     }
@@ -451,14 +455,6 @@ const handleExecute = (showModal?: boolean) => handleTransactionAction('execute'
 const handleRemindSigners = (showModal?: boolean) =>
   handleTransactionAction('remindSigners', showModal);
 
-const handlePrevious = async () => {
-  await nextTransaction.routeToPrev(router);
-};
-
-const handleNext = async () => {
-  await nextTransaction.routeToNext(router);
-};
-
 const handleExport = async () => {
   if (!props.sdkTransaction || !props.organizationTransaction) {
     throw new Error('(BUG) Transaction is not available');
@@ -544,10 +540,8 @@ const handleAction = async (value: ActionButton) => {
     await handleApprove(true, true);
   } else if (value === sign) {
     await handleSign();
-  } else if (value === next) {
-    handleNext();
-  } else if (value === previous) {
-    handlePrevious();
+  } else if (value === signAndNext) {
+    await handleSign(true);
   } else if (value === cancel) {
     await handleCancel(true);
   } else if (value === archive) {
@@ -636,20 +630,20 @@ watch(
     @submit.prevent="handleSubmit"
     class="flex-centered justify-content-between flex-wrap gap-4"
   >
-    <div class="d-flex align-items-center">
+    <div class="d-flex align-items-center gap-4">
       <AppButton
         type="button"
         color="secondary"
-        class="btn-icon-only me-4"
+        class="btn-icon-only"
         data-testid="button-back"
         @click="handleBack"
       >
         <i class="bi bi-arrow-left"></i>
       </AppButton>
-      <NextTransactionCursor/>
-      <h2 class="text-title text-bold">
-        Transaction Details
-        <span v-if="isTransactionFailed" class="badge bg-danger text-break ms-2">
+      <NextTransactionCursor />
+      <template v-if="txType">
+        <h2 class="text-title text-bold">{{ txType }}</h2>
+        <span v-if="isTransactionFailed" class="badge bg-danger text-break">
           {{
             getStatusFromCode(props.organizationTransaction?.statusCode)
               ? getStatusFromCode(props.organizationTransaction?.statusCode)
@@ -667,14 +661,24 @@ watch(
           :transaction-status="props.organizationTransaction?.status ?? null"
           variant="countdown"
         />
-      </h2>
+        <span v-else-if="isTransactionVersionMismatch" class="badge bg-danger text-break"
+          >Transaction Version Mismatch</span
+        >
+        <span v-else-if="isManualFlagVisible" class="badge bg-info text-break">Manual</span>
+      </template>
     </div>
 
     <div class="flex-centered gap-4">
       <Transition name="fade" mode="out-in">
         <template v-if="visibleButtons.length > 0">
           <div>
+            <SplitSignButtonDropdown
+              v-if="visibleButtons[0] === sign"
+              :loading="Boolean(loadingStates[sign])"
+              :loading-text="loadingStates[sign] || ''"
+            />
             <AppButton
+              v-else
               :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
               :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[0]])"
               :loading="Boolean(loadingStates[visibleButtons[0]])"
@@ -688,55 +692,16 @@ watch(
       </Transition>
 
       <Transition name="fade" mode="out-in">
-        <template v-if="visibleButtons.length > 1">
-          <div class="d-none d-lg-block">
-            <AppButton
-              :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
-              :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[1]])"
-              :loading="Boolean(loadingStates[visibleButtons[1]])"
-              :loading-text="loadingStates[visibleButtons[1]] || ''"
-              :data-testid="buttonsDataTestIds[visibleButtons[1]]"
-              type="submit"
-              >{{ visibleButtons[1] }}
-            </AppButton>
-          </div>
-        </template>
-      </Transition>
-
-      <Transition name="fade" mode="out-in">
-        <template v-if="visibleButtons.length > 2">
+        <template v-if="dropDownItems.length > 0">
           <div>
             <AppDropDown
-              class="d-lg-none"
               :color="'secondary'"
               :items="dropDownItems"
               :disabled="isRefreshing"
               compact
               @select="handleDropDownItem($event as ActionButton)"
-              data-testid="button-more-dropdown-sm"
-            />
-            <AppDropDown
-              class="d-none d-lg-block"
-              :color="'secondary'"
-              :items="dropDownItems.slice(1)"
-              :disabled="isRefreshing"
-              compact
-              @select="handleDropDownItem($event as ActionButton)"
               data-testid="button-more-dropdown-lg"
             />
-          </div>
-        </template>
-        <template v-else-if="visibleButtons.length === 2">
-          <div class="d-lg-none">
-            <AppButton
-              :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
-              :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[1]])"
-              :loading="Boolean(loadingStates[visibleButtons[1]])"
-              :loading-text="loadingStates[visibleButtons[1]] || ''"
-              :data-testid="buttonsDataTestIds[visibleButtons[1]]"
-              type="submit"
-              >{{ visibleButtons[1] }}
-            </AppButton>
           </div>
         </template>
       </Transition>

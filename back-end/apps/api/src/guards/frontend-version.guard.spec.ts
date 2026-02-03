@@ -291,7 +291,7 @@ describe('FrontendVersionGuard', () => {
   });
 
   describe('updateUrl in 426 responses', () => {
-    const repoUrl = 'https://github.com/hashgraph/hedera-transaction-tool/releases';
+    const repoUrl = 'https://github.com/hashgraph/hedera-transaction-tool/releases/download';
     const latestVersion = '2.0.0';
 
     beforeEach(() => {
@@ -317,7 +317,7 @@ describe('FrontendVersionGuard', () => {
         guard.canActivate(context);
       } catch (error) {
         const response = (error as HttpException).getResponse() as Record<string, unknown>;
-        expect(response.updateUrl).toBe(`${repoUrl}/download/v${latestVersion}/`);
+        expect(response.updateUrl).toBe(`${repoUrl}/v${latestVersion}/`);
       }
     });
 
@@ -328,7 +328,7 @@ describe('FrontendVersionGuard', () => {
         guard.canActivate(context);
       } catch (error) {
         const response = (error as HttpException).getResponse() as Record<string, unknown>;
-        expect(response.updateUrl).toBe(`${repoUrl}/download/v${latestVersion}/`);
+        expect(response.updateUrl).toBe(`${repoUrl}/v${latestVersion}/`);
       }
     });
 
@@ -339,7 +339,7 @@ describe('FrontendVersionGuard', () => {
         guard.canActivate(context);
       } catch (error) {
         const response = (error as HttpException).getResponse() as Record<string, unknown>;
-        expect(response.updateUrl).toBe(`${repoUrl}/download/v${latestVersion}/`);
+        expect(response.updateUrl).toBe(`${repoUrl}/v${latestVersion}/`);
       }
     });
 
@@ -417,7 +417,7 @@ describe('FrontendVersionGuard', () => {
           case 'MINIMUM_SUPPORTED_FRONTEND_VERSION':
             return '1.0.0';
           case 'FRONTEND_REPO_URL':
-            return 'https://github.com/hashgraph/hedera-transaction-tool/releases///';
+            return 'https://github.com/hashgraph/hedera-transaction-tool/releases/download///';
           case 'LATEST_SUPPORTED_FRONTEND_VERSION':
             return '2.0.0';
           default:

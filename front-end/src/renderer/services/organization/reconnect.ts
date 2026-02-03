@@ -10,7 +10,6 @@ import {
   setVersionDataForOrg,
   getVersionStatusForOrg,
   organizationVersionData,
-  triggeringOrganizationServerUrl,
   organizationCompatibilityResults,
 } from '@renderer/stores/versionState';
 
@@ -104,7 +103,6 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
         );
 
         organizationCompatibilityResults.value[serverUrl] = compatibilityResult;
-        triggeringOrganizationServerUrl.value = serverUrl;
 
         if (versionResponse.updateUrl) {
           setOrgVersionBelowMinimum(serverUrl, versionResponse.updateUrl);
