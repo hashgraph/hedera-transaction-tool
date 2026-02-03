@@ -60,11 +60,11 @@ spec:
             - name: GLOBAL_SECOND_LIMIT
               value: '1000'
             - name: LATEST_SUPPORTED_FRONTEND_VERSION
-              value: '0.21.0'
+              value: '0.23.1'
             - name: MINIMUM_SUPPORTED_FRONTEND_VERSION
-              value: '0.21.0'
+              value: '0.23.0'
             - name: FRONTEND_REPO_URL
-              value: 'https://github.com/hashgraph/hedera-transaction-tool/releases'
+              value: 'https://github.com/hashgraph/hedera-transaction-tool/releases/download'
           ports:
             - containerPort: 3000
 ---

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import DefaultOrganization from './DefaultOrganization.vue';
 import MaxTransactionFeeSetting from './MaxTransactionFeeSetting.vue';
-import UpdateLocation from './UpdateLocation.vue';
 import DateTimeSetting from '@renderer/pages/Settings/components/GeneralTab/components/DateTimeSetting.vue';
 </script>
 <template>
@@ -10,6 +9,5 @@ import DateTimeSetting from '@renderer/pages/Settings/components/GeneralTab/comp
     <MaxTransactionFeeSetting />
     <DefaultOrganization />
     <DateTimeSetting />
-    <UpdateLocation />
   </div>
 </template>

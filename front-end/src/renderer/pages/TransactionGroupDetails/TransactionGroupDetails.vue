@@ -1,20 +1,19 @@
 <script setup lang="ts">
 import type { IGroup } from '@renderer/services/organization';
-import type { IGroupItem, ITransactionFull } from '@shared/interfaces';
+import { BackEndTransactionType, type IGroupItem, type ITransactionFull } from '@shared/interfaces';
+import { TransactionStatus, TransactionTypeName } from '@shared/interfaces';
 
 import { computed, onBeforeMount, reactive, ref, watch, watchEffect } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
 import { Transaction } from '@hashgraph/sdk';
 import JSZip from 'jszip';
-
-import { TransactionStatus, TransactionTypeName } from '@shared/interfaces';
 import { historyTitle, TRANSACTION_ACTION } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
-import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
+import useNextTransactionV2 from '@renderer/stores/storeNextTransactionV2.ts';
 
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
@@ -36,7 +35,6 @@ import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtils
 import {
   getPrivateKey,
   getTransactionBodySignatureWithoutNodeAccountId,
-  redirectToDetails,
   hexToUint8Array,
   isLoggedInOrganization,
   isUserLoggedIn,
@@ -60,8 +58,12 @@ import useContactsStore from '@renderer/stores/storeContacts.ts';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
-import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
+import {
+  formatTransactionType,
+  getTransactionTypeFromBackendType,
+} from '@renderer/utils/sdk/transactions.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
+import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
@@ -85,17 +87,15 @@ const buttonsDataTestIds: { [key: string]: string } = {
 /* Stores */
 const user = useUserStore();
 const network = useNetwork();
-const nextTransaction = useNextTransactionStore();
+const nextTransaction = useNextTransactionV2();
 const contacts = useContactsStore();
 
 /* Composables */
 const router = useRouter();
-const route = useRoute();
 const toast = useToast();
 useWebsocketSubscription(TRANSACTION_ACTION, async () => {
   const id = router.currentRoute.value.params.id;
   await fetchGroup(Array.isArray(id) ? id[0] : id);
-  setGetTransactionsFunction();
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
@@ -126,6 +126,35 @@ const loadingStates = reactive<{ [key: string]: string | null }>({
 });
 
 /* Computed */
+const pageTitle = computed(() => {
+  let txType: BackEndTransactionType | null = null;
+  let result: string | null = null;
+
+  if (group.value) {
+    if (group.value.groupItems.length >= 1) {
+      txType = group.value.groupItems[0].transaction.type;
+      for (const item of group.value.groupItems.slice(1)) {
+        if (item.transaction.type !== txType) {
+          txType = null;
+          break;
+        }
+      }
+      result = txType
+        ? `Group of ${group.value.groupItems.length} ${getTransactionTypeFromBackendType(txType, false, true)} transactions`
+        : `Group of ${group.value.groupItems.length} transactions`;
+    }
+  }
+  return result;
+});
+
+const description = computed(() => {
+  return group.value ? group.value.description : null;
+});
+
+const isSequential = computed(() => {
+  return group.value?.sequential ?? false;
+});
+
 const canSignAll = computed(() => {
   return (
     isLoggedInOrganization(user.selectedOrganization) &&
@@ -179,27 +208,17 @@ const dropDownItems = computed(() =>
 );
 
 /* Handlers */
-const handleBack = () => {
-  if (!history.state?.back?.startsWith('/transactions')) {
-    router.push({ name: 'transactions' });
-  } else {
-    router.back();
-  }
+const handleBack = async () => {
+  await nextTransaction.routeUp(router);
 };
 
 const handleDetails = async (id: number) => {
-  const flatTransactions = group.value?.groupItems || [];
-  const selectedTransactionIndex = flatTransactions.findIndex(t => t.transaction.id === id);
-  const previousTransactionIds = flatTransactions
-    .slice(0, selectedTransactionIndex)
-    .map(t => t.transaction.id);
-  nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
-
-  if (route.query.previousTab && route.query.previousTab === 'inProgress') {
-    redirectToDetails(router, id, true, false, true);
-  } else {
-    redirectToDetails(router, id, true);
-  }
+  // Before routing to details, we update nextTransaction store
+  const groupItems = group.value?.groupItems ?? [];
+  const nodeIds = groupItems.map(item => {
+    return { transactionId: item.transactionId };
+  });
+  await nextTransaction.routeDown({ transactionId: id }, nodeIds, router);
 };
 
 const handleSignGroupItem = async (groupItem: IGroupItem) => {
@@ -485,7 +504,6 @@ onBeforeMount(async () => {
   }
 
   await fetchGroup(Array.isArray(id) ? id[0] : id);
-  setGetTransactionsFunction();
 });
 
 /* Watchers */
@@ -573,16 +591,6 @@ const isTransactionInProgress = (transaction: ITransactionFull) => {
   ].includes(transaction.status);
 };
 
-function setGetTransactionsFunction() {
-  nextTransaction.setGetTransactionsFunction(async () => {
-    const transactions = group.value?.groupItems.map(t => t.transaction);
-    return {
-      items: transactions?.map(t => t.id) || [],
-      totalItems: transactions?.length || 0,
-    };
-  }, false);
-}
-
 const canSignItem = (item: IGroupItem) => {
   return (
     !signingItems.value[item.seq] &&
@@ -662,12 +670,19 @@ function itemStatusBadgeClass(item: IGroupItem): string {
   <form @submit.prevent="handleSubmit" class="p-5">
     <div class="flex-column-100">
       <div class="flex-centered justify-content-between flex-wrap gap-4">
-        <div class="d-flex align-items-center">
-          <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
+        <div class="d-flex align-items-center gap-4 flex-1">
+          <AppButton type="button" color="secondary" class="btn-icon-only" @click="handleBack">
             <i class="bi bi-arrow-left"></i>
           </AppButton>
+          <NextTransactionCursor />
 
-          <h2 class="text-title text-bold">Transaction Group Details</h2>
+          <Transition mode="out-in" name="fade">
+            <template v-if="pageTitle">
+              <h2 class="text-title text-bold flex-1 text-one-line-ellipsis">
+                {{ pageTitle }}
+              </h2>
+            </template>
+          </Transition>
         </div>
 
         <div class="flex-centered gap-4">
@@ -687,51 +702,15 @@ function itemStatusBadgeClass(item: IGroupItem): string {
           </Transition>
 
           <Transition name="fade" mode="out-in">
-            <template v-if="visibleButtons.length > 1">
-              <div class="d-none d-lg-block">
-                <AppButton
-                  :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
-                  :loading="Boolean(loadingStates[visibleButtons[1]])"
-                  :loading-text="loadingStates[visibleButtons[1]] || ''"
-                  :data-testid="buttonsDataTestIds[visibleButtons[1]]"
-                  type="submit"
-                  >{{ visibleButtons[1] }}
-                </AppButton>
-              </div>
-            </template>
-          </Transition>
-
-          <Transition name="fade" mode="out-in">
-            <template v-if="visibleButtons.length > 2">
+            <template v-if="dropDownItems.length > 0">
               <div>
                 <AppDropDown
-                  class="d-lg-none"
                   :color="'secondary'"
                   :items="dropDownItems"
                   compact
                   @select="handleDropDownItem($event as ActionButton)"
-                  data-testid="button-more-dropdown-sm"
-                />
-                <AppDropDown
-                  class="d-none d-lg-block"
-                  :color="'secondary'"
-                  :items="dropDownItems.slice(1)"
-                  compact
-                  @select="handleDropDownItem($event as ActionButton)"
                   data-testid="button-more-dropdown-lg"
                 />
-              </div>
-            </template>
-            <template v-else-if="visibleButtons.length === 2">
-              <div class="d-lg-none">
-                <AppButton
-                  :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
-                  :loading="Boolean(loadingStates[visibleButtons[1]])"
-                  :loading-text="loadingStates[visibleButtons[1]] || ''"
-                  :data-testid="buttonsDataTestIds[visibleButtons[1]]"
-                  type="submit"
-                  >{{ visibleButtons[1] }}
-                </AppButton>
               </div>
             </template>
           </Transition>
@@ -741,18 +720,14 @@ function itemStatusBadgeClass(item: IGroupItem): string {
       <Transition name="fade" mode="out-in">
         <template v-if="group">
           <div class="fill-remaining flex-column-100 mt-5">
-            <div class="d-flex">
-              <div class="col-6 flex-1">
-                <label class="form-label">Transaction Group Description</label>
-                <div>{{ group?.description }}</div>
-              </div>
+            <div class="mt-5">
+              <label class="form-label">Transaction Group Description</label>
+              <div>{{ description }}</div>
+            </div>
 
-              <template v-if="isLoggedInOrganization(user.selectedOrganization)">
-                <div class="col-6">
-                  <label class="form-label">Sequential Execution</label>
-                  <div>{{ group?.sequential ? 'Yes' : 'No' }}</div>
-                </div>
-              </template>
+            <div v-if="isLoggedInOrganization(user.selectedOrganization)" class="mt-5">
+              <label class="form-label">Sequential Execution</label>
+              <div>{{ isSequential ? 'Yes' : 'No' }}</div>
             </div>
 
             <hr class="separator my-5 w-100" />

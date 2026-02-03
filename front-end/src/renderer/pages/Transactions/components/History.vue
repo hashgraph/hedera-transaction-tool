@@ -3,7 +3,6 @@ import type { ITransaction } from '@shared/interfaces';
 import type { Transaction } from '@prisma/client';
 
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
 import { Prisma } from '@prisma/client';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
@@ -14,7 +13,9 @@ import { TRANSACTION_ACTION } from '@shared/constants';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
-import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
+import useNextTransactionV2, {
+  type TransactionNodeId,
+} from '@renderer/stores/storeNextTransactionV2.ts';
 
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
@@ -27,7 +28,6 @@ import {
   getStatusFromCode,
   getNotifiedTransactions,
   hexToUint8Array,
-  redirectToDetails,
   isLoggedInOrganization,
   isUserLoggedIn,
 } from '@renderer/utils';
@@ -40,15 +40,15 @@ import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import TransactionsFilter from '@renderer/components/Filter/TransactionsFilter.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
+import { useRouter } from 'vue-router';
 
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
 const notifications = useNotificationsStore();
-const nextTransaction = useNextTransactionStore();
+const nextTransaction = useNextTransactionV2();
 
 /* Composables */
-const router = useRouter();
 useWebsocketSubscription(TRANSACTION_ACTION, fetchTransactions);
 const { oldNotifications } = useMarkNotifications([
   NotificationType.TRANSACTION_INDICATOR_EXECUTED,
@@ -93,6 +93,9 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 const isLoading = ref(true);
 
+/* Composables */
+const router = useRouter();
+
 /* Computed */
 const generatedClass = computed(() => {
   return localSort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
@@ -109,13 +112,25 @@ const handleSort = async (
   orgSort.field = organizationField;
   orgSort.direction = direction;
 
-  setGetTransactionsFunction();
   await fetchTransactions();
 };
 
-const handleDetails = (id: string | number) => {
-  setPreviousTransactionsIds(id);
-  redirectToDetails(router, id, true);
+const handleDetails = async (id: string | number) => {
+  let nodeIds: TransactionNodeId[] = [];
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    nodeIds = organizationTransactions.value.map(t => {
+      return {
+        transactionId: t.transactionRaw.id,
+      };
+    });
+  } else {
+    nodeIds = transactions.value.map(t => {
+      return {
+        transactionId: t.id,
+      };
+    });
+  }
+  await nextTransaction.routeDown({ transactionId: id }, nodeIds, router);
 };
 
 /* Functions */
@@ -255,13 +270,11 @@ function getLocalTransactionDisplayType(transaction: Transaction): string {
 
 /* Hooks */
 onBeforeMount(async () => {
-  setGetTransactionsFunction();
   await fetchTransactions();
 });
 
 /* Watchers */
 watch([currentPage, pageSize, () => user.selectedOrganization, orgFilters], async () => {
-  setGetTransactionsFunction();
   await fetchTransactions();
 });
 
@@ -502,7 +515,7 @@ watch(
                       }}</span
                     >
                   </td>
-<!--
+                  <!--
                   <td :data-testid="`td-transaction-createdAt-${index}`">
                     <span class="text-small text-secondary">
                       <DateTimeString

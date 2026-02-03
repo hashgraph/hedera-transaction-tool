@@ -19,6 +19,7 @@ export class ElectronUpdaterService {
   private setupLogger(): void {
     autoUpdater.logger = this.logger;
     autoUpdater.autoDownload = false;
+    autoUpdater.autoInstallOnAppQuit = false;
     autoUpdater.forceDevUpdateConfig = is.dev;
   }
 
