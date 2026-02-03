@@ -181,7 +181,6 @@ watch(
     <UpgradeError
       v-else-if="hasError && errorMessage"
       :error-message="errorMessage"
-      :cancel-label='Disconnect'
       @cancel="handleCancel"
       @retry="handleRetry"
     />
