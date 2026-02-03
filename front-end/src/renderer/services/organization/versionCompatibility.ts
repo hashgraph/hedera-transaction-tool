@@ -10,7 +10,7 @@ import { getLatestVersionForOrg } from '@renderer/stores/versionState';
 export type CompatibilityConflict = {
   serverUrl: string;
   organizationName: string;
-  latestSupportedVersion: string;
+  latestSupportedVersion: string | null;
   suggestedVersion: string;
 };
 
@@ -45,24 +45,28 @@ export async function checkCompatibilityAcrossOrganizations(
     }
 
     const orgLatestVersion = getLatestVersionForOrg(org.serverUrl);
+    const conflictVersion = {
+      serverUrl: org.serverUrl,
+      organizationName: org.nickname || org.serverUrl,
+      latestSupportedVersion: orgLatestVersion,
+      suggestedVersion: cleanSuggestedVersion,
+    };
 
     if (!orgLatestVersion) {
+      console.warn(`No version supplied for org ${org.serverUrl}`);
+      conflicts.push(conflictVersion);
       continue;
     }
 
     const cleanOrgLatestVersion = semver.clean(orgLatestVersion);
     if (!cleanOrgLatestVersion) {
       console.warn(`Invalid version format for org ${org.serverUrl}: ${orgLatestVersion}`);
+      conflicts.push(conflictVersion);
       continue;
     }
 
     if (semver.gt(cleanSuggestedVersion, cleanOrgLatestVersion)) {
-      conflicts.push({
-        serverUrl: org.serverUrl,
-        organizationName: org.nickname || org.serverUrl,
-        latestSupportedVersion: orgLatestVersion,
-        suggestedVersion: cleanSuggestedVersion,
-      });
+      conflicts.push(conflictVersion);
     }
   }
 

@@ -24,7 +24,7 @@ const onUpgradeClick = () => {
 
 /* Hooks */
 onBeforeMount(async () => {
-  version.value = await window.electronAPI.local.update.getVerison();
+  version.value = await window.electronAPI.local.update.getVersion();
 });
 
 /* Misc */
