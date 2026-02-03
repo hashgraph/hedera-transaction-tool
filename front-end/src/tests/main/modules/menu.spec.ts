@@ -1,6 +1,6 @@
 import { mockDeep } from 'vitest-mock-extended';
 
-import { Menu, shell } from 'electron';
+import { BrowserWindow, Menu, shell } from 'electron';
 import menuBuilder from '@main/modules/menu';
 
 vi.mock('electron', () => mockDeep());
@@ -45,7 +45,33 @@ describe('menuBuilder', () => {
     if (helpSection.submenu) {
       helpSection.submenu[0].click();
 
-      expect(vi.mocked(shell).openExternal).toHaveBeenCalledWith('https://electronjs.org');
+      expect(vi.mocked(shell).openExternal).toHaveBeenCalledWith(
+        'https://transactiontool.hedera.com',
+      );
+    }
+  });
+
+  test('should send settings message to focused window on Settings click', () => {
+    const mockWebContents = { send: vi.fn() };
+    const mockWindow = { webContents: mockWebContents };
+
+    vi.mocked(BrowserWindow.getFocusedWindow).mockReturnValue(
+      mockWindow as any,
+    );
+
+    menuBuilder();
+
+    const macMenu = vi.mocked(Menu).buildFromTemplate.mock.calls[3][0][0];
+
+    expect(macMenu).toBeDefined();
+
+    if (macMenu.submenu) {
+      const settingsItem = macMenu.submenu[2];
+
+      settingsItem.click();
+
+      expect(BrowserWindow.getFocusedWindow).toHaveBeenCalled();
+      expect(mockWebContents.send).toHaveBeenCalledWith('settings');
     }
   });
 });

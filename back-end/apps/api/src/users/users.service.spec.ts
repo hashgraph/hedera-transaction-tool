@@ -5,7 +5,7 @@ import { FindOptionsWhere, Repository } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
 import { ErrorCodes, checkFrontendVersion } from '@app/common';
-import { Client, User } from '@entities';
+import { Client, User, UserKey } from '@entities';
 
 import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
@@ -204,11 +204,15 @@ describe('UsersService', () => {
     });
   });
 
-  it('should remove user', async () => {
+  it('should remove user and soft-delete all associated keys', async () => {
     userRepository.findOne.mockResolvedValue(user as User);
+    userRepository.manager.softDelete.mockResolvedValue({ affected: 2, raw: [], generatedMaps: [] });
 
     await service.removeUser(1);
 
+    // Verify keys are soft-deleted first
+    expect(userRepository.manager.softDelete).toHaveBeenCalledWith(UserKey, { userId: 1 });
+    // Then user is soft-deleted
     expect(userRepository.softRemove).toHaveBeenCalledWith(user);
   });
 
@@ -350,7 +354,7 @@ describe('UsersService', () => {
       const mockResult = {
         latestSupportedVersion: latestVersion,
         minimumSupportedVersion: minimumVersion,
-        updateUrl: `${repoUrl}/download/v${latestVersion}/`,
+        updateUrl: `${repoUrl}/v${latestVersion}/`,
       };
       jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
 
@@ -387,13 +391,13 @@ describe('UsersService', () => {
       const mockResult = {
         latestSupportedVersion: latestVersion,
         minimumSupportedVersion: minimumVersion,
-        updateUrl: `${repoUrl}/download/v${latestVersion}/`,
+        updateUrl: `${repoUrl}/v${latestVersion}/`,
       };
       jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
 
       const result = service.getVersionCheckInfo(userVersion);
 
-      expect(result.updateUrl).toBe(`${repoUrl}/download/v${latestVersion}/`);
+      expect(result.updateUrl).toBe(`${repoUrl}/v${latestVersion}/`);
     });
 
     it('should handle missing config values gracefully', () => {

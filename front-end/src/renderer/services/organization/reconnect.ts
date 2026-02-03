@@ -1,5 +1,3 @@
-import router from '@renderer/router';
-
 import { useToast } from 'vue-toast-notification';
 
 import useVersionCheck from '@renderer/composables/useVersionCheck';
@@ -12,22 +10,25 @@ import {
   setVersionDataForOrg,
   getVersionStatusForOrg,
   organizationVersionData,
-  triggeringOrganizationServerUrl,
   organizationCompatibilityResults,
 } from '@renderer/stores/versionState';
 
 import { getLocalWebsocketPath } from '@renderer/services/organizationsService';
 import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organization/versionCompatibility';
 import { isVersionBelowMinimum } from '@renderer/services/organization/versionCompatibility';
-import { checkVersion } from '@renderer/services/organization';
+import { checkVersion, login } from '@renderer/services/organization';
 
 import { FRONTEND_VERSION } from '@renderer/utils/version';
 import {
-  getConnectedOrganization,
-  isLoggedOutOrganization,
+  getAuthTokenFromSessionStorage,
+  toggleAuthTokenInSessionStorage,
 } from '@renderer/utils/userStoreHelpers';
 
 import { errorToastOptions } from '@renderer/utils/toastOptions';
+import {
+  getOrganizationCredentials,
+  updateOrganizationCredentials,
+} from '../organizationCredentials';
 
 export async function reconnectOrganization(serverUrl: string): Promise<{
   success: boolean;
@@ -41,6 +42,7 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
   const toast = useToast();
 
   const org = userStore.organizations.find(o => o.serverUrl === serverUrl);
+  const user = userStore.personal;
   if (!org) {
     console.error(`[${new Date().toISOString()}] RECONNECT Organization not found: ${serverUrl}`);
     toast.error('Organization not found', errorToastOptions);
@@ -48,6 +50,27 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
   }
 
   try {
+    const token = getAuthTokenFromSessionStorage(org.serverUrl);
+    if (!token && user && user.isLoggedIn && (user.password || user.useKeychain)) {
+      const credentials = await getOrganizationCredentials(org.id, user.id, user.password);
+
+      if (credentials) {
+        const { jwtToken } = await login(
+          org.serverUrl,
+          credentials.email,
+          credentials.password,
+        );
+
+        await updateOrganizationCredentials(
+          org.id,
+          user.id,
+          undefined,
+          undefined,
+          jwtToken,
+        );
+        toggleAuthTokenInSessionStorage(org.serverUrl, jwtToken, false);
+      }
+    }
     console.log(
       `[${new Date().toISOString()}] RECONNECT Starting version check for: ${org.nickname || serverUrl}`,
     );
@@ -80,7 +103,6 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
         );
 
         organizationCompatibilityResults.value[serverUrl] = compatibilityResult;
-        triggeringOrganizationServerUrl.value = serverUrl;
 
         if (versionResponse.updateUrl) {
           setOrgVersionBelowMinimum(serverUrl, versionResponse.updateUrl);
@@ -128,13 +150,6 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
     );
     console.log(`  - Status: connected`);
     console.log(`  - Details: Version check passed, websocket connected`);
-
-    userStore.selectedOrganization = await getConnectedOrganization(org, userStore.personal);
-    if (isLoggedOutOrganization(userStore.selectedOrganization)) {
-      await router.push({ name: 'organizationLogin' });
-    } else {
-      toast.success(`Reconnected to ${org.nickname || serverUrl}`);
-    }
 
     return { success: true };
   } catch (error) {

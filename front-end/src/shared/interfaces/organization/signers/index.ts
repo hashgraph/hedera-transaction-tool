@@ -13,12 +13,12 @@ export interface ITransactionSigner extends IBaseTransactionSigner {
 
 export interface ITransactionSignerUserKey extends IBaseTransactionSigner {
   transactionId: number;
-  userKey: IUserKey;
+  userKey?: IUserKey;
   createdAt: string | Date;
 }
 
 export interface ITransactionSignerFull extends IBaseTransactionSigner {
   transaction: ITransaction;
-  userKey: IUserKey;
+  userKey?: IUserKey;
   createdAt: string | Date;
 }

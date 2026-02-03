@@ -11,6 +11,7 @@ import useSetupStores from '@renderer/composables/user/useSetupStores';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 import useVersionCheck from '@renderer/composables/useVersionCheck';
+import useAppVisibility from '@renderer/composables/useAppVisibility';
 
 import { getUseKeychain } from '@renderer/services/safeStorageService';
 import { getUsersCount, resetDataLocal } from '@renderer/services/userService';
@@ -22,7 +23,6 @@ import {
 } from '@renderer/stores/versionState';
 
 import AutoLoginInOrganization from '@renderer/components/Organization/AutoLoginInOrganization.vue';
-import AppUpdate from './components/AppUpdate.vue';
 import ImportantNote from './components/ImportantNote.vue';
 import BeginDataMigration from './components/BeginDataMigration.vue';
 import MandatoryUpgrade from './components/MandatoryUpgrade.vue';
@@ -42,10 +42,23 @@ const { performVersionCheck, getAllOrganizationVersionData } = useVersionCheck()
 /* State */
 const importantNoteRef = ref<InstanceType<typeof ImportantNote> | null>(null);
 const beginDataMigrationRef = ref<InstanceType<typeof BeginDataMigration> | null>(null);
+const autoLoginRef = ref<InstanceType<typeof AutoLoginInOrganization> | null>(null);
 
 const precheckReady = ref(false);
 const importantNoteReady = ref(false);
 const migrate = ref(false);
+
+/* App Visibility - handles token refresh when app regains focus */
+const handleTokenExpired = async () => {
+  if (autoLoginRef.value) {
+    await autoLoginRef.value.triggerReauthentication();
+  }
+};
+
+useAppVisibility({
+  debounceMs: 2000,
+  onTokenExpired: handleTokenExpired,
+});
 
 /* Handlers */
 const handleImportantModalReady = async () => {
@@ -180,7 +193,6 @@ watch(
 </script>
 
 <template>
-  <AppUpdate />
   <MandatoryUpgrade />
   <OptionalUpgrade />
 
@@ -197,6 +209,6 @@ watch(
   </template>
 
   <template v-if="user.personal?.isLoggedIn">
-    <AutoLoginInOrganization />
+    <AutoLoginInOrganization ref="autoLoginRef" />
   </template>
 </template>
