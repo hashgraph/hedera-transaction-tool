@@ -6,7 +6,6 @@ import useElectronUpdater from '@renderer/composables/useElectronUpdater';
 import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 import { UPDATE_ERROR_MESSAGES } from '@shared/constants';
 
-import { formatProgressBytes } from '@renderer/utils';
 import { errorToastOptions } from '@renderer/utils/toastOptions';
 
 import { disconnectOrganization } from '@renderer/services/organization/disconnect';
@@ -25,14 +24,19 @@ import {
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppProgressBar from '@renderer/components/ui/AppProgressBar.vue';
 import CompatibilityWarningModal from '@renderer/components/Organization/CompatibilityWarningModal.vue';
+import DownloadUpgrade from '@renderer/components/GlobalAppProcesses/components/DownloadUpgrade.vue';
+import InstallUpgrade from '@renderer/components/GlobalAppProcesses/components/InstallUpgrade.vue';
+import CheckForUpgrade from '@renderer/components/GlobalAppProcesses/components/CheckForUpgrade.vue';
+import UpgradeError from '@renderer/components/GlobalAppProcesses/components/UpgradeError.vue';
 
 const { versionStatus, updateUrl } = useVersionCheck();
 const { state, progress, error, updateInfo, startUpdate, installUpdate } = useElectronUpdater();
 const user = useUserStore();
 const toast = useToast();
 const { setLast } = useDefaultOrganization();
+
+const cancelLabel = 'Disconnect';
 
 const affectedOrg = computed(() => {
   const serverUrl =
@@ -66,6 +70,7 @@ const orgUpdateUrl = computed(() => {
 const isChecking = computed(() => state.value === 'checking');
 const isDownloading = computed(() => state.value === 'downloading');
 const isDownloaded = computed(() => state.value === 'downloaded');
+const isInstalling = computed(() => state.value === 'installing');
 const hasError = computed(() => state.value === 'error');
 
 const errorMessage = computed(() => {
@@ -154,89 +159,43 @@ const handleCompatibilityCancel = () => {
   handleDisconnect();
 };
 </script>
-
 <template>
   <AppModal
     :show="shown"
     :close-on-click-outside="false"
     :close-on-escape="false"
     class="modal-fit-content"
+    :loading="isInstalling"
   >
-    <div v-if="isChecking" class="text-center p-4">
-      <div>
-        <i
-          class="bi bi-arrow-repeat text-primary"
-          style="font-size: 4rem; animation: spin 1s linear infinite"
-        ></i>
-      </div>
-      <h2 class="text-title text-semi-bold mt-4">Checking for Update</h2>
-      <p class="text-small text-secondary mt-3">Please wait...</p>
-    </div>
+    <CheckForUpgrade
+      v-if="isChecking"
+    />
 
-    <div v-else-if="isDownloading" class="text-center p-4">
-      <div>
-        <i class="bi bi-download text-primary" style="font-size: 4rem"></i>
-      </div>
-      <h2 class="text-title text-semi-bold mt-4">Downloading Update</h2>
-      <p class="text-small text-secondary mt-3" v-if="updateInfo">
-        Version {{ updateInfo.version }}
-      </p>
-      <div class="d-grid mt-4" v-if="progress">
-        <div class="d-flex justify-content-between">
-          <p class="text-start text-footnote mt-3">
-            {{ formatProgressBytes(progress.transferred) }}
-            of
-            {{ formatProgressBytes(progress.total) }}
-          </p>
-          <p class="text-start text-micro mt-3">
-            {{ formatProgressBytes(progress.bytesPerSecond, '') }}/s
-          </p>
-        </div>
-        <AppProgressBar
-          :percent="Number(progress.percent?.toFixed(2)) || 0"
-          :label="progressBarLabel"
-          :height="18"
-          class="mt-2"
-        />
-      </div>
-    </div>
+    <DownloadUpgrade
+      v-else-if="isDownloading"
+      :version="updateInfo?.version"
+      :progress="progress"
+      :progress-label="progressBarLabel"
+      :cancel-label="cancelLabel"
+      @cancel="handleDisconnect"
+    />
 
-    <div v-else-if="isDownloaded" class="text-center p-4">
-      <div>
-        <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem"></i>
-      </div>
-      <h2 class="text-title text-semi-bold mt-4">Update Ready to Install</h2>
-      <p class="text-small text-secondary mt-3" v-if="updateInfo">
-        Version {{ updateInfo.version }} has been downloaded.<br />
-        The application will restart to install the update.
-      </p>
-      <hr class="separator my-4" />
-      <div class="d-flex gap-4 justify-content-center">
-        <AppButton type="button" color="primary" @click="handleInstall">
-          <i class="bi bi-arrow-clockwise me-2"></i>Install & Restart
-        </AppButton>
-      </div>
-    </div>
+    <InstallUpgrade
+      v-else-if="isDownloaded || isInstalling"
+      :version="updateInfo?.version"
+      :is-installing="isInstalling"
+      :cancel-label="cancelLabel"
+      @cancel="handleDisconnect"
+      @install="handleInstall"
+    />
 
-    <div v-else-if="hasError && errorMessage" class="text-center p-4">
-      <div>
-        <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 4rem"></i>
-      </div>
-      <h2 class="text-title text-semi-bold mt-4">{{ errorMessage.title }}</h2>
-      <p class="text-small text-secondary mt-3">
-        {{ errorMessage.message }}<br />
-        {{ errorMessage.action }}
-      </p>
-      <hr class="separator my-4" />
-      <div class="d-flex gap-4 justify-content-center">
-        <AppButton type="button" color="secondary" @click="handleDisconnect">
-          Disconnect
-        </AppButton>
-        <AppButton type="button" color="primary" @click="handleRetry">
-          <i class="bi bi-arrow-repeat me-2"></i>Try Again
-        </AppButton>
-      </div>
-    </div>
+    <UpgradeError
+      v-else-if="hasError && errorMessage"
+      :error-message="errorMessage"
+      :cancel-label="cancelLabel"
+      @cancel="handleDisconnect"
+      @retry="handleRetry"
+    />
 
     <div v-else class="text-center p-4">
       <div>
