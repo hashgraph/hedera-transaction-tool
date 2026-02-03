@@ -10,9 +10,11 @@ import LogoText from '@renderer/components/LogoText.vue';
 import NotificationsDropDown from '@renderer/components/Notifications/NotificationsDropDown.vue';
 import UserModeSelect from './UserModeSelect.vue';
 import NetworkSelect from './NetworkSelect.vue';
+import useDeveloperMode from '@renderer/stores/useDeveloperMode.ts';
 
 /* Stores */
 const user = useUserStore();
+const developerMode = useDeveloperMode();
 
 /* Composables */
 const createTooltips = useCreateTooltips();
@@ -42,7 +44,9 @@ onUpdated(createTooltips);
       <span class="container-icon">
         <i class="text-icon-main bi bi-three-dots-vertical"></i>
       </span> -->
-      <div class="me-4"><NetworkSelect /></div>
+      <div v-if="developerMode.enabled" class="me-4">
+        <NetworkSelect />
+      </div>
       <div>
         <UserModeSelect />
       </div>
