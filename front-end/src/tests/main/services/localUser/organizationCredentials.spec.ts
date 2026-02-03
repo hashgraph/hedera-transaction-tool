@@ -768,6 +768,15 @@ describe('Services Local User Organization Credentials', () => {
       vi.resetAllMocks();
     });
 
+    test('returns empty string when data is empty and does not attempt decryption', async () => {
+      const result = await decryptData('');
+
+      expect(result).toBe('');
+      expect(getUseKeychainClaim).not.toHaveBeenCalled();
+      expect(safeStorage.decryptString).not.toHaveBeenCalled();
+      expect(decrypt).not.toHaveBeenCalled();
+    });
+
     test('Should decrypt data using keychain', async () => {
       const encryptedData = 'encryptedData';
       const decryptedData = 'decryptedData';

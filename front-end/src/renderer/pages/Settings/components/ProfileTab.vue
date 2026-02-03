@@ -129,7 +129,7 @@ const handleLogout = async () => {
 
     const { id, nickname, serverUrl, key } = user.selectedOrganization;
     await logout(serverUrl);
-    await updateOrganizationCredentials(id, user.personal.id, undefined, null, null);
+    await updateOrganizationCredentials(id, user.personal.id, undefined, '', null);
     toggleAuthTokenInSessionStorage(serverUrl, '', true);
     await user.selectOrganization({ id, nickname, serverUrl, key });
   } else {
