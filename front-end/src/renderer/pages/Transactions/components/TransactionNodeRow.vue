@@ -2,14 +2,13 @@
 import type { INotificationReceiver } from '@shared/interfaces';
 
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
 import { computedAsync } from '@vueuse/core';
 
 import useTransactionAudit from '@renderer/composables/useTransactionAudit.ts';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import useFilterNotifications from '@renderer/composables/useFilterNotifications.ts';
 import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions.ts';
-import { FreezeTransaction, type FreezeType } from '@hashgraph/sdk';
+import { FreezeTransaction } from '@hashgraph/sdk';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';

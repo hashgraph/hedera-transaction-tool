@@ -208,54 +208,6 @@ async function fetchTransactions() {
   }
 }
 
-function setGetTransactionsFunction() {
-  nextTransaction.setGetTransactionsFunction(async (page: number | null, size: number | null) => {
-    if (isLoggedInOrganization(user.selectedOrganization)) {
-      const { items, totalItems } = await getHistoryTransactions(
-        user.selectedOrganization.serverUrl,
-        page || 1,
-        size || 10,
-        orgFilters.value,
-        [{ property: orgSort.field, direction: orgSort.direction }],
-      );
-      return {
-        items: items.map(t => t.id),
-        totalItems,
-      };
-    } else {
-      if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
-      totalItems.value = await getTransactionsCount(user.personal.id);
-      const findArgs = createFindArgs();
-      findArgs.skip = ((page || 1) - 1) * (size || 10);
-      findArgs.take = size || 10;
-      transactions.value = await getTransactions(createFindArgs());
-
-      return {
-        items: transactions.value.map(t => t.id),
-        totalItems: totalItems.value,
-      };
-    }
-  }, true);
-}
-
-function setPreviousTransactionsIds(id: string | number) {
-  if (isLoggedInOrganization(user.selectedOrganization)) {
-    const selectedTransactionIndex = organizationTransactions.value.findIndex(
-      t => t.transactionRaw.id === id,
-    );
-    const previousTransactionIds = organizationTransactions.value
-      .slice(0, selectedTransactionIndex)
-      .map(t => t.transactionRaw.id);
-    nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
-  } else {
-    const selectedTransactionIndex = transactions.value.findIndex(t => t.id === id);
-    const previousTransactionIds = transactions.value
-      .slice(0, selectedTransactionIndex)
-      .map(t => t.id);
-    nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
-  }
-}
-
 /**
  * Gets the display transaction type for local transactions.
  * For freeze transactions, extracts the specific freeze type from the transaction body.
