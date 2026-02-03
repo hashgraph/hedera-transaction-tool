@@ -176,3 +176,15 @@
   word-break: break-word;
   min-width: 6rem;
 }
+
+.text-one-line-ellipsis {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-all;
+  min-width: 6rem;
+}
