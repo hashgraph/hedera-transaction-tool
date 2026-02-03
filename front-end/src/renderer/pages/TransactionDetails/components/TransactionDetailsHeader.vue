@@ -661,10 +661,6 @@ watch(
           :transaction-status="props.organizationTransaction?.status ?? null"
           variant="countdown"
         />
-        <span v-else-if="isTransactionVersionMismatch" class="badge bg-danger text-break"
-          >Transaction Version Mismatch</span
-        >
-        <span v-else-if="isManualFlagVisible" class="badge bg-info text-break">Manual</span>
       </template>
     </div>
 
