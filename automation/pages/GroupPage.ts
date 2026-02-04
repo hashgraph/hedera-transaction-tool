@@ -19,6 +19,7 @@ export class GroupPage extends BasePage {
   /* Selectors */
 
   // Buttons
+  backButtonSelector = 'button-back';
   saveGroupButtonSelector = 'button-save-group';
   signAndExecuteButtonSelector = 'button-sign-submit';
   addTransactionButtonSelector = 'button-add-transaction';
@@ -67,6 +68,10 @@ export class GroupPage extends BasePage {
 
   async closeDraftTransactionModal() {
     await this.closeModalIfVisible(this.discardDraftTransactionModalButtonSelector);
+  }
+
+  async clickOnBackButton() {
+    await this.click(this.backButtonSelector);
   }
 
   async clickOnSaveGroupButton() {
