@@ -18,36 +18,24 @@ import {
   TransactionType,
 } from '@entities';
 
+type Roles = {
+  signer?: boolean;
+  creator?: boolean;
+  observer?: boolean;
+  approver?: boolean;
+};
+
 interface WhereClauseResult {
   clause: string;
   values: any[];
 }
 
-function buildWhereClause(
+function buildFilterConditions(
   sql: SqlBuilderService,
-  user: User,
-  roles: { signer?: boolean; creator?: boolean; observer?: boolean; approver?: boolean },
-  filters: {statuses: TransactionStatus[], types?: TransactionType[], mirrorNetwork?: string}
-): WhereClauseResult{
+  filters: {statuses: TransactionStatus[], types?: TransactionType[], mirrorNetwork?: string},
+  addParam: (value: any) => string
+): string[] {
   const conditions: string[] = [];
-  const values: any[] = [];
-
-  let cachedUserKeyIds: number[] | null = null;
-
-  const getUserKeyIds = () => {
-    if (!cachedUserKeyIds) {
-      cachedUserKeyIds = user.keys.map(k => k.id);
-    }
-    return cachedUserKeyIds;
-  };
-
-  let paramIndex = 1;
-
-  // Helper to add a parameter and get its $N reference
-  const addParam = (value: any): string => {
-    values.push(value);
-    return `$${paramIndex++}`;
-  };
 
   // Status filter (always required)
   conditions.push(`t.${sql.col(Transaction, 'status')} = ANY(${addParam(filters.statuses)})`);
@@ -62,7 +50,16 @@ function buildWhereClause(
     conditions.push(`t.${sql.col(Transaction, 'mirrorNetwork')} = ${addParam(filters.mirrorNetwork)}`);
   }
 
-  // Role-based eligibility
+  return conditions;
+}
+
+function buildEligibilityConditions(
+  sql: SqlBuilderService,
+  user: User,
+  roles: Roles,
+  addParam: (value: any) => string,
+  getUserKeyIds: () => number[]
+): string[] {
   const eligibilityConditions: string[] = [];
 
   if (roles.signer) {
@@ -170,15 +167,54 @@ function buildWhereClause(
           FROM ${sql.table(TransactionApprover)} a
           JOIN approverList al ON al.${sql.col(TransactionApprover, 'id')} = a.${sql.col(TransactionApprover, 'listId')}
         )
-        SELECT COUNT(*) FROM approverList
+        SELECT COUNT(*)::int FROM approverList
         WHERE approverList.${sql.col(TransactionApprover, 'deletedAt')} IS NULL
           AND approverList.${sql.col(TransactionApprover, 'userId')} = ${userParam}
       ) > 0
     `);
   }
 
-  if (eligibilityConditions.length > 0) {
-    conditions.push(`(${eligibilityConditions.join(' OR ')})`);
+  return eligibilityConditions;
+}
+
+function buildWhereClause(
+  sql: SqlBuilderService,
+  filters: {statuses: TransactionStatus[], types?: TransactionType[], mirrorNetwork?: string},
+  user?: User,
+  roles?: Roles
+): WhereClauseResult{
+  const conditions: string[] = [];
+  const values: any[] = [];
+
+  let cachedUserKeyIds: number[] | null = null;
+
+  let paramIndex = 1;
+
+  // Helper to add a parameter and get its $N reference
+  const addParam = (value: any): string => {
+    values.push(value);
+    return `$${paramIndex++}`;
+  };
+
+  // Build filter conditions
+  const filterConditions = buildFilterConditions(sql, filters, addParam);
+  conditions.push(...filterConditions);
+
+  if (user && roles) {
+    const getUserKeyIds = () => {
+      if (!user) return [];
+      if (!cachedUserKeyIds) {
+        cachedUserKeyIds = user.keys.map(k => k.id);
+      }
+      return cachedUserKeyIds;
+    };
+
+    // Build eligibility conditions
+    const eligibilityConditions = buildEligibilityConditions(sql, user, roles, addParam, getUserKeyIds);
+
+    if (eligibilityConditions.length > 0) {
+      conditions.push(`(${eligibilityConditions.join(' OR ')})`);
+    }
   }
 
   return {
@@ -189,11 +225,11 @@ function buildWhereClause(
 
 export function getTransactionNodesForUser(
   sql: SqlBuilderService,
-  user: User,
-  roles: { signer?: boolean; creator?: boolean; observer?: boolean; approver?: boolean },
-  filters: {statuses: TransactionStatus[], types?: TransactionType[], mirrorNetwork?: string}
+  filters: {statuses: TransactionStatus[], types?: TransactionType[], mirrorNetwork?: string},
+  user?: User,
+  roles?: { signer?: boolean; creator?: boolean; observer?: boolean; approver?: boolean }
 ): SqlQuery {
-  const whereResult = buildWhereClause(sql, user, roles, filters);
+  const whereResult = buildWhereClause(sql, filters, user, roles);
 
   const text = `
     WITH eligible_transactions AS (
