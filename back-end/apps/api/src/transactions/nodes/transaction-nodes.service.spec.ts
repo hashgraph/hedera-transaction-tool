@@ -318,12 +318,12 @@ describe('TransactionNodesService', () => {
 
       expect(getTransactionNodesForUser).toHaveBeenCalledWith(
         sqlBuilderService,
-        user,
-        { approver: true },
         {
           statuses: TRANSACTION_STATUS_COLLECTIONS.READY_FOR_REVIEW,
           mirrorNetwork: TEST_NETWORK,
-        }
+        },
+        user,
+        { approver: true }
       );
 
       expect(entityManager.query).toHaveBeenCalledWith(mockQuery.text, mockQuery.values);
@@ -351,12 +351,12 @@ describe('TransactionNodesService', () => {
       expect(getTransactionNodesForUser)
         .toHaveBeenCalledWith(
           sqlBuilderService,
-          user,
-          { signer: true },
           {
             statuses: TRANSACTION_STATUS_COLLECTIONS.READY_TO_SIGN,
             mirrorNetwork: TEST_NETWORK,
-          }
+          },
+          user,
+          { signer: true }
         );
 
       // Verify entityManager.query was called with the query
@@ -387,16 +387,16 @@ describe('TransactionNodesService', () => {
 
       expect(getTransactionNodesForUser).toHaveBeenCalledWith(
         sqlBuilderService,
+        {
+          statuses: TRANSACTION_STATUS_COLLECTIONS.READY_FOR_EXECUTION,
+          mirrorNetwork: TEST_NETWORK,
+        },
         user,
         {
           signer: true,
           creator: true,
           observer: true,
           approver: true,
-        },
-        {
-          statuses: TRANSACTION_STATUS_COLLECTIONS.READY_FOR_EXECUTION,
-          mirrorNetwork: TEST_NETWORK,
         }
       );
 
@@ -427,16 +427,16 @@ describe('TransactionNodesService', () => {
 
       expect(getTransactionNodesForUser).toHaveBeenCalledWith(
         sqlBuilderService,
+        {
+          statuses: TRANSACTION_STATUS_COLLECTIONS.IN_PROGRESS,
+          mirrorNetwork: TEST_NETWORK,
+        },
         user,
         {
           signer: true,
           creator: true,
           observer: true,
           approver: true,
-        },
-        {
-          statuses: TRANSACTION_STATUS_COLLECTIONS.IN_PROGRESS,
-          mirrorNetwork: TEST_NETWORK,
         }
       );
 
@@ -467,13 +467,6 @@ describe('TransactionNodesService', () => {
 
       expect(getTransactionNodesForUser).toHaveBeenCalledWith(
         sqlBuilderService,
-        user,
-        {
-          signer: true,
-          creator: true,
-          observer: true,
-          approver: true,
-        },
         {
           statuses: TRANSACTION_STATUS_COLLECTIONS.HISTORY,
           types: null,
@@ -502,13 +495,6 @@ describe('TransactionNodesService', () => {
 
       expect(getTransactionNodesForUser).toHaveBeenCalledWith(
         sqlBuilderService,
-        user,
-        {
-          signer: true,
-          creator: true,
-          observer: true,
-          approver: true,
-        },
         {
           statuses: [TransactionStatus.EXPIRED],
           types: null,
@@ -537,13 +523,6 @@ describe('TransactionNodesService', () => {
 
       expect(getTransactionNodesForUser).toHaveBeenCalledWith(
         sqlBuilderService,
-        user,
-        {
-          signer: true,
-          creator: true,
-          observer: true,
-          approver: true,
-        },
         {
           statuses: TRANSACTION_STATUS_COLLECTIONS.HISTORY,
           types: [TransactionType.FILE_APPEND],
