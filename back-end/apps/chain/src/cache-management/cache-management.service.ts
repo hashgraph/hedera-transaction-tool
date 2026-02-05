@@ -153,7 +153,7 @@ export class CacheManagementService {
     // Emit updates for affected transactions
     if (transactionsToUpdate.size > 0) {
       this.logger.log(
-        `Refreshed ${accountTransactionMap.size} nodes, updating ${transactionsToUpdate.size} transactions`
+        `Refreshed ${accountTransactionMap.size} accounts, updating ${transactionsToUpdate.size} transactions`
       );
 
       emitTransactionUpdate(
@@ -268,7 +268,7 @@ export class CacheManagementService {
       WHERE id IN (
         SELECT ca.id
         FROM cached_account ca
-        LEFT JOIN transaction_cached_account ta ON ta."accountId" = ca.id
+        LEFT JOIN transaction_cached_account ta ON ta."cachedAccountId" = ca.id
         LEFT JOIN transaction t ON ta."transactionId" = t.id
         GROUP BY ca.id
         HAVING 
@@ -299,7 +299,7 @@ export class CacheManagementService {
       WHERE id IN (
         SELECT cn.id
         FROM cached_node cn
-        LEFT JOIN transaction_cached_node tn ON tn."nodeId" = cn.id
+        LEFT JOIN transaction_cached_node tn ON tn."cachedNodeId" = cn.id
         LEFT JOIN transaction t ON tn."transactionId" = t.id
         GROUP BY cn.id
         HAVING 
