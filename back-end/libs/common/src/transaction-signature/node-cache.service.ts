@@ -318,7 +318,9 @@ export class NodeCacheService {
   private parseCachedNode(cached: CachedNode): NodeInfoParsed {
     return {
       admin_key: deserializeKey(cached.encodedKey),
-      node_account_id: AccountId.fromString(cached.nodeAccountId),
+      node_account_id: cached.nodeAccountId
+        ? AccountId.fromString(cached.nodeAccountId)
+        : null,
     } as NodeInfoParsed;
   }
 
