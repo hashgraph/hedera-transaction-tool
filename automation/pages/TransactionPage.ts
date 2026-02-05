@@ -71,6 +71,7 @@ export class TransactionPage extends BasePage {
   descriptionInputSelector = 'input-transaction-description';
   complexKeyAccountIdInputSelector = 'input-complex-key-account-id';
   //Buttons
+  backButtonSelector = 'button-back';
   transactionsMenuButtonSelector = 'button-menu-transactions';
   accountsMenuButtonSelector = 'button-menu-accounts';
   createNewTransactionButtonSelector = 'button-create-new';
@@ -737,6 +738,10 @@ export class TransactionPage extends BasePage {
 
   async getFilledMaxAccountAssociations() {
     return this.getTextFromInputField(this.maxAutoAssociationsInputSelector);
+  }
+
+  async clickOnBackButton() {;
+    await this.click(this.backButtonSelector, null, 10000);
   }
 
   async clickOnSignAndSubmitButton() {

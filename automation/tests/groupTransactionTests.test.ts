@@ -64,6 +64,21 @@ test.describe('Group transaction tests', () => {
     expect(isAllElementsPresent).toBe(true);
   });
 
+  test('Verify that empty group and empty transaction is not saved', async () => {
+    await groupPage.clickOnAddTransactionButton();
+    await transactionPage.clickOnCreateAccountTransaction();
+    // If we click immediatly on back button, then Add To Group button appears
+    // If we wait a bit, then no save dialog => we wait a bit :(
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await transactionPage.clickOnBackButton();
+    await groupPage.clickOnBackButton();
+
+    //verify no transaction group is saved
+    await transactionPage.navigateToDrafts();
+    const isContinueButtonHidden = await transactionPage.isFirstDraftContinueButtonHidden();
+    expect(isContinueButtonHidden).toBe(true);
+  });
+
   test('Verify delete group action does not save the group', async () => {
     await groupPage.fillDescription('test');
 
