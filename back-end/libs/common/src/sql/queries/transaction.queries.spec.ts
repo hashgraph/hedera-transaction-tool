@@ -60,7 +60,7 @@ describe('getTransactionNodesForUser - Integration', () => {
     it('should execute without errors on empty database', async () => {
       const user = await createTestUserWithKeys(dataSource);
 
-      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
+      const query = getTransactionNodesForUser(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toEqual([]);
@@ -72,7 +72,7 @@ describe('getTransactionNodesForUser - Integration', () => {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
       });
 
-      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
+      const query = getTransactionNodesForUser(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(1);
@@ -89,7 +89,7 @@ describe('getTransactionNodesForUser - Integration', () => {
 
       await createTransactionSigner(dataSource, transaction, user.keys[0]);
 
-      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
+      const query = getTransactionNodesForUser(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(0);
@@ -105,7 +105,7 @@ describe('getTransactionNodesForUser - Integration', () => {
       // Only signed with first key
       await createTransactionSigner(dataSource, transaction, user.keys[0]);
 
-      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
+      const query = getTransactionNodesForUser(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(1);
@@ -123,7 +123,7 @@ describe('getTransactionNodesForUser - Integration', () => {
         status: TransactionStatus.EXECUTED,
       });
 
-      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
+      const query = getTransactionNodesForUser(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(1);
@@ -148,7 +148,7 @@ describe('getTransactionNodesForUser - Integration', () => {
         mirrorNetwork: 'mainnet',
       };
 
-      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, filters);
+      const query = getTransactionNodesForUser(sqlBuilder, filters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(1);
@@ -169,7 +169,7 @@ describe('getTransactionNodesForUser - Integration', () => {
         });
       }
 
-      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
+      const query = getTransactionNodesForUser(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(1);
@@ -189,7 +189,7 @@ describe('getTransactionNodesForUser - Integration', () => {
         });
       }
 
-      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
+      const query = getTransactionNodesForUser(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result[0].group_item_count).toBe(5);
@@ -212,7 +212,7 @@ describe('getTransactionNodesForUser - Integration', () => {
         }
       }
 
-      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
+      const query = getTransactionNodesForUser(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result[0].group_item_count).toBe(5);
@@ -234,7 +234,7 @@ describe('getTransactionNodesForUser - Integration', () => {
         seq: 1,
       });
 
-      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
+      const query = getTransactionNodesForUser(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result[0].status).toBe(TransactionStatus.WAITING_FOR_SIGNATURES);
@@ -262,7 +262,7 @@ describe('getTransactionNodesForUser - Integration', () => {
         ],
       };
 
-      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, filters);
+      const query = getTransactionNodesForUser(sqlBuilder, filters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result[0].status).toBeNull();
@@ -281,7 +281,7 @@ describe('getTransactionNodesForUser - Integration', () => {
         seq: 0,
       });
 
-      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
+      const query = getTransactionNodesForUser(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result[0].description).toBe('Group Description');
@@ -307,7 +307,7 @@ describe('getTransactionNodesForUser - Integration', () => {
         createdAt: new Date('2024-01-02'),
       });
 
-      const query = getTransactionNodesForUser(sqlBuilder, user, signerRoles, defaultFilters);
+      const query = getTransactionNodesForUser(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(3);
