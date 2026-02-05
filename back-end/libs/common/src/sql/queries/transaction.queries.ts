@@ -202,7 +202,6 @@ function buildWhereClause(
 
   if (user && roles) {
     const getUserKeyIds = () => {
-      if (!user) return [];
       if (!cachedUserKeyIds) {
         cachedUserKeyIds = user.keys.map(k => k.id);
       }
