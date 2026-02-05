@@ -35,6 +35,13 @@ export async function setupApp() {
     await loginPage.closeKeyChainModal();
   }
 
+  // Check if we need to reset app state (if user exists from previous run)
+  const isSettingsButtonVisible = await loginPage.isSettingsButtonVisible();
+  if (isSettingsButtonVisible) {
+    console.log('Existing user detected, resetting app state...');
+    await resetAppState(window, app);
+  }
+
   return { app, window };
 }
 

@@ -9,7 +9,6 @@ import {
   generateRandomPassword,
   setupApp,
   setupEnvironmentForTransactions,
-  resetAppState,
 } from '../utils/util.js';
 import { LoginPage } from '../pages/LoginPage.js';
 
@@ -29,13 +28,6 @@ test.describe('Group transaction tests', () => {
     loginPage = new LoginPage(window);
     transactionPage = new TransactionPage(window);
     groupPage = new GroupPage(window);
-
-    // Check if we need to reset app state (if user exists from previous run)
-    const isSettingsButtonVisible = await loginPage.isSettingsButtonVisible();
-    if (isSettingsButtonVisible) {
-      console.log('Existing user detected, resetting app state...');
-      await resetAppState(window, app);
-    }
 
     // Generate credentials and store them globally
     globalCredentials.email = generateRandomEmail();
