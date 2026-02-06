@@ -269,6 +269,7 @@ export class RegistrationPage extends BasePage {
     await this.waitForElementToDisappear(this.toastMessageSelector);
     await this.clickOnFinalNextButtonWithRetry();
 
+    await this.window.waitForSelector(this.toastMessageSelector, { state: 'visible', timeout: 5000 }).catch(() => {});
     const toastMessage = await this.getToastMessage();
     expect(toastMessage).toBe('Key Pair saved successfully');
   }
