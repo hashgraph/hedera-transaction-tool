@@ -35,12 +35,15 @@ let intervalId: ReturnType<typeof setInterval> | null = null;
 const inProgressStatuses = [
   TransactionStatus.NEW,
   TransactionStatus.WAITING_FOR_SIGNATURES,
-  TransactionStatus.WAITING_FOR_EXECUTION,
 ];
 
 const timeUntilExpiry = computed(() => {
   if (!props.validStart) return null;
   return props.validStart.getTime() - now.value;
+});
+
+const isExpired = computed(() => {
+  return timeUntilExpiry.value !== null && timeUntilExpiry.value <= 0;
 });
 
 const shouldShowBadge = computed(() => {
@@ -49,11 +52,11 @@ const shouldShowBadge = computed(() => {
     return false;
   }
   const remaining = timeUntilExpiry.value;
-  return remaining !== null && remaining > 0 && remaining <= TWENTY_FOUR_HOURS_MS;
+  return remaining !== null && remaining <= TWENTY_FOUR_HOURS_MS;
 });
 
 const countdownText = computed(() => {
-  if (!timeUntilExpiry.value || timeUntilExpiry.value <= 0) return '';
+  if (!timeUntilExpiry.value || timeUntilExpiry.value <= 0) return 'Expired';
 
   const totalMinutes = Math.floor(timeUntilExpiry.value / ONE_MINUTE_MS);
   const hours = Math.floor(totalMinutes / 60);
@@ -80,9 +83,12 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <span v-if="shouldShowBadge" class="badge bg-danger text-break ms-2">
+  <span
+    v-if="shouldShowBadge"
+    :class="['badge', isExpired ? 'bg-danger' : 'bg-warning', 'text-break', 'ms-2']"
+  >
     <!-- VARIANT: Simple text badge -->
-    <template v-if="variant === 'simple'">Expiring soon</template>
+    <template v-if="variant === 'simple'">{{ isExpired ? 'Expired' : 'Expiring soon' }}</template>
 
     <!-- VARIANT: Countdown badge -->
     <template v-else-if="variant === 'countdown'">{{ countdownText }}</template>
