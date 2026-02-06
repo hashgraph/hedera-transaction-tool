@@ -1,0 +1,96 @@
+{
+  "plugins": [
+    [
+      "@semantic-release/commit-analyzer",
+      {
+        "preset": "conventionalcommits"
+      }
+    ],
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        "preset": "conventionalcommits"
+      }
+    ],
+    [
+      "semantic-release-helm3",
+      {
+        "chartPath": "./charts/transaction-tool"
+      }
+    ],
+    "@semantic-release/git",
+    "@semantic-release/github"
+  ],
+  "verifyRelease": [
+    [
+      "@semantic-release/exec",
+      { "cmd": "echo ${nextRelease.version} > VERSION" }
+    ]
+  ],
+  "prepare": [
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "for dir in back-end back-end/apps/api back-end/apps/chain back-end/apps/notifications front-end; do (cd $dir && npm version ${nextRelease.version} --no-git-tag-version --allow-same-version); done"
+      }
+    ],
+    [
+      "semantic-release-helm3",
+      {
+        "chartPath": "./charts/transaction-tool"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": [
+          "charts/transaction-tool/Chart.yaml",
+          "back-end/package.json",
+          "back-end/apps/api/package.json",
+          "back-end/apps/chain/package.json",
+          "back-end/apps/notifications/package.json",
+          "front-end/package.json"
+        ],
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\nSigned-off-by: swirlds-automation <hedera-eng-automation@swirldslabs.com>"
+      }
+    ]
+  ],
+  "publish": [
+    [
+      "@semantic-release/github"
+    ]
+  ],
+  "branches":[
+    {
+      "name": "main"
+    },
+    {
+      "name": "release/([0-9]+).([0-9]+)",
+      "channel": "${name.replace(/release\\//g, '').split('.')[0]}.${name.replace(/release\\//g, '').split('.')[1]}.x",
+      "range": "${name.replace(/release\\//g, '').split('.')[0]}.${name.replace(/release\\//g, '').split('.')[1]}.x"
+    },
+    {
+      "name": "alpha/*",
+      "prerelease": "alpha",
+      "channel": "alpha"
+    },
+    {
+      "name": "ci/*",
+      "prerelease": "alpha",
+      "channel": "alpha"
+    },
+    {
+      "name": "beta/*",
+      "prerelease": "beta",
+      "channel": "beta"
+    },
+    {
+      "name": "rc/*",
+      "prerelease": "rc",
+      "channel": "rc"
+    },
+    {
+      "name": "resd-455"
+    }
+  ]
+}
