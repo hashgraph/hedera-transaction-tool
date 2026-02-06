@@ -303,6 +303,11 @@ async function encryptData(data: string, encryptPassword?: string | null) {
 
 /* Decrypt data */
 export async function decryptData(data: string, decryptPassword?: string | null) {
+  // if no data was stored (password cleared), just return empty string
+  if (data.length === 0) {
+    return '';
+  }
+
   const useKeychain = await getUseKeychainClaim();
   if (useKeychain) {
     const buffer = Buffer.from(data, 'base64');

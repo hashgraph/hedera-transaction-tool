@@ -394,7 +394,6 @@ export class BasePage {
    * @returns {Promise<boolean>} - Returns true if the ::before pseudo-element exists and is visible, false otherwise.
    */
   async hasBeforePseudoElement(testId: string, index: number|null = null, timeout = this.DEFAULT_TIMEOUT): Promise<boolean> {
-    console.log(`Checking if ::before pseudo-element exists for element with testId: ${testId}`);
     const element = this.getElement(testId, index);
     await element.waitFor({ state: 'visible', timeout: timeout });
 
@@ -406,15 +405,21 @@ export class BasePage {
         height: styles.getPropertyValue('height'),
         opacity: styles.getPropertyValue('opacity'),
         visibility: styles.getPropertyValue('visibility'),
+        borderLeftWidth: styles.getPropertyValue('border-left-width'),
+        borderTopWidth: styles.getPropertyValue('border-top-width'),
       };
     });
+
+    // Check for borders (some indicators use borders instead of width/height)
+    const hasBorders =
+      parseFloat(pseudoStyles.borderLeftWidth) > 0 ||
+      parseFloat(pseudoStyles.borderTopWidth) > 0;
 
     return (
       pseudoStyles.display !== 'none' &&
       pseudoStyles.visibility !== 'hidden' &&
       parseFloat(pseudoStyles.opacity) !== 0 &&
-      parseFloat(pseudoStyles.width) > 0 &&
-      parseFloat(pseudoStyles.height) > 0
+      (parseFloat(pseudoStyles.width) > 0 || parseFloat(pseudoStyles.height) > 0 || hasBorders)
     );
   }
 
