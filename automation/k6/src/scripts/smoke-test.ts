@@ -8,7 +8,7 @@
 import http, { setResponseCallback, expectedStatuses } from 'k6/http';
 import { check, sleep } from 'k6';
 import { getBaseUrlWithFallback } from '../config/credentials';
-import { DELAYS, HTTP_STATUS } from '../config/constants';
+import { DELAYS, FRONTEND_VERSION, HTTP_STATUS } from '../config/constants';
 import { generateReport } from '../lib/reporter';
 import { formatDataMetrics, needed_properties } from '../lib/utils';
 import type { K6Options, SummaryData, SummaryOutput } from '../types';
@@ -35,7 +35,7 @@ const BASE_URL = getBaseUrlWithFallback();
  */
 export default function (): void {
   const apiRes = http.get(`${BASE_URL}/users`, {
-    headers: { 'x-frontend-version': '0.22.0' },
+    headers: { 'x-frontend-version': FRONTEND_VERSION },
   });
 
   check(apiRes, {

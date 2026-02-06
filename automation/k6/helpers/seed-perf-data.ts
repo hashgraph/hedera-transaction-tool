@@ -12,7 +12,18 @@
  *   - Test user created (npm run k6:seed)
  *
  * Environment variables:
- *   TEST_USER_EMAIL - Email of test user to link transactions to (required)
+ *   TEST_USER_EMAIL - Email of test user to link transactions to (default: k6perf@test.com)
+ *   SEED_POOL       - Set to 'true' to seed for all pool users
+ *
+ * Local database (default):
+ *   POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DATABASE, POSTGRES_USERNAME, POSTGRES_PASSWORD
+ *
+ * Dev/Staging database (via Teleport tunnel):
+ *   STAGING_POSTGRES_HOST      - Tunnel host (e.g., localhost)
+ *   STAGING_POSTGRES_PORT      - Tunnel port (assigned by tsh proxy)
+ *   STAGING_POSTGRES_DATABASE  - Database name (default: development)
+ *   STAGING_POSTGRES_USERNAME  - IAM user from Teleport
+ *   STAGING_POSTGRES_PASSWORD  - Usually empty for IAM auth
  */
 
 import { Client, QueryResult } from 'pg';
@@ -51,6 +62,49 @@ const APPROVE_COUNT = DATA_VOLUMES.READY_FOR_REVIEW;
 const GROUP_SIZE = DATA_VOLUMES.GROUP_SIZE;
 const EXECUTION_COUNT = DATA_VOLUMES.READY_FOR_EXECUTION;
 const DEBUG = process.env.DEBUG === 'true';
+
+// Check if staging-specific environment variables are set
+const IS_STAGING = Boolean(process.env.STAGING_POSTGRES_HOST);
+
+interface DbConfig {
+  host: string;
+  port: number;
+  database: string;
+  user: string;
+  password: string;
+}
+
+function getDbConfig(): DbConfig {
+  if (IS_STAGING) {
+    // Staging mode: use STAGING_POSTGRES_* vars (e.g., via Teleport tunnel)
+    if (!process.env.STAGING_POSTGRES_HOST) {
+      throw new Error('STAGING_POSTGRES_HOST is required for staging mode');
+    }
+    if (!process.env.STAGING_POSTGRES_USERNAME) {
+      console.error('\nError: STAGING_POSTGRES_USERNAME is required for staging mode.');
+      console.error('Set it to your Teleport IAM username (usually your email):\n');
+      console.error('  export STAGING_POSTGRES_USERNAME="your.email@swirldslabs.com"');
+      console.error('  pnpm run k6:tabs:dev\n');
+      process.exit(1);
+    }
+    return {
+      host: process.env.STAGING_POSTGRES_HOST,
+      port: Number.parseInt(process.env.STAGING_POSTGRES_PORT || '5432', 10),
+      database: process.env.STAGING_POSTGRES_DATABASE || 'development',
+      user: process.env.STAGING_POSTGRES_USERNAME,
+      password: process.env.STAGING_POSTGRES_PASSWORD || '',
+    };
+  }
+
+  // Local mode: use standard POSTGRES_* vars
+  return {
+    host: process.env.POSTGRES_HOST || 'localhost',
+    port: Number.parseInt(process.env.POSTGRES_PORT || '5432', 10),
+    database: process.env.POSTGRES_DATABASE || 'postgres',
+    user: process.env.POSTGRES_USERNAME || 'postgres',
+    password: process.env.POSTGRES_PASSWORD || 'postgres',
+  };
+}
 
 interface UserRow {
   id: number;
@@ -1007,17 +1061,13 @@ async function seedData(): Promise<void> {
   // Initialize keypair for signing transactions (ONCE - shared across all users)
   await initializeKeyPair();
 
-  const client = new Client({
-    host: process.env.POSTGRES_HOST || 'localhost',
-    port: Number.parseInt(process.env.POSTGRES_PORT || '5432', 10),
-    database: process.env.POSTGRES_DATABASE || 'postgres',
-    user: process.env.POSTGRES_USERNAME || 'postgres',
-    password: process.env.POSTGRES_PASSWORD || 'postgres',
-  });
+  const dbConfig = getDbConfig();
+  const client = new Client(dbConfig);
 
   try {
     await client.connect();
-    console.log('Connected to PostgreSQL');
+    const modeLabel = IS_STAGING ? 'STAGING' : 'LOCAL';
+    console.log(`Connected to PostgreSQL [${modeLabel}] - database: ${dbConfig.database}`);
 
     const usersToSeed: string[] = [];
 

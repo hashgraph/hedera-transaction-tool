@@ -20,6 +20,10 @@ export const ENVIRONMENTS: EnvironmentMap = {
     baseUrl: 'http://localhost:3001',
     name: 'Local Development',
   },
+  development: {
+    baseUrl: 'https://development-transaction-tool.swirldslabs-devops.com',
+    name: 'Development (Teleport DB)',
+  },
   staging: {
     baseUrl: 'https://staging-transaction-tool.swirldslabs-devops.com',
     name: 'Staging',

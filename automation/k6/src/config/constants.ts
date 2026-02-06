@@ -4,6 +4,21 @@
  * Centralized configuration values derived from performance requirements.
  */
 
+// __ENV is only available in k6 runtime, not Node.js
+declare const __ENV: Record<string, string | undefined> | undefined;
+const getEnvVar = (key: string, defaultValue: string): string => {
+  if (typeof __ENV !== 'undefined' && __ENV[key]) {
+    return __ENV[key]!;
+  }
+  return defaultValue;
+};
+
+/**
+ * Frontend version for x-frontend-version header.
+ * Must match or exceed backend's MINIMUM_SUPPORTED_FRONTEND_VERSION.
+ */
+export const FRONTEND_VERSION = '0.23.1';
+
 /**
  * Performance thresholds (milliseconds)
  */
@@ -34,9 +49,16 @@ export const DATA_VOLUMES = {
 
 /**
  * Load testing configuration
+ *
+ * VUs (virtual users) can be overridden via environment variable:
+ *   k6 run -e VUS=10 ...     # Light load
+ *   k6 run -e VUS=30 ...     # Medium load
+ *   k6 run -e VUS=50 ...     # Heavy load
+ *   k6 run -e VUS=100 ...    # Stress test (default)
  */
 export const LOAD_TEST = {
-  CONCURRENT_USERS: 100,
+  CONCURRENT_USERS: parseInt(getEnvVar('VUS', '100'), 10),
+  DEFAULT_VUS: 100,
 };
 
 /**

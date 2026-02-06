@@ -138,3 +138,72 @@ Add `:grafana` suffix to any test for dashboard output.
 - Node.js 22+ (for build tooling)
 - Backend running (`docker-compose up` in back-end/)
 - Test user seeded (`npm run k6:seed`)
+
+## Running Against Staging Environment
+
+The `:staging` scripts run tests against the staging environment for production readiness validation.
+
+### Prerequisites
+
+- VPN access to the network
+- Teleport CLI installed and authenticated
+- Appropriate IAM permissions
+
+### Setup
+
+1. **Authenticate with Teleport:**
+   ```bash
+   tsh login --proxy=hashgraph.teleport.sh:443 hashgraph.teleport.sh
+   ```
+
+2. **Start the database tunnel (in a separate terminal):**
+   ```bash
+   tsh proxy db --tunnel gcp-tt-staging-postgres --db-user=teleport-cloudsql-user@transaction-tool-dev.iam --db-name=staging --port 54320
+   ```
+
+3. **Run tests:**
+   ```bash
+   pnpm run k6:smoke:staging      # Quick health check
+   pnpm run k6:tabs:staging       # Tab load times
+   pnpm run k6:baseline:staging   # Smoke + tabs combined
+   ```
+
+### Staging Scripts
+
+| Script | Description | Duration |
+|--------|-------------|----------|
+| `k6:smoke:staging` | Smoke test against staging | 30s |
+| `k6:tabs:staging` | All tabs baseline | 2 min |
+| `k6:baseline:staging` | Smoke + tabs combined | 2.5 min |
+| `k6:ready-to-sign:staging` | Ready to Sign load test | 7 min |
+| `k6:seed:staging` | Seed test user to staging database | - |
+| `k6:seed:data:staging` | Seed transaction data to staging | - |
+| `k6:seed:all:staging` | Seed user + transactions to staging | - |
+
+### Configurable Load (VUs)
+
+The number of virtual users (VUs) can be overridden for any load test:
+
+```bash
+# Default: 100 VUs, 7 min (stress test)
+pnpm run k6:ready-to-sign:staging
+
+# Light load: 10 VUs
+k6 run -e VUS=10 -e ENV=staging -e USER_EMAIL=k6perf@test.com -e USER_PASSWORD=Password123 k6/dist/ready-to-sign.js
+
+# Medium load: 30 VUs
+k6 run -e VUS=30 -e ENV=staging -e USER_EMAIL=k6perf@test.com -e USER_PASSWORD=Password123 k6/dist/ready-to-sign.js
+```
+
+**Recommended progression to find breaking point:**
+1. `VUS=3` - Baseline (target <1s responses)
+2. `VUS=10` - Light load
+3. `VUS=20` - Medium load (100% success threshold)
+4. `VUS=50` - Heavy load (failure detection)
+
+### How It Works
+
+- Staging scripts automatically seed data before running tests
+- Data is seeded via the Teleport tunnel to the remote PostgreSQL database
+- Tests run against `staging-transaction-tool.swirldslabs-devops.com`
+- The `FRONTEND_VERSION` constant in `src/config/constants.ts` must match the backend's minimum supported version
