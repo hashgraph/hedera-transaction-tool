@@ -36,12 +36,18 @@ export class CacheHelper {
     const pollIntervalMs = 100;
     const uuid = randomUUID();
 
+    const values = {
+      ...where,
+      createdAt: () => 'NOW()',
+      updatedAt: () => 'NOW()',
+    };
+
     // 1. Ensure row exists (idempotent)
     await this.dataSource
       .createQueryBuilder()
       .insert()
       .into(entity)
-      .values(where)
+      .values(values)
       .orIgnore()
       .execute();
 
