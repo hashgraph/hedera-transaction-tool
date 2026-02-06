@@ -101,26 +101,8 @@ const countdownText = computed(() => {
     return '';
   }
 
-  // EXPIRED: Show "Expired" or "Expired HHh MMm ago"
   if (remaining <= 0) {
-    const elapsed = Math.abs(remaining);
-    const totalSeconds = Math.floor(elapsed / ONE_SECOND_MS);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    // Just expired (under 1 minute ago) - show simple "Expired"
-    if (elapsed < ONE_MINUTE_MS) {
-      return 'Expired';
-    }
-
-    // Under 1 hour ago: show "Expired MMm SSs ago"
-    if (elapsed < ONE_HOUR_MS) {
-      return `Expired ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s ago`;
-    }
-
-    // 1 hour or more ago: show "Expired HHh MMm ago"
-    return `Expired ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ago`;
+    return 'Expired';
   }
 
   // ACTIVE: Show "Expires in HHh MMm" or "Expires in MMm SSs"
@@ -197,7 +179,7 @@ watch(() => props.variant, () => {
 </script>
 
 <template>
-  <span v-if="shouldShowBadge" class="badge bg-danger text-break ms-2">
+  <span v-if="shouldShowBadge" class="badge bg-warning text-break ms-2">
     <!-- VARIANT: Simple text badge -->
     <template v-if="variant === 'simple'">{{ simpleText }}</template>
 
