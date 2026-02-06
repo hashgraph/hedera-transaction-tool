@@ -1,20 +1,39 @@
 /**
  * Seed Test Users for k6 Performance Tests
  *
- * Creates test users directly in PostgreSQL using argon2 hashing.
+ * Creates test users directly in PostgreSQL using bcryptjs hashing.
  * Run this before k6 tests in CI or local development.
  *
  * Usage:
  *   cd automation && npx tsx k6/helpers/seed-test-users.ts
  *
- * Environment variables:
- *   TEST_USER_EMAIL    - User email (required)
- *   TEST_USER_PASSWORD - User password (required)
+ * Environment variables (user config):
+ *   TEST_USER_EMAIL    - User email (default: k6perf@test.com)
+ *   TEST_USER_PASSWORD - User password (default: Password123)
  *   TEST_USER_ADMIN    - Set to 'true' for admin (default: true)
+ *   SEED_POOL          - Set to 'true' to seed all pool users
+ *
+ * Local database (default):
+ *   POSTGRES_HOST      - Database host (default: localhost)
+ *   POSTGRES_PORT      - Database port (default: 5432)
+ *   POSTGRES_DATABASE  - Database name (default: postgres)
+ *   POSTGRES_USERNAME  - Database user (default: postgres)
+ *   POSTGRES_PASSWORD  - Database password (default: postgres)
+ *
+ * Staging database (via Teleport tunnel):
+ *   STAGING_POSTGRES_HOST      - Tunnel host (e.g., localhost)
+ *   STAGING_POSTGRES_PORT      - Tunnel port (assigned by tsh proxy)
+ *   STAGING_POSTGRES_DATABASE  - Database name (default: development)
+ *   STAGING_POSTGRES_USERNAME  - IAM user from Teleport
+ *   STAGING_POSTGRES_PASSWORD  - Usually empty for IAM auth
+ *
+ * Example (staging via Teleport):
+ *   tsh proxy db --tunnel gcp-tt-dev-postgres --db-user=<iam-user> --db-name=development
+ *   STAGING_POSTGRES_HOST=localhost STAGING_POSTGRES_PORT=<tunnel_port> npx tsx k6/helpers/seed-test-users.ts
  */
 
 import { Client, QueryResult } from 'pg';
-import * as argon2 from 'argon2';
+import bcrypt from 'bcryptjs';
 import { TEST_USER_POOL } from '../src/config/constants.js';
 
 interface TestUser {
@@ -31,6 +50,49 @@ interface UserRow {
 const DEFAULT_EMAIL = 'k6perf@test.com';
 const DEFAULT_PASSWORD = 'Password123';
 
+// Check if staging-specific environment variables are set
+const IS_STAGING = Boolean(process.env.STAGING_POSTGRES_HOST);
+
+interface DbConfig {
+  host: string;
+  port: number;
+  database: string;
+  user: string;
+  password: string;
+}
+
+function getDbConfig(): DbConfig {
+  if (IS_STAGING) {
+    // Staging mode: use STAGING_POSTGRES_* vars (e.g., via Teleport tunnel)
+    if (!process.env.STAGING_POSTGRES_HOST) {
+      throw new Error('STAGING_POSTGRES_HOST is required for staging mode');
+    }
+    if (!process.env.STAGING_POSTGRES_USERNAME) {
+      console.error('\nError: STAGING_POSTGRES_USERNAME is required for staging mode.');
+      console.error('Set it to your Teleport IAM username (usually your email):\n');
+      console.error('  export STAGING_POSTGRES_USERNAME="your.email@swirldslabs.com"');
+      console.error('  pnpm run k6:tabs:dev\n');
+      process.exit(1);
+    }
+    return {
+      host: process.env.STAGING_POSTGRES_HOST,
+      port: Number.parseInt(process.env.STAGING_POSTGRES_PORT || '5432', 10),
+      database: process.env.STAGING_POSTGRES_DATABASE || 'development',
+      user: process.env.STAGING_POSTGRES_USERNAME,
+      password: process.env.STAGING_POSTGRES_PASSWORD || '',
+    };
+  }
+
+  // Local mode: use standard POSTGRES_* vars
+  return {
+    host: process.env.POSTGRES_HOST || 'localhost',
+    port: Number.parseInt(process.env.POSTGRES_PORT || '5432', 10),
+    database: process.env.POSTGRES_DATABASE || 'postgres',
+    user: process.env.POSTGRES_USERNAME || 'postgres',
+    password: process.env.POSTGRES_PASSWORD || 'postgres',
+  };
+}
+
 function getTestUser(): TestUser {
   const email = process.env.TEST_USER_EMAIL || DEFAULT_EMAIL;
   const password = process.env.TEST_USER_PASSWORD || DEFAULT_PASSWORD;
@@ -45,12 +107,8 @@ function getTestUser(): TestUser {
 const TEST_USER = getTestUser();
 
 async function hashPassword(password: string): Promise<string> {
-  return await argon2.hash(password, {
-    type: argon2.argon2id,
-    memoryCost: 65536,
-    timeCost: 3,
-    parallelism: 4,
-  });
+  const saltRounds = 10;
+  return await bcrypt.hash(password, saltRounds);
 }
 
 /**
@@ -80,13 +138,13 @@ async function seedSingleUser(
     return existing.rows[0].id;
   }
 
-  // Hash password using argon2 (same as backend)
+  // Hash password using bcryptjs (backend accepts both bcrypt and argon2)
   const hashedPassword = await hashPassword(password);
 
-  // Insert user
+  // Insert user with status 'NEW' (same as backend createUser behavior)
   const result: QueryResult<UserRow> = await client.query(
     `INSERT INTO "user" (email, password, admin, status, "deletedAt")
-     VALUES ($1, $2, $3, 'NONE', NULL)
+     VALUES ($1, $2, $3, 'NEW', NULL)
      RETURNING id`,
     [email, hashedPassword, isAdmin],
   );
@@ -96,17 +154,13 @@ async function seedSingleUser(
 }
 
 async function seedUsers(): Promise<void> {
-  const client = new Client({
-    host: process.env.POSTGRES_HOST || 'localhost',
-    port: Number.parseInt(process.env.POSTGRES_PORT || '5432', 10),
-    database: process.env.POSTGRES_DATABASE || 'postgres',
-    user: process.env.POSTGRES_USERNAME || 'postgres',
-    password: process.env.POSTGRES_PASSWORD || 'postgres',
-  });
+  const dbConfig = getDbConfig();
+  const client = new Client(dbConfig);
 
   try {
     await client.connect();
-    console.log('Connected to PostgreSQL');
+    const modeLabel = IS_STAGING ? 'STAGING' : 'LOCAL';
+    console.log(`Connected to PostgreSQL [${modeLabel}] - database: ${dbConfig.database}`);
 
     // SEED_POOL mode: create all pool users for rate limiting avoidance
     if (process.env.SEED_POOL === 'true') {

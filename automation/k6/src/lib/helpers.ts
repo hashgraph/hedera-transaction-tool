@@ -6,7 +6,7 @@
 
 import http, { Response } from 'k6/http';
 import type { AuthHeaders, AuthResponse } from '../types';
-import { HTTP_STATUS, THRESHOLDS } from '../config/constants';
+import { FRONTEND_VERSION, HTTP_STATUS, THRESHOLDS } from '../config/constants';
 
 /**
  * Authenticate and return auth token
@@ -24,7 +24,7 @@ export function login(
   const params = {
     headers: {
       'Content-Type': 'application/json',
-      'x-frontend-version': '0.22.0',
+      'x-frontend-version': FRONTEND_VERSION,
     },
   };
 
@@ -53,7 +53,7 @@ export function authHeaders(token: string): AuthHeaders {
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
-      'x-frontend-version': '0.22.0',
+      'x-frontend-version': FRONTEND_VERSION,
     },
   };
 }
