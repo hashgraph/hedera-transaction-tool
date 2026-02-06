@@ -12,51 +12,6 @@ const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
-// Import and re-export constants from k6 (SSOT)
-import { SEED_MARKER, TEST_USER_EMAIL_PATTERN } from '../k6/src/config/constants.js';
-export { SEED_MARKER };
-
-/**
- * Local host identifiers for staging safety checks.
- * Includes IPv4 localhost, IPv6 localhost.
- * WARNING: SSH tunnels using localhost will bypass safety checks.
- */
-export const LOCAL_HOSTS = ['localhost', '127.0.0.1', '::1'];
-
-/**
- * Check if a hostname is a local address.
- */
-export function isLocalHost(host: string): boolean {
-  return LOCAL_HOSTS.includes(host);
-}
-
-/**
- * Check if destructive database operations are allowed.
- * Blocks operations on non-localhost unless explicitly allowed.
- * This prevents accidental data deletion on staging/production.
- *
- * WARNING: If staging is accessed via localhost tunnel (e.g., SSH -L),
- * this check will be bypassed. Use real hostnames for staging.
- */
-export function isDestructiveAllowed(): boolean {
-  const allowDestructive = process.env.ALLOW_DESTRUCTIVE === 'true';
-  const host = process.env.POSTGRES_HOST || 'localhost';
-  const hostIsLocal = isLocalHost(host);
-
-  if (!allowDestructive && !hostIsLocal) {
-    console.error('⚠️  DESTRUCTIVE OPERATIONS BLOCKED');
-    console.error(`   POSTGRES_HOST=${host} is not localhost`);
-    console.error('   Set ALLOW_DESTRUCTIVE=true to override');
-    return false;
-  }
-
-  if (allowDestructive && !hostIsLocal) {
-    console.warn(`⚠️  Running destructive ops on non-localhost (${host})!`);
-  }
-
-  return true;
-}
-
 // SQLite Functions
 export function getDatabasePath(): string {
   const homeDir = os.homedir();
@@ -260,12 +215,6 @@ export async function createTestUsersBatch(usersData: {email: string, password: 
 }
 
 export async function resetPostgresDbState() {
-  const fullReset = isDestructiveAllowed();
-
-  if (!fullReset) {
-    console.log('Staging-safe mode: Only deleting test data with seed marker');
-  }
-
   const client = await connectPostgresDatabase();
 
   // Tables to reset - order matters for foreign key constraints
@@ -285,38 +234,10 @@ export async function resetPostgresDbState() {
     'user',
   ];
 
-  // Tables with description field that can be filtered by seed marker
-  const tablesWithDescription = ['transaction', 'transaction_group'];
-
   try {
     for (const table of tablesToReset) {
-      let query: string;
-      let params: string[] = [];
-
-      if (fullReset) {
-        // Full reset - delete everything
-        query = `DELETE FROM "${table}";`;
-      } else if (tablesWithDescription.includes(table)) {
-        // Staging-safe: only delete records with seed marker
-        query = `DELETE FROM "${table}" WHERE description LIKE $1;`;
-        params = [`${SEED_MARKER}%`];
-      } else if (table === 'user') {
-        // Staging-safe: only delete test users by email pattern
-        query = `DELETE FROM "${table}" WHERE email LIKE $1;`;
-        params = [TEST_USER_EMAIL_PATTERN];
-      } else {
-        // Skip tables we can't safely filter
-        console.log(`Skipping ${table} (no safe filter available)`);
-        continue;
-      }
-
-      const result = await client.query(query, params);
-      const deletedCount = result.rowCount || 0;
-      if (fullReset) {
-        console.log(`Deleted all records from ${table}`);
-      } else {
-        console.log(`Deleted ${deletedCount} test records from ${table}`);
-      }
+      await client.query(`DELETE FROM "${table}";`);
+      console.log(`Deleted all records from ${table}`);
     }
   } catch (err) {
     console.error('Error resetting PostgreSQL database:', err);
