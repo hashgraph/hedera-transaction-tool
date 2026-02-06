@@ -40,7 +40,6 @@ let currentIntervalMs: number | null = null;
 const inProgressStatuses = [
   TransactionStatus.NEW,
   TransactionStatus.WAITING_FOR_SIGNATURES,
-  TransactionStatus.WAITING_FOR_EXECUTION,
 ];
 
 const timeUntilExpiry = computed(() => {
@@ -179,7 +178,15 @@ watch(() => props.variant, () => {
 </script>
 
 <template>
-  <span v-if="shouldShowBadge" class="badge bg-warning text-break ms-2">
+  <span
+    v-if="shouldShowBadge"
+    :class="[
+      'badge',
+      timeUntilExpiry! > 0 ? 'bg-warning' : 'bg-danger',
+      'text-break',
+      'ms-2',
+    ]"
+  >
     <!-- VARIANT: Simple text badge -->
     <template v-if="variant === 'simple'">{{ simpleText }}</template>
 
