@@ -37,12 +37,12 @@ export class TransactionNodesService {
       case TransactionNodeCollection.READY_FOR_REVIEW: {
         const query = getTransactionNodesForUser(
           this.sqlBuilder,
-          user,
-          { approver: true },
           {
             statuses: TRANSACTION_STATUS_COLLECTIONS.READY_FOR_REVIEW,
             mirrorNetwork: network,
-          }
+          },
+          user,
+          { approver: true }
         );
 
         rows = await this.entityManager.query(query.text, query.values);
@@ -51,12 +51,12 @@ export class TransactionNodesService {
       case TransactionNodeCollection.READY_TO_SIGN: {
         const query = getTransactionNodesForUser(
           this.sqlBuilder,
-          user,
-          { signer: true },
           {
             statuses: TRANSACTION_STATUS_COLLECTIONS.READY_TO_SIGN,
             mirrorNetwork: network,
-          }
+          },
+          user,
+          { signer: true }
         );
 
         rows = await this.entityManager.query(query.text, query.values);
@@ -65,16 +65,16 @@ export class TransactionNodesService {
       case TransactionNodeCollection.READY_FOR_EXECUTION: {
         const query = getTransactionNodesForUser(
           this.sqlBuilder,
+          {
+            statuses: TRANSACTION_STATUS_COLLECTIONS.READY_FOR_EXECUTION,
+            mirrorNetwork: network,
+          },
           user,
           {
             signer: true,
             creator: true,
             observer: true,
             approver: true,
-          },
-          {
-            statuses: TRANSACTION_STATUS_COLLECTIONS.READY_FOR_EXECUTION,
-            mirrorNetwork: network,
           }
         );
 
@@ -84,16 +84,16 @@ export class TransactionNodesService {
       case TransactionNodeCollection.IN_PROGRESS: {
         const query = getTransactionNodesForUser(
           this.sqlBuilder,
+          {
+            statuses: TRANSACTION_STATUS_COLLECTIONS.IN_PROGRESS,
+            mirrorNetwork: network,
+          },
           user,
           {
             signer: true,
             creator: true,
             observer: true,
             approver: true,
-          },
-          {
-            statuses: TRANSACTION_STATUS_COLLECTIONS.IN_PROGRESS,
-            mirrorNetwork: network,
           }
         );
 
@@ -105,13 +105,6 @@ export class TransactionNodesService {
         transactionTypeFilter = transactionTypeFilter?.length ? transactionTypeFilter : null;
         const query = getTransactionNodesForUser(
           this.sqlBuilder,
-          user,
-          {
-            signer: true,
-            creator: true,
-            observer: true,
-            approver: true,
-          },
           {
             statuses: statusFilter,
             types: transactionTypeFilter,
