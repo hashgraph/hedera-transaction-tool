@@ -2,7 +2,7 @@ import { ElectronApplication, expect, Page, test } from '@playwright/test';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
-import { resetDbState, resetPostgresDbState } from '../utils/databaseUtil.js';
+import { resetDbState, resetPostgresDbState, flushRateLimiter } from '../utils/databaseUtil.js';
 import {
   closeApp,
   generateRandomEmail,
@@ -12,7 +12,8 @@ import {
 } from '../utils/util.js';
 import {
   disableNotificationsForTestUsers,
-  getLatestNotificationStatusByEmail,
+  getLatestInAppNotificationStatusByEmail,
+  getNotifiedTransactionIdByEmail,
 } from '../utils/databaseQueries.js';
 
 let app: ElectronApplication;
@@ -72,6 +73,11 @@ test.describe('Organization Notification tests', () => {
     await organizationPage.addComplexKeyAccountForTransactions();
   });
 
+  test.beforeEach(async () => {
+    // Flush rate limiter before each test to prevent "too many requests" errors
+    await flushRateLimiter();
+  });
+
   test.afterAll(async () => {
     await closeApp(app);
     await resetDbState();
@@ -87,15 +93,20 @@ test.describe('Organization Notification tests', () => {
   test('Verify notification is saved in the db and marked correctly', async () => {
     await organizationPage.ensureNotificationStateForUser(firstUser, secondUser, globalCredentials);
 
-    let status = await getLatestNotificationStatusByEmail(secondUser.email);
+    let status = await getLatestInAppNotificationStatusByEmail(secondUser.email);
     expect(status?.isRead).toBe(false);
     expect(status?.isInAppNotified).toBe(true);
 
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnReadyToSignTab();
-    await organizationPage.clickOnSubmitSignButtonByIndex(0);
-    await new Promise(resolve => setTimeout(resolve, 300));
-    status = await getLatestNotificationStatusByEmail(secondUser.email);
+    // Wait for notifications to be fetched and linked to transaction rows
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Click Details to VIEW the transaction - this marks the notification as read
+    await organizationPage.clickOnReadyToSignDetailsButtonByIndex(0);
+
+    // Wait for backend to process the "mark as read" request and update DB
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    status = await getLatestInAppNotificationStatusByEmail(secondUser.email);
     expect(status?.isRead).toBe(true);
   });
 
@@ -104,7 +115,10 @@ test.describe('Organization Notification tests', () => {
 
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnReadyToSignTab();
-    await organizationPage.clickOnSubmitSignButtonByIndex(0);
+    // Wait for notifications to be fetched and linked to transaction rows
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Click Details to VIEW the transaction - this marks the notification as read and clears the indicator
+    await organizationPage.clickOnReadyToSignDetailsButtonByIndex(0);
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     expect(await organizationPage.isNotificationNumberHidden()).toBe(true);
@@ -113,7 +127,17 @@ test.describe('Organization Notification tests', () => {
   test('Verify notification element is shown next to the transaction', async () => {
     await organizationPage.ensureNotificationStateForUser(firstUser, secondUser, globalCredentials);
 
+    // Get the specific transaction ID that has the unread notification
+    const notifiedTransactionId = await getNotifiedTransactionIdByEmail(secondUser.email);
+    expect(notifiedTransactionId).not.toBeNull();
+
     await transactionPage.clickOnTransactionsMenuButton();
-    expect(await organizationPage.getNotificationElementFromFirstTransaction()).toBe(true);
+    await organizationPage.clickOnReadyToSignTab();
+    // Wait for notifications to be fetched and linked to transaction rows
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Check the specific transaction row for the notification indicator
+    const hasNotification = await organizationPage.hasNotificationForTransaction(notifiedTransactionId!);
+    expect(hasNotification).toBe(true);
   });
 });

@@ -56,7 +56,13 @@ watch(showAddReminder, show => {
 <template>
   <div>
     <div class="d-flex align-items-center">
-      <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="$router.back()">
+      <AppButton
+        type="button"
+        color="secondary"
+        class="btn-icon-only me-4"
+        data-testid="button-back"
+        @click="$router.back()"
+      >
         <i class="bi bi-arrow-left"></i>
       </AppButton>
 

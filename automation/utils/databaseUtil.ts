@@ -102,6 +102,10 @@ export async function resetDbState() {
     'TransactionDraft',
     'GroupItem',
     'TransactionGroup',
+    // Additional tables that were missing - Mnemonic is critical for full reset
+    'Mnemonic',
+    'Contact',
+    'PublicKeyMapping',
   ];
 
   try {
@@ -223,6 +227,8 @@ export async function resetPostgresDbState() {
     'transaction',
     'user_key',
     'notification_preferences',
+    'client',
+    'notification',
     'user',
   ];
 
@@ -236,5 +242,15 @@ export async function resetPostgresDbState() {
     console.error('Error resetting PostgreSQL database:', err);
   } finally {
     await disconnectPostgresDatabase(client);
+  }
+}
+
+export async function flushRateLimiter() {
+  const { execSync } = await import('child_process');
+  try {
+    execSync('docker exec cache redis-cli FLUSHDB', { stdio: 'pipe' });
+    console.log('Flushed Redis rate limiter');
+  } catch (err) {
+    console.error('Error flushing rate limiter:', err);
   }
 }
