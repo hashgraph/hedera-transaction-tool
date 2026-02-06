@@ -5,27 +5,35 @@ import useVersionCheck from '@renderer/composables/useVersionCheck';
 import useElectronUpdater from '@renderer/composables/useElectronUpdater';
 import { UPDATE_ERROR_MESSAGES } from '@shared/constants';
 
-import { formatProgressBytes } from '@renderer/utils';
-import { warningToastOptions } from '@renderer/utils/toastOptions';
-
 import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organization/versionCompatibility';
 import type { CompatibilityConflict } from '@renderer/services/organization/versionCompatibility';
 
-import { getAllOrganizationVersions, getVersionStatusForOrg } from '@renderer/stores/versionState';
+import {
+  getAllOrganizationVersions,
+  getVersionStatusForOrg,
+  triggeringOrganizationServerUrl,
+} from '@renderer/stores/versionState';
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
-
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppProgressBar from '@renderer/components/ui/AppProgressBar.vue';
 import CompatibilityWarningModal from '@renderer/components/Organization/CompatibilityWarningModal.vue';
+import DownloadUpgrade from '@renderer/components/GlobalAppProcesses/components/DownloadUpgrade.vue';
+import InstallUpgrade from '@renderer/components/GlobalAppProcesses/components/InstallUpgrade.vue';
+import CheckForUpgrade from '@renderer/components/GlobalAppProcesses/components/CheckForUpgrade.vue';
+import UpgradeError from '@renderer/components/GlobalAppProcesses/components/UpgradeError.vue';
+import AvailableUpgrade from '@renderer/components/GlobalAppProcesses/components/AvailableUpgrade.vue';
 
 const { versionStatus, updateUrl, latestVersion, isDismissed, dismissOptionalUpdate } =
   useVersionCheck();
-const { state, progress, error, updateInfo, startUpdate, installUpdate, cancelUpdate } =
-  useElectronUpdater();
-const toast = useToast();
+const {
+  state,
+  progress,
+  error,
+  updateInfo,
+  startUpdate,
+  installUpdate,
+  cancelUpdate
+} = useElectronUpdater();
 const user = useUserStore();
 
 const compatibilityResult = ref<{
@@ -37,57 +45,23 @@ const compatibilityResult = ref<{
 const showCompatibilityWarning = ref(false);
 const isCheckingCompatibility = ref(false);
 
-watch([() => versionStatus.value, () => latestVersion.value], async ([status, latestVer]) => {
-  if (status === 'updateAvailable' && latestVer && !isDismissed.value) {
-    isCheckingCompatibility.value = true;
-    try {
-      const orgsWithOptionalUpdates = user.organizations.filter(
-        org => getVersionStatusForOrg(org.serverUrl) === 'updateAvailable',
-      );
-
-      if (orgsWithOptionalUpdates.length === 0) {
-        return;
-      }
-
-      const triggeringOrg = orgsWithOptionalUpdates[0];
-      const allVersions = getAllOrganizationVersions();
-      const versionData = allVersions[triggeringOrg.serverUrl];
-
-      if (versionData?.latestSupportedVersion) {
-        const result = await checkCompatibilityAcrossOrganizations(
-          versionData.latestSupportedVersion,
-          triggeringOrg.serverUrl,
-        );
-
-        if (result.hasConflict) {
-          compatibilityResult.value = result;
-          showCompatibilityWarning.value = true;
-
-          const conflictOrgNames = result.conflicts.map(c => c.organizationName).join(', ');
-          toast.warning(
-            `Update may cause issues with ${conflictOrgNames}. Please review compatibility warnings.`,
-            warningToastOptions,
-          );
-        }
-      }
-    } catch (error) {
-      console.error('Compatibility check failed:', error);
-    } finally {
-      isCheckingCompatibility.value = false;
-    }
-  }
+const affectedOrg = computed(() => {
+  const serverUrl =
+    triggeringOrganizationServerUrl.value;
+  if (!serverUrl) return null;
+  return user.organizations.find(org => org.serverUrl === serverUrl) || null;
 });
 
 const shown = computed(
   () =>
     versionStatus.value === 'updateAvailable' &&
-    !isDismissed.value &&
-    !showCompatibilityWarning.value,
+    !isDismissed.value,
 );
 
 const isChecking = computed(() => state.value === 'checking');
 const isDownloading = computed(() => state.value === 'downloading');
 const isDownloaded = computed(() => state.value === 'downloaded');
+const isInstalling = computed(() => state.value === 'installing');
 const hasError = computed(() => state.value === 'error');
 
 const errorMessage = computed(() => {
@@ -112,11 +86,9 @@ const handleInstall = () => {
   installUpdate();
 };
 
-const handleLater = () => {
+const handleCancel = () => {
   cancelUpdate();
   dismissOptionalUpdate();
-  showCompatibilityWarning.value = false;
-  compatibilityResult.value = null;
 };
 
 const handleRetry = () => {
@@ -125,125 +97,110 @@ const handleRetry = () => {
   }
 };
 
-const handleCompatibilityProceed = () => {
-  showCompatibilityWarning.value = false;
-  handleUpdate();
+const runCompatibilityCheck = async () => {
+  if (
+    versionStatus.value !== 'updateAvailable' ||
+    !latestVersion.value ||
+    isDismissed.value ||
+    isCheckingCompatibility.value
+  ) {
+    return;
+  }
+
+  isCheckingCompatibility.value = true;
+
+  try {
+    const orgsWithOptionalUpdates = user.organizations.filter(
+      org => getVersionStatusForOrg(org.serverUrl) === 'updateAvailable',
+    );
+
+    if (orgsWithOptionalUpdates.length === 0) {
+      return;
+    }
+
+    const triggeringOrg = orgsWithOptionalUpdates[0];
+    const allVersions = getAllOrganizationVersions();
+    const versionData = allVersions[triggeringOrg.serverUrl];
+
+    if (versionData?.latestSupportedVersion) {
+      const result = await checkCompatibilityAcrossOrganizations(
+        versionData.latestSupportedVersion,
+        triggeringOrg.serverUrl,
+      );
+
+      if (result.hasConflict) {
+        compatibilityResult.value = result;
+        showCompatibilityWarning.value = true;
+      }
+    }
+  } catch (error) {
+    console.error('Compatibility check failed:', error);
+  } finally {
+    isCheckingCompatibility.value = false;
+  }
 };
 
-const handleCompatibilityCancel = () => {
-  showCompatibilityWarning.value = false;
-  handleLater();
-};
+watch(
+  () => shown.value,
+  newVal => {
+    compatibilityResult.value = null;
+    showCompatibilityWarning.value = false;
+    if (newVal) {
+      void runCompatibilityCheck();
+    }
+  },
+);
 </script>
 <template>
-  <AppModal :show="shown" :close-on-click-outside="false" class="modal-fit-content">
-    <div v-if="isChecking" class="text-center p-4">
-      <div>
-        <i
-          class="bi bi-arrow-repeat text-primary"
-          style="font-size: 4rem; animation: spin 1s linear infinite"
-        ></i>
-      </div>
-      <h2 class="text-title text-semi-bold mt-4">Checking for Update</h2>
-      <p class="text-small text-secondary mt-3">Please wait...</p>
-    </div>
+  <AppModal
+    :show="shown"
+    :close-on-click-outside="false"
+    class="modal-fit-content"
+    :loading="isInstalling"
+  >
+    <CheckForUpgrade
+      v-if="isChecking"
+    />
 
-    <div v-else-if="isDownloading" class="text-center p-4">
-      <div>
-        <i class="bi bi-download text-primary" style="font-size: 4rem"></i>
-      </div>
-      <h2 class="text-title text-semi-bold mt-4">Downloading Update</h2>
-      <p class="text-small text-secondary mt-3" v-if="updateInfo">
-        Version {{ updateInfo.version }}
-      </p>
-      <div class="d-grid mt-4" v-if="progress">
-        <div class="d-flex justify-content-between">
-          <p class="text-start text-footnote mt-3">
-            {{ formatProgressBytes(progress.transferred) }}
-            of
-            {{ formatProgressBytes(progress.total) }}
-          </p>
-          <p class="text-start text-micro mt-3">
-            {{ formatProgressBytes(progress.bytesPerSecond, '') }}/s
-          </p>
-        </div>
-        <AppProgressBar
-          :percent="Number(progress.percent?.toFixed(2)) || 0"
-          :label="progressBarLabel"
-          :height="18"
-          class="mt-2"
-        />
-      </div>
-      <hr class="separator my-4" />
-      <div class="d-flex gap-4 justify-content-center">
-        <AppButton type="button" color="secondary" @click="handleLater">Cancel</AppButton>
-      </div>
-    </div>
+    <DownloadUpgrade
+      v-else-if="isDownloading"
+      :version="updateInfo?.version"
+      :progress="progress"
+      :progress-label="progressBarLabel"
+      @cancel="handleCancel"
+    />
 
-    <div v-else-if="isDownloaded" class="text-center p-4">
-      <div>
-        <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem"></i>
-      </div>
-      <h2 class="text-title text-semi-bold mt-4">Update Ready to Install</h2>
-      <p class="text-small text-secondary mt-3" v-if="updateInfo">
-        Version {{ updateInfo.version }} has been downloaded.<br />
-        The application will restart to install the update.
-      </p>
-      <hr class="separator my-4" />
-      <div class="d-flex gap-4 justify-content-center">
-        <AppButton type="button" color="secondary" @click="handleLater">Later</AppButton>
-        <AppButton type="button" color="primary" @click="handleInstall">
-          <i class="bi bi-arrow-clockwise me-2"></i>Install & Restart
-        </AppButton>
-      </div>
-    </div>
+    <InstallUpgrade
+      v-else-if="isDownloaded || isInstalling"
+      :version="updateInfo?.version"
+      :is-installing="isInstalling"
+      @cancel="handleCancel"
+      @install="handleInstall"
+    />
 
-    <div v-else-if="hasError && errorMessage" class="text-center p-4">
-      <div>
-        <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 4rem"></i>
-      </div>
-      <h2 class="text-title text-semi-bold mt-4">{{ errorMessage.title }}</h2>
-      <p class="text-small text-secondary mt-3">
-        {{ errorMessage.message }}<br />
-        {{ errorMessage.action }}
-      </p>
-      <hr class="separator my-4" />
-      <div class="d-flex gap-4 justify-content-center">
-        <AppButton type="button" color="secondary" @click="handleLater">Later</AppButton>
-        <AppButton type="button" color="primary" @click="handleRetry">
-          <i class="bi bi-arrow-repeat me-2"></i>Try Again
-        </AppButton>
-      </div>
-    </div>
+    <UpgradeError
+      v-else-if="hasError && errorMessage"
+      :error-message="errorMessage"
+      @cancel="handleCancel"
+      @retry="handleRetry"
+    />
 
-    <div v-else class="text-center p-4">
-      <div>
-        <i class="bi bi-arrow-up-circle-fill text-primary" style="font-size: 4rem"></i>
-      </div>
-      <h2 class="text-title text-semi-bold mt-4">Update Available</h2>
-      <p class="text-small text-secondary mt-3">
-        A new version <span v-if="latestVersion" class="text-bold">({{ latestVersion }})</span> is
-        available.<br />
-        Would you like to update now?
-      </p>
-      <hr class="separator my-4" />
-      <div class="d-flex gap-4 justify-content-center">
-        <AppButton type="button" color="secondary" @click="handleLater">Later</AppButton>
-        <AppButton type="button" color="primary" @click="handleUpdate">
-          <i class="bi bi-download me-2"></i>Update Now
-        </AppButton>
-      </div>
-    </div>
+    <AvailableUpgrade
+      v-else
+      :latest-version="latestVersion"
+      @cancel="handleCancel"
+      @update="handleUpdate"
+    />
 
     <CompatibilityWarningModal
       v-if="compatibilityResult"
-      :show="showCompatibilityWarning"
+      v-model:show="showCompatibilityWarning"
       :conflicts="compatibilityResult.conflicts || []"
       :suggested-version="compatibilityResult.suggestedVersion || latestVersion || ''"
       :is-optional="true"
-      @proceed="handleCompatibilityProceed"
-      @cancel="handleCompatibilityCancel"
-      @update:show="showCompatibilityWarning = $event"
+      :triggering-org-name="affectedOrg ? affectedOrg.nickname || affectedOrg.serverUrl : ''"
+      @proceed="handleUpdate"
+      @cancel="handleCancel"
     />
   </AppModal>
 </template>

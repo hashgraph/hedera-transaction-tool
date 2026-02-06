@@ -1,13 +1,9 @@
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import type { IVersionCheckResponse } from '@shared/interfaces';
 import type { CompatibilityCheckResult } from '@renderer/services/organization/versionCompatibility';
 
 export type VersionStatus = 'current' | 'updateAvailable' | 'belowMinimum' | null;
-
-export const versionStatus = ref<VersionStatus>(null);
-export const updateUrl = ref<string | null>(null);
-export const latestVersion = ref<string | null>(null);
 
 export const organizationVersionStatus = ref<{ [serverUrl: string]: VersionStatus }>({});
 export const organizationUpdateUrls = ref<{ [serverUrl: string]: string | null }>({});
@@ -21,20 +17,59 @@ export const organizationCompatibilityResults = ref<{
   [serverUrl: string]: CompatibilityCheckResult | null;
 }>({});
 
-export const triggeringOrganizationServerUrl = ref<string | null>(null);
-
 export const organizationUpdateTimestamps = ref<{ [serverUrl: string]: Date }>({});
 
-export const setGlobalVersionBelowMinimum = (url: string | null): void => {
-  versionStatus.value = 'belowMinimum';
-  updateUrl.value = url;
+// Helper to get orgs needing attention, ordered by most recent
+const getOrgsNeedingUpdateOrdered = (): { serverUrl: string; timestamp: Date }[] => {
+  return Object.entries(organizationVersionStatus.value)
+    .filter(([, status]) => status === 'updateAvailable' || status === 'belowMinimum')
+    .map(([serverUrl]) => ({
+      serverUrl,
+      timestamp: organizationUpdateTimestamps.value[serverUrl],
+    }))
+    .filter(org => org.timestamp)
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 };
+
+export const versionStatus = computed<VersionStatus>(() => {
+  const statuses: VersionStatus[] = Object.values(organizationVersionStatus.value);
+
+  if (!statuses.length) return null;
+  if (statuses.includes('belowMinimum')) return 'belowMinimum';
+  if (statuses.includes('updateAvailable')) return 'updateAvailable';
+  if (statuses.every((s) => s === 'current')) return 'current';
+  return null;
+});
+
+// Global computed updateUrl based on org statuses
+export const updateUrl = computed<string | null>(() => {
+  const orgsNeedingUpdate = getOrgsNeedingUpdateOrdered();
+  if (!orgsNeedingUpdate.length) return null;
+
+  const selectedOrgUrl = orgsNeedingUpdate[0].serverUrl;
+  return organizationUpdateUrls.value[selectedOrgUrl] ?? null;
+});
+
+// Global computed latestVersion based on org statuses
+export const latestVersion = computed<string | null>(() => {
+  const orgsNeedingUpdate = getOrgsNeedingUpdateOrdered();
+  if (!orgsNeedingUpdate.length) return null;
+
+  const selectedOrgUrl = orgsNeedingUpdate[0].serverUrl;
+  return organizationLatestVersions.value[selectedOrgUrl] ?? null;
+});
+
+export const triggeringOrganizationServerUrl = computed<string | null>(() => {
+  const orgsNeedingUpdate = getOrgsNeedingUpdateOrdered();
+  if (!orgsNeedingUpdate.length) return null;
+
+  return orgsNeedingUpdate[0].serverUrl;
+});
 
 export const setOrgVersionBelowMinimum = (serverUrl: string, url: string | null): void => {
   organizationVersionStatus.value[serverUrl] = 'belowMinimum';
   organizationUpdateUrls.value[serverUrl] = url;
   organizationUpdateTimestamps.value[serverUrl] = new Date();
-  triggeringOrganizationServerUrl.value = serverUrl;
 };
 
 export const getVersionStatusForOrg = (serverUrl: string): VersionStatus => {
@@ -50,10 +85,12 @@ export const setVersionDataForOrg = (serverUrl: string, data: IVersionCheckRespo
   organizationLatestVersions.value[serverUrl] = data.latestSupportedVersion;
   organizationMinimumVersions.value[serverUrl] = data.minimumSupportedVersion;
   organizationUpdateUrls.value[serverUrl] = data.updateUrl;
+  organizationUpdateTimestamps.value[serverUrl] = new Date();
 };
 
 export const setVersionStatusForOrg = (serverUrl: string, status: VersionStatus): void => {
   organizationVersionStatus.value[serverUrl] = status;
+  organizationUpdateTimestamps.value[serverUrl] = new Date();
 };
 
 export const resetVersionStatusForOrg = (serverUrl: string): void => {
@@ -64,21 +101,6 @@ export const resetVersionStatusForOrg = (serverUrl: string): void => {
   delete organizationVersionData.value[serverUrl];
   delete organizationUpdateTimestamps.value[serverUrl];
   delete organizationCompatibilityResults.value[serverUrl];
-
-  // If this was the triggering org, find the next most recent one
-  if (triggeringOrganizationServerUrl.value === serverUrl) {
-    const orgsRequiringUpdate = Object.entries(organizationVersionStatus.value)
-      .filter(([, status]) => status === 'belowMinimum')
-      .map(([url]) => ({
-        serverUrl: url,
-        timestamp: organizationUpdateTimestamps.value[url],
-      }))
-      .filter(org => org.timestamp)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-
-    triggeringOrganizationServerUrl.value =
-      orgsRequiringUpdate.length > 0 ? orgsRequiringUpdate[0].serverUrl : null;
-  }
 };
 
 export const getAllOrganizationVersions = (): {
@@ -94,9 +116,6 @@ export const getAllOrganizationVersions = (): {
 };
 
 export const resetVersionState = (): void => {
-  versionStatus.value = null;
-  updateUrl.value = null;
-  latestVersion.value = null;
   organizationVersionStatus.value = {};
   organizationUpdateUrls.value = {};
   organizationLatestVersions.value = {};
@@ -104,18 +123,10 @@ export const resetVersionState = (): void => {
   organizationVersionData.value = {};
   organizationCompatibilityResults.value = {};
   organizationUpdateTimestamps.value = {};
-  triggeringOrganizationServerUrl.value = null;
 };
 
 export const getMostRecentOrganizationRequiringUpdate = (): string | null => {
-  const orgsRequiringUpdate = Object.entries(organizationVersionStatus.value)
-    .filter(([, status]) => status === 'belowMinimum')
-    .map(([url]) => ({
-      serverUrl: url,
-      timestamp: organizationUpdateTimestamps.value[url],
-    }))
-    .filter(org => org.timestamp)
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  const orgsRequiringUpdate = getOrgsNeedingUpdateOrdered();
 
   return orgsRequiringUpdate.length > 0 ? orgsRequiringUpdate[0].serverUrl : null;
 };

@@ -14,7 +14,6 @@ import { CommonNetwork } from '@shared/enums';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
-import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
@@ -29,7 +28,6 @@ import {
 } from '@renderer/utils/sdk/transactions';
 import {
   getUInt8ArrayFromBytesString,
-  KEEP_NEXT_QUERY_KEY,
   openTransactionInHashscan,
   hexToUint8Array,
   isLoggedInOrganization,
@@ -57,19 +55,11 @@ import TransactionId from '@renderer/components/ui/TransactionId.vue';
 const user = useUserStore();
 const network = useNetwork();
 const contacts = useContactsStore();
-const nextTransaction = useNextTransactionStore();
 
 /* Composables */
 const router = useRouter();
 useWebsocketSubscription(TRANSACTION_ACTION, async () => {
   await fetchTransaction();
-  const id = formattedId.value!;
-  nextId.value = await nextTransaction.getNext(
-    isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
-  );
-  prevId.value = await nextTransaction.getPrevious(
-    isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
-  );
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const route = useRoute();
@@ -83,8 +73,6 @@ const orgTransaction = ref<ITransactionFull | null>(null);
 const localTransaction = ref<Transaction | null>(null);
 const sdkTransaction = ref<SDKTransaction | null>(null);
 const signatureKeyObject = ref<Awaited<ReturnType<typeof computeSignatureKey>> | null>(null);
-const nextId = ref<string | number | null>(null);
-const prevId = ref<string | number | null>(null);
 const feePayer = ref<string | null>(null);
 const feePayerNickname = ref<string | null>(null);
 const groupDescription = ref<string | undefined>(undefined);
@@ -187,20 +175,7 @@ onBeforeMount(async () => {
     return;
   }
 
-  const keepNextTransaction = router.currentRoute.value.query[KEEP_NEXT_QUERY_KEY];
-  if (!keepNextTransaction) nextTransaction.reset();
-
-  const result = await Promise.all([
-    fetchTransaction(),
-    nextTransaction.getNext(
-      isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
-    ),
-    nextTransaction.getPrevious(
-      isLoggedInOrganization(user.selectedOrganization) ? Number(id) : id,
-    ),
-  ]);
-  nextId.value = result[1];
-  prevId.value = result[2];
+  await fetchTransaction();
 });
 
 onBeforeRouteLeave(to => {
@@ -238,8 +213,6 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           :organization-transaction="orgTransaction"
           :sdk-transaction="sdkTransaction as SDKTransaction"
           :local-transaction="localTransaction"
-          :next-id="nextId"
-          :previous-id="prevId"
           :on-action="fetchTransaction"
         />
 

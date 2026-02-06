@@ -28,7 +28,6 @@ import {
   getErrorMessage,
   getPropagationButtonLabel,
   isLoggedInOrganization,
-  redirectToGroupDetails,
   redirectToPreviousTransactionsTab,
 } from '@renderer/utils';
 import { createTransactionId } from '@renderer/utils/sdk';
@@ -44,10 +43,14 @@ import SaveTransactionGroupModal from '@renderer/components/modals/SaveTransacti
 import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+import useNextTransactionV2, {
+  type TransactionNodeId,
+} from '@renderer/stores/storeNextTransactionV2.ts';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
 const user = useUserStore();
+const useNextTransaction = useNextTransactionV2();
 
 /* Composables */
 const router = useRouter();
@@ -199,18 +202,20 @@ async function handleSignSubmit() {
   }
 }
 
-function handleExecuted(id: string) {
+async function handleExecuted(id: string) {
   transactionGroup.clearGroup();
   if (user.selectedOrganization) {
-    redirectToGroupDetails(router, id).then();
+    const targetNodeId: TransactionNodeId = { groupId: id };
+    await useNextTransaction.routeDown(targetNodeId, [targetNodeId], router);
   } else {
-    redirectToPreviousTransactionsTab(router);
+    await redirectToPreviousTransactionsTab(router);
   }
 }
 
-function handleSubmit(id: number) {
+async function handleSubmit(id: number) {
   transactionGroup.clearGroup();
-  redirectToGroupDetails(router, id).then();
+  const targetNodeId: TransactionNodeId = { groupId: id };
+  await useNextTransaction.routeDown(targetNodeId, [targetNodeId], router);
 }
 
 function handleClose() {
@@ -439,7 +444,13 @@ onBeforeRouteLeave(async to => {
   <div class="p-5">
     <div class="flex-column-100 overflow-hidden">
       <div class="d-flex align-items-center">
-        <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
+        <AppButton
+          type="button"
+          color="secondary"
+          class="btn-icon-only me-4"
+          data-testid="button-back"
+          @click="handleBack"
+        >
           <i class="bi bi-arrow-left"></i>
         </AppButton>
 
