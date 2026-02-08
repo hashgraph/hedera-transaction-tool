@@ -5,7 +5,7 @@ import { TransactionNodeCollection } from '../dto/ITransactionNode';
 import { TRANSACTION_STATUS_COLLECTIONS } from './transaction-node-collections.constants';
 import {
   attachKeys,
-  getTransactionNodesForUser,
+  getTransactionNodesForUserQuery,
   SqlBuilderService,
 } from '@app/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
@@ -35,7 +35,7 @@ export class TransactionNodesService {
 
     switch (collection) {
       case TransactionNodeCollection.READY_FOR_REVIEW: {
-        const query = getTransactionNodesForUser(
+        const query = getTransactionNodesForUserQuery(
           this.sqlBuilder,
           {
             statuses: TRANSACTION_STATUS_COLLECTIONS.READY_FOR_REVIEW,
@@ -49,7 +49,7 @@ export class TransactionNodesService {
         break;
       }
       case TransactionNodeCollection.READY_TO_SIGN: {
-        const query = getTransactionNodesForUser(
+        const query = getTransactionNodesForUserQuery(
           this.sqlBuilder,
           {
             statuses: TRANSACTION_STATUS_COLLECTIONS.READY_TO_SIGN,
@@ -63,7 +63,7 @@ export class TransactionNodesService {
         break;
       }
       case TransactionNodeCollection.READY_FOR_EXECUTION: {
-        const query = getTransactionNodesForUser(
+        const query = getTransactionNodesForUserQuery(
           this.sqlBuilder,
           {
             statuses: TRANSACTION_STATUS_COLLECTIONS.READY_FOR_EXECUTION,
@@ -82,7 +82,7 @@ export class TransactionNodesService {
         break;
       }
       case TransactionNodeCollection.IN_PROGRESS: {
-        const query = getTransactionNodesForUser(
+        const query = getTransactionNodesForUserQuery(
           this.sqlBuilder,
           {
             statuses: TRANSACTION_STATUS_COLLECTIONS.IN_PROGRESS,
@@ -103,7 +103,7 @@ export class TransactionNodesService {
       case TransactionNodeCollection.HISTORY: {
         statusFilter = statusFilter?.length ? statusFilter : TRANSACTION_STATUS_COLLECTIONS.HISTORY;
         transactionTypeFilter = transactionTypeFilter?.length ? transactionTypeFilter : null;
-        const query = getTransactionNodesForUser(
+        const query = getTransactionNodesForUserQuery(
           this.sqlBuilder,
           {
             statuses: statusFilter,
