@@ -19,6 +19,7 @@ import {
 import { MirrorNodeClient } from './mirror-node.client';
 import { CacheHelper } from './cache.helper';
 import { RefreshResult, RefreshStatus } from './cache.types';
+import { SqlBuilderService } from '../sql';
 
 @Injectable()
 export class AccountCacheService {
@@ -26,16 +27,17 @@ export class AccountCacheService {
   private readonly cacheHelper: CacheHelper;
 
   private readonly cacheTtlMs: number;
-  private readonly reclaimDelayMs: number;
+  private readonly reclaimTimeoutMs: number;
 
   constructor(
     private readonly mirrorNodeClient: MirrorNodeClient,
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
+    private readonly sqlBuilder: SqlBuilderService,
   ) {
     this.cacheHelper = new CacheHelper(dataSource);
     this.cacheTtlMs = this.configService.get<number>('CACHE_STALE_THRESHOLD_MS', 10 * 1000);
-    this.reclaimDelayMs = this.configService.get<number>('RECLAIM_DELAY_MS', 2 * 60 * 1000);
+    this.reclaimTimeoutMs = this.configService.get<number>('CACHE_RECLAIM_TIMEOUT_MS', 10 * 1000);
   }
 
   /**
@@ -116,9 +118,10 @@ export class AccountCacheService {
     mirrorNetwork: string,
   ): Promise<CachedAccount> {
     return this.cacheHelper.tryClaimRefresh(
+      this.sqlBuilder,
       CachedAccount,
       { account, mirrorNetwork },
-      this.reclaimDelayMs,
+      this.reclaimTimeoutMs,
     );
   }
 
