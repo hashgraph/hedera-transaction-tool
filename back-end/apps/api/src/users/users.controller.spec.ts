@@ -78,14 +78,15 @@ describe('UsersController', () => {
   });
 
   describe('getUser', () => {
-    it('should return a user', async () => {
-      userService.getUser.mockResolvedValue(user);
+    it('should return a user with clients', async () => {
+      userService.getUserWithClients.mockResolvedValue(user);
 
       expect(await controller.getUser(1)).toBe(user);
+      expect(userService.getUserWithClients).toHaveBeenCalledWith(1);
     });
 
     it('should throw an error if the user does not exist', async () => {
-      userService.getUser.mockResolvedValue(null);
+      userService.getUserWithClients.mockRejectedValue(new Error());
 
       try {
         await controller.getUser(1);

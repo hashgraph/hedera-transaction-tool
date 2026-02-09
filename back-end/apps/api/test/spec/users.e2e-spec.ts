@@ -99,7 +99,7 @@ describe('Users (e2e)', () => {
       endpoint = new Endpoint(server, '/users');
     });
 
-    it('(GET) should get a specific user', async () => {
+    it('(GET) should get a specific user with clients', async () => {
       const res = await endpoint.get('1', userAuthToken).expect(200);
 
       expect(res.body).toEqual({
@@ -111,6 +111,22 @@ describe('Users (e2e)', () => {
         updatedAt: expect.any(String),
         deletedAt: null,
         keys: expect.any(Array),
+        clients: expect.any(Array),
+      });
+    });
+
+    it('(GET) should include client version info after version-check', async () => {
+      const versionEndpoint = new Endpoint(server, '/users/version-check');
+      await versionEndpoint.post({ version: '0.9.0' }, null, userAuthToken).expect(201);
+
+      const user = await getUser('user');
+      const res = await endpoint.get(user.id.toString(), userAuthToken).expect(200);
+
+      expect(res.body.clients).toBeDefined();
+      expect(res.body.clients).toHaveLength(1);
+      expect(res.body.clients[0]).toMatchObject({
+        version: '0.9.0',
+        updateAvailable: true,
       });
     });
 

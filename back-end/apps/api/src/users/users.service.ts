@@ -15,7 +15,7 @@ import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
 import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
 
-import { ErrorCodes, checkFrontendVersion, VersionCheckResult } from '@app/common';
+import { ErrorCodes, checkFrontendVersion, isUpdateAvailable, VersionCheckResult } from '@app/common';
 import { Client, User, UserKey, UserStatus } from '@entities';
 
 @Injectable()
@@ -83,8 +83,23 @@ export class UsersService {
   }
 
   // Return an array of users, containing all current users of the organization.
-  getUsers(): Promise<User[]> {
-    return this.repo.find();
+  async getUsers(): Promise<User[]> {
+    const users = await this.repo.find({ relations: ['clients'] });
+    const latestSupported = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
+    return this.enrichUsersWithUpdateFlag(users, latestSupported);
+  }
+
+  async getUserWithClients(id: number): Promise<User> {
+    const user = await this.repo.findOne({ where: { id }, relations: ['clients'] });
+
+    if (!user) {
+      throw new BadRequestException(ErrorCodes.UNF);
+    }
+
+    const latestSupported = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
+    this.enrichUsersWithUpdateFlag([user], latestSupported);
+
+    return user;
   }
 
   async getOwnerOfPublicKey(publicKey: string): Promise<string | null> {
@@ -189,6 +204,17 @@ export class UsersService {
     }
 
     return client;
+  }
+
+  private enrichUsersWithUpdateFlag(users: User[], latestSupported: string | undefined): User[] {
+    for (const user of users) {
+      user.clients = (user.clients ?? []).map(client =>
+        Object.assign(client, {
+          updateAvailable: isUpdateAvailable(client.version, latestSupported),
+        }),
+      );
+    }
+    return users;
   }
 
   getVersionCheckInfo(userVersion: string): VersionCheckResult {

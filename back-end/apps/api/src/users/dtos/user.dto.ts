@@ -4,6 +4,7 @@ import { IsEnum } from 'class-validator';
 import { UserStatus } from '@entities';
 
 import { UserKeyDto } from '../../user-keys/dtos';
+import { ClientDto } from './client.dto';
 
 export class UserDto {
   @Expose()
@@ -31,4 +32,8 @@ export class UserDto {
   @Expose()
   @Type(() => UserKeyDto)
   keys: UserKeyDto;
+
+  @Expose()
+  @Type(() => ClientDto)
+  clients?: ClientDto[];
 }

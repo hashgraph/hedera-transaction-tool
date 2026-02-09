@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
-import { ErrorCodes, checkFrontendVersion } from '@app/common';
+import { ErrorCodes, checkFrontendVersion, isUpdateAvailable } from '@app/common';
 import { Client, User, UserKey } from '@entities';
 
 import * as bcrypt from 'bcryptjs';
@@ -17,6 +17,7 @@ jest.mock('argon2');
 jest.mock('@app/common', () => ({
   ...jest.requireActual('@app/common'),
   checkFrontendVersion: jest.fn(),
+  isUpdateAvailable: jest.fn(),
 }));
 
 describe('UsersService', () => {
@@ -93,10 +94,65 @@ describe('UsersService', () => {
     expect(result).toBeNull();
   });
 
-  it('should call the repo to find all users', async () => {
-    await service.getUsers();
+  describe('getUsers', () => {
+    it('should load users with clients relation and enrich with updateAvailable', async () => {
+      const usersWithClients = [
+        {
+          ...user,
+          clients: [
+            { id: 1, userId: 1, version: '1.0.0', createdAt: new Date(), updatedAt: new Date() },
+          ],
+        },
+      ];
+      userRepository.find.mockResolvedValue(usersWithClients as User[]);
+      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(isUpdateAvailable).mockReturnValue(true);
 
-    expect(userRepository.find).toHaveBeenCalled();
+      const result = await service.getUsers();
+
+      expect(userRepository.find).toHaveBeenCalledWith({ relations: ['clients'] });
+      expect(isUpdateAvailable).toHaveBeenCalledWith('1.0.0', '1.1.0');
+      expect(result[0].clients[0]).toHaveProperty('updateAvailable', true);
+    });
+
+    it('should handle users with no client records', async () => {
+      const usersWithoutClients = [{ ...user, clients: [] }];
+      userRepository.find.mockResolvedValue(usersWithoutClients as User[]);
+      configService.get.mockReturnValue('1.1.0');
+
+      const result = await service.getUsers();
+
+      expect(result[0].clients).toEqual([]);
+    });
+  });
+
+  describe('getUserWithClients', () => {
+    it('should find user with clients relation and enrich with updateAvailable', async () => {
+      const userWithClients = {
+        ...user,
+        id: 1,
+        clients: [
+          { id: 1, userId: 1, version: '1.0.0', createdAt: new Date(), updatedAt: new Date() },
+        ],
+      };
+      userRepository.findOne.mockResolvedValue(userWithClients as User);
+      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(isUpdateAvailable).mockReturnValue(true);
+
+      const result = await service.getUserWithClients(1);
+
+      expect(userRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+        relations: ['clients'],
+      });
+      expect(result.clients[0]).toHaveProperty('updateAvailable', true);
+    });
+
+    it('should throw BadRequestException when user not found', async () => {
+      userRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.getUserWithClients(999)).rejects.toThrow(ErrorCodes.UNF);
+    });
   });
 
   it('should call the repo to create a user', async () => {
