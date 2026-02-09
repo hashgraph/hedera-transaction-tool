@@ -184,7 +184,6 @@ watch(() => props.variant, () => {
       'badge',
       timeUntilExpiry! > 0 ? 'bg-warning' : 'bg-danger',
       'text-break',
-      'ms-2',
     ]"
   >
     <!-- VARIANT: Simple text badge -->
