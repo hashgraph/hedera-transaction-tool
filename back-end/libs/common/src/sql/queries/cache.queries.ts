@@ -32,6 +32,10 @@ export function getUpsertRefreshTokenForCacheQuery(
       refreshTokenParam,
     ]);
 
+  const keyWhereClause = keyColumnNames
+    .map((col, i) => `${col} = ${keyParams[i]}`)
+    .join(' AND ');
+
   return `
     WITH claimed AS (
       INSERT INTO ${tableName} (${insertColumns.join(', ')})
@@ -45,12 +49,14 @@ export function getUpsertRefreshTokenForCacheQuery(
       RETURNING *
     )
     SELECT * FROM claimed
+             
     UNION ALL
+    
     SELECT *
     FROM ${tableName}
-    WHERE ${keyColumnNames
-    .map((col, i) => `${col} = ${keyParams[i]}`)
-    .join(' AND ')}
+    WHERE ${keyWhereClause}
+      AND NOT EXISTS (SELECT 1 FROM claimed)
+      
     LIMIT 1
   `.trim();
 }

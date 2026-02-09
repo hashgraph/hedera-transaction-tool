@@ -19,7 +19,9 @@ import {
   flattenKeyList,
   NodeInfoParsed,
   serializeKey,
+  SqlBuilderService,
 } from '@app/common';
+import { mockDeep } from 'jest-mock-extended';
 
 jest.mock('@app/common', () => ({
   ...jest.requireActual('@app/common'),
@@ -34,6 +36,8 @@ describe('NodeCacheService', () => {
   let dataSource: jest.Mocked<DataSource>;
   let cacheHelper: jest.Mocked<CacheHelper>;
   let configService: jest.Mocked<ConfigService>;
+
+  const sqlBuilderService = mockDeep<SqlBuilderService>();
 
   const mockTransaction: Transaction = {
     id: 1,
@@ -72,6 +76,7 @@ describe('NodeCacheService', () => {
         { provide: MirrorNodeClient, useValue: mirrorNodeClient },
         { provide: DataSource, useValue: dataSource },
         { provide: ConfigService, useValue: configService },
+        { provide: SqlBuilderService, useValue: sqlBuilderService },
       ],
     }).compile();
 
@@ -87,7 +92,7 @@ describe('NodeCacheService', () => {
   describe('constructor', () => {
     it('should initialize with config values', () => {
       expect(configService.get).toHaveBeenCalledWith('CACHE_STALE_THRESHOLD_MS', 10000);
-      expect(configService.get).toHaveBeenCalledWith('RECLAIM_DELAY_MS', 120000);
+      expect(configService.get).toHaveBeenCalledWith('CACHE_RECLAIM_TIMEOUT_MS', 10000);
     });
   });
 
@@ -103,7 +108,7 @@ describe('NodeCacheService', () => {
         node_account_id: AccountId.fromString('0.0.3'),
       }
 
-      cacheHelper.tryClaimRefresh.mockResolvedValue(cachedNode);
+      cacheHelper.tryClaimRefresh.mockResolvedValue({ data: cachedNode, claimed: true });
       mirrorNodeClient.fetchNodeInfo.mockResolvedValue({
         data: nodeInfo as NodeInfoParsed,
         etag: 'etag-123',
@@ -114,9 +119,10 @@ describe('NodeCacheService', () => {
 
       expect(result).toBe(true);
       expect(cacheHelper.tryClaimRefresh).toHaveBeenCalledWith(
+        sqlBuilderService,
         CachedNode,
         { nodeId: 1, mirrorNetwork: 'testnet' },
-        120000
+        10000
       );
     });
 
@@ -127,7 +133,7 @@ describe('NodeCacheService', () => {
       } as CachedNode;
 
       const claimedNode = { ...cachedNode, refreshToken: null } as CachedNode;
-      cacheHelper.tryClaimRefresh.mockResolvedValue(claimedNode);
+      cacheHelper.tryClaimRefresh.mockResolvedValue({ data: claimedNode, claimed: false });
 
       const result = await service.refreshNode(cachedNode);
 
@@ -144,7 +150,7 @@ describe('NodeCacheService', () => {
         encodedKey: Buffer.from('encoded-key'),
       } as CachedNode;
 
-      cacheHelper.tryClaimRefresh.mockResolvedValue(cachedNode);
+      cacheHelper.tryClaimRefresh.mockResolvedValue({ data: cachedNode, claimed: true });
       mirrorNodeClient.fetchNodeInfo.mockResolvedValue({
         data: null, // 304 Not Modified
         etag: 'etag-123',
@@ -164,7 +170,7 @@ describe('NodeCacheService', () => {
         refreshToken: 'token-123',
       } as CachedNode;
 
-      cacheHelper.tryClaimRefresh.mockResolvedValue(cachedNode);
+      cacheHelper.tryClaimRefresh.mockResolvedValue({ data: cachedNode, claimed: false });
       mirrorNodeClient.fetchNodeInfo.mockResolvedValue({
         data: null,
         etag: null,
@@ -239,7 +245,7 @@ describe('NodeCacheService', () => {
       };
 
       dataSource.manager.findOne = jest.fn().mockResolvedValue(cachedNode);
-      cacheHelper.tryClaimRefresh.mockResolvedValue(cachedNode);
+      cacheHelper.tryClaimRefresh.mockResolvedValue({ data: cachedNode, claimed: true });
       mirrorNodeClient.fetchNodeInfo.mockResolvedValue({
         data: nodeInfo as NodeInfoParsed,
         etag: 'etag-123',
@@ -267,7 +273,7 @@ describe('NodeCacheService', () => {
         node_account_id: AccountId.fromString('0.0.3'),
       }
 
-      cacheHelper.tryClaimRefresh.mockResolvedValue(claimedNode);
+      cacheHelper.tryClaimRefresh.mockResolvedValue({ data: claimedNode, claimed: true });
       mirrorNodeClient.fetchNodeInfo.mockResolvedValue({
         data: nodeInfo as NodeInfoParsed,
         etag: 'etag-123',
@@ -298,7 +304,7 @@ describe('NodeCacheService', () => {
       };
 
       dataSource.manager.findOne = jest.fn().mockResolvedValue(cachedNode);
-      cacheHelper.tryClaimRefresh.mockResolvedValue(claimedNode);
+      cacheHelper.tryClaimRefresh.mockResolvedValue({ data: claimedNode, claimed: false });
       cacheHelper.linkTransactionToEntity.mockResolvedValue(undefined);
 
       const result = await service.getNodeInfoForTransaction(mockTransaction, 1);
@@ -319,7 +325,7 @@ describe('NodeCacheService', () => {
       } as CachedNode;
 
       dataSource.manager.findOne = jest.fn().mockResolvedValue(null);
-      cacheHelper.tryClaimRefresh.mockResolvedValue(claimedNode);
+      cacheHelper.tryClaimRefresh.mockResolvedValue({ data: claimedNode, claimed: false });
 
       const result = await service.getNodeInfoForTransaction(mockTransaction, 1);
 

@@ -1,3 +1,4 @@
+import { mockDeep } from 'jest-mock-extended';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
@@ -19,6 +20,7 @@ import {
   deserializeKey,
   flattenKeyList,
   AccountInfoParsed,
+  SqlBuilderService,
 } from '@app/common';
 
 jest.mock('@app/common', () => ({
@@ -34,6 +36,8 @@ describe('AccountCacheService', () => {
   let dataSource: jest.Mocked<DataSource>;
   let cacheHelper: jest.Mocked<CacheHelper>;
   let configService: jest.Mocked<ConfigService>;
+
+  const sqlBuilderService = mockDeep<SqlBuilderService>();
 
   const mockTransaction: Transaction = {
     id: 1,
@@ -72,6 +76,7 @@ describe('AccountCacheService', () => {
         { provide: MirrorNodeClient, useValue: mirrorNodeClient },
         { provide: DataSource, useValue: dataSource },
         { provide: ConfigService, useValue: configService },
+        { provide: SqlBuilderService, useValue: sqlBuilderService },
       ],
     }).compile();
 
@@ -87,7 +92,7 @@ describe('AccountCacheService', () => {
   describe('constructor', () => {
     it('should initialize with config values', () => {
       expect(configService.get).toHaveBeenCalledWith('CACHE_STALE_THRESHOLD_MS', 10000);
-      expect(configService.get).toHaveBeenCalledWith('RECLAIM_DELAY_MS', 120000);
+      expect(configService.get).toHaveBeenCalledWith('CACHE_RECLAIM_TIMEOUT_MS', 10000);
     });
   });
 
@@ -104,7 +109,7 @@ describe('AccountCacheService', () => {
         receiverSignatureRequired: false,
       };
 
-      cacheHelper.tryClaimRefresh.mockResolvedValue(cachedAccount);
+      cacheHelper.tryClaimRefresh.mockResolvedValue({ data: cachedAccount, claimed: true });
       mirrorNodeClient.fetchAccountInfo.mockResolvedValue({
         data: accountInfo as AccountInfoParsed,
         etag: 'etag-123',
@@ -115,9 +120,10 @@ describe('AccountCacheService', () => {
 
       expect(result).toBe(true);
       expect(cacheHelper.tryClaimRefresh).toHaveBeenCalledWith(
+        sqlBuilderService,
         CachedAccount,
         { account: '0.0.123', mirrorNetwork: 'testnet' },
-        120000
+        10000
       );
     });
 
@@ -133,7 +139,7 @@ describe('AccountCacheService', () => {
         refreshToken: null,
       } as CachedAccount;
 
-      cacheHelper.tryClaimRefresh.mockResolvedValue(claimedAccount);
+      cacheHelper.tryClaimRefresh.mockResolvedValue({ data: claimedAccount, claimed: false });
 
       const result = await service.refreshAccount(cachedAccount);
 
@@ -151,7 +157,7 @@ describe('AccountCacheService', () => {
         receiverSignatureRequired: false,
       } as CachedAccount;
 
-      cacheHelper.tryClaimRefresh.mockResolvedValue(cachedAccount);
+      cacheHelper.tryClaimRefresh.mockResolvedValue({ data: cachedAccount, claimed: true });
       mirrorNodeClient.fetchAccountInfo.mockResolvedValue({
         data: null, // 304 Not Modified
         etag: 'etag-123',
@@ -171,7 +177,7 @@ describe('AccountCacheService', () => {
         refreshToken: 'token-123',
       } as CachedAccount;
 
-      cacheHelper.tryClaimRefresh.mockResolvedValue(cachedAccount);
+      cacheHelper.tryClaimRefresh.mockResolvedValue({ data: cachedAccount, claimed: false });
       mirrorNodeClient.fetchAccountInfo.mockResolvedValue({
         data: null,
         etag: null,
@@ -253,7 +259,7 @@ describe('AccountCacheService', () => {
       }
 
       dataSource.manager.findOne = jest.fn().mockResolvedValue(cachedAccount);
-      cacheHelper.tryClaimRefresh.mockResolvedValue(cachedAccount);
+      cacheHelper.tryClaimRefresh.mockResolvedValue({ data: cachedAccount, claimed: true });
       mirrorNodeClient.fetchAccountInfo.mockResolvedValue({
         data: accountInfo as AccountInfoParsed,
         etag: 'new-etag',
@@ -282,7 +288,7 @@ describe('AccountCacheService', () => {
         receiverSignatureRequired: false,
       }
 
-      cacheHelper.tryClaimRefresh.mockResolvedValue(claimedAccount);
+      cacheHelper.tryClaimRefresh.mockResolvedValue({ data: claimedAccount, claimed: true });
       mirrorNodeClient.fetchAccountInfo.mockResolvedValue({
         data: accountInfo as AccountInfoParsed,
         etag: 'etag-123',
@@ -313,7 +319,7 @@ describe('AccountCacheService', () => {
       };
 
       dataSource.manager.findOne = jest.fn().mockResolvedValue(cachedAccount);
-      cacheHelper.tryClaimRefresh.mockResolvedValue(claimedAccount);
+      cacheHelper.tryClaimRefresh.mockResolvedValue({ data: claimedAccount, claimed: false });
       cacheHelper.linkTransactionToEntity.mockResolvedValue(undefined);
 
       const result = await service.getAccountInfoForTransaction(mockTransaction, '0.0.123');
@@ -334,7 +340,7 @@ describe('AccountCacheService', () => {
       } as CachedAccount;
 
       dataSource.manager.findOne = jest.fn().mockResolvedValue(null);
-      cacheHelper.tryClaimRefresh.mockResolvedValue(claimedAccount);
+      cacheHelper.tryClaimRefresh.mockResolvedValue({ data: claimedAccount, claimed: false });
 
       const result = await service.getAccountInfoForTransaction(mockTransaction, '0.0.123');
 

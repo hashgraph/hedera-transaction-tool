@@ -50,9 +50,9 @@ export class NodeCacheService {
     const mirrorNetwork = cached.mirrorNetwork;
 
     // Try to claim the node for refresh
-    const claimedNode = await this.tryClaimNodeRefresh(nodeId, mirrorNetwork);
+    const { data: claimedNode, claimed } = await this.tryClaimNodeRefresh(nodeId, mirrorNetwork);
 
-    if (!claimedNode.refreshToken) {
+    if (!claimed) {
       return false; // Didn't refresh (someone else did it)
     }
 
@@ -91,9 +91,9 @@ export class NodeCacheService {
     this.logger.debug(`Fetching node ${nodeId} from mirror node (cache ${cached ? 'stale' : 'missing'})`);
 
     // Try to claim the node for refresh, create the node if none exists
-    const claimedNode = await this.tryClaimNodeRefresh(nodeId, mirrorNetwork);
+    const { data: claimedNode, claimed } = await this.tryClaimNodeRefresh(nodeId, mirrorNetwork);
 
-    if (!claimedNode.refreshToken) {
+    if (!claimed) {
       // Link to transaction if we have cached data
       await this.linkTransactionToNode(transaction.id, claimedNode.id);
 
@@ -116,7 +116,7 @@ export class NodeCacheService {
   private tryClaimNodeRefresh(
     nodeId: number,
     mirrorNetwork: string,
-  ): Promise<CachedNode> {
+  ): Promise<{ data: CachedNode, claimed: boolean }> {
     return this.cacheHelper.tryClaimRefresh(
       this.sqlBuilder,
       CachedNode,
