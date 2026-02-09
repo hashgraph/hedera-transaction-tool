@@ -102,7 +102,9 @@ export class SqlBuilderService {
         throw new SqlBuilderError(`Entity has no table name defined`);
       }
 
-      return metadata.tableName;
+      // Handle schema-qualified table names: schema.table
+      const parts = metadata.tableName.split('.');
+      return parts.map(p => `"${p}"`).join('.');
     } catch (error) {
       // Add context about which method failed
       if (error instanceof SqlBuilderError) {

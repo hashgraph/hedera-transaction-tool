@@ -50,9 +50,9 @@ export class AccountCacheService {
     const mirrorNetwork = cached.mirrorNetwork;
 
     // Try to claim the account for refresh
-    const claimedAccount = await this.tryClaimAccountRefresh(account, mirrorNetwork);
+    const { data: claimedAccount, claimed } = await this.tryClaimAccountRefresh(account, mirrorNetwork);
 
-    if (!claimedAccount.refreshToken) {
+    if (!claimed) {
       return false; // Didn't refresh (someone else did it)
     }
 
@@ -91,9 +91,9 @@ export class AccountCacheService {
     this.logger.debug(`Fetching account ${account} from mirror node (cache ${cached ? 'stale' : 'missing'})`);
 
     // Try to claim the account for refresh, create the account row if none exists
-    const claimedAccount = await this.tryClaimAccountRefresh(account, mirrorNetwork);
+    const { data: claimedAccount, claimed } = await this.tryClaimAccountRefresh(account, mirrorNetwork);
 
-    if (!claimedAccount.refreshToken) {
+    if (!claimed) {
       // Link to transaction
       await this.linkTransactionToAccount(transaction.id, claimedAccount.id);
 
@@ -116,7 +116,7 @@ export class AccountCacheService {
   private tryClaimAccountRefresh(
     account: string,
     mirrorNetwork: string,
-  ): Promise<CachedAccount> {
+  ): Promise<{ data: CachedAccount, claimed: boolean }> {
     return this.cacheHelper.tryClaimRefresh(
       this.sqlBuilder,
       CachedAccount,

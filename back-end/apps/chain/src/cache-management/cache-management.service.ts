@@ -271,6 +271,7 @@ export class CacheManagementService {
         LEFT JOIN transaction_cached_account ta ON ta."cachedAccountId" = ca.id
         LEFT JOIN transaction t ON ta."transactionId" = t.id
         WHERE ca."refreshToken" IS NULL
+          AND ca."updatedAt" < NOW() - INTERVAL '5 minutes'
         GROUP BY ca.id
         HAVING 
           COUNT(ta.id) = 0 OR
@@ -303,6 +304,7 @@ export class CacheManagementService {
         LEFT JOIN transaction_cached_node tn ON tn."cachedNodeId" = cn.id
         LEFT JOIN transaction t ON tn."transactionId" = t.id
         WHERE cn."refreshToken" IS NULL
+          AND cn."updatedAt" < NOW() - INTERVAL '5 minutes'
         GROUP BY cn.id
         HAVING 
           COUNT(tn.id) = 0 OR

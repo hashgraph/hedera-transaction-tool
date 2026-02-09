@@ -24,7 +24,7 @@ jest.mock('@app/common', () => {
   return {
     ...jest.requireActual('@app/common'),
     attachKeys: jest.fn(),
-    getTransactionNodesForUser: jest.fn(),
+    getTransactionNodesForUserQuery: jest.fn(),
   };
 });
 
