@@ -139,9 +139,11 @@ const pageTitle = computed(() => {
           break;
         }
       }
-      result = txType
-        ? `Group of ${group.value.groupItems.length} ${getTransactionTypeFromBackendType(txType, false, true)} transactions`
-        : `Group of ${group.value.groupItems.length} transactions`;
+      result = `Group of ${group.value.groupItems.length}`;
+      if (txType) {
+        result += ` ${getTransactionTypeFromBackendType(txType, false, true)}`;
+      }
+      result += (group.value.groupItems.length > 1) ? ' transactions' : ' transaction';
     }
   }
   return result;
