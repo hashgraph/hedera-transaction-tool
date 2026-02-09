@@ -55,6 +55,14 @@ const contact = computed<Contact | null>(
   () => contacts.contacts.find(c => c.user.id === selectedId.value) || null,
 );
 
+const isAdmin = computed(
+  () => isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin,
+);
+
+function hasUpdateAvailable(contact: Contact): boolean {
+  return contact.user.clients?.some(client => client.updateAvailable) ?? false;
+}
+
 const contactList = computed(() =>
   contacts.contacts
     .filter(c =>
@@ -202,9 +210,10 @@ onBeforeMount(async () => {
                         {{ c.user.email }}
                       </p>
                     </div>
-                    <div v-if="c.user.admin || c.user.status === 'NEW'" class="mt-2">
+                    <div v-if="c.user.admin || c.user.status === 'NEW' || (isAdmin && hasUpdateAvailable(c))" class="mt-2">
                       <span v-if="c.user.admin" class="badge bg-warning me-2">admin</span>
-                      <span v-if="c.user.status === 'NEW'" class="badge bg-info">new</span>
+                      <span v-if="c.user.status === 'NEW'" class="badge bg-info me-2">new</span>
+                      <span v-if="isAdmin && hasUpdateAvailable(c)" class="badge bg-warning">update available</span>
                     </div>
                   </div>
                 </div>
