@@ -22,7 +22,6 @@ test.describe('Login tests', () => {
     await resetDbState();
     ({ app, window } = await setupApp());
     loginPage = new LoginPage(window);
-    await loginPage.logout();
     registrationPage = new RegistrationPage(window);
 
     // Generate credentials and store them globally

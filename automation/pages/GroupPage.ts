@@ -2,7 +2,11 @@ import { BasePage } from './BasePage.js';
 import { TransactionPage } from './TransactionPage.js';
 import { Page } from '@playwright/test';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { generateCSVFile } from '../utils/csvGenerator.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { getTransactionGroupsForTransactionId } from '../utils/databaseQueries.js';
 import { OrganizationPage } from './OrganizationPage.js';
 
@@ -19,6 +23,7 @@ export class GroupPage extends BasePage {
   /* Selectors */
 
   // Buttons
+  backButtonSelector = 'button-back';
   saveGroupButtonSelector = 'button-save-group';
   signAndExecuteButtonSelector = 'button-sign-submit';
   addTransactionButtonSelector = 'button-add-transaction';
@@ -67,6 +72,10 @@ export class GroupPage extends BasePage {
 
   async closeDraftTransactionModal() {
     await this.closeModalIfVisible(this.discardDraftTransactionModalButtonSelector);
+  }
+
+  async clickOnBackButton() {
+    await this.click(this.backButtonSelector);
   }
 
   async clickOnSaveGroupButton() {

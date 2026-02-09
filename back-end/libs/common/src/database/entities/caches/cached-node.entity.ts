@@ -18,9 +18,9 @@ export class CachedNode {
   @Index()
   nodeId: number;
 
-  @Column({ length: 64 })
+  @Column({ length: 64, nullable: true })
   @Index()
-  nodeAccountId: string;
+  nodeAccountId: string | null;
 
   @Column()
   mirrorNetwork: string;

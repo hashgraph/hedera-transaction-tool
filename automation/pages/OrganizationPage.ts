@@ -1,5 +1,5 @@
 import { BasePage } from './BasePage.js';
-import { Page } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 import { RegistrationPage } from './RegistrationPage.js';
 import { SettingsPage } from './SettingsPage.js';
 import { TransactionPage } from './TransactionPage.js';
@@ -17,7 +17,7 @@ import {
   findNewKey,
   getAllTransactionIdsForUserObserver,
   getFirstPublicKeyByEmail,
-  getLatestNotificationStatusByEmail,
+  getLatestInAppNotificationStatusByEmail,
   getUserIdByEmail,
   insertKeyPair,
   insertUserKey,
@@ -370,6 +370,26 @@ export class OrganizationPage extends BasePage {
     return await this.hasBeforePseudoElement(this.transactionNodeTransactionIdIndexSelector + '0');
   }
 
+  /**
+   * Finds a transaction row by its transaction ID and checks if it has the notification indicator.
+   * This is more precise than checking index 0 when multiple transactions exist.
+   * @param transactionId - The SDK transaction ID (e.g., "0.0.123@1234567890.000000000")
+   * @returns true if the transaction row has the notification indicator, false otherwise
+   */
+  async hasNotificationForTransaction(transactionId: string): Promise<boolean> {
+    const rows = await this.window.locator(`[data-testid^="${this.transactionNodeTransactionIdIndexSelector}"]`).all();
+
+    for (let i = 0; i < rows.length; i++) {
+      const rowText = await this.getText(this.transactionNodeTransactionIdIndexSelector + i);
+
+      if (rowText && rowText.includes(transactionId)) {
+        return await this.hasBeforePseudoElement(this.transactionNodeTransactionIdIndexSelector + i);
+      }
+    }
+
+    return false;
+  }
+
   async selectModeByIndex(index: number) {
     await this.click(this.modeSelectionIndexSelector + index);
   }
@@ -638,6 +658,10 @@ export class OrganizationPage extends BasePage {
     const transactionResponse =
       await this.transactionPage.mirrorGetTransactionResponse(transactionId);
     this.complexAccountId.push(transactionResponse?.entity_id ?? '');
+
+    // Navigate back to transactions list to ensure clean state for next call
+    await this.transactionPage.clickOnTransactionsMenuButton();
+    await this.waitForElementToBeVisible('button-create-new');
   }
 
   async createComplexKeyAccountForUsers(numberOfUsers = 9, groupSize = 3) {
@@ -1324,6 +1348,14 @@ export class OrganizationPage extends BasePage {
     await this.click(this.transactionNodeSignButtonIndexSelector + index, null, 5000);
   }
 
+  async isReadyToSignDetailsButtonVisibleByIndex(index: number) {
+    return await this.isElementVisible(this.transactionNodeDetailsButtonIndexSelector + index);
+  }
+
+  async clickOnReadyToSignDetailsButtonByIndex(index: number) {
+    await this.click(this.transactionNodeDetailsButtonIndexSelector + index);
+  }
+
   async getInProgressTransactionIdByIndex(index: number) {
     return await this.getText(this.transactionNodeTransactionIdIndexSelector + index);
   }
@@ -1635,13 +1667,23 @@ export class OrganizationPage extends BasePage {
     secondUser: UserDetails,
     globalCredentials: Credentials,
   ) {
-    let notificationStatus = await getLatestNotificationStatusByEmail(secondUser.email);
+    const notificationStatus = await getLatestInAppNotificationStatusByEmail(secondUser.email);
 
     // If there's no notification or the latest is read, create a new one
     if (!notificationStatus || notificationStatus.isRead) {
       await this.createNotificationForUser(firstUser, secondUser, globalCredentials);
+
+      // Poll until the indicator notification is created by the backend (async process)
+      await expect.poll(
+        async () => {
+          const status = await getLatestInAppNotificationStatusByEmail(secondUser.email);
+          return status !== null && !status.isRead;
+        },
+        { timeout: 10000, intervals: [500] },
+      ).toBe(true);
     }
-    // If the notification exists and is unread, nothing more needs to be done
+    // If notification exists and is unread, secondUser is already logged in from createNotificationForUser
+    // with notifications fetched via the frontend fix to loggedInOrganization watcher
   }
 
   async clickOnNextTransactionButton() {

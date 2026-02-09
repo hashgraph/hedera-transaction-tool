@@ -48,6 +48,8 @@ export class TransactionSignatureService {
       await this.addNodeKeys(signatureKey, transaction, requirements.nodeId);
     }
 
+    signatureKey.push(...requirements.newKeys);
+
     return signatureKey;
   }
 
@@ -57,14 +59,12 @@ export class TransactionSignatureService {
   private extractSignatureRequirements(
     transactionModel: TransactionBaseModel<any>
   ): SignatureRequirements {
-    const nodeId = transactionModel.getNodeId();
-
     return {
       feePayerAccount: transactionModel.getFeePayerAccountId().toString(),
       signingAccounts: transactionModel.getSigningAccounts(),
       receiverAccounts: transactionModel.getReceiverAccounts(),
       newKeys: transactionModel.getNewKeys() ?? [],
-      nodeId: nodeId,
+      nodeId: transactionModel.getNodeId(),
     };
   }
 
