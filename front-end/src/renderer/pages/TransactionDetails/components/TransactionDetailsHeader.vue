@@ -626,10 +626,8 @@ watch(
 );
 </script>
 <template>
-  <form
-    @submit.prevent="handleSubmit"
-    class="flex-centered justify-content-between flex-wrap gap-4"
-  >
+  <form @submit.prevent="handleSubmit">
+    <div class="flex-centered justify-content-between flex-wrap gap-4">
     <div class="d-flex align-items-center gap-4">
       <AppButton
         type="button"
@@ -641,7 +639,7 @@ watch(
         <i class="bi bi-arrow-left"></i>
       </AppButton>
       <NextTransactionCursor />
-      <template v-if="txType">
+      <div v-if="txType" class="d-flex align-items-center column-gap-3 row-gap-2 flex-wrap">
         <h2 class="text-title text-bold">{{ txType }}</h2>
         <span v-if="isTransactionFailed" class="badge bg-danger text-break">
           {{
@@ -650,10 +648,10 @@ watch(
               : 'FAILED'
           }}
         </span>
-        <span v-else-if="isTransactionVersionMismatch" class="badge bg-danger text-break ms-2">
+        <span v-else-if="isTransactionVersionMismatch" class="badge bg-danger text-break">
           Transaction Version Mismatch
         </span>
-        <span v-else-if="isManualFlagVisible" class="badge bg-info text-break ms-2">Manual</span>
+        <span v-else-if="isManualFlagVisible" class="badge bg-info text-break">Manual</span>
         <!-- Expiring Soon Badge -->
         <ExpiringBadge
           :valid-start="validStartDate"
@@ -661,7 +659,7 @@ watch(
           :transaction-status="props.organizationTransaction?.status ?? null"
           variant="countdown"
         />
-      </template>
+      </div>
     </div>
 
     <div class="flex-centered gap-4">
@@ -701,6 +699,7 @@ watch(
           </div>
         </template>
       </Transition>
+    </div>
     </div>
   </form>
 
