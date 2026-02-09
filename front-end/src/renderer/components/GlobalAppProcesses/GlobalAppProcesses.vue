@@ -70,16 +70,17 @@ const handleBeginMigrationReadyState = async () => {
   await withLoader(tryAutoLogin);
 
   await user.refetchOrganizations();
+
+  if (user.personal?.isLoggedIn && user.organizations.length > 0) {
+    await checkAllOrganizationVersions();
+  }
+
   const redirect = await redirectIfRequiredKeysToMigrate();
   if (!redirect) {
     await withLoader(selectDefaultOrganization);
   }
 
   await setupStores();
-
-  if (user.personal?.isLoggedIn && user.organizations.length > 0) {
-    await checkAllOrganizationVersions();
-  }
 };
 
 async function checkAllOrganizationVersions(): Promise<void> {
