@@ -2,7 +2,7 @@
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { onBeforeMount, ref, watch } from 'vue';
 import { isUserLoggedIn, safeAwait } from '@renderer/utils';
-import { add, getStoredClaim, update } from '@renderer/services/claimService.ts';
+import { getStoredClaim, setStoredClaim } from '@renderer/services/claimService.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import { GO_NEXT_AFTER_SIGN } from '@shared/constants';
 
@@ -22,9 +22,7 @@ const goToNext = ref(false);
 /* Watchers */
 watch(goToNext, async () => {
   if (isUserLoggedIn(user.personal)) {
-    const claimValue = await safeAwait(getStoredClaim(user.personal.id, GO_NEXT_AFTER_SIGN));
-    const addOrUpdate = claimValue.data !== undefined ? update : add;
-    await addOrUpdate(user.personal.id, GO_NEXT_AFTER_SIGN, goToNext.value.toString());
+    await setStoredClaim(user.personal.id, GO_NEXT_AFTER_SIGN, goToNext.value.toString());
   }
 });
 

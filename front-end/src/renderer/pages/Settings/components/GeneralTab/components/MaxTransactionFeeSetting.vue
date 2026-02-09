@@ -6,7 +6,7 @@ import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { add, getStoredClaim, update } from '@renderer/services/claimService';
+import { getStoredClaim, setStoredClaim } from '@renderer/services/claimService';
 
 import { isUserLoggedIn } from '@renderer/utils';
 
@@ -21,10 +21,7 @@ const maxTransactionFee = ref<Hbar>(new Hbar(0));
 const handleUpdateMaxTransactionFee = async (newFee: Hbar) => {
   if (!isUserLoggedIn(user.personal)) return;
 
-  const storedClaim = await getStoredClaim(user.personal.id, DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY);
-  const addOrUpdate = storedClaim !== undefined ? update : add;
-
-  await addOrUpdate(
+  await setStoredClaim(
     user.personal.id,
     DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY,
     newFee.toString(HbarUnit.Tinybar),
