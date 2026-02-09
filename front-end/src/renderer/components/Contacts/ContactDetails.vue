@@ -32,6 +32,7 @@ import { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPu
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
 import { formatDatePart } from '@renderer/utils/dateTimeFormat.ts';
+import { getLatestClient } from '@renderer/utils/clientVersion.ts';
 
 /* Modals */
 const linkedAccounts = defineModel<HederaAccount[]>('linkedAccounts');
@@ -64,13 +65,7 @@ const publicKeyToEdit = ref<string | null>(null);
 /* Computed */
 const { isUtcSelected } = useDateTimeSetting();
 
-const latestClient = computed(() => {
-  const clients = props.contact.user.clients;
-  if (!clients || clients.length === 0) return null;
-  return clients.reduce((latest, client) =>
-    new Date(client.updatedAt) > new Date(latest.updatedAt) ? client : latest,
-  );
-});
+const latestClient = computed(() => getLatestClient(props.contact.user.clients));
 
 const latestClientDate = computed(() => {
   if (!latestClient.value) return null;
