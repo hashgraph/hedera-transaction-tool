@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import type { Transaction } from '@prisma/client';
 import type { ITransactionFull, TransactionFile } from '@shared/interfaces';
 
@@ -626,81 +626,80 @@ watch(
 );
 </script>
 <template>
-  <form
-    @submit.prevent="handleSubmit"
-    class="flex-centered justify-content-between flex-wrap gap-4"
-  >
-    <div class="d-flex align-items-center gap-4">
-      <AppButton
-        type="button"
-        color="secondary"
-        class="btn-icon-only"
-        data-testid="button-back"
-        @click="handleBack"
-      >
-        <i class="bi bi-arrow-left"></i>
-      </AppButton>
-      <NextTransactionCursor />
-      <template v-if="txType">
-        <h2 class="text-title text-bold">{{ txType }}</h2>
-        <span v-if="isTransactionFailed" class="badge bg-danger text-break">
-          {{
-            getStatusFromCode(props.organizationTransaction?.statusCode)
-              ? getStatusFromCode(props.organizationTransaction?.statusCode)
-              : 'FAILED'
-          }}
-        </span>
-        <span v-else-if="isTransactionVersionMismatch" class="badge bg-danger text-break ms-2">
-          Transaction Version Mismatch
-        </span>
-        <span v-else-if="isManualFlagVisible" class="badge bg-info text-break ms-2">Manual</span>
-        <!-- Expiring Soon Badge -->
-        <ExpiringBadge
-          :valid-start="validStartDate"
-          :valid-duration="props.sdkTransaction?.transactionValidDuration ?? 0"
-          :transaction-status="props.organizationTransaction?.status ?? null"
-          variant="countdown"
-        />
-      </template>
-    </div>
+  <form @submit.prevent="handleSubmit">
+    <div class="flex-centered justify-content-between flex-wrap gap-4">
+      <div class="d-flex align-items-center gap-4">
+        <AppButton
+          class="btn-icon-only"
+          color="secondary"
+          data-testid="button-back"
+          type="button"
+          @click="handleBack"
+        >
+          <i class="bi bi-arrow-left"></i>
+        </AppButton>
+        <NextTransactionCursor />
+        <div v-if="txType" class="d-flex align-items-center column-gap-3 row-gap-2 flex-wrap">
+          <h2 class="text-title text-bold">{{ txType }}</h2>
+          <span v-if="isTransactionFailed" class="badge bg-danger text-break">
+            {{
+              getStatusFromCode(props.organizationTransaction?.statusCode)
+                ? getStatusFromCode(props.organizationTransaction?.statusCode)
+                : 'FAILED'
+            }}
+          </span>
+          <span v-else-if="isTransactionVersionMismatch" class="badge bg-danger text-break">
+            Transaction Version Mismatch
+          </span>
+          <span v-else-if="isManualFlagVisible" class="badge bg-info text-break">Manual</span>
+          <!-- Expiring Soon Badge -->
+          <ExpiringBadge
+            :transaction-status="props.organizationTransaction?.status ?? null"
+            :valid-duration="props.sdkTransaction?.transactionValidDuration ?? 0"
+            :valid-start="validStartDate"
+            variant="countdown"
+          />
+        </div>
+      </div>
 
-    <div class="flex-centered gap-4">
-      <Transition name="fade" mode="out-in">
-        <template v-if="visibleButtons.length > 0">
-          <div>
-            <SplitSignButtonDropdown
-              v-if="visibleButtons[0] === sign"
-              :loading="Boolean(loadingStates[sign])"
-              :loading-text="loadingStates[sign] || ''"
-            />
-            <AppButton
-              v-else
-              :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
-              :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[0]])"
-              :loading="Boolean(loadingStates[visibleButtons[0]])"
-              :loading-text="loadingStates[visibleButtons[0]] || ''"
-              :data-testid="buttonsDataTestIds[visibleButtons[0]]"
-              type="submit"
-              >{{ visibleButtons[0] }}
-            </AppButton>
-          </div>
-        </template>
-      </Transition>
+      <div class="flex-centered gap-4">
+        <Transition mode="out-in" name="fade">
+          <template v-if="visibleButtons.length > 0">
+            <div>
+              <SplitSignButtonDropdown
+                v-if="visibleButtons[0] === sign"
+                :loading="Boolean(loadingStates[sign])"
+                :loading-text="loadingStates[sign] || ''"
+              />
+              <AppButton
+                v-else
+                :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
+                :data-testid="buttonsDataTestIds[visibleButtons[0]]"
+                :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[0]])"
+                :loading="Boolean(loadingStates[visibleButtons[0]])"
+                :loading-text="loadingStates[visibleButtons[0]] || ''"
+                type="submit"
+                >{{ visibleButtons[0] }}
+              </AppButton>
+            </div>
+          </template>
+        </Transition>
 
-      <Transition name="fade" mode="out-in">
-        <template v-if="dropDownItems.length > 0">
-          <div>
-            <AppDropDown
-              :color="'secondary'"
-              :items="dropDownItems"
-              :disabled="isRefreshing"
-              compact
-              @select="handleDropDownItem($event as ActionButton)"
-              data-testid="button-more-dropdown-lg"
-            />
-          </div>
-        </template>
-      </Transition>
+        <Transition mode="out-in" name="fade">
+          <template v-if="dropDownItems.length > 0">
+            <div>
+              <AppDropDown
+                :color="'secondary'"
+                :disabled="isRefreshing"
+                :items="dropDownItems"
+                compact
+                data-testid="button-more-dropdown-lg"
+                @select="handleDropDownItem($event as ActionButton)"
+              />
+            </div>
+          </template>
+        </Transition>
+      </div>
     </div>
   </form>
 
