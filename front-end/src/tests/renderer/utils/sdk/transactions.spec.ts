@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, test, expect, vi, beforeEach, type MockInstance } from 'vitest';
 import { FreezeTransaction, FreezeType, Transaction, TransferTransaction } from '@hashgraph/sdk';
 import {
@@ -10,6 +11,15 @@ import * as organizationService from '@renderer/services/organization';
 
 vi.mock('@renderer/services/organization', () => ({
   getTransactionById: vi.fn(),
+}));
+
+vi.mock('@renderer/utils', () => ({
+  hexToUint8Array: (hexString: string) =>
+    new Uint8Array(
+      (hexString.startsWith('0x') ? hexString.slice(2) : hexString)
+        .match(/.{1,2}/g)
+        ?.map(byte => parseInt(byte, 16)) || [],
+    ),
 }));
 
 describe('SDK Transaction Utilities - Freeze Types', () => {
