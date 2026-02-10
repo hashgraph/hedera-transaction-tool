@@ -61,7 +61,7 @@ export class CacheHelper {
     // Retry loop: claim atomically or poll for unclaimed row
     while (attempt < maxAttempts) {
       if (attempt > 0) {
-        // On retries: check for unclaimed row to short-circuit without U
+        // On retries: check for unclaimed row to short-circuit without claiming
         existing = await this.dataSource.manager.findOne(entity, { where: key as unknown as FindOptionsWhere<T> }) as T | null;
         if (existing && !existing.refreshToken) {
           // Unclaimed row found → we can use it (someone else finished updating)
