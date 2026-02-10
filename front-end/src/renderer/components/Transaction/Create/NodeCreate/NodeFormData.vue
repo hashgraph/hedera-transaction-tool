@@ -16,6 +16,8 @@ import {
   validate100CharInput,
 } from '@renderer/utils';
 
+import { cleanAndExtractPort, getEndpointData } from '@renderer/utils/endpointUtils';
+
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
@@ -44,9 +46,6 @@ const gossipCaCertificateText = ref('');
 const gossipFile = useTemplateRef<HTMLInputElement>('gossipFile');
 const grpcFile = useTemplateRef<HTMLInputElement>('grpcFile');
 const nodeDescriptionError = ref(false);
-
-const validIp =
-  '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]).){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$';
 
 /* Emits */
 const emit = defineEmits<{
@@ -169,64 +168,6 @@ function handleInputValidation(e: Event) {
 }
 
 /* Functions */
-function stripProtocolAndPath(input: string): string {
-  let result = input.trim();
-
-  // Remove protocol prefix (http://, https://, grpc://, etc.)
-  result = result.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, '');
-
-  // Remove path, query parameters, and fragments
-  // Find the first occurrence of /, ?, or # and truncate there
-  const slashIndex = result.indexOf('/');
-  const queryIndex = result.indexOf('?');
-  const fragmentIndex = result.indexOf('#');
-
-  const indices = [slashIndex, queryIndex, fragmentIndex].filter(i => i !== -1);
-  if (indices.length > 0) {
-    const cutIndex = Math.min(...indices);
-    result = result.substring(0, cutIndex);
-  }
-
-  return result;
-}
-
-function cleanAndExtractPort(input: string): { hostPart: string; port: string | null } {
-  let hostPart = stripProtocolAndPath(input);
-
-  const colonCount = (hostPart.match(/:/g) || []).length;
-
-  if (colonCount > 1) {
-    // IPv6 territory - only extract port if brackets are used: [IPv6]:port
-    const bracketMatch = hostPart.match(/^(\[.+\]):(\d+)$/);
-    if (bracketMatch) {
-      return { hostPart: bracketMatch[1], port: bracketMatch[2] };
-    }
-    // Bare IPv6 - can't have a port without brackets
-    return { hostPart, port: null };
-  }
-
-  // IPv4 or domain - standard port extraction
-  const portMatch = hostPart.match(/:(\d+)$/);
-  if (portMatch) {
-    const port = portMatch[1];
-    hostPart = hostPart.substring(0, hostPart.lastIndexOf(':'));
-    return { hostPart, port };
-  }
-
-  return { hostPart, port: null };
-}
-
-function getEndpointData(ipOrDomain: string, port: string) {
-  // Input already cleaned by watcher - just classify as IP or domain
-  const isIp = ipOrDomain.match(validIp);
-
-  return {
-    ipAddressV4: isIp ? ipOrDomain : '',
-    port,
-    domainName: isIp ? '' : ipOrDomain.trim(),
-  };
-}
-
 function getGrpcWebProxyEndpoint(field: 'domainName' | 'port', value: string) {
   let domainValue =
     field === 'domainName' ? value : props.data.grpcWebProxyEndpoint?.domainName || '';
