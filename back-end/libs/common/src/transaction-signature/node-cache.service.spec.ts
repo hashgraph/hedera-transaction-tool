@@ -74,7 +74,10 @@ describe('NodeCacheService', () => {
       providers: [
         NodeCacheService,
         { provide: MirrorNodeClient, useValue: mirrorNodeClient },
-        { provide: DataSource, useValue: dataSource },
+        {
+          provide: 'cacheDataSource',
+          useValue: dataSource,
+        },
         { provide: ConfigService, useValue: configService },
         { provide: SqlBuilderService, useValue: sqlBuilderService },
       ],
@@ -92,7 +95,7 @@ describe('NodeCacheService', () => {
   describe('constructor', () => {
     it('should initialize with config values', () => {
       expect(configService.get).toHaveBeenCalledWith('CACHE_STALE_THRESHOLD_MS', 10000);
-      expect(configService.get).toHaveBeenCalledWith('CACHE_RECLAIM_TIMEOUT_MS', 10000);
+      expect(configService.get).toHaveBeenCalledWith('CACHE_CLAIM_TIMEOUT_MS', 10000);
     });
   });
 

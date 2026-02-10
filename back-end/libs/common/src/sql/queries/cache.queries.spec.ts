@@ -27,18 +27,19 @@ describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
 
   describe('INSERT path - new records', () => {
     it('should insert new record with refresh token', async () => {
-      const query = getUpsertRefreshTokenForCacheQuery(
+      const key = { account: '0.0.100', mirrorNetwork: 'mainnet' };
+
+      const { text: query, values } = getUpsertRefreshTokenForCacheQuery(
         sqlBuilder,
         CachedAccount,
-        ['account', 'mirrorNetwork'],
+        key
       );
 
       const refreshToken = randomUUID();
       const reclaimDate = new Date(Date.now() - 60000);
 
       const result = await dataSource.query(query, [
-        '0.0.100',
-        'mainnet',
+        ...values,
         refreshToken,
         reclaimDate,
       ]);
@@ -52,18 +53,19 @@ describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
     });
 
     it('should insert record with single key column', async () => {
-      const query = getUpsertRefreshTokenForCacheQuery(
+      const key = { nodeId: 1, mirrorNetwork: 'mainnet' };
+
+      const { text: query, values } = getUpsertRefreshTokenForCacheQuery(
         sqlBuilder,
         CachedNode,
-        ['nodeId', 'mirrorNetwork'],
+        key,
       );
 
       const refreshToken = randomUUID();
       const reclaimDate = new Date(Date.now() - 60000);
 
       const result = await dataSource.query(query, [
-        1,
-        'mainnet',
+        ...values,
         refreshToken,
         reclaimDate,
       ]);
@@ -84,18 +86,19 @@ describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
         refreshToken: null,
       });
 
-      const query = getUpsertRefreshTokenForCacheQuery(
+      const key = { account: '0.0.200', mirrorNetwork: 'testnet' };
+
+      const { text: query, values } = getUpsertRefreshTokenForCacheQuery(
         sqlBuilder,
         CachedAccount,
-        ['account', 'mirrorNetwork'],
+        key,
       );
 
       const refreshToken = randomUUID();
       const reclaimDate = new Date(Date.now() - 60000);
 
       const result = await dataSource.query(query, [
-        '0.0.200',
-        'testnet',
+        ...values,
         refreshToken,
         reclaimDate,
       ]);
@@ -116,18 +119,19 @@ describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
         updatedAt: staleDate,
       });
 
-      const query = getUpsertRefreshTokenForCacheQuery(
+      const key = { account: '0.0.300', mirrorNetwork: 'mainnet' };
+
+      const { text: query, values } = getUpsertRefreshTokenForCacheQuery(
         sqlBuilder,
         CachedAccount,
-        ['account', 'mirrorNetwork'],
+        key,
       );
 
       const newRefreshToken = randomUUID();
       const reclaimDate = new Date(Date.now() - 60000); // 1 minute ago
 
       const result = await dataSource.query(query, [
-        '0.0.300',
-        'mainnet',
+        ...values,
         newRefreshToken,
         reclaimDate,
       ]);
@@ -149,18 +153,19 @@ describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
         updatedAt: recentDate,
       });
 
-      const query = getUpsertRefreshTokenForCacheQuery(
+      const key = { account: '0.0.400', mirrorNetwork: 'mainnet' };
+
+      const { text: query, values } = getUpsertRefreshTokenForCacheQuery(
         sqlBuilder,
         CachedAccount,
-        ['account', 'mirrorNetwork'],
+        key,
       );
 
       const attemptedToken = randomUUID();
       const reclaimDate = new Date(Date.now() - 60000); // 1 minute ago
 
       const result = await dataSource.query(query, [
-        '0.0.400',
-        'mainnet',
+        ...values,
         attemptedToken,
         reclaimDate,
       ]);
@@ -181,18 +186,19 @@ describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
         updatedAt: recentDate,
       });
 
-      const query = getUpsertRefreshTokenForCacheQuery(
+      const key = { account: '0.0.500', mirrorNetwork: 'testnet' };
+
+      const { text: query, values } = getUpsertRefreshTokenForCacheQuery(
         sqlBuilder,
         CachedAccount,
-        ['account', 'mirrorNetwork'],
+        key,
       );
 
       const attemptedToken = randomUUID();
       const reclaimDate = new Date(Date.now() - 60000);
 
       const result = await dataSource.query(query, [
-        '0.0.500',
-        'testnet',
+        ...values,
         attemptedToken,
         reclaimDate,
       ]);
@@ -204,18 +210,19 @@ describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
 
   describe('edge cases', () => {
     it('should handle multiple key columns correctly', async () => {
-      const query = getUpsertRefreshTokenForCacheQuery(
+      const key = { account: '0.0.600', mirrorNetwork: 'previewnet' };
+
+      const { text: query, values } = getUpsertRefreshTokenForCacheQuery(
         sqlBuilder,
         CachedAccount,
-        ['account', 'mirrorNetwork'],
+        key,
       );
 
       const refreshToken = randomUUID();
       const reclaimDate = new Date(Date.now() - 60000);
 
       const result = await dataSource.query(query, [
-        '0.0.600',
-        'previewnet',
+        ...values,
         refreshToken,
         reclaimDate,
       ]);
@@ -234,15 +241,16 @@ describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
         refreshToken: randomUUID(),
       });
 
-      const query = getUpsertRefreshTokenForCacheQuery(
+      const key = { account: '0.0.700', mirrorNetwork: 'mainnet' };
+
+      const { text: query, values } = getUpsertRefreshTokenForCacheQuery(
         sqlBuilder,
         CachedAccount,
-        ['account', 'mirrorNetwork'],
+        key,
       );
 
       const result = await dataSource.query(query, [
-        '0.0.700',
-        'mainnet',
+        ...values,
         randomUUID(),
         new Date(Date.now() - 60000),
       ]);
@@ -251,15 +259,16 @@ describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
     });
 
     it('should set timestamps correctly on insert', async () => {
-      const query = getUpsertRefreshTokenForCacheQuery(
+      const key = { account: '0.0.800', mirrorNetwork: 'mainnet' };
+
+      const { text: query, values } = getUpsertRefreshTokenForCacheQuery(
         sqlBuilder,
         CachedAccount,
-        ['account', 'mirrorNetwork'],
+        key,
       );
 
       const result = await dataSource.query(query, [
-        '0.0.800',
-        'mainnet',
+        ...values,
         randomUUID(),
         new Date(Date.now() - 60000),
       ]);
@@ -281,17 +290,17 @@ describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
         updatedAt: oldDate,
       });
 
+      const key = { account: '0.0.900', mirrorNetwork: 'mainnet' };
       const beforeClaim = new Date();
 
-      const query = getUpsertRefreshTokenForCacheQuery(
+      const { text: query, values } = getUpsertRefreshTokenForCacheQuery(
         sqlBuilder,
         CachedAccount,
-        ['account', 'mirrorNetwork'],
+        key,
       );
 
       const result = await dataSource.query(query, [
-        '0.0.900',
-        'mainnet',
+        ...values,
         randomUUID(),
         new Date(Date.now() - 60000),
       ]);
@@ -314,18 +323,19 @@ describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
         refreshToken: null,
       });
 
-      const query = getUpsertRefreshTokenForCacheQuery(
+      const key = { account: '0.0.1000', mirrorNetwork: 'mainnet' };
+
+      const { text: query, values } = getUpsertRefreshTokenForCacheQuery(
         sqlBuilder,
         CachedAccount,
-        ['account', 'mirrorNetwork'],
+        key,
       );
 
       const reclaimDate = new Date(Date.now() - 60000);
 
       // First claim should succeed
       const result1 = await dataSource.query(query, [
-        '0.0.1000',
-        'mainnet',
+        ...values,
         winnerToken,
         reclaimDate,
       ]);
@@ -334,8 +344,7 @@ describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
 
       // Second claim should return the winner's token
       const result2 = await dataSource.query(query, [
-        '0.0.1000',
-        'mainnet',
+        ...values,
         randomUUID(),
         reclaimDate,
       ]);
@@ -347,16 +356,18 @@ describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
   describe('parameter ordering', () => {
     it('should accept parameters in correct order: keys, refreshToken, reclaimDate', async () => {
       const token = randomUUID();
-      const query = getUpsertRefreshTokenForCacheQuery(
+
+      const key = { account: '0.0.1100', mirrorNetwork: 'mainnet' };
+
+      const { text: query, values } = getUpsertRefreshTokenForCacheQuery(
         sqlBuilder,
         CachedAccount,
-        ['account', 'mirrorNetwork'],
+        key,
       );
 
       // Parameters: account, mirrorNetwork, refreshToken, reclaimDate
       const result = await dataSource.query(query, [
-        '0.0.1100',         // key 1
-        'mainnet',          // key 2
+        ...values,
         token, // refreshToken
         new Date(Date.now() - 60000), // reclaimDate
       ]);
