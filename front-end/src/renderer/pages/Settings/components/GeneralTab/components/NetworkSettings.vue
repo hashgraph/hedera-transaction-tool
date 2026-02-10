@@ -11,7 +11,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import useLoader from '@renderer/composables/useLoader';
 
-import { add, getStoredClaim, update } from '@renderer/services/claimService';
+import { setStoredClaim } from '@renderer/services/claimService';
 
 import { isUserLoggedIn } from '@renderer/utils';
 
@@ -89,9 +89,7 @@ const handleMirrorNodeBaseURLChange = async () => {
 
 const updateSelectedNetwork = async (network: Network) => {
   if (!isUserLoggedIn(user.personal)) return;
-  const selectedNetwork = await getStoredClaim(user.personal.id, SELECTED_NETWORK);
-  const addOrUpdate = selectedNetwork !== undefined ? update : add;
-  await addOrUpdate(user.personal.id, SELECTED_NETWORK, network);
+  await setStoredClaim(user.personal.id, SELECTED_NETWORK, network);
 };
 
 const handleChange = (network: Network) => {

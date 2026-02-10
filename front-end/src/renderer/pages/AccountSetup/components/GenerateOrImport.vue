@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { KeyPair } from '@prisma/client';
 import type { TabItem } from '@renderer/components/ui/AppTabs.vue';
+import AppTabs from '@renderer/components/ui/AppTabs.vue';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
 
@@ -9,16 +10,9 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useRouter } from 'vue-router';
 import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNickname';
 
-import { getStoredClaim, update, add } from '@renderer/services/claimService';
+import { setStoredClaim } from '@renderer/services/claimService';
 
-import {
-  assertUserLoggedIn,
-  buildSkipClaimKey,
-  isLoggedInOrganization,
-  safeAwait,
-} from '@renderer/utils';
-
-import AppTabs from '@renderer/components/ui/AppTabs.vue';
+import { assertUserLoggedIn, buildSkipClaimKey, isLoggedInOrganization } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import Import from '@renderer/components/RecoveryPhrase/Import.vue';
 import RecoveryPhraseNicknameInput from '@renderer/components/RecoveryPhrase/RecoveryPhraseNicknameInput.vue';
@@ -79,9 +73,7 @@ const handleSkip = async () => {
       user.selectedOrganization.serverUrl,
       user.selectedOrganization.userId,
     );
-    const { data } = await safeAwait(getStoredClaim(user.personal.id, claimKey));
-    const addOrUpdate = data !== undefined ? update : add;
-    await addOrUpdate(user.personal.id, claimKey, 'true');
+    await setStoredClaim(user.personal.id, claimKey, 'true');
     user.skippedSetup = true;
     await router.push({ name: 'transactions' });
   }
