@@ -472,10 +472,8 @@ export class TransactionPage extends BasePage {
       `[data-testid="${this.confirmTransactionModalSelector}"]`,
       { state: 'hidden', timeout: 10000 }
     );
-    // Wait for execution modal to APPEAR first (shows "Executing" text while tx runs)
-    await this.window.waitForSelector('text=Executing', { state: 'visible', timeout: 10000 });
-    // DON'T click Close - it's a cancel button that dismisses modal while tx still running!
-    // Wait for modal to AUTO-CLOSE when execution completes (isExecuting becomes false in Vue component)
+    // Wait for execution to complete (modal auto-closes when done)
+    // Note: don't wait for 'Executing' to appear first - it's transient and may already be gone
     await this.window.waitForSelector('text=Executing', { state: 'hidden', timeout: 30000 });
     await this.waitForCreatedAtToBeVisible();
 
