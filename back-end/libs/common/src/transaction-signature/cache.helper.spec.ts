@@ -68,7 +68,7 @@ describe('CacheHelper', () => {
   describe('tryClaimRefresh', () => {
     describe('successful claim scenarios', () => {
       it('should claim a new row on first attempt (INSERT path)', async () => {
-        const where = { key: 'test-key' };
+        const key = { account: '0.0.123', mirrorNetwork: 'testnet' };
         const reclaimAfterMs = 60000;
         const mockUuid = 'test-uuid-123';
 
@@ -88,7 +88,7 @@ describe('CacheHelper', () => {
         const result = await helper.tryClaimRefresh(
           sqlBuilderService,
           TestCacheEntity,
-          where,
+          key,
           reclaimAfterMs,
         );
 
@@ -99,7 +99,7 @@ describe('CacheHelper', () => {
       });
 
       it('should claim an unclaimed existing row (UPDATE path)', async () => {
-        const where = { key: 'test-key' };
+        const key = { account: '0.0.123', mirrorNetwork: 'testnet' };
         const reclaimAfterMs = 60000;
         const mockUuid = 'test-uuid-456';
 
@@ -118,7 +118,7 @@ describe('CacheHelper', () => {
         const result = await helper.tryClaimRefresh(
           sqlBuilderService,
           TestCacheEntity,
-          where,
+          key,
           reclaimAfterMs,
         );
 
@@ -127,7 +127,7 @@ describe('CacheHelper', () => {
       });
 
       it('should reclaim a stale row (beyond reclaimAfterMs)', async () => {
-        const where = { key: 'test-key' };
+        const key = { account: '0.0.123', mirrorNetwork: 'testnet' };
         const reclaimAfterMs = 60000;
         const mockUuid = 'test-uuid-789';
 
@@ -147,7 +147,7 @@ describe('CacheHelper', () => {
         const result = await helper.tryClaimRefresh(
           sqlBuilderService,
           TestCacheEntity,
-          where,
+          key,
           reclaimAfterMs,
         );
 
@@ -156,7 +156,8 @@ describe('CacheHelper', () => {
         expect(mockQuery).toHaveBeenCalledWith(
           expect.any(String),
           expect.arrayContaining([
-            'test-key',
+            '0.0.123',
+            'testnet',
             mockUuid,
             expect.any(Date), // reclaim cutoff
           ]),
@@ -166,7 +167,7 @@ describe('CacheHelper', () => {
 
     describe('retry and backoff scenarios', () => {
       it('should retry and eventually find unclaimed row', async () => {
-        const where = { key: 'test-key' };
+        const key = { account: '0.0.123', mirrorNetwork: 'testnet' };
         const reclaimAfterMs = 60000;
 
         // First attempt: someone else claimed it
@@ -191,7 +192,7 @@ describe('CacheHelper', () => {
         const result = await helper.tryClaimRefresh(
           sqlBuilderService,
           TestCacheEntity,
-          where,
+          key,
           reclaimAfterMs,
         );
 
@@ -202,11 +203,11 @@ describe('CacheHelper', () => {
       });
 
       it('should retry multiple times before finding unclaimed row', async () => {
-        const where = { key: 'test-key' };
+        const key = { account: '0.0.123', mirrorNetwork: 'testnet' };
         const reclaimAfterMs = 60000;
 
-        // First attempt: claimed by other
-        mockQuery.mockResolvedValueOnce([
+        // claimed by other
+        mockQuery.mockResolvedValue([
           { id: 5, refreshToken: 'other-1', updatedAt: new Date() },
         ]);
 
@@ -221,7 +222,7 @@ describe('CacheHelper', () => {
         const result = await helper.tryClaimRefresh(
           sqlBuilderService,
           TestCacheEntity,
-          where,
+          key,
           reclaimAfterMs,
         );
 
@@ -231,7 +232,7 @@ describe('CacheHelper', () => {
       });
 
       it('should attempt UPSERT again if row disappears during retry', async () => {
-        const where = { key: 'test-key' };
+        const key = { account: '0.0.123', mirrorNetwork: 'testnet' };
         const reclaimAfterMs = 60000;
         const mockUuid = 'test-uuid-abc';
 
@@ -253,7 +254,7 @@ describe('CacheHelper', () => {
         const result = await helper.tryClaimRefresh(
           sqlBuilderService,
           TestCacheEntity,
-          where,
+          key,
           reclaimAfterMs,
         );
 
@@ -266,18 +267,18 @@ describe('CacheHelper', () => {
 
     describe('error scenarios', () => {
       it('should throw if query returns no rows', async () => {
-        const where = { key: 'test-key' };
+        const key = { account: '0.0.123', mirrorNetwork: 'testnet' };
         const reclaimAfterMs = 60000;
 
         mockQuery.mockResolvedValue([]);
 
         await expect(
-          helper.tryClaimRefresh(sqlBuilderService, TestCacheEntity, where, reclaimAfterMs),
+          helper.tryClaimRefresh(sqlBuilderService, TestCacheEntity, key, reclaimAfterMs),
         ).rejects.toThrow('Unexpected number of rows returned from cache upsert/claim');
       });
 
       it('should throw if query returns multiple rows', async () => {
-        const where = { key: 'test-key' };
+        const key = { account: '0.0.123', mirrorNetwork: 'testnet' };
         const reclaimAfterMs = 60000;
 
         mockQuery.mockResolvedValue([
@@ -286,23 +287,23 @@ describe('CacheHelper', () => {
         ]);
 
         await expect(
-          helper.tryClaimRefresh(sqlBuilderService, TestCacheEntity, where, reclaimAfterMs),
+          helper.tryClaimRefresh(sqlBuilderService, TestCacheEntity, key, reclaimAfterMs),
         ).rejects.toThrow('Unexpected number of rows returned from cache upsert/claim');
       });
 
       it('should throw if query returns non-array', async () => {
-        const where = { key: 'test-key' };
+        const key = { account: '0.0.123', mirrorNetwork: 'testnet' };
         const reclaimAfterMs = 60000;
 
         mockQuery.mockResolvedValue({ id: 1 }); // Not an array
 
         await expect(
-          helper.tryClaimRefresh(sqlBuilderService, TestCacheEntity, where, reclaimAfterMs),
+          helper.tryClaimRefresh(sqlBuilderService, TestCacheEntity, key, reclaimAfterMs),
         ).rejects.toThrow('Unexpected number of rows returned from cache upsert/claim');
       });
 
       it('should throw after max attempts with no existing data', async () => {
-        const where = { key: 'test-key' };
+        const key = { account: '0.0.123', mirrorNetwork: 'testnet' };
         const reclaimAfterMs = 10000;
 
         // All attempts: claimed by others
@@ -313,7 +314,7 @@ describe('CacheHelper', () => {
         mockFindOne.mockResolvedValue(null);
 
         await expect(
-          helper.tryClaimRefresh(sqlBuilderService, TestCacheEntity, where, reclaimAfterMs),
+          helper.tryClaimRefresh(sqlBuilderService, TestCacheEntity, key, reclaimAfterMs),
         ).rejects.toThrow('Failed to claim cache refresh after max attempts, and no existing data found');
 
         expect(mockQuery).toHaveBeenCalledTimes(20);
@@ -321,7 +322,7 @@ describe('CacheHelper', () => {
       });
 
       it('should return last known data after max attempts if existing data found', async () => {
-        const where = { key: 'test-key' };
+        const key = { account: '0.0.123', mirrorNetwork: 'testnet' };
         const reclaimAfterMs = 60000;
 
         const lastKnownData = {
@@ -339,7 +340,7 @@ describe('CacheHelper', () => {
         const result = await helper.tryClaimRefresh(
           sqlBuilderService,
           TestCacheEntity,
-          where,
+          key,
           reclaimAfterMs,
         );
 
@@ -350,7 +351,7 @@ describe('CacheHelper', () => {
 
     describe('concurrency', () => {
       it('should generate unique UUID for each call', async () => {
-        const where = { key: 'test-key' };
+        const key = { account: '0.0.123', mirrorNetwork: 'testnet' };
         const reclaimAfterMs = 60000;
 
         const uuidSpy = randomUUID as jest.Mock;
@@ -359,7 +360,7 @@ describe('CacheHelper', () => {
           { id: 11, refreshToken: 'test-uuid', updatedAt: new Date() },
         ]);
 
-        await helper.tryClaimRefresh(sqlBuilderService, TestCacheEntity, where, reclaimAfterMs);
+        await helper.tryClaimRefresh(sqlBuilderService, TestCacheEntity, key, reclaimAfterMs);
 
         expect(uuidSpy).toHaveBeenCalledTimes(1);
       });

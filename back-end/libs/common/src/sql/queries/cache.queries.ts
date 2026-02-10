@@ -1,12 +1,19 @@
-import { SqlBuilderService } from '@app/common';
+import { SqlBuilderService, SqlQuery } from '@app/common';
 import { EntityTarget } from 'typeorm';
+
+export type CacheKey =
+  | { account: string; mirrorNetwork: string }
+  | { nodeId: number; mirrorNetwork: string };
 
 export function getUpsertRefreshTokenForCacheQuery(
   sql: SqlBuilderService,
   entity: EntityTarget<any>,
-  keyColumns: string[],
-): string {
+  key: CacheKey,
+): SqlQuery {
   const tableName = sql.table(entity);
+
+  const keyColumns = Object.keys(key);
+  const keyValues = Object.values(key);
 
   const keyColumnNames = keyColumns.map(col => sql.col(entity, col));
   const createdAtCol = sql.col(entity, 'createdAt');
@@ -36,7 +43,7 @@ export function getUpsertRefreshTokenForCacheQuery(
     .map((col, i) => `${col} = ${keyParams[i]}`)
     .join(' AND ');
 
-  return `
+  const text = `
     WITH claimed AS (
       INSERT INTO ${tableName} (${insertColumns.join(', ')})
       VALUES (${valuePlaceholders.join(', ')})
@@ -59,4 +66,6 @@ export function getUpsertRefreshTokenForCacheQuery(
       
     LIMIT 1
   `.trim();
+
+  return { text, values: keyValues };
 }

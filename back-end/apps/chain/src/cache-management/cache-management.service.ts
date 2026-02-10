@@ -33,7 +33,7 @@ export class CacheManagementService {
   ) {
     this.staleThresholdMs =  this.configService.get<number>('CACHE_STALE_THRESHOLD_MS', 10 * 1000);
     this.batchSize =  this.configService.get<number>('CACHE_REFRESH_BATCH_SIZE', 100);
-    this.reclaimTimeoutMs = this.configService.get<number>('CACHE_RECLAIM_TIMEOUT_MS', 10 * 1000);
+    this.reclaimTimeoutMs = this.configService.get<number>('CACHE_CLAIM_TIMEOUT_MS', 10 * 1000);
   }
 
   /**

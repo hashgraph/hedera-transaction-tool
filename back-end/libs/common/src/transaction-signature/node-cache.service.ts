@@ -28,7 +28,7 @@ export class NodeCacheService {
   private readonly cacheHelper: CacheHelper;
 
   private readonly cacheTtlMs: number;
-  private readonly reclaimTimeoutMs: number;
+  private readonly claimTimeoutMs: number;
 
   constructor(
     private readonly mirrorNodeClient: MirrorNodeClient,
@@ -39,7 +39,7 @@ export class NodeCacheService {
   ) {
     this.cacheHelper = new CacheHelper(dataSource);
     this.cacheTtlMs = this.configService.get<number>('CACHE_STALE_THRESHOLD_MS', 10 * 1000);
-    this.reclaimTimeoutMs = this.configService.get<number>('CACHE_RECLAIM_TIMEOUT_MS', 10 * 1000);
+    this.claimTimeoutMs = this.configService.get<number>('CACHE_CLAIM_TIMEOUT_MS', 10 * 1000);
   }
 
   /**
@@ -113,7 +113,7 @@ export class NodeCacheService {
   }
 
   /**
-   * Claim refresh for a CachedNode row. Reclaim period: 2 minutes.
+   * Claim refresh for a CachedNode row.
    */
   private tryClaimNodeRefresh(
     nodeId: number,
@@ -123,7 +123,7 @@ export class NodeCacheService {
       this.sqlBuilder,
       CachedNode,
       { nodeId, mirrorNetwork },
-      this.reclaimTimeoutMs,
+      this.claimTimeoutMs,
     );
   }
 

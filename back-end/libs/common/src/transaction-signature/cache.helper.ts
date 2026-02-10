@@ -1,7 +1,7 @@
-import { DataSource, EntityTarget } from 'typeorm';
+import { DataSource, EntityTarget, FindOptionsWhere } from 'typeorm';
 import { PublicKey } from '@hashgraph/sdk';
 import { randomUUID } from 'node:crypto';
-import { getUpsertRefreshTokenForCacheQuery, SqlBuilderService } from '../sql';
+import { CacheKey, getUpsertRefreshTokenForCacheQuery, SqlBuilderService } from '../sql';
 
 /**
  * Helper class for common caching operations.
@@ -32,7 +32,7 @@ export class CacheHelper {
    *
    * @param sqlBuilder - Resolves safe table/column names from entity metadata
    * @param entity - TypeORM entity class (determines table/columns)
-   * @param where - Unique key columns/values (determines conflict target)
+   * @param key - Unique key columns/values (determines conflict target)
    * @param reclaimAfterMs - Time window after which stale claims can be stolen
    * @returns Row data + boolean indicating if this caller claimed ownership
    * @throws If no row exists after max attempts or query fails unexpectedly
@@ -40,21 +40,21 @@ export class CacheHelper {
   async tryClaimRefresh<T extends { refreshToken?: string | null; updatedAt?: Date }>(
     sqlBuilder: SqlBuilderService,
     entity: EntityTarget<T>,
-    where: Record<string, any>,
+    key: CacheKey,
     reclaimAfterMs: number,
   ): Promise<{ data: T, claimed: boolean }> {
     const pollIntervalMs = 500;
     const uuid = randomUUID();
 
     // Generate parameterized UPSERT SQL using safe column/table names from entity metadata
-    // Object.keys(where) defines conflict target columns
-    const sql = getUpsertRefreshTokenForCacheQuery(
+    // CacheKey defines conflict target columns
+    const { text: sql, values } = getUpsertRefreshTokenForCacheQuery(
       sqlBuilder,
       entity,
-      Object.keys(where),
+      key,
     );
 
-    const maxAttempts = 20
+    const maxAttempts = 20;
     let attempt = 0;
     let existing: T | null = null;
 
@@ -62,17 +62,10 @@ export class CacheHelper {
     while (attempt < maxAttempts) {
       if (attempt > 0) {
         // On retries: check for unclaimed row to short-circuit without U
-        existing = await this.dataSource.manager.findOne(entity, { where }) as T | null;
-        if (existing) {
-          if (!existing.refreshToken) {
-            // Unclaimed row found → we can use it (someone else finished updating)
-            return { data: existing, claimed: false };
-          } else {
-            // Row still claimed → backoff and retry
-            await new Promise(res => setTimeout(res, pollIntervalMs));
-            attempt++;
-            continue;
-          }
+        existing = await this.dataSource.manager.findOne(entity, { where: key as unknown as FindOptionsWhere<T> }) as T | null;
+        if (existing && !existing.refreshToken) {
+          // Unclaimed row found → we can use it (someone else finished updating)
+          return { data: existing, claimed: false };
         }
       }
 
@@ -81,7 +74,7 @@ export class CacheHelper {
       // - ON CONFLICT: steal if unclaimed or reclaimable (updatedAt < reclaim cutoff)
       // - Always returns current owner row
       const result = await this.dataSource.query(sql, [
-        ...Object.values(where),        // key columns
+        ...values,                      // key columns
         uuid,                           // our refreshToken
         new Date(Date.now() - reclaimAfterMs), // reclaim cutoff
       ]);
