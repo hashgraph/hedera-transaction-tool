@@ -38,3 +38,25 @@ export const getStoredClaim = async (
 
   return claim?.claim_value;
 };
+
+export const setStoredClaim = async (userId: string, key: string, newValue: string | undefined) => {
+  const currentValue = await getStoredClaim(userId, key);
+  if (currentValue) {
+    // Claim is already set
+    if (newValue) {
+      // We update
+      await update(userId, key, newValue);
+    } else {
+      // We remove
+      await remove(userId, [key]);
+    }
+  } else {
+    // Claim is unset
+    if (newValue) {
+      // We add
+      add(userId, key, newValue);
+    } else {
+      // We leave unset
+    }
+  }
+};
