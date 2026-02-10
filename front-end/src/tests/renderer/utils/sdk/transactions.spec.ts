@@ -240,6 +240,59 @@ describe('SDK Transaction Utilities - Freeze Types', () => {
           expect(result).toBe(expected);
         },
       );
+
+      test('extracts freeze subtype from valid transactionBytes', () => {
+        const fromBytesSpy = vi.spyOn(Transaction, 'fromBytes');
+        const mockFreezeTx = new FreezeTransaction();
+        Object.defineProperty(mockFreezeTx, 'freezeType', { value: FreezeType.FreezeUpgrade });
+        fromBytesSpy.mockReturnValueOnce(mockFreezeTx);
+
+        const result = getDisplayTransactionType(
+          { localType: 'Freeze Transaction', transactionBytes: '1,2,3' },
+          false,
+          true,
+        );
+        expect(result).toBe('Freeze Upgrade');
+        fromBytesSpy.mockRestore();
+      });
+
+      test('falls back to formatted localType when deserialized freeze tx has no freezeType', () => {
+        const fromBytesSpy = vi.spyOn(Transaction, 'fromBytes');
+        const mockFreezeTx = new FreezeTransaction();
+        Object.defineProperty(mockFreezeTx, 'freezeType', { value: null });
+        fromBytesSpy.mockReturnValueOnce(mockFreezeTx);
+
+        const result = getDisplayTransactionType(
+          { localType: 'Freeze Transaction', transactionBytes: '1,2,3' },
+          false,
+          true,
+        );
+        expect(result).toBe('Freeze');
+        fromBytesSpy.mockRestore();
+      });
+
+      test('falls back to formatted localType when transactionBytes are invalid', () => {
+        const result = getDisplayTransactionType(
+          { localType: 'Freeze Transaction', transactionBytes: 'invalid,bytes' },
+          false,
+          true,
+        );
+        expect(result).toBe('Freeze');
+      });
+
+      test('falls back to formatted localType when bytes deserialize to non-freeze transaction', () => {
+        const fromBytesSpy = vi.spyOn(Transaction, 'fromBytes');
+        const mockTransferTx = new TransferTransaction();
+        fromBytesSpy.mockReturnValueOnce(mockTransferTx);
+
+        const result = getDisplayTransactionType(
+          { localType: 'Freeze Transaction', transactionBytes: '1,2,3' },
+          false,
+          true,
+        );
+        expect(result).toBe('Freeze');
+        fromBytesSpy.mockRestore();
+      });
     });
   });
 });
