@@ -20,6 +20,7 @@ import { MirrorNodeClient } from './mirror-node.client';
 import { CacheHelper } from './cache.helper';
 import { RefreshResult, RefreshStatus } from './cache.types';
 import { SqlBuilderService } from '../sql';
+import { InjectDataSource } from '@nestjs/typeorm';
 
 @Injectable()
 export class NodeCacheService {
@@ -31,6 +32,7 @@ export class NodeCacheService {
 
   constructor(
     private readonly mirrorNodeClient: MirrorNodeClient,
+    @InjectDataSource('cache')
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
     private readonly sqlBuilder: SqlBuilderService,
