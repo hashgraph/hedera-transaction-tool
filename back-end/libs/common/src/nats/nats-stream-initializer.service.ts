@@ -24,7 +24,7 @@ export class NatsStreamInitializerService implements OnModuleInit {
         subjects: ['notifications.queue.>'],
         retention: RetentionPolicy.Limits,
         storage: StorageType.File,
-        max_age: 30 * 60 * 1_000_000_000, // 30 minutes in nanoseconds
+        max_age: 5 * 60 * 1_000_000_000, // 5 minutes in nanoseconds
         max_msgs: -1,
         max_bytes: 1024 * 1024 * 1024, // 1 GB
         discard: 'old',
