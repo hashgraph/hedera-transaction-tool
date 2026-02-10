@@ -48,6 +48,37 @@ export function cleanAndExtractPort(input: string): { hostPart: string; port: st
   return { hostPart, port: null };
 }
 
+export function processEndpointInput(
+  ipOrDomain: string,
+  currentPort: string,
+): { ipOrDomain: string; port: string } {
+  const { hostPart, port } = cleanAndExtractPort(ipOrDomain);
+  return {
+    ipOrDomain: hostPart,
+    port: port ?? currentPort,
+  };
+}
+
+export function resolveGrpcProxyValues(
+  field: 'domainName' | 'port',
+  value: string,
+  existingDomain: string,
+  existingPort: string,
+): { domainName: string; port: string } {
+  let domainValue = field === 'domainName' ? value : existingDomain;
+  let portValue = field === 'port' ? value : existingPort;
+
+  if (field === 'domainName') {
+    const { hostPart, port } = cleanAndExtractPort(value);
+    domainValue = hostPart;
+    if (port) {
+      portValue = port;
+    }
+  }
+
+  return { domainName: domainValue, port: portValue };
+}
+
 export function getEndpointData(ipOrDomain: string, port: string) {
   // Input already cleaned by watcher - just classify as IP or domain
   const isIp = ipOrDomain.match(VALID_IPV4_REGEX);

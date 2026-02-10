@@ -3,6 +3,8 @@ import {
   stripProtocolAndPath,
   cleanAndExtractPort,
   getEndpointData,
+  processEndpointInput,
+  resolveGrpcProxyValues,
 } from '@renderer/utils/endpointUtils';
 
 describe('stripProtocolAndPath', () => {
@@ -273,6 +275,75 @@ describe('cleanAndExtractPort', () => {
         hostPart: 'a',
         port: '8080',
       });
+    });
+  });
+});
+
+describe('processEndpointInput', () => {
+  test('should strip protocol and extract port from full URL', () => {
+    expect(processEndpointInput('https://example.com:8080/path', '3000')).toEqual({
+      ipOrDomain: 'example.com',
+      port: '8080',
+    });
+  });
+
+  test('should preserve currentPort when input has no port', () => {
+    expect(processEndpointInput('example.com', '5000')).toEqual({
+      ipOrDomain: 'example.com',
+      port: '5000',
+    });
+  });
+
+  test('should strip protocol only when no port in input', () => {
+    expect(processEndpointInput('https://node.hedera.com', '50211')).toEqual({
+      ipOrDomain: 'node.hedera.com',
+      port: '50211',
+    });
+  });
+
+  test('should return empty host and preserve currentPort for empty input', () => {
+    expect(processEndpointInput('', '8080')).toEqual({
+      ipOrDomain: '',
+      port: '8080',
+    });
+  });
+});
+
+describe('resolveGrpcProxyValues', () => {
+  test('should extract domain and port when field is domainName with embedded port', () => {
+    expect(resolveGrpcProxyValues('domainName', 'proxy.example.com:443', '', '8080')).toEqual({
+      domainName: 'proxy.example.com',
+      port: '443',
+    });
+  });
+
+  test('should clean domain and preserve existingPort when no port in value', () => {
+    expect(resolveGrpcProxyValues('domainName', 'proxy.example.com', '', '8080')).toEqual({
+      domainName: 'proxy.example.com',
+      port: '8080',
+    });
+  });
+
+  test('should strip protocol and extract port from domainName value', () => {
+    expect(
+      resolveGrpcProxyValues('domainName', 'https://proxy.example.com:9090', '', '8080'),
+    ).toEqual({
+      domainName: 'proxy.example.com',
+      port: '9090',
+    });
+  });
+
+  test('should return existingDomain and new port when field is port', () => {
+    expect(resolveGrpcProxyValues('port', '3000', 'proxy.example.com', '8080')).toEqual({
+      domainName: 'proxy.example.com',
+      port: '3000',
+    });
+  });
+
+  test('should return empty domain when field is domainName with empty value', () => {
+    expect(resolveGrpcProxyValues('domainName', '', 'old.domain.com', '8080')).toEqual({
+      domainName: '',
+      port: '8080',
     });
   });
 });

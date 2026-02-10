@@ -16,7 +16,11 @@ import {
   validate100CharInput,
 } from '@renderer/utils';
 
-import { cleanAndExtractPort, getEndpointData } from '@renderer/utils/endpointUtils';
+import {
+  getEndpointData,
+  processEndpointInput,
+  resolveGrpcProxyValues,
+} from '@renderer/utils/endpointUtils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -169,25 +173,16 @@ function handleInputValidation(e: Event) {
 
 /* Functions */
 function getGrpcWebProxyEndpoint(field: 'domainName' | 'port', value: string) {
-  let domainValue =
-    field === 'domainName' ? value : props.data.grpcWebProxyEndpoint?.domainName || '';
-  let portValue = field === 'port' ? value : props.data.grpcWebProxyEndpoint?.port || '';
-
-  if (field === 'domainName') {
-    const { hostPart, port } = cleanAndExtractPort(value);
-    domainValue = hostPart;
-    if (port) {
-      portValue = port;
-    }
-  }
+  const { domainName, port } = resolveGrpcProxyValues(
+    field,
+    value,
+    props.data.grpcWebProxyEndpoint?.domainName || '',
+    props.data.grpcWebProxyEndpoint?.port || '',
+  );
 
   emit('update:data', {
     ...props.data,
-    grpcWebProxyEndpoint: {
-      ipAddressV4: '',
-      domainName: domainValue,
-      port: portValue,
-    },
+    grpcWebProxyEndpoint: { ipAddressV4: '', domainName, port },
   });
 }
 
@@ -206,11 +201,9 @@ function handleIpOrDomainBlur(key: 'gossip' | 'service') {
     service: { ipOrDomain: serviceIpOrDomain, port: servicePort },
   };
 
-  const { hostPart, port } = cleanAndExtractPort(mapping[key].ipOrDomain.value);
-  mapping[key].ipOrDomain.value = hostPart;
-  if (port) {
-    mapping[key].port.value = port;
-  }
+  const result = processEndpointInput(mapping[key].ipOrDomain.value, mapping[key].port.value);
+  mapping[key].ipOrDomain.value = result.ipOrDomain;
+  mapping[key].port.value = result.port;
 }
 
 /* Watchers */
