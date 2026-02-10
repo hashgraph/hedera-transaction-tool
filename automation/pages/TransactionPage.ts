@@ -1,3 +1,4 @@
+
 import { BasePage } from './BasePage.js';
 import { Page } from '@playwright/test';
 import { getAccountDetails, getTransactionDetails } from '../utils/mirrorNodeAPI.js';
@@ -514,6 +515,7 @@ export class TransactionPage extends BasePage {
     await this.fillInDeletedAccountId(accountId);
     await this.clickOnSignAndSubmitButton();
     await this.clickOnConfirmDeleteAccountButton();
+    // Wait for delete confirmation modal to close before looking for transaction modal
     await this.window.waitForTimeout(500);
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();

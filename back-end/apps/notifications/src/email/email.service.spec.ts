@@ -1,13 +1,3 @@
-// Mock DebouncedNotificationBatcher to prevent Redis connections during tests
-jest.mock('../utils/DebouncedNotificationBatcher', () => ({
-  DebouncedNotificationBatcher: jest.fn().mockImplementation(() => ({
-    add: jest.fn().mockResolvedValue(undefined),
-    flush: jest.fn().mockResolvedValue(undefined),
-    flushAll: jest.fn().mockResolvedValue(undefined),
-    destroy: jest.fn().mockResolvedValue(undefined),
-  })),
-}));
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { createTransport, SendMailOptions, Transporter } from 'nodemailer';

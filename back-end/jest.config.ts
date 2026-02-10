@@ -14,7 +14,6 @@ const config: Config = {
     '^@app/common(|/.*)$': '<rootDir>/libs/common/src/$1',
     '^@entities(|/.*)$': '<rootDir>/libs/common/src/database/entities/$1',
   },
-  setupFilesAfterEnv: ['<rootDir>/libs/common/jest.setup.ts'],
 };
 
 if (process.env.CI) {
