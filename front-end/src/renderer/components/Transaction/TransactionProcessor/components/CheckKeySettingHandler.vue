@@ -120,7 +120,6 @@ defineExpose({
           <AppButton
             color="primary"
             type="submit"
-            data-testid="button-sign-transaction"
             :loading="saving"
             loading-text="Saving Draft…"
             :disabled="saving"
