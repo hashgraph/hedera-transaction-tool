@@ -14,6 +14,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    setupFiles: ['src/tests/renderer/setup.ts'],
     include: ['src/tests/renderer/**/*.{test,spec}.{ts,js}'],
   },
   plugins: [vue()],
