@@ -1,4 +1,3 @@
-// @vitest-environment node
 import { expect } from 'vitest';
 import {
   stripProtocolAndPath,
