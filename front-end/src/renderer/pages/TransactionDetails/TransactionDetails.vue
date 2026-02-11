@@ -364,7 +364,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Type</h4>
                   <p :class="detailItemValueClass" data-testid="p-transaction-details-type">
-                    {{ getTransactionType(sdkTransaction) }}
+                    {{ getTransactionType(sdkTransaction, false, true) }}
                   </p>
                 </div>
 

@@ -2,11 +2,13 @@
 import type { INotificationReceiver } from '@shared/interfaces';
 
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computedAsync } from '@vueuse/core';
 
 import useTransactionAudit from '@renderer/composables/useTransactionAudit.ts';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import useFilterNotifications from '@renderer/composables/useFilterNotifications.ts';
-import { getTransactionTypeFromBackendType } from '@renderer/utils/sdk/transactions.ts';
+import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions.ts';
+import { FreezeTransaction } from '@hashgraph/sdk';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -51,6 +53,20 @@ const transactionId = computed(() => props.node.transactionId ?? null);
 const transactionAudit = useTransactionAudit(transactionId);
 
 /* Computed */
+const freezeType = computedAsync(
+  async () => {
+    if (props.node.transactionType !== 'FREEZE') return null;
+
+    const sdkTx = await transactionAudit.sdkTransaction.value;
+
+    if (sdkTx instanceof FreezeTransaction && sdkTx.freezeType) {
+      return sdkTx.freezeType;
+    }
+    return null;
+  },
+  null,
+);
+
 const filteringNotificationTypes = computed(() => {
   switch (props.collection) {
     case TransactionNodeCollection.READY_FOR_REVIEW:
@@ -115,7 +131,11 @@ const hasNotifications = computed(() => {
 const transactionType = computed(() => {
   let result: string;
   if (props.node.transactionType) {
-    result = getTransactionTypeFromBackendType(props.node.transactionType, false, true);
+    result = getDisplayTransactionType(
+      { backendType: props.node.transactionType, freezeType: freezeType.value },
+      false,
+      true,
+    );
   } else if (props.node.groupItemCount) {
     const groupItemCount = props.node.groupItemCount;
     const groupCollectedCount = props.node.groupCollectedCount ?? groupItemCount;
@@ -210,11 +230,21 @@ onUnmounted(() => {
 watch(() => props.node.description, () => {
   nextTick(() => checkTruncation());
 });
-watch(transactionId, async () => {
-  const externalSignerKeys = await transactionAudit.externalSignerKeys.value;
-  isExternal.value = externalSignerKeys.size > 0;
-},{ immediate: true });
 
+// Fetch external status for the transaction
+watch(
+  () => props.node.transactionId,
+  async transactionId => {
+    if (!transactionId) {
+      isExternal.value = false;
+      return;
+    }
+
+    const externalSignerKeys = await transactionAudit.externalSignerKeys.value;
+    isExternal.value = externalSignerKeys.size > 0;
+  },
+  { immediate: true },
+);
 </script>
 
 <template>

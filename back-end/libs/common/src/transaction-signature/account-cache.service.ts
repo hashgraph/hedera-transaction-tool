@@ -19,6 +19,8 @@ import {
 import { MirrorNodeClient } from './mirror-node.client';
 import { CacheHelper } from './cache.helper';
 import { RefreshResult, RefreshStatus } from './cache.types';
+import { SqlBuilderService } from '../sql';
+import { InjectDataSource } from '@nestjs/typeorm';
 
 @Injectable()
 export class AccountCacheService {
@@ -26,16 +28,18 @@ export class AccountCacheService {
   private readonly cacheHelper: CacheHelper;
 
   private readonly cacheTtlMs: number;
-  private readonly reclaimDelayMs: number;
+  private readonly claimTimeoutMs: number;
 
   constructor(
     private readonly mirrorNodeClient: MirrorNodeClient,
+    @InjectDataSource('cache')
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
+    private readonly sqlBuilder: SqlBuilderService,
   ) {
     this.cacheHelper = new CacheHelper(dataSource);
     this.cacheTtlMs = this.configService.get<number>('CACHE_STALE_THRESHOLD_MS', 10 * 1000);
-    this.reclaimDelayMs = this.configService.get<number>('RECLAIM_DELAY_MS', 2 * 60 * 1000);
+    this.claimTimeoutMs = this.configService.get<number>('CACHE_CLAIM_TIMEOUT_MS', 10 * 1000);
   }
 
   /**
@@ -48,9 +52,9 @@ export class AccountCacheService {
     const mirrorNetwork = cached.mirrorNetwork;
 
     // Try to claim the account for refresh
-    const claimedAccount = await this.tryClaimAccountRefresh(account, mirrorNetwork);
+    const { data: claimedAccount, claimed } = await this.tryClaimAccountRefresh(account, mirrorNetwork);
 
-    if (!claimedAccount.refreshToken) {
+    if (!claimed) {
       return false; // Didn't refresh (someone else did it)
     }
 
@@ -89,9 +93,9 @@ export class AccountCacheService {
     this.logger.debug(`Fetching account ${account} from mirror node (cache ${cached ? 'stale' : 'missing'})`);
 
     // Try to claim the account for refresh, create the account row if none exists
-    const claimedAccount = await this.tryClaimAccountRefresh(account, mirrorNetwork);
+    const { data: claimedAccount, claimed } = await this.tryClaimAccountRefresh(account, mirrorNetwork);
 
-    if (!claimedAccount.refreshToken) {
+    if (!claimed) {
       // Link to transaction
       await this.linkTransactionToAccount(transaction.id, claimedAccount.id);
 
@@ -109,16 +113,17 @@ export class AccountCacheService {
   }
 
   /**
-   * Claim refresh for a CachedAccount row. Reclaim period: 2 minutes.
+   * Claim refresh for a CachedAccount row.
    */
   private tryClaimAccountRefresh(
     account: string,
     mirrorNetwork: string,
-  ): Promise<CachedAccount> {
+  ): Promise<{ data: CachedAccount, claimed: boolean }> {
     return this.cacheHelper.tryClaimRefresh(
+      this.sqlBuilder,
       CachedAccount,
       { account, mirrorNetwork },
-      this.reclaimDelayMs,
+      this.claimTimeoutMs,
     );
   }
 

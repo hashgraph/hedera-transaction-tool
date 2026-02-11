@@ -94,7 +94,7 @@ describe('SqlBuilder', () => {
   describe('table()', () => {
     it('should return table name for valid entity', () => {
       const tableName = sqlBuilder.table(User);
-      expect(tableName).toBe('users');
+      expect(tableName).toBe('"users"');
     });
 
     it('should call getRepository with correct entity', () => {
@@ -246,17 +246,17 @@ describe('SqlBuilder', () => {
     it('should handle typical workflow: get table and column', () => {
       const table = sqlBuilder.table(User);
       const column = sqlBuilder.col(User, 'email');
-      expect(`SELECT ${column} FROM ${table}`).toBe('SELECT "user_email" FROM users');
+      expect(`SELECT ${column} FROM ${table}`).toBe('SELECT "user_email" FROM "users"');
     });
 
     it('should handle mixed valid and invalid operations gracefully', () => {
-      expect(sqlBuilder.table(User)).toBe('users');
+      expect(sqlBuilder.table(User)).toBe('"users"');
       expect(sqlBuilder.col(User, 'email')).toBe('"user_email"');
 
       expect(() => sqlBuilder.table(Post)).toThrow(EntityNotFoundError);
       expect(() => sqlBuilder.col(User, 'invalid')).toThrow(ColumnNotFoundError);
 
-      expect(sqlBuilder.table(User)).toBe('users');
+      expect(sqlBuilder.table(User)).toBe('"users"');
       expect(sqlBuilder.col(User, 'email')).toBe('"user_email"');
     });
 
@@ -267,7 +267,7 @@ describe('SqlBuilder', () => {
 
       const query = `SELECT ${emailCol}, ${firstNameCol} FROM ${table} WHERE ${emailCol} = ?`;
 
-      expect(query).toBe('SELECT "user_email", "first_name" FROM users WHERE "user_email" = ?');
+      expect(query).toBe('SELECT "user_email", "first_name" FROM "users" WHERE "user_email" = ?');
     });
   });
 
@@ -365,8 +365,8 @@ describe('SqlBuilder', () => {
         throw new Error('Entity not found');
       });
 
-      expect(sqlBuilder.table(User)).toBe('users');
-      expect(sqlBuilder.table(Post)).toBe('posts');
+      expect(sqlBuilder.table(User)).toBe('"users"');
+      expect(sqlBuilder.table(Post)).toBe('"posts"');
 
       // Both should still be cached
       sqlBuilder.table(User);

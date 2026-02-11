@@ -21,7 +21,7 @@ export class NatsModule {
         NatsPublisherService,
       ],
       exports: [NatsPublisherService, NatsJetStreamService],
-      global: true, // Optional: makes it global so you don't need to import everywhere
+      global: true,
     };
   }
 }

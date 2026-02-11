@@ -139,9 +139,11 @@ const pageTitle = computed(() => {
           break;
         }
       }
-      result = txType
-        ? `Group of ${group.value.groupItems.length} ${getTransactionTypeFromBackendType(txType, false, true)} transactions`
-        : `Group of ${group.value.groupItems.length} transactions`;
+      result = `Group of ${group.value.groupItems.length}`;
+      if (txType) {
+        result += ` ${getTransactionTypeFromBackendType(txType, false, true)}`;
+      }
+      result += (group.value.groupItems.length > 1) ? ' transactions' : ' transaction';
     }
   }
   return result;
@@ -676,14 +678,14 @@ function itemStatusBadgeClass(item: IGroupItem): string {
           </AppButton>
           <NextTransactionCursor />
 
-          <Transition mode="out-in" name="fade">
-            <template v-if="pageTitle">
-              <h2 class="text-title text-bold flex-1 text-one-line-ellipsis">
-                {{ pageTitle }}
-              </h2>
-            </template>
-          </Transition>
-        </div>
+            <Transition mode="out-in" name="fade">
+              <template v-if="pageTitle">
+                <h2 class="text-title text-bold flex-1 text-one-line-ellipsis">
+                  {{ pageTitle }}
+                </h2>
+              </template>
+            </Transition>
+          </div>
 
         <div class="flex-centered gap-4">
           <Transition name="fade" mode="out-in">
