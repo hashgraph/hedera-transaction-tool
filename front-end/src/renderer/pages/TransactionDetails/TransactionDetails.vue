@@ -34,6 +34,7 @@ import {
   computeSignatureKey,
   getAccountNicknameFromId,
   getAccountIdWithChecksum,
+  getStatusFromCode,
 } from '@renderer/utils';
 
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -50,6 +51,7 @@ import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.t
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
+import ExpiringBadge from '@renderer/pages/TransactionDetails/components/ExpiringBadge.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -98,9 +100,38 @@ const creator = computed(() => {
 
 const showExternal = computed(() => {
   // External badges are displayed for the transaction creator only
-  return isLoggedInOrganization(user.selectedOrganization) ?
-    user.selectedOrganization?.userId === orgTransaction.value?.creatorId :
-    false;
+  return isLoggedInOrganization(user.selectedOrganization)
+    ? user.selectedOrganization?.userId === orgTransaction.value?.creatorId
+    : false;
+});
+
+const transactionIsInProgress = computed(
+  () =>
+    orgTransaction.value &&
+    [
+      TransactionStatus.NEW,
+      TransactionStatus.WAITING_FOR_EXECUTION,
+      TransactionStatus.WAITING_FOR_SIGNATURES,
+    ].includes(orgTransaction.value.status),
+);
+
+const isTransactionFailed = computed(() => {
+  return orgTransaction.value?.status === TransactionStatus.FAILED;
+});
+
+const isManualFlagVisible = computed(() => {
+  return orgTransaction.value?.isManual && transactionIsInProgress.value;
+});
+
+const validStartDate = computed(() => {
+  return sdkTransaction.value
+    ? getTransactionValidStart(sdkTransaction.value as SDKTransaction)
+    : null;
+});
+
+const formattedId = computed(() => {
+  const id = router.currentRoute.value.params.id;
+  return id ? (Array.isArray(id) ? id[0] : id) : null;
 });
 
 /* Functions */
@@ -160,11 +191,6 @@ async function fetchTransaction() {
 
   feePayer.value = getTransactionPayerId(sdkTransaction.value);
 }
-
-const formattedId = computed(() => {
-  const id = router.currentRoute.value.params.id;
-  return id ? (Array.isArray(id) ? id[0] : id) : null;
-});
 
 /* Hooks */
 onBeforeMount(async () => {
@@ -251,7 +277,27 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
               </div>
 
               <!-- Transaction Status -->
-              <div v-if="orgTransaction" class="mt-5">
+              <div v-if="orgTransaction" class="d-flex flex-column gap-4 mt-5">
+                <div class="d-flex align-items-center column-gap-3 row-gap-2 flex-wrap">
+                  <h2 class="text-title text-bold">Transaction Status</h2>
+                  <span v-if="isTransactionFailed" class="badge bg-danger text-break">
+                    {{
+                      getStatusFromCode(orgTransaction?.statusCode)
+                        ? getStatusFromCode(orgTransaction?.statusCode)
+                        : 'FAILED'
+                    }}
+                  </span>
+                  <span v-else-if="isManualFlagVisible" class="badge bg-info text-break"
+                    >Manual</span
+                  >
+                  <!-- Expiring Soon Badge -->
+                  <ExpiringBadge
+                    :transaction-status="orgTransaction?.status ?? null"
+                    :valid-duration="sdkTransaction?.transactionValidDuration ?? 0"
+                    :valid-start="validStartDate"
+                    variant="countdown"
+                  />
+                </div>
                 <TransactionDetailsStatusStepper :transaction="orgTransaction" />
               </div>
 
@@ -264,7 +310,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 <ReadOnlyApproversList :approvers="orgTransaction?.approvers" />
               </div>
 
-              <hr v-if="isLoggedInOrganization(user.selectedOrganization)" class="separator my-8" />
+              <hr v-if="isLoggedInOrganization(user.selectedOrganization)" class="separator my-5" />
 
               <!-- TRANSACTION GROUP DETAILS -->
               <div v-if="groupDescription">
@@ -380,7 +426,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Valid Start</h4>
                   <p :class="detailItemValueClass" data-testid="p-transaction-details-valid-start">
-                    <DateTimeString :date="getTransactionValidStart(sdkTransaction)"/>
+                    <DateTimeString :date="getTransactionValidStart(sdkTransaction)" />
                   </p>
                 </div>
 
