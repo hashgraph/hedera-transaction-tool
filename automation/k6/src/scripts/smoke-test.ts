@@ -39,9 +39,9 @@ export default function (): void {
   });
 
   check(apiRes, {
-    'API responds (even if 401)': (r) =>
+    'GET /users → responds (200 or 401)': (r) =>
       r.status === HTTP_STATUS.OK || r.status === HTTP_STATUS.UNAUTHORIZED,
-    'response time < 500ms': (r) => r.timings.duration < 500,
+    'GET /users → response < 500ms': (r) => r.timings.duration < 500,
   });
 
   sleep(DELAYS.BETWEEN_ITERATIONS);

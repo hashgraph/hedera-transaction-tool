@@ -78,8 +78,8 @@ export default function (data: MultiUserSetupData): void {
     );
 
     check(res, {
-      'in-progress status 200': (r) => r.status === HTTP_STATUS.OK,
-      'in-progress response < 1s': (r) => r.timings.duration < THRESHOLDS.PAGE_LOAD_MS,
+      'GET /transaction-nodes?collection=IN_PROGRESS → status 200': (r) => r.status === HTTP_STATUS.OK,
+      'GET /transaction-nodes?collection=IN_PROGRESS → response < 1s': (r) => r.timings.duration < THRESHOLDS.PAGE_LOAD_MS,
     });
 
     if (res.status !== HTTP_STATUS.OK) {

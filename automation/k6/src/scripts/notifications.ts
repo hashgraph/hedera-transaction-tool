@@ -64,8 +64,8 @@ export default function (data: MultiUserSetupData): void {
     });
 
     check(res, {
-      'notifications status 200': (r) => r.status === HTTP_STATUS.OK,
-      'notifications response < 1s': (r) => r.timings.duration < THRESHOLDS.PAGE_LOAD_MS,
+      'GET /notifications → status 200': (r) => r.status === HTTP_STATUS.OK,
+      'GET /notifications → response < 1s': (r) => r.timings.duration < THRESHOLDS.PAGE_LOAD_MS,
     });
 
     if (DEBUG) console.log(`Notifications load time: ${formatDuration(res.timings.duration)}`);

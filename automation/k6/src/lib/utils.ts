@@ -80,7 +80,7 @@ export const needed_properties: MetricPropertyMap = {
   'ready_to_approve_data_volume_ok': 'Ready to Approve Data Volume OK',
 
   // Check results
-  'ready-to-sign status 200': 'Ready to Sign Status OK',
-  'ready-to-sign response < 1s': 'Ready to Sign Under 1s',
+  'GET /transaction-nodes?collection=READY_TO_SIGN → status 200': 'Ready to Sign Status OK',
+  'GET /transaction-nodes?collection=READY_TO_SIGN → response < 1s': 'Ready to Sign Under 1s',
 };
 

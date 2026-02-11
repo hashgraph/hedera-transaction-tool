@@ -156,7 +156,7 @@ function fetchReadyToSign(headers: ReturnType<typeof authHeaders>): void {
     readyToSignTotalDuration.add(totalDuration);
 
     check(res, {
-      'Ready to Sign status 200': () => res.status === HTTP_STATUS.OK,
+      'GET /transaction-nodes?collection=READY_TO_SIGN → status 200': () => res.status === HTTP_STATUS.OK,
     });
 
     if (!success) {
@@ -171,8 +171,8 @@ function fetchReadyToSign(headers: ReturnType<typeof authHeaders>): void {
       readyToSignVolumeOk.add(totalItems >= targetCount);
 
       check(null, {
-        'Ready to Sign total time < 1s': () => totalDuration < THRESHOLDS.PAGE_LOAD_MS,
-        [`Ready to Sign fetched ${targetCount}+ items`]: () => totalItems >= targetCount,
+        'GET /transaction-nodes?collection=READY_TO_SIGN → response < 1s': () => totalDuration < THRESHOLDS.PAGE_LOAD_MS,
+        [`GET /transaction-nodes?collection=READY_TO_SIGN → fetched ${targetCount}+ items`]: () => totalItems >= targetCount,
       });
     } catch {
       readyToSignVolumeOk.add(false);
@@ -201,7 +201,7 @@ function fetchHistory(headers: ReturnType<typeof authHeaders>): void {
     historyTotalDuration.add(totalDuration);
 
     check(res, {
-      'History status 200': () => res.status === HTTP_STATUS.OK,
+      'GET /transaction-nodes?collection=HISTORY → status 200': () => res.status === HTTP_STATUS.OK,
     });
 
     if (!success) {
@@ -216,8 +216,8 @@ function fetchHistory(headers: ReturnType<typeof authHeaders>): void {
       historyVolumeOk.add(totalItems >= targetCount);
 
       check(null, {
-        'History total time < 1s': () => totalDuration < THRESHOLDS.PAGE_LOAD_MS,
-        [`History fetched ${targetCount}+ items`]: () => totalItems >= targetCount,
+        'GET /transaction-nodes?collection=HISTORY → response < 1s': () => totalDuration < THRESHOLDS.PAGE_LOAD_MS,
+        [`GET /transaction-nodes?collection=HISTORY → fetched ${targetCount}+ items`]: () => totalItems >= targetCount,
       });
     } catch {
       historyVolumeOk.add(false);
@@ -229,13 +229,7 @@ function fetchHistory(headers: ReturnType<typeof authHeaders>): void {
  * Main test function - tests each tab
  */
 export default function (data: SetupData): void {
-  const { token } = data;
-  if (!token) {
-    console.error('No auth token - skipping iteration');
-    return;
-  }
-
-  const headers = authHeaders(token);
+  const headers = authHeaders(data.token);
 
   // Test each tab - special handling for multi-page tabs
   TABS.forEach((tab) => {
@@ -255,8 +249,8 @@ export default function (data: SetupData): void {
       tab.metric.add(res.timings.duration);
 
       check(res, {
-        [`${tab.name} status 200`]: (r) => r.status === HTTP_STATUS.OK,
-        [`${tab.name} response < 1s`]: (r) => r.timings.duration < THRESHOLDS.PAGE_LOAD_MS,
+        [`GET ${tab.endpoint} → status 200`]: (r) => r.status === HTTP_STATUS.OK,
+        [`GET ${tab.endpoint} → response < 1s`]: (r) => r.timings.duration < THRESHOLDS.PAGE_LOAD_MS,
       });
 
       if (!success) {

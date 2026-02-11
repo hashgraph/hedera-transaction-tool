@@ -74,8 +74,8 @@ export default function (data: MultiUserSetupData): void {
     );
 
     check(res, {
-      'ready-to-approve status 200': (r) => r.status === HTTP_STATUS.OK,
-      'ready-to-approve response < 1s': (r) => r.timings.duration < THRESHOLDS.PAGE_LOAD_MS,
+      'GET /transaction-nodes?collection=READY_FOR_REVIEW → status 200': (r) => r.status === HTTP_STATUS.OK,
+      'GET /transaction-nodes?collection=READY_FOR_REVIEW → response < 1s': (r) => r.timings.duration < THRESHOLDS.PAGE_LOAD_MS,
     });
 
     if (res.status !== HTTP_STATUS.OK) {
