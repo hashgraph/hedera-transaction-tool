@@ -86,28 +86,28 @@ export class UsersService {
   async getUsers(): Promise<User[]> {
     const users = await this.repo.find({ relations: ['clients'] });
     const latestSupported = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
-    const enrichedUsers = this.enrichUsersWithUpdateFlag(users, latestSupported);
+    this.enrichUsersWithUpdateFlag(users, latestSupported);
 
     // Do not expose clients over the wire from this method
-    for (const user of enrichedUsers) {
-      // Remove the clients relation to avoid leaking client/version details
-      delete (user as any).clients;
-    }
-
-    return enrichedUsers;
+    return users.map(({ clients, ...userWithoutClients }) => userWithoutClients as User);
   }
 
-  async getUserWithClients(id: number): Promise<User> {
+  async getUserWithClients(id: number, requestingUser: User): Promise<User> {
     const user = await this.repo.findOne({ where: { id }, relations: ['clients'] });
 
     if (!user) {
       throw new BadRequestException(ErrorCodes.UNF);
     }
 
-    const latestSupported = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
-    this.enrichUsersWithUpdateFlag([user], latestSupported);
+    // Only expose client version data to admins or the user themselves
+    if (requestingUser.admin || requestingUser.id === id) {
+      const latestSupported = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
+      this.enrichUsersWithUpdateFlag([user], latestSupported);
+      return user;
+    }
 
-    return user;
+    const { clients, ...userWithoutClients } = user;
+    return userWithoutClients as User;
   }
 
   async getOwnerOfPublicKey(publicKey: string): Promise<string | null> {

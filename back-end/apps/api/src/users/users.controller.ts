@@ -68,8 +68,8 @@ export class UsersController {
   })
   @Get('/:id')
   @Serialize(UserDto)
-  getUser(@Param('id', ParseIntPipe) id: number): Promise<User> {
-    return this.usersService.getUserWithClients(id);
+  getUser(@GetUser() requestingUser: User, @Param('id', ParseIntPipe) id: number): Promise<User> {
+    return this.usersService.getUserWithClients(id, requestingUser);
   }
 
   @ApiOperation({

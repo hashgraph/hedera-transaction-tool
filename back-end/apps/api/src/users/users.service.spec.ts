@@ -112,7 +112,8 @@ describe('UsersService', () => {
 
       expect(userRepository.find).toHaveBeenCalledWith({ relations: ['clients'] });
       expect(isUpdateAvailable).toHaveBeenCalledWith('1.0.0', '1.1.0');
-      expect(result[0].clients[0]).toHaveProperty('updateAvailable', true);
+      // Clients are stripped from the result to avoid leaking version details
+      expect(result[0]).not.toHaveProperty('clients');
     });
 
     it('should handle users with no client records', async () => {
@@ -122,11 +123,15 @@ describe('UsersService', () => {
 
       const result = await service.getUsers();
 
-      expect(result[0].clients).toEqual([]);
+      expect(result[0]).not.toHaveProperty('clients');
     });
   });
 
   describe('getUserWithClients', () => {
+    const adminUser = { id: 99, admin: true } as User;
+    const selfUser = { id: 1, admin: false } as User;
+    const otherUser = { id: 50, admin: false } as User;
+
     it('should find user with clients relation and enrich with updateAvailable', async () => {
       const userWithClients = {
         ...user,
@@ -139,7 +144,7 @@ describe('UsersService', () => {
       configService.get.mockReturnValue('1.1.0');
       jest.mocked(isUpdateAvailable).mockReturnValue(true);
 
-      const result = await service.getUserWithClients(1);
+      const result = await service.getUserWithClients(1, adminUser);
 
       expect(userRepository.findOne).toHaveBeenCalledWith({
         where: { id: 1 },
@@ -148,10 +153,63 @@ describe('UsersService', () => {
       expect(result.clients[0]).toHaveProperty('updateAvailable', true);
     });
 
+    it('should include clients when requester is admin', async () => {
+      const userWithClients = {
+        ...user,
+        id: 1,
+        clients: [
+          { id: 1, userId: 1, version: '1.0.0', createdAt: new Date(), updatedAt: new Date() },
+        ],
+      };
+      userRepository.findOne.mockResolvedValue(userWithClients as User);
+      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(isUpdateAvailable).mockReturnValue(false);
+
+      const result = await service.getUserWithClients(1, adminUser);
+
+      expect(result.clients).toBeDefined();
+      expect(result.clients).toHaveLength(1);
+    });
+
+    it('should include clients when requester is the user themselves', async () => {
+      const userWithClients = {
+        ...user,
+        id: 1,
+        clients: [
+          { id: 1, userId: 1, version: '1.0.0', createdAt: new Date(), updatedAt: new Date() },
+        ],
+      };
+      userRepository.findOne.mockResolvedValue(userWithClients as User);
+      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(isUpdateAvailable).mockReturnValue(false);
+
+      const result = await service.getUserWithClients(1, selfUser);
+
+      expect(result.clients).toBeDefined();
+      expect(result.clients).toHaveLength(1);
+    });
+
+    it('should strip clients when requester is a non-admin requesting another user', async () => {
+      const userWithClients = {
+        ...user,
+        id: 1,
+        clients: [
+          { id: 1, userId: 1, version: '1.0.0', createdAt: new Date(), updatedAt: new Date() },
+        ],
+      };
+      userRepository.findOne.mockResolvedValue(userWithClients as User);
+      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(isUpdateAvailable).mockReturnValue(true);
+
+      const result = await service.getUserWithClients(1, otherUser);
+
+      expect(result.clients).toBeUndefined();
+    });
+
     it('should throw BadRequestException when user not found', async () => {
       userRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.getUserWithClients(999)).rejects.toThrow(ErrorCodes.UNF);
+      await expect(service.getUserWithClients(999, adminUser)).rejects.toThrow(ErrorCodes.UNF);
     });
   });
 
