@@ -56,10 +56,10 @@ async function createWindow() {
   });
 
   if (process.env.VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+    await mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(join(process.env.DIST, 'index.html'));
+    await mainWindow.loadFile(join(process.env.DIST, 'index.html'));
   }
 
   return mainWindow;
