@@ -216,15 +216,13 @@ export class UsersService {
 
   private enrichUsersWithUpdateFlag(users: User[], latestSupported: string | undefined): User[] {
     for (const user of users) {
-      user.clients = (user.clients ?? []).map(client =>
-        Object.assign(client, {
-          updateAvailable: isUpdateAvailable(client.version, latestSupported),
-        }),
-      );
+      user.clients = (user.clients ?? []).map(client => ({
+        ...client,
+        updateAvailable: isUpdateAvailable(client.version, latestSupported),
+      }));
     }
     return users;
   }
-
   getVersionCheckInfo(userVersion: string): VersionCheckResult {
     const latestSupported = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
     const minimumSupported = this.configService.get<string>('MINIMUM_SUPPORTED_FRONTEND_VERSION');
