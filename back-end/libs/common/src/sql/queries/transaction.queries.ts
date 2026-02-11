@@ -222,7 +222,7 @@ function buildWhereClause(
   };
 }
 
-export function getTransactionNodesForUser(
+export function getTransactionNodesForUserQuery(
   sql: SqlBuilderService,
   filters: {statuses: TransactionStatus[], types?: TransactionType[], mirrorNetwork?: string},
   user?: User,
