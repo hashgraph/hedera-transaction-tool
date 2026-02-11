@@ -31,7 +31,7 @@ export class UserDto {
 
   @Expose()
   @Type(() => UserKeyDto)
-  keys: UserKeyDto;
+  keys: UserKeyDto[];
 
   @Expose()
   @Type(() => ClientDto)
