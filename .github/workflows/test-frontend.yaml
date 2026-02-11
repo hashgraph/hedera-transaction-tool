@@ -40,7 +40,7 @@ jobs:
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 22.12.0
-          cache: "npm"
+          cache: 'npm'
           cache-dependency-path: |
             front-end/pnpm-lock.yaml
 
@@ -98,7 +98,7 @@ jobs:
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 22.12.0
-          cache: "npm"
+          cache: 'npm'
           cache-dependency-path: |
             automation/pnpm-lock.yaml
 
@@ -154,7 +154,7 @@ jobs:
           SOLO_DEPLOYMENT: solo-deployment
         run: |
           set -euo pipefail
-          kind create cluster -n "${SOLO_CLUSTER_NAME}"
+          kind create cluster -n '${SOLO_CLUSTER_NAME}'
           solo one-shot single deploy | tee solo-deploy.log
 
       - name: Check port forwarding
@@ -478,7 +478,7 @@ jobs:
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 22.12.0
-          cache: "npm"
+          cache: 'npm'
           cache-dependency-path: |
             front-end/pnpm-lock.yaml
 
@@ -492,6 +492,8 @@ jobs:
       - name: Generate Prisma Client
         run: pnpm run generate:database
         working-directory: front-end
+        env:
+          DATABASE_URL: "file:./prisma/dev.db"
 
       - name: Run Unit Tests
         run: pnpm run test:${{ matrix.test-suite.command }}
