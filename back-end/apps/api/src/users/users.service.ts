@@ -86,7 +86,15 @@ export class UsersService {
   async getUsers(): Promise<User[]> {
     const users = await this.repo.find({ relations: ['clients'] });
     const latestSupported = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
-    return this.enrichUsersWithUpdateFlag(users, latestSupported);
+    const enrichedUsers = this.enrichUsersWithUpdateFlag(users, latestSupported);
+
+    // Do not expose clients over the wire from this method
+    for (const user of enrichedUsers) {
+      // Remove the clients relation to avoid leaking client/version details
+      delete (user as any).clients;
+    }
+
+    return enrichedUsers;
   }
 
   async getUserWithClients(id: number): Promise<User> {
