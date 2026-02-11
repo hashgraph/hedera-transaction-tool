@@ -3,8 +3,8 @@ import {
   stripProtocolAndPath,
   cleanAndExtractPort,
   getEndpointData,
+  isValidFqdn,
   processEndpointInput,
-  resolveGrpcProxyValues,
 } from '@renderer/utils/endpointUtils';
 
 describe('stripProtocolAndPath', () => {
@@ -309,41 +309,83 @@ describe('processEndpointInput', () => {
   });
 });
 
-describe('resolveGrpcProxyValues', () => {
-  test('should extract domain and port when field is domainName with embedded port', () => {
-    expect(resolveGrpcProxyValues('domainName', 'proxy.example.com:443', '', '8080')).toEqual({
-      domainName: 'proxy.example.com',
-      port: '443',
+describe('isValidFqdn', () => {
+  describe('valid FQDNs', () => {
+    test('should accept standard FQDN', () => {
+      expect(isValidFqdn('proxy.hedera.com')).toBe(true);
+    });
+
+    test('should accept two-label FQDN', () => {
+      expect(isValidFqdn('example.com')).toBe(true);
+    });
+
+    test('should accept multi-level subdomain', () => {
+      expect(isValidFqdn('api.staging.hedera.io')).toBe(true);
+    });
+
+    test('should accept short labels', () => {
+      expect(isValidFqdn('a.b.c')).toBe(true);
+    });
+
+    test('should accept hyphens within labels', () => {
+      expect(isValidFqdn('my-host.example.io')).toBe(true);
+    });
+
+    test('should accept trailing dot (absolute FQDN)', () => {
+      expect(isValidFqdn('proxy.hedera.com.')).toBe(true);
+    });
+
+    test('should accept labels with digits', () => {
+      expect(isValidFqdn('node1.hedera2.com')).toBe(true);
     });
   });
 
-  test('should clean domain and preserve existingPort when no port in value', () => {
-    expect(resolveGrpcProxyValues('domainName', 'proxy.example.com', '', '8080')).toEqual({
-      domainName: 'proxy.example.com',
-      port: '8080',
+  describe('invalid inputs', () => {
+    test('should reject empty string', () => {
+      expect(isValidFqdn('')).toBe(false);
     });
-  });
 
-  test('should strip protocol and extract port from domainName value', () => {
-    expect(
-      resolveGrpcProxyValues('domainName', 'https://proxy.example.com:9090', '', '8080'),
-    ).toEqual({
-      domainName: 'proxy.example.com',
-      port: '9090',
+    test('should reject whitespace-only string', () => {
+      expect(isValidFqdn('   ')).toBe(false);
     });
-  });
 
-  test('should return existingDomain and new port when field is port', () => {
-    expect(resolveGrpcProxyValues('port', '3000', 'proxy.example.com', '8080')).toEqual({
-      domainName: 'proxy.example.com',
-      port: '3000',
+    test('should reject IPv4 address', () => {
+      expect(isValidFqdn('192.168.1.1')).toBe(false);
     });
-  });
 
-  test('should return empty domain when field is domainName with empty value', () => {
-    expect(resolveGrpcProxyValues('domainName', '', 'old.domain.com', '8080')).toEqual({
-      domainName: '',
-      port: '8080',
+    test('should reject single label without dot (e.g. localhost)', () => {
+      expect(isValidFqdn('localhost')).toBe(false);
+    });
+
+    test('should reject label starting with hyphen', () => {
+      expect(isValidFqdn('-bad.com')).toBe(false);
+    });
+
+    test('should reject label ending with hyphen', () => {
+      expect(isValidFqdn('bad-.com')).toBe(false);
+    });
+
+    test('should reject label with underscores', () => {
+      expect(isValidFqdn('my_host.com')).toBe(false);
+    });
+
+    test('should reject label with spaces', () => {
+      expect(isValidFqdn('my host.com')).toBe(false);
+    });
+
+    test('should reject domain exceeding 253 characters', () => {
+      const longDomain = 'a'.repeat(62) + '.' + 'b'.repeat(62) + '.' + 'c'.repeat(62) + '.' + 'd'.repeat(63) + '.com';
+      expect(longDomain.length).toBeGreaterThan(253);
+      expect(isValidFqdn(longDomain)).toBe(false);
+    });
+
+    test('should reject label exceeding 63 characters', () => {
+      const longLabel = 'a'.repeat(64) + '.com';
+      expect(isValidFqdn(longLabel)).toBe(false);
+    });
+
+    test('should reject empty label (consecutive dots)', () => {
+      expect(isValidFqdn('proxy..hedera.com')).toBe(false);
     });
   });
 });

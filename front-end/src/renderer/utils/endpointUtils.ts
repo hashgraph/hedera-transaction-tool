@@ -59,24 +59,37 @@ export function processEndpointInput(
   };
 }
 
-export function resolveGrpcProxyValues(
-  field: 'domainName' | 'port',
-  value: string,
-  existingDomain: string,
-  existingPort: string,
-): { domainName: string; port: string } {
-  let domainValue = field === 'domainName' ? value : existingDomain;
-  let portValue = field === 'port' ? value : existingPort;
+export function isValidFqdn(domain: string): boolean {
+  const trimmed = domain.trim();
 
-  if (field === 'domainName') {
-    const { hostPart, port } = cleanAndExtractPort(value);
-    domainValue = hostPart;
-    if (port) {
-      portValue = port;
-    }
+  if (!trimmed) return false;
+
+  // Reject IPv4 addresses
+  if (trimmed.match(VALID_IPV4_REGEX)) return false;
+
+  // Must contain at least one dot (fully qualified)
+  if (!trimmed.includes('.')) return false;
+
+  // Total length <= 253 characters
+  if (trimmed.length > 253) return false;
+
+  // Strip optional trailing dot (valid FQDN representation)
+  const normalized = trimmed.endsWith('.') ? trimmed.slice(0, -1) : trimmed;
+
+  const labels = normalized.split('.');
+
+  for (const label of labels) {
+    // Each label must be 1-63 characters
+    if (label.length === 0 || label.length > 63) return false;
+
+    // Each label must contain only alphanumeric characters and hyphens
+    if (!/^[a-zA-Z0-9-]+$/.test(label)) return false;
+
+    // Labels must not start or end with a hyphen
+    if (label.startsWith('-') || label.endsWith('-')) return false;
   }
 
-  return { domainName: domainValue, port: portValue };
+  return true;
 }
 
 export function getEndpointData(ipOrDomain: string, port: string) {

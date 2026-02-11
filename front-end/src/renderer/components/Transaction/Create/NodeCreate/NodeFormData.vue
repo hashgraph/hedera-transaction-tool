@@ -18,8 +18,8 @@ import {
 
 import {
   getEndpointData,
+  isValidFqdn,
   processEndpointInput,
-  resolveGrpcProxyValues,
 } from '@renderer/utils/endpointUtils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -43,6 +43,8 @@ const gossipIpOrDomain = ref('');
 const serviceIpOrDomain = ref('');
 const gossipPort = ref('');
 const servicePort = ref('');
+const grpcProxyDomain = ref('');
+const grpcProxyPort = ref('');
 const publicKeyHash = ref('');
 const hash = ref('');
 const grpcCertificate = ref('');
@@ -172,18 +174,40 @@ function handleInputValidation(e: Event) {
 }
 
 /* Functions */
-function getGrpcWebProxyEndpoint(field: 'domainName' | 'port', value: string) {
-  const { domainName, port } = resolveGrpcProxyValues(
-    field,
-    value,
-    props.data.grpcWebProxyEndpoint?.domainName || '',
-    props.data.grpcWebProxyEndpoint?.port || '',
-  );
+function emitGrpcProxyEndpoint() {
+  const domainName = grpcProxyDomain.value.trim();
+  const port = grpcProxyPort.value;
+
+  if (!domainName && !port) {
+    emit('update:data', {
+      ...props.data,
+      grpcWebProxyEndpoint: null,
+    });
+    return;
+  }
 
   emit('update:data', {
     ...props.data,
     grpcWebProxyEndpoint: { ipAddressV4: '', domainName, port },
   });
+}
+
+function handleGrpcProxyDomainBlur() {
+  const result = processEndpointInput(grpcProxyDomain.value, grpcProxyPort.value);
+  grpcProxyDomain.value = result.ipOrDomain;
+  grpcProxyPort.value = result.port;
+
+  if (grpcProxyDomain.value && !isValidFqdn(grpcProxyDomain.value)) {
+    toast.error('Invalid gRPC Web Proxy Endpoint: A valid FQDN is required', errorToastOptions);
+  }
+
+  emitGrpcProxyEndpoint();
+}
+
+function formatGrpcProxyPort(event: Event) {
+  const target = event.target as HTMLInputElement;
+  grpcProxyPort.value = target.value.replace(/[^0-9]/g, '');
+  emitGrpcProxyEndpoint();
 }
 
 function formatPort(event: Event, key: 'gossip' | 'service') {
@@ -207,6 +231,17 @@ function handleIpOrDomainBlur(key: 'gossip' | 'service') {
 }
 
 /* Watchers */
+watch(
+  () => props.data.grpcWebProxyEndpoint,
+  () => {
+    if (props.data.grpcWebProxyEndpoint) {
+      grpcProxyDomain.value = props.data.grpcWebProxyEndpoint.domainName || '';
+      grpcProxyPort.value = props.data.grpcWebProxyEndpoint.port || '';
+    }
+  },
+  { once: true },
+);
+
 watch(
   () => props.data.gossipCaCertificate,
   async () => {
@@ -444,20 +479,20 @@ watch(
     <div class="row align-items-end">
       <div class="col-4 col-xxxl-3">
         <label class="form-label">Domain</label>
-        <AppInput
-          :model-value="data.grpcWebProxyEndpoint?.domainName ?? undefined"
-          @update:model-value="getGrpcWebProxyEndpoint('domainName', $event)"
+        <input
+          v-model="grpcProxyDomain"
+          @blur="handleGrpcProxyDomainBlur"
+          class="form-control is-fill"
           placeholder="Enter FQDN"
-          :filled="true"
         />
       </div>
       <div class="col-4 col-xxxl-3">
         <label class="form-label">Port</label>
-        <AppInput
-          :model-value="data.grpcWebProxyEndpoint?.port"
-          @update:model-value="getGrpcWebProxyEndpoint('port', $event)"
+        <input
+          v-model="grpcProxyPort"
+          @input="formatGrpcProxyPort($event)"
+          class="form-control is-fill"
           placeholder="Enter Port"
-          :filled="true"
         />
       </div>
     </div>
