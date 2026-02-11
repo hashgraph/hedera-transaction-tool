@@ -129,7 +129,7 @@ function fetchTransactionsToSign(
   );
 
   const success = check(res, {
-    'list transactions status 200': (r) => r.status === HTTP_STATUS.OK,
+    'GET /transaction-nodes?collection=READY_TO_SIGN → status 200': (r) => r.status === HTTP_STATUS.OK,
   });
 
   if (!success) {
@@ -275,13 +275,7 @@ export function setup(): SetupData {
  * Main test function - signs all transactions
  */
 export default function (data: SetupData): void {
-  const { token } = data;
-  if (!token) {
-    console.error('No auth token - aborting test');
-    return;
-  }
-
-  const headers = authHeaders(token);
+  const headers = authHeaders(data.token);
 
   group('Sign All Transactions', () => {
     if (DEBUG) console.log('Fetching transactions to sign...');
@@ -321,9 +315,9 @@ export default function (data: SetupData): void {
     logResults(mode, result.successCount, txCount, result.duration);
 
     check(null, {
-      [`process ${txCount} transactions under ${THRESHOLDS.SIGN_ALL_MS}ms`]: () =>
+      [`POST /transactions/signers → ${txCount} txns under ${THRESHOLDS.SIGN_ALL_MS}ms`]: () =>
         result.duration <= THRESHOLDS.SIGN_ALL_MS,
-      'all transactions processed successfully': () => result.successCount === txCount,
+      'POST /transactions/signers → all processed successfully': () => result.successCount === txCount,
     });
   });
 }

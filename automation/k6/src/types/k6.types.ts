@@ -6,9 +6,10 @@
 
 /**
  * Setup data passed to default function (single user)
+ * token is non-nullable: standardSetup() calls fail() if auth fails
  */
 export interface SetupData {
-  token: string | null;
+  token: string;
 }
 
 /**

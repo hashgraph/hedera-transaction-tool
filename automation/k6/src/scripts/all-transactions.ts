@@ -64,8 +64,8 @@ export default function (data: MultiUserSetupData): void {
     });
 
     check(res, {
-      'all-transactions status 200': (r) => r.status === HTTP_STATUS.OK,
-      'all-transactions response < 1s': (r) => r.timings.duration < THRESHOLDS.PAGE_LOAD_MS,
+      'GET /transactions → status 200': (r) => r.status === HTTP_STATUS.OK,
+      'GET /transactions → response < 1s': (r) => r.timings.duration < THRESHOLDS.PAGE_LOAD_MS,
     });
 
     if (DEBUG) console.log(`All Transactions load time: ${formatDuration(res.timings.duration)}`);

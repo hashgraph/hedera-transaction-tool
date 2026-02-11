@@ -86,7 +86,7 @@ export default function (data: MultiUserSetupData): void {
     totalDurationTrend.add(totalDuration);
 
     check(res, {
-      'ready-to-sign status 200': (r) => r.status === HTTP_STATUS.OK,
+      'GET /transaction-nodes?collection=READY_TO_SIGN → status 200': (r) => r.status === HTTP_STATUS.OK,
     });
 
     if (res.status !== HTTP_STATUS.OK) {
@@ -101,8 +101,8 @@ export default function (data: MultiUserSetupData): void {
       dataVolumeOk.add(itemCount >= targetCount);
 
       check(null, {
-        'ready-to-sign total time < 1s': () => totalDuration < THRESHOLDS.PAGE_LOAD_MS,
-        [`fetched ${targetCount}+ items`]: () => itemCount >= targetCount,
+        'GET /transaction-nodes?collection=READY_TO_SIGN → response < 1s': () => totalDuration < THRESHOLDS.PAGE_LOAD_MS,
+        [`GET /transaction-nodes?collection=READY_TO_SIGN → fetched ${targetCount}+ items`]: () => itemCount >= targetCount,
       });
 
       if (DEBUG)
