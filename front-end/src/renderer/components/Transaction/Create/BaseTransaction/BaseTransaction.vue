@@ -15,7 +15,14 @@ import TransactionProcessor, {
 import type { CreateTransactionFunc } from '.';
 
 import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue';
-import { Hbar, KeyList, Timestamp, Transaction } from '@hashgraph/sdk';
+import {
+  FileAppendTransaction,
+  FileUpdateTransaction,
+  Hbar,
+  KeyList,
+  Timestamp,
+  Transaction,
+} from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -24,7 +31,12 @@ import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 import useLoader from '@renderer/composables/useLoader';
 
-import { computeSignatureKey, getErrorMessage, isAccountId } from '@renderer/utils';
+import {
+  assertUserLoggedIn,
+  computeSignatureKey,
+  getErrorMessage,
+  isAccountId,
+} from '@renderer/utils';
 import { getPropagationButtonLabel } from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -43,7 +55,8 @@ import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOpt
 import useNextTransactionV2, {
   type TransactionNodeId,
 } from '@renderer/stores/storeNextTransactionV2.ts';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { addDraft, updateDraft } from '@renderer/services/transactionDraftsService';
 
 /* Props */
 const { createTransaction, preCreateAssert, customRequest } = defineProps<{
@@ -69,6 +82,7 @@ const nextTransaction = useNextTransactionV2();
 
 /* Composables */
 const router = useRouter();
+const route = useRoute();
 const toast = useToast();
 const payerData = useAccountId();
 const withLoader = useLoader();
@@ -242,6 +256,39 @@ function handleInputValidation(e: Event) {
   }
 }
 
+const saveDraft = async (): Promise<void> => {
+  // TBD: This method should be passed to SaveDraftButton and replace handleDraft()
+  const draftId = route.query.draftId?.toString();
+  const transactionBytes = getTransactionBytes();
+  if (draftId) {
+    // Draft exists => this is an update
+    await updateDraft(draftId, {
+      transactionBytes: transactionBytes.toString(),
+      description: description.value,
+    });
+    isDraftSaved.value = true;
+    toast.success('Draft updated', successToastOptions);
+  } else {
+    // Draft does not exist yet => this is an add
+    assertUserLoggedIn(user.personal);
+    await addDraft(user.personal.id, transactionBytes, description.value);
+    isDraftSaved.value = true;
+    toast.success('Draft saved', successToastOptions);
+  }
+};
+
+const getTransactionBytes = () => {
+  const transaction = createTransaction({ ...data } as TransactionCommonData);
+  if (
+    transaction instanceof FileUpdateTransaction ||
+    transaction instanceof FileAppendTransaction
+  ) {
+    //@ts-expect-error - contents should be null
+    transaction.setContents(null);
+  }
+  return transaction.toBytes();
+};
+
 /* Functions */
 function basePreCreateAssert() {
   if (!isAccountId(payerData.accountId.value)) {
@@ -355,10 +402,12 @@ defineExpose({
       ref="transactionProcessor"
       :observers="observers"
       :approvers="approvers"
+      :has-data-changed="hasDataChanged"
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
       :on-group-submitted="handleGroupSubmit"
       :on-local-stored="handleLocalStored"
+      :save-draft="saveDraft"
     />
 
     <BaseDraftLoad @draft-loaded="handleDraftLoaded" />
