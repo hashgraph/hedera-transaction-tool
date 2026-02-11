@@ -9,7 +9,7 @@ These tests measure **backend/API performance**:
 - Transaction signing throughput
 - Database query performance via API
 
-**Target:** 100+ concurrent users, all API responses < 1 second
+**Target:** Tab load times < 1 second under 100+ concurrent users
 
 ## Key Difference from UI Performance Tests
 
@@ -67,7 +67,7 @@ These tests measure **backend/API performance**:
    npm run k6:history
    ```
 
-All `k6:*` npm scripts automatically handle seeding and building before running tests.
+All `k6:*` test scripts (smoke, tabs, load tests) automatically handle seeding and building before running.
 
 ## Staging Setup
 
@@ -105,7 +105,6 @@ npm run k6:baseline:staging
 
 # Individual load tests (default 100 VUs)
 npm run k6:ready-to-sign:staging
-npm run k6:history:staging
 ```
 
 Staging scripts automatically seed data via the Teleport tunnel before running tests.
@@ -191,7 +190,7 @@ k6/
 |--------|---------|-----------|
 | `smoke-test.ts` | Health check | API responds |
 | `tab-load-times.ts` | All 7 tabs (1 VU baseline) | < 1 second each |
-| `sign-all.ts` | Sign 200 transactions | < 4 seconds |
+| `sign-all.ts` | Sign 500 transactions | < 4 seconds |
 | `ready-to-sign.ts` | Ready to Sign tab | < 1 second |
 | `ready-to-approve.ts` | Ready to Approve tab | < 1 second |
 | `in-progress.ts` | In Progress tab | < 1 second |
@@ -199,7 +198,9 @@ k6/
 | `history.ts` | History tab | < 1 second |
 | `notifications.ts` | Notifications tab | < 1 second |
 
-## Available npm Scripts
+## Common npm Scripts
+
+For the full list of scripts, see `automation/package.json`.
 
 ### Local
 
@@ -223,7 +224,7 @@ k6/
 | `grafana:start` | Start Grafana + InfluxDB | - |
 | `grafana:stop` | Stop monitoring stack | - |
 
-Add `:grafana` suffix to any test for Grafana dashboard output (e.g., `k6:tabs:grafana`).
+Add `:grafana` suffix to individual test scripts for Grafana dashboard output (e.g., `k6:tabs:grafana`).
 
 ### Staging
 
@@ -233,15 +234,11 @@ Add `:grafana` suffix to any test for Grafana dashboard output (e.g., `k6:tabs:g
 | `k6:tabs:staging` | All tabs baseline | 2 min |
 | `k6:baseline:staging` | Smoke + tabs combined | 2.5 min |
 | `k6:ready-to-sign:staging` | Ready to Sign load test | 7 min |
-| `k6:ready-to-approve:staging` | Ready to Approve load test | 7 min |
-| `k6:in-progress:staging` | In Progress load test | 7 min |
-| `k6:all-transactions:staging` | All Transactions load test | 7 min |
-| `k6:history:staging` | History load test | 7 min |
-| `k6:notifications:staging` | Notifications load test | 7 min |
-| `k6:load:all:staging` | Full load test suite | 35 min |
 | `k6:seed:staging` | Seed test user to staging DB | - |
 | `k6:seed:data:staging` | Seed transaction data to staging | - |
 | `k6:seed:all:staging` | Seed user + transactions to staging | - |
+
+Other endpoints can be tested against staging using the raw k6 command with `-e ENV=staging` (see [Configurable Load](#configurable-load-vus) above).
 
 ## Development
 
