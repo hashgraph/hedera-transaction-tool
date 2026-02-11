@@ -338,6 +338,10 @@ describe('isValidFqdn', () => {
     test('should accept labels with digits', () => {
       expect(isValidFqdn('node1.hedera2.com')).toBe(true);
     });
+
+    test('should trim whitespace and accept valid FQDN', () => {
+      expect(isValidFqdn('  proxy.hedera.com  ')).toBe(true);
+    });
   });
 
   describe('invalid inputs', () => {
