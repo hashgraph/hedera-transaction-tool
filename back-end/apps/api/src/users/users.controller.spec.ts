@@ -76,6 +76,15 @@ describe('UsersController', () => {
 
       expect(await controller.getUsers(user)).toEqual([]);
     });
+
+    it('should pass non-admin requesting user to the service', async () => {
+      const nonAdminUser = { ...user, admin: false };
+      userService.getUsers.mockResolvedValue([]);
+
+      await controller.getUsers(nonAdminUser as User);
+
+      expect(userService.getUsers).toHaveBeenCalledWith(nonAdminUser);
+    });
   });
 
   describe('getUser', () => {
@@ -90,6 +99,23 @@ describe('UsersController', () => {
       userService.getUserWithClients.mockRejectedValue(new Error());
 
       await expect(controller.getUser(user, 1)).rejects.toBeInstanceOf(Error);
+    });
+
+    it('should pass non-admin requesting user to getUserWithClients', async () => {
+      const nonAdminUser = { ...user, admin: false };
+      userService.getUserWithClients.mockResolvedValue(user);
+
+      await controller.getUser(nonAdminUser as User, 2);
+
+      expect(userService.getUserWithClients).toHaveBeenCalledWith(2, nonAdminUser);
+    });
+
+    it('should pass the correct id to getUserWithClients', async () => {
+      userService.getUserWithClients.mockResolvedValue(user);
+
+      await controller.getUser(user, 42);
+
+      expect(userService.getUserWithClients).toHaveBeenCalledWith(42, user);
     });
   });
 

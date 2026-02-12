@@ -141,6 +141,113 @@ describe('UsersService', () => {
       expect(userRepository.find).toHaveBeenCalledWith();
       expect(result[0]).not.toHaveProperty('updateAvailable');
     });
+
+    it('should handle users with undefined clients for admin users', async () => {
+      const usersWithUndefinedClients = [{ ...user, clients: undefined }];
+      userRepository.find.mockResolvedValue(usersWithUndefinedClients as unknown as User[]);
+      configService.get.mockReturnValue('1.1.0');
+
+      const result = await service.getUsers(adminUser);
+
+      expect(result[0].clients).toBeDefined();
+      expect(result[0].clients).toHaveLength(0);
+      expect(result[0]).toHaveProperty('updateAvailable', false);
+    });
+
+    it('should set updateAvailable to true when at least one client needs update among multiple', async () => {
+      const usersWithClients = [
+        {
+          ...user,
+          clients: [
+            { id: 1, userId: 1, version: '1.0.0', createdAt: new Date(), updatedAt: new Date() },
+            { id: 2, userId: 1, version: '1.1.0', createdAt: new Date(), updatedAt: new Date() },
+          ],
+        },
+      ];
+      userRepository.find.mockResolvedValue(usersWithClients as User[]);
+      configService.get.mockReturnValue('1.1.0');
+      jest
+        .mocked(isUpdateAvailable)
+        .mockImplementation((clientVersion: string) => clientVersion === '1.0.0');
+
+      const result = await service.getUsers(adminUser);
+
+      expect(result[0].clients).toHaveLength(2);
+      expect(result[0].clients[0]).toHaveProperty('updateAvailable', true);
+      expect(result[0].clients[1]).toHaveProperty('updateAvailable', false);
+      expect(result[0]).toHaveProperty('updateAvailable', true);
+    });
+
+    it('should set updateAvailable to false when all clients are up to date', async () => {
+      const usersWithClients = [
+        {
+          ...user,
+          clients: [
+            { id: 1, userId: 1, version: '1.1.0', createdAt: new Date(), updatedAt: new Date() },
+            { id: 2, userId: 1, version: '1.1.0', createdAt: new Date(), updatedAt: new Date() },
+          ],
+        },
+      ];
+      userRepository.find.mockResolvedValue(usersWithClients as User[]);
+      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(isUpdateAvailable).mockReturnValue(false);
+
+      const result = await service.getUsers(adminUser);
+
+      expect(result[0].clients).toHaveLength(2);
+      expect(result[0]).toHaveProperty('updateAvailable', false);
+    });
+
+    it('should handle undefined latestSupported config for admin users', async () => {
+      const usersWithClients = [
+        {
+          ...user,
+          clients: [
+            { id: 1, userId: 1, version: '1.0.0', createdAt: new Date(), updatedAt: new Date() },
+          ],
+        },
+      ];
+      userRepository.find.mockResolvedValue(usersWithClients as User[]);
+      configService.get.mockReturnValue(undefined);
+      jest.mocked(isUpdateAvailable).mockReturnValue(false);
+
+      const result = await service.getUsers(adminUser);
+
+      expect(isUpdateAvailable).toHaveBeenCalledWith('1.0.0', undefined);
+      expect(result[0]).toHaveProperty('updateAvailable', false);
+    });
+
+    it('should enrich multiple users correctly for admin', async () => {
+      const usersWithClients = [
+        {
+          ...user,
+          id: 1,
+          email: 'user1@test.com',
+          clients: [
+            { id: 1, userId: 1, version: '1.0.0', createdAt: new Date(), updatedAt: new Date() },
+          ],
+        },
+        {
+          ...user,
+          id: 2,
+          email: 'user2@test.com',
+          clients: [
+            { id: 2, userId: 2, version: '1.1.0', createdAt: new Date(), updatedAt: new Date() },
+          ],
+        },
+      ];
+      userRepository.find.mockResolvedValue(usersWithClients as User[]);
+      configService.get.mockReturnValue('1.1.0');
+      jest
+        .mocked(isUpdateAvailable)
+        .mockImplementation((clientVersion: string) => clientVersion === '1.0.0');
+
+      const result = await service.getUsers(adminUser);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toHaveProperty('updateAvailable', true);
+      expect(result[1]).toHaveProperty('updateAvailable', false);
+    });
   });
 
   describe('getUserWithClients', () => {
@@ -226,6 +333,96 @@ describe('UsersService', () => {
       userRepository.findOne.mockResolvedValue(null);
 
       await expect(service.getUserWithClients(999, adminUser)).rejects.toThrow(ErrorCodes.UNF);
+    });
+
+    it('should handle empty clients array for admin user', async () => {
+      const userWithClients = { ...user, id: 1, clients: [] };
+      userRepository.findOne.mockResolvedValue(userWithClients as User);
+      configService.get.mockReturnValue('1.1.0');
+
+      const result = await service.getUserWithClients(1, adminUser);
+
+      expect(result.clients).toBeDefined();
+      expect(result.clients).toHaveLength(0);
+      expect(result).toHaveProperty('updateAvailable', false);
+    });
+
+    it('should set updateAvailable on user when enriching for self user', async () => {
+      const userWithClients = {
+        ...user,
+        id: 1,
+        clients: [
+          { id: 1, userId: 1, version: '1.0.0', createdAt: new Date(), updatedAt: new Date() },
+        ],
+      };
+      userRepository.findOne.mockResolvedValue(userWithClients as User);
+      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(isUpdateAvailable).mockReturnValue(true);
+
+      const result = await service.getUserWithClients(1, selfUser);
+
+      expect(result.clients[0]).toHaveProperty('updateAvailable', true);
+      expect(result).toHaveProperty('updateAvailable', true);
+    });
+
+    it('should not set updateAvailable when stripping clients for non-admin other user', async () => {
+      const userWithClients = {
+        ...user,
+        id: 1,
+        clients: [
+          { id: 1, userId: 1, version: '1.0.0', createdAt: new Date(), updatedAt: new Date() },
+        ],
+      };
+      userRepository.findOne.mockResolvedValue(userWithClients as User);
+      configService.get.mockReturnValue('1.1.0');
+      jest.mocked(isUpdateAvailable).mockReturnValue(true);
+
+      const result = await service.getUserWithClients(1, otherUser);
+
+      expect(result.clients).toBeUndefined();
+      expect(result).not.toHaveProperty('updateAvailable');
+    });
+
+    it('should handle undefined latestSupported config when enriching for admin', async () => {
+      const userWithClients = {
+        ...user,
+        id: 1,
+        clients: [
+          { id: 1, userId: 1, version: '1.0.0', createdAt: new Date(), updatedAt: new Date() },
+        ],
+      };
+      userRepository.findOne.mockResolvedValue(userWithClients as User);
+      configService.get.mockReturnValue(undefined);
+      jest.mocked(isUpdateAvailable).mockReturnValue(false);
+
+      const result = await service.getUserWithClients(1, adminUser);
+
+      expect(isUpdateAvailable).toHaveBeenCalledWith('1.0.0', undefined);
+      expect(result.clients[0]).toHaveProperty('updateAvailable', false);
+      expect(result).toHaveProperty('updateAvailable', false);
+    });
+
+    it('should handle multiple clients with mixed update states for admin', async () => {
+      const userWithClients = {
+        ...user,
+        id: 1,
+        clients: [
+          { id: 1, userId: 1, version: '0.9.0', createdAt: new Date(), updatedAt: new Date() },
+          { id: 2, userId: 1, version: '1.1.0', createdAt: new Date(), updatedAt: new Date() },
+        ],
+      };
+      userRepository.findOne.mockResolvedValue(userWithClients as User);
+      configService.get.mockReturnValue('1.1.0');
+      jest
+        .mocked(isUpdateAvailable)
+        .mockImplementation((clientVersion: string) => clientVersion === '0.9.0');
+
+      const result = await service.getUserWithClients(1, adminUser);
+
+      expect(result.clients).toHaveLength(2);
+      expect(result.clients[0]).toHaveProperty('updateAvailable', true);
+      expect(result.clients[1]).toHaveProperty('updateAvailable', false);
+      expect(result).toHaveProperty('updateAvailable', true);
     });
   });
 

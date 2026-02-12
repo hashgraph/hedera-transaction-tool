@@ -66,4 +66,63 @@ describe('getLatestClient', () => {
 
     expect(getLatestClient([clientA, clientB])).toEqual(clientA);
   });
+
+  test('Preserves updateAvailable property on returned client', () => {
+    const client = createClient({ id: 1, version: '1.0.0', updateAvailable: true });
+    const result = getLatestClient([client]);
+
+    expect(result).toEqual(client);
+    expect(result!.updateAvailable).toBe(true);
+  });
+
+  test('Returns the most recently updated client regardless of version number', () => {
+    const newerVersion = createClient({
+      id: 1,
+      version: '2.0.0',
+      updatedAt: '2025-01-01T00:00:00.000Z',
+    });
+    const olderVersionButMoreRecent = createClient({
+      id: 2,
+      version: '1.0.0',
+      updatedAt: '2025-12-01T00:00:00.000Z',
+    });
+
+    expect(getLatestClient([newerVersion, olderVersionButMoreRecent])).toEqual(
+      olderVersionButMoreRecent,
+    );
+  });
+
+  test('Handles clients with updateAvailable set to different values', () => {
+    const clientWithUpdate = createClient({
+      id: 1,
+      version: '1.0.0',
+      updateAvailable: true,
+      updatedAt: '2025-01-01T00:00:00.000Z',
+    });
+    const clientWithoutUpdate = createClient({
+      id: 2,
+      version: '2.0.0',
+      updateAvailable: false,
+      updatedAt: '2025-12-01T00:00:00.000Z',
+    });
+
+    const result = getLatestClient([clientWithUpdate, clientWithoutUpdate]);
+    expect(result).toEqual(clientWithoutUpdate);
+    expect(result!.updateAvailable).toBe(false);
+  });
+
+  test('Handles ISO date strings with different timezones correctly', () => {
+    const clientA = createClient({
+      id: 1,
+      version: '1.0.0',
+      updatedAt: '2025-06-01T23:59:59.000Z',
+    });
+    const clientB = createClient({
+      id: 2,
+      version: '2.0.0',
+      updatedAt: '2025-06-02T00:00:00.000Z',
+    });
+
+    expect(getLatestClient([clientA, clientB])).toEqual(clientB);
+  });
 });
