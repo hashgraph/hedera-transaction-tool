@@ -135,7 +135,7 @@ const hasTransactionChanged = computed(() => {
       (initialValidStart.compare(now) > 0 || validStart.compare(now) > 0)
     ) {
       result = true; // validStart was updated
-    } else if (hasStartTimestampChanged(initialTransaction.value, transaction.value as Transaction, now)) {
+    } else if (hasStartTimestampChanged(initialTransaction.value as Transaction, transaction.value as Transaction, now)) {
       result = true; // startTimestamp was manually updated to a future time
     } else {
       // whether tx data match, excluding validStart and startTimestamp
