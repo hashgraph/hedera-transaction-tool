@@ -76,6 +76,16 @@ const contactList = computed(() =>
     }),
 );
 
+const updateAvailableUserIds = computed(() => {
+  const ids = new Set<number>();
+  for (const c of contactList.value) {
+    if (hasUpdateAvailable(c)) {
+      ids.add(c.user.id);
+    }
+  }
+  return ids;
+});
+
 const notifiedUserIds = computed(() => {
   const notificationsKey = user.selectedOrganization?.serverUrl || '';
   const result = [];
@@ -210,10 +220,10 @@ onBeforeMount(async () => {
                         {{ c.user.email }}
                       </p>
                     </div>
-                    <div v-if="c.user.admin || c.user.status === 'NEW' || (isAdmin && hasUpdateAvailable(c))" class="mt-2">
+                    <div v-if="c.user.admin || c.user.status === 'NEW' || (isAdmin && updateAvailableUserIds.has(c.user.id))" class="mt-2">
                       <span v-if="c.user.admin" class="badge bg-warning me-2">admin</span>
                       <span v-if="c.user.status === 'NEW'" class="badge bg-info me-2">new</span>
-                      <span v-if="isAdmin && hasUpdateAvailable(c)" class="badge bg-warning">update available</span>
+                      <span v-if="isAdmin && updateAvailableUserIds.has(c.user.id)" class="badge bg-warning">update available</span>
                     </div>
                   </div>
                 </div>
