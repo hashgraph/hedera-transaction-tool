@@ -441,5 +441,7 @@ export function transactionsDataMatch(t1: Transaction, t2: Transaction): boolean
   const t2Data = getAllData(t2);
   t1Data.validStart = undefined
   t2Data.validStart = undefined
+  t1Data.startTimestamp = undefined;
+  t2Data.startTimestamp = undefined;
   return JSON.stringify(t1Data) === JSON.stringify(t2Data);
 }

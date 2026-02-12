@@ -18,6 +18,7 @@ import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue';
 import {
   FileAppendTransaction,
   FileUpdateTransaction,
+  FreezeTransaction,
   Hbar,
   KeyList,
   Timestamp,
@@ -121,6 +122,26 @@ const transactionKey = ref<KeyList>(new KeyList([]));
 /* Computed */
 const transaction = computed(() => createTransaction({ ...data } as TransactionCommonData));
 
+function hasStartTimestampChanged(
+  initial: Transaction | null,
+  current: Transaction,
+  now: Timestamp,
+): boolean {
+  if (!(initial instanceof FreezeTransaction) || !(current instanceof FreezeTransaction)) {
+    return false;
+  }
+
+  const initialStart = initial.startTimestamp;
+  const currentStart = current.startTimestamp;
+
+  if (!initialStart || !currentStart) {
+    return false;
+  }
+
+  return initialStart.compare(currentStart) !== 0 &&
+    (initialStart.compare(now) > 0 || currentStart.compare(now) > 0);
+}
+
 const hasTransactionChanged = computed(() => {
   let result: boolean;
 
@@ -134,8 +155,10 @@ const hasTransactionChanged = computed(() => {
       (initialValidStart.compare(now) > 0 || validStart.compare(now) > 0)
     ) {
       result = true; // validStart was updated
+    } else if (hasStartTimestampChanged(initialTransaction.value, transaction.value, now)) {
+      result = true; // startTimestamp was manually updated to a future time
     } else {
-      // whether tx data match, excluding validStart
+      // whether tx data match, excluding validStart and startTimestamp
       result = !transactionsDataMatch(initialTransaction.value as Transaction, transaction.value);
     }
   } else {
