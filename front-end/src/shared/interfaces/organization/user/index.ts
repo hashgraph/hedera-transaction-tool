@@ -15,4 +15,5 @@ export interface IUser {
   admin: boolean;
   keys: IUserKey[];
   clients?: IClient[];
+  updateAvailable?: boolean;
 }

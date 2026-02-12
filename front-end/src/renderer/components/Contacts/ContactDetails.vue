@@ -244,7 +244,7 @@ watch(() => props.contact, handleContactChange);
     class="mt-4 row"
   >
     <div class="col-5">
-      <p class="text-main text-semi-bold">CLI Version</p>
+      <p class="text-main text-semi-bold">Client Version</p>
     </div>
     <div class="col-7">
       <p class="text-secondary overflow-hidden" data-testid="p-contact-cli-version">

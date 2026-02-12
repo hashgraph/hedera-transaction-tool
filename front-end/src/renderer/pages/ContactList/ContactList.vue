@@ -60,7 +60,7 @@ const isAdmin = computed(
 );
 
 function hasUpdateAvailable(contact: Contact): boolean {
-  return contact.user.clients?.some(client => client.updateAvailable) ?? false;
+  return contact.user.updateAvailable ?? false;
 }
 
 const contactList = computed(() =>
@@ -79,7 +79,7 @@ const contactList = computed(() =>
 const updateAvailableUserIds = computed(() => {
   const ids = new Set<number>();
   for (const c of contactList.value) {
-    if (hasUpdateAvailable(c)) {
+    if (c.user.updateAvailable) {
       ids.add(c.user.id);
     }
   }
