@@ -95,7 +95,10 @@ describe('UsersService', () => {
   });
 
   describe('getUsers', () => {
-    it('should load users with clients relation and enrich with updateAvailable', async () => {
+    const adminUser = { id: 99, admin: true } as User;
+    const nonAdminUser = { id: 50, admin: false } as User;
+
+    it('should load clients and enrich with updateAvailable for admin users', async () => {
       const usersWithClients = [
         {
           ...user,
@@ -108,22 +111,35 @@ describe('UsersService', () => {
       configService.get.mockReturnValue('1.1.0');
       jest.mocked(isUpdateAvailable).mockReturnValue(true);
 
-      const result = await service.getUsers();
+      const result = await service.getUsers(adminUser);
 
       expect(userRepository.find).toHaveBeenCalledWith({ relations: ['clients'] });
       expect(isUpdateAvailable).toHaveBeenCalledWith('1.0.0', '1.1.0');
-      // Clients are stripped from the result to avoid leaking version details
-      expect(result[0]).not.toHaveProperty('clients');
+      expect(result[0].clients).toBeDefined();
+      expect(result[0].clients).toHaveLength(1);
+      expect(result[0].clients[0]).toHaveProperty('updateAvailable', true);
+      expect(result[0]).toHaveProperty('updateAvailable', true);
     });
 
-    it('should handle users with no client records', async () => {
-      const usersWithoutClients = [{ ...user, clients: [] }];
-      userRepository.find.mockResolvedValue(usersWithoutClients as User[]);
+    it('should return empty clients array when no clients exist', async () => {
+      const usersWithClients = [{ ...user, clients: [] }];
+      userRepository.find.mockResolvedValue(usersWithClients as User[]);
       configService.get.mockReturnValue('1.1.0');
 
-      const result = await service.getUsers();
+      const result = await service.getUsers(adminUser);
 
-      expect(result[0]).not.toHaveProperty('clients');
+      expect(result[0].clients).toBeDefined();
+      expect(result[0].clients).toHaveLength(0);
+      expect(result[0]).toHaveProperty('updateAvailable', false);
+    });
+
+    it('should not load clients relation for non-admin users', async () => {
+      userRepository.find.mockResolvedValue([user] as User[]);
+
+      const result = await service.getUsers(nonAdminUser);
+
+      expect(userRepository.find).toHaveBeenCalledWith();
+      expect(result[0]).not.toHaveProperty('updateAvailable');
     });
   });
 

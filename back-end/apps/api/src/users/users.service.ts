@@ -83,13 +83,16 @@ export class UsersService {
   }
 
   // Return an array of users, containing all current users of the organization.
-  async getUsers(): Promise<User[]> {
-    const users = await this.repo.find({ relations: ['clients'] });
-    const latestSupported = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
-    this.enrichUsersWithUpdateFlag(users, latestSupported);
+  async getUsers(requestingUser: User): Promise<User[]> {
+    // Only load clients relation when admin needs update info
+    if (requestingUser.admin) {
+      const users = await this.repo.find({ relations: ['clients'] });
+      const latestSupported = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
+      this.enrichUsersWithUpdateFlag(users, latestSupported);
+      return users;
+    }
 
-    // Do not expose clients over the wire from this method
-    return users.map(({ clients, ...userWithoutClients }) => userWithoutClients as User);
+    return this.repo.find();
   }
 
   async getUserWithClients(id: number, requestingUser: User): Promise<User> {
@@ -106,7 +109,8 @@ export class UsersService {
       return user;
     }
 
-    const { clients, ...userWithoutClients } = user;
+    const { clients: _clients, ...userWithoutClients }: User = user;
+    // Type assertion needed: serialization interceptor handles the actual shape
     return userWithoutClients as User;
   }
 
@@ -214,15 +218,18 @@ export class UsersService {
     return client;
   }
 
-  private enrichUsersWithUpdateFlag(users: User[], latestSupported: string | undefined): User[] {
+  private enrichUsersWithUpdateFlag(users: User[], latestSupported: string | undefined): void {
     for (const user of users) {
       user.clients = (user.clients ?? []).map(client => ({
         ...client,
         updateAvailable: isUpdateAvailable(client.version, latestSupported),
       }));
+      (user as User & { updateAvailable: boolean }).updateAvailable = user.clients.some(
+        c => c.updateAvailable,
+      );
     }
-    return users;
   }
+
   getVersionCheckInfo(userVersion: string): VersionCheckResult {
     const latestSupported = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
     const minimumSupported = this.configService.get<string>('MINIMUM_SUPPORTED_FRONTEND_VERSION');

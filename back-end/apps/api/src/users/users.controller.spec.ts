@@ -67,13 +67,14 @@ describe('UsersController', () => {
 
       userService.getUsers.mockResolvedValue(result);
 
-      expect(await controller.getUsers()).toBe(result);
+      expect(await controller.getUsers(user)).toBe(result);
+      expect(userService.getUsers).toHaveBeenCalledWith(user);
     });
 
     it('should return an empty array if no users exist', async () => {
       userService.getUsers.mockResolvedValue([]);
 
-      expect(await controller.getUsers()).toEqual([]);
+      expect(await controller.getUsers(user)).toEqual([]);
     });
   });
 
