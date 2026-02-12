@@ -97,10 +97,7 @@ const creator = computed(() => {
 });
 
 const showExternal = computed(() => {
-  // External badges are displayed for the transaction creator only
-  return isLoggedInOrganization(user.selectedOrganization) ?
-    user.selectedOrganization?.userId === orgTransaction.value?.creatorId :
-    false;
+  return isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin;
 });
 
 /* Functions */
