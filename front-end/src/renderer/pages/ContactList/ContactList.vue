@@ -59,10 +59,6 @@ const isAdmin = computed(
   () => isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin,
 );
 
-function hasUpdateAvailable(contact: Contact): boolean {
-  return contact.user.updateAvailable ?? false;
-}
-
 const contactList = computed(() =>
   contacts.contacts
     .filter(c =>
