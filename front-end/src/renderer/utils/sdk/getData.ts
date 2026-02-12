@@ -2,6 +2,7 @@ import {
   ServiceEndpoint,
   SystemDeleteTransaction,
   SystemUndeleteTransaction,
+  Timestamp,
   type Transaction,
 } from '@hashgraph/sdk';
 
@@ -434,6 +435,26 @@ export function getAllData(transaction: Transaction) {
     throw new Error('Unsupported transaction type');
   }
   return handler(transaction);
+}
+
+export function hasStartTimestampChanged(
+  initial: Transaction | null,
+  current: Transaction,
+  now: Timestamp,
+): boolean {
+  if (!(initial instanceof FreezeTransaction) || !(current instanceof FreezeTransaction)) {
+    return false;
+  }
+
+  const initialStart = initial.startTimestamp;
+  const currentStart = current.startTimestamp;
+
+  if (!initialStart || !currentStart) {
+    return false;
+  }
+
+  return initialStart.compare(currentStart) !== 0 &&
+    (initialStart.compare(now) > 0 || currentStart.compare(now) > 0);
 }
 
 export function transactionsDataMatch(t1: Transaction, t2: Transaction): boolean {

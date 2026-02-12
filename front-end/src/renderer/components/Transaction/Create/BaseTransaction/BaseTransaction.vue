@@ -2,6 +2,7 @@
 import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
 import {
   getTransactionCommonData,
+  hasStartTimestampChanged,
   type TransactionCommonData,
   transactionsDataMatch,
   validate100CharInput,
@@ -18,7 +19,6 @@ import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue';
 import {
   FileAppendTransaction,
   FileUpdateTransaction,
-  FreezeTransaction,
   Hbar,
   KeyList,
   Timestamp,
@@ -121,26 +121,6 @@ const transactionKey = ref<KeyList>(new KeyList([]));
 
 /* Computed */
 const transaction = computed(() => createTransaction({ ...data } as TransactionCommonData));
-
-function hasStartTimestampChanged(
-  initial: Transaction | null,
-  current: Transaction,
-  now: Timestamp,
-): boolean {
-  if (!(initial instanceof FreezeTransaction) || !(current instanceof FreezeTransaction)) {
-    return false;
-  }
-
-  const initialStart = initial.startTimestamp;
-  const currentStart = current.startTimestamp;
-
-  if (!initialStart || !currentStart) {
-    return false;
-  }
-
-  return initialStart.compare(currentStart) !== 0 &&
-    (initialStart.compare(now) > 0 || currentStart.compare(now) > 0);
-}
 
 const hasTransactionChanged = computed(() => {
   let result: boolean;
