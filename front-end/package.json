@@ -24,8 +24,6 @@
     "publish": "pnpm run build && electron-builder -m -p 'onTagOrDraft'",
     "test:main": "vitest --config src/tests/vitest.config.main.ts --passWithNoTests",
     "test:main:coverage": "vitest --config src/tests/vitest.config.main.ts --coverage.enabled --coverage.include=src/main",
-    "test:renderer": "vitest --config src/tests/vitest.config.renderer.ts --passWithNoTests",
-    "test:renderer:coverage": "vitest --config src/tests/vitest.config.renderer.ts --coverage.enabled --coverage.include=src/renderer/utils/endpointUtils.ts",
     "generate:database": "prisma generate --no-hints"
   },
   "dependencies": {
