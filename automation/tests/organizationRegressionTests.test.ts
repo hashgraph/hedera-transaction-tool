@@ -8,6 +8,7 @@ import {
   closeApp,
   generateRandomEmail,
   generateRandomPassword,
+  getPrivateKeyEnv,
   setupApp,
   setupEnvironmentForTransactions,
   waitForValidStart,
@@ -68,7 +69,7 @@ test.describe.skip('Organization Regression tests', () => {
       globalCredentials.password,
     );
 
-    await setupEnvironmentForTransactions(window, process.env.PRIVATE_KEY);
+    await setupEnvironmentForTransactions(window, getPrivateKeyEnv());
 
     // Set complex account for transactions
     await organizationPage.addComplexKeyAccountWithNestedThresholds(totalUsers);
