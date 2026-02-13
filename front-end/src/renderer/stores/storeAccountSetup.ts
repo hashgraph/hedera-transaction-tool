@@ -63,6 +63,7 @@ const useAccountSetupStore = defineStore('accountSetupStore', (): StoreAccountSe
     if (isUserLoggedIn(user.personal) && skipClaimKey.value !== null) {
       await setStoredClaim(user.personal.id, skipClaimKey.value, 'true');
     }
+    user.setAccountSetupStarted(false);
   };
 
   /* Functions */
