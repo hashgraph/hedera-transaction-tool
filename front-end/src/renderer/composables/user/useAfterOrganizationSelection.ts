@@ -2,18 +2,14 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
 
-import { SKIPPED_PERSONAL_SETUP } from '@shared/constants';
-
 import useSetupStores from '@renderer/composables/user/useSetupStores';
+import useAccountSetup from '@renderer/stores/storeAccountSetup';
 import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 
 import { get as getStoredMnemonics } from '@renderer/services/mnemonicService';
-import { getStoredClaim } from '@renderer/services/claimService';
 
 import {
-  accountSetupRequired,
   assertUserLoggedIn,
-  buildSkipClaimKey,
   getLocalKeyPairs,
   isLoggedInOrganization,
   isLoggedOutOrganization,
@@ -25,6 +21,7 @@ import {
 export default function useAfterOrganizationSelection() {
   /* Stores */
   const user = useUserStore();
+  const accountSetup = useAccountSetup();
 
   /* Composables */
   const router = useRouter();
@@ -47,15 +44,6 @@ export default function useAfterOrganizationSelection() {
     user.keyPairs = keyPairs;
     user.mnemonics = mnemonics;
 
-    if (!organization) {
-      const { data } = await safeAwait(getStoredClaim(user.personal.id, SKIPPED_PERSONAL_SETUP));
-      user.skippedSetup = !!data;
-    } else if (isLoggedInOrganization(organization)) {
-      const claimKey = buildSkipClaimKey(organization.serverUrl, organization.userId);
-      const { data } = await safeAwait(getStoredClaim(user.personal.id, claimKey));
-      user.skippedSetup = !!data;
-    }
-
     return { keyPairs, mnemonics };
   };
 
@@ -76,10 +64,9 @@ export default function useAfterOrganizationSelection() {
       return;
     }
 
-    const shouldSetup = accountSetupRequired(organization, user.keyPairs);
+    const shouldSetup = await accountSetup.shouldShowAccountSetup();
     const shouldNavigateToSetup =
-      shouldSetup &&
-      ((organization && !isLoggedInOrganization(organization)) || !user.skippedSetup);
+      shouldSetup && organization && !isLoggedInOrganization(organization);
 
     if (shouldNavigateToSetup) {
       await router.push({ name: 'accountSetup' });

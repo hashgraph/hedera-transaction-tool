@@ -4,6 +4,7 @@ import type { KeyPair } from '@prisma/client';
 import { onMounted, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useAccountSetupStore from '@renderer/stores/storeAccountSetup';
 
 import { useToast } from 'vue-toast-notification';
 import { useRouter } from 'vue-router';
@@ -23,6 +24,7 @@ import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
+const accountSetupStore = useAccountSetupStore();
 
 /* Composables */
 useSetDynamicLayout(ACCOUNT_SETUP_LAYOUT);
@@ -114,7 +116,7 @@ const handleKeysDeleted = async () => {
   await user.refetchKeys();
   await user.refetchAccounts();
 
-  if (user.shouldSetupAccount) {
+  if (await accountSetupStore.shouldShowAccountSetup()) {
     await router.push({ name: 'accountSetup' });
   }
 };
