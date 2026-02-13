@@ -9,10 +9,9 @@ import {
   closeApp,
   generateRandomEmail,
   generateRandomPassword,
-  getPrivateKeyEnv,
   setupApp,
 } from '../utils/util.js';
-import { generateEd25519KeyPair } from '../utils/keyUtil.js';
+import { generateECDSAKeyPair, generateEd25519KeyPair } from '../utils/keyUtil.js';
 
 let app: ElectronApplication;
 let window: Page;
@@ -163,9 +162,8 @@ test.describe('Settings tests', () => {
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnECDSADropDown();
 
-    const privateKey = getPrivateKeyEnv();
-
-    await settingsPage.fillInECDSAPrivateKey(privateKey!);
+    const privateKey = generateECDSAKeyPair();
+    await settingsPage.fillInECDSAPrivateKey(privateKey);
     await settingsPage.fillInECDSANickname('Test-ECDSA-Import');
     // await settingsPage.fillInECDSAPassword(globalCredentials.password);
     await loginPage.waitForToastToDisappear();
