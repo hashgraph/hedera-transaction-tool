@@ -190,7 +190,7 @@ test.describe('Settings tests', () => {
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnED25519DropDown();
 
-    const privateKey = generateEd25519KeyPair();
+    const { privateKey } = generateEd25519KeyPair();
 
     await settingsPage.fillInED25519PrivateKey(privateKey);
     await settingsPage.fillInED25519Nickname('Test-ED25519-Import');

@@ -22,7 +22,7 @@ export function generateECDSAKeyPair(curve = 'secp256k1') {
 
 // Generates an Ed25519 key pair
 export function generateEd25519KeyPair() {
-  const { privateKey } = crypto.generateKeyPairSync('ed25519', {
+  const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519', {
     publicKeyEncoding: {
       type: 'spki',
       format: 'der',
@@ -33,7 +33,10 @@ export function generateEd25519KeyPair() {
     },
   });
 
-  return privateKey.toString('hex');
+  return {
+    publicKey: publicKey.toString('hex'),
+    privateKey: privateKey.toString('hex')
+  };
 }
 
 export const decodeProtobuffKey = (protobuffEncodedKey: string) => {

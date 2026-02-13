@@ -6,6 +6,8 @@ import { SettingsPage } from '../pages/SettingsPage.js';
 import * as fsp from 'fs/promises';
 import _ from 'lodash';
 import Diff from 'deep-diff';
+import { TransactionPage } from '../pages/TransactionPage.js';
+import { generateEd25519KeyPair } from './keyUtil.js';
 
 /**
  * Localnet payer account ID corresponding to the PRIVATE_KEY in .env
@@ -59,6 +61,7 @@ export async function closeApp(app: ElectronApplication) {
 }
 
 const LOCALNET_OPERATOR_KEY = '0x91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137'; // genesis account key
+const LOCALNET_OPERATOR_ACCOUNT = '0.0.2'; // genesis account ID
 
 // Retrieves the private key from environment variables
 export function getPrivateKeyEnv(): string | null {
@@ -87,13 +90,44 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnED25519DropDown();
-    await settingsPage.fillInED25519PrivateKey(privateKey ?? '');
-    await settingsPage.fillInED25519Nickname('Payer Account');
-    await settingsPage.clickOnED25519ImportButton();
 
-    const modalClosedLocalnet = await settingsPage.isElementHidden(settingsPage.ed25519ImportButtonSelector, null, 10000);
-    if (!modalClosedLocalnet) {
-      throw new Error('Import modal did not close within 10 seconds (LOCALNET)');
+    if (privateKey === null) {
+      // The private key is not configured so we are going to create a payer account using the
+      // operator key, so we need to:
+      //  - import the operator key
+      //  - generate a key pair for the payer account
+      //  - create the payer account using operator as payer, and transfer 10000 HBARs to it
+      //  - delete the operator key
+      //  - import the payer key which will further be used for all transactions
+      await settingsPage.fillInED25519PrivateKey(getOperatorKeyEnv());
+      await settingsPage.fillInED25519Nickname('Operator Account');
+      await settingsPage.clickOnED25519ImportButton();
+
+      const { publicKey, privateKey } = generateEd25519KeyPair();
+
+      const transactionPage = new TransactionPage(window);
+      await transactionPage.clickOnTransactionsMenuButton();
+      await transactionPage.createNewAccount({
+        initialFunds: '10000',
+        publicKey: publicKey,
+        payerAccountId: LOCALNET_OPERATOR_ACCOUNT,
+      });
+
+      await settingsPage.clickOnSettingsButton();
+      await settingsPage.clickOnKeysTab();
+      await settingsPage.clickOnDeleteButtonAtIndex(1);
+      await settingsPage.clickOnDeleteKeyPairButton();
+
+      await settingsPage.clickOnImportButton();
+      await settingsPage.clickOnED25519DropDown();
+      await settingsPage.fillInED25519PrivateKey(privateKey);
+      await settingsPage.fillInED25519Nickname('Payer Account');
+      await settingsPage.clickOnED25519ImportButton();
+    } else {
+      // The private key is configured so this is the one which will be used as payer for all transactions
+      await settingsPage.fillInED25519PrivateKey(privateKey);
+      await settingsPage.fillInED25519Nickname('Payer Account');
+      await settingsPage.clickOnED25519ImportButton();
     }
   } else if (network === 'TESTNET') {
     const settingsPage = new SettingsPage(window);
@@ -105,11 +139,6 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.fillInECDSAPrivateKey(privateKey ?? '');
     await settingsPage.fillInECDSANickname('Payer Account');
     await settingsPage.clickOnECDSAImportButton();
- 
-    const modalClosedTestnet = await settingsPage.isElementHidden(settingsPage.ecdsaImportButtonSelector, null, 10000);
-    if (!modalClosedTestnet) {
-      throw new Error('Import modal did not close within 10 seconds (TESTNET)');
-    }
   } else if (network === 'PREVIEWNET') {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
@@ -120,11 +149,6 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.fillInECDSAPrivateKey(privateKey ?? '');
     await settingsPage.fillInECDSANickname('Payer Account');
     await settingsPage.clickOnECDSAImportButton();
-
-    const modalClosedPreviewnet = await settingsPage.isElementHidden(settingsPage.ecdsaImportButtonSelector, null, 10000);
-    if (!modalClosedPreviewnet) {
-      throw new Error('Import modal did not close within 10 seconds (PREVIEWNET)');
-    }
   } else {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
@@ -136,11 +160,6 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.fillInED25519PrivateKey(privateKey ?? '');
     await settingsPage.fillInED25519Nickname('Payer Account');
     await settingsPage.clickOnED25519ImportButton();
-
-    const modalClosedCustom = await settingsPage.isElementHidden(settingsPage.ed25519ImportButtonSelector, null, 10000);
-    if (!modalClosedCustom) {
-      throw new Error('Import modal did not close within 10 seconds (Custom)');
-    }
   }
 }
 
