@@ -17,18 +17,11 @@ import { initializeUpdaterService } from '@main/services/electronUpdater';
 
 let mainWindow: BrowserWindow | null;
 
-initLogger();
-
-run();
-
 async function run() {
   await initDatabase();
 
   registerIpcListeners();
 }
-
-attachAppEvents();
-setupDeepLink();
 
 function attachAppEvents() {
   app.on('ready', async () => {
@@ -104,6 +97,26 @@ function setupDeepLink() {
   } else {
     app.setAsDefaultProtocolClient(PROTOCOL_NAME);
   }
+}
+
+initLogger();
+
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+
+  run();
+
+  attachAppEvents();
+  setupDeepLink();
 }
 
 process.on('message', msg => {

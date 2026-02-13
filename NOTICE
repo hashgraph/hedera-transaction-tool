@@ -756,13 +756,7 @@ This product includes software (@types/debug@4.1.12) developed at
 This product includes software (@types/deep-diff@1.0.5) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
-This product includes software (@types/eslint-scope@3.7.7) developed at
-(https://github.com/DefinitelyTyped/DefinitelyTyped).
-
 This product includes software (@types/eslint@8.56.12) developed at
-(https://github.com/DefinitelyTyped/DefinitelyTyped).
-
-This product includes software (@types/eslint@9.6.1) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/estree@1.0.6) developed at
@@ -1687,10 +1681,6 @@ This product includes software (engine.io-client@6.6.3) developed at
 
 This product includes software (engine.io-parser@5.2.3) developed at
 (https://github.com/socketio/socket.io).
-
-The Initial Developer of entities@4.5.0,
-is Felix Boehm (https://github.com/fb55/entities).
-Copyright Felix Boehm. All Rights Reserved.
 
 The Initial Developer of env-paths@2.2.1,
 is Sindre Sorhus (https://github.com/sindresorhus/env-paths).
@@ -3139,7 +3129,7 @@ The Initial Developer of roarr@2.15.4,
 is Gajus Kuizinas (https://github.com/gajus/roarr).
 Copyright Gajus Kuizinas. All Rights Reserved.
 
-The Initial Developer of rollup@2.79.2,
+The Initial Developer of rollup@4.40.1,
 is Rich Harris (https://github.com/rollup/rollup).
 Copyright Rich Harris. All Rights Reserved.
 
@@ -3717,10 +3707,6 @@ Copyright Isaac Z. Schlueter. All Rights Reserved.
 The Initial Developer of write-file-atomic@4.0.2,
 is GitHub Inc. (https://github.com/npm/write-file-atomic).
 Copyright GitHub Inc.. All Rights Reserved.
-
-The Initial Developer of ws@8.17.1,
-is Einar Otto Stangvik (https://github.com/websockets/ws).
-Copyright Einar Otto Stangvik. All Rights Reserved.
 
 The Initial Developer of xml-name-validator@4.0.0,
 is Domenic Denicola (https://github.com/jsdom/xml-name-validator).

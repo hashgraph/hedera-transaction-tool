@@ -14,7 +14,11 @@ import { deleteAllTempFolders } from '@main/services/localUser';
 
 vi.mock('path', () => mockDeep());
 vi.mock('@electron-toolkit/utils', () => mockDeep());
-vi.mock('electron', () => mockDeep());
+vi.mock('electron', () => {
+  const mocked = mockDeep();
+  mocked.app.requestSingleInstanceLock.mockReturnValue(true);
+  return mocked;
+});
 vi.mock('@main/db/init', () => mockDeep());
 vi.mock('@main/services/localUser', () => mockDeep());
 vi.mock('@main/modules/logger', () => mockDeep());
@@ -49,6 +53,9 @@ describe('Electron entry file', async () => {
   vi.mocked(BrowserWindow).mockReturnValue({
     on: vi.fn(),
     close: vi.fn(),
+    isMinimized: vi.fn(),
+    restore: vi.fn(),
+    focus: vi.fn(),
   } as unknown as BrowserWindow);
 
   test('Should initialize the main process', async () => {
@@ -152,5 +159,31 @@ describe('Electron entry file', async () => {
         'Content-Security-Policy': ["script-src 'self'"],
       },
     });
+  });
+
+  test('Should request single instance lock', () => {
+    expect(app.requestSingleInstanceLock).toHaveBeenCalled();
+  });
+
+  test('Should restore and focus window on second-instance event', async () => {
+    const mainWindow = new BrowserWindow();
+    vi.mocked(restoreOrCreateWindow).mockResolvedValue(mainWindow);
+
+    // Re-trigger ready so mainWindow is set
+    //@ts-expect-error Incorrect type definition
+    const readyHandler = vi.mocked(app).on.mock.calls.find(([event]) => event === 'ready');
+    readyHandler && (await readyHandler[1]());
+
+    //@ts-expect-error Incorrect type definition
+    const secondInstanceHandler = vi
+      .mocked(app)
+      .on.mock.calls.find(([event]) => event === 'second-instance');
+    expect(secondInstanceHandler).toBeDefined();
+
+    vi.mocked(mainWindow.isMinimized).mockReturnValue(true);
+    secondInstanceHandler && secondInstanceHandler[1]();
+
+    expect(mainWindow.restore).toHaveBeenCalled();
+    expect(mainWindow.focus).toHaveBeenCalled();
   });
 });

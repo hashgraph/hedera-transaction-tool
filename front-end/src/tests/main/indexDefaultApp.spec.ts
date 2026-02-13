@@ -15,6 +15,7 @@ vi.mock('electron', () => {
       on: vi.fn(),
       setAsDefaultProtocolClient: vi.fn(),
       quit: vi.fn(),
+      requestSingleInstanceLock: vi.fn(() => true),
     },
     BrowserWindow: vi.fn(),
   };
