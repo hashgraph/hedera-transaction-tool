@@ -1,16 +1,27 @@
-import type { AccountInfo } from '@shared/interfaces';
+import type { AccountInfo, ITransaction } from '@shared/interfaces';
 import type { HederaAccount } from '@prisma/client';
 
-import { AccountId, Client, Hbar, HbarUnit, Long } from '@hashgraph/sdk';
+import { AccountId, Client, Hbar, HbarUnit, Long, Transaction } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getOne } from '@renderer/services/accountsService';
-import { getPublicKeyOwner } from '@renderer/services/organization';
+import { getPublicKeyOwner, uploadSignatures } from '@renderer/services/organization';
 
-import { getPublicKeyMapping, isUserLoggedIn } from './userStoreHelpers';
+import {
+  assertIsLoggedInOrganization,
+  assertUserLoggedIn,
+  getPublicKeyMapping,
+  isUserLoggedIn,
+} from './userStoreHelpers';
 import { isAccountId } from './validator';
+import { usersPublicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
+import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
+import { useToast } from 'vue-toast-notification';
+import type { SignatureItem } from '@renderer/types';
 
 export * from './dom';
 export * from './sdk';
@@ -28,33 +39,7 @@ export * from './sdk';
 export * from './transactionSignatureModels';
 export * from './autoFocus';
 export * from './localServices';
-
-export const getDateTimeLocalInputValue = (date: Date) => {
-  const tzo = -date.getTimezoneOffset();
-  const dif = tzo >= 0 ? '+' : '-';
-  const pad = function (num: number) {
-    return (num < 10 ? '0' : '') + num;
-  };
-
-  const formattedDate =
-    date.getFullYear() +
-    '-' +
-    pad(date.getMonth() + 1) +
-    '-' +
-    pad(date.getDate()) +
-    'T' +
-    pad(date.getHours()) +
-    ':' +
-    pad(date.getMinutes()) +
-    ':' +
-    pad(date.getSeconds()) +
-    dif +
-    pad(Math.floor(Math.abs(tzo) / 60)) +
-    ':' +
-    pad(Math.abs(tzo) % 60);
-
-  return formattedDate.slice(0, 19);
-};
+export * from './transactionFile';
 
 export const convertBytes = (
   bytes: number,
@@ -112,44 +97,6 @@ export const base64ToUint8Array = (base64String: string) => {
 export const encodeString = (str: string) => {
   return new TextEncoder().encode(str);
 };
-
-export function stringToHex(str: string): string {
-  return Array.from(str, c => c.charCodeAt(0).toString(16)).join('');
-}
-
-export function hexToString(hex: string) {
-  return decodeURIComponent(hex.replace(/\s+/g, '').replace(/[0-9a-f]{2}/g, '%$&'));
-}
-
-export function getDateString(date: Date, isUtcSelected = true) {
-  return isUtcSelected
-    ? date.toLocaleString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-        timeZone: 'UTC', // Force UTC time
-      })
-    : date.toLocaleString();
-}
-
-export function getDateStringExtended(date: Date, isUtcSelected = true) {
-
-  const formatter = new Intl.DateTimeFormat(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-    timeZoneName: 'short',
-  });
-
-  return isUtcSelected
-    ? date.toUTCString()
-    : `${date.toDateString()} ${formatter.format(date)}`;
-}
 
 export const throwError = (errorMessage: string) => {
   throw new Error(errorMessage);
@@ -224,7 +171,7 @@ export const getAccountIdWithChecksum = (accountId: string): string => {
 
 const TINYBAR_THRESHOLD = 1_000_000;
 
-export function stringifyHbarWithFont(hbar: Hbar, fontClass: string): string {
+export function stringifyHbarWithFont(hbar: Hbar, fontClass = 'text-bold text-secondary'): string {
   const amount = hbar.isNegative() ? hbar.toTinybars().negate() : hbar.toTinybars();
   const showTinybars = amount.lessThan(Long.fromNumber(TINYBAR_THRESHOLD));
 
@@ -234,6 +181,81 @@ export function stringifyHbarWithFont(hbar: Hbar, fontClass: string): string {
   const displayUnit = showTinybars ? HbarUnit.Tinybar._symbol : HbarUnit.Hbar._symbol;
 
   return `${displayAmount} <span class="${fontClass}">${displayUnit}</span>`;
+}
+
+export async function signTransactions(
+  transactions: ITransaction[],
+  password: string | null,
+  accountInfoCache: AccountByIdCache,
+  nodeInfoCache: NodeByIdCache,
+): Promise<boolean> {
+  const user = useUserStore();
+  const network = useNetworkStore();
+  const toast = useToast();
+  assertUserLoggedIn(user.personal);
+  assertIsLoggedInOrganization(user.selectedOrganization);
+
+  const items: SignatureItem[] = [];
+  let signed = false;
+
+  for (const tx of transactions) {
+    const tid = tx.id;
+    const transaction = Transaction.fromBytes(hexToUint8Array(tx.transactionBytes));
+
+    const publicKeysRequired = await usersPublicRequiredToSign(
+      transaction,
+      user.selectedOrganization.userKeys,
+      network.mirrorNodeBaseURL,
+      accountInfoCache,
+      nodeInfoCache,
+      user.selectedOrganization,
+    );
+
+    const restoredRequiredKeys = [];
+    const nonRestoredRequiredKeys = [];
+
+    // Separate keys into restored and non-restored, where restored indicates that the
+    // key is locally present.
+    for (const requiredKey of publicKeysRequired) {
+      if (user.keyPairs.some(k => k.public_key === requiredKey)) {
+        restoredRequiredKeys.push(requiredKey);
+      } else {
+        nonRestoredRequiredKeys.push(requiredKey);
+      }
+    }
+
+    if (nonRestoredRequiredKeys.length > 0) {
+      toast.error(
+        `You need to restore the following public keys to fully sign the transaction: ${nonRestoredRequiredKeys.join(
+          ', ',
+        )}`,
+        errorToastOptions,
+      );
+      break;
+    }
+
+    if (restoredRequiredKeys.length > 0) {
+      items.push({
+        publicKeys: publicKeysRequired,
+        transaction: transaction,
+        transactionId: tid,
+      });
+    }
+  }
+
+  if (items.length > 0) {
+    await uploadSignatures(
+      user.personal.id,
+      password,
+      user.selectedOrganization,
+      undefined,
+      undefined,
+      undefined,
+      items,
+    );
+    signed = true;
+  }
+  return signed;
 }
 
 export const splitMultipleAccounts = (input: string, client: Client): string[] => {
@@ -378,18 +400,9 @@ export function sanitizeAccountId(value: string): string {
   return value;
 }
 
-export const getNetworkLabel = (network: string) => {
-  network = network.toLocaleLowerCase();
-  switch (network) {
-    case 'mainnet':
-      return 'Mainnet';
-    case 'testnet':
-      return 'Testnet';
-    case 'previewnet':
-      return 'Previewnet';
-    case 'local-node':
-      return 'Local Node';
-    default:
-      return 'Custom';
-  }
+export const formatProgressBytes = (
+  bytes: number | undefined | null,
+  fallback: string = '0',
+): string => {
+  return convertBytes(bytes || 0, { useBinaryUnits: false, decimals: 2 }) || fallback;
 };

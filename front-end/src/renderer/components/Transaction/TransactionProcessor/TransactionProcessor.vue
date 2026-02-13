@@ -16,8 +16,10 @@ import OrganizationRequestHandler from './components/OrganizationRequestHandler.
 import SignPersonalRequestHandler from './components/SignPersonalRequestHandler.vue';
 import ExecutePersonalRequestHandler from './components/ExecutePersonalRequestHandler.vue';
 import MultipleAccountUpdateRequestHandler from './components/MultipleAccountUpdateRequestHandler.vue';
+import CheckKeySettingHandler from '@renderer/components/Transaction/TransactionProcessor/components/CheckKeySettingHandler.vue';
 
 import { assertHandlerExists } from '.';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -27,6 +29,8 @@ const props = defineProps<{
   onLocalStored?: (id: string) => void;
   onCloseSuccessModalClick?: () => void;
   watchExecutedModalShown?: (shown: boolean) => void;
+  hasDataChanged: boolean;
+  saveDraft: () => Promise<void>;
 }>();
 
 /* Composables */
@@ -34,6 +38,7 @@ const toast = useToast();
 
 /* State */
 /** Handlers */
+const checkKeySettingHandler = ref<InstanceType<typeof CheckKeySettingHandler> | null>(null);
 const validateHandler = ref<InstanceType<typeof ValidateRequestHandler> | null>(null);
 const confirmHandler = ref<InstanceType<typeof ConfirmTransactionHandler> | null>(null);
 const multipleAccountUpdateHandler = ref<InstanceType<
@@ -55,13 +60,13 @@ const isLoading = ref(false);
 /* Handlers */
 const handleGroupSubmitSuccess = async (id: number) => {
   setConfirmModalShown(false);
-  toast.success('Transaction group submitted successfully');
+  toast.success('Transaction group submitted successfully', successToastOptions);
   props.onGroupSubmitted && (await props.onGroupSubmitted(id));
 };
 
 const handleSubmitSuccess = async (id: number, transactionBytes: string) => {
   setConfirmModalShown(false);
-  toast.success('Transaction submitted successfully');
+  toast.success('Transaction submitted successfully', successToastOptions);
   props.onSubmitted && (await props.onSubmitted(id, transactionBytes));
 };
 
@@ -108,11 +113,18 @@ async function process(
 
   buildChain();
 
-  assertHandlerExists<typeof ValidateRequestHandler>(validateHandler.value, 'Validate');
-  await validateHandler.value.handle(request);
+  assertHandlerExists<typeof CheckKeySettingHandler>(
+    checkKeySettingHandler.value,
+    'CheckKeySetting',
+  );
+  checkKeySettingHandler.value.handle(request);
 }
 
 function buildChain() {
+  assertHandlerExists<typeof CheckKeySettingHandler>(
+    checkKeySettingHandler.value,
+    'CheckKeySetting',
+  );
   assertHandlerExists<typeof ValidateRequestHandler>(validateHandler.value, 'Validate');
   assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Confirm');
   assertHandlerExists<typeof MultipleAccountUpdateRequestHandler>(
@@ -137,6 +149,7 @@ function buildChain() {
     'Execute Personal',
   );
 
+  checkKeySettingHandler.value.setNext(validateHandler.value);
   validateHandler.value.setNext(confirmHandler.value);
   confirmHandler.value.setNext(multipleAccountUpdateHandler.value);
   multipleAccountUpdateHandler.value.setNext(bigFileOrganizationHandler.value);
@@ -164,6 +177,9 @@ defineExpose({
 </script>
 <template>
   <div>
+    <!-- Handler #0: Check at least one private key is set -->
+    <CheckKeySettingHandler ref="checkKeySettingHandler" :save-draft="props.saveDraft" :hasDataChanged="props.hasDataChanged" />
+
     <!-- Handler #1: Validation -->
     <ValidateRequestHandler ref="validateHandler" />
 

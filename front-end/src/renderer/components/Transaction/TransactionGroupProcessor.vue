@@ -24,7 +24,7 @@ import {
   addApprovers,
   addObservers,
   submitTransactionGroup,
-  getApiGroupById,
+  getTransactionGroupById,
 } from '@renderer/services/organization';
 
 import { createTransactionId } from '@renderer/utils/sdk';
@@ -44,6 +44,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -144,7 +145,7 @@ async function signAfterConfirm() {
       await executeTransaction(signedTransactionBytes, groupItem);
     }
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Transaction signing failed'));
+    toast.error(getErrorMessage(error, 'Transaction signing failed'), errorToastOptions);
   } finally {
     isSigning.value = false;
   }
@@ -217,13 +218,13 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
     // }
 
     if (unmounted.value) {
-      toast.success('Transaction executed');
+      toast.success('Transaction executed', successToastOptions);
     }
   } catch (error) {
     const data = JSON.parse(getErrorMessage(error, 'Transaction execution failed'));
     status = data.status;
 
-    toast.error(data.message);
+    toast.error(data.message, errorToastOptions);
   } finally {
     isExecuting.value = false;
   }
@@ -345,9 +346,9 @@ async function sendSignedTransactionsToOrganization() {
     apiGroupItems,
   );
 
-  const group: IGroup = await getApiGroupById(user.selectedOrganization.serverUrl, id);
+  const group: IGroup = await getTransactionGroupById(user.selectedOrganization.serverUrl, id);
 
-  toast.success('Transaction submitted successfully');
+  toast.success('Transaction submitted successfully', successToastOptions);
 
   for (const groupItem of group.groupItems) {
     const results = await Promise.allSettled([
@@ -358,7 +359,7 @@ async function sendSignedTransactionsToOrganization() {
     ]);
     results.forEach(result => {
       if (result.status === 'rejected') {
-        toast.error(result.reason.message);
+        toast.error(result.reason.message, errorToastOptions);
       }
     });
   }

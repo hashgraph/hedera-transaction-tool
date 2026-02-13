@@ -18,6 +18,7 @@ import AppStepper from '@renderer/components/ui/AppStepper.vue';
 import GenerateOrImport from './components/GenerateOrImport.vue';
 import KeyPairs from './components/KeyPairs.vue';
 import NewPassword from './components/NewPassword.vue';
+import useVersionCheck from '@renderer/composables/useVersionCheck';
 
 /* Types */
 type StepName = 'newPassword' | 'recoveryPhrase' | 'keyPairs';
@@ -28,6 +29,8 @@ const user = useUserStore();
 /* Composables */
 const router = useRouter();
 useSetDynamicLayout(ACCOUNT_SETUP_LAYOUT);
+const { isDismissed } =
+  useVersionCheck();
 
 /* State */
 const keyPairsComponent = ref<InstanceType<typeof KeyPairs> | null>(null);
@@ -54,9 +57,6 @@ const handleBack = () => {
 };
 
 const handleNext = async () => {
-  const requiredParts = accountSetupRequiredParts(user.selectedOrganization, user.keyPairs);
-  if (requiredParts.length === 0) router.push({ name: 'transactions' }).then();
-
   step.value.previous = step.value.current;
   const currentIndex = stepperItems.value.findIndex(i => i.name === step.value.current);
 
@@ -67,6 +67,7 @@ const handleNext = async () => {
       user.setAccountSetupStarted(false);
     } finally {
       nextLoadingText.value = null;
+      await router.push({ name: 'transactions' });
     }
   } else {
     step.value.current =
@@ -114,6 +115,9 @@ onBeforeRouteLeave(async () => {
   } catch {
     await user.selectOrganization(null);
   }
+
+  // Reset the version check dismissal state
+  isDismissed.value = false;
 
   if (isLoggedInOrganization(user.selectedOrganization) && isUserLoggedIn(user.personal)) {
     if (user.skippedSetup) {

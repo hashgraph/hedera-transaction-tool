@@ -9,15 +9,15 @@ import {
   TransactionId,
 } from '@hashgraph/sdk';
 
-import { MirrorNodeService, computeSignatureKey, flattenKeyList } from '@app/common';
+import { TransactionSignatureService, flattenKeyList } from '@app/common';
 
 import { keysRequiredToSign, userKeysRequiredToSign } from '.';
 
-jest.mock('@app/common');
+jest.mock('@app/common/utils');
 
 describe('keysRequiredToSign', () => {
   let transaction;
-  const mirrorNodeService = mockDeep<MirrorNodeService>();
+  const transactionSignatureService = mockDeep<TransactionSignatureService>();
   const entityManager = mockDeep<EntityManager>();
 
   beforeEach(() => {
@@ -31,7 +31,7 @@ describe('keysRequiredToSign', () => {
   });
 
   it('should return an empty array if transaction is not provided', async () => {
-    const result = await keysRequiredToSign(null, mirrorNodeService, entityManager);
+    const result = await keysRequiredToSign(null, transactionSignatureService, entityManager);
     expect(result).toEqual([]);
   });
 
@@ -41,10 +41,10 @@ describe('keysRequiredToSign', () => {
     const keyList = new KeyList([pk.publicKey]);
 
     entityManager.find.mockResolvedValueOnce(keys);
-    jest.mocked(computeSignatureKey).mockResolvedValueOnce(keyList);
+    transactionSignatureService.computeSignatureKey.mockResolvedValueOnce(keyList);
     jest.mocked(flattenKeyList).mockReturnValueOnce([pk.publicKey]);
 
-    const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
+    const result = await keysRequiredToSign(transaction, transactionSignatureService, entityManager);
     expect(result).toEqual(keys);
   });
 
@@ -56,10 +56,10 @@ describe('keysRequiredToSign', () => {
     transaction.transactionBytes = signedTransaction.toBytes();
 
     entityManager.find.mockResolvedValueOnce(keys);
-    jest.mocked(computeSignatureKey).mockResolvedValueOnce(keyList);
+    transactionSignatureService.computeSignatureKey.mockResolvedValueOnce(keyList);
     jest.mocked(flattenKeyList).mockReturnValueOnce([pk.publicKey]);
 
-    const result = await keysRequiredToSign(transaction, mirrorNodeService, entityManager);
+    const result = await keysRequiredToSign(transaction, transactionSignatureService, entityManager);
     expect(result).toEqual([]);
   });
 });
@@ -67,8 +67,8 @@ describe('keysRequiredToSign', () => {
 describe('userKeysRequiredToSign', () => {
   let transaction;
   let user;
-  let mirrorNodeService;
   let entityManager;
+  const transactionSignatureService = mockDeep<TransactionSignatureService>();
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -76,7 +76,6 @@ describe('userKeysRequiredToSign', () => {
     const accountCreateTx = new AccountCreateTransaction();
     transaction = { id: 1, transactionBytes: accountCreateTx.toBytes(), network: 'testnet' };
     user = { id: 1, keys: [] };
-    mirrorNodeService = { getAccountInfo: jest.fn() };
     entityManager = { find: jest.fn() };
   });
 
@@ -85,8 +84,9 @@ describe('userKeysRequiredToSign', () => {
     const result = await userKeysRequiredToSign(
       transaction,
       user,
-      mirrorNodeService,
+      transactionSignatureService,
       entityManager,
+      false,
     );
     expect(result).toEqual([]);
   });
@@ -97,14 +97,15 @@ describe('userKeysRequiredToSign', () => {
     const keyList = new KeyList([pk.publicKey]);
 
     entityManager.find.mockResolvedValueOnce([]);
-    jest.mocked(computeSignatureKey).mockResolvedValueOnce(keyList);
+    transactionSignatureService.computeSignatureKey.mockResolvedValueOnce(keyList);
     jest.mocked(flattenKeyList).mockReturnValueOnce([pk.publicKey]);
 
     const result = await userKeysRequiredToSign(
       transaction,
       user,
-      mirrorNodeService,
+      transactionSignatureService,
       entityManager,
+      false,
     );
     expect(result).toEqual([1]);
   });

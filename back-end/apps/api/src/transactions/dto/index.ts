@@ -11,6 +11,7 @@ export * from './transaction-approver.dto';
 export * from './transaction-group.dto';
 export * from './transaction-observer.dto';
 export * from './transaction-signer.dto';
+export * from './transaction-node.dto';
 export * from './transaction-to-sign.dto';
 export * from './update-transaction-observer.dto';
 export * from './update-transaction-approver.dto';

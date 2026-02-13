@@ -31,35 +31,48 @@ export default function useMarkNotifications(notificationTypes: NotificationType
     );
   });
 
+  const filteredByType = computed(() =>
+    notificationTypes.length === 0
+      ? []
+      : networkFilteredNotifications.value.filter(nr =>
+        notificationTypes.includes(nr.notification.type),
+      ),
+  );
+
   /* Functions */
   async function markAsRead() {
-    if (isLoggedInOrganization(user.selectedOrganization)) {
-      const typesToMark = [
-        ...new Set(
-          networkFilteredNotifications.value
-            .filter(nr => notificationTypes.includes(nr.notification.type))
-            .map(nr => nr.notification.type),
-        ),
-      ];
-
-      if (typesToMark.length > 0) {
-        await Promise.allSettled(typesToMark.map(type => notifications.markAsRead(type)));
-      }
+    if (
+      notificationTypes.length === 0 ||
+      !isLoggedInOrganization(user.selectedOrganization)
+    ) {
+      return;
     }
+
+    const typesToMark = [
+      ...new Set(filteredByType.value.map(nr => nr.notification.type)),
+    ];
+
+    if (typesToMark.length === 0) {
+      return;
+    }
+
+    await Promise.allSettled(
+      typesToMark.map(type => notifications.markAsRead(type)),
+    );
   }
 
   /* retain the previous notifications to allow the indicators to be shown temporarily */
   function setOldNotifications(addPrevious = false) {
-    const data =
-      networkFilteredNotifications.value?.filter(nr =>
-        notificationTypes.includes(nr.notification.type),
-      ) || [];
-
-    if (addPrevious) {
-      oldNotifications.value = oldNotifications.value.concat(data);
-    } else {
-      oldNotifications.value = data;
+    if (notificationTypes.length === 0) {
+      oldNotifications.value = addPrevious ? oldNotifications.value : [];
+      return;
     }
+
+    const data = filteredByType.value;
+
+    oldNotifications.value = addPrevious
+      ? oldNotifications.value.concat(data)
+      : data;
   }
 
   /* Hooks */

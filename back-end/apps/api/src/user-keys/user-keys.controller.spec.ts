@@ -54,6 +54,7 @@ describe('UserKeysController', () => {
       issuedNotifications: [],
       receivedNotifications: [],
       notificationPreferences: [],
+      clients: [],
     };
 
     userKey = {

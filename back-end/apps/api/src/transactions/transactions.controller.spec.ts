@@ -7,7 +7,7 @@ import { validateOrReject } from 'class-validator';
 
 import { SignatureMap, TransactionId } from '@hashgraph/sdk';
 
-import { BlacklistService, guardMock, Pagination } from '@app/common';
+import { BlacklistService, Pagination, guardMock } from '@app/common';
 import { Transaction, TransactionStatus, TransactionType, User, UserStatus } from '@entities';
 
 import { HasKeyGuard, VerifiedUserGuard } from '../guards';
@@ -83,6 +83,7 @@ describe('TransactionsController', () => {
       issuedNotifications: [],
       receivedNotifications: [],
       notificationPreferences: [],
+      clients: [],
     };
     transaction = {
       id: 1,
@@ -120,11 +121,14 @@ describe('TransactionsController', () => {
         approvedTransactions: [],
         signedTransactions: [],
       },
+      creatorKeyId: 1,
       signers: [],
       approvers: [],
       observers: [],
       comments: [],
       groupItem: null,
+      transactionCachedAccounts: [],
+      transactionCachedNodes: [],
     };
     pagination = {
       page: 1,
@@ -393,6 +397,23 @@ describe('TransactionsController', () => {
       await expect(controller.archiveTransaction(user, 1)).rejects.toThrow(
         'Transaction cannot be archived',
       );
+    });
+  });
+
+  describe('executeTransaction', () => {
+    it('should return a boolean when the transaction is executed', async () => {
+      const result = true;
+      (transactionService.executeTransaction as jest.Mock).mockResolvedValue(result);
+
+      expect(await controller.executeTransaction(user, 1)).toBe(result);
+    });
+
+    it('should throw an error if execution fails', async () => {
+      jest
+        .spyOn(controller, 'executeTransaction')
+        .mockRejectedValue(new BadRequestException('Execution failed'));
+
+      await expect(controller.executeTransaction(user, 1)).rejects.toThrow('Execution failed');
     });
   });
 

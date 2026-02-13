@@ -11,6 +11,7 @@ import { User, UserKey } from '@entities';
 import { UserKeysService } from './user-keys.service';
 
 import { UpdateUserKeyMnemonicHashDto, UploadUserKeyDto } from './dtos';
+import { PrivateKey } from '@hashgraph/sdk';
 
 jest.mock('@app/common/utils');
 describe('UserKeysService', () => {
@@ -44,13 +45,31 @@ describe('UserKeysService', () => {
     it('should return a UserKey if where condition is provided', async () => {
       await service.getUserKey({ id: 1 });
 
-      expect(repo.findOne).toHaveBeenCalledWith({ where: { id: 1 }, relations: undefined });
+      expect(repo.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+        relations: undefined,
+        withDeleted: false,
+      });
     });
 
     it('should handle relations when provided', async () => {
       await service.getUserKey({ id: 1 }, { user: true });
 
-      expect(repo.findOne).toHaveBeenCalledWith({ where: { id: 1 }, relations: { user: true } });
+      expect(repo.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+        relations: { user: true },
+        withDeleted: false,
+      });
+    });
+
+    it('should handle withDeleted when provided', async () => {
+      await service.getUserKey({ id: 1 }, undefined, true);
+
+      expect(repo.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+        relations: undefined,
+        withDeleted: true,
+      });
     });
   });
 
@@ -59,8 +78,14 @@ describe('UserKeysService', () => {
     let dto: UploadUserKeyDto;
 
     beforeEach(() => {
+      jest.restoreAllMocks();
+
       user = { id: 1 } as unknown as User;
-      dto = { publicKey: 'test-public-key', mnemonicHash: 'test-hash', index: 0 };
+      dto = {
+        publicKey: PrivateKey.generateED25519().publicKey.toStringRaw(),
+        mnemonicHash: 'test-hash',
+        index: 0,
+      };
     });
 
     it('should throw BadRequestException if public key is in use by a different user', async () => {
@@ -76,6 +101,7 @@ describe('UserKeysService', () => {
       repo.findOne.mockResolvedValue(existingUserKey as UserKey);
 
       await expect(service.uploadKey(user, dto)).rejects.toThrow(BadRequestException);
+      await expect(service.uploadKey(user, dto)).rejects.toThrow(ErrorCodes.PU);
     });
 
     it('should throw BadRequestException if public key is in use but dto has different index', async () => {
@@ -172,7 +198,6 @@ describe('UserKeysService', () => {
 
       expect(repo.find).toHaveBeenCalledWith({
         select: {
-          deletedAt: true,
           id: true,
           index: true,
           mnemonicHash: true,
@@ -202,7 +227,6 @@ describe('UserKeysService', () => {
           mnemonicHash: false,
           index: false,
           publicKey: true,
-          deletedAt: true,
         },
       });
       expect(result).toEqual(mockUserKeys);

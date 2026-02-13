@@ -33,6 +33,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -115,7 +116,7 @@ const handleUnlinkAccount = async () => {
   isUnlinkAccountModalShown.value = false;
 
   selectedAccountIds.value = [];
-  toast.success('Account Unlinked!');
+  toast.success('Account Unlinked!', successToastOptions);
 };
 
 const handleStartNicknameEdit = () => {
@@ -311,7 +312,8 @@ onMounted(async () => {
 
             <div class="transition-bg rounded px-3" :class="{ 'bg-secondary': selectMany }">
               <AppButton
-                class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-1"
+                class="d-flex align-items-center min-w-unset border-0 p-1"
+                :class="selectMany ? 'text-white' : 'text-dark-emphasis'"
                 data-testid="button-select-many-accounts"
                 @click="handleToggleSelectMode"
               >

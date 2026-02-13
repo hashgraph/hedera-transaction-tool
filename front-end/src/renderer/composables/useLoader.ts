@@ -7,6 +7,7 @@ import { useToast } from 'vue-toast-notification';
 import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 
 import { getErrorMessage } from '@renderer/utils';
+import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 
 export default function useLoader() {
   /* Composables */
@@ -30,7 +31,7 @@ export default function useLoader() {
       globalModalLoaderRef?.value?.open(background);
       return await Promise.race([fn(), timeoutPromise]);
     } catch (error) {
-      toast.error(getErrorMessage(error, defaultErrorMessage));
+      toast.error(getErrorMessage(error, defaultErrorMessage), errorToastOptions);
     } finally {
       globalModalLoaderRef?.value?.close();
     }

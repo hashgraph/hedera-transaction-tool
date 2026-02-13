@@ -13,24 +13,31 @@ import { defineStore } from 'pinia';
 
 import { Prisma } from '@prisma/client';
 
-import { ACCOUNT_SETUP_STARTED } from '@shared/constants';
+import { ACCOUNT_SETUP_STARTED, SELECTED_NETWORK } from '@shared/constants';
 
-import { add, remove } from '@renderer/services/claimService';
+import { add, getStoredClaim, remove } from '@renderer/services/claimService';
 
 import useAfterOrganizationSelection from '@renderer/composables/user/useAfterOrganizationSelection';
+import useVersionCheck from '@renderer/composables/useVersionCheck';
 
 import { safeAwait } from '@renderer/utils';
+import * as pks from '@renderer/services/publicKeyMappingService';
 import * as ush from '@renderer/utils/userStoreHelpers';
+import { getVersionStatusForOrg } from './versionState';
 
 import useNetworkStore from './storeNetwork';
+import useOrganizationConnection from './storeOrganizationConnection';
 import { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
+import { reconnectOrganization } from '@renderer/services/organization';
 
 const useUserStore = defineStore('user', () => {
   /* Stores */
   const network = useNetworkStore();
+  const orgConnection = useOrganizationConnection();
 
   /* Composables */
   const afterOrganizationSelection = useAfterOrganizationSelection();
+  const { reset: resetVersionCheck } = useVersionCheck();
 
   /* Injected */
   const accountByKeyCache = AccountByPublicKeyCache.inject();
@@ -70,18 +77,28 @@ const useUserStore = defineStore('user', () => {
   /* Actions */
   /** Personal */
   const login = async (id: string, email: string, useKeychain: boolean) => {
-    personal.value = ush.createPersonalUser(id, email, useKeychain);
-    await ush.setupSafeNetwork(id, network.setup);
+    personal.value = {
+      isLoggedIn: true,
+      id,
+      email,
+      password: null,
+      useKeychain: useKeychain,
+    };
+    const { data } = await safeAwait(getStoredClaim(id, SELECTED_NETWORK));
+    await safeAwait(network.setup(data));
     await selectOrganization(null);
   };
 
   const logout = () => {
-    personal.value = ush.createPersonalUser();
+    personal.value = {
+      isLoggedIn: false,
+    };
     selectedOrganization.value = null;
     organizations.value = [];
     publicKeyToAccounts.value = [];
     keyPairs.value = [];
     recoveryPhrase.value = null;
+    resetVersionCheck();
   };
 
   const getPassword = () => {
@@ -174,13 +191,32 @@ const useUserStore = defineStore('user', () => {
   };
 
   const deletePublicKeyMapping = async (id: string) => {
-    await ush.deletePublicKeyMapping(id);
+    await pks.deletePublicKey(id);
     await refetchPublicKeys();
   };
 
   /* Organization */
   const selectOrganization = async (organization: Organization | null) => {
     await nextTick();
+
+    if (organization) {
+      const connectionStatus = orgConnection.getConnectionStatus(organization.serverUrl);
+      const disconnectReason = orgConnection.getDisconnectReason(organization.serverUrl);
+
+      // Prevent selecting organizations that are disconnected due to upgrade requirement
+      if (connectionStatus === 'disconnected') {
+        if (disconnectReason === 'upgradeRequired') {
+          const versionStatus = getVersionStatusForOrg(organization.serverUrl);
+
+          if (versionStatus === 'belowMinimum') {
+            return;
+          }
+        }
+
+        await reconnectOrganization(organization.serverUrl);
+      }
+    }
+
     selectedOrganization.value = await ush.getConnectedOrganization(organization, personal.value);
     await afterOrganizationSelection();
   };

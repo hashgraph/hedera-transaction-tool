@@ -12,9 +12,15 @@ import {
   TransactionObserver,
   TransactionSigner,
   NotificationReceiver,
+  TransactionCachedAccount,
+  TransactionCachedNode,
+  CachedAccount,
+  CachedAccountKey,
+  CachedNode,
+  CachedNodeAdminKey,
 } from '@entities';
 
-import { ChainProxyModule, MirrorNodeModule } from '@app/common';
+import { ExecuteModule, SqlBuilderModule, TransactionSignatureModule } from '@app/common';
 
 import { UserKeysModule } from '../user-keys/user-keys.module';
 import { TransactionGroupsController, TransactionGroupsService } from './groups';
@@ -22,6 +28,8 @@ import { CommentsController, CommentsService } from './comments';
 import { SignersController, SignersService } from './signers';
 import { ObserversController, ObserversService } from './observers';
 import { ApproversController, ApproversService } from './approvers';
+import { TransactionNodesController } from './nodes/transaction-nodes.controller';
+import { TransactionNodesService } from './nodes/transaction-nodes.service';
 
 @Module({
   imports: [
@@ -33,12 +41,19 @@ import { ApproversController, ApproversService } from './approvers';
       TransactionSigner,
       TransactionApprover,
       TransactionObserver,
+      TransactionCachedAccount,
+      TransactionCachedNode,
+      CachedAccount,
+      CachedAccountKey,
+      CachedNode,
+      CachedNodeAdminKey,
       Notification,
       NotificationReceiver,
     ]),
-    MirrorNodeModule,
+    TransactionSignatureModule,
     UserKeysModule,
-    ChainProxyModule,
+    ExecuteModule,
+    SqlBuilderModule,
   ],
   controllers: [
     TransactionsController,
@@ -47,6 +62,7 @@ import { ApproversController, ApproversService } from './approvers';
     ObserversController,
     ApproversController,
     TransactionGroupsController,
+    TransactionNodesController
   ],
   providers: [
     TransactionsService,
@@ -55,6 +71,7 @@ import { ApproversController, ApproversService } from './approvers';
     ObserversService,
     ApproversService,
     TransactionGroupsService,
+    TransactionNodesService
   ],
   exports: [TransactionsService],
 })

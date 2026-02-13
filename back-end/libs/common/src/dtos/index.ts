@@ -2,13 +2,9 @@ import { plainToInstance } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
 
 export * from './chain-update-transaction-status.dto';
-export * from './execute-transaction-group.dto';
-export * from './execute-transaction.dto';
+export * from './email.dto';
+export * from './notification-event.dto';
 export * from './notifications-notify-client.dto';
-export * from './notifications-notify-email.dto';
-export * from './notifications-notify-for-transaction.dto';
-export * from './notifications-notify-general.dto';
-export * from './notifications-sync-indicators.dto';
 export * from './paginated-resource.dto';
 export * from './transaction-executed.dto';
 export * from './transaction-group-executed.dto';

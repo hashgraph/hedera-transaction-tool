@@ -2,7 +2,7 @@ import {
   NetworkNode,
   NodeInfoParsed,
   KeyType,
-  decodeProtobuffKey,
+  decodeProtobufKey,
   isAccountId,
   ServiceEndPoint,
   parseHbar,
@@ -86,7 +86,7 @@ export function parseNodeProperty(nodeInfo: NetworkNode, property: keyof Network
       if (!nodeInfo.admin_key) return null;
       switch (nodeInfo.admin_key._type) {
         case KeyType.ProtobufEncoded:
-          return decodeProtobuffKey(nodeInfo.admin_key?.key);
+          return decodeProtobufKey(nodeInfo.admin_key?.key);
         case KeyType.ED25519:
           return PublicKey.fromStringED25519(nodeInfo.admin_key?.key);
         case KeyType.ECDSA_SECP256K1:

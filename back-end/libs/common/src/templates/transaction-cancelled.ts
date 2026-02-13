@@ -2,6 +2,8 @@ import { getNetworkString } from '@app/common';
 import { Notification } from '@entities';
 
 export const generateTransactionCancelledContent = (...notifications: Notification[]) => {
+  if (notifications.length === 0) return null;
+
   const header =
     notifications.length === 1
       ? `A transaction has been cancelled.`

@@ -30,6 +30,7 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import ContactDetails from '@renderer/components/Contacts/ContactDetails.vue';
 import DeleteContactModal from '@renderer/components/Contacts/DeleteContactModal.vue';
 import ElevateContactModal from '@renderer/components/Contacts/ElevateContactModal.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -97,7 +98,7 @@ async function handleRemove() {
     contact.value.nicknameId && (await removeContact(user.personal.id, contact.value.nicknameId));
   }
 
-  toast.success('User removed successfully');
+  toast.success('User removed successfully', successToastOptions);
   selectedId.value = null;
   await contacts.fetch();
 }
@@ -112,7 +113,7 @@ async function handleElevate() {
 
   await elevateUserToAdmin(user.selectedOrganization.serverUrl, contact.value.user.id);
 
-  toast.success('User elevate to admin successfully');
+  toast.success('User elevate to admin successfully', successToastOptions);
   selectedId.value = null;
   await contacts.fetch();
 }

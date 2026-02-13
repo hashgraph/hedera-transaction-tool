@@ -25,6 +25,12 @@ if [[ "$1" == '--' ]]; then shift; fi
 
 BASEDIR=$(dirname "$0")
 
+# Load environment variables from .env
+ENV_FILE=$(realpath "$BASEDIR/.env")
+if [ -f "$ENV_FILE" ]; then
+    export $(grep -v '^#' "$ENV_FILE" | grep -v '^$' | xargs)
+fi
+
 # Validate
 VALIDATE_SCRIPT=$(realpath "$BASEDIR/shell/validate.sh")
 SECRETS_SCRIPT=$(realpath "$BASEDIR/shell/secrets.sh")
@@ -66,8 +72,21 @@ clean() {
 # Invoke the clean function on the following signals
 trap clean SIGINT SIGQUIT SIGTERM
 
+# Asserts that NATS Helm repo is installed
+assert_nats_helm_repo
+
+# Asserts the NATS release is installed
+assert_nats_release
+
+# Waits for the Traefik deployment to be ready
+wait_for_nats
+
 # Deploy Kubernetes deployments
-deploy_all
+if [ -n "$K8S_CONTEXT" ]; then
+    deploy_all "$K8S_CONTEXT"
+else
+    deploy_all
+fi
 
 # Asserts that Traefik Helm repo is installed
 assert_traefik_helm_repo

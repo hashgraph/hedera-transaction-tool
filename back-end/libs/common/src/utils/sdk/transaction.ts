@@ -19,15 +19,14 @@ import {
   SystemDeleteTransaction,
   SystemUndeleteTransaction,
   FileContentsQuery,
+  KeyList,
 } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
 import { MAX_TRANSACTION_BYTE_SIZE, TransactionType, Transaction } from '@entities';
 import {
-  MirrorNodeService,
   decode,
   computeShortenedPublicKeyList,
-  computeSignatureKey,
 } from '@app/common';
 
 export const isExpired = (transaction: SDKTransaction) => {
@@ -282,20 +281,14 @@ export const verifyTransactionBodyWithoutNodeAccountIdSignature = (
 
 export async function smartCollate(
   transaction: Transaction,
-  mirrorNodeService: MirrorNodeService,
+  requiredKeys: KeyList,
 ): Promise<SDKTransaction | null> {
   const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
   if (await isTransactionOverMaxSize(sdkTransaction)) {
-    const signatureKey = await computeSignatureKey(
-      sdkTransaction,
-      mirrorNodeService,
-      transaction.mirrorNetwork,
-    );
-
     const publicKeys = computeShortenedPublicKeyList(
       sdkTransaction._signerPublicKeys,
-      signatureKey,
+      requiredKeys,
     );
 
     const signatureMap = sdkTransaction.getSignatures();

@@ -1,43 +1,11 @@
-import type { IDefaultNetworks, IGroup, Network } from '@shared/interfaces';
+import type { Network } from '@shared/interfaces';
 import type { KeyPair, Transaction } from '@prisma/client';
 
-import {
-  Timestamp,
-  Status,
-  TransactionReceipt,
-  Transaction as Tx,
-  TransactionId,
-  Key,
-} from '@hashgraph/sdk';
+import { Key, Status, Timestamp, Transaction as Tx, TransactionReceipt } from '@hashgraph/sdk';
 
 import { CommonNetwork } from '@shared/enums';
-import { TransactionStatus } from '@shared/interfaces';
 
 import { openExternal } from '@renderer/services/electronUtilsService';
-
-export const getTransactionDate = (transaction: Transaction): string => {
-  return new Timestamp(
-    Number(transaction.transaction_id.split('@')[1].split('.')[0]),
-    Number(transaction.transaction_id.split('@')[1].split('.')[1]),
-  )
-    .toDate()
-    .toDateString();
-};
-
-export const getTransactionId = (transaction: Transaction): string => {
-  const transactionId = TransactionId.fromString(transaction.transaction_id);
-  // return `${transactionId.accountId?.toString()}@${transactionId.validStart?.seconds.toString()}`;
-  return transactionId.toString();
-};
-
-export const getTransactionPayerId = (transaction: Transaction): string => {
-  return transaction.transaction_id.split('@')[0];
-};
-
-export const getTransactionValidStart = (transaction: Transaction) => {
-  const transactionId = TransactionId.fromString(transaction.transaction_id);
-  return transactionId.validStart;
-};
 
 export const getTransactionStatus = (transaction: Transaction): string => {
   try {
@@ -45,10 +13,6 @@ export const getTransactionStatus = (transaction: Transaction): string => {
   } catch {
     return 'UNKNOWN';
   }
-};
-
-export const getPayerFromTransaction = (transaction: Transaction): number => {
-  return Number(transaction.transaction_id.split('@')[0].split('.').join(''));
 };
 
 export const getStatusFromCode = (code?: number): string | null => {
@@ -103,46 +67,3 @@ export const getPropagationButtonLabel = (
     return 'Sign & Execute';
   }
 };
-
-export const normalizeNetworkName = (network: string): IDefaultNetworks | 'custom' => {
-  const defaultNetworks = ['mainnet', 'testnet', 'previewnet', 'local-node'];
-  if (defaultNetworks.includes(network)) {
-    return network as IDefaultNetworks;
-  } else {
-    return 'custom';
-  }
-};
-
-const TransactionStatusName = {
-  [TransactionStatus.NEW]: 'New',
-  [TransactionStatus.CANCELED]: 'Canceled',
-  [TransactionStatus.REJECTED]: 'Rejected',
-  [TransactionStatus.WAITING_FOR_SIGNATURES]: 'Waiting for Signatures',
-  [TransactionStatus.WAITING_FOR_EXECUTION]: 'Waiting for Execution',
-  [TransactionStatus.EXECUTED]: 'Executed',
-  [TransactionStatus.FAILED]: 'Failed',
-  [TransactionStatus.EXPIRED]: 'Expired',
-  [TransactionStatus.ARCHIVED]: 'Archived',
-};
-
-export const getTransactionStatusName = (
-  status: TransactionStatus,
-  uppercase: boolean = false,
-): string => {
-  const statusName = TransactionStatusName[status];
-  return uppercase ? statusName.toUpperCase() : statusName;
-};
-
-/**
- * Find and return the most recent updatedAt timestamp from the group items in the given group
- * @param group
- */
-export const getTransactionGroupUpdatedAt = (group: IGroup) => {
-  return new Date(
-    Math.max(
-      ...group.groupItems.map(item => {
-        return new Date(item.transaction.updatedAt).getTime();
-      }),
-    ),
-  );
-}

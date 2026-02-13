@@ -1,10 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
-import { ErrorCodes } from '@app/common';
-import { User } from '@entities';
+import { ErrorCodes, checkFrontendVersion } from '@app/common';
+import { Client, User, UserKey } from '@entities';
 
 import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
@@ -13,11 +14,17 @@ import { UsersService } from './users.service';
 
 jest.mock('bcryptjs');
 jest.mock('argon2');
+jest.mock('@app/common', () => ({
+  ...jest.requireActual('@app/common'),
+  checkFrontendVersion: jest.fn(),
+}));
 
 describe('UsersService', () => {
   let service: UsersService;
 
   const userRepository = mockDeep<Repository<User>>();
+  const clientRepository = mockDeep<Repository<Client>>();
+  const configService = mockDeep<ConfigService>();
 
   const email = 'some@email.com';
   const password = 'password';
@@ -34,6 +41,14 @@ describe('UsersService', () => {
         {
           provide: getRepositoryToken(User),
           useValue: userRepository,
+        },
+        {
+          provide: getRepositoryToken(Client),
+          useValue: clientRepository,
+        },
+        {
+          provide: ConfigService,
+          useValue: configService,
         },
       ],
     }).compile();
@@ -189,11 +204,15 @@ describe('UsersService', () => {
     });
   });
 
-  it('should remove user', async () => {
+  it('should remove user and soft-delete all associated keys', async () => {
     userRepository.findOne.mockResolvedValue(user as User);
+    userRepository.manager.softDelete.mockResolvedValue({ affected: 2, raw: [], generatedMaps: [] });
 
     await service.removeUser(1);
 
+    // Verify keys are soft-deleted first
+    expect(userRepository.manager.softDelete).toHaveBeenCalledWith(UserKey, { userId: 1 });
+    // Then user is soft-deleted
     expect(userRepository.softRemove).toHaveBeenCalledWith(user);
   });
 
@@ -258,6 +277,159 @@ describe('UsersService', () => {
 
     expect(userRepository.find).toHaveBeenCalledWith({
       where: { admin: true },
+    });
+  });
+
+  describe('updateClientVersion', () => {
+    const userId = 1;
+    const version = '1.0.0';
+    const newVersion = '1.1.0';
+
+    it('should create a new client record when none exists', async () => {
+      const newClient: Partial<Client> = { userId, version };
+      clientRepository.findOne.mockResolvedValue(null);
+      clientRepository.create.mockReturnValue(newClient as Client);
+      clientRepository.save.mockResolvedValue(newClient as Client);
+
+      const result = await service.updateClientVersion(userId, version);
+
+      expect(clientRepository.findOne).toHaveBeenCalledWith({ where: { userId } });
+      expect(clientRepository.create).toHaveBeenCalledWith({ userId, version });
+      expect(clientRepository.save).toHaveBeenCalledWith(newClient);
+      expect(result).toEqual(newClient);
+    });
+
+    it('should update existing client record when version changes', async () => {
+      const existingClient: Partial<Client> = { id: 1, userId, version };
+      const updatedClient: Partial<Client> = { id: 1, userId, version: newVersion };
+      clientRepository.findOne.mockResolvedValue(existingClient as Client);
+      clientRepository.save.mockResolvedValue(updatedClient as Client);
+
+      const result = await service.updateClientVersion(userId, newVersion);
+
+      expect(clientRepository.findOne).toHaveBeenCalledWith({ where: { userId } });
+      expect(clientRepository.save).toHaveBeenCalledWith({
+        ...existingClient,
+        version: newVersion,
+      });
+      expect(result).toEqual(updatedClient);
+    });
+
+    it('should not update when version is the same', async () => {
+      const existingClient: Partial<Client> = { id: 1, userId, version };
+      clientRepository.findOne.mockResolvedValue(existingClient as Client);
+
+      const result = await service.updateClientVersion(userId, version);
+
+      expect(clientRepository.findOne).toHaveBeenCalledWith({ where: { userId } });
+      expect(clientRepository.save).not.toHaveBeenCalled();
+      expect(clientRepository.create).not.toHaveBeenCalled();
+      expect(result).toEqual(existingClient);
+    });
+  });
+
+  describe('getVersionCheckInfo', () => {
+    const latestVersion = '1.0.0';
+    const minimumVersion = '0.9.0';
+    const repoUrl = 'https://github.com/hashgraph/hedera-transaction-tool/releases';
+
+    beforeEach(() => {
+      // Setup config service mock for version check
+      configService.get.mockImplementation((key: string) => {
+        switch (key) {
+          case 'LATEST_SUPPORTED_FRONTEND_VERSION':
+            return latestVersion;
+          case 'MINIMUM_SUPPORTED_FRONTEND_VERSION':
+            return minimumVersion;
+          case 'FRONTEND_REPO_URL':
+            return repoUrl;
+          default:
+            return undefined;
+        }
+      });
+    });
+
+    it('should call checkFrontendVersion with config values', () => {
+      const userVersion = '0.9.5';
+      const mockResult = {
+        latestSupportedVersion: latestVersion,
+        minimumSupportedVersion: minimumVersion,
+        updateUrl: `${repoUrl}/v${latestVersion}/`,
+      };
+      jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
+
+      const result = service.getVersionCheckInfo(userVersion);
+
+      expect(configService.get).toHaveBeenCalledWith('LATEST_SUPPORTED_FRONTEND_VERSION');
+      expect(configService.get).toHaveBeenCalledWith('MINIMUM_SUPPORTED_FRONTEND_VERSION');
+      expect(configService.get).toHaveBeenCalledWith('FRONTEND_REPO_URL');
+      expect(checkFrontendVersion).toHaveBeenCalledWith(
+        userVersion,
+        latestVersion,
+        minimumVersion,
+        repoUrl,
+      );
+      expect(result).toEqual(mockResult);
+    });
+
+    it('should return result when user has latest version', () => {
+      const userVersion = '1.0.0';
+      const mockResult = {
+        latestSupportedVersion: latestVersion,
+        minimumSupportedVersion: minimumVersion,
+        updateUrl: null,
+      };
+      jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
+
+      const result = service.getVersionCheckInfo(userVersion);
+
+      expect(result.updateUrl).toBeNull();
+    });
+
+    it('should return result when update is available', () => {
+      const userVersion = '0.9.5';
+      const mockResult = {
+        latestSupportedVersion: latestVersion,
+        minimumSupportedVersion: minimumVersion,
+        updateUrl: `${repoUrl}/v${latestVersion}/`,
+      };
+      jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
+
+      const result = service.getVersionCheckInfo(userVersion);
+
+      expect(result.updateUrl).toBe(`${repoUrl}/v${latestVersion}/`);
+    });
+
+    it('should handle missing config values gracefully', () => {
+      // Override config to return undefined for all version-related keys
+      // Note: In production, config is required, so this scenario won't occur
+      configService.get.mockReturnValue(undefined);
+
+      const mockResult = {
+        latestSupportedVersion: '',
+        minimumSupportedVersion: '',
+        updateUrl: null,
+      };
+      jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
+
+      const result = service.getVersionCheckInfo('1.0.0');
+
+      expect(checkFrontendVersion).toHaveBeenCalledWith('1.0.0', undefined, undefined, undefined);
+      expect(result).toEqual(mockResult);
+    });
+
+    it('should handle user version newer than latest supported', () => {
+      const userVersion = '2.0.0';
+      const mockResult = {
+        latestSupportedVersion: latestVersion,
+        minimumSupportedVersion: minimumVersion,
+        updateUrl: null,
+      };
+      jest.mocked(checkFrontendVersion).mockReturnValue(mockResult);
+
+      const result = service.getVersionCheckInfo(userVersion);
+
+      expect(result.updateUrl).toBeNull();
     });
   });
 });

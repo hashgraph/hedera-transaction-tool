@@ -18,7 +18,7 @@ import type {
 import { Prisma } from '@prisma/client';
 import { Mnemonic } from '@hashgraph/sdk';
 
-import { SELECTED_NETWORK, SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@shared/constants';
+import { SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@shared/constants';
 
 import {
   getUserState,
@@ -42,7 +42,6 @@ import {
   compareHash,
   compareDataToHashes,
 } from '@renderer/services/electronUtilsService';
-import { getStoredClaim } from '@renderer/services/claimService';
 import { get as getStoredMnemonics } from '@renderer/services/mnemonicService';
 
 import { safeAwait } from './safeAwait';
@@ -153,21 +152,6 @@ export const accountSetupRequiredParts = (
 };
 
 /* Entity creation */
-export const createPersonalUser = (
-  id?: string,
-  email?: string,
-  useKeychain?: boolean,
-): PersonalUser =>
-  id && email
-    ? {
-        isLoggedIn: true,
-        id,
-        email,
-        password: null,
-        useKeychain: useKeychain || false,
-      }
-    : { isLoggedIn: false };
-
 export const createRecoveryPhrase = async (words: string[]): Promise<RecoveryPhrase> => {
   try {
     const mnemonic = await Mnemonic.fromWords(words);
@@ -257,14 +241,6 @@ export const getPublicKeyToAccounts = async (
   }
 
   return [...publicKeyToAccounts];
-};
-
-export const setupSafeNetwork = async (
-  userId: string,
-  setNetwork: (network: string | undefined) => Promise<void>,
-) => {
-  const { data } = await safeAwait(getStoredClaim(userId, SELECTED_NETWORK));
-  await safeAwait(setNetwork(data));
 };
 
 export const getMnemonics = async (user: PersonalUser | null) => {
@@ -409,40 +385,40 @@ export const getConnectedOrganization = async (
     return null;
   }
 
-  let isActive = false;
-  try {
-    isActive = await healthCheck(organization.serverUrl);
-  } catch (error) {
-    console.log(error);
-  }
-
-  const inactiveServer: ConnectedOrganization = {
+  const inactiveOrg: ConnectedOrganization = {
     ...organization,
     isLoading: false,
     isServerActive: false,
     loginRequired: false,
   };
 
-  const activeloginRequired: ConnectedOrganization = {
+  try {
+    const isActive = await healthCheck(organization.serverUrl);
+
+    if (!isActive) {
+      return inactiveOrg;
+    }
+  } catch (error) {
+    console.log(error);
+    return inactiveOrg;
+  }
+
+  const activeLoginRequired: ConnectedOrganization = {
     ...organization,
     isLoading: false,
     isServerActive: true,
     loginRequired: true,
   };
 
-  if (!isActive) {
-    return inactiveServer;
-  }
-
-  let shouldSignIn = true;
   try {
-    shouldSignIn = await shouldSignInOrganization(user.id, organization.id);
+    const shouldSignIn = await shouldSignInOrganization(user.id, organization.id);
+
+    if (shouldSignIn) {
+      return activeLoginRequired;
+    }
   } catch (error) {
     console.log(error);
-  }
-
-  if (shouldSignIn) {
-    return activeloginRequired;
+    return activeLoginRequired;
   }
 
   try {
@@ -453,7 +429,7 @@ export const getConnectedOrganization = async (
     const connectedOrganization: ConnectedOrganization = {
       ...organization,
       isLoading: false,
-      isServerActive: isActive,
+      isServerActive: true,
       loginRequired: false,
       userId: id,
       email,
@@ -464,7 +440,7 @@ export const getConnectedOrganization = async (
     };
     return connectedOrganization;
   } catch {
-    return activeloginRequired;
+    return activeLoginRequired;
   }
 };
 
@@ -723,8 +699,4 @@ export const updatePublicKeyNickname = async (
     throw new Error('You need to set a different nickname than the previous one!');
   }
   return await pks.editPublicKeyNickname(id, newNickname);
-};
-
-export const deletePublicKeyMapping = async (id: string) => {
-  return await pks.deletePublicKey(id);
 };

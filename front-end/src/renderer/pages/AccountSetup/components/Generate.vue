@@ -9,19 +9,15 @@ import { useToast } from 'vue-toast-notification';
 import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNickname';
 
 import { validateMnemonic } from '@renderer/services/keyPairService';
-import { add, getStoredClaim, update } from '@renderer/services/claimService';
+import { setStoredClaim } from '@renderer/services/claimService';
 
-import {
-  assertUserLoggedIn,
-  buildSkipClaimKey,
-  isLoggedInOrganization,
-  safeAwait,
-} from '@renderer/utils';
+import { assertUserLoggedIn, buildSkipClaimKey, isLoggedInOrganization } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppRecoveryPhraseWord from '@renderer/components/ui/AppRecoveryPhraseWord.vue';
 import RecoveryPhraseNicknameInput from '@renderer/components/RecoveryPhrase/RecoveryPhraseNicknameInput.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -94,7 +90,7 @@ const handleWordChange = (newWord: string, index: number) => {
 
 const handleCopyRecoveryPhrase = () => {
   navigator.clipboard.writeText(words.value.join(', '));
-  toast.success('Recovery phrase copied');
+  toast.success('Recovery phrase copied', successToastOptions);
 };
 
 const handleGenerate = async () => {
@@ -111,9 +107,7 @@ const handleSkip = async () => {
       user.selectedOrganization.serverUrl,
       user.selectedOrganization.userId,
     );
-    const { data } = await safeAwait(getStoredClaim(user.personal.id, claimKey));
-    const addOrUpdate = data !== undefined ? update : add;
-    await addOrUpdate(user.personal.id, claimKey, 'true');
+    await setStoredClaim(user.personal.id, claimKey, 'true');
     user.skippedSetup = true;
     await router.push({ name: 'transactions' });
   }

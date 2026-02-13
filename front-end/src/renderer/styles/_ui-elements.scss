@@ -63,7 +63,7 @@
   background-color: var(--#{$prefix}btn-group-container-bg-color);
   border-radius: 10px;
   padding: 8px;
-  box-shadow: 1px 1px 1px 0px #00000012 inset;
+  box-shadow: 1px 1px 1px 0 #00000012 inset;
 }
 
 .btn-group {
@@ -74,6 +74,10 @@
 
 .btn-secondary .bi {
   color: #fff !important;
+}
+
+td .btn {
+  min-width: 6rem;
 }
 
 /* Forms */
@@ -418,11 +422,20 @@
 }
 
 .full-screen-modal {
-  --#{$prefix}modal-width: 100vw;
+  --#{$prefix}modal-width: calc(100vw - 48px);
 
   & > .modal-dialog > .modal-content {
-    height: 100vh;
-    max-height: 100vh;
+    height: calc(100vh - 48px);
+    max-height: calc(100vh - 48px);
+  }
+}
+
+.full-screen-modal-in-modal {
+  --#{$prefix}modal-width: calc(100vw - 96px);
+
+  & > .modal-dialog > .modal-content {
+    height: calc(100vh - 96px);
+    max-height: calc(100vh - 96px);
   }
 }
 
@@ -581,6 +594,20 @@
   }
 }
 
+.v-toast {
+  &__item--warning {
+    background-color: var(--#{$prefix}toast-bg-color-warning) !important;
+    color: var(--#{$prefix}toast-color-warning) !important;
+  }
+}
+
+.v-toast {
+  &__item--error {
+    background-color: var(--#{$prefix}toast-bg-color-error) !important;
+    color: var(--#{$prefix}toast-color-error) !important;
+  }
+}
+
 /* Tables */
 .table-custom {
   border-collapse: separate;
@@ -589,7 +616,6 @@
 
   td,
   th {
-    padding: 8px 16px;
     white-space: nowrap;
 
     &:first-of-type {
@@ -617,12 +643,23 @@
     background-color: var(--#{$prefix}card-primary-bg-color);
     font-size: 12px;
     font-weight: 400;
+    padding: 8px;
   }
 
   td {
     background-color: var(--#{$prefix}card-primary-bg-color);
     font-size: 14px;
-    padding: 16px;
+    padding: 8px 8px;
+  }
+
+  th:first-child,
+  td:first-child {
+    padding-left: 16px;
+  }
+
+  th:last-child,
+  td:last-child {
+    padding-right: 16px;
   }
 
   thead {
@@ -644,9 +681,9 @@
           top: 0;
           left: 0;
           border-left: 3px solid $error-400;
-          border-top: 36px solid $error-400;
+          border-top: 28px solid $error-400;
           border-right: 3px solid $error-400;
-          border-bottom: 36px solid $error-400;
+          border-bottom: 28px solid $error-400;
           border-top-left-radius: 9px;
           border-bottom-left-radius: 9px;
         }
@@ -1067,7 +1104,7 @@
     }
 
     .autocomplete-item-custom {
-      margin: 5px 0px;
+      margin: 5px 0;
       padding: 5px 12px;
 
       cursor: pointer;

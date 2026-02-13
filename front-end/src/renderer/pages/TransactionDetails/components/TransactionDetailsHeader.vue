@@ -1,20 +1,19 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import type { Transaction } from '@prisma/client';
-import type { ITransactionFull } from '@shared/interfaces';
+import type { ITransactionFull, TransactionFile } from '@shared/interfaces';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
-import { encode } from 'msgpackr';
 
 import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
-import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
+import useNextTransactionV2 from '@renderer/stores/storeNextTransactionV2.ts';
 
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
@@ -22,12 +21,9 @@ import {
   archiveTransaction,
   cancelTransaction,
   executeTransaction,
-  generateTransactionExportContent,
-  generateTransactionExportFileName,
   getUserShouldApprove,
   remindSigners,
   sendApproverChoice,
-  uploadSignatures,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService';
@@ -35,6 +31,9 @@ import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtils
 import {
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
+  generateTransactionExportFileName,
+  generateTransactionV1ExportContent,
+  generateTransactionV2ExportContent,
   getErrorMessage,
   getLastExportExtension,
   getPrivateKey,
@@ -42,30 +41,36 @@ import {
   getTransactionBodySignatureWithoutNodeAccountId,
   hexToUint8Array,
   isLoggedInOrganization,
-  redirectToDetails,
   setLastExportExtension,
+  signTransactions,
   usersPublicRequiredToSign,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
+import ExpiringBadge from './ExpiringBadge.vue';
+import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
+import SplitSignButtonDropdown from '@renderer/components/SplitSignButtonDropdown.vue';
 
 import { TransactionStatus } from '@shared/interfaces';
+
+import { getTransactionValidStart } from '@renderer/utils/sdk/transactions';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { writeTransactionFile } from '@renderer/services/transactionFileService.ts';
+import { getTransactionType } from '@renderer/utils/sdk/transactions.ts';
 
 /* Types */
 type ActionButton =
   | 'Reject'
   | 'Approve'
   | 'Sign'
-  | 'Previous'
-  | 'Next'
+  | 'Sign & Next'
   | 'Cancel'
   | 'Export'
-  | 'Submit'
+  | 'Schedule'
   | 'Remind Signers'
   | 'Archive';
 
@@ -73,23 +78,20 @@ type ActionButton =
 const reject: ActionButton = 'Reject';
 const approve: ActionButton = 'Approve';
 const sign: ActionButton = 'Sign';
-const previous: ActionButton = 'Previous';
-const next: ActionButton = 'Next';
+const signAndNext: ActionButton = 'Sign & Next';
+const execute: ActionButton = 'Schedule';
 const cancel: ActionButton = 'Cancel';
-const execute: ActionButton = 'Submit';
 const remindSignersLabel: ActionButton = 'Remind Signers';
 const archive: ActionButton = 'Archive';
 const exportName: ActionButton = 'Export';
 
-const primaryButtons: ActionButton[] = [reject, approve, sign, next];
+const primaryButtons: ActionButton[] = [reject, approve, sign, execute];
 const buttonsDataTestIds: { [key: string]: string } = {
   [reject]: 'button-reject-org-transaction',
   [approve]: 'button-approve-org-transaction',
   [sign]: 'button-sign-org-transaction',
-  [previous]: 'button-previous-org-transaction',
-  [next]: 'button-next-org-transaction',
-  [cancel]: 'button-cancel-org-transaction',
   [execute]: 'button-execute-org-transaction',
+  [cancel]: 'button-cancel-org-transaction',
   [remindSignersLabel]: 'button-remind-signers-org-transaction',
   [archive]: 'button-archive-org-transaction',
   [exportName]: 'button-export-transaction',
@@ -97,13 +99,13 @@ const buttonsDataTestIds: { [key: string]: string } = {
 
 const EXPORT_FORMATS = [
   {
-    name: 'Transaction Tool 2.0 (.tx2)',
+    name: 'TX2 (Tx Tool 2.0)',
     value: 'tt2',
     extensions: ['tx2'],
     enabled: true, // Set to false to hide/remove in the future
   },
   {
-    name: 'Transaction Tool (.tx)',
+    name: 'TX (Tx Tool 1.0)',
     value: 'tt1',
     extensions: ['tx'],
     enabled: true, // Set to false to hide/remove
@@ -115,15 +117,14 @@ const props = defineProps<{
   organizationTransaction: ITransactionFull | null;
   localTransaction: Transaction | null;
   sdkTransaction: SDKTransaction | null;
-  nextId: number | string | null;
-  previousId: number | string | null;
+  onAction: () => Promise<void>;
 }>();
 
 /* Stores */
 const user = useUserStore();
 const network = useNetwork();
 const contacts = useContactsStore();
-const nextTransaction = useNextTransactionStore();
+const nextTransaction = useNextTransactionV2();
 
 /* Composables */
 const router = useRouter();
@@ -131,10 +132,11 @@ const toast = useToast();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject()
-const nodeByIdCache = NodeByIdCache.inject()
+const accountByIdCache = AccountByIdCache.inject();
+const nodeByIdCache = NodeByIdCache.inject();
 
 /* State */
+const isTransactionVersionMismatch = ref(false);
 const isConfirmModalShown = ref(false);
 const confirmModalTitle = ref('');
 const confirmModalText = ref('');
@@ -142,7 +144,7 @@ const confirmModalButtonText = ref('');
 const confirmModalLoadingText = ref('');
 const confirmCallback = ref<((...args: any[]) => void) | null>(null);
 
-const fullyLoaded = ref(false);
+const isRefreshing = ref(false);
 const loadingStates = reactive<{ [key: string]: string | null }>({
   [reject]: null,
   [approve]: null,
@@ -154,6 +156,10 @@ const publicKeysRequiredToSign = ref<string[] | null>(null);
 const shouldApprove = ref<boolean>(false);
 
 /* Computed */
+const txType = computed(() => {
+  return props.sdkTransaction ? getTransactionType(props.sdkTransaction) : null;
+});
+
 const creator = computed(() => {
   return props.organizationTransaction
     ? contacts.contacts.find(contact =>
@@ -188,33 +194,29 @@ const canSign = computed(() => {
   if (!isLoggedInOrganization(user.selectedOrganization)) return false;
 
   if (isTransactionVersionMismatch.value) {
-    toast.error('Transaction version mismatch. Cannot sign.');
+    toast.error('Transaction version mismatch. Cannot sign.', errorToastOptions);
     return false;
   }
 
   const userShouldSign = publicKeysRequiredToSign.value.length > 0;
 
-  return userShouldSign && transactionIsInProgress.value;
+  return (
+    userShouldSign &&
+    props.organizationTransaction.status === TransactionStatus.WAITING_FOR_SIGNATURES
+  );
 });
 
 const canExecute = computed(() => {
   const status = props.organizationTransaction?.status;
   const isManual = props.organizationTransaction?.isManual;
 
-  return (
-    status === TransactionStatus.WAITING_FOR_EXECUTION &&
-    isManual &&
-    isCreator.value
-  );
+  return status === TransactionStatus.WAITING_FOR_EXECUTION && isManual && isCreator.value;
 });
 
 const canRemind = computed(() => {
   const status = props.organizationTransaction?.status;
 
-  return (
-    status === TransactionStatus.WAITING_FOR_SIGNATURES &&
-    isCreator.value
-  );
+  return status === TransactionStatus.WAITING_FOR_SIGNATURES && isCreator.value;
 });
 
 const canArchive = computed(() => {
@@ -226,19 +228,10 @@ const canArchive = computed(() => {
 const visibleButtons = computed(() => {
   const buttons: ActionButton[] = [];
 
-  if (!fullyLoaded.value) return buttons;
-
-  /* The order is important REJECT, APPROVE, SIGN, SUBMIT, PREVIOUS, NEXT, CANCEL, ARCHIVE, EXPORT */
+  /* The order is important REJECT, APPROVE, SIGN, SUBMIT, CANCEL, ARCHIVE, EXPORT */
   shouldApprove.value && buttons.push(reject, approve);
   canSign.value && !shouldApprove.value && buttons.push(sign);
   canExecute.value && buttons.push(execute);
-  // if (isLargeScreen.value) {
-  //   props.previousId && buttons.push(previous);
-  //   props.nextId && buttons.push(next);
-  // } else {
-  props.nextId && buttons.push(next);
-  props.previousId && buttons.push(previous);
-  // }
   canCancel.value && buttons.push(cancel);
   canRemind.value && buttons.push(remindSignersLabel);
   canArchive.value && buttons.push(archive);
@@ -255,30 +248,20 @@ const isTransactionFailed = computed(() => {
   return props.organizationTransaction?.status === TransactionStatus.FAILED;
 });
 
-const isTransactionVersionMismatch = computed(() => {
-  if (!props.sdkTransaction || !props.organizationTransaction) return false;
+const isManualFlagVisible = computed(() => {
+  return props.organizationTransaction?.isManual && transactionIsInProgress.value;
+});
 
-  // The sdkTransaction has already been deserialized from bytes, serialize back into bytes
-  // and compare to the organizations transaction bytes.
-  return !areByteArraysEqual(
-    props.sdkTransaction.toBytes(),
-    hexToUint8Array(props.organizationTransaction.transactionBytes),
-  );
+const validStartDate = computed(() => {
+  return props.sdkTransaction ? getTransactionValidStart(props.sdkTransaction) : null;
 });
 
 /* Handlers */
-const handleBack = () => {
-  if (
-    !history.state?.back?.startsWith('/transactions') &&
-    !history.state?.back?.startsWith('/transaction-group/')
-  ) {
-    router.push({ name: 'transactions' });
-  } else {
-    router.back();
-  }
+const handleBack = async () => {
+  await nextTransaction.routeUp(router);
 };
 
-const handleSign = async () => {
+const handleSign = async (goNext = false) => {
   if (!(props.sdkTransaction instanceof SDKTransaction) || !props.organizationTransaction) {
     throw new Error('Transaction is not available');
   }
@@ -286,56 +269,33 @@ const handleSign = async () => {
   assertUserLoggedIn(user.personal);
   assertIsLoggedInOrganization(user.selectedOrganization);
 
-  const personalPassword = getPassword(handleSign, {
+  const personalPassword = getPassword(handleSign.bind(null, goNext), {
     subHeading: 'Enter your application password to access your private key',
   });
   if (passwordModalOpened(personalPassword)) return;
 
   try {
-    loadingStates[sign] = 'Signing...';
+    loadingStates[sign] = 'Signing…';
 
-    const publicKeysRequired = await usersPublicRequiredToSign(
-      props.sdkTransaction,
-      user.selectedOrganization.userKeys,
-      network.mirrorNodeBaseURL,
+    const signed = await signTransactions(
+      [props.organizationTransaction],
+      personalPassword,
       accountByIdCache,
-      nodeByIdCache
+      nodeByIdCache,
     );
+    await props.onAction();
+    updateTransactionVersionMismatch();
 
-    const restoredRequiredKeys = [];
-    const requiredNonRestoredKeys = [];
-
-    // Separate keys into restored and non-restored, where restored indicates that the
-    // key is locally present.
-    for (const requiredKey of publicKeysRequired) {
-      if (user.keyPairs.some(k => k.public_key === requiredKey)) {
-        restoredRequiredKeys.push(requiredKey);
-      } else {
-        requiredNonRestoredKeys.push(requiredKey);
+    if (signed) {
+      toast.success('Transaction signed successfully', successToastOptions);
+      if (goNext) {
+        await nextTransaction.routeToNext(router);
       }
-    }
-
-    if (requiredNonRestoredKeys.length > 0) {
-      toast.error(
-        `You need to restore the following public keys to fully sign the transaction: ${requiredNonRestoredKeys.join(
-          ', ',
-        )}`,
-      );
-    }
-
-    if (restoredRequiredKeys.length > 0) {
-      await uploadSignatures(
-        user.personal.id,
-        personalPassword,
-        user.selectedOrganization,
-        restoredRequiredKeys,
-        SDKTransaction.fromBytes(props.sdkTransaction.toBytes()),
-        props.organizationTransaction.id,
-      );
-      toast.success('Transaction signed successfully');
+    } else {
+      toast.error('Failed to sign transaction', errorToastOptions);
     }
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to sign transaction'));
+    toast.error(getErrorMessage(error, 'Failed to sign transaction'), errorToastOptions);
   } finally {
     loadingStates[sign] = null;
   }
@@ -347,7 +307,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
     confirmModalText.value = 'Are you sure you want to reject the transaction?';
     confirmModalButtonText.value = 'Reject';
     confirmCallback.value = () => handleApprove(false);
-    confirmModalLoadingText.value = 'Rejecting...';
+    confirmModalLoadingText.value = 'Rejecting…';
     isConfirmModalShown.value = true;
     return;
   }
@@ -367,9 +327,9 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
 
     try {
       if (approved) {
-        loadingStates[approve] = 'Approving...';
+        loadingStates[approve] = 'Approving…';
       } else {
-        loadingStates[reject] = 'Rejecting...';
+        loadingStates[reject] = 'Rejecting…';
         isConfirmModalLoadingState.value = true;
       }
 
@@ -394,7 +354,11 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
         signature,
         approved,
       );
-      toast.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
+      await props.onAction();
+      toast.success(
+        `Transaction ${approved ? 'approved' : 'rejected'} successfully`,
+        successToastOptions,
+      );
 
       if (!approved) {
         router.back();
@@ -427,7 +391,7 @@ const handleTransactionAction = async (
       title: 'Cancel Transaction?',
       text: 'Are you sure you want to cancel the transaction?',
       buttonText: 'Confirm',
-      loadingText: 'Canceling...',
+      loadingText: 'Canceling…',
       successMessage: 'Transaction canceled successfully',
       actionFunction: cancelTransaction,
     },
@@ -435,23 +399,23 @@ const handleTransactionAction = async (
       title: 'Archive Transaction?',
       text: 'Are you sure you want to archive the transaction? The required signers will not be able to sign it anymore.',
       buttonText: 'Confirm',
-      loadingText: 'Archiving...',
+      loadingText: 'Archiving…',
       successMessage: 'Transaction archived successfully',
       actionFunction: archiveTransaction,
     },
     execute: {
-      title: 'Submit Transaction?',
+      title: 'Schedule Transaction?',
       text: 'The transaction will be scheduled to execute at the specified time and processed automatically.',
       buttonText: 'Confirm',
-      loadingText: 'Submitting...',
-      successMessage: 'Transaction sent for execution successfully',
+      loadingText: 'Scheduling…',
+      successMessage: 'Transaction scheduled for execution successfully',
       actionFunction: executeTransaction,
     },
     remindSigners: {
       title: 'Remind Signers?',
       text: 'All signers that have not yet signed will be sent a notification.',
       buttonText: 'Confirm',
-      loadingText: 'Sending...',
+      loadingText: 'Sending…',
       successMessage: 'Signers reminded successfully',
       actionFunction: remindSigners,
     },
@@ -473,7 +437,8 @@ const handleTransactionAction = async (
     confirmModalLoadingText.value = loadingText;
     isConfirmModalLoadingState.value = true;
     await actionFunction(user.selectedOrganization.serverUrl, props.organizationTransaction.id);
-    toast.success(successMessage);
+    await props.onAction();
+    toast.success(successMessage, successToastOptions);
   } catch (error) {
     isConfirmModalShown.value = false;
     throw error;
@@ -489,36 +454,6 @@ const handleArchive = (showModal?: boolean) => handleTransactionAction('archive'
 const handleExecute = (showModal?: boolean) => handleTransactionAction('execute', showModal);
 const handleRemindSigners = (showModal?: boolean) =>
   handleTransactionAction('remindSigners', showModal);
-
-const handlePrevious = () => {
-  if (!props.previousId) return;
-
-  const newPreviousTransactionsIds = [...(nextTransaction.previousTransactionsIds || [])];
-  if (isLoggedInOrganization(user.selectedOrganization)) {
-    props.organizationTransaction &&
-      newPreviousTransactionsIds.push(props.organizationTransaction.id);
-  } else {
-    props.localTransaction && newPreviousTransactionsIds.push(props.localTransaction.id);
-  }
-  nextTransaction.setPreviousTransactionsIds(newPreviousTransactionsIds);
-
-  redirectToDetails(router, props.previousId.toString(), true, true);
-};
-
-const handleNext = () => {
-  if (!props.nextId) return;
-
-  const newPreviousTransactionsIds = [...(nextTransaction.previousTransactionsIds || [])];
-  if (isLoggedInOrganization(user.selectedOrganization)) {
-    props.organizationTransaction &&
-      newPreviousTransactionsIds.push(props.organizationTransaction.id);
-  } else {
-    props.localTransaction && newPreviousTransactionsIds.push(props.localTransaction.id);
-  }
-  nextTransaction.setPreviousTransactionsIds(newPreviousTransactionsIds);
-
-  redirectToDetails(router, props.nextId.toString(), true, true);
-};
 
 const handleExport = async () => {
   if (!props.sdkTransaction || !props.organizationTransaction) {
@@ -566,13 +501,16 @@ const handleExport = async () => {
 
   // Create file(s) based on name and selected format
   if (ext === 'tx2') {
-    // TTv2 is the new format, which includes the entire transaction, comments, and any other
-    // metadata that might be relevant.
-    const bytes = encode(props.organizationTransaction);
-    await saveFileToPath(bytes, filePath);
+    // Export TTv2 --> TTv2
+    const tx2Content: TransactionFile = generateTransactionV2ExportContent(
+      [props.organizationTransaction],
+      network.network,
+    );
+    await writeTransactionFile(tx2Content, filePath);
 
-    toast.success('Transaction exported successfully');
+    toast.success('Transaction exported successfully', successToastOptions);
   } else if (ext === 'tx') {
+    // Export TTv2 --> TTv1
     if (user.publicKeys.length === 0) {
       throw new Error(
         'Exporting in the .tx format requires a signature. User must have at least one key pair to sign the transaction.',
@@ -582,7 +520,7 @@ const handleExport = async () => {
     const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
     const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
-    const { signedBytes, jsonContent } = await generateTransactionExportContent(
+    const { signedBytes, jsonContent } = await generateTransactionV1ExportContent(
       props.organizationTransaction,
       privateKey,
     );
@@ -591,7 +529,7 @@ const handleExport = async () => {
     const txtFilePath = filePath.replace(/\.[^/.]+$/, '.txt');
     await saveFileToPath(jsonContent, txtFilePath);
 
-    toast.success('Transaction exported successfully');
+    toast.success('Transaction exported successfully', successToastOptions);
   }
 };
 
@@ -602,10 +540,8 @@ const handleAction = async (value: ActionButton) => {
     await handleApprove(true, true);
   } else if (value === sign) {
     await handleSign();
-  } else if (value === next) {
-    handleNext();
-  } else if (value === previous) {
-    handlePrevious();
+  } else if (value === signAndNext) {
+    await handleSign(true);
   } else if (value === cancel) {
     await handleCancel(true);
   } else if (value === archive) {
@@ -625,11 +561,25 @@ const handleSubmit = async (e: Event) => {
 
 const handleDropDownItem = async (value: ActionButton) => handleAction(value);
 
+/* Functions */
+
+const updateTransactionVersionMismatch = (): void => {
+  let mismatch: boolean;
+  if (!props.sdkTransaction || !props.organizationTransaction) {
+    mismatch = false;
+  } else {
+    // As organizationTransaction and sdkTransaction are updated separately,
+    // we cannot compare the two values directly. After signatures, they may be different.
+    const bytes = hexToUint8Array(props.organizationTransaction.transactionBytes);
+    const transaction = SDKTransaction.fromBytes(bytes);
+    mismatch = !areByteArraysEqual(bytes, transaction.toBytes());
+  }
+  isTransactionVersionMismatch.value = mismatch;
+};
+
 /* Hooks */
 onMounted(() => {
-  if (!isLoggedInOrganization(user.selectedOrganization)) {
-    fullyLoaded.value = true;
-  }
+  updateTransactionVersionMismatch();
 });
 
 /* Watchers */
@@ -638,11 +588,12 @@ watch(
   async transaction => {
     assertIsLoggedInOrganization(user.selectedOrganization);
 
-    fullyLoaded.value = false;
+    isRefreshing.value = true;
 
     if (!transaction) {
       publicKeysRequiredToSign.value = null;
       shouldApprove.value = false;
+      isRefreshing.value = false;
       return;
     }
 
@@ -653,6 +604,7 @@ watch(
         network.mirrorNodeBaseURL,
         accountByIdCache,
         nodeByIdCache,
+        user.selectedOrganization,
       ),
       getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id),
     ]);
@@ -660,138 +612,101 @@ watch(
     results[0].status === 'fulfilled' && (publicKeysRequiredToSign.value = results[0].value);
     results[1].status === 'fulfilled' && (shouldApprove.value = results[1].value);
 
-    fullyLoaded.value = true;
+    isRefreshing.value = false;
 
     results.forEach(
       r =>
         r.status === 'rejected' &&
-        toast.error(getErrorMessage(r.reason, 'Failed to load transaction details')),
+        toast.error(
+          getErrorMessage(r.reason, 'Failed to load transaction details'),
+          errorToastOptions,
+        ),
     );
   },
 );
 </script>
 <template>
-  <form
-    @submit.prevent="handleSubmit"
-    class="flex-centered justify-content-between flex-wrap gap-4"
-  >
-    <div class="d-flex align-items-center">
-      <AppButton
-        type="button"
-        color="secondary"
-        class="btn-icon-only me-4"
-        data-testid="button-back"
-        @click="handleBack"
-      >
-        <i class="bi bi-arrow-left"></i>
-      </AppButton>
+  <form @submit.prevent="handleSubmit">
+    <div class="flex-centered justify-content-between flex-wrap gap-4">
+      <div class="d-flex align-items-center gap-4">
+        <AppButton
+          class="btn-icon-only"
+          color="secondary"
+          data-testid="button-back"
+          type="button"
+          @click="handleBack"
+        >
+          <i class="bi bi-arrow-left"></i>
+        </AppButton>
+        <NextTransactionCursor />
+        <div v-if="txType" class="d-flex align-items-center column-gap-3 row-gap-2 flex-wrap">
+          <h2 class="text-title text-bold">{{ txType }}</h2>
+          <span v-if="isTransactionFailed" class="badge bg-danger text-break">
+            {{
+              getStatusFromCode(props.organizationTransaction?.statusCode)
+                ? getStatusFromCode(props.organizationTransaction?.statusCode)
+                : 'FAILED'
+            }}
+          </span>
+          <span v-else-if="isTransactionVersionMismatch" class="badge bg-danger text-break">
+            Transaction Version Mismatch
+          </span>
+          <span v-else-if="isManualFlagVisible" class="badge bg-info text-break">Manual</span>
+          <!-- Expiring Soon Badge -->
+          <ExpiringBadge
+            :transaction-status="props.organizationTransaction?.status ?? null"
+            :valid-duration="props.sdkTransaction?.transactionValidDuration ?? 0"
+            :valid-start="validStartDate"
+            variant="countdown"
+          />
+        </div>
+      </div>
 
-      <h2 class="text-title text-bold">
-        Transaction Details
-        <span v-if="isTransactionFailed" class="badge bg-danger text-break ms-2">
-          {{
-            getStatusFromCode(props.organizationTransaction?.statusCode)
-              ? getStatusFromCode(props.organizationTransaction?.statusCode)
-              : 'FAILED'
-          }}
-        </span>
-        <span v-else-if="isTransactionVersionMismatch" class="badge bg-danger text-break ms-2">
-          Transaction Version Mismatch
-        </span>
-      </h2>
-    </div>
+      <div class="flex-centered gap-4">
+        <Transition mode="out-in" name="fade">
+          <template v-if="visibleButtons.length > 0">
+            <div>
+              <SplitSignButtonDropdown
+                v-if="visibleButtons[0] === sign"
+                :loading="Boolean(loadingStates[sign])"
+                :loading-text="loadingStates[sign] || ''"
+              />
+              <AppButton
+                v-else
+                :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
+                :data-testid="buttonsDataTestIds[visibleButtons[0]]"
+                :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[0]])"
+                :loading="Boolean(loadingStates[visibleButtons[0]])"
+                :loading-text="loadingStates[visibleButtons[0]] || ''"
+                type="submit"
+                >{{ visibleButtons[0] }}
+              </AppButton>
+            </div>
+          </template>
+        </Transition>
 
-    <div class="flex-centered gap-4">
-      <Transition name="fade" mode="out-in">
-        <template v-if="visibleButtons.length > 0">
-          <div>
-            <AppButton
-              :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
-              :loading="Boolean(loadingStates[visibleButtons[0]])"
-              :loading-text="loadingStates[visibleButtons[0]] || ''"
-              :data-testid="buttonsDataTestIds[visibleButtons[0]]"
-              type="submit"
-              >{{ visibleButtons[0] }}
-            </AppButton>
-          </div>
-        </template>
-      </Transition>
-
-      <Transition name="fade" mode="out-in">
-        <template v-if="visibleButtons.length > 1">
-          <div class="d-none d-lg-block">
-            <AppButton
-              :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
-              :loading="Boolean(loadingStates[visibleButtons[1]])"
-              :loading-text="loadingStates[visibleButtons[1]] || ''"
-              :data-testid="buttonsDataTestIds[visibleButtons[1]]"
-              type="submit"
-              >{{ visibleButtons[1] }}
-            </AppButton>
-          </div>
-        </template>
-      </Transition>
-
-      <Transition name="fade" mode="out-in">
-        <template v-if="visibleButtons.length > 2">
-          <div>
-            <AppDropDown
-              class="d-lg-none"
-              :color="'secondary'"
-              :items="dropDownItems"
-              compact
-              @select="handleDropDownItem($event as ActionButton)"
-              data-testid="button-more-dropdown-sm"
-            />
-            <AppDropDown
-              class="d-none d-lg-block"
-              :color="'secondary'"
-              :items="dropDownItems.slice(1)"
-              compact
-              @select="handleDropDownItem($event as ActionButton)"
-              data-testid="button-more-dropdown-lg"
-            />
-          </div>
-        </template>
-        <template v-else-if="visibleButtons.length === 2">
-          <div class="d-lg-none">
-            <AppButton
-              :color="primaryButtons.includes(visibleButtons[1]) ? 'primary' : 'secondary'"
-              :loading="Boolean(loadingStates[visibleButtons[1]])"
-              :loading-text="loadingStates[visibleButtons[1]] || ''"
-              :data-testid="buttonsDataTestIds[visibleButtons[1]]"
-              type="submit"
-              >{{ visibleButtons[1] }}
-            </AppButton>
-          </div>
-        </template>
-      </Transition>
+        <Transition mode="out-in" name="fade">
+          <template v-if="dropDownItems.length > 0">
+            <div>
+              <AppDropDown
+                :color="'secondary'"
+                :disabled="isRefreshing"
+                :items="dropDownItems"
+                compact
+                data-testid="button-more-dropdown-lg"
+                @select="handleDropDownItem($event as ActionButton)"
+              />
+            </div>
+          </template>
+        </Transition>
+      </div>
     </div>
   </form>
 
-  <AppModal v-model:show="isConfirmModalShown" class="common-modal">
-    <div class="p-4">
-      <i class="bi bi-x-lg d-inline-block cursor-pointer" @click="isConfirmModalShown = false"></i>
-      <div class="text-center">
-        <AppCustomIcon :name="'questionMark'" style="height: 160px" />
-      </div>
-      <h3 class="text-center text-title text-bold mt-4">{{ confirmModalTitle }}</h3>
-      <p class="text-center text-small text-secondary mt-4">
-        {{ confirmModalText }}
-      </p>
-      <hr class="separator my-5" />
-      <div class="flex-between-centered gap-4">
-        <AppButton color="borderless" @click="isConfirmModalShown = false">Cancel</AppButton>
-        <AppButton
-          color="primary"
-          data-testid="button-confirm-change-password"
-          @click="confirmCallback && confirmCallback()"
-          :disabled="isConfirmModalLoadingState"
-          :loading="isConfirmModalLoadingState"
-          :loading-text="confirmModalLoadingText"
-          >{{ confirmModalButtonText }}</AppButton
-        >
-      </div>
-    </div>
-  </AppModal>
+  <AppConfirmModal
+    v-model:show="isConfirmModalShown"
+    :callback="confirmCallback"
+    :text="confirmModalText"
+    :title="confirmModalTitle"
+  />
 </template>

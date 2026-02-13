@@ -1,4 +1,5 @@
 import { Inject, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   OnGatewayConnection,
@@ -16,14 +17,17 @@ import {
 } from '@app/common';
 
 import { AuthWebsocket, AuthWebsocketMiddleware } from './middlewares/auth-websocket.middleware';
+import { FrontendVersionWebsocketMiddleware } from './middlewares/frontend-version-websocket.middleware';
 import { roomKeys } from './helpers';
 import { DebouncedNotificationBatcher } from '../utils';
-import { ConfigService } from '@nestjs/config';
 
 @WebSocketGateway({
   path: '/ws',
   cors: { origin: true, methods: ['GET', 'POST'], credentials: true },
-  connectionStateRecovery: { maxDisconnectionDuration: 2 * 60 * 1000 },
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 30 * 1000,
+    skipMiddlewares: false,
+  },
   transports: ['websocket', 'polling'],
 })
 export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
@@ -50,6 +54,11 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   private io: Server;
 
   afterInit(io: Server) {
+    const minimumVersion = this.configService.getOrThrow<string>(
+      'MINIMUM_SUPPORTED_FRONTEND_VERSION',
+    );
+
+    io.use(FrontendVersionWebsocketMiddleware(minimumVersion));
     io.use(AuthWebsocketMiddleware(this.authService, this.blacklistService));
   }
 
@@ -75,8 +84,9 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
     await this.batcher.add(newMessage);
   }
 
-  async notifyUser(userId: number, message: string, data) {
-    const newMessage = new NotificationMessage(message, [data]);
+  async notifyUser(userId: number, message: string, data: any | any[]) {
+    const content = Array.isArray(data) ? data : [data];
+    const newMessage = new NotificationMessage(message, content);
     await this.batcher.add(newMessage, userId);
   }
 
@@ -91,6 +101,7 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
     for (const [message, content] of groupedMessages.entries()) {
       if (groupKey) {
+        // Emit to specific user room, if the room doesn't exist, silent no-op
         this.io.to(roomKeys.USER_KEY(groupKey)).emit(message, content);
       } else {
         this.io.emit(message, content);

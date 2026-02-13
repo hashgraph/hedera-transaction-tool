@@ -557,7 +557,7 @@ The Initial Developer of @pkgr/core@0.1.1,
 is JounQin (https://github.com/un-ts/pkgr).
 Copyright JounQin. All Rights Reserved.
 
-The Initial Developer of @playwright/test@1.50.0,
+The Initial Developer of @playwright/test@1.56.1,
 is Microsoft Corporation (https://github.com/microsoft/playwright).
 Copyright Microsoft Corporation. All Rights Reserved.
 
@@ -714,6 +714,9 @@ The Initial Developer of @tootallnate/once@2.0.0,
 is Nathan Rajlich (https://github.com/TooTallNate/once).
 Copyright Nathan Rajlich. All Rights Reserved.
 
+This product includes software (@types/async-retry@1.4.5) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
 This product includes software (@types/babel__core@7.20.5) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
@@ -727,6 +730,9 @@ This product includes software (@types/babel__traverse@7.20.7) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/bcrypt@5.0.2) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
+This product includes software (@types/bcrypt@6.0.0) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/bcryptjs@2.4.6) developed at
@@ -745,6 +751,9 @@ This product includes software (@types/cacheable-request@6.0.3) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/debug@4.1.12) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
+This product includes software (@types/deep-diff@1.0.5) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/eslint-scope@3.7.7) developed at
@@ -789,6 +798,9 @@ This product includes software (@types/json-schema@7.0.15) developed at
 This product includes software (@types/keyv@3.1.4) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
+This product includes software (@types/lodash@4.17.21) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
 This product includes software (@types/ms@2.1.0) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
@@ -810,6 +822,9 @@ This product includes software (@types/passport-jwt@4.0.1) developed at
 This product includes software (@types/passport-local@1.0.38) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
+This product includes software (@types/pg@8.15.6) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
 This product includes software (@types/plist@3.0.5) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
@@ -817,6 +832,9 @@ This product includes software (@types/readline-sync@1.4.8) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/responselike@1.0.3) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
+This product includes software (@types/semver@7.5.8) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/stack-utils@2.0.3) developed at
@@ -1147,6 +1165,10 @@ The Initial Developer of atomic-sleep@1.0.0,
 is David Mark Clements (https://github.com/davidmarkclements/atomic-sleep).
 Copyright David Mark Clements. All Rights Reserved.
 
+The Initial Developer of axios@1.13.2,
+is Matt Zabriskie (https://github.com/axios/axios).
+Copyright Matt Zabriskie. All Rights Reserved.
+
 The Initial Developer of axios@1.8.3,
 is Matt Zabriskie (https://github.com/axios/axios).
 Copyright Matt Zabriskie. All Rights Reserved.
@@ -1180,6 +1202,10 @@ is T. Jameson Little (https://github.com/beatgammit/base64-js).
 Copyright T. Jameson Little. All Rights Reserved.
 
 The Initial Developer of bcrypt@5.1.1,
+is Nick Campbell (https://github.com/kelektiv/node.bcrypt.js).
+Copyright Nick Campbell. All Rights Reserved.
+
+The Initial Developer of bcrypt@6.0.0,
 is Nick Campbell (https://github.com/kelektiv/node.bcrypt.js).
 Copyright Nick Campbell. All Rights Reserved.
 
@@ -1629,7 +1655,7 @@ The Initial Developer of electron-to-chromium@1.5.88,
 is Kilian Valkhof (https://github.com/kilian/electron-to-chromium).
 Copyright Kilian Valkhof. All Rights Reserved.
 
-The Initial Developer of electron-updater@6.3.9,
+The Initial Developer of electron-updater@6.6.2,
 is Vladimir Krivosheev (https://github.com/electron-userland/electron-builder).
 Copyright Vladimir Krivosheev. All Rights Reserved.
 
@@ -2636,6 +2662,10 @@ The Initial Developer of napi-build-utils@2.0.0,
 is Jim Schlight (https://github.com/inspiredware/napi-build-utils).
 Copyright Jim Schlight. All Rights Reserved.
 
+The Initial Developer of nats@2.29.3,
+is The NATS Authors (https://github.com/nats-io/nats.node).
+Copyright The NATS Authors. All Rights Reserved.
+
 The Initial Developer of natural-compare@1.4.0,
 is Lauri Rooden (https://github.com/litejs/natural-compare-lite).
 Copyright Lauri Rooden. All Rights Reserved.
@@ -2856,6 +2886,10 @@ The Initial Developer of pg@8.13.1,
 is Brian Carlson (https://github.com/brianc/node-postgres).
 Copyright Brian Carlson. All Rights Reserved.
 
+The Initial Developer of pg@8.16.3,
+is Brian Carlson (https://github.com/brianc/node-postgres).
+Copyright Brian Carlson. All Rights Reserved.
+
 The Initial Developer of picocolors@1.1.1,
 is Alexey Raspopov (https://github.com/alexeyraspopov/picocolors).
 Copyright Alexey Raspopov. All Rights Reserved.
@@ -2888,11 +2922,11 @@ The Initial Developer of pirates@4.0.7,
 is Ari Porad (https://github.com/danez/pirates).
 Copyright Ari Porad. All Rights Reserved.
 
-The Initial Developer of playwright-core@1.50.0,
+The Initial Developer of playwright-core@1.56.1,
 is Microsoft Corporation (https://github.com/microsoft/playwright).
 Copyright Microsoft Corporation. All Rights Reserved.
 
-The Initial Developer of playwright@1.50.0,
+The Initial Developer of playwright@1.56.1,
 is Microsoft Corporation (https://github.com/microsoft/playwright).
 Copyright Microsoft Corporation. All Rights Reserved.
 
@@ -3155,7 +3189,7 @@ The Initial Developer of semver-compare@1.0.0,
 is James Halliday (https://github.com/substack/semver-compare).
 Copyright James Halliday. All Rights Reserved.
 
-The Initial Developer of semver@7.6.3,
+The Initial Developer of semver@7.7.1,
 is GitHub Inc. (https://github.com/npm/node-semver).
 Copyright GitHub Inc.. All Rights Reserved.
 
@@ -3501,6 +3535,10 @@ The Initial Developer of typescript@5.7.3,
 is Microsoft Corp. (https://github.com/microsoft/TypeScript).
 Copyright Microsoft Corp.. All Rights Reserved.
 
+The Initial Developer of typescript@5.9.3,
+is Microsoft Corp. (https://github.com/microsoft/TypeScript).
+Copyright Microsoft Corp.. All Rights Reserved.
+
 This product includes software (undici-types@6.20.0) developed at
 (https://github.com/nodejs/undici).
 
@@ -3552,7 +3590,7 @@ The Initial Developer of utils-merge@1.0.1,
 is Jared Hanson (https://github.com/jaredhanson/utils-merge).
 Copyright Jared Hanson. All Rights Reserved.
 
-This product includes software (uuid@10.0.0) developed at
+This product includes software (uuid@13.0.0) developed at
 (https://github.com/uuidjs/uuid).
 
 This product includes software (verror@1.10.1) developed at

@@ -13,6 +13,7 @@ import { safeAwait } from '@main/utils/safeAwait';
 import { deleteAllTempFolders } from '@main/services/localUser';
 
 import { restoreOrCreateWindow } from '@main/windows/mainWindow';
+import { initializeUpdaterService } from '@main/services/electronUpdater';
 
 let mainWindow: BrowserWindow | null;
 
@@ -81,6 +82,10 @@ function attachAppEvents() {
 
 async function initMainWindow() {
   mainWindow = await restoreOrCreateWindow();
+
+  if (mainWindow) {
+    initializeUpdaterService(mainWindow);
+  }
 
   createMenu();
 

@@ -30,6 +30,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
+import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -108,7 +109,7 @@ const handleChangePassword = async () => {
 
     await user.refetchAccounts();
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to change password'));
+    toast.error(getErrorMessage(error, 'Failed to change password'), errorToastOptions);
   } finally {
     isChangingPassword.value = false;
   }
@@ -128,7 +129,7 @@ const handleLogout = async () => {
 
     const { id, nickname, serverUrl, key } = user.selectedOrganization;
     await logout(serverUrl);
-    await updateOrganizationCredentials(id, user.personal.id, undefined, undefined, null);
+    await updateOrganizationCredentials(id, user.personal.id, undefined, '', null);
     toggleAuthTokenInSessionStorage(serverUrl, '', true);
     await user.selectOrganization({ id, nickname, serverUrl, key });
   } else {

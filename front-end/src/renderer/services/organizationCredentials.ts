@@ -50,7 +50,7 @@ export const updateOrganizationCredentials = async (
   organization_id: string,
   user_id: string,
   email?: string,
-  password?: string,
+  password?: string | null,
   jwtToken?: string | null,
   encryptPassword?: string,
 ) =>
@@ -73,6 +73,15 @@ export const deleteOrganizationCredentials = async (organization_id: string, use
       user_id,
     );
   }, 'Failed to delete organization credentials');
+
+export const getOrganizationCredentials = async (organization_id: string, user_id: string, decryptPassword: string | null) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.organizationCredentials.getOrganizationCredentials(
+      organization_id,
+      user_id,
+      decryptPassword,
+    );
+  }, 'Failed to get organization credentials');
 
 /* Try auto sign in */
 export const tryAutoSignIn = async (user_id: string, decryptPassword: string | null) =>

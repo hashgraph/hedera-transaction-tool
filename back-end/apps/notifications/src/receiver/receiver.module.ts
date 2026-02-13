@@ -1,16 +1,28 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { LoggerModule, MirrorNodeModule, RedisMurlockModule } from '@app/common';
 import {
+  LoggerModule,
+  NatsModule,
+  RedisMurlockModule,
+  TransactionSignatureModule,
+} from '@app/common';
+import {
+  CachedAccount,
+  CachedAccountKey,
+  CachedNode,
+  CachedNodeAdminKey,
+  Client,
   Notification,
   NotificationPreferences,
   NotificationReceiver,
   Transaction,
+  TransactionCachedAccount,
   TransactionApprover,
   TransactionComment,
   TransactionGroup,
   TransactionGroupItem,
+  TransactionCachedNode,
   TransactionObserver,
   TransactionSigner,
   User,
@@ -19,10 +31,8 @@ import {
 
 import { FanOutModule } from '../fan-out/fan-out.module';
 
-import { ReceiverController } from './receiver.controller';
 import { ReceiverService } from './receiver.service';
-
-import { ReminderHandlerService } from './services';
+import { ReceiverConsumerService } from './receiver-consumer.service';
 
 @Module({
   imports: [
@@ -30,6 +40,7 @@ import { ReminderHandlerService } from './services';
     TypeOrmModule.forFeature([
       User,
       UserKey,
+      Client,
       Transaction,
       TransactionSigner,
       TransactionApprover,
@@ -37,15 +48,21 @@ import { ReminderHandlerService } from './services';
       TransactionComment,
       TransactionGroup,
       TransactionGroupItem,
+      TransactionCachedAccount,
+      TransactionCachedNode,
+      CachedAccount,
+      CachedAccountKey,
+      CachedNode,
+      CachedNodeAdminKey,
       Notification,
       NotificationReceiver,
       NotificationPreferences,
     ]),
-    MirrorNodeModule,
+    TransactionSignatureModule,
     FanOutModule,
     RedisMurlockModule,
+    NatsModule
   ],
-  controllers: [ReceiverController],
-  providers: [ReceiverService, ReminderHandlerService],
+  providers: [ReceiverService, ReceiverConsumerService],
 })
 export class ReceiverModule {}

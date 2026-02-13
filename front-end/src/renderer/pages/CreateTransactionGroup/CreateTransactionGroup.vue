@@ -28,7 +28,6 @@ import {
   getErrorMessage,
   getPropagationButtonLabel,
   isLoggedInOrganization,
-  redirectToGroupDetails,
   redirectToPreviousTransactionsTab,
 } from '@renderer/utils';
 import { createTransactionId } from '@renderer/utils/sdk';
@@ -43,10 +42,15 @@ import TransactionGroupProcessor from '@renderer/components/Transaction/Transact
 import SaveTransactionGroupModal from '@renderer/components/modals/SaveTransactionGroupModal.vue';
 import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+import useNextTransactionV2, {
+  type TransactionNodeId,
+} from '@renderer/stores/storeNextTransactionV2.ts';
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
 const user = useUserStore();
+const useNextTransaction = useNextTransactionV2();
 
 /* Composables */
 const router = useRouter();
@@ -58,7 +62,7 @@ useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { dateTimeSettingLabel } = useDateTimeSetting();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject()
+const accountByIdCache = AccountByIdCache.inject();
 
 /* State */
 const groupDescription = ref('');
@@ -143,9 +147,9 @@ function handleBack() {
   router.push({
     name: 'transactions',
     query: {
-      tab: router.previousTab
-    }
-  } );
+      tab: router.previousTab,
+    },
+  });
 }
 
 async function handleDelete() {
@@ -178,7 +182,7 @@ const handleLoadGroup = async () => {
 
 async function handleSignSubmit() {
   if (groupDescription.value.trim() === '') {
-    toast.error('Group Description Required');
+    toast.error('Group Description Required', errorToastOptions);
     return;
   }
 
@@ -194,22 +198,24 @@ async function handleSignSubmit() {
     await transactionGroupProcessor.value?.process(requiredKey);
   } catch (error) {
     updateValidStarts.value = true;
-    toast.error(getErrorMessage(error, 'Failed to create transaction'));
+    toast.error(getErrorMessage(error, 'Failed to create transaction'), errorToastOptions);
   }
 }
 
-function handleExecuted(id: string) {
+async function handleExecuted(id: string) {
   transactionGroup.clearGroup();
   if (user.selectedOrganization) {
-    redirectToGroupDetails(router, id);
+    const targetNodeId: TransactionNodeId = { groupId: id };
+    await useNextTransaction.routeDown(targetNodeId, [targetNodeId], router);
   } else {
-    redirectToPreviousTransactionsTab(router);
+    await redirectToPreviousTransactionsTab(router);
   }
 }
 
-function handleSubmit(id: number) {
+async function handleSubmit(id: number) {
   transactionGroup.clearGroup();
-  redirectToGroupDetails(router, id);
+  const targetNodeId: TransactionNodeId = { groupId: id };
+  await useNextTransaction.routeDown(targetNodeId, [targetNodeId], router);
 }
 
 function handleClose() {
@@ -268,6 +274,7 @@ async function handleOnFileChanged(e: Event) {
           } catch (error) {
             toast.error(
               `Sender account ${senderAccount} does not exist on network. Review the CSV file.`,
+              errorToastOptions,
             );
             console.log(error);
             return;
@@ -280,6 +287,7 @@ async function handleOnFileChanged(e: Event) {
           } catch (error) {
             toast.error(
               `Fee payer account ${feePayer} does not exist on network. Review the CSV file.`,
+              errorToastOptions,
             );
             console.log(error);
             return;
@@ -323,6 +331,7 @@ async function handleOnFileChanged(e: Event) {
           } catch (error) {
             toast.error(
               `Receiver account ${receiverAccount} does not exist on network. Review the CSV file.`,
+              errorToastOptions,
             );
             console.log(error);
             transactionGroup.clearGroup();
@@ -370,9 +379,9 @@ async function handleOnFileChanged(e: Event) {
         }
       }
     }
-    toast.success('Import complete');
+    toast.success('Import complete', successToastOptions);
   } catch (error) {
-    toast.error('Failed to import CSV file');
+    toast.error('Failed to import CSV file', errorToastOptions);
     console.log(error);
   } finally {
     if (file.value != null) {
@@ -435,7 +444,13 @@ onBeforeRouteLeave(async to => {
   <div class="p-5">
     <div class="flex-column-100 overflow-hidden">
       <div class="d-flex align-items-center">
-        <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
+        <AppButton
+          type="button"
+          color="secondary"
+          class="btn-icon-only me-4"
+          data-testid="button-back"
+          @click="handleBack"
+        >
           <i class="bi bi-arrow-left"></i>
         </AppButton>
 

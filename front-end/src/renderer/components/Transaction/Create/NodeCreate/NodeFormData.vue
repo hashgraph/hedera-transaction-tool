@@ -21,6 +21,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
 import KeyField from '@renderer/components/KeyField.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
+import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -162,7 +163,7 @@ function handleInputValidation(e: Event) {
     validate100CharInput(target.value, 'Transaction Memo');
     nodeDescriptionError.value = false;
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Invalid Node Description'));
+    toast.error(getErrorMessage(error, 'Invalid Node Description'), errorToastOptions);
     nodeDescriptionError.value = true;
   }
 }

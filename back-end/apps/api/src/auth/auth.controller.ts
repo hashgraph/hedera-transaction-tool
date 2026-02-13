@@ -75,6 +75,7 @@ export class AuthController {
   })
   @ApiResponse({
     status: 200,
+    type: LoginResponseDto,
     description: 'User is verified and an authentication token is returned along with the user.',
   })
   @Post('/login')

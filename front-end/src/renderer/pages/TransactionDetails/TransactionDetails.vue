@@ -14,24 +14,20 @@ import { CommonNetwork } from '@shared/enums';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
-import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
-import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
 
-import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
+import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 
-import { getApiGroupById, getTransactionById } from '@renderer/services/organization';
+import { getTransactionGroupById, getTransactionById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
 
 import {
-  getTransactionId,
   getTransactionPayerId,
   getTransactionType,
   getTransactionValidStart,
 } from '@renderer/utils/sdk/transactions';
 import {
   getUInt8ArrayFromBytesString,
-  KEEP_NEXT_QUERY_KEY,
   openTransactionInHashscan,
   hexToUint8Array,
   isLoggedInOrganization,
@@ -53,31 +49,30 @@ import { getGroup } from '@renderer/services/transactionGroupsService';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import TransactionId from '@renderer/components/ui/TransactionId.vue';
 
 /* Stores */
 const user = useUserStore();
 const network = useNetwork();
 const contacts = useContactsStore();
-const wsStore = useWebsocketConnection();
-const nextTransaction = useNextTransactionStore();
 
 /* Composables */
 const router = useRouter();
-const ws = useDisposableWs();
+useWebsocketSubscription(TRANSACTION_ACTION, async () => {
+  await fetchTransaction();
+});
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const route = useRoute();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject()
-const nodeByIdCache = NodeByIdCache.inject()
+const accountByIdCache = AccountByIdCache.inject();
+const nodeByIdCache = NodeByIdCache.inject();
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);
 const localTransaction = ref<Transaction | null>(null);
 const sdkTransaction = ref<SDKTransaction | null>(null);
 const signatureKeyObject = ref<Awaited<ReturnType<typeof computeSignatureKey>> | null>(null);
-const nextId = ref<string | number | null>(null);
-const prevId = ref<string | number | null>(null);
 const feePayer = ref<string | null>(null);
 const feePayerNickname = ref<string | null>(null);
 const groupDescription = ref<string | undefined>(undefined);
@@ -101,8 +96,16 @@ const creator = computed(() => {
     : null;
 });
 
+const showExternal = computed(() => {
+  // External badges are displayed for the transaction creator only
+  return isLoggedInOrganization(user.selectedOrganization) ?
+    user.selectedOrganization?.userId === orgTransaction.value?.creatorId :
+    false;
+});
+
 /* Functions */
-async function fetchTransaction(id: string | number) {
+async function fetchTransaction() {
+  const id = formattedId.value!;
   let transactionBytes: Uint8Array;
   try {
     if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
@@ -114,7 +117,7 @@ async function fetchTransaction(id: string | number) {
 
       if (orgTransaction.value?.groupItem?.groupId) {
         if (user.selectedOrganization?.serverUrl) {
-          const orgGroup = await getApiGroupById(
+          const orgGroup = await getTransactionGroupById(
             user.selectedOrganization?.serverUrl,
             orgTransaction.value.groupItem.groupId,
           );
@@ -151,53 +154,28 @@ async function fetchTransaction(id: string | number) {
       network.mirrorNodeBaseURL,
       accountByIdCache,
       nodeByIdCache,
+      user.selectedOrganization,
     );
   }
 
   feePayer.value = getTransactionPayerId(sdkTransaction.value);
 }
 
-const subscribeToTransactionAction = () => {
-  if (!user.selectedOrganization?.serverUrl) return;
-  ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
-    const id = router.currentRoute.value.params.id;
-    const formattedId = Array.isArray(id) ? id[0] : id;
-    await fetchTransaction(formattedId);
-    nextId.value = await nextTransaction.getNext(
-      isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
-    );
-    prevId.value = await nextTransaction.getPrevious(
-      isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
-    );
-  });
-};
+const formattedId = computed(() => {
+  const id = router.currentRoute.value.params.id;
+  return id ? (Array.isArray(id) ? id[0] : id) : null;
+});
 
 /* Hooks */
 onBeforeMount(async () => {
-  const id = router.currentRoute.value.params.id;
+  const id = formattedId.value;
 
   if (!id) {
     router.back();
     return;
   }
 
-  const keepNextTransaction = router.currentRoute.value.query[KEEP_NEXT_QUERY_KEY];
-  if (!keepNextTransaction) nextTransaction.reset();
-
-  subscribeToTransactionAction();
-  const formattedId = Array.isArray(id) ? id[0] : id;
-
-  const result = await Promise.all([
-    fetchTransaction(formattedId),
-    nextTransaction.getNext(
-      isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
-    ),
-    nextTransaction.getPrevious(
-      isLoggedInOrganization(user.selectedOrganization) ? Number(formattedId) : formattedId,
-    ),
-  ]);
-  nextId.value = result[1];
-  prevId.value = result[2];
+  await fetchTransaction();
 });
 
 onBeforeRouteLeave(to => {
@@ -211,11 +189,6 @@ onBeforeRouteLeave(to => {
 });
 
 /* Watchers */
-wsStore.$onAction(ctx => {
-  if (ctx.name !== 'setup') return;
-  ctx.after(() => subscribeToTransactionAction());
-});
-
 watch(() => user.selectedOrganization, router.back);
 
 watch(feePayer, async newFeePayer => {
@@ -240,8 +213,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           :organization-transaction="orgTransaction"
           :sdk-transaction="sdkTransaction as SDKTransaction"
           :local-transaction="localTransaction"
-          :next-id="nextId"
-          :previous-id="prevId"
+          :on-action="fetchTransaction"
         />
 
         <Transition name="fade" mode="out-in">
@@ -392,7 +364,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Type</h4>
                   <p :class="detailItemValueClass" data-testid="p-transaction-details-type">
-                    {{ getTransactionType(sdkTransaction) }}
+                    {{ getTransactionType(sdkTransaction, false, true) }}
                   </p>
                 </div>
 
@@ -400,7 +372,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 <div :class="commonColClass">
                   <h4 :class="detailItemLabelClass">Transaction ID</h4>
                   <p :class="detailItemValueClass" data-testid="p-transaction-details-id">
-                    {{ getTransactionId(sdkTransaction) }}
+                    <TransactionId :transaction-id="sdkTransaction.transactionId" />
                   </p>
                 </div>
 
@@ -456,6 +428,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 <SignatureStatus
                   :signature-key-object="signatureKeyObject"
                   :public-keys-signed="signersPublicKeys"
+                  :show-external="showExternal"
                 />
               </div>
 

@@ -43,6 +43,33 @@ export default function usePersonalPassword() {
     return personalPassword;
   }
 
+  function getPasswordV2(
+    callback: (password: string|null) => void,
+    modalOptions?: {
+      heading?: string | null;
+      subHeading?: string | null;
+    },
+  ): void {
+    assertUserLoggedIn(user.personal);
+
+    if (user.personal.useKeychain) {
+      callback(null);
+    } else {
+      const personalPassword = user.getPassword();
+      if (personalPassword) {
+        // User is already authenticated
+        callback(personalPassword);
+      } else {
+        if (!userPasswordModalRef?.value) throw new Error('User password modal ref is not provided');
+        userPasswordModalRef.value.open(
+          modalOptions?.heading || 'Enter your application password',
+          modalOptions?.subHeading || null,
+          callback,
+        );
+      }
+    }
+  }
+
   function passwordModalOpened(
     personalPasswordResult: PersonalPasswordResult,
   ): personalPasswordResult is false {
@@ -50,5 +77,5 @@ export default function usePersonalPassword() {
     return false;
   }
 
-  return { getPassword, passwordModalOpened };
+  return { getPassword, getPasswordV2, passwordModalOpened };
 }

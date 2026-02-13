@@ -21,6 +21,8 @@ import sdk from './sdk';
 import mnemonic from './mnemonic';
 import publicKeyMapping from './publicKeyMapping';
 import importV1 from './importV1';
+import transactionFile from './transactionFile';
+import settings from './settings';
 
 export default {
   ...updateAPI,
@@ -45,5 +47,7 @@ export default {
   ...sdk,
   ...mnemonic,
   ...publicKeyMapping,
-  ...importV1
+  ...importV1,
+  ...transactionFile,
+  ...settings,
 };

@@ -12,6 +12,7 @@ import { useToast } from 'vue-toast-notification';
 import { add, getAll } from '@renderer/services/accountsService';
 
 import { handleFormatAccount, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -52,7 +53,7 @@ const handleLinkAccount = async (accountId: string) => {
 
   await add(user.personal.id, accountId, network.network, '');
 
-  toast.success('Account linked successfully');
+  toast.success('Account linked successfully', successToastOptions);
 
   emit(
     'update:linkedAccounts',

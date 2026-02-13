@@ -22,6 +22,7 @@ import {
 } from '@renderer/services/transactionGroupsService';
 import EmptyTransactionGroup from '@renderer/components/EmptyTransactionGroup.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Store */
 const user = useUserStore();
@@ -72,7 +73,7 @@ const handleDeleteGroup = async (id: string) => {
 
   await fetchGroups();
 
-  toast.success('Group successfully deleted');
+  toast.success('Group successfully deleted', successToastOptions);
 };
 
 const handleContinueGroup = async (id: string) => {
@@ -183,7 +184,7 @@ watch([currentPage, pageSize], async () => {
                 <td>{{ i + 1 }}</td>
                 <td>
                   <span class="text-secondary">
-                    <DateTimeString :date="group.created_at" :extended="false" />
+                    <DateTimeString :date="group.created_at" compact wrap />
                   </span>
                 </td>
                 <td>

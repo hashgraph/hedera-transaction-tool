@@ -5,9 +5,9 @@ import {
   type Handler,
   type Processable,
 } from '..';
-import type { IGroup, TransactionApproverDto } from '@shared/interfaces';
+import type { TransactionApproverDto } from '@shared/interfaces';
 import type { GroupItem } from '@renderer/stores/storeTransactionGroup';
-import type { ApiGroupItem } from '@renderer/services/organization';
+import type { ApiGroupItem, IGroup } from '@renderer/services/organization';
 
 import { ref } from 'vue';
 import {
@@ -28,7 +28,7 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import { decryptPrivateKey, flattenKeyList } from '@renderer/services/keyPairService';
 import {
   submitTransactionGroup,
-  getApiGroupById,
+  getTransactionGroupById,
   addObservers,
   addApprovers,
 } from '@renderer/services/organization';
@@ -303,7 +303,7 @@ async function submitGroup(groupItems: GroupItem[], signature: string[], keyToSi
       true,
       apiGroupItems,
     );
-    const group: IGroup = await getApiGroupById(user.selectedOrganization.serverUrl, id);
+    const group = await getTransactionGroupById(user.selectedOrganization.serverUrl, id);
     await safeAwait(submitApproversObservers(group));
     emit('transaction:group:submit:success', id);
   } catch (error) {

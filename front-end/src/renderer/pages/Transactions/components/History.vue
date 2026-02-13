@@ -13,27 +13,25 @@ import { TRANSACTION_ACTION } from '@shared/constants';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
-import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
+import useNextTransactionV2, {
+  type TransactionNodeId,
+} from '@renderer/stores/storeNextTransactionV2.ts';
 
-import { useRouter } from 'vue-router';
-import useDisposableWs from '@renderer/composables/useDisposableWs';
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
-import useNextTransactionStore from '@renderer/stores/storeNextTransaction';
+import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 
 import { getTransactions, getTransactionsCount } from '@renderer/services/transactionService';
 import { getHistoryTransactions } from '@renderer/services/organization';
 
 import {
   getTransactionStatus,
-  getTransactionId,
   getStatusFromCode,
   getNotifiedTransactions,
   hexToUint8Array,
-  redirectToDetails,
   isLoggedInOrganization,
   isUserLoggedIn,
 } from '@renderer/utils';
-import * as sdkTransactionUtils from '@renderer/utils/sdk/transactions';
+import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -41,17 +39,17 @@ import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import TransactionsFilter from '@renderer/components/Filter/TransactionsFilter.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
+import TransactionId from '@renderer/components/ui/TransactionId.vue';
+import { useRouter } from 'vue-router';
 
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
 const notifications = useNotificationsStore();
-const wsStore = useWebsocketConnection();
-const nextTransaction = useNextTransactionStore();
+const nextTransaction = useNextTransactionV2();
 
 /* Composables */
-const router = useRouter();
-const ws = useDisposableWs();
+useWebsocketSubscription(TRANSACTION_ACTION, fetchTransactions);
 const { oldNotifications } = useMarkNotifications([
   NotificationType.TRANSACTION_INDICATOR_EXECUTED,
   NotificationType.TRANSACTION_INDICATOR_EXPIRED,
@@ -95,6 +93,9 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 const isLoading = ref(true);
 
+/* Composables */
+const router = useRouter();
+
 /* Computed */
 const generatedClass = computed(() => {
   return localSort.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
@@ -111,13 +112,25 @@ const handleSort = async (
   orgSort.field = organizationField;
   orgSort.direction = direction;
 
-  setGetTransactionsFunction();
   await fetchTransactions();
 };
 
-const handleDetails = (id: string | number) => {
-  setPreviousTransactionsIds(id);
-  redirectToDetails(router, id, true);
+const handleDetails = async (id: string | number) => {
+  let nodeIds: TransactionNodeId[] = [];
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    nodeIds = organizationTransactions.value.map(t => {
+      return {
+        transactionId: t.transactionRaw.id,
+      };
+    });
+  } else {
+    nodeIds = transactions.value.map(t => {
+      return {
+        transactionId: t.id,
+      };
+    });
+  }
+  await nextTransaction.routeDown({ transactionId: id }, nodeIds, router);
 };
 
 /* Functions */
@@ -195,76 +208,25 @@ async function fetchTransactions() {
   }
 }
 
-function setGetTransactionsFunction() {
-  nextTransaction.setGetTransactionsFunction(async (page: number | null, size: number | null) => {
-    if (isLoggedInOrganization(user.selectedOrganization)) {
-      const { items, totalItems } = await getHistoryTransactions(
-        user.selectedOrganization.serverUrl,
-        page || 1,
-        size || 10,
-        orgFilters.value,
-        [{ property: orgSort.field, direction: orgSort.direction }],
-      );
-      return {
-        items: items.map(t => t.id),
-        totalItems,
-      };
-    } else {
-      if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
-      totalItems.value = await getTransactionsCount(user.personal.id);
-      const findArgs = createFindArgs();
-      findArgs.skip = ((page || 1) - 1) * (size || 10);
-      findArgs.take = size || 10;
-      transactions.value = await getTransactions(createFindArgs());
-
-      return {
-        items: transactions.value.map(t => t.id),
-        totalItems: totalItems.value,
-      };
-    }
-  }, true);
+/**
+ * Gets the display transaction type for local transactions.
+ * For freeze transactions, extracts the specific freeze type from the transaction body.
+ */
+function getLocalTransactionDisplayType(transaction: Transaction): string {
+  return getDisplayTransactionType(
+    { localType: transaction.type, transactionBytes: transaction.body },
+    false,
+    true,
+  );
 }
-
-function setPreviousTransactionsIds(id: string | number) {
-  if (isLoggedInOrganization(user.selectedOrganization)) {
-    const selectedTransactionIndex = organizationTransactions.value.findIndex(
-      t => t.transactionRaw.id === id,
-    );
-    const previousTransactionIds = organizationTransactions.value
-      .slice(0, selectedTransactionIndex)
-      .map(t => t.transactionRaw.id);
-    nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
-  } else {
-    const selectedTransactionIndex = transactions.value.findIndex(t => t.id === id);
-    const previousTransactionIds = transactions.value
-      .slice(0, selectedTransactionIndex)
-      .map(t => t.id);
-    nextTransaction.setPreviousTransactionsIds(previousTransactionIds);
-  }
-}
-
-const subscribeToTransactionAction = () => {
-  if (!user.selectedOrganization?.serverUrl) return;
-  ws.on(user.selectedOrganization?.serverUrl, TRANSACTION_ACTION, async () => {
-    await fetchTransactions();
-  });
-};
 
 /* Hooks */
 onBeforeMount(async () => {
-  subscribeToTransactionAction();
-  setGetTransactionsFunction();
   await fetchTransactions();
 });
 
 /* Watchers */
-wsStore.$onAction(ctx => {
-  if (ctx.name !== 'setup') return;
-  ctx.after(() => subscribeToTransactionAction());
-});
-
 watch([currentPage, pageSize, () => user.selectedOrganization, orgFilters], async () => {
-  setGetTransactionsFunction();
   await fetchTransactions();
 });
 
@@ -343,6 +305,25 @@ watch(
                   class="table-sort-link"
                   @click="
                     handleSort(
+                      'description',
+                      localSort.field === 'description' ? getOpositeDirection() : 'asc',
+                      'description',
+                    )
+                  "
+                >
+                  <span>Description</span>
+                  <i
+                    v-if="localSort.field === 'description'"
+                    :class="[generatedClass]"
+                    class="bi text-title"
+                  ></i>
+                </div>
+              </th>
+              <th>
+                <div
+                  class="table-sort-link"
+                  @click="
+                    handleSort(
                       'status_code',
                       localSort.field === 'status_code' ? getOpositeDirection() : 'asc',
                       'statusCode',
@@ -357,7 +338,7 @@ watch(
                   ></i>
                 </div>
               </th>
-              <th>
+              <th v-if="!user.selectedOrganization">
                 <div
                   class="table-sort-link"
                   @click="
@@ -408,10 +389,13 @@ watch(
               >
                 <tr>
                   <td :data-testid="`td-transaction-id-${index}`">
-                    {{ getTransactionId(transaction) }}
+                    <TransactionId :transaction-id="transaction.transaction_id" wrap />
                   </td>
                   <td :data-testid="`td-transaction-type-${index}`">
-                    <span class="text-bold">{{ transaction.type }}</span>
+                    <span class="text-bold">{{ getLocalTransactionDisplayType(transaction) }}</span>
+                  </td>
+                  <td :data-testid="`td-transaction-description-${index}`">
+                    <span class="text-wrap-two-line-ellipsis">{{ transaction.description }}</span>
                   </td>
                   <td :data-testid="`td-transaction-status-${index}`">
                     <span
@@ -422,7 +406,7 @@ watch(
                   </td>
                   <td :data-testid="`td-transaction-createdAt-${index}`">
                     <span class="text-small text-secondary">
-                      <DateTimeString :date="transaction.created_at"/>
+                      <DateTimeString :date="transaction.created_at" compact wrap />
                     </span>
                   </td>
                   <td class="text-center">
@@ -430,7 +414,6 @@ watch(
                       :data-testid="`button-transaction-details-${index}`"
                       @click="handleDetails(transaction.id)"
                       color="secondary"
-                      class="min-w-unset"
                       >Details</AppButton
                     >
                   </td>
@@ -450,11 +433,19 @@ watch(
                   :id="transactionData.transactionRaw.id.toString()"
                 >
                   <td :data-testid="`td-transaction-id-${index}`">
-                    {{ sdkTransactionUtils.getTransactionId(transactionData.transaction) }}
+                    <TransactionId
+                      :transaction-id="transactionData.transaction.transactionId"
+                      wrap
+                    />
                   </td>
                   <td :data-testid="`td-transaction-type-${index}`">
                     <span class="text-bold">{{
-                      sdkTransactionUtils.getTransactionType(transactionData.transaction)
+                      getDisplayTransactionType(transactionData.transaction, false, true)
+                    }}</span>
+                  </td>
+                  <td :data-testid="`td-transaction-description-${index}`">
+                    <span class="text-wrap-two-line-ellipsis">{{
+                      transactionData.transactionRaw.description
                     }}</span>
                   </td>
                   <td :data-testid="`td-transaction-status-${index}`">
@@ -476,13 +467,17 @@ watch(
                       }}</span
                     >
                   </td>
+                  <!--
                   <td :data-testid="`td-transaction-createdAt-${index}`">
                     <span class="text-small text-secondary">
                       <DateTimeString
                         :date="new Date(transactionData.transactionRaw.createdAt)"
+                        compact
+                        wrap
                       />
                     </span>
                   </td>
+-->
                   <td>
                     <span
                       :data-testid="`td-transaction-executedAt-${index}`"
@@ -491,6 +486,8 @@ watch(
                       <DateTimeString
                         v-if="transactionData.transactionRaw.executedAt"
                         :date="new Date(transactionData.transactionRaw.executedAt)"
+                        compact
+                        wrap
                       />
                       <span v-else>N/A</span>
                     </span>
@@ -500,7 +497,6 @@ watch(
                       :data-testid="`button-transaction-details-${index}`"
                       @click="handleDetails(transactionData.transactionRaw.id)"
                       color="secondary"
-                      class="min-w-unset"
                       >Details</AppButton
                     >
                   </td>

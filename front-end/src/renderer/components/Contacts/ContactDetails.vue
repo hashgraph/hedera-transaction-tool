@@ -29,6 +29,7 @@ import ContactDetailsAssociatedAccounts from '@renderer/components/Contacts/Cont
 import ContactDetailsLinkedAccounts from '@renderer/components/Contacts/ContactDetailsLinkedAccounts.vue';
 import RenamePublicKeyModal from '@renderer/pages/Settings/components/PublicKeysTab/components/RenamePublicKeyModal.vue';
 import { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Modals */
 const linkedAccounts = defineModel<HederaAccount[]>('linkedAccounts');
@@ -126,9 +127,12 @@ const handleResend = async () => {
       const email = props.contact.user.email;
       await signUp(user.selectedOrganization.serverUrl, email);
     }
-    toast.success('Email sent successfully');
+    toast.success('Email sent successfully', successToastOptions);
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Error while sending email. Please try again.'));
+    toast.error(
+      getErrorMessage(error, 'Error while sending email. Please try again.'),
+      errorToastOptions,
+    );
   }
 };
 

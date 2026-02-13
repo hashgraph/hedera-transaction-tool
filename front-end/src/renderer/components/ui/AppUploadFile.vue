@@ -4,6 +4,7 @@ import { ref } from 'vue';
 import { useToast } from 'vue-toast-notification';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -39,7 +40,7 @@ const handleFileImport = async (e: Event) => {
 
   if (file) {
     if (file.size > (props.maxSizeKb || 0) * 1024) {
-      toast.error(`File size exceeds ${props.maxSizeKb} KB`);
+      toast.error(`File size exceeds ${props.maxSizeKb} KB`, errorToastOptions);
       return;
     }
 
@@ -67,11 +68,11 @@ const handleFileImport = async (e: Event) => {
 
     fileReader.value.addEventListener('error', () => {
       emit('update:file', null);
-      toast.error('Failed to upload file');
+      toast.error('Failed to upload file', errorToastOptions);
     });
     fileReader.value.addEventListener('abort', () => {
       emit('update:file', null);
-      toast.error('File upload aborted');
+      toast.error('File upload aborted', errorToastOptions);
     });
   }
 };

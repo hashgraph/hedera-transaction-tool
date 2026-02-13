@@ -8,7 +8,7 @@ import {
   DatabaseModule,
   LoggerMiddleware,
   LoggerModule,
-  NotificationsProxyModule,
+  NatsModule,
   HealthModule,
   BlacklistModule,
   SchedulerModule,
@@ -16,9 +16,9 @@ import {
 
 import getEnvFilePaths from './config/envFilePaths';
 
-import { IpThrottlerGuard } from './guards';
+import { FrontendVersionGuard, IpThrottlerGuard } from './guards';
 
-import { EmailThrottlerModule, IpThrottlerModule } from './modules';
+import { EmailThrottlerModule, IpThrottlerModule } from './throttlers';
 
 import { AuthModule } from './auth/auth.module';
 import { TransactionsModule } from './transactions/transactions.module';
@@ -39,13 +39,16 @@ export const config = ConfigModule.forRoot({
     POSTGRES_USERNAME: Joi.string().required(),
     POSTGRES_PASSWORD: Joi.string().required(),
     POSTGRES_SYNCHRONIZE: Joi.boolean().required(),
-    RABBITMQ_URI: Joi.string().required(),
+    NATS_URL: Joi.string().required(),
     JWT_SECRET: Joi.string().required(),
     JWT_EXPIRATION: Joi.number().required(),
     OTP_SECRET: Joi.string().required(),
     OTP_EXPIRATION: Joi.number().required(),
     REDIS_URL: Joi.string().required(),
     REDIS_DEFAULT_TTL_MS: Joi.number().optional(),
+    LATEST_SUPPORTED_FRONTEND_VERSION: Joi.string().required(),
+    MINIMUM_SUPPORTED_FRONTEND_VERSION: Joi.string().required(),
+    FRONTEND_REPO_URL: Joi.string().required(),
   }),
 });
 
@@ -58,9 +61,9 @@ export const config = ConfigModule.forRoot({
     UserKeysModule,
     AuthModule,
     TransactionsModule,
+    NatsModule.forRoot(),
     NotificationPreferencesModule,
     NotificationReceiverModule,
-    NotificationsProxyModule,
     HealthModule,
     IpThrottlerModule,
     EmailThrottlerModule,
@@ -71,6 +74,10 @@ export const config = ConfigModule.forRoot({
     {
       provide: APP_GUARD,
       useClass: IpThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: FrontendVersionGuard,
     },
     LoggerMiddleware,
   ],

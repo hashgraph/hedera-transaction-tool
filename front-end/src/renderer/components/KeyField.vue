@@ -27,6 +27,7 @@ import ComplexKeyModal from '@renderer/components/ComplexKey/ComplexKeyModal.vue
 import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/ComplexKeyAddPublicKeyModal.vue';
 import ComplexKeySelectSavedKey from '@renderer/components/ComplexKey/ComplexKeySelectSavedKey.vue';
 import ComplexKeySaveKeyModal from '@renderer/components/ComplexKey/ComplexKeySaveKeyModal.vue';
+import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = withDefaults(
@@ -117,7 +118,7 @@ const handleComplexKeyUpdate = async (keyList: KeyList) => {
   if (selectedComplexKey.value) {
     const keyListBytes = encodeKey(keyList);
     selectedComplexKey.value = await updateComplexKey(selectedComplexKey.value.id, keyListBytes);
-    toast.success('Key list updated successfully');
+    toast.success('Key list updated successfully', successToastOptions);
   }
 };
 

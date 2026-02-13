@@ -2,6 +2,8 @@ import { Notification } from '@entities';
 import { getNetworkString } from '@app/common';
 
 export const generateTransactionWaitingForSignaturesContent = (...notifications: Notification[]) => {
+  if (notifications.length === 0) return null;
+
   const header =
     notifications.length === 1
       ? `A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction.`

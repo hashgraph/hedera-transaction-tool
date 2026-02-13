@@ -9,6 +9,7 @@ import useLoader from '@renderer/composables/useLoader';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useSetDynamicLayout, { DEFAULT_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
+import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 
 import { login } from '@renderer/services/organization';
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
@@ -26,6 +27,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import ForgotPasswordModal from '@renderer/components/ForgotPasswordModal.vue';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -37,6 +39,7 @@ const withLoader = useLoader();
 useSetDynamicLayout(DEFAULT_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 const { redirectIfRequiredKeysToMigrate } = useRecoveryPhraseHashMigrate();
+const { setLast } = useDefaultOrganization();
 
 /* State */
 const loading = ref(false);
@@ -85,7 +88,7 @@ const handleLogin = async () => {
     );
     await user.refetchOrganizationTokens();
 
-    toast.success('Successfully signed in');
+    toast.success('Successfully signed in', successToastOptions);
 
     loading.value = false;
 
@@ -95,6 +98,11 @@ const handleLogin = async () => {
       10000,
       false,
     );
+
+    if (isOrganizationActive(user.selectedOrganization)) {
+      await setLast(user.selectedOrganization.id);
+    }
+
     await withLoader(
       redirectIfRequiredKeysToMigrate,
       'Failed to redirect to recovery phrase migration',
@@ -102,7 +110,7 @@ const handleLogin = async () => {
       false,
     );
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to sign in'));
+    toast.error(getErrorMessage(error, 'Failed to sign in'), errorToastOptions);
     inputEmailInvalid.value = true;
     inputPasswordInvalid.value = true;
   } finally {

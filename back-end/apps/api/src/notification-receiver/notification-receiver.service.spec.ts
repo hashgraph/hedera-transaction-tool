@@ -1,19 +1,16 @@
-import { mockDeep } from 'jest-mock-extended';
+import { mock, mockDeep } from 'jest-mock-extended';
 
 import { BadRequestException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ClientProxy } from '@nestjs/microservices';
 import { In, Repository } from 'typeorm';
 
 import {
   Filtering,
-  MirrorNodeService,
-  NOTIFICATIONS_SERVICE,
+  NatsPublisherService,
   Pagination,
   Sorting,
 } from '@app/common';
-import { notifyGeneral } from '@app/common/utils/client';
 import { keysRequiredToSign } from '@app/common/utils/transaction';
 import {
   NotificationReceiver,
@@ -31,15 +28,13 @@ import { UpdateNotificationReceiverDto } from './dtos';
 import { TransactionsService } from '../transactions/transactions.service';
 import { AccountCreateTransaction } from '@hashgraph/sdk';
 
-jest.mock('@app/common/utils/client');
 jest.mock('@app/common/utils/transaction');
 
 describe('NotificationReceiverService', () => {
   let service: NotificationReceiverService;
   const repo = mockDeep<Repository<NotificationReceiver>>();
-  const notificationsService = mockDeep<ClientProxy>();
-  const mirrorNodeService = mockDeep<MirrorNodeService>();
-  const transactionsService = mockDeep<TransactionsService>();
+  const notificationsPublisher = mock<NatsPublisherService>();
+  const transactionsService = mock<TransactionsService>();
 
   const user: User = { id: 1 } as User;
   const notificationReceiver: NotificationReceiver = {
@@ -60,12 +55,8 @@ describe('NotificationReceiverService', () => {
           useValue: repo,
         },
         {
-          provide: NOTIFICATIONS_SERVICE,
-          useValue: notificationsService,
-        },
-        {
-          provide: MirrorNodeService,
-          useValue: mirrorNodeService,
+          provide: NatsPublisherService,
+          useValue: notificationsPublisher,
         },
         {
           provide: TransactionsService,
@@ -301,6 +292,7 @@ describe('NotificationReceiverService', () => {
       const accountCreate = new AccountCreateTransaction();
       const transaction = {
         id: 1,
+        transactionId: '0.0.1-1234567890-123456',
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: accountCreate.toBytes(),
         validStart: new Date(),
@@ -313,7 +305,18 @@ describe('NotificationReceiverService', () => {
       await service.remindSigners(user, 1);
 
       expect(transactionsService.getTransactionForCreator).toHaveBeenCalledWith(1, user);
-      expect(notifyGeneral).toHaveBeenCalled();
+      expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+        'notifications.queue.transaction.remind-signers.manual',
+        expect.arrayContaining([
+          expect.objectContaining({
+            entityId: transaction.id,
+            additionalData: {
+              transactionId: transaction.transactionId,
+              network: transaction.mirrorNetwork,
+            }
+          }),
+        ]),
+      );
     });
   });
 });

@@ -15,22 +15,27 @@ import TransactionProcessor, {
 import type { CreateTransactionFunc } from '.';
 
 import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue';
-import { Hbar, KeyList, Timestamp, Transaction } from '@hashgraph/sdk';
+import {
+  FileAppendTransaction,
+  FileUpdateTransaction,
+  Hbar,
+  KeyList,
+  Timestamp,
+  Transaction,
+} from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useAccountId from '@renderer/composables/useAccountId';
 import useLoader from '@renderer/composables/useLoader';
 
 import {
+  assertUserLoggedIn,
   computeSignatureKey,
   getErrorMessage,
   isAccountId,
-  redirectToDetails,
-  redirectToGroupDetails,
 } from '@renderer/utils';
 import { getPropagationButtonLabel } from '@renderer/utils/transactions';
 
@@ -46,6 +51,12 @@ import BaseApproversObserverData from '@renderer/components/Transaction/Create/B
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+import useNextTransactionV2, {
+  type TransactionNodeId,
+} from '@renderer/stores/storeNextTransactionV2.ts';
+import { useRoute, useRouter } from 'vue-router';
+import { addDraft, updateDraft } from '@renderer/services/transactionDraftsService';
 
 /* Props */
 const { createTransaction, preCreateAssert, customRequest } = defineProps<{
@@ -67,10 +78,12 @@ const emit = defineEmits<{
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const nextTransaction = useNextTransactionV2();
 
 /* Composables */
-const toast = useToast();
 const router = useRouter();
+const route = useRoute();
+const toast = useToast();
 const payerData = useAccountId();
 const withLoader = useLoader();
 
@@ -141,7 +154,7 @@ const hasDataChanged = computed(() => hasTransactionChanged.value || hasDescript
 const handleDraftLoaded = async (transaction: Transaction) => {
   initialTransaction.value = transaction;
 
-  const txData = getTransactionCommonData(transaction) as TransactionCommonData;
+  const txData = getTransactionCommonData(transaction);
   payerData.accountId.value = txData.payerId;
   Object.assign(data, txData);
 
@@ -150,7 +163,7 @@ const handleDraftLoaded = async (transaction: Transaction) => {
 
 const handleCreate = async () => {
   basePreCreateAssert();
-  if ((await preCreateAssert?.()) === false) return;
+  if (preCreateAssert?.() === false) return;
 
   const processable =
     customRequest ||
@@ -182,26 +195,29 @@ const handleCreate = async () => {
 const handleExecuted = async ({ success, response, receipt }: ExecutedData) => {
   isProcessed.value = true;
   if (success && response && receipt) {
-    toast.success(`${getTransactionType(transaction.value)} Executed`);
+    toast.success(`${getTransactionType(transaction.value)} Executed`, successToastOptions);
     emit('executed:success', { success, response, receipt });
   }
   emit('executed', { success, response, receipt });
 };
 
-const handleSubmit = (id: number, body: string) => {
+const handleSubmit = async (id: number, body: string) => {
   isProcessed.value = true;
-  redirectToDetails(router, id);
+  const targetNodeId: TransactionNodeId = { transactionId: id };
+  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router);
   emit('submitted', id, body);
 };
 
-const handleGroupSubmit = (id: number) => {
+const handleGroupSubmit = async (id: number) => {
   isProcessed.value = true;
-  redirectToGroupDetails(router, id);
+  const targetNodeId: TransactionNodeId = { groupId: id };
+  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router);
   emit('group:submitted', id);
 };
 
-const handleLocalStored = (id: string) => {
-  redirectToDetails(router, id);
+const handleLocalStored = async (id: string) => {
+  const targetNodeId: TransactionNodeId = { transactionId: id };
+  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router);
 };
 
 const handleGroupAction = (action: 'add' | 'edit', path?: string) => {
@@ -235,10 +251,43 @@ function handleInputValidation(e: Event) {
     validate100CharInput(target.value, 'Transaction Memo');
     memoError.value = false;
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Invalid Transaction Memo'));
+    toast.error(getErrorMessage(error, 'Invalid Transaction Memo'), errorToastOptions);
     memoError.value = true;
   }
 }
+
+const saveDraft = async (): Promise<void> => {
+  // TBD: This method should be passed to SaveDraftButton and replace handleDraft()
+  const draftId = route.query.draftId?.toString();
+  const transactionBytes = getTransactionBytes();
+  if (draftId) {
+    // Draft exists => this is an update
+    await updateDraft(draftId, {
+      transactionBytes: transactionBytes.toString(),
+      description: description.value,
+    });
+    isDraftSaved.value = true;
+    toast.success('Draft updated', successToastOptions);
+  } else {
+    // Draft does not exist yet => this is an add
+    assertUserLoggedIn(user.personal);
+    await addDraft(user.personal.id, transactionBytes, description.value);
+    isDraftSaved.value = true;
+    toast.success('Draft saved', successToastOptions);
+  }
+};
+
+const getTransactionBytes = () => {
+  const transaction = createTransaction({ ...data } as TransactionCommonData);
+  if (
+    transaction instanceof FileUpdateTransaction ||
+    transaction instanceof FileAppendTransaction
+  ) {
+    //@ts-expect-error - contents should be null
+    transaction.setContents(null);
+  }
+  return transaction.toBytes();
+};
 
 /* Functions */
 function basePreCreateAssert() {
@@ -261,6 +310,7 @@ async function updateTransactionKey() {
     network.mirrorNodeBaseURL,
     accountByIdCache,
     nodeByIdCache,
+    user.selectedOrganization,
   );
   transactionKey.value = new KeyList(computedKeys.signatureKeys);
 }
@@ -352,10 +402,12 @@ defineExpose({
       ref="transactionProcessor"
       :observers="observers"
       :approvers="approvers"
+      :has-data-changed="hasDataChanged"
       :on-executed="handleExecuted"
       :on-submitted="handleSubmit"
       :on-group-submitted="handleGroupSubmit"
       :on-local-stored="handleLocalStored"
+      :save-draft="saveDraft"
     />
 
     <BaseDraftLoad @draft-loaded="handleDraftLoaded" />

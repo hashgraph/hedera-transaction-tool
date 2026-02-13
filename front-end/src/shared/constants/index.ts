@@ -1,6 +1,7 @@
 export * from './websocket';
 export * from './errorCodes';
 export * from './network';
+export * from './updateErrors';
 
 export const TRANSACTION_MAX_SIZE = 6144; // in bytes
 export const TRANSACTION_SIGNATURE_ESTIMATED_MAX_SIZE = 100; // in bytes
@@ -28,6 +29,7 @@ export const RECOVERY_PHRASE_HASH_UPDATED = 'recovery_phrase_hash_updated';
 export const WINDOW_STATE = 'window_state';
 export const SKIPPED_PERSONAL_SETUP = 'skipped_personal_setup';
 export const SKIPPED_ORGANIZATION_SETUP = 'skipped_organization_setup';
+export const GO_NEXT_AFTER_SIGN = 'go_next_after_sign';
 
 /* Transaction tabs */
 export const draftsTitle = 'Drafts';
@@ -43,3 +45,4 @@ export const HTX_USER = 'htx_user';
 
 /* Session Storage */
 export const SESSION_STORAGE_AUTH_TOKEN_PREFIX = 'auth-token-';
+export const SESSION_STORAGE_DISMISSED_UPDATE_PROMPT = 'dismissed-update-prompt';

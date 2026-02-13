@@ -2,13 +2,15 @@
 
 1. **Make sure that a Kubernetes Cluster is running**
 
-2. **(First time only)** Create `email-api-secret.yaml` from `email-api-secret.example.yaml` with your Brevo (or other provider) credentials
+2. For automatic context switching before deployment, create a .env file in this folder, following the `.env.example` template
+
+3. **(First time only)** Create `email-api-secret.yaml` from `email-api-secret.example.yaml` with your Brevo (or other provider) credentials
 
 #### You can use either the `deploy.sh` script or manually deploy each resource
 
 #### **Usage of the `deploy.sh` (Preferred)**
 
-3.  Run the script `sh deploy.sh` or `./deploy.sh`
+1. Run the script `sh deploy.sh` or `./deploy.sh`
 
 #### **Manual deployment**
 
@@ -20,6 +22,10 @@
    ```
 
 2. **(On back-end change only)** Build Docker images from the root `back-end` folder
+
+   ```bash
+   docker build -t back-end-migration:1.0.0 -f ./typeorm/Dockerfile .
+   ```
 
    ```bash
    docker build -t back-end-api:1.0.0 -f ./apps/api/Dockerfile .

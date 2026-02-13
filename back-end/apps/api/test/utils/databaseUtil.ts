@@ -3,8 +3,8 @@ import * as pc from 'picocolors';
 import { DataSource, DeepPartial, EntityTarget, ObjectLiteral } from 'typeorm';
 import {
   AccountCreateTransaction,
-  AccountUpdateTransaction,
   AccountId,
+  AccountUpdateTransaction,
   Client,
   FileCreateTransaction,
   KeyList,
@@ -12,22 +12,28 @@ import {
 } from '@hashgraph/sdk';
 
 import {
-  User,
-  UserKey,
-  Transaction,
-  TransactionApprover,
-  TransactionSigner,
-  TransactionObserver,
-  TransactionComment,
-  TransactionGroupItem,
-  TransactionGroup,
-  UserStatus,
-  TransactionStatus,
+  CachedAccount,
+  CachedAccountKey,
+  CachedNode,
+  CachedNodeAdminKey,
   Notification,
   NotificationPreferences,
   NotificationReceiver,
   NotificationType,
-} from '../../../../libs/common/src/database/entities';
+  Transaction,
+  TransactionApprover,
+  TransactionCachedAccount,
+  TransactionCachedNode,
+  TransactionComment,
+  TransactionGroup,
+  TransactionGroupItem,
+  TransactionObserver,
+  TransactionSigner,
+  TransactionStatus,
+  User,
+  UserKey,
+  UserStatus,
+} from '@entities';
 
 import {
   createTransactionId,
@@ -40,14 +46,7 @@ import {
   localnet2,
 } from './hederaUtils';
 
-import {
-  adminEmail,
-  adminPassword,
-  dummyEmail,
-  dummyNewEmail,
-  dummyNewPassword,
-  dummyPassword,
-} from './constants';
+import { adminEmail, adminPassword, dummyEmail, dummyNewEmail, dummyNewPassword, dummyPassword } from './constants';
 import { hash } from './crypto';
 
 let _dataSource: DataSource;
@@ -87,8 +86,7 @@ export async function createUser(
     password,
   });
 
-  const hashed = await hash(password);
-  user.password = hashed;
+  user.password = await hash(password);
 
   try {
     return await userRepo.save(user);
@@ -245,7 +243,7 @@ export async function getUserKey(userId: number, publicKey: string) {
   const userKeyRepo = await getRepository(UserKey);
 
   try {
-    const userKey = await userKeyRepo.findOne({
+    return await userKeyRepo.findOne({
       where: {
         user: {
           id: userId,
@@ -253,7 +251,6 @@ export async function getUserKey(userId: number, publicKey: string) {
         publicKey,
       },
     });
-    return userKey;
   } catch (error) {
     console.log(pc.red(error.message));
   }
@@ -538,7 +535,7 @@ async function connectDatabase() {
     username: process.env.POSTGRES_USERNAME,
     password: process.env.POSTGRES_PASSWORD,
     database: process.env.POSTGRES_DATABASE,
-    synchronize: true,
+    synchronize: false,
     entities: [
       User,
       UserKey,
@@ -549,6 +546,12 @@ async function connectDatabase() {
       TransactionComment,
       TransactionGroupItem,
       TransactionGroup,
+      TransactionCachedAccount,
+      TransactionCachedNode,
+      CachedAccount,
+      CachedAccountKey,
+      CachedNode,
+      CachedNodeAdminKey,
       Notification,
       NotificationReceiver,
       NotificationPreferences,

@@ -8,14 +8,16 @@ import useUserStore from '@renderer/stores/storeUser';
 import { useToast } from 'vue-toast-notification';
 
 import { addOrganization } from '@renderer/services/organizationsService';
+import { healthCheck } from '@renderer/services/organization';
 
 import { getErrorMessage } from '@renderer/utils';
+import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
-import { healthCheck } from '@renderer/services/organization';
+import useVersionCheck from '@renderer/composables/useVersionCheck';
 
 /* Props */
 const props = defineProps<{
@@ -33,10 +35,13 @@ const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
+const { isDismissed } =
+  useVersionCheck();
 
 /* State */
 const nickname = ref('');
 const serverUrl = ref('');
+const newOrgNickname = ref<string>('');
 
 /* Handlers */
 const handleAdd = async () => {
@@ -53,16 +58,22 @@ const handleAdd = async () => {
       throw new Error('Organization does not exist. Please check the server URL');
     }
 
+    // Suppress the version check warning for adding organizations
+    isDismissed.value = true;
+
     const organization = await addOrganization({
       nickname: nickname.value.trim() || `Organization ${user.organizations.length + 1}`,
       serverUrl: serverUrl.value,
       key: '',
     });
-    toast.success('Organization Added');
+
+    newOrgNickname.value = organization.nickname || serverUrl.value;
+
+    toast.success('Organization Added', successToastOptions);
     emit('added', organization);
     emit('update:show', false);
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to add organization'));
+    toast.error(getErrorMessage(error, 'Failed to add organization'), errorToastOptions);
   }
 };
 
@@ -72,9 +83,11 @@ watch(
   () => {
     nickname.value = '';
     serverUrl.value = '';
+    newOrgNickname.value = '';
   },
 );
 </script>
+
 <template>
   <AppModal
     :show="show"
