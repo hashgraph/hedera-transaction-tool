@@ -58,12 +58,29 @@ function buildEligibilityConditions(
   user: User,
   roles: Roles,
   addParam: (value: any) => string,
-  getUserKeyIds: () => number[]
 ): string[] {
   const eligibilityConditions: string[] = [];
+  let cachedData: { keyIds: number[], publicKeys: string[] } | null = null;
+
+  const getUserKeyData = () => {
+    if (!cachedData) {
+      const keyIds: number[] = [];
+      const publicKeys: string[] = [];
+
+      for (const key of user.keys) {
+        keyIds.push(key.id);
+        publicKeys.push(key.publicKey);
+      }
+
+      cachedData = { keyIds, publicKeys };
+    }
+    return cachedData;
+  };
 
   if (roles.signer) {
-    const keyParam = addParam(getUserKeyIds());
+    const { keyIds, publicKeys } = getUserKeyData();
+    const keyParam = addParam(keyIds);
+    const publicKeysParam = addParam(publicKeys);
 
     eligibilityConditions.push(`
       (
@@ -92,6 +109,10 @@ function buildEligibilityConditions(
               ON uk.${sql.col(UserKey, 'publicKey')} = cnak.${sql.col(CachedNodeAdminKey, 'publicKey')}
             WHERE tn.${sql.col(TransactionCachedNode, 'transactionId')} = t.${sql.col(Transaction, 'id')}
               AND uk.${sql.col(UserKey, 'id')} = ANY(${keyParam})
+          )
+          OR
+          (
+            t.${sql.col(Transaction, 'publicKeys')} && ${publicKeysParam}
           )
         )
         AND (
@@ -132,13 +153,26 @@ function buildEligibilityConditions(
                   AND ts.${sql.col(TransactionSigner, 'userKeyId')} = uk.${sql.col(UserKey, 'id')}
               )
           )
+          OR
+          (
+            t.${sql.col(Transaction, 'publicKeys')} && ${publicKeysParam}
+            AND NOT EXISTS (
+              SELECT 1
+              FROM ${sql.table(TransactionSigner)} ts
+              JOIN ${sql.table(UserKey)} uk
+                ON uk.${sql.col(UserKey, 'id')} = ts.${sql.col(TransactionSigner, 'userKeyId')}
+              WHERE ts.${sql.col(TransactionSigner, 'transactionId')} = t.${sql.col(Transaction, 'id')}
+                AND uk.${sql.col(UserKey, 'publicKey')} = ANY(t.${sql.col(Transaction, 'publicKeys')})
+                AND uk.${sql.col(UserKey, 'id')} = ANY(${keyParam})
+            )
+          )
         )
       )
     `);
   }
 
   if (roles.creator) {
-    const keyParam = addParam(getUserKeyIds());
+    const keyParam = addParam(getUserKeyData().keyIds);
     eligibilityConditions.push(`t.${sql.col(Transaction, 'creatorKeyId')} = ANY(${keyParam})`);
   }
 
@@ -186,8 +220,6 @@ function buildWhereClause(
   const conditions: string[] = [];
   const values: any[] = [];
 
-  let cachedUserKeyIds: number[] | null = null;
-
   let paramIndex = 1;
 
   // Helper to add a parameter and get its $N reference
@@ -201,15 +233,8 @@ function buildWhereClause(
   conditions.push(...filterConditions);
 
   if (user && roles) {
-    const getUserKeyIds = () => {
-      if (!cachedUserKeyIds) {
-        cachedUserKeyIds = user.keys.map(k => k.id);
-      }
-      return cachedUserKeyIds;
-    };
-
     // Build eligibility conditions
-    const eligibilityConditions = buildEligibilityConditions(sql, user, roles, addParam, getUserKeyIds);
+    const eligibilityConditions = buildEligibilityConditions(sql, user, roles, addParam);
 
     if (eligibilityConditions.length > 0) {
       conditions.push(`(${eligibilityConditions.join(' OR ')})`);
