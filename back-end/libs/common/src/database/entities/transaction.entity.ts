@@ -60,6 +60,10 @@ export const MAX_TRANSACTION_BYTE_SIZE = 6_144;
 @Entity()
 @Index(['status', 'mirrorNetwork'])
 @Index(['creatorKeyId'])
+@Index('idx_transaction_public_keys_gin', {
+  // Tell TypeORM this index exists but is managed by migrations
+  synchronize: false,
+})
 export class Transaction {
   @PrimaryGeneratedColumn()
   id: number;
