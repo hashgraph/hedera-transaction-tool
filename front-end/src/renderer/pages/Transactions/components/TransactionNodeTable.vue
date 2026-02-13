@@ -29,10 +29,14 @@ import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 import {
   sortTransactionNodes,
   TransactionNodeSortField,
+  sortFieldToUrl,
+  sortFieldFromUrl,
+  TRANSACTION_NODE_SORT_URL_VALUES,
 } from '@renderer/utils/sortTransactionNodes.ts';
 import TransactionsFilterV2 from '@renderer/components/Filter/v2/TransactionsFilterV2.vue';
 import { TRANSACTION_ACTION } from '@shared/constants';
 import { useRouter } from 'vue-router';
+import useTableQueryState from '@renderer/composables/useTableQueryState.ts';
 
 const NOTIFICATION_TYPES_BY_COLLECTION: Record<TransactionNodeCollection, NotificationType[]> = {
   [TransactionNodeCollection.READY_FOR_REVIEW]: [],
@@ -75,14 +79,24 @@ const { oldNotifications } = useMarkNotifications(
   NOTIFICATION_TYPES_BY_COLLECTION[props.collection] ?? [],
 );
 
+const defaults = initialSort();
+const { initialPage, initialSortField, initialSortDirection, syncToUrl } = useTableQueryState(
+  TRANSACTION_NODE_SORT_URL_VALUES,
+  sortFieldToUrl(defaults.field),
+  defaults.direction,
+);
+
 /* State */
 const nodes = ref<ITransactionNode[]>([]);
 const isLoading = ref(true);
 const sort = ref<{
   field: TransactionNodeSortField;
   direction: 'asc' | 'desc';
-}>(initialSort());
-const currentPage = ref(1);
+}>({
+  field: sortFieldFromUrl(initialSortField) ?? defaults.field,
+  direction: initialSortDirection,
+});
+const currentPage = ref(initialPage);
 const pageSize = ref(10);
 const statusFilter = ref<TransactionStatus[]>([]);
 const transactionTypeFilter = ref<BackEndTransactionType[]>([]);
@@ -174,8 +188,8 @@ async function fetchNodes(): Promise<void> {
         statusFilter.value,
         transactionTypeFilter.value,
       );
-      resetPagination();
       sortNodes();
+      clampPage();
     } catch {
       toast.error(loadErrorMessage.value, errorToastOptions);
     } finally {
@@ -194,18 +208,29 @@ function sortNodes(): void {
   }
 }
 
-function resetPagination(): void {
-  currentPage.value = 1;
+function clampPage(): void {
+  const totalPages = Math.max(1, Math.ceil(nodes.value.length / pageSize.value));
+  if (currentPage.value > totalPages) {
+    currentPage.value = totalPages;
+  }
 }
 
 /* Watchers */
 watch(sort, () => {
-    resetPagination();
+    currentPage.value = 1;
     sortNodes();
+    syncToUrl(currentPage.value, sortFieldToUrl(sort.value.field), sort.value.direction);
   },
 );
 
-watch([statusFilter, transactionTypeFilter], fetchNodes, { deep: true });
+watch(currentPage, () => {
+  syncToUrl(currentPage.value, sortFieldToUrl(sort.value.field), sort.value.direction);
+});
+
+watch([statusFilter, transactionTypeFilter], () => {
+  currentPage.value = 1;
+  fetchNodes();
+}, { deep: true });
 
 /* Hooks */
 onMounted(fetchNodes);
