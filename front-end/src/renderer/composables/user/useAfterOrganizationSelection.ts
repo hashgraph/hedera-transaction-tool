@@ -11,7 +11,6 @@ import { get as getStoredMnemonics } from '@renderer/services/mnemonicService';
 import {
   assertUserLoggedIn,
   getLocalKeyPairs,
-  isLoggedInOrganization,
   isLoggedOutOrganization,
   isOrganizationActive,
   isUserLoggedIn,
@@ -64,11 +63,7 @@ export default function useAfterOrganizationSelection() {
       return;
     }
 
-    const shouldSetup = await accountSetup.shouldShowAccountSetup();
-    const shouldNavigateToSetup =
-      shouldSetup && organization && !isLoggedInOrganization(organization);
-
-    if (shouldNavigateToSetup) {
+    if (await accountSetup.shouldShowAccountSetup()) {
       await router.push({ name: 'accountSetup' });
       return;
     }
