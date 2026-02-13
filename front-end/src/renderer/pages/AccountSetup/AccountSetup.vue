@@ -76,9 +76,9 @@ const handleNext = async () => {
     try {
       nextLoadingText.value = 'Saving...';
       await keyPairsComponent.value?.handleSave();
-      user.setAccountSetupStarted(false);
     } finally {
       nextLoadingText.value = null;
+      user.setAccountSetupStarted(false);
       await router.push({ name: 'transactions' });
     }
   }
