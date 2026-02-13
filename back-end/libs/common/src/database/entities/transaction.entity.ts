@@ -122,6 +122,12 @@ export class Transaction {
   @Column({ nullable: true })
   cutoffAt?: Date;
 
+  /**
+   * List of keys from the newKey, where applicable.
+   */
+  @Column({ type: 'text', array: true, nullable: true })
+  publicKeys: string[] | null;
+
   @CreateDateColumn()
   createdAt: Date;
 
