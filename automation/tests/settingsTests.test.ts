@@ -5,8 +5,14 @@ import { LoginPage } from '../pages/LoginPage.js';
 import { SettingsPage } from '../pages/SettingsPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { resetDbState } from '../utils/databaseUtil.js';
-import { closeApp, generateRandomEmail, generateRandomPassword, setupApp } from '../utils/util.js';
-import { generateEd25519KeyPair, getPrivateKey } from '../utils/keyUtil.js';
+import {
+  closeApp,
+  generateRandomEmail,
+  generateRandomPassword,
+  getPrivateKeyEnv,
+  setupApp,
+} from '../utils/util.js';
+import { generateEd25519KeyPair } from '../utils/keyUtil.js';
 
 let app: ElectronApplication;
 let window: Page;
@@ -157,7 +163,7 @@ test.describe('Settings tests', () => {
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnECDSADropDown();
 
-    const privateKey = getPrivateKey();
+    const privateKey = getPrivateKeyEnv();
 
     await settingsPage.fillInECDSAPrivateKey(privateKey!);
     await settingsPage.fillInECDSANickname('Test-ECDSA-Import');

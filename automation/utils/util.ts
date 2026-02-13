@@ -58,12 +58,29 @@ export async function closeApp(app: ElectronApplication) {
   await app.close();
 }
 
+const LOCALNET_OPERATOR_KEY = '0x91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137'; // genesis account key
+
+// Retrieves the private key from environment variables
+export function getPrivateKeyEnv(): string | null {
+  return process.env.PRIVATE_KEY && process.env.PRIVATE_KEY !== '' ? process.env.PRIVATE_KEY : null;
+}
+
+// Retrieves the operator private key from environment variables
+export function getOperatorKeyEnv(): string {
+  return process.env.OPERATOR_KEY && process.env.OPERATOR_KEY !== '' ? process.env.OPERATOR_KEY : LOCALNET_OPERATOR_KEY;
+}
+
+// Retrieves the network used from environment variables
+export function getNetworkEnv(): string {
+  return process.env.ENVIRONMENT && process.env.ENVIRONMENT !== '' ? process.env.ENVIRONMENT : 'LOCALNET';
+}
+
 export async function setupEnvironmentForTransactions(
   window: Page,
-  privateKey = process.env.PRIVATE_KEY,
+  privateKey = getPrivateKeyEnv(),
 ) {
-  const env = process.env.ENVIRONMENT;
-  if (env?.toUpperCase() === 'LOCALNET') {
+  const network = getNetworkEnv().toUpperCase();
+  if (network === 'LOCALNET') {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnLocalNodeTab();
@@ -78,7 +95,7 @@ export async function setupEnvironmentForTransactions(
     if (!modalClosedLocalnet) {
       throw new Error('Import modal did not close within 10 seconds (LOCALNET)');
     }
-  } else if (env?.toUpperCase() === 'TESTNET') {
+  } else if (network === 'TESTNET') {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnTestnetTab();
@@ -93,7 +110,7 @@ export async function setupEnvironmentForTransactions(
     if (!modalClosedTestnet) {
       throw new Error('Import modal did not close within 10 seconds (TESTNET)');
     }
-  } else if (env?.toUpperCase() === 'PREVIEWNET') {
+  } else if (network === 'PREVIEWNET') {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnPreviewnetTab();
@@ -112,7 +129,7 @@ export async function setupEnvironmentForTransactions(
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnCustomNodeTab();
-    await settingsPage.fillInMirrorNodeBaseURL(env ?? '');
+    await settingsPage.fillInMirrorNodeBaseURL(getNetworkEnv() ?? '');
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnED25519DropDown();

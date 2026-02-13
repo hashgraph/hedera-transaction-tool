@@ -3,12 +3,6 @@ import * as bip39 from 'bip39';
 import { proto } from '@hashgraph/proto';
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 
-
-// Retrieves the private key from environment variables
-export function getPrivateKey() {
-  return process.env.PRIVATE_KEY;
-}
-
 // Generates an ECDSA key pair
 // export function generateECDSAKeyPair(curve = 'secp256k1') {
 //   const { privateKey } = crypto.generateKeyPairSync('ec', {
