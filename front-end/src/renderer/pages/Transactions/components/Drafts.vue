@@ -76,7 +76,6 @@ const handleSort = async (field: string, direction: string) => {
   sortField.value = field;
   sortDirection.value = direction;
   currentPage.value = 1;
-  syncToUrl(currentPage.value, sortField.value, sortDirection.value as 'asc' | 'desc');
 
   switch (field) {
     case 'created_at': {
