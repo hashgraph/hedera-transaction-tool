@@ -22,18 +22,9 @@ These tests measure **backend/API performance**:
 
 ## Prerequisites
 
-### Local
-
 - **k6** - Install with `brew install k6` (macOS) or see [k6 installation docs](https://grafana.com/docs/k6/latest/set-up/install-k6/)
-- **Node.js 22+** - Required for build tooling and seeding scripts
 - **pnpm** - Package manager (`npm install -g pnpm`)
-- **Backend running** - The backend API must be running locally (see below)
-
-### Staging (additional)
-
-- VPN access to the network
-- **Teleport CLI** installed and authenticated (`tsh`)
-- Appropriate IAM permissions for staging database access
+- **Backend running** - See the backend README for setup instructions
 
 ## Local Setup
 
@@ -43,11 +34,7 @@ These tests measure **backend/API performance**:
    pnpm install
    ```
 
-2. **Start the backend** (in a separate terminal):
-   ```bash
-   cd back-end
-   docker-compose up
-   ```
+2. **Start the backend** (see the backend `README.md` for detailed instructions).
 
 3. **Run the smoke test** to verify everything works:
    ```bash
@@ -55,6 +42,8 @@ These tests measure **backend/API performance**:
    npm run k6:smoke
    ```
    This will automatically seed test data, build the TypeScript, and run a 30-second health check.
+
+   > **Note:** Local tests assume the backend is running on HTTP (`http://localhost:3001`). If using HTTPS, set the `BASE_URL` environment variable: `k6 run -e BASE_URL=https://localhost:3001 k6/dist/smoke-test.js`
 
 4. **Run the full baseline** (all 7 tabs at 1 VU):
    ```bash
@@ -71,28 +60,21 @@ All `k6:*` test scripts (smoke, tabs, load tests) automatically handle seeding a
 
 ## Staging Setup
 
-The `:staging` scripts run tests against `staging-transaction-tool.swirldslabs-devops.com` for production readiness validation.
+Running against a staging environment requires database access for seeding test data and the staging API URL.
 
-### Step 1: Authenticate with Teleport
+### Step 1: Configure database connection
 
-```bash
-tsh login --proxy=hashgraph.teleport.sh:443 hashgraph.teleport.sh
-```
-
-### Step 2: Start the database tunnel
-
-Open a **separate terminal** and keep it running:
+Set the `POSTGRES_*` environment variables to point to the staging database:
 
 ```bash
-tsh proxy db --tunnel gcp-tt-staging-postgres \
-  --db-user=teleport-cloudsql-user@transaction-tool-dev.iam \
-  --db-name=staging \
-  --port 54320
+export POSTGRES_HOST=<db-host>
+export POSTGRES_PORT=<db-port>
+export POSTGRES_DATABASE=<db-name>
+export POSTGRES_USERNAME=<db-user>
+export POSTGRES_PASSWORD=<db-password>  # leave empty if using IAM auth
 ```
 
-This tunnel is required for seeding test data to the staging database. The staging npm scripts expect the tunnel on `localhost:54320`.
-
-### Step 3: Run tests
+### Step 2: Run tests
 
 ```bash
 cd automation
@@ -107,20 +89,22 @@ npm run k6:baseline:staging
 npm run k6:ready-to-sign:staging
 ```
 
-Staging scripts automatically seed data via the Teleport tunnel before running tests.
+The `:staging` scripts pass `-e ENV=staging` to k6, which reads the `BASE_URL` from the staging environment config. Set `BASE_URL` to override the staging API URL:
+
+```bash
+k6 run -e ENV=staging -e BASE_URL=https://your-staging-url.com k6/dist/smoke-test.js
+```
 
 ### Configurable Load (VUs)
 
-The number of virtual users (VUs) can be overridden for any load test using the `VUS` environment variable:
+The number of virtual users (VUs) can be overridden using the `VUS` environment variable:
 
 ```bash
 # Default: 100 VUs
 npm run k6:ready-to-sign:staging
 
-# Custom VUs (requires raw k6 command):
-k6 run -e VUS=50 -e ENV=staging \
-  -e USER_EMAIL=k6perf@test.com -e USER_PASSWORD=Password123 \
-  k6/dist/ready-to-sign.js
+# Custom VUs:
+k6 run -e VUS=50 -e ENV=staging k6/dist/ready-to-sign.js
 ```
 
 **Recommended progression:**
@@ -132,8 +116,8 @@ k6 run -e VUS=50 -e ENV=staging \
 ### Important Notes
 
 - The `FRONTEND_VERSION` constant in `src/config/constants.ts` must match the backend's minimum supported version
-- Tests run against `staging-transaction-tool.swirldslabs-devops.com` (not through the tunnel — the tunnel is only for database seeding)
 - Staging tests must be run **sequentially** (not in parallel) to get accurate performance measurements
+- Default test credentials (`k6perf@test.com` / `Password123`) are baked into the JS code; override via `-e USER_EMAIL=... -e USER_PASSWORD=...`
 
 ## Reports
 
@@ -202,8 +186,6 @@ k6/
 
 For the full list of scripts, see `automation/package.json`.
 
-### Local
-
 | Script | Description | Duration |
 |--------|-------------|----------|
 | `k6:build` | Build TypeScript to JavaScript | - |
@@ -220,25 +202,8 @@ For the full list of scripts, see `automation/package.json`.
 | `k6:load:all` | Full load test suite (all endpoints) | 35 min |
 | `k6:seed` | Seed test users only | - |
 | `k6:seed:all` | Seed users + transactions | - |
-| `k6:bootstrap:complex` | Setup complex key account (localnet) | - |
-| `grafana:start` | Start Grafana + InfluxDB | - |
-| `grafana:stop` | Stop monitoring stack | - |
 
-Add `:grafana` suffix to individual test scripts for Grafana dashboard output (e.g., `k6:tabs:grafana`).
-
-### Staging
-
-| Script | Description | Duration |
-|--------|-------------|----------|
-| `k6:smoke:staging` | Smoke test against staging | 30s |
-| `k6:tabs:staging` | All tabs baseline | 2 min |
-| `k6:baseline:staging` | Smoke + tabs combined | 2.5 min |
-| `k6:ready-to-sign:staging` | Ready to Sign load test | 7 min |
-| `k6:seed:staging` | Seed test user to staging DB | - |
-| `k6:seed:data:staging` | Seed transaction data to staging | - |
-| `k6:seed:all:staging` | Seed user + transactions to staging | - |
-
-Other endpoints can be tested against staging using the raw k6 command with `-e ENV=staging` (see [Configurable Load](#configurable-load-vus) above).
+Add `:staging` suffix for staging environment (e.g., `k6:smoke:staging`). Add `:grafana` suffix for Grafana dashboard output (e.g., `k6:tabs:grafana`).
 
 ## Development
 
@@ -259,7 +224,7 @@ npm run k6:smoke  # Builds then runs
 3. Import helpers from `../lib/helpers`
 4. Export `options`, `setup()`, `default()`, `handleSummary()`
 5. Add a webpack entry in `webpack.config.js`
-6. Add npm scripts in `package.json` (local + staging variants)
+6. Add npm scripts in `package.json`
 7. Rebuild: `npm run k6:build`
 
 ### Type Definitions
@@ -284,5 +249,7 @@ npm run k6:tabs:grafana
 # Stop when done
 npm run grafana:stop
 ```
+
+> **Note:** Requires Docker running. If Grafana doesn't load, verify Docker is running and port 3000 is available.
 
 The Grafana dashboard shows live metrics: request rates, response times, error rates, and VU count over time.
