@@ -64,8 +64,11 @@ const handleNext = async () => {
   </div>
 </template>
 <style scoped>
+.btn-group {
+  height: 40px;
+}
 .page-counter {
-  min-width: 80px;
+  min-width: 50px;
   opacity: 0.8;
   padding-left: 8px;
   padding-right: 8px;
