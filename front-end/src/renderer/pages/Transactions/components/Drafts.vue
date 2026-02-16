@@ -256,12 +256,6 @@ async function fetchDrafts() {
     totalItems.value = draftsCount + groupsCount;
     list.value = [...drafts.value, ...groups.value];
     await handleSort(sortField.value, sortDirection.value);
-
-    // Clamp page if it exceeds total pages (e.g. restored from URL)
-    const totalPages = Math.max(1, Math.ceil(totalItems.value / pageSize.value));
-    if (currentPage.value > totalPages) {
-      currentPage.value = totalPages;
-    }
   } finally {
     isLoading.value = false;
   }
