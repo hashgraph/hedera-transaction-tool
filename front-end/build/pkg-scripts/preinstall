@@ -67,7 +67,23 @@ show_dialog() {
 graceful_quit() {
   local escaped_name
   escaped_name=$(escape_for_applescript "${APP_NAME}")
-  /usr/bin/osascript -e "tell application \"${escaped_name}\" to quit" 2>/dev/null || true
+
+  # Try Apple Event quit as the console user so it reaches the app's GUI session
+  local console_user
+  console_user=$(/usr/sbin/scutil <<< "show State:/Users/ConsoleUser" \
+                 | awk '/Name :/ { print $3 }')
+
+  if [ -n "${console_user}" ] && [ "${console_user}" != "loginwindow" ]; then
+    local console_uid
+    console_uid=$(id -u "${console_user}")
+    launchctl asuser "${console_uid}" sudo -u "${console_user}" \
+      /usr/bin/osascript -e "tell application \"${escaped_name}\" to quit" 2>/dev/null || true
+  else
+    /usr/bin/osascript -e "tell application \"${escaped_name}\" to quit" 2>/dev/null || true
+  fi
+
+  # Fallback: SIGTERM in case the Apple Event didn't reach the process
+  pkill -15 -x "${PROCESS_NAME}" 2>/dev/null || true
 }
 
 force_quit() {
