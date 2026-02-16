@@ -841,7 +841,10 @@ export class TransactionPage extends BasePage {
   }
 
   async clickOnCancelTransaction() {
-    await this.click(this.buttonCancelTransactionSelector);
+    const modalSelector = `[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"]`;
+    const cancelButtonSelector = `${modalSelector} [data-testid="${this.buttonCancelTransactionSelector}"]`;
+    await this.window.waitForSelector(cancelButtonSelector, { state: 'visible', timeout: 15000 });
+    await this.window.click(cancelButtonSelector);
   }
 
   async clickAddButton(depth: string) {
