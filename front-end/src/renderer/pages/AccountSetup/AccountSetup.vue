@@ -70,9 +70,9 @@ const handleBack = () => {
 };
 
 const handleNext = async () => {
-  currentStep.value = nextStep.value;
-
-  if (currentStep.value === null) {
+  if (nextStep.value !== null) {
+    currentStep.value = nextStep.value;
+  } else {
     try {
       nextLoadingText.value = 'Saving...';
       await keyPairsComponent.value?.handleSave();
