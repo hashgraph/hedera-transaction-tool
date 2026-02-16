@@ -21,11 +21,11 @@ export const ENVIRONMENTS: EnvironmentMap = {
     name: 'Local Development',
   },
   development: {
-    baseUrl: 'https://development-transaction-tool.swirldslabs-devops.com',
-    name: 'Development (Teleport DB)',
+    baseUrl: __ENV.BASE_URL || '',
+    name: 'Development',
   },
   staging: {
-    baseUrl: 'https://staging-transaction-tool.swirldslabs-devops.com',
+    baseUrl: __ENV.BASE_URL || '',
     name: 'Staging',
   },
   prod: {

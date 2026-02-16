@@ -15,17 +15,11 @@
  *   TEST_USER_EMAIL - Email of test user to link transactions to (default: k6perf@test.com)
  *   SEED_POOL       - Set to 'true' to seed for all pool users
  *
- * Local database (default):
+ * Database connection:
  *   POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DATABASE, POSTGRES_USERNAME, POSTGRES_PASSWORD
- *
- * Dev/Staging database (via Teleport tunnel):
- *   STAGING_POSTGRES_HOST      - Tunnel host (e.g., localhost)
- *   STAGING_POSTGRES_PORT      - Tunnel port (assigned by tsh proxy)
- *   STAGING_POSTGRES_DATABASE  - Database name (default: development)
- *   STAGING_POSTGRES_USERNAME  - IAM user from Teleport
- *   STAGING_POSTGRES_PASSWORD  - Usually empty for IAM auth
  */
 
+import 'dotenv/config';
 import { Client, QueryResult } from 'pg';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -63,9 +57,6 @@ const GROUP_SIZE = DATA_VOLUMES.GROUP_SIZE;
 const EXECUTION_COUNT = DATA_VOLUMES.READY_FOR_EXECUTION;
 const DEBUG = process.env.DEBUG === 'true';
 
-// Check if staging-specific environment variables are set
-const IS_STAGING = Boolean(process.env.STAGING_POSTGRES_HOST);
-
 interface DbConfig {
   host: string;
   port: number;
@@ -75,28 +66,6 @@ interface DbConfig {
 }
 
 function getDbConfig(): DbConfig {
-  if (IS_STAGING) {
-    // Staging mode: use STAGING_POSTGRES_* vars (e.g., via Teleport tunnel)
-    if (!process.env.STAGING_POSTGRES_HOST) {
-      throw new Error('STAGING_POSTGRES_HOST is required for staging mode');
-    }
-    if (!process.env.STAGING_POSTGRES_USERNAME) {
-      console.error('\nError: STAGING_POSTGRES_USERNAME is required for staging mode.');
-      console.error('Set it to your Teleport IAM username (usually your email):\n');
-      console.error('  export STAGING_POSTGRES_USERNAME="your.email@swirldslabs.com"');
-      console.error('  pnpm run k6:tabs:dev\n');
-      process.exit(1);
-    }
-    return {
-      host: process.env.STAGING_POSTGRES_HOST,
-      port: Number.parseInt(process.env.STAGING_POSTGRES_PORT || '5432', 10),
-      database: process.env.STAGING_POSTGRES_DATABASE || 'development',
-      user: process.env.STAGING_POSTGRES_USERNAME,
-      password: process.env.STAGING_POSTGRES_PASSWORD || '',
-    };
-  }
-
-  // Local mode: use standard POSTGRES_* vars
   return {
     host: process.env.POSTGRES_HOST || 'localhost',
     port: Number.parseInt(process.env.POSTGRES_PORT || '5432', 10),
@@ -1066,8 +1035,7 @@ async function seedData(): Promise<void> {
 
   try {
     await client.connect();
-    const modeLabel = IS_STAGING ? 'STAGING' : 'LOCAL';
-    console.log(`Connected to PostgreSQL [${modeLabel}] - database: ${dbConfig.database}`);
+    console.log(`Connected to PostgreSQL (${dbConfig.host}:${dbConfig.port}) - database: ${dbConfig.database}`);
 
     const usersToSeed: string[] = [];
 
@@ -1115,9 +1083,7 @@ async function seedData(): Promise<void> {
 
     if (usersToSeed.length === 1) {
       console.log('\nRun k6 tests with:');
-      console.log(
-        `  k6 run -e USER_EMAIL='${usersToSeed[0]}' -e USER_PASSWORD='yourpassword' k6/dist/tab-load-times.js`,
-      );
+      console.log('  npm run k6:tabs');
     } else {
       console.log('\nPool users ready for UI performance tests.');
     }

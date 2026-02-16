@@ -19,6 +19,7 @@
  *   npx tsx helpers/create-complex-accounts.ts --simple          # Faster, fewer keys
  */
 
+import 'dotenv/config';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
@@ -213,18 +214,17 @@ async function seedStagingUserKeys(
   userEmail: string,
   force: boolean = false,
 ): Promise<{ userId: number; seeded: boolean; firstUserKeyId: number }> {
-  const pgHost = process.env.STAGING_POSTGRES_HOST;
-  const pgPassword = process.env.STAGING_POSTGRES_PASSWORD;
-  if (!pgHost || !pgPassword) {
-    throw new Error('STAGING_POSTGRES_HOST and STAGING_POSTGRES_PASSWORD required for PostgreSQL seeding');
+  const pgHost = process.env.POSTGRES_HOST;
+  if (!pgHost) {
+    throw new Error('POSTGRES_HOST is required for PostgreSQL seeding');
   }
 
   const client = new PgClient({
     host: pgHost,
-    port: Number.parseInt(process.env.STAGING_POSTGRES_PORT || '5432', 10),
-    database: process.env.STAGING_POSTGRES_DATABASE || 'postgres',
-    user: process.env.STAGING_POSTGRES_USERNAME || 'postgres',
-    password: pgPassword,
+    port: Number.parseInt(process.env.POSTGRES_PORT || '5432', 10),
+    database: process.env.POSTGRES_DATABASE || 'postgres',
+    user: process.env.POSTGRES_USERNAME || 'postgres',
+    password: process.env.POSTGRES_PASSWORD || 'postgres',
   });
 
   await client.connect();
@@ -295,8 +295,8 @@ async function seedStagingPostgres(
   keyResult: ComplexKeyResult,
   force: boolean,
 ): Promise<void> {
-  if (!process.env.STAGING_POSTGRES_HOST) {
-    console.log('\nSkipping PostgreSQL seeding (STAGING_POSTGRES_HOST not set)');
+  if (!process.env.POSTGRES_HOST) {
+    console.log('\nSkipping PostgreSQL seeding (POSTGRES_HOST not set)');
     return;
   }
 
@@ -319,11 +319,11 @@ async function seedStagingPostgres(
   }
 
   const pgClient = new PgClient({
-    host: process.env.STAGING_POSTGRES_HOST,
-    port: Number.parseInt(process.env.STAGING_POSTGRES_PORT || '5432', 10),
-    database: process.env.STAGING_POSTGRES_DATABASE || 'postgres',
-    user: process.env.STAGING_POSTGRES_USERNAME || 'postgres',
-    password: process.env.STAGING_POSTGRES_PASSWORD,
+    host: process.env.POSTGRES_HOST,
+    port: Number.parseInt(process.env.POSTGRES_PORT || '5432', 10),
+    database: process.env.POSTGRES_DATABASE || 'postgres',
+    user: process.env.POSTGRES_USERNAME || 'postgres',
+    password: process.env.POSTGRES_PASSWORD || 'postgres',
   });
 
   await pgClient.connect();
@@ -470,13 +470,13 @@ Environment Variables (required for --staging):
   OPERATOR_KEY      Hedera operator private key (DER format)
   HEDERA_NETWORK    Set to 'testnet' for staging mode
 
-Environment Variables (optional for --staging PostgreSQL seeding):
-  STAGING_USER_EMAIL        Email of staging user to seed keys for
-  STAGING_POSTGRES_HOST     PostgreSQL host for staging
-  STAGING_POSTGRES_PORT     PostgreSQL port (default: 5432)
-  STAGING_POSTGRES_DATABASE PostgreSQL database (default: postgres)
-  STAGING_POSTGRES_USERNAME PostgreSQL username (default: postgres)
-  STAGING_POSTGRES_PASSWORD PostgreSQL password
+Environment Variables (optional for PostgreSQL seeding):
+  STAGING_USER_EMAIL  Email of user to seed keys for
+  POSTGRES_HOST       PostgreSQL host (default: localhost)
+  POSTGRES_PORT       PostgreSQL port (default: 5432)
+  POSTGRES_DATABASE   PostgreSQL database (default: postgres)
+  POSTGRES_USERNAME   PostgreSQL username (default: postgres)
+  POSTGRES_PASSWORD   PostgreSQL password (default: postgres)
 
 Environment Variables (set after staging setup):
   COMPLEX_KEY_ACCOUNT_ID     Account ID with complex key
