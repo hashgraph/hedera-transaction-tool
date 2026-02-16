@@ -186,6 +186,30 @@ describe('Electron entry file', async () => {
     expect(mainWindow.restore).toHaveBeenCalled();
     expect(mainWindow.focus).toHaveBeenCalled();
   });
+
+  test('Should focus but not restore window on second-instance when not minimized', async () => {
+    const mainWindow = new BrowserWindow();
+    vi.mocked(restoreOrCreateWindow).mockResolvedValue(mainWindow);
+
+    // Re-trigger ready so mainWindow is set
+    //@ts-expect-error Incorrect type definition
+    const readyHandler = vi.mocked(app).on.mock.calls.find(([event]) => event === 'ready');
+    readyHandler && (await readyHandler[1]());
+
+    //@ts-expect-error Incorrect type definition
+    const secondInstanceHandler = vi
+      .mocked(app)
+      .on.mock.calls.find(([event]) => event === 'second-instance');
+    expect(secondInstanceHandler).toBeDefined();
+
+    vi.mocked(mainWindow.isMinimized).mockReturnValue(false);
+    vi.mocked(mainWindow.restore).mockClear();
+    vi.mocked(mainWindow.focus).mockClear();
+    secondInstanceHandler && secondInstanceHandler[1]();
+
+    expect(mainWindow.restore).not.toHaveBeenCalled();
+    expect(mainWindow.focus).toHaveBeenCalled();
+  });
 });
 
 describe('Electron entry file - single instance lock not acquired', async () => {
