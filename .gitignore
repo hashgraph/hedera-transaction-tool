@@ -152,11 +152,14 @@ automation/data/*.bin
 automation/data/*.csv
 automation/data/102.json
 
-# Performance test reports (keep .gitkeep files)
-automation/reports/k6/*.html
-automation/reports/k6/*.json
-automation/reports/playwright/
-!automation/reports/**/.gitkeep
+# Performance test reports
+automation/reports/
+
+# k6 build output and generated data
+automation/k6/dist/
+automation/k6/data/
+automation/k6/.env
+automation/k6/*.local.json
 
 # files with notes and scripts for manual data/image manipulation
 *.helper
