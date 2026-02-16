@@ -8,7 +8,6 @@ set -euo pipefail
 
 APP_NAME="Hedera Transaction Tool"
 PROCESS_NAME="Hedera Transaction Tool"
-BUNDLE_ID="com.hiero.transactiontool.app"
 QUIT_TIMEOUT=30          # seconds to wait for a graceful quit
 FORCE_QUIT_WAIT=2        # seconds to wait after force-quit
 
