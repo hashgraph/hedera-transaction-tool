@@ -14,8 +14,12 @@ import {
   emitTransactionStatusUpdate,
   emitTransactionUpdate,
   processTransactionStatus,
+  FAN_OUT_DELETE_NOTIFICATIONS,
 } from '@app/common';
 import {
+  Notification,
+  NotificationReceiver,
+  NotificationType,
   Transaction,
   TransactionSigner,
   TransactionStatus,
@@ -126,6 +130,12 @@ export class SignersService {
 
     // Update transaction statuses and emit notifications
     await this.updateStatusesAndNotify(transactionsToProcess);
+
+    // Clear NEW indicator for the signing user
+    const processedTransactionIds = transactionsToProcess.map(t => t.id);
+    if (processedTransactionIds.length > 0) {
+      await this.clearNewIndicatorForUser(user.id, processedTransactionIds);
+    }
 
     return [...signers];
   }
@@ -373,6 +383,64 @@ export class SignersService {
         },
       });
       insertedSigners.forEach(signer => signers.add(signer));
+    }
+  }
+
+  private async clearNewIndicatorForUser(userId: number, transactionIds: number[]) {
+    try {
+      let deletedReceiverIds: number[] = [];
+
+      await this.dataSource.transaction(async manager => {
+        const notifications = await manager.find(Notification, {
+          where: {
+            type: NotificationType.TRANSACTION_INDICATOR_NEW,
+            entityId: In(transactionIds),
+          },
+        });
+
+        if (notifications.length === 0) return;
+
+        const notificationIds = notifications.map(n => n.id);
+
+        const receivers = await manager.find(NotificationReceiver, {
+          where: {
+            notificationId: In(notificationIds),
+            userId,
+            isRead: false,
+          },
+        });
+
+        if (receivers.length === 0) return;
+
+        deletedReceiverIds = receivers.map(r => r.id);
+
+        await manager.delete(NotificationReceiver, {
+          id: In(deletedReceiverIds),
+        });
+
+        // Clean up orphaned Notification entities (no remaining receivers)
+        // so the NEW indicator can be re-created if the transaction re-enters WAITING_FOR_SIGNATURES
+        for (const notificationId of notificationIds) {
+          const remainingCount = await manager.count(NotificationReceiver, {
+            where: { notificationId },
+          });
+          if (remainingCount === 0) {
+            await manager.delete(Notification, { id: notificationId });
+          }
+        }
+      });
+
+      // Emit WebSocket deletion event outside the transaction so frontend removes the notifications
+      if (deletedReceiverIds.length > 0) {
+        await this.notificationsPublisher.publish(FAN_OUT_DELETE_NOTIFICATIONS, [
+          {
+            userId,
+            notificationReceiverIds: deletedReceiverIds,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error(`Error clearing NEW indicators for user ${userId}:`, error);
     }
   }
 

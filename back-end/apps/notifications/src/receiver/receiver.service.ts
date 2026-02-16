@@ -31,6 +31,15 @@ import {
 
 @Injectable()
 export class ReceiverService {
+  // Terminal statuses where NEW indicators should also be cleaned up
+  private static readonly TERMINAL_STATUSES: TransactionStatus[] = [
+    TransactionStatus.EXECUTED,
+    TransactionStatus.FAILED,
+    TransactionStatus.EXPIRED,
+    TransactionStatus.CANCELED,
+    TransactionStatus.ARCHIVED,
+  ];
+
   // Mapping from transaction status to the in-app indicator notification type
   private static readonly IN_APP_NOTIFICATION_TYPES: Partial<Record<TransactionStatus, NotificationType>> = {
     [TransactionStatus.WAITING_FOR_SIGNATURES]: NotificationType.TRANSACTION_INDICATOR_SIGN,
@@ -226,6 +235,7 @@ export class ReceiverService {
       case NotificationType.TRANSACTION_INDICATOR_SIGN:
         return requiredUserIds;
 
+      case NotificationType.TRANSACTION_INDICATOR_NEW:
       case NotificationType.TRANSACTION_READY_FOR_EXECUTION:
       case NotificationType.TRANSACTION_INDICATOR_EXECUTABLE:
       case NotificationType.TRANSACTION_EXECUTED:
@@ -358,8 +368,14 @@ export class ReceiverService {
   // --- Indicator deletion helpers --------------------------------------
 
   /* Get all indicator notifications for a transaction */
-  private async getIndicatorNotifications(entityManager: EntityManager, transactionId: number) {
-    const indicatorTypes = Object.values(NotificationType).filter(t => t.includes('INDICATOR'));
+  private async getIndicatorNotifications(
+    entityManager: EntityManager,
+    transactionId: number,
+    excludeTypes: NotificationType[] = [],
+  ) {
+    const indicatorTypes = Object.values(NotificationType).filter(
+      t => t.includes('INDICATOR') && !excludeTypes.includes(t),
+    );
 
     return entityManager.find(Notification, {
       where: {
@@ -377,10 +393,12 @@ export class ReceiverService {
   private async deleteExistingIndicators(
     entityManager: EntityManager,
     transaction: Transaction,
+    excludeTypes: NotificationType[] = [],
   ): Promise<Array<{ userId: number; receiverId: number }>> {
     const indicatorNotifications = await this.getIndicatorNotifications(
       entityManager,
       transaction.id,
+      excludeTypes,
     );
 
     if (indicatorNotifications.length === 0) {
@@ -719,7 +737,14 @@ export class ReceiverService {
       const additionalData = this.buildAdditionalData(transaction);
 
       if (syncType) {
-        const deletedReceiverIds = await this.deleteExistingIndicators(entityManager, transaction);
+        const isTerminal = ReceiverService.TERMINAL_STATUSES.includes(transaction.status);
+        const excludeTypes = isTerminal ? [] : [NotificationType.TRANSACTION_INDICATOR_NEW];
+
+        const deletedReceiverIds = await this.deleteExistingIndicators(
+          entityManager,
+          transaction,
+          excludeTypes,
+        );
 
         deletedReceiverIds.forEach(({ userId, receiverId }) => {
           if (!deletionNotifications[userId]) {
@@ -745,6 +770,35 @@ export class ReceiverService {
           inAppReceiverIds.push(nr.id);
           affectedUserIds.add(nr.userId);
         });
+
+        // Create TRANSACTION_INDICATOR_NEW on first entry to WAITING_FOR_SIGNATURES
+        if (syncType === NotificationType.TRANSACTION_INDICATOR_SIGN) {
+          const existingNew = await entityManager.findOne(Notification, {
+            where: {
+              entityId: transaction.id,
+              type: NotificationType.TRANSACTION_INDICATOR_NEW,
+            },
+          });
+
+          if (!existingNew) {
+            const newIndicatorReceivers = await this.createNotificationWithReceivers(
+              entityManager,
+              transaction,
+              approvers,
+              NotificationType.TRANSACTION_INDICATOR_NEW,
+              additionalData,
+              cache,
+              keyCache,
+            );
+
+            newIndicatorReceivers.forEach(nr => {
+              if (!inAppNotifications[nr.userId]) inAppNotifications[nr.userId] = [];
+              inAppNotifications[nr.userId].push(nr);
+              inAppReceiverIds.push(nr.id);
+              affectedUserIds.add(nr.userId);
+            });
+          }
+        }
       }
 
       if (emailType) {

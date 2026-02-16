@@ -351,7 +351,7 @@ describe('ReceiverService', () => {
       }
     });
 
-    it('returns creator + approvers + observers + required for execution/expired/archived etc.', async () => {
+    it('returns creator + approvers + observers + required for execution/expired/archived/new etc.', async () => {
       const types = [
         NotificationType.TRANSACTION_READY_FOR_EXECUTION,
         NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
@@ -361,6 +361,7 @@ describe('ReceiverService', () => {
         NotificationType.TRANSACTION_EXPIRED,
         NotificationType.TRANSACTION_INDICATOR_EXPIRED,
         NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
+        NotificationType.TRANSACTION_INDICATOR_NEW,
       ];
       const expected = [1, 2, 3, 5, 6, 7];
       for (const t of types) {
@@ -490,6 +491,45 @@ describe('ReceiverService', () => {
     const result = await (service as any).deleteExistingIndicators(em as any, { id: 5 } as any);
     expect(em.delete).toHaveBeenCalledTimes(2);
     expect(result).toEqual([{ userId: 1, receiverId: 10 }]);
+  });
+
+  it('deleteExistingIndicators passes excludeTypes to getIndicatorNotifications', async () => {
+    const getIndicatorSpy = jest.spyOn(service as any, 'getIndicatorNotifications')
+      .mockResolvedValueOnce([]);
+
+    await (service as any).deleteExistingIndicators(
+      em as any,
+      { id: 5 } as any,
+      [NotificationType.TRANSACTION_INDICATOR_NEW],
+    );
+
+    expect(getIndicatorSpy).toHaveBeenCalledWith(
+      em as any,
+      5,
+      [NotificationType.TRANSACTION_INDICATOR_NEW],
+    );
+
+    getIndicatorSpy.mockRestore();
+  });
+
+  it('getIndicatorNotifications excludes types in excludeTypes', async () => {
+    em.find.mockResolvedValueOnce([]);
+
+    await (service as any).getIndicatorNotifications(
+      em as any,
+      42,
+      [NotificationType.TRANSACTION_INDICATOR_NEW],
+    );
+
+    const findCall = em.find.mock.calls[0];
+    const whereClause = findCall[1].where;
+    const typeFilter = whereClause.type;
+
+    // The In() value should contain indicator types but NOT TRANSACTION_INDICATOR_NEW
+    const indicatorTypes = typeFilter._value;
+    expect(indicatorTypes).not.toContain(NotificationType.TRANSACTION_INDICATOR_NEW);
+    expect(indicatorTypes).toContain(NotificationType.TRANSACTION_INDICATOR_SIGN);
+    expect(indicatorTypes).toContain(NotificationType.TRANSACTION_INDICATOR_EXECUTABLE);
   });
 
   it('processNotificationType creates new and updates existing receivers', async () => {
@@ -729,7 +769,7 @@ describe('ReceiverService', () => {
       const emailReceiverIds: number[] = [];
       const affectedUserIds = new Set<number>();
 
-      const transaction = { id: 42, transactionId: 'tx-42', mirrorNetwork: 'net' } as any;
+      const transaction = { id: 42, transactionId: 'tx-42', mirrorNetwork: 'net', status: TransactionStatus.EXECUTED } as any;
       const approvers: any[] = [];
 
       // deleteExistingIndicators returns one deleted receiver
@@ -765,7 +805,7 @@ describe('ReceiverService', () => {
       );
 
       // deletedReceiverIds.forEach updated deletionNotifications and affectedUserIds
-      expect((service as any).deleteExistingIndicators).toHaveBeenCalledWith(em as any, transaction);
+      expect((service as any).deleteExistingIndicators).toHaveBeenCalledWith(em as any, transaction, []);
       expect(deletionNotifications[1]).toEqual([10]);
       expect(affectedUserIds.has(1)).toBe(true);
 
@@ -806,6 +846,235 @@ describe('ReceiverService', () => {
       );
 
       consoleSpy.mockRestore();
+    });
+
+    it('preserves NEW indicator for non-terminal status transitions', async () => {
+      const transaction = {
+        id: 50,
+        transactionId: 'tx-50',
+        mirrorNetwork: 'net',
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      } as any;
+
+      const deleteSpy = jest.spyOn(service as any, 'deleteExistingIndicators').mockResolvedValue([]);
+      jest.spyOn(service as any, 'createNotificationWithReceivers').mockResolvedValue([]);
+
+      await (service as any).handleTransactionStatusUpdateNotifications(
+        em as any,
+        transaction,
+        [],
+        NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
+        null,
+        new Map(),
+        new Map(),
+        {},
+        {},
+        [],
+        {},
+        [],
+        new Set(),
+        50,
+      );
+
+      expect(deleteSpy).toHaveBeenCalledWith(
+        em as any,
+        transaction,
+        [NotificationType.TRANSACTION_INDICATOR_NEW],
+      );
+
+      deleteSpy.mockRestore();
+    });
+
+    it('deletes all indicators including NEW for terminal status transitions', async () => {
+      const terminalStatuses = [
+        TransactionStatus.EXECUTED,
+        TransactionStatus.FAILED,
+        TransactionStatus.EXPIRED,
+        TransactionStatus.CANCELED,
+        TransactionStatus.ARCHIVED,
+      ];
+
+      for (const status of terminalStatuses) {
+        jest.clearAllMocks();
+
+        const transaction = {
+          id: 51,
+          transactionId: 'tx-51',
+          mirrorNetwork: 'net',
+          status,
+        } as any;
+
+        const deleteSpy = jest.spyOn(service as any, 'deleteExistingIndicators').mockResolvedValue([]);
+        jest.spyOn(service as any, 'createNotificationWithReceivers').mockResolvedValue([]);
+
+        await (service as any).handleTransactionStatusUpdateNotifications(
+          em as any,
+          transaction,
+          [],
+          NotificationType.TRANSACTION_INDICATOR_EXECUTED,
+          null,
+          new Map(),
+          new Map(),
+          {},
+          {},
+          [],
+          {},
+          [],
+          new Set(),
+          51,
+        );
+
+        expect(deleteSpy).toHaveBeenCalledWith(em as any, transaction, []);
+
+        deleteSpy.mockRestore();
+      }
+    });
+
+    it('creates TRANSACTION_INDICATOR_NEW on first WAITING_FOR_SIGNATURES', async () => {
+      const transaction = {
+        id: 52,
+        transactionId: 'tx-52',
+        mirrorNetwork: 'net',
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      } as any;
+
+      jest.spyOn(service as any, 'deleteExistingIndicators').mockResolvedValue([]);
+
+      const newSignReceivers = [{ id: 200, userId: 1 } as any];
+      const newIndicatorReceivers = [{ id: 201, userId: 1 }, { id: 202, userId: 2 }] as any[];
+
+      const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers')
+        .mockResolvedValueOnce(newSignReceivers)    // first call: SIGN indicator
+        .mockResolvedValueOnce(newIndicatorReceivers); // second call: NEW indicator
+
+      // No existing NEW notification
+      em.findOne.mockResolvedValueOnce(null);
+
+      const inAppNotifications: { [userId: number]: any[] } = {};
+      const inAppReceiverIds: number[] = [];
+      const affectedUserIds = new Set<number>();
+
+      await (service as any).handleTransactionStatusUpdateNotifications(
+        em as any,
+        transaction,
+        [],
+        NotificationType.TRANSACTION_INDICATOR_SIGN,
+        null,
+        new Map(),
+        new Map(),
+        {},
+        inAppNotifications,
+        inAppReceiverIds,
+        {},
+        [],
+        affectedUserIds,
+        52,
+      );
+
+      // Should have created both SIGN and NEW indicators
+      expect(createSpy).toHaveBeenCalledTimes(2);
+      expect(createSpy).toHaveBeenCalledWith(
+        em as any,
+        transaction,
+        [],
+        NotificationType.TRANSACTION_INDICATOR_NEW,
+        expect.any(Object),
+        expect.any(Map),
+        expect.any(Map),
+      );
+
+      // NEW indicator receivers should be tracked
+      expect(inAppReceiverIds).toContain(201);
+      expect(inAppReceiverIds).toContain(202);
+      expect(affectedUserIds.has(1)).toBe(true);
+      expect(affectedUserIds.has(2)).toBe(true);
+
+      createSpy.mockRestore();
+    });
+
+    it('does not create duplicate NEW indicator when one already exists', async () => {
+      const transaction = {
+        id: 53,
+        transactionId: 'tx-53',
+        mirrorNetwork: 'net',
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      } as any;
+
+      jest.spyOn(service as any, 'deleteExistingIndicators').mockResolvedValue([]);
+
+      const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers')
+        .mockResolvedValueOnce([{ id: 300, userId: 1 } as any]); // SIGN indicator only
+
+      // Existing NEW notification found
+      em.findOne.mockResolvedValueOnce({ id: 999, type: NotificationType.TRANSACTION_INDICATOR_NEW });
+
+      await (service as any).handleTransactionStatusUpdateNotifications(
+        em as any,
+        transaction,
+        [],
+        NotificationType.TRANSACTION_INDICATOR_SIGN,
+        null,
+        new Map(),
+        new Map(),
+        {},
+        {},
+        [],
+        {},
+        [],
+        new Set(),
+        53,
+      );
+
+      // Should only create SIGN indicator, not NEW
+      expect(createSpy).toHaveBeenCalledTimes(1);
+      expect(createSpy).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        NotificationType.TRANSACTION_INDICATOR_NEW,
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+      );
+
+      createSpy.mockRestore();
+    });
+
+    it('does not create NEW indicator for non-SIGN syncTypes', async () => {
+      const transaction = {
+        id: 54,
+        transactionId: 'tx-54',
+        mirrorNetwork: 'net',
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      } as any;
+
+      jest.spyOn(service as any, 'deleteExistingIndicators').mockResolvedValue([]);
+
+      const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers')
+        .mockResolvedValueOnce([{ id: 400, userId: 1 } as any]); // EXECUTABLE indicator only
+
+      await (service as any).handleTransactionStatusUpdateNotifications(
+        em as any,
+        transaction,
+        [],
+        NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
+        null,
+        new Map(),
+        new Map(),
+        {},
+        {},
+        [],
+        {},
+        [],
+        new Set(),
+        54,
+      );
+
+      // Should only create EXECUTABLE indicator, no NEW indicator check
+      expect(createSpy).toHaveBeenCalledTimes(1);
+      expect(em.findOne).not.toHaveBeenCalled();
+
+      createSpy.mockRestore();
     });
   });
 
