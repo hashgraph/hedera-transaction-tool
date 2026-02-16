@@ -19,19 +19,19 @@ let mainWindow: BrowserWindow | null;
 
 initLogger();
 
-run();
-
-async function run() {
+// Initialize database and IPC handlers before window creation
+const appReady = (async () => {
   await initDatabase();
-
   registerIpcListeners();
-}
+})();
 
 attachAppEvents();
 setupDeepLink();
 
 function attachAppEvents() {
   app.on('ready', async () => {
+    // Wait for database and IPC handlers to be ready before creating window
+    await appReady;
     await initMainWindow();
 
     if (!is.dev) {

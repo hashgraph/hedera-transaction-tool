@@ -50,6 +50,5 @@ publish:
   repo: hedera-transaction-tool
 extraResources:
   - node_modules/prisma/**/*
-  - node_modules/.prisma/**/*
-  - node_modules/@prisma/client/**/*
+  - node_modules/@prisma/adapter-better-sqlite3/**/*
   - prisma/**

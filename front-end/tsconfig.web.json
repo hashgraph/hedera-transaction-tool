@@ -1,7 +1,7 @@
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
   "include": [
-    "node_modules/@prisma/client",
+    "src/generated/prisma",
     "src/shared/**/*",
     "src/renderer/env.d.ts",
     "src/renderer/**/*",
@@ -18,7 +18,8 @@
       "@renderer/*": ["src/renderer/*"],
       "@main/*": ["src/main/*"],
       "@shared/*": ["src/shared/*"],
-      "@prisma/*": ["node_modules/.prisma/*"],
+      "@prisma/client": ["src/generated/prisma/browser.ts"],
+      "@prisma/client/*": ["src/generated/prisma/*"],
       "long": ["node_modules/long"]
     },
 

@@ -1,4 +1,5 @@
 *.sqlite
+*.db
 
 # Logs
 logs
@@ -154,3 +155,6 @@ automation_javascript/data/102.json
 
 # files with notes and scripts for manual data/image manipulation
 *.helper
+
+# Prisma generated client
+front-end/src/generated/

@@ -18,6 +18,7 @@ module.exports = [
       '**/.gitignore',
       '**/release',
       '**/coverage',
+      '**/src/generated/**',
     ],
   },
   ...pluginVue.configs['flat/essential'],
