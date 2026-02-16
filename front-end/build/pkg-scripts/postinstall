@@ -24,6 +24,12 @@ CACHE_DIRS=(
 for user_home in /Users/*; do
   [ -d "${user_home}" ] || continue
 
+  # Only consider real user homes: they should have a Library directory,
+  # and skip well-known non-user directories like Shared and Guest.
+  user_name="$(basename "${user_home}")"
+  [ -d "${user_home}/Library" ] || continue
+  [ "${user_name}" = "Shared" ] && continue
+  [ "${user_name}" = "Guest" ] && continue
   app_support="${user_home}/Library/Application Support/${APP_SUPPORT_DIR_NAME}"
   [ -d "${app_support}" ] || continue
 
