@@ -23,7 +23,7 @@ escape_for_applescript() {
 }
 
 is_running() {
-  pgrep -f "${PROCESS_NAME}" >/dev/null 2>&1
+  pgrep -x "${PROCESS_NAME}" >/dev/null 2>&1
 }
 
 has_gui_session() {
@@ -87,7 +87,7 @@ graceful_quit() {
 }
 
 force_quit() {
-  pkill -9 -f "${PROCESS_NAME}" 2>/dev/null || true
+  pkill -9 -x "${PROCESS_NAME}" 2>/dev/null || true
 }
 
 wait_for_exit() {
