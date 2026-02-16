@@ -95,16 +95,18 @@ export const PAGINATION = {
 export const TEST_USER_EMAIL_PATTERN = 'k6perf@%';
 
 /**
- * Test user pool for staging rate limiting avoidance.
+ * Test user pool for rate limiting avoidance.
  * Each test can use a different user to avoid backend rate limits (3 logins/min per email).
- * All emails match cleanup pattern 'k6perf@%' for safe staging cleanup.
+ * All emails match cleanup pattern 'k6perf@%' for safe cleanup.
+ * Password is read from TEST_USER_PASSWORD env var (default: Password123).
  */
+const DEFAULT_POOL_PASSWORD = (typeof __ENV !== 'undefined' && __ENV?.TEST_USER_PASSWORD) || 'Password123';
 export const TEST_USER_POOL = [
-  { email: 'k6perf@1.test', password: 'Password123' },
-  { email: 'k6perf@2.test', password: 'Password123' },
-  { email: 'k6perf@3.test', password: 'Password123' },
-  { email: 'k6perf@4.test', password: 'Password123' },
-] as const;
+  { email: 'k6perf@1.test', password: DEFAULT_POOL_PASSWORD },
+  { email: 'k6perf@2.test', password: DEFAULT_POOL_PASSWORD },
+  { email: 'k6perf@3.test', password: DEFAULT_POOL_PASSWORD },
+  { email: 'k6perf@4.test', password: DEFAULT_POOL_PASSWORD },
+];
 
 /**
  * Signature modes for sign-all tests
@@ -121,10 +123,10 @@ export const SIGNATURE_MODES = {
 export const SEED_MARKER = 'k6-perf-seed';
 
 /**
- * Default password for UI performance test local encryption
- * Used across all org-mode performance tests for consistency
+ * Default password for UI performance test local encryption.
+ * Override via TEST_LOCAL_PASSWORD env var if needed.
  */
-export const TEST_LOCAL_PASSWORD = 'TestPassword123';
+export const TEST_LOCAL_PASSWORD = getEnvVar('TEST_LOCAL_PASSWORD', 'TestPassword123');
 
 /**
  * Complex threshold key configuration

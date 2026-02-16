@@ -2,7 +2,7 @@
  * k6 Credentials Management
  *
  * Centralized handling of test credentials via environment variables.
- * Tests will fail if required credentials are not provided.
+ * Defaults are provided for local development; override via -e flags for other environments.
  */
 
 import { getEnvironment } from './environments';
@@ -11,6 +11,10 @@ import { getEnvironment } from './environments';
 declare const __ENV: Record<string, string | undefined>;
 declare const __VU: number;
 
+// Default test credentials (overridable via USER_EMAIL / USER_PASSWORD env vars)
+const DEFAULT_EMAIL = 'k6perf@test.com';
+const DEFAULT_PASSWORD = 'Password123';
+
 export interface TestCredentials {
   email: string;
   password: string;
@@ -18,19 +22,13 @@ export interface TestCredentials {
 
 /**
  * Get test credentials from environment variables.
- * Throws if credentials are not provided.
+ * Falls back to default test credentials if not provided.
  */
 export function getCredentials(): TestCredentials {
-  const email = __ENV.USER_EMAIL;
-  const password = __ENV.USER_PASSWORD;
-
-  if (!email || !password) {
-    throw new Error(
-      'Missing required environment variables: USER_EMAIL and USER_PASSWORD must be set',
-    );
-  }
-
-  return { email, password };
+  return {
+    email: __ENV.USER_EMAIL || DEFAULT_EMAIL,
+    password: __ENV.USER_PASSWORD || DEFAULT_PASSWORD,
+  };
 }
 
 /**
@@ -40,19 +38,16 @@ export function getCredentials(): TestCredentials {
 export function getTestUsers(): TestCredentials[] {
   const users: TestCredentials[] = [];
 
-  // Primary user
-  if (__ENV.USER_EMAIL && __ENV.USER_PASSWORD) {
-    users.push({
-      email: __ENV.USER_EMAIL,
-      password: __ENV.USER_PASSWORD,
-    });
-  }
+  // Primary user (defaults if not set)
+  const primaryEmail = __ENV.USER_EMAIL || DEFAULT_EMAIL;
+  const primaryPassword = __ENV.USER_PASSWORD || DEFAULT_PASSWORD;
+  users.push({ email: primaryEmail, password: primaryPassword });
 
   // Additional users (USER_EMAIL_1, USER_EMAIL_2, etc.) - no limit
   for (let i = 1; ; i++) {
     const email = __ENV[`USER_EMAIL_${i}`];
     if (!email) break; // Stop when no more users configured
-    const password = __ENV[`USER_PASSWORD_${i}`] || __ENV.USER_PASSWORD;
+    const password = __ENV[`USER_PASSWORD_${i}`] || primaryPassword;
     if (password) {
       users.push({ email, password });
     }
