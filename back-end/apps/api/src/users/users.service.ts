@@ -96,7 +96,8 @@ export class UsersService {
   }
 
   async getUserWithClients(id: number, requestingUser: User): Promise<User> {
-    const user = await this.repo.findOne({ where: { id }, relations: ['clients'] });
+    const relations = (requestingUser.admin || requestingUser.id === id) ? ['clients'] : [];
+    const user = await this.repo.findOne({ where: { id }, relations });
 
     if (!user) {
       throw new BadRequestException(ErrorCodes.UNF);
