@@ -230,12 +230,6 @@ async function fetchTransactions() {
       totalItems.value = await getTransactionsCount(user.personal.id);
       transactions.value = await getTransactions(createFindArgs());
     }
-
-    // Clamp page if it exceeds total pages (e.g. restored from URL)
-    const totalPages = Math.max(1, Math.ceil(totalItems.value / pageSize.value));
-    if (currentPage.value > totalPages) {
-      currentPage.value = totalPages;
-    }
   } finally {
     isLoading.value = false;
   }
