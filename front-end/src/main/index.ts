@@ -16,6 +16,7 @@ import { restoreOrCreateWindow } from '@main/windows/mainWindow';
 import { initializeUpdaterService } from '@main/services/electronUpdater';
 
 let mainWindow: BrowserWindow | null;
+let mainWindowInit: Promise<void> | null = null;
 
 async function run() {
   await initDatabase();
@@ -25,7 +26,9 @@ async function run() {
 
 function attachAppEvents() {
   app.on('ready', async () => {
-    await initMainWindow();
+    mainWindowInit = initMainWindow();
+    await mainWindowInit;
+    mainWindowInit = null;
 
     if (!is.dev) {
       session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
@@ -107,6 +110,9 @@ if (!gotTheLock) {
   app.quit();
 } else {
   app.on('second-instance', async () => {
+    await app.whenReady();
+    if (mainWindowInit) await mainWindowInit;
+
     if (!mainWindow) {
       await initMainWindow();
       return;

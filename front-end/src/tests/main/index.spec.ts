@@ -17,6 +17,7 @@ vi.mock('@electron-toolkit/utils', () => mockDeep());
 vi.mock('electron', () => {
   const mocked = mockDeep();
   mocked.app.requestSingleInstanceLock.mockReturnValue(true);
+  mocked.app.whenReady.mockResolvedValue();
   return mocked;
 });
 vi.mock('@main/db/init', () => mockDeep());
@@ -181,7 +182,7 @@ describe('Electron entry file', async () => {
     expect(secondInstanceHandler).toBeDefined();
 
     vi.mocked(mainWindow.isMinimized).mockReturnValue(true);
-    secondInstanceHandler && secondInstanceHandler[1]();
+    secondInstanceHandler && (await secondInstanceHandler[1]());
 
     expect(mainWindow.restore).toHaveBeenCalled();
     expect(mainWindow.focus).toHaveBeenCalled();
@@ -205,10 +206,30 @@ describe('Electron entry file', async () => {
     vi.mocked(mainWindow.isMinimized).mockReturnValue(false);
     vi.mocked(mainWindow.restore).mockClear();
     vi.mocked(mainWindow.focus).mockClear();
-    secondInstanceHandler && secondInstanceHandler[1]();
+    secondInstanceHandler && (await secondInstanceHandler[1]());
 
     expect(mainWindow.restore).not.toHaveBeenCalled();
     expect(mainWindow.focus).toHaveBeenCalled();
+  });
+
+  test('Should wait for app ready and init before handling second-instance', async () => {
+    const mainWindow = new BrowserWindow();
+    vi.mocked(restoreOrCreateWindow).mockResolvedValue(mainWindow);
+
+    //@ts-expect-error Incorrect type definition
+    const secondInstanceHandler = vi
+      .mocked(app)
+      .on.mock.calls.find(([event]) => event === 'second-instance');
+    expect(secondInstanceHandler).toBeDefined();
+
+    // Fire second-instance before ready — handler awaits app.whenReady()
+    vi.mocked(mainWindow.isMinimized).mockReturnValue(false);
+    vi.mocked(mainWindow.restore).mockClear();
+    vi.mocked(mainWindow.focus).mockClear();
+    secondInstanceHandler && (await secondInstanceHandler[1]());
+
+    expect(app.whenReady).toHaveBeenCalled();
+    expect(restoreOrCreateWindow).toHaveBeenCalled();
   });
 });
 
