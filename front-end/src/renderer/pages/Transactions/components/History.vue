@@ -137,9 +137,6 @@ const handleSort = async (
   orgSort.field = organizationField;
   orgSort.direction = direction;
   currentPage.value = 1;
-
-  syncToUrl(currentPage.value, localSort.field, localSort.direction);
-  await fetchTransactions();
 };
 
 const handleDetails = async (id: string | number) => {
