@@ -418,15 +418,18 @@ export class SignersService {
           id: In(deletedReceiverIds),
         });
 
-        // Clean up orphaned Notification entities (no remaining receivers)
-        // so the NEW indicator can be re-created if the transaction re-enters WAITING_FOR_SIGNATURES
-        for (const notificationId of notificationIds) {
-          const remainingCount = await manager.count(NotificationReceiver, {
-            where: { notificationId },
-          });
-          if (remainingCount === 0) {
-            await manager.delete(Notification, { id: notificationId });
-          }
+        // Atomically clean up orphaned Notification entities (no remaining receivers)
+        // so the NEW indicator can be re-created if the transaction re-enters WAITING_FOR_SIGNATURES.
+        // Uses a single atomic query to avoid race conditions when multiple users sign concurrently.
+        if (notificationIds.length > 0) {
+          await manager.query(
+            `DELETE FROM notification
+             WHERE id = ANY($1)
+               AND NOT EXISTS (
+                 SELECT 1 FROM notification_receiver WHERE "notificationId" = notification.id
+               )`,
+            [notificationIds],
+          );
         }
       });
 

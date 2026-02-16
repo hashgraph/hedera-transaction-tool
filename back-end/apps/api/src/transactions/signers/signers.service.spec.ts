@@ -969,7 +969,7 @@ describe('SignersService', () => {
       });
     });
 
-    it('should delete receivers and emit WebSocket event', async () => {
+    it('should delete receivers, clean up orphans atomically, and emit WebSocket event', async () => {
       const notifications = [{ id: 100 }, { id: 200 }];
       const receivers = [{ id: 500 }, { id: 501 }];
 
@@ -978,11 +978,7 @@ describe('SignersService', () => {
         .mockResolvedValueOnce(receivers);    // find NotificationReceivers
 
       mockManager.delete.mockResolvedValue({ affected: 1, raw: [] });
-
-      // After deleting receivers, count remaining for orphan cleanup
-      mockManager.count
-        .mockResolvedValueOnce(0)  // notification 100 has 0 remaining
-        .mockResolvedValueOnce(2); // notification 200 still has 2 remaining
+      mockManager.query.mockResolvedValue({ affected: 1, raw: [] });
 
       await service['clearNewIndicatorForUser'](userId, transactionIds);
 
@@ -1008,9 +1004,15 @@ describe('SignersService', () => {
         id: In([500, 501]),
       });
 
-      // Should delete orphaned notification 100 (0 remaining) but not 200 (2 remaining)
-      expect(mockManager.delete).toHaveBeenCalledWith(Notification, { id: 100 });
-      expect(mockManager.delete).not.toHaveBeenCalledWith(Notification, { id: 200 });
+      // Should atomically clean up orphaned notifications via raw query
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE FROM notification'),
+        [[100, 200]],
+      );
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('NOT EXISTS'),
+        [[100, 200]],
+      );
 
       // Should emit WebSocket deletion
       expect(notificationsPublisher.publish).toHaveBeenCalledWith(

@@ -771,8 +771,15 @@ export class ReceiverService {
           affectedUserIds.add(nr.userId);
         });
 
-        // Create TRANSACTION_INDICATOR_NEW on first entry to WAITING_FOR_SIGNATURES
+        // Create TRANSACTION_INDICATOR_NEW on first entry to WAITING_FOR_SIGNATURES.
+        // Lock the transaction row to prevent concurrent duplicate creation
+        // when the same event is processed by multiple workers simultaneously.
         if (syncType === NotificationType.TRANSACTION_INDICATOR_SIGN) {
+          await entityManager.query(
+            `SELECT id FROM "transaction" WHERE id = $1 FOR UPDATE`,
+            [transaction.id],
+          );
+
           const existingNew = await entityManager.findOne(Notification, {
             where: {
               entityId: transaction.id,

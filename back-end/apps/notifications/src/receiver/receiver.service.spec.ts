@@ -947,6 +947,9 @@ describe('ReceiverService', () => {
         .mockResolvedValueOnce(newSignReceivers)    // first call: SIGN indicator
         .mockResolvedValueOnce(newIndicatorReceivers); // second call: NEW indicator
 
+      // Mock the FOR UPDATE lock query
+      em.query.mockResolvedValueOnce([{ id: 52 }]);
+
       // No existing NEW notification
       em.findOne.mockResolvedValueOnce(null);
 
@@ -969,6 +972,12 @@ describe('ReceiverService', () => {
         [],
         affectedUserIds,
         52,
+      );
+
+      // Should acquire a row-level lock to prevent concurrent duplicate creation
+      expect(em.query).toHaveBeenCalledWith(
+        expect.stringContaining('FOR UPDATE'),
+        [52],
       );
 
       // Should have created both SIGN and NEW indicators
@@ -1005,6 +1014,9 @@ describe('ReceiverService', () => {
       const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers')
         .mockResolvedValueOnce([{ id: 300, userId: 1 } as any]); // SIGN indicator only
 
+      // Mock the FOR UPDATE lock query
+      em.query.mockResolvedValueOnce([{ id: 53 }]);
+
       // Existing NEW notification found
       em.findOne.mockResolvedValueOnce({ id: 999, type: NotificationType.TRANSACTION_INDICATOR_NEW });
 
@@ -1023,6 +1035,12 @@ describe('ReceiverService', () => {
         [],
         new Set(),
         53,
+      );
+
+      // Should acquire lock before checking
+      expect(em.query).toHaveBeenCalledWith(
+        expect.stringContaining('FOR UPDATE'),
+        [53],
       );
 
       // Should only create SIGN indicator, not NEW
