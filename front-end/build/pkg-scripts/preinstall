@@ -16,6 +16,13 @@ FORCE_QUIT_WAIT=2        # seconds to wait after force-quit
 # Helpers
 # ---------------------------------------------------------------------------
 
+escape_for_applescript() {
+  local s="$1"
+  s="${s//\\/\\\\}"    # escape backslashes
+  s="${s//\"/\\\"}"    # escape double quotes
+  printf '%s' "$s"
+}
+
 is_running() {
   pgrep -f "${PROCESS_NAME}" >/dev/null 2>&1
 }
@@ -27,7 +34,8 @@ has_gui_session() {
 }
 
 show_dialog() {
-  local message="$1"
+  local message
+  message=$(escape_for_applescript "$1")
   local buttons="$2"          # e.g. '{"Cancel Installation", "Close and Continue"}'
   local default_button="$3"   # e.g. '"Close and Continue"'
 
@@ -44,18 +52,23 @@ show_dialog() {
   local console_uid
   console_uid=$(id -u "${console_user}")
 
+  local title
+  title=$(escape_for_applescript "${APP_NAME} Installer")
+
   launchctl asuser "${console_uid}" sudo -u "${console_user}" \
     /usr/bin/osascript -e "
       display dialog \"${message}\" \
         buttons ${buttons} \
         default button ${default_button} \
-        with title \"${APP_NAME} Installer\" \
+        with title \"${title}\" \
         with icon caution
     " 2>/dev/null
 }
 
 graceful_quit() {
-  /usr/bin/osascript -e "tell application \"${APP_NAME}\" to quit" 2>/dev/null || true
+  local escaped_name
+  escaped_name=$(escape_for_applescript "${APP_NAME}")
+  /usr/bin/osascript -e "tell application \"${escaped_name}\" to quit" 2>/dev/null || true
 }
 
 force_quit() {
