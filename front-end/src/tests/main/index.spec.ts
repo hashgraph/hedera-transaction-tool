@@ -187,3 +187,42 @@ describe('Electron entry file', async () => {
     expect(mainWindow.focus).toHaveBeenCalled();
   });
 });
+
+describe('Electron entry file - single instance lock not acquired', async () => {
+  vi.resetModules();
+
+  vi.doMock('electron', () => {
+    const mocked = mockDeep<typeof import('electron')>();
+    mocked.app.requestSingleInstanceLock.mockReturnValue(false);
+    return mocked;
+  });
+
+  vi.doMock('path', () => mockDeep());
+  vi.doMock('@electron-toolkit/utils', () => mockDeep());
+  vi.doMock('@main/db/init', () => mockDeep());
+  vi.doMock('@main/services/localUser', () => mockDeep());
+  vi.doMock('@main/modules/logger', () => mockDeep());
+  vi.doMock('@main/modules/menu', () => mockDeep());
+  vi.doMock('@main/modules/deepLink', () => ({
+    default: vi.fn(),
+    PROTOCOL_NAME: 'test-protocol',
+  }));
+  vi.doMock('@main/modules/ipcHandlers', () => mockDeep());
+  vi.doMock('@main/windows/mainWindow', () => mockDeep());
+  vi.doMock('@main/services/electronUpdater', () => ({
+    getUpdaterService: vi.fn(() => null),
+    initializeUpdaterService: vi.fn(),
+  }));
+
+  const { app: freshApp } = await import('electron');
+  await import('@main/index');
+
+  test('Should quit the app when single instance lock is not acquired', () => {
+    expect(freshApp.quit).toHaveBeenCalled();
+  });
+
+  test('Should not set up app event handlers when lock is not acquired', () => {
+    expect(freshApp.on).not.toHaveBeenCalledWith('ready', expect.any(Function));
+    expect(freshApp.on).not.toHaveBeenCalledWith('second-instance', expect.any(Function));
+  });
+});
