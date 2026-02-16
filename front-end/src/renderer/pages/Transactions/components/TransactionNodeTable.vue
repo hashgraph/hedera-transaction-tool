@@ -219,7 +219,6 @@ function clampPage(): void {
 watch(sort, () => {
     currentPage.value = 1;
     sortNodes();
-    syncToUrl(currentPage.value, sortFieldToUrl(sort.value.field), sort.value.direction);
   },
 );
 
