@@ -45,3 +45,8 @@ const colorMapping = {
     </template>
   </button>
 </template>
+<style scoped>
+button {
+  height: 40px;
+}
+</style>

@@ -1,6 +1,7 @@
-import { computed, type ComputedRef, ref } from 'vue';
+import { computed, type ComputedRef, type Ref, ref } from 'vue';
 import { type Router } from 'vue-router';
 import { defineStore } from 'pinia';
+import { TransactionNodeCollection } from '../../../../shared/src/ITransactionNode.ts';
 
 export type TransactionNodeId =
   | {
@@ -17,14 +18,18 @@ export interface StoreNextTransactionV2 {
     current: TransactionNodeId,
     collection: TransactionNodeId[],
     router: Router,
+    context?: TransactionNodeCollection | string | null,
+    topLevel?: boolean,
+    replace?: boolean,
   ) => Promise<void>;
-  routeUp: (router: Router) => Promise<void>;
+  routeUp: (router: Router, nbLevels?: number) => Promise<void>;
   routeToNext: (router: Router) => Promise<void>;
   routeToPrev: (router: Router) => Promise<void>;
   hasNext: ComputedRef<boolean>;
   hasPrev: ComputedRef<boolean>;
   currentIndex: ComputedRef<number>;
   currentCollection: ComputedRef<TransactionNodeId[] | null>;
+  contextStack: Ref<(TransactionNodeCollection | string)[]>;
 }
 
 const useNextTransactionV2 = defineStore(
@@ -32,6 +37,7 @@ const useNextTransactionV2 = defineStore(
   (): StoreNextTransactionV2 => {
     /* State */
     const collectionStack = ref<TransactionNodeId[][]>([]);
+    const contextStack = ref<(TransactionNodeCollection | string)[]>([]);
     const currentIndexStack = ref<number[]>([]);
 
     /* Computed */
@@ -47,14 +53,30 @@ const useNextTransactionV2 = defineStore(
     );
 
     /* Functions */
+
     const routeDown = async (
       current: TransactionNodeId,
       collection: TransactionNodeId[],
       router: Router,
+      context: TransactionNodeCollection | string | null = null,
+      topLevel = false,
+      replace = false,
     ): Promise<void> => {
+      if (topLevel) {
+        resetStack();
+      }
+      if (context !== null) {
+        if (
+          Object.values(TransactionNodeCollection).includes(context as TransactionNodeCollection)
+        ) {
+          contextStack.value.push(getCollectionLabel(context as TransactionNodeCollection));
+        } else {
+          contextStack.value.push(context);
+        }
+      }
       collectionStack.value.push(collection); // now indexOf() will search collection
       currentIndexStack.value.push(indexOf(current));
-      await routeToCurrent(router, false);
+      await routeToCurrent(router, replace);
     };
 
     const routeToNext = async (router: Router): Promise<void> => {
@@ -77,13 +99,17 @@ const useNextTransactionV2 = defineStore(
       }
     };
 
-    const routeUp = async (router: Router): Promise<void> => {
-      if (currentCollection.value !== null && currentIndex.value !== -1) {
-        collectionStack.value.pop();
-        currentIndexStack.value.pop();
-        router.back();
-      } else {
-        console.warn('There is no up');
+    const routeUp = async (router: Router, nbLevels = 1): Promise<void> => {
+      while (nbLevels >= 1) {
+        if (currentCollection.value !== null && currentIndex.value !== -1) {
+          collectionStack.value.pop();
+          currentIndexStack.value.pop();
+          contextStack.value.pop();
+          router.back();
+        } else {
+          console.warn('There is no up');
+        }
+        nbLevels--;
       }
     };
 
@@ -99,6 +125,34 @@ const useNextTransactionV2 = defineStore(
     //
     // Private
     //
+
+    const resetStack = () => {
+      collectionStack.value = [];
+      contextStack.value = [];
+      currentIndexStack.value = [];
+    };
+
+    const getCollectionLabel = (collection: TransactionNodeCollection): string => {
+      let result: string;
+      switch (collection) {
+        case TransactionNodeCollection.READY_FOR_REVIEW:
+          result = 'Ready for Review';
+          break;
+        case TransactionNodeCollection.READY_TO_SIGN:
+          result = 'Ready to Sign';
+          break;
+        case TransactionNodeCollection.READY_FOR_EXECUTION:
+          result = 'Ready for Execution';
+          break;
+        case TransactionNodeCollection.IN_PROGRESS:
+          result = 'In Progress';
+          break;
+        case TransactionNodeCollection.HISTORY:
+          result = 'History';
+          break;
+      }
+      return result;
+    };
 
     const indexOf = (targetId: TransactionNodeId): number => {
       let result: number;
@@ -144,6 +198,7 @@ const useNextTransactionV2 = defineStore(
       hasPrev,
       currentIndex,
       currentCollection,
+      contextStack,
     };
   },
 );
