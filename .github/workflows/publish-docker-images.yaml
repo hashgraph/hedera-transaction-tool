@@ -43,13 +43,13 @@ jobs:
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@318604b99e75e41977312d83839a89be02ca4893 # 5.9.0
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # 5.10.0
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.image }}
 
       - name: Build and push Docker image
         id: push
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # 6.18.0
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # 6.19.2
         with:
           context: back-end/
           file: back-end/apps/${{ matrix.image }}/Dockerfile

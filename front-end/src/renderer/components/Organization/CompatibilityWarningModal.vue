@@ -49,11 +49,10 @@ const updateMessage = computed(() => {
 const conflictMessage = computed(() => {
   if (props.conflicts.length === 0) return '';
 
-  const orgNames = props.conflicts.map(c => c.organizationName).join(', ');
   if (props.isOptional) {
-    return `This update may cause issues with ${orgNames}. You can continue using your current version safely.`;
+    return `You can continue using your current version safely.`;
   } else {
-    return `This update may cause issues with ${orgNames}. If you choose not to upgrade, you will be disconnected from that organization.`;
+    return `If you choose not to upgrade, you will be disconnected from that organization.`;
   }
 });
 
@@ -98,8 +97,9 @@ const cancelButtonText = computed(() => {
 
       <div v-if="conflicts.length > 0" class="mt-4">
         <div class="alert alert-warning" role="alert">
-          <p class="text-small mb-2"><strong>Compatibility Warning:</strong></p>
-          <p class="text-small mb-0">{{ conflictMessage }}</p>
+          <p class="text-small mb-0">
+            This update may cause issues with other configured organizations. {{ conflictMessage }}
+          </p>
         </div>
 
         <div class="mt-3">
@@ -113,26 +113,11 @@ const cancelButtonText = computed(() => {
               <i class="bi bi-exclamation-circle me-2"></i>
               <strong>{{ conflict.organizationName }}</strong>
               <span v-if="conflict.latestSupportedVersion">
-                \- Latest supported version: {{ conflict.latestSupportedVersion }}
+                - Latest supported version: {{ conflict.latestSupportedVersion }}
               </span>
             </li>
           </ul>
         </div>
-      </div>
-
-      <div class="mt-4">
-        <p class="text-small text-secondary">
-          <span v-if="isOptional">
-            You can choose to proceed with the update, but this may cause compatibility issues with
-            the organizations listed above. Alternatively, you can cancel and continue using your
-            current version.
-          </span>
-          <span v-else>
-            You must update to continue using the organization. However, updating may cause
-            compatibility issues with other organizations. If you choose not to update, you will be
-            disconnected from the organization requiring the update.
-          </span>
-        </p>
       </div>
 
       <hr class="separator my-4" />

@@ -94,7 +94,7 @@ describe('CacheManagementService', () => {
     it('should initialize with config values', () => {
       expect(configService.get).toHaveBeenCalledWith('CACHE_STALE_THRESHOLD_MS', 10000);
       expect(configService.get).toHaveBeenCalledWith('CACHE_REFRESH_BATCH_SIZE', 100);
-      expect(configService.get).toHaveBeenCalledWith('CACHE_RECLAIM_TIMEOUT_MS', 120000);
+      expect(configService.get).toHaveBeenCalledWith('CACHE_CLAIM_TIMEOUT_MS', 10000);
     });
   });
 

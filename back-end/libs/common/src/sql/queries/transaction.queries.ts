@@ -18,36 +18,31 @@ import {
   TransactionType,
 } from '@entities';
 
+type TransactionFilters = {
+  statuses: TransactionStatus[];
+  types?: TransactionType[];
+  mirrorNetwork?: string;
+  onlyUnsigned?: boolean; // Optional flag, defaults to false
+};
+
+type Roles = {
+  signer?: boolean;
+  creator?: boolean;
+  observer?: boolean;
+  approver?: boolean;
+};
+
 interface WhereClauseResult {
   clause: string;
   values: any[];
 }
 
-function buildWhereClause(
+function buildFilterConditions(
   sql: SqlBuilderService,
-  user: User,
-  roles: { signer?: boolean; creator?: boolean; observer?: boolean; approver?: boolean },
-  filters: {statuses: TransactionStatus[], types?: TransactionType[], mirrorNetwork?: string}
-): WhereClauseResult{
+  filters: TransactionFilters,
+  addParam: (value: any) => string
+): string[] {
   const conditions: string[] = [];
-  const values: any[] = [];
-
-  let cachedUserKeyIds: number[] | null = null;
-
-  const getUserKeyIds = () => {
-    if (!cachedUserKeyIds) {
-      cachedUserKeyIds = user.keys.map(k => k.id);
-    }
-    return cachedUserKeyIds;
-  };
-
-  let paramIndex = 1;
-
-  // Helper to add a parameter and get its $N reference
-  const addParam = (value: any): string => {
-    values.push(value);
-    return `$${paramIndex++}`;
-  };
 
   // Status filter (always required)
   conditions.push(`t.${sql.col(Transaction, 'status')} = ANY(${addParam(filters.statuses)})`);
@@ -62,86 +57,113 @@ function buildWhereClause(
     conditions.push(`t.${sql.col(Transaction, 'mirrorNetwork')} = ${addParam(filters.mirrorNetwork)}`);
   }
 
-  // Role-based eligibility
+  return conditions;
+}
+
+function buildEligibilityConditions(
+  sql: SqlBuilderService,
+  user: User,
+  roles: Roles,
+  addParam: (value: any) => string,
+  onlyUnsigned: boolean,
+): string[] {
   const eligibilityConditions: string[] = [];
+  let cachedData: { keyIds: number[], publicKeys: string[] } | null = null;
+
+  const getUserKeyData = () => {
+    if (!cachedData) {
+      const keyIds: number[] = [];
+      const publicKeys: string[] = [];
+
+      for (const key of user.keys) {
+        keyIds.push(key.id);
+        publicKeys.push(key.publicKey);
+      }
+
+      cachedData = { keyIds, publicKeys };
+    }
+    return cachedData;
+  };
 
   if (roles.signer) {
-    const keyParam = addParam(getUserKeyIds());
+    const { keyIds, publicKeys } = getUserKeyData();
+    const keyParam = addParam(keyIds);
+    const publicKeysParam = addParam(publicKeys);
 
-    eligibilityConditions.push(`
-      (
-        (
-          EXISTS (
+    const branches: string[] = [];
+
+    // Branch 1: Cached Account Keys
+    const cachedAccountBranch = `
+      EXISTS (
+        SELECT 1
+        FROM ${sql.table(TransactionCachedAccount)} ta
+        JOIN ${sql.table(CachedAccount)} ca
+          ON ca.${sql.col(CachedAccount, 'id')} = ta.${sql.col(TransactionCachedAccount, 'cachedAccountId')}
+        JOIN ${sql.table(CachedAccountKey)} cak
+          ON cak.${sql.col(CachedAccountKey, 'cachedAccountId')} = ca.${sql.col(CachedAccount, 'id')}
+        JOIN ${sql.table(UserKey)} uk
+          ON uk.${sql.col(UserKey, 'publicKey')} = cak.${sql.col(CachedAccountKey, 'publicKey')}
+        WHERE ta.${sql.col(TransactionCachedAccount, 'transactionId')} = t.${sql.col(Transaction, 'id')}
+          AND uk.${sql.col(UserKey, 'id')} = ANY(${keyParam})
+          ${onlyUnsigned ? `
+          AND NOT EXISTS (
             SELECT 1
-            FROM ${sql.table(TransactionCachedAccount)} ta
-            JOIN ${sql.table(CachedAccount)} ca
-              ON ca.${sql.col(CachedAccount, 'id')} = ta.${sql.col(TransactionCachedAccount, 'cachedAccountId')}
-            JOIN ${sql.table(CachedAccountKey)} cak
-              ON cak.${sql.col(CachedAccountKey, 'cachedAccountId')} = ca.${sql.col(CachedAccount, 'id')}
-            JOIN ${sql.table(UserKey)} uk
-              ON uk.${sql.col(UserKey, 'publicKey')} = cak.${sql.col(CachedAccountKey, 'publicKey')}
-            WHERE ta.${sql.col(TransactionCachedAccount, 'transactionId')} = t.${sql.col(Transaction, 'id')}
-              AND uk.${sql.col(UserKey, 'id')} = ANY(${keyParam})
-          )
-          OR
-          EXISTS (
-            SELECT 1
-            FROM ${sql.table(TransactionCachedNode)} tn
-            JOIN ${sql.table(CachedNode)} cn
-              ON cn.${sql.col(CachedNode, 'id')} = tn.${sql.col(TransactionCachedNode, 'cachedNodeId')}
-            JOIN ${sql.table(CachedNodeAdminKey)} cnak
-              ON cnak.${sql.col(CachedNodeAdminKey, 'cachedNodeId')} = cn.${sql.col(CachedNode, 'id')}
-            JOIN ${sql.table(UserKey)} uk
-              ON uk.${sql.col(UserKey, 'publicKey')} = cnak.${sql.col(CachedNodeAdminKey, 'publicKey')}
-            WHERE tn.${sql.col(TransactionCachedNode, 'transactionId')} = t.${sql.col(Transaction, 'id')}
-              AND uk.${sql.col(UserKey, 'id')} = ANY(${keyParam})
-          )
-        )
-        AND (
-          EXISTS (
-            SELECT 1
-            FROM ${sql.table(TransactionCachedAccount)} ta
-            JOIN ${sql.table(CachedAccount)} ca
-              ON ca.${sql.col(CachedAccount, 'id')} = ta.${sql.col(TransactionCachedAccount, 'cachedAccountId')}
-            JOIN ${sql.table(CachedAccountKey)} cak
-              ON cak.${sql.col(CachedAccountKey, 'cachedAccountId')} = ca.${sql.col(CachedAccount, 'id')}
-            JOIN ${sql.table(UserKey)} uk
-              ON uk.${sql.col(UserKey, 'publicKey')} = cak.${sql.col(CachedAccountKey, 'publicKey')}
-            WHERE ta.${sql.col(TransactionCachedAccount, 'transactionId')} = t.${sql.col(Transaction, 'id')}
-              AND uk.${sql.col(UserKey, 'id')} = ANY(${keyParam})
-              AND NOT EXISTS (
-                SELECT 1
-                FROM ${sql.table(TransactionSigner)} ts
-                WHERE ts.${sql.col(TransactionSigner, 'transactionId')} = t.${sql.col(Transaction, 'id')}
-                  AND ts.${sql.col(TransactionSigner, 'userKeyId')} = uk.${sql.col(UserKey, 'id')}
-              )
-          )
-          OR
-          EXISTS (
-            SELECT 1
-            FROM ${sql.table(TransactionCachedNode)} tn
-            JOIN ${sql.table(CachedNode)} cn
-              ON cn.${sql.col(CachedNode, 'id')} = tn.${sql.col(TransactionCachedNode, 'cachedNodeId')}
-            JOIN ${sql.table(CachedNodeAdminKey)} cnak
-              ON cnak.${sql.col(CachedNodeAdminKey, 'cachedNodeId')} = cn.${sql.col(CachedNode, 'id')}
-            JOIN ${sql.table(UserKey)} uk
-              ON uk.${sql.col(UserKey, 'publicKey')} = cnak.${sql.col(CachedNodeAdminKey, 'publicKey')}
-            WHERE tn.${sql.col(TransactionCachedNode, 'transactionId')} = t.${sql.col(Transaction, 'id')}
-              AND uk.${sql.col(UserKey, 'id')} = ANY(${keyParam})
-              AND NOT EXISTS (
-                SELECT 1
-                FROM ${sql.table(TransactionSigner)} ts
-                WHERE ts.${sql.col(TransactionSigner, 'transactionId')} = t.${sql.col(Transaction, 'id')}
-                  AND ts.${sql.col(TransactionSigner, 'userKeyId')} = uk.${sql.col(UserKey, 'id')}
-              )
-          )
-        )
+            FROM ${sql.table(TransactionSigner)} ts
+            WHERE ts.${sql.col(TransactionSigner, 'transactionId')} = t.${sql.col(Transaction, 'id')}
+              AND ts.${sql.col(TransactionSigner, 'userKeyId')} = uk.${sql.col(UserKey, 'id')}
+          )` : ''}
       )
-    `);
+    `;
+    branches.push(cachedAccountBranch);
+
+    // Branch 2: Cached Node Keys
+    const cachedNodeBranch = `
+      EXISTS (
+        SELECT 1
+        FROM ${sql.table(TransactionCachedNode)} tn
+        JOIN ${sql.table(CachedNode)} cn
+          ON cn.${sql.col(CachedNode, 'id')} = tn.${sql.col(TransactionCachedNode, 'cachedNodeId')}
+        JOIN ${sql.table(CachedNodeAdminKey)} cnak
+          ON cnak.${sql.col(CachedNodeAdminKey, 'cachedNodeId')} = cn.${sql.col(CachedNode, 'id')}
+        JOIN ${sql.table(UserKey)} uk
+          ON uk.${sql.col(UserKey, 'publicKey')} = cnak.${sql.col(CachedNodeAdminKey, 'publicKey')}
+        WHERE tn.${sql.col(TransactionCachedNode, 'transactionId')} = t.${sql.col(Transaction, 'id')}
+          AND uk.${sql.col(UserKey, 'id')} = ANY(${keyParam})
+          ${onlyUnsigned ? `
+          AND NOT EXISTS (
+            SELECT 1
+            FROM ${sql.table(TransactionSigner)} ts
+            WHERE ts.${sql.col(TransactionSigner, 'transactionId')} = t.${sql.col(Transaction, 'id')}
+              AND ts.${sql.col(TransactionSigner, 'userKeyId')} = uk.${sql.col(UserKey, 'id')}
+          )` : ''}
+      )
+    `;
+    branches.push(cachedNodeBranch);
+
+    // Branch 3: Transaction Public Keys
+    const publicKeysBranch = `
+      (
+        t.${sql.col(Transaction, 'publicKeys')} && ${publicKeysParam}
+        ${onlyUnsigned ? `
+        AND NOT EXISTS (
+          SELECT 1
+          FROM ${sql.table(TransactionSigner)} ts
+          JOIN ${sql.table(UserKey)} uk
+            ON uk.${sql.col(UserKey, 'id')} = ts.${sql.col(TransactionSigner, 'userKeyId')}
+          WHERE ts.${sql.col(TransactionSigner, 'transactionId')} = t.${sql.col(Transaction, 'id')}
+            AND uk.${sql.col(UserKey, 'publicKey')} = ANY(t.${sql.col(Transaction, 'publicKeys')})
+            AND uk.${sql.col(UserKey, 'id')} = ANY(${keyParam})
+        )` : ''}
+      )
+    `;
+    branches.push(publicKeysBranch);
+
+    // Combine all branches with OR
+    eligibilityConditions.push(`(${branches.join(' OR ')})`);
   }
 
   if (roles.creator) {
-    const keyParam = addParam(getUserKeyIds());
+    const keyParam = addParam(getUserKeyData().keyIds);
     eligibilityConditions.push(`t.${sql.col(Transaction, 'creatorKeyId')} = ANY(${keyParam})`);
   }
 
@@ -170,15 +192,50 @@ function buildWhereClause(
           FROM ${sql.table(TransactionApprover)} a
           JOIN approverList al ON al.${sql.col(TransactionApprover, 'id')} = a.${sql.col(TransactionApprover, 'listId')}
         )
-        SELECT COUNT(*) FROM approverList
+        SELECT COUNT(*)::int FROM approverList
         WHERE approverList.${sql.col(TransactionApprover, 'deletedAt')} IS NULL
           AND approverList.${sql.col(TransactionApprover, 'userId')} = ${userParam}
       ) > 0
     `);
   }
 
-  if (eligibilityConditions.length > 0) {
-    conditions.push(`(${eligibilityConditions.join(' OR ')})`);
+  return eligibilityConditions;
+}
+
+function buildWhereClause(
+  sql: SqlBuilderService,
+  filters: TransactionFilters,
+  user?: User,
+  roles?: Roles
+): WhereClauseResult {
+  const conditions: string[] = [];
+  const values: any[] = [];
+
+  let paramIndex = 1;
+
+  // Helper to add a parameter and get its $N reference
+  const addParam = (value: any): string => {
+    values.push(value);
+    return `$${paramIndex++}`;
+  };
+
+  // Build filter conditions
+  const filterConditions = buildFilterConditions(sql, filters, addParam);
+  conditions.push(...filterConditions);
+
+  if (user && roles) {
+    // Build eligibility conditions
+    const eligibilityConditions = buildEligibilityConditions(
+      sql,
+      user,
+      roles,
+      addParam,
+      filters.onlyUnsigned ?? false
+    );
+
+    if (eligibilityConditions.length > 0) {
+      conditions.push(`(${eligibilityConditions.join(' OR ')})`);
+    }
   }
 
   return {
@@ -187,13 +244,13 @@ function buildWhereClause(
   };
 }
 
-export function getTransactionNodesForUser(
+export function getTransactionNodesQuery(
   sql: SqlBuilderService,
-  user: User,
-  roles: { signer?: boolean; creator?: boolean; observer?: boolean; approver?: boolean },
-  filters: {statuses: TransactionStatus[], types?: TransactionType[], mirrorNetwork?: string}
+  filters: TransactionFilters,
+  user?: User,
+  roles?: { signer?: boolean; creator?: boolean; observer?: boolean; approver?: boolean }
 ): SqlQuery {
-  const whereResult = buildWhereClause(sql, user, roles, filters);
+  const whereResult = buildWhereClause(sql, filters, user, roles);
 
   const text = `
     WITH eligible_transactions AS (

@@ -2,16 +2,16 @@
 import type { MigrateUserDataResult } from '@shared/interfaces/migration';
 import type { RecoveryPhrase } from '@renderer/types';
 import type { PersonalUser } from './components/SetupPersonal.vue';
+import SetupPersonal from './components/SetupPersonal.vue';
 import { computed, ref } from 'vue';
 
 import { KeyPathWithName } from '@shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useAccountSetupStore from '@renderer/stores/storeAccountSetup';
 
 import useSetDynamicLayout, { DEFAULT_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import { useRouter } from 'vue-router';
-
-import { SKIPPED_PERSONAL_SETUP } from '@shared/constants';
 
 import { resetDataLocal } from '@renderer/services/userService';
 import { getStaticUser } from '@renderer/services/safeStorageService';
@@ -19,20 +19,18 @@ import { getDataMigrationKeysPath } from '@renderer/services/migrateDataService'
 import { searchEncryptedKeys } from '@renderer/services/encryptedKeys';
 
 import DecryptRecoveryPhrase from './components/DecryptRecoveryPhrase.vue';
-import SetupPersonal from './components/SetupPersonal.vue';
 import SetupOrganization from './components/SetupOrganization.vue';
 import ImportUserData from './components/ImportUserData.vue';
 import BeginKeysImport from './components/BeginKeysImport.vue';
 import Summary from './components/Summary.vue';
 import SelectKeys from './components/SelectKeys.vue';
-import { buildSkipClaimKey, isLoggedInOrganization, safeAwait } from '@renderer/utils';
-import { add, getStoredClaim, update } from '@renderer/services/claimService';
 
 /* Types */
 type StepName = 'recoveryPhrase' | 'personal' | 'organization' | 'selectKeys' | 'summary';
 
 /* Stores */
 const user = useUserStore();
+const accountSetupStore = useAccountSetupStore();
 
 /* Composables */
 const router = useRouter();
@@ -159,24 +157,7 @@ const initializeUserStore = async () => {
 };
 
 const handleSkipSetupAfterMigration = async () => {
-  if (!personalUser.value) throw new Error('(BUG) Personal User not set');
-
-  // in order to set the skip setup BEFORE org is selected, user the user.organization[0]
-  const org = user.selectedOrganization || user.organizations[0];
-  if (!org) {
-    const { data } = await safeAwait(
-      getStoredClaim(personalUser.value.personalId, SKIPPED_PERSONAL_SETUP),
-    );
-    const addOrUpdate = data !== undefined ? update : add;
-    await addOrUpdate(personalUser.value.personalId, SKIPPED_PERSONAL_SETUP, 'true');
-    user.skippedSetup = true;
-  } else if (isLoggedInOrganization(org) && user.personal && 'id' in user.personal) {
-    const claimKey = buildSkipClaimKey(org.serverUrl, org.userId);
-    const { data } = await safeAwait(getStoredClaim(user.personal.id, claimKey));
-    const addOrUpdate = data !== undefined ? update : add;
-    await addOrUpdate(user.personal.id, claimKey, 'true');
-    user.skippedSetup = true;
-  }
+  await accountSetupStore.handleSkipRecoveryPhrase();
 };
 </script>
 <template>

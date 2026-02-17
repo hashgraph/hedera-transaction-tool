@@ -4,6 +4,7 @@ import { Tabs } from '..';
 import { computed, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useAccountSetupStore from '@renderer/stores/storeAccountSetup';
 
 import { useToast } from 'vue-toast-notification';
 
@@ -39,6 +40,7 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+const accountSetupStore = useAccountSetupStore();
 
 /* Composables */
 const toast = useToast();
@@ -134,6 +136,14 @@ const handleDelete = async () => {
     await user.refetchUserState();
     await user.refetchKeys();
     await user.refetchAccounts();
+
+    if (await accountSetupStore.shouldShowAccountSetup()) {
+      // User has deleted all key pairs
+      // => we don't want user to be display Account Setup during next navigation
+      // => we simulate Skip immediately
+      await accountSetupStore.handleSkipRecoveryPhrase();
+    }
+
   } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to delete key pair'), errorToastOptions);
   } finally {

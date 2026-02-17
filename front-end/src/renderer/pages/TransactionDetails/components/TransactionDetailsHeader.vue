@@ -1,14 +1,12 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import type { Transaction } from '@prisma/client';
 import type { ITransactionFull, TransactionFile } from '@shared/interfaces';
 
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
-
-import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
@@ -37,7 +35,6 @@ import {
   getErrorMessage,
   getLastExportExtension,
   getPrivateKey,
-  getStatusFromCode,
   getTransactionBodySignatureWithoutNodeAccountId,
   hexToUint8Array,
   isLoggedInOrganization,
@@ -50,18 +47,23 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
+import SplitSignButtonDropdown from '@renderer/components/SplitSignButtonDropdown.vue';
 
 import { TransactionStatus } from '@shared/interfaces';
+
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { writeTransactionFile } from '@renderer/services/transactionFileService.ts';
+import { getTransactionType } from '@renderer/utils/sdk/transactions.ts';
+import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 
 /* Types */
 type ActionButton =
   | 'Reject'
   | 'Approve'
   | 'Sign'
+  | 'Sign & Next'
   | 'Cancel'
   | 'Export'
   | 'Schedule'
@@ -72,6 +74,7 @@ type ActionButton =
 const reject: ActionButton = 'Reject';
 const approve: ActionButton = 'Approve';
 const sign: ActionButton = 'Sign';
+const signAndNext: ActionButton = 'Sign & Next';
 const execute: ActionButton = 'Schedule';
 const cancel: ActionButton = 'Cancel';
 const remindSignersLabel: ActionButton = 'Remind Signers';
@@ -149,6 +152,10 @@ const publicKeysRequiredToSign = ref<string[] | null>(null);
 const shouldApprove = ref<boolean>(false);
 
 /* Computed */
+const txType = computed(() => {
+  return props.sdkTransaction ? getTransactionType(props.sdkTransaction) : null;
+});
+
 const creator = computed(() => {
   return props.organizationTransaction
     ? contacts.contacts.find(contact =>
@@ -233,12 +240,8 @@ const dropDownItems = computed(() =>
   visibleButtons.value.slice(1).map(item => ({ label: item, value: item })),
 );
 
-const isTransactionFailed = computed(() => {
-  return props.organizationTransaction?.status === TransactionStatus.FAILED;
-});
-
-const isManualFlagVisible = computed(() => {
-  return props.organizationTransaction?.isManual && transactionIsInProgress.value;
+const flatBreadCrumb = computed(() => {
+  return nextTransaction.contextStack.length === 0;
 });
 
 /* Handlers */
@@ -246,7 +249,7 @@ const handleBack = async () => {
   await nextTransaction.routeUp(router);
 };
 
-const handleSign = async () => {
+const handleSign = async (goNext = false) => {
   if (!(props.sdkTransaction instanceof SDKTransaction) || !props.organizationTransaction) {
     throw new Error('Transaction is not available');
   }
@@ -254,7 +257,7 @@ const handleSign = async () => {
   assertUserLoggedIn(user.personal);
   assertIsLoggedInOrganization(user.selectedOrganization);
 
-  const personalPassword = getPassword(handleSign, {
+  const personalPassword = getPassword(handleSign.bind(null, goNext), {
     subHeading: 'Enter your application password to access your private key',
   });
   if (passwordModalOpened(personalPassword)) return;
@@ -269,10 +272,12 @@ const handleSign = async () => {
       nodeByIdCache,
     );
     await props.onAction();
-    updateTransactionVersionMismatch();
 
     if (signed) {
       toast.success('Transaction signed successfully', successToastOptions);
+      if (goNext) {
+        await nextTransaction.routeToNext(router);
+      }
     } else {
       toast.error('Failed to sign transaction', errorToastOptions);
     }
@@ -522,6 +527,8 @@ const handleAction = async (value: ActionButton) => {
     await handleApprove(true, true);
   } else if (value === sign) {
     await handleSign();
+  } else if (value === signAndNext) {
+    await handleSign(true);
   } else if (value === cancel) {
     await handleCancel(true);
   } else if (value === archive) {
@@ -540,27 +547,6 @@ const handleSubmit = async (e: Event) => {
 };
 
 const handleDropDownItem = async (value: ActionButton) => handleAction(value);
-
-/* Functions */
-
-const updateTransactionVersionMismatch = (): void => {
-  let mismatch: boolean;
-  if (!props.sdkTransaction || !props.organizationTransaction) {
-    mismatch = false;
-  } else {
-    // As organizationTransaction and sdkTransaction are updated separately,
-    // we cannot compare the two values directly. After signatures, they may be different.
-    const bytes = hexToUint8Array(props.organizationTransaction.transactionBytes);
-    const transaction = SDKTransaction.fromBytes(bytes);
-    mismatch = !areByteArraysEqual(bytes, transaction.toBytes());
-  }
-  isTransactionVersionMismatch.value = mismatch;
-};
-
-/* Hooks */
-onMounted(() => {
-  updateTransactionVersionMismatch();
-});
 
 /* Watchers */
 watch(
@@ -606,68 +592,61 @@ watch(
 );
 </script>
 <template>
-  <form
-    @submit.prevent="handleSubmit"
-    class="flex-centered justify-content-between flex-wrap gap-4"
-  >
-    <div class="d-flex align-items-center gap-4">
-      <AppButton
-        type="button"
-        color="secondary"
-        class="btn-icon-only"
-        data-testid="button-back"
-        @click="handleBack"
-      >
-        <i class="bi bi-arrow-left"></i>
-      </AppButton>
-      <NextTransactionCursor/>
-      <h2 class="text-title text-bold">
-        Transaction Details
-        <span v-if="isTransactionFailed" class="badge bg-danger text-break ms-2">
-          {{
-            getStatusFromCode(props.organizationTransaction?.statusCode)
-              ? getStatusFromCode(props.organizationTransaction?.statusCode)
-              : 'FAILED'
-          }}
-        </span>
-        <span v-else-if="isTransactionVersionMismatch" class="badge bg-danger text-break ms-2">
-          Transaction Version Mismatch
-        </span>
-        <span v-else-if="isManualFlagVisible" class="badge bg-info text-break ms-2">Manual</span>
-      </h2>
-    </div>
+  <form @submit.prevent="handleSubmit">
+    <div class="flex-centered justify-content-between flex-wrap gap-4">
+      <div class="d-flex align-items-center gap-4">
+        <AppButton
+          v-if="flatBreadCrumb"
+          class="btn-icon-only"
+          color="secondary"
+          data-testid="button-back"
+          type="button"
+          @click="handleBack"
+        >
+          <i class="bi bi-arrow-left"></i>
+        </AppButton>
+        <BreadCrumb v-if="txType" :leaf="txType" />
+      </div>
 
-    <div class="flex-centered gap-4">
-      <Transition name="fade" mode="out-in">
-        <template v-if="visibleButtons.length > 0">
-          <div>
-            <AppButton
-              :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
-              :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[0]])"
-              :loading="Boolean(loadingStates[visibleButtons[0]])"
-              :loading-text="loadingStates[visibleButtons[0]] || ''"
-              :data-testid="buttonsDataTestIds[visibleButtons[0]]"
-              type="submit"
-              >{{ visibleButtons[0] }}
-            </AppButton>
-          </div>
-        </template>
-      </Transition>
+      <div class="flex-centered gap-4">
+        <NextTransactionCursor />
+        <Transition mode="out-in" name="fade">
+          <template v-if="visibleButtons.length > 0">
+            <div>
+              <SplitSignButtonDropdown
+                v-if="visibleButtons[0] === sign"
+                :loading="Boolean(loadingStates[sign])"
+                :loading-text="loadingStates[sign] || ''"
+              />
+              <AppButton
+                v-else
+                :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
+                :data-testid="buttonsDataTestIds[visibleButtons[0]]"
+                :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[0]])"
+                :loading="Boolean(loadingStates[visibleButtons[0]])"
+                :loading-text="loadingStates[visibleButtons[0]] || ''"
+                type="submit"
+                >{{ visibleButtons[0] }}
+              </AppButton>
+            </div>
+          </template>
+        </Transition>
 
-      <Transition name="fade" mode="out-in">
-        <template v-if="dropDownItems.length > 0">
-          <div>
-            <AppDropDown
-              :color="'secondary'"
-              :items="dropDownItems"
-              :disabled="isRefreshing"
-              compact
-              @select="handleDropDownItem($event as ActionButton)"
-              data-testid="button-more-dropdown-lg"
-            />
-          </div>
-        </template>
-      </Transition>
+        <Transition mode="out-in" name="fade">
+          <template v-if="dropDownItems.length > 0">
+            <div>
+              <AppDropDown
+                :color="'secondary'"
+                :disabled="isRefreshing"
+                :items="dropDownItems"
+                compact
+                data-testid="button-more-dropdown-lg"
+                @select="handleDropDownItem($event as ActionButton)"
+              />
+            </div>
+          </template>
+        </Transition>
+      </div>
     </div>
   </form>
 

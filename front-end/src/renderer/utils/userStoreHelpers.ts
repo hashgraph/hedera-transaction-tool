@@ -109,48 +109,6 @@ export const isLoggedInOrganization = (
   );
 };
 
-export const accountSetupRequired = (
-  organization: ConnectedOrganization | null,
-  localKeys: KeyPair[],
-) => {
-  if (getSecretHashesFromKeys(localKeys).length === 0) return true;
-  if (!organization || !isLoggedInOrganization(organization)) return false;
-
-  if (organization.isPasswordTemporary) return true;
-  if (organization.secretHashes.length === 0) return true;
-  if (
-    !organization.userKeys
-      .filter(key => key.mnemonicHash)
-      .some(key => localKeys.some(k => k.public_key === key.publicKey))
-  )
-    return true;
-
-  return false;
-};
-
-export type AccountSetupPart = 'password' | 'keys';
-
-export const accountSetupRequiredParts = (
-  organization: ConnectedOrganization | null,
-  localKeys: KeyPair[],
-): AccountSetupPart[] => {
-  const parts = new Set<AccountSetupPart>();
-
-  if (getSecretHashesFromKeys(localKeys).length === 0) parts.add('keys');
-  if (!organization || !isLoggedInOrganization(organization)) return [...parts];
-
-  if (organization.isPasswordTemporary) parts.add('password');
-  if (organization.secretHashes.length === 0) parts.add('keys');
-  if (
-    !organization.userKeys
-      .filter(key => key.mnemonicHash)
-      .some(key => localKeys.some(k => k.public_key === key.publicKey))
-  )
-    parts.add('keys');
-
-  return [...parts];
-};
-
 /* Entity creation */
 export const createRecoveryPhrase = async (words: string[]): Promise<RecoveryPhrase> => {
   try {

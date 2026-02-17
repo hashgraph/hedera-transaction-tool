@@ -1,4 +1,4 @@
-import { EntityManager, EntityMetadata } from 'typeorm';
+import { EntityManager, EntityMetadata, EntityTarget } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 
 export interface SqlQuery {
@@ -44,7 +44,7 @@ export class InvalidEntityManagerError extends SqlBuilderError {
  */
 @Injectable()
 export class SqlBuilderService {
-  private metaCache = new Map<any, EntityMetadata>();
+  private metaCache = new Map<EntityTarget<any>, EntityMetadata>();
 
   constructor(private entityManager: EntityManager) {
     if (!entityManager) {
@@ -55,7 +55,7 @@ export class SqlBuilderService {
   /**
    * Gets entity metadata with caching and error handling
    */
-  private getMeta(entity: any): EntityMetadata {
+  private getMeta(entity: EntityTarget<any>): EntityMetadata {
     // Validate entity parameter
     if (entity === null || entity === undefined) {
       throw new SqlBuilderError('Entity cannot be null or undefined');
@@ -94,7 +94,7 @@ export class SqlBuilderService {
    * @returns The table name in the database
    * @throws {EntityNotFoundError} If entity is not registered
    */
-  table(entity: any): string {
+  table(entity: EntityTarget<any>): string {
     try {
       const metadata = this.getMeta(entity);
 
@@ -102,7 +102,9 @@ export class SqlBuilderService {
         throw new SqlBuilderError(`Entity has no table name defined`);
       }
 
-      return metadata.tableName;
+      // Handle schema-qualified table names: schema.table
+      const parts = metadata.tableName.split('.');
+      return parts.map(p => `"${p}"`).join('.');
     } catch (error) {
       // Add context about which method failed
       if (error instanceof SqlBuilderError) {
@@ -120,7 +122,7 @@ export class SqlBuilderService {
    * @throws {EntityNotFoundError} If entity is not registered
    * @throws {ColumnNotFoundError} If property doesn't exist on entity
    */
-  col(entity: any, property: string): string {
+  col(entity: EntityTarget<any>, property: string): string {
     // Validate property parameter
     if (!property || typeof property !== 'string') {
       throw new SqlBuilderError('Property name must be a non-empty string');

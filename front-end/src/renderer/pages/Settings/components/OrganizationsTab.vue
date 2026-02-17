@@ -226,12 +226,6 @@ const hasCompatibilityConflict = (serverUrl: string) => {
                     >
                       Current
                     </span>
-                    <span
-                      v-if="hasCompatibilityConflict(organization.serverUrl)"
-                      class="text-small text-warning"
-                    >
-                      <i class="bi bi-exclamation-triangle-fill me-1"></i>Compatibility conflict
-                    </span>
                   </div>
                 </td>
                 <td>
