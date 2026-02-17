@@ -5,6 +5,7 @@ import { MIGRATE_RECOVERY_PHRASE_HASH } from './constants';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { isLoggedInOrganization } from '@renderer/utils';
+import useAccountSetupStore from '@renderer/stores/storeAccountSetup.ts';
 
 const excludedPreviousPaths = [
   'login',
@@ -17,12 +18,14 @@ const excludedPreviousPaths = [
 
 export function addGuards(router: Router) {
   const user = useUserStore();
+  const setupAccount = useAccountSetupStore()
 
-  router.beforeEach((to, from) => {
+  router.beforeEach(async (to, from) => {
     const userIsLoggedIn = user.personal?.isLoggedIn;
     const userIsLoggedInOrganization = isLoggedInOrganization(user.selectedOrganization);
     const userIsAdmin =
       isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin;
+    const showAccountSetup = await setupAccount.shouldShowAccountSetup();
 
     if (user.accountSetupStarted) {
       return to.name === 'accountSetup';
@@ -38,8 +41,7 @@ export function addGuards(router: Router) {
     if (
       userIsLoggedIn &&
       (user.selectedOrganization ? userIsLoggedInOrganization : true) &&
-      user.shouldSetupAccount &&
-      !user.skippedSetup &&
+      showAccountSetup &&
       to.name !== 'accountSetup'
     ) {
       return { name: 'accountSetup' };
@@ -48,7 +50,7 @@ export function addGuards(router: Router) {
     if (
       (!userIsLoggedIn && to.name === 'accountSetup') ||
       (userIsLoggedIn && to.name === 'login') ||
-      (!user.shouldSetupAccount && to.name === 'accountSetup') ||
+      (!showAccountSetup && to.name === 'accountSetup') ||
       (userIsLoggedInOrganization && to.name === 'organizationLogin') ||
       (userIsLoggedIn && to.name === 'migrate')
     ) {
