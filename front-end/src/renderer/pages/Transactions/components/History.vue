@@ -41,6 +41,7 @@ import TransactionsFilter from '@renderer/components/Filter/TransactionsFilter.v
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import { useRouter } from 'vue-router';
+import { TransactionNodeCollection } from '../../../../../../shared/src/ITransactionNode.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -116,7 +117,7 @@ const handleSort = async (
 };
 
 const handleDetails = async (id: string | number) => {
-  let nodeIds: TransactionNodeId[] = [];
+  let nodeIds: TransactionNodeId[];
   if (isLoggedInOrganization(user.selectedOrganization)) {
     nodeIds = organizationTransactions.value.map(t => {
       return {
@@ -130,7 +131,13 @@ const handleDetails = async (id: string | number) => {
       };
     });
   }
-  await nextTransaction.routeDown({ transactionId: id }, nodeIds, router);
+  await nextTransaction.routeDown(
+    { transactionId: id },
+    nodeIds,
+    router,
+    TransactionNodeCollection.HISTORY,
+    true,
+  );
 };
 
 /* Functions */

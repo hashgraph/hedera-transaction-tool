@@ -207,20 +207,20 @@ const handleExecuted = async ({ success, response, receipt }: ExecutedData) => {
 const handleSubmit = async (id: number, body: string) => {
   isProcessed.value = true;
   const targetNodeId: TransactionNodeId = { transactionId: id };
-  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router);
+  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true, true);
   emit('submitted', id, body);
 };
 
 const handleGroupSubmit = async (id: number) => {
   isProcessed.value = true;
   const targetNodeId: TransactionNodeId = { groupId: id };
-  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router);
+  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true, true);
   emit('group:submitted', id);
 };
 
 const handleLocalStored = async (id: string) => {
   const targetNodeId: TransactionNodeId = { transactionId: id };
-  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router);
+  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true, true);
 };
 
 const handleGroupAction = (action: 'add' | 'edit', path?: string) => {
@@ -292,6 +292,11 @@ const getTransactionBytes = () => {
 };
 
 /* Functions */
+function handlePayerIdUpdate(newPayerId: string) {
+  payerData.accountId.value = newPayerId;
+  data.payerId = newPayerId;
+}
+
 function basePreCreateAssert() {
   if (!isAccountId(payerData.accountId.value)) {
     throw new Error('Invalid Payer ID');
@@ -371,7 +376,7 @@ defineExpose({
         <TransactionIdControls
           class="mt-6"
           :payer-id="payerData.accountId.value"
-          @update:payer-id="((payerData.accountId.value = $event), (data.payerId = $event))"
+          @update:payer-id="handlePayerIdUpdate"
           v-model:valid-start="data.validStart"
           v-model:max-transaction-fee="data.maxTransactionFee as Hbar"
         />

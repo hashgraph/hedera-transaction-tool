@@ -143,7 +143,7 @@ const pageTitle = computed(() => {
       if (txType) {
         result += ` ${getTransactionTypeFromBackendType(txType, false, true)}`;
       }
-      result += (group.value.groupItems.length > 1) ? ' transactions' : ' transaction';
+      result += group.value.groupItems.length > 1 ? ' transactions' : ' transaction';
     }
   }
   return result;
@@ -220,7 +220,7 @@ const handleDetails = async (id: number) => {
   const nodeIds = groupItems.map(item => {
     return { transactionId: item.transactionId };
   });
-  await nextTransaction.routeDown({ transactionId: id }, nodeIds, router);
+  await nextTransaction.routeDown({ transactionId: id }, nodeIds, router, pageTitle.value);
 };
 
 const handleSignGroupItem = async (groupItem: IGroupItem) => {
