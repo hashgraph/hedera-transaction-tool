@@ -64,6 +64,7 @@ import {
 } from '@renderer/utils/sdk/transactions.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
+import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
@@ -671,51 +672,46 @@ function itemStatusBadgeClass(item: IGroupItem): string {
 <template>
   <form @submit.prevent="handleSubmit" class="p-5">
     <div class="flex-column-100">
-      <div class="flex-centered justify-content-between flex-wrap gap-4">
-        <div class="d-flex align-items-center gap-4 flex-1">
-          <AppButton type="button" color="secondary" class="btn-icon-only" @click="handleBack">
-            <i class="bi bi-arrow-left"></i>
-          </AppButton>
-          <NextTransactionCursor />
+      <div class="d-flex flex-column">
+        <div class="flex-centered justify-content-between flex-wrap gap-4">
+          <div class="d-flex align-items-center gap-4 flex-1">
+            <AppButton type="button" color="secondary" class="btn-icon-only" @click="handleBack">
+              <i class="bi bi-arrow-left"></i>
+            </AppButton>
+            <BreadCrumb v-if="pageTitle" :leaf="pageTitle" />
+          </div>
 
-            <Transition mode="out-in" name="fade">
-              <template v-if="pageTitle">
-                <h2 class="text-title text-bold flex-1 text-one-line-ellipsis">
-                  {{ pageTitle }}
-                </h2>
+          <div class="flex-centered gap-4">
+            <NextTransactionCursor style="max-height: 40px" />
+            <Transition name="fade" mode="out-in">
+              <template v-if="visibleButtons.length > 0">
+                <div>
+                  <AppButton
+                    :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
+                    :loading="Boolean(loadingStates[visibleButtons[0]])"
+                    :loading-text="loadingStates[visibleButtons[0]] || ''"
+                    :data-testid="buttonsDataTestIds[visibleButtons[0]]"
+                    type="submit"
+                    >{{ visibleButtons[0] }}
+                  </AppButton>
+                </div>
+              </template>
+            </Transition>
+
+            <Transition name="fade" mode="out-in">
+              <template v-if="dropDownItems.length > 0">
+                <div>
+                  <AppDropDown
+                    :color="'secondary'"
+                    :items="dropDownItems"
+                    compact
+                    @select="handleDropDownItem($event as ActionButton)"
+                    data-testid="button-more-dropdown-lg"
+                  />
+                </div>
               </template>
             </Transition>
           </div>
-
-        <div class="flex-centered gap-4">
-          <Transition name="fade" mode="out-in">
-            <template v-if="visibleButtons.length > 0">
-              <div>
-                <AppButton
-                  :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
-                  :loading="Boolean(loadingStates[visibleButtons[0]])"
-                  :loading-text="loadingStates[visibleButtons[0]] || ''"
-                  :data-testid="buttonsDataTestIds[visibleButtons[0]]"
-                  type="submit"
-                  >{{ visibleButtons[0] }}
-                </AppButton>
-              </div>
-            </template>
-          </Transition>
-
-          <Transition name="fade" mode="out-in">
-            <template v-if="dropDownItems.length > 0">
-              <div>
-                <AppDropDown
-                  :color="'secondary'"
-                  :items="dropDownItems"
-                  compact
-                  @select="handleDropDownItem($event as ActionButton)"
-                  data-testid="button-more-dropdown-lg"
-                />
-              </div>
-            </template>
-          </Transition>
         </div>
       </div>
 

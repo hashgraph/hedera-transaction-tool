@@ -34,7 +34,7 @@ const truncate = (item: string) => {
 </script>
 
 <template>
-  <nav v-if="items.length > 0" class="d-flex align-items-baseline gap-2">
+  <nav v-if="items.length > 0" class="d-flex align-items-center gap-2">
     <template v-for="(item, index) in items" :key="item">
       <a class="path-item" href="#" @click="handleClick(index)">{{ item }}</a>
       <span v-if="index < items.length - 1 || props.leaf" class="item-separator">{{
