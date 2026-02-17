@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - release/**
   pull_request:
     branches:
       - main
+      - release/**
   workflow_dispatch:
 
 defaults:
@@ -75,3 +77,4 @@ jobs:
           POSTGRES_USERNAME: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DATABASE: postgres
+

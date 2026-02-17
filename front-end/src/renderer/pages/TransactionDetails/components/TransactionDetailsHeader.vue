@@ -56,6 +56,7 @@ import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { writeTransactionFile } from '@renderer/services/transactionFileService.ts';
 import { getTransactionType } from '@renderer/utils/sdk/transactions.ts';
+import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 
 /* Types */
 type ActionButton =
@@ -238,6 +239,10 @@ const visibleButtons = computed(() => {
 const dropDownItems = computed(() =>
   visibleButtons.value.slice(1).map(item => ({ label: item, value: item })),
 );
+
+const flatBreadCrumb = computed(() => {
+  return nextTransaction.contextStack.length === 0;
+});
 
 /* Handlers */
 const handleBack = async () => {
@@ -591,6 +596,7 @@ watch(
     <div class="flex-centered justify-content-between flex-wrap gap-4">
       <div class="d-flex align-items-center gap-4">
         <AppButton
+          v-if="flatBreadCrumb"
           class="btn-icon-only"
           color="secondary"
           data-testid="button-back"
@@ -599,13 +605,11 @@ watch(
         >
           <i class="bi bi-arrow-left"></i>
         </AppButton>
-        <NextTransactionCursor />
-        <div v-if="txType" class="d-flex align-items-center column-gap-3 row-gap-2 flex-wrap">
-          <h2 class="text-title text-bold">{{ txType }}</h2>
-        </div>
+        <BreadCrumb v-if="txType" :leaf="txType" />
       </div>
 
       <div class="flex-centered gap-4">
+        <NextTransactionCursor />
         <Transition mode="out-in" name="fade">
           <template v-if="visibleButtons.length > 0">
             <div>
