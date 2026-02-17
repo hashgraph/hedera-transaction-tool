@@ -230,10 +230,17 @@ export class SettingsPage extends BasePage {
 
   async clickOnECDSAImportButton(): Promise<void> {
     await this.click(this.ecdsaImportButtonSelector);
+    if (!(await this.isElementHidden(this.ecdsaImportButtonSelector, null, 10000))) {
+      throw new Error('Import modal did not close within 10 seconds');
+    }
+
   }
 
   async clickOnED25519ImportButton(): Promise<void> {
     await this.click(this.ed25519ImportButtonSelector);
+    if (!(await this.isElementHidden(this.ed25519ImportButtonSelector, null, 10000))) {
+      throw new Error('Import modal did not close within 10 seconds');
+    }
   }
 
   async clickOnEyeDecryptIcon(): Promise<void> {

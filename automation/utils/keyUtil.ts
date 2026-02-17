@@ -3,32 +3,26 @@ import * as bip39 from 'bip39';
 import { proto } from '@hashgraph/proto';
 import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 
-
-// Retrieves the private key from environment variables
-export function getPrivateKey() {
-  return process.env.PRIVATE_KEY;
-}
-
 // Generates an ECDSA key pair
-// export function generateECDSAKeyPair(curve = 'secp256k1') {
-//   const { privateKey } = crypto.generateKeyPairSync('ec', {
-//     namedCurve: curve,
-//     publicKeyEncoding: {
-//       type: 'spki',
-//       format: 'pem',
-//     },
-//     privateKeyEncoding: {
-//       type: 'pkcs8',
-//       format: 'der',
-//     },
-//   });
-//
-//   return privateKey.toString('hex');
-// }
+export function generateECDSAKeyPair(curve = 'secp256k1') {
+  const { privateKey } = crypto.generateKeyPairSync('ec', {
+    namedCurve: curve,
+    publicKeyEncoding: {
+      type: 'spki',
+      format: 'pem',
+    },
+    privateKeyEncoding: {
+      type: 'pkcs8',
+      format: 'der',
+    },
+  });
+
+  return privateKey.toString('hex');
+}
 
 // Generates an Ed25519 key pair
 export function generateEd25519KeyPair() {
-  const { privateKey } = crypto.generateKeyPairSync('ed25519', {
+  const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519', {
     publicKeyEncoding: {
       type: 'spki',
       format: 'der',
@@ -39,7 +33,10 @@ export function generateEd25519KeyPair() {
     },
   });
 
-  return privateKey.toString('hex');
+  return {
+    publicKey: publicKey.toString('hex'),
+    privateKey: privateKey.toString('hex')
+  };
 }
 
 export const decodeProtobuffKey = (protobuffEncodedKey: string) => {

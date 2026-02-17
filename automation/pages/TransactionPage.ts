@@ -19,6 +19,8 @@ export interface CreateAccountOptions {
   isReceiverSigRequired?: boolean;
   memo?: string | null;
   description?: string | null;
+  publicKey?: string | null;
+  payerAccountId?: string | null;
 }
 
 export class TransactionPage extends BasePage {
@@ -439,6 +441,8 @@ export class TransactionPage extends BasePage {
       isReceiverSigRequired = false,
       memo = null,
       description = null,
+      publicKey = null,
+      payerAccountId = null,
     } = options;
     if (!isComingFromDraft) {
       await this.clickOnCreateNewTransactionButton();
@@ -452,6 +456,11 @@ export class TransactionPage extends BasePage {
 
     // Handle optional settings
     const optionHandlers = [
+      {
+        condition: payerAccountId !== null,
+        handler: () => this.fillInPayerAccountId(payerAccountId!),
+      },
+      { condition: publicKey !== null, handler: () => this.fillInPublicKeyForAccount(publicKey!) },
       {
         condition: maxAutoAssociations !== null,
         handler: () => this.fillInMaxAccountAssociations(maxAutoAssociations!.toString()),
@@ -473,10 +482,8 @@ export class TransactionPage extends BasePage {
       `[data-testid="${this.confirmTransactionModalSelector}"]`,
       { state: 'hidden', timeout: 10000 }
     );
-    // Wait for execution modal to APPEAR first (shows "Executing" text while tx runs)
-    await this.window.waitForSelector('text=Executing', { state: 'visible', timeout: 10000 });
-    // DON'T click Close - it's a cancel button that dismisses modal while tx still running!
-    // Wait for modal to AUTO-CLOSE when execution completes (isExecuting becomes false in Vue component)
+    // Wait for execution to complete (modal auto-closes when done)
+    // Note: don't wait for 'Executing' to appear first - it's transient and may already be gone
     await this.window.waitForSelector('text=Executing', { state: 'hidden', timeout: 30000 });
     await this.waitForCreatedAtToBeVisible();
 
@@ -763,7 +770,7 @@ export class TransactionPage extends BasePage {
     return this.getTextFromInputField(this.maxAutoAssociationsInputSelector);
   }
 
-  async clickOnBackButton() {;
+  async clickOnBackButton() {
     await this.click(this.backButtonSelector, null, 10000);
   }
 
@@ -834,7 +841,10 @@ export class TransactionPage extends BasePage {
   }
 
   async clickOnCancelTransaction() {
-    await this.click(this.buttonCancelTransactionSelector);
+    const modalSelector = `[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"]`;
+    const cancelButtonSelector = `${modalSelector} [data-testid="${this.buttonCancelTransactionSelector}"]`;
+    await this.window.waitForSelector(cancelButtonSelector, { state: 'visible', timeout: 15000 });
+    await this.window.click(cancelButtonSelector);
   }
 
   async clickAddButton(depth: string) {

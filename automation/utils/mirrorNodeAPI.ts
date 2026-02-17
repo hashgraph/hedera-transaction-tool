@@ -1,12 +1,12 @@
 import axios from 'axios';
 import retry from 'async-retry';
 
-import { formatTransactionId } from './util.js';
+import { formatTransactionId, getNetworkEnv } from './util.js';
 import { AccountInfo, AccountsResponse } from '../../front-end/src/shared/interfaces/index.js';
 
  const getBaseURL = () => {
-   const env = process.env.ENVIRONMENT;
-   switch (env?.toUpperCase()) {
+   const network = getNetworkEnv().toUpperCase();
+   switch (network) {
      case 'TESTNET':
        return 'https://testnet.mirrornode.hedera.com/api/v1';
      case 'PREVIEWNET':
