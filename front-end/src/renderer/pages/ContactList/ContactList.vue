@@ -219,7 +219,7 @@ onBeforeMount(async () => {
                     <div v-if="c.user.admin || c.user.status === 'NEW' || (isAdmin && updateAvailableUserIds.has(c.user.id))" class="mt-2">
                       <span v-if="c.user.admin" class="badge bg-warning me-2">admin</span>
                       <span v-if="c.user.status === 'NEW'" class="badge bg-info me-2">new</span>
-                      <span v-if="isAdmin && updateAvailableUserIds.has(c.user.id)" class="badge bg-warning">update available</span>
+                      <span v-if="isAdmin && updateAvailableUserIds.has(c.user.id)" class="badge bg-success">update available</span>
                     </div>
                   </div>
                 </div>
