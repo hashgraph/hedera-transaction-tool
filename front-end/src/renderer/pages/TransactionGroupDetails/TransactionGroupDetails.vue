@@ -210,6 +210,10 @@ const dropDownItems = computed(() =>
   visibleButtons.value.slice(1).map(item => ({ label: item, value: item })),
 );
 
+const flatBreadCrumb = computed(() => {
+  return nextTransaction.contextStack.length === 0;
+});
+
 /* Handlers */
 const handleBack = async () => {
   await nextTransaction.routeUp(router);
@@ -675,14 +679,20 @@ function itemStatusBadgeClass(item: IGroupItem): string {
       <div class="d-flex flex-column">
         <div class="flex-centered justify-content-between flex-wrap gap-4">
           <div class="d-flex align-items-center gap-4 flex-1">
-            <AppButton type="button" color="secondary" class="btn-icon-only" @click="handleBack">
+            <AppButton
+              v-if="flatBreadCrumb"
+              class="btn-icon-only"
+              color="secondary"
+              type="button"
+              @click="handleBack"
+            >
               <i class="bi bi-arrow-left"></i>
             </AppButton>
             <BreadCrumb v-if="pageTitle" :leaf="pageTitle" />
           </div>
 
           <div class="flex-centered gap-4">
-            <NextTransactionCursor style="max-height: 40px" />
+            <NextTransactionCursor />
             <Transition name="fade" mode="out-in">
               <template v-if="visibleButtons.length > 0">
                 <div>

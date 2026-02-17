@@ -54,12 +54,6 @@ const useNextTransactionV2 = defineStore(
 
     /* Functions */
 
-    const resetStack = () => {
-      collectionStack.value = [];
-      contextStack.value = [];
-      currentIndexStack.value = [];
-    };
-
     const routeDown = async (
       current: TransactionNodeId,
       collection: TransactionNodeId[],
@@ -131,6 +125,12 @@ const useNextTransactionV2 = defineStore(
     //
     // Private
     //
+
+    const resetStack = () => {
+      collectionStack.value = [];
+      contextStack.value = [];
+      currentIndexStack.value = [];
+    };
 
     const getCollectionLabel = (collection: TransactionNodeCollection): string => {
       let result: string;
