@@ -260,7 +260,6 @@ function handleInputValidation(e: Event) {
 }
 
 const saveDraft = async (): Promise<void> => {
-  // TBD: This method should be passed to SaveDraftButton and replace handleDraft()
   const draftId = route.query.draftId?.toString();
   const transactionBytes = getTransactionBytes();
   if (draftId) {
