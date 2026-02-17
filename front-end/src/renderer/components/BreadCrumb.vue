@@ -36,12 +36,24 @@ const truncate = (item: string) => {
 <template>
   <nav v-if="items.length > 0" class="d-flex align-items-center gap-2">
     <template v-for="(item, index) in items" :key="item">
-      <a class="path-item" href="#" @click="handleClick(index)">{{ item }}</a>
+      <a
+        :data-testid="`breadcrumb-item-${index}`"
+        class="path-item"
+        href="#"
+        @click="handleClick(index)"
+        >{{ item }}</a
+      >
       <span v-if="index < items.length - 1 || props.leaf" class="item-separator">{{
         SEPARATOR
       }}</span>
     </template>
-    <h2 v-if="props.leaf" class="text-title text-bold ws-no-wrap">{{ props.leaf }}</h2>
+    <h2
+      :data-testid="`breadcrumb-item-${items.length}`"
+      v-if="props.leaf"
+      class="text-title text-bold ws-no-wrap"
+    >
+      {{ props.leaf }}
+    </h2>
   </nav>
 </template>
 
