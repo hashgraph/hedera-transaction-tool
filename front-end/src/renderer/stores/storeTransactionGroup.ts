@@ -114,6 +114,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
 
   function editGroupItem(newGroupItem: GroupItem) {
     const editIndex = Number.parseInt(newGroupItem.seq);
+    if (editIndex < 0 || editIndex >= groupItems.value.length) return;
     const uniqueValidStart = findUniqueValidStart(
       newGroupItem.payerAccountId,
       newGroupItem.validStart.getTime(),
@@ -262,6 +263,8 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   }
 
   function updateTransactionValidStarts(newGroupValidStart: Date) {
+    // Items are updated in-place so that findUniqueValidStart sees
+    // already-assigned timestamps from earlier items in the same pass
     groupItems.value.forEach((groupItem, index) => {
       const updatedValidStart = findUniqueValidStart(
         groupItem.payerAccountId,
