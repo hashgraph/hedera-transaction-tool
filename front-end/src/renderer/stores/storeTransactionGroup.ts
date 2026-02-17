@@ -266,6 +266,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       const updatedValidStart = findUniqueValidStart(
         groupItem.payerAccountId,
         newGroupValidStart.getTime() + index,
+        index,
       );
       const transaction = Transaction.fromBytes(groupItem.transactionBytes);
       transaction.setTransactionId(
