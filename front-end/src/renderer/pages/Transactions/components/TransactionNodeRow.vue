@@ -14,7 +14,8 @@ import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import SignSingleButton from '@renderer/pages/Transactions/components/SignSingleButton.vue';
 import SignGroupButton from '@renderer/pages/Transactions/components/SignGroupButton.vue';
-import { getStatusFromCode } from '@renderer/utils';
+import { getStatusFromCode, isLoggedInOrganization } from '@renderer/utils';
+import useUserStore from '@renderer/stores/storeUser.ts';
 import {
   type ITransactionNode,
   TransactionNodeCollection,
@@ -39,6 +40,7 @@ const emit = defineEmits<{
 }>();
 
 /* Stores */
+const user = useUserStore();
 const notifications = useNotificationsStore();
 
 /* State */
@@ -231,11 +233,15 @@ watch(() => props.node.description, () => {
   nextTick(() => checkTruncation());
 });
 
-// Fetch external status for the transaction
+// Fetch external status for the transaction (admin only)
 watch(
   () => props.node.transactionId,
   async transactionId => {
-    if (!transactionId) {
+    if (
+      !transactionId ||
+      !isLoggedInOrganization(user.selectedOrganization) ||
+      !user.selectedOrganization.admin
+    ) {
       isExternal.value = false;
       return;
     }

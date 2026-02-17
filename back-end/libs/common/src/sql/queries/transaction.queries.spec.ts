@@ -14,7 +14,7 @@ import {
   UserStatus,
 } from '@entities';
 import { createTestPostgresDataSource } from '../../../../../test-utils/postgres-test-db';
-import { getTransactionNodesForUserQuery, SqlBuilderService } from '@app/common';
+import { getTransactionNodesQuery, SqlBuilderService } from '@app/common';
 
 describe('getTransactionNodesForUser - Integration', () => {
   let dataSource: DataSource;
@@ -60,7 +60,7 @@ describe('getTransactionNodesForUser - Integration', () => {
     it('should execute without errors on empty database', async () => {
       const user = await createTestUserWithKeys(dataSource);
 
-      const query = getTransactionNodesForUserQuery(sqlBuilder, defaultFilters, user, signerRoles);
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toEqual([]);
@@ -72,7 +72,7 @@ describe('getTransactionNodesForUser - Integration', () => {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
       });
 
-      const query = getTransactionNodesForUserQuery(sqlBuilder, defaultFilters, user, signerRoles);
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(1);
@@ -89,7 +89,9 @@ describe('getTransactionNodesForUser - Integration', () => {
 
       await createTransactionSigner(dataSource, transaction, user.keys[0]);
 
-      const query = getTransactionNodesForUserQuery(sqlBuilder, defaultFilters, user, signerRoles);
+      const filters = { ...defaultFilters, onlyUnsigned: true };
+
+      const query = getTransactionNodesQuery(sqlBuilder, filters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(0);
@@ -105,7 +107,7 @@ describe('getTransactionNodesForUser - Integration', () => {
       // Only signed with first key
       await createTransactionSigner(dataSource, transaction, user.keys[0]);
 
-      const query = getTransactionNodesForUserQuery(sqlBuilder, defaultFilters, user, signerRoles);
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(1);
@@ -123,7 +125,7 @@ describe('getTransactionNodesForUser - Integration', () => {
         status: TransactionStatus.EXECUTED,
       });
 
-      const query = getTransactionNodesForUserQuery(sqlBuilder, defaultFilters, user, signerRoles);
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(1);
@@ -148,11 +150,232 @@ describe('getTransactionNodesForUser - Integration', () => {
         mirrorNetwork: 'mainnet',
       };
 
-      const query = getTransactionNodesForUserQuery(sqlBuilder, filters, user, signerRoles);
+      const query = getTransactionNodesQuery(sqlBuilder, filters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(1);
       expect(result[0].transaction_id).toBeDefined();
+    });
+  });
+
+  describe('onlyUnsigned filter', () => {
+    it('should show transaction to non-creator signer when they have not signed yet (onlyUnsigned: true)', async () => {
+      const creator = await createTestUserWithKeys(dataSource);
+      const signer = await createTestUserWithKeys(dataSource);
+
+      const transaction = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+
+      // Link signer's key to the transaction via cached account
+      const cachedAccount = dataSource.getRepository(CachedAccount).create({
+        account: `0.0.${transaction.id + 1000}`,
+        mirrorNetwork: 'mainnet',
+        receiverSignatureRequired: null,
+        encodedKey: null,
+        etag: null,
+        keys: [],
+        accountTransactions: [],
+      });
+      await dataSource.getRepository(CachedAccount).save(cachedAccount);
+
+      const cachedAccountKey = dataSource.getRepository(CachedAccountKey).create({
+        cachedAccountId: cachedAccount.id,
+        publicKey: signer.keys[0].publicKey,
+      });
+      await dataSource.getRepository(CachedAccountKey).save(cachedAccountKey);
+
+      const transactionCachedAccount = dataSource.getRepository(TransactionCachedAccount).create({
+        transactionId: transaction.id,
+        cachedAccountId: cachedAccount.id,
+      });
+      await dataSource.getRepository(TransactionCachedAccount).save(transactionCachedAccount);
+
+      // Signer has NOT signed yet
+      const filters = {
+        statuses: [TransactionStatus.WAITING_FOR_SIGNATURES],
+        onlyUnsigned: true,
+      };
+
+      const query = getTransactionNodesQuery(sqlBuilder, filters, signer, { signer: true });
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].transaction_id).toBe(transaction.id);
+    });
+
+    it('should NOT show transaction to non-creator signer when they have already signed (onlyUnsigned: true)', async () => {
+      const creator = await createTestUserWithKeys(dataSource);
+      const signer = await createTestUserWithKeys(dataSource);
+
+      const transaction = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+
+      // Link signer's key to the transaction
+      const cachedAccount = dataSource.getRepository(CachedAccount).create({
+        account: `0.0.${transaction.id + 1000}`,
+        mirrorNetwork: 'mainnet',
+        receiverSignatureRequired: null,
+        encodedKey: null,
+        etag: null,
+        keys: [],
+        accountTransactions: [],
+      });
+      await dataSource.getRepository(CachedAccount).save(cachedAccount);
+
+      const cachedAccountKey = dataSource.getRepository(CachedAccountKey).create({
+        cachedAccountId: cachedAccount.id,
+        publicKey: signer.keys[0].publicKey,
+      });
+      await dataSource.getRepository(CachedAccountKey).save(cachedAccountKey);
+
+      const transactionCachedAccount = dataSource.getRepository(TransactionCachedAccount).create({
+        transactionId: transaction.id,
+        cachedAccountId: cachedAccount.id,
+      });
+      await dataSource.getRepository(TransactionCachedAccount).save(transactionCachedAccount);
+
+      // Signer HAS signed
+      await createTransactionSigner(dataSource, transaction, signer.keys[0]);
+
+      const filters = {
+        statuses: [TransactionStatus.WAITING_FOR_SIGNATURES],
+        onlyUnsigned: true,
+      };
+
+      const query = getTransactionNodesQuery(sqlBuilder, filters, signer, { signer: true });
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(0);
+    });
+
+    it('should show transaction to non-creator signer even when they have signed (onlyUnsigned: false)', async () => {
+      const creator = await createTestUserWithKeys(dataSource);
+      const signer = await createTestUserWithKeys(dataSource);
+
+      const transaction = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+
+      // Link signer's key to the transaction
+      const cachedAccount = dataSource.getRepository(CachedAccount).create({
+        account: `0.0.${transaction.id + 1000}`,
+        mirrorNetwork: 'mainnet',
+        receiverSignatureRequired: null,
+        encodedKey: null,
+        etag: null,
+        keys: [],
+        accountTransactions: [],
+      });
+      await dataSource.getRepository(CachedAccount).save(cachedAccount);
+
+      const cachedAccountKey = dataSource.getRepository(CachedAccountKey).create({
+        cachedAccountId: cachedAccount.id,
+        publicKey: signer.keys[0].publicKey,
+      });
+      await dataSource.getRepository(CachedAccountKey).save(cachedAccountKey);
+
+      const transactionCachedAccount = dataSource.getRepository(TransactionCachedAccount).create({
+        transactionId: transaction.id,
+        cachedAccountId: cachedAccount.id,
+      });
+      await dataSource.getRepository(TransactionCachedAccount).save(transactionCachedAccount);
+
+      // Signer HAS signed
+      await createTransactionSigner(dataSource, transaction, signer.keys[0]);
+
+      const filters = {
+        statuses: [TransactionStatus.WAITING_FOR_SIGNATURES],
+        onlyUnsigned: false,
+      };
+
+      const query = getTransactionNodesQuery(sqlBuilder, filters, signer, { signer: true });
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].transaction_id).toBe(transaction.id);
+    });
+
+    it('should work with transaction.publicKeys array (onlyUnsigned: true, not signed)', async () => {
+      const creator = await createTestUserWithKeys(dataSource);
+      const signer = await createTestUserWithKeys(dataSource);
+
+      // Create transaction with publicKeys array set
+      const transaction = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+
+      await dataSource.getRepository(Transaction).update(
+        { id: transaction.id },
+        { publicKeys: [signer.keys[0].publicKey] }
+      );
+
+      // Signer has NOT signed yet
+      const filters = {
+        statuses: [TransactionStatus.WAITING_FOR_SIGNATURES],
+        onlyUnsigned: true,
+      };
+
+      const query = getTransactionNodesQuery(sqlBuilder, filters, signer, { signer: true });
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].transaction_id).toBe(transaction.id);
+    });
+
+    it('should NOT show transaction with publicKeys when user has signed (onlyUnsigned: true, signed)', async () => {
+      const creator = await createTestUserWithKeys(dataSource);
+      const signer = await createTestUserWithKeys(dataSource);
+
+      const transaction = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+
+      await dataSource.getRepository(Transaction).update(
+        { id: transaction.id },
+        { publicKeys: [signer.keys[0].publicKey] }
+      );
+
+      // Signer HAS signed
+      await createTransactionSigner(dataSource, transaction, signer.keys[0]);
+
+      const filters = {
+        statuses: [TransactionStatus.WAITING_FOR_SIGNATURES],
+        onlyUnsigned: true,
+      };
+
+      const query = getTransactionNodesQuery(sqlBuilder, filters, signer, { signer: true });
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(0);
+    });
+
+    it('should show transaction with publicKeys when user has signed (onlyUnsigned: false)', async () => {
+      const creator = await createTestUserWithKeys(dataSource);
+      const signer = await createTestUserWithKeys(dataSource);
+
+      const transaction = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+
+      await dataSource.getRepository(Transaction).update(
+        { id: transaction.id },
+        { publicKeys: [signer.keys[0].publicKey] }
+      );
+
+      await createTransactionSigner(dataSource, transaction, signer.keys[0]);
+
+      const filters = {
+        statuses: [TransactionStatus.WAITING_FOR_SIGNATURES],
+        onlyUnsigned: false,
+      };
+
+      const query = getTransactionNodesQuery(sqlBuilder, filters, signer, { signer: true });
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].transaction_id).toBe(transaction.id);
     });
   });
 
@@ -169,7 +392,7 @@ describe('getTransactionNodesForUser - Integration', () => {
         });
       }
 
-      const query = getTransactionNodesForUserQuery(sqlBuilder, defaultFilters, user, signerRoles);
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(1);
@@ -189,7 +412,7 @@ describe('getTransactionNodesForUser - Integration', () => {
         });
       }
 
-      const query = getTransactionNodesForUserQuery(sqlBuilder, defaultFilters, user, signerRoles);
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result[0].group_item_count).toBe(5);
@@ -212,7 +435,9 @@ describe('getTransactionNodesForUser - Integration', () => {
         }
       }
 
-      const query = getTransactionNodesForUserQuery(sqlBuilder, defaultFilters, user, signerRoles);
+      const filters = { ...defaultFilters, onlyUnsigned: true };
+
+      const query = getTransactionNodesQuery(sqlBuilder, filters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result[0].group_item_count).toBe(5);
@@ -234,7 +459,7 @@ describe('getTransactionNodesForUser - Integration', () => {
         seq: 1,
       });
 
-      const query = getTransactionNodesForUserQuery(sqlBuilder, defaultFilters, user, signerRoles);
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result[0].status).toBe(TransactionStatus.WAITING_FOR_SIGNATURES);
@@ -262,7 +487,7 @@ describe('getTransactionNodesForUser - Integration', () => {
         ],
       };
 
-      const query = getTransactionNodesForUserQuery(sqlBuilder, filters, user, signerRoles);
+      const query = getTransactionNodesQuery(sqlBuilder, filters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result[0].status).toBeNull();
@@ -281,7 +506,7 @@ describe('getTransactionNodesForUser - Integration', () => {
         seq: 0,
       });
 
-      const query = getTransactionNodesForUserQuery(sqlBuilder, defaultFilters, user, signerRoles);
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result[0].description).toBe('Group Description');
@@ -307,7 +532,7 @@ describe('getTransactionNodesForUser - Integration', () => {
         createdAt: new Date('2024-01-02'),
       });
 
-      const query = getTransactionNodesForUserQuery(sqlBuilder, defaultFilters, user, signerRoles);
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, user, signerRoles);
       const result = await dataSource.query(query.text, query.values);
 
       expect(result).toHaveLength(3);

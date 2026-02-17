@@ -7,6 +7,7 @@ import {
   compareJsonFiles,
   generateRandomEmail,
   generateRandomPassword,
+  getPrivateKeyEnv,
   parsePropertiesContent,
   setupEnvironmentForTransactions,
   waitForValidStart,
@@ -221,7 +222,7 @@ export class OrganizationPage extends BasePage {
 
   async setUpInitialUsers(window: Page, encryptionPassword: string, setPrivateKey = true) {
     const user = this.users[0];
-    const privateKey = process.env.PRIVATE_KEY ?? '';
+    const privateKey = getPrivateKeyEnv()
 
     // Full setup for the first user (index 0) who is payer
     await this.signInOrganization(user.email, user.password, encryptionPassword);
@@ -245,7 +246,7 @@ export class OrganizationPage extends BasePage {
 
     if (setPrivateKey) {
       await setupEnvironmentForTransactions(window, privateKey);
-      this.users[0].privateKey = privateKey;
+      this.users[0].privateKey = privateKey ?? '';
     }
 
     await this.settingsPage.navigateToLogout();
@@ -314,7 +315,7 @@ export class OrganizationPage extends BasePage {
 
   async recoverPrivateKey(window: Page) {
     // for settings tests we are recovering User#1 which has PRIVATE_KEY_2 in the database
-    await setupEnvironmentForTransactions(window, process.env.PRIVATE_KEY);
+    await setupEnvironmentForTransactions(window, getPrivateKeyEnv());
   }
 
   getUser(index: number) {

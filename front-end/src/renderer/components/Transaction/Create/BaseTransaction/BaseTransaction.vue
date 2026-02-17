@@ -2,6 +2,7 @@
 import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
 import {
   getTransactionCommonData,
+  hasStartTimestampChanged,
   type TransactionCommonData,
   transactionsDataMatch,
   validate100CharInput,
@@ -134,8 +135,10 @@ const hasTransactionChanged = computed(() => {
       (initialValidStart.compare(now) > 0 || validStart.compare(now) > 0)
     ) {
       result = true; // validStart was updated
+    } else if (hasStartTimestampChanged(initialTransaction.value as Transaction, transaction.value as Transaction, now)) {
+      result = true; // startTimestamp was manually updated to a future time
     } else {
-      // whether tx data match, excluding validStart
+      // whether tx data match, excluding validStart and startTimestamp
       result = !transactionsDataMatch(initialTransaction.value as Transaction, transaction.value);
     }
   } else {
@@ -204,20 +207,20 @@ const handleExecuted = async ({ success, response, receipt }: ExecutedData) => {
 const handleSubmit = async (id: number, body: string) => {
   isProcessed.value = true;
   const targetNodeId: TransactionNodeId = { transactionId: id };
-  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router);
+  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true);
   emit('submitted', id, body);
 };
 
 const handleGroupSubmit = async (id: number) => {
   isProcessed.value = true;
   const targetNodeId: TransactionNodeId = { groupId: id };
-  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router);
+  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true);
   emit('group:submitted', id);
 };
 
 const handleLocalStored = async (id: string) => {
   const targetNodeId: TransactionNodeId = { transactionId: id };
-  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router);
+  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true);
 };
 
 const handleGroupAction = (action: 'add' | 'edit', path?: string) => {
@@ -257,7 +260,6 @@ function handleInputValidation(e: Event) {
 }
 
 const saveDraft = async (): Promise<void> => {
-  // TBD: This method should be passed to SaveDraftButton and replace handleDraft()
   const draftId = route.query.draftId?.toString();
   const transactionBytes = getTransactionBytes();
   if (draftId) {
@@ -290,6 +292,11 @@ const getTransactionBytes = () => {
 };
 
 /* Functions */
+function handlePayerIdUpdate(newPayerId: string) {
+  payerData.accountId.value = newPayerId;
+  data.payerId = newPayerId;
+}
+
 function basePreCreateAssert() {
   if (!isAccountId(payerData.accountId.value)) {
     throw new Error('Invalid Payer ID');
@@ -342,8 +349,7 @@ defineExpose({
         v-model:reminder="reminder"
         :valid-start="data.validStart"
         :is-processed="isProcessed"
-        v-on:draft-saved="isDraftSaved = true"
-        :create-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
+        :save-draft="saveDraft"
         :description="description"
         :heading-text="getTransactionType(transaction)"
         :create-button-label="
@@ -370,7 +376,7 @@ defineExpose({
         <TransactionIdControls
           class="mt-6"
           :payer-id="payerData.accountId.value"
-          @update:payer-id="((payerData.accountId.value = $event), (data.payerId = $event))"
+          @update:payer-id="handlePayerIdUpdate"
           v-model:valid-start="data.validStart"
           v-model:max-transaction-fee="data.maxTransactionFee as Hbar"
         />

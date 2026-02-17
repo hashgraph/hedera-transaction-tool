@@ -1,50 +1,49 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
-import {
-  Brackets,
-  DeepPartial,
-  EntityManager,
-  In,
-  Not,
-  Repository,
-  SelectQueryBuilder,
-} from 'typeorm';
+import { Brackets, DeepPartial, EntityManager, In, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import {
   AccountCreateTransaction,
   AccountId,
-  PublicKey,
-  TransactionId,
-  Timestamp,
+  AccountUpdateTransaction,
   Client,
+  Long,
+  NodeCreateTransaction,
+  NodeUpdateTransaction,
   PrivateKey,
+  PublicKey,
   SignatureMap,
+  Timestamp,
+  TransactionId,
 } from '@hashgraph/sdk';
 
 import {
-  ErrorCodes,
-  SchedulerService,
-  safe,
-  NatsPublisherService,
   emitTransactionStatusUpdate,
+  ErrorCodes,
   ExecuteService,
-  TransactionSignatureService,
+  flattenKeyList,
+  NatsPublisherService,
+  safe,
+  SchedulerService,
   SqlBuilderService,
+  TransactionSignatureService,
 } from '@app/common';
 import {
   attachKeys,
   getClientFromNetwork,
-  isExpired,
-  userKeysRequiredToSign,
-  MirrorNetworkGRPC,
-  isTransactionBodyOverMaxSize,
   getTransactionSignReminderKey,
+  getTransactionTypeEnumValue,
+  isExpired,
+  isTransactionBodyOverMaxSize,
+  MirrorNetworkGRPC,
+  userKeysRequiredToSign,
 } from '@app/common/utils';
 import {
   Transaction,
   TransactionApprover,
   TransactionSigner,
   TransactionStatus,
+  TransactionType,
   User,
   UserKey,
   UserStatus,
@@ -784,6 +783,229 @@ describe('TransactionsService', () => {
         `Creator key ${dto.creatorKeyId} not found`,
       );
 
+      client.close();
+    });
+
+    it('should extract publicKeys from AccountUpdateTransaction with new key', async () => {
+      const newKey = PrivateKey.generateECDSA().publicKey;
+      const sdkTransaction = new AccountUpdateTransaction()
+        .setTransactionId(new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())))
+        .setKey(newKey);
+
+      const dto: CreateTransactionDto = {
+        name: 'Account Update',
+        description: 'Update account key',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
+      });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+      transactionsRepo.find.mockResolvedValueOnce([]);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      jest.mocked(getTransactionTypeEnumValue).mockReturnValueOnce(TransactionType.ACCOUNT_UPDATE);
+      jest.mocked(flattenKeyList).mockReturnValueOnce([newKey]);
+
+      let capturedTransaction: any;
+      transactionsRepo.create.mockImplementationOnce((input: DeepPartial<Transaction>) => {
+        capturedTransaction = input;
+        return { ...input } as Transaction;
+      });
+
+      await service.createTransaction(dto, user as User);
+
+      expect(capturedTransaction.publicKeys).toBeDefined();
+      expect(capturedTransaction.publicKeys).toContain(newKey.toStringRaw());
+      expect(capturedTransaction.publicKeys).toHaveLength(1);
+
+      client.close();
+    });
+
+    it('should extract publicKeys from NodeUpdateTransaction with admin key', async () => {
+      const adminKey = PrivateKey.generateECDSA().publicKey;
+      const sdkTransaction = new NodeUpdateTransaction()
+        .setTransactionId(new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())))
+        .setAdminKey(adminKey)
+        .setNodeId(Long.fromInt(1));
+
+      const dto: CreateTransactionDto = {
+        name: 'Node Update',
+        description: 'Update node admin key',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
+      });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+      transactionsRepo.find.mockResolvedValueOnce([]);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      jest.mocked(getTransactionTypeEnumValue).mockReturnValueOnce(TransactionType.NODE_UPDATE);
+      jest.mocked(flattenKeyList).mockReturnValueOnce([adminKey]);
+
+      let capturedTransaction: any;
+      transactionsRepo.create.mockImplementationOnce((input: DeepPartial<Transaction>) => {
+        capturedTransaction = input;
+        return { ...input } as Transaction;
+      });
+
+      await service.createTransaction(dto, user as User);
+
+      expect(capturedTransaction.publicKeys).toBeDefined();
+      expect(capturedTransaction.publicKeys).toContain(adminKey.toStringRaw());
+      expect(capturedTransaction.publicKeys).toHaveLength(1);
+
+      client.close();
+    });
+
+    it('should extract publicKeys from NodeCreateTransaction with admin key', async () => {
+      const adminKey = PrivateKey.generateECDSA().publicKey;
+      const sdkTransaction = new NodeCreateTransaction()
+        .setTransactionId(new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())))
+        .setAdminKey(adminKey)
+        .setAccountId(AccountId.fromString('0.0.100'));
+
+      const dto: CreateTransactionDto = {
+        name: 'Node Create',
+        description: 'Create node with admin key',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
+      });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+      transactionsRepo.find.mockResolvedValueOnce([]);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      jest.mocked(getTransactionTypeEnumValue).mockReturnValueOnce(TransactionType.NODE_CREATE);
+      jest.mocked(flattenKeyList).mockReturnValueOnce([adminKey]);
+
+      let capturedTransaction: any;
+      transactionsRepo.create.mockImplementationOnce((input: DeepPartial<Transaction>) => {
+        capturedTransaction = input;
+        return { ...input } as Transaction;
+      });
+
+      await service.createTransaction(dto, user as User);
+
+      expect(capturedTransaction.publicKeys).toBeDefined();
+      expect(capturedTransaction.publicKeys).toContain(adminKey.toStringRaw());
+      expect(capturedTransaction.publicKeys).toHaveLength(1);
+
+      client.close();
+    });
+
+    it('should set publicKeys to null for transactions without new keys', async () => {
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())));
+
+      const dto: CreateTransactionDto = {
+        name: 'Transaction without new key',
+        description: 'Description',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
+      });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+      transactionsRepo.find.mockResolvedValueOnce([]);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      jest.mocked(getTransactionTypeEnumValue).mockReturnValueOnce(TransactionType.ACCOUNT_CREATE);
+
+      let capturedTransaction: any;
+      transactionsRepo.create.mockImplementationOnce((input: DeepPartial<Transaction>) => {
+        capturedTransaction = input;
+        return { ...input } as Transaction;
+      });
+
+      await service.createTransaction(dto, user as User);
+
+      expect(capturedTransaction.publicKeys).toBeNull();
+
+      client.close();
+    });
+
+    it('should handle key extraction errors gracefully and set publicKeys to null', async () => {
+      const sdkTransaction = new AccountUpdateTransaction()
+        .setTransactionId(new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())))
+        .setKey(PrivateKey.generateECDSA().publicKey);
+
+      const dto: CreateTransactionDto = {
+        name: 'Account Update',
+        description: 'Update with error',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
+      });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+      transactionsRepo.find.mockResolvedValueOnce([]);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      jest.mocked(getTransactionTypeEnumValue).mockReturnValueOnce(TransactionType.ACCOUNT_UPDATE);
+
+      // Mock console.error to avoid polluting test output
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // Force flattenKeyList or key extraction to throw
+      jest.spyOn(Object.getPrototypeOf(sdkTransaction), 'key', 'get').mockImplementation(() => {
+        throw new Error('Key extraction failed');
+      });
+
+      let capturedTransaction: any;
+      transactionsRepo.create.mockImplementationOnce((input: DeepPartial<Transaction>) => {
+        capturedTransaction = input;
+        return { ...input } as Transaction;
+      });
+
+      await service.createTransaction(dto, user as User);
+
+      expect(capturedTransaction.publicKeys).toBeNull();
+      expect(consoleErrorSpy).toHaveBeenCalled();
+
+      consoleErrorSpy.mockRestore();
       client.close();
     });
   });

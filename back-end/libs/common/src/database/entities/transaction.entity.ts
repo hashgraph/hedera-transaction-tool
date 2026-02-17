@@ -60,6 +60,10 @@ export const MAX_TRANSACTION_BYTE_SIZE = 6_144;
 @Entity()
 @Index(['status', 'mirrorNetwork'])
 @Index(['creatorKeyId'])
+@Index('idx_transaction_public_keys_gin', {
+  // Tell TypeORM this index exists but is managed by migrations
+  synchronize: false,
+})
 export class Transaction {
   @PrimaryGeneratedColumn()
   id: number;
@@ -121,6 +125,12 @@ export class Transaction {
 
   @Column({ nullable: true })
   cutoffAt?: Date;
+
+  /**
+   * List of keys from the newKey, where applicable.
+   */
+  @Column({ type: 'text', array: true, nullable: true })
+  publicKeys: string[] | null;
 
   @CreateDateColumn()
   createdAt: Date;
