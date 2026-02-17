@@ -10,7 +10,6 @@ import {
   setVersionDataForOrg,
   getVersionStatusForOrg,
   organizationVersionData,
-  triggeringOrganizationServerUrl,
   organizationCompatibilityResults,
 } from '@renderer/stores/versionState';
 
@@ -55,7 +54,7 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
     if (!token && user && user.isLoggedIn && (user.password || user.useKeychain)) {
       const credentials = await getOrganizationCredentials(org.id, user.id, user.password);
 
-      if (credentials) {
+      if (credentials?.password) {
         const { jwtToken } = await login(
           org.serverUrl,
           credentials.email,
@@ -104,7 +103,6 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
         );
 
         organizationCompatibilityResults.value[serverUrl] = compatibilityResult;
-        triggeringOrganizationServerUrl.value = serverUrl;
 
         if (versionResponse.updateUrl) {
           setOrgVersionBelowMinimum(serverUrl, versionResponse.updateUrl);

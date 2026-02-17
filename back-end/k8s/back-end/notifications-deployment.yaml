@@ -92,7 +92,7 @@ spec:
             - name: POSTGRES_SYNCHRONIZE
               value: 'false'
             - name: MINIMUM_SUPPORTED_FRONTEND_VERSION
-              value: '0.21.0'
+              value: '0.23.0'
 ---
 apiVersion: v1
 kind: Service

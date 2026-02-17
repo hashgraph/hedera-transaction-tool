@@ -23,7 +23,7 @@ import useVersionCheck from '@renderer/composables/useVersionCheck';
 import { safeAwait } from '@renderer/utils';
 import * as pks from '@renderer/services/publicKeyMappingService';
 import * as ush from '@renderer/utils/userStoreHelpers';
-import { getVersionStatusForOrg, triggeringOrganizationServerUrl } from './versionState';
+import { getVersionStatusForOrg } from './versionState';
 
 import useNetworkStore from './storeNetwork';
 import useOrganizationConnection from './storeOrganizationConnection';
@@ -58,7 +58,6 @@ const useUserStore = defineStore('user', () => {
   const selectedOrganization = ref<ConnectedOrganization | null>(null);
   const organizations = ref<ConnectedOrganization[]>([]);
   const organizationTokens = ref<OrganizationTokens>({});
-  const skippedSetup = ref<boolean>(false);
 
   /** AccountSetup */
   const accountSetupStarted = ref<boolean | null>(null);
@@ -69,9 +68,6 @@ const useUserStore = defineStore('user', () => {
   const publicKeys = computed(() => keyPairs.value.map(kp => kp.public_key));
   const publicKeysToAccountsFlattened = computed(() =>
     ush.flattenAccountIds(publicKeyToAccounts.value),
-  );
-  const shouldSetupAccount = computed(() =>
-    ush.accountSetupRequired(selectedOrganization.value, keyPairs.value),
   );
 
   /* Actions */
@@ -209,7 +205,6 @@ const useUserStore = defineStore('user', () => {
           const versionStatus = getVersionStatusForOrg(organization.serverUrl);
 
           if (versionStatus === 'belowMinimum') {
-            triggeringOrganizationServerUrl.value = organization.serverUrl;
             return;
           }
         }
@@ -280,10 +275,8 @@ const useUserStore = defineStore('user', () => {
     organizations,
     secretHashes,
     publicKeys,
-    shouldSetupAccount,
     accountSetupStarted,
     mnemonics,
-    skippedSetup,
     deleteOrganization,
     getJwtToken,
     getPassword,

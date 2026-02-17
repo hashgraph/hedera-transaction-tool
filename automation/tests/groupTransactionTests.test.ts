@@ -10,11 +10,13 @@ import {
   setupApp,
   setupEnvironmentForTransactions,
 } from '../utils/util.js';
+import { LoginPage } from '../pages/LoginPage.js';
 
 let app: ElectronApplication;
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;
+let loginPage: LoginPage;
 let transactionPage: TransactionPage;
 let groupPage: GroupPage;
 
@@ -23,6 +25,7 @@ test.describe('Group transaction tests', () => {
     await resetDbState();
     ({ app, window } = await setupApp());
     registrationPage = new RegistrationPage(window);
+    loginPage = new LoginPage(window);
     transactionPage = new TransactionPage(window);
     groupPage = new GroupPage(window);
 
@@ -40,12 +43,23 @@ test.describe('Group transaction tests', () => {
   });
 
   test.beforeEach(async () => {
+    // Wait for any ongoing operations to complete
+    await window.waitForLoadState('networkidle');
+
+    // Ensure menu button is visible before clicking
+    await transactionPage.waitForElementToBeVisible(
+      transactionPage.transactionsMenuButtonSelector,
+      5000,
+    );
     await transactionPage.clickOnTransactionsMenuButton();
 
-    //this is needed because tests fail in CI environment
+    // Additional wait for CI environment stability
     if (process.env.CI) {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
+
+    // Wait for page to stabilize after navigation
+    await window.waitForLoadState('networkidle');
 
     await groupPage.closeDraftTransactionModal();
     await groupPage.closeGroupDraftModal();
@@ -62,6 +76,21 @@ test.describe('Group transaction tests', () => {
   test('Verify group transaction elements', async () => {
     const isAllElementsPresent = await groupPage.verifyGroupElements();
     expect(isAllElementsPresent).toBe(true);
+  });
+
+  test('Verify that empty group and empty transaction is not saved', async () => {
+    await groupPage.clickOnAddTransactionButton();
+    await transactionPage.clickOnCreateAccountTransaction();
+    // If we click immediatly on back button, then Add To Group button appears
+    // If we wait a bit, then no save dialog => we wait a bit :(
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await transactionPage.clickOnBackButton();
+    await groupPage.clickOnBackButton();
+
+    //verify no transaction group is saved
+    await transactionPage.navigateToDrafts();
+    const isContinueButtonHidden = await transactionPage.isFirstDraftContinueButtonHidden();
+    expect(isContinueButtonHidden).toBe(true);
   });
 
   test('Verify delete group action does not save the group', async () => {

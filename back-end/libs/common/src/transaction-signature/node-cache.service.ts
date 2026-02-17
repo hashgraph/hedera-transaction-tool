@@ -19,6 +19,8 @@ import {
 import { MirrorNodeClient } from './mirror-node.client';
 import { CacheHelper } from './cache.helper';
 import { RefreshResult, RefreshStatus } from './cache.types';
+import { SqlBuilderService } from '../sql';
+import { InjectDataSource } from '@nestjs/typeorm';
 
 @Injectable()
 export class NodeCacheService {
@@ -26,16 +28,18 @@ export class NodeCacheService {
   private readonly cacheHelper: CacheHelper;
 
   private readonly cacheTtlMs: number;
-  private readonly reclaimDelayMs: number;
+  private readonly claimTimeoutMs: number;
 
   constructor(
     private readonly mirrorNodeClient: MirrorNodeClient,
+    @InjectDataSource('cache')
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
+    private readonly sqlBuilder: SqlBuilderService,
   ) {
     this.cacheHelper = new CacheHelper(dataSource);
     this.cacheTtlMs = this.configService.get<number>('CACHE_STALE_THRESHOLD_MS', 10 * 1000);
-    this.reclaimDelayMs = this.configService.get<number>('RECLAIM_DELAY_MS', 2 * 60 * 1000);
+    this.claimTimeoutMs = this.configService.get<number>('CACHE_CLAIM_TIMEOUT_MS', 10 * 1000);
   }
 
   /**
@@ -48,9 +52,9 @@ export class NodeCacheService {
     const mirrorNetwork = cached.mirrorNetwork;
 
     // Try to claim the node for refresh
-    const claimedNode = await this.tryClaimNodeRefresh(nodeId, mirrorNetwork);
+    const { data: claimedNode, claimed } = await this.tryClaimNodeRefresh(nodeId, mirrorNetwork);
 
-    if (!claimedNode.refreshToken) {
+    if (!claimed) {
       return false; // Didn't refresh (someone else did it)
     }
 
@@ -89,9 +93,9 @@ export class NodeCacheService {
     this.logger.debug(`Fetching node ${nodeId} from mirror node (cache ${cached ? 'stale' : 'missing'})`);
 
     // Try to claim the node for refresh, create the node if none exists
-    const claimedNode = await this.tryClaimNodeRefresh(nodeId, mirrorNetwork);
+    const { data: claimedNode, claimed } = await this.tryClaimNodeRefresh(nodeId, mirrorNetwork);
 
-    if (!claimedNode.refreshToken) {
+    if (!claimed) {
       // Link to transaction if we have cached data
       await this.linkTransactionToNode(transaction.id, claimedNode.id);
 
@@ -109,16 +113,17 @@ export class NodeCacheService {
   }
 
   /**
-   * Claim refresh for a CachedNode row. Reclaim period: 2 minutes.
+   * Claim refresh for a CachedNode row.
    */
   private tryClaimNodeRefresh(
     nodeId: number,
     mirrorNetwork: string,
-  ): Promise<CachedNode> {
+  ): Promise<{ data: CachedNode, claimed: boolean }> {
     return this.cacheHelper.tryClaimRefresh(
+      this.sqlBuilder,
       CachedNode,
       { nodeId, mirrorNetwork },
-      this.reclaimDelayMs,
+      this.claimTimeoutMs,
     );
   }
 
@@ -318,7 +323,9 @@ export class NodeCacheService {
   private parseCachedNode(cached: CachedNode): NodeInfoParsed {
     return {
       admin_key: deserializeKey(cached.encodedKey),
-      node_account_id: AccountId.fromString(cached.nodeAccountId),
+      node_account_id: cached.nodeAccountId
+        ? AccountId.fromString(cached.nodeAccountId)
+        : null,
     } as NodeInfoParsed;
   }
 

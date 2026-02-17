@@ -1,6 +1,7 @@
-import { DataSource, EntityTarget } from 'typeorm';
+import { DataSource, EntityTarget, FindOptionsWhere } from 'typeorm';
 import { PublicKey } from '@hashgraph/sdk';
 import { randomUUID } from 'node:crypto';
+import { CacheKey, getUpsertRefreshTokenForCacheQuery, SqlBuilderService } from '../sql';
 
 /**
  * Helper class for common caching operations.
@@ -10,83 +11,98 @@ export class CacheHelper {
   constructor(private readonly dataSource: DataSource) {}
 
   /**
-   * Generic claim-based refresh coordinator for any entity.
+   * Generic claim-based refresh coordinator for cache rows.
    *
    * Behavior:
-   * 1) Ensures the row exists via idempotent insert-or-ignore.
-   * 2) Attempts to atomically claim the row by setting a refresh token
-   *    if it is unclaimed or reclaimable.
-   * 3) If the claim succeeds, returns the claimed row (this caller is the refresher).
-   * 4) If another caller is refreshing, waits until the refresh completes
-   *    (refreshToken is cleared) or the reclaim window expires, then retries.
+   * 1) Tries atomic UPSERT to claim row with unique refresh token
+   *    - INSERT succeeds if row doesn't exist
+   *    - UPDATE succeeds only if unclaimed (refreshToken IS NULL) or reclaimable (updatedAt < reclaim cutoff)
+   * 2) Returns claimed row + `claimed: true` if this caller owns it
+   * 3) If claim fails (another process owns it), polls with backoff until:
+   *    - Row becomes unclaimed (use without claiming), OR
+   *    - We successfully reclaim after maxAttempts
    *
    * Guarantees:
-   * - At most one caller holds the refresh claim at any time.
-   * - Waiting callers do not perform redundant refresh work.
-   * - If a refresher stalls past the reclaim window, exactly one waiting
-   *   caller will take over the claim.
+   * - Exactly one caller owns refreshToken at any time (optimistic locking)
+   * - Polling callers avoid redundant work while waiting for current owner
+   * - Stalled refresher can be reclaimed after `reclaimAfterMs` window
+   * - Always returns valid row data (newly claimed or existing)
    *
    * Freshness is enforced by the caller; this method coordinates ownership only.
+   *
+   * @param sqlBuilder - Resolves safe table/column names from entity metadata
+   * @param entity - TypeORM entity class (determines table/columns)
+   * @param key - Unique key columns/values (determines conflict target)
+   * @param reclaimAfterMs - Time window after which stale claims can be stolen
+   * @returns Row data + boolean indicating if this caller claimed ownership
+   * @throws If no row exists after max attempts or query fails unexpectedly
    */
   async tryClaimRefresh<T extends { refreshToken?: string | null; updatedAt?: Date }>(
+    sqlBuilder: SqlBuilderService,
     entity: EntityTarget<T>,
-    where: Record<string, any>,
+    key: CacheKey,
     reclaimAfterMs: number,
-  ): Promise<T> {
-    const pollIntervalMs = 100;
+  ): Promise<{ data: T, claimed: boolean }> {
+    const pollIntervalMs = 500;
     const uuid = randomUUID();
 
-    // 1. Ensure row exists (idempotent)
-    await this.dataSource
-      .createQueryBuilder()
-      .insert()
-      .into(entity)
-      .values(where)
-      .orIgnore()
-      .execute();
+    // Generate parameterized UPSERT SQL using safe column/table names from entity metadata
+    // CacheKey defines conflict target columns
+    const { text: sql, values } = getUpsertRefreshTokenForCacheQuery(
+      sqlBuilder,
+      entity,
+      key,
+    );
 
-    while (true) {
-      const reclaimDate = new Date(Date.now() - reclaimAfterMs);
+    const maxAttempts = 20;
+    let attempt = 0;
+    let existing: T | null = null;
 
-      // 2. Try to claim (MUST update updatedAt)
-      const updateResult = await this.dataSource
-        .createQueryBuilder()
-        .update(entity)
-        .set({
-          refreshToken: uuid,
-          updatedAt: () => 'NOW()',
-        })
-        .where(where)
-        .andWhere(
-          `(refreshToken IS NULL OR updatedAt < :reclaimDate)`,
-          { reclaimDate },
-        )
-        .returning('*')
-        .execute();
-
-      // 3. We won the claim
-      if (updateResult.affected === 1) {
-        return updateResult.raw[0] as T;
+    // Retry loop: claim atomically or poll for unclaimed row
+    while (attempt < maxAttempts) {
+      if (attempt > 0) {
+        // On retries: check for unclaimed row to short-circuit without claiming
+        existing = await this.dataSource.manager.findOne(entity, { where: key as unknown as FindOptionsWhere<T> }) as T | null;
+        if (existing && !existing.refreshToken) {
+          // Unclaimed row found → we can use it (someone else finished updating)
+          return { data: existing, claimed: false };
+        }
       }
 
-      // 4. Someone else owns it → wait
+      // Attempt atomic claim via UPSERT:
+      // - INSERT new row with our claimToken
+      // - ON CONFLICT: steal if unclaimed or reclaimable (updatedAt < reclaim cutoff)
+      // - Always returns current owner row
+      const result = await this.dataSource.query(sql, [
+        ...values,                      // key columns
+        uuid,                           // our refreshToken
+        new Date(Date.now() - reclaimAfterMs), // reclaim cutoff
+      ]);
+
+      // Safety check: ensure query returns exactly one row (protects against SQL errors)
+      if (!Array.isArray(result) || result.length !== 1) {
+        throw new Error('Unexpected number of rows returned from cache upsert/claim');
+      }
+
+      const claim = result[0] as T;
+
+      if (claim.refreshToken === uuid) {
+        // SUCCESS: we claimed ownership
+        return { data: claim, claimed: true };
+      }
+
+      // FAILED: someone else claimed it first → wait and retry
       await new Promise(res => setTimeout(res, pollIntervalMs));
-
-      const row = await this.dataSource.manager.findOne(entity, { where });
-
-      if (!row) {
-        // Should not happen, but be defensive
-        continue;
-      }
-
-      // 5. Refresh finished while we waited
-      if (!row.refreshToken) {
-        return row;
-      }
-
-      // 6. Otherwise: loop again
-      // Eventually reclaimDate will pass and one waiter will win
+      attempt++;
     }
+
+    // Max attempts exhausted
+    if (existing === null) {
+      throw new Error('Failed to claim cache refresh after max attempts, and no existing data found');
+    }
+
+    // Return last known data (best effort)
+    return { data: existing!, claimed: false };
   }
 
   /**

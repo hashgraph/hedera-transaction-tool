@@ -31,7 +31,7 @@ import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import { successToastOptions } from '@renderer/utils/toastOptions.ts';
-import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
+import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
@@ -163,6 +163,18 @@ const handleContinueDraft = async (draft: TransactionDraft | TransactionGroup) =
 /* Functions */
 function getOpositeDirection() {
   return sortDirection.value === 'asc' ? 'desc' : 'asc';
+}
+
+/**
+ * Gets the display transaction type for drafts.
+ * For freeze transactions, extracts the specific freeze type from transactionBytes.
+ */
+function getDraftDisplayType(draft: TransactionDraft): string {
+  return getDisplayTransactionType(
+    { localType: draft.type, transactionBytes: draft.transactionBytes },
+    false,
+    true,
+  );
 }
 
 function createFindArgs(): Prisma.TransactionDraftFindManyArgs {
@@ -431,7 +443,7 @@ watch(() => list.value.length, () => {
                 <td>
                   <span class="text-bold" :data-testid="'span-draft-tx-type-' + i">{{
                       (draft as TransactionDraft).type
-                        ? formatTransactionType((draft as TransactionDraft).type, false, true)
+                        ? getDraftDisplayType(draft as TransactionDraft)
                         : 'Group'
                     }}</span>
                 </td>

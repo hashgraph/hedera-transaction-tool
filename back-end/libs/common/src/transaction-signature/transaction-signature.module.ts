@@ -8,14 +8,28 @@ import {
   CachedAccountKey,
   CachedNode,
   CachedNodeAdminKey,
+  Client,
+  Notification,
+  NotificationPreferences,
+  NotificationReceiver,
+  Transaction,
+  TransactionApprover,
   TransactionCachedAccount,
   TransactionCachedNode,
+  TransactionComment,
+  TransactionGroup,
+  TransactionGroupItem,
+  TransactionObserver,
+  TransactionSigner,
+  User,
+  UserKey,
 } from '@entities';
 
 import { AccountCacheService } from './account-cache.service';
 import { MirrorNodeClient } from './mirror-node.client';
 import { NodeCacheService } from './node-cache.service';
 import { TransactionSignatureService } from './transaction-signature.service';
+import { SqlBuilderModule } from '../sql';
 
 @Module({
   imports: [
@@ -24,13 +38,27 @@ import { TransactionSignatureService } from './transaction-signature.service';
       CachedAccountKey,
       CachedNode,
       CachedNodeAdminKey,
+      Client,
+      Notification,
+      NotificationPreferences,
+      NotificationReceiver,
+      Transaction,
+      TransactionApprover,
       TransactionCachedAccount,
       TransactionCachedNode,
-    ]),
+      TransactionComment,
+      TransactionGroup,
+      TransactionGroupItem,
+      TransactionObserver,
+      TransactionSigner,
+      User,
+      UserKey,
+    ], 'cache'),
     HttpModule.register({
       timeout: 5000,
     }),
     ConfigModule,
+    SqlBuilderModule,
   ],
   providers: [
     AccountCacheService,

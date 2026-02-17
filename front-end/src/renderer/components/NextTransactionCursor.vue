@@ -22,6 +22,10 @@ const positionLabel = computed(() => {
   return result;
 });
 
+const isSingleElementCollection = computed(() => {
+  return nextTransaction.currentCollection?.length === 1;
+});
+
 /* Handlers */
 const handlePrev = async () => {
   await nextTransaction.routeToPrev(router);
@@ -33,7 +37,7 @@ const handleNext = async () => {
 </script>
 
 <template>
-  <div class="btn-group" role="group">
+  <div v-if="!isSingleElementCollection" class="btn-group" role="group">
     <AppButton
       :disabled="!nextTransaction.hasPrev"
       class="btn-icon-only"
@@ -44,13 +48,9 @@ const handleNext = async () => {
     >
       <i class="bi bi-chevron-left"></i>
     </AppButton>
-    <AppButton
-      :disabled="true"
-      color="secondary"
-      class="text-numeric page-counter"
-      type="button"
-      >{{ positionLabel }}</AppButton
-    >
+    <AppButton :disabled="true" color="secondary" class="text-numeric page-counter" type="button">{{
+      positionLabel
+    }}</AppButton>
     <AppButton
       :disabled="!nextTransaction.hasNext"
       class="btn-icon-only"
@@ -64,8 +64,11 @@ const handleNext = async () => {
   </div>
 </template>
 <style scoped>
+.btn-group {
+  height: 40px;
+}
 .page-counter {
-  min-width: 80px;
+  min-width: 50px;
   opacity: 0.8;
   padding-left: 8px;
   padding-right: 8px;

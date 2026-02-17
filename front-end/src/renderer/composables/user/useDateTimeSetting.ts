@@ -2,7 +2,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { DATE_TIME_PREFERENCE } from '@shared/constants';
 
-import { add, getStoredClaim, update } from '@renderer/services/claimService';
+import { getStoredClaim, setStoredClaim } from '@renderer/services/claimService';
 
 import { isUserLoggedIn, safeAwait } from '@renderer/utils';
 import { computed, onBeforeMount, ref } from 'vue';
@@ -65,9 +65,7 @@ export default function useDateTimeSetting() {
 
   async function setDateTimeSetting(format: DateTimeOptions) {
     if (isUserLoggedIn(user.personal)) {
-      const claimValue = await safeAwait(getStoredClaim(user.personal.id, DATE_TIME_PREFERENCE));
-      const addOrUpdate = claimValue.data !== undefined ? update : add;
-      await addOrUpdate(user.personal.id, DATE_TIME_PREFERENCE, format);
+      await setStoredClaim(user.personal.id, DATE_TIME_PREFERENCE, format);
     }
     dateTimeSetting.value = null; // force a reload of the setting at next use to make sure cache is in sync with DB
   }

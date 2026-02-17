@@ -1,7 +1,16 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 
-import { Client, PublicKey, Transaction as SDKTransaction, TransactionId } from '@hashgraph/sdk';
+import {
+  AccountUpdateTransaction,
+  Client,
+  Key,
+  NodeCreateTransaction,
+  NodeUpdateTransaction,
+  PublicKey,
+  Transaction as SDKTransaction,
+  TransactionId,
+} from '@hashgraph/sdk';
 
 import {
   Brackets,
@@ -14,7 +23,7 @@ import {
   Repository,
 } from 'typeorm';
 
-import { Transaction, TransactionSigner, TransactionStatus, User } from '@entities';
+import { Transaction, TransactionSigner, TransactionStatus, TransactionType, User } from '@entities';
 
 import {
   attachKeys,
@@ -40,6 +49,7 @@ import {
   Sorting,
   userKeysRequiredToSign,
   validateSignature,
+  flattenKeyList,
 } from '@app/common';
 
 import { CreateTransactionDto, SignatureImportResultDto, UploadSignatureMapDto } from './dto';
@@ -391,6 +401,7 @@ export class TransactionsService {
             validStart: data.validStart,
             isManual: data.isManual,
             cutoffAt: data.cutoffAt,
+            publicKeys: data.publicKeys,
           }),
         );
 
@@ -797,10 +808,32 @@ export class TransactionsService {
     sdkTransaction.freezeWith(client);
 
     const transactionHash = await sdkTransaction.getTransactionHash();
+    const transactionType = getTransactionTypeEnumValue(sdkTransaction);
+
+    // Extract new keys if applicable
+    let publicKeys: string[] | null = null;
+    try {
+      let keyToExtract: Key | null = null;
+
+      if (transactionType === TransactionType.ACCOUNT_UPDATE) {
+        keyToExtract = (sdkTransaction as AccountUpdateTransaction).key;
+      } else if (transactionType === TransactionType.NODE_UPDATE) {
+        keyToExtract = (sdkTransaction as NodeUpdateTransaction).adminKey;
+      } else if (transactionType === TransactionType.NODE_CREATE) {
+        keyToExtract = (sdkTransaction as NodeCreateTransaction).adminKey;
+      }
+
+      if (keyToExtract) {
+        publicKeys = flattenKeyList(keyToExtract).map(pk => pk.toStringRaw());
+      }
+    } catch (error) {
+      // Log but don't fail - publicKeys will remain null
+      console.error(`Failed to extract public keys from transaction ${sdkTransaction.transactionId}:`, error);
+    }
 
     return {
       name: dto.name,
-      type: getTransactionTypeEnumValue(sdkTransaction),
+      type: transactionType,
       description: dto.description,
       transactionId: sdkTransaction.transactionId.toString(),
       transactionHash: encodeUint8Array(transactionHash),
@@ -812,6 +845,7 @@ export class TransactionsService {
       validStart: sdkTransaction.transactionId.validStart.toDate(),
       isManual: dto.isManual,
       cutoffAt: dto.cutoffAt,
+      publicKeys,
     };
   }
 

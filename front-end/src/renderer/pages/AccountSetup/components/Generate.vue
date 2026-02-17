@@ -3,20 +3,15 @@ import { ref, watch } from 'vue';
 import { Mnemonic } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useAccountSetupStore from '@renderer/stores/storeAccountSetup';
 
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNickname';
 
 import { validateMnemonic } from '@renderer/services/keyPairService';
-import { add, getStoredClaim, update } from '@renderer/services/claimService';
 
-import {
-  assertUserLoggedIn,
-  buildSkipClaimKey,
-  isLoggedInOrganization,
-  safeAwait,
-} from '@renderer/utils';
+import { isLoggedInOrganization } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
@@ -31,6 +26,7 @@ const props = defineProps<{
 
 /* Store */
 const user = useUserStore();
+const accountSetupStore = useAccountSetupStore();
 
 /* Composables */
 const router = useRouter();
@@ -105,19 +101,8 @@ const handleGenerate = async () => {
 };
 
 const handleSkip = async () => {
-  assertUserLoggedIn(user.personal);
-
-  if (isLoggedInOrganization(user.selectedOrganization)) {
-    const claimKey = buildSkipClaimKey(
-      user.selectedOrganization.serverUrl,
-      user.selectedOrganization.userId,
-    );
-    const { data } = await safeAwait(getStoredClaim(user.personal.id, claimKey));
-    const addOrUpdate = data !== undefined ? update : add;
-    await addOrUpdate(user.personal.id, claimKey, 'true');
-    user.skippedSetup = true;
-    await router.push({ name: 'transactions' });
-  }
+  await accountSetupStore.handleSkipRecoveryPhrase();
+  await router.push({ name: 'transactions' });
 };
 
 /* Watchers */

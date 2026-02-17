@@ -21,10 +21,32 @@ import { ConfigService } from '@nestjs/config';
         }) as TypeOrmModuleAsyncOptions,
       inject: [ConfigService],
     }),
+
+    // Cache connection pool
+    TypeOrmModule.forRootAsync({
+      name: 'cache', // Add name
+      imports: [],
+      useFactory: (configService: ConfigService) =>
+        ({
+          type: 'postgres',
+          host: configService.getOrThrow('POSTGRES_HOST'),
+          port: configService.getOrThrow<number>('POSTGRES_PORT', { infer: true }),
+          database: configService.getOrThrow('POSTGRES_DATABASE'),
+          username: configService.getOrThrow('POSTGRES_USERNAME'),
+          password: configService.getOrThrow('POSTGRES_PASSWORD'),
+          synchronize: false, // Don't sync twice
+          autoLoadEntities: true,
+          poolSize: 5, // Smaller dedicated pool
+          extra: {
+            statement_timeout: 15000, // Slightly longer for cache operations
+          },
+        }) as TypeOrmModuleAsyncOptions,
+      inject: [ConfigService],
+    }),
   ],
 })
 export class DatabaseModule {
-  static forFeature(entities: EntityClassOrSchema[]) {
-    return TypeOrmModule.forFeature(entities);
+  static forFeature(entities: EntityClassOrSchema[], connectionName?: string) {
+    return TypeOrmModule.forFeature(entities, connectionName);
   }
 }

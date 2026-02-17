@@ -106,6 +106,7 @@ describe('TransactionsController', () => {
       mirrorNetwork: 'testnet',
       isManual: false,
       cutoffAt: new Date(),
+      publicKeys: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       deletedAt: null,

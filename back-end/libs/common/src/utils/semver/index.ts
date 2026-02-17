@@ -29,7 +29,7 @@ export function checkFrontendVersion(
     if (cleanLatest && semver.lt(cleanUserVersion, cleanLatest)) {
       if (repoUrl) {
         const baseUrl = repoUrl.replace(/\/+$/, '');
-        result.updateUrl = `${baseUrl}/download/v${cleanLatest}/`;
+        result.updateUrl = `${baseUrl}/v${cleanLatest}/`;
       }
     }
   }

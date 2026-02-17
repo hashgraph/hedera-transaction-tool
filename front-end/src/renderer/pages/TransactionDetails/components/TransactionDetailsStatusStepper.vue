@@ -115,6 +115,5 @@ const createErrorItem = (title: string, name: string) => {
 
 </script>
 <template>
-  <h2 class="text-title text-bold">Transaction Status</h2>
   <AppStepper :items="stepperItems" :active-index="stepperActiveIndex" />
 </template>

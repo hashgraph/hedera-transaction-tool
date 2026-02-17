@@ -206,7 +206,7 @@ async function handleExecuted(id: string) {
   transactionGroup.clearGroup();
   if (user.selectedOrganization) {
     const targetNodeId: TransactionNodeId = { groupId: id };
-    await useNextTransaction.routeDown(targetNodeId, [targetNodeId], router);
+    await useNextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true);
   } else {
     await redirectToPreviousTransactionsTab(router);
   }
@@ -215,7 +215,7 @@ async function handleExecuted(id: string) {
 async function handleSubmit(id: number) {
   transactionGroup.clearGroup();
   const targetNodeId: TransactionNodeId = { groupId: id };
-  await useNextTransaction.routeDown(targetNodeId, [targetNodeId], router);
+  await useNextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true);
 }
 
 function handleClose() {
@@ -444,7 +444,13 @@ onBeforeRouteLeave(async to => {
   <div class="p-5">
     <div class="flex-column-100 overflow-hidden">
       <div class="d-flex align-items-center">
-        <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="handleBack">
+        <AppButton
+          type="button"
+          color="secondary"
+          class="btn-icon-only me-4"
+          data-testid="button-back"
+          @click="handleBack"
+        >
           <i class="bi bi-arrow-left"></i>
         </AppButton>
 
