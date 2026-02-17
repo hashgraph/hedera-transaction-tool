@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { Transaction } from '@hashgraph/sdk';
 
 import { ref, watch } from 'vue';
 
@@ -15,13 +14,13 @@ import SaveDraftButton from '@renderer/components/SaveDraftButton.vue';
 import AppReminderSelect from '@renderer/components/selects/AppReminderSelect.vue';
 
 /* Props */
-defineProps<{
+const props = defineProps<{
   createButtonLabel: string;
   validStart: Date;
   headingText?: string;
   loading?: boolean;
   isProcessed?: boolean;
-  createTransaction?: () => Transaction;
+  saveDraft?: () => Promise<void>;
   createButtonDisabled?: boolean;
   description?: string;
 }>();
@@ -30,7 +29,6 @@ defineProps<{
 defineEmits<{
   (event: 'add-to-group'): void;
   (event: 'edit-group-item'): void;
-  (event: 'draft-saved'): void;
 }>();
 
 /* Models */
@@ -102,11 +100,10 @@ watch(showAddReminder, show => {
       <template v-if="!($route.query.group === 'true')">
         <div class="flex-centered justify-content-end flex-wrap gap-3">
           <SaveDraftButton
-            v-if="createTransaction && typeof isProcessed === 'boolean'"
-            :get-transaction="createTransaction"
+            v-if="props.saveDraft && typeof isProcessed === 'boolean'"
             :description="description || ''"
             :is-executed="isProcessed"
-            v-on:draft-saved="$emit('draft-saved')"
+            :save-draft="props.saveDraft"
           />
           <AppButton
             color="primary"
