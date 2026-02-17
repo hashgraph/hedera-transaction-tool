@@ -1,4 +1,4 @@
-import { computed, type ComputedRef, type Ref, ref, watch } from 'vue';
+import { computed, type ComputedRef, type Ref, ref } from 'vue';
 import { type Router } from 'vue-router';
 import { defineStore } from 'pinia';
 import { TransactionNodeCollection } from '../../../../shared/src/ITransactionNode.ts';
@@ -188,17 +188,6 @@ const useNextTransactionV2 = defineStore(
         }
       }
     };
-
-    //
-    // DEBUG
-    //
-    watch(
-      contextStack,
-      () => {
-        console.log(`${contextStack.value.join('>')}`);
-      },
-      { deep: true },
-    );
 
     return {
       routeDown,
