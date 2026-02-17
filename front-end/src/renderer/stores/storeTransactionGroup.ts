@@ -114,7 +114,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
 
   function editGroupItem(newGroupItem: GroupItem) {
     const editIndex = Number.parseInt(newGroupItem.seq);
-    if (editIndex < 0 || editIndex >= groupItems.value.length) return;
+    if (!(editIndex >= 0 && editIndex < groupItems.value.length)) return;
     const uniqueValidStart = findUniqueValidStart(
       newGroupItem.payerAccountId,
       newGroupItem.validStart.getTime(),

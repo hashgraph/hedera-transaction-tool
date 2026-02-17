@@ -36,6 +36,9 @@ vi.mock('@prisma/client', () => ({
   Prisma: {},
 }));
 
+import { getGroup, getGroupItems } from '@renderer/services/transactionGroupsService';
+import { getDrafts } from '@renderer/services/transactionDraftsService';
+import { getTransactionFromBytes } from '@renderer/utils';
 import useTransactionGroupStore, {
   type GroupItem,
 } from '@renderer/stores/storeTransactionGroup';
@@ -62,6 +65,48 @@ describe('useTransactionGroupStore', () => {
     setActivePinia(createPinia());
     store = useTransactionGroupStore();
     vi.clearAllMocks();
+  });
+
+  describe('fetchGroup', () => {
+    test('should deduplicate validStarts when fetched items share the same payer and timestamp', async () => {
+      const futureStart = new Date(Date.now() + 120_000);
+
+      const mockTransaction = {
+        toBytes: () => new Uint8Array([1, 2, 3]),
+        transactionId: {
+          accountId: { toString: () => '0.0.1' },
+          validStart: { toDate: () => new Date(futureStart) },
+        },
+      };
+
+      vi.mocked(getGroup).mockResolvedValue({
+        description: 'test group',
+        groupValidStart: futureStart,
+      });
+
+      vi.mocked(getGroupItems).mockResolvedValue([
+        { transaction_draft_id: 'draft-1', seq: '0' },
+        { transaction_draft_id: 'draft-2', seq: '1' },
+        { transaction_draft_id: 'draft-3', seq: '2' },
+      ]);
+
+      vi.mocked(getDrafts).mockResolvedValue([
+        { id: 'draft-1', transactionBytes: new Uint8Array([1]), type: 'Transfer', description: 'tx1' },
+        { id: 'draft-2', transactionBytes: new Uint8Array([2]), type: 'Transfer', description: 'tx2' },
+        { id: 'draft-3', transactionBytes: new Uint8Array([3]), type: 'Transfer', description: 'tx3' },
+      ]);
+
+      vi.mocked(getTransactionFromBytes).mockReturnValue(mockTransaction as any);
+
+      await store.fetchGroup('group-1', {});
+
+      expect(store.groupItems).toHaveLength(3);
+
+      const timestamps = store.groupItems.map(item => item.validStart.getTime());
+      const uniqueTimestamps = new Set(timestamps);
+      expect(uniqueTimestamps.size).toBe(3);
+    });
+
   });
 
   describe('addGroupItem', () => {
@@ -200,6 +245,21 @@ describe('useTransactionGroupStore', () => {
       store.editGroupItem(createGroupItem({ seq: '0', description: 'edited' }));
       expect(store.isModified()).toBe(true);
     });
+
+    test('should no-op when seq is a non-numeric string (NaN)', () => {
+      store.groupItems.push(
+        createGroupItem({ seq: '0', description: 'original-0' }),
+        createGroupItem({ seq: '1', description: 'original-1' }),
+      );
+
+      const edited = createGroupItem({ seq: 'abc', description: 'should-not-appear' });
+      store.editGroupItem(edited);
+
+      expect(store.groupItems).toHaveLength(2);
+      expect(store.groupItems[0].description).toBe('original-0');
+      expect(store.groupItems[1].description).toBe('original-1');
+      expect(store.isModified()).toBe(false);
+    });
   });
 
   describe('updateTransactionValidStarts', () => {
@@ -272,6 +332,24 @@ describe('useTransactionGroupStore', () => {
       store.updateTransactionValidStarts(new Date(0));
 
       expect(store.isModified()).toBe(false);
+    });
+
+    test('should still produce unique timestamps when old validStarts overlap with new range', () => {
+      store.groupItems.push(
+        createGroupItem({ seq: '0', payerAccountId: '0.0.1', validStart: new Date(2001) }),
+        createGroupItem({ seq: '1', payerAccountId: '0.0.1', validStart: new Date(2000) }),
+        createGroupItem({ seq: '2', payerAccountId: '0.0.1', validStart: new Date(2002) }),
+      );
+
+      store.updateTransactionValidStarts(new Date(2000));
+
+      const timestamps = store.groupItems.map(item => item.validStart.getTime());
+      const uniqueTimestamps = new Set(timestamps);
+      expect(uniqueTimestamps.size).toBe(3);
+      // All timestamps must be >= the group valid start
+      for (const ts of timestamps) {
+        expect(ts).toBeGreaterThanOrEqual(2000);
+      }
     });
   });
 
