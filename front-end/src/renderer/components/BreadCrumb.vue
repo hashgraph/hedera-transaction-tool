@@ -34,7 +34,7 @@ const truncate = (item: string) => {
 </script>
 
 <template>
-  <nav v-if="items.length > 0" class="d-flex align-items-center gap-2">
+  <nav class="d-flex align-items-center gap-2">
     <template v-for="(item, index) in items" :key="item">
       <a
         :data-testid="`breadcrumb-item-${index}`"
