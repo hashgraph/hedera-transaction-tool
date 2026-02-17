@@ -260,7 +260,6 @@ function handleInputValidation(e: Event) {
 }
 
 const saveDraft = async (): Promise<void> => {
-  // TBD: This method should be passed to SaveDraftButton and replace handleDraft()
   const draftId = route.query.draftId?.toString();
   const transactionBytes = getTransactionBytes();
   if (draftId) {
@@ -345,8 +344,7 @@ defineExpose({
         v-model:reminder="reminder"
         :valid-start="data.validStart"
         :is-processed="isProcessed"
-        v-on:draft-saved="isDraftSaved = true"
-        :create-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
+        :save-draft="saveDraft"
         :description="description"
         :heading-text="getTransactionType(transaction)"
         :create-button-label="
