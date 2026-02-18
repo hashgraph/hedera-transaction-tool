@@ -380,16 +380,15 @@ export async function refreshCachedAccountTimestamp(client?: Client): Promise<vo
     const protoKey = (publicKey as unknown as { _toProtobufKey: () => unknown })._toProtobufKey();
     const encodedKey = Buffer.from(proto.Key.encode(protoKey as Parameters<typeof proto.Key.encode>[0]).finish());
 
-    // Delete and re-insert with correct key
+    // UPDATE instead of DELETE+INSERT to preserve cascade-dependent rows:
+    // - cached_account_key (required for signer key matching)
+    // - transaction_cached_account (links each transaction to this account)
+    // Deleting would cascade-destroy thousands of transaction links.
     await pgClient.query(
-      `DELETE FROM cached_account WHERE account = $1 AND "mirrorNetwork" = $2`,
-      ['0.0.2', MIRROR_NETWORK],
-    );
-
-    await pgClient.query(
-      `INSERT INTO cached_account (account, "mirrorNetwork", "encodedKey", "receiverSignatureRequired", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, false, NOW(), NOW())`,
-      ['0.0.2', MIRROR_NETWORK, encodedKey],
+      `UPDATE cached_account
+       SET "encodedKey" = $1, "updatedAt" = NOW()
+       WHERE account = $2 AND "mirrorNetwork" = $3`,
+      [encodedKey, '0.0.2', MIRROR_NETWORK],
     );
 
     if (DEBUG) console.log(`✓ Refreshed CachedAccount for 0.0.2 with key ${publicKey.toStringRaw().slice(0, 16)}...`);
