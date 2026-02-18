@@ -9,7 +9,7 @@ import { PAGINATION } from './constants';
 
 declare const __ENV: Record<string, string | undefined>;
 
-// Network parameter - matches seed data (mainnet for local, testnet for staging)
+// Network parameter - must match the value used when seeding (defaults to mainnet)
 const NETWORK = __ENV.HEDERA_NETWORK || 'mainnet';
 
 /**

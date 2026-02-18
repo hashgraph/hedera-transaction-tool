@@ -34,7 +34,7 @@ declare function open(filePath: string): string;
 
 // Debug mode - gate verbose logging
 const DEBUG = __ENV.DEBUG === 'true';
-// Network parameter - matches seed data (mainnet for local, testnet for staging)
+// Network parameter - must match the value used when seeding (defaults to mainnet)
 const NETWORK = __ENV.HEDERA_NETWORK || 'mainnet';
 
 // Custom metrics

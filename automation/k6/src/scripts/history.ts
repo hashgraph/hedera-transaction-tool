@@ -31,7 +31,7 @@ const dataVolumeOk = new Rate('history_data_volume_ok');
 
 declare const __ENV: Record<string, string | undefined>;
 const DEBUG = __ENV.DEBUG === 'true';
-// Network parameter - matches seed data (mainnet for local, testnet for staging)
+// Network parameter - must match the value used when seeding (defaults to mainnet)
 const NETWORK = __ENV.HEDERA_NETWORK || 'mainnet';
 
 /**

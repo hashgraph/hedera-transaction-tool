@@ -41,7 +41,7 @@ import { proto } from '@hashgraph/proto';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Mirror network - parameterized for staging (testnet) vs local/prod (mainnet)
+// Mirror network - must match the value used in k6 test scripts (defaults to mainnet)
 const MIRROR_NETWORK = process.env.HEDERA_NETWORK === 'testnet' ? 'testnet' : 'mainnet';
 
 // Generated keypair for signing - stored in user_key table

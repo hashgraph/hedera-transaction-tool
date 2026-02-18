@@ -71,28 +71,32 @@ export POSTGRES_HOST=<db-host>
 export POSTGRES_PORT=<db-port>
 export POSTGRES_DATABASE=<db-name>
 export POSTGRES_USERNAME=<db-user>
-export POSTGRES_PASSWORD=<db-password>  # leave empty if using IAM auth
+export POSTGRES_PASSWORD=<db-password>  # defaults to 'postgres' if not set
 ```
 
-### Step 2: Run tests
+### Step 2: Seed test data and build
 
 ```bash
 cd automation
-
-# Quick health check
-npm run k6:smoke:staging
-
-# All tabs baseline (1 VU)
-npm run k6:baseline:staging
-
-# Individual load tests (default 100 VUs)
-npm run k6:ready-to-sign:staging
+npm run k6:seed:all   # Seed test users + transactions
+npm run k6:build      # Build TypeScript to JavaScript
 ```
 
-The `:staging` scripts pass `-e ENV=staging` to k6, which reads the `BASE_URL` from the staging environment config. Set `BASE_URL` to override the staging API URL:
+### Step 3: Run tests
+
+Staging tests use raw `k6 run` commands with `-e ENV=staging` and `-e BASE_URL=...`:
 
 ```bash
-k6 run -e ENV=staging -e BASE_URL=https://your-staging-url.com k6/dist/smoke-test.js
+export BASE_URL=https://your-staging-url.com
+
+# Quick health check
+k6 run -e ENV=staging -e BASE_URL=$BASE_URL k6/dist/smoke-test.js
+
+# All tabs baseline (1 VU)
+k6 run -e ENV=staging -e BASE_URL=$BASE_URL k6/dist/tab-load-times.js
+
+# Individual load tests (default 100 VUs)
+k6 run -e ENV=staging -e BASE_URL=$BASE_URL k6/dist/ready-to-sign.js
 ```
 
 ### Configurable Load (VUs)
@@ -100,11 +104,8 @@ k6 run -e ENV=staging -e BASE_URL=https://your-staging-url.com k6/dist/smoke-tes
 The number of virtual users (VUs) can be overridden using the `VUS` environment variable:
 
 ```bash
-# Default: 100 VUs
-npm run k6:ready-to-sign:staging
-
 # Custom VUs:
-k6 run -e VUS=50 -e ENV=staging k6/dist/ready-to-sign.js
+k6 run -e ENV=staging -e BASE_URL=$BASE_URL -e VUS=50 k6/dist/ready-to-sign.js
 ```
 
 **Recommended progression:**
@@ -118,6 +119,7 @@ k6 run -e VUS=50 -e ENV=staging k6/dist/ready-to-sign.js
 - The `FRONTEND_VERSION` constant in `src/config/constants.ts` must match the backend's minimum supported version
 - Staging tests must be run **sequentially** (not in parallel) to get accurate performance measurements
 - Default test credentials (`k6perf@test.com` / `Password123`) are baked into the JS code; override via `-e USER_EMAIL=... -e USER_PASSWORD=...`
+- `HEDERA_NETWORK` defaults to `mainnet` for both seeding and k6 queries; if changed, use the same value for both to keep data consistent
 
 ## Reports
 
@@ -203,7 +205,7 @@ For the full list of scripts, see `automation/package.json`.
 | `k6:seed` | Seed test users only | - |
 | `k6:seed:all` | Seed users + transactions | - |
 
-Add `:staging` suffix for staging environment (e.g., `k6:smoke:staging`). Add `:grafana` suffix for Grafana dashboard output (e.g., `k6:tabs:grafana`).
+Add `:grafana` suffix for Grafana dashboard output (e.g., `k6:tabs:grafana`). For staging, use raw `k6 run` commands (see [Staging Setup](#staging-setup)).
 
 ## Development
 
