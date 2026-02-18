@@ -17,7 +17,7 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'transactionSigned', transactionId: number): void;
+  (event: 'transactionSigned', payload: { transactionId: number, signed: boolean}): void;
 }>();
 
 /* Stores */
@@ -60,7 +60,7 @@ const handleSign = async (personalPassword: string|null) => {
       nodeByIdCache,
     );
 
-    emit('transactionSigned', props.transactionId);
+    emit('transactionSigned', { transactionId: props.transactionId, signed });
     if (signed) {
       toast.success('Transaction signed successfully', successToastOptions);
     } else {
