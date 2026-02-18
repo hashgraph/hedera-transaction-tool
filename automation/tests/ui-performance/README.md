@@ -63,8 +63,10 @@ npx playwright test tests/ui-performance/historyPerformance.test.ts
 ## Requirements
 
 - Built Electron app binary
-- Set `EXECUTABLE_PATH` environment variable to app location
 - Dependencies installed (`pnpm install`)
+- A `.env` file in `automation/` (copy from `example.env`) with at minimum:
+  - `EXECUTABLE_PATH` - Path to the built Electron app binary
+  - `ORGANIZATION_URL` - Backend URL for org mode tests (e.g., `http://localhost:3001`)
 - For org mode tests: Backend running + `npm run k6:seed:all`
 
 ## Utilities
