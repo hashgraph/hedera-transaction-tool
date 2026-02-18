@@ -223,7 +223,7 @@ test.describe('Transaction tests', () => {
     await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
     const updatedMemoText = 'Updated memo';
-    const maxAutoAssociationsNumber = '44';
+    const maxAutoAssociationsNumber = '-1';
     const transactionId = await transactionPage.updateAccount(
       accountFromList,
       maxAutoAssociationsNumber,
