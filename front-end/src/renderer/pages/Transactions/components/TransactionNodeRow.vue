@@ -186,6 +186,27 @@ const isDangerStatus = computed(() => {
 });
 
 /* Handlers */
+const handleTransactionSigned = async (payload: { transactionId: number; signed: boolean }) => {
+  if (payload.signed) {
+    if (notificationMonitor.filteredNotificationIds.value.length > 0) {
+      await notifications.markAsReadIds(notificationMonitor.filteredNotificationIds.value);
+    }
+  }
+
+  // then pass only the id up (or the whole payload if you prefer)
+  emit('transactionSigned', payload.transactionId);
+};
+
+const handleTransactionGroupSigned = async (payload: { groupId: number; signed: boolean }) => {
+  if (payload.signed) {
+    if (notificationMonitor.filteredNotificationIds.value.length > 0) {
+      await notifications.markAsReadIds(notificationMonitor.filteredNotificationIds.value);
+    }
+  }
+
+  emit('transactionGroupSigned', payload.groupId);
+};
+
 const handleDetails = async () => {
   if (notificationMonitor.filteredNotificationIds.value.length > 0) {
     await notifications.markAsReadIds(notificationMonitor.filteredNotificationIds.value);
@@ -323,13 +344,13 @@ watch(
             v-if="props.node.transactionId"
             :data-testid="`button-transaction-node-sign-${index}`"
             :transactionId="props.node.transactionId"
-            @transactionSigned="(tid: number) => emit('transactionSigned', tid)"
+            @transactionSigned="handleTransactionSigned"
           />
           <SignGroupButton
             v-if="props.node.groupId"
             :data-testid="`button-transaction-node-sign-${index}`"
             :group-id="props.node.groupId"
-            @transactionGroupSigned="(gid: number) => emit('transactionGroupSigned', gid)"
+            @transactionGroupSigned="handleTransactionGroupSigned"
           />
         </template>
         <AppButton
