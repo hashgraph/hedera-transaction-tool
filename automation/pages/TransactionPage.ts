@@ -313,12 +313,17 @@ export class TransactionPage extends BasePage {
 
   async addPublicKeyAtDepth(depth: string, publicKey: string | null = null) {
     await this.clickAddButton(depth);
+    await this.window.waitForTimeout(300);
     await this.selectPublicKeyOption(depth);
+    await this.window.waitForTimeout(300);
     if (publicKey === null) {
       publicKey = await this.generateRandomPublicKey();
     }
     await this.fillInPublicKeyField(publicKey);
+    await this.window.waitForTimeout(300);
     await this.clickInsertPublicKey();
+    // Wait for DOM to update after key insertion (needed for CI)
+    await this.window.waitForTimeout(300);
   }
 
   async addAccountAtDepth(depth: string, accountId: string) {
@@ -330,7 +335,10 @@ export class TransactionPage extends BasePage {
 
   async addThresholdKeyAtDepth(depth: string) {
     await this.clickAddButton(depth);
+    await this.window.waitForTimeout(300);
     await this.selectThreshold(depth);
+    // Wait for DOM to update after threshold key addition (needed for CI)
+    await this.window.waitForTimeout(300);
   }
 
   async createComplexKeyStructure() {
