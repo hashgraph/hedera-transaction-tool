@@ -15,7 +15,7 @@ import { deleteAllTempFolders } from '@main/services/localUser';
 import { restoreOrCreateWindow } from '@main/windows/mainWindow';
 import { initializeUpdaterService } from '@main/services/electronUpdater';
 
-let mainWindow: BrowserWindow | null;
+let mainWindow: BrowserWindow | null = null;
 let mainWindowInit: Promise<void> | null = null;
 
 async function run() {
