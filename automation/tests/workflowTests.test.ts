@@ -672,7 +672,7 @@ test.describe('Workflow tests', () => {
     expect(isViewContentButtonVisible).toBe(true);
   });
 
-  test.only('Verify breadcrumb is displayed for transaction group item', async () => {
+  test('Verify breadcrumb is displayed for transaction group item', async () => {
     const txDescription = 'test account create tx description';
     const { newTransactionId } = await transactionPage.createNewAccount({
       description: txDescription,
