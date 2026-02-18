@@ -11,6 +11,30 @@ export enum TransactionNodeSortField {
   EXECUTED_AT_DATE,
   CREATED_AT_DATE,
 }
+
+const SORT_FIELD_URL_MAP: Record<TransactionNodeSortField, string> = {
+  [TransactionNodeSortField.TRANSACTION_ID]: 'TRANSACTION_ID',
+  [TransactionNodeSortField.TRANSACTION_TYPE]: 'TRANSACTION_TYPE',
+  [TransactionNodeSortField.DESCRIPTION]: 'DESCRIPTION',
+  [TransactionNodeSortField.STATUS]: 'STATUS',
+  [TransactionNodeSortField.VALID_START_DATE]: 'VALID_START_DATE',
+  [TransactionNodeSortField.EXECUTED_AT_DATE]: 'EXECUTED_AT_DATE',
+  [TransactionNodeSortField.CREATED_AT_DATE]: 'CREATED_AT_DATE',
+};
+
+const URL_TO_SORT_FIELD_MAP: Record<string, TransactionNodeSortField> = Object.fromEntries(
+  Object.entries(SORT_FIELD_URL_MAP).map(([k, v]) => [v, Number(k) as TransactionNodeSortField]),
+);
+
+export const TRANSACTION_NODE_SORT_URL_VALUES: string[] = Object.values(SORT_FIELD_URL_MAP);
+
+export function sortFieldToUrl(field: TransactionNodeSortField): string {
+  return SORT_FIELD_URL_MAP[field];
+}
+
+export function sortFieldFromUrl(value: string): TransactionNodeSortField | undefined {
+  return URL_TO_SORT_FIELD_MAP[value];
+}
 export function sortTransactionNodes(
   nodes: ITransactionNode[],
   sort: TransactionNodeSortField,

@@ -429,17 +429,15 @@ describe('Services Local User Transactions', () => {
   });
 
   describe('executeQuery', () => {
-    beforeAll(async () => {
+    beforeEach(async () => {
+      vi.resetAllMocks();
+
       vi.spyOn(SDK.Client, 'forName').mockReturnValue({
         close: vi.fn(),
         setOperator: vi.fn(),
       } as any);
 
       await setClient('testnet');
-    });
-
-    beforeEach(() => {
-      vi.resetAllMocks();
     });
 
     test('Should execute the query and return the response', async () => {
@@ -651,7 +649,10 @@ describe('Services Local User Transactions', () => {
         'Invalid key type',
       );
 
-      expect(getClient()._operator).toBeNull();
+      // In real world scenario, the operator should be null. We test for undefined here because the actual
+      // code's intent is to leave the client's operator untouched, so in the case of this mock,
+      // that means it will be left as undefined.
+      expect(getClient()._operator).toBeUndefined();
     });
   });
 
