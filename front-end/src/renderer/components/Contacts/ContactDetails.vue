@@ -3,7 +3,7 @@ import type { HederaAccount, PublicKeyMapping } from '@prisma/client';
 import type { AccountInfo, Contact } from '@shared/interfaces';
 import { useToast } from 'vue-toast-notification';
 
-import { onBeforeMount, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import { PublicKey } from '@hashgraph/sdk';
 
@@ -30,6 +30,9 @@ import ContactDetailsLinkedAccounts from '@renderer/components/Contacts/ContactD
 import RenamePublicKeyModal from '@renderer/pages/Settings/components/PublicKeysTab/components/RenamePublicKeyModal.vue';
 import { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
 import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
+import { formatDatePart } from '@renderer/utils/dateTimeFormat.ts';
+import { getLatestClient } from '@renderer/utils/clientVersion.ts';
 
 /* Modals */
 const linkedAccounts = defineModel<HederaAccount[]>('linkedAccounts');
@@ -58,6 +61,16 @@ const publicKeysMapping = ref<Record<string, string>>({});
 const isUpdateNicknameModalShown = ref(false);
 const publicKeyMappingToEdit = ref<PublicKeyMapping | null>(null);
 const publicKeyToEdit = ref<string | null>(null);
+
+/* Computed */
+const { isUtcSelected } = useDateTimeSetting();
+
+const latestClient = computed(() => getLatestClient(props.contact.user.clients));
+
+const latestClientDate = computed(() => {
+  if (!latestClient.value) return null;
+  return formatDatePart(new Date(latestClient.value.updatedAt), isUtcSelected.value, true);
+});
 
 /* Emits */
 defineEmits<{
@@ -223,6 +236,22 @@ watch(() => props.contact, handleContactChange);
     <div class="col-7">
       <p class="text-secondary overflow-hidden" data-testid="p-contact-email">
         {{ contact.user.email }}
+      </p>
+    </div>
+  </div>
+  <div
+    v-if="isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin"
+    class="mt-4 row"
+  >
+    <div class="col-5">
+      <p class="text-main text-semi-bold">App</p>
+    </div>
+    <div class="col-7">
+      <p class="text-secondary overflow-hidden" data-testid="p-contact-cli-version">
+        <template v-if="latestClient">
+          <small>version {{ latestClient.version }} | updated on: {{ latestClientDate }}</small>
+        </template>
+        <template v-else> - </template>
       </p>
     </div>
   </div>

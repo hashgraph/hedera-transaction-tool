@@ -67,31 +67,55 @@ describe('UsersController', () => {
 
       userService.getUsers.mockResolvedValue(result);
 
-      expect(await controller.getUsers()).toBe(result);
+      expect(await controller.getUsers(user)).toBe(result);
+      expect(userService.getUsers).toHaveBeenCalledWith(user);
     });
 
     it('should return an empty array if no users exist', async () => {
       userService.getUsers.mockResolvedValue([]);
 
-      expect(await controller.getUsers()).toEqual([]);
+      expect(await controller.getUsers(user)).toEqual([]);
+    });
+
+    it('should pass non-admin requesting user to the service', async () => {
+      const nonAdminUser = { ...user, admin: false };
+      userService.getUsers.mockResolvedValue([]);
+
+      await controller.getUsers(nonAdminUser as User);
+
+      expect(userService.getUsers).toHaveBeenCalledWith(nonAdminUser);
     });
   });
 
   describe('getUser', () => {
-    it('should return a user', async () => {
-      userService.getUser.mockResolvedValue(user);
+    it('should return a user with clients', async () => {
+      userService.getUserWithClients.mockResolvedValue(user);
 
-      expect(await controller.getUser(1)).toBe(user);
+      expect(await controller.getUser(user, 1)).toBe(user);
+      expect(userService.getUserWithClients).toHaveBeenCalledWith(1, user);
     });
 
     it('should throw an error if the user does not exist', async () => {
-      userService.getUser.mockResolvedValue(null);
+      userService.getUserWithClients.mockRejectedValue(new Error());
 
-      try {
-        await controller.getUser(1);
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-      }
+      await expect(controller.getUser(user, 1)).rejects.toBeInstanceOf(Error);
+    });
+
+    it('should pass non-admin requesting user to getUserWithClients', async () => {
+      const nonAdminUser = { ...user, admin: false };
+      userService.getUserWithClients.mockResolvedValue(user);
+
+      await controller.getUser(nonAdminUser as User, 2);
+
+      expect(userService.getUserWithClients).toHaveBeenCalledWith(2, nonAdminUser);
+    });
+
+    it('should pass the correct id to getUserWithClients', async () => {
+      userService.getUserWithClients.mockResolvedValue(user);
+
+      await controller.getUser(user, 42);
+
+      expect(userService.getUserWithClients).toHaveBeenCalledWith(42, user);
     });
   });
 

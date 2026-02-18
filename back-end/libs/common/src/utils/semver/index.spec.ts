@@ -1,4 +1,4 @@
-import { checkFrontendVersion } from './index';
+import { checkFrontendVersion, isUpdateAvailable } from './index';
 
 describe('Semver Utilities', () => {
   describe('checkFrontendVersion', () => {
@@ -127,6 +127,52 @@ describe('Semver Utilities', () => {
         expect(result.updateUrl).toBeNull();
         expect(result.latestSupportedVersion).toBe('invalid');
       });
+    });
+  });
+
+  describe('isUpdateAvailable', () => {
+    it('should return true when client version is older than latest', () => {
+      expect(isUpdateAvailable('1.0.0', '1.1.0')).toBe(true);
+    });
+
+    it('should return true for major version differences', () => {
+      expect(isUpdateAvailable('1.9.9', '2.0.0')).toBe(true);
+    });
+
+    it('should return true for patch version differences', () => {
+      expect(isUpdateAvailable('1.2.3', '1.2.4')).toBe(true);
+    });
+
+    it('should return false when client version equals latest', () => {
+      expect(isUpdateAvailable('1.2.0', '1.2.0')).toBe(false);
+    });
+
+    it('should return false when client version is newer than latest', () => {
+      expect(isUpdateAvailable('2.0.0', '1.5.0')).toBe(false);
+    });
+
+    it('should return false when latestSupported is null', () => {
+      expect(isUpdateAvailable('1.0.0', null)).toBe(false);
+    });
+
+    it('should return false when latestSupported is undefined', () => {
+      expect(isUpdateAvailable('1.0.0', undefined)).toBe(false);
+    });
+
+    it('should return false when client version is invalid', () => {
+      expect(isUpdateAvailable('invalid', '1.2.0')).toBe(false);
+    });
+
+    it('should return false when latest version is invalid', () => {
+      expect(isUpdateAvailable('1.0.0', 'invalid')).toBe(false);
+    });
+
+    it('should handle pre-release client versions', () => {
+      expect(isUpdateAvailable('1.0.0-beta.1', '1.0.0')).toBe(true);
+    });
+
+    it('should handle pre-release latest versions', () => {
+      expect(isUpdateAvailable('1.0.0', '1.1.0-rc.1')).toBe(true);
     });
   });
 });
