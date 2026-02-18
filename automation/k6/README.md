@@ -247,11 +247,11 @@ npm run grafana:start
 # Run any test with :grafana suffix
 npm run k6:tabs:grafana
 
-# Access Grafana at http://localhost:3000
+# Access Grafana at http://localhost:3030
 # Stop when done
 npm run grafana:stop
 ```
 
-> **Note:** Requires Docker running. If Grafana doesn't load, verify Docker is running and port 3000 is available.
+> **Note:** Requires Docker running. If Grafana doesn't load, verify Docker is running and port 3030 is available.
 
 The Grafana dashboard shows live metrics: request rates, response times, error rates, and VU count over time.
