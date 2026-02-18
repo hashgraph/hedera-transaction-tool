@@ -55,6 +55,10 @@ const contact = computed<Contact | null>(
   () => contacts.contacts.find(c => c.user.id === selectedId.value) || null,
 );
 
+const isAdmin = computed(
+  () => isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin,
+);
+
 const contactList = computed(() =>
   contacts.contacts
     .filter(c =>
@@ -67,6 +71,16 @@ const contactList = computed(() =>
       return getPriority(a.user) - getPriority(b.user);
     }),
 );
+
+const updateAvailableUserIds = computed(() => {
+  const ids = new Set<number>();
+  for (const c of contactList.value) {
+    if (c.user.updateAvailable) {
+      ids.add(c.user.id);
+    }
+  }
+  return ids;
+});
 
 const notifiedUserIds = computed(() => {
   const notificationsKey = user.selectedOrganization?.serverUrl || '';
@@ -202,9 +216,10 @@ onBeforeMount(async () => {
                         {{ c.user.email }}
                       </p>
                     </div>
-                    <div v-if="c.user.admin || c.user.status === 'NEW'" class="mt-2">
+                    <div v-if="c.user.admin || c.user.status === 'NEW' || (isAdmin && updateAvailableUserIds.has(c.user.id))" class="mt-2">
                       <span v-if="c.user.admin" class="badge bg-warning me-2">admin</span>
-                      <span v-if="c.user.status === 'NEW'" class="badge bg-info">new</span>
+                      <span v-if="c.user.status === 'NEW'" class="badge bg-info me-2">new</span>
+                      <span v-if="isAdmin && updateAvailableUserIds.has(c.user.id)" class="badge bg-success">update available</span>
                     </div>
                   </div>
                 </div>

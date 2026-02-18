@@ -31,4 +31,7 @@ export class Client {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  // Computed at runtime, not persisted
+  updateAvailable?: boolean;
 }
