@@ -1,6 +1,6 @@
 
 import { BasePage } from './BasePage.js';
-import { Page } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 import { getAccountDetails, getTransactionDetails } from '../utils/mirrorNodeAPI.js';
 import {
   verifyAccountExists,
@@ -803,10 +803,12 @@ export class TransactionPage extends BasePage {
       }
     }
 
-    // Scroll to top to ensure button is visible, then click
+    // Wait for button to be enabled before clicking
     const button = this.window.getByTestId(this.signAndSubmitButtonSelector);
     await button.scrollIntoViewIfNeeded();
-    await button.click({ timeout: 10000 });
+    await button.waitFor({ state: 'visible', timeout: 30000 });
+    await expect(button).toBeEnabled({ timeout: 30000 });
+    await button.click();
   }
 
   // For queries (FileContentsQuery, etc.) - uses dropdown for payer, not input
