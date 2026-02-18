@@ -77,7 +77,7 @@ const { oldNotifications } = useMarkNotifications([
   NotificationType.TRANSACTION_INDICATOR_FAILED,
 ]);
 
-const { initialPage, initialSortField, initialSortDirection, syncToUrl } = useTableQueryState(
+const { initialPage, initialPageSize, initialSortField, initialSortDirection, syncToUrl } = useTableQueryState(
   HISTORY_SORT_URL_VALUES,
   'created_at',
   'desc',
@@ -115,7 +115,7 @@ const orgFilters = ref<
 >([{ property: 'mirrorNetwork', rule: 'eq', value: network.network }]);
 const totalItems = ref(0);
 const currentPage = ref(initialPage);
-const pageSize = ref(10);
+const pageSize = ref(initialPageSize);
 const isLoading = ref(true);
 
 /* Composables */
@@ -251,7 +251,7 @@ onBeforeMount(async () => {
 
 /* Watchers */
 watch([currentPage, pageSize, () => user.selectedOrganization, orgFilters], async () => {
-  syncToUrl(currentPage.value, localSort.field, localSort.direction);
+  syncToUrl(currentPage.value, localSort.field, localSort.direction, pageSize.value);
   await fetchTransactions();
 });
 

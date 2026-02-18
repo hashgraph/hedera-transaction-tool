@@ -80,7 +80,7 @@ const { oldNotifications } = useMarkNotifications(
 );
 
 const defaults = initialSort();
-const { initialPage, initialSortField, initialSortDirection, syncToUrl } = useTableQueryState(
+const { initialPage, initialPageSize, initialSortField, initialSortDirection, syncToUrl } = useTableQueryState(
   TRANSACTION_NODE_SORT_URL_VALUES,
   sortFieldToUrl(defaults.field),
   defaults.direction,
@@ -97,7 +97,7 @@ const sort = ref<{
   direction: initialSortDirection,
 });
 const currentPage = ref(initialPage);
-const pageSize = ref(10);
+const pageSize = ref(initialPageSize);
 const statusFilter = ref<TransactionStatus[]>([]);
 const transactionTypeFilter = ref<BackEndTransactionType[]>([]);
 
@@ -222,8 +222,8 @@ watch(sort, () => {
   },
 );
 
-watch(currentPage, () => {
-  syncToUrl(currentPage.value, sortFieldToUrl(sort.value.field), sort.value.direction);
+watch([currentPage, pageSize], () => {
+  syncToUrl(currentPage.value, sortFieldToUrl(sort.value.field), sort.value.direction, pageSize.value);
 });
 
 watch([statusFilter, transactionTypeFilter], () => {

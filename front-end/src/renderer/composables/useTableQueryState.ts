@@ -22,6 +22,9 @@ export default function useTableQueryState(
   const rawPage = typeof query.page === 'string' ? parseInt(query.page, 10) : NaN;
   const initialPage = Number.isFinite(rawPage) && rawPage >= 1 ? rawPage : 1;
 
+  const rawPerPage = typeof query.perPage === 'string' ? parseInt(query.perPage, 10) : NaN;
+  const initialPageSize = Number.isFinite(rawPerPage) && rawPerPage >= 1 ? rawPerPage : 10;
+
   const rawSort = typeof query.sort === 'string' ? query.sort : '';
   const initialSortField = validSortValues.includes(rawSort) ? rawSort : defaultSort;
 
@@ -31,7 +34,7 @@ export default function useTableQueryState(
 
   // --- Write helper ---
 
-  function syncToUrl(page: number, sortField: string, sortDirection: 'asc' | 'desc') {
+  function syncToUrl(page: number, sortField: string, sortDirection: 'asc' | 'desc', pageSize?: number) {
     const existing = router.currentRoute.value.query;
     const newQuery: Record<string, string> = {};
 
@@ -57,12 +60,16 @@ export default function useTableQueryState(
     if (page > 1) {
       newQuery.page = String(page);
     }
+    if (pageSize != null && pageSize !== 10) {
+      newQuery.perPage = String(pageSize);
+    }
 
     router.replace({ query: newQuery });
   }
 
   return {
     initialPage,
+    initialPageSize,
     initialSortField,
     initialSortDirection,
     syncToUrl,

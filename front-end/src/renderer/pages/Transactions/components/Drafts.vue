@@ -46,7 +46,7 @@ const router = useRouter();
 const toast = useToast();
 const createTooltips = useCreateTooltips();
 
-const { initialPage, initialSortField, initialSortDirection, syncToUrl } = useTableQueryState(
+const { initialPage, initialPageSize, initialSortField, initialSortDirection, syncToUrl } = useTableQueryState(
   DRAFTS_SORT_URL_VALUES,
   'created_at',
   'desc',
@@ -56,7 +56,7 @@ const { initialPage, initialSortField, initialSortDirection, syncToUrl } = useTa
 const drafts = ref<TransactionDraft[]>([]);
 const totalItems = ref(0);
 const currentPage = ref(initialPage);
-const pageSize = ref(10);
+const pageSize = ref(initialPageSize);
 const isLoading = ref(true);
 const groups = ref<TransactionGroup[]>([]);
 const list = ref<(TransactionDraft | TransactionGroup)[]>([]);
@@ -355,7 +355,7 @@ onUnmounted(() => {
 
 /* Watchers */
 watch([currentPage, pageSize], async () => {
-  syncToUrl(currentPage.value, sortField.value, sortDirection.value as 'asc' | 'desc');
+  syncToUrl(currentPage.value, sortField.value, sortDirection.value as 'asc' | 'desc', pageSize.value);
   await fetchDrafts();
 });
 
