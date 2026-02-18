@@ -15,7 +15,7 @@ import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
 import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
 
-import { ErrorCodes, checkFrontendVersion, VersionCheckResult } from '@app/common';
+import { ErrorCodes, checkFrontendVersion, isUpdateAvailable, VersionCheckResult } from '@app/common';
 import { Client, User, UserKey, UserStatus } from '@entities';
 
 @Injectable()
@@ -83,8 +83,36 @@ export class UsersService {
   }
 
   // Return an array of users, containing all current users of the organization.
-  getUsers(): Promise<User[]> {
+  async getUsers(requestingUser: User): Promise<User[]> {
+    // Only load clients relation when admin needs update info
+    if (requestingUser.admin) {
+      const users = await this.repo.find({ relations: ['clients'] });
+      const latestSupported = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
+      this.enrichUsersWithUpdateFlag(users, latestSupported);
+      return users;
+    }
+
     return this.repo.find();
+  }
+
+  async getUserWithClients(id: number, requestingUser: User): Promise<User> {
+    const relations = (requestingUser.admin || requestingUser.id === id) ? ['clients'] : [];
+    const user = await this.repo.findOne({ where: { id }, relations });
+
+    if (!user) {
+      throw new BadRequestException(ErrorCodes.UNF);
+    }
+
+    // Only expose client version data to admins or the user themselves
+    if (requestingUser.admin || requestingUser.id === id) {
+      const latestSupported = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
+      this.enrichUsersWithUpdateFlag([user], latestSupported);
+      return user;
+    }
+
+    const { clients: _clients, ...userWithoutClients }: User = user;
+    // Type assertion needed: serialization interceptor handles the actual shape
+    return userWithoutClients as User;
   }
 
   async getOwnerOfPublicKey(publicKey: string): Promise<string | null> {
@@ -189,6 +217,18 @@ export class UsersService {
     }
 
     return client;
+  }
+
+  private enrichUsersWithUpdateFlag(users: User[], latestSupported: string | undefined): void {
+    for (const user of users) {
+      user.clients = (user.clients ?? []).map(client => ({
+        ...client,
+        updateAvailable: isUpdateAvailable(client.version, latestSupported),
+      }));
+      (user as User & { updateAvailable: boolean }).updateAvailable = user.clients.some(
+        c => c.updateAvailable,
+      );
+    }
   }
 
   getVersionCheckInfo(userVersion: string): VersionCheckResult {
