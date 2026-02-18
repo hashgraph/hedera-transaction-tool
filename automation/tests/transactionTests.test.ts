@@ -7,6 +7,7 @@ import {
   closeApp,
   generateRandomEmail,
   generateRandomPassword,
+  getOperatorKeyEnv,
   setupApp,
   setupEnvironmentForTransactions,
 } from '../utils/util.js';
@@ -249,7 +250,7 @@ test.describe('Transaction tests', () => {
   });
 
   test('Verify that system account can be updated without account key using a superUser as the fee payer', async () => {
-    await setupEnvironmentForTransactions(window, process.env.OPERATOR_KEY);
+    await setupEnvironmentForTransactions(window, getOperatorKeyEnv());
     const newPublicKey = await transactionPage.generateRandomPublicKey();
     const transactionId = await transactionPage.updateAccountKey('0.0.100', newPublicKey, '0.0.2');
 

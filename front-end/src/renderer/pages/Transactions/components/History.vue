@@ -60,6 +60,7 @@ const LOCAL_TO_ORG_SORT: Record<string, keyof ITransaction> = {
   status_code: 'statusCode',
   executed_at: 'executedAt',
 };
+import { TransactionNodeCollection } from '../../../../../../shared/src/ITransactionNode.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -140,7 +141,7 @@ const handleSort = async (
 };
 
 const handleDetails = async (id: string | number) => {
-  let nodeIds: TransactionNodeId[] = [];
+  let nodeIds: TransactionNodeId[];
   if (isLoggedInOrganization(user.selectedOrganization)) {
     nodeIds = organizationTransactions.value.map(t => {
       return {
@@ -154,7 +155,13 @@ const handleDetails = async (id: string | number) => {
       };
     });
   }
-  await nextTransaction.routeDown({ transactionId: id }, nodeIds, router);
+  await nextTransaction.routeDown(
+    { transactionId: id },
+    nodeIds,
+    router,
+    TransactionNodeCollection.HISTORY,
+    true,
+  );
 };
 
 /* Functions */

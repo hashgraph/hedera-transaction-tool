@@ -36,3 +36,17 @@ export function checkFrontendVersion(
 
   return result;
 }
+
+export function isUpdateAvailable(
+  clientVersion: string,
+  latestSupported: string | undefined | null,
+): boolean {
+  if (!latestSupported) return false;
+
+  const cleanClient = semver.clean(clientVersion);
+  const cleanLatest = semver.clean(latestSupported);
+
+  if (!cleanClient || !cleanLatest) return false;
+
+  return semver.lt(cleanClient, cleanLatest);
+}

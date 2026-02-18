@@ -143,9 +143,21 @@ const routeToDetails = async (node: ITransactionNode) => {
     }
   }
   if (node.transactionId) {
-    await nextTransaction.routeDown({ transactionId: node.transactionId }, nodeIds, router);
+    await nextTransaction.routeDown(
+      { transactionId: node.transactionId },
+      nodeIds,
+      router,
+      props.collection,
+      true,
+    );
   } else if (node.groupId) {
-    await nextTransaction.routeDown({ groupId: node.groupId }, nodeIds, router);
+    await nextTransaction.routeDown(
+      { groupId: node.groupId },
+      nodeIds,
+      router,
+      props.collection,
+      true,
+    );
   } else {
     console.warn(`Malformed transaction node`);
   }

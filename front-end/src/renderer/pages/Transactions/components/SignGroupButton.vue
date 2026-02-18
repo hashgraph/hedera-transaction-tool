@@ -18,7 +18,7 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'transactionGroupSigned', groupId: number): void;
+  (event: 'transactionGroupSigned', payload: { groupId: number, signed: boolean}): void;
 }>();
 
 /* Stores */
@@ -62,7 +62,7 @@ const handleSign = async (personalPassword: string|null) => {
       nodeByIdCache,
     );
 
-    emit('transactionGroupSigned', props.groupId);
+    emit('transactionGroupSigned', { groupId: props.groupId, signed });
     if (signed) {
       toast.success('Transaction group signed successfully', successToastOptions);
     } else {

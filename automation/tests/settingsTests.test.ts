@@ -5,8 +5,13 @@ import { LoginPage } from '../pages/LoginPage.js';
 import { SettingsPage } from '../pages/SettingsPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { resetDbState } from '../utils/databaseUtil.js';
-import { closeApp, generateRandomEmail, generateRandomPassword, setupApp } from '../utils/util.js';
-import { generateEd25519KeyPair, getPrivateKey } from '../utils/keyUtil.js';
+import {
+  closeApp,
+  generateRandomEmail,
+  generateRandomPassword,
+  setupApp,
+} from '../utils/util.js';
+import { generateECDSAKeyPair, generateEd25519KeyPair } from '../utils/keyUtil.js';
 
 let app: ElectronApplication;
 let window: Page;
@@ -157,9 +162,8 @@ test.describe('Settings tests', () => {
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnECDSADropDown();
 
-    const privateKey = getPrivateKey();
-
-    await settingsPage.fillInECDSAPrivateKey(privateKey!);
+    const privateKey = generateECDSAKeyPair();
+    await settingsPage.fillInECDSAPrivateKey(privateKey);
     await settingsPage.fillInECDSANickname('Test-ECDSA-Import');
     // await settingsPage.fillInECDSAPassword(globalCredentials.password);
     await loginPage.waitForToastToDisappear();
@@ -186,7 +190,7 @@ test.describe('Settings tests', () => {
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnED25519DropDown();
 
-    const privateKey = generateEd25519KeyPair();
+    const { privateKey } = generateEd25519KeyPair();
 
     await settingsPage.fillInED25519PrivateKey(privateKey);
     await settingsPage.fillInED25519Nickname('Test-ED25519-Import');

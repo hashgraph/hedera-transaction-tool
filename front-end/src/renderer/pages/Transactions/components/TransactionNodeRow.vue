@@ -14,7 +14,8 @@ import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import SignSingleButton from '@renderer/pages/Transactions/components/SignSingleButton.vue';
 import SignGroupButton from '@renderer/pages/Transactions/components/SignGroupButton.vue';
-import { getStatusFromCode } from '@renderer/utils';
+import { getStatusFromCode, isLoggedInOrganization } from '@renderer/utils';
+import useUserStore from '@renderer/stores/storeUser.ts';
 import {
   type ITransactionNode,
   TransactionNodeCollection,
@@ -39,6 +40,7 @@ const emit = defineEmits<{
 }>();
 
 /* Stores */
+const user = useUserStore();
 const notifications = useNotificationsStore();
 
 /* State */
@@ -184,6 +186,27 @@ const isDangerStatus = computed(() => {
 });
 
 /* Handlers */
+const handleTransactionSigned = async (payload: { transactionId: number; signed: boolean }) => {
+  if (payload.signed) {
+    if (notificationMonitor.filteredNotificationIds.value.length > 0) {
+      await notifications.markAsReadIds(notificationMonitor.filteredNotificationIds.value);
+    }
+  }
+
+  // then pass only the id up (or the whole payload if you prefer)
+  emit('transactionSigned', payload.transactionId);
+};
+
+const handleTransactionGroupSigned = async (payload: { groupId: number; signed: boolean }) => {
+  if (payload.signed) {
+    if (notificationMonitor.filteredNotificationIds.value.length > 0) {
+      await notifications.markAsReadIds(notificationMonitor.filteredNotificationIds.value);
+    }
+  }
+
+  emit('transactionGroupSigned', payload.groupId);
+};
+
 const handleDetails = async () => {
   if (notificationMonitor.filteredNotificationIds.value.length > 0) {
     await notifications.markAsReadIds(notificationMonitor.filteredNotificationIds.value);
@@ -231,11 +254,15 @@ watch(() => props.node.description, () => {
   nextTick(() => checkTruncation());
 });
 
-// Fetch external status for the transaction
+// Fetch external status for the transaction (admin only)
 watch(
   () => props.node.transactionId,
   async transactionId => {
-    if (!transactionId) {
+    if (
+      !transactionId ||
+      !isLoggedInOrganization(user.selectedOrganization) ||
+      !user.selectedOrganization.admin
+    ) {
       isExternal.value = false;
       return;
     }
@@ -317,13 +344,13 @@ watch(
             v-if="props.node.transactionId"
             :data-testid="`button-transaction-node-sign-${index}`"
             :transactionId="props.node.transactionId"
-            @transactionSigned="(tid: number) => emit('transactionSigned', tid)"
+            @transactionSigned="handleTransactionSigned"
           />
           <SignGroupButton
             v-if="props.node.groupId"
             :data-testid="`button-transaction-node-sign-${index}`"
             :group-id="props.node.groupId"
-            @transactionGroupSigned="(gid: number) => emit('transactionGroupSigned', gid)"
+            @transactionGroupSigned="handleTransactionGroupSigned"
           />
         </template>
         <AppButton
