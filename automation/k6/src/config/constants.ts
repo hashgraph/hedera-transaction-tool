@@ -17,7 +17,7 @@ const getEnvVar = (key: string, defaultValue: string): string => {
  * Frontend version for x-frontend-version header.
  * Must match or exceed backend's MINIMUM_SUPPORTED_FRONTEND_VERSION.
  */
-export const FRONTEND_VERSION = '0.23.1';
+export const FRONTEND_VERSION = '0.24.0';
 
 /**
  * Performance thresholds (milliseconds)
