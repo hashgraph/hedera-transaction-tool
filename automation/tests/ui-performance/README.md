@@ -40,7 +40,7 @@ These tests measure **frontend/UI performance**:
 | `inProgressPerformance.test.ts` | In Progress tab | 200 txns | < 1 second (p95) |
 | `readyForExecutionPerformance.test.ts` | Ready for Execution tab | 100 txns | < 1 second (p95) |
 | `historyPerformance.test.ts` | History tab | 500 txns | < 1 second (p95) |
-| `signAllPerformance.test.ts` | Sign All operation | 100 txns | < 4 seconds |
+| `signAllPerformance.test.ts` | Sign All operation | 500 txns | < 4 seconds |
 | `signAllComplexKeyPerformance.test.ts` | Sign All with complex keys | 100 txns | < 4 seconds |
 
 ## Running Tests

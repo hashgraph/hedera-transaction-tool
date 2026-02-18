@@ -66,8 +66,6 @@ test.describe('Drafts Page Performance', () => {
     await setPageSize(window, PAGE_SIZE);
 
     // Validate pager shows sufficient total items (volume enforcement - STRICT)
-    // BUG: Drafts.vue:207-212 overwrites totalItems with group count instead of drafts+groups
-    // This test will fail until the front-end bug is fixed
     const pagerTotal = await getPagerTotal(window);
     expect(pagerTotal, 'Pager not found - volume enforcement failed').not.toBeNull();
     expect(pagerTotal!, `Pager shows only ${pagerTotal} items, need >= ${REQUIRED_TOTAL}`).toBeGreaterThanOrEqual(REQUIRED_TOTAL);

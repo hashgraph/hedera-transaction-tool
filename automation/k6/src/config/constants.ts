@@ -4,11 +4,14 @@
  * Centralized configuration values derived from performance requirements.
  */
 
-// __ENV is only available in k6 runtime, not Node.js
+// __ENV is available in k6 runtime; process.env in Node.js/Playwright
 declare const __ENV: Record<string, string | undefined> | undefined;
 const getEnvVar = (key: string, defaultValue: string): string => {
   if (typeof __ENV !== 'undefined' && __ENV[key]) {
     return __ENV[key]!;
+  }
+  if (typeof process !== 'undefined' && process.env && process.env[key]) {
+    return process.env[key] as string;
   }
   return defaultValue;
 };

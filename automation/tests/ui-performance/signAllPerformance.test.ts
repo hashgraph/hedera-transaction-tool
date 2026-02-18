@@ -6,7 +6,7 @@
  *
  * Prerequisites:
  * - Backend running (docker-compose up)
- * - Run: npm run k6:seed:all (seeds 200 transactions to sign)
+ * - Run: npm run k6:seed:all (seeds 500 transactions to sign)
  * - User must have signing key configured
  *
  * IMPORTANT: This test is DESTRUCTIVE - it changes transaction state.
@@ -75,6 +75,9 @@ test.describe('Sign All Performance (Org Mode)', () => {
     await detailsButton.click();
 
     await window.waitForLoadState('networkidle');
+
+    // DEBUG PAUSE: inspect Electron app state before checking Sign All button
+    await window.pause();
 
     const signAllButton = window.locator(SELECTORS.BUTTON_SIGN_GROUP);
     await expect(signAllButton, 'Sign All button not found on group details page').toBeVisible({ timeout: 10000 });

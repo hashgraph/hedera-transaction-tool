@@ -97,7 +97,7 @@ export async function waitForRowCount(
  * @returns true if page size was set, false if pager not found
  */
 export async function setPageSize(window: Page, size: 5 | 10 | 20 | 50): Promise<boolean> {
-  const dropdown = window.locator('.pager-per-page select');
+  const dropdown = window.locator(`${SELECTORS.PAGER_SELECT} select`);
 
   // Check if pager exists (some pages don't have it)
   const isVisible = await dropdown.isVisible().catch(() => false);
@@ -116,7 +116,7 @@ export async function setPageSize(window: Page, size: 5 | 10 | 20 | 50): Promise
  * @returns Total item count, or null if pager not found
  */
 export async function getPagerTotal(window: Page): Promise<number | null> {
-  const pagerText = await window.locator('.pager-shown-items').textContent().catch(() => null);
+  const pagerText = await window.locator(SELECTORS.PAGER_ITEMS).textContent().catch(() => null);
   if (!pagerText) return null;
   // Parse "1-50 of 200 items" → 200
   const match = /of\s+(\d+)\s+items/.exec(pagerText);
