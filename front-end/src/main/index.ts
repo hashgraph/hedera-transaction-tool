@@ -26,9 +26,12 @@ async function run() {
 
 function attachAppEvents() {
   app.on('ready', async () => {
-    mainWindowInit = initMainWindow();
-    await mainWindowInit;
-    mainWindowInit = null;
+    try {
+      mainWindowInit = initMainWindow();
+      await mainWindowInit;
+    } finally {
+      mainWindowInit = null;
+    }
 
     if (!is.dev) {
       session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
