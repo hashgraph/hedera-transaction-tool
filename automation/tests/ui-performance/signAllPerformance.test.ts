@@ -76,9 +76,6 @@ test.describe('Sign All Performance (Org Mode)', () => {
 
     await window.waitForLoadState('networkidle');
 
-    // DEBUG PAUSE: inspect Electron app state before checking Sign All button
-    await window.pause();
-
     const signAllButton = window.locator(SELECTORS.BUTTON_SIGN_GROUP);
     await expect(signAllButton, 'Sign All button not found on group details page').toBeVisible({ timeout: 10000 });
     if (DEBUG) console.log('Found Sign All button on group details page');
