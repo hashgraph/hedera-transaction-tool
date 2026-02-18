@@ -124,7 +124,7 @@ export const SEED_MARKER = 'k6-perf-seed';
 
 /**
  * Default password for UI performance test local encryption.
- * Override via TEST_LOCAL_PASSWORD env var if needed.
+ * Overridable via k6 `-e TEST_LOCAL_PASSWORD=...` flag (k6 runtime only).
  */
 export const TEST_LOCAL_PASSWORD = getEnvVar('TEST_LOCAL_PASSWORD', 'TestPassword123');
 
