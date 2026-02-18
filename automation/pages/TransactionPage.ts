@@ -458,6 +458,9 @@ export class TransactionPage extends BasePage {
     if (!isComingFromDraft) {
       await this.clickOnCreateNewTransactionButton();
       await this.clickOnCreateAccountTransaction();
+    } else {
+      // When coming from draft, wait for form to fully load and validate
+      await this.window.waitForTimeout(2000);
     }
 
     // Handle complex key creation
