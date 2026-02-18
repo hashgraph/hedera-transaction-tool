@@ -38,7 +38,13 @@ vi.mock('@main/services/electronUpdater', () => ({
 }));
 
 describe('Electron entry file', async () => {
+  const processOnSpy = vi.spyOn(process, 'on');
   await import('@main/index');
+
+  const processMessageHandler = processOnSpy.mock.calls.find(
+    ([event]) => event === 'message',
+  )![1] as (msg: string) => void;
+  processOnSpy.mockRestore();
 
   const assertEventHandler = (event: string) => {
     const handler = vi.mocked(app).on.mock.calls.find(([ev]) => ev === event);
@@ -212,9 +218,22 @@ describe('Electron entry file', async () => {
     expect(mainWindow.focus).toHaveBeenCalled();
   });
 
-  test('Should wait for app ready and init before handling second-instance', async () => {
+  test('Should init mainWindow when second-instance fires and mainWindow is null', async () => {
     const mainWindow = new BrowserWindow();
     vi.mocked(restoreOrCreateWindow).mockResolvedValue(mainWindow);
+
+    // Re-trigger ready so mainWindow is set
+    //@ts-expect-error Incorrect type definition
+    const readyHandler = vi.mocked(app).on.mock.calls.find(([event]) => event === 'ready');
+    readyHandler && (await readyHandler[1]());
+
+    // Trigger 'closed' event to set module-level mainWindow to null
+    //@ts-expect-error Incorrect type definition
+    mainWindow.on.mock.calls.find(([event]) => event === 'closed')![1]();
+
+    // Clear mocks to verify this test's calls specifically
+    vi.mocked(restoreOrCreateWindow).mockClear();
+    vi.mocked(mainWindow.focus).mockClear();
 
     //@ts-expect-error Incorrect type definition
     const secondInstanceHandler = vi
@@ -222,14 +241,39 @@ describe('Electron entry file', async () => {
       .on.mock.calls.find(([event]) => event === 'second-instance');
     expect(secondInstanceHandler).toBeDefined();
 
-    // Fire second-instance before ready — handler awaits app.whenReady()
-    vi.mocked(mainWindow.isMinimized).mockReturnValue(false);
-    vi.mocked(mainWindow.restore).mockClear();
-    vi.mocked(mainWindow.focus).mockClear();
     secondInstanceHandler && (await secondInstanceHandler[1]());
 
     expect(app.whenReady).toHaveBeenCalled();
+    // initMainWindow should have been called (via restoreOrCreateWindow)
     expect(restoreOrCreateWindow).toHaveBeenCalled();
+    // Should return early after initMainWindow, not reach focus
+    expect(mainWindow.focus).not.toHaveBeenCalled();
+  });
+
+  test('Should reload all windows on hot-reload message', () => {
+    const mockWindow1 = { webContents: { reload: vi.fn() } };
+    const mockWindow2 = { webContents: { reload: vi.fn() } };
+    const getAllWindowsMock = vi
+      .fn()
+      .mockReturnValue([mockWindow1, mockWindow2] as unknown as BrowserWindow[]);
+    (BrowserWindow as unknown as Record<string, unknown>).getAllWindows = getAllWindowsMock;
+
+    processMessageHandler('electron-vite&type=hot-reload');
+
+    expect(mockWindow1.webContents.reload).toHaveBeenCalled();
+    expect(mockWindow2.webContents.reload).toHaveBeenCalled();
+  });
+
+  test('Should not reload windows on unrelated process message', () => {
+    const mockWindow = { webContents: { reload: vi.fn() } };
+    const getAllWindowsMock = vi
+      .fn()
+      .mockReturnValue([mockWindow] as unknown as BrowserWindow[]);
+    (BrowserWindow as unknown as Record<string, unknown>).getAllWindows = getAllWindowsMock;
+
+    processMessageHandler('some-other-message');
+
+    expect(mockWindow.webContents.reload).not.toHaveBeenCalled();
   });
 });
 
