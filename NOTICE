@@ -1668,10 +1668,6 @@ This product includes software (engine.io-client@6.6.3) developed at
 This product includes software (engine.io-parser@5.2.3) developed at
 (https://github.com/socketio/socket.io).
 
-The Initial Developer of entities@4.5.0,
-is Felix Boehm (https://github.com/fb55/entities).
-Copyright Felix Boehm. All Rights Reserved.
-
 The Initial Developer of env-paths@2.2.1,
 is Sindre Sorhus (https://github.com/sindresorhus/env-paths).
 Copyright Sindre Sorhus. All Rights Reserved.
@@ -3666,10 +3662,6 @@ Copyright Isaac Z. Schlueter. All Rights Reserved.
 The Initial Developer of write-file-atomic@4.0.2,
 is GitHub Inc. (https://github.com/npm/write-file-atomic).
 Copyright GitHub Inc.. All Rights Reserved.
-
-The Initial Developer of ws@8.17.1,
-is Einar Otto Stangvik (https://github.com/websockets/ws).
-Copyright Einar Otto Stangvik. All Rights Reserved.
 
 The Initial Developer of xml-name-validator@4.0.0,
 is Domenic Denicola (https://github.com/jsdom/xml-name-validator).

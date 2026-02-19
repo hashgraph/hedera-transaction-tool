@@ -120,6 +120,7 @@ defineExpose({
           <AppButton
             color="primary"
             type="submit"
+            :data-testid="props.hasDataChanged ? 'button-save-goto-settings' : 'button-goto-settings'"
             :loading="saving"
             loading-text="Saving Draft…"
             :disabled="saving"
