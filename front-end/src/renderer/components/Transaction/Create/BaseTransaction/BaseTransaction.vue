@@ -207,20 +207,20 @@ const handleExecuted = async ({ success, response, receipt }: ExecutedData) => {
 const handleSubmit = async (id: number, body: string) => {
   isProcessed.value = true;
   const targetNodeId: TransactionNodeId = { transactionId: id };
-  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true);
+  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true, true);
   emit('submitted', id, body);
 };
 
 const handleGroupSubmit = async (id: number) => {
   isProcessed.value = true;
   const targetNodeId: TransactionNodeId = { groupId: id };
-  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true);
+  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true, true);
   emit('group:submitted', id);
 };
 
 const handleLocalStored = async (id: string) => {
   const targetNodeId: TransactionNodeId = { transactionId: id };
-  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true);
+  await nextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true, true);
 };
 
 const handleGroupAction = (action: 'add' | 'edit', path?: string) => {
