@@ -42,6 +42,7 @@ pkg:
   hasStrictIdentifier: false
   # force the app to be installed in /Applications, not overwriting in any other location
   isRelocatable: false
+  scripts: pkg-scripts
 publish:
   provider: github
   # Explicitly set repository owner and name for GitHub Releases
