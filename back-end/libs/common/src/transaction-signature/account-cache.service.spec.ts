@@ -191,6 +191,34 @@ describe('AccountCacheService', () => {
 
       expect(result).toBe(false);
     });
+
+    it('should return false when HTTP 200 but data is identical to cached', async () => {
+      const serializedMockKey = `serialized-${mockKey}`;
+      const cachedAccount = {
+        id: 1,
+        account: '0.0.123',
+        mirrorNetwork: 'testnet',
+        refreshToken: 'token-123',
+        encodedKey: serializedMockKey,
+        receiverSignatureRequired: false,
+      } as unknown as CachedAccount;
+
+      const accountInfo: Partial<AccountInfoParsed> = {
+        key: mockKey,
+        receiverSignatureRequired: false,
+      };
+
+      cacheHelper.tryClaimRefresh.mockResolvedValue({ data: cachedAccount, claimed: true });
+      mirrorNodeClient.fetchAccountInfo.mockResolvedValue({
+        data: accountInfo as AccountInfoParsed,
+        etag: 'new-etag',
+      });
+      cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+
+      const result = await service.refreshAccount(cachedAccount);
+
+      expect(result).toBe(false);
+    });
   });
 
   describe('getAccountInfoForTransaction', () => {
@@ -499,6 +527,116 @@ describe('AccountCacheService', () => {
         'cachedAccount'
       );
     });
+
+    it('should return NOT_MODIFIED when fetched data matches cached data', async () => {
+      const serializedMockKey = `serialized-${mockKey}`;
+      const claimedAccount = {
+        id: 1,
+        account: '0.0.123',
+        mirrorNetwork: 'testnet',
+        refreshToken: 'token-123',
+        encodedKey: serializedMockKey,
+        receiverSignatureRequired: false,
+      } as unknown as CachedAccount;
+
+      const accountInfo: Partial<AccountInfoParsed> = {
+        key: mockKey,
+        receiverSignatureRequired: false,
+      };
+
+      mirrorNodeClient.fetchAccountInfo.mockResolvedValue({
+        data: accountInfo as AccountInfoParsed,
+        etag: 'new-etag',
+      });
+      cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+
+      const result = await (service as any).performRefreshForClaimedAccount(claimedAccount);
+
+      expect(result.status).toBe(RefreshStatus.NOT_MODIFIED);
+      expect(result.data).toEqual({
+        key: mockKey,
+        receiverSignatureRequired: false,
+      });
+    });
+
+    it('should return REFRESHED when key differs', async () => {
+      const otherKey = PrivateKey.generateED25519().publicKey;
+      const claimedAccount = {
+        id: 1,
+        account: '0.0.123',
+        mirrorNetwork: 'testnet',
+        refreshToken: 'token-123',
+        encodedKey: `serialized-${otherKey}`,
+        receiverSignatureRequired: false,
+      } as unknown as CachedAccount;
+
+      const accountInfo: Partial<AccountInfoParsed> = {
+        key: mockKey,
+        receiverSignatureRequired: false,
+      };
+
+      mirrorNodeClient.fetchAccountInfo.mockResolvedValue({
+        data: accountInfo as AccountInfoParsed,
+        etag: 'new-etag',
+      });
+      cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+
+      const result = await (service as any).performRefreshForClaimedAccount(claimedAccount);
+
+      expect(result.status).toBe(RefreshStatus.REFRESHED);
+    });
+
+    it('should return REFRESHED when receiverSignatureRequired differs', async () => {
+      const serializedMockKey = `serialized-${mockKey}`;
+      const claimedAccount = {
+        id: 1,
+        account: '0.0.123',
+        mirrorNetwork: 'testnet',
+        refreshToken: 'token-123',
+        encodedKey: serializedMockKey,
+        receiverSignatureRequired: true,
+      } as unknown as CachedAccount;
+
+      const accountInfo: Partial<AccountInfoParsed> = {
+        key: mockKey,
+        receiverSignatureRequired: false,
+      };
+
+      mirrorNodeClient.fetchAccountInfo.mockResolvedValue({
+        data: accountInfo as AccountInfoParsed,
+        etag: 'new-etag',
+      });
+      cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+
+      const result = await (service as any).performRefreshForClaimedAccount(claimedAccount);
+
+      expect(result.status).toBe(RefreshStatus.REFRESHED);
+    });
+
+    it('should return REFRESHED when cache has no prior data (first fetch)', async () => {
+      const claimedAccount = {
+        id: 1,
+        account: '0.0.123',
+        mirrorNetwork: 'testnet',
+        refreshToken: 'token-123',
+        encodedKey: null,
+      } as CachedAccount;
+
+      const accountInfo: Partial<AccountInfoParsed> = {
+        key: mockKey,
+        receiverSignatureRequired: false,
+      };
+
+      mirrorNodeClient.fetchAccountInfo.mockResolvedValue({
+        data: accountInfo as AccountInfoParsed,
+        etag: 'etag-123',
+      });
+      cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+
+      const result = await (service as any).performRefreshForClaimedAccount(claimedAccount);
+
+      expect(result.status).toBe(RefreshStatus.REFRESHED);
+    });
   });
 
   describe('saveAccountData', () => {
@@ -655,6 +793,66 @@ describe('AccountCacheService', () => {
         receiverSignatureRequired: true,
       });
       expect(deserializeKey).toHaveBeenCalledWith(Buffer.from('encoded-key'));
+    });
+  });
+
+  describe('hasAccountDataChanged', () => {
+    it('should return false when fetched data matches cached data', () => {
+      const serializedMockKey = `serialized-${mockKey}`;
+      const cached = {
+        encodedKey: serializedMockKey,
+        receiverSignatureRequired: false,
+      } as unknown as CachedAccount;
+
+      const fetchedData = {
+        key: mockKey,
+        receiverSignatureRequired: false,
+      } as unknown as AccountInfoParsed;
+
+      expect((service as any).hasAccountDataChanged(fetchedData, cached)).toBe(false);
+    });
+
+    it('should return true when key differs', () => {
+      const otherKey = PrivateKey.generateED25519().publicKey;
+      const cached = {
+        encodedKey: `serialized-${otherKey}`,
+        receiverSignatureRequired: false,
+      } as unknown as CachedAccount;
+
+      const fetchedData = {
+        key: mockKey,
+        receiverSignatureRequired: false,
+      } as unknown as AccountInfoParsed;
+
+      expect((service as any).hasAccountDataChanged(fetchedData, cached)).toBe(true);
+    });
+
+    it('should return true when receiverSignatureRequired differs', () => {
+      const serializedMockKey = `serialized-${mockKey}`;
+      const cached = {
+        encodedKey: serializedMockKey,
+        receiverSignatureRequired: true,
+      } as unknown as CachedAccount;
+
+      const fetchedData = {
+        key: mockKey,
+        receiverSignatureRequired: false,
+      } as unknown as AccountInfoParsed;
+
+      expect((service as any).hasAccountDataChanged(fetchedData, cached)).toBe(true);
+    });
+
+    it('should return true when cache has no prior data', () => {
+      const cached = {
+        encodedKey: null,
+      } as CachedAccount;
+
+      const fetchedData = {
+        key: mockKey,
+        receiverSignatureRequired: false,
+      } as unknown as AccountInfoParsed;
+
+      expect((service as any).hasAccountDataChanged(fetchedData, cached)).toBe(true);
     });
   });
 });
