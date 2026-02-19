@@ -80,20 +80,23 @@ describe('useTransactionGroupStore', () => {
       };
 
       vi.mocked(getGroup).mockResolvedValue({
+        id: 'group-1',
+        created_at: new Date(),
         description: 'test group',
+        atomic: false,
         groupValidStart: futureStart,
       });
 
       vi.mocked(getGroupItems).mockResolvedValue([
-        { transaction_draft_id: 'draft-1', seq: '0' },
-        { transaction_draft_id: 'draft-2', seq: '1' },
-        { transaction_draft_id: 'draft-3', seq: '2' },
+        { transaction_id: null, transaction_draft_id: 'draft-1', transaction_group_id: 'group-1', seq: '0' },
+        { transaction_id: null, transaction_draft_id: 'draft-2', transaction_group_id: 'group-1', seq: '1' },
+        { transaction_id: null, transaction_draft_id: 'draft-3', transaction_group_id: 'group-1', seq: '2' },
       ]);
 
       vi.mocked(getDrafts).mockResolvedValue([
-        { id: 'draft-1', transactionBytes: new Uint8Array([1]), type: 'Transfer', description: 'tx1' },
-        { id: 'draft-2', transactionBytes: new Uint8Array([2]), type: 'Transfer', description: 'tx2' },
-        { id: 'draft-3', transactionBytes: new Uint8Array([3]), type: 'Transfer', description: 'tx3' },
+        { id: 'draft-1', created_at: new Date(), updated_at: new Date(), user_id: 'user-1', transactionBytes: '0x01', type: 'Transfer', description: 'tx1', isTemplate: null, details: null },
+        { id: 'draft-2', created_at: new Date(), updated_at: new Date(), user_id: 'user-1', transactionBytes: '0x02', type: 'Transfer', description: 'tx2', isTemplate: null, details: null },
+        { id: 'draft-3', created_at: new Date(), updated_at: new Date(), user_id: 'user-1', transactionBytes: '0x03', type: 'Transfer', description: 'tx3', isTemplate: null, details: null },
       ]);
 
       vi.mocked(getTransactionFromBytes).mockReturnValue(mockTransaction as any);
