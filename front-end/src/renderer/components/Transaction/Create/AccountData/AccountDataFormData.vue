@@ -195,7 +195,7 @@ const columnClass = 'col-4 col-xxxl-3';
             })
           "
           data-testid="input-max-auto-token-associations"
-          :min="0"
+          :min="-1"
           :max="5000"
           :filled="true"
           type="number"

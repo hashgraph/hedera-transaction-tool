@@ -16,6 +16,7 @@ import {
   CachedAccountKey,
   CachedNode,
   CachedNodeAdminKey,
+  Client as ClientEntity,
   Notification,
   NotificationPreferences,
   NotificationReceiver,
@@ -539,6 +540,7 @@ async function connectDatabase() {
     entities: [
       User,
       UserKey,
+      ClientEntity,
       Transaction,
       TransactionSigner,
       TransactionApprover,

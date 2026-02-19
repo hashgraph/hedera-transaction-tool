@@ -15,11 +15,8 @@ import { deleteAllTempFolders } from '@main/services/localUser';
 import { restoreOrCreateWindow } from '@main/windows/mainWindow';
 import { initializeUpdaterService } from '@main/services/electronUpdater';
 
-let mainWindow: BrowserWindow | null;
-
-initLogger();
-
-run();
+let mainWindow: BrowserWindow | null = null;
+let mainWindowInit: Promise<void> | null = null;
 
 async function run() {
   await initDatabase();
@@ -27,12 +24,14 @@ async function run() {
   registerIpcListeners();
 }
 
-attachAppEvents();
-setupDeepLink();
-
 function attachAppEvents() {
   app.on('ready', async () => {
-    await initMainWindow();
+    try {
+      mainWindowInit = initMainWindow();
+      await mainWindowInit;
+    } finally {
+      mainWindowInit = null;
+    }
 
     if (!is.dev) {
       session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
@@ -104,6 +103,32 @@ function setupDeepLink() {
   } else {
     app.setAsDefaultProtocolClient(PROTOCOL_NAME);
   }
+}
+
+initLogger();
+
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', async () => {
+    await app.whenReady();
+    if (mainWindowInit) await mainWindowInit;
+
+    if (!mainWindow) {
+      await initMainWindow();
+      return;
+    }
+
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  });
+
+  run();
+
+  attachAppEvents();
+  setupDeepLink();
 }
 
 process.on('message', msg => {

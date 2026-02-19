@@ -41,6 +41,26 @@ import TransactionsFilter from '@renderer/components/Filter/TransactionsFilter.v
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import { useRouter } from 'vue-router';
+import useTableQueryState from '@renderer/composables/useTableQueryState.ts';
+
+const HISTORY_SORT_URL_VALUES = [
+  'created_at',
+  'transaction_id',
+  'type',
+  'description',
+  'status_code',
+  'executed_at',
+] as const;
+
+const LOCAL_TO_ORG_SORT: Record<string, keyof ITransaction> = {
+  created_at: 'createdAt',
+  transaction_id: 'transactionId',
+  type: 'type',
+  description: 'description',
+  status_code: 'statusCode',
+  executed_at: 'executedAt',
+};
+import { TransactionNodeCollection } from '../../../../../../shared/src/ITransactionNode.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -58,6 +78,12 @@ const { oldNotifications } = useMarkNotifications([
   NotificationType.TRANSACTION_INDICATOR_FAILED,
 ]);
 
+const { initialPage, initialPageSize, initialSortField, initialSortDirection, syncToUrl } = useTableQueryState(
+  HISTORY_SORT_URL_VALUES,
+  'created_at',
+  'desc',
+);
+
 /* State */
 const organizationTransactions = ref<
   {
@@ -71,15 +97,15 @@ const localSort = reactive<{
   field: Prisma.TransactionScalarFieldEnum;
   direction: Prisma.SortOrder;
 }>({
-  field: 'created_at',
-  direction: 'desc',
+  field: initialSortField as Prisma.TransactionScalarFieldEnum,
+  direction: initialSortDirection,
 });
 const orgSort = reactive<{
   field: keyof ITransaction;
   direction: 'asc' | 'desc';
 }>({
-  field: 'createdAt',
-  direction: 'desc',
+  field: LOCAL_TO_ORG_SORT[initialSortField] || 'createdAt',
+  direction: initialSortDirection,
 });
 const orgFilters = ref<
   {
@@ -89,8 +115,8 @@ const orgFilters = ref<
   }[]
 >([{ property: 'mirrorNetwork', rule: 'eq', value: network.network }]);
 const totalItems = ref(0);
-const currentPage = ref(1);
-const pageSize = ref(10);
+const currentPage = ref(initialPage);
+const pageSize = ref(initialPageSize);
 const isLoading = ref(true);
 
 /* Composables */
@@ -111,12 +137,11 @@ const handleSort = async (
   localSort.direction = direction;
   orgSort.field = organizationField;
   orgSort.direction = direction;
-
-  await fetchTransactions();
+  currentPage.value = 1;
 };
 
 const handleDetails = async (id: string | number) => {
-  let nodeIds: TransactionNodeId[] = [];
+  let nodeIds: TransactionNodeId[];
   if (isLoggedInOrganization(user.selectedOrganization)) {
     nodeIds = organizationTransactions.value.map(t => {
       return {
@@ -130,7 +155,13 @@ const handleDetails = async (id: string | number) => {
       };
     });
   }
-  await nextTransaction.routeDown({ transactionId: id }, nodeIds, router);
+  await nextTransaction.routeDown(
+    { transactionId: id },
+    nodeIds,
+    router,
+    TransactionNodeCollection.HISTORY,
+    true,
+  );
 };
 
 /* Functions */
@@ -227,6 +258,7 @@ onBeforeMount(async () => {
 
 /* Watchers */
 watch([currentPage, pageSize, () => user.selectedOrganization, orgFilters], async () => {
+  syncToUrl(currentPage.value, localSort.field, localSort.direction, pageSize.value);
   await fetchTransactions();
 });
 

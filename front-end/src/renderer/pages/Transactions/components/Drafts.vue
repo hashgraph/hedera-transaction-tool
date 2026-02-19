@@ -33,21 +33,35 @@ import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
+import useTableQueryState from '@renderer/composables/useTableQueryState.ts';
 import Tooltip from 'bootstrap/js/dist/tooltip';
+
+const DRAFTS_SORT_URL_VALUES = ['created_at', 'type', 'description', 'isTemplate'] as const;
 
 /* Store */
 const user = useUserStore();
 
+/* Composables */
+const router = useRouter();
+const toast = useToast();
+const createTooltips = useCreateTooltips();
+
+const { initialPage, initialPageSize, initialSortField, initialSortDirection, syncToUrl } = useTableQueryState(
+  DRAFTS_SORT_URL_VALUES,
+  'created_at',
+  'desc',
+);
+
 /* State */
 const drafts = ref<TransactionDraft[]>([]);
 const totalItems = ref(0);
-const currentPage = ref(1);
-const pageSize = ref(10);
+const currentPage = ref(initialPage);
+const pageSize = ref(initialPageSize);
 const isLoading = ref(true);
 const groups = ref<TransactionGroup[]>([]);
 const list = ref<(TransactionDraft | TransactionGroup)[]>([]);
-const sortField = ref<string>('created_at');
-const sortDirection = ref<string>('desc');
+const sortField = ref<string>(initialSortField);
+const sortDirection = ref<string>(initialSortDirection);
 const descriptionRefs = ref<Map<string, HTMLElement>>(new Map());
 const truncationState = ref<Map<string, boolean>>(new Map());
 let resizeObserver: ResizeObserver | undefined;
@@ -57,15 +71,11 @@ const generatedClass = computed(() => {
   return sortDirection.value === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
 });
 
-/* Composables */
-const router = useRouter();
-const toast = useToast();
-const createTooltips = useCreateTooltips();
-
 /* Handlers */
 const handleSort = async (field: string, direction: string) => {
   sortField.value = field;
   sortDirection.value = direction;
+  currentPage.value = 1;
 
   switch (field) {
     case 'created_at': {
@@ -345,6 +355,7 @@ onUnmounted(() => {
 
 /* Watchers */
 watch([currentPage, pageSize], async () => {
+  syncToUrl(currentPage.value, sortField.value, sortDirection.value as 'asc' | 'desc', pageSize.value);
   await fetchDrafts();
 });
 

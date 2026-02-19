@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 /* Props */
 const props = withDefaults(
@@ -23,6 +23,13 @@ const emit = defineEmits(['update:currentPage', 'update:perPage']);
 
 /* State */
 const internalPerPage = ref(props.perPage || 10);
+
+/* Watchers */
+watch(() => props.perPage, (newVal) => {
+  if (newVal != null && newVal !== internalPerPage.value) {
+    internalPerPage.value = newVal;
+  }
+});
 
 /* Computed */
 const totalPages = computed(() => Math.ceil(props.totalItems / internalPerPage.value));

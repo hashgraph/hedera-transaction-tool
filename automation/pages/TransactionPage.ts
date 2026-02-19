@@ -120,6 +120,9 @@ export class TransactionPage extends BasePage {
   moreDropdownButtonSelector = 'button-more-dropdown-lg';
   importButtonSelector = 'button-transaction-page-import';
   confirmImportButtonSelector = 'button-import-files-public';
+  saveGotoSettingsButtonSelector = 'button-save-goto-settings';
+  gotoSettingsButtonSelector = 'button-goto-settings';
+
   //Other
   confirmTransactionModalSelector = 'modal-confirm-transaction';
   spanCreateNewComplexKeyButtonSelector = 'span-create-new-complex-key';
@@ -885,6 +888,14 @@ export class TransactionPage extends BasePage {
 
   async clickOnDoneButtonForComplexKeyCreation() {
     await this.click(this.doneComplexKeyButtonSelector, 0);
+  }
+
+  async clickOnSaveGotoSettings() {
+    await this.click(this.saveGotoSettingsButtonSelector);
+  }
+
+  async clickOnGotoSettings() {
+    await this.click(this.gotoSettingsButtonSelector);
   }
 
   /**

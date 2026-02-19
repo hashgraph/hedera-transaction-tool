@@ -19,7 +19,13 @@ import { User } from '@entities';
 import { AdminGuard, JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../guards';
 import { AllowNonVerifiedUser, GetUser } from '../decorators';
 
-import { UpdateUserDto, UserDto, VersionCheckDto, VersionCheckResponseDto } from './dtos';
+import {
+  UpdateUserDto,
+  UserDto,
+  UserWithClientsDto,
+  VersionCheckDto,
+  VersionCheckResponseDto,
+} from './dtos';
 
 import { UsersService } from './users.service';
 
@@ -35,12 +41,12 @@ export class UsersController {
   })
   @ApiResponse({
     status: 200,
-    type: [UserDto],
+    type: [UserWithClientsDto],
   })
   @Get()
-  @Serialize(UserDto)
-  getUsers(): Promise<User[]> {
-    return this.usersService.getUsers();
+  @Serialize(UserWithClientsDto)
+  getUsers(@GetUser() requestingUser: User): Promise<User[]> {
+    return this.usersService.getUsers(requestingUser);
   }
 
   @ApiOperation({
@@ -64,12 +70,12 @@ export class UsersController {
   })
   @ApiResponse({
     status: 200,
-    type: UserDto,
+    type: UserWithClientsDto,
   })
   @Get('/:id')
-  @Serialize(UserDto)
-  getUser(@Param('id', ParseIntPipe) id: number): Promise<User> {
-    return this.usersService.getUser({ id });
+  @Serialize(UserWithClientsDto)
+  getUser(@GetUser() requestingUser: User, @Param('id', ParseIntPipe) id: number): Promise<User> {
+    return this.usersService.getUserWithClients(id, requestingUser);
   }
 
   @ApiOperation({

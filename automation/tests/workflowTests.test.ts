@@ -671,4 +671,31 @@ test.describe('Workflow tests', () => {
     const isViewContentButtonVisible = await detailsPage.isViewContentsButtonVisible();
     expect(isViewContentButtonVisible).toBe(true);
   });
+
+  test('Verify breadcrumb is displayed for transaction group item', async () => {
+    const txDescription = 'test account create tx description';
+    const { newTransactionId } = await transactionPage.createNewAccount({
+      description: txDescription,
+    });
+    await transactionPage.clickOnTransactionsMenuButton();
+    await detailsPage.assertTransactionDisplayed(
+      newTransactionId ?? '',
+      'Account Create',
+      txDescription,
+    );
+
+    await detailsPage.clickOnFirstTransactionDetailsButton();
+
+    const nbItems = await detailsPage.countElements('breadcrumb-item-');
+    expect(nbItems).toBe(2);
+    const item1 = await detailsPage.getBreadCrumbItem(0);
+    const item2 = await detailsPage.getBreadCrumbItem(1);
+    expect(await item1.innerText()).toBe('History');
+    expect(await item2.innerText()).toBe('Account Create Transaction');
+
+    await(item1.click())
+    const url = window.url();
+    expect(url).toContain('transactions?tab=History');
+  });
+
 });
