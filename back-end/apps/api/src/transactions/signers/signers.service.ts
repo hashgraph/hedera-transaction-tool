@@ -274,7 +274,7 @@ export class SignersService {
   ) {
     // Prepare batched operations
     const transactionsToUpdate: { id: number; transactionBytes: Buffer }[] = [];
-    const notificationsToUpdate: { id: number; transactionId: number }[] = [];
+    const notificationsToUpdate: { userId: number; transactionId: number }[] = [];
     const signersToInsert: { userId: number; transactionId: number; userKeyId: number }[] = [];
     const transactionsToProcess: { id: number; transaction: Transaction }[] = [];
 
@@ -293,7 +293,7 @@ export class SignersService {
       if (!isSameBytes) {
         transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
         transactionsToUpdate.push({ id, transactionBytes: transaction.transactionBytes });
-        notificationsToUpdate.push({ id, transactionId: transaction.id });
+        notificationsToUpdate.push({ userId: user.id, transactionId: transaction.id });
       }
 
       // Collect inserts
@@ -357,14 +357,14 @@ export class SignersService {
 
   private async bulkUpdateNotificationReceivers(
     manager: any,
-    notificationsToUpdate: { id: number; transactionId: number }[]
+    notificationsToUpdate: { userId: number; transactionId: number }[]
   ) {
     if (notificationsToUpdate.length === 0) return;
 
     const params: any[] = [];
     const orClauses: string[] = [];
 
-    notificationsToUpdate.forEach(({ id: userId, transactionId }) => {
+    notificationsToUpdate.forEach(({ userId, transactionId }) => {
       const userIdParamIndex = params.length + 1;
       params.push(userId);
 

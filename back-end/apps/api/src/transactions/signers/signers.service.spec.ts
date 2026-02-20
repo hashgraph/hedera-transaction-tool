@@ -414,8 +414,8 @@ describe('SignersService', () => {
       mockManager.query.mockResolvedValue(undefined);
 
       const notificationsToUpdate = [
-        { id: 1, transactionId: 100 },
-        { id: 2, transactionId: 200 },
+        { userId: 1, transactionId: 100 },
+        { userId: 2, transactionId: 200 },
       ];
 
       await service['bulkUpdateNotificationReceivers'](mockManager, notificationsToUpdate);
@@ -439,7 +439,7 @@ describe('SignersService', () => {
       const mockManager = mockDeep<any>();
       mockManager.query.mockResolvedValue(undefined);
 
-      const notificationsToUpdate = [{ id: 42, transactionId: 99 }];
+      const notificationsToUpdate = [{ userId: 42, transactionId: 99 }];
 
       await service['bulkUpdateNotificationReceivers'](mockManager, notificationsToUpdate);
 
