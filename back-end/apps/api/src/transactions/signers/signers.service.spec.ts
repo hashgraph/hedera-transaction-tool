@@ -386,7 +386,7 @@ describe('SignersService', () => {
   });
 
   describe('bulkUpdateTransactions', () => {
-    it('should execute bulk update query', async () => {
+    it('should execute bulk transaction update query', async () => {
       const mockManager = mockDeep<any>();
       mockManager.query.mockResolvedValue(undefined);
 
@@ -404,6 +404,56 @@ describe('SignersService', () => {
           Buffer.from([4, 5, 6]),
           [1, 2],
         ])
+      );
+    });
+  });
+
+  describe('bulkUpdateNotificationReceivers', () => {
+    it('should execute bulk notification update query', async () => {
+      const mockManager = mockDeep<any>();
+      mockManager.query.mockResolvedValue(undefined);
+
+      const notificationsToUpdate = [
+        { id: 1, transactionId: 100 },
+        { id: 2, transactionId: 200 },
+      ];
+
+      await service['bulkUpdateNotificationReceivers'](mockManager, notificationsToUpdate);
+
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE notification_receiver'),
+        expect.arrayContaining([1, 100, 2, 200])
+      );
+    });
+
+    it('should not execute query when notificationsToUpdate is empty', async () => {
+      const mockManager = mockDeep<any>();
+      mockManager.query.mockResolvedValue(undefined);
+
+      await service['bulkUpdateNotificationReceivers'](mockManager, []);
+
+      expect(mockManager.query).not.toHaveBeenCalled();
+    });
+
+    it('should build correct WHERE clause with userId and transactionId params', async () => {
+      const mockManager = mockDeep<any>();
+      mockManager.query.mockResolvedValue(undefined);
+
+      const notificationsToUpdate = [{ id: 42, transactionId: 99 }];
+
+      await service['bulkUpdateNotificationReceivers'](mockManager, notificationsToUpdate);
+
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringMatching(/"userId" = \$1/),
+        [42, 99]
+      );
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringMatching(/"entityId" = \$2/),
+        [42, 99]
+      );
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining("type = 'TRANSACTION_INDICATOR_SIGN'"),
+        expect.any(Array)
       );
     });
   });

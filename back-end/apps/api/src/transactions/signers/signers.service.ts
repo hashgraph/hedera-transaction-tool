@@ -100,9 +100,6 @@ export class SignersService {
     });
   }
 
-
-
-
   /* Upload signatures for the given transaction ids */
   async uploadSignatureMaps(
     dto: UploadSignatureMapDto[],
@@ -277,6 +274,7 @@ export class SignersService {
   ) {
     // Prepare batched operations
     const transactionsToUpdate: { id: number; transactionBytes: Buffer }[] = [];
+    const notificationsToUpdate: { id: number; transactionId: number }[] = [];
     const signersToInsert: { userId: number; transactionId: number; userKeyId: number }[] = [];
     const transactionsToProcess: { id: number; transaction: Transaction }[] = [];
 
@@ -295,6 +293,7 @@ export class SignersService {
       if (!isSameBytes) {
         transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
         transactionsToUpdate.push({ id, transactionBytes: transaction.transactionBytes });
+        notificationsToUpdate.push({ id, transactionId: transaction.id });
       }
 
       // Collect inserts
@@ -316,6 +315,11 @@ export class SignersService {
         // Bulk update transactions
         if (transactionsToUpdate.length > 0) {
           await this.bulkUpdateTransactions(manager, transactionsToUpdate);
+        }
+
+        // Bulk update notifications
+        if (notificationsToUpdate.length > 0) {
+          await this.bulkUpdateNotificationReceivers(manager, notificationsToUpdate);
         }
 
         // Bulk insert signers
@@ -348,6 +352,44 @@ export class SignersService {
          "updatedAt" = NOW()
      WHERE id = ANY($${bytes.length + 1})`,
       [...bytes, ids]
+    );
+  }
+
+  private async bulkUpdateNotificationReceivers(
+    manager: any,
+    notificationsToUpdate: { id: number; transactionId: number }[]
+  ) {
+    if (notificationsToUpdate.length === 0) return;
+
+    const params: any[] = [];
+    const orClauses: string[] = [];
+
+    notificationsToUpdate.forEach(({ id: userId, transactionId }) => {
+      const userIdParamIndex = params.length + 1;
+      params.push(userId);
+
+      const txIdParamIndex = params.length + 1;
+      params.push(transactionId);
+
+      orClauses.push(
+        `("userId" = $${userIdParamIndex} AND "notificationId" IN (
+          SELECT id FROM notification
+          WHERE "entityId" = $${txIdParamIndex}
+            AND type = 'TRANSACTION_INDICATOR_SIGN'
+        ))`
+      );
+    });
+
+    const whereClause = orClauses.join(' OR ');
+
+    await manager.query(
+      `
+      UPDATE notification_receiver
+      SET "isRead" = true,
+          "updatedAt" = NOW()
+      WHERE ${whereClause}
+    `,
+      params
     );
   }
 
