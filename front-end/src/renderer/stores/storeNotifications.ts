@@ -67,23 +67,37 @@ const useNotificationsStore = defineStore('notifications', () => {
     }
     return counts;
   });
+
   const loggedInOrganization = computed((): ConnectedOrganization | null => {
-    let result: ConnectedOrganization | null;
     if (isUserLoggedIn(user.personal) && isLoggedInOrganization(user.selectedOrganization)) {
-      result = user.selectedOrganization;
-    } else {
-      result = null;
+      return user.selectedOrganization;
     }
-    return result;
+    return null;
   });
+
   const organizationServerUrls = computed(() => {
-    let result: string[];
     if (isUserLoggedIn(user.personal)) {
-      result = user.organizations.map(o => o.serverUrl);
-    } else {
-      result = [];
+      return user.organizations.map(o => o.serverUrl);
     }
-    return result;
+    return [];
+  });
+
+  const currentNotificationsKey = computed(() => {
+    if (!isLoggedInOrganization(user.selectedOrganization)) return '';
+    return user.selectedOrganization!.serverUrl;
+  });
+
+  const currentOrganizationNotifications = computed<INotificationReceiver[]>(() => {
+    const key = currentNotificationsKey.value;
+    if (!key) return [];
+
+    const allForOrg = notifications.value[key] || [];
+
+    // keep the same network filter behavior as in markAsRead
+    return allForOrg.filter(n =>
+      !n.notification.additionalData?.network ||
+      n.notification.additionalData.network === network.network,
+    );
   });
 
   let notificationsQueue = Promise.resolve();
@@ -166,7 +180,7 @@ const useNotificationsStore = defineStore('notifications', () => {
       throw new Error('No organization selected');
     }
 
-    const notificationsKey = user.selectedOrganization?.serverUrl || '';
+    const notificationsKey = currentNotificationsKey.value;
     if (!notificationsKey) return;
 
     const networkFilteredNotifications =
@@ -190,7 +204,7 @@ const useNotificationsStore = defineStore('notifications', () => {
       throw new Error('No organization selected');
     }
 
-    const notificationsKey = user.selectedOrganization?.serverUrl || '';
+    const notificationsKey = currentNotificationsKey.value;
     if (!notificationsKey) return;
 
     await _updateNotifications(notificationsKey, notificationIds);
@@ -230,6 +244,7 @@ const useNotificationsStore = defineStore('notifications', () => {
   return {
     notificationsPreferences,
     notifications,
+    currentOrganizationNotifications,
     updatePreferences,
     markAsRead,
     markAsReadIds,

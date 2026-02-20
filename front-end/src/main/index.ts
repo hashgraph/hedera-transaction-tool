@@ -15,7 +15,7 @@ import { deleteAllTempFolders } from '@main/services/localUser';
 import { restoreOrCreateWindow } from '@main/windows/mainWindow';
 import { initializeUpdaterService } from '@main/services/electronUpdater';
 
-let mainWindow: BrowserWindow | null;
+let mainWindow: BrowserWindow | null = null;
 let mainWindowInit: Promise<void> | null = null;
 
 async function run() {
@@ -26,9 +26,12 @@ async function run() {
 
 function attachAppEvents() {
   app.on('ready', async () => {
-    mainWindowInit = initMainWindow();
-    await mainWindowInit;
-    mainWindowInit = null;
+    try {
+      mainWindowInit = initMainWindow();
+      await mainWindowInit;
+    } finally {
+      mainWindowInit = null;
+    }
 
     if (!is.dev) {
       session.defaultSession.webRequest.onHeadersReceived((details, callback) => {

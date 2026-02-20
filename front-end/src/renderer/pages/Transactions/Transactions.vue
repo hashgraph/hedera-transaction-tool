@@ -292,7 +292,7 @@ async function selectTransactionFile(onlyV2 = false): Promise<string | null> {
 async function setQueryTabAndRemount(title: string) {
   const query = router.currentRoute.value.query;
   if (query.tab === title) return;
-  await router.replace({ query: { ...query, tab: title } });
+  await router.replace({ query: { tab: title } });
   // Triggers unmount() + remount()
 }
 

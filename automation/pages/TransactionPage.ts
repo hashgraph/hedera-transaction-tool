@@ -1,6 +1,6 @@
 
 import { BasePage } from './BasePage.js';
-import { Page } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 import { getAccountDetails, getTransactionDetails } from '../utils/mirrorNodeAPI.js';
 import {
   verifyAccountExists,
@@ -120,6 +120,9 @@ export class TransactionPage extends BasePage {
   moreDropdownButtonSelector = 'button-more-dropdown-lg';
   importButtonSelector = 'button-transaction-page-import';
   confirmImportButtonSelector = 'button-import-files-public';
+  saveGotoSettingsButtonSelector = 'button-save-goto-settings';
+  gotoSettingsButtonSelector = 'button-goto-settings';
+
   //Other
   confirmTransactionModalSelector = 'modal-confirm-transaction';
   spanCreateNewComplexKeyButtonSelector = 'span-create-new-complex-key';
@@ -310,12 +313,17 @@ export class TransactionPage extends BasePage {
 
   async addPublicKeyAtDepth(depth: string, publicKey: string | null = null) {
     await this.clickAddButton(depth);
+    await this.window.waitForTimeout(300);
     await this.selectPublicKeyOption(depth);
+    await this.window.waitForTimeout(300);
     if (publicKey === null) {
       publicKey = await this.generateRandomPublicKey();
     }
     await this.fillInPublicKeyField(publicKey);
+    await this.window.waitForTimeout(300);
     await this.clickInsertPublicKey();
+    // Wait for DOM to update after key insertion (needed for CI)
+    await this.window.waitForTimeout(300);
   }
 
   async addAccountAtDepth(depth: string, accountId: string) {
@@ -327,7 +335,10 @@ export class TransactionPage extends BasePage {
 
   async addThresholdKeyAtDepth(depth: string) {
     await this.clickAddButton(depth);
+    await this.window.waitForTimeout(300);
     await this.selectThreshold(depth);
+    // Wait for DOM to update after threshold key addition (needed for CI)
+    await this.window.waitForTimeout(300);
   }
 
   async createComplexKeyStructure() {
@@ -447,6 +458,9 @@ export class TransactionPage extends BasePage {
     if (!isComingFromDraft) {
       await this.clickOnCreateNewTransactionButton();
       await this.clickOnCreateAccountTransaction();
+    } else {
+      // When coming from draft, wait for form to fully load and validate
+      await this.window.waitForTimeout(2000);
     }
 
     // Handle complex key creation
@@ -792,10 +806,12 @@ export class TransactionPage extends BasePage {
       }
     }
 
-    // Scroll to top to ensure button is visible, then click
+    // Wait for button to be enabled before clicking
     const button = this.window.getByTestId(this.signAndSubmitButtonSelector);
     await button.scrollIntoViewIfNeeded();
-    await button.click({ timeout: 10000 });
+    await button.waitFor({ state: 'visible', timeout: 30000 });
+    await expect(button).toBeEnabled({ timeout: 30000 });
+    await button.click();
   }
 
   // For queries (FileContentsQuery, etc.) - uses dropdown for payer, not input
@@ -885,6 +901,14 @@ export class TransactionPage extends BasePage {
 
   async clickOnDoneButtonForComplexKeyCreation() {
     await this.click(this.doneComplexKeyButtonSelector, 0);
+  }
+
+  async clickOnSaveGotoSettings() {
+    await this.click(this.saveGotoSettingsButtonSelector);
+  }
+
+  async clickOnGotoSettings() {
+    await this.click(this.gotoSettingsButtonSelector);
   }
 
   /**

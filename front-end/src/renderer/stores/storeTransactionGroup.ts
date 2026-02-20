@@ -81,6 +81,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     }
 
     groupItems.value = groupItemsToAdd;
+    updateTransactionValidStarts(groupValidStart.value);
   }
 
   function clearGroup() {
@@ -92,20 +93,49 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   }
 
   function addGroupItem(groupItem: GroupItem) {
+    const uniqueValidStart = findUniqueValidStart(
+      groupItem.payerAccountId,
+      groupItem.validStart.getTime(),
+    );
+    if (uniqueValidStart.getTime() !== groupItem.validStart.getTime()) {
+      const transaction = Transaction.fromBytes(groupItem.transactionBytes);
+      transaction.setTransactionId(
+        createTransactionId(groupItem.payerAccountId, uniqueValidStart),
+      );
+      groupItem = {
+        ...groupItem,
+        transactionBytes: transaction.toBytes(),
+        validStart: uniqueValidStart,
+      };
+    }
     groupItems.value = [...groupItems.value, groupItem];
     setModified();
   }
 
   function editGroupItem(newGroupItem: GroupItem) {
-    for (const [i] of groupItems.value.entries()) {
-      if (i == Number.parseInt(newGroupItem.seq)) {
-        groupItems.value = [
-          ...groupItems.value.slice(0, i),
-          newGroupItem,
-          ...groupItems.value.slice(i + 1),
-        ];
-      }
+    const editIndex = Number.parseInt(newGroupItem.seq);
+    if (!(editIndex >= 0 && editIndex < groupItems.value.length)) return;
+    const uniqueValidStart = findUniqueValidStart(
+      newGroupItem.payerAccountId,
+      newGroupItem.validStart.getTime(),
+      editIndex,
+    );
+    if (uniqueValidStart.getTime() !== newGroupItem.validStart.getTime()) {
+      const transaction = Transaction.fromBytes(newGroupItem.transactionBytes);
+      transaction.setTransactionId(
+        createTransactionId(newGroupItem.payerAccountId, uniqueValidStart),
+      );
+      newGroupItem = {
+        ...newGroupItem,
+        transactionBytes: transaction.toBytes(),
+        validStart: uniqueValidStart,
+      };
     }
+    groupItems.value = [
+      ...groupItems.value.slice(0, editIndex),
+      newGroupItem,
+      ...groupItems.value.slice(editIndex + 1),
+    ];
     setModified();
   }
 
@@ -151,26 +181,29 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
    * @param validStartMillis - The milliseconds of the desired validStart date .
    * @returns A unique validStart date.
    */
-  function findUniqueValidStart(payerAccountId: string, validStartMillis: number): Date {
+  function findUniqueValidStart(
+    payerAccountId: string,
+    validStartMillis: number,
+    excludeIndex?: number,
+  ): Date {
     let isUnique = false;
 
     while (!isUnique) {
       isUnique = true;
 
-      for (const item of groupItems.value) {
+      for (const [index, item] of groupItems.value.entries()) {
+        if (index === excludeIndex) continue;
         if (
           item.payerAccountId === payerAccountId &&
           item.validStart.getTime() === validStartMillis
         ) {
           isUnique = false;
-          // Not unique, add 1 millisecond and break the loop
           validStartMillis += 1;
           break;
         }
       }
     }
 
-    // Convert milliseconds back to Date and return
     return new Date(validStartMillis);
   }
 
@@ -230,24 +263,24 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   }
 
   function updateTransactionValidStarts(newGroupValidStart: Date) {
+    // Items are updated in-place so that findUniqueValidStart sees
+    // already-assigned timestamps from earlier items in the same pass
     groupItems.value.forEach((groupItem, index) => {
-      const now = new Date();
-      if (groupItem.validStart < now) {
-        const updatedValidStart = findUniqueValidStart(
-          groupItem.payerAccountId,
-          newGroupValidStart.getTime() + index,
-        );
-        const transaction = Transaction.fromBytes(groupItem.transactionBytes);
-        transaction.setTransactionId(
-          createTransactionId(groupItem.payerAccountId, updatedValidStart),
-        );
+      const updatedValidStart = findUniqueValidStart(
+        groupItem.payerAccountId,
+        newGroupValidStart.getTime() + index,
+        index,
+      );
+      const transaction = Transaction.fromBytes(groupItem.transactionBytes);
+      transaction.setTransactionId(
+        createTransactionId(groupItem.payerAccountId, updatedValidStart),
+      );
 
-        groupItems.value[index] = {
-          ...groupItem,
-          transactionBytes: transaction.toBytes(),
-          validStart: updatedValidStart,
-        };
-      }
+      groupItems.value[index] = {
+        ...groupItem,
+        transactionBytes: transaction.toBytes(),
+        validStart: updatedValidStart,
+      };
     });
     groupItems.value = [...groupItems.value];
 
