@@ -22,9 +22,13 @@
     "build:mac": "pnpm run build && electron-builder --mac",
     "build:linux": "pnpm run build && electron-builder --linux --config",
     "publish": "pnpm run build && electron-builder -m -p 'onTagOrDraft'",
-    "test:main": "vitest --config src/tests/vitest.config.main.ts --passWithNoTests",
-    "test:main:coverage": "vitest --config src/tests/vitest.config.main.ts --coverage.enabled --coverage.include=src/main",
-    "test:renderer": "vitest --config src/tests/vitest.config.renderer.ts --passWithNoTests",
+    "test": "pnpm run test:main && pnpm run test:renderer && pnpm run test:shared",
+    "test:main": "vitest --config src/tests/vitest.config.main.ts --passWithNoTests --run",
+    "test:main:coverage": "vitest --config src/tests/vitest.config.main.ts --coverage.enabled --coverage.include=src/main --run",
+    "test:renderer": "vitest --config src/tests/vitest.config.renderer.ts --passWithNoTests --run",
+    "test:renderer:coverage": "vitest --config src/tests/vitest.config.renderer.ts --coverage.enabled --coverage.include=src/renderer --run",
+    "test:shared": "vitest --config src/tests/vitest.config.shared.ts --passWithNoTests --run",
+    "test:shared:coverage": "vitest --config src/tests/vitest.config.shared.ts --coverage.enabled --coverage.include=src/shared --run",
     "generate:database": "prisma generate --no-hints"
   },
   "dependencies": {
