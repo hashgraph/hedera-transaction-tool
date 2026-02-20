@@ -42,6 +42,21 @@ const handleAutoLogin = async (password: string | null) => {
 
   await user.refetchOrganizations();
 
+  // After successful auto-login, re-select the current org to trigger
+  // proper navigation (e.g., away from OrganizationLogin to Transactions)
+  if (user.selectedOrganization) {
+    const selectedOrgId = user.selectedOrganization.id;
+    const wasAutoLoginFailed = loginFailedForOrganizations.value.some(
+      failed => failed.id === selectedOrgId,
+    );
+    if (!wasAutoLoginFailed) {
+      const updatedOrg = user.organizations.find(org => org.id === selectedOrgId);
+      if (updatedOrg && isOrganizationActive(updatedOrg) && !updatedOrg.loginRequired) {
+        await user.selectOrganization(updatedOrg);
+      }
+    }
+  }
+
   const successfulOrg = loginTriedForOrganizations.value.find(
     org => !loginFailedForOrganizations.value.some(failed => failed.id === org.id),
   );
