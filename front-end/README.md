@@ -10,20 +10,20 @@ and is at your own risk.
 - [**Node.js**](https://nodejs.org/en/download/package-manager)
   - Required version: `>= 22.12.0`
   - Verify installation:
-    
+
     ```bash
     node -v
     ```
 
-- [**pnpm**](https://pnpm.io/installation) 
+- [**pnpm**](https://pnpm.io/installation)
   - Required version: `>= 9.13.1`
   - Installation of `pnpm`(if not already installed):
-    
+
     ```bash
     npm install -g pnpm@latest
     ```
   - Verify installation:
-     
+
     ```bash
     pnpm --version
     ```
@@ -31,12 +31,12 @@ and is at your own risk.
 - [**Python setuptools**](https://pypi.org/project/setuptools)
   - Required version: `>= 75.6.0`
   - Installation of `python-setuptools` with `brew`:
-    
+
     ```bash
     brew install python-setuptools
     ```
   - Verify installation:
-      
+
     ```bash
     python -m setuptools --version
     ```
@@ -76,33 +76,37 @@ pnpm build:mac # uses mac as build target
 
 ```bash
 pnpm test:main # run tests for the main process
+pnpm test:renderer # run tests for the renderer process
+pnpm test:shared # run tests for the shared utils
 ```
 
 Run the tests with coverage
 
 ```bash
 pnpm test:main:coverage # run tests for the main process
+pnpm test:renderer:coverage # run tests for the renderer process
+pnpm test:shared:coverage # run tests for the shared utils
 ```
 
 ## 7. Troubleshooting
 
 - **Prisma issues**
   - If you encounter problems with `@prisma/client`:
-    
+
     ```bash
     npx prisma generate
     ```
   - Alternatively, reinstall `node_modules` and run:
-    
+
     ```bash
     npx prisma generate
     ```
 
 - **ENOENT errors**
-  - If errors persist after reinstalling `node_modules` and running `prisma_generate`, it may be caused by a missing Electron distribution.  
+  - If errors persist after reinstalling `node_modules` and running `prisma_generate`, it may be caused by a missing Electron distribution.
   - To fix this, manually rebuild Electron from the `front-end` directory:
-    
+
     ```bash
     pnpm rebuild electron
     ```
-    
+
