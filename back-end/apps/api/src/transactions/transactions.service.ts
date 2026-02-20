@@ -77,7 +77,14 @@ export class TransactionsService {
 
     const transaction = await this.repo.findOne({
       where: typeof id == 'number' ? { id } : { transactionId: id.toString() },
-      relations: ['creatorKey', 'creatorKey.user', 'observers', 'comments', 'groupItem'],
+      relations: [
+        'creatorKey',
+        'creatorKey.user',
+        'observers',
+        'comments',
+        'groupItem',
+        'groupItem.group',
+      ],
     });
 
     if (!transaction) return null;
