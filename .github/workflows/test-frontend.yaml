@@ -184,7 +184,7 @@ jobs:
       matrix:
         test-suite:
           - name: Main Process
-            command: main
+            command: main:coverage
           - name: Renderer Process
             command: renderer
           - name: Shared
@@ -214,7 +214,7 @@ jobs:
         working-directory: front-end
 
       - name: Run Unit Tests
-        run: pnpm run test:${{ matrix.test-suite.command }}:coverage
+        run: pnpm run test:${{ matrix.test-suite.command }}
         working-directory: front-end
 
       - name: Upload coverage to Codecov
