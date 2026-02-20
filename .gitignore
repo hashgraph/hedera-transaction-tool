@@ -142,15 +142,24 @@ out
 .DS_Store
 
 # Automation files
-automation_javascript/node_modules/
-automation_javascript/test-results/
-automation_javascript/playwright-report/
-automation_javascript/blob-report/
-automation_javascript/playwright/.cache/
-automation_javascript/.env
+automation/node_modules/
+automation/test-results/
+automation/playwright-report/
+automation/blob-report/
+automation/playwright/.cache/
+automation/.env
 automation/data/*.bin
 automation/data/*.csv
-automation_javascript/data/102.json
+automation/data/102.json
+
+# Performance test reports
+automation/reports/
+
+# k6 build output and generated data
+automation/k6/dist/
+automation/k6/data/
+automation/k6/.env
+automation/k6/*.local.json
 
 # files with notes and scripts for manual data/image manipulation
 *.helper
