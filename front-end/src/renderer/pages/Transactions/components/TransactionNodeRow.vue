@@ -208,9 +208,6 @@ const handleTransactionGroupSigned = async (payload: { groupId: number; signed: 
 };
 
 const handleDetails = async () => {
-  if (notificationMonitor.filteredNotificationIds.value.length > 0) {
-    await notifications.markAsReadIds(notificationMonitor.filteredNotificationIds.value);
-  }
   emit('routeToDetails', props.node);
 };
 
