@@ -52,6 +52,7 @@ import { useToast } from 'vue-toast-notification';
 import { readTransactionFile } from '@renderer/services/transactionFileService.ts';
 import { SignatureMap, Transaction } from '@hashgraph/sdk';
 import { getTransactionById, importSignatures } from '@renderer/services/organization';
+import TransactionImportModal from '@renderer/components/TransactionImportModal.vue';
 
 const IMPORT_FORMATS = [
   { name: 'All Tx Tool files', extensions: ['tx2', 'zip'] },
@@ -282,7 +283,7 @@ async function selectTransactionFile(onlyV2 = false): Promise<string | null> {
     'Select Transaction File',
     'Select',
     filter,
-    ['openFile' /*, 'openDirectory', 'multiSelections' */],
+    ['openFile', 'multiSelections' /*, 'openDirectory' */],
     message,
   );
 
@@ -452,5 +453,7 @@ onBeforeMount(async () => {
       v-model:show="isSignTransactionFileModalShown"
       :filePath="transactionFilePath"
     />
+
+    <TransactionImportModal v-model:show="isImportModalVisible" :filter-result="filterResult" />
   </div>
 </template>
