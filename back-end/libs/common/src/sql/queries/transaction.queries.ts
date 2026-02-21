@@ -356,7 +356,7 @@ export function getTransactionGroupItemsQuery(
   groupId: number,
   user?: User,
 ): SqlQuery {
-  const whereResult = buildWhereClause(sql, null, user, { signer: true, creator: true, observer: true, approver: true });
+  const whereResult = buildWhereClause(sql, undefined, user, { signer: true, creator: true, observer: true, approver: true });
 
   const values = [...whereResult.values];
   let paramIndex = values.length + 1;
