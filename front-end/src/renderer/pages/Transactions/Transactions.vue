@@ -283,7 +283,7 @@ async function selectTransactionFile(onlyV2 = false): Promise<string | null> {
     'Select Transaction File',
     'Select',
     filter,
-    ['openFile', 'multiSelections' /*, 'openDirectory' */],
+    ['openFile' /*, 'openDirectory', 'multiSelections' */],
     message,
   );
 
