@@ -6,8 +6,8 @@ import { TransactionDto } from './transaction.dto'
 import { TransactionGroupItemDto } from './transaction-group-item.dto'
 import { TransactionGroupDto } from './transaction-group.dto';
 
-describe('TransactionDto', () => {
-  test('maps plain object -> TransactionDto and applies transforms/types', () => {
+describe('TransactionGroupItemDto', () => {
+  test('maps plain object -> TransactionGroupItemDto and applies transforms/types', () => {
     const plain = {
       transactionId: 42,
       groupId: 7,
