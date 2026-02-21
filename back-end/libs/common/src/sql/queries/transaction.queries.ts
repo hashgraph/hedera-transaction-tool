@@ -397,6 +397,7 @@ export function getTransactionGroupItemsQuery(
     LEFT JOIN ${sql.table(User)} c
       ON c.${sql.col(User, 'id')} = ck.${sql.col(UserKey, 'userId')}
     WHERE ${whereResult.clause}
+    ORDER BY gi.${sql.col(TransactionGroupItem, 'seq')}
   `;
 
   return { text, values };
