@@ -12,7 +12,7 @@ export class TransactionGroupItemDto {
 
   @Expose()
   @Type(() => TransactionGroupDto)
-  group: TransactionGroup;
+  group?: TransactionGroup;
 
   @Expose()
   seq: number;

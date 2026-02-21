@@ -10,7 +10,7 @@ import {
   NatsPublisherService,
   SqlBuilderService,
 } from '@app/common';
-import { Transaction, TransactionGroup, TransactionGroupItem, User } from '@entities';
+import { Transaction, TransactionGroup, TransactionGroupItem, User, UserKey } from '@entities';
 
 import { TransactionsService } from '../transactions.service';
 
@@ -86,6 +86,17 @@ export class TransactionGroupsService {
     );
 
     group.groupItems = rows.map(row => {
+      const creator = this.dataSource.manager.create(User, {
+        id: row.tx_creator_key_user_id,
+        email: row.tx_creator_email,
+      });
+
+      const creatorKey = this.dataSource.manager.create(UserKey, {
+        id: row.tx_creator_key_id,
+        userId: row.tx_creator_key_user_id,
+        user: creator,
+      });
+
       const transaction = this.dataSource.manager.create(Transaction, {
         id: row.tx_id,
         name: row.tx_name,
@@ -98,6 +109,7 @@ export class TransactionGroupsService {
         status: row.tx_status,
         statusCode: row.tx_status_code,
         creatorKeyId: row.tx_creator_key_id,
+        creatorKey,
         signature: row.tx_signature,
         validStart: row.tx_valid_start,
         mirrorNetwork: row.tx_mirror_network,

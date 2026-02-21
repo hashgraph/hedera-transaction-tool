@@ -771,7 +771,7 @@ export class TransactionsService {
       return [];
     }
 
-    //To be implemented...
+    //To be implemented when approver functionality is added.
     return [];
   }
 
