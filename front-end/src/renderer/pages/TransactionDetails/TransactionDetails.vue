@@ -150,7 +150,7 @@ async function fetchTransaction() {
         if (groupItem.group) {
           groupDescription.value = groupItem.group.description;
         } else {
-          // Pre 0.25.0 release
+          // Backwards compatibility for older organization servers where groupItem.group is not populated
           if (user.selectedOrganization?.serverUrl) {
             const orgGroup = await getTransactionGroupById(
               user.selectedOrganization?.serverUrl,
