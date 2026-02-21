@@ -155,6 +155,7 @@ async function fetchTransaction() {
             const orgGroup = await getTransactionGroupById(
               user.selectedOrganization?.serverUrl,
               groupItem.groupId,
+              false,
             );
             groupDescription.value = orgGroup.description;
           }
