@@ -86,7 +86,7 @@ export interface IGroupItem {
   transactionId: number;
   groupId: number;
   transaction: ITransaction;
-  group: IGroup;
+  group?: IGroup;
 }
 
 export interface IGroup {

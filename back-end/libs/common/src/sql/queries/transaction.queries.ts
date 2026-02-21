@@ -37,6 +37,15 @@ interface WhereClauseResult {
   values: any[];
 }
 
+const TERMINAL_STATUSES = [
+  TransactionStatus.CANCELED,
+  TransactionStatus.REJECTED,
+  TransactionStatus.EXECUTED,
+  TransactionStatus.FAILED,
+  TransactionStatus.EXPIRED,
+  TransactionStatus.ARCHIVED,
+];
+
 function buildFilterConditions(
   sql: SqlBuilderService,
   filters: TransactionFilters,
@@ -202,6 +211,22 @@ function buildEligibilityConditions(
   return eligibilityConditions;
 }
 
+/**
+ * Builds a parameterized SQL WHERE clause for filtering and authorizing transaction queries.
+ *
+ * The resulting clause is structured as:
+ * `(filter conditions) AND ((eligibility conditions) OR (terminal status override))`
+ *
+ * Terminal statuses (CANCELED, REJECTED, EXECUTED, FAILED, EXPIRED, ARCHIVED) always
+ * pass the eligibility check regardless of user or role conditions.
+ *
+ * @param sql - The SQL builder service used to resolve table and column names.
+ * @param filters - Optional filters to apply, such as status, type, and mirror network.
+ * @param user - Optional user to scope results to. If provided, `roles` must also be supplied.
+ * @param roles - Optional roles defining how the user may be eligible to see a transaction
+ *                (e.g. as signer, creator, observer, or approver).
+ * @returns A `WhereClauseResult` containing the SQL clause string and its corresponding parameter values.
+ */
 function buildWhereClause(
   sql: SqlBuilderService,
   filters?: TransactionFilters,
@@ -225,9 +250,11 @@ function buildWhereClause(
     conditions.push(...filterConditions);
   }
 
+  const eligibilityConditions: string[] = [];
+
   if (user && roles) {
     // Build eligibility conditions
-    const eligibilityConditions = buildEligibilityConditions(
+    const userEligibility = buildEligibilityConditions(
       sql,
       user,
       roles,
@@ -235,10 +262,13 @@ function buildWhereClause(
       filters?.onlyUnsigned ?? false
     );
 
-    if (eligibilityConditions.length > 0) {
-      conditions.push(`(${eligibilityConditions.join(' OR ')})`);
-    }
+    eligibilityConditions.push(...userEligibility);
   }
+
+  const statusParam = addParam(TERMINAL_STATUSES);
+  eligibilityConditions.push(`t.${sql.col(Transaction, 'status')} = ANY(${statusParam})`);
+
+  conditions.push(`(${eligibilityConditions.join(' OR ')})`);
 
   return {
     clause: conditions.join(' AND '),

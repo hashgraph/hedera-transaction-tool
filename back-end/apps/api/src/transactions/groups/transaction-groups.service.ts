@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
@@ -127,8 +127,9 @@ export class TransactionGroupsService {
         transaction,
       });
     });
+
     if (group.groupItems.length === 0) {
-      throw new BadRequestException(ErrorCodes.TNF);
+      throw new UnauthorizedException("You don't have permission to view this group.");
     }
 
     if (!full) return group;
