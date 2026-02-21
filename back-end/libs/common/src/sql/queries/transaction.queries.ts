@@ -385,9 +385,9 @@ export function getTransactionGroupItemsQuery(
       t.${sql.col(Transaction, 'status')} AS tx_status,
       t.${sql.col(Transaction, 'statusCode')} AS tx_status_code,
       t.${sql.col(Transaction, 'type')} AS tx_type,
-      t.${sql.col(Transaction, 'isManual')} AS tx_is_manual
-      ck.$(sql.col(UserKey, 'userId')) AS tx_creator_key_user_id,
-      c.$(sql.col(User, 'email')) AS tx_creator_email,
+      t.${sql.col(Transaction, 'isManual')} AS tx_is_manual,
+      ck.${sql.col(UserKey, 'userId')} AS tx_creator_key_user_id,
+      c.${sql.col(User, 'email')} AS tx_creator_email
     FROM ${sql.table(Transaction)} t
     INNER JOIN ${sql.table(TransactionGroupItem)} gi
       ON gi.${sql.col(TransactionGroupItem, 'transactionId')} = t.${sql.col(Transaction, 'id')}
