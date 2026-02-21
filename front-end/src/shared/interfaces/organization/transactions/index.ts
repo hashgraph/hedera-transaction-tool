@@ -72,7 +72,7 @@ export interface ITransaction {
   creatorKeyId: number;
   creatorId: number;
   creatorEmail: string;
-  groupItem: IGroupItem;
+  groupItem?: IGroupItem;
 }
 
 export interface ITransactionFull extends ITransaction {

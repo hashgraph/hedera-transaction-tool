@@ -69,7 +69,7 @@ export class TransactionDto {
 
   @Expose()
   @Type(() => TransactionGroupItemDto)
-  groupItem: TransactionGroupItemDto;
+  groupItem?: TransactionGroupItemDto;
 }
 
 export class TransactionFullDto extends TransactionDto {

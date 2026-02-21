@@ -59,12 +59,13 @@ export const getTransactionGroups = async (serverUrl: string) => {
 };
 
 /* Get transaction groups */
-export const getTransactionGroupById = async (serverUrl: string, id: number) => {
+export const getTransactionGroupById = async (serverUrl: string, id: number, full?: boolean) => {
   return commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.get<IGroup>(
       `${serverUrl}/transaction-groups/${id}`,
       {
         withCredentials: true,
+        params: full !== undefined ? { full } : undefined,
       },
     );
 

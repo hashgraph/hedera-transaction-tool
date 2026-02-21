@@ -15,7 +15,7 @@ export async function flattenNodeCollection(
 
   for (const node of nodeCollection) {
     if (node.groupId !== undefined) {
-      const group = await getTransactionGroupById(serverUrl, node.groupId);
+      const group = await getTransactionGroupById(serverUrl, node.groupId, false);
       for (const item of group.groupItems) {
         result.push(item.transaction);
       }
