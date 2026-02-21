@@ -206,7 +206,7 @@ async function handleExecuted(id: string) {
   transactionGroup.clearGroup();
   if (user.selectedOrganization) {
     const targetNodeId: TransactionNodeId = { groupId: id };
-    await useNextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true);
+    await useNextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true, true);
   } else {
     await redirectToPreviousTransactionsTab(router);
   }
@@ -215,7 +215,7 @@ async function handleExecuted(id: string) {
 async function handleSubmit(id: number) {
   transactionGroup.clearGroup();
   const targetNodeId: TransactionNodeId = { groupId: id };
-  await useNextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true);
+  await useNextTransaction.routeDown(targetNodeId, [targetNodeId], router, null, true, true);
 }
 
 function handleClose() {
