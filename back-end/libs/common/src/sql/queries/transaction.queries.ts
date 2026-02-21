@@ -204,7 +204,7 @@ function buildEligibilityConditions(
 
 function buildWhereClause(
   sql: SqlBuilderService,
-  filters: TransactionFilters,
+  filters?: TransactionFilters,
   user?: User,
   roles?: Roles
 ): WhereClauseResult {
@@ -220,8 +220,10 @@ function buildWhereClause(
   };
 
   // Build filter conditions
-  const filterConditions = buildFilterConditions(sql, filters, addParam);
-  conditions.push(...filterConditions);
+  if (filters) {
+    const filterConditions = buildFilterConditions(sql, filters, addParam);
+    conditions.push(...filterConditions);
+  }
 
   if (user && roles) {
     // Build eligibility conditions
@@ -230,7 +232,7 @@ function buildWhereClause(
       user,
       roles,
       addParam,
-      filters.onlyUnsigned ?? false
+      filters?.onlyUnsigned ?? false
     );
 
     if (eligibilityConditions.length > 0) {
@@ -347,4 +349,49 @@ export function getTransactionNodesQuery(
   `;
 
   return { text, values: whereResult.values };
+}
+
+export function getTransactionGroupItemsQuery(
+  sql: SqlBuilderService,
+  groupId: number,
+  user?: User,
+): SqlQuery {
+  const whereResult = buildWhereClause(sql, null, user, { signer: true, creator: true, observer: true, approver: true });
+
+  const values = [...whereResult.values];
+  let paramIndex = values.length + 1;
+
+  const groupIdParam = `$${paramIndex++}`;
+  values.push(groupId);
+
+  const text = `
+    SELECT
+      gi.${sql.col(TransactionGroupItem, 'seq')} AS gi_seq,
+      t.${sql.col(Transaction, 'id')} AS tx_id,
+      t.${sql.col(Transaction, 'name')} AS tx_name,
+      t.${sql.col(Transaction, 'description')} AS tx_description,
+      t.${sql.col(Transaction, 'transactionId')} AS sdk_transaction_id,
+      t.${sql.col(Transaction, 'transactionHash')} AS tx_transaction_hash,
+      t.${sql.col(Transaction, 'transactionBytes')} AS tx_transaction_bytes,
+      t.${sql.col(Transaction, 'unsignedTransactionBytes')} AS tx_unsigned_transaction_bytes,
+      t.${sql.col(Transaction, 'creatorKeyId')} AS tx_creator_key_id,
+      t.${sql.col(Transaction, 'signature')} AS tx_signature,
+      t.${sql.col(Transaction, 'mirrorNetwork')} AS tx_mirror_network,
+      t.${sql.col(Transaction, 'cutoffAt')} AS tx_cutoff_at,
+      t.${sql.col(Transaction, 'createdAt')} AS tx_created_at,
+      t.${sql.col(Transaction, 'validStart')} AS tx_valid_start,
+      t.${sql.col(Transaction, 'updatedAt')} AS tx_updated_at,
+      t.${sql.col(Transaction, 'executedAt')} AS tx_executed_at,
+      t.${sql.col(Transaction, 'status')} AS tx_status,
+      t.${sql.col(Transaction, 'statusCode')} AS tx_status_code,
+      t.${sql.col(Transaction, 'type')} AS tx_type,
+      t.${sql.col(Transaction, 'isManual')} AS tx_is_manual
+    FROM ${sql.table(Transaction)} t
+    INNER JOIN ${sql.table(TransactionGroupItem)} gi
+      ON gi.${sql.col(TransactionGroupItem, 'transactionId')} = t.${sql.col(Transaction, 'id')}
+      AND gi.${sql.col(TransactionGroupItem, 'groupId')} = ${groupIdParam}
+    WHERE ${whereResult.clause}
+  `;
+
+  return { text, values };
 }

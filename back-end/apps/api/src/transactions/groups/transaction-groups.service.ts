@@ -1,15 +1,16 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
 import {
-  asyncFilter,
   emitTransactionStatusUpdate,
   emitTransactionUpdate,
   ErrorCodes,
+  getTransactionGroupItemsQuery,
   NatsPublisherService,
+  SqlBuilderService,
 } from '@app/common';
-import { TransactionGroup, TransactionGroupItem, User } from '@entities';
+import { Transaction, TransactionGroup, TransactionGroupItem, User } from '@entities';
 
 import { TransactionsService } from '../transactions.service';
 
@@ -21,6 +22,7 @@ export class TransactionGroupsService {
     private readonly transactionsService: TransactionsService,
     @InjectDataSource() private dataSource: DataSource,
     private readonly notificationsPublisher: NatsPublisherService,
+    private readonly sqlBuilder: SqlBuilderService,
   ) {}
 
   getTransactionGroups(): Promise<TransactionGroup[]> {
@@ -67,29 +69,83 @@ export class TransactionGroupsService {
     return group;
   }
 
-  async getTransactionGroup(user: User, id: number): Promise<TransactionGroup> {
+  async getTransactionGroup(user: User, id: number, full?: boolean): Promise<TransactionGroup> {
     const group = await this.dataSource.manager.findOne(TransactionGroup, {
       where: { id },
-      relations: [
-        'groupItems',
-        'groupItems.transaction',
-        'groupItems.transaction.creatorKey',
-        'groupItems.transaction.observers',
-      ],
     });
 
-    if (!(group?.groupItems?.length > 0)) {
+    if (!group) {
       throw new BadRequestException(ErrorCodes.TNF);
     }
 
-    group.groupItems = await asyncFilter(group.groupItems, async groupItem => {
-      await this.transactionsService.attachTransactionSigners(groupItem.transaction);
-      await this.transactionsService.attachTransactionApprovers(groupItem.transaction);
-      return this.transactionsService.verifyAccess(groupItem.transaction, user);
+    const query = getTransactionGroupItemsQuery(this.sqlBuilder, id, user);
+
+    const rows = await this.dataSource.manager.query(
+      query.text,
+      query.values,
+    );
+
+    group.groupItems = rows.map(row => {
+      const transaction = this.dataSource.manager.create(Transaction, {
+        id: row.tx_id,
+        name: row.tx_name,
+        type: row.tx_type,
+        description: row.tx_description,
+        transactionId: row.sdk_transaction_id,
+        transactionHash: row.tx_transaction_hash,
+        transactionBytes: row.tx_transaction_bytes,
+        unsignedTransactionBytes: row.tx_unsigned_transaction_bytes,
+        status: row.tx_status,
+        statusCode: row.tx_status_code,
+        creatorKeyId: row.tx_creator_key_id,
+        signature: row.tx_signature,
+        validStart: row.tx_valid_start,
+        mirrorNetwork: row.tx_mirror_network,
+        isManual: row.tx_is_manual,
+        cutoffAt: row.tx_cutoff_at,
+        createdAt: row.tx_created_at,
+        executedAt: row.tx_executed_at,
+        updatedAt: row.tx_updated_at,
+      });
+
+      return this.dataSource.manager.create(TransactionGroupItem, {
+        seq: row.gi_seq,
+        groupId: id,
+        transactionId: row.tx_id,
+        transaction,
+        group,
+      });
     });
 
+
     if (group.groupItems.length === 0) {
-      throw new UnauthorizedException("You don't have permission to view this group.");
+      throw new BadRequestException(ErrorCodes.TNF);
+    }
+
+    if (!full) return group;
+
+    const transactionIds = group.groupItems.map(item => item.transactionId);
+
+    const [
+      transactionSigners,
+      transactionApprovers,
+      transactionObservers,
+    ] = await Promise.all([
+      this.transactionsService.getTransactionSignersForTransactions(transactionIds),
+      this.transactionsService.getTransactionApproversForTransactions(transactionIds),
+      this.transactionsService.getTransactionObserversForTransactions(transactionIds),
+    ]);
+
+    const signerMap = this.groupBy(transactionSigners, s => s.transactionId);
+    const approverMap = this.groupBy(transactionApprovers, a => a.transactionId);
+    const observerMap = this.groupBy(transactionObservers, o => o.transactionId);
+
+    for (const groupItem of group.groupItems) {
+      const txId = groupItem.transactionId;
+
+      groupItem.transaction.signers = signerMap.get(txId) ?? [];
+      groupItem.transaction.approvers = approverMap.get(txId) ?? [];
+      groupItem.transaction.observers = observerMap.get(txId) ?? [];
     }
 
     return group;
@@ -121,5 +177,22 @@ export class TransactionGroupsService {
     emitTransactionUpdate(this.notificationsPublisher, groupItems.map(gi => ({ entityId: gi.transactionId })));
 
     return true;
+  }
+
+  private groupBy<T>(
+    items: T[],
+    key: (item: T) => string | number,
+  ) {
+    const map = new Map<string | number, T[]>();
+
+    for (const item of items) {
+      const k = key(item);
+      if (!map.has(k)) {
+        map.set(k, []);
+      }
+      map.get(k)!.push(item);
+    }
+
+    return map;
   }
 }
