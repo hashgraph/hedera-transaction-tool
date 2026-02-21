@@ -125,11 +125,8 @@ export class TransactionGroupsService {
         groupId: id,
         transactionId: row.tx_id,
         transaction,
-        group,
       });
     });
-
-
     if (group.groupItems.length === 0) {
       throw new BadRequestException(ErrorCodes.TNF);
     }
