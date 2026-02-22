@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
 
@@ -160,6 +160,8 @@ describe('TransactionGroupsService', () => {
         tx_executed_at: null,
         tx_updated_at: new Date('2024-01-01'),
         gi_seq: 1,
+        tx_creator_key_user_id: 1,
+        tx_creator_email: 'test@email.com',
       },
       {
         tx_id: 11,
@@ -182,6 +184,8 @@ describe('TransactionGroupsService', () => {
         tx_executed_at: null,
         tx_updated_at: new Date('2024-01-02'),
         gi_seq: 2,
+        tx_creator_key_user_id: 1,
+        tx_creator_email: 'test@email.com',
       },
     ];
 
@@ -193,13 +197,13 @@ describe('TransactionGroupsService', () => {
       );
     });
 
-    it('should throw BadRequestException if query returns no rows', async () => {
+    it('should throw UnauthorizedException if query returns no rows', async () => {
       dataSource.manager.findOne.mockResolvedValue(mockGroup);
       dataSource.manager.query.mockResolvedValue([]);
       dataSource.manager.create.mockImplementation((_, data) => ({ ...data }));
 
       await expect(service.getTransactionGroup(userWithKeys, 1)).rejects.toThrow(
-        BadRequestException,
+        UnauthorizedException,
       );
     });
 
