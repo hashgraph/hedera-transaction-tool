@@ -1035,14 +1035,18 @@ describe('TransactionStatusService', () => {
     let timeToValidStart: number;
 
     beforeEach(() => {
+      jest.useFakeTimers();
+
+      const fixedNow = Date.now();
+      jest.setSystemTime(fixedNow);
+
       transaction = {
         id: 1,
-        validStart: new Date(Date.now() + 1000),
+        validStart: new Date(fixedNow + 1000),
       } as Transaction;
       name = `execution_timeout_${transaction.id}`;
-      timeToValidStart = transaction.validStart.getTime() - Date.now();
+      timeToValidStart = transaction.validStart.getTime() - fixedNow;
 
-      jest.useFakeTimers();
       jest.spyOn(global, 'setTimeout');
       jest.spyOn(schedulerRegistry, 'doesExist').mockReturnValue(false);
       jest.spyOn(schedulerRegistry, 'addTimeout');
@@ -1051,6 +1055,7 @@ describe('TransactionStatusService', () => {
     });
 
     afterEach(() => {
+      jest.setSystemTime(new Date());
       jest.useRealTimers();
     });
 
