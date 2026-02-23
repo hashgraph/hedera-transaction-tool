@@ -242,13 +242,20 @@ export class TransactionPage extends BasePage {
   }
 
   async clickOnCreateNewTransactionButton() {
-    // Click Create New button to open dropdown
-    await this.click(this.createNewTransactionButtonSelector);
-
-    // Wait for dropdown and click Single Transaction
-    const singleTxButton = this.getElement(this.singleTransactionButtonSelector);
-    await singleTxButton.waitFor({ state: 'visible', timeout: 5000 });
-    await singleTxButton.click();
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await this.click(this.createNewTransactionButtonSelector);
+        await this.window.waitForTimeout(500);
+        const singleTxButton = this.getElement(this.singleTransactionButtonSelector);
+        await singleTxButton.waitFor({ state: 'visible', timeout: 3000 });
+        await singleTxButton.click();
+        return;
+      } catch (error) {
+        if (attempt === 2) throw error;
+        await this.window.keyboard.press('Escape');
+        await this.window.waitForTimeout(300);
+      }
+    }
   }
 
   async clickOnImportButton() {
