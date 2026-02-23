@@ -6,6 +6,11 @@ export class BasePage {
 
   constructor(protected readonly window: Page) {}
 
+  // Debug helper - pauses test execution for manual inspection
+  async pause() {
+    await this.window.pause();
+  }
+
   // --------------------------
   // Helper Methods
   // --------------------------
@@ -59,12 +64,8 @@ export class BasePage {
   async click(selector: string, index: number|null = null, timeout = this.DEFAULT_TIMEOUT): Promise<void> {
     console.log(`Clicking on element with selector: ${selector}`);
     const element = this.getElement(selector, index);
-    try {
-      await element.waitFor({ state: 'visible', timeout });
-      await element.click();
-    } catch {
-      console.log(`Element with selector: ${selector} is not visible`);
-    }
+    await element.waitFor({ state: 'visible', timeout });
+    await element.click();
   }
 
   /**
@@ -218,6 +219,7 @@ export class BasePage {
         `Element with testId ${testId} did not become visible within the timeout: ${timeout}`,
         error,
       );
+      throw error;
     }
   }
 
@@ -641,5 +643,24 @@ export class BasePage {
     const count = await elements.count();
     console.log(`Found ${count} elements with prefix: ${selectorPrefix}`);
     return count;
+  }
+
+  /**
+   * Closes the 'Save Draft?' modal if it appears during navigation.
+   * This modal can block UI interactions when navigating away from unsaved transaction forms.
+   * @param {string} [buttonSelector='button-discard-draft-for-group-modal'] - The selector for the discard button.
+   * @param {number} [timeout=3000] - Timeout in ms to wait for the modal.
+   * @returns {Promise<void>}
+   */
+  async closeDraftModal(
+    buttonSelector = 'button-discard-draft-for-group-modal',
+    timeout = 3000,
+  ): Promise<void> {
+    const modalButton = this.window.getByTestId(buttonSelector);
+    await modalButton.waitFor({ state: 'visible', timeout }).catch(() => {});
+
+    if (await modalButton.isVisible()) {
+      await modalButton.click();
+    }
   }
 }
