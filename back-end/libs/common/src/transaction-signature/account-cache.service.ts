@@ -257,7 +257,7 @@ export class AccountCacheService {
       }
 
       if (!this.hasAccountDataChanged(accountData, claimedAccount)) {
-        return { status: RefreshStatus.NOT_MODIFIED, data: accountData };
+        return { status: RefreshStatus.DATA_UNCHANGED, data: accountData };
       }
 
       return { status: RefreshStatus.REFRESHED, data: accountData };

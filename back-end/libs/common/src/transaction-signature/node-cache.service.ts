@@ -257,7 +257,7 @@ export class NodeCacheService {
       }
 
       if (!this.hasNodeDataChanged(nodeData, claimedNode)) {
-        return { status: RefreshStatus.NOT_MODIFIED, data: nodeData };
+        return { status: RefreshStatus.DATA_UNCHANGED, data: nodeData };
       }
 
       return { status: RefreshStatus.REFRESHED, data: nodeData };

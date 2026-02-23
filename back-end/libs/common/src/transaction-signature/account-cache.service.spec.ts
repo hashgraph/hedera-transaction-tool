@@ -25,7 +25,7 @@ import {
 
 jest.mock('@app/common', () => ({
   ...jest.requireActual('@app/common'),
-  serializeKey: jest.fn((key) => `serialized-${key}`),
+  serializeKey: jest.fn((key) => Buffer.from(`serialized-${key}`)),
   deserializeKey: jest.fn((encoded) => `deserialized-${encoded}`),
   flattenKeyList: jest.fn((key) => [key]),
 }));
@@ -193,7 +193,7 @@ describe('AccountCacheService', () => {
     });
 
     it('should return false when HTTP 200 but data is identical to cached', async () => {
-      const serializedMockKey = `serialized-${mockKey}`;
+      const serializedMockKey = Buffer.from(`serialized-${mockKey}`);
       const cachedAccount = {
         id: 1,
         account: '0.0.123',
@@ -528,8 +528,8 @@ describe('AccountCacheService', () => {
       );
     });
 
-    it('should return NOT_MODIFIED when fetched data matches cached data', async () => {
-      const serializedMockKey = `serialized-${mockKey}`;
+    it('should return DATA_UNCHANGED when fetched data matches cached data', async () => {
+      const serializedMockKey = Buffer.from(`serialized-${mockKey}`);
       const claimedAccount = {
         id: 1,
         account: '0.0.123',
@@ -552,7 +552,7 @@ describe('AccountCacheService', () => {
 
       const result = await (service as any).performRefreshForClaimedAccount(claimedAccount);
 
-      expect(result.status).toBe(RefreshStatus.NOT_MODIFIED);
+      expect(result.status).toBe(RefreshStatus.DATA_UNCHANGED);
       expect(result.data).toEqual({
         key: mockKey,
         receiverSignatureRequired: false,
@@ -566,7 +566,7 @@ describe('AccountCacheService', () => {
         account: '0.0.123',
         mirrorNetwork: 'testnet',
         refreshToken: 'token-123',
-        encodedKey: `serialized-${otherKey}`,
+        encodedKey: Buffer.from(`serialized-${otherKey}`),
         receiverSignatureRequired: false,
       } as unknown as CachedAccount;
 
@@ -587,7 +587,7 @@ describe('AccountCacheService', () => {
     });
 
     it('should return REFRESHED when receiverSignatureRequired differs', async () => {
-      const serializedMockKey = `serialized-${mockKey}`;
+      const serializedMockKey = Buffer.from(`serialized-${mockKey}`);
       const claimedAccount = {
         id: 1,
         account: '0.0.123',
@@ -798,7 +798,7 @@ describe('AccountCacheService', () => {
 
   describe('hasAccountDataChanged', () => {
     it('should return false when fetched data matches cached data', () => {
-      const serializedMockKey = `serialized-${mockKey}`;
+      const serializedMockKey = Buffer.from(`serialized-${mockKey}`);
       const cached = {
         encodedKey: serializedMockKey,
         receiverSignatureRequired: false,
@@ -815,7 +815,7 @@ describe('AccountCacheService', () => {
     it('should return true when key differs', () => {
       const otherKey = PrivateKey.generateED25519().publicKey;
       const cached = {
-        encodedKey: `serialized-${otherKey}`,
+        encodedKey: Buffer.from(`serialized-${otherKey}`),
         receiverSignatureRequired: false,
       } as unknown as CachedAccount;
 
@@ -828,7 +828,7 @@ describe('AccountCacheService', () => {
     });
 
     it('should return true when receiverSignatureRequired differs', () => {
-      const serializedMockKey = `serialized-${mockKey}`;
+      const serializedMockKey = Buffer.from(`serialized-${mockKey}`);
       const cached = {
         encodedKey: serializedMockKey,
         receiverSignatureRequired: true,

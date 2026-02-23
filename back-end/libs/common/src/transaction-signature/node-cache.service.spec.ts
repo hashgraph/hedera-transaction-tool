@@ -25,7 +25,7 @@ import { mockDeep } from 'jest-mock-extended';
 
 jest.mock('@app/common', () => ({
   ...jest.requireActual('@app/common'),
-  serializeKey: jest.fn((key) => `serialized-${key}`),
+  serializeKey: jest.fn((key) => Buffer.from(`serialized-${key}`)),
   deserializeKey: jest.fn((encoded) => `deserialized-${encoded}`),
   flattenKeyList: jest.fn((key) => [key]),
 }));
@@ -186,7 +186,7 @@ describe('NodeCacheService', () => {
     });
 
     it('should return false when HTTP 200 but data is identical to cached', async () => {
-      const serializedMockKey = `serialized-${mockKey}`;
+      const serializedMockKey = Buffer.from(`serialized-${mockKey}`);
       const cachedNode = {
         id: 1,
         nodeId: 1,
@@ -513,8 +513,8 @@ describe('NodeCacheService', () => {
       );
     });
 
-    it('should return NOT_MODIFIED when fetched data matches cached data', async () => {
-      const serializedMockKey = `serialized-${mockKey}`;
+    it('should return DATA_UNCHANGED when fetched data matches cached data', async () => {
+      const serializedMockKey = Buffer.from(`serialized-${mockKey}`);
       const claimedNode = {
         id: 1,
         nodeId: 1,
@@ -537,7 +537,7 @@ describe('NodeCacheService', () => {
 
       const result = await (service as any).performRefreshForClaimedNode(claimedNode);
 
-      expect(result.status).toBe(RefreshStatus.NOT_MODIFIED);
+      expect(result.status).toBe(RefreshStatus.DATA_UNCHANGED);
       expect(result.data).toEqual({
         admin_key: mockKey,
         node_account_id: AccountId.fromString('0.0.3'),
@@ -551,7 +551,7 @@ describe('NodeCacheService', () => {
         nodeId: 1,
         mirrorNetwork: 'testnet',
         refreshToken: 'token-123',
-        encodedKey: `serialized-${otherKey}`,
+        encodedKey: Buffer.from(`serialized-${otherKey}`),
         nodeAccountId: '0.0.3',
       } as unknown as CachedNode;
 
@@ -572,7 +572,7 @@ describe('NodeCacheService', () => {
     });
 
     it('should return REFRESHED when nodeAccountId differs', async () => {
-      const serializedMockKey = `serialized-${mockKey}`;
+      const serializedMockKey = Buffer.from(`serialized-${mockKey}`);
       const claimedNode = {
         id: 1,
         nodeId: 1,
@@ -776,7 +776,7 @@ describe('NodeCacheService', () => {
 
   describe('hasNodeDataChanged', () => {
     it('should return false when fetched data matches cached data', () => {
-      const serializedMockKey = `serialized-${mockKey}`;
+      const serializedMockKey = Buffer.from(`serialized-${mockKey}`);
       const cached = {
         encodedKey: serializedMockKey,
         nodeAccountId: '0.0.3',
@@ -793,7 +793,7 @@ describe('NodeCacheService', () => {
     it('should return true when admin key differs', () => {
       const otherKey = PrivateKey.generateED25519().publicKey;
       const cached = {
-        encodedKey: `serialized-${otherKey}`,
+        encodedKey: Buffer.from(`serialized-${otherKey}`),
         nodeAccountId: '0.0.3',
       } as unknown as CachedNode;
 
@@ -806,7 +806,7 @@ describe('NodeCacheService', () => {
     });
 
     it('should return true when nodeAccountId differs', () => {
-      const serializedMockKey = `serialized-${mockKey}`;
+      const serializedMockKey = Buffer.from(`serialized-${mockKey}`);
       const cached = {
         encodedKey: serializedMockKey,
         nodeAccountId: '0.0.4',
