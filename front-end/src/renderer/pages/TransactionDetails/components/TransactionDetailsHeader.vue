@@ -276,7 +276,11 @@ const handleSign = async (goNext = false) => {
     if (signed) {
       toast.success('Transaction signed successfully', successToastOptions);
       if (goNext) {
-        await nextTransaction.routeToNext(router);
+        if (nextTransaction.hasNext) {
+          await nextTransaction.routeToNext(router);
+        } else {
+          await nextTransaction.routeUp(router);
+        }
       }
     } else {
       toast.error('Failed to sign transaction', errorToastOptions);
