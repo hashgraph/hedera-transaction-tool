@@ -346,7 +346,7 @@ async function sendSignedTransactionsToOrganization() {
     apiGroupItems,
   );
 
-  const group: IGroup = await getTransactionGroupById(user.selectedOrganization.serverUrl, id);
+  const group: IGroup = await getTransactionGroupById(user.selectedOrganization.serverUrl, id, false);
 
   toast.success('Transaction submitted successfully', successToastOptions);
 

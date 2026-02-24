@@ -23,7 +23,15 @@ import {
   Repository,
 } from 'typeorm';
 
-import { Transaction, TransactionSigner, TransactionStatus, TransactionType, User } from '@entities';
+import {
+  Transaction,
+  TransactionApprover,
+  TransactionObserver,
+  TransactionSigner,
+  TransactionStatus,
+  TransactionType,
+  User,
+} from '@entities';
 
 import {
   attachKeys,
@@ -77,7 +85,14 @@ export class TransactionsService {
 
     const transaction = await this.repo.findOne({
       where: typeof id == 'number' ? { id } : { transactionId: id.toString() },
-      relations: ['creatorKey', 'creatorKey.user', 'observers', 'comments', 'groupItem'],
+      relations: [
+        'creatorKey',
+        'creatorKey.user',
+        'observers',
+        'comments',
+        'groupItem',
+        'groupItem.group',
+      ],
     });
 
     if (!transaction) return null;
@@ -733,6 +748,45 @@ export class TransactionsService {
       !!transaction.signers?.some(s => s.userKey?.userId === user.id) ||
       !!transaction.approvers?.some(a => a.userId === user.id)
     );
+  }
+
+  async getTransactionSignersForTransactions(
+    transactionIds: number[]
+  ): Promise<TransactionSigner[]> {
+    if (!transactionIds.length) return [];
+
+    return this.entityManager.find(TransactionSigner, {
+      where: {
+        transactionId: In(transactionIds),
+      },
+      relations: ['userKey'],
+      withDeleted: true,
+    });
+  }
+
+  async getTransactionApproversForTransactions(
+    transactionIds: number[],
+  ): Promise<TransactionApprover[]> {
+    if (!transactionIds.length) {
+      return [];
+    }
+
+    //To be implemented when approver functionality is added.
+    return [];
+  }
+
+  async getTransactionObserversForTransactions(
+    transactionIds: number[],
+  ): Promise<TransactionObserver[]> {
+    if (!transactionIds.length) {
+      return [];
+    }
+
+    return this.entityManager.find(TransactionObserver, {
+      where: {
+        transactionId: In(transactionIds),
+      },
+    });
   }
 
   /* Check whether the user should approve the transaction */

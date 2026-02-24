@@ -196,10 +196,7 @@ const canSign = computed(() => {
 
   const userShouldSign = publicKeysRequiredToSign.value.length > 0;
 
-  return (
-    userShouldSign &&
-    props.organizationTransaction.status === TransactionStatus.WAITING_FOR_SIGNATURES
-  );
+  return userShouldSign;
 });
 
 const canExecute = computed(() => {

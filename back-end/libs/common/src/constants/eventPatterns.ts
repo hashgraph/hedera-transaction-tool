@@ -6,6 +6,7 @@ export const TRANSACTION_REMIND_SIGNERS_MANUAL = 'notifications.queue.transactio
 export const USER_INVITE = 'notifications.queue.email.invite';
 export const USER_REGISTERED = 'notifications.queue.user.registered';
 export const USER_PASSWORD_RESET = 'notifications.queue.email.password-reset';
+export const DISMISSED_NOTIFICATIONS = 'notifications.queue.notification.dismiss';
 
 /* Private FanOut Patterns */
 export const FAN_OUT_NEW_NOTIFICATIONS = 'notifications.fan-out.new';
