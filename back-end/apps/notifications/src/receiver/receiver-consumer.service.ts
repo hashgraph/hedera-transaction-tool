@@ -29,7 +29,7 @@ export class ReceiverConsumerService extends BaseNatsConsumerService {
       filterSubjects: [
         'notifications.queue.user.>',
         'notifications.queue.transaction.>',
-        'notifications.queue.notification.>'
+        'notifications.queue.notification.>',
       ],
     };
   }
