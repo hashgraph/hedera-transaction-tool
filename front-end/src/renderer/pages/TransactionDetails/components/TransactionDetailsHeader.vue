@@ -196,9 +196,7 @@ const canSign = computed(() => {
 
   const userShouldSign = publicKeysRequiredToSign.value.length > 0;
 
-  return (
-    userShouldSign
-  );
+  return userShouldSign;
 });
 
 const canExecute = computed(() => {
