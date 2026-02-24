@@ -365,7 +365,7 @@ export class SignersService {
     const userIds = notificationsToUpdate.map(n => n.userId);
     const txIds = notificationsToUpdate.map(n => n.transactionId);
 
-    // Use UNNEST with ordinality to preserve 1:1 pairing
+    // Use UNNEST to preserve 1:1 pairing between userIds and transactionIds
     return await manager.query(
       `
       WITH input(user_id, tx_id) AS (
