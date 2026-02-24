@@ -94,7 +94,7 @@ describe('ReceiverConsumerService', () => {
       await handlers[4].handler(singleData);
       expect(receiverService.processUserRegisteredNotifications).toHaveBeenCalledWith(singleData);
 
-      const dismissedData = [{ id: 1,  userId: 1 }];
+      const dismissedData = [{ id: 1, userId: 1 }];
       await handlers[5].handler(dismissedData);
       expect(receiverService.processDismissedNotifications).toHaveBeenCalledWith(dismissedData);
     });
