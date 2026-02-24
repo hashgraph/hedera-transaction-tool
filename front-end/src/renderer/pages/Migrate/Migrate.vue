@@ -3,7 +3,7 @@ import type { MigrateUserDataResult } from '@shared/interfaces/migration';
 import type { RecoveryPhrase } from '@renderer/types';
 import type { PersonalUser } from './components/SetupPersonal.vue';
 import SetupPersonal from './components/SetupPersonal.vue';
-import { computed, ref } from 'vue';
+import { computed, ref, type Ref } from 'vue';
 
 import { KeyPathWithName } from '@shared/interfaces';
 
@@ -39,7 +39,7 @@ useSetDynamicLayout(DEFAULT_LAYOUT);
 /* State */
 const step = ref<StepName>('recoveryPhrase');
 
-const recoveryPhrase = ref<RecoveryPhrase | null>(null);
+const recoveryPhrase: Ref<RecoveryPhrase | null> = ref(null);
 const recoveryPhrasePassword = ref<string | null>(null);
 const personalUser = ref<PersonalUser | null>(null);
 const organizationId = ref<string | null>(null);

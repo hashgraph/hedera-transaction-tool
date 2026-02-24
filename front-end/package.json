@@ -34,7 +34,7 @@
   "dependencies": {
     "@electron-toolkit/utils": "3.0.0",
     "@hashgraph/proto": "2.19.0",
-    "@hashgraph/sdk": "2.66.0",
+    "@hashgraph/sdk": "2.80.0",
     "@prisma/client": "6.2.1",
     "@vuepic/vue-datepicker": "11.0.2",
     "@vueuse/core": "12.5.0",
