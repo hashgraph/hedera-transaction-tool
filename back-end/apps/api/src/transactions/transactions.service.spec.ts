@@ -41,6 +41,7 @@ import {
 import {
   Transaction,
   TransactionApprover,
+  TransactionObserver,
   TransactionSigner,
   TransactionStatus,
   TransactionType,
@@ -149,7 +150,7 @@ describe('TransactionsService', () => {
 
       expect(transactionsRepo.findOne).toHaveBeenCalledWith({
         where: { id: 1 },
-        relations: ['creatorKey', 'creatorKey.user', 'observers', 'comments', 'groupItem'],
+        relations: ['creatorKey', 'creatorKey.user', 'observers', 'comments', 'groupItem', 'groupItem.group'],
       });
 
       expect(entityManager.find).toHaveBeenCalledWith(TransactionSigner, {
@@ -465,6 +466,12 @@ describe('TransactionsService', () => {
       });
     });
 
+    it('should return empty array if dto is empty', async () => {
+      const result = await service.createTransactions([] as CreateTransactionDto[], user as User);
+      expect(result).toHaveLength(0);
+      expect(attachKeys).not.toHaveBeenCalled();
+    });
+
     it('should create a transaction', async () => {
       const sdkTransaction = new AccountCreateTransaction().setTransactionId(
         new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
@@ -479,8 +486,6 @@ describe('TransactionsService', () => {
         mirrorNetwork: 'testnet',
         reminderMillisecondsBefore: 60 * 1_000,
       };
-
-
 
       const client = Client.forTestnet();
 
@@ -1323,6 +1328,111 @@ describe('TransactionsService', () => {
       const tx = { status: TransactionStatus.WAITING_FOR_SIGNATURES } as Transaction;
       jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
       await expect(service.verifyAccess(tx, user as User)).resolves.toBe(false);
+    });
+  });
+
+  describe('getTransactionSignersForTransactions', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('should return empty array if no transactionIds provided', async () => {
+      const result = await service.getTransactionSignersForTransactions([]);
+      expect(result).toEqual([]);
+      expect(entityManager.find).not.toHaveBeenCalled();
+    });
+
+    it('should query TransactionSigner with correct options', async () => {
+      const mockSigners = [
+        { id: 1, transactionId: 10, userKey: { id: 1, publicKey: '0x' } },
+        { id: 2, transactionId: 11, userKey: { id: 2, publicKey: '0y' } },
+      ];
+
+      entityManager.find.mockResolvedValue(mockSigners);
+
+      const result = await service.getTransactionSignersForTransactions([10, 11]);
+
+      expect(entityManager.find).toHaveBeenCalledWith(TransactionSigner, {
+        where: {
+          transactionId: In([10, 11]),
+        },
+        relations: ['userKey'],
+        withDeleted: true,
+      });
+      expect(result).toEqual(mockSigners);
+    });
+
+    it('should include deleted signers via withDeleted', async () => {
+      entityManager.find.mockResolvedValue([]);
+
+      await service.getTransactionSignersForTransactions([1]);
+
+      expect(entityManager.find).toHaveBeenCalledWith(
+        TransactionSigner,
+        expect.objectContaining({ withDeleted: true }),
+      );
+    });
+  });
+
+  describe('getTransactionApproversForTransactions', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('should return empty array if no transactionIds provided', async () => {
+      const result = await service.getTransactionApproversForTransactions([]);
+      expect(result).toEqual([]);
+    });
+
+    it('should return empty array (not yet implemented)', async () => {
+      const result = await service.getTransactionApproversForTransactions([10, 11]);
+      expect(result).toEqual([]);
+    });
+
+    it('should not query the database', async () => {
+      await service.getTransactionApproversForTransactions([10, 11]);
+      expect(entityManager.find).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getTransactionObserversForTransactions', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('should return empty array if no transactionIds provided', async () => {
+      const result = await service.getTransactionObserversForTransactions([]);
+      expect(result).toEqual([]);
+      expect(entityManager.find).not.toHaveBeenCalled();
+    });
+
+    it('should query TransactionObserver with correct options', async () => {
+      const mockObservers = [
+        { id: 1, transactionId: 10, userId: 5 },
+        { id: 2, transactionId: 11, userId: 6 },
+      ];
+
+      entityManager.find.mockResolvedValue(mockObservers);
+
+      const result = await service.getTransactionObserversForTransactions([10, 11]);
+
+      expect(entityManager.find).toHaveBeenCalledWith(TransactionObserver, {
+        where: {
+          transactionId: In([10, 11]),
+        },
+      });
+      expect(result).toEqual(mockObservers);
+    });
+
+    it('should not include deleted observers', async () => {
+      entityManager.find.mockResolvedValue([]);
+
+      await service.getTransactionObserversForTransactions([1]);
+
+      expect(entityManager.find).toHaveBeenCalledWith(
+        TransactionObserver,
+        expect.not.objectContaining({ withDeleted: true }),
+      );
     });
   });
 
