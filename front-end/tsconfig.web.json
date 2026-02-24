@@ -32,6 +32,8 @@
 
     "exactOptionalPropertyTypes": false,
     "noPropertyAccessFromIndexSignature": false,
-    "noUncheckedIndexedAccess": false
+    "noUncheckedIndexedAccess": false,
+
+    "preserveSymlinks": true
   }
 }
