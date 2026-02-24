@@ -7,7 +7,7 @@ import {
   TransactionStatus,
 } from '@shared/interfaces';
 
-import { computed, onBeforeMount, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, watch, type Ref } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
@@ -75,7 +75,7 @@ const nodeByIdCache = NodeByIdCache.inject();
 const orgTransaction = ref<ITransactionFull | null>(null);
 const localTransaction = ref<Transaction | null>(null);
 const sdkTransaction = ref<SDKTransaction | null>(null);
-const signatureKeyObject = ref<Awaited<ReturnType<typeof computeSignatureKey>> | null>(null);
+const signatureKeyObject: Ref<Awaited<ReturnType<typeof computeSignatureKey>> | null> = ref(null);
 const feePayer = ref<string | null>(null);
 const feePayerNickname = ref<string | null>(null);
 const groupDescription = ref<string | undefined>(undefined);
