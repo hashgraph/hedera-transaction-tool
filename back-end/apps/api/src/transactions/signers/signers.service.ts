@@ -374,7 +374,7 @@ export class SignersService {
       UPDATE notification_receiver nr
       SET "isRead" = true,
           "updatedAt" = NOW()
-          FROM notification n, input i
+      FROM notification n, input i
       WHERE nr."notificationId" = n.id
         AND n.type = 'TRANSACTION_INDICATOR_SIGN'
         AND i.tx_id = n."entityId"
