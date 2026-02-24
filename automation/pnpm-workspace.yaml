@@ -4,5 +4,6 @@ packages:
 onlyBuiltDependencies:
   - argon2
   - bcrypt
+  - esbuild
   - protobufjs
   - sqlite3

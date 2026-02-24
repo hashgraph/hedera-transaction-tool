@@ -1,21 +1,19 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 
 import { transactionTypeKeys } from '@renderer/components/Transaction/Create/txTypeComponentMapping';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 
 /* Props */
-const props = defineProps<{
-  show: boolean;
+defineProps<{
   group?: boolean;
 }>();
 
-/* Emits */
-const emit = defineEmits(['update:show']);
+/* Models */
+const show = defineModel<boolean>('show', { required: true });
 
 /* State */
-const show = ref(props.show);
 const activeGroupIndex = ref(0);
 
 /* Computed */
@@ -66,17 +64,6 @@ const transactionGroups = computed(() => {
 
   return groups;
 });
-
-/* Watchers */
-watch(show, value => {
-  emit('update:show', value);
-});
-watch(
-  () => props.show,
-  value => {
-    show.value = value;
-  },
-);
 </script>
 <template>
   <AppModal v-model:show="show" class="large-modal">
@@ -85,7 +72,7 @@ watch(
         <i
           class="bi bi-x-lg cursor-pointer me-5"
           style="line-height: 16px"
-          @click="$emit('update:show', false)"
+          @click="show = false"
         ></i>
         <h3 class="text-subheader fw-medium flex-1">Select type of Transaction</h3>
       </div>
