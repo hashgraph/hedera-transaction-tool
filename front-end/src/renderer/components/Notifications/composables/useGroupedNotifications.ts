@@ -166,7 +166,7 @@ export function useGroupedNotifications() {
       case NotificationType.TRANSACTION_INDICATOR_NEW:
         return async () => {
           await selectOrganization();
-          await router.push({ name: 'transactions' });
+          await router.push({ name: 'transactions', query: { tab: readyToSignTitle } });
           await notificationsStore.markAsRead(notification.type);
         };
       case NotificationType.TRANSACTION_INDICATOR_CANCELLED:
