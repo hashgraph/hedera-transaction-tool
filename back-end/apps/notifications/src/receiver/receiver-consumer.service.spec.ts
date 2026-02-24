@@ -7,7 +7,7 @@ import {
   TRANSACTION_UPDATE,
   TRANSACTION_REMIND_SIGNERS,
   TRANSACTION_REMIND_SIGNERS_MANUAL,
-  USER_REGISTERED,
+  USER_REGISTERED, DISMISSED_NOTIFICATIONS,
 } from '@app/common';
 
 describe('ReceiverConsumerService', () => {
@@ -33,6 +33,7 @@ describe('ReceiverConsumerService', () => {
             remindSigners: jest.fn(),
             remindSignersManual: jest.fn(),
             processUserRegisteredNotifications: jest.fn(),
+            processDismissedNotifications: jest.fn(),
           },
         },
       ],
@@ -52,6 +53,7 @@ describe('ReceiverConsumerService', () => {
         filterSubjects: [
           'notifications.queue.user.>',
           'notifications.queue.transaction.>',
+          'notifications.queue.notification.>',
         ],
       });
     });
@@ -61,13 +63,14 @@ describe('ReceiverConsumerService', () => {
     it('should return handlers for all receiver subjects', () => {
       const handlers = service['getMessageHandlers']();
 
-      expect(handlers).toHaveLength(5);
+      expect(handlers).toHaveLength(6);
       expect(handlers.map(h => h.subject)).toEqual([
         TRANSACTION_STATUS_UPDATE,
         TRANSACTION_UPDATE,
         TRANSACTION_REMIND_SIGNERS,
         TRANSACTION_REMIND_SIGNERS_MANUAL,
         USER_REGISTERED,
+        DISMISSED_NOTIFICATIONS,
       ]);
     });
 
@@ -90,6 +93,10 @@ describe('ReceiverConsumerService', () => {
       const singleData = { id: 1 };
       await handlers[4].handler(singleData);
       expect(receiverService.processUserRegisteredNotifications).toHaveBeenCalledWith(singleData);
+
+      const dismissedData = [{ id: 1, userId: 1 }];
+      await handlers[5].handler(dismissedData);
+      expect(receiverService.processDismissedNotifications).toHaveBeenCalledWith(dismissedData);
     });
   });
 });

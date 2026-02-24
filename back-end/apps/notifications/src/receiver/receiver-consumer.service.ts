@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { BaseNatsConsumerService, ConsumerConfig, MessageHandler } from '../consumer';
-import { NatsJetStreamService } from '@app/common';
 import { ReceiverService } from './receiver.service';
 import {
+  DismissedNotificationReceiverDto,
+  NatsJetStreamService,
   NotificationEventDto,
+  DISMISSED_NOTIFICATIONS,
   TRANSACTION_REMIND_SIGNERS,
   TRANSACTION_REMIND_SIGNERS_MANUAL,
   TRANSACTION_STATUS_UPDATE,
@@ -27,6 +29,7 @@ export class ReceiverConsumerService extends BaseNatsConsumerService {
       filterSubjects: [
         'notifications.queue.user.>',
         'notifications.queue.transaction.>',
+        'notifications.queue.notification.>',
       ],
     };
   }
@@ -66,6 +69,13 @@ export class ReceiverConsumerService extends BaseNatsConsumerService {
         dtoClass: NotificationEventDto,
         handler: async (data: NotificationEventDto) => {
           await this.receiverService.processUserRegisteredNotifications(data);
+        },
+      },
+      {
+        subject: DISMISSED_NOTIFICATIONS,
+        dtoClass: DismissedNotificationReceiverDto,
+        handler: async (data: DismissedNotificationReceiverDto[]) => {
+          await this.receiverService.processDismissedNotifications(data);
         },
       },
     ];

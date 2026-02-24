@@ -2,7 +2,7 @@ import { Test } from '@nestjs/testing';
 import { ReceiverService } from './receiver.service';
 import { EntityManager, In } from 'typeorm';
 
-import { TransactionSignatureService } from '@app/common';
+import { DismissedNotificationReceiverDto, TransactionSignatureService } from '@app/common';
 import { NatsPublisherService } from '@app/common/nats/nats.publisher';
 
 import {
@@ -1310,6 +1310,49 @@ describe('ReceiverService', () => {
       expect(consoleSpy).toHaveBeenCalledWith('No admin users found to notify');
 
       consoleSpy.mockRestore();
+    });
+  });
+
+  describe('processDismissedNotifications', () => {
+    it('should group notification ids by userId and call sendDeletionNotifications', async () => {
+      const sendDeletionSpy = jest
+        .spyOn(service as any, 'sendDeletionNotifications')
+        .mockResolvedValue(undefined);
+
+      const event: DismissedNotificationReceiverDto[] = [
+        { id: 1, userId: 10 },
+        { id: 2, userId: 10 },
+        { id: 3, userId: 20 },
+      ];
+
+      await service.processDismissedNotifications(event);
+
+      expect(sendDeletionSpy).toHaveBeenCalledWith({
+        10: [1, 2],
+        20: [3],
+      });
+    });
+
+    it('should handle a single notification', async () => {
+      const sendDeletionSpy = jest
+        .spyOn(service as any, 'sendDeletionNotifications')
+        .mockResolvedValue(undefined);
+
+      const event: DismissedNotificationReceiverDto[] = [{ id: 5, userId: 99 }];
+
+      await service.processDismissedNotifications(event);
+
+      expect(sendDeletionSpy).toHaveBeenCalledWith({ 99: [5] });
+    });
+
+    it('should handle empty event array', async () => {
+      const sendDeletionSpy = jest
+        .spyOn(service as any, 'sendDeletionNotifications')
+        .mockResolvedValue(undefined);
+
+      await service.processDismissedNotifications([]);
+
+      expect(sendDeletionSpy).toHaveBeenCalledWith({});
     });
   });
 });

@@ -689,7 +689,7 @@ describe('Services Local User Transactions', () => {
         throw new Error('Failed to store transaction');
       });
 
-      expect(
+      await expect(
         async () => await storeTransaction({} as Prisma.TransactionUncheckedCreateInput),
       ).rejects.toThrow('Failed to store transaction');
     });
@@ -699,7 +699,7 @@ describe('Services Local User Transactions', () => {
         throw '';
       });
 
-      expect(
+      await expect(
         async () => await storeTransaction({} as Prisma.TransactionUncheckedCreateInput),
       ).rejects.toThrow('Failed to store transaction');
     });
