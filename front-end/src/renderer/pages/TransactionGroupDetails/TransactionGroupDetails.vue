@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import type { IGroup } from '@renderer/services/organization';
-import { BackEndTransactionType, type IGroupItem, type ITransactionFull } from '@shared/interfaces';
+import {
+  BackEndTransactionType,
+  type IGroupItem,
+  type INotificationReceiver,
+  type ITransactionFull,
+  NotificationType,
+} from '@shared/interfaces';
 import { TransactionStatus, TransactionTypeName } from '@shared/interfaces';
 
 import { computed, onBeforeMount, reactive, ref, watch, watchEffect } from 'vue';
@@ -65,6 +71,7 @@ import {
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
+import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
@@ -90,6 +97,7 @@ const user = useUserStore();
 const network = useNetwork();
 const nextTransaction = useNextTransactionV2();
 const contacts = useContactsStore();
+const notifications = useNotificationsStore();
 
 /* Composables */
 const router = useRouter();
@@ -574,6 +582,21 @@ async function fetchGroup(id: string | number) {
         }
         signingItems.value = Array(group.value.groupItems.length).fill(false);
         fullyLoaded.value = true;
+
+        const notificationIds = notifications.currentOrganizationNotifications
+          .filter((n: INotificationReceiver) => {
+            const notificationGroupId = n.notification.additionalData?.groupId;
+
+            return (
+              n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN &&
+              notificationGroupId === Number(id)
+            );
+          })
+          .map(n => n.id);
+
+        if (notificationIds.length > 0) {
+          await notifications.markAsReadIds(notificationIds);
+        }
       }
 
       unsignedSignersToCheck.value = updatedUnsignedSignersToCheck;

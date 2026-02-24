@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import type { Transaction } from '@prisma/client';
-import type { ITransactionFull } from '@shared/interfaces';
+import {
+  type INotificationReceiver,
+  type ITransactionFull,
+  NotificationType,
+  TransactionStatus,
+} from '@shared/interfaces';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
-
-import { TransactionStatus } from '@shared/interfaces';
 import { TRANSACTION_ACTION } from '@shared/constants';
 import { CommonNetwork } from '@shared/enums';
 
@@ -18,23 +21,19 @@ import useContactsStore from '@renderer/stores/storeContacts';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 
-import { getTransactionGroupById, getTransactionById } from '@renderer/services/organization';
+import { getTransactionById, getTransactionGroupById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
 
+import { getTransactionPayerId, getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions';
 import {
-  getTransactionPayerId,
-  getTransactionType,
-  getTransactionValidStart,
-} from '@renderer/utils/sdk/transactions';
-import {
+  computeSignatureKey,
+  getAccountIdWithChecksum,
+  getAccountNicknameFromId,
+  getStatusFromCode,
   getUInt8ArrayFromBytesString,
-  openTransactionInHashscan,
   hexToUint8Array,
   isLoggedInOrganization,
-  computeSignatureKey,
-  getAccountNicknameFromId,
-  getAccountIdWithChecksum,
-  getStatusFromCode,
+  openTransactionInHashscan,
 } from '@renderer/utils';
 
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -52,11 +51,13 @@ import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import ExpiringBadge from '@renderer/pages/TransactionDetails/components/ExpiringBadge.vue';
+import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 
 /* Stores */
 const user = useUserStore();
 const network = useNetwork();
 const contacts = useContactsStore();
+const notifications = useNotificationsStore();
 
 /* Composables */
 const router = useRouter();
@@ -174,6 +175,19 @@ async function fetchTransaction() {
   if (!(sdkTransaction.value instanceof SDKTransaction)) {
     router.back();
     return;
+  }
+
+  const notificationIds = notifications.currentOrganizationNotifications
+    .filter((n: INotificationReceiver) => {
+      return (
+        n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN &&
+        n.notification.entityId === Number(id)
+      );
+    })
+    .map(n => n.id);
+
+  if (notificationIds.length > 0) {
+    await notifications.markAsReadIds(notificationIds);
   }
 
   if (isLoggedInOrganization(user.selectedOrganization)) {
