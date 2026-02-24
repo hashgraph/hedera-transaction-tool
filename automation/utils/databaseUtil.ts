@@ -216,6 +216,8 @@ export async function createTestUsersBatch(usersData: {email: string, password: 
 
 export async function resetPostgresDbState() {
   const client = await connectPostgresDatabase();
+
+  // Tables to reset - order matters for foreign key constraints
   const tablesToReset = [
     'notification_receiver',
     'transaction_approver',
@@ -234,8 +236,7 @@ export async function resetPostgresDbState() {
 
   try {
     for (const table of tablesToReset) {
-      const query = `DELETE FROM "${table}";`;
-      await client.query(query);
+      await client.query(`DELETE FROM "${table}";`);
       console.log(`Deleted all records from ${table}`);
     }
   } catch (err) {
