@@ -386,7 +386,7 @@ describe('SignersService', () => {
   });
 
   describe('bulkUpdateTransactions', () => {
-    it('should execute bulk update query', async () => {
+    it('should execute bulk transaction update query', async () => {
       const mockManager = mockDeep<any>();
       mockManager.query.mockResolvedValue(undefined);
 
@@ -405,6 +405,69 @@ describe('SignersService', () => {
           [1, 2],
         ])
       );
+    });
+  });
+
+  describe('bulkUpdateNotificationReceivers', () => {
+    it('should execute bulk notification update query', async () => {
+      const mockManager = mockDeep<any>();
+      mockManager.query.mockResolvedValue(undefined);
+
+      const notificationsToUpdate = [
+        { userId: 1, transactionId: 100 },
+        { userId: 2, transactionId: 200 },
+      ];
+
+      await service['bulkUpdateNotificationReceivers'](mockManager, notificationsToUpdate);
+
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE notification_receiver'),
+        [[1, 2], [100, 200]]
+      );
+    });
+
+    it('should not execute query when notificationsToUpdate is empty', async () => {
+      const mockManager = mockDeep<any>();
+      mockManager.query.mockResolvedValue(undefined);
+
+      await service['bulkUpdateNotificationReceivers'](mockManager, []);
+
+      expect(mockManager.query).not.toHaveBeenCalled();
+    });
+
+    it('should build correct query with UNNEST and paired arrays', async () => {
+      const mockManager = mockDeep<any>();
+      mockManager.query.mockResolvedValue([]);
+
+      const notificationsToUpdate = [{ userId: 42, transactionId: 99 }];
+
+      await service['bulkUpdateNotificationReceivers'](mockManager, notificationsToUpdate);
+
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('UNNEST($1::int[], $2::int[])'),
+        [[42], [99]]
+      );
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining("type = 'TRANSACTION_INDICATOR_SIGN'"),
+        expect.any(Array)
+      );
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('isRead" = false'),
+        expect.any(Array)
+      );
+    });
+
+    it('should return the query result', async () => {
+      const mockManager = mockDeep<any>();
+      const mockResult = [{ id: 1, userId: 42 }];
+      mockManager.query.mockResolvedValue(mockResult);
+
+      const result = await service['bulkUpdateNotificationReceivers'](
+        mockManager,
+        [{ userId: 42, transactionId: 99 }]
+      );
+
+      expect(result).toEqual(mockResult);
     });
   });
 
