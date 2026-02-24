@@ -63,6 +63,6 @@ export const emitUserStatusUpdateNotifications = (
 export const emitDismissedNotifications = (
   publisher: NatsPublisherService,
   dtos: DismissedNotificationReceiverDto[]
-)=> {
+) => {
   publisher.publish(DISMISSED_NOTIFICATIONS, dtos);
 };
