@@ -144,13 +144,21 @@ async function fetchTransaction() {
       );
       transactionBytes = hexToUint8Array(orgTransaction.value.transactionBytes);
 
-      if (orgTransaction.value?.groupItem?.groupId) {
-        if (user.selectedOrganization?.serverUrl) {
-          const orgGroup = await getTransactionGroupById(
-            user.selectedOrganization?.serverUrl,
-            orgTransaction.value.groupItem.groupId,
-          );
-          groupDescription.value = orgGroup.description;
+      // To be backwards compatible, check if the groupItem exists but group does not
+      const groupItem = orgTransaction.value?.groupItem;
+      if (groupItem) {
+        if (groupItem.group) {
+          groupDescription.value = groupItem.group.description;
+        } else if (groupItem.groupId) {
+          // Backwards compatibility for older organization servers where groupItem.group is not populated
+          if (user.selectedOrganization?.serverUrl) {
+            const orgGroup = await getTransactionGroupById(
+              user.selectedOrganization?.serverUrl,
+              groupItem.groupId,
+              false,
+            );
+            groupDescription.value = orgGroup.description;
+          }
         }
       }
     } else {

@@ -303,7 +303,7 @@ async function submitGroup(groupItems: GroupItem[], signature: string[], keyToSi
       true,
       apiGroupItems,
     );
-    const group = await getTransactionGroupById(user.selectedOrganization.serverUrl, id);
+    const group = await getTransactionGroupById(user.selectedOrganization.serverUrl, id, false);
     await safeAwait(submitApproversObservers(group));
     emit('transaction:group:submit:success', id);
   } catch (error) {
