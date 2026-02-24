@@ -2,6 +2,7 @@ import { plainToInstance } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
 
 export * from './chain-update-transaction-status.dto';
+export * from './dismissed-notification.dto';
 export * from './email.dto';
 export * from './notification-event.dto';
 export * from './notifications-notify-client.dto';
