@@ -422,7 +422,7 @@ describe('SignersService', () => {
 
       expect(mockManager.query).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE notification_receiver'),
-        expect.arrayContaining([1, 100, 2, 200])
+        [[1, 2], [100, 200]]
       );
     });
 
@@ -435,26 +435,39 @@ describe('SignersService', () => {
       expect(mockManager.query).not.toHaveBeenCalled();
     });
 
-    it('should build correct WHERE clause with userId and transactionId params', async () => {
+    it('should build correct query with UNNEST and paired arrays', async () => {
       const mockManager = mockDeep<any>();
-      mockManager.query.mockResolvedValue(undefined);
+      mockManager.query.mockResolvedValue([]);
 
       const notificationsToUpdate = [{ userId: 42, transactionId: 99 }];
 
       await service['bulkUpdateNotificationReceivers'](mockManager, notificationsToUpdate);
 
       expect(mockManager.query).toHaveBeenCalledWith(
-        expect.stringMatching(/"userId" = \$1/),
-        [42, 99]
-      );
-      expect(mockManager.query).toHaveBeenCalledWith(
-        expect.stringMatching(/"entityId" = \$2/),
-        [42, 99]
+        expect.stringContaining('UNNEST($1::int[], $2::int[])'),
+        [[42], [99]]
       );
       expect(mockManager.query).toHaveBeenCalledWith(
         expect.stringContaining("type = 'TRANSACTION_INDICATOR_SIGN'"),
         expect.any(Array)
       );
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('isRead" = false'),
+        expect.any(Array)
+      );
+    });
+
+    it('should return the query result', async () => {
+      const mockManager = mockDeep<any>();
+      const mockResult = [{ id: 1, userId: 42 }];
+      mockManager.query.mockResolvedValue(mockResult);
+
+      const result = await service['bulkUpdateNotificationReceivers'](
+        mockManager,
+        [{ userId: 42, transactionId: 99 }]
+      );
+
+      expect(result).toEqual(mockResult);
     });
   });
 

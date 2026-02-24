@@ -5,23 +5,18 @@ import { DataSource, In, Repository } from 'typeorm';
 import { PublicKey, SignatureMap, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
-  isExpired,
-  PaginatedResourceDto,
-  Pagination,
-  ErrorCodes,
-  NatsPublisherService,
-  TransactionSignatureService,
+  emitDismissedNotifications,
   emitTransactionStatusUpdate,
   emitTransactionUpdate,
+  ErrorCodes,
+  isExpired,
+  NatsPublisherService,
+  PaginatedResourceDto,
+  Pagination,
   processTransactionStatus,
+  TransactionSignatureService,
 } from '@app/common';
-import {
-  Transaction,
-  TransactionSigner,
-  TransactionStatus,
-  User,
-  UserKey,
-} from '@entities';
+import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
 
 import { UploadSignatureMapDto } from '../dto';
 
@@ -319,7 +314,12 @@ export class SignersService {
 
         // Bulk update notifications
         if (notificationsToUpdate.length > 0) {
-          await this.bulkUpdateNotificationReceivers(manager, notificationsToUpdate);
+          const updatedNotificationReceivers = await this.bulkUpdateNotificationReceivers(manager, notificationsToUpdate);
+
+          emitDismissedNotifications(
+            this.notificationsPublisher,
+            updatedNotificationReceivers,
+          );
         }
 
         // Bulk insert signers
@@ -359,37 +359,30 @@ export class SignersService {
     manager: any,
     notificationsToUpdate: { userId: number; transactionId: number }[]
   ) {
-    if (notificationsToUpdate.length === 0) return;
+    if (!notificationsToUpdate.length) return [];
 
-    const params: any[] = [];
-    const orClauses: string[] = [];
+    // Separate arrays of userIds and transactionIds
+    const userIds = notificationsToUpdate.map(n => n.userId);
+    const txIds = notificationsToUpdate.map(n => n.transactionId);
 
-    notificationsToUpdate.forEach(({ userId, transactionId }) => {
-      const userIdParamIndex = params.length + 1;
-      params.push(userId);
-
-      const txIdParamIndex = params.length + 1;
-      params.push(transactionId);
-
-      orClauses.push(
-        `("userId" = $${userIdParamIndex} AND "notificationId" IN (
-          SELECT id FROM notification
-          WHERE "entityId" = $${txIdParamIndex}
-            AND type = 'TRANSACTION_INDICATOR_SIGN'
-        ))`
-      );
-    });
-
-    const whereClause = orClauses.join(' OR ');
-
-    await manager.query(
+    // Use UNNEST with ordinality to preserve 1:1 pairing
+    return await manager.query(
       `
-      UPDATE notification_receiver
+      WITH input(user_id, tx_id) AS (
+        SELECT * FROM UNNEST($1::int[], $2::int[])
+      )
+      UPDATE notification_receiver nr
       SET "isRead" = true,
           "updatedAt" = NOW()
-      WHERE ${whereClause}
-    `,
-      params
+          FROM notification n, input i
+      WHERE nr."notificationId" = n.id
+        AND n.type = 'TRANSACTION_INDICATOR_SIGN'
+        AND i.tx_id = n."entityId"
+        AND i.user_id = nr."userId"
+        AND nr."isRead" = false
+      RETURNING nr.id, nr."userId"
+      `,
+      [userIds, txIds]
     );
   }
 
