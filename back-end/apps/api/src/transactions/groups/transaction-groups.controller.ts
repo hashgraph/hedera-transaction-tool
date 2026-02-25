@@ -4,8 +4,10 @@ import {
   Delete,
   Get,
   Param,
+  ParseBoolPipe,
   ParseIntPipe,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -64,8 +66,9 @@ export class TransactionGroupsController {
   getTransactionGroup(
     @GetUser() user: User,
     @Param('id', ParseIntPipe) groupId: number,
+    @Query('full', new ParseBoolPipe({ optional: true })) full?: boolean,
   ): Promise<TransactionGroup> {
-    return this.transactionGroupsService.getTransactionGroup(user, groupId);
+    return this.transactionGroupsService.getTransactionGroup(user, groupId, full ?? true);
   }
 
   /* Delete a transaction group */

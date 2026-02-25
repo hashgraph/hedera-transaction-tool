@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ITransactionBrowserItem } from '@renderer/components/ExternalSigning/TransactionBrowser/ITransactionBrowserItem.ts';
 import SignatureStatus from '@renderer/components/SignatureStatus.vue';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, type Ref } from 'vue';
 import { Transaction } from '@hashgraph/sdk';
 import {
   computeSignatureKey,
@@ -27,7 +27,7 @@ const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
 
 /* State */
-const signatureKeyObject = ref<SignatureAudit | null>(null);
+const signatureKeyObject: Ref<SignatureAudit | null> = ref(null);
 
 /* Computed */
 const transaction = computed<Transaction | null>(() => {
