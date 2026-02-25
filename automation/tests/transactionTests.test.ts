@@ -739,7 +739,7 @@ test.describe('Transaction tests', () => {
     await transactionPage.deleteFirstDraft();
   });
 
-  test.only('Verify that deleting all keys prevent to sign and execute a draft transaction', async () => {
+  test('Verify that deleting all keys prevent to sign and execute a draft transaction', async () => {
     // This test is a copy of organizationSettingsTests.test.ts 'Verify that deleting all keys prevent to sign and execute a draft transaction'
     // If you fix something here, you probably want to do the same in organizationSettingsTests.test.ts
 
