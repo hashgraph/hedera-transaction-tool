@@ -8,7 +8,7 @@ import type {
   OrganizationTokens,
 } from '@renderer/types';
 
-import { computed, ref, watch, nextTick, watchEffect } from 'vue';
+import { computed, ref, watch, nextTick, watchEffect, type Ref } from 'vue';
 import { defineStore } from 'pinia';
 
 import { Prisma } from '@prisma/client';
@@ -45,7 +45,7 @@ const useUserStore = defineStore('user', () => {
   /* State */
   /** Keys */
   const publicKeyToAccounts = ref<PublicKeyAccounts[]>([]);
-  const recoveryPhrase = ref<RecoveryPhrase | null>(null);
+  const recoveryPhrase: Ref<RecoveryPhrase|null> = ref(null);
   const keyPairs = ref<KeyPair[]>([]);
   const mnemonics = ref<Mnemonic[]>([]);
   const publicKeyMappings = ref<PublicKeyMapping[]>([]);

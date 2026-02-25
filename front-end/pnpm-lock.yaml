@@ -15,8 +15,8 @@ importers:
         specifier: 2.19.0
         version: 2.19.0
       '@hashgraph/sdk':
-        specifier: 2.66.0
-        version: 2.66.0(bn.js@5.2.1)(react-native@0.79.2(@babel/core@7.26.7)(react@19.1.0))
+        specifier: 2.80.0
+        version: 2.80.0(bn.js@5.2.3)(react-native@0.79.2(@babel/core@7.26.7)(react@19.1.0))
       '@prisma/client':
         specifier: 6.2.1
         version: 6.2.1(prisma@6.2.1)
@@ -31,7 +31,7 @@ importers:
         version: 0.41.1
       axios:
         specifier: 1.13.5
-        version: 1.13.5
+        version: 1.13.5(debug@4.4.1)
       bcrypt:
         specifier: 5.1.1
         version: 5.1.1(encoding@0.1.13)
@@ -791,8 +791,8 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
-  '@hashgraph/cryptography@1.8.0':
-    resolution: {integrity: sha512-tkBbGd8zU2dNCwlxCX47cS+VhRosh8mEbFfjvjzjcuW2KxdVsdV6GshyVtXeFxHMijo5kAcxd2CoubhCreNdaQ==}
+  '@hashgraph/cryptography@1.16.0-beta.3':
+    resolution: {integrity: sha512-6uSMGOCPysopy56usx6NS5lGZLIBty9dCsRZoaPwAKxEGpOMUHP0mFcSKxcyq5l/7nvefj9fGqGeEf9bki5dMw==}
     engines: {node: '>=12.0.0'}
     peerDependencies:
       expo-crypto: '*'
@@ -804,11 +804,21 @@ packages:
     resolution: {integrity: sha512-ghlkyPb8JJx9ACGVna84vOtMqQkisBZ+EGeQe+FT+ci7qlhdf/ecRGvMw/uanSE5yviOFBqJeH0c2SzVIqpydQ==}
     engines: {node: '>=10.0.0'}
 
-  '@hashgraph/sdk@2.66.0':
-    resolution: {integrity: sha512-A5dCSxb7pzYhgd7zhkOJ7lJRwg29MEcfkq0B/Nqb5j2Swdee6v+DCse7xkB978dmHnfrG6UM64LZX0qMWw8Uiw==}
+  '@hashgraph/proto@2.26.0-beta.3':
+    resolution: {integrity: sha512-i89RMYEjpG5uVOa7VzDMVQq8gNs4feeXvEJFyZzwp6i1NSmMHn9DfmIWePylh67LOFBNnX5ZyXNcgUJaAC8Fmw==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      ansi-regex: 6.2.2
+      ansi-styles: 6.2.3
+      debug: 4.4.1
+      protobufjs: 7.5.4
+      strip-ansi: 7.1.2
+
+  '@hashgraph/sdk@2.80.0':
+    resolution: {integrity: sha512-EoofLZBCryR4SoddlxJ1JYmrzcdeUcGAHVU1K65BLoX0ia4RAGxydR4ZUogM4fP4aLUILF/3KSBy7yJAWpf1wQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
-      bn.js: ^5.2.1
+      bn.js: 5.2.1
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -948,12 +958,12 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@noble/curves@1.9.1':
-    resolution: {integrity: sha512-k11yZxZg+t+gWvBbIswW0yoJlu8cHOC7dhunwOzoWH/mXGBiYyR4YY6hAEK/3EUs4UpB8la1RfdRpeGsFHkWsA==}
+  '@noble/curves@1.8.1':
+    resolution: {integrity: sha512-warwspo+UYUPep0Q+vtdVB4Ugn8GGQj8iyB3gnRWsztmUHTI3S1nhdiWNsPUGL0vud7JlRRk1XEu7Lq1KGTnMQ==}
     engines: {node: ^14.21.3 || >=16}
 
-  '@noble/hashes@1.8.0':
-    resolution: {integrity: sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==}
+  '@noble/hashes@1.7.1':
+    resolution: {integrity: sha512-B8XBPsn4vT/KJAGqDzbwztd+6Yte3P4V7iafm24bxgDe/mlRuK6xmWPuCNrKt2vDafZ8MfJLlchDG/vYafQEjQ==}
     engines: {node: ^14.21.3 || >=16}
 
   '@nodelib/fs.scandir@2.1.5':
@@ -988,6 +998,9 @@ packages:
     resolution: {integrity: sha512-g+qR49GNdI1Z8rZxKrQC3GN+LfnGTNf5Kk8Nz5Cz6mIGva5WRS+ffPXQfzhA0nu6TveWzPNYTjGl4nJqd3Cu9Q==}
     peerDependencies:
       pinia: '>=3.0.4'
+
+  '@pinojs/redact@0.4.0':
+    resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
 
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -1668,8 +1681,8 @@ packages:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
     engines: {node: '>=8'}
 
-  ansi-regex@6.1.0:
-    resolution: {integrity: sha512-7HSX4QQb4CspciLpVFwyRe79O3xsIZDDLER21kERQ71oaPodF8jL725AgJMFAYbooIqolJoRLuM81SpeUkpkvA==}
+  ansi-regex@6.2.2:
+    resolution: {integrity: sha512-Bq3SmSpyFHaWjPk8If9yc6svM8c56dB5BAtW4Qbw5jHTwwXXcTLoRMkpDJp6VL0XzlWaCHTXrkFURMYmD0sLqg==}
     engines: {node: '>=12'}
 
   ansi-styles@4.3.0:
@@ -1680,8 +1693,8 @@ packages:
     resolution: {integrity: sha512-Cxwpt2SfTzTtXcfOlzGEee8O+c+MmUgGrNiBcXnuWxuFJHe6a5Hz7qwhwe5OgaSYI0IJvkLqWX1ASG+cJOkEiA==}
     engines: {node: '>=10'}
 
-  ansi-styles@6.2.1:
-    resolution: {integrity: sha512-bN798gFfQX+viw3R7yrGWRqnrN2oRkEkUjjl4JNn4E8GxxbjtG3FbrEIIY3l8/hrwUwIeCZvi4QuOTP4MErVug==}
+  ansi-styles@6.2.3:
+    resolution: {integrity: sha512-4Dj6M28JB+oAH8kFkTLUo+a2jwOFkuqb3yucU0CANcRRUbxS0cP0nZYCGjcc3BNXwRIsUVmDGgzawme7zvJHvg==}
     engines: {node: '>=12'}
 
   anymatch@3.1.3:
@@ -1822,6 +1835,9 @@ packages:
   better-sqlite3@11.8.1:
     resolution: {integrity: sha512-9BxNaBkblMjhJW8sMRZxnxVTRgbRmssZW0Oxc1MPBTfiR+WW21e2Mk4qu8CzrcZb1LwPCnFsfDEzq+SNcBU8eg==}
 
+  bignumber.js@9.1.1:
+    resolution: {integrity: sha512-pHm4LsMJ6lzgNGVfZHjMoO8sdoRhOzOH4MLmY65Jg70bpxCKu5iOHNJyfF6OyvYw7t8Fpf35RuzUyqnQsj8Vig==}
+
   bignumber.js@9.1.2:
     resolution: {integrity: sha512-2/mKyZH9K85bzOEfhXDBFZTGd1CTs+5IHpeFQo9luiBG7hghdC851Pj2WAhb6E3R6b9tZj/XKhbg4fum+Kepug==}
 
@@ -1844,11 +1860,14 @@ packages:
   bluebird@3.7.2:
     resolution: {integrity: sha512-XpNj6GDQzdfW+r2Wnn7xiSAd7TM3jzkxGXBGTtWKuSXv1xUV+azxAm8jdWZN06QTQk+2N2XB9jRDkvbmQmcRtg==}
 
-  bn.js@4.12.1:
-    resolution: {integrity: sha512-k8TVBiPkPJT9uHLdOKfFpqcfprwBFOAAXXozRubr7R7PfIuKvQlzcI4M0pALeqXN09vdaMbUdUj+pass+uULAg==}
+  bn.js@4.12.3:
+    resolution: {integrity: sha512-fGTi3gxV/23FTYdAoUtLYp6qySe2KE3teyZitipKNRuVYcBkoP/bB3guXN/XVKUe9mxCHXnc9C4ocyz8OmgN0g==}
 
   bn.js@5.2.1:
     resolution: {integrity: sha512-eXRvHzWyYPBuB4NBy0cmYQjGitUrtqwbvlzP3G6VFnNRbsZQIxQ10PbKKHt8gZ/HW/D/747aDl+QkDqg3KQLMQ==}
+
+  bn.js@5.2.3:
+    resolution: {integrity: sha512-EAcmnPkxpntVL+DS7bO1zhcZNvCkxqtkd0ZY53h06GNQ3DEkkGZ/gKgmDv6DdZQGj9BgfSPKtJJ7Dp1GPP8f7w==}
 
   boolbase@1.0.0:
     resolution: {integrity: sha512-JZOSA7Mo9sNGB8+UjSgzdLtokWAky1zbztM3WRLCbZ70/3cTANmQmOdR7y2g+J0e2WXywy1yS468tY+IruqEww==}
@@ -2171,6 +2190,15 @@ packages:
 
   debug@4.4.0:
     resolution: {integrity: sha512-6WTZ/IxCY/T6BALoZHaE4ctp9xm+Z5kY/pzYaCHRFeyVhojxlrm+46y68HA6hr0TcwEssoxNiDEUJQjfPZ/RYA==}
+    engines: {node: '>=6.0'}
+    peerDependencies:
+      supports-color: '*'
+    peerDependenciesMeta:
+      supports-color:
+        optional: true
+
+  debug@4.4.1:
+    resolution: {integrity: sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==}
     engines: {node: '>=6.0'}
     peerDependencies:
       supports-color: '*'
@@ -2567,10 +2595,6 @@ packages:
 
   fast-levenshtein@2.0.6:
     resolution: {integrity: sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw==}
-
-  fast-redact@3.5.0:
-    resolution: {integrity: sha512-dwsoQlS7h9hMeYUq1W++23NDcBLV4KqONnITDV9DjfS3q1SgDGVrBdvvTLUotWtPSD7asWDV9/CmsZPy8Hf70A==}
-    engines: {node: '>=6'}
 
   fast-safe-stringify@2.1.1:
     resolution: {integrity: sha512-W+KJc2dmILlPplD/H4K9l9LcAHAfPtP6BY84uVLXQ6Evcz9Lcg33Y2z1IVblT6xdY54PXYVHEv+0Wpq8Io6zkA==}
@@ -3113,6 +3137,9 @@ packages:
   joycon@3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
     engines: {node: '>=10'}
+
+  js-base64@3.7.4:
+    resolution: {integrity: sha512-wpM/wi20Tl+3ifTyi0RdDckS4YTD4Lf953mBRrpG8547T7hInHNPEj8+ck4gB8VDcGyeAWFK++Wb/fU1BeavKQ==}
 
   js-base64@3.7.7:
     resolution: {integrity: sha512-7rCnleh0z2CkXhH67J8K1Ytz0b2Y+yxTPL+/KOJoa20hfnVQ/3/T6W/KflYI4bRHRagNeXeU2bkNGI3v1oS/lw==}
@@ -3870,8 +3897,8 @@ packages:
   pino-std-serializers@7.0.0:
     resolution: {integrity: sha512-e906FRY0+tV27iq4juKzSYPbUj2do2X2JX4EzSca1631EB2QJQUqGbDuERal7LCtOpxl6x3+nvo9NPZcmjkiFA==}
 
-  pino@9.6.0:
-    resolution: {integrity: sha512-i85pKRCt4qMjZ1+L7sy2Ag4t1atFcdbEt76+7iRJn1g2BvsnRMGu9p8pivl9fs63M2kF/A0OacFZhTub+m/qMg==}
+  pino@10.1.0:
+    resolution: {integrity: sha512-0zZC2ygfdqvqK8zJIr1e+wT1T/L+LF6qvqvbzEQ6tiMAoTqEVK9a1K3YRu8HEUvGEvNqZyPJTtb2sNIoTkB83w==}
     hasBin: true
 
   pirates@4.0.7:
@@ -3925,8 +3952,8 @@ packages:
   process-nextick-args@2.0.1:
     resolution: {integrity: sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==}
 
-  process-warning@4.0.1:
-    resolution: {integrity: sha512-3c2LzQ3rY9d0hc1emcsHhfT9Jwz0cChib/QN89oME2R451w5fy3f0afAhERFZAwrbDU43wk12d0ORBpDVME50Q==}
+  process-warning@5.0.0:
+    resolution: {integrity: sha512-a39t9ApHNx2L4+HBnQKqxxHNs1r7KF+Intd8Q/g1bUh6q0WIp9voPXJ/x0j+ZL45KF1pJd9+q2jLIRMfvEshkA==}
 
   progress@2.0.3:
     resolution: {integrity: sha512-7PiHtLll5LdnKIMw100I+8xJXR5gW2QwWYkT6iJva0bXitZKa/XMrSbdmg3r2Xnaidz9Qumd0VPaMrZlF9V9sA==}
@@ -3954,6 +3981,10 @@ packages:
     resolution: {integrity: sha512-gGXRSXvxQ7UiPgfw8gevrfRWcTlSbOFg+p/N+JVJEK5VhueL2miT6qTymqAmjr1Q5WbOCyJbyrk6JfWKwlFn6A==}
     engines: {node: '>=12.0.0'}
 
+  protobufjs@7.5.4:
+    resolution: {integrity: sha512-CvexbZtbov6jW2eXAvLukXjXUW1TzFaivC46BpWc/3BpcCysb5Vffu+B3XHMm8lVEuy2Mm4XGex8hBSg1yapPg==}
+    engines: {node: '>=12.0.0'}
+
   proxy-from-env@1.1.0:
     resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
 
@@ -3967,9 +3998,9 @@ packages:
   pvtsutils@1.3.6:
     resolution: {integrity: sha512-PLgQXQ6H2FWCaeRak8vvk1GW462lMxB5s3Jm673N82zI4vqtVUPuZdffdZbPDFRoU8kAhItWFtPCWiPpp4/EDg==}
 
-  pvutils@1.1.3:
-    resolution: {integrity: sha512-pMpnA0qRdFp32b1sJl1wOJNxZLQ2cbQx+k6tjNtZ8CpvVhNqEPRgivZ2WOUev2YMajecdH7ctUPDvEe87nariQ==}
-    engines: {node: '>=6.0.0'}
+  pvutils@1.1.5:
+    resolution: {integrity: sha512-KTqnxsgGiQ6ZAzZCVlJH5eOjSnvlyEgx1m8bkRJfOhmGRqfo5KLvmAlACQkrjEtOQ4B7wF9TdSLIs9O90MX9xA==}
+    engines: {node: '>=16.0.0'}
 
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
@@ -4085,8 +4116,8 @@ packages:
     resolution: {integrity: sha512-U9nH88a3fc/ekCF1l0/UP1IosiuIjyTh7hBvXVMHYgVcfGvt897Xguj2UOLDeI5BG2m7/uwyaLVT6fbtCwTyzw==}
     engines: {iojs: '>=1.0.0', node: '>=0.10.0'}
 
-  rfc4648@1.5.4:
-    resolution: {integrity: sha512-rRg/6Lb+IGfJqO05HZkN50UtY7K/JhxJag1kP23+zyMfrvoB0B7RWv06MbOzoc79RgCdNTiUaNsTT1AJZ7Z+cg==}
+  rfc4648@1.5.3:
+    resolution: {integrity: sha512-MjOWxM065+WswwnmNONOT+bD1nXzY9Km6u3kzvnx8F8/HXGZdz3T6e6vZJ8Q/RIMUSp/nxqjH3GwvJDy8ijeQQ==}
 
   rfdc@1.4.1:
     resolution: {integrity: sha512-q1b3N5QkRUWUl7iyylaaj3kOpIT0N2i9MqIEQXP73GVsN9cw3fdx8X63cEmWhJGi2PPCF23Ijp7ktmd39rawIA==}
@@ -4334,8 +4365,8 @@ packages:
     resolution: {integrity: sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==}
     engines: {node: '>=8'}
 
-  strip-ansi@7.1.0:
-    resolution: {integrity: sha512-iq6eVVI64nQQTRYq2KtEg2d2uU7LElhTJwsH4YzIHZshxlgZms/wIc4VoDQTlG/IvVIrBKG06CrZnp0qv7hkcQ==}
+  strip-ansi@7.1.2:
+    resolution: {integrity: sha512-gmBGslpoQJtgnMAvOVqGZpEz9dyoKTCzy2nfz/n8aIFhN/jCE/rCmcxabB6jOOHV+0WNnylOxaxBQPSvcWklhA==}
     engines: {node: '>=12'}
 
   strip-final-newline@4.0.0:
@@ -4933,7 +4964,7 @@ snapshots:
       '@babel/traverse': 7.26.7
       '@babel/types': 7.26.7
       convert-source-map: 2.0.0
-      debug: 4.4.0
+      debug: 4.4.3
       gensync: 1.0.0-beta.2
       json5: 2.2.3
       semver: 6.3.1
@@ -5240,7 +5271,7 @@ snapshots:
       '@babel/parser': 7.26.7
       '@babel/template': 7.25.9
       '@babel/types': 7.26.7
-      debug: 4.4.0
+      debug: 4.4.3
       globals: 11.12.0
     transitivePeerDependencies:
       - supports-color
@@ -5304,7 +5335,7 @@ snapshots:
 
   '@electron/notarize@2.5.0':
     dependencies:
-      debug: 4.4.0
+      debug: 4.4.3
       fs-extra: 9.1.0
       promise-retry: 2.0.1
     transitivePeerDependencies:
@@ -5313,7 +5344,7 @@ snapshots:
   '@electron/osx-sign@1.3.1':
     dependencies:
       compare-version: 0.1.2
-      debug: 4.4.0
+      debug: 4.4.3
       fs-extra: 10.1.0
       isbinaryfile: 4.0.10
       minimist: 1.2.8
@@ -5325,7 +5356,7 @@ snapshots:
     dependencies:
       '@malept/cross-spawn-promise': 2.0.0
       chalk: 4.1.2
-      debug: 4.4.0
+      debug: 4.4.3
       detect-libc: 2.0.3
       fs-extra: 10.1.0
       got: 11.8.6
@@ -5345,7 +5376,7 @@ snapshots:
     dependencies:
       '@electron/asar': 3.2.18
       '@malept/cross-spawn-promise': 2.0.0
-      debug: 4.4.0
+      debug: 4.4.3
       dir-compare: 4.2.0
       fs-extra: 11.3.0
       minimatch: 9.0.5
@@ -5566,7 +5597,7 @@ snapshots:
       '@ethersproject/bytes': 5.8.0
       '@ethersproject/logger': 5.8.0
       '@ethersproject/properties': 5.8.0
-      bn.js: 5.2.1
+      bn.js: 5.2.3
       elliptic: 6.6.1
       hash.js: 1.1.7
 
@@ -5607,53 +5638,72 @@ snapshots:
     dependencies:
       lodash.camelcase: 4.3.0
       long: 5.3.1
-      protobufjs: 7.2.5
+      protobufjs: 7.5.4
       yargs: 17.7.2
 
-  '@hashgraph/cryptography@1.8.0(react-native@0.79.2(@babel/core@7.26.7)(react@19.1.0))':
+  '@hashgraph/cryptography@1.16.0-beta.3(react-native@0.79.2(@babel/core@7.26.7)(react@19.1.0))':
     dependencies:
-      '@noble/curves': 1.9.1
+      '@noble/curves': 1.8.1
+      ansi-regex: 6.2.2
+      ansi-styles: 6.2.3
       asn1js: 3.0.6
-      bignumber.js: 9.1.2
+      bignumber.js: 9.1.1
       bn.js: 5.2.1
       buffer: 6.0.3
       crypto-js: 4.2.0
+      debug: 4.4.1
       forge-light: 1.1.4
       js-base64: 3.7.7
       react-native-get-random-values: 1.11.0(react-native@0.79.2(@babel/core@7.26.7)(react@19.1.0))
       spark-md5: 3.0.2
+      strip-ansi: 7.1.2
       tweetnacl: 1.0.3
       utf8: 3.0.0
     transitivePeerDependencies:
       - react-native
+      - supports-color
 
   '@hashgraph/proto@2.19.0':
     dependencies:
       long: 5.3.1
       protobufjs: 7.2.5
 
-  '@hashgraph/sdk@2.66.0(bn.js@5.2.1)(react-native@0.79.2(@babel/core@7.26.7)(react@19.1.0))':
+  '@hashgraph/proto@2.26.0-beta.3(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.1)(protobufjs@7.5.4)(strip-ansi@7.1.2)':
+    dependencies:
+      ansi-regex: 6.2.2
+      ansi-styles: 6.2.3
+      debug: 4.4.1
+      long: 5.3.1
+      protobufjs: 7.5.4
+      strip-ansi: 7.1.2
+
+  '@hashgraph/sdk@2.80.0(bn.js@5.2.3)(react-native@0.79.2(@babel/core@7.26.7)(react@19.1.0))':
     dependencies:
       '@ethersproject/abi': 5.8.0
       '@ethersproject/bignumber': 5.8.0
       '@ethersproject/bytes': 5.8.0
       '@ethersproject/rlp': 5.8.0
       '@grpc/grpc-js': 1.12.6
-      '@hashgraph/cryptography': 1.8.0(react-native@0.79.2(@babel/core@7.26.7)(react@19.1.0))
-      '@hashgraph/proto': 2.19.0
-      bignumber.js: 9.1.2
-      bn.js: 5.2.1
+      '@hiero-ledger/cryptography': '@hashgraph/cryptography@1.16.0-beta.3(react-native@0.79.2(@babel/core@7.26.7)(react@19.1.0))'
+      '@hiero-ledger/proto': '@hashgraph/proto@2.26.0-beta.3(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.1)(protobufjs@7.5.4)(strip-ansi@7.1.2)'
+      ansi-regex: 6.2.2
+      ansi-styles: 6.2.3
+      bignumber.js: 9.1.1
+      bn.js: 5.2.3
       crypto-js: 4.2.0
-      js-base64: 3.7.7
+      debug: 4.4.1
+      js-base64: 3.7.4
       long: 5.3.1
-      pino: 9.6.0
+      pino: 10.1.0
       pino-pretty: 13.0.0
-      protobufjs: 7.2.5
-      rfc4648: 1.5.4
+      protobufjs: 7.5.4
+      rfc4648: 1.5.3
+      strip-ansi: 7.1.2
       utf8: 3.0.0
     transitivePeerDependencies:
       - expo-crypto
       - react-native
+      - supports-color
 
   '@humanfs/core@0.19.1': {}
 
@@ -5672,7 +5722,7 @@ snapshots:
     dependencies:
       string-width: 5.1.2
       string-width-cjs: string-width@4.2.3
-      strip-ansi: 7.1.0
+      strip-ansi: 7.1.2
       strip-ansi-cjs: strip-ansi@6.0.1
       wrap-ansi: 8.1.0
       wrap-ansi-cjs: wrap-ansi@7.0.0
@@ -5789,7 +5839,7 @@ snapshots:
 
   '@malept/flatpak-bundler@0.4.0':
     dependencies:
-      debug: 4.4.0
+      debug: 4.4.3
       fs-extra: 9.1.0
       lodash: 4.17.21
       tmp-promise: 3.0.3
@@ -5829,11 +5879,11 @@ snapshots:
   '@msgpackr-extract/msgpackr-extract-win32-x64@3.0.3':
     optional: true
 
-  '@noble/curves@1.9.1':
+  '@noble/curves@1.8.1':
     dependencies:
-      '@noble/hashes': 1.8.0
+      '@noble/hashes': 1.7.1
 
-  '@noble/hashes@1.8.0': {}
+  '@noble/hashes@1.7.1': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -5864,6 +5914,8 @@ snapshots:
   '@pinia/testing@1.0.3(pinia@2.3.1(typescript@5.7.3)(vue@3.5.13(typescript@5.7.3)))':
     dependencies:
       pinia: 2.3.1(typescript@5.7.3)(vue@3.5.13(typescript@5.7.3))
+
+  '@pinojs/redact@0.4.0': {}
 
   '@pkgjs/parseargs@0.11.0':
     optional: true
@@ -6249,7 +6301,7 @@ snapshots:
       '@typescript-eslint/types': 8.22.0
       '@typescript-eslint/typescript-estree': 8.22.0(typescript@5.7.3)
       '@typescript-eslint/visitor-keys': 8.22.0
-      debug: 4.4.0
+      debug: 4.4.3
       eslint: 9.19.0
       typescript: 5.7.3
     transitivePeerDependencies:
@@ -6264,7 +6316,7 @@ snapshots:
     dependencies:
       '@typescript-eslint/typescript-estree': 8.22.0(typescript@5.7.3)
       '@typescript-eslint/utils': 8.22.0(eslint@9.19.0)(typescript@5.7.3)
-      debug: 4.4.0
+      debug: 4.4.3
       eslint: 9.19.0
       ts-api-utils: 2.0.0(typescript@5.7.3)
       typescript: 5.7.3
@@ -6277,7 +6329,7 @@ snapshots:
     dependencies:
       '@typescript-eslint/types': 8.22.0
       '@typescript-eslint/visitor-keys': 8.22.0
-      debug: 4.4.0
+      debug: 4.4.3
       fast-glob: 3.3.3
       is-glob: 4.0.3
       minimatch: 9.0.5
@@ -6588,7 +6640,7 @@ snapshots:
 
   agent-base@6.0.2:
     dependencies:
-      debug: 4.4.0
+      debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
 
@@ -6620,7 +6672,7 @@ snapshots:
 
   ansi-regex@5.0.1: {}
 
-  ansi-regex@6.1.0: {}
+  ansi-regex@6.2.2: {}
 
   ansi-styles@4.3.0:
     dependencies:
@@ -6628,7 +6680,7 @@ snapshots:
 
   ansi-styles@5.2.0: {}
 
-  ansi-styles@6.2.1: {}
+  ansi-styles@6.2.3: {}
 
   anymatch@3.1.3:
     dependencies:
@@ -6742,7 +6794,7 @@ snapshots:
   asn1js@3.0.6:
     dependencies:
       pvtsutils: 1.3.6
-      pvutils: 1.1.3
+      pvutils: 1.1.5
       tslib: 2.8.1
 
   assert-plus@1.0.0:
@@ -6765,9 +6817,9 @@ snapshots:
 
   atomic-sleep@1.0.0: {}
 
-  axios@1.13.5:
+  axios@1.13.5(debug@4.4.1):
     dependencies:
-      follow-redirects: 1.15.11
+      follow-redirects: 1.15.11(debug@4.4.1)
       form-data: 4.0.5
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
@@ -6851,6 +6903,8 @@ snapshots:
       bindings: 1.5.0
       prebuild-install: 7.1.3
 
+  bignumber.js@9.1.1: {}
+
   bignumber.js@9.1.2: {}
 
   binary-extensions@2.3.0: {}
@@ -6873,9 +6927,11 @@ snapshots:
 
   bluebird@3.7.2: {}
 
-  bn.js@4.12.1: {}
+  bn.js@4.12.3: {}
 
   bn.js@5.2.1: {}
+
+  bn.js@5.2.3: {}
 
   boolbase@1.0.0: {}
 
@@ -7243,6 +7299,10 @@ snapshots:
     dependencies:
       ms: 2.1.3
 
+  debug@4.4.1:
+    dependencies:
+      ms: 2.1.3
+
   debug@4.4.3:
     dependencies:
       ms: 2.1.3
@@ -7434,7 +7494,7 @@ snapshots:
 
   elliptic@6.6.1:
     dependencies:
-      bn.js: 4.12.1
+      bn.js: 4.12.3
       brorand: 1.1.0
       hash.js: 1.1.7
       hmac-drbg: 1.0.1
@@ -7721,8 +7781,6 @@ snapshots:
 
   fast-levenshtein@2.0.6: {}
 
-  fast-redact@3.5.0: {}
-
   fast-safe-stringify@2.1.1: {}
 
   fastq@1.18.0:
@@ -7790,7 +7848,9 @@ snapshots:
 
   flow-enums-runtime@0.0.6: {}
 
-  follow-redirects@1.15.11: {}
+  follow-redirects@1.15.11(debug@4.4.1):
+    optionalDependencies:
+      debug: 4.4.1
 
   foreground-child@3.3.0:
     dependencies:
@@ -8065,14 +8125,14 @@ snapshots:
     dependencies:
       '@tootallnate/once': 2.0.0
       agent-base: 6.0.2
-      debug: 4.4.0
+      debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
 
   http-proxy-agent@7.0.2:
     dependencies:
       agent-base: 7.1.3
-      debug: 4.4.0
+      debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
 
@@ -8084,14 +8144,14 @@ snapshots:
   https-proxy-agent@5.0.1:
     dependencies:
       agent-base: 6.0.2
-      debug: 4.4.0
+      debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
 
   https-proxy-agent@7.0.6:
     dependencies:
       agent-base: 7.1.3
-      debug: 4.4.0
+      debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
 
@@ -8334,6 +8394,8 @@ snapshots:
       supports-color: 8.1.1
 
   joycon@3.1.1: {}
+
+  js-base64@3.7.4: {}
 
   js-base64@3.7.7: {}
 
@@ -9157,14 +9219,14 @@ snapshots:
 
   pino-std-serializers@7.0.0: {}
 
-  pino@9.6.0:
+  pino@10.1.0:
     dependencies:
+      '@pinojs/redact': 0.4.0
       atomic-sleep: 1.0.0
-      fast-redact: 3.5.0
       on-exit-leak-free: 2.1.2
       pino-abstract-transport: 2.0.0
       pino-std-serializers: 7.0.0
-      process-warning: 4.0.1
+      process-warning: 5.0.0
       quick-format-unescaped: 4.0.4
       real-require: 0.2.0
       safe-stable-stringify: 2.5.0
@@ -9231,7 +9293,7 @@ snapshots:
 
   process-nextick-args@2.0.1: {}
 
-  process-warning@4.0.1: {}
+  process-warning@5.0.0: {}
 
   progress@2.0.3: {}
 
@@ -9263,6 +9325,21 @@ snapshots:
       '@types/node': 22.12.0
       long: 5.3.1
 
+  protobufjs@7.5.4:
+    dependencies:
+      '@protobufjs/aspromise': 1.1.2
+      '@protobufjs/base64': 1.1.2
+      '@protobufjs/codegen': 2.0.4
+      '@protobufjs/eventemitter': 1.1.0
+      '@protobufjs/fetch': 1.1.0
+      '@protobufjs/float': 1.0.2
+      '@protobufjs/inquire': 1.1.0
+      '@protobufjs/path': 1.1.2
+      '@protobufjs/pool': 1.1.0
+      '@protobufjs/utf8': 1.1.0
+      '@types/node': 22.12.0
+      long: 5.3.1
+
   proxy-from-env@1.1.0: {}
 
   pump@3.0.2:
@@ -9276,7 +9353,7 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  pvutils@1.1.3: {}
+  pvutils@1.1.5: {}
 
   queue-microtask@1.2.3: {}
 
@@ -9364,7 +9441,7 @@ snapshots:
 
   read-binary-file-arch@1.0.6:
     dependencies:
-      debug: 4.4.0
+      debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
 
@@ -9423,7 +9500,7 @@ snapshots:
 
   reusify@1.0.4: {}
 
-  rfc4648@1.5.4: {}
+  rfc4648@1.5.3: {}
 
   rfdc@1.4.1: {}
 
@@ -9617,7 +9694,7 @@ snapshots:
   socks-proxy-agent@7.0.0:
     dependencies:
       agent-base: 6.0.2
-      debug: 4.4.0
+      debug: 4.4.3
       socks: 2.8.3
     transitivePeerDependencies:
       - supports-color
@@ -9686,7 +9763,7 @@ snapshots:
     dependencies:
       eastasianwidth: 0.2.0
       emoji-regex: 9.2.2
-      strip-ansi: 7.1.0
+      strip-ansi: 7.1.2
 
   string_decoder@1.1.1:
     dependencies:
@@ -9700,9 +9777,9 @@ snapshots:
     dependencies:
       ansi-regex: 5.0.1
 
-  strip-ansi@7.1.0:
+  strip-ansi@7.1.2:
     dependencies:
-      ansi-regex: 6.1.0
+      ansi-regex: 6.2.2
 
   strip-final-newline@4.0.0: {}
 
@@ -10161,9 +10238,9 @@ snapshots:
 
   wrap-ansi@8.1.0:
     dependencies:
-      ansi-styles: 6.2.1
+      ansi-styles: 6.2.3
       string-width: 5.1.2
-      strip-ansi: 7.1.0
+      strip-ansi: 7.1.2
 
   wrappy@1.0.2: {}
 

@@ -53,7 +53,7 @@ const handleSign = async (personalPassword: string|null) => {
 
   signOnGoing.value = true;
   try {
-    const group = await getTransactionGroupById(serverUrl, props.groupId);
+    const group = await getTransactionGroupById(serverUrl, props.groupId, false);
     const transactions = group.groupItems.map(item => item.transaction);
     const signed = await signTransactions(
       transactions,
