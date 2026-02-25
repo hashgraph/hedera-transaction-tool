@@ -12,6 +12,7 @@ export class ElectronUpdaterService {
   private window: BrowserWindow | null = null;
   private currentUpdateUrl: string | null = null;
   private targetVersion: string | null = null;
+  private isInstalling = false;
 
   constructor(window: BrowserWindow) {
     this.window = window;
@@ -83,6 +84,12 @@ export class ElectronUpdaterService {
     updater.on('error', (error: Error) => {
       const categorized = categorizeUpdateError(error);
       this.logger.error(`Update error [${categorized.type}]: ${categorized.details}`);
+
+      if (this.isInstalling) {
+        this.isInstalling = false;
+        removeUpdateLock();
+        this.logger.info('Update lock removed after installation error');
+      }
 
       this.window?.webContents.send('update:error', {
         type: categorized.type,
@@ -173,42 +180,50 @@ export class ElectronUpdaterService {
   }
 
   quitAndInstall(isSilent: boolean = false, isForceRunAfter: boolean = true): void {
-      if (!this.updater) {
-        this.logger.error('Cannot quit and install: updater not initialized');
-        return;
-      }
+    if (this.isInstalling) {
+      this.logger.warn('quitAndInstall already in progress, ignoring duplicate call');
+      return;
+    }
 
-      if (this.targetVersion) {
-        try {
-          createUpdateLock(this.targetVersion);
-          this.logger.info(`Update lock created for version ${this.targetVersion}`);
-        } catch (error) {
-          this.logger.error(`Failed to create update lock: ${error}`);
-        }
-      }
+    if (!this.updater) {
+      this.logger.error('Cannot quit and install: updater not initialized');
+      return;
+    }
 
-      if (Notification.isSupported()) {
-        const notification = new Notification({
-          title: 'Hedera Transaction Tool',
-          body: 'Installing update. The app will restart automatically. This may take a few minutes.',
-        });
-        notification.show();
-      }
+    this.isInstalling = true;
 
-      this.logger.info('Quitting and installing update...');
-
+    if (this.targetVersion) {
       try {
-        this.updater.quitAndInstall(isSilent, isForceRunAfter);
+        createUpdateLock(this.targetVersion);
+        this.logger.info(`Update lock created for version ${this.targetVersion}`);
       } catch (error) {
-        removeUpdateLock();
-        const categorized = categorizeUpdateError(error as Error);
-        this.logger.error(`Failed to quit and install: ${categorized.details}`);
-        this.window?.webContents.send('update:error', {
-          type: categorized.type,
-          message: categorized.message,
-          details: categorized.details,
-        });
+        this.logger.error(`Failed to create update lock: ${error}`);
       }
+    }
+
+    if (Notification.isSupported()) {
+      const notification = new Notification({
+        title: 'Hedera Transaction Tool',
+        body: 'Installing update. The app will restart automatically. This may take a few minutes.',
+      });
+      notification.show();
+    }
+
+    this.logger.info('Quitting and installing update...');
+
+    try {
+      this.updater.quitAndInstall(isSilent, isForceRunAfter);
+    } catch (error) {
+      this.isInstalling = false;
+      removeUpdateLock();
+      const categorized = categorizeUpdateError(error as Error);
+      this.logger.error(`Failed to quit and install: ${categorized.details}`);
+      this.window?.webContents.send('update:error', {
+        type: categorized.type,
+        message: categorized.message,
+        details: categorized.details,
+      });
+    }
   }
 
   cancelUpdate(): void {
