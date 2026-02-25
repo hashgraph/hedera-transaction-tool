@@ -77,23 +77,15 @@ test.describe('Workflow tests', () => {
   });
 
   test.beforeEach(async () => {
-    // Wait for any ongoing operations to complete
-    await window.waitForLoadState('networkidle');
-
-    // Ensure menu button is visible before clicking
     await transactionPage.waitForElementToBeVisible(
       transactionPage.transactionsMenuButtonSelector,
-      5000,
     );
     await transactionPage.clickOnTransactionsMenuButton();
 
-    // Additional wait for CI environment stability
     if (process.env.CI) {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    // Wait for page to stabilize after navigation
-    await window.waitForLoadState('networkidle');
     await transactionPage.closeDraftModal();
   });
 

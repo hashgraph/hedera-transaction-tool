@@ -102,7 +102,6 @@ export async function resetDbState() {
     'TransactionDraft',
     'GroupItem',
     'TransactionGroup',
-    // Additional tables that were missing - Mnemonic is critical for full reset
     'Mnemonic',
     'Contact',
     'PublicKeyMapping',

@@ -128,7 +128,6 @@ test.describe('Organization Notification tests', () => {
   test('Verify notification element is shown next to the transaction', async () => {
     await organizationPage.ensureNotificationStateForUser(firstUser, secondUser, globalCredentials);
 
-    // Get the specific transaction ID that has the unread notification
     const notifiedTransactionId = await getNotifiedTransactionIdByEmail(secondUser.email);
     expect(notifiedTransactionId).not.toBeNull();
 
@@ -137,7 +136,6 @@ test.describe('Organization Notification tests', () => {
     // Wait for notifications to be fetched and linked to transaction rows
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Check the specific transaction row for the notification indicator
     const hasNotification = await organizationPage.hasNotificationForTransaction(notifiedTransactionId!);
     expect(hasNotification).toBe(true);
   });
