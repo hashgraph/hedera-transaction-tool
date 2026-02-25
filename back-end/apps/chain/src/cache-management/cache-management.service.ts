@@ -173,8 +173,8 @@ export class CacheManagementService {
           const wasRefreshed = await this.accountCacheService.refreshAccount(account);
           if (wasRefreshed) {
             txIds.forEach(txId => transactionsToUpdate.add(txId));
+            this.circuitBreaker.recordSuccess(network);
           }
-          this.circuitBreaker.recordSuccess(network);
         } catch (error: any) {
           const stillAvailable = this.circuitBreaker.recordFailure(network);
           const msg = error?.message ?? String(error);
