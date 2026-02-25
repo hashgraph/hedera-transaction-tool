@@ -43,6 +43,8 @@ pkg:
   # force the app to be installed in /Applications, not overwriting in any other location
   isRelocatable: false
   scripts: pkg-scripts
+  mustClose:
+    - com.hiero.transactiontool.app
 publish:
   provider: github
   # Explicitly set repository owner and name for GitHub Releases
