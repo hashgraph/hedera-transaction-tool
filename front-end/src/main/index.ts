@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { app, BrowserWindow, session } from 'electron';
+import { app, BrowserWindow, dialog, session } from 'electron';
 import { optimizer, is } from '@electron-toolkit/utils';
 
 import initDatabase from '@main/db/init';
@@ -14,6 +14,7 @@ import { deleteAllTempFolders } from '@main/services/localUser';
 
 import { restoreOrCreateWindow } from '@main/windows/mainWindow';
 import { initializeUpdaterService } from '@main/services/electronUpdater';
+import { getUpdateLock, removeUpdateLock, isUpdateLockStale } from '@main/services/updateLock';
 
 let mainWindow: BrowserWindow | null = null;
 let mainWindowInit: Promise<void> | null = null;
@@ -26,6 +27,25 @@ async function run() {
 
 function attachAppEvents() {
   app.on('ready', async () => {
+    const lock = getUpdateLock();
+    if (lock) {
+      if (app.getVersion() === lock.version) {
+        removeUpdateLock();
+      } else if (!isUpdateLockStale(lock)) {
+        dialog.showMessageBoxSync({
+          type: 'info',
+          title: 'Update in Progress',
+          message:
+            'Hedera Transaction Tool is currently being updated. Please wait for the update to complete. This may take a few minutes.',
+          buttons: ['OK'],
+        });
+        app.quit();
+        return;
+      } else {
+        removeUpdateLock();
+      }
+    }
+
     try {
       mainWindowInit = initMainWindow();
       await mainWindowInit;

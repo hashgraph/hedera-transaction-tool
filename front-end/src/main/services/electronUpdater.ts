@@ -1,15 +1,17 @@
-import { BrowserWindow } from 'electron';
+import { BrowserWindow, Notification } from 'electron';
 import { autoUpdater, type AppUpdater, type UpdateInfo, type ProgressInfo } from 'electron-updater';
 import { is } from '@electron-toolkit/utils';
 
 import { getAppUpdateLogger } from '@main/modules/logger';
 import { categorizeUpdateError } from '@main/utils/updateErrors';
+import { createUpdateLock, removeUpdateLock } from '@main/services/updateLock';
 
 export class ElectronUpdaterService {
   private updater: AppUpdater | null = null;
   private logger = getAppUpdateLogger();
   private window: BrowserWindow | null = null;
   private currentUpdateUrl: string | null = null;
+  private targetVersion: string | null = null;
 
   constructor(window: BrowserWindow) {
     this.window = window;
@@ -57,6 +59,7 @@ export class ElectronUpdaterService {
 
     updater.on('update-available', (info: UpdateInfo) => {
       this.logger.info(`Update available: ${info.version}`);
+      this.targetVersion = info.version;
       this.window?.webContents.send('update:update-available', info);
     });
 
@@ -175,8 +178,37 @@ export class ElectronUpdaterService {
       return;
     }
 
+    if (this.targetVersion) {
+      try {
+        createUpdateLock(this.targetVersion);
+        this.logger.info(`Update lock created for version ${this.targetVersion}`);
+      } catch (error) {
+        this.logger.error(`Failed to create update lock: ${error}`);
+      }
+    }
+
+    if (Notification.isSupported()) {
+      const notification = new Notification({
+        title: 'Hedera Transaction Tool',
+        body: 'Installing update. The app will restart automatically. This may take a few minutes.',
+      });
+      notification.show();
+    }
+
     this.logger.info('Quitting and installing update...');
-    this.updater.quitAndInstall(isSilent, isForceRunAfter);
+
+    try {
+      this.updater.quitAndInstall(isSilent, isForceRunAfter);
+    } catch (error) {
+      removeUpdateLock();
+      const categorized = categorizeUpdateError(error as Error);
+      this.logger.error(`Failed to quit and install: ${categorized.details}`);
+      this.window?.webContents.send('update:error', {
+        type: categorized.type,
+        message: categorized.message,
+        details: categorized.details,
+      });
+    }
   }
 
   cancelUpdate(): void {
