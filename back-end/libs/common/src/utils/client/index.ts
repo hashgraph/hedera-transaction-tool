@@ -1,4 +1,5 @@
 import {
+  DismissedNotificationReceiverDto,
   NatsPublisherService,
   NotificationEventDto,
   TRANSACTION_STATUS_UPDATE,
@@ -9,6 +10,7 @@ import {
   USER_INVITE,
   USER_PASSWORD_RESET,
   EmailDto,
+  DISMISSED_NOTIFICATIONS,
 } from '@app/common';
 
 //If it is to prevent an extra trip to the db, then need to decide if that is worth it or not
@@ -56,4 +58,11 @@ export const emitUserStatusUpdateNotifications = (
   dto: NotificationEventDto,
 ) => {
   publisher.publish(USER_REGISTERED, dto);
+};
+
+export const emitDismissedNotifications = (
+  publisher: NatsPublisherService,
+  dtos: DismissedNotificationReceiverDto[]
+) => {
+  publisher.publish(DISMISSED_NOTIFICATIONS, dtos);
 };

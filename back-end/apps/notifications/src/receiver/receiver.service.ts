@@ -8,6 +8,7 @@ import {
   TransactionSignatureService,
   NatsPublisherService,
   NotificationEventDto,
+  DismissedNotificationReceiverDto,
 } from '@app/common';
 import {
   Notification,
@@ -1239,5 +1240,18 @@ export class ReceiverService {
     // Send all notifications
     await this.sendInAppNotifications(inAppNotifications, inAppReceiverIds);
     await this.sendEmailNotifications(emailNotifications, emailReceiverIds);
+  }
+
+  async processDismissedNotifications(event: DismissedNotificationReceiverDto[]) {
+    const dismissedNotifications: { [userId: number]: number[] } = {};
+
+    for (const { id, userId } of event) {
+      if (!dismissedNotifications[userId]) {
+        dismissedNotifications[userId] = [];
+      }
+      dismissedNotifications[userId].push(id);
+    }
+
+    await this.sendDeletionNotifications(dismissedNotifications);
   }
 }

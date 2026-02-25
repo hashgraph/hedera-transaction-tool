@@ -5,14 +5,14 @@ import { DataSource, In, Repository } from 'typeorm';
 import { PublicKey, SignatureMap, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
-  isExpired,
-  PaginatedResourceDto,
-  Pagination,
-  ErrorCodes,
-  NatsPublisherService,
-  TransactionSignatureService,
+  emitDismissedNotifications,
   emitTransactionStatusUpdate,
   emitTransactionUpdate,
+  ErrorCodes,
+  isExpired,
+  NatsPublisherService,
+  PaginatedResourceDto,
+  Pagination,
   processTransactionStatus,
   FAN_OUT_DELETE_NOTIFICATIONS,
 } from '@app/common';
@@ -103,9 +103,6 @@ export class SignersService {
       withDeleted,
     });
   }
-
-
-
 
   /* Upload signatures for the given transaction ids */
   async uploadSignatureMaps(
@@ -287,6 +284,7 @@ export class SignersService {
   ) {
     // Prepare batched operations
     const transactionsToUpdate: { id: number; transactionBytes: Buffer }[] = [];
+    const notificationsToUpdate: { userId: number; transactionId: number }[] = [];
     const signersToInsert: { userId: number; transactionId: number; userKeyId: number }[] = [];
     const transactionsToProcess: { id: number; transaction: Transaction }[] = [];
 
@@ -305,6 +303,7 @@ export class SignersService {
       if (!isSameBytes) {
         transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
         transactionsToUpdate.push({ id, transactionBytes: transaction.transactionBytes });
+        notificationsToUpdate.push({ userId: user.id, transactionId: transaction.id });
       }
 
       // Collect inserts
@@ -326,6 +325,16 @@ export class SignersService {
         // Bulk update transactions
         if (transactionsToUpdate.length > 0) {
           await this.bulkUpdateTransactions(manager, transactionsToUpdate);
+        }
+
+        // Bulk update notifications
+        if (notificationsToUpdate.length > 0) {
+          const updatedNotificationReceivers = await this.bulkUpdateNotificationReceivers(manager, notificationsToUpdate);
+
+          emitDismissedNotifications(
+            this.notificationsPublisher,
+            updatedNotificationReceivers,
+          );
         }
 
         // Bulk insert signers
@@ -358,6 +367,37 @@ export class SignersService {
          "updatedAt" = NOW()
      WHERE id = ANY($${bytes.length + 1})`,
       [...bytes, ids]
+    );
+  }
+
+  private async bulkUpdateNotificationReceivers(
+    manager: any,
+    notificationsToUpdate: { userId: number; transactionId: number }[]
+  ) {
+    if (!notificationsToUpdate.length) return [];
+
+    // Separate arrays of userIds and transactionIds
+    const userIds = notificationsToUpdate.map(n => n.userId);
+    const txIds = notificationsToUpdate.map(n => n.transactionId);
+
+    // Use UNNEST to preserve 1:1 pairing between userIds and transactionIds
+    return await manager.query(
+      `
+      WITH input(user_id, tx_id) AS (
+        SELECT * FROM UNNEST($1::int[], $2::int[])
+      )
+      UPDATE notification_receiver nr
+      SET "isRead" = true,
+          "updatedAt" = NOW()
+      FROM notification n, input i
+      WHERE nr."notificationId" = n.id
+        AND n.type = 'TRANSACTION_INDICATOR_SIGN'
+        AND i.tx_id = n."entityId"
+        AND i.user_id = nr."userId"
+        AND nr."isRead" = false
+      RETURNING nr.id, nr."userId"
+      `,
+      [userIds, txIds]
     );
   }
 
