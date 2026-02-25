@@ -256,6 +256,10 @@ export class NodeCacheService {
         return { status: RefreshStatus.NOT_FOUND, data: null };
       }
 
+      if (!this.hasNodeDataChanged(nodeData, claimedNode)) {
+        return { status: RefreshStatus.DATA_UNCHANGED, data: nodeData };
+      }
+
       return { status: RefreshStatus.REFRESHED, data: nodeData };
     } catch (error) {
       // On error, clear the refresh token so another process can try
@@ -327,6 +331,32 @@ export class NodeCacheService {
         ? AccountId.fromString(cached.nodeAccountId)
         : null,
     } as NodeInfoParsed;
+  }
+
+  /**
+   * Compare fetched data against cached values to determine if anything meaningful changed.
+   * Returns true if data differs (or if there's no prior cached data), false if identical.
+   */
+  private hasNodeDataChanged(fetchedData: NodeInfoParsed, cached: CachedNode): boolean {
+    if (!this.hasCompleteData(cached)) {
+      return true;
+    }
+
+    const serializedKey = serializeKey(fetchedData.admin_key);
+    const keysEqual =
+      Buffer.isBuffer(serializedKey) && Buffer.isBuffer(cached.encodedKey)
+        ? Buffer.compare(serializedKey, cached.encodedKey) === 0
+        : serializedKey === cached.encodedKey;
+
+    if (!keysEqual) {
+      return true;
+    }
+
+    if (fetchedData.node_account_id?.toString() !== cached.nodeAccountId) {
+      return true;
+    }
+
+    return false;
   }
 
   /**

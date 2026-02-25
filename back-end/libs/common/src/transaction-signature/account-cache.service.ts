@@ -256,6 +256,10 @@ export class AccountCacheService {
         return { status: RefreshStatus.NOT_FOUND, data: null };
       }
 
+      if (!this.hasAccountDataChanged(accountData, claimedAccount)) {
+        return { status: RefreshStatus.DATA_UNCHANGED, data: accountData };
+      }
+
       return { status: RefreshStatus.REFRESHED, data: accountData };
     } catch (error) {
       // On error, clear the refresh token so another process can try
@@ -329,6 +333,32 @@ export class AccountCacheService {
       key: deserializeKey(cached.encodedKey),
       receiverSignatureRequired: cached.receiverSignatureRequired,
     } as AccountInfoParsed;
+  }
+
+  /**
+   * Compare fetched data against cached values to determine if anything meaningful changed.
+   * Returns true if data differs (or if there's no prior cached data), false if identical.
+   */
+  private hasAccountDataChanged(fetchedData: AccountInfoParsed, cached: CachedAccount): boolean {
+    if (!this.hasCompleteData(cached)) {
+      return true;
+    }
+
+    const serializedKey = serializeKey(fetchedData.key);
+    const keysEqual =
+      Buffer.isBuffer(serializedKey) && Buffer.isBuffer(cached.encodedKey)
+        ? Buffer.compare(serializedKey, cached.encodedKey) === 0
+        : serializedKey === cached.encodedKey;
+
+    if (!keysEqual) {
+      return true;
+    }
+
+    if (fetchedData.receiverSignatureRequired !== cached.receiverSignatureRequired) {
+      return true;
+    }
+
+    return false;
   }
 
   /**
