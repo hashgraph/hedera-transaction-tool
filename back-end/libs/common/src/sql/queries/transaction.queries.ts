@@ -37,6 +37,15 @@ interface WhereClauseResult {
   values: any[];
 }
 
+const TERMINAL_STATUSES = [
+  TransactionStatus.CANCELED,
+  TransactionStatus.REJECTED,
+  TransactionStatus.EXECUTED,
+  TransactionStatus.FAILED,
+  TransactionStatus.EXPIRED,
+  TransactionStatus.ARCHIVED,
+];
+
 function buildFilterConditions(
   sql: SqlBuilderService,
   filters: TransactionFilters,
@@ -202,9 +211,25 @@ function buildEligibilityConditions(
   return eligibilityConditions;
 }
 
+/**
+ * Builds a parameterized SQL WHERE clause for filtering and authorizing transaction queries.
+ *
+ * The resulting clause is structured as:
+ * `(filter conditions) AND ((eligibility conditions) OR (terminal status override))`
+ *
+ * Terminal statuses (CANCELED, REJECTED, EXECUTED, FAILED, EXPIRED, ARCHIVED) always
+ * pass the eligibility check regardless of user or role conditions.
+ *
+ * @param sql - The SQL builder service used to resolve table and column names.
+ * @param filters - Optional filters to apply, such as status, type, and mirror network.
+ * @param user - Optional user to scope results to. If provided, `roles` must also be supplied.
+ * @param roles - Optional roles defining how the user may be eligible to see a transaction
+ *                (e.g. as signer, creator, observer, or approver).
+ * @returns A `WhereClauseResult` containing the SQL clause string and its corresponding parameter values.
+ */
 function buildWhereClause(
   sql: SqlBuilderService,
-  filters: TransactionFilters,
+  filters?: TransactionFilters,
   user?: User,
   roles?: Roles
 ): WhereClauseResult {
@@ -220,23 +245,30 @@ function buildWhereClause(
   };
 
   // Build filter conditions
-  const filterConditions = buildFilterConditions(sql, filters, addParam);
-  conditions.push(...filterConditions);
+  if (filters) {
+    const filterConditions = buildFilterConditions(sql, filters, addParam);
+    conditions.push(...filterConditions);
+  }
+
+  const eligibilityConditions: string[] = [];
 
   if (user && roles) {
     // Build eligibility conditions
-    const eligibilityConditions = buildEligibilityConditions(
+    const userEligibility = buildEligibilityConditions(
       sql,
       user,
       roles,
       addParam,
-      filters.onlyUnsigned ?? false
+      filters?.onlyUnsigned ?? false
     );
 
-    if (eligibilityConditions.length > 0) {
-      conditions.push(`(${eligibilityConditions.join(' OR ')})`);
-    }
+    eligibilityConditions.push(...userEligibility);
   }
+
+  const statusParam = addParam(TERMINAL_STATUSES);
+  eligibilityConditions.push(`t.${sql.col(Transaction, 'status')} = ANY(${statusParam})`);
+
+  conditions.push(`(${eligibilityConditions.join(' OR ')})`);
 
   return {
     clause: conditions.join(' AND '),
@@ -347,4 +379,56 @@ export function getTransactionNodesQuery(
   `;
 
   return { text, values: whereResult.values };
+}
+
+export function getTransactionGroupItemsQuery(
+  sql: SqlBuilderService,
+  groupId: number,
+  user?: User,
+): SqlQuery {
+  const whereResult = buildWhereClause(sql, undefined, user, { signer: true, creator: true, observer: true, approver: true });
+
+  const values = [...whereResult.values];
+  let paramIndex = values.length + 1;
+
+  const groupIdParam = `$${paramIndex++}`;
+  values.push(groupId);
+
+  const text = `
+    SELECT
+      gi.${sql.col(TransactionGroupItem, 'seq')} AS gi_seq,
+      t.${sql.col(Transaction, 'id')} AS tx_id,
+      t.${sql.col(Transaction, 'name')} AS tx_name,
+      t.${sql.col(Transaction, 'description')} AS tx_description,
+      t.${sql.col(Transaction, 'transactionId')} AS sdk_transaction_id,
+      t.${sql.col(Transaction, 'transactionHash')} AS tx_transaction_hash,
+      t.${sql.col(Transaction, 'transactionBytes')} AS tx_transaction_bytes,
+      t.${sql.col(Transaction, 'unsignedTransactionBytes')} AS tx_unsigned_transaction_bytes,
+      t.${sql.col(Transaction, 'creatorKeyId')} AS tx_creator_key_id,
+      t.${sql.col(Transaction, 'signature')} AS tx_signature,
+      t.${sql.col(Transaction, 'mirrorNetwork')} AS tx_mirror_network,
+      t.${sql.col(Transaction, 'cutoffAt')} AS tx_cutoff_at,
+      t.${sql.col(Transaction, 'createdAt')} AS tx_created_at,
+      t.${sql.col(Transaction, 'validStart')} AS tx_valid_start,
+      t.${sql.col(Transaction, 'updatedAt')} AS tx_updated_at,
+      t.${sql.col(Transaction, 'executedAt')} AS tx_executed_at,
+      t.${sql.col(Transaction, 'status')} AS tx_status,
+      t.${sql.col(Transaction, 'statusCode')} AS tx_status_code,
+      t.${sql.col(Transaction, 'type')} AS tx_type,
+      t.${sql.col(Transaction, 'isManual')} AS tx_is_manual,
+      ck.${sql.col(UserKey, 'userId')} AS tx_creator_key_user_id,
+      c.${sql.col(User, 'email')} AS tx_creator_email
+    FROM ${sql.table(Transaction)} t
+    INNER JOIN ${sql.table(TransactionGroupItem)} gi
+      ON gi.${sql.col(TransactionGroupItem, 'transactionId')} = t.${sql.col(Transaction, 'id')}
+      AND gi.${sql.col(TransactionGroupItem, 'groupId')} = ${groupIdParam}
+    LEFT JOIN ${sql.table(UserKey)} ck
+      ON ck.${sql.col(UserKey, 'id')} = t.${sql.col(Transaction, 'creatorKeyId')}
+    LEFT JOIN ${sql.table(User)} c
+      ON c.${sql.col(User, 'id')} = ck.${sql.col(UserKey, 'userId')}
+    WHERE ${whereResult.clause}
+    ORDER BY gi.${sql.col(TransactionGroupItem, 'seq')}
+  `;
+
+  return { text, values };
 }

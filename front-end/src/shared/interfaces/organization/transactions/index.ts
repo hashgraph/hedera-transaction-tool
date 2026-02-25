@@ -72,7 +72,7 @@ export interface ITransaction {
   creatorKeyId: number;
   creatorId: number;
   creatorEmail: string;
-  groupItem: IGroupItem;
+  groupItem?: IGroupItem;
 }
 
 export interface ITransactionFull extends ITransaction {
@@ -86,7 +86,7 @@ export interface IGroupItem {
   transactionId: number;
   groupId: number;
   transaction: ITransaction;
-  group: IGroup;
+  group?: IGroup;
 }
 
 export interface IGroup {

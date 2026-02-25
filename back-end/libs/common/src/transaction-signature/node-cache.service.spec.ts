@@ -25,7 +25,7 @@ import { mockDeep } from 'jest-mock-extended';
 
 jest.mock('@app/common', () => ({
   ...jest.requireActual('@app/common'),
-  serializeKey: jest.fn((key) => `serialized-${key}`),
+  serializeKey: jest.fn((key) => Buffer.from(`serialized-${key}`)),
   deserializeKey: jest.fn((encoded) => `deserialized-${encoded}`),
   flattenKeyList: jest.fn((key) => [key]),
 }));
@@ -177,6 +177,34 @@ describe('NodeCacheService', () => {
       mirrorNodeClient.fetchNodeInfo.mockResolvedValue({
         data: null,
         etag: null,
+      });
+      cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+
+      const result = await service.refreshNode(cachedNode);
+
+      expect(result).toBe(false);
+    });
+
+    it('should return false when HTTP 200 but data is identical to cached', async () => {
+      const serializedMockKey = Buffer.from(`serialized-${mockKey}`);
+      const cachedNode = {
+        id: 1,
+        nodeId: 1,
+        mirrorNetwork: 'testnet',
+        refreshToken: 'token-123',
+        encodedKey: serializedMockKey,
+        nodeAccountId: '0.0.3',
+      } as unknown as CachedNode;
+
+      const nodeInfo: Partial<NodeInfoParsed> = {
+        admin_key: mockKey,
+        node_account_id: AccountId.fromString('0.0.3'),
+      };
+
+      cacheHelper.tryClaimRefresh.mockResolvedValue({ data: cachedNode, claimed: true });
+      mirrorNodeClient.fetchNodeInfo.mockResolvedValue({
+        data: nodeInfo as NodeInfoParsed,
+        etag: 'new-etag',
       });
       cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
 
@@ -484,6 +512,117 @@ describe('NodeCacheService', () => {
         'cachedNode'
       );
     });
+
+    it('should return DATA_UNCHANGED when fetched data matches cached data', async () => {
+      const serializedMockKey = Buffer.from(`serialized-${mockKey}`);
+      const claimedNode = {
+        id: 1,
+        nodeId: 1,
+        mirrorNetwork: 'testnet',
+        refreshToken: 'token-123',
+        encodedKey: serializedMockKey,
+        nodeAccountId: '0.0.3',
+      } as unknown as CachedNode;
+
+      const nodeInfo: Partial<NodeInfoParsed> = {
+        admin_key: mockKey,
+        node_account_id: AccountId.fromString('0.0.3'),
+      };
+
+      mirrorNodeClient.fetchNodeInfo.mockResolvedValue({
+        data: nodeInfo as NodeInfoParsed,
+        etag: 'new-etag',
+      });
+      cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+
+      const result = await (service as any).performRefreshForClaimedNode(claimedNode);
+
+      expect(result.status).toBe(RefreshStatus.DATA_UNCHANGED);
+      expect(result.data).toEqual({
+        admin_key: mockKey,
+        node_account_id: AccountId.fromString('0.0.3'),
+      });
+    });
+
+    it('should return REFRESHED when admin key differs', async () => {
+      const otherKey = PrivateKey.generateED25519().publicKey;
+      const claimedNode = {
+        id: 1,
+        nodeId: 1,
+        mirrorNetwork: 'testnet',
+        refreshToken: 'token-123',
+        encodedKey: Buffer.from(`serialized-${otherKey}`),
+        nodeAccountId: '0.0.3',
+      } as unknown as CachedNode;
+
+      const nodeInfo: Partial<NodeInfoParsed> = {
+        admin_key: mockKey,
+        node_account_id: AccountId.fromString('0.0.3'),
+      };
+
+      mirrorNodeClient.fetchNodeInfo.mockResolvedValue({
+        data: nodeInfo as NodeInfoParsed,
+        etag: 'new-etag',
+      });
+      cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+
+      const result = await (service as any).performRefreshForClaimedNode(claimedNode);
+
+      expect(result.status).toBe(RefreshStatus.REFRESHED);
+    });
+
+    it('should return REFRESHED when nodeAccountId differs', async () => {
+      const serializedMockKey = Buffer.from(`serialized-${mockKey}`);
+      const claimedNode = {
+        id: 1,
+        nodeId: 1,
+        mirrorNetwork: 'testnet',
+        refreshToken: 'token-123',
+        encodedKey: serializedMockKey,
+        nodeAccountId: '0.0.4',
+      } as unknown as CachedNode;
+
+      const nodeInfo: Partial<NodeInfoParsed> = {
+        admin_key: mockKey,
+        node_account_id: AccountId.fromString('0.0.3'),
+      };
+
+      mirrorNodeClient.fetchNodeInfo.mockResolvedValue({
+        data: nodeInfo as NodeInfoParsed,
+        etag: 'new-etag',
+      });
+      cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+
+      const result = await (service as any).performRefreshForClaimedNode(claimedNode);
+
+      expect(result.status).toBe(RefreshStatus.REFRESHED);
+    });
+
+    it('should return REFRESHED when cache has no prior data (first fetch)', async () => {
+      const claimedNode = {
+        id: 1,
+        nodeId: 1,
+        mirrorNetwork: 'testnet',
+        refreshToken: 'token-123',
+        encodedKey: null,
+        nodeAccountId: null,
+      } as CachedNode;
+
+      const nodeInfo: Partial<NodeInfoParsed> = {
+        admin_key: mockKey,
+        node_account_id: AccountId.fromString('0.0.3'),
+      };
+
+      mirrorNodeClient.fetchNodeInfo.mockResolvedValue({
+        data: nodeInfo as NodeInfoParsed,
+        etag: 'etag-123',
+      });
+      cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+
+      const result = await (service as any).performRefreshForClaimedNode(claimedNode);
+
+      expect(result.status).toBe(RefreshStatus.REFRESHED);
+    });
   });
 
   describe('saveNodeData', () => {
@@ -632,6 +771,67 @@ describe('NodeCacheService', () => {
         node_account_id: AccountId.fromString('0.0.3'),
       });
       expect(deserializeKey).toHaveBeenCalledWith(Buffer.from('encoded-key'));
+    });
+  });
+
+  describe('hasNodeDataChanged', () => {
+    it('should return false when fetched data matches cached data', () => {
+      const serializedMockKey = Buffer.from(`serialized-${mockKey}`);
+      const cached = {
+        encodedKey: serializedMockKey,
+        nodeAccountId: '0.0.3',
+      } as unknown as CachedNode;
+
+      const fetchedData = {
+        admin_key: mockKey,
+        node_account_id: AccountId.fromString('0.0.3'),
+      } as unknown as NodeInfoParsed;
+
+      expect((service as any).hasNodeDataChanged(fetchedData, cached)).toBe(false);
+    });
+
+    it('should return true when admin key differs', () => {
+      const otherKey = PrivateKey.generateED25519().publicKey;
+      const cached = {
+        encodedKey: Buffer.from(`serialized-${otherKey}`),
+        nodeAccountId: '0.0.3',
+      } as unknown as CachedNode;
+
+      const fetchedData = {
+        admin_key: mockKey,
+        node_account_id: AccountId.fromString('0.0.3'),
+      } as unknown as NodeInfoParsed;
+
+      expect((service as any).hasNodeDataChanged(fetchedData, cached)).toBe(true);
+    });
+
+    it('should return true when nodeAccountId differs', () => {
+      const serializedMockKey = Buffer.from(`serialized-${mockKey}`);
+      const cached = {
+        encodedKey: serializedMockKey,
+        nodeAccountId: '0.0.4',
+      } as unknown as CachedNode;
+
+      const fetchedData = {
+        admin_key: mockKey,
+        node_account_id: AccountId.fromString('0.0.3'),
+      } as unknown as NodeInfoParsed;
+
+      expect((service as any).hasNodeDataChanged(fetchedData, cached)).toBe(true);
+    });
+
+    it('should return true when cache has no prior data', () => {
+      const cached = {
+        encodedKey: null,
+        nodeAccountId: null,
+      } as unknown as CachedNode;
+
+      const fetchedData = {
+        admin_key: mockKey,
+        node_account_id: AccountId.fromString('0.0.3'),
+      } as unknown as NodeInfoParsed;
+
+      expect((service as any).hasNodeDataChanged(fetchedData, cached)).toBe(true);
     });
   });
 });

@@ -5,7 +5,6 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { computedAsync } from '@vueuse/core';
 
 import useTransactionAudit from '@renderer/composables/useTransactionAudit.ts';
-import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import useFilterNotifications from '@renderer/composables/useFilterNotifications.ts';
 import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import { FreezeTransaction } from '@hashgraph/sdk';
@@ -41,7 +40,6 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
-const notifications = useNotificationsStore();
 
 /* State */
 const descriptionRef = ref<HTMLElement | null>(null);
@@ -186,27 +184,6 @@ const isDangerStatus = computed(() => {
 });
 
 /* Handlers */
-const handleTransactionSigned = async (payload: { transactionId: number; signed: boolean }) => {
-  if (payload.signed) {
-    if (notificationMonitor.filteredNotificationIds.value.length > 0) {
-      await notifications.markAsReadIds(notificationMonitor.filteredNotificationIds.value);
-    }
-  }
-
-  // then pass only the id up (or the whole payload if you prefer)
-  emit('transactionSigned', payload.transactionId);
-};
-
-const handleTransactionGroupSigned = async (payload: { groupId: number; signed: boolean }) => {
-  if (payload.signed) {
-    if (notificationMonitor.filteredNotificationIds.value.length > 0) {
-      await notifications.markAsReadIds(notificationMonitor.filteredNotificationIds.value);
-    }
-  }
-
-  emit('transactionGroupSigned', payload.groupId);
-};
-
 const handleDetails = async () => {
   emit('routeToDetails', props.node);
 };
@@ -341,13 +318,13 @@ watch(
             v-if="props.node.transactionId"
             :data-testid="`button-transaction-node-sign-${index}`"
             :transactionId="props.node.transactionId"
-            @transactionSigned="handleTransactionSigned"
+            @transactionSigned="(payload) => emit('transactionSigned', payload.transactionId)"
           />
           <SignGroupButton
             v-if="props.node.groupId"
             :data-testid="`button-transaction-node-sign-${index}`"
             :group-id="props.node.groupId"
-            @transactionGroupSigned="handleTransactionGroupSigned"
+            @transactionGroupSigned="(payload) => emit('transactionGroupSigned', payload.groupId)"
           />
         </template>
         <AppButton
