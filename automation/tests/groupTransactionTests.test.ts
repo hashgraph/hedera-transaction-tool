@@ -40,9 +40,6 @@ test.describe('Group transaction tests', () => {
   });
 
   test.beforeEach(async () => {
-    await transactionPage.waitForElementToBeVisible(
-      transactionPage.transactionsMenuButtonSelector,
-    );
     await transactionPage.clickOnTransactionsMenuButton();
 
     if (process.env.CI) {
