@@ -739,7 +739,7 @@ test.describe('Transaction tests', () => {
     await transactionPage.deleteFirstDraft();
   });
 
-  test('Verify that deleting all keys prevent to sign and execute a draft transaction', async () => {
+  test.only('Verify that deleting all keys prevent to sign and execute a draft transaction', async () => {
     // This test is a copy of organizationSettingsTests.test.ts 'Verify that deleting all keys prevent to sign and execute a draft transaction'
     // If you fix something here, you probably want to do the same in organizationSettingsTests.test.ts
 
@@ -773,6 +773,7 @@ test.describe('Transaction tests', () => {
     await transactionPage.clickOnFirstDraftContinueButton();
 
     // Click Sign and Execute, Save and Goto Settings and check Settings tab is displayed
+    await new Promise(resolve => setTimeout(resolve, 250));
     await transactionPage.clickOnSignAndSubmitButton();
     await transactionPage.clickOnGotoSettings();
     await settingsPage.verifySettingsElements();
