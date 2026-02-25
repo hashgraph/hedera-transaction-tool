@@ -173,42 +173,42 @@ export class ElectronUpdaterService {
   }
 
   quitAndInstall(isSilent: boolean = false, isForceRunAfter: boolean = true): void {
-    if (!this.updater) {
-      this.logger.error('Cannot quit and install: updater not initialized');
-      return;
-    }
-
-    if (this.targetVersion) {
-      try {
-        createUpdateLock(this.targetVersion);
-        this.logger.info(`Update lock created for version ${this.targetVersion}`);
-      } catch (error) {
-        this.logger.error(`Failed to create update lock: ${error}`);
+      if (!this.updater) {
+        this.logger.error('Cannot quit and install: updater not initialized');
+        return;
       }
-    }
 
-    if (Notification.isSupported()) {
-      const notification = new Notification({
-        title: 'Hedera Transaction Tool',
-        body: 'Installing update. The app will restart automatically. This may take a few minutes.',
-      });
-      notification.show();
-    }
+      if (this.targetVersion) {
+        try {
+          createUpdateLock(this.targetVersion);
+          this.logger.info(`Update lock created for version ${this.targetVersion}`);
+        } catch (error) {
+          this.logger.error(`Failed to create update lock: ${error}`);
+        }
+      }
 
-    this.logger.info('Quitting and installing update...');
+      if (Notification.isSupported()) {
+        const notification = new Notification({
+          title: 'Hedera Transaction Tool',
+          body: 'Installing update. The app will restart automatically. This may take a few minutes.',
+        });
+        notification.show();
+      }
 
-    try {
-      this.updater.quitAndInstall(isSilent, isForceRunAfter);
-    } catch (error) {
-      removeUpdateLock();
-      const categorized = categorizeUpdateError(error as Error);
-      this.logger.error(`Failed to quit and install: ${categorized.details}`);
-      this.window?.webContents.send('update:error', {
-        type: categorized.type,
-        message: categorized.message,
-        details: categorized.details,
-      });
-    }
+      this.logger.info('Quitting and installing update...');
+
+      try {
+        this.updater.quitAndInstall(isSilent, isForceRunAfter);
+      } catch (error) {
+        removeUpdateLock();
+        const categorized = categorizeUpdateError(error as Error);
+        this.logger.error(`Failed to quit and install: ${categorized.details}`);
+        this.window?.webContents.send('update:error', {
+          type: categorized.type,
+          message: categorized.message,
+          details: categorized.details,
+        });
+      }
   }
 
   cancelUpdate(): void {
