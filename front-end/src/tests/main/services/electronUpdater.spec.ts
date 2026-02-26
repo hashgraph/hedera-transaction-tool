@@ -454,6 +454,50 @@ describe('ElectronUpdaterService', () => {
         }),
       );
     });
+
+    it('should remove lock and reset isInstalling when error event fires during installation', async () => {
+      mockQuitAndInstall.mockImplementation(() => {});
+      service.initialize('https://releases.example.com');
+      await service.checkForUpdatesAndDownload();
+
+      // Trigger update-available to set targetVersion
+      const updateAvailableCallback = mockOn.mock.calls.find(
+        ([name]) => name === 'update-available',
+      );
+      expect(updateAvailableCallback).toBeDefined();
+      updateAvailableCallback![1]({ version: '2.0.0' });
+
+      // Call quitAndInstall to set isInstalling = true
+      service.quitAndInstall();
+      expect(mockQuitAndInstall).toHaveBeenCalledTimes(1);
+      mockRemoveUpdateLock.mockClear();
+
+      // Get the error event callback and invoke it
+      const errorCallback = mockOn.mock.calls.find(([name]) => name === 'error');
+      expect(errorCallback).toBeDefined();
+      errorCallback![1](new Error('Installation failed unexpectedly'));
+
+      // Should have removed the update lock
+      expect(mockRemoveUpdateLock).toHaveBeenCalled();
+
+      // isInstalling should be reset, so a subsequent quitAndInstall should go through
+      mockQuitAndInstall.mockClear();
+      service.quitAndInstall();
+      expect(mockQuitAndInstall).toHaveBeenCalledTimes(1);
+    });
+
+    it('should ignore duplicate quitAndInstall call when already installing', () => {
+      mockQuitAndInstall.mockImplementation(() => {});
+      service.initialize('https://releases.example.com');
+
+      // First call sets isInstalling = true
+      service.quitAndInstall();
+      expect(mockQuitAndInstall).toHaveBeenCalledTimes(1);
+
+      // Second call should be ignored
+      service.quitAndInstall();
+      expect(mockQuitAndInstall).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('cancelUpdate', () => {
