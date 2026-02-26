@@ -134,7 +134,8 @@ export class ReceiverService {
     approvers: TransactionApprover[],
     keyCache: Map<string, UserKey>,
   ) {
-    const creatorId = transaction.creatorKey.userId;
+    // If the creatorKey is deleted, it will not be included
+    const creatorId = transaction.creatorKey?.userId;
     const signerUserIds = transaction.signers.map(s => s.userId);
     const observerUserIds = transaction.observers.map(o => o.userId);
     const requiredUserIds = await this.getUsersIdsRequiredToSign(entityManager, transaction, keyCache);
@@ -165,7 +166,7 @@ export class ReceiverService {
     ];
 
     return {
-      creatorId,
+      ...(creatorId != null ? { creatorId } : {}),
       signerUserIds,
       observerUserIds,
       approversUserIds,
