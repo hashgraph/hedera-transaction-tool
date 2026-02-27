@@ -2,9 +2,30 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserWindow } from 'electron';
 import { mockDeep } from 'vitest-mock-extended';
 
+const { mockCreateUpdateLock, mockRemoveUpdateLock, mockNotificationShow, mockNotificationIsSupported } = vi.hoisted(
+  () => ({
+    mockCreateUpdateLock: vi.fn(),
+    mockRemoveUpdateLock: vi.fn(),
+    mockNotificationShow: vi.fn(),
+    mockNotificationIsSupported: vi.fn().mockReturnValue(true),
+  }),
+);
+
 // Mock electron
 vi.mock('electron', () => ({
   BrowserWindow: vi.fn(),
+  Notification: Object.assign(
+    vi.fn().mockImplementation(() => ({
+      show: mockNotificationShow,
+    })),
+    { isSupported: mockNotificationIsSupported },
+  ),
+}));
+
+// Mock updateLock
+vi.mock('@main/services/updateLock', () => ({
+  createUpdateLock: mockCreateUpdateLock,
+  removeUpdateLock: mockRemoveUpdateLock,
 }));
 
 // Create mock functions using vi.hoisted() so they're available in the mock factory
@@ -97,6 +118,10 @@ describe('ElectronUpdaterService', () => {
     mockDownloadUpdate.mockClear();
     mockQuitAndInstall.mockClear();
     mockSetFeedURL.mockClear();
+    mockCreateUpdateLock.mockClear();
+    mockRemoveUpdateLock.mockClear();
+    mockNotificationShow.mockClear();
+    mockNotificationIsSupported.mockClear().mockReturnValue(true);
 
     // Reset mock implementations
     mockCheckForUpdates.mockResolvedValue(undefined);
@@ -338,6 +363,141 @@ describe('ElectronUpdaterService', () => {
 
       expect(mockQuitAndInstall).toHaveBeenCalledWith(true, false);
     });
+
+    it('should create update lock when target version is known', async () => {
+      service.initialize('https://releases.example.com');
+
+      // Simulate update-available to set targetVersion
+      await service.checkForUpdatesAndDownload();
+      const updateAvailableCallback = mockOn.mock.calls.find(
+        ([name]) => name === 'update-available',
+      );
+      expect(updateAvailableCallback).toBeDefined();
+      updateAvailableCallback![1]({ version: '2.0.0' });
+
+      service.quitAndInstall();
+
+      expect(mockCreateUpdateLock).toHaveBeenCalledWith('2.0.0');
+    });
+
+    it('should not create update lock when target version is unknown', () => {
+      service.initialize('https://releases.example.com');
+
+      service.quitAndInstall();
+
+      expect(mockCreateUpdateLock).not.toHaveBeenCalled();
+    });
+
+    it('should fire OS notification when supported', async () => {
+      service.initialize('https://releases.example.com');
+
+      await service.checkForUpdatesAndDownload();
+      const updateAvailableCallback = mockOn.mock.calls.find(
+        ([name]) => name === 'update-available',
+      );
+      updateAvailableCallback![1]({ version: '2.0.0' });
+
+      service.quitAndInstall();
+
+      expect(mockNotificationShow).toHaveBeenCalled();
+    });
+
+    it('should not fire notification when not supported', () => {
+      mockNotificationIsSupported.mockReturnValue(false);
+      service.initialize('https://releases.example.com');
+
+      service.quitAndInstall();
+
+      expect(mockNotificationShow).not.toHaveBeenCalled();
+    });
+
+    it('should still call quitAndInstall even if lock creation fails', async () => {
+      service.initialize('https://releases.example.com');
+
+      await service.checkForUpdatesAndDownload();
+      const updateAvailableCallback = mockOn.mock.calls.find(
+        ([name]) => name === 'update-available',
+      );
+      updateAvailableCallback![1]({ version: '2.0.0' });
+
+      mockCreateUpdateLock.mockImplementation(() => {
+        throw new Error('disk full');
+      });
+
+      service.quitAndInstall();
+
+      expect(mockQuitAndInstall).toHaveBeenCalledWith(false, true);
+    });
+
+    it('should remove lock and send error when quitAndInstall throws', async () => {
+      service.initialize('https://releases.example.com');
+
+      await service.checkForUpdatesAndDownload();
+      const updateAvailableCallback = mockOn.mock.calls.find(
+        ([name]) => name === 'update-available',
+      );
+      updateAvailableCallback![1]({ version: '2.0.0' });
+
+      mockQuitAndInstall.mockImplementation(() => {
+        throw new Error('NSIS installer corrupted');
+      });
+
+      service.quitAndInstall();
+
+      expect(mockRemoveUpdateLock).toHaveBeenCalled();
+      expect(mockWindow.webContents.send).toHaveBeenCalledWith(
+        'update:error',
+        expect.objectContaining({
+          type: 'generic',
+          message: expect.any(String),
+          details: expect.stringContaining('NSIS installer corrupted'),
+        }),
+      );
+    });
+
+    it('should remove lock and reset isInstalling when error event fires during installation', async () => {
+      mockQuitAndInstall.mockImplementation(() => {});
+      service.initialize('https://releases.example.com');
+      await service.checkForUpdatesAndDownload();
+
+      // Trigger update-available to set targetVersion
+      const updateAvailableCallback = mockOn.mock.calls.find(
+        ([name]) => name === 'update-available',
+      );
+      expect(updateAvailableCallback).toBeDefined();
+      updateAvailableCallback![1]({ version: '2.0.0' });
+
+      // Call quitAndInstall to set isInstalling = true
+      service.quitAndInstall();
+      expect(mockQuitAndInstall).toHaveBeenCalledTimes(1);
+      mockRemoveUpdateLock.mockClear();
+
+      // Get the error event callback and invoke it
+      const errorCallback = mockOn.mock.calls.find(([name]) => name === 'error');
+      expect(errorCallback).toBeDefined();
+      errorCallback![1](new Error('Installation failed unexpectedly'));
+
+      // Should have removed the update lock
+      expect(mockRemoveUpdateLock).toHaveBeenCalled();
+
+      // isInstalling should be reset, so a subsequent quitAndInstall should go through
+      mockQuitAndInstall.mockClear();
+      service.quitAndInstall();
+      expect(mockQuitAndInstall).toHaveBeenCalledTimes(1);
+    });
+
+    it('should ignore duplicate quitAndInstall call when already installing', () => {
+      mockQuitAndInstall.mockImplementation(() => {});
+      service.initialize('https://releases.example.com');
+
+      // First call sets isInstalling = true
+      service.quitAndInstall();
+      expect(mockQuitAndInstall).toHaveBeenCalledTimes(1);
+
+      // Second call should be ignored
+      service.quitAndInstall();
+      expect(mockQuitAndInstall).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('cancelUpdate', () => {
@@ -552,6 +712,10 @@ describe('ElectronUpdaterService - edge cases', () => {
     mockDownloadUpdate.mockClear();
     mockQuitAndInstall.mockClear();
     mockSetFeedURL.mockClear();
+    mockCreateUpdateLock.mockClear();
+    mockRemoveUpdateLock.mockClear();
+    mockNotificationShow.mockClear();
+    mockNotificationIsSupported.mockClear().mockReturnValue(true);
   });
 
   describe('removeEventListeners when updater is null', () => {
