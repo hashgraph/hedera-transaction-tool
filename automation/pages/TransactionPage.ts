@@ -39,7 +39,6 @@ export class TransactionPage extends BasePage {
 
   //Inputs
   payerAccountInputSelector = 'input-payer-account';
-  payerDropdownSelector = 'dropdown-payer'; // Used for queries (FileContentsQuery, etc.)
   initialBalanceInputSelector = 'input-initial-balance-amount';
   maxAutoAssociationsInputSelector = 'input-max-auto-token-associations';
   accountMemoInputSelector = 'input-account-memo';
@@ -499,9 +498,11 @@ export class TransactionPage extends BasePage {
     await this.clickOnSignAndSubmitButton();
     await this.clickSignTransactionButton();
     // Wait for Confirm Transaction modal to close before looking for execution modal
+    // Note: uses waitForSelector instead of getByTestId because AppModal.vue hardcodes
+    // data-testid="modal-confirm-transaction" on ALL modals, causing strict mode violations
     await this.window.waitForSelector(
       `[data-testid="${this.confirmTransactionModalSelector}"]`,
-      { state: 'hidden', timeout: 10000 }
+      { state: 'hidden', timeout: 10000 },
     );
     // Wait for execution to complete (modal auto-closes when done)
     // Note: don't wait for 'Executing' to appear first - it's transient and may already be gone
@@ -533,7 +534,7 @@ export class TransactionPage extends BasePage {
       throw new Error('Complex key modal did not close within 10 seconds');
     }
     // Then wait for sign button to become visible and clickable
-    await this.waitForElementToBeVisible(this.signAndSubmitButtonSelector, 5000);
+    await this.waitForElementToBeVisible(this.signAndSubmitButtonSelector);
   }
 
   async deleteAccount(accountId: string) {
@@ -821,18 +822,7 @@ export class TransactionPage extends BasePage {
     await button.click();
   }
 
-  // For queries (FileContentsQuery, etc.) - uses dropdown for payer, not input
   async clickOnSignAndReadButton() {
-    // For LOCALNET: Select payer from dropdown if not already selected
-    if (process.env.ENVIRONMENT?.toUpperCase() === 'LOCALNET') {
-      const payerDropdown = this.window.getByTestId(this.payerDropdownSelector);
-      // Check if dropdown exists and wait for it
-      await payerDropdown.waitFor({ state: 'visible', timeout: 10000 });
-      // The dropdown should auto-populate with imported accounts
-      // Just ensure something is selected by waiting for the button to be enabled
-    }
-
-    // Click the Sign & Read button (same testid as Sign & Submit)
     const button = this.window.getByTestId(this.signAndSubmitButtonSelector);
     await button.scrollIntoViewIfNeeded();
     await button.click({ timeout: 10000 });

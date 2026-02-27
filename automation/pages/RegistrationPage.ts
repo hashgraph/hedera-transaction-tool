@@ -33,7 +33,7 @@ export class RegistrationPage extends BasePage {
   nextButtonSelector = 'button-verify-next-generate';
   nextButtonImportSelector = 'button-next-import';
   finalNextButtonSelector = 'button-next';
-  settingsButtonSelector = 'a[href="/settings/general"].link-menu.mt-2';
+  settingsButtonSelector = 'button-menu-settings';
   clearButtonSelector = 'button-clear';
   generateAgainButtonSelector = 'button-generate-again';
   showPrivateKeyButtonSelector = 'button-show-private-key';
@@ -121,7 +121,7 @@ export class RegistrationPage extends BasePage {
       try {
         // Attempt to click the final next button
         await this.click(this.finalNextButtonSelector);
-        await this.window.waitForSelector(this.settingsButtonSelector, {
+        await this.window.getByTestId(this.settingsButtonSelector).waitFor({
           state: 'visible',
           timeout: 1000,
         });
