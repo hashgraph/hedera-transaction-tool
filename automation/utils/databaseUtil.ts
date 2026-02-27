@@ -252,5 +252,6 @@ export async function flushRateLimiter() {
     console.log('Flushed Redis rate limiter');
   } catch (err) {
     console.error('Error flushing rate limiter:', err);
+    throw err;
   }
 }
