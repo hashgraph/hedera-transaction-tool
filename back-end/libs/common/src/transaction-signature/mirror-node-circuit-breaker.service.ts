@@ -13,6 +13,7 @@ interface NetworkCircuit {
   lastFailureTime: number;
   halfOpenSuccesses: number;
   halfOpenAttempts: number;
+  halfOpenSince: number;
 }
 
 @Injectable()
@@ -61,6 +62,12 @@ export class MirrorNodeCircuitBreaker {
           circuit.halfOpenAttempts++;
           return true;
         }
+        // Safety net: if HALF_OPEN has been stuck with exhausted attempts,
+        // transition back to OPEN so the cycle can restart after resetTimeoutMs
+        if (Date.now() - circuit.halfOpenSince >= this.resetTimeoutMs) {
+          this.transitionTo(network, circuit, CircuitState.OPEN);
+          circuit.lastFailureTime = Date.now();
+        }
         return false;
     }
   }
@@ -96,6 +103,7 @@ export class MirrorNodeCircuitBreaker {
         lastFailureTime: 0,
         halfOpenSuccesses: 0,
         halfOpenAttempts: 0,
+        halfOpenSince: 0,
       };
       this.circuits.set(network, circuit);
     }
@@ -145,7 +153,6 @@ export class MirrorNodeCircuitBreaker {
   }
 
   private transitionTo(network: string, circuit: NetworkCircuit, newState: CircuitState): void {
-    const oldState = circuit.state;
     circuit.state = newState;
 
     switch (newState) {
@@ -158,6 +165,7 @@ export class MirrorNodeCircuitBreaker {
       case CircuitState.HALF_OPEN:
         circuit.halfOpenSuccesses = 0;
         circuit.halfOpenAttempts = 0;
+        circuit.halfOpenSince = Date.now();
         this.logger.log(
           `Circuit breaker HALF_OPEN for network "${network}" -- probing recovery`,
         );

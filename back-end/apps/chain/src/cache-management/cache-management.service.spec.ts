@@ -114,6 +114,10 @@ describe('CacheManagementService', () => {
       jest.spyOn(Math, 'random').mockReturnValue(0);
     });
 
+    afterEach(() => {
+      jest.spyOn(Math, 'random').mockRestore();
+    });
+
     it('should refresh stale accounts and nodes with jitter', async () => {
       const promise = service.refreshStaleCache();
 
@@ -455,12 +459,12 @@ describe('CacheManagementService', () => {
       expect(accountCacheService.refreshAccount).toHaveBeenCalledWith(accounts[1]);
     });
 
-    it('should call recordSuccess on successful refresh', async () => {
+    it('should call recordSuccess on any non-throwing refresh', async () => {
       const accounts = [
         { id: 1, account: '0.0.100', mirrorNetwork: 'testnet' } as CachedAccount,
       ];
       setupAccountTransaction(accounts);
-      accountCacheService.refreshAccount.mockResolvedValue(true);
+      accountCacheService.refreshAccount.mockResolvedValue(false);
 
       await service.refreshStaleAccounts();
 
@@ -581,12 +585,12 @@ describe('CacheManagementService', () => {
       expect(nodeCacheService.refreshNode).toHaveBeenCalledWith(nodes[1]);
     });
 
-    it('should call recordSuccess on successful node refresh', async () => {
+    it('should call recordSuccess on any non-throwing node refresh', async () => {
       const nodes = [
         { id: 1, nodeId: 3, mirrorNetwork: 'testnet' } as CachedNode,
       ];
       setupNodeTransaction(nodes);
-      nodeCacheService.refreshNode.mockResolvedValue(true);
+      nodeCacheService.refreshNode.mockResolvedValue(false);
 
       await service.refreshStaleNodes();
 

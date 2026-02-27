@@ -232,6 +232,59 @@ describe('MirrorNodeCircuitBreaker', () => {
       service.recordFailure('testnet');
       expect(service.getCircuitState('testnet')).toBe(CircuitState.OPEN);
     });
+
+    it('should re-open stale HALF_OPEN after resetTimeoutMs when attempts are exhausted', () => {
+      const baseTime = Date.now();
+
+      // Open the circuit
+      service.recordFailure('testnet');
+      service.recordFailure('testnet');
+      service.recordFailure('testnet');
+
+      // Transition to HALF_OPEN (consumes the one allowed attempt)
+      jest.spyOn(Date, 'now').mockReturnValue(baseTime + 61000);
+      expect(service.isAvailable('testnet')).toBe(true);
+      expect(service.getCircuitState('testnet')).toBe(CircuitState.HALF_OPEN);
+
+      // Attempts exhausted, but not yet stale — should stay HALF_OPEN
+      expect(service.isAvailable('testnet')).toBe(false);
+      expect(service.getCircuitState('testnet')).toBe(CircuitState.HALF_OPEN);
+
+      // Advance past resetTimeoutMs from when HALF_OPEN was entered
+      jest.spyOn(Date, 'now').mockReturnValue(baseTime + 61000 + 61000);
+
+      // Should transition HALF_OPEN -> OPEN (and return false)
+      expect(service.isAvailable('testnet')).toBe(false);
+      expect((service as any).circuits.get('testnet').state).toBe(CircuitState.OPEN);
+    });
+
+    it('should allow a fresh HALF_OPEN probe cycle after stale HALF_OPEN resets to OPEN', () => {
+      const baseTime = Date.now();
+
+      // Open the circuit
+      service.recordFailure('testnet');
+      service.recordFailure('testnet');
+      service.recordFailure('testnet');
+
+      // Transition to HALF_OPEN (consumes the one allowed attempt)
+      jest.spyOn(Date, 'now').mockReturnValue(baseTime + 61000);
+      expect(service.isAvailable('testnet')).toBe(true);
+
+      // No recordSuccess/recordFailure called — simulate the deadlock scenario
+
+      // Advance past resetTimeoutMs — stale HALF_OPEN resets to OPEN
+      jest.spyOn(Date, 'now').mockReturnValue(baseTime + 61000 + 61000);
+      expect(service.isAvailable('testnet')).toBe(false); // triggers HALF_OPEN -> OPEN
+
+      // Advance past another resetTimeoutMs — OPEN -> HALF_OPEN with fresh attempts
+      jest.spyOn(Date, 'now').mockReturnValue(baseTime + 61000 + 61000 + 61000);
+      expect(service.isAvailable('testnet')).toBe(true);
+      expect(service.getCircuitState('testnet')).toBe(CircuitState.HALF_OPEN);
+
+      // This time record success -> should recover to CLOSED
+      service.recordSuccess('testnet');
+      expect(service.getCircuitState('testnet')).toBe(CircuitState.CLOSED);
+    });
   });
 
   describe('recordSuccess in CLOSED state', () => {
