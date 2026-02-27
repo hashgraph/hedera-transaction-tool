@@ -101,8 +101,7 @@ test.describe('Organization Group Tx tests', () => {
       globalCredentials.password,
     );
 
-    // Wait for login toast to disappear before test starts
-    await groupPage.waitForElementToDisappear('.v-toast__text');
+    await groupPage.waitForElementToDisappear(groupPage.toastMessageSelector);
 
     await transactionPage.clickOnTransactionsMenuButton();
 

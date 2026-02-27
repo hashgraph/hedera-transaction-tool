@@ -588,46 +588,6 @@ export async function disableNotificationsForTestUsers(inApp = false) {
 }
 
 /**
- * Retrieves the latest notification status for a user identified by the given email.
- *
- * @param {string} email - The email of the user.
- * @return {Promise<{isRead: boolean, isInAppNotified: boolean}|null>} A promise that resolves to an object containing
- * 'isRead' and 'isInAppNotified' if a notification is found, or null if not found.
- * @throws {Error} If there is an error executing the query.
- */
-export async function getLatestNotificationStatusByEmail(
-  email: string,
-): Promise<{ isRead: boolean; isInAppNotified: boolean } | null> {
-  try {
-    const userId = await getUserIdByEmail(email);
-    if (!userId) {
-      console.error(`User with email ${email} not found.`);
-      return null;
-    }
-
-    const query = `
-      SELECT nr."isRead", nr."isInAppNotified"
-      FROM public.notification_receiver nr
-      WHERE nr."userId" = $1
-      ORDER BY nr."updatedAt" DESC
-      LIMIT 1;
-    `;
-
-    const result = await queryPostgresDatabase(query, [userId]);
-    if (result.length > 0) {
-      const { isRead, isInAppNotified } = result[0];
-      return { isRead, isInAppNotified };
-    } else {
-      console.error(`No notifications found for user with ID ${userId}.`);
-      return null;
-    }
-  } catch (error) {
-    console.error('Error fetching latest notification status by email:', error);
-    return null;
-  }
-}
-
-/**
  * Retrieves the latest IN-APP notification status for a user identified by the given email.
  * This specifically queries for INDICATOR notification types (which are in-app notifications),
  * not email-only notification types.
