@@ -125,7 +125,7 @@ if (!gotTheLock) {
     mainWindow.focus();
   });
 
-  run();
+  await run();
 
   attachAppEvents();
   setupDeepLink();
