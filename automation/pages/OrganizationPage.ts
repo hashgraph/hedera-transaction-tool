@@ -10,6 +10,7 @@ import {
   parsePropertiesContent,
   setupEnvironmentForTransactions,
   waitForValidStart,
+  getPrivateKeyEnv
 } from '../utils/util.js';
 import { createTestUsersBatch } from '../utils/databaseUtil.js';
 import { Mnemonic } from '@hashgraph/sdk';
@@ -223,7 +224,8 @@ export class OrganizationPage extends BasePage {
 
   async setUpInitialUsers(window: Page, encryptionPassword: string, setPrivateKey = true) {
     const user = this.users[0];
-    const privateKey = process.env.PRIVATE_KEY ?? '';
+    const privateKey = getPrivateKeyEnv();
+    if (!privateKey) throw new Error('PRIVATE_KEY env variable is not set');
 
     // Full setup for the first user (index 0) who is payer
     await this.signInOrganization(user.email, user.password, encryptionPassword);
@@ -316,7 +318,7 @@ export class OrganizationPage extends BasePage {
 
   async recoverPrivateKey(window: Page) {
     // for settings tests we are recovering User#1 which has PRIVATE_KEY_2 in the database
-    await setupEnvironmentForTransactions(window, process.env.PRIVATE_KEY);
+    await setupEnvironmentForTransactions(window, getPrivateKeyEnv());
   }
 
   getUser(index: number) {
@@ -921,8 +923,13 @@ export class OrganizationPage extends BasePage {
   }
 
   async getValidStart() {
-        return this.normalizeDateTime(await this.getText(this.transactionValidStartSelector));
-      }
+    return await this.getText(this.transactionValidStartSelector);
+  }
+
+  async getValidStartTimeOnly(dateStr?: string | null): Promise<string | null> {
+    const raw = dateStr ?? await this.getText(this.transactionValidStartSelector);
+    return this.normalizeDateTime(raw);
+  }
 
   getComplexAccountId() {
     return this.complexAccountId[0];

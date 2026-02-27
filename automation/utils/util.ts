@@ -219,6 +219,11 @@ export async function waitForValidStart(dateTimeString: string, bufferSeconds = 
     dateStr = dateStr + 'Z';
   }
   const targetDate = new Date(dateStr);
+  if (isNaN(targetDate.getTime())) {
+    throw new Error(
+      `waitForValidStart: invalid date string. Original: "${dateTimeString}", normalized: "${dateStr}"`,
+    );
+  }
 
   // Get the current time
   const currentDate = new Date();

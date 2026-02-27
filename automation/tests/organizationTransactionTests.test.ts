@@ -41,7 +41,11 @@ test.describe('Organization Transaction tests', () => {
     // Capture browser console logs to see [TXD-DBG] instrumentation
     window.on('console', msg => {
       const text = msg.text();
-      if (text.includes('[TXD-DBG]') || text.includes('[SIG-AUDIT-DBG]') || text.includes('[ORG-USER-DBG]')) {
+      if (
+        text.includes('[TXD-DBG]') ||
+        text.includes('[SIG-AUDIT-DBG]') ||
+        text.includes('[ORG-USER-DBG]')
+      ) {
         console.log('[BROWSER]', text);
       }
     });
@@ -90,16 +94,16 @@ test.describe('Organization Transaction tests', () => {
     await organizationPage.logoutFromOrganization();
 
     await app.evaluate(({ dialog }) => {
-      (dialog as unknown as { _savePath: string|null })._savePath=null;
-      (dialog as unknown as { _openPaths: string[] })._openPaths=[];
+      (dialog as unknown as { _savePath: string | null })._savePath = null;
+      (dialog as unknown as { _openPaths: string[] })._openPaths = [];
 
       dialog.showSaveDialog = async () => ({
         canceled: false,
-        filePath:  (dialog as unknown as { _savePath: string|null })?._savePath ?? '',
+        filePath: (dialog as unknown as { _savePath: string | null })?._savePath ?? '',
       });
       dialog.showOpenDialog = async () => ({
         canceled: false,
-        filePaths:  (dialog as unknown as { _openPaths: string[] })?._openPaths ?? [],
+        filePaths: (dialog as unknown as { _openPaths: string[] })?._openPaths ?? [],
       });
     });
   });
@@ -143,6 +147,7 @@ test.describe('Organization Transaction tests', () => {
       1000,
       false,
     );
+    const validStartTime = await organizationPage.getValidStartTimeOnly(validStart);
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
 
@@ -156,7 +161,7 @@ test.describe('Organization Transaction tests', () => {
 
     expect(transactionDetails?.transactionId).toBe(txId);
     expect(transactionDetails?.transactionType).toBe('Account Update');
-    expect(transactionDetails?.validStart).toBe(validStart);
+    expect(transactionDetails?.validStart).toBe(validStartTime);
     expect(transactionDetails?.detailsButton).toBe(true);
 
     await organizationPage.logoutFromOrganization();
@@ -172,7 +177,7 @@ test.describe('Organization Transaction tests', () => {
     );
     expect(transactionDetails2?.transactionId).toBe(txId);
     expect(transactionDetails2?.transactionType).toBe('Account Update');
-    expect(transactionDetails2?.validStart).toBe(validStart);
+    expect(transactionDetails2?.validStart).toBe(validStartTime);
     expect(transactionDetails2?.detailsButton).toBe(true);
   });
 
@@ -235,12 +240,8 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify transaction is shown "In progress" tab after signing', async () => {
-    const { txId, validStart } = await organizationPage.updateAccount(
-      complexKeyAccountId,
-      'update',
-      30,
-      true,
-    );
+    const { txId, validStart } = await organizationPage.updateAccount(complexKeyAccountId, 'update', 30, true);
+    const validStartTime = await organizationPage.getValidStartTimeOnly(validStart);
     await organizationPage.closeDraftModal();
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnInProgressTab();
@@ -248,18 +249,14 @@ test.describe('Organization Transaction tests', () => {
     const transactionDetails = await organizationPage.getInProgressTransactionDetails(txId ?? '');
     expect(transactionDetails?.transactionId).toBe(txId);
     expect(transactionDetails?.transactionType).toBe('Account Update');
-    expect(transactionDetails?.validStart).toBe(validStart);
+    expect(transactionDetails?.validStart).toBe(validStartTime);
     expect(transactionDetails?.detailsButton).toBe(true);
   });
 
   test('Verify transaction is shown "Ready for Execution" and correct stage is displayed', async () => {
     test.slow();
-    const { txId, validStart } = await organizationPage.updateAccount(
-      complexKeyAccountId,
-      'update',
-      600,
-      true,
-    );
+    const { txId, validStart } = await organizationPage.updateAccount(complexKeyAccountId, 'update', 600, true);
+    const validStartTime = await organizationPage.getValidStartTimeOnly(validStart);
     await organizationPage.closeDraftModal();
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
@@ -280,7 +277,7 @@ test.describe('Organization Transaction tests', () => {
     );
     expect(transactionDetails?.transactionId).toBe(txId);
     expect(transactionDetails?.transactionType).toBe('Account Update');
-    expect(transactionDetails?.validStart).toBe(validStart);
+    expect(transactionDetails?.validStart).toBe(validStartTime);
     expect(transactionDetails?.detailsButton).toBe(true);
 
     await organizationPage.clickOnReadyForExecutionDetailsButtonByTransactionId(txId ?? '');
