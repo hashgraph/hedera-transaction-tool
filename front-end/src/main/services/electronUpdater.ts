@@ -223,7 +223,11 @@ export class ElectronUpdaterService {
       this.updater.quitAndInstall(isSilent, isForceRunAfter);
     } catch (error) {
       this.isInstalling = false;
-      removeUpdateLock();
+      try {
+        removeUpdateLock();
+      } catch (lockError) {
+        this.logger.error(`Failed to remove update lock: ${lockError}`);
+      }
       const categorized = categorizeUpdateError(error as Error);
       this.logger.error(`Failed to quit and install: ${categorized.details}`);
       this.window?.webContents.send('update:error', {
