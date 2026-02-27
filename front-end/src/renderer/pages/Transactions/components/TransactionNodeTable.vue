@@ -34,7 +34,8 @@ import {
   TRANSACTION_NODE_SORT_URL_VALUES,
 } from '@renderer/utils/sortTransactionNodes.ts';
 import TransactionsFilterV2 from '@renderer/components/Filter/v2/TransactionsFilterV2.vue';
-import { TRANSACTION_ACTION } from '@shared/constants';
+import { TRANSACTION_ACTION, TRANSACTION_EVENT_TYPE } from '@shared/constants';
+import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 import { useRouter } from 'vue-router';
 import useTableQueryState from '@renderer/composables/useTableQueryState.ts';
 
@@ -73,7 +74,42 @@ const nextTransaction = useNextTransactionV2();
 /* Composables */
 const router = useRouter();
 const toast = useToast();
-useWebsocketSubscription(TRANSACTION_ACTION, fetchNodes);
+const recentlyUpdatedIds = ref<Set<number>>(new Set());
+let highlightTimer: ReturnType<typeof setTimeout> | null = null;
+
+function highlightAndFetch(ids: number[], fetchFn: () => Promise<void>) {
+  for (const id of ids) recentlyUpdatedIds.value.add(id);
+  // Trigger reactivity
+  recentlyUpdatedIds.value = new Set(recentlyUpdatedIds.value);
+
+  if (highlightTimer) clearTimeout(highlightTimer);
+  highlightTimer = setTimeout(() => { recentlyUpdatedIds.value = new Set(); }, 3000);
+
+  return fetchFn();
+}
+
+useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
+  const parsed = parseTransactionActionPayload(payload);
+  if (!parsed) { await fetchNodes(); return; } // Legacy fallback
+
+  // Status updates can move items between collections — always refetch
+  if (parsed.eventType === TRANSACTION_EVENT_TYPE.STATUS_UPDATE) {
+    await highlightAndFetch([...parsed.transactionIds, ...parsed.groupIds], fetchNodes);
+    return;
+  }
+
+  // For non-status updates, only refetch if current items are affected
+  const txIds = new Set(parsed.transactionIds);
+  const grpIds = new Set(parsed.groupIds);
+  const hasMatch = nodes.value.some(n =>
+    (n.transactionId && txIds.has(n.transactionId)) ||
+    (n.groupId && grpIds.has(n.groupId)),
+  );
+  if (hasMatch) {
+    await highlightAndFetch([...parsed.transactionIds, ...parsed.groupIds], fetchNodes);
+  }
+});
+
 /* Use mark notifications with computed types */
 const { oldNotifications } = useMarkNotifications(
   NOTIFICATION_TYPES_BY_COLLECTION[props.collection] ?? [],
@@ -271,6 +307,12 @@ onMounted(fetchNodes);
                 :node="node"
                 :index="index"
                 :old-notifications="oldNotifications"
+                :recently-updated="
+                  recentlyUpdatedIds.size > 0 && (
+                    (node.transactionId != null && recentlyUpdatedIds.has(node.transactionId)) ||
+                    (node.groupId != null && recentlyUpdatedIds.has(node.groupId))
+                  )
+                "
                 @route-to-details="routeToDetails"
                 @transaction-signed="fetchNodes"
                 @transaction-group-signed="fetchNodes"

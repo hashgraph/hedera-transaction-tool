@@ -75,18 +75,37 @@ describe('FanOutService', () => {
     );
   });
 
-  it('notifyClients should log and call websocket.notifyClient with TRANSACTION_ACTION', async () => {
-    const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-    const dtos: any[] = [{}, {}];
+  it('notifyClients should call websocket.notifyUser per dto with payload', async () => {
+    const dtos: any[] = [
+      { userId: 1, transactionIds: [10, 20], groupIds: [100], eventType: 'status_update' },
+      { userId: 2, transactionIds: [30], groupIds: [], eventType: 'update' },
+    ];
 
     await service.notifyClients(dtos);
 
-    expect(consoleSpy).toHaveBeenCalledWith('Notify clients called in fan-out service');
-    expect(websocketMock.notifyClient).toHaveBeenCalledWith({
-      message: TRANSACTION_ACTION,
-      content: '',
+    expect(websocketMock.notifyUser).toHaveBeenCalledTimes(2);
+    expect(websocketMock.notifyUser).toHaveBeenCalledWith(1, TRANSACTION_ACTION, {
+      transactionIds: [10, 20],
+      groupIds: [100],
+      eventType: 'status_update',
     });
+    expect(websocketMock.notifyUser).toHaveBeenCalledWith(2, TRANSACTION_ACTION, {
+      transactionIds: [30],
+      groupIds: [],
+      eventType: 'update',
+    });
+    expect(websocketMock.notifyClient).not.toHaveBeenCalled();
+  });
 
-    consoleSpy.mockRestore();
+  it('notifyClients should use defaults when optional fields are missing', async () => {
+    const dtos: any[] = [{ userId: 5 }];
+
+    await service.notifyClients(dtos);
+
+    expect(websocketMock.notifyUser).toHaveBeenCalledWith(5, TRANSACTION_ACTION, {
+      transactionIds: [],
+      groupIds: [],
+      eventType: 'unknown',
+    });
   });
 });

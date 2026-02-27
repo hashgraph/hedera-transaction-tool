@@ -12,7 +12,7 @@ import useDisposableWs from '@renderer/composables/useDisposableWs';
  */
 export default function useWebsocketSubscription(
   eventName: string,
-  callback: () => void | Promise<void>,
+  callback: (payload?: unknown) => void | Promise<void>,
 ) {
   const user = useUserStore();
   const wsStore = useWebsocketConnection();
@@ -21,7 +21,7 @@ export default function useWebsocketSubscription(
   /* Functions */
   const subscribe = () => {
     if (!user.selectedOrganization?.serverUrl) return;
-    ws.on(user.selectedOrganization.serverUrl, eventName, callback);
+    ws.on(user.selectedOrganization.serverUrl, eventName, (data: any) => callback(data));
   };
 
   /* Subscribe immediately on mount (in case WS is already connected) */

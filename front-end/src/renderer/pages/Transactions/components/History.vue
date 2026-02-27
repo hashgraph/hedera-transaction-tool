@@ -8,7 +8,8 @@ import { Prisma } from '@prisma/client';
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import { NotificationType, TransactionStatus } from '@shared/interfaces';
-import { TRANSACTION_ACTION } from '@shared/constants';
+import { TRANSACTION_ACTION, TRANSACTION_EVENT_TYPE } from '@shared/constants';
+import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -69,7 +70,38 @@ const notifications = useNotificationsStore();
 const nextTransaction = useNextTransactionV2();
 
 /* Composables */
-useWebsocketSubscription(TRANSACTION_ACTION, fetchTransactions);
+const recentlyUpdatedIds = ref<Set<number>>(new Set());
+let highlightTimer: ReturnType<typeof setTimeout> | null = null;
+
+function highlightAndFetch(ids: number[], fetchFn: () => Promise<void>) {
+  for (const id of ids) recentlyUpdatedIds.value.add(id);
+  // Trigger reactivity
+  recentlyUpdatedIds.value = new Set(recentlyUpdatedIds.value);
+
+  if (highlightTimer) clearTimeout(highlightTimer);
+  highlightTimer = setTimeout(() => { recentlyUpdatedIds.value = new Set(); }, 3000);
+
+  return fetchFn();
+}
+
+useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
+  const parsed = parseTransactionActionPayload(payload);
+  if (!parsed) { await fetchTransactions(); return; } // Legacy fallback
+
+  // Status updates can move transactions into History — always refetch
+  if (parsed.eventType === TRANSACTION_EVENT_TYPE.STATUS_UPDATE) {
+    await highlightAndFetch(parsed.transactionIds, fetchTransactions);
+    return;
+  }
+
+  // For non-status updates, only refetch if current items are affected
+  const txIds = new Set(parsed.transactionIds);
+  const hasMatch = organizationTransactions.value.some(t => txIds.has(t.transactionRaw.id));
+  if (hasMatch) {
+    await highlightAndFetch(parsed.transactionIds, fetchTransactions);
+  }
+});
+
 const { oldNotifications } = useMarkNotifications([
   NotificationType.TRANSACTION_INDICATOR_EXECUTED,
   NotificationType.TRANSACTION_INDICATOR_EXPIRED,
@@ -461,6 +493,7 @@ watch(
                   v-if="transactionData.transaction instanceof SDKTransaction && true"
                   :class="{
                     highlight: notifiedTransactionIds.includes(transactionData.transactionRaw.id),
+                    'recently-updated': recentlyUpdatedIds.has(transactionData.transactionRaw.id),
                   }"
                   :id="transactionData.transactionRaw.id.toString()"
                 >
@@ -555,3 +588,13 @@ watch(
     </template>
   </div>
 </template>
+
+<style scoped>
+.recently-updated {
+  animation: flash-update 3s ease-out;
+}
+@keyframes flash-update {
+  0% { background-color: rgba(var(--bs-info-rgb), 0.15); }
+  100% { background-color: transparent; }
+}
+</style>

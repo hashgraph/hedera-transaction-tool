@@ -37,17 +37,16 @@ export class FanOutService {
   }
 
   async notifyClients(dtos: NotifyClientDto[]) {
-    // for (const userId of userIds) {
-    //   // client.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-    //   //   message: TRANSACTION_ACTION,
-    //   //   content: '',
-    //   // });
-    //   await this.websocket.notifyClient({ message: TRANSACTION_ACTION, content: '' });
-    // }
-    console.log('Notify clients called in fan-out service');
-    await this.websocket.notifyClient({
-      message: TRANSACTION_ACTION,
-      content: '',
-    });
+    for (const dto of dtos) {
+      try {
+        await this.websocket.notifyUser(dto.userId, TRANSACTION_ACTION, {
+          transactionIds: dto.transactionIds ?? [],
+          groupIds: dto.groupIds ?? [],
+          eventType: dto.eventType ?? 'unknown',
+        });
+      } catch (error) {
+        console.error(`Failed to notify user ${dto.userId}:`, error);
+      }
+    }
   }
 }

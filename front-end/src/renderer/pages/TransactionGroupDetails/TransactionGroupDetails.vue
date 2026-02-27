@@ -25,6 +25,7 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
+import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 
 import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
@@ -102,9 +103,16 @@ const notifications = useNotificationsStore();
 /* Composables */
 const router = useRouter();
 const toast = useToast();
-useWebsocketSubscription(TRANSACTION_ACTION, async () => {
+useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
+  const parsed = parseTransactionActionPayload(payload);
   const id = router.currentRoute.value.params.id;
-  await fetchGroup(Array.isArray(id) ? id[0] : id);
+  const groupId = Number(Array.isArray(id) ? id[0] : id);
+  if (!parsed) { await fetchGroup(groupId); return; } // Legacy fallback
+  const isAffected = parsed.groupIds.includes(groupId) ||
+    (group.value?.groupItems?.some(item =>
+      parsed.transactionIds.includes(item.transactionId),
+    ) ?? false);
+  if (isAffected) await fetchGroup(groupId);
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
