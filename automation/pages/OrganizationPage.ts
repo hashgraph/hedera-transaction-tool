@@ -662,7 +662,7 @@ export class OrganizationPage extends BasePage {
 
     // Navigate back to transactions list to ensure clean state for next call
     await this.transactionPage.clickOnTransactionsMenuButton();
-    await this.waitForElementToBeVisible('button-create-new');
+    await this.waitForElementToBeVisible(this.transactionPage.createNewTransactionButtonSelector);
   }
 
   async createComplexKeyAccountForUsers(numberOfUsers = 9, groupSize = 3) {
@@ -1683,8 +1683,6 @@ export class OrganizationPage extends BasePage {
         { timeout: 10000, intervals: [500] },
       ).toBe(true);
     }
-    // If notification exists and is unread, secondUser is already logged in from createNotificationForUser
-    // with notifications fetched via the frontend fix to loggedInOrganization watcher
   }
 
   async clickOnNextTransactionButton() {

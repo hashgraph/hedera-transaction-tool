@@ -102,7 +102,6 @@ export async function resetDbState() {
     'TransactionDraft',
     'GroupItem',
     'TransactionGroup',
-    // Additional tables that were missing - Mnemonic is critical for full reset
     'Mnemonic',
     'Contact',
     'PublicKeyMapping',
@@ -253,5 +252,6 @@ export async function flushRateLimiter() {
     console.log('Flushed Redis rate limiter');
   } catch (err) {
     console.error('Error flushing rate limiter:', err);
+    throw err;
   }
 }
