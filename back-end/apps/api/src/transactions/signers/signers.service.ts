@@ -15,8 +15,18 @@ import {
   Pagination,
   processTransactionStatus,
   TransactionSignatureService,
+  FAN_OUT_DELETE_NOTIFICATIONS,
 } from '@app/common';
-import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
+import {
+  Notification,
+  NotificationReceiver,
+  NotificationType,
+  Transaction,
+  TransactionSigner,
+  TransactionStatus,
+  User,
+  UserKey,
+} from '@entities';
 
 import { UploadSignatureMapDto } from '../dto';
 
@@ -118,6 +128,12 @@ export class SignersService {
 
     // Update transaction statuses and emit notifications
     await this.updateStatusesAndNotify(transactionsToProcess);
+
+    // Clear NEW indicator for the signing user
+    const processedTransactionIds = transactionsToProcess.map(t => t.id);
+    if (processedTransactionIds.length > 0) {
+      await this.clearNewIndicatorForUser(user.id, processedTransactionIds);
+    }
 
     return [...signers];
   }
@@ -408,6 +424,67 @@ export class SignersService {
         },
       });
       insertedSigners.forEach(signer => signers.add(signer));
+    }
+  }
+
+  private async clearNewIndicatorForUser(userId: number, transactionIds: number[]) {
+    try {
+      let deletedReceiverIds: number[] = [];
+
+      await this.dataSource.transaction(async manager => {
+        const notifications = await manager.find(Notification, {
+          where: {
+            type: NotificationType.TRANSACTION_INDICATOR_NEW,
+            entityId: In(transactionIds),
+          },
+        });
+
+        if (notifications.length === 0) return;
+
+        const notificationIds = notifications.map(n => n.id);
+
+        const receivers = await manager.find(NotificationReceiver, {
+          where: {
+            notificationId: In(notificationIds),
+            userId,
+            isRead: false,
+          },
+        });
+
+        if (receivers.length === 0) return;
+
+        deletedReceiverIds = receivers.map(r => r.id);
+
+        await manager.delete(NotificationReceiver, {
+          id: In(deletedReceiverIds),
+        });
+
+        // Atomically clean up orphaned Notification entities (no remaining receivers)
+        // so the NEW indicator can be re-created if the transaction re-enters WAITING_FOR_SIGNATURES.
+        // Uses a single atomic query to avoid race conditions when multiple users sign concurrently.
+        if (notificationIds.length > 0) {
+          await manager.query(
+            `DELETE FROM notification
+             WHERE id = ANY($1)
+               AND NOT EXISTS (
+                 SELECT 1 FROM notification_receiver WHERE "notificationId" = notification.id
+               )`,
+            [notificationIds],
+          );
+        }
+      });
+
+      // Emit WebSocket deletion event outside the transaction so frontend removes the notifications
+      if (deletedReceiverIds.length > 0) {
+        await this.notificationsPublisher.publish(FAN_OUT_DELETE_NOTIFICATIONS, [
+          {
+            userId,
+            notificationReceiverIds: deletedReceiverIds,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error(`Error clearing NEW indicators for user ${userId}:`, error);
     }
   }
 
