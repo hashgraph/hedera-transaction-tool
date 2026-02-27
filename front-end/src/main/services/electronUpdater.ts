@@ -87,8 +87,16 @@ export class ElectronUpdaterService {
 
       if (this.isInstalling) {
         this.isInstalling = false;
-        removeUpdateLock();
-        this.logger.info('Update lock removed after installation error');
+        try {
+          removeUpdateLock();
+          this.logger.info('Update lock removed after installation error');
+        } catch (lockError) {
+          this.logger.error(
+            `Failed to remove update lock after installation error: ${
+              (lockError as Error).message
+            }`,
+          );
+        }
       }
 
       this.window?.webContents.send('update:error', {
