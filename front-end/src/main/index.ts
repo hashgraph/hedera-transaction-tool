@@ -30,7 +30,11 @@ function attachAppEvents() {
     const lock = getUpdateLock();
     if (lock) {
       if (app.getVersion() === lock.version) {
-        removeUpdateLock();
+        try {
+          removeUpdateLock();
+        } catch (error) {
+          console.error('Failed to remove update lock after successful update:', error);
+        }
       } else if (!isUpdateLockStale(lock)) {
         dialog.showMessageBoxSync({
           type: 'info',
@@ -39,10 +43,14 @@ function attachAppEvents() {
             'Hedera Transaction Tool is currently being updated. Please wait for the update to complete. This may take a few minutes.',
           buttons: ['OK'],
         });
-        app.quit();
+        app.exit(0);
         return;
       } else {
-        removeUpdateLock();
+        try {
+          removeUpdateLock();
+        } catch (error) {
+          console.error('Failed to remove stale update lock:', error);
+        }
       }
     }
 
