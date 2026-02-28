@@ -10,14 +10,15 @@ import {
   TransactionCachedNode,
   TransactionStatus,
 } from '@entities';
-import { emitTransactionUpdate, AccountCacheService, NatsPublisherService, NodeCacheService } from '@app/common';
+import { emitTransactionUpdate, AccountCacheService, MirrorNodeCircuitBreaker, NatsPublisherService, NodeCacheService } from '@app/common';
 
 @Injectable()
 export class CacheManagementService {
   private readonly logger = new Logger(CacheManagementService.name);
   private readonly staleThresholdMs: number;
   private readonly batchSize: number;
-  private readonly reclaimTimeoutMs: number
+  private readonly reclaimTimeoutMs: number;
+  private refreshInProgress = false;
 
   constructor(
     @InjectDataSource()
@@ -30,6 +31,7 @@ export class CacheManagementService {
     private readonly nodeRepository: Repository<CachedNode>,
     private readonly configService: ConfigService,
     private readonly notificationsPublisher: NatsPublisherService,
+    private readonly circuitBreaker: MirrorNodeCircuitBreaker,
   ) {
     this.staleThresholdMs =  this.configService.get<number>('CACHE_STALE_THRESHOLD_MS', 10 * 1000);
     this.batchSize =  this.configService.get<number>('CACHE_REFRESH_BATCH_SIZE', 100);
@@ -43,6 +45,8 @@ export class CacheManagementService {
     name: 'cache-refresh',
   })
   async refreshStaleCache(): Promise<void> {
+    if (this.refreshInProgress) return;
+    this.refreshInProgress = true;
     try {
       // 0–2 seconds of jitter, help prevent thundering herd across multiple instances
       const jitterMs = Math.random() * 2000;
@@ -53,6 +57,8 @@ export class CacheManagementService {
     } catch (error: any) {
       this.logger.error('Cache refresh job failed', error?.stack ?? error?.message ?? String(error));
       throw error;
+    } finally {
+      this.refreshInProgress = false;
     }
   }
 
@@ -138,22 +144,56 @@ export class CacheManagementService {
       return;
     }
 
+    // Group accounts by mirrorNetwork
+    const networkGroups = new Map<string, [CachedAccount, number[]][]>();
+    for (const [account, txIds] of accountTransactionMap) {
+      const network = account.mirrorNetwork;
+      if (!networkGroups.has(network)) {
+        networkGroups.set(network, []);
+      }
+      networkGroups.get(network)!.push([account, txIds]);
+    }
+
     // Track which transactions need updates
     const transactionsToUpdate = new Set<number>();
 
-    // Refresh outside the transaction
-    for (const [account, txIds] of accountTransactionMap) {
-      const wasRefreshed = await this.accountCacheService.refreshAccount(account);
+    // Process each network group
+    for (const [network, entries] of networkGroups) {
+      if (!this.circuitBreaker.isAvailable(network)) {
+        this.logger.warn(
+          `Skipping ${entries.length} stale account(s) for network "${network}" (circuit open)`,
+        );
+        continue;
+      }
 
-      if (wasRefreshed) {
-        txIds.forEach(txId => transactionsToUpdate.add(txId));
+      const errors = new Set<string>();
+
+      for (const [account, txIds] of entries) {
+        try {
+          const wasRefreshed = await this.accountCacheService.refreshAccount(account);
+          if (wasRefreshed) {
+            txIds.forEach(txId => transactionsToUpdate.add(txId));
+          }
+          this.circuitBreaker.recordSuccess(network);
+        } catch (error: any) {
+          const stillAvailable = this.circuitBreaker.recordFailure(network);
+          const msg = error?.message ?? String(error);
+          errors.add(msg);
+          if (!stillAvailable) break;
+        }
+      }
+
+      if (errors.size > 0) {
+        this.logger.warn(
+          `Account refresh failures for network "${network}": ${Array.from(errors).join('; ')}`,
+        );
       }
     }
 
     // Emit updates for affected transactions
     if (transactionsToUpdate.size > 0) {
       this.logger.log(
-        `Refreshed ${accountTransactionMap.size} accounts, updating ${transactionsToUpdate.size} transactions`
+        `Refreshed accounts, updating ${transactionsToUpdate.size} transactions`,
       );
 
       emitTransactionUpdate(
@@ -216,22 +256,56 @@ export class CacheManagementService {
       return;
     }
 
+    // Group nodes by mirrorNetwork
+    const networkGroups = new Map<string, [CachedNode, number[]][]>();
+    for (const [node, txIds] of nodeTransactionMap) {
+      const network = node.mirrorNetwork;
+      if (!networkGroups.has(network)) {
+        networkGroups.set(network, []);
+      }
+      networkGroups.get(network)!.push([node, txIds]);
+    }
+
     // Track which transactions need updates
     const transactionsToUpdate = new Set<number>();
 
-    // Refresh outside the transaction
-    for (const [node, txIds] of nodeTransactionMap) {
-      const wasRefreshed = await this.nodeCacheService.refreshNode(node);
+    // Process each network group
+    for (const [network, entries] of networkGroups) {
+      if (!this.circuitBreaker.isAvailable(network)) {
+        this.logger.warn(
+          `Skipping ${entries.length} stale node(s) for network "${network}" (circuit open)`,
+        );
+        continue;
+      }
 
-      if (wasRefreshed) {
-        txIds.forEach(txId => transactionsToUpdate.add(txId));
+      const errors = new Set<string>();
+
+      for (const [node, txIds] of entries) {
+        try {
+          const wasRefreshed = await this.nodeCacheService.refreshNode(node);
+          if (wasRefreshed) {
+            txIds.forEach(txId => transactionsToUpdate.add(txId));
+          }
+          this.circuitBreaker.recordSuccess(network);
+        } catch (error: any) {
+          const stillAvailable = this.circuitBreaker.recordFailure(network);
+          const msg = error?.message ?? String(error);
+          errors.add(msg);
+          if (!stillAvailable) break;
+        }
+      }
+
+      if (errors.size > 0) {
+        this.logger.warn(
+          `Node refresh failures for network "${network}": ${Array.from(errors).join('; ')}`,
+        );
       }
     }
 
     // Emit updates for affected transactions
     if (transactionsToUpdate.size > 0) {
       this.logger.log(
-        `Refreshed ${nodeTransactionMap.size} nodes, updating ${transactionsToUpdate.size} transactions`
+        `Refreshed nodes, updating ${transactionsToUpdate.size} transactions`,
       );
 
       emitTransactionUpdate(

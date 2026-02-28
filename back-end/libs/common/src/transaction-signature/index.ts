@@ -6,3 +6,4 @@ export * from './mirror-node.client';
 export * from './cache.helper';
 export * from './cache.types';
 export * from './cache.util';
+export * from './mirror-node-circuit-breaker.service';
