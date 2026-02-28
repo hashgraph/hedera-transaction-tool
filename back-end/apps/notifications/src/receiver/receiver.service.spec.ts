@@ -242,6 +242,29 @@ describe('ReceiverService', () => {
     expect(result.requiredUserIds).toEqual([100]);
   });
 
+  it('getTransactionParticipants omits creatorId and does not include it in participants when creatorKey is null', async () => {
+    (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 100, user: { id: 100 } }]);
+
+    const tx: any = {
+      creatorKey: null,
+      signers: [{ userId: 2 }],
+      observers: [{ userId: 3 }],
+      status: TransactionStatus.WAITING_FOR_SIGNATURES,
+    };
+
+    const approvers = [
+      { userId: 4, approved: null } as TransactionApprover,
+      { userId: 5, approved: true } as TransactionApprover,
+    ];
+
+    const result = await (service as any).getTransactionParticipants(em as any, tx, approvers, new Map());
+
+    expect('creatorId' in result).toBe(false);
+    expect(result.participants).toEqual(expect.arrayContaining([2, 3, 4, 5, 100]));
+    expect(result.participants).not.toContain(null);
+    expect(result.participants).not.toContain(undefined);
+  });
+
   it('getTransactionParticipants yields empty approversShouldChooseUserIds when status is not waiting', async () => {
     (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 100, user: { id: 100 } }]);
 
