@@ -2,7 +2,7 @@ import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { type INotificationReceiver, NotificationType } from '@shared/interfaces';
-import { readyToSignTitle, historyTitle, readyForExecutionTitle } from '@shared/constants';
+import { readyToSignTitle, historyTitle, inProgressTitle } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -154,7 +154,7 @@ export function useGroupedNotifications() {
       case NotificationType.TRANSACTION_INDICATOR_EXECUTABLE:
         return async () => {
           await selectOrganization();
-          await router.push({ name: 'transactions', query: { tab: readyForExecutionTitle } });
+          await router.push({ name: 'transactions', query: { tab: inProgressTitle } });
         };
       case NotificationType.TRANSACTION_INDICATOR_SIGN:
         return async () => {
