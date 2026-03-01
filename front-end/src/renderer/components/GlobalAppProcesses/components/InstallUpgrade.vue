@@ -24,8 +24,11 @@ const handleInstall = () => emit('install');
     </div>
     <h2 class="text-title text-semi-bold mt-4">Update Ready to Install</h2>
     <p class="text-small text-secondary mt-3" v-if="version">
-      Version {{ version }} has been downloaded.<br />
-      The application will restart to install the update.
+      Version {{ version }} will install automatically after you enter your system password.
+    </p>
+
+    <p class="text-small text-warning mt-2">
+      Installation takes 2-3 minutes. Please do not manually restart the app.
     </p>
     <hr class="separator my-4" />
     <div class="d-flex gap-4 justify-content-center">
