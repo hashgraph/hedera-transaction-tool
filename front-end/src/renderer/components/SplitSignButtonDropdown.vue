@@ -17,7 +17,7 @@ const props = defineProps<{
 const user = useUserStore();
 
 /* State */
-const goToNext = ref(false);
+const goToNext = ref(true);
 
 /* Watchers */
 watch(goToNext, async () => {
