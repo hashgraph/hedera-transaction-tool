@@ -118,6 +118,7 @@ export const commonRequestHandler = async <T>(
   callback: () => Promise<T>,
   defaultMessage: string = 'Failed to send request',
   messageOn401?: string,
+  statusMessages?: Partial<Record<number, string>>,
 ) => {
   try {
     return await callback();
@@ -127,17 +128,17 @@ export const commonRequestHandler = async <T>(
     if (error instanceof AxiosError) {
       throwIfNoResponse(error.response);
 
+      const status = error.response.status;
       const errorMessage = error.response.data?.message;
-      if (error.response.status === 401 && message.length > 0) {
-        message = messageOn401?.trim() || errorMessage;
-      }
 
-      if (error.response.status === 400) {
+      if (statusMessages?.[status]) {
+        message = statusMessages[status]!;
+      } else if (status === 401 && messageOn401) {
+        message = messageOn401.trim() || errorMessage;
+      } else if (status === 400) {
         const code: keyof typeof ErrorMessages = error.response.data?.code || ErrorCodes.UNKWN;
         message = ErrorMessages[code] || ErrorMessages[ErrorCodes.UNKWN];
-      }
-
-      if (error.response.status === 429) {
+      } else if (status === 429) {
         message = 'Too many requests. Please try again later.';
       }
     }
