@@ -29,6 +29,7 @@ const props = defineProps<{
   node: ITransactionNode;
   index: number;
   oldNotifications?: INotificationReceiver[];
+  recentlyUpdated?: boolean;
 }>();
 
 /* Emits */
@@ -249,7 +250,7 @@ watch(
 </script>
 
 <template>
-  <tr :class="{ highlight: hasNotifications }">
+  <tr :class="{ highlight: hasNotifications, 'recently-updated': recentlyUpdated }">
     <!-- Column #1 : Transaction Id -->
     <td :data-testid="`td-transaction-node-transaction-id-${index}`">
       <TransactionId
@@ -339,3 +340,13 @@ watch(
     </td>
   </tr>
 </template>
+
+<style scoped>
+.recently-updated {
+  animation: flash-update 3s ease-out;
+}
+@keyframes flash-update {
+  0% { background-color: rgba(var(--bs-info-rgb), 0.15); }
+  100% { background-color: transparent; }
+}
+</style>

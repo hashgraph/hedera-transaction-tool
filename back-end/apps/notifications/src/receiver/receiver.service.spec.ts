@@ -727,7 +727,7 @@ describe('ReceiverService', () => {
       const inAppReceiverIds: number[] = [];
       const emailNotifications: { [email: string]: any[] } = {};
       const emailReceiverIds: number[] = [];
-      const affectedUserIds = new Set<number>();
+      const affectedUsers = new Map<number, { transactionIds: Set<number>; groupIds: Set<number> }>();
 
       const transaction = { id: 42, transactionId: 'tx-42', mirrorNetwork: 'net' } as any;
       const approvers: any[] = [];
@@ -760,14 +760,15 @@ describe('ReceiverService', () => {
         inAppReceiverIds,
         emailNotifications,
         emailReceiverIds,
-        affectedUserIds,
+        affectedUsers,
         123,
       );
 
-      // deletedReceiverIds.forEach updated deletionNotifications and affectedUserIds
+      // deletedReceiverIds.forEach updated deletionNotifications and affectedUsers
       expect((service as any).deleteExistingIndicators).toHaveBeenCalledWith(em as any, transaction);
       expect(deletionNotifications[1]).toEqual([10]);
-      expect(affectedUserIds.has(1)).toBe(true);
+      expect(affectedUsers.has(1)).toBe(true);
+      expect(affectedUsers.get(1)!.transactionIds.has(123)).toBe(true);
 
       // new in-app receivers were added to inAppNotifications and inAppReceiverIds
       expect(inAppNotifications[2]).toBeDefined();
@@ -796,7 +797,7 @@ describe('ReceiverService', () => {
         [],
         {},
         [],
-        new Set(),
+        new Map(),
         123,
       );
 
@@ -929,7 +930,7 @@ describe('ReceiverService', () => {
       expect(ctx!.keyCache).toBeInstanceOf(Map);
       expect(ctx!.inAppReceiverIds).toEqual([]);
       expect(ctx!.emailReceiverIds).toEqual([]);
-      expect(ctx!.affectedUserIds).toBeInstanceOf(Set);
+      expect(ctx!.affectedUsers).toBeInstanceOf(Map);
     });
   });
 
