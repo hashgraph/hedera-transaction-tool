@@ -71,7 +71,7 @@ const notifications = useNotificationsStore();
 const nextTransaction = useNextTransactionV2();
 
 /* Composables */
-const { recentlyUpdatedTxIds, recentlyUpdatedGroupIds, highlightAndFetch } = useTransactionLiveHighlight();
+const { recentlyUpdatedTxIds, highlightAndFetch } = useTransactionLiveHighlight();
 
 useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const parsed = parseTransactionActionPayload(payload);
@@ -581,11 +581,12 @@ watch(
 </template>
 
 <style scoped>
-.recently-updated {
+.recently-updated td {
   animation: flash-update 3s ease-out;
 }
 @keyframes flash-update {
-  0% { background-color: rgba(var(--bs-info-rgb), 0.15); }
-  100% { background-color: transparent; }
+  0%,
+  25% { background-color: rgba(var(--bs-info-rgb), 0.45); }
+  100% { }
 }
 </style>

@@ -342,11 +342,12 @@ watch(
 </template>
 
 <style scoped>
-.recently-updated {
+.recently-updated :deep(td) {
   animation: flash-update 3s ease-out;
 }
 @keyframes flash-update {
-  0% { background-color: rgba(var(--bs-info-rgb), 0.15); }
-  100% { background-color: transparent; }
+  0%,
+  25% { background-color: rgba(var(--bs-info-rgb), 0.45); }
+  100% { }
 }
 </style>
