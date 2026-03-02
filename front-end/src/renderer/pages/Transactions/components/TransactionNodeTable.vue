@@ -303,8 +303,8 @@ onMounted(fetchNodes);
                   (node.groupId != null && recentlyUpdatedGroupIds.has(node.groupId))
                 "
                 @route-to-details="routeToDetails"
-                @transaction-signed="fetchNodes"
-                @transaction-group-signed="fetchNodes"
+                @transaction-signed="() => fetchNodes()"
+                @transaction-group-signed="() => fetchNodes()"
               />
             </template>
           </tbody>
