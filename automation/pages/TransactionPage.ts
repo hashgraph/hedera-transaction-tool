@@ -241,8 +241,20 @@ export class TransactionPage extends BasePage {
   }
 
   async clickOnCreateNewTransactionButton() {
-    await this.click(this.createNewTransactionButtonSelector);
-    await this.click(this.singleTransactionButtonSelector);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await this.click(this.createNewTransactionButtonSelector);
+        await this.window.waitForTimeout(500);
+        const singleTxButton = this.getElement(this.singleTransactionButtonSelector);
+        await singleTxButton.waitFor({ state: 'visible', timeout: 3000 });
+        await singleTxButton.click();
+        return;
+      } catch (error) {
+        if (attempt === 2) throw error;
+        await this.window.keyboard.press('Escape');
+        await this.window.waitForTimeout(300);
+      }
+    }
   }
 
   async clickOnImportButton() {

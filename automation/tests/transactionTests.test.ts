@@ -762,6 +762,7 @@ test.describe('Transaction tests', () => {
     await transactionPage.clickOnFirstDraftContinueButton();
 
     // Click Sign and Execute, Save and Goto Settings and check Settings tab is displayed
+    await new Promise(resolve => setTimeout(resolve, 250));
     await transactionPage.clickOnSignAndSubmitButton();
     await transactionPage.clickOnGotoSettings();
     await settingsPage.verifySettingsElements();
