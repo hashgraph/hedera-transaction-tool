@@ -27,6 +27,12 @@ const handleInstall = () => emit('install');
       Version {{ version }} has been downloaded.<br />
       The application will restart to install the update.
     </p>
+    <div class="alert alert-info mt-3" role="alert">
+      <p class="text-small mb-0">
+        Installing update may take several minutes.<br />
+        Please <b>wait</b> until application restarts.<br />
+      </p>
+    </div>
     <hr class="separator my-4" />
     <div class="d-flex gap-4 justify-content-center">
       <AppButton
