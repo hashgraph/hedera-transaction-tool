@@ -30,4 +30,12 @@ export const getTransactionNodes = async (
     const r = await axiosWithCredentials.get(`${serverUrl}/transaction-nodes`, { params });
 
     return r.data;
-  }, 'Failed to get transaction nodes');
+  },
+    'Something went wrong while fetching transaction nodes. Please try again.',
+    'Your session may have expired. Try refreshing the page and signing in again.',
+    {
+      404: `Could not retrieve transactions. The server may be outdated — please contact your administrator for help.`,
+      403: `You don't have permission to view transactions for this network.`,
+      500: `The server ran into a problem fetching transactions. Try again in a moment.`,
+    },
+  );
