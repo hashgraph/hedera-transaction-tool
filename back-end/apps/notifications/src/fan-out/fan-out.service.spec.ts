@@ -108,4 +108,22 @@ describe('FanOutService', () => {
       eventType: 'unknown',
     });
   });
+
+  it('notifyClients should catch and log errors without throwing', async () => {
+    const error = new Error('websocket failure');
+    websocketMock.notifyUser.mockRejectedValueOnce(error);
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+    const dtos: any[] = [
+      { userId: 1, transactionIds: [10], groupIds: [], eventType: 'update' },
+      { userId: 2, transactionIds: [20], groupIds: [], eventType: 'update' },
+    ];
+
+    await expect(service.notifyClients(dtos)).resolves.not.toThrow();
+
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to notify user 1:', error);
+    expect(websocketMock.notifyUser).toHaveBeenCalledTimes(2);
+
+    consoleSpy.mockRestore();
+  });
 });
