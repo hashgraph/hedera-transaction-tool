@@ -25,9 +25,12 @@ export function generateTransactionExecutedContent(...notifications: Notificatio
       : `Multiple transactions have executed!`;
 
   const details = notifications.map(notification => {
-    const status = notification.additionalData?.status ?? 'UNKNOWN';
+    const statusCode = notification.additionalData?.statusCode;
     const transactionId = notification.additionalData?.transactionId;
     const network = notification.additionalData?.network;
+
+    // For simplicity, we treat status codes 0, 22, and 104 as "SUCCESS", and everything else as "FAILED".
+    const status = [0, 22, 104].includes(statusCode) ? 'SUCCESS' : 'FAILED';
 
     return `Status: ${status}\nTransaction ID: ${transactionId}\nNetwork: ${getNetworkString(network)}`;
   }).join('\n\n');

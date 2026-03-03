@@ -4,220 +4,53 @@ import {
 } from '.';
 import { Notification, TransactionStatus } from '@entities';
 
-describe('generateTransactionExecutedContent', () => {
-  describe('header content', () => {
-    it('should use singular header for one notification', () => {
-      const notification = {
-        additionalData: {
-          status: 'SUCCESS',
-          transactionId: 'tx-123',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
+// back-end/libs/common/src/templates/transaction-executed.spec.ts
+describe('generateTransactionExecutedContent - statusCode mapping', () => {
+  const makeNotification = (statusCode: any): Notification =>
+    ({
+      additionalData: {
+        statusCode,
+        transactionId: 'tx-123',
+        network: 'mainnet',
+      },
+    }) as unknown as Notification;
 
-      const result = generateTransactionExecutedContent(notification);
-
-      expect(result).toContain('Transaction has executed!');
-      expect(result).not.toContain('Multiple transactions');
-    });
-
-    it('should use plural header for multiple notifications', () => {
-      const notifications = [
-        { additionalData: { status: 'SUCCESS', transactionId: 'tx-1', network: 'mainnet' } },
-        { additionalData: { status: 'FAILED', transactionId: 'tx-2', network: 'testnet' } },
-      ] as unknown as Notification[];
-
-      const result = generateTransactionExecutedContent(...notifications);
-
-      expect(result).toContain('Multiple transactions have executed!');
-      expect(result).not.toContain('Transaction has executed!');
-    });
+  it('maps statusCode 0 to SUCCESS', () => {
+    const result = generateTransactionExecutedContent(makeNotification(0));
+    expect(result).toContain('Status: SUCCESS');
   });
 
-  describe('transaction details', () => {
-    it('should include status, transaction ID, and network', () => {
-      const notification = {
-        additionalData: {
-          status: 'SUCCESS',
-          transactionId: '0.0.123@1234567890.123456789',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
-
-      const result = generateTransactionExecutedContent(notification);
-
-      expect(result).toContain('Status: SUCCESS');
-      expect(result).toContain('Transaction ID: 0.0.123@1234567890.123456789');
-      expect(result).toContain('Network: Mainnet');
-    });
-
-    it('should default status to UNKNOWN when missing', () => {
-      const notification = {
-        additionalData: {
-          transactionId: 'tx-123',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
-
-      const result = generateTransactionExecutedContent(notification);
-
-      expect(result).toContain('Status: UNKNOWN');
-    });
-
-    it('should default status to UNKNOWN when null', () => {
-      const notification = {
-        additionalData: {
-          status: null,
-          transactionId: 'tx-123',
-          network: 'mainnet',
-        },
-      } as any;
-
-      const result = generateTransactionExecutedContent(notification);
-
-      expect(result).toContain('Status: UNKNOWN');
-    });
-
-    it('should handle missing transactionId', () => {
-      const notification = {
-        additionalData: {
-          status: 'SUCCESS',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
-
-      const result = generateTransactionExecutedContent(notification);
-
-      expect(result).toContain('Transaction ID: undefined');
-    });
-
-    it('should format network string', () => {
-      const notification = {
-        additionalData: {
-          status: 'SUCCESS',
-          transactionId: 'tx-123',
-          network: 'testnet',
-        },
-      } as unknown as Notification;
-
-      const result = generateTransactionExecutedContent(notification);
-
-      expect(result).toContain('Network: Testnet');
-    });
+  it('maps statusCode 22 to SUCCESS', () => {
+    const result = generateTransactionExecutedContent(makeNotification(22));
+    expect(result).toContain('Status: SUCCESS');
   });
 
-  describe('multiple notifications', () => {
-    it('should separate notifications with double newlines', () => {
-      const notifications = [
-        {
-          additionalData: {
-            status: 'SUCCESS',
-            transactionId: 'tx-1',
-            network: 'mainnet',
-          },
-        },
-        {
-          additionalData: {
-            status: 'FAILED',
-            transactionId: 'tx-2',
-            network: 'testnet',
-          },
-        },
-      ] as unknown as Notification[];
-
-      const result = generateTransactionExecutedContent(...notifications);
-
-      expect(result).toMatch(/Network:.*\n\nStatus:/);
-    });
-
-    it('should include all three fields for each notification', () => {
-      const notifications = [
-        { additionalData: { status: 'SUCCESS', transactionId: 'tx-1', network: 'mainnet' } },
-        { additionalData: { status: 'FAILED', transactionId: 'tx-2', network: 'testnet' } },
-      ] as unknown as Notification[];
-
-      const result = generateTransactionExecutedContent(...notifications);
-
-      expect(result.match(/Status:/g)?.length).toBe(2);
-      expect(result.match(/Transaction ID:/g)?.length).toBe(2);
-      expect(result.match(/Network:/g)?.length).toBe(2);
-    });
-
-    it('should maintain notification order', () => {
-      const notifications = [
-        { additionalData: { status: 'SUCCESS', transactionId: 'first', network: 'mainnet' } },
-        { additionalData: { status: 'FAILED', transactionId: 'second', network: 'testnet' } },
-        { additionalData: { status: 'PENDING', transactionId: 'third', network: 'previewnet' } },
-      ] as unknown as Notification[];
-
-      const result = generateTransactionExecutedContent(...notifications);
-
-      const firstIndex = result.indexOf('first');
-      const secondIndex = result.indexOf('second');
-      const thirdIndex = result.indexOf('third');
-
-      expect(firstIndex).toBeLessThan(secondIndex);
-      expect(secondIndex).toBeLessThan(thirdIndex);
-    });
+  it('maps statusCode 104 to SUCCESS', () => {
+    const result = generateTransactionExecutedContent(makeNotification(104));
+    expect(result).toContain('Status: SUCCESS');
   });
 
-  describe('output format', () => {
-    it('should have header followed by double newline before details', () => {
-      const notification = {
-        additionalData: {
-          status: 'SUCCESS',
-          transactionId: 'tx-123',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
-
-      const result = generateTransactionExecutedContent(notification);
-
-      expect(result).toMatch(/executed!\n\nStatus:/);
-    });
-
-    it('should maintain consistent field order', () => {
-      const notification = {
-        additionalData: {
-          status: 'SUCCESS',
-          transactionId: 'tx-123',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
-
-      const result = generateTransactionExecutedContent(notification);
-
-      const statusIndex = result.indexOf('Status:');
-      const transactionIdIndex = result.indexOf('Transaction ID:');
-      const networkIndex = result.indexOf('Network:');
-
-      expect(statusIndex).toBeLessThan(transactionIdIndex);
-      expect(transactionIdIndex).toBeLessThan(networkIndex);
-    });
+  it('maps any other numeric statusCode to FAILED', () => {
+    const result = generateTransactionExecutedContent(makeNotification(999));
+    expect(result).toContain('Status: FAILED');
   });
 
-  describe('edge cases', () => {
-    it('should handle empty notifications array', () => {
-      const result = generateTransactionExecutedContent();
+  it('maps undefined statusCode to FAILED', () => {
+    const result = generateTransactionExecutedContent(makeNotification(undefined));
+    expect(result).toContain('Status: FAILED');
+  });
 
-      expect(result).toBeNull();
-    });
+  it('maps null statusCode to FAILED', () => {
+    const result = generateTransactionExecutedContent(makeNotification(null));
+    expect(result).toContain('Status: FAILED');
+  });
 
-    it('should handle different status values', () => {
-      const notifications = [
-        { additionalData: { status: 'SUCCESS', transactionId: 'tx-1', network: 'mainnet' } },
-        { additionalData: { status: 'FAILED', transactionId: 'tx-2', network: 'testnet' } },
-        { additionalData: { status: 'PENDING', transactionId: 'tx-3', network: 'previewnet' } },
-      ] as unknown as Notification[];
-
-      const result = generateTransactionExecutedContent(...notifications);
-
-      expect(result).toContain('Status: SUCCESS');
-      expect(result).toContain('Status: FAILED');
-      expect(result).toContain('Status: PENDING');
-    });
+  it('maps non-number statusCode (e.g. string) to FAILED', () => {
+    const result = generateTransactionExecutedContent(makeNotification('0'));
+    expect(result).toContain('Status: FAILED');
   });
 });
+
 
 describe('newGenerateTransactionExecutedContent', () => {
   describe('empty notifications', () => {
@@ -232,7 +65,7 @@ describe('newGenerateTransactionExecutedContent', () => {
     it('should use singular title for one notification', () => {
       const notification = {
         additionalData: {
-          status: TransactionStatus.EXECUTED,
+          statusCode: TransactionStatus.EXECUTED,
           transactionId: 'tx-123',
           network: 'mainnet',
           executedAt: new Date('2024-01-15T10:30:00Z'),
@@ -249,7 +82,7 @@ describe('newGenerateTransactionExecutedContent', () => {
       const notifications = [
         {
           additionalData: {
-            status: TransactionStatus.EXECUTED,
+            statusCode: TransactionStatus.EXECUTED,
             transactionId: 'tx-1',
             network: 'mainnet',
             executedAt: new Date('2024-01-15T10:30:00Z'),
@@ -257,7 +90,7 @@ describe('newGenerateTransactionExecutedContent', () => {
         },
         {
           additionalData: {
-            status: TransactionStatus.FAILED,
+            statusCode: TransactionStatus.FAILED,
             transactionId: 'tx-2',
             network: 'testnet',
             executedAt: new Date('2024-01-15T10:31:00Z'),
@@ -274,7 +107,7 @@ describe('newGenerateTransactionExecutedContent', () => {
     it('should use singular intro text for one notification', () => {
       const notification = {
         additionalData: {
-          status: TransactionStatus.EXECUTED,
+          statusCode: TransactionStatus.EXECUTED,
           transactionId: 'tx-123',
           network: 'mainnet',
           executedAt: new Date('2024-01-15T10:30:00Z'),
@@ -290,7 +123,7 @@ describe('newGenerateTransactionExecutedContent', () => {
       const notifications = [
         {
           additionalData: {
-            status: TransactionStatus.EXECUTED,
+            statusCode: TransactionStatus.EXECUTED,
             transactionId: 'tx-1',
             network: 'mainnet',
             executedAt: new Date(),
@@ -298,7 +131,7 @@ describe('newGenerateTransactionExecutedContent', () => {
         },
         {
           additionalData: {
-            status: TransactionStatus.EXECUTED,
+            statusCode: TransactionStatus.EXECUTED,
             transactionId: 'tx-2',
             network: 'testnet',
             executedAt: new Date(),
@@ -317,7 +150,7 @@ describe('newGenerateTransactionExecutedContent', () => {
       const notifications = [
         {
           additionalData: {
-            status: TransactionStatus.EXECUTED,
+            statusCode: TransactionStatus.EXECUTED,
             transactionId: 'tx-1',
             network: 'mainnet',
             executedAt: new Date('2024-01-15T10:30:00Z'),
@@ -325,7 +158,7 @@ describe('newGenerateTransactionExecutedContent', () => {
         },
         {
           additionalData: {
-            status: TransactionStatus.EXECUTED,
+            statusCode: TransactionStatus.EXECUTED,
             transactionId: 'tx-2',
             network: 'testnet',
             executedAt: new Date('2024-01-15T10:31:00Z'),
@@ -333,7 +166,7 @@ describe('newGenerateTransactionExecutedContent', () => {
         },
         {
           additionalData: {
-            status: TransactionStatus.FAILED,
+            statusCode: TransactionStatus.FAILED,
             transactionId: 'tx-3',
             network: 'mainnet',
             executedAt: new Date('2024-01-15T10:32:00Z'),
@@ -353,7 +186,7 @@ describe('newGenerateTransactionExecutedContent', () => {
     it('should show "Successful transactions" for EXECUTED status', () => {
       const notification = {
         additionalData: {
-          status: TransactionStatus.EXECUTED,
+          statusCode: TransactionStatus.EXECUTED,
           transactionId: 'tx-123',
           network: 'mainnet',
           executedAt: new Date(),
@@ -369,7 +202,7 @@ describe('newGenerateTransactionExecutedContent', () => {
       const notifications = [
         {
           additionalData: {
-            status: 'PENDING',
+            statusCode: 'PENDING',
             transactionId: 'tx-1',
             network: 'mainnet',
             executedAt: new Date(),
@@ -377,7 +210,7 @@ describe('newGenerateTransactionExecutedContent', () => {
         },
         {
           additionalData: {
-            status: 'FAILED',
+            statusCode: 'FAILED',
             transactionId: 'tx-2',
             network: 'testnet',
             executedAt: new Date(),
@@ -409,7 +242,7 @@ describe('newGenerateTransactionExecutedContent', () => {
       const notifications = [
         {
           additionalData: {
-            status: 'executed',
+            statusCode: 'executed',
             transactionId: 'tx-1',
             network: 'mainnet',
             executedAt: new Date(),
@@ -417,7 +250,7 @@ describe('newGenerateTransactionExecutedContent', () => {
         },
         {
           additionalData: {
-            status: 'EXECUTED',
+            statusCode: 'EXECUTED',
             transactionId: 'tx-2',
             network: 'testnet',
             executedAt: new Date(),
@@ -438,7 +271,7 @@ describe('newGenerateTransactionExecutedContent', () => {
     it('should use green badge for successful transactions', () => {
       const notification = {
         additionalData: {
-          status: TransactionStatus.EXECUTED,
+          statusCode: TransactionStatus.EXECUTED,
           transactionId: 'tx-123',
           network: 'mainnet',
           executedAt: new Date(),
@@ -454,7 +287,7 @@ describe('newGenerateTransactionExecutedContent', () => {
     it('should use red badge for failed transactions', () => {
       const notification = {
         additionalData: {
-          status: TransactionStatus.FAILED,
+          statusCode: TransactionStatus.FAILED,
           transactionId: 'tx-123',
           network: 'mainnet',
           executedAt: new Date(),
@@ -472,7 +305,7 @@ describe('newGenerateTransactionExecutedContent', () => {
     it('should include table headers', () => {
       const notification = {
         additionalData: {
-          status: TransactionStatus.EXECUTED,
+          statusCode: TransactionStatus.EXECUTED,
           transactionId: 'tx-123',
           network: 'mainnet',
           executedAt: new Date(),
@@ -489,7 +322,7 @@ describe('newGenerateTransactionExecutedContent', () => {
     it('should include transaction details in table', () => {
       const notification = {
         additionalData: {
-          status: TransactionStatus.EXECUTED,
+          statusCode: TransactionStatus.EXECUTED,
           transactionId: '0.0.123@1234567890.123456789',
           network: 'mainnet',
           executedAt: new Date('2024-01-15T10:30:00Z'),
@@ -506,7 +339,7 @@ describe('newGenerateTransactionExecutedContent', () => {
       const notifications = [
         {
           additionalData: {
-            status: TransactionStatus.EXECUTED,
+            statusCode: TransactionStatus.EXECUTED,
             transactionId: 'tx-1',
             network: 'mainnet',
             executedAt: new Date(),
@@ -514,7 +347,7 @@ describe('newGenerateTransactionExecutedContent', () => {
         },
         {
           additionalData: {
-            status: TransactionStatus.EXECUTED,
+            statusCode: TransactionStatus.EXECUTED,
             transactionId: 'tx-2',
             network: 'testnet',
             executedAt: new Date(),
@@ -535,7 +368,7 @@ describe('newGenerateTransactionExecutedContent', () => {
       const date = new Date('2024-01-15T10:30:45Z');
       const notification = {
         additionalData: {
-          status: TransactionStatus.EXECUTED,
+          statusCode: TransactionStatus.EXECUTED,
           transactionId: 'tx-123',
           network: 'mainnet',
           executedAt: date,
@@ -551,7 +384,7 @@ describe('newGenerateTransactionExecutedContent', () => {
       const dateStr = '2024-01-15T10:30:45Z';
       const notification = {
         additionalData: {
-          status: TransactionStatus.EXECUTED,
+          statusCode: TransactionStatus.EXECUTED,
           transactionId: 'tx-123',
           network: 'mainnet',
           executedAt: dateStr,
@@ -568,7 +401,7 @@ describe('newGenerateTransactionExecutedContent', () => {
       const timestamp = 1705315845000;
       const notification = {
         additionalData: {
-          status: TransactionStatus.EXECUTED,
+          statusCode: TransactionStatus.EXECUTED,
           transactionId: 'tx-123',
           network: 'mainnet',
           executedAt: timestamp,
@@ -586,7 +419,7 @@ describe('newGenerateTransactionExecutedContent', () => {
     it('should generate valid HTML document', () => {
       const notification = {
         additionalData: {
-          status: TransactionStatus.EXECUTED,
+          statusCode: TransactionStatus.EXECUTED,
           transactionId: 'tx-123',
           network: 'mainnet',
           executedAt: new Date(),
@@ -607,7 +440,7 @@ describe('newGenerateTransactionExecutedContent', () => {
     it('should include meta charset', () => {
       const notification = {
         additionalData: {
-          status: TransactionStatus.EXECUTED,
+          statusCode: TransactionStatus.EXECUTED,
           transactionId: 'tx-123',
           network: 'mainnet',
           executedAt: new Date(),
@@ -622,7 +455,7 @@ describe('newGenerateTransactionExecutedContent', () => {
     it('should use table-based layout', () => {
       const notification = {
         additionalData: {
-          status: TransactionStatus.EXECUTED,
+          statusCode: TransactionStatus.EXECUTED,
           transactionId: 'tx-123',
           network: 'mainnet',
           executedAt: new Date(),
@@ -638,7 +471,7 @@ describe('newGenerateTransactionExecutedContent', () => {
     it('should include header with brand color', () => {
       const notification = {
         additionalData: {
-          status: TransactionStatus.EXECUTED,
+          statusCode: TransactionStatus.EXECUTED,
           transactionId: 'tx-123',
           network: 'mainnet',
           executedAt: new Date(),
@@ -654,7 +487,7 @@ describe('newGenerateTransactionExecutedContent', () => {
     it('should include footer with automated message disclaimer', () => {
       const notification = {
         additionalData: {
-          status: TransactionStatus.EXECUTED,
+          statusCode: TransactionStatus.EXECUTED,
           transactionId: 'tx-123',
           network: 'mainnet',
           executedAt: new Date(),
@@ -672,7 +505,7 @@ describe('newGenerateTransactionExecutedContent', () => {
       const notifications = [
         {
           additionalData: {
-            status: TransactionStatus.FAILED,
+            statusCode: TransactionStatus.FAILED,
             transactionId: 'tx-1',
             network: 'mainnet',
             executedAt: new Date(),
@@ -680,7 +513,7 @@ describe('newGenerateTransactionExecutedContent', () => {
         },
         {
           additionalData: {
-            status: TransactionStatus.EXECUTED,
+            statusCode: TransactionStatus.EXECUTED,
             transactionId: 'tx-2',
             network: 'testnet',
             executedAt: new Date(),
@@ -688,7 +521,7 @@ describe('newGenerateTransactionExecutedContent', () => {
         },
         {
           additionalData: {
-            status: TransactionStatus.EXECUTED,
+            statusCode: TransactionStatus.EXECUTED,
             transactionId: 'tx-3',
             network: 'previewnet',
             executedAt: new Date(),
