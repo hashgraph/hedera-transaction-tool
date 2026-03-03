@@ -691,12 +691,25 @@ export class ReceiverService {
     transactionId: string;
     network: string;
     groupId?: number;
+    isManual?: boolean;
+    validStart?: Date;
+    statusCode?: number;
   } {
+    const groupId = transaction.groupItem?.groupId;
+    const statusCode = transaction.statusCode;
+
     return {
       transactionId: transaction.transactionId,
       network: transaction.mirrorNetwork,
-      ...(transaction.groupItem?.groupId
-        ? { groupId: transaction.groupItem.groupId }
+
+      ...(groupId ? { groupId } : {}),
+
+      ...(transaction.isManual
+        ? { isManual: true, validStart: transaction.validStart }
+        : {}),
+
+      ...(statusCode != null
+        ? { statusCode }
         : {}),
     };
   }
