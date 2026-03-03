@@ -96,7 +96,7 @@ function buildEligibilityConditions(
 
   if (roles.signer) {
     const { keyIds, publicKeys } = getUserKeyData();
-    const keyParam = addParam(keyIds);
+    const keyIdsParam = addParam(keyIds);
     const publicKeysParam = addParam(publicKeys);
 
     const branches: string[] = [];
@@ -113,7 +113,7 @@ function buildEligibilityConditions(
         JOIN ${sql.table(UserKey)} uk
           ON uk.${sql.col(UserKey, 'publicKey')} = cak.${sql.col(CachedAccountKey, 'publicKey')}
         WHERE ta.${sql.col(TransactionCachedAccount, 'transactionId')} = t.${sql.col(Transaction, 'id')}
-          AND uk.${sql.col(UserKey, 'id')} = ANY(${keyParam})
+          AND uk.${sql.col(UserKey, 'id')} = ANY(${keyIdsParam})
           ${onlyUnsigned ? `
           AND NOT EXISTS (
             SELECT 1
@@ -137,7 +137,7 @@ function buildEligibilityConditions(
         JOIN ${sql.table(UserKey)} uk
           ON uk.${sql.col(UserKey, 'publicKey')} = cnak.${sql.col(CachedNodeAdminKey, 'publicKey')}
         WHERE tn.${sql.col(TransactionCachedNode, 'transactionId')} = t.${sql.col(Transaction, 'id')}
-          AND uk.${sql.col(UserKey, 'id')} = ANY(${keyParam})
+          AND uk.${sql.col(UserKey, 'id')} = ANY(${keyIdsParam})
           ${onlyUnsigned ? `
           AND NOT EXISTS (
             SELECT 1
@@ -157,11 +157,8 @@ function buildEligibilityConditions(
         AND NOT EXISTS (
           SELECT 1
           FROM ${sql.table(TransactionSigner)} ts
-          JOIN ${sql.table(UserKey)} uk
-            ON uk.${sql.col(UserKey, 'id')} = ts.${sql.col(TransactionSigner, 'userKeyId')}
           WHERE ts.${sql.col(TransactionSigner, 'transactionId')} = t.${sql.col(Transaction, 'id')}
-            AND uk.${sql.col(UserKey, 'publicKey')} = ANY(t.${sql.col(Transaction, 'publicKeys')})
-            AND uk.${sql.col(UserKey, 'id')} = ANY(${keyParam})
+            AND ts.${sql.col(TransactionSigner, 'userKeyId')} = ANY(${keyIdsParam})
         )` : ''}
       )
     `;
@@ -191,20 +188,21 @@ function buildEligibilityConditions(
   if (roles.approver) {
     const userParam = addParam(user.id);
     eligibilityConditions.push(`
-      (
+      EXISTS (
         WITH RECURSIVE approverList AS (
           SELECT *
           FROM ${sql.table(TransactionApprover)}
           WHERE ${sql.col(TransactionApprover, 'transactionId')} = t.${sql.col(Transaction, 'id')}
+            AND ${sql.col(TransactionApprover, 'deletedAt')} IS NULL
           UNION ALL
           SELECT a.*
           FROM ${sql.table(TransactionApprover)} a
-          JOIN approverList al ON al.${sql.col(TransactionApprover, 'id')} = a.${sql.col(TransactionApprover, 'listId')}
+            JOIN approverList al ON al.${sql.col(TransactionApprover, 'id')} = a.${sql.col(TransactionApprover, 'listId')}
+          WHERE a.${sql.col(TransactionApprover, 'deletedAt')} IS NULL
         )
-        SELECT COUNT(*)::int FROM approverList
-        WHERE approverList.${sql.col(TransactionApprover, 'deletedAt')} IS NULL
-          AND approverList.${sql.col(TransactionApprover, 'userId')} = ${userParam}
-      ) > 0
+        SELECT 1 FROM approverList
+        WHERE approverList.${sql.col(TransactionApprover, 'userId')} = ${userParam}
+      )
     `);
   }
 
