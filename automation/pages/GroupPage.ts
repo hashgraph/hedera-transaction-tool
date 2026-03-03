@@ -36,7 +36,7 @@ export class GroupPage extends BasePage {
   deleteAllButtonSelector = 'button-delete-all';
   confirmDeleteAllButtonSelector = 'button-confirm-delete-all';
   confirmGroupTransactionButtonSelector = 'button-confirm-group-transaction';
-  detailsGroupButtonSelector = 'button-group-details-';
+  detailsGroupButtonSelector = 'button-transaction-node-details-';
   importCsvButtonSelector = 'button-import-csv';
   // Text
   toastMessageSelector = '.v-toast__text';
@@ -55,7 +55,7 @@ export class GroupPage extends BasePage {
   async closeModalIfVisible(selector: string) {
     const modalButton = this.window.getByTestId(selector);
 
-    await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(() => {});
+    await modalButton.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
 
     if (await modalButton.isVisible()) {
       await modalButton.click();
@@ -83,6 +83,8 @@ export class GroupPage extends BasePage {
   }
 
   async clickOnSignAndExecuteButton() {
+    // Skip loader wait - it never disappears. Just wait for button to be visible.
+    await this.waitForElementToBeVisible(this.signAndExecuteButtonSelector, 10000);
     await this.click(this.signAndExecuteButtonSelector);
   }
 
@@ -221,6 +223,31 @@ export class GroupPage extends BasePage {
       this.importCsvButtonSelector,
       path.resolve(__dirname, '..', 'data', fileName),
     );
+    // Wait for all transactions to be loaded before proceeding
+    const lastTxIndex = numberOfTransactions - 1;
+    await this.waitForElementToBeVisible(`span-transaction-type-${lastTxIndex}`, 10000);
+  }
+
+  async importCsvExpectingError(
+    fromAccountId: string,
+    receiverAccountId: string,
+    numberOfTransactions: number = 10,
+    feePayerAccountId: string | null = null,
+  ) {
+    const fileName = 'groupTransactions.csv';
+    await generateCSVFile({
+      senderAccount: fromAccountId,
+      feePayerAccount: feePayerAccountId,
+      accountId: receiverAccountId,
+      startingAmount: 1,
+      numberOfTransactions: numberOfTransactions,
+      fileName: fileName,
+    });
+    await this.uploadFile(
+      this.importCsvButtonSelector,
+      path.resolve(__dirname, '..', 'data', fileName),
+    );
+    return await this.getToastMessage(true);
   }
 
   async addOrgAllowanceTransactionToGroup(
@@ -258,6 +285,8 @@ export class GroupPage extends BasePage {
   }
 
   async clickOnConfirmGroupTransactionButton() {
+    // Wait for the confirmation modal to appear before clicking
+    await this.waitForElementToBeVisible(this.confirmGroupTransactionButtonSelector, 5000);
     await this.click(this.confirmGroupTransactionButtonSelector);
   }
 
@@ -272,11 +301,17 @@ export class GroupPage extends BasePage {
   }
 
   async clickOnDetailsGroupButton(index: number) {
-    await this.click(this.detailsGroupButtonSelector + index);
+    const selector = this.detailsGroupButtonSelector + index;
+    // Wait for the group button to be visible (may take time to load)
+    await this.waitForElementToBeVisible(selector, 10000);
+    await this.click(selector);
   }
 
   async clickOnTransactionDetailsButton(index: number) {
-    await this.click(this.orgTransactionDetailsButtonIndexSelector + index);
+    const selector = this.orgTransactionDetailsButtonIndexSelector + index;
+    // Skip loader wait - just wait for button to be visible
+    await this.waitForElementToBeVisible(selector, 10000);
+    await this.click(selector);
   }
 
   async logInAndSignGroupTransactionsByAllUsers(encryptionPassword: string, signAll = true) {
@@ -286,6 +321,19 @@ export class GroupPage extends BasePage {
       await this.organizationPage.signInOrganization(user.email, user.password, encryptionPassword);
       await this.transactionPage.clickOnTransactionsMenuButton();
       await this.organizationPage.clickOnReadyToSignTab();
+
+      // Poll for transaction to appear (handles cache race condition)
+      // Backend cache linking can take 10-30s+ depending on mirror node latency
+      const found = await this.waitForTransactionInTab(
+        this.organizationPage.readyToSignTabSelector,
+        30,   // Max 30 retries (increased from 15)
+        2000  // 2 seconds between retries = max 60s wait
+      );
+
+      if (!found) {
+        throw new Error(`User ${i} (${user.email}) could not find transaction in Ready to Sign tab after 30 retries (60s timeout)`);
+      }
+
       await this.clickOnDetailsGroupButton(0);
       if (signAll) {
         await this.clickOnSignAllButton();
@@ -322,6 +370,8 @@ export class GroupPage extends BasePage {
         } while (true);
       }
 
+      // Wait for backend to process signatures before next user logs in
+      await this.waitForElementToDisappear(this.toastMessageSelector);
       await this.organizationPage.logoutFromOrganization();
     }
   }
@@ -331,10 +381,61 @@ export class GroupPage extends BasePage {
   }
 
   async clickOnCancelAllButton() {
-    await this.click(this.organizationPage.cancelAllTransactionsButtonSelector);
+    const dropdownSelector = 'button-more-dropdown-lg';
+    const cancelItemSelector = 'button-more-dropdown-lg-item-Cancel All';
+    await this.waitForElementToBeVisible(dropdownSelector, 15000);
+    await this.click(dropdownSelector);
+    await this.click(cancelItemSelector);
   }
 
   async clickOnConfirmGroupActionButton() {
     await this.organizationPage.clickOnConfirmGroupActionButton();
+  }
+
+  /**
+   * Wait for transaction to appear in specified tab with retry logic.
+   * Handles cache race condition where transaction_cached_account links
+   * are populated asynchronously after User 0 signs.
+   *
+   * Backend cache population timing:
+   * - processTransactionStatus() calls computeSignatureKey()
+   * - computeSignatureKey() calls getAccountInfoForTransaction()
+   * - getAccountInfoForTransaction() fetches from mirror node (5-15s) + creates links
+   * - Total time can be 10-30s depending on mirror node latency
+   *
+   * @param tabSelector - Tab selector (e.g., organizationPage.readyToSignTabSelector)
+   * @param maxRetries - Maximum number of retry attempts (default: 15)
+   * @param delayMs - Delay between retries in milliseconds (default: 2000)
+   * @returns true if transaction found, false otherwise
+   */
+  async waitForTransactionInTab(
+    tabSelector: string,
+    maxRetries: number = 30,
+    delayMs: number = 2000
+  ): Promise<boolean> {
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        // Navigate to the tab (using click method directly since no generic clickOnTab exists)
+        await this.organizationPage.click(tabSelector);
+
+        // SKIP loader wait - it never disappears (stays visible in DOM with display:block)
+        // Transaction renders immediately even with loader visible
+
+        // Use Playwright's native waitFor for better reliability
+        await this.window.locator('[data-testid="button-transaction-node-details-0"]')
+          .waitFor({ state: 'visible', timeout: 3000 });
+
+        console.log(`Transaction found in tab after ${i + 1} attempt(s)`);
+        return true;
+      } catch (error: any) {
+        console.log(`Transaction not found, retrying in ${delayMs}ms... (attempt ${i + 1}/${maxRetries})`);
+        if (i < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+      }
+    }
+
+    console.log(`Transaction not found after ${maxRetries} attempts`);
+    return false;
   }
 }

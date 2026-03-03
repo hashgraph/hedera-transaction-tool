@@ -202,8 +202,8 @@ async function fetchNodes(): Promise<void> {
       );
       sortNodes();
       clampPage();
-    } catch {
-      toast.error(loadErrorMessage.value, errorToastOptions);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : loadErrorMessage.value, errorToastOptions);
     } finally {
       isLoading.value = false;
     }
