@@ -1033,6 +1033,10 @@ export class ReceiverService {
     // Process each event
     for (const { entityId: transactionId } of events) {
       const transaction = transactionMap.get(transactionId);
+      if (!transaction) {
+        console.warn(`Transaction ${transactionId} not found, skipping status-update notifications`);
+        continue;
+      }
       const approvers = approversMap.get(transactionId) || [];
 
       if (transaction.deletedAt && transaction.status !== TransactionStatus.CANCELED) {
@@ -1124,6 +1128,10 @@ export class ReceiverService {
 
     for (const { entityId: transactionId } of events) {
       const transaction = transactionMap.get(transactionId);
+      if (!transaction) {
+        console.warn(`Transaction ${transactionId} not found, skipping signer reminder`);
+        continue;
+      }
 
       const allKeys = await keysRequiredToSign(
         transaction,
