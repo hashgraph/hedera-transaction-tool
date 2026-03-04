@@ -242,6 +242,29 @@ describe('ReceiverService', () => {
     expect(result.requiredUserIds).toEqual([100]);
   });
 
+  it('getTransactionParticipants omits creatorId and does not include it in participants when creatorKey is null', async () => {
+    (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 100, user: { id: 100 } }]);
+
+    const tx: any = {
+      creatorKey: null,
+      signers: [{ userId: 2 }],
+      observers: [{ userId: 3 }],
+      status: TransactionStatus.WAITING_FOR_SIGNATURES,
+    };
+
+    const approvers = [
+      { userId: 4, approved: null } as TransactionApprover,
+      { userId: 5, approved: true } as TransactionApprover,
+    ];
+
+    const result = await (service as any).getTransactionParticipants(em as any, tx, approvers, new Map());
+
+    expect('creatorId' in result).toBe(false);
+    expect(result.participants).toEqual(expect.arrayContaining([2, 3, 4, 5, 100]));
+    expect(result.participants).not.toContain(null);
+    expect(result.participants).not.toContain(undefined);
+  });
+
   it('getTransactionParticipants yields empty approversShouldChooseUserIds when status is not waiting', async () => {
     (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 100, user: { id: 100 } }]);
 
@@ -588,7 +611,7 @@ describe('ReceiverService', () => {
     cache.set(1, { id: 1 } as any);
     cache.set(2, { id: 2 } as any);
 
-    const result = await (service as any).processNotificationType(
+    await (service as any).processNotificationType(
       em as any,
       /* transactionId */ 999,
       notificationType,
@@ -755,6 +778,130 @@ describe('ReceiverService', () => {
         network: 'net-2',
       });
       expect(res).not.toHaveProperty('groupId');
+    });
+
+    it('buildAdditionalData includes isManual and validStart when isManual is true', () => {
+      const validStart = new Date('2025-01-01T00:00:00.000Z');
+      const transaction: any = {
+        transactionId: 'tx-3',
+        mirrorNetwork: 'net-3',
+        isManual: true,
+        validStart,
+      };
+
+      const res = (service as any).buildAdditionalData(transaction);
+
+      expect(res).toEqual({
+        transactionId: 'tx-3',
+        network: 'net-3',
+        isManual: true,
+        validStart,
+      });
+    });
+
+    it('buildAdditionalData omits isManual and validStart when isManual is falsey', () => {
+      const transaction: any = {
+        transactionId: 'tx-4',
+        mirrorNetwork: 'net-4',
+        isManual: false,
+        validStart: new Date('2025-01-01T00:00:00.000Z'),
+      };
+
+      const res = (service as any).buildAdditionalData(transaction);
+
+      expect(res).toEqual({
+        transactionId: 'tx-4',
+        network: 'net-4',
+      });
+      expect(res).not.toHaveProperty('isManual');
+      expect(res).not.toHaveProperty('validStart');
+    });
+
+    it('buildAdditionalData includes statusCode when it is a number', () => {
+      const transaction: any = {
+        transactionId: 'tx-5',
+        mirrorNetwork: 'net-5',
+        statusCode: 22,
+      };
+
+      const res = (service as any).buildAdditionalData(transaction);
+
+      expect(res).toEqual({
+        transactionId: 'tx-5',
+        network: 'net-5',
+        statusCode: 22,
+      });
+    });
+
+    it('buildAdditionalData includes statusCode when it is 0', () => {
+      const transaction: any = {
+        transactionId: 'tx-6',
+        mirrorNetwork: 'net-6',
+        statusCode: 0,
+      };
+
+      const res = (service as any).buildAdditionalData(transaction);
+
+      expect(res).toEqual({
+        transactionId: 'tx-6',
+        network: 'net-6',
+        statusCode: 0,
+      });
+    });
+
+    it('buildAdditionalData omits statusCode when it is null', () => {
+      const transaction: any = {
+        transactionId: 'tx-7',
+        mirrorNetwork: 'net-7',
+        statusCode: null,
+      };
+
+      const res = (service as any).buildAdditionalData(transaction);
+
+      expect(res).toEqual({
+        transactionId: 'tx-7',
+        network: 'net-7',
+      });
+      expect(res).not.toHaveProperty('statusCode');
+    });
+
+    it('buildAdditionalData omits statusCode when it is undefined', () => {
+      const transaction: any = {
+        transactionId: 'tx-8',
+        mirrorNetwork: 'net-8',
+        statusCode: undefined,
+      };
+
+      const res = (service as any).buildAdditionalData(transaction);
+
+      expect(res).toEqual({
+        transactionId: 'tx-8',
+        network: 'net-8',
+      });
+      expect(res).not.toHaveProperty('statusCode');
+    });
+
+    it('buildAdditionalData composes groupId + isManual + statusCode together', () => {
+      const validStart = new Date('2025-02-02T00:00:00.000Z');
+      const transaction: any = {
+        transactionId: 'tx-9',
+        mirrorNetwork: 'net-9',
+        groupItem: { groupId: 999 },
+        isManual: true,
+        validStart,
+        statusCode: 104,
+      };
+
+      const res = (service as any).buildAdditionalData(transaction);
+
+      expect(res).toEqual({
+        transactionId: 'tx-9',
+        network: 'net-9',
+        groupId: 999,
+        isManual: true,
+        validStart,
+        statusCode: 104,
+      });
     });
   });
 

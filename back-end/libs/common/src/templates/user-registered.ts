@@ -12,6 +12,21 @@ export function generateNotifyUserRegisteredContent(notifications: Notification[
 
   const emails = notifications.map(n => n.additionalData?.username).filter(Boolean);
 
+  const header =
+    emails.length === 1
+      ? `A new user has successfully registered.`
+      : `Multiple users have successfully registered.`;
+
+  const details = emails.join('\n');
+
+  return `${header}\n\n${details}`;
+}
+
+export function generateNotifyUserRegisteredContentV2(notifications: Notification[]): string {
+  if (notifications.length === 0) return null;
+
+  const emails = notifications.map(n => n.additionalData?.username).filter(Boolean);
+
   const title =
     emails.length === 1 ? 'New user registration' : 'New user registrations';
 

@@ -1,4 +1,8 @@
-import { generateUserRegisteredMessage, generateNotifyUserRegisteredContent } from '.';
+import {
+  generateUserRegisteredMessage,
+  generateNotifyUserRegisteredContentV2,
+  generateNotifyUserRegisteredContent,
+} from '.';
 import { Notification } from '@entities';
 
 describe('generateUserRegisteredMessage', () => {
@@ -76,6 +80,64 @@ describe('generateUserRegisteredMessage', () => {
 });
 
 describe('generateNotifyUserRegisteredContent', () => {
+  it('should return null for empty notifications array', () => {
+    expect(generateNotifyUserRegisteredContent([] as unknown as Notification[])).toBeNull();
+  });
+
+  it('should generate singular header and a single email', () => {
+    const notifications = [
+      { additionalData: { username: 'user1@example.com' } },
+    ] as unknown as Notification[];
+
+    const result = generateNotifyUserRegisteredContent(notifications);
+
+    expect(result).toBe(`A new user has successfully registered.\n\nuser1@example.com`);
+  });
+
+  it('should generate plural header and list all emails on new lines', () => {
+    const notifications = [
+      { additionalData: { username: 'user1@example.com' } },
+      { additionalData: { username: 'user2@example.com' } },
+    ] as unknown as Notification[];
+
+    const result = generateNotifyUserRegisteredContent(notifications);
+
+    expect(result).toBe(
+      `Multiple users have successfully registered.\n\nuser1@example.com\nuser2@example.com`
+    );
+  });
+
+  it('should filter out notifications missing username', () => {
+    const notifications = [
+      { additionalData: { username: 'user1@example.com' } },
+      { additionalData: {} },
+      {} as unknown as Notification,
+      { additionalData: { username: null } },
+      { additionalData: { username: undefined } },
+      { additionalData: { username: 'user2@example.com' } },
+    ] as unknown as Notification[];
+
+    const result = generateNotifyUserRegisteredContent(notifications);
+
+    expect(result).toBe(
+      `Multiple users have successfully registered.\n\nuser1@example.com\nuser2@example.com`
+    );
+  });
+
+  it('should still return a message if all usernames are filtered out', () => {
+    const notifications = [
+      { additionalData: {} },
+      {} as unknown as Notification,
+      { additionalData: { username: null } },
+    ] as unknown as Notification[];
+
+    const result = generateNotifyUserRegisteredContent(notifications);
+
+    expect(result).toBe(`Multiple users have successfully registered.\n\n`);
+  });
+});
+
+describe('generateNotifyUserRegisteredContentV2', () => {
   describe('single user registration', () => {
     it('should use singular title for one user', () => {
       const notifications = [
@@ -86,7 +148,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).toContain('<title>New user registration</title>');
       expect(result).toContain('<h1 style="margin:0;font-size:20px;">New user registration</h1>');
@@ -101,7 +163,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).toContain('A user user1@example.com has successfully registered.');
     });
@@ -115,7 +177,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).not.toContain('<ul');
       expect(result).not.toContain('<li');
@@ -129,7 +191,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         { additionalData: { username: 'user2@example.com' } },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).toContain('<title>New user registrations</title>');
       expect(result).toContain('<h1 style="margin:0;font-size:20px;">New user registrations</h1>');
@@ -141,7 +203,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         { additionalData: { username: 'user2@example.com' } },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).toContain('The following users have successfully registered:');
     });
@@ -153,7 +215,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         { additionalData: { username: 'user3@example.com' } },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).toContain('<ul style="margin:8px 0 0 18px;padding:0;">');
       expect(result).toContain('user1@example.com</li>');
@@ -167,7 +229,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         { additionalData: { username: 'user2@example.com' } },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).toContain('<li style="margin:4px 0;font-size:14px;color:#333333;">user1@example.com</li>');
       expect(result).toContain('<li style="margin:4px 0;font-size:14px;color:#333333;">user2@example.com</li>');
@@ -182,7 +244,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         { additionalData: { username: 'user2@example.com' } },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).toContain('user1@example.com');
       expect(result).toContain('user2@example.com');
@@ -196,7 +258,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         { additionalData: { username: null } },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).toContain('user1@example.com');
       expect(result).toContain('New user registration'); // Singular
@@ -208,7 +270,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         { additionalData: { username: 'user1@example.com' } },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).toContain('user1@example.com');
       expect(result).toContain('New user registration'); // Singular
@@ -221,7 +283,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         { additionalData: { username: 'user2@example.com' } },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).toContain('user1@example.com');
       expect(result).toContain('user2@example.com');
@@ -234,7 +296,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         { additionalData: { username: 'user1@example.com' } },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).toContain('<!DOCTYPE html>');
       expect(result).toContain('<html lang="en">');
@@ -250,7 +312,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         { additionalData: { username: 'user1@example.com' } },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).toContain('<meta charset="UTF-8" />');
     });
@@ -260,7 +322,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         { additionalData: { username: 'user1@example.com' } },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).toContain('<table role="presentation"');
       expect(result).toContain('width="600"');
@@ -271,7 +333,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         { additionalData: { username: 'user1@example.com' } },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).toContain('background-color:#0b6efd');
       expect(result).toContain('color:#ffffff');
@@ -282,7 +344,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         { additionalData: { username: 'user1@example.com' } },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).toContain('This is an automated message. Please do not reply.');
     });
@@ -292,7 +354,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         { additionalData: { username: 'user1@example.com' } },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).toContain('background-color:#f5f5f5');
       expect(result).toContain('border-radius:8px');
@@ -304,7 +366,7 @@ describe('generateNotifyUserRegisteredContent', () => {
     it('should handle empty notifications array', () => {
       const notifications: Notification[] = [];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).toBeNull();
     });
@@ -315,7 +377,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         { additionalData: { username: null } },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       // Should still generate valid HTML
       expect(result).toContain('<!DOCTYPE html>');
@@ -328,7 +390,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         { additionalData: { username: 'user.name@sub.example.com' } },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       expect(result).toContain('user+tag@example.com');
       expect(result).toContain('user.name@sub.example.com');
@@ -341,7 +403,7 @@ describe('generateNotifyUserRegisteredContent', () => {
         { additionalData: { username: 'charlie@example.com' } },
       ] as unknown as Notification[];
 
-      const result = generateNotifyUserRegisteredContent(notifications);
+      const result = generateNotifyUserRegisteredContentV2(notifications);
 
       const aliceIndex = result.indexOf('alice@example.com');
       const bobIndex = result.indexOf('bob@example.com');

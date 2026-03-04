@@ -143,7 +143,8 @@ export class ReceiverService {
     approvers: TransactionApprover[],
     keyCache: Map<string, UserKey>,
   ) {
-    const creatorId = transaction.creatorKey.userId;
+    // If the creatorKey is deleted, it will not be included
+    const creatorId = transaction.creatorKey?.userId;
     const signerUserIds = transaction.signers.map(s => s.userId);
     const observerUserIds = transaction.observers.map(o => o.userId);
     const requiredUserIds = await this.getUsersIdsRequiredToSign(entityManager, transaction, keyCache);
@@ -174,7 +175,7 @@ export class ReceiverService {
     ];
 
     return {
-      creatorId,
+      ...(creatorId != null ? { creatorId } : {}),
       signerUserIds,
       observerUserIds,
       approversUserIds,
@@ -708,12 +709,25 @@ export class ReceiverService {
     transactionId: string;
     network: string;
     groupId?: number;
+    isManual?: boolean;
+    validStart?: Date;
+    statusCode?: number;
   } {
+    const groupId = transaction.groupItem?.groupId;
+    const statusCode = transaction.statusCode;
+
     return {
       transactionId: transaction.transactionId,
       network: transaction.mirrorNetwork,
-      ...(transaction.groupItem?.groupId
-        ? { groupId: transaction.groupItem.groupId }
+
+      ...(groupId ? { groupId } : {}),
+
+      ...(transaction.isManual
+        ? { isManual: true, validStart: transaction.validStart }
+        : {}),
+
+      ...(statusCode != null
+        ? { statusCode }
         : {}),
     };
   }
