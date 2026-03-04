@@ -121,6 +121,11 @@ jobs:
         run: |
           set -euo pipefail
 
+          if [ ! -f package.json ] || [ ! -f pnpm-workspace.yaml ]; then
+            echo "Expected to run pnpm install from back-end root" >&2
+            exit 1
+          fi
+
           pnpm install
 
           sudo apt-get update
@@ -141,17 +146,28 @@ jobs:
             fi
           done
 
-          docker-compose down --remove-orphans || true
+          FRONTEND_VERSION="$(node -p "require('../front-end/package.json').version")"
+          sed -i "s/^LATEST_SUPPORTED_FRONTEND_VERSION=.*/LATEST_SUPPORTED_FRONTEND_VERSION=${FRONTEND_VERSION}/" apps/api/.env
+          sed -i "s/^MINIMUM_SUPPORTED_FRONTEND_VERSION=.*/MINIMUM_SUPPORTED_FRONTEND_VERSION=${FRONTEND_VERSION}/" apps/api/.env
+          sed -i "s/^MINIMUM_SUPPORTED_FRONTEND_VERSION=.*/MINIMUM_SUPPORTED_FRONTEND_VERSION=${FRONTEND_VERSION}/" apps/notifications/.env
+
+          if [ ! -f docker-compose.yaml ]; then
+            echo "Expected to run docker-compose from back-end root" >&2
+            exit 1
+          fi
+
           docker-compose up -d
 
           for attempt in $(seq 1 120); do
-            if curl -kfsS https://localhost:3001/ >/dev/null; then
-              echo "Back-end is ready on https://localhost:3001"
+            status_code="$(curl -ksS -o /dev/null -w '%{http_code}' https://localhost:3001/ || true)"
+            if [ "${status_code}" = "200" ] || [ "${status_code}" = "426" ]; then
+              echo "Back-end is ready on https://localhost:3001 (HTTP ${status_code})"
               break
             fi
 
             if [ "${attempt}" -eq 120 ]; then
               echo "Back-end did not become ready in time" >&2
+              echo "Last health status code: ${status_code}" >&2
               docker-compose ps
               docker-compose logs --tail=200 api chain notifications migration database redis nats || true
               exit 1
