@@ -98,6 +98,13 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   );
   if (hasMatch) {
     await highlightAndFetch(parsed.transactionIds, parsed.groupIds, silentFetch);
+    return;
+  }
+
+  // Edge case: during initial load, nodes are still empty while isLoading is true.
+  // In that case, the targeted-refetch path above cannot match; fall back to a silent full refetch.
+  if (isLoading.value && nodes.value.length === 0) {
+    await silentFetch();
   }
 });
 
