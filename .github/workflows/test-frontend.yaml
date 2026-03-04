@@ -239,6 +239,11 @@ jobs:
           OPERATOR_KEY: ${{ secrets.OPERATOR_KEY }}
           ENVIRONMENT: LOCALNET
           ORGANIZATION_URL: https://localhost:3001
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DATABASE: postgres
+          POSTGRES_USERNAME: postgres
+          POSTGRES_PASSWORD: postgres
 
         run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }}
         working-directory: automation
