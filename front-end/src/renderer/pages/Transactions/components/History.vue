@@ -588,6 +588,6 @@ watch(
 @keyframes flash-update {
   0%,
   25% { background-color: rgba(var(--bs-info-rgb), 0.45); }
-  100% { }
+  100% { background-color: transparent; }
 }
 </style>
