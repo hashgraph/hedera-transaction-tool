@@ -116,12 +116,15 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: automation
 
-      - name: Deploy | Back-end
+      - name: Build | Back-end
         run: |
           set -euo pipefail
 
           pnpm install
-          brew install mkcert
+
+          sudo apt-get update
+          sudo apt-get install -y libnss3-tools mkcert
+
           mkdir -p cert
           mkcert -install
           mkcert -key-file ./cert/key.pem -cert-file ./cert/cert.pem localhost
