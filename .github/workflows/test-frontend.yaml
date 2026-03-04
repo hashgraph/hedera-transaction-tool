@@ -111,6 +111,7 @@ jobs:
         run: |
           sudo curl -fLo /usr/local/lib/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v2.29.1/docker-compose-linux-x86_64
           sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+          sudo ln -sf /usr/local/lib/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
 
       - name: Install Automation Dependencies
         run: pnpm install --frozen-lockfile
@@ -139,6 +140,27 @@ jobs:
               exit 1
             fi
           done
+
+          docker-compose down --remove-orphans || true
+          docker-compose up -d
+
+          for attempt in $(seq 1 120); do
+            if curl -kfsS https://localhost:3001/ >/dev/null; then
+              echo "Back-end is ready on https://localhost:3001"
+              break
+            fi
+
+            if [ "${attempt}" -eq 120 ]; then
+              echo "Back-end did not become ready in time" >&2
+              docker-compose ps
+              docker-compose logs --tail=200 api chain notifications migration database redis nats || true
+              exit 1
+            fi
+
+            sleep 5
+          done
+
+          docker-compose ps
         working-directory: back-end
 
       - name: Setup Kind
@@ -200,6 +222,7 @@ jobs:
           PRIVATE_KEY: ${{ secrets.SOLO_PRIVATE_KEY }}
           OPERATOR_KEY: ${{ secrets.OPERATOR_KEY }}
           ENVIRONMENT: LOCALNET
+          ORGANIZATION_URL: https://localhost:3001
 
         run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }}
         working-directory: automation
@@ -212,6 +235,16 @@ jobs:
           path: automation/reports/playwright
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Show Back-end logs on failure
+        if: ${{ failure() }}
+        run: docker-compose logs --tail=300 api chain notifications migration database redis nats
+        working-directory: back-end
+
+      - name: Stop Back-end Services
+        if: ${{ always() }}
+        run: docker-compose down --remove-orphans
+        working-directory: back-end
 
   unit-test:
     name: Unit Tests | ${{ matrix.test-suite.name }}
