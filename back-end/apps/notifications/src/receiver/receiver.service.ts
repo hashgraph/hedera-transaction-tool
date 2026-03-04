@@ -1110,9 +1110,9 @@ export class ReceiverService {
       );
 
       for (const result of results) {
-        if (result.status === 'fulfilled') {
+        if (result.status === 'fulfilled' && result.value != null) {
           this.mergeNotificationResults(merged, result.value);
-        } else {
+        } else if (result.status === 'rejected') {
           console.error('Failed to process transaction notifications:', result.reason);
         }
       }
