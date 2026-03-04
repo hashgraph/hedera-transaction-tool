@@ -1,8 +1,8 @@
 import { Page, Locator } from '@playwright/test';
 
 export class BasePage {
-  private readonly DEFAULT_TIMEOUT = 1000*2;
-  private readonly LONG_TIMEOUT = 5500;
+  protected readonly DEFAULT_TIMEOUT = 1000 * 2;
+  protected readonly LONG_TIMEOUT = 5500;
 
   constructor(protected readonly window: Page) {}
 
@@ -21,9 +21,10 @@ export class BasePage {
    * @returns {boolean} - True if the selector is a CSS selector, false otherwise.
    */
   isCssSelector(selector: string): boolean {
-    // Check if the selector starts with '.', '#', '[', or ':'
-    const cssSelectorPattern = /^[.#\[:]/;
-    return cssSelectorPattern.test(selector);
+    // Treat as a selector only when an explicit Playwright engine is used.
+    // Everything else is assumed to be a data-testid string.
+    const engines = ['css=', 'xpath=', 'text=', 'role=', 'id=', 'data-testid='];
+    return engines.some(engine => selector.startsWith(engine));
   }
 
   /**
@@ -33,7 +34,7 @@ export class BasePage {
    * @returns {Locator} - The element handle.
    * @throws {Error} - If the selector is invalid.
    */
-  getElement(selector: string, index: number|null = null): Locator {
+  getElement(selector: string, index: number | null = null): Locator {
     let element: Locator;
     if (this.isCssSelector(selector)) {
       element = this.window.locator(selector);
@@ -61,7 +62,11 @@ export class BasePage {
    * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be visible.
    * @returns {Promise<void>}
    */
-  async click(selector: string, index: number|null = null, timeout = this.DEFAULT_TIMEOUT): Promise<void> {
+  async click(
+    selector: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<void> {
     console.log(`Clicking on element with selector: ${selector}`);
     const element = this.getElement(selector, index);
     await element.waitFor({ state: 'visible', timeout });
@@ -76,7 +81,12 @@ export class BasePage {
    * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be visible.
    * @returns {Promise<void>}
    */
-  async fill(selector: string, value: string, index: number|null = null, timeout = this.DEFAULT_TIMEOUT) {
+  async fill(
+    selector: string,
+    value: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<void> {
     console.log(`Filling element with selector: ${selector} with value: ${value}`);
     const element = this.getElement(selector, index);
     await element.waitFor({ state: 'visible', timeout });
@@ -94,7 +104,13 @@ export class BasePage {
    * @returns {Promise<void>}
    * @throws {Error} - If the value cannot be correctly filled after retries.
    */
-  async fillAndVerify(selector: string, value: string, retries = 5, index: number|null = null, timeout = this.DEFAULT_TIMEOUT) {
+  async fillAndVerify(
+    selector: string,
+    value: string,
+    retries: number = 5,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<void> {
     let attempt = 0;
     let currentValue = '';
 
@@ -140,7 +156,12 @@ export class BasePage {
    * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be visible.
    * @returns {Promise<void>}
    */
-  async selectOptionByValue(selector: string, value: string, index: number|null = null, timeout = this.DEFAULT_TIMEOUT) {
+  async selectOptionByValue(
+    selector: string,
+    value: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<void> {
     console.log(`Selecting option with value: ${value} in <select> with selector: ${selector}`);
     const selectElement = this.getElement(selector, index);
     await selectElement.waitFor({ state: 'visible', timeout });
@@ -154,7 +175,11 @@ export class BasePage {
    * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be actionable.
    * @returns {Promise<void>}
    */
-  async toggleSwitch(selector: string, index: number|null = null, timeout = this.DEFAULT_TIMEOUT) {
+  async toggleSwitch(
+    selector: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<void> {
     console.log(`Toggling switch with selector: ${selector}`);
     const element = this.getElement(selector, index);
     const inputElement = element.locator('input[type="checkbox"]');
@@ -176,7 +201,7 @@ export class BasePage {
    * @param {number|null} [index=null] - Optional index to select a specific element when multiple are present.
    * @returns {Promise<void>}
    */
-  async scrollIntoView(selector: string, index: number|null = null) {
+  async scrollIntoView(selector: string, index: number | null = null): Promise<void> {
     console.log(`Scrolling element with selector: ${selector} into view`);
     const element = this.getElement(selector, index);
     await element.scrollIntoViewIfNeeded();
@@ -191,9 +216,9 @@ export class BasePage {
    */
   async waitForElementToDisappear(
     selector: string,
-    timeout = this.DEFAULT_TIMEOUT,
-    longTimeout = this.LONG_TIMEOUT,
-  ) {
+    timeout: number = this.DEFAULT_TIMEOUT,
+    longTimeout: number = this.LONG_TIMEOUT,
+  ): Promise<void> {
     console.log(`Waiting for element with selector: ${selector} to disappear`);
     try {
       await this.window.waitForSelector(selector, { state: 'attached', timeout: timeout });
@@ -209,7 +234,10 @@ export class BasePage {
    * @param {number} [timeout=this.LONG_TIMEOUT] - Optional timeout to wait for the element to be visible.
    * @returns {Promise<void>}
    */
-  async waitForElementToBeVisible(testId: string, timeout = this.LONG_TIMEOUT) {
+  async waitForElementToBeVisible(
+    testId: string,
+    timeout: number = this.LONG_TIMEOUT,
+  ): Promise<void> {
     console.log(`Waiting for element with testId: ${testId} to become visible`);
     try {
       await this.window.waitForSelector(`[data-testid="${testId}"]`, { state: 'visible', timeout });
@@ -229,7 +257,10 @@ export class BasePage {
    * @param {number} [timeout=this.LONG_TIMEOUT] - Optional timeout to wait for the element to be present.
    * @returns {Promise<void>}
    */
-  async waitForElementPresentInDOM(testId: string, timeout = this.LONG_TIMEOUT) {
+  async waitForElementPresentInDOM(
+    testId: string,
+    timeout: number = this.LONG_TIMEOUT,
+  ): Promise<void> {
     try {
       await this.window.waitForSelector(`[data-testid="${testId}"]`, {
         state: 'attached',
@@ -250,13 +281,19 @@ export class BasePage {
    * @param {number|null} [index=null] - Optional index to select a specific element when multiple are present.
    * @returns {Promise<void>}
    */
-  async uploadFile(selector: string, filePaths: string|string[], index: number|null = null) {
+  async uploadFile(
+    selector: string,
+    filePaths: string | string[],
+    index: number | null = null,
+  ): Promise<void> {
     console.log(`Uploading file(s) ${filePaths} via element with selector: ${selector}`);
 
     const element = this.getElement(selector, index);
 
     // Determine if the element is an input of type file
-    const isInputFile = await element.evaluate(el => el instanceof HTMLInputElement && el.type === 'file');
+    const isInputFile = await element.evaluate(
+      el => el instanceof HTMLInputElement && el.type === 'file',
+    );
 
     if (isInputFile) {
       // If the element is an input[type="file"], set files directly
@@ -280,7 +317,7 @@ export class BasePage {
    * @param {number|null} [index=null] - Optional index to select a specific element when multiple are present.
    * @returns {Promise<boolean>} - True if the element has 'active' class, false otherwise.
    */
-  async isElementActive(selector: string, index: number|null = null): Promise<boolean> {
+  async isElementActive(selector: string, index: number | null = null): Promise<boolean> {
     const element = this.getElement(selector, index);
     const classAttribute = await element.getAttribute('class');
     return classAttribute !== null && classAttribute.includes('active');
@@ -293,7 +330,11 @@ export class BasePage {
    * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be visible.
    * @returns {Promise<boolean>} - True if the element is visible, false otherwise.
    */
-  async isElementVisible(selector: string, index: number|null = null, timeout = this.DEFAULT_TIMEOUT): Promise<boolean> {
+  async isElementVisible(
+    selector: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<boolean> {
     console.log(`Checking if element with selector: ${selector} is visible`);
     try {
       const element = this.getElement(selector, index);
@@ -311,7 +352,11 @@ export class BasePage {
    * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be hidden.
    * @returns {Promise<boolean>} - True if the element is hidden, false otherwise.
    */
-  async isElementHidden(selector: string, index: number|null = null, timeout = this.DEFAULT_TIMEOUT): Promise<boolean> {
+  async isElementHidden(
+    selector: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<boolean> {
     console.log(`Checking if element with selector: ${selector} is hidden`);
     try {
       const element = this.getElement(selector, index);
@@ -329,7 +374,11 @@ export class BasePage {
    * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be visible.
    * @returns {Promise<boolean>} - True if the element is editable, false otherwise.
    */
-  async isElementEditable(selector: string, index: number|null = null, timeout = this.DEFAULT_TIMEOUT): Promise<boolean> {
+  async isElementEditable(
+    selector: string,
+    index: number | null = null,
+    timeout = this.DEFAULT_TIMEOUT,
+  ): Promise<boolean> {
     console.log(`Checking if element with selector: ${selector} is editable`);
     const element = this.getElement(selector, index);
     await element.waitFor({ state: 'visible', timeout });
@@ -343,7 +392,11 @@ export class BasePage {
    * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be visible.
    * @returns {Promise<boolean>} - True if the element is disabled, false otherwise.
    */
-  async isDisabled(selector: string, index: number|null = null, timeout = this.DEFAULT_TIMEOUT): Promise<boolean> {
+  async isDisabled(
+    selector: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<boolean> {
     console.log(`Checking if element with selector: ${selector} is disabled`);
     const element = this.getElement(selector, index);
     await element.waitFor({ state: 'visible', timeout });
@@ -395,7 +448,11 @@ export class BasePage {
    * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be visible.
    * @returns {Promise<boolean>} - Returns true if the ::before pseudo-element exists and is visible, false otherwise.
    */
-  async hasBeforePseudoElement(testId: string, index: number|null = null, timeout = this.DEFAULT_TIMEOUT): Promise<boolean> {
+  async hasBeforePseudoElement(
+    testId: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<boolean> {
     const element = this.getElement(testId, index);
     await element.waitFor({ state: 'visible', timeout: timeout });
 
@@ -414,8 +471,7 @@ export class BasePage {
 
     // Check for borders (some indicators use borders instead of width/height)
     const hasBorders =
-      parseFloat(pseudoStyles.borderLeftWidth) > 0 ||
-      parseFloat(pseudoStyles.borderTopWidth) > 0;
+      parseFloat(pseudoStyles.borderLeftWidth) > 0 || parseFloat(pseudoStyles.borderTopWidth) > 0;
 
     return (
       pseudoStyles.display !== 'none' &&
@@ -436,8 +492,12 @@ export class BasePage {
    * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be visible.
    * @returns {Promise<string|null>} - Text content of the element(s).
    */
-  async getText(selector: string, index: number|null = null, timeout = this.DEFAULT_TIMEOUT): Promise<string|null> {
-    let result: string|null;
+  async getText(
+    selector: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<string | null> {
+    let result: string | null;
 
     if (index !== null) {
       console.log(`Getting text for element with selector: ${selector} at index ${index}`);
@@ -491,14 +551,14 @@ export class BasePage {
    */
   async getTextWithRetry(
     selector: string,
-    index: number|null = null,
+    index: number | null = null,
     timeout = this.DEFAULT_TIMEOUT,
     retries = 5,
     retryDelay = 1000,
-  ): Promise<string|null> {
+  ): Promise<string | null> {
     console.log(`Getting text for element with selector: ${selector}`);
     let attempt = 0;
-    let textContent: string|null = null;
+    let textContent: string | null = null;
 
     while (attempt < retries) {
       const element = this.getElement(selector, index);
@@ -533,7 +593,11 @@ export class BasePage {
    * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be visible.
    * @returns {Promise<string>} - The value of the input field.
    */
-  async getTextFromInputField(selector: string, index: number|null = null, timeout = this.DEFAULT_TIMEOUT): Promise<string> {
+  async getTextFromInputField(
+    selector: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<string> {
     console.log(`Getting text from input field with selector: ${selector}`);
     const element = this.getElement(selector, index);
     await element.waitFor({ state: 'visible', timeout });
@@ -548,7 +612,11 @@ export class BasePage {
    * @returns {Promise<string>} - The value of the input field.
    * @throws {Error} - If a non-empty value cannot be retrieved after retries.
    */
-  async getTextFromInputFieldWithRetry(selector: string, index: number|null = null, timeout = this.DEFAULT_TIMEOUT): Promise<string> {
+  async getTextFromInputFieldWithRetry(
+    selector: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<string> {
     console.log(`Getting text from input field with selector: ${selector}`);
     const element = this.getElement(selector, index);
     await element.waitFor({ state: 'visible', timeout });
@@ -580,7 +648,11 @@ export class BasePage {
    * @param {number} [timeout=this.LONG_TIMEOUT] - The timeout to wait for the element to be visible.
    * @returns {Promise<string>} - The inner text or HTML of the element.
    */
-  async getInnerContent(selector: string, index: number|null = null, timeout = this.LONG_TIMEOUT): Promise<string> {
+  async getInnerContent(
+    selector: string,
+    index: number | null = null,
+    timeout: number = this.LONG_TIMEOUT,
+  ): Promise<string> {
     console.log(`Getting inner content for element with selector: ${selector}`);
     const element = this.getElement(selector, index);
     await element.waitFor({ state: 'visible', timeout });
@@ -595,7 +667,11 @@ export class BasePage {
    * @returns {Promise<string>} - The value of the input field once it is filled.
    * @throws {Error} - If the input field is not filled within the timeout period.
    */
-  async waitForInputFieldToBeFilled(selector: string, index: number|null = null, timeout = this.LONG_TIMEOUT): Promise<string> {
+  async waitForInputFieldToBeFilled(
+    selector: string,
+    index: number | null = null,
+    timeout = this.LONG_TIMEOUT,
+  ): Promise<string> {
     console.log(`Waiting for input field with selector: ${selector} to be filled`);
     const element = this.getElement(selector, index);
 
@@ -653,8 +729,8 @@ export class BasePage {
    * @returns {Promise<void>}
    */
   async closeDraftModal(
-    buttonSelector = 'button-discard-draft-for-group-modal',
-    timeout = 3000,
+    buttonSelector: string = 'button-discard-draft-for-group-modal',
+    timeout: number = this.LONG_TIMEOUT,
   ): Promise<void> {
     const modalButton = this.window.getByTestId(buttonSelector);
     await modalButton.waitFor({ state: 'visible', timeout }).catch(() => {});

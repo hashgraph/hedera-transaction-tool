@@ -39,7 +39,7 @@ export class GroupPage extends BasePage {
   detailsGroupButtonSelector = 'button-transaction-node-details-';
   importCsvButtonSelector = 'button-import-csv';
   // Text
-  toastMessageSelector = '.v-toast__text';
+  toastMessageSelector = 'css=.v-toast__text';
   emptyTransactionTextSelector = 'p-empty-transaction-text';
   transactionGroupDetailsIdSelector = 'td-group-transaction-id';
   // Inputs

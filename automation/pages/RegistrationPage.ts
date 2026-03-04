@@ -48,7 +48,7 @@ export class RegistrationPage extends BasePage {
   privateKeyLabelSelector = 'label-private-key';
 
   // Messages
-  toastMessageSelector = '.v-toast__text';
+  toastMessageSelector = 'css=.v-toast__text';
   emailErrorMessageSelector = 'invalid-text-email';
   passwordErrorMessageSelector = 'invalid-text-password';
   confirmPasswordErrorMessageSelector = 'invalid-text-password-not-match';

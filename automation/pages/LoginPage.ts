@@ -29,7 +29,7 @@ export class LoginPage extends BasePage {
   passwordLabelSelector = 'label-password';
 
   // Messages
-  toastMessageSelector = '.v-toast__text';
+  toastMessageSelector = 'css=.v-toast__text';
   invalidPasswordMessageSelector = 'invalid-text-password';
   invalidEmailMessageSelector = 'invalid-text-email';
 

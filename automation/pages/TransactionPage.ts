@@ -130,7 +130,7 @@ export class TransactionPage extends BasePage {
   textTypeTransactionSelector = 'p-type-transaction';
   textTransactionIdSelector = 'p-transaction-id';
   textMaxTxFeeSelector = 'p-max-tx-fee';
-  toastMessageSelector = '.v-toast__text';
+  toastMessageSelector = 'css.v-toast__text';
   hbarAmountValueSelector = 'p-hbar-amount';
   transactionTypeHeaderSelector = 'h2-transaction-type';
   transactionDetailsCreatedAtSelector = 'p-transaction-details-created-at';
@@ -142,18 +142,6 @@ export class TransactionPage extends BasePage {
   draftDetailsTypeIndexSelector = 'span-draft-tx-type-';
   draftDetailsDescriptionIndexSelector = 'span-draft-tx-description-';
   draftDetailsIsTemplateCheckboxSelector = 'checkbox-is-template-';
-
-  // Method to close the 'Save Draft' modal if it appears
-  async closeDraftModal() {
-    // Wait for the button to be visible with a timeout
-    const modalButton = this.window.getByTestId(this.discardModalDraftButtonSelector);
-    await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(() => {});
-
-    // If the modal is visible, then click the button to close the modal
-    if (await modalButton.isVisible()) {
-      await modalButton.click();
-    }
-  }
 
   // Combined method to verify all elements on Create transaction page
   async verifyAccountCreateTransactionElements() {
@@ -229,7 +217,7 @@ export class TransactionPage extends BasePage {
   }
 
   async clickOnTransactionsMenuButton() {
-    await this.click(this.transactionsMenuButtonSelector, null, 2500);
+    await this.click(this.transactionsMenuButtonSelector);
   }
 
   async clickOnSingleTransactionButton() {
