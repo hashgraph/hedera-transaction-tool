@@ -16,37 +16,56 @@ export class FanOutService {
   ) {}
 
   async processNewNotifications(dtos: NewNotificationDto[]) {
-    for (const dto of dtos) {
-      const newDtos = dto.notificationReceivers.map(receiver =>
-        plainToInstance(NotificationReceiverDto, receiver, {
-          excludeExtraneousValues: true,
-          exposeUnsetFields: false,
-        }),
-      );
+    const results = await Promise.allSettled(
+      dtos.map(dto => {
+        const newDtos = dto.notificationReceivers.map(receiver =>
+          plainToInstance(NotificationReceiverDto, receiver, {
+            excludeExtraneousValues: true,
+            exposeUnsetFields: false,
+          }),
+        );
+        return this.websocket.notifyUser(dto.userId, NOTIFICATIONS_NEW, newDtos);
+      }),
+    );
 
-      await this.websocket.notifyUser(dto.userId, NOTIFICATIONS_NEW, newDtos);
-    }
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`Failed to notify user ${dtos[index].userId}:`, result.reason);
+      }
+    });
   }
 
   async processDeleteNotifications(dtos: DeleteNotificationDto[]) {
-    for (const dto of dtos) {
-      await this.websocket.notifyUser(dto.userId, NOTIFICATIONS_INDICATORS_DELETE, {
-        notificationReceiverIds: dto.notificationReceiverIds,
-      });
-    }
+    const results = await Promise.allSettled(
+      dtos.map(dto =>
+        this.websocket.notifyUser(dto.userId, NOTIFICATIONS_INDICATORS_DELETE, {
+          notificationReceiverIds: dto.notificationReceiverIds,
+        }),
+      ),
+    );
+
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`Failed to notify user ${dtos[index].userId}:`, result.reason);
+      }
+    });
   }
 
   async notifyClients(dtos: NotifyClientDto[]) {
-    for (const dto of dtos) {
-      try {
-        await this.websocket.notifyUser(dto.userId, TRANSACTION_ACTION, {
+    const results = await Promise.allSettled(
+      dtos.map(dto =>
+        this.websocket.notifyUser(dto.userId, TRANSACTION_ACTION, {
           transactionIds: dto.transactionIds ?? [],
           groupIds: dto.groupIds ?? [],
           eventType: dto.eventType ?? 'unknown',
-        });
-      } catch (error) {
-        console.error(`Failed to notify user ${dto.userId}:`, error);
+        }),
+      ),
+    );
+
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`Failed to notify user ${dtos[index].userId}:`, result.reason);
       }
-    }
+    });
   }
 }
