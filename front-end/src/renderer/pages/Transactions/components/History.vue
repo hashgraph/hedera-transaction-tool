@@ -85,10 +85,11 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
     return;
   }
 
-  // For non-status updates, only refetch if current items are affected
+  // For non-status updates, refetch if current items are affected
+  // or if no transactions have been loaded yet (pre-load fallback)
   const txIds = new Set(parsed.transactionIds);
   const hasMatch = organizationTransactions.value.some(t => txIds.has(t.transactionRaw.id));
-  if (hasMatch) {
+  if (hasMatch || organizationTransactions.value.length === 0) {
     await highlightAndFetch(parsed.transactionIds, parsed.groupIds, silentFetch);
   }
 });
