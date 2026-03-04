@@ -1,7 +1,6 @@
-import { onBeforeMount } from 'vue';
+import { onBeforeMount, onBeforeUnmount } from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
-import useDisposableWs from '@renderer/composables/useDisposableWs';
 
 /**
  * Subscribe to a WebSocket event for the current organization
@@ -16,20 +15,32 @@ export default function useWebsocketSubscription(
 ) {
   const user = useUserStore();
   const wsStore = useWebsocketConnection();
-  const ws = useDisposableWs();
+
+  let dispose: (() => void) | null = null;
 
   /* Functions */
   const subscribe = () => {
+    if (dispose) dispose();
+    dispose = null;
+
     if (!user.selectedOrganization?.serverUrl) return;
-    ws.on(user.selectedOrganization.serverUrl, eventName, (data: any) => callback(data));
+    dispose = wsStore.on(user.selectedOrganization.serverUrl, eventName, (data: any) =>
+      callback(data),
+    );
   };
 
   /* Subscribe immediately on mount (in case WS is already connected) */
   onBeforeMount(subscribe);
 
   /* Handle WebSocket reconnections (for future reconnects) */
-  wsStore.$onAction(ctx => {
+  const unsubscribeAction = wsStore.$onAction(ctx => {
     if (ctx.name !== 'setup') return;
     ctx.after(() => subscribe());
+  });
+
+  onBeforeUnmount(() => {
+    if (dispose) dispose();
+    dispose = null;
+    unsubscribeAction();
   });
 }
