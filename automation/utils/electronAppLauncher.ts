@@ -14,14 +14,22 @@ export async function launchHederaTransactionTool() {
   console.log('[ElectronLauncher] Launching Hedera Transaction Tool...');
   console.log(`[ElectronLauncher] Executable path: ${executablePath}`);
 
-  const startTime = Date.now();
+  const launchStart = Date.now();
 
   const app = await electron.launch({
     executablePath,
   });
 
-  const launchTime = Date.now() - startTime;
-  console.log(`[ElectronLauncher] Electron app launched in ${launchTime} ms`);
+  const launchTime = Date.now() - launchStart;
+  console.log(`[ElectronLauncher] Electron process launched in ${launchTime} ms`);
+
+  const windowStart = Date.now();
+
+  const firstWindow = await app.firstWindow();
+  await firstWindow.waitForLoadState('domcontentloaded');
+
+  const windowTime = Date.now() - windowStart;
+  console.log(`[ElectronLauncher] First window ready in ${windowTime} ms`);
 
   return app;
 }

@@ -811,9 +811,8 @@ export class TransactionPage extends BasePage {
   }
 
   async clickOnSignAndReadButton() {
-    const button = this.window.getByTestId(this.signAndSubmitButtonSelector);
-    await button.scrollIntoViewIfNeeded();
-    await button.click({ timeout: 10000 });
+    await this.scrollIntoView(this.signAndSubmitButtonSelector);
+    await this.click(this.signAndSubmitButtonSelector);
   }
 
   async clickSignTransactionButton() {
@@ -834,9 +833,7 @@ export class TransactionPage extends BasePage {
   }
 
   async clickOnExportTransactionButton(index: string) {
-    await this.window.waitForSelector(`[data-testid="${this.moreDropdownButtonSelector}"]`, {
-      state: 'visible',
-    });
+    await this.isElementVisible(this.moreDropdownButtonSelector);
     await this.click(this.moreDropdownButtonSelector);
     await this.click(`${this.moreDropdownButtonSelector}-item-${index}`, null, 5000);
   }
@@ -908,8 +905,7 @@ export class TransactionPage extends BasePage {
 
     while (attempt < maxRetries) {
       // Fill the input normally
-      const element = this.window.getByTestId(inputSelector);
-      await element.fill(accountId);
+      await this.fill(inputSelector, accountId);
 
       // Check if the target button is enabled
       if (await this.isButtonEnabled(buttonSelector)) {

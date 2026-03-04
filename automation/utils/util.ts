@@ -17,31 +17,48 @@ import { generateEd25519KeyPair } from './keyUtil.js';
 export const LOCALNET_PAYER_ACCOUNT_ID = '0.0.1022';
 
 export async function setupApp() {
-  console.log(asciiArt); // Display ASCII art as the app starts
+  console.log(asciiArt);
+
+  console.log('[setupApp] Launching Hedera Transaction Tool...');
   const app = await launchHederaTransactionTool();
+
   const window = await app.firstWindow();
+  await window.waitForLoadState('domcontentloaded');
+
   const loginPage = new LoginPage(window);
 
+  console.log('[setupApp] Clearing browser storage...');
   await window.evaluate(() => {
-    (window as any).localStorage.clear();
-    // window.localStorage.setItem('important-note-accepted', 'true');
+    globalThis.localStorage.clear();
+    globalThis.sessionStorage.clear();
   });
 
-  expect(window).not.toBeNull();
+  console.log('[setupApp] Handling startup modals...');
+
   await loginPage.closeImportantNoteModal();
+
   const canMigrate = await migrationDataExists(app);
+  console.log(`[setupApp] migrationDataExists: ${canMigrate}`);
+
   if (canMigrate) {
     await loginPage.closeMigrationModal();
   }
+
   if (process.platform === 'darwin') {
+    console.log('[setupApp] macOS detected → checking Keychain modal...');
     await loginPage.closeKeyChainModal();
   }
 
-  // Check if we need to reset app state (if user exists from previous run)
+  console.log('[setupApp] Checking if existing user session exists...');
   const isSettingsButtonVisible = await loginPage.isSettingsButtonVisible();
+  console.log(`[setupApp] isSettingsButtonVisible: ${isSettingsButtonVisible}`);
+
   if (isSettingsButtonVisible) {
+    console.log('[setupApp] Existing session detected → resetting app state...');
     await resetAppState(window, app);
   }
+
+  console.log('[setupApp] App ready.');
 
   return { app, window };
 }
