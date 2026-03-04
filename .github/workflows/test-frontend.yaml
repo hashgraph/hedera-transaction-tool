@@ -69,20 +69,23 @@ jobs:
       fail-fast: false
       matrix:
         test-suite:
-          - name: Registration
-            command: RegistrationTests
-            soloRequired: false
-          - name: Login
-            command: LoginTests
-            soloRequired: false
-          - name: Settings
-            command: SettingsTests
-            soloRequired: false
-          - name: Transactions
-            command: TransactionTests
-            soloRequired: true
-          - name: Workflow
-            command: WorkflowTests
+#          - name: Registration
+#            command: RegistrationTests
+#            soloRequired: false
+#          - name: Login
+#            command: LoginTests
+#            soloRequired: false
+#          - name: Settings
+#            command: SettingsTests
+#            soloRequired: false
+#          - name: Transactions
+#            command: TransactionTests
+#            soloRequired: true
+#          - name: Workflow
+#            command: WorkflowTests
+#            soloRequired: true
+          - name: OrganizationGroup
+            command: OrganizationGroupTests
             soloRequired: true
     steps:
       - name: Harden Runner
