@@ -106,11 +106,12 @@ const router = useRouter();
 const toast = useToast();
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 const FETCH_DEBOUNCE_MS = 1000;
-useWebsocketSubscription(TRANSACTION_ACTION, async (payload: string) => {
+useWebsocketSubscription(TRANSACTION_ACTION, async (payload) => {
   // Group ID scoping: ignore events for other groups
-  if (payload) {
+  const rawPayload = Array.isArray(payload) ? payload[0] : payload;
+  if (rawPayload) {
     try {
-      const data = JSON.parse(payload);
+      const data = JSON.parse(rawPayload);
       const currentGroupId = Number(router.currentRoute.value.params.id);
       if (data.groupIds && !data.groupIds.includes(currentGroupId)) return;
     } catch {

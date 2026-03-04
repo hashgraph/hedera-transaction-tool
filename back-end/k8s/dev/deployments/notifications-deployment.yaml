@@ -79,6 +79,8 @@ spec:
               value: '10'
             - name: POSTGRES_CACHE_POOL_SIZE
               value: '10'
+            - name: CACHE_STALE_THRESHOLD_MS
+              value: '60000'
             - name: MINIMUM_SUPPORTED_FRONTEND_VERSION
               value: '0.23.0'
 ---

@@ -40,5 +40,7 @@ spec:
               value: '10'
             - name: POSTGRES_CACHE_POOL_SIZE
               value: '10'
+            - name: CACHE_STALE_THRESHOLD_MS
+              value: '60000'
             - name: REDIS_URL
               value: 'redis://redis-service:6379'
