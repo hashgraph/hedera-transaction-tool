@@ -1078,6 +1078,10 @@ export class ReceiverService {
       const results = await Promise.allSettled(
         batch.map(async ({ entityId: transactionId }) => {
           const transaction = transactionMap.get(transactionId);
+          if (!transaction) {
+            console.error(`Transaction ${transactionId} not found in map, skipping`);
+            return null;
+          }
           const approvers = approversMap.get(transactionId) || [];
 
           if (transaction.deletedAt && transaction.status !== TransactionStatus.CANCELED) {
@@ -1135,13 +1139,17 @@ export class ReceiverService {
     // Process each event
     for (const { entityId: transactionId } of events) {
       const transaction = transactionMap.get(transactionId);
+      if (!transaction) continue;
       const approvers = approversMap.get(transactionId) || [];
+
+      const additionalData = this.buildAdditionalData(transaction);
+      const groupId = additionalData.groupId;
 
       const syncType = this.getInAppNotificationType(transaction.status);
 
       if (syncType) {
         const receiverIds = await this.getNotificationReceiverIds(this.entityManager, transaction, syncType, approvers, keyCache);
-        receiverIds.forEach(id => this.addAffectedUser(affectedUserIds, id));
+        receiverIds.forEach(id => this.addAffectedUser(affectedUserIds, id, groupId));
       }
     }
 
@@ -1168,6 +1176,7 @@ export class ReceiverService {
 
     for (const { entityId: transactionId } of events) {
       const transaction = transactionMap.get(transactionId);
+      if (!transaction) continue;
 
       const allKeys = await keysRequiredToSign(
         transaction,

@@ -91,7 +91,7 @@ export class TransactionSignatureService {
         signatureKey.push(accountInfo.key);
       }
     } catch (error) {
-      this.logger.error(`Failed to get fee payer key: ${error.message}`);
+      this.logger.error(`Failed to get fee payer key for ${feePayerAccount}: ${error.message}`);
       return null;
     }
   }
@@ -104,18 +104,19 @@ export class TransactionSignatureService {
     transaction: Transaction,
     signingAccounts: Set<string>
   ): Promise<void> {
+    const accountList = [...signingAccounts];
     const results = await Promise.allSettled(
-      [...signingAccounts].map(account =>
+      accountList.map(account =>
         this.accountCacheService.getAccountInfoForTransaction(transaction, account),
       ),
     );
-    for (const result of results) {
+    results.forEach((result, idx) => {
       if (result.status === 'fulfilled' && result.value?.key) {
         signatureKey.push(result.value.key);
       } else if (result.status === 'rejected') {
-        this.logger.error(`Failed to get key for signing account: ${result.reason?.message}`);
+        this.logger.error(`Failed to get key for signing account ${accountList[idx]}: ${result.reason?.message}`);
       }
-    }
+    });
   }
 
   /**
@@ -127,21 +128,22 @@ export class TransactionSignatureService {
     receiverAccounts: Set<string>,
     showAll: boolean,
   ): Promise<void> {
+    const accountList = [...receiverAccounts];
     const results = await Promise.allSettled(
-      [...receiverAccounts].map(account =>
+      accountList.map(account =>
         this.accountCacheService.getAccountInfoForTransaction(transaction, account),
       ),
     );
-    for (const result of results) {
+    results.forEach((result, idx) => {
       if (result.status === 'fulfilled') {
         const accountInfo = result.value;
         if ((showAll || accountInfo?.receiverSignatureRequired) && accountInfo?.key) {
           signatureKey.push(accountInfo.key);
         }
       } else if (result.status === 'rejected') {
-        this.logger.error(`Failed to get receiver key: ${result.reason?.message}`);
+        this.logger.error(`Failed to get receiver key for ${accountList[idx]}: ${result.reason?.message}`);
       }
-    }
+    });
   }
 
   /**

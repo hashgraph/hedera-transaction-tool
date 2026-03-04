@@ -92,6 +92,8 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     for (const result of lookupResults) {
       if (result.status === 'fulfilled') {
         accountInfoMap.set(result.value.id, result.value.info ?? null);
+      } else {
+        console.warn('Account lookup failed:', result.reason);
       }
     }
 

@@ -26,6 +26,7 @@ import { InjectDataSource } from '@nestjs/typeorm';
 export class AccountCacheService {
   private readonly logger = new Logger(AccountCacheService.name);
   private readonly cacheHelper: CacheHelper;
+  private readonly linkedPairs = new Set<string>();
 
   private readonly cacheTtlMs: number;
   private readonly claimTimeoutMs: number;
@@ -288,6 +289,10 @@ export class AccountCacheService {
     transactionId: number,
     cachedAccountId: number,
   ): Promise<void> {
+    const key = `${transactionId}:${cachedAccountId}`;
+    if (this.linkedPairs.has(key)) return;
+    this.linkedPairs.add(key);
+
     await this.cacheHelper.linkTransactionToEntity(
       TransactionCachedAccount,
       transactionId,

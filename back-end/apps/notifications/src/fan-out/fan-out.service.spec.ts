@@ -75,18 +75,21 @@ describe('FanOutService', () => {
     );
   });
 
-  it('notifyClients should log and call websocket.notifyClient with TRANSACTION_ACTION', async () => {
-    const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  it('notifyClients should call websocket.notifyClient with TRANSACTION_ACTION', async () => {
     const dtos: any[] = [{}, {}];
-
     await service.notifyClients(dtos);
-
-    expect(consoleSpy).toHaveBeenCalledWith('Notify clients called in fan-out service');
     expect(websocketMock.notifyClient).toHaveBeenCalledWith({
       message: TRANSACTION_ACTION,
       content: '',
     });
+  });
 
-    consoleSpy.mockRestore();
+  it('notifyClients should include groupIds in content when present', async () => {
+    const dtos: any[] = [{ groupId: 1 }, { groupId: 2 }, { groupId: 1 }];
+    await service.notifyClients(dtos);
+    expect(websocketMock.notifyClient).toHaveBeenCalledWith({
+      message: TRANSACTION_ACTION,
+      content: JSON.stringify({ groupIds: [1, 2] }),
+    });
   });
 });

@@ -11,7 +11,7 @@ import {
 } from '@shared/interfaces';
 import { TransactionStatus, TransactionTypeName } from '@shared/interfaces';
 
-import { computed, onBeforeMount, reactive, ref, watch, watchEffect } from 'vue';
+import { computed, onBeforeMount, onBeforeUnmount, reactive, ref, watch, watchEffect } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
@@ -124,6 +124,12 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload: string) => {
     const id = router.currentRoute.value.params.id;
     await fetchGroup(Array.isArray(id) ? id[0] : id);
   }, FETCH_DEBOUNCE_MS);
+});
+onBeforeUnmount(() => {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();

@@ -12,7 +12,7 @@ import useDisposableWs from '@renderer/composables/useDisposableWs';
  */
 export default function useWebsocketSubscription(
   eventName: string,
-  callback: (data?: any) => void | Promise<void>,
+  callback: (data?: string) => void | Promise<void>,
 ) {
   const user = useUserStore();
   const wsStore = useWebsocketConnection();

@@ -122,6 +122,8 @@ export const uploadSignatures = async (
     });
   }
 
+  decryptedKeyCache.clear();
+
   await commonRequestHandler(async () => {
     await axiosWithCredentials.post(
       `${organization.serverUrl}/${controller}/signers`,

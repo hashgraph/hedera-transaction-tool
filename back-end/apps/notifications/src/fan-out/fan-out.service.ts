@@ -37,7 +37,7 @@ export class FanOutService {
   }
 
   async notifyClients(dtos: NotifyClientDto[]) {
-    const groupIds = [...new Set(dtos.map(d => d.groupId).filter(Boolean))];
+    const groupIds = [...new Set(dtos.map(d => d.groupId).filter(id => id != null))];
     await this.websocket.notifyClient({
       message: TRANSACTION_ACTION,
       content: groupIds.length > 0 ? JSON.stringify({ groupIds }) : '',
