@@ -12,6 +12,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppListItem from '@renderer/components/ui/AppListItem.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 /* Enums */
 enum KeyTab {
@@ -36,6 +37,9 @@ const emit = defineEmits<{
 /* Stores */
 const user = useUserStore();
 const contacts = useContactsStore();
+
+/* Injected */
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
 /* State */
 const publicKey = ref('');
@@ -148,7 +152,7 @@ watch(
       const tempIdentifiers = await Promise.all(
         newList.map(async key => {
           try {
-            const identifier = await findIdentifier(key.publicKey);
+            const identifier = await findIdentifier(key.publicKey, publicKeyOwnerCache);
             return identifier || 'Public Key';
           } catch (error) {
             console.error(`Failed to find owner/nickname for key: ${key.publicKey}`, error);

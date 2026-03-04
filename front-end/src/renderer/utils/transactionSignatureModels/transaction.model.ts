@@ -5,7 +5,7 @@ import type { INodeInfoParsed } from '@shared/interfaces';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import type { ConnectedOrganization } from '@renderer/types';
-import { getPublicKeyOwner } from '@renderer/services/organization';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { flattenKeyList } from '@renderer/services/keyPairService.ts';
 
 export interface SignatureAudit {
@@ -54,6 +54,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     mirrorNodeLink: string,
     accountInfoCache: AccountByIdCache,
     nodeInfoCache: NodeByIdCache,
+    publicKeyOwnerCache: PublicKeyOwnerCache,
     organization: ConnectedOrganization | null,
   ): Promise<SignatureAudit> {
     const feePayerAccountId = this.getFeePayerAccountId();
@@ -167,7 +168,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
       for (const key of signatureKeys) {
         const flatKeys = flattenKeyList(key);
         for (const flatKey of flatKeys) {
-          const o = await getPublicKeyOwner(organization.serverUrl, flatKey.toStringRaw());
+          const o = await publicKeyOwnerCache.lookup(flatKey.toStringRaw(), organization.serverUrl);
           if (o === null) {
             // flatKey has no matching user in organization
             // => flatKey is external

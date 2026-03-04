@@ -36,6 +36,7 @@ import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
 import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache';
 
 /* Props */
 const props = defineProps<{
@@ -52,6 +53,7 @@ const toast = useToast();
 
 /* Injected */
 const transactionByIdCache = TransactionByIdCache.inject();
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
 /* State */
 const isKeyStructureModalShown = ref(false);
@@ -140,7 +142,7 @@ onBeforeMount(async () => {
 
   await checkAndFetchTransactionInfo();
   if (props.transaction.key && props.transaction.key instanceof PublicKey) {
-    formattedKey.value = await formatPublicKey(props.transaction.key.toStringRaw());
+    formattedKey.value = await formatPublicKey(props.transaction.key.toStringRaw(), publicKeyOwnerCache);
   }
 });
 
