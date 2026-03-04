@@ -109,6 +109,48 @@ describe('FanOutService', () => {
     });
   });
 
+  it('processNewNotifications should catch and log errors without throwing', async () => {
+    const error = new Error('websocket failure');
+    websocketMock.notifyUser.mockRejectedValueOnce(error);
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+    const dtos: any[] = [
+      {
+        userId: 1,
+        notificationReceivers: [{ id: 1, userId: 1, notificationId: 99, isRead: false }],
+      },
+      {
+        userId: 2,
+        notificationReceivers: [{ id: 2, userId: 2, notificationId: 100, isRead: false }],
+      },
+    ];
+
+    await expect(service.processNewNotifications(dtos)).resolves.not.toThrow();
+
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to notify user 1:', error);
+    expect(websocketMock.notifyUser).toHaveBeenCalledTimes(2);
+
+    consoleSpy.mockRestore();
+  });
+
+  it('processDeleteNotifications should catch and log errors without throwing', async () => {
+    const error = new Error('websocket failure');
+    websocketMock.notifyUser.mockRejectedValueOnce(error);
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+    const dtos: any[] = [
+      { userId: 55, notificationReceiverIds: [10, 11] },
+      { userId: 66, notificationReceiverIds: [20] },
+    ];
+
+    await expect(service.processDeleteNotifications(dtos)).resolves.not.toThrow();
+
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to notify user 55:', error);
+    expect(websocketMock.notifyUser).toHaveBeenCalledTimes(2);
+
+    consoleSpy.mockRestore();
+  });
+
   it('notifyClients should catch and log errors without throwing', async () => {
     const error = new Error('websocket failure');
     websocketMock.notifyUser.mockRejectedValueOnce(error);
