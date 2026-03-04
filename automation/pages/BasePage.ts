@@ -1,7 +1,8 @@
 import { Page, Locator } from '@playwright/test';
 
 export class BasePage {
-  protected readonly DEFAULT_TIMEOUT = 1000 * 2;
+  protected readonly DEFAULT_TIMEOUT = 2000;
+  protected readonly SHORT_TIMEOUT = 500;
   protected readonly LONG_TIMEOUT = 5500;
 
   constructor(protected readonly window: Page) {}

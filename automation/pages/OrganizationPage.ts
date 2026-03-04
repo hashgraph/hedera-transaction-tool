@@ -438,7 +438,6 @@ export class OrganizationPage extends BasePage {
     this.organizationRecoveryWords[userIndex] = [];
     for (let i = 1; i <= 24; i++) {
       const selector = this.registrationPage.getRecoveryWordSelector(i);
-      // const wordElement = this.window.getByTestId(selector);
       this.organizationRecoveryWords[userIndex][i] = await this.getTextFromInputField(selector);
     }
   }
