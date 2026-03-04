@@ -116,6 +116,28 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: automation
 
+      - name: Deploy | Back-end
+        run: |
+          set -euo pipefail
+
+          pnpm install
+          brew install mkcert
+          mkdir -p cert
+          mkcert -install
+          mkcert -key-file ./cert/key.pem -cert-file ./cert/cert.pem localhost
+
+          for directory in apps/api apps/chain apps/notifications . scripts typeorm; do
+            if [ -f "${directory}/.example.env" ]; then
+              cp "${directory}/.example.env" "${directory}/.env"
+            elif [ -f "${directory}/example.env" ]; then
+              cp "${directory}/example.env" "${directory}/.env"
+            else
+              echo "No .example.env or example.env file found in ${directory}" >&2
+              exit 1
+            fi
+          done
+        working-directory: back-end
+
       - name: Setup Kind
         if: ${{ matrix.test-suite.soloRequired }}
         uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
@@ -178,6 +200,15 @@ jobs:
 
         run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }}
         working-directory: automation
+
+      - name: Upload Playwright Report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.test-suite.name }}
+          path: automation/reports/playwright
+          if-no-files-found: warn
+          retention-days: 14
 
   unit-test:
     name: Unit Tests | ${{ matrix.test-suite.name }}
